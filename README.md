@@ -7,18 +7,14 @@ This project is a monorepo for experimental and portfolio frontend micro-apps, b
 ```
 labs/
   src/
+    index.html         # Landing page with links to all micro-apps
     zines/           # Example micro-app: Minizine Magic Maker
-      App.tsx
-      main.tsx
-      zines.css
+      index.html 
       ...
     cats/            # (Add more micro-apps here)
       ...
-  index.html         # Landing page with links to all micro-apps
-  zines/index.html   # HTML entry for the zines app (served at /zines/)
   package.json       # Shared dependencies and scripts
   vite.config.cjs    # Vite config for multi-app build
-  tailwind.config.cjs, postcss.config.cjs  # Shared styling config
 ```
 
 ## How the Micro-Apps Architecture Works
