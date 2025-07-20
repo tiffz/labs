@@ -1,12 +1,366 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Test</title>
-  </head>
-  <body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minizine Maker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Kalam:wght@300;400;700&family=Gaegu:wght@300;400;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        :root {
+            --artsy-bg: #FFF7E0; 
+            --text-color: #5D4037; 
+            --heading-color: #E65100; /* Dark Orange */
+            --sub-heading-color: #00695C; /* Dark Teal */
+            --accent-orange: #FFCC80;
+            --accent-peach: #FFAB91;
+            --accent-teal: #4DB6AC; 
+            --accent-light-teal: #B2DFDB;
+            --input-bg: #FFFDF7;
+            --input-border: var(--accent-orange);
+            --input-focus-border: var(--accent-peach);
+        }
+
+        body {
+            font-family: 'Kalam', cursive; 
+            overscroll-behavior-y: contain; 
+            background-color: var(--artsy-bg); 
+            color: var(--text-color); 
+            font-size: 16px;
+        }
+        .font-heading {
+            font-family: 'Caveat', cursive;
+        }
+        .font-secondary-text {
+            font-family: 'Kalam', cursive;
+        }
+
+        @media print {
+            body * { visibility: hidden; margin: 0; padding: 0; }
+            #printSheetCanvas, #printSheetCanvas * { visibility: visible !important; }
+            #printSheetCanvas { position: fixed !important; left: 0; top: 0; width: 100vw !important; height: 100vh !important; margin: 0 !important; padding: 0 !important; border: none !important; }
+            .view-mode-selector, header, footer, .lg\:col-span-1, .zine-layout-container > *:not(#printSheetCanvasContainer), .download-button-container { display: none !important; }
+            @page { size: letter landscape; margin: 0mm; }
+        }
+
+        .aspect-ratio-container-for-grid { position: relative; width: 100%; max-width: 900px; margin-left: auto; margin-right: auto; }
+        .aspect-ratio-container-for-grid::before { content: ""; display: block; padding-top: var(--aspect-ratio-padding, 77.27%); }
+        .aspect-ratio-content-for-grid { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(2, 1fr); gap: var(--grid-gap, 8px); padding: var(--grid-padding, 8px); background-color: var(--grid-bg-color, #FFE0B2); border-radius: var(--grid-border-radius, 16px); border: var(--grid-border, none); transition: background-color 0.3s ease, gap 0.3s ease, padding 0.3s ease, border 0.3s ease, border-radius 0.3s ease; }
+
+        .image-uploader-slot { background-color: #FFF3E0; border: 2px dashed var(--accent-orange); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; overflow: hidden; border-radius: 12px; position: relative; }
+        .image-uploader-slot.preview-mode { border: none; padding: 0; cursor: default; background-color: white; border-radius: 0; }
+        .image-uploader-slot.preview-mode:hover { transform: none; box-shadow: none; border-color: transparent; }
+        .image-uploader-slot.dragging-over, .image-uploader-slot.file-dragging-over { border-color: var(--accent-teal); background-color: #E0F2F1; }
+        .image-uploader-slot.is-being-dragged { opacity: 0.6; border-style: solid; transform: scale(0.95); }
+        .image-uploader-slot:not(.preview-mode):hover .slot-controls { opacity: 1; visibility: visible; }
+        .image-uploader-slot:hover:not(.is-being-dragged):not(.preview-mode) { background-color: #FFE0B2; border-color: var(--accent-peach); transform: translateY(-3px) scale(1.02); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        
+        .zine-page-display { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; position:relative; background-color: white; }
+        .zine-page-display img { width: 100%; height: 100%; pointer-events: none; }
+        .image-uploader-slot .zine-page-display img { border-radius: 8px; } 
+        .image-uploader-slot.preview-mode .zine-page-display img { border-radius: 0; } 
+
+        .slot-controls { opacity: 0; visibility: hidden; transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out; }
+        .image-fit-controls { position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; background-color: rgba(255, 255, 255, 0.85); padding: 4px 6px; border-radius: 8px; z-index: 10; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .image-fit-button { background-color: var(--accent-orange); color: var(--text-color); border: 1px solid var(--accent-orange); padding: 3px 8px; font-size: 11px; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+        .image-fit-button:hover { background-color: #FFB74D; transform: translateY(-1px); }
+        .image-fit-button.active { background-color: var(--accent-teal); color: white; border-color: var(--accent-teal); }
+        .persistent-label { position: absolute; top: 5px; left: 50%; transform: translateX(-50%); background-color: rgba(93, 64, 55, 0.7); color: white; padding: 3px 10px; border-radius: 6px; font-size: 11px; z-index: 5; pointer-events: none; }
+        
+        .top-right-controls { position: absolute; top: 8px; right: 8px; display: flex; flex-direction: column; gap: 5px; z-index: 20; }
+        .icon-button { background-color: rgba(255,255,255,0.8); color: var(--text-color); padding: 5px; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: all 0.2s; }
+        .icon-button:hover { background-color: white; transform: scale(1.1); }
+        .icon-button span { font-size: 15px; }
+        .rotation-indicator { position: absolute; top: 8px; left: 8px; background-color: rgba(77, 182, 172, 0.85); color: white; padding: 3px 8px; border-radius: 6px; font-size: 11px; z-index: 10; display: flex; align-items: center; }
+
+        .custom-shadow { box-shadow: 0 8px 16px rgba(121, 85, 72, 0.15); } 
+        .custom-button { background-color: var(--accent-teal); color: white; font-weight: bold; padding: 14px 24px; border-radius: 25px; transition: all 0.3s ease; border: none; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .custom-button:hover { background-color: #00695C; transform: translateY(-2px) scale(1.02); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+        .custom-button-secondary { background-color: #FFCC80; color: #5D4037; font-weight: bold; padding: 12px 20px; border-radius: 20px; transition: all 0.3s ease; border: none; box-shadow: 0 2px 4px rgba(0,0,0,0.08); }
+        .custom-button-secondary:hover { background-color: #FFB74D; transform: translateY(-1px) scale(1.01); box-shadow: 0 3px 6px rgba(0,0,0,0.12); }
+        
+        .view-mode-selector { display: inline-flex; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border-radius: 10px; overflow:hidden; }
+        .view-mode-selector button { background-color: #FFF3E0; color: var(--heading-color); font-weight: bold; padding: 10px 15px; transition: all 0.2s ease; border: none; border-right: 1px solid #FFE0B2; }
+        .view-mode-selector button:last-child { border-right: none; }
+        .view-mode-selector button:hover { background-color: #FFE0B2; }
+        .view-mode-selector button.active { background-color: #FF8A65; color: white; box-shadow: inset 0 1px 3px rgba(0,0,0,0.15); }
+
+        .input-field { border: 2px dashed var(--input-border); border-radius: 10px; padding: 10px; color: var(--text-color); background-color: var(--input-bg); width: 100%; }
+        .input-field:focus { border-color: var(--input-focus-border); box-shadow: 0 0 0 2px rgba(255, 171, 145, 0.3); outline: none; }
+        .card-bg { background-color: #FFFFFF; border-radius: 20px; }
+        .instruction-card-bg { background-color: #E0F2F1; border: 1px dashed var(--accent-light-teal); color: #004D40; border-radius: 16px; }
+        .zine-layout-container { background-color: #FFFFFF; padding: 20px; border-radius: 20px; box-shadow: 0 8px 16px rgba(121, 85, 72, 0.15); }
+        
+        .book-preview-container { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 10px 0; background-color: transparent; border-radius: 12px; }
+        .book-spread-wrapper { width: 100%; max-width: var(--book-wrapper-max-width, 700px); aspect-ratio: var(--book-aspect-ratio, 1 / 1.414); position: relative; }
+        .book-spread { display: flex; width: 100%; height: 100%; box-shadow: 0 6px 15px rgba(0,0,0,0.15); background-color: white; }
+        .book-page { flex: 1; background-color: white; overflow: hidden; display: flex; align-items: center; justify-content: center; border: 1px solid #F0F0F0; cursor: pointer; }
+        .page-content-wrapper { width: 100%; height: 100%; position: relative; }
+        .page-face { position: absolute; top:0; left:0; width:100%; height:100%; display: flex; align-items: center; justify-content: center; }
+        .page-face img { max-width: 100%; max-height: 100%; }
+        .book-navigation { display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 400px; margin-top: 10px;}
+        .book-navigation .nav-text { text-align: center; font-size: 1.1em; color: var(--text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 10px; flex-shrink: 1; min-width: 100px; }
+        .book-navigation button { flex-shrink: 0; }
+        #printSheetCanvasContainer { border: 1px solid #FFE0B2; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin: auto; }
+        #printSheetCanvas { display: block; width: 100%; height: auto; }
+        
+        /* Modal Styles */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-content { background-color: white; padding: 25px; border-radius: 16px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); max-width: 400px; text-align: center; border: 4px solid var(--accent-peach); }
+        .modal-title { font-family: 'Caveat', cursive; font-size: 24px; color: var(--heading-color); margin-bottom: 15px; }
+        .modal-body { font-size: 16px; margin-bottom: 20px; line-height: 1.5; }
+
+    </style>
+</head>
+<body>
     <div id="root"></div>
-  </body>
-</html> 
+
+    <script type="text/babel">
+        window.onload = function() {
+            if (window.React && window.ReactDOM) {
+                const { useState, useEffect, useMemo, useCallback, useRef } = React;
+
+                const PAGE_SLOTS_CONFIG = [ /* As before */ { id: 'page4', label: 'Page 4', notes: 'Top Left on Sheet', rotation: 180, gridOrder: 1 }, { id: 'page3', label: 'Page 3', notes: 'Top Center-Left', rotation: 180, gridOrder: 2 }, { id: 'page2', label: 'Page 2', notes: 'Top Center-Right', rotation: 180, gridOrder: 3 }, { id: 'page1', label: 'Page 1', notes: 'Top Right on Sheet', rotation: 180, gridOrder: 4 }, { id: 'page5', label: 'Page 5', notes: 'Bottom Left on Sheet', rotation: 0, gridOrder: 5 }, { id: 'page6', label: 'Page 6', notes: 'Bottom Center-Left', rotation: 0, gridOrder: 6 }, { id: 'backCover', label: 'Back Cover', notes: 'Bottom Center-Right', rotation: 0, gridOrder: 7 }, { id: 'frontCover', label: 'Front Cover', notes: 'Bottom Right on Sheet', rotation: 0, gridOrder: 8 }, ];
+                const BOOK_VIEW_ORDER = [ /* As before */ { type: 'single', pageSlotId: 'frontCover', label: 'Front Cover' }, { type: 'spread', leftPageSlotId: 'page1', rightPageSlotId: 'page2', leftLabel: 'Page 1', rightLabel: 'Page 2' }, { type: 'spread', leftPageSlotId: 'page3', rightPageSlotId: 'page4', leftLabel: 'Page 3', rightLabel: 'Page 4' }, { type: 'spread', leftPageSlotId: 'page5', rightPageSlotId: 'page6', leftLabel: 'Page 5', rightLabel: 'Page 6' }, { type: 'single', pageSlotId: 'backCover', label: 'Back Cover' }, ];
+                const DUMMY_PLACEHOLDER_IMAGE = "data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22100%22%20height%3D%22100%22%20viewBox%3D%220%200%20100%20100%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20fill%3D%22%23FFFFFF%22%2F%3E%3C%2Fsvg%3E"; 
+                
+                const FILENAME_MAP = {
+                  'frontCover': ['frontcover', 'front', 'cover', 'outerfront'],
+                  'backCover': ['backcover', 'back', 'outerback'],
+                  'page1': ['page1', 'p1', '1'], 'page2': ['page2', 'p2', '2'],
+                  'page3': ['page3', 'p3', '3'], 'page4': ['page4', 'p4', '4'],
+                  'page5': ['page5', 'p5', '5'], 'page6': ['page6', 'p6', '6'],
+                };
+
+                function PaperConfiguration({ paperConfig, onConfigChange }) { 
+                    const handleInputChange = (e) => { const { name, value, type } = e.target; onConfigChange({ ...paperConfig, [name]: type === 'number' ? (parseFloat(value) || 0) : value }); }; 
+                    return ( <div className="card-bg p-6 custom-shadow mb-8"> <h2 className="font-heading text-3xl font-bold mb-5" style={{color: 'var(--heading-color)'}}> <span className="mr-3 text-3xl">🎨</span> Paper Settings </h2> 
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4"> {/* Changed to 2-col on small screens */}
+                            <div><label htmlFor="width" className="block text-sm font-secondary-text mb-1 text-orange-800">Width</label><input type="number" name="width" id="width" value={paperConfig.width} onChange={handleInputChange} className="input-field" step="0.1"/></div> 
+                            <div><label htmlFor="height" className="block text-sm font-secondary-text mb-1 text-orange-800">Height</label><input type="number" name="height" id="height" value={paperConfig.height} onChange={handleInputChange} className="input-field" step="0.1"/></div> 
+                            <div><label htmlFor="unit" className="block text-sm font-secondary-text mb-1 text-orange-800">Unit</label><select name="unit" id="unit" value={paperConfig.unit} onChange={handleInputChange} className="input-field"><option value="in">Inches (in)</option><option value="cm">Centimeters (cm)</option><option value="mm">Millimeters (mm)</option></select></div> 
+                            <div><label htmlFor="dpi" className="block text-sm font-secondary-text mb-1 text-orange-800">Print DPI</label><input type="number" name="dpi" id="dpi" value={paperConfig.dpi} onChange={handleInputChange} className="input-field" step="1"/></div> 
+                        </div> 
+                        <p className="mt-4 text-xs font-secondary-text text-orange-700"><span className="inline mr-1">💡</span>Set your desired print resolution. 300 DPI is standard for good quality prints. Ensure your printer settings match.</p> 
+                    </div> ); 
+                }
+                function ZinePageDisplay({ imageSrc, fitMode = 'cover', rotation = 0, altText = "Zine Page", paperConfig, isPrintSlot = false }) { /* As before */ const imgSrcToDisplay = imageSrc || DUMMY_PLACEHOLDER_IMAGE; const zinePageAspectRatio = useMemo(() => { if (isPrintSlot) return 'auto'; const pageW = paperConfig.width / 4; const pageH = paperConfig.height / 2; if (pageW === 0 || pageH === 0) return 'auto'; return `${pageW} / ${pageH}`; }, [paperConfig, isPrintSlot]); const wrapperStyle = isPrintSlot ? { aspectRatio: zinePageAspectRatio, width: '100%', height: '100%' } : {width: '100%', height: '100%'}; return ( <div className={`zine-page-display ${isPrintSlot ? 'zine-page-display-print-wrapper' : ''}`} style={wrapperStyle}> <img src={imgSrcToDisplay} alt={altText} style={{ objectFit: fitMode, transform: `rotate(${rotation}deg)` }} /> </div> ); }
+                
+                function ImageUploaderSlot({ slot, imageSrc, fitMode = 'cover', rotation = 0, onImageUpload, onImageRemove, onFitModeChange, onDragStart, onDragOver, onDrop, onDragEnd, isDraggingOver, isBeingDragged, isPreviewMode, paperConfig, setModalContent }) { 
+                    const inputRef = React.useRef(null); 
+                    const [isUploading, setIsUploading] = useState(false);
+                    const [showControls, setShowControls] = useState(false);
+                    const [fileDragOver, setFileDragOver] = useState(false);
+
+                    const handleFileChange = (event) => { if (isUploading) return; setIsUploading(true); const file = event.target.files[0]; if (file) { const reader = new FileReader(); reader.onload = (e) => { onImageUpload(slot.id, e.target.result); if(event.target) event.target.value = null; setIsUploading(false); }; reader.onerror = () => { console.error("Error reading file for slot " + slot.id); if(event.target) event.target.value = null; setIsUploading(false); }; reader.readAsDataURL(file); } else { if(event.target) event.target.value = null; setIsUploading(false); } }; 
+                    const handleRemove = (e) => { e.stopPropagation(); onImageRemove(slot.id); }; 
+                    const handleReplace = (e) => { e.stopPropagation(); if(!isUploading && inputRef.current) inputRef.current.click(); };
+
+                    const handleFileDrop = (e) => {
+                        e.preventDefault(); e.stopPropagation(); setFileDragOver(false);
+                        if (e.dataTransfer.types.includes('text/plain')) { onDrop(e, slot.id); return; }
+                        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                            handleFileChange({target: {files: e.dataTransfer.files}});
+                            return; 
+                        }
+                        const html = e.dataTransfer.getData('text/html');
+                        if (html) {
+                            const doc = new DOMParser().parseFromString(html, 'text/html');
+                            const imgTag = doc.querySelector('img');
+                            const imgSrc = imgTag ? imgTag.src : null;
+                            if (imgSrc) {
+                                const img = new Image();
+                                img.crossOrigin = 'anonymous';
+                                img.onload = () => {
+                                    const canvas = document.createElement('canvas');
+                                    canvas.width = img.width;
+                                    canvas.height = img.height;
+                                    const ctx = canvas.getContext('2d');
+                                    ctx.drawImage(img, 0, 0);
+                                    const dataUrl = canvas.toDataURL('image/png');
+                                    onImageUpload(slot.id, dataUrl);
+                                };
+                                img.onerror = () => {
+                                    setModalContent({
+                                        title: 'Image Load Error',
+                                        message: "Couldn't load image from that source due to security restrictions (CORS policy). Please try saving the image to your computer, then drag the file from your desktop."
+                                    });
+                                };
+                                img.src = imgSrc;
+                            }
+                        }
+                    };
+                    
+                    const handleFileDragEnter = (e) => { e.preventDefault(); e.stopPropagation(); if(e.dataTransfer.types.includes('Files') || e.dataTransfer.types.includes('text/html')) { setFileDragOver(true); } };
+                    const handleFileDragLeave = (e) => { e.preventDefault(); e.stopPropagation(); setFileDragOver(false); };
+
+                    let classNames = `image-uploader-slot relative ${isDraggingOver || fileDragOver ? 'dragging-over' : ''} ${isBeingDragged ? 'is-being-dragged' : ''}`; 
+                    if (isPreviewMode) { classNames += ' preview-mode'; } else { classNames += ' p-1'; } 
+
+                    return ( <div className={classNames} onClick={() => !isPreviewMode && !imageSrc && !isUploading && inputRef.current && inputRef.current.click()} draggable={!isPreviewMode && !!imageSrc} onDragStart={(e) => { if (!isPreviewMode && imageSrc) { e.dataTransfer.setData("text/plain", slot.id); onDragStart(slot.id); } else { e.preventDefault(); }}} onDragEnter={handleFileDragEnter} onDragLeave={handleFileDragLeave} onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }} onDrop={handleFileDrop}> 
+                        <input type="file" accept="image/*" ref={inputRef} onChange={handleFileChange} className="hidden" id={`file-upload-${slot.id}`}/> 
+                        {!isPreviewMode && imageSrc && <div className="persistent-label">{slot.label}</div>} 
+                        {imageSrc ? ( <div className="w-full h-full relative flex items-center justify-center overflow-hidden"> <ZinePageDisplay imageSrc={imageSrc} fitMode={fitMode} rotation={rotation} altText={slot.label} paperConfig={paperConfig} isPrintSlot={isPreviewMode} /> {!isPreviewMode && (<div className={`slot-controls ${showControls ? 'opacity-100 visible' : ''}`}> <div className="top-right-controls"> <button onClick={handleReplace} className="icon-button replace-button" title="Replace Image"><span>🔁</span></button> <button onClick={handleRemove} className="icon-button remove-button" title="Remove image"><span>🗑️</span></button> </div> <div className="image-fit-controls z-20"> <button onClick={(e) => { e.stopPropagation(); onFitModeChange(slot.id, 'contain'); }} className={`image-fit-button ${fitMode === 'contain' ? 'active' : ''}`} title="Fit image to frame (show all)">Fit</button> <button onClick={(e) => { e.stopPropagation(); onFitModeChange(slot.id, 'cover'); }} className={`image-fit-button ${fitMode === 'cover' ? 'active' : ''}`} title="Fill frame with image (may crop)">Fill</button> </div> {rotation > 0 && (<div className="rotation-indicator absolute top-1.5 left-1.5" title={`Rotated ${rotation}°`}><span className="mr-0.5">🔄</span> {rotation}°</div>)} </div>)} </div> ) : ( !isPreviewMode && ( <div className="placeholder-content flex flex-col items-center text-center" onClick={() => !isUploading && inputRef.current && inputRef.current.click()}><span className="text-3xl mb-1 text-orange-400">🖼️</span><span className="text-xs font-semibold text-amber-800">{slot.label}</span><span className="text-xs text-amber-600">{slot.notes}</span>{rotation > 0 && (<div className="mt-1 text-xs text-teal-600 flex items-center"><span className="mr-0.5">🔄</span> Rotated {rotation}°</div>)}</div>))} 
+                    </div> ); 
+                }
+                function BookPreview({ images, imageFitModes, paperConfig }) {
+                    const [currentViewIndex, setCurrentViewIndex] = useState(0);
+                    const currentView = BOOK_VIEW_ORDER[currentViewIndex];
+
+                    const navigate = (newIndex) => {
+                        if (newIndex < 0 || newIndex >= BOOK_VIEW_ORDER.length) return;
+                        setCurrentViewIndex(newIndex);
+                    };
+
+                    const goToPreviousView = () => navigate(currentViewIndex - 1);
+                    const goToNextView = () => navigate(currentViewIndex + 1);
+                    const handlePageClick = (isRightPage) => { if (currentView.type === 'single') { if (currentViewIndex === 0) goToNextView(); else if (currentViewIndex === BOOK_VIEW_ORDER.length - 1) goToPreviousView(); } else if (currentView.type === 'spread') { if (isRightPage) goToNextView(); else goToPreviousView(); } }; 
+                    const singlePageAspectRatio = useMemo(() => { const zinePageH = paperConfig.height / 2; const zinePageW = paperConfig.width / 4; if (zinePageW === 0 || zinePageH === 0) return '0.7 / 1'; return `${zinePageW} / ${zinePageH}`; }, [paperConfig]);
+                    const bookSpreadWrapperStyle = useMemo(() => { if (currentView.type === 'single') { return { '--book-aspect-ratio': singlePageAspectRatio, '--book-wrapper-max-width': '350px' }; } else { const [w, h] = singlePageAspectRatio.split('/').map(s => parseFloat(s.trim())); return { '--book-aspect-ratio': `${w * 2} / ${h}`, '--book-wrapper-max-width': '700px' }; } }, [currentView.type, singlePageAspectRatio]);
+                    
+                    const renderPage = (pageSlotId, label, isRightPageForClick = false) => { 
+                        const imageSrc = images[pageSlotId] || DUMMY_PLACEHOLDER_IMAGE; 
+                        const fitMode = imageFitModes[pageSlotId] || 'cover'; 
+                        return ( <div className="book-page" onClick={() => handlePageClick(isRightPageForClick)}> 
+                            <ZinePageDisplay imageSrc={imageSrc} fitMode={fitMode} altText={label} paperConfig={paperConfig} rotation={0} /> 
+                        </div> ); 
+                    };
+                    return ( <div className="book-preview-container"> <div className="book-spread-wrapper" style={bookSpreadWrapperStyle}> <div className="book-spread"> {currentView.type === 'single' ? ( renderPage(currentView.pageSlotId, currentView.label, currentViewIndex === 0) ) : ( <> {renderPage(currentView.leftPageSlotId, currentView.leftLabel, false)} {renderPage(currentView.rightPageSlotId, currentView.rightLabel, true)} </> )} </div> </div> <div className="book-navigation"> <button onClick={goToPreviousView} disabled={currentViewIndex === 0} className="custom-button-secondary disabled:opacity-50 disabled:cursor-not-allowed">← Prev</button> <span className="nav-text"> {currentView.type === 'single' ? currentView.label : `${currentView.leftLabel} & ${currentView.rightLabel}`} </span> <button onClick={goToNextView} disabled={currentViewIndex === BOOK_VIEW_ORDER.length - 1} className="custom-button-secondary disabled:opacity-50 disabled:cursor-not-allowed">Next →</button> </div> </div> );
+                }
+                function PrintSheetCanvas({ images, imageFitModes, paperConfig, pageSlotsConfig }) { /* As before, with clipping */ const canvasRef = useRef(null); useEffect(() => { const canvas = canvasRef.current; if (!canvas) return; const ctx = canvas.getContext('2d'); if (!ctx) return; const isLandscape = paperConfig.width >= paperConfig.height; const paperWidthInUnits = isLandscape ? paperConfig.width : paperConfig.height; const paperHeightInUnits = isLandscape ? paperConfig.height : paperConfig.width; let pixelWidth = paperWidthInUnits * paperConfig.dpi; let pixelHeight = paperHeightInUnits * paperConfig.dpi; const MAX_CANVAS_DIM = 16000; if (pixelWidth > MAX_CANVAS_DIM || pixelHeight > MAX_CANVAS_DIM) { const scaleDown = Math.min(MAX_CANVAS_DIM / pixelWidth, MAX_CANVAS_DIM / pixelHeight); pixelWidth *= scaleDown; pixelHeight *= scaleDown; console.warn("Canvas scaled down."); } canvas.width = pixelWidth; canvas.height = pixelHeight; ctx.fillStyle = 'white'; ctx.fillRect(0, 0, canvas.width, canvas.height); const panelWidth = canvas.width / 4; const panelHeight = canvas.height / 2; const imageLoadPromises = []; pageSlotsConfig.forEach(slotConfig => { const imageSrc = images[slotConfig.id]; if (imageSrc) { const promise = new Promise((resolve, reject) => { const img = new Image(); img.onload = () => resolve({ img, slotConfig }); img.onerror = () => reject(new Error(`Failed to load image for ${slotConfig.label}`)); img.src = imageSrc; }); imageLoadPromises.push(promise); }}); Promise.all(imageLoadPromises).then(loadedImagesData => { loadedImagesData.forEach(({ img, slotConfig }) => { const col = (slotConfig.gridOrder - 1) % 4; const row = Math.floor((slotConfig.gridOrder - 1) / 4); const x = col * panelWidth; const y = row * panelHeight; const fitMode = imageFitModes[slotConfig.id] || 'cover'; ctx.save(); ctx.translate(x + panelWidth / 2, y + panelHeight / 2); if (slotConfig.rotation === 180) ctx.rotate(Math.PI); ctx.beginPath(); ctx.rect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight); ctx.clip(); let dw, dh, dx, dy; const imgAspectRatio = img.width / img.height; const panelAspectRatio = panelWidth / panelHeight; if (fitMode === 'contain') { if (imgAspectRatio > panelAspectRatio) { dw = panelWidth; dh = panelWidth / imgAspectRatio; } else { dh = panelHeight; dw = panelHeight * imgAspectRatio; }} else { /* cover */ if (imgAspectRatio > panelAspectRatio) { dh = panelHeight; dw = panelHeight * imgAspectRatio; } else { dw = panelWidth; dh = panelWidth / imgAspectRatio; }} dx = -dw / 2; dy = -dh / 2; ctx.drawImage(img, dx, dy, dw, dh); ctx.restore(); }); }).catch(error => console.error("Error loading images for canvas:", error)); }, [images, imageFitModes, paperConfig, pageSlotsConfig]); return ( <div id="printSheetCanvasContainer" className="w-full h-auto" style={{aspectRatio: `${paperConfig.width}/${paperConfig.height}`}}> <canvas ref={canvasRef} id="printSheetCanvas" /> </div> ); }
+
+                function App() { 
+                    const [paperConfig, setPaperConfig] = useState({ width: 11, height: 8.5, unit: 'in', dpi: 300 }); const [images, setImages] = useState({}); const [imageFitModes, setImageFitModes] = useState({}); const [viewMode, setViewMode] = useState('edit'); const multipleFilesInputRef = useRef(null); const [draggedSlotId, setDraggedSlotId] = useState(null); const [dragOverSlotId, setDragOverSlotId] = useState(null);
+                    const [modalContent, setModalContent] = useState(null); 
+                    
+                    const handleImageFitChange = useCallback((slotId, mode) => setImageFitModes(prev => ({ ...prev, [slotId]: mode })), []); 
+                    const handleSingleImageUpload = useCallback((slotId, imageDataUrl) => { setImages(prev => ({ ...prev, [slotId]: imageDataUrl })); setImageFitModes(prev => ({ ...prev, [slotId]: 'cover' })); }, []); 
+                    const handleImageRemove = useCallback((slotId) => { setImages(prev => { const ni = { ...prev }; delete ni[slotId]; return ni; }); setImageFitModes(prev => { const nf = { ...prev }; delete nf[slotId]; return nf; }); }, []); 
+                    
+                    const handleMultipleFilesSelected = (event) => {
+                        const files = Array.from(event.target.files);
+                        if (!files.length) { event.target.value = null; return; }
+                        
+                        let filesToProcess = files.map(file => {
+                            const normalizedName = file.name.replace(/\.[^/.]+$/, "").replace(/[\s_-]/g, "").toLowerCase();
+                            for (const [slotId, keywords] of Object.entries(FILENAME_MAP)) {
+                                if (keywords.some(kw => normalizedName.includes(kw))) {
+                                    return { file, slotId, matched: true };
+                                }
+                            }
+                            return { file, slotId: null, matched: false };
+                        });
+
+                        const smartPlaced = {};
+                        const sequentialFiles = [];
+
+                        filesToProcess.forEach(item => {
+                            if (item.matched) {
+                                smartPlaced[item.slotId] = item.file;
+                            } else {
+                                sequentialFiles.push(item.file);
+                            }
+                        });
+
+                        Object.entries(smartPlaced).forEach(([slotId, file]) => {
+                           const reader = new FileReader();
+                           reader.onload = (e) => {
+                               setImages(prev => ({...prev, [slotId]: e.target.result}));
+                               setImageFitModes(prev => ({...prev, [slotId]: 'cover'}));
+                           };
+                           reader.readAsDataURL(file);
+                        });
+                        
+                        if(sequentialFiles.length > 0) {
+                             setTimeout(() => { 
+                                setImages(prevImages => {
+                                    const updatedImages = {...prevImages};
+                                    let fileIdx = 0;
+                                    for (const slotConfig of PAGE_SLOTS_CONFIG) {
+                                        if (fileIdx >= sequentialFiles.length) break;
+                                        if (!updatedImages[slotConfig.id]) {
+                                            const file = sequentialFiles[fileIdx];
+                                            const reader = new FileReader();
+                                            reader.onload = (e) => {
+                                                setImages(prev => ({...prev, [slotConfig.id]: e.target.result}));
+                                                setImageFitModes(prev => ({...prev, [slotConfig.id]: 'cover'}));
+                                            };
+                                            reader.readAsDataURL(file);
+                                            fileIdx++;
+                                            updatedImages[slotConfig.id] = 'placeholder'; // Prevent re-filling
+                                        }
+                                    }
+                                    return updatedImages;
+                                });
+                             }, 100);
+                        }
+                        
+                        event.target.value = null; 
+                    }; 
+
+                    const handleDragStart = useCallback((slotId) => setDraggedSlotId(slotId), []); const handleDragOver = useCallback((event, targetSlotId) => { event.preventDefault(); if (targetSlotId !== dragOverSlotId) setDragOverSlotId(targetSlotId); }, [dragOverSlotId]); const handleDragLeave = useCallback(() => setDragOverSlotId(null), []); const handleDrop = useCallback((event, targetSlotId) => { /* As before */ event.preventDefault(); setDragOverSlotId(null); if (event.dataTransfer.files.length > 0) return; const draggedId = event.dataTransfer.getData("text/plain"); if (draggedId && draggedId !== targetSlotId) { const imgDrag = images[draggedId], imgTarget = images[targetSlotId]; const fitDrag = imageFitModes[draggedId] || 'cover', fitTarget = imageFitModes[targetSlotId] || 'cover'; setImages(ci => { const ni = { ...ci }; ni[targetSlotId] = imgDrag; ni[draggedId] = imgTarget; if (!imgTarget) delete ni[draggedId]; if (!imgDrag && imgTarget) delete ni[targetSlotId]; return ni; }); setImageFitModes(cf => { const nf = { ...cf }; nf[targetSlotId] = fitDrag; nf[draggedId] = fitTarget; if (!imgTarget) delete nf[draggedId]; if (!imgDrag && imgTarget) delete nf[targetSlotId]; return nf; }); } setDraggedSlotId(null); }, [draggedSlotId, images, imageFitModes]); const handleDragEnd = useCallback(() => { setDraggedSlotId(null); setDragOverSlotId(null); }, []); const handlePaperConfigChange = (newConfig) => setPaperConfig(newConfig); 
+                    const handleDownloadPNG = () => { const canvas = document.getElementById('printSheetCanvas'); if (canvas) { const dataURL = canvas.toDataURL('image/png'); const link = document.createElement('a'); link.href = dataURL; link.download = 'minizine_layout.png'; document.body.appendChild(link); link.click(); document.body.removeChild(link); } else { alert("Please switch to 'Print Sheet' view to generate the PNG."); } };
+                    const selectViewMode = (mode) => setViewMode(mode);
+                    const aspectRatioPaddingForGrid = useMemo(() => { const w = paperConfig.width > paperConfig.height ? paperConfig.width : paperConfig.height; const h = paperConfig.width > paperConfig.height ? paperConfig.height : paperConfig.width; if (w === 0 || h === 0) return '50%'; return `${(h / w) * 100}%`; }, [paperConfig]);
+
+                    return (
+                        <>
+                        {modalContent && (
+                            <div className="modal-overlay" onClick={() => setModalContent(null)}>
+                                <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                                    <h2 className="modal-title">{modalContent.title}</h2>
+                                    <p className="modal-body">{modalContent.message}</p>
+                                    <button className="custom-button" onClick={() => setModalContent(null)}>Got it</button>
+                                </div>
+                            </div>
+                        )}
+                        <div className="container mx-auto p-4 md:p-6">
+                            <header className="mb-10 text-center"> <h1 className="font-heading text-5xl md:text-6xl font-bold text-orange-600">Minizine Magic Maker</h1> <p className="text-amber-700 mt-3 text-xl">Craft your tiny tales & art!</p> </header>
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start"> 
+                                <div className="lg:col-span-1 space-y-8"> 
+                                    <PaperConfiguration paperConfig={paperConfig} onConfigChange={handlePaperConfigChange} />
+                                    <div className="instruction-card-bg p-5 rounded-xl custom-shadow-sm"> <h3 className="font-heading text-2xl font-bold mb-3 text-teal-700 flex items-center"><span className="mr-2 text-2xl">📜</span> Folding Guide</h3> <ol className="list-decimal list-inside space-y-1.5 text-sm text-teal-800 font-secondary-text"> <li>Download your zine as a PNG.</li> <li>Open the PNG and print it. Ensure printer settings match your paper size & DPI, use **Landscape** orientation, and scale to **100%** (Actual Size). Print on one side.</li> <li>Fold hotdog style (lengthwise).</li><li>Fold hamburger style (widthwise).</li><li>Fold outer edges to center crease.</li> <li>Unfold last two. Cut along center horizontal crease (3 panels long).</li><li>Refold into booklet! (Search "8 page zine fold" for videos).</li> </ol> </div>
+                                </div>
+                                <div className="lg:col-span-2 zine-layout-container"> 
+                                    <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-3">
+                                        <h2 className="font-heading text-3xl font-bold text-orange-500 text-center sm:text-left">Your Zine Layout</h2>
+                                        <div className="view-mode-selector flex justify-center sm:justify-end">
+                                            <button onClick={() => selectViewMode('edit')} className={viewMode === 'edit' ? 'active' : ''}>✏️ Edit</button>
+                                            <button onClick={() => selectViewMode('printPreview')} className={viewMode === 'printPreview' ? 'active' : ''}>👁️ Print Sheet</button>
+                                            <button onClick={() => selectViewMode('bookPreview')} className={viewMode === 'bookPreview' ? 'active' : ''}>📖 Read Zine</button>
+                                        </div>
+                                    </div>
+                                    {viewMode === 'edit' && (<> <div className="flex justify-center mb-3"> <div className="text-center"> <button className="custom-button-secondary" onClick={() => multipleFilesInputRef.current && multipleFilesInputRef.current.click()}>Upload Multiple Images</button> <input type="file" multiple accept="image/*" ref={multipleFilesInputRef} className="hidden" onChange={handleMultipleFilesSelected}/> <p className="text-xs text-amber-700 mt-1">Tip: Name files "page1", "frontcover", etc. for auto-placement!</p> </div> </div> <p className="text-xs text-amber-700 mb-3 text-center">Click slots to upload. Drag & drop to reorder. Use 'Fit' or 'Fill'.</p> </>)}
+                                    {viewMode === 'printPreview' && (<p className="text-xs text-amber-700 mb-3 text-center">This is how your zine will look on a single sheet for printing.</p>)}
+                                    {viewMode === 'bookPreview' && (<p className="text-xs text-amber-700 mb-3 text-center">Preview your zine as a flippable booklet. Click pages to turn.</p>)}
+                                    
+                                    {viewMode === 'edit' ? (
+                                        <div className="aspect-ratio-container-for-grid custom-shadow-lg" style={{ '--aspect-ratio-padding': aspectRatioPaddingForGrid, '--grid-gap': '8px', '--grid-padding': '8px', '--grid-bg-color': '#FFE0B2', '--grid-border': 'none', '--grid-border-radius': '12px' }} onDragLeave={handleDragLeave}>
+                                            <div className="aspect-ratio-content-for-grid">
+                                                {PAGE_SLOTS_CONFIG.map(slot => ( <ImageUploaderSlot key={slot.id} slot={slot} imageSrc={images[slot.id]} fitMode={imageFitModes[slot.id] || 'cover'} rotation={slot.rotation} onImageUpload={handleSingleImageUpload} onImageRemove={handleImageRemove} onFitModeChange={handleImageFitChange} onDragStart={handleDragStart} onDragOver={(e) => handleDragOver(e, slot.id)} onDrop={handleDrop} onDragEnd={handleDragEnd} isDraggingOver={dragOverSlotId === slot.id} isBeingDragged={draggedSlotId === slot.id} isPreviewMode={false} paperConfig={paperConfig} setModalContent={setModalContent} /> ))}
+                                            </div>
+                                        </div>
+                                    ) : viewMode === 'printPreview' ? (
+                                        <PrintSheetCanvas images={images} imageFitModes={imageFitModes} paperConfig={paperConfig} pageSlotsConfig={PAGE_SLOTS_CONFIG} />
+                                    ) : ( <BookPreview images={images} imageFitModes={imageFitModes} paperConfig={paperConfig} /> )}
+                                     <div className="text-center mt-6 download-button-container"> 
+                                        <button onClick={handleDownloadPNG} className="custom-button"><span className="mr-2 text-xl">🖼️</span> Download Zine as PNG</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <footer className="text-center mt-16 py-8 border-t-2 border-dashed border-amber-300"><p className="text-amber-700">Minizine Magic Maker ~ Made with ♡</p></footer>
+                        </div>
+                        </>
+                    );
+                }
+                const container = document.getElementById('root'); if (container) { ReactDOM.createRoot(container).render(<App />); } else { console.error("Root element #root not found."); }
+            } else { console.error("CRITICAL: React or ReactDOM not available on window.onload."); const rootDiv = document.getElementById('root'); if (rootDiv) rootDiv.innerHTML = "<p style='color:red;text-align:center;padding:20px;'>Error: Essential libraries failed to load. Check internet and refresh.</p>"; }
+        };
+    </script>
+</body>
+</html>
