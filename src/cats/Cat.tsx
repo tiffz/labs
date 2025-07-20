@@ -70,15 +70,17 @@ const Cat: React.FC<CatProps> = ({ onClick, isPetting }) => {
         {/* Head */}
         <g id="head">
           <path
-            d="M 30 100 C 20 40, 180 40, 170 100 Z"
+            d="M 30 100 C 20 40, 180 40, 170 100 C 170 110, 30 110, 30 100 Z"
             fill="#212121"
           />
+          {/* Left ear */}
           <path
-            d="M 50 55 L 65 30 L 80 55 Z"
+            d="M 50 70 L 60 45 L 80 70 Z"
             fill="#212121"
           />
+          {/* Right ear */}
           <path
-            d="M 120 55 L 135 30 L 150 55 Z"
+            d="M 120 70 L 140 45 L 150 70 Z"
             fill="#212121"
           />
         </g>
