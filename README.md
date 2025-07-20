@@ -1,69 +1,86 @@
-# React + TypeScript + Vite
+# Labs Monorepo: Micro-Apps Architecture
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This project is a monorepo for experimental and portfolio frontend micro-apps, built with React, TypeScript, and Vite. Each micro-app is isolated in its own folder under `src/`, but all share the same dependencies and build system for easy maintenance and deployment.
 
-Currently, two official plugins are available:
+## Project Structure
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+labs/
+  src/
+    zines/           # Example micro-app: Minizine Magic Maker
+      App.tsx
+      main.tsx
+      zines.css
+      ...
+    cats/            # (Add more micro-apps here)
+      ...
+  index.html         # Landing page with links to all micro-apps
+  zines/index.html   # HTML entry for the zines app (served at /zines/)
+  package.json       # Shared dependencies and scripts
+  vite.config.cjs    # Vite config for multi-app build
+  tailwind.config.cjs, postcss.config.cjs  # Shared styling config
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## How the Micro-Apps Architecture Works
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+- **Each micro-app lives in its own subfolder under `src/`** (e.g., `src/zines/`, `src/cats/`).
+- **Each app has its own entry point** (`main.tsx`) and root component (`App.tsx`).
+- **Each app can have its own CSS and assets** (e.g., `zines.css`).
+- **All apps share the same React, TypeScript, and other dependencies** (defined in the root `package.json`).
+- **Vite is configured for multiple HTML entry points** (e.g., `/zines/` loads `zines/index.html` and `src/zines/main.tsx`).
+- **The root `index.html` is a landing page** that links to all available micro-apps.
+- **All apps are built together** and output to the `build/` directory for deployment (e.g., to GitHub Pages).
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## How to Add or Edit a Micro-App
+
+1. **To add a new app:**
+   - Create a new folder under `src/` (e.g., `src/myapp/`).
+   - Add your `main.tsx`, `App.tsx`, and any other files/assets you need.
+   - Create a new HTML entry (e.g., `myapp/index.html`) based on `zines/index.html`.
+   - Update `vite.config.cjs` to add your new app as an entry point in the `rollupOptions.input` section.
+   - Add a link to your app in the root `index.html` landing page.
+
+2. **To edit an existing app:**
+   - Edit the files in the corresponding `src/<app>/` folder.
+   - You can use both Tailwind CSS and custom CSS for styling.
+   - If your app needs special fonts or assets, add them to its own HTML or CSS files.
+
+3. **To share code or components:**
+   - Place shared utilities/components in a common folder (e.g., `src/shared/`) and import them as needed.
+   - Keep app-specific code inside each app’s folder for isolation.
+
+4. **To update dependencies:**
+   - Update the root `package.json` and run `npm install`.
+   - All apps will use the same versions of React, TypeScript, etc.
+
+## Development & Build
+
+- **Start the dev server:**
+  ```sh
+  npm start
+  ```
+  Visit `/zines/` or any other app at `/yourapp/`.
+
+- **Build for production:**
+  ```sh
+  npm run build
+  ```
+  Output is in the `build/` directory.
+
+- **Deploy to GitHub Pages:**
+  ```sh
+  npm run deploy
+  ```
+
+## Notes for Contributors
+
+- **Always keep each micro-app isolated in its own folder under `src/`.**
+- **Do not move or merge app code into the root or other app folders.**
+- **When adding a new app, always update the Vite config and landing page.**
+- **When editing an app, use the app’s own CSS and assets unless you are intentionally sharing code.**
+- **If you see custom CSS classes (e.g., `.card-bg`, `.font-heading`), do not remove them—they are required for the original look and feel.**
+- **If you add new dependencies, make sure they are compatible with all apps.**
+
+---
+
+For any questions or to extend the architecture, follow the above conventions to keep the monorepo organized and maintainable.
