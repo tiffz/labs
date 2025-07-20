@@ -1,0 +1,120 @@
+/* Custom styles for Cat Clicker */
+body {
+    font-family: sans-serif;
+    background-color: #f0f0f0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+.game-container {
+    text-align: center;
+    background-color: white;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.cat-container {
+    margin: 2rem 0;
+}
+
+.cat {
+    font-size: 5rem;
+    cursor: pointer;
+    user-select: none;
+    display: inline-block;
+    transition: transform 0.1s ease-in-out;
+}
+
+.cat:active {
+    transform: scale(0.9);
+}
+
+.treat-counter {
+    font-size: 1.5rem;
+}
+
+.stats-container {
+    margin-bottom: 1rem;
+}
+
+.upgrades-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 2rem;
+}
+
+button {
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    background-color: #eee;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+button:hover:not(:disabled) {
+    background-color: #ddd;
+}
+
+button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.cat-svg {
+  width: 250px;
+  height: auto;
+  transition: transform 0.1s ease-in-out;
+}
+
+.cat-svg:active {
+  transform: scale(0.95);
+}
+
+#head {
+  animation: head-bob 2.5s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+
+#tail {
+    animation: tail-wag 3s ease-in-out infinite;
+    transform-origin: bottom left;
+}
+
+.is-petting #head {
+  animation: head-bob-petting 0.2s ease-in-out;
+}
+
+@keyframes head-bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(2px) rotate(1deg);
+  }
+}
+
+@keyframes head-bob-petting {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(4px);
+  }
+}
+
+@keyframes tail-wag {
+    0%, 100% {
+        transform: rotate(0deg);
+    }
+    50% {
+        transform: rotate(-10deg);
+    }
+} 

@@ -23,6 +23,7 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, 'src/index.html'),
         zines: resolve(__dirname, 'src/zines/index.html'),
+        cats: resolve(__dirname, 'src/cats/index.html'),
       },
     },
   },
