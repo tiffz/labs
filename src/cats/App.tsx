@@ -1,9 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import Cat from './Cat';
 import Heart from './Heart';
+import Zzz from './Zzz';
 
 interface HeartType {
+  id: number;
+  x: number;
+  y: number;
+  translateX: number;
+  rotation: number;
+  scale: number;
+}
+
+interface ZzzType {
   id: number;
   x: number;
   y: number;
@@ -22,6 +32,9 @@ function App() {
   const [hearts, setHearts] = useState<HeartType[]>([]);
   const [isStartled, setIsStartled] = useState(false);
   const [lastHeart, setLastHeart] = useState<HTMLDivElement | null>(null);
+  const [isSleeping, setIsSleeping] = useState(false);
+  const [zzzs, setZzzs] = useState<ZzzType[]>([]);
+  const zzzTimeoutRef = useRef<number | null>(null);
 
   const handleCatClick = (event: React.MouseEvent) => {
     setTreats(treats + treatsPerClick);
@@ -80,6 +93,75 @@ function App() {
     }, 500);
   };
 
+  const wakeUp = useCallback(() => {
+    setIsSleeping(false);
+    setZzzs([]);
+  }, []);
+
+  useEffect(() => {
+    let inactivityTimer: number;
+
+    const resetInactivityTimer = () => {
+      wakeUp();
+      clearTimeout(inactivityTimer);
+      inactivityTimer = window.setTimeout(() => {
+        setIsSleeping(true);
+      }, 30000); // 30 seconds
+    };
+
+    resetInactivityTimer();
+
+    document.addEventListener('mousemove', resetInactivityTimer);
+    document.addEventListener('mousedown', resetInactivityTimer);
+
+    return () => {
+      clearTimeout(inactivityTimer);
+      document.removeEventListener('mousemove', resetInactivityTimer);
+      document.removeEventListener('mousedown', resetInactivityTimer);
+    };
+  }, [wakeUp]);
+
+  useEffect(() => {
+    const initialDelay = 2500;
+    const minDelay = 1000;
+    const decayFactor = 0.98;
+
+    const scheduleNextZzz = (delay: number) => {
+      if (zzzTimeoutRef.current) {
+        clearTimeout(zzzTimeoutRef.current);
+      }
+      zzzTimeoutRef.current = window.setTimeout(() => {
+        setZzzs((currentZzzs) => [
+          ...currentZzzs,
+          {
+            id: Date.now(),
+            x: window.innerWidth / 2 + Math.random() * 20 - 10,
+            y: window.innerHeight / 2 - 20 + Math.random() * 10,
+            translateX: Math.random() * 40 - 20,
+            rotation: Math.random() * 60 - 30,
+            scale: Math.random() * 0.4 + 0.8,
+          },
+        ]);
+        const nextDelay = Math.max(minDelay, delay * decayFactor);
+        scheduleNextZzz(nextDelay);
+      }, delay);
+    };
+
+    if (isSleeping) {
+      scheduleNextZzz(initialDelay);
+    } else {
+      if (zzzTimeoutRef.current) {
+        clearTimeout(zzzTimeoutRef.current);
+      }
+    }
+
+    return () => {
+      if (zzzTimeoutRef.current) {
+        clearTimeout(zzzTimeoutRef.current);
+      }
+    };
+  }, [isSleeping]);
+
   useEffect(() => {
     const treatInterval = setInterval(() => {
       setTreats((prevTreats) => prevTreats + treatsPerSecond);
@@ -109,21 +191,33 @@ function App() {
   return (
     <div className="game-container">
       {ReactDOM.createPortal(
-        hearts.map((heart, index) => (
-          <Heart
-            key={heart.id}
-            onMount={
-              index === hearts.length - 1
-                ? (el) => setLastHeart(el)
-                : undefined
-            }
-            x={heart.x}
-            y={heart.y}
-            translateX={heart.translateX}
-            rotation={heart.rotation}
-            scale={heart.scale}
-          />
-        )),
+        <>
+          {hearts.map((heart, index) => (
+            <Heart
+              key={heart.id}
+              onMount={
+                index === hearts.length - 1
+                  ? (el) => setLastHeart(el)
+                  : undefined
+              }
+              x={heart.x}
+              y={heart.y}
+              translateX={heart.translateX}
+              rotation={heart.rotation}
+              scale={heart.scale}
+            />
+          ))}
+          {zzzs.map((zzz) => (
+            <Zzz
+              key={zzz.id}
+              x={zzz.x}
+              y={zzz.y}
+              translateX={zzz.translateX}
+              rotation={zzz.rotation}
+              scale={zzz.scale}
+            />
+          ))}
+        </>,
         document.getElementById('heart-container')!
       )}
       <h1>Cat Clicker</h1>
@@ -138,6 +232,7 @@ function App() {
           onEyeClick={handleEyeClick}
           isPetting={isPetting}
           isStartled={isStartled}
+          isSleeping={isSleeping}
           wiggleDuration={wiggleDuration}
           lastHeart={lastHeart}
         />

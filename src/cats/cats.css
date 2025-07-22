@@ -151,7 +151,8 @@ button:disabled {
 }
 
 .eye-open,
-.eye-startled {
+.eye-startled,
+.eye-sleeping {
   transition: opacity 0.05s ease-in-out;
 }
 
@@ -163,6 +164,25 @@ button:disabled {
     0%, 100% { transform: rotate(0deg); }
     25% { transform: rotate(-3deg); }
     75% { transform: rotate(2deg); }
+}
+
+.zzz {
+  position: absolute;
+  font-size: 1.5rem;
+  color: #ccc;
+  animation: float-up 2s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes float-up {
+  0% {
+    transform: translateY(0) translateX(0) rotate(0) scale(var(--scale));
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-50px) translateX(var(--translate-x)) rotate(var(--rotation)) scale(var(--scale));
+    opacity: 0;
+  }
 }
 
 @keyframes ear-wiggle-right {

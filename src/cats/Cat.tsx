@@ -5,6 +5,7 @@ interface CatProps {
   onEyeClick: (event: React.MouseEvent) => void;
   isPetting: boolean;
   isStartled: boolean;
+  isSleeping: boolean;
   wiggleDuration: number | null;
   lastHeart: HTMLDivElement | null;
 }
@@ -14,6 +15,7 @@ const Cat: React.FC<CatProps> = ({
   onEyeClick,
   isPetting,
   isStartled,
+  isSleeping,
   wiggleDuration,
   lastHeart,
 }) => {
@@ -168,9 +170,27 @@ const Cat: React.FC<CatProps> = ({
           
           {/* Face */}
           <g id="face" transform="translate(0, -5)">
+            {/* Sleeping Eyes */}
+            <g className={`eye-sleeping ${isSleeping ? '' : 'hidden'}`}>
+              <path
+                d="M 74 82 Q 80 87, 86 82"
+                stroke="white"
+                strokeWidth="1.5"
+                fill="none"
+              />
+              <path
+                d="M 114 82 Q 120 87, 126 82"
+                stroke="white"
+                strokeWidth="1.5"
+                fill="none"
+              />
+            </g>
+
             {/* Open Eyes */}
             <g
-              className={`eye-open ${isStartled ? 'hidden' : ''}`}
+              className={`eye-open ${
+                !isSleeping && !isStartled ? '' : 'hidden'
+              }`}
               onClick={onEyeClick}
             >
               <g>
@@ -195,7 +215,9 @@ const Cat: React.FC<CatProps> = ({
 
             {/* Startled Eyes */}
             <g
-              className={`eye-startled ${isStartled ? '' : 'hidden'}`}
+              className={`eye-startled ${
+                !isSleeping && isStartled ? '' : 'hidden'
+              }`}
               onClick={onEyeClick}
             >
               <path
