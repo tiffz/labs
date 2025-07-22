@@ -21,6 +21,7 @@ function App() {
   const [wiggleDuration, setWiggleDuration] = useState<number | null>(null);
   const [hearts, setHearts] = useState<HeartType[]>([]);
   const [isStartled, setIsStartled] = useState(false);
+  const [lastHeart, setLastHeart] = useState<HTMLDivElement | null>(null);
 
   const handleCatClick = (event: React.MouseEvent) => {
     setTreats(treats + treatsPerClick);
@@ -44,6 +45,7 @@ function App() {
       setHearts((currentHearts) =>
         currentHearts.filter((heart) => heart.id !== newHeart.id)
       );
+      setLastHeart(null);
     }, 1000);
 
     if (interval < 300) { // Fast click detected
@@ -98,9 +100,14 @@ function App() {
   return (
     <div className="game-container">
       {ReactDOM.createPortal(
-        hearts.map((heart) => (
+        hearts.map((heart, index) => (
           <Heart
             key={heart.id}
+            onMount={
+              index === hearts.length - 1
+                ? (el) => setLastHeart(el)
+                : undefined
+            }
             x={heart.x}
             y={heart.y}
             translateX={heart.translateX}
@@ -123,6 +130,7 @@ function App() {
           isPetting={isPetting}
           isStartled={isStartled}
           wiggleDuration={wiggleDuration}
+          lastHeart={lastHeart}
         />
       </div>
       <div className="upgrades-container">

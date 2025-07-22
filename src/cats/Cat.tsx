@@ -6,6 +6,7 @@ interface CatProps {
   isPetting: boolean;
   isStartled: boolean;
   wiggleDuration: number | null;
+  lastHeart: HTMLDivElement | null;
 }
 
 const Cat: React.FC<CatProps> = ({
@@ -14,41 +15,98 @@ const Cat: React.FC<CatProps> = ({
   isPetting,
   isStartled,
   wiggleDuration,
+  lastHeart,
 }) => {
   const [pupilsPos, setPupilsPos] = useState({ left: { x: 80, y: 80 }, right: { x: 120, y: 80 } });
   const catRef = useRef<SVGSVGElement>(null);
+  const lerpFactorRef = useRef(0.6); // Fast by default
 
   useEffect(() => {
+    // When the main target changes, slow down the lerp for a smooth transition.
+    lerpFactorRef.current = 0.15;
+    const timer = setTimeout(() => {
+      lerpFactorRef.current = 0.6; // Return to fast tracking after the transition
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [lastHeart]);
+
+  useEffect(() => {
+    let target = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    let animationFrameId: number;
+
     const handleMouseMove = (event: MouseEvent) => {
-      if (!catRef.current) return;
-
-      const { clientX, clientY } = event;
-      const catRect = catRef.current.getBoundingClientRect();
-      
-      const eyeLeftCenter = { x: catRect.left + (catRect.width * (90 / 220)), y: catRect.top + (catRect.height * (95 / 200)) };
-      const eyeRightCenter = { x: catRect.left + (catRect.width * (130 / 220)), y: catRect.top + (catRect.height * (95 / 200)) };
-
-      const maxPupilOffset = 4;
-
-      const angleLeft = Math.atan2(clientY - eyeLeftCenter.y, clientX - eyeLeftCenter.x);
-      const pupilLeftX = 80 + Math.cos(angleLeft) * maxPupilOffset;
-      const pupilLeftY = 80 + Math.sin(angleLeft) * maxPupilOffset;
-
-      const angleRight = Math.atan2(clientY - eyeRightCenter.y, clientX - eyeRightCenter.x);
-      const pupilRightX = 120 + Math.cos(angleRight) * maxPupilOffset;
-      const pupilRightY = 80 + Math.sin(angleRight) * maxPupilOffset;
-
-      setPupilsPos({
-        left: { x: pupilLeftX, y: pupilLeftY },
-        right: { x: pupilRightX, y: pupilRightY },
-      });
+      if (!lastHeart) {
+        target = { x: event.clientX, y: event.clientY };
+      }
     };
 
     document.addEventListener('mousemove', handleMouseMove);
+
+    const animate = () => {
+      if (lastHeart && lastHeart.isConnected) {
+        const heartRect = lastHeart.getBoundingClientRect();
+        target = {
+          x: heartRect.left + heartRect.width / 2,
+          y: heartRect.top + heartRect.height / 2,
+        };
+      }
+
+      if (catRef.current) {
+        const catRect = catRef.current.getBoundingClientRect();
+        const eyeLeftCenter = {
+          x: catRect.left + (catRect.width * (90 / 220)),
+          y: catRect.top + (catRect.height * (95 / 200)),
+        };
+        const eyeRightCenter = {
+          x: catRect.left + (catRect.width * (130 / 220)),
+          y: catRect.top + (catRect.height * (95 / 200)),
+        };
+        const maxPupilOffset = 4;
+
+        const angleLeft = Math.atan2(target.y - eyeLeftCenter.y, target.x - eyeLeftCenter.x);
+        const desiredPupilLeftX = 80 + Math.cos(angleLeft) * maxPupilOffset;
+        const desiredPupilLeftY = 80 + Math.sin(angleLeft) * maxPupilOffset;
+
+        const angleRight = Math.atan2(
+          target.y - eyeRightCenter.y,
+          target.x - eyeRightCenter.x
+        );
+        const desiredPupilRightX = 120 + Math.cos(angleRight) * maxPupilOffset;
+        const desiredPupilRightY = 80 + Math.sin(angleRight) * maxPupilOffset;
+
+        setPupilsPos((currentPos) => {
+          const lerpFactor = lerpFactorRef.current;
+          const newLeftX =
+            currentPos.left.x +
+            (desiredPupilLeftX - currentPos.left.x) * lerpFactor;
+          const newLeftY =
+            currentPos.left.y +
+            (desiredPupilLeftY - currentPos.left.y) * lerpFactor;
+          const newRightX =
+            currentPos.right.x +
+            (desiredPupilRightX - currentPos.right.x) * lerpFactor;
+          const newRightY =
+            currentPos.right.y +
+            (desiredPupilRightY - currentPos.right.y) * lerpFactor;
+
+          return {
+            left: { x: newLeftX, y: newLeftY },
+            right: { x: newRightX, y: newRightY },
+          };
+        });
+      }
+
+      animationFrameId = requestAnimationFrame(animate);
+    };
+
+    animationFrameId = requestAnimationFrame(animate);
+
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
+      cancelAnimationFrame(animationFrameId);
     };
-  }, []);
+  }, [lastHeart]);
 
   const containerClasses = [
     isPetting ? 'is-petting' : '',

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import './cats.css';
 
 interface HeartProps {
@@ -7,6 +7,7 @@ interface HeartProps {
   translateX: number;
   rotation: number;
   scale: number;
+  onMount?: (el: HTMLDivElement) => void;
 }
 
 const Heart: React.FC<HeartProps> = ({
@@ -15,7 +16,16 @@ const Heart: React.FC<HeartProps> = ({
   translateX,
   rotation,
   scale,
+  onMount,
 }) => {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (ref.current && onMount) {
+      onMount(ref.current);
+    }
+  }, [onMount]);
+
   const style: React.CSSProperties = {
     left: `${x}px`,
     top: `${y}px`,
@@ -25,7 +35,7 @@ const Heart: React.FC<HeartProps> = ({
   } as React.CSSProperties;
 
   return (
-    <div className="heart" style={style}>
+    <div className="heart" ref={ref} style={style}>
       <svg
         xmlns="http://www.w3.org/2000/svg"
         width="24"
