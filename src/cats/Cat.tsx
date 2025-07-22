@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 interface CatProps {
-  onClick: () => void;
+  onClick: (event: React.MouseEvent) => void;
   isPetting: boolean;
   wiggleDuration: number | null;
 }
@@ -55,10 +55,14 @@ const Cat: React.FC<CatProps> = ({ onClick, isPetting, wiggleDuration }) => {
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 220 200"
       className="cat-svg"
-      onClick={onClick}
-      style={{ cursor: 'pointer' }}
     >
-      <g id="cat-container" className={containerClasses} transform="translate(10, 20)">
+      <g
+        id="cat-container"
+        className={containerClasses}
+        transform="translate(10, 20)"
+        onClick={onClick}
+        style={{ cursor: 'pointer' }}
+      >
         {/* Tail */}
         <g id="tail">
           <path

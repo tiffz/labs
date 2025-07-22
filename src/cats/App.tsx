@@ -1,5 +1,16 @@
 import { useState, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import Cat from './Cat';
+import Heart from './Heart';
+
+interface HeartType {
+  id: number;
+  x: number;
+  y: number;
+  translateX: number;
+  rotation: number;
+  scale: number;
+}
 
 function App() {
   const [treats, setTreats] = useState(0);
@@ -8,14 +19,31 @@ function App() {
   const [isPetting, setIsPetting] = useState(false);
   const [lastClickTime, setLastClickTime] = useState(0);
   const [wiggleDuration, setWiggleDuration] = useState<number | null>(null);
+  const [hearts, setHearts] = useState<HeartType[]>([]);
 
-  const handleCatClick = () => {
+  const handleCatClick = (event: React.MouseEvent) => {
     setTreats(treats + treatsPerClick);
     setIsPetting(true);
     setTimeout(() => setIsPetting(false), 200);
 
     const now = Date.now();
     const interval = now - lastClickTime;
+
+    const newHeart: HeartType = {
+      id: now,
+      x: event.clientX,
+      y: event.clientY,
+      translateX: Math.random() * 40 - 20, // -20px to 20px
+      rotation: Math.random() * 60 - 30, // -30deg to 30deg
+      scale: Math.random() * 0.4 + 0.8, // 0.8 to 1.2
+    };
+    setHearts((currentHearts) => [...currentHearts, newHeart]);
+
+    setTimeout(() => {
+      setHearts((currentHearts) =>
+        currentHearts.filter((heart) => heart.id !== newHeart.id)
+      );
+    }, 1000);
 
     if (interval < 300) { // Fast click detected
       // Map the click interval (50ms-300ms) to an animation duration (0.4s-1.0s)
@@ -57,6 +85,19 @@ function App() {
 
   return (
     <div className="game-container">
+      {ReactDOM.createPortal(
+        hearts.map((heart) => (
+          <Heart
+            key={heart.id}
+            x={heart.x}
+            y={heart.y}
+            translateX={heart.translateX}
+            rotation={heart.rotation}
+            scale={heart.scale}
+          />
+        )),
+        document.getElementById('heart-container')!
+      )}
       <h1>Cat Clicker</h1>
       <div className="stats-container">
         <p>Treats: {treats}</p>

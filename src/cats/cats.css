@@ -69,11 +69,14 @@ button:disabled {
 .cat-svg {
   width: 250px;
   height: auto;
+}
+
+.cat-svg #cat-container {
+  transform-origin: 100px 110px;
   transition: transform 0.1s ease-in-out;
 }
 
-.cat-svg:active {
-  transform: scale(0.95);
+.cat-svg #cat-container:active {
 }
 
 #head {
@@ -89,6 +92,24 @@ button:disabled {
 .is-petting #head {
   animation: head-bob-petting 0.2s ease-in-out;
 }
+
+.heart {
+    position: absolute;
+    animation: fly-up 1s ease-out forwards;
+    pointer-events: none;
+    z-index: 100;
+  }
+  
+  @keyframes fly-up {
+    0% {
+      transform: translateY(0) translateX(0) rotate(0) scale(var(--scale));
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(-100px) translateX(var(--translate-x)) rotate(var(--rotation)) scale(var(--scale));
+      opacity: 0;
+    }
+  }
 
 @keyframes head-bob {
   0%,
