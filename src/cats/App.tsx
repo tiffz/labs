@@ -101,7 +101,7 @@ function App() {
     setLastClickTime(now);
   };
 
-  const handleWandClick = (event: React.MouseEvent) => {
+  const handleWandClick = () => {
     if (shakeTimeoutRef.current) {
       clearTimeout(shakeTimeoutRef.current);
     }

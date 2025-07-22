@@ -11,6 +11,10 @@ export default defineConfig({
     react(),
     checker({
       typescript: true,
+      eslint: {
+        useFlatConfig: true,
+        lintCommand: 'eslint .',
+      },
     }),
     VitePWA({
       registerType: 'autoUpdate',

@@ -18,7 +18,10 @@ interface CatProps {
 
 const Cat = React.forwardRef<SVGSVGElement, CatProps>(
   (
-    {
+    props,
+    catRef
+  ) => {
+    const {
       onClick,
       onEyeClick,
       onEarClick,
@@ -32,9 +35,7 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
       wigglingEar,
       wiggleDuration,
       lastHeart,
-    },
-    catRef
-  ) => {
+    } = props;
     const [pupilsPos, setPupilsPos] = useState({
       left: { x: 80, y: 80 },
       right: { x: 120, y: 80 },
@@ -57,16 +58,17 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
     });
 
     useEffect(() => {
+      const drowsinessTimerRef = drowsinessState.current;
       if (isDrowsy) {
-        drowsinessState.current.startTime = Date.now();
+        drowsinessTimerRef.startTime = Date.now();
         const scheduleBlink = () => {
-          const timeSinceDrowsy = Date.now() - drowsinessState.current.startTime;
+          const timeSinceDrowsy = Date.now() - drowsinessTimerRef.startTime;
           // As time progresses, blinks get more frequent (min interval 500ms)
           const blinkInterval = Math.max(500, 4000 - timeSinceDrowsy / 3);
           // As time progresses, blinks get longer (max duration 1000ms)
           const blinkDuration = Math.min(1000, 200 + timeSinceDrowsy / 5);
 
-          drowsinessState.current.drowsinessTimer = window.setTimeout(() => {
+          drowsinessTimerRef.drowsinessTimer = window.setTimeout(() => {
             setIsBlinking(true);
             setTimeout(() => {
               setIsBlinking(false);
@@ -76,19 +78,19 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
         };
         scheduleBlink();
       } else {
-        if (drowsinessState.current.drowsinessTimer) {
-          clearTimeout(drowsinessState.current.drowsinessTimer);
+        if (drowsinessTimerRef.drowsinessTimer) {
+          clearTimeout(drowsinessTimerRef.drowsinessTimer);
         }
         setIsBlinking(false);
-        drowsinessState.current.startTime = 0;
+        drowsinessTimerRef.startTime = 0;
       }
 
       return () => {
-        if (drowsinessState.current.drowsinessTimer) {
-          clearTimeout(drowsinessState.current.drowsinessTimer);
+        if (drowsinessTimerRef.drowsinessTimer) {
+          clearTimeout(drowsinessTimerRef.drowsinessTimer);
         }
       };
-    }, [isDrowsy]);
+    }, [isDrowsy, drowsinessState]);
 
     useEffect(() => {
       if (isPouncing && !pounceState.current.isActive) {
@@ -382,5 +384,6 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
     );
   }
 );
+Cat.displayName = 'Cat';
 
 export default Cat; 
