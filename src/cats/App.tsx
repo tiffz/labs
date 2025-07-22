@@ -20,6 +20,7 @@ function App() {
   const [lastClickTime, setLastClickTime] = useState(0);
   const [wiggleDuration, setWiggleDuration] = useState<number | null>(null);
   const [hearts, setHearts] = useState<HeartType[]>([]);
+  const [isStartled, setIsStartled] = useState(false);
 
   const handleCatClick = (event: React.MouseEvent) => {
     setTreats(treats + treatsPerClick);
@@ -55,6 +56,17 @@ function App() {
       setTimeout(() => setWiggleDuration(null), newDuration * 1000);
     }
     setLastClickTime(now);
+  };
+
+  const handleEyeClick = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    if (isStartled) {
+      return;
+    }
+    setIsStartled(true);
+    setTimeout(() => {
+      setIsStartled(false);
+    }, 500);
   };
 
   useEffect(() => {
@@ -105,7 +117,13 @@ function App() {
         <p>Treats per second: {treatsPerSecond}</p>
       </div>
       <div className="cat-container">
-        <Cat onClick={handleCatClick} isPetting={isPetting} wiggleDuration={wiggleDuration} />
+        <Cat
+          onClick={handleCatClick}
+          onEyeClick={handleEyeClick}
+          isPetting={isPetting}
+          isStartled={isStartled}
+          wiggleDuration={wiggleDuration}
+        />
       </div>
       <div className="upgrades-container">
         <button onClick={handleUpgradeTreatsPerClick} disabled={treats < treatsPerClick * 10}>

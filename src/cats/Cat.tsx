@@ -2,11 +2,19 @@ import React, { useState, useEffect, useRef } from 'react';
 
 interface CatProps {
   onClick: (event: React.MouseEvent) => void;
+  onEyeClick: (event: React.MouseEvent) => void;
   isPetting: boolean;
+  isStartled: boolean;
   wiggleDuration: number | null;
 }
 
-const Cat: React.FC<CatProps> = ({ onClick, isPetting, wiggleDuration }) => {
+const Cat: React.FC<CatProps> = ({
+  onClick,
+  onEyeClick,
+  isPetting,
+  isStartled,
+  wiggleDuration,
+}) => {
   const [pupilsPos, setPupilsPos] = useState({ left: { x: 80, y: 80 }, right: { x: 120, y: 80 } });
   const catRef = useRef<SVGSVGElement>(null);
 
@@ -102,11 +110,49 @@ const Cat: React.FC<CatProps> = ({ onClick, isPetting, wiggleDuration }) => {
           
           {/* Face */}
           <g id="face" transform="translate(0, -5)">
-            {/* Eyes */}
-            <circle cx="80" cy="80" r="10" fill="white" />
-            <circle cx={pupilsPos.left.x} cy={pupilsPos.left.y} r="5" fill="black" />
-            <circle cx="120" cy="80" r="10" fill="white" />
-            <circle cx={pupilsPos.right.x} cy={pupilsPos.right.y} r="5" fill="black" />
+            {/* Open Eyes */}
+            <g
+              className={`eye-open ${isStartled ? 'hidden' : ''}`}
+              onClick={onEyeClick}
+            >
+              <g>
+                <circle cx="80" cy="80" r="10" fill="white" />
+                <circle
+                  cx={pupilsPos.left.x}
+                  cy={pupilsPos.left.y}
+                  r="5"
+                  fill="black"
+                />
+              </g>
+              <g>
+                <circle cx="120" cy="80" r="10" fill="white" />
+                <circle
+                  cx={pupilsPos.right.x}
+                  cy={pupilsPos.right.y}
+                  r="5"
+                  fill="black"
+                />
+              </g>
+            </g>
+
+            {/* Startled Eyes */}
+            <g
+              className={`eye-startled ${isStartled ? '' : 'hidden'}`}
+              onClick={onEyeClick}
+            >
+              <path
+                d="M 75 75 L 85 80 L 75 85"
+                stroke="white"
+                strokeWidth="1.5"
+                fill="none"
+              />
+              <path
+                d="M 125 75 L 115 80 L 125 85"
+                stroke="white"
+                strokeWidth="1.5"
+                fill="none"
+              />
+            </g>
             {/* Nose */}
             <path d="M 97 90 L 103 90 L 100 94 Z" fill="white" />
           </g>
