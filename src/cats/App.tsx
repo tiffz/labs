@@ -35,6 +35,7 @@ function App() {
   const [isSleeping, setIsSleeping] = useState(false);
   const [zzzs, setZzzs] = useState<ZzzType[]>([]);
   const zzzTimeoutRef = useRef<number | null>(null);
+  const [wigglingEar, setWigglingEar] = useState<'left' | 'right' | null>(null);
 
   const handleCatClick = (event: React.MouseEvent) => {
     setTreats(treats + treatsPerClick);
@@ -90,6 +91,17 @@ function App() {
     setIsStartled(true);
     setTimeout(() => {
       setIsStartled(false);
+    }, 500);
+  };
+
+  const handleEarClick = (ear: 'left' | 'right', event: React.MouseEvent) => {
+    if (wigglingEar) {
+      return;
+    }
+    handleCatClick(event);
+    setWigglingEar(ear);
+    setTimeout(() => {
+      setWigglingEar(null);
     }, 500);
   };
 
@@ -230,9 +242,11 @@ function App() {
         <Cat
           onClick={handleCatClick}
           onEyeClick={handleEyeClick}
+          onEarClick={handleEarClick}
           isPetting={isPetting}
           isStartled={isStartled}
           isSleeping={isSleeping}
+          wigglingEar={wigglingEar}
           wiggleDuration={wiggleDuration}
           lastHeart={lastHeart}
         />

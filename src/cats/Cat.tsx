@@ -3,9 +3,11 @@ import React, { useState, useEffect, useRef } from 'react';
 interface CatProps {
   onClick: (event: React.MouseEvent) => void;
   onEyeClick: (event: React.MouseEvent) => void;
+  onEarClick: (ear: 'left' | 'right', event: React.MouseEvent) => void;
   isPetting: boolean;
   isStartled: boolean;
   isSleeping: boolean;
+  wigglingEar: 'left' | 'right' | null;
   wiggleDuration: number | null;
   lastHeart: HTMLDivElement | null;
 }
@@ -13,9 +15,11 @@ interface CatProps {
 const Cat: React.FC<CatProps> = ({
   onClick,
   onEyeClick,
+  onEarClick,
   isPetting,
   isStartled,
   isSleeping,
+  wigglingEar,
   wiggleDuration,
   lastHeart,
 }) => {
@@ -154,14 +158,30 @@ const Cat: React.FC<CatProps> = ({
             fill="#212121"
           />
           {/* Left ear */}
-          <g id="left-ear" style={earStyle}>
+          <g
+            id="left-ear"
+            className={wigglingEar === 'left' ? 'ear-wiggling' : ''}
+            style={earStyle}
+            onClick={(e) => {
+              e.stopPropagation();
+              onEarClick('left', e);
+            }}
+          >
             <path
               d="M 50 70 L 60 45 L 80 70 Z"
               fill="#212121"
             />
           </g>
           {/* Right ear */}
-          <g id="right-ear" style={earStyle}>
+          <g
+            id="right-ear"
+            className={wigglingEar === 'right' ? 'ear-wiggling' : ''}
+            style={earStyle}
+            onClick={(e) => {
+              e.stopPropagation();
+              onEarClick('right', e);
+            }}
+          >
             <path
               d="M 120 70 L 140 45 L 150 70 Z"
               fill="#212121"

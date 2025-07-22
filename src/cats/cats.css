@@ -185,6 +185,16 @@ button:disabled {
   }
 }
 
+#left-ear.ear-wiggling {
+  animation: ear-wiggle-left 0.5s ease-in-out;
+  transform-origin: bottom center;
+}
+
+#right-ear.ear-wiggling {
+  animation: ear-wiggle-right 0.5s ease-in-out;
+  transform-origin: bottom center;
+}
+
 @keyframes ear-wiggle-right {
     0%, 100% { transform: rotate(0deg); }
     25% { transform: rotate(3deg); }
