@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 interface CatProps {
   onClick: (event: React.MouseEvent) => void;
@@ -7,6 +7,7 @@ interface CatProps {
   isPetting: boolean;
   isStartled: boolean;
   isSleeping: boolean;
+  isDrowsy: boolean;
   isPouncing: boolean;
   isPlaying: boolean;
   pounceTarget: { x: number; y: number };
@@ -24,6 +25,7 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
       isPetting,
       isStartled,
       isSleeping,
+      isDrowsy,
       isPouncing,
       isPlaying,
       pounceTarget,
@@ -37,6 +39,11 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
       left: { x: 80, y: 80 },
       right: { x: 120, y: 80 },
     });
+    const [isBlinking, setIsBlinking] = useState(false);
+    const drowsinessState = useRef({
+      startTime: 0,
+      drowsinessTimer: null as number | null,
+    });
 
     const pounceState = React.useRef({
       startTime: 0,
@@ -44,6 +51,40 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
       x: 0,
       y: 0,
     });
+
+    useEffect(() => {
+      if (isDrowsy) {
+        drowsinessState.current.startTime = Date.now();
+        const scheduleBlink = () => {
+          const timeSinceDrowsy = Date.now() - drowsinessState.current.startTime;
+          // As time progresses, blinks get more frequent (min interval 500ms)
+          const blinkInterval = Math.max(500, 4000 - timeSinceDrowsy / 3);
+          // As time progresses, blinks get longer (max duration 1000ms)
+          const blinkDuration = Math.min(1000, 200 + timeSinceDrowsy / 5);
+
+          drowsinessState.current.drowsinessTimer = window.setTimeout(() => {
+            setIsBlinking(true);
+            setTimeout(() => {
+              setIsBlinking(false);
+              scheduleBlink();
+            }, blinkDuration);
+          }, blinkInterval);
+        };
+        scheduleBlink();
+      } else {
+        if (drowsinessState.current.drowsinessTimer) {
+          clearTimeout(drowsinessState.current.drowsinessTimer);
+        }
+        setIsBlinking(false);
+        drowsinessState.current.startTime = 0;
+      }
+
+      return () => {
+        if (drowsinessState.current.drowsinessTimer) {
+          clearTimeout(drowsinessState.current.drowsinessTimer);
+        }
+      };
+    }, [isDrowsy]);
 
     useEffect(() => {
       if (isPouncing && !pounceState.current.isActive) {
@@ -250,10 +291,30 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
                 />
               </g>
 
+              {/* Drowsy Eyes */}
+              <g
+                className={`eye-drowsy ${
+                  !isSleeping && isDrowsy && isBlinking ? '' : 'hidden'
+                }`}
+              >
+                <path
+                  d="M 74 82 Q 80 87, 86 82"
+                  stroke="white"
+                  strokeWidth="1.5"
+                  fill="none"
+                />
+                <path
+                  d="M 114 82 Q 120 87, 126 82"
+                  stroke="white"
+                  strokeWidth="1.5"
+                  fill="none"
+                />
+              </g>
+
               {/* Open Eyes */}
               <g
                 className={`eye-open ${
-                  !isSleeping && !isStartled ? '' : 'hidden'
+                  !isSleeping && !isStartled && (!isDrowsy || !isBlinking) ? '' : 'hidden'
                 }`}
                 onClick={onEyeClick}
               >

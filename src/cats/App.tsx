@@ -35,6 +35,7 @@ function App() {
   const [isStartled, setIsStartled] = useState(false);
   const [lastHeart, setLastHeart] = useState<HTMLDivElement | null>(null);
   const [isSleeping, setIsSleeping] = useState(false);
+  const [isDrowsy, setIsDrowsy] = useState(false);
   const [zzzs, setZzzs] = useState<ZzzType[]>([]);
   const zzzTimeoutRef = useRef<number | null>(null);
   const [wigglingEar, setWigglingEar] = useState<'left' | 'right' | null>(null);
@@ -201,6 +202,7 @@ function App() {
 
   const wakeUp = useCallback(() => {
     setIsSleeping(false);
+    setIsDrowsy(false);
     setZzzs([]);
   }, []);
 
@@ -211,12 +213,18 @@ function App() {
   }, [trackableHeartId]);
 
   useEffect(() => {
-    let inactivityTimer: number;
+    let drowsinessTimer: number;
+    let sleepTimer: number;
 
     const resetInactivityTimer = () => {
       wakeUp();
-      clearTimeout(inactivityTimer);
-      inactivityTimer = window.setTimeout(() => {
+      clearTimeout(drowsinessTimer);
+      clearTimeout(sleepTimer);
+      drowsinessTimer = window.setTimeout(() => {
+        setIsDrowsy(true);
+      }, 20000); // 20 seconds
+      sleepTimer = window.setTimeout(() => {
+        setIsDrowsy(false);
         setIsSleeping(true);
       }, 30000); // 30 seconds
     };
@@ -227,7 +235,8 @@ function App() {
     document.addEventListener('mousedown', resetInactivityTimer);
 
     return () => {
-      clearTimeout(inactivityTimer);
+      clearTimeout(drowsinessTimer);
+      clearTimeout(sleepTimer);
       document.removeEventListener('mousemove', resetInactivityTimer);
       document.removeEventListener('mousedown', resetInactivityTimer);
     };
@@ -357,6 +366,7 @@ function App() {
           isPetting={isPetting}
           isStartled={isStartled}
           isSleeping={isSleeping}
+          isDrowsy={isDrowsy}
           isPouncing={isPouncing}
           isPlaying={isPlaying}
           pounceTarget={pounceTarget}
