@@ -82,30 +82,30 @@ const Cat: React.FC<CatProps> = ({ onClick, isPetting, wiggleDuration }) => {
             fill="#212121"
           />
           {/* Left ear */}
-          <path
-            id="left-ear"
-            style={earStyle}
-            d="M 50 70 L 60 45 L 80 70 Z"
-            fill="#212121"
-          />
+          <g id="left-ear" style={earStyle}>
+            <path
+              d="M 50 70 L 60 45 L 80 70 Z"
+              fill="#212121"
+            />
+          </g>
           {/* Right ear */}
-          <path
-            id="right-ear"
-            style={earStyle}
-            d="M 120 70 L 140 45 L 150 70 Z"
-            fill="#212121"
-          />
-        </g>
-        
-        {/* Face */}
-        <g id="face" transform="translate(0, -5)">
-          {/* Eyes */}
-          <circle cx="80" cy="80" r="10" fill="white" />
-          <circle cx={pupilsPos.left.x} cy={pupilsPos.left.y} r="5" fill="black" />
-          <circle cx="120" cy="80" r="10" fill="white" />
-          <circle cx={pupilsPos.right.x} cy={pupilsPos.right.y} r="5" fill="black" />
-          {/* Nose */}
-          <path d="M 97 90 L 103 90 L 100 94 Z" fill="white" />
+          <g id="right-ear" style={earStyle}>
+            <path
+              d="M 120 70 L 140 45 L 150 70 Z"
+              fill="#212121"
+            />
+          </g>
+          
+          {/* Face */}
+          <g id="face" transform="translate(0, -5)">
+            {/* Eyes */}
+            <circle cx="80" cy="80" r="10" fill="white" />
+            <circle cx={pupilsPos.left.x} cy={pupilsPos.left.y} r="5" fill="black" />
+            <circle cx="120" cy="80" r="10" fill="white" />
+            <circle cx={pupilsPos.right.x} cy={pupilsPos.right.y} r="5" fill="black" />
+            {/* Nose */}
+            <path d="M 97 90 L 103 90 L 100 94 Z" fill="white" />
+          </g>
         </g>
       </g>
     </svg>
