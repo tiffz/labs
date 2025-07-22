@@ -3,13 +3,31 @@ import tseslint from 'typescript-eslint';
 import pluginReact from 'eslint-plugin-react';
 import pluginReactHooks from 'eslint-plugin-react-hooks';
 import pluginReactRefresh from 'eslint-plugin-react-refresh';
+import js from '@eslint/js';
 
 export default [
+  // Global ignores
   {
-    ignores: ['dist'],
+    ignores: ['dist/'],
   },
+
+  // Base JS and TS configs
+  js.configs.recommended,
+  ...tseslint.configs.recommended,
+
+  // Config for Node.js files (e.g., config files in root)
   {
-    files: ['**/*.{js,mjs,cjs,ts,jsx,tsx}'],
+    files: ['eslint.config.js', 'vite.config.ts', 'postcss.config.js'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
+
+  // Config for React application source files
+  {
+    files: ['src/**/*.{ts,tsx}'],
     plugins: {
       react: pluginReact,
       'react-hooks': pluginReactHooks,
@@ -18,11 +36,15 @@ export default [
     languageOptions: {
       globals: {
         ...globals.browser,
-        ...globals.node,
       },
       parserOptions: {
         project: 'tsconfig.app.json',
         tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    settings: {
+      react: {
+        version: 'detect',
       },
     },
     rules: {
@@ -35,5 +57,4 @@ export default [
       ],
     },
   },
-  ...tseslint.configs.recommended,
 ];
