@@ -50,6 +50,10 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
       isActive: false,
       x: 0,
       y: 0,
+      arcHeight: 30,
+      overshootX: 0,
+      overshootY: 0,
+      duration: 500,
     });
 
     useEffect(() => {
@@ -93,6 +97,10 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
           isActive: true,
           x: pounceTarget.x,
           y: pounceTarget.y,
+          arcHeight: 20 + Math.random() * 20, // Varies between 20 and 40
+          overshootX: (Math.random() - 0.5) * 10, // Varies between -5 and 5
+          overshootY: (Math.random() - 0.5) * 10, // Varies between -5 and 5
+          duration: 450 + Math.random() * 100, // Varies between 450ms and 550ms
         };
       }
       if (!isPouncing) {
@@ -121,11 +129,18 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
 
         // Pounce Animation
         if (pounceState.current.isActive) {
-          const progress = (Date.now() - pounceState.current.startTime) / 500;
+          const progress =
+            (Date.now() - pounceState.current.startTime) /
+            pounceState.current.duration;
           if (progress < 1) {
-            const yOffset = -Math.sin(progress * Math.PI) * 30;
-            const currentPounceX = pounceState.current.x * progress;
-            const currentPounceY = pounceState.current.y * progress;
+            const yOffset =
+              -Math.sin(progress * Math.PI) * pounceState.current.arcHeight;
+            const targetX =
+              pounceState.current.x + pounceState.current.overshootX;
+            const targetY =
+              pounceState.current.y + pounceState.current.overshootY;
+            const currentPounceX = targetX * progress;
+            const currentPounceY = targetY * progress;
             catElement.style.transform = `translate(${currentPounceX}px, ${
               currentPounceY + yOffset
             }px)`;

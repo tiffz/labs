@@ -49,6 +49,10 @@ function App() {
   const [trackableHeartId, setTrackableHeartId] = useState<number | null>(null);
   const catRef = useRef<SVGSVGElement>(null);
   const shakeTimeoutRef = useRef<number | null>(null);
+  const [wandPosition, setWandPosition] = useState({ x: 0, y: 0 });
+  const pounceConfidenceRef = useRef(0);
+  const lastWandPositionRef = useRef({ x: 0, y: 0 });
+  const lastWandMoveTimeRef = useRef(0);
 
   const handleCatClick = (event: React.MouseEvent) => {
     setTreats(treats + treatsPerClick);
@@ -101,6 +105,7 @@ function App() {
     if (shakeTimeoutRef.current) {
       clearTimeout(shakeTimeoutRef.current);
     }
+    pounceConfidenceRef.current += 15;
     setIsShaking(false);
     requestAnimationFrame(() => {
       setIsShaking(true);
@@ -118,57 +123,134 @@ function App() {
     }
 
     if (!catRef.current) return;
-
-    const catRect = catRef.current.getBoundingClientRect();
-    const catCenterX = catRect.left + catRect.width / 2;
-    const catCenterY = catRect.top + catRect.height / 2;
-
-    const vectorX = event.clientX - catCenterX;
-    const vectorY = event.clientY - catCenterY;
-    const magnitude = Math.sqrt(vectorX * vectorX + vectorY * vectorY);
-    const maxPounce = 40; // Max pounce distance in SVG units
-
-    const pounceX = magnitude > 0 ? (vectorX / magnitude) * maxPounce : 0;
-    const pounceY = magnitude > 0 ? (vectorY / magnitude) * maxPounce : 0;
-
-    setPounceTarget({ x: pounceX, y: pounceY });
-    setTreats((currentTreats) => currentTreats + treatsPerPounce);
-
-    // Create a burst of hearts at the click location
-    const newHearts: HeartType[] = [];
-    for (let i = 0; i < 5; i++) {
-      newHearts.push({
-        id: Date.now() + i,
-        x: event.clientX + (Math.random() - 0.5) * 40,
-        y: event.clientY + (Math.random() - 0.5) * 40,
-        translateX: Math.random() * 60 - 30,
-        rotation: Math.random() * 80 - 40,
-        scale: Math.random() * 0.5 + 0.5,
-        animationDuration: Math.random() * 0.5 + 0.5, // 0.5s to 1s
-      });
-    }
-    setHearts((currentHearts) => [...currentHearts, ...newHearts]);
-    setTrackableHeartId(newHearts[newHearts.length - 1].id);
-
-    // Remove the hearts after a delay
-    setTimeout(() => {
-      setHearts((currentHearts) =>
-        currentHearts.filter(
-          (heart) => !newHearts.some((nh) => nh.id === heart.id)
-        )
-      );
-    }, 1000);
-
-    setIsPouncing(true);
-    setTimeout(() => {
-      setIsPouncing(false);
-    }, 500);
-
-    // Clear the heart tracking after the hearts have disappeared
-    setTimeout(() => {
-      setTrackableHeartId(null);
-    }, 1000);
   };
+
+  useEffect(() => {
+    const handleMouseMove = (event: MouseEvent) => {
+      setWandPosition({ x: event.clientX, y: event.clientY });
+    };
+    document.addEventListener('mousemove', handleMouseMove);
+    return () => document.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  useEffect(() => {
+    const pouncePlanningInterval = setInterval(() => {
+      if (!catRef.current) return;
+
+      const catRect = catRef.current.getBoundingClientRect();
+      const catCenterX = catRect.left + catRect.width / 2;
+      const catCenterY = catRect.top + catRect.height / 2;
+      const distanceToCat = Math.sqrt(
+        Math.pow(wandPosition.x - catCenterX, 2) +
+          Math.pow(wandPosition.y - catCenterY, 2)
+      );
+
+      // --- Confidence Calculation ---
+
+      // 1. Proximity: Closer is better. Confidence increases exponentially as the toy gets closer.
+      let proximityConfidence = 0;
+      if (distanceToCat < 300) {
+        proximityConfidence = Math.pow((300 - distanceToCat) / 50, 2);
+      }
+      
+      const now = Date.now();
+      const distanceMoved = Math.sqrt(
+        Math.pow(wandPosition.x - lastWandPositionRef.current.x, 2) +
+          Math.pow(wandPosition.y - lastWandPositionRef.current.y, 2)
+      );
+      const timeDelta = now - lastWandMoveTimeRef.current;
+      
+      // 2. Velocity: Faster is better.
+      let velocityConfidence = 0;
+      if (distanceMoved > 5 && timeDelta > 0) {
+        const velocity = distanceMoved / timeDelta;
+        velocityConfidence = velocity * 10; // A direct multiplier for speed
+        if (velocity > 1.2) {
+          velocityConfidence += 30; // Bonus for very fast movement
+        }
+        lastWandMoveTimeRef.current = now;
+        lastWandPositionRef.current = wandPosition;
+      }
+      
+      // Combine confidences
+      pounceConfidenceRef.current += proximityConfidence + velocityConfidence;
+
+      // Decay confidence over time
+      pounceConfidenceRef.current = Math.max(
+        0,
+        pounceConfidenceRef.current * 0.9
+      );
+
+      // Pounce condition
+      if (
+        pounceConfidenceRef.current > 75 &&
+        !isPouncing
+      ) {
+        pounceConfidenceRef.current = 0; // Reset after pouncing
+        
+        const vectorX = wandPosition.x - catCenterX;
+        const vectorY = wandPosition.y - catCenterY;
+        const pounceDistance = Math.sqrt(
+          vectorX * vectorX + vectorY * vectorY
+        );
+        const maxPounce = 30 + Math.random() * 20;
+        const angle = Math.atan2(vectorY, vectorX);
+        const randomAngleOffset = (Math.random() - 0.5) * 0.4;
+        const newAngle = angle + randomAngleOffset;
+
+        const pounceX =
+          pounceDistance > 0 ? Math.cos(newAngle) * maxPounce : 0;
+        const pounceY =
+          pounceDistance > 0 ? Math.sin(newAngle) * maxPounce : 0;
+
+        setPounceTarget({ x: pounceX, y: pounceY });
+
+        const treatsForPounce = Math.round(
+          treatsPerPounce + pounceDistance / 20
+        );
+        setTreats((currentTreats) => currentTreats + treatsForPounce);
+
+        // Create a burst of hearts at the click location
+        const newHearts: HeartType[] = [];
+        const heartCount = Math.max(1, Math.round(pounceDistance / 40));
+        for (let i = 0; i < heartCount; i++) {
+          newHearts.push({
+            id: Date.now() + i,
+            x: wandPosition.x + (Math.random() - 0.5) * 40,
+            y: wandPosition.y + (Math.random() - 0.5) * 40,
+            translateX: Math.random() * 60 - 30,
+            rotation: Math.random() * 80 - 40,
+            scale: Math.random() * 0.5 + 0.5,
+            animationDuration: Math.random() * 0.5 + 0.5,
+          });
+        }
+        setHearts((currentHearts) => [...currentHearts, ...newHearts]);
+        setTrackableHeartId(newHearts[newHearts.length - 1].id);
+
+        // Remove the hearts after a delay
+        setTimeout(() => {
+          setHearts((currentHearts) =>
+            currentHearts.filter(
+              (heart) => !newHearts.some((nh) => nh.id === heart.id)
+            )
+          );
+        }, 1000);
+
+        setIsPouncing(true);
+        setTimeout(() => {
+          setIsPouncing(false);
+        }, 500);
+
+        // Clear the heart tracking after the hearts have disappeared
+        setTimeout(() => {
+          setTrackableHeartId(null);
+        }, 1000);
+      }
+    }, 100);
+
+    return () => clearInterval(pouncePlanningInterval);
+  }, [isPouncing, treatsPerPounce, wandPosition]);
+
 
   const handleEyeClick = (event: React.MouseEvent) => {
     event.stopPropagation();
@@ -308,6 +390,17 @@ function App() {
       setTreatsPerSecond(treatsPerSecond + 1);
     }
   };
+
+  useEffect(() => {
+    if (wandMode) {
+      document.body.classList.add('wand-mode-active');
+    } else {
+      document.body.classList.remove('wand-mode-active');
+    }
+    return () => {
+      document.body.classList.remove('wand-mode-active');
+    };
+  }, [wandMode]);
 
   return (
     <div className="game-container">

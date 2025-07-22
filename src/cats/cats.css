@@ -9,6 +9,11 @@ body {
     margin: 0;
 }
 
+body.wand-mode-active,
+body.wand-mode-active * {
+  cursor: default !important;
+}
+
 .game-container {
     text-align: center;
     background-color: white;

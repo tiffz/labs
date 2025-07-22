@@ -72,3 +72,26 @@ The interactivity of the cat has been enhanced with several advanced animations.
 - **Implementation:** The feature is managed by several states in `App.tsx` (`wandMode`, `isPouncing`, `isPlaying`). The pounce is a CSS animation that uses custom properties (`--pounce-x`, `--pounce-y`) to dynamically direct the jump towards the toy.
 - **Click Area:** The clickable area for the wand toy is a larger, invisible `div` that surrounds the cat. This ensures that clicks *near* the cat trigger the pounce, not just clicks *on* the cat.
 - **Caveat:** Early implementations of this feature caused several regressions, including incorrect click areas and broken eye-tracking. **Lesson Learned:** When adding new, complex features, it's crucial to be mindful of how they interact with existing systems. Passing component references (`ref`s) as standard props instead of using `React.forwardRef` can sometimes be a simpler and more robust solution. 
+ 
+### Immersive Sleeping State
+
+- **Functionality:** To make the transition to sleep feel more natural, the cat now has a "drowsy" phase. For 10 seconds before falling asleep, the cat will start to blink. The blinks are slow and occasional at first, becoming more frequent and lasting longer as the cat gets closer to sleep.
+- **Implementation:** A new `isDrowsy` state was added to `App.tsx`, which is triggered by a 20-second inactivity timer. This state activates a blinking effect in `Cat.tsx`, which is controlled by a `setTimeout` loop that progressively shortens the blink interval and lengthens the blink duration.
+
+### Intelligent Pounce Planning
+
+- **Functionality:** The cat's pounce is no longer a direct reaction to a click. Instead, the cat has an internal "pounce confidence" meter and decides for itself when to strike, creating a more organic and cat-like interaction.
+- **Confidence System:** The cat's excitement is influenced by several factors:
+    - **Proximity:** The closer the wand toy is to the cat, the higher the baseline excitement.
+    - **Velocity:** Rapid movement of the toy is a major contributor to confidence. A fast-moving toy can trigger a pounce even without any clicks.
+    - **Player Clicks:** Each click on the toy provides a direct boost to the confidence meter.
+- **Dynamic Pounce Animation:** To make the pounces less repetitive, several randomization factors were introduced:
+    - The arc, duration, distance, and trajectory of each pounce are all slightly randomized.
+- **Dynamic Rewards:** The rewards for a successful pounce are now based on the distance the cat traveled.
+    - **Treats:** Longer pounces award more treats.
+    - **Hearts:** The number of hearts in the celebratory burst also scales with the pounce distance.
+
+### Wand Toy Physics & UI Polish
+
+- **Wiggle Animation:** The feather toy now has a physics-based wiggle. The faster the user moves the cursor, the more the toy will rotate and sway, adding a satisfying sense of weight and motion.
+- **Cursor Bug Fix:** A minor but distracting bug where the large default system cursor would occasionally flash has been fixed. A global CSS rule now enforces a consistent cursor style when the wand toy is active, preventing the browser from switching styles and causing the flicker. 

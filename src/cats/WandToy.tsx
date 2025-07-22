@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './cats.css';
 
 interface WandToyProps {
@@ -7,17 +7,48 @@ interface WandToyProps {
 }
 
 const WandToy: React.FC<WandToyProps> = ({ isShaking, initialPosition }) => {
-  const [position, setPosition] = useState(initialPosition);
+  const [position, setPosition] = useState(() => initialPosition);
+  const [wiggle, setWiggle] = useState(0);
+  const lastPositionRef = useRef(initialPosition);
+  const animationFrameRef = useRef<number>(0);
 
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
-      setPosition({ x: event.clientX, y: event.clientY });
+      const newPosition = { x: event.clientX, y: event.clientY };
+      setPosition(newPosition);
+
+      const deltaX = newPosition.x - lastPositionRef.current.x;
+      const deltaY = newPosition.y - lastPositionRef.current.y;
+      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+      
+      const maxWiggle = 35;
+      const velocityFactor = 1.5;
+      let newWiggle = Math.min(distance * velocityFactor, maxWiggle);
+
+      // Add horizontal direction to the wiggle
+      newWiggle *= Math.sign(deltaX);
+
+      // Add some randomness
+      newWiggle += (Math.random() - 0.5) * 10;
+      
+      setWiggle(newWiggle);
+
+      lastPositionRef.current = newPosition;
     };
 
     document.addEventListener('mousemove', handleMouseMove);
 
+    const smoothWiggle = () => {
+      setWiggle(currentWiggle => currentWiggle * 0.85);
+      animationFrameRef.current = requestAnimationFrame(smoothWiggle);
+    };
+    animationFrameRef.current = requestAnimationFrame(smoothWiggle);
+
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
     };
   }, []);
 
@@ -27,6 +58,8 @@ const WandToy: React.FC<WandToyProps> = ({ isShaking, initialPosition }) => {
       style={{
         left: `${position.x}px`,
         top: `${position.y}px`,
+        transform: `translate(-50%, 0) rotate(${wiggle}deg)`,
+        transformOrigin: '50% 0',
       }}
     >
       <svg
