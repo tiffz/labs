@@ -56,6 +56,8 @@ body {
     flex-direction: column;
     gap: 0.5rem;
     margin-top: 2rem;
+    position: relative;
+    z-index: 20;
 }
 
 button {
@@ -217,6 +219,7 @@ button:disabled {
   pointer-events: none;
   transform: translate(-50%, 0);
   transform-origin: top center;
+  z-index: 30;
 }
 
 .wand-toy.shaking {

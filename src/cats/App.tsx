@@ -40,6 +40,7 @@ function App() {
   const [wigglingEar, setWigglingEar] = useState<'left' | 'right' | null>(null);
   const [wandMode, setWandMode] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
+  const [wandInitialPosition, setWandInitialPosition] = useState({ x: 0, y: 0 });
   const [isPouncing, setIsPouncing] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [pounceTarget, setPounceTarget] = useState({ x: 0, y: 0 });
@@ -329,7 +330,12 @@ function App() {
               scale={zzz.scale}
             />
           ))}
-          {wandMode && <WandToy isShaking={isShaking} />}
+          {wandMode && (
+            <WandToy
+              isShaking={isShaking}
+              initialPosition={wandInitialPosition}
+            />
+          )}
         </>,
         document.getElementById('heart-container')!
       )}
@@ -344,7 +350,7 @@ function App() {
           <div className="wand-click-area" onClick={handleWandClick} />
         )}
         <Cat
-          catRef={catRef}
+          ref={catRef}
           onClick={handleCatClick}
           onEyeClick={handleEyeClick}
           onEarClick={handleEarClick}
@@ -360,7 +366,13 @@ function App() {
         />
       </div>
       <div className="upgrades-container">
-        <button onClick={() => setWandMode(!wandMode)}>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setWandMode(!wandMode);
+            setWandInitialPosition({ x: e.clientX, y: e.clientY });
+          }}
+        >
           {wandMode ? 'Put away wand' : 'Play with wand'}
         </button>
         <button onClick={handleUpgradeTreatsPerClick} disabled={treats < treatsPerClick * 10}>

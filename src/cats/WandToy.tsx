@@ -3,10 +3,11 @@ import './cats.css';
 
 interface WandToyProps {
   isShaking: boolean;
+  initialPosition: { x: number; y: number };
 }
 
-const WandToy: React.FC<WandToyProps> = ({ isShaking }) => {
-  const [position, setPosition] = useState({ x: 0, y: 0 });
+const WandToy: React.FC<WandToyProps> = ({ isShaking, initialPosition }) => {
+  const [position, setPosition] = useState(initialPosition);
 
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
