@@ -7,6 +7,7 @@ interface HeartProps {
   translateX: number;
   rotation: number;
   scale: number;
+  animationDuration: number;
   onMount?: (el: HTMLDivElement) => void;
 }
 
@@ -16,6 +17,7 @@ const Heart: React.FC<HeartProps> = ({
   translateX,
   rotation,
   scale,
+  animationDuration,
   onMount,
 }) => {
   const ref = useRef<HTMLDivElement>(null);
@@ -32,6 +34,7 @@ const Heart: React.FC<HeartProps> = ({
     '--translate-x': `${translateX}px`,
     '--rotation': `${rotation}deg`,
     '--scale': scale,
+    animationDuration: `${animationDuration}s`,
   } as React.CSSProperties;
 
   return (

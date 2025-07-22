@@ -19,6 +19,16 @@ body {
 
 .cat-container {
     margin: 2rem 0;
+    position: relative;
+}
+
+.wand-click-area {
+  position: absolute;
+  top: -50px;
+  left: -50px;
+  right: -50px;
+  bottom: -50px;
+  z-index: 10;
 }
 
 .cat {
@@ -69,6 +79,7 @@ button:disabled {
 .cat-svg {
   width: 250px;
   height: auto;
+  overflow: visible;
 }
 
 .cat-svg #cat-container {
@@ -199,4 +210,45 @@ button:disabled {
     0%, 100% { transform: rotate(0deg); }
     25% { transform: rotate(3deg); }
     75% { transform: rotate(-2deg); }
+}
+
+.wand-toy {
+  position: absolute;
+  pointer-events: none;
+  transform: translate(-50%, 0);
+  transform-origin: top center;
+}
+
+.wand-toy.shaking {
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translate(-50%, 0) rotate(0deg);
+  }
+  25% {
+    transform: translate(-50%, 0) rotate(10deg);
+  }
+  75% {
+    transform: translate(-50%, 0) rotate(-10deg);
+  }
+}
+
+.playing {
+  animation: play-wiggle 0.3s ease-in-out;
+}
+
+@keyframes play-wiggle {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  25% {
+    transform: rotate(-5deg);
+  }
+  75% {
+    transform: rotate(5deg);
+  }
 } 

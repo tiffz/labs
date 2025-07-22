@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import Cat from './Cat';
 import Heart from './Heart';
 import Zzz from './Zzz';
+import WandToy from './WandToy';
 
 interface HeartType {
   id: number;
@@ -11,6 +12,7 @@ interface HeartType {
   translateX: number;
   rotation: number;
   scale: number;
+  animationDuration: number;
 }
 
 interface ZzzType {
@@ -36,6 +38,15 @@ function App() {
   const [zzzs, setZzzs] = useState<ZzzType[]>([]);
   const zzzTimeoutRef = useRef<number | null>(null);
   const [wigglingEar, setWigglingEar] = useState<'left' | 'right' | null>(null);
+  const [wandMode, setWandMode] = useState(false);
+  const [isShaking, setIsShaking] = useState(false);
+  const [isPouncing, setIsPouncing] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [pounceTarget, setPounceTarget] = useState({ x: 0, y: 0 });
+  const [treatsPerPounce, setTreatsPerPounce] = useState(3);
+  const [trackableHeartId, setTrackableHeartId] = useState<number | null>(null);
+  const catRef = useRef<SVGSVGElement>(null);
+  const shakeTimeoutRef = useRef<number | null>(null);
 
   const handleCatClick = (event: React.MouseEvent) => {
     setTreats(treats + treatsPerClick);
@@ -61,6 +72,7 @@ function App() {
       translateX: Math.random() * 40 - 20, // -20px to 20px
       rotation: Math.random() * 60 - 30, // -30deg to 30deg
       scale: randomScale,
+      animationDuration: 1,
     };
     setHearts((currentHearts) => [...currentHearts, newHeart]);
 
@@ -81,6 +93,79 @@ function App() {
       setTimeout(() => setWiggleDuration(null), newDuration * 1000);
     }
     setLastClickTime(now);
+  };
+
+  const handleWandClick = (event: React.MouseEvent) => {
+    if (shakeTimeoutRef.current) {
+      clearTimeout(shakeTimeoutRef.current);
+    }
+    setIsShaking(false);
+    requestAnimationFrame(() => {
+      setIsShaking(true);
+      shakeTimeoutRef.current = window.setTimeout(
+        () => setIsShaking(false),
+        500
+      );
+    });
+
+    if (isPouncing) {
+      setIsPlaying(true);
+      setTreats((currentTreats) => currentTreats + 1); // Subsequent clicks are worth 1
+      setTimeout(() => setIsPlaying(false), 300);
+      return;
+    }
+
+    if (!catRef.current) return;
+
+    const catRect = catRef.current.getBoundingClientRect();
+    const catCenterX = catRect.left + catRect.width / 2;
+    const catCenterY = catRect.top + catRect.height / 2;
+
+    const vectorX = event.clientX - catCenterX;
+    const vectorY = event.clientY - catCenterY;
+    const magnitude = Math.sqrt(vectorX * vectorX + vectorY * vectorY);
+    const maxPounce = 40; // Max pounce distance in SVG units
+
+    const pounceX = magnitude > 0 ? (vectorX / magnitude) * maxPounce : 0;
+    const pounceY = magnitude > 0 ? (vectorY / magnitude) * maxPounce : 0;
+
+    setPounceTarget({ x: pounceX, y: pounceY });
+    setTreats((currentTreats) => currentTreats + treatsPerPounce);
+
+    // Create a burst of hearts at the click location
+    const newHearts: HeartType[] = [];
+    for (let i = 0; i < 5; i++) {
+      newHearts.push({
+        id: Date.now() + i,
+        x: event.clientX + (Math.random() - 0.5) * 40,
+        y: event.clientY + (Math.random() - 0.5) * 40,
+        translateX: Math.random() * 60 - 30,
+        rotation: Math.random() * 80 - 40,
+        scale: Math.random() * 0.5 + 0.5,
+        animationDuration: Math.random() * 0.5 + 0.5, // 0.5s to 1s
+      });
+    }
+    setHearts((currentHearts) => [...currentHearts, ...newHearts]);
+    setTrackableHeartId(newHearts[newHearts.length - 1].id);
+
+    // Remove the hearts after a delay
+    setTimeout(() => {
+      setHearts((currentHearts) =>
+        currentHearts.filter(
+          (heart) => !newHearts.some((nh) => nh.id === heart.id)
+        )
+      );
+    }, 1000);
+
+    setIsPouncing(true);
+    setTimeout(() => {
+      setIsPouncing(false);
+    }, 500);
+
+    // Clear the heart tracking after the hearts have disappeared
+    setTimeout(() => {
+      setTrackableHeartId(null);
+    }, 1000);
   };
 
   const handleEyeClick = (event: React.MouseEvent) => {
@@ -105,10 +190,24 @@ function App() {
     }, 500);
   };
 
+  const handleUpgradePounce = () => {
+    const cost = treatsPerPounce * 10;
+    if (treats >= cost) {
+      setTreats(treats - cost);
+      setTreatsPerPounce(treatsPerPounce + 5);
+    }
+  };
+
   const wakeUp = useCallback(() => {
     setIsSleeping(false);
     setZzzs([]);
   }, []);
+
+  useEffect(() => {
+    if (trackableHeartId === null) {
+      setLastHeart(null);
+    }
+  }, [trackableHeartId]);
 
   useEffect(() => {
     let inactivityTimer: number;
@@ -204,11 +303,11 @@ function App() {
     <div className="game-container">
       {ReactDOM.createPortal(
         <>
-          {hearts.map((heart, index) => (
+          {hearts.map((heart) => (
             <Heart
               key={heart.id}
               onMount={
-                index === hearts.length - 1
+                heart.id === trackableHeartId
                   ? (el) => setLastHeart(el)
                   : undefined
               }
@@ -217,6 +316,7 @@ function App() {
               translateX={heart.translateX}
               rotation={heart.rotation}
               scale={heart.scale}
+              animationDuration={heart.animationDuration}
             />
           ))}
           {zzzs.map((zzz) => (
@@ -229,6 +329,7 @@ function App() {
               scale={zzz.scale}
             />
           ))}
+          {wandMode && <WandToy isShaking={isShaking} />}
         </>,
         document.getElementById('heart-container')!
       )}
@@ -239,21 +340,34 @@ function App() {
         <p>Treats per second: {treatsPerSecond}</p>
       </div>
       <div className="cat-container">
+        {wandMode && (
+          <div className="wand-click-area" onClick={handleWandClick} />
+        )}
         <Cat
+          catRef={catRef}
           onClick={handleCatClick}
           onEyeClick={handleEyeClick}
           onEarClick={handleEarClick}
           isPetting={isPetting}
           isStartled={isStartled}
           isSleeping={isSleeping}
+          isPouncing={isPouncing}
+          isPlaying={isPlaying}
+          pounceTarget={pounceTarget}
           wigglingEar={wigglingEar}
           wiggleDuration={wiggleDuration}
           lastHeart={lastHeart}
         />
       </div>
       <div className="upgrades-container">
+        <button onClick={() => setWandMode(!wandMode)}>
+          {wandMode ? 'Put away wand' : 'Play with wand'}
+        </button>
         <button onClick={handleUpgradeTreatsPerClick} disabled={treats < treatsPerClick * 10}>
           Upgrade treats per click (Cost: {treatsPerClick * 10})
+        </button>
+        <button onClick={handleUpgradePounce} disabled={treats < treatsPerPounce * 10}>
+          Upgrade pounce power (Cost: {treatsPerPounce * 10})
         </button>
         <button onClick={handleUpgradeTreatsPerSecond} disabled={treats < (treatsPerSecond + 1) * 15}>
           Upgrade treats per second (Cost: {(treatsPerSecond + 1) * 15})

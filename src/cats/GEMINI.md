@@ -54,6 +54,7 @@ The interactivity of the cat has been enhanced with several advanced animations.
 - **Implementation:** The eye movement is handled by a `requestAnimationFrame` loop in `Cat.tsx`. This loop uses linear interpolation (lerp) to smoothly move the pupils towards their target.
 - **Dynamic Smoothing:** The "lerp factor," which controls the smoothing, is dynamic. It's high for fast, responsive tracking of the cursor and temporarily becomes low when the target changes (from cursor to heart, or back). This creates a graceful, eased transition without making the normal tracking feel sluggish.
 - **Caveat:** A constant lerp factor felt either too slow for the cursor or too jerky for transitions. **Lesson Learned:** For animations that need to be both responsive and smooth, a dynamic smoothing factor is essential.
+- **State Management Caveat:** A persistent bug caused the eye-tracking to "freeze" after a pounce. The root cause was a state management issue where the game would get stuck trying to track a heart that no longer existed. The `lastHeart` state was not being properly cleared. **Lesson Learned:** When multiple systems (like heart-tracking and cursor-tracking) compete for control, they must be managed with an explicit and robust state system. The final solution involved creating a `trackableHeartId` to ensure only one heart could ever be the target, and explicitly clearing this ID to return control to the cursor.
 
 ### Startled Face Animation
 
@@ -61,3 +62,13 @@ The interactivity of the cat has been enhanced with several advanced animations.
 - **Implementation:** The eye graphics are separated into groups for "open" and "startled." The `onEyeClick` handler is attached to the parent group to ensure the entire eye is clickable.
 - **Smooth Transition:** The transition between the open and startled eyes is handled with a fast CSS opacity fade. A previous attempt to use a `scaleY` transform felt unnatural. **Lesson Learned:** For simple state swaps, a quick fade can often feel better than a more complex transform.
 - **Caveat:** Clicks were not registering on the pupils, only on the whites of the eyes. **Lesson Learned:** Ensure that click handlers are attached to the parent group of a compound SVG element to make the entire shape clickable. 
+
+### Wand Toy Interaction
+
+- **Functionality:** The user can enter "Wand Toy Mode," which makes a feather toy appear and follow the cursor. Clicking near the cat will cause the toy to shake and the cat to pounce towards it, rewarding the player with a burst of hearts and a higher treat count.
+- **Organic Interaction:** To make the interaction feel more natural, the cat's animations are stateful:
+    - The cat commits to its pounce and won't re-pounce if the toy is clicked again.
+    - Subsequent clicks while the cat is pouncing will cause it to enter a "playing" state (a gentle wiggle) instead of a frantic, repeated jump.
+- **Implementation:** The feature is managed by several states in `App.tsx` (`wandMode`, `isPouncing`, `isPlaying`). The pounce is a CSS animation that uses custom properties (`--pounce-x`, `--pounce-y`) to dynamically direct the jump towards the toy.
+- **Click Area:** The clickable area for the wand toy is a larger, invisible `div` that surrounds the cat. This ensures that clicks *near* the cat trigger the pounce, not just clicks *on* the cat.
+- **Caveat:** Early implementations of this feature caused several regressions, including incorrect click areas and broken eye-tracking. **Lesson Learned:** When adding new, complex features, it's crucial to be mindful of how they interact with existing systems. Passing component references (`ref`s) as standard props instead of using `React.forwardRef` can sometimes be a simpler and more robust solution. 
