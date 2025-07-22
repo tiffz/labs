@@ -126,14 +126,16 @@ function App() {
   };
 
   useEffect(() => {
+    if (!wandMode) {
+      pounceConfidenceRef.current = 0;
+      return;
+    }
+
     const handleMouseMove = (event: MouseEvent) => {
       setWandPosition({ x: event.clientX, y: event.clientY });
     };
     document.addEventListener('mousemove', handleMouseMove);
-    return () => document.removeEventListener('mousemove', handleMouseMove);
-  }, []);
 
-  useEffect(() => {
     const pouncePlanningInterval = setInterval(() => {
       if (!catRef.current) return;
 
@@ -166,7 +168,7 @@ function App() {
         const velocity = distanceMoved / timeDelta;
         velocityConfidence = velocity * 10; // A direct multiplier for speed
         if (velocity > 1.2) {
-          velocityConfidence += 30; // Bonus for very fast movement
+            velocityConfidence += 30; // Bonus for very fast movement
         }
         lastWandMoveTimeRef.current = now;
         lastWandPositionRef.current = wandPosition;
@@ -182,12 +184,9 @@ function App() {
       );
 
       // Pounce condition
-      if (
-        pounceConfidenceRef.current > 75 &&
-        !isPouncing
-      ) {
+      if (pounceConfidenceRef.current > 75 && !isPouncing) {
         pounceConfidenceRef.current = 0; // Reset after pouncing
-        
+
         const vectorX = wandPosition.x - catCenterX;
         const vectorY = wandPosition.y - catCenterY;
         const pounceDistance = Math.sqrt(
@@ -248,9 +247,16 @@ function App() {
       }
     }, 100);
 
-    return () => clearInterval(pouncePlanningInterval);
-  }, [isPouncing, treatsPerPounce, wandPosition]);
-
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      clearInterval(pouncePlanningInterval);
+    };
+  }, [
+    wandMode,
+    isPouncing,
+    treatsPerPounce,
+    wandPosition,
+  ]);
 
   const handleEyeClick = (event: React.MouseEvent) => {
     event.stopPropagation();
@@ -466,6 +472,7 @@ function App() {
           wigglingEar={wigglingEar}
           wiggleDuration={wiggleDuration}
           lastHeart={lastHeart}
+          wandMode={wandMode}
         />
       </div>
       <div className="upgrades-container">

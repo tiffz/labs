@@ -14,6 +14,7 @@ interface CatProps {
   wigglingEar: 'left' | 'right' | null;
   wiggleDuration: number | null;
   lastHeart: HTMLDivElement | null;
+  wandMode: boolean;
 }
 
 const Cat = React.forwardRef<SVGSVGElement, CatProps>(
@@ -35,6 +36,7 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
       wigglingEar,
       wiggleDuration,
       lastHeart,
+      wandMode,
     } = props;
     const [pupilsPos, setPupilsPos] = useState({
       left: { x: 80, y: 80 },
@@ -90,7 +92,7 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
           clearTimeout(drowsinessTimerRef.drowsinessTimer);
         }
       };
-    }, [isDrowsy, drowsinessState]);
+    }, [isDrowsy]);
 
     useEffect(() => {
       if (isPouncing && !pounceState.current.isActive) {
@@ -149,9 +151,11 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
           } else {
             pounceState.current.isActive = false; // End the pounce
           }
-        } else {
+        } else if (wandMode) {
           // Drift back to center if not pouncing
-          const currentTransform = new DOMMatrix(getComputedStyle(catElement).transform);
+          const currentTransform = new DOMMatrix(
+            getComputedStyle(catElement).transform
+          );
           const currentX = currentTransform.m41;
           const currentY = currentTransform.m42;
           const driftFactor = 0.1;
@@ -211,7 +215,7 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
         document.removeEventListener('mousemove', handleMouseMove);
         cancelAnimationFrame(animationFrameId);
       };
-    }, [lastHeart, catRef, isPouncing, pounceTarget]);
+    }, [lastHeart, catRef, isPouncing, pounceTarget, wandMode]);
 
     const containerClasses = [
       isPetting ? 'is-petting' : '',
