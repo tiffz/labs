@@ -6,18 +6,37 @@ function App() {
   const [treatsPerClick, setTreatsPerClick] = useState(1);
   const [treatsPerSecond, setTreatsPerSecond] = useState(0);
   const [isPetting, setIsPetting] = useState(false);
+  const [lastClickTime, setLastClickTime] = useState(0);
+  const [wiggleDuration, setWiggleDuration] = useState<number | null>(null);
 
   const handleCatClick = () => {
     setTreats(treats + treatsPerClick);
     setIsPetting(true);
     setTimeout(() => setIsPetting(false), 200);
+
+    const now = Date.now();
+    const interval = now - lastClickTime;
+
+    if (interval < 300) { // Fast click detected
+      // Map the click interval (50ms-300ms) to an animation duration (0.4s-1.0s)
+      const clampedInterval = Math.max(50, Math.min(interval, 300));
+      // Faster click (smaller interval) -> shorter duration
+      const newDuration = 0.4 + ((clampedInterval - 50) / (300 - 50)) * 0.6;
+      
+      setWiggleDuration(newDuration);
+      setTimeout(() => setWiggleDuration(null), newDuration * 1000);
+    }
+    setLastClickTime(now);
   };
 
   useEffect(() => {
-    const interval = setInterval(() => {
+    const treatInterval = setInterval(() => {
       setTreats((prevTreats) => prevTreats + treatsPerSecond);
     }, 1000);
-    return () => clearInterval(interval);
+
+    return () => {
+      clearInterval(treatInterval);
+    };
   }, [treatsPerSecond]);
 
   const handleUpgradeTreatsPerClick = () => {
@@ -45,7 +64,7 @@ function App() {
         <p>Treats per second: {treatsPerSecond}</p>
       </div>
       <div className="cat-container">
-        <Cat onClick={handleCatClick} isPetting={isPetting} />
+        <Cat onClick={handleCatClick} isPetting={isPetting} wiggleDuration={wiggleDuration} />
       </div>
       <div className="upgrades-container">
         <button onClick={handleUpgradeTreatsPerClick} disabled={treats < treatsPerClick * 10}>

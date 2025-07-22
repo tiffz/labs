@@ -3,9 +3,10 @@ import React, { useState, useEffect, useRef } from 'react';
 interface CatProps {
   onClick: () => void;
   isPetting: boolean;
+  wiggleDuration: number | null;
 }
 
-const Cat: React.FC<CatProps> = ({ onClick, isPetting }) => {
+const Cat: React.FC<CatProps> = ({ onClick, isPetting, wiggleDuration }) => {
   const [pupilsPos, setPupilsPos] = useState({ left: { x: 80, y: 80 }, right: { x: 120, y: 80 } });
   const catRef = useRef<SVGSVGElement>(null);
 
@@ -41,6 +42,13 @@ const Cat: React.FC<CatProps> = ({ onClick, isPetting }) => {
     };
   }, []);
 
+  const containerClasses = [
+    isPetting ? 'is-petting' : '',
+    wiggleDuration ? 'is-wiggling' : ''
+  ].filter(Boolean).join(' ');
+
+  const earStyle = wiggleDuration ? { animationDuration: `${wiggleDuration}s` } : {};
+
   return (
     <svg
       ref={catRef}
@@ -50,7 +58,7 @@ const Cat: React.FC<CatProps> = ({ onClick, isPetting }) => {
       onClick={onClick}
       style={{ cursor: 'pointer' }}
     >
-      <g id="cat-container" className={isPetting ? 'is-petting' : ''} transform="translate(10, 20)">
+      <g id="cat-container" className={containerClasses} transform="translate(10, 20)">
         {/* Tail */}
         <g id="tail">
           <path
@@ -75,11 +83,15 @@ const Cat: React.FC<CatProps> = ({ onClick, isPetting }) => {
           />
           {/* Left ear */}
           <path
+            id="left-ear"
+            style={earStyle}
             d="M 50 70 L 60 45 L 80 70 Z"
             fill="#212121"
           />
           {/* Right ear */}
           <path
+            id="right-ear"
+            style={earStyle}
             d="M 120 70 L 140 45 L 150 70 Z"
             fill="#212121"
           />
