@@ -40,6 +40,8 @@ function App() {
   const zzzTimeoutRef = useRef<number | null>(null);
   const [wigglingEar, setWigglingEar] = useState<'left' | 'right' | null>(null);
   const [wandMode, setWandMode] = useState(false);
+  const [isJumping, setIsJumping] = useState(false);
+  const clickTimestampsRef = useRef<number[]>([]);
   const [isShaking, setIsShaking] = useState(false);
   const [wandInitialPosition, setWandInitialPosition] = useState({ x: 0, y: 0 });
   const [isPouncing, setIsPouncing] = useState(false);
@@ -60,6 +62,32 @@ function App() {
     setTimeout(() => setIsPetting(false), 200);
 
     const now = Date.now();
+
+    // --- JUMP LOGIC ---
+    if (!wandMode && !isJumping) {
+      const JUMP_WINDOW_MS = 500; // how far back to look for clicks
+      const JUMP_CLICK_THRESHOLD = 4; // how many clicks needed to be a 'burst'
+      const JUMP_CHANCE = 0.4; // 40% chance to jump on a burst
+
+      clickTimestampsRef.current.push(now);
+      // Remove clicks that are too old to be part of the burst
+      clickTimestampsRef.current = clickTimestampsRef.current.filter(
+        (timestamp) => now - timestamp < JUMP_WINDOW_MS
+      );
+      
+      if (clickTimestampsRef.current.length >= JUMP_CLICK_THRESHOLD) {
+        if (Math.random() < JUMP_CHANCE) {
+          setTreats(current => current + treatsPerClick); // Bonus treats!
+          setIsJumping(true);
+          // Reset burst detection after a successful jump
+          clickTimestampsRef.current = [];
+          setTimeout(() => {
+            setIsJumping(false);
+          }, 500); // Duration of the jump animation
+        }
+      }
+    }
+
     const interval = now - lastClickTime;
 
     const maxHeartSize = 2.0;
@@ -467,6 +495,7 @@ function App() {
           isSleeping={isSleeping}
           isDrowsy={isDrowsy}
           isPouncing={isPouncing}
+          isJumping={isJumping}
           isPlaying={isPlaying}
           pounceTarget={pounceTarget}
           wigglingEar={wigglingEar}

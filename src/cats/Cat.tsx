@@ -9,6 +9,7 @@ interface CatProps {
   isSleeping: boolean;
   isDrowsy: boolean;
   isPouncing: boolean;
+  isJumping: boolean;
   isPlaying: boolean;
   pounceTarget: { x: number; y: number };
   wigglingEar: 'left' | 'right' | null;
@@ -31,6 +32,7 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
       isSleeping,
       isDrowsy,
       isPouncing,
+      isJumping,
       isPlaying,
       pounceTarget,
       wigglingEar,
@@ -46,6 +48,13 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
     const drowsinessState = useRef({
       startTime: 0,
       drowsinessTimer: null as number | null,
+    });
+
+    const jumpState = React.useRef({
+      startTime: 0,
+      isActive: false,
+      jumpHeight: 30,
+      duration: 500,
     });
 
     const pounceState = React.useRef({
@@ -93,6 +102,20 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
         }
       };
     }, [isDrowsy]);
+
+    useEffect(() => {
+      if (isJumping && !jumpState.current.isActive) {
+        jumpState.current = {
+          startTime: Date.now(),
+          isActive: true,
+          jumpHeight: 20 + Math.random() * 20, // Varies between 20 and 40
+          duration: 450 + Math.random() * 100, // Varies between 450ms and 550ms
+        };
+      }
+      if (!isJumping) {
+        jumpState.current.isActive = false;
+      }
+    }, [isJumping]);
 
     useEffect(() => {
       if (isPouncing && !pounceState.current.isActive) {
@@ -159,7 +182,28 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
           const currentX = currentTransform.m41;
           const currentY = currentTransform.m42;
           const driftFactor = 0.1;
-          catElement.style.transform = `translate(${currentX * (1-driftFactor)}px, ${currentY * (1-driftFactor)}px)`;
+          catElement.style.transform = `translate(${
+            currentX * (1 - driftFactor)
+          }px, ${currentY * (1 - driftFactor)}px)`;
+        } else if (jumpState.current.isActive) {
+          const progress =
+            (Date.now() - jumpState.current.startTime) / jumpState.current.duration;
+          if (progress < 1) {
+            const jumpYOffset =
+              -Math.sin(progress * Math.PI) * jumpState.current.jumpHeight;
+            catElement.style.transform = `translateY(${jumpYOffset}px)`;
+          } else {
+            jumpState.current.isActive = false;
+            catElement.style.transform = 'translateY(0px)';
+          }
+        } else {
+          // Not in wand mode, not jumping - ensure it's at rest.
+          const currentTransform = new DOMMatrix(
+            getComputedStyle(catElement).transform
+          );
+          if (currentTransform.m41 !== 0 || currentTransform.m42 !== 0) {
+            catElement.style.transform = `translate(0, 0)`;
+          }
         }
 
         // Eye Tracking
@@ -296,8 +340,24 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
             
             {/* Face */}
             <g id="face" transform="translate(0, -5)">
+              {/* Jumping Eyes */}
+              <g className={`eye-jumping ${isJumping ? '' : 'hidden'}`}>
+                <path
+                  d="M 74 82 Q 80 77, 86 82"
+                  stroke="white"
+                  strokeWidth="1.5"
+                  fill="none"
+                />
+                <path
+                  d="M 114 82 Q 120 77, 126 82"
+                  stroke="white"
+                  strokeWidth="1.5"
+                  fill="none"
+                />
+              </g>
+
               {/* Sleeping Eyes */}
-              <g className={`eye-sleeping ${isSleeping ? '' : 'hidden'}`}>
+              <g className={`eye-sleeping ${isSleeping && !isJumping ? '' : 'hidden'}`}>
                 <path
                   d="M 74 82 Q 80 87, 86 82"
                   stroke="white"
@@ -315,7 +375,7 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
               {/* Drowsy Eyes */}
               <g
                 className={`eye-drowsy ${
-                  !isSleeping && isDrowsy && isBlinking ? '' : 'hidden'
+                  !isSleeping && isDrowsy && isBlinking && !isJumping ? '' : 'hidden'
                 }`}
               >
                 <path
@@ -335,7 +395,9 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
               {/* Open Eyes */}
               <g
                 className={`eye-open ${
-                  !isSleeping && !isStartled && (!isDrowsy || !isBlinking) ? '' : 'hidden'
+                  !isSleeping && !isStartled && (!isDrowsy || !isBlinking) && !isJumping
+                    ? ''
+                    : 'hidden'
                 }`}
                 onClick={onEyeClick}
               >
@@ -362,7 +424,7 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
               {/* Startled Eyes */}
               <g
                 className={`eye-startled ${
-                  !isSleeping && isStartled ? '' : 'hidden'
+                  !isSleeping && isStartled && !isJumping ? '' : 'hidden'
                 }`}
                 onClick={onEyeClick}
               >
