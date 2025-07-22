@@ -4,6 +4,7 @@ import Cat from './Cat';
 import Heart from './Heart';
 import Zzz from './Zzz';
 import WandToy from './WandToy';
+import DevPanel from './DevPanel';
 
 interface HeartType {
   id: number;
@@ -51,13 +52,60 @@ function App() {
   const [trackableHeartId, setTrackableHeartId] = useState<number | null>(null);
   const catRef = useRef<SVGSVGElement>(null);
   const shakeTimeoutRef = useRef<number | null>(null);
-  const [wandPosition, setWandPosition] = useState({ x: 0, y: 0 });
   const pounceConfidenceRef = useRef(0);
   const lastWandPositionRef = useRef({ x: 0, y: 0 });
   const lastWandMoveTimeRef = useRef(0);
+  const lastVelocityRef = useRef(0);
+  const [energy, setEnergy] = useState(100); // Cat's energy, 0-100
+  const [isDevMode, setIsDevMode] = useState(false);
+  const [pounceConfidenceDisplay, setPounceConfidenceDisplay] = useState(0);
+  const [lastVelocityDisplay, setLastVelocityDisplay] = useState(0);
+  const [proximityMultiplierDisplay, setProximityMultiplierDisplay] = useState(1);
+  const [rapidClickCount, setRapidClickCount] = useState(0);
+
+  const energyRef = useRef(energy);
+  useEffect(() => {
+    energyRef.current = energy;
+  }, [energy]);
+
+  const wandPositionRef = useRef({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('dev') === 'true') {
+      setIsDevMode(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!wandMode) return;
+    const handleMouseMove = (event: MouseEvent) => {
+      wandPositionRef.current = { x: event.clientX, y: event.clientY };
+    };
+    document.addEventListener('mousemove', handleMouseMove);
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, [wandMode]);
+
+  // Energy regeneration
+  useEffect(() => {
+    const energyInterval = setInterval(() => {
+      // Takes ~10 mins to fully regenerate from 0
+      setEnergy(currentEnergy => Math.min(100, currentEnergy + 100 / 600));
+    }, 1000);
+
+    return () => clearInterval(energyInterval);
+  }, []);
 
   const handleCatClick = (event: React.MouseEvent) => {
-    setTreats(treats + treatsPerClick);
+    const energyMultiplier = 1 + energy / 100; // up to 2x
+    const treatsFromClick = Math.round(treatsPerClick * energyMultiplier);
+    setTreats(t => t + treatsFromClick);
+
+    // Deplete energy from petting
+    setEnergy(e => Math.max(0, e - 1));
+    
     setIsPetting(true);
     setTimeout(() => setIsPetting(false), 200);
 
@@ -67,20 +115,26 @@ function App() {
     if (!wandMode && !isJumping) {
       const JUMP_WINDOW_MS = 500; // how far back to look for clicks
       const JUMP_CLICK_THRESHOLD = 4; // how many clicks needed to be a 'burst'
-      const JUMP_CHANCE = 0.4; // 40% chance to jump on a burst
+      const JUMP_CHANCE = 0.1 + (energy / 100) * 0.5; // 10% to 60% chance based on energy
 
       clickTimestampsRef.current.push(now);
       // Remove clicks that are too old to be part of the burst
       clickTimestampsRef.current = clickTimestampsRef.current.filter(
         (timestamp) => now - timestamp < JUMP_WINDOW_MS
       );
+      if (isDevMode) {
+        setRapidClickCount(clickTimestampsRef.current.length);
+      }
       
       if (clickTimestampsRef.current.length >= JUMP_CLICK_THRESHOLD) {
         if (Math.random() < JUMP_CHANCE) {
-          setTreats(current => current + treatsPerClick); // Bonus treats!
+          setTreats(current => current + treatsFromClick); // Bonus treats!
           setIsJumping(true);
           // Reset burst detection after a successful jump
           clickTimestampsRef.current = [];
+          if (isDevMode) {
+            setRapidClickCount(0);
+          }
           setTimeout(() => {
             setIsJumping(false);
           }, 500); // Duration of the jump animation
@@ -133,7 +187,12 @@ function App() {
     if (shakeTimeoutRef.current) {
       clearTimeout(shakeTimeoutRef.current);
     }
-    pounceConfidenceRef.current += 15;
+    // Significantly increase the confidence from a direct shake action
+    pounceConfidenceRef.current += 35;
+    
+    // Shaking the toy costs a little energy
+    setEnergy(e => Math.max(0, e - 0.5));
+
     setIsShaking(false);
     requestAnimationFrame(() => {
       setIsShaking(true);
@@ -156,67 +215,107 @@ function App() {
   useEffect(() => {
     if (!wandMode) {
       pounceConfidenceRef.current = 0;
+      if (isDevMode) {
+        setPounceConfidenceDisplay(0);
+      }
       return;
     }
-
-    const handleMouseMove = (event: MouseEvent) => {
-      setWandPosition({ x: event.clientX, y: event.clientY });
-    };
-    document.addEventListener('mousemove', handleMouseMove);
 
     const pouncePlanningInterval = setInterval(() => {
       if (!catRef.current) return;
 
+      // Drain a tiny bit of energy just for keeping the cat engaged with the wand
+      setEnergy(e => Math.max(0, e - 0.05));
+
       const catRect = catRef.current.getBoundingClientRect();
       const catCenterX = catRect.left + catRect.width / 2;
       const catCenterY = catRect.top + catRect.height / 2;
+      const currentWandPosition = wandPositionRef.current;
       const distanceToCat = Math.sqrt(
-        Math.pow(wandPosition.x - catCenterX, 2) +
-          Math.pow(wandPosition.y - catCenterY, 2)
+        Math.pow(currentWandPosition.x - catCenterX, 2) +
+          Math.pow(currentWandPosition.y - catCenterY, 2)
       );
 
       // --- Confidence Calculation ---
-
-      // 1. Proximity: Closer is better. Confidence increases exponentially as the toy gets closer.
-      let proximityConfidence = 0;
-      if (distanceToCat < 300) {
-        proximityConfidence = Math.pow((300 - distanceToCat) / 50, 2);
-      }
-      
       const now = Date.now();
-      const distanceMoved = Math.sqrt(
-        Math.pow(wandPosition.x - lastWandPositionRef.current.x, 2) +
-          Math.pow(wandPosition.y - lastWandPositionRef.current.y, 2)
-      );
       const timeDelta = now - lastWandMoveTimeRef.current;
-      
-      // 2. Velocity: Faster is better.
-      let velocityConfidence = 0;
-      if (distanceMoved > 5 && timeDelta > 0) {
-        const velocity = distanceMoved / timeDelta;
-        velocityConfidence = velocity * 10; // A direct multiplier for speed
-        if (velocity > 1.2) {
-            velocityConfidence += 30; // Bonus for very fast movement
-        }
-        lastWandMoveTimeRef.current = now;
-        lastWandPositionRef.current = wandPosition;
-      }
-      
-      // Combine confidences
-      pounceConfidenceRef.current += proximityConfidence + velocityConfidence;
+      let proximityMultiplier = 1.0;
+      const veryCloseDistance = 60; // The "super interested" zone
+      const nearDistance = 220; // The "moderately interested" zone
 
-      // Decay confidence over time
+      if (distanceToCat < veryCloseDistance) {
+        // When very close, even tiny movements are exciting. Exponentially ramp up multiplier.
+        proximityMultiplier = 1 + Math.pow((veryCloseDistance - distanceToCat) / 25, 2.2);
+      } else if (distanceToCat < nearDistance) {
+        // When near, there's some interest, but not a huge boost.
+        const progress = (distanceToCat - veryCloseDistance) / (nearDistance - veryCloseDistance);
+        proximityMultiplier = 1.0 - progress * 0.7; // goes from 1.0 down to 0.3
+      } else {
+        // When far, cat is less interested, velocity is less impactful.
+        proximityMultiplier = 0.3;
+      }
+
+
+      let velocityConfidence = 0;
+      let suddenStopConfidence = 0;
+
+      // timeDelta check to avoid noisy calculations on first render or lag
+      if (timeDelta > 16) { 
+        const distanceMoved = Math.sqrt(
+          Math.pow(currentWandPosition.x - lastWandPositionRef.current.x, 2) +
+            Math.pow(currentWandPosition.y - lastWandPositionRef.current.y, 2)
+        );
+
+        const velocity = distanceMoved / timeDelta;
+        
+        // Velocity confidence is now amplified by the cat's interest (proximity)
+        if (velocity > 0.1) { 
+          // Reduced the base multiplier for velocity
+          velocityConfidence = (velocity * 10) * proximityMultiplier;
+          if (velocity > 1.8) { // Increased threshold for "fast"
+            // Reduced the bonus for fast movement
+            velocityConfidence += (20 * proximityMultiplier); 
+          }
+        }
+        
+        // Sudden Stop is also amplified by proximity
+        if (lastVelocityRef.current > 1.6 && velocity < 0.3) { // Adjusted thresholds
+            // Reduced the bonus for a sudden stop
+            suddenStopConfidence = 25 * proximityMultiplier;
+        }
+
+        // Update refs for next calculation
+        lastVelocityRef.current = velocity;
+      }
+      lastWandMoveTimeRef.current = now;
+      lastWandPositionRef.current = currentWandPosition;
+      
+      // Combine confidences. More energy makes the cat more playful.
+      const energyBoost = 1 + (energyRef.current / 100); // up to 2x confidence boost
+      const totalConfidenceGain = (velocityConfidence + suddenStopConfidence);
+      pounceConfidenceRef.current += totalConfidenceGain * energyBoost;
+
+      // Decay confidence over time. Faster decay to compensate for higher gains.
       pounceConfidenceRef.current = Math.max(
         0,
-        pounceConfidenceRef.current * 0.9
+        pounceConfidenceRef.current * 0.88 
       );
+
+      if (isDevMode) {
+        setPounceConfidenceDisplay(pounceConfidenceRef.current);
+        setLastVelocityDisplay(lastVelocityRef.current);
+        setProximityMultiplierDisplay(proximityMultiplier);
+      }
 
       // Pounce condition
       if (pounceConfidenceRef.current > 75 && !isPouncing) {
         pounceConfidenceRef.current = 0; // Reset after pouncing
 
-        const vectorX = wandPosition.x - catCenterX;
-        const vectorY = wandPosition.y - catCenterY;
+        // Pouncing costs more energy
+        setEnergy(e => Math.max(0, e - 5));
+
+        const vectorX = currentWandPosition.x - catCenterX;
+        const vectorY = currentWandPosition.y - catCenterY;
         const pounceDistance = Math.sqrt(
           vectorX * vectorX + vectorY * vectorY
         );
@@ -232,10 +331,10 @@ function App() {
 
         setPounceTarget({ x: pounceX, y: pounceY });
 
-        const treatsForPounce = Math.round(
-          treatsPerPounce + pounceDistance / 20
+        const pounceTreats = Math.round(
+          (treatsPerPounce + pounceDistance / 20) * energyBoost
         );
-        setTreats((currentTreats) => currentTreats + treatsForPounce);
+        setTreats((currentTreats) => currentTreats + pounceTreats);
 
         // Create a burst of hearts at the click location
         const newHearts: HeartType[] = [];
@@ -243,8 +342,8 @@ function App() {
         for (let i = 0; i < heartCount; i++) {
           newHearts.push({
             id: Date.now() + i,
-            x: wandPosition.x + (Math.random() - 0.5) * 40,
-            y: wandPosition.y + (Math.random() - 0.5) * 40,
+            x: currentWandPosition.x + (Math.random() - 0.5) * 40,
+            y: currentWandPosition.y + (Math.random() - 0.5) * 40,
             translateX: Math.random() * 60 - 30,
             rotation: Math.random() * 80 - 40,
             scale: Math.random() * 0.5 + 0.5,
@@ -276,14 +375,13 @@ function App() {
     }, 100);
 
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
       clearInterval(pouncePlanningInterval);
     };
   }, [
     wandMode,
     isPouncing,
     treatsPerPounce,
-    wandPosition,
+    isDevMode,
   ]);
 
   const handleEyeClick = (event: React.MouseEvent) => {
@@ -438,6 +536,15 @@ function App() {
 
   return (
     <div className="game-container">
+      {isDevMode && (
+        <DevPanel
+          energy={energy}
+          pounceConfidence={pounceConfidenceDisplay}
+          rapidClickCount={rapidClickCount}
+          lastVelocity={lastVelocityDisplay}
+          proximityMultiplier={proximityMultiplierDisplay}
+        />
+      )}
       {ReactDOM.createPortal(
         <>
           {hearts.map((heart) => (

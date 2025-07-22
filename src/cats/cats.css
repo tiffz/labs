@@ -259,4 +259,27 @@ button:disabled {
   75% {
     transform: rotate(5deg);
   }
+}
+
+.dev-panel {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 1rem;
+  border-radius: 8px;
+  font-family: monospace;
+  z-index: 1000;
+  max-width: 300px;
+}
+
+.dev-panel h3 {
+  margin-top: 0;
+  border-bottom: 1px solid #555;
+  padding-bottom: 0.5rem;
+}
+
+.dev-panel p {
+  margin: 0.5rem 0;
 } 

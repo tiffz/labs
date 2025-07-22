@@ -95,3 +95,31 @@ The interactivity of the cat has been enhanced with several advanced animations.
 
 - **Wiggle Animation:** The feather toy now has a physics-based wiggle. The faster the user moves the cursor, the more the toy will rotate and sway, adding a satisfying sense of weight and motion.
 - **Cursor Bug Fix:** A minor but distracting bug where the large default system cursor would occasionally flash has been fixed. A global CSS rule now enforces a consistent cursor style when the wand toy is active, preventing the browser from switching styles and causing the flicker. 
+
+This file documents the features and improvements made to the Cat Clicker game with the help of Gemini.
+
+### Initial Setup
+- Created the basic Cat Clicker game structure with React and TypeScript.
+- Implemented core features like treat accumulation, upgrades, and a clickable cat.
+
+### Cat Animation & Interaction
+- **SVG Animation:** Brought the cat to life with SVG and CSS animations for the head, tail, and ears.
+- **Drowsiness & Sleep:** The cat now gets drowsy and eventually falls asleep after periods of inactivity, complete with unique eye states and Zzz particles.
+- **Startled State:** Clicking the cat's eyes will startle it.
+- **Ear Wiggles:** Clicking the cat's ears makes them wiggle.
+- **Wand Toy:** Added an interactive wand toy that the cat can pounce on. The pounce logic is based on the toy's proximity and velocity, making the interaction feel more dynamic.
+- **Happy Jumps:** The cat has a chance to do a happy jump on rapid clicks, rewarding the player with bonus treats and displaying a joyful facial expression. This animation is controlled via JavaScript for fine-grained control.
+
+### Gameplay Mechanics
+- **Energy System:** A hidden energy meter was introduced to make the cat's behavior more dynamic.
+  - Energy regenerates slowly over about 10 minutes.
+  - Petting and playing with the wand deplete energy at different rates.
+  - The cat's energy level acts as a multiplier, affecting treat rewards and the probability of special actions like pouncing and jumping.
+- **Pounce Logic Overhaul:** The logic for determining when the cat pounces was significantly refined.
+  - It now uses a "proximity multiplier" that dramatically increases the cat's interest in small movements when the wand toy is very close.
+  - Confidence is gained from cursor velocity and "sudden stops," amplified by the proximity multiplier.
+  - The system is balanced to prioritize active "shakes" of the toy over passive mouse movement, making player actions more meaningful.
+
+### Developer Features
+- **Debug Mode:** A developer mode can be activated by adding `?dev=true` to the URL.
+- **Dev Panel:** When active, a panel displays real-time values for hidden mechanics like Energy, Pounce Confidence, Cursor Velocity, Proximity Multiplier, and Rapid Click Count, offering a clear view into the cat's AI. 
