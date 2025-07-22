@@ -31,13 +31,22 @@ function App() {
     const now = Date.now();
     const interval = now - lastClickTime;
 
+    const maxHeartSize = 2.0;
+    const minHeartSize = 0.5;
+    // Logarithmic growth for heart size
+    const growthFactor = 0.2;
+    const calculatedScale =
+      minHeartSize + Math.log(treatsPerClick) * growthFactor;
+    const baseScale = Math.min(calculatedScale, maxHeartSize);
+    const randomScale = baseScale + (Math.random() - 0.5) * 0.2; // Add some variation
+
     const newHeart: HeartType = {
       id: now,
       x: event.clientX,
       y: event.clientY,
       translateX: Math.random() * 40 - 20, // -20px to 20px
       rotation: Math.random() * 60 - 30, // -30deg to 30deg
-      scale: Math.random() * 0.4 + 0.8, // 0.8 to 1.2
+      scale: randomScale,
     };
     setHearts((currentHearts) => [...currentHearts, newHeart]);
 
