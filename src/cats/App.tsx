@@ -5,6 +5,7 @@ import Heart from './Heart';
 import Zzz from './Zzz';
 import WandToy from './WandToy';
 import DevPanel from './DevPanel';
+import HeartIcon from './HeartIcon';
 
 interface HeartType {
   id: number;
@@ -26,9 +27,9 @@ interface ZzzType {
 }
 
 function App() {
-  const [treats, setTreats] = useState(0);
-  const [treatsPerClick, setTreatsPerClick] = useState(1);
-  const [treatsPerSecond, setTreatsPerSecond] = useState(0);
+  const [love, setLove] = useState(0);
+  const [lovePerClick, setLovePerClick] = useState(1);
+  const [lovePerSecond, setLovePerSecond] = useState(0);
   const [isPetting, setIsPetting] = useState(false);
   const [lastClickTime, setLastClickTime] = useState(0);
   const [wiggleDuration, setWiggleDuration] = useState<number | null>(null);
@@ -48,7 +49,7 @@ function App() {
   const [isPouncing, setIsPouncing] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [pounceTarget, setPounceTarget] = useState({ x: 0, y: 0 });
-  const [treatsPerPounce, setTreatsPerPounce] = useState(3);
+  const [lovePerPounce, setLovePerPounce] = useState(3);
   const [trackableHeartId, setTrackableHeartId] = useState<number | null>(null);
   const catRef = useRef<SVGSVGElement>(null);
   const shakeTimeoutRef = useRef<number | null>(null);
@@ -100,8 +101,8 @@ function App() {
 
   const handleCatClick = (event: React.MouseEvent) => {
     const energyMultiplier = 1 + energy / 100; // up to 2x
-    const treatsFromClick = Math.round(treatsPerClick * energyMultiplier);
-    setTreats(t => t + treatsFromClick);
+    const loveFromClick = Math.round(lovePerClick * energyMultiplier);
+    setLove(t => t + loveFromClick);
 
     // Deplete energy from petting
     setEnergy(e => Math.max(0, e - 1));
@@ -128,7 +129,7 @@ function App() {
       
       if (clickTimestampsRef.current.length >= JUMP_CLICK_THRESHOLD) {
         if (Math.random() < JUMP_CHANCE) {
-          setTreats(current => current + treatsFromClick); // Bonus treats!
+          setLove(current => current + loveFromClick); // Bonus love!
           setIsJumping(true);
           // Reset burst detection after a successful jump
           clickTimestampsRef.current = [];
@@ -149,7 +150,7 @@ function App() {
     // Logarithmic growth for heart size
     const growthFactor = 0.2;
     const calculatedScale =
-      minHeartSize + Math.log(treatsPerClick) * growthFactor;
+      minHeartSize + Math.log(lovePerClick) * growthFactor;
     const baseScale = Math.min(calculatedScale, maxHeartSize);
     const randomScale = baseScale + (Math.random() - 0.5) * 0.2; // Add some variation
 
@@ -204,7 +205,7 @@ function App() {
 
     if (isPouncing) {
       setIsPlaying(true);
-      setTreats((currentTreats) => currentTreats + 1); // Subsequent clicks are worth 1
+      setLove((currentLove) => currentLove + 1); // Subsequent clicks are worth 1
       setTimeout(() => setIsPlaying(false), 300);
       return;
     }
@@ -254,7 +255,6 @@ function App() {
         // When far, cat is less interested, velocity is less impactful.
         proximityMultiplier = 0.3;
       }
-
 
       let velocityConfidence = 0;
       let suddenStopConfidence = 0;
@@ -331,10 +331,10 @@ function App() {
 
         setPounceTarget({ x: pounceX, y: pounceY });
 
-        const pounceTreats = Math.round(
-          (treatsPerPounce + pounceDistance / 20) * energyBoost
+        const pounceLove = Math.round(
+          (lovePerPounce + pounceDistance / 20) * energyBoost
         );
-        setTreats((currentTreats) => currentTreats + pounceTreats);
+        setLove((currentLove) => currentLove + pounceLove);
 
         // Create a burst of hearts at the click location
         const newHearts: HeartType[] = [];
@@ -380,7 +380,7 @@ function App() {
   }, [
     wandMode,
     isPouncing,
-    treatsPerPounce,
+    lovePerPounce,
     isDevMode,
   ]);
 
@@ -407,10 +407,10 @@ function App() {
   };
 
   const handleUpgradePounce = () => {
-    const cost = treatsPerPounce * 10;
-    if (treats >= cost) {
-      setTreats(treats - cost);
-      setTreatsPerPounce(treatsPerPounce + 5);
+    const cost = lovePerPounce * 10;
+    if (love >= cost) {
+      setLove(love - cost);
+      setLovePerPounce(lovePerPounce + 5);
     }
   };
 
@@ -498,28 +498,28 @@ function App() {
   }, [isSleeping]);
 
   useEffect(() => {
-    const treatInterval = setInterval(() => {
-      setTreats((prevTreats) => prevTreats + treatsPerSecond);
+    const loveInterval = setInterval(() => {
+      setLove((prevLove) => prevLove + lovePerSecond);
     }, 1000);
 
     return () => {
-      clearInterval(treatInterval);
+      clearInterval(loveInterval);
     };
-  }, [treatsPerSecond]);
+  }, [lovePerSecond]);
 
-  const handleUpgradeTreatsPerClick = () => {
-    const cost = treatsPerClick * 10;
-    if (treats >= cost) {
-      setTreats(treats - cost);
-      setTreatsPerClick(treatsPerClick + 1);
+  const handleUpgradeLovePerClick = () => {
+    const cost = lovePerClick * 10;
+    if (love >= cost) {
+      setLove(love - cost);
+      setLovePerClick(lovePerClick + 1);
     }
   };
 
-  const handleUpgradeTreatsPerSecond = () => {
-    const cost = (treatsPerSecond + 1) * 15;
-    if (treats >= cost) {
-      setTreats(treats - cost);
-      setTreatsPerSecond(treatsPerSecond + 1);
+  const handleUpgradeLovePerSecond = () => {
+    const cost = (lovePerSecond + 1) * 15;
+    if (love >= cost) {
+      setLove(love - cost);
+      setLovePerSecond(lovePerSecond + 1);
     }
   };
 
@@ -543,6 +543,8 @@ function App() {
           rapidClickCount={rapidClickCount}
           lastVelocity={lastVelocityDisplay}
           proximityMultiplier={proximityMultiplierDisplay}
+          lovePerClick={lovePerClick}
+          lovePerSecond={lovePerSecond}
         />
       )}
       {ReactDOM.createPortal(
@@ -584,9 +586,7 @@ function App() {
       )}
       <h1>Cat Clicker</h1>
       <div className="stats-container">
-        <p>Treats: {treats}</p>
-        <p>Treats per click: {treatsPerClick}</p>
-        <p>Treats per second: {treatsPerSecond}</p>
+        <p><HeartIcon className="love-icon" /> {love}</p>
       </div>
       <div className="cat-container">
         {wandMode && (
@@ -621,14 +621,14 @@ function App() {
         >
           {wandMode ? 'Put away wand' : 'Play with wand'}
         </button>
-        <button onClick={handleUpgradeTreatsPerClick} disabled={treats < treatsPerClick * 10}>
-          Upgrade treats per click (Cost: {treatsPerClick * 10})
+        <button onClick={handleUpgradeLovePerClick} disabled={love < lovePerClick * 10}>
+          More Love Per Pet (Cost: {lovePerClick * 10})
         </button>
-        <button onClick={handleUpgradePounce} disabled={treats < treatsPerPounce * 10}>
-          Upgrade pounce power (Cost: {treatsPerPounce * 10})
+        <button onClick={handleUpgradePounce} disabled={love < lovePerPounce * 10}>
+          More Powerful Pounces (Cost: {lovePerPounce * 10})
         </button>
-        <button onClick={handleUpgradeTreatsPerSecond} disabled={treats < (treatsPerSecond + 1) * 15}>
-          Upgrade treats per second (Cost: {(treatsPerSecond + 1) * 15})
+        <button onClick={handleUpgradeLovePerSecond} disabled={love < (lovePerSecond + 1) * 15}>
+          Passive Love Income (Cost: {(lovePerSecond + 1) * 15})
         </button>
       </div>
     </div>

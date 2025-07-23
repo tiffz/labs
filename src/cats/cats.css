@@ -261,6 +261,16 @@ button:disabled {
   }
 }
 
+.love-icon {
+  display: inline-block;
+  vertical-align: middle;
+  width: 1.2em;
+  height: 1.2em;
+  margin-right: 0.25rem;
+  position: relative;
+  top: -0.1em; /* Fine-tune vertical alignment */
+}
+
 .dev-panel {
   position: fixed;
   top: 1rem;
