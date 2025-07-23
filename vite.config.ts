@@ -21,6 +21,10 @@ export default defineConfig({
       workbox: {
         // This will cache all assets, including all your html entry points
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        // This tells the service worker to serve index.html for directory requests
+        directoryIndex: 'index.html',
+        // This is the key fix: it tells the SW to ignore all URL parameters
+        ignoreURLParametersMatching: [/.*/],
       },
       // A simple manifest is fine
       manifest: {
