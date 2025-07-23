@@ -57,6 +57,7 @@ function App() {
   const [pounceTarget, setPounceTarget] = useState({ x: 0, y: 0 });
   const [lovePerPounce, setLovePerPounce] = useState(3);
   const [trackableHeartId, setTrackableHeartId] = useState<number | null>(null);
+  const [isSmiling, setIsSmiling] = useState(false);
   const catRef = useRef<SVGSVGElement>(null);
   const shakeTimeoutRef = useRef<number | null>(null);
   const pounceConfidenceRef = useRef(0);
@@ -449,6 +450,28 @@ function App() {
     }, 500);
   };
 
+  const handleNoseClick = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    setIsSmiling(true);
+    setLove(l => l + 5); // A little bonus for a nose boop
+
+    const now = Date.now();
+    const newHeart: HeartType = {
+      id: now,
+      x: event.clientX,
+      y: event.clientY,
+      translateX: Math.random() * 20 - 10,
+      rotation: Math.random() * 20 - 10,
+      scale: 0.6,
+      animationDuration: 0.8,
+    };
+    setHearts((currentHearts) => [...currentHearts, newHeart]);
+
+    setTimeout(() => {
+      setIsSmiling(false);
+    }, 500); // Smile duration
+  };
+
   const handleUpgradePounce = () => {
     const cost = lovePerPounce * 10;
     if (love >= cost) {
@@ -663,6 +686,7 @@ function App() {
             onClick={handleCatClick}
             onEyeClick={handleEyeClick}
             onEarClick={handleEarClick}
+            onNoseClick={handleNoseClick}
             isPetting={isPetting}
             isStartled={isStartled}
             isSleeping={isSleeping}
@@ -670,6 +694,7 @@ function App() {
             isPouncing={isPouncing}
             isJumping={isJumping}
             isPlaying={isPlaying}
+            isSmiling={isSmiling}
             pounceTarget={pounceTarget}
             wigglingEar={wigglingEar}
             wiggleDuration={wiggleDuration}

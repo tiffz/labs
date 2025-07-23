@@ -4,6 +4,7 @@ interface CatProps {
   onClick: (event: React.MouseEvent) => void;
   onEyeClick: (event: React.MouseEvent) => void;
   onEarClick: (ear: 'left' | 'right', event: React.MouseEvent) => void;
+  onNoseClick: (event: React.MouseEvent) => void;
   isPetting: boolean;
   isStartled: boolean;
   isSleeping: boolean;
@@ -11,6 +12,7 @@ interface CatProps {
   isPouncing: boolean;
   isJumping: boolean;
   isPlaying: boolean;
+  isSmiling: boolean;
   pounceTarget: { x: number; y: number };
   wigglingEar: 'left' | 'right' | null;
   wiggleDuration: number | null;
@@ -27,6 +29,7 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
       onClick,
       onEyeClick,
       onEarClick,
+      onNoseClick,
       isPetting,
       isStartled,
       isSleeping,
@@ -34,6 +37,7 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
       isPouncing,
       isJumping,
       isPlaying,
+      isSmiling,
       pounceTarget,
       wigglingEar,
       wiggleDuration,
@@ -341,7 +345,7 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
             {/* Face */}
             <g id="face" transform="translate(0, -5)">
               {/* Jumping Eyes */}
-              <g className={`eye-jumping ${isJumping ? '' : 'hidden'}`}>
+              <g className={`eye-jumping ${isJumping || isSmiling ? '' : 'hidden'}`}>
                 <path
                   d="M 74 82 Q 80 77, 86 82"
                   stroke="white"
@@ -395,7 +399,7 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
               {/* Open Eyes */}
               <g
                 className={`eye-open ${
-                  !isSleeping && !isStartled && (!isDrowsy || !isBlinking) && !isJumping
+                  !isSleeping && !isStartled && (!isDrowsy || !isBlinking) && !isJumping && !isSmiling
                     ? ''
                     : 'hidden'
                 }`}
@@ -441,8 +445,14 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
                   fill="none"
                 />
               </g>
+              {/* Smile */}
               {/* Nose */}
-              <path d="M 97 90 L 103 90 L 100 94 Z" fill="white" />
+              <path
+                d="M 97 90 L 103 90 L 100 94 Z"
+                fill="white"
+                onClick={onNoseClick}
+                style={{ cursor: 'pointer' }}
+              />
             </g>
           </g>
         </g>
