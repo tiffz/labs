@@ -57,11 +57,14 @@ function App() {
   const lastWandPositionRef = useRef({ x: 0, y: 0 });
   const lastWandMoveTimeRef = useRef(0);
   const lastVelocityRef = useRef(0);
+  const velocityHistoryRef = useRef<number[]>([]);
+  const movementNoveltyRef = useRef(1.0);
   const [energy, setEnergy] = useState(100); // Cat's energy, 0-100
   const [isDevMode, setIsDevMode] = useState(false);
   const [pounceConfidenceDisplay, setPounceConfidenceDisplay] = useState(0);
   const [lastVelocityDisplay, setLastVelocityDisplay] = useState(0);
   const [proximityMultiplierDisplay, setProximityMultiplierDisplay] = useState(1);
+  const [movementNoveltyDisplay, setMovementNoveltyDisplay] = useState(1.0);
   const [rapidClickCount, setRapidClickCount] = useState(0);
 
   const energyRef = useRef(energy);
@@ -258,6 +261,7 @@ function App() {
 
       let velocityConfidence = 0;
       let suddenStopConfidence = 0;
+      let suddenStartConfidence = 0;
 
       // timeDelta check to avoid noisy calculations on first render or lag
       if (timeDelta > 16) { 
@@ -268,20 +272,39 @@ function App() {
 
         const velocity = distanceMoved / timeDelta;
         
-        // Velocity confidence is now amplified by the cat's interest (proximity)
+        // --- Boredom / Novelty Calculation ---
+        velocityHistoryRef.current.push(velocity);
+        if (velocityHistoryRef.current.length > 20) { // Look at a shorter history (~2s)
+          velocityHistoryRef.current.shift(); 
+        }
+
+        const highVelocityThreshold = 1.5;
+        const recentFastMoves = velocityHistoryRef.current.filter(v => v > highVelocityThreshold).length;
+        const historyRatio = velocityHistoryRef.current.length > 0 ? recentFastMoves / velocityHistoryRef.current.length : 0;
+        
+        if (historyRatio > 0.5) { // Lower threshold to trigger boredom
+            // If most of the recent movements were fast, the cat gets bored faster.
+            movementNoveltyRef.current = Math.max(0.1, movementNoveltyRef.current - 0.1);
+        } else {
+            // If movement is not boring, novelty regenerates faster.
+            movementNoveltyRef.current = Math.min(1.0, movementNoveltyRef.current + 0.06);
+        }
+        const movementNovelty = movementNoveltyRef.current;
+
+        // --- Confidence from Movement ---
         if (velocity > 0.1) { 
-          // Reduced the base multiplier for velocity
-          velocityConfidence = (velocity * 10) * proximityMultiplier;
-          if (velocity > 1.8) { // Increased threshold for "fast"
-            // Reduced the bonus for fast movement
-            velocityConfidence += (20 * proximityMultiplier); 
-          }
+          // Raw velocity confidence, dampened by boredom
+          velocityConfidence = (velocity * 8) * movementNovelty; 
         }
         
-        // Sudden Stop is also amplified by proximity
-        if (lastVelocityRef.current > 1.6 && velocity < 0.3) { // Adjusted thresholds
-            // Reduced the bonus for a sudden stop
-            suddenStopConfidence = 25 * proximityMultiplier;
+        // Sudden Stop bonus, amplified by proximity
+        if (lastVelocityRef.current > 1.6 && velocity < 0.3) {
+            suddenStopConfidence = (20 * proximityMultiplier);
+        }
+
+        // Sudden Start bonus, also amplified by proximity
+        if (lastVelocityRef.current < 0.4 && velocity > 1.5) {
+            suddenStartConfidence = (25 * proximityMultiplier);
         }
 
         // Update refs for next calculation
@@ -292,24 +315,27 @@ function App() {
       
       // Combine confidences. More energy makes the cat more playful.
       const energyBoost = 1 + (energyRef.current / 100); // up to 2x confidence boost
-      const totalConfidenceGain = (velocityConfidence + suddenStopConfidence);
+      const totalConfidenceGain = (velocityConfidence + suddenStopConfidence + suddenStartConfidence);
       pounceConfidenceRef.current += totalConfidenceGain * energyBoost;
 
-      // Decay confidence over time. Faster decay to compensate for higher gains.
+      // Decay confidence over time. Slower decay to reward sustained play.
       pounceConfidenceRef.current = Math.max(
         0,
-        pounceConfidenceRef.current * 0.88 
+        pounceConfidenceRef.current * 0.90
       );
 
       if (isDevMode) {
         setPounceConfidenceDisplay(pounceConfidenceRef.current);
         setLastVelocityDisplay(lastVelocityRef.current);
         setProximityMultiplierDisplay(proximityMultiplier);
+        setMovementNoveltyDisplay(movementNoveltyRef.current);
       }
 
       // Pounce condition
       if (pounceConfidenceRef.current > 75 && !isPouncing) {
         pounceConfidenceRef.current = 0; // Reset after pouncing
+        velocityHistoryRef.current = []; // Clear history after pounce
+        movementNoveltyRef.current = 1.0; // Reset boredom as well
 
         // Pouncing costs more energy
         setEnergy(e => Math.max(0, e - 5));
@@ -545,6 +571,7 @@ function App() {
           proximityMultiplier={proximityMultiplierDisplay}
           lovePerClick={lovePerClick}
           lovePerSecond={lovePerSecond}
+          movementNovelty={movementNoveltyDisplay}
         />
       )}
       {ReactDOM.createPortal(
@@ -625,7 +652,7 @@ function App() {
           More Love Per Pet (Cost: {lovePerClick * 10})
         </button>
         <button onClick={handleUpgradePounce} disabled={love < lovePerPounce * 10}>
-          More Powerful Pounces (Cost: {lovePerPounce * 10})
+          More Love From Pouncing (Cost: {lovePerPounce * 10})
         </button>
         <button onClick={handleUpgradeLovePerSecond} disabled={love < (lovePerSecond + 1) * 15}>
           Passive Love Income (Cost: {(lovePerSecond + 1) * 15})
