@@ -7,8 +7,8 @@ interface DevPanelProps {
   lastVelocity: number;
   proximityMultiplier: number;
   lovePerClick: number;
-  lovePerSecond: number;
   movementNovelty: number;
+  treatsPerSecond: number;
 }
 
 const DevPanel: React.FC<DevPanelProps> = ({
@@ -18,8 +18,8 @@ const DevPanel: React.FC<DevPanelProps> = ({
   lastVelocity,
   proximityMultiplier,
   lovePerClick,
-  lovePerSecond,
   movementNovelty,
+  treatsPerSecond,
 }) => {
   return (
     <div className="dev-panel">
@@ -46,7 +46,7 @@ const DevPanel: React.FC<DevPanelProps> = ({
         <strong>Love per Click:</strong> {lovePerClick}
       </p>
       <p>
-        <strong>Love per Second:</strong> {lovePerSecond}
+        <strong>Treats per Second:</strong> {treatsPerSecond.toFixed(2)}
       </p>
     </div>
   );

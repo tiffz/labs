@@ -2,124 +2,50 @@
 
 This document outlines the vision, architecture, and implementation details for the "Cat Clicker" micro-app. It serves as a reference for future development and ensures that Gemini can easily understand and contribute to the project.
 
-## 1. Project Overview
+## 1. Core Gameplay Loop
 
-**Cat Clicker** is an incremental game where players click on a cat to earn "treats." These treats can be spent on upgrades to increase the number of treats earned per click or to generate treats automatically over time. The game is built as a micro-app within a larger monorepo, using React, TypeScript, and Vite.
+**Cat Clicker** is an incremental game with two primary currencies:
+-   **Love (❤️):** Earned by interacting directly with the cat (petting, playing with the wand). Love is spent on upgrades that improve these direct interactions.
+-   **Treats (🐟):** Earned passively by acquiring "Day Jobs." Treats are the foundation for the game's idle progression.
 
-**Core Mechanics:**
-- **Click to Earn:** Clicking the cat generates treats.
-- **Upgrades:** Players can purchase upgrades to improve their treat-earning potential.
-- **Incremental Progress:** The game is designed to be a "clicker" or "idle" game, where progress is made through both active clicking and passive generation.
+The core loop is satirical and wholesome: the player must work a series of humorous day jobs not for themselves, but to provide a better life for their cat.
 
-## 2. Vision
+## 2. UI/UX Vision & Design System
 
-The long-term vision for Cat Clicker is to create a game that feels like a blend of **Neopets, Pokémon, and Cookie Clicker**, with a focus on collecting and caring for virtual cats.
+The application's design is heavily inspired by **Google's Material Design 3 (M3)** system. The goal is a clean, modern, and professional UI that feels intuitive and delightful to use.
 
-**Future Features:**
-- **Cat Collection:** Players will be able to collect different types of cats, each with unique appearances and abilities.
-- **Customization:** Cats will be customizable with different markings, colors, and accessories.
-- **Animations:** The SVG cats will feature more advanced animations, such as blinking, smiling, and other expressions.
-- **Mini-Games:** Players will be able to interact with their cats through mini-games and other activities.
+-   **Layout:** The game uses a responsive two-panel layout. The left panel is for direct cat interaction, while the right panel is dedicated to the "Day Job" progression system.
+-   **Component Styling:** All interactive elements, such as buttons and panels, are styled according to M3 specifications, using appropriate color palettes, corner radiuses, and elevation shadows.
+-   **Typography & Spacing:** The application follows M3's type scale and spacing guidelines to ensure visual harmony and readability.
 
-## 3. SVG Graphics Implementation
-
-The cat is rendered as a modular SVG in the `Cat.tsx` component, allowing for easy customization and animation.
-
-**Key Features:**
-- **Modular Design:** The SVG is composed of separate groups for the `head`, `body`, `tail`, and `face`. This makes it easy to animate individual parts of the cat.
-- **Component-Based:** The entire cat is a self-contained React component, making it easy to manage and reuse.
-- **Dynamic Properties:** The component accepts props like `isPetting` to trigger different animations and states.
-
-## 4. Animations and Interactivity
-
-The cat's animations and interactivity are handled through a combination of CSS and React.
-
-- **CSS Animations:** The `cats.css` file contains keyframe animations for the `head-bob` and `tail-wag`. These are applied to the corresponding SVG groups to bring the cat to life.
-- **Petting Animation:** When the cat is clicked, the `is-petting` class is added to the SVG container, triggering a more enthusiastic head-bob animation.
-- **Eye Following:** The `Cat.tsx` component uses a `mousemove` event listener to track the user's cursor. It then calculates the appropriate position for the pupils and updates the SVG in real-time, creating the illusion that the cat is following the mouse. 
-
-## 5. Advanced Animations and Lessons Learned
-
-The interactivity of the cat has been enhanced with several advanced animations. Here's a breakdown of how they work and the key lessons learned during their implementation:
-
-### Heart Animation
-
-- **Functionality:** When the user clicks the cat, a heart emoji flies from the cursor's position. Each heart has a randomized trajectory, rotation, and scale to feel more dynamic.
-- **Implementation:** The hearts are rendered into a separate `div` at the root of the document using a React Portal (`ReactDOM.createPortal`).
-- **Caveat:** Originally, the hearts were rendered inside the main game container. This caused a "jerking" layout shift whenever a heart was added or removed. **Lesson Learned:** For animations that shouldn't affect the layout, always render them in a separate, isolated container using a portal.
-
-### Eye Tracking and Smoothing
-
-- **Functionality:** The cat's eyes follow the user's cursor. When a heart appears, the eyes will smoothly transition to follow the heart as it floats up. Once the heart is gone, the eyes will smoothly transition back to tracking the cursor.
-- **Implementation:** The eye movement is handled by a `requestAnimationFrame` loop in `Cat.tsx`. This loop uses linear interpolation (lerp) to smoothly move the pupils towards their target.
-- **Dynamic Smoothing:** The "lerp factor," which controls the smoothing, is dynamic. It's high for fast, responsive tracking of the cursor and temporarily becomes low when the target changes (from cursor to heart, or back). This creates a graceful, eased transition without making the normal tracking feel sluggish.
-- **Caveat:** A constant lerp factor felt either too slow for the cursor or too jerky for transitions. **Lesson Learned:** For animations that need to be both responsive and smooth, a dynamic smoothing factor is essential.
-- **State Management Caveat:** A persistent bug caused the eye-tracking to "freeze" after a pounce. The root cause was a state management issue where the game would get stuck trying to track a heart that no longer existed. The `lastHeart` state was not being properly cleared. **Lesson Learned:** When multiple systems (like heart-tracking and cursor-tracking) compete for control, they must be managed with an explicit and robust state system. The final solution involved creating a `trackableHeartId` to ensure only one heart could ever be the target, and explicitly clearing this ID to return control to the cursor.
-
-### Startled Face Animation
-
-- **Functionality:** If the user clicks on the cat's eyes, the cat will make a "startled" face (`>.<`) for a brief moment. This animation is rate-limited to prevent a jarring "flashing" effect on rapid clicks.
-- **Implementation:** The eye graphics are separated into groups for "open" and "startled." The `onEyeClick` handler is attached to the parent group to ensure the entire eye is clickable.
-- **Smooth Transition:** The transition between the open and startled eyes is handled with a fast CSS opacity fade. A previous attempt to use a `scaleY` transform felt unnatural. **Lesson Learned:** For simple state swaps, a quick fade can often feel better than a more complex transform.
-- **Caveat:** Clicks were not registering on the pupils, only on the whites of the eyes. **Lesson Learned:** Ensure that click handlers are attached to the parent group of a compound SVG element to make the entire shape clickable. 
-
-### Wand Toy Interaction
-
-- **Functionality:** The user can enter "Wand Toy Mode," which makes a feather toy appear and follow the cursor. Clicking near the cat will cause the toy to shake and the cat to pounce towards it, rewarding the player with a burst of hearts and a higher treat count.
-- **Organic Interaction:** To make the interaction feel more natural, the cat's animations are stateful:
-    - The cat commits to its pounce and won't re-pounce if the toy is clicked again.
-    - Subsequent clicks while the cat is pouncing will cause it to enter a "playing" state (a gentle wiggle) instead of a frantic, repeated jump.
-- **Implementation:** The feature is managed by several states in `App.tsx` (`wandMode`, `isPouncing`, `isPlaying`). The pounce is a CSS animation that uses custom properties (`--pounce-x`, `--pounce-y`) to dynamically direct the jump towards the toy.
-- **Click Area:** The clickable area for the wand toy is a larger, invisible `div` that surrounds the cat. This ensures that clicks *near* the cat trigger the pounce, not just clicks *on* the cat.
-- **Caveat:** Early implementations of this feature caused several regressions, including incorrect click areas and broken eye-tracking. **Lesson Learned:** When adding new, complex features, it's crucial to be mindful of how they interact with existing systems. Passing component references (`ref`s) as standard props instead of using `React.forwardRef` can sometimes be a simpler and more robust solution. 
- 
-### Immersive Sleeping State
-
-- **Functionality:** To make the transition to sleep feel more natural, the cat now has a "drowsy" phase. For 10 seconds before falling asleep, the cat will start to blink. The blinks are slow and occasional at first, becoming more frequent and lasting longer as the cat gets closer to sleep.
-- **Implementation:** A new `isDrowsy` state was added to `App.tsx`, which is triggered by a 20-second inactivity timer. This state activates a blinking effect in `Cat.tsx`, which is controlled by a `setTimeout` loop that progressively shortens the blink interval and lengthens the blink duration.
-
-### Intelligent Pounce Planning
-
-- **Functionality:** The cat's pounce is no longer a direct reaction to a click. Instead, the cat has an internal "pounce confidence" meter and decides for itself when to strike, creating a more organic and cat-like interaction.
-- **Confidence System:** The cat's excitement is influenced by several factors:
-    - **Proximity:** The closer the wand toy is to the cat, the higher the baseline excitement.
-    - **Velocity:** Rapid movement of the toy is a major contributor to confidence. A fast-moving toy can trigger a pounce even without any clicks.
-    - **Player Clicks:** Each click on the toy provides a direct boost to the confidence meter.
-- **Dynamic Pounce Animation:** To make the pounces less repetitive, several randomization factors were introduced:
-    - The arc, duration, distance, and trajectory of each pounce are all slightly randomized.
-- **Dynamic Rewards:** The rewards for a successful pounce are now based on the distance the cat traveled.
-    - **Treats:** Longer pounces award more treats.
-    - **Hearts:** The number of hearts in the celebratory burst also scales with the pounce distance.
-
-### Wand Toy Physics & UI Polish
-
-- **Wiggle Animation:** The feather toy now has a physics-based wiggle. The faster the user moves the cursor, the more the toy will rotate and sway, adding a satisfying sense of weight and motion.
-- **Cursor Bug Fix:** A minor but distracting bug where the large default system cursor would occasionally flash has been fixed. A global CSS rule now enforces a consistent cursor style when the wand toy is active, preventing the browser from switching styles and causing the flicker. 
-
-This file documents the features and improvements made to the Cat Clicker game with the help of Gemini.
-
-### Initial Setup
-- Created the basic Cat Clicker game structure with React and TypeScript.
-- Implemented core features like treat accumulation, upgrades, and a clickable cat.
+## 3. Key Features & Mechanics
 
 ### Cat Animation & Interaction
-- **SVG Animation:** Brought the cat to life with SVG and CSS animations for the head, tail, and ears.
-- **Drowsiness & Sleep:** The cat now gets drowsy and eventually falls asleep after periods of inactivity, complete with unique eye states and Zzz particles.
-- **Startled State:** Clicking the cat's eyes will startle it.
-- **Ear Wiggles:** Clicking the cat's ears makes them wiggle.
-- **Wand Toy:** Added an interactive wand toy that the cat can pounce on. The pounce logic is based on the toy's proximity and velocity, making the interaction feel more dynamic.
-- **Happy Jumps:** The cat has a chance to do a happy jump on rapid clicks, rewarding the player with bonus treats and displaying a joyful facial expression. This animation is controlled via JavaScript for fine-grained control.
+-   **SVG Cat:** The cat is a modular SVG, allowing for individual parts like the head, tail, and eyes to be animated independently.
+-   **Dynamic States:** The cat has multiple states, including `petting`, `drowsy`, `sleeping`, `startled`, and `pouncing`, each with unique animations and behaviors.
+-   **Happy Jumps:** Rapidly petting the cat has a chance to trigger a "happy jump," which rewards bonus Love and features a joyful `^^` eye expression.
 
-### Gameplay Mechanics
-- **Energy System:** A hidden energy meter was introduced to make the cat's behavior more dynamic.
-  - Energy regenerates slowly over about 10 minutes.
-  - Petting and playing with the wand deplete energy at different rates.
-  - The cat's energy level acts as a multiplier, affecting treat rewards and the probability of special actions like pouncing and jumping.
-- **Pounce Logic Overhaul:** The logic for determining when the cat pounces was significantly refined.
-  - It now uses a "proximity multiplier" that dramatically increases the cat's interest in small movements when the wand toy is very close.
-  - Confidence is gained from cursor velocity and "sudden stops," amplified by the proximity multiplier.
-  - The system is balanced to prioritize active "shakes" of the toy over passive mouse movement, making player actions more meaningful.
+### Advanced Pounce Logic
+The logic for the wand toy interaction is designed to feel organic and skillful, rewarding players who play like they would with a real cat.
+-   **Pounce Confidence:** The cat has an internal "pounce confidence" meter that is influenced by player actions.
+-   **Proximity Multiplier:** The cat becomes hyper-focused when the toy is close, dramatically amplifying the excitement from small, twitchy movements.
+-   **Movement Novelty:** The cat gets "bored" of repetitive, high-speed movements (like circling the mouse). To keep the cat engaged, the player must use varied, jerky motions that mimic prey.
+-   **Sudden Start/Stop Bonuses:** The cat is most excited by sudden changes in velocity, rewarding the player for skillful, unpredictable play.
 
-### Developer Features
-- **Debug Mode:** A developer mode can be activated by adding `?dev=true` to the URL.
-- **Dev Panel:** When active, a panel displays real-time values for hidden mechanics like Energy, Pounce Confidence, Cursor Velocity, Proximity Multiplier, and Rapid Click Count, offering a clear view into the cat's AI. 
+### Dual-Currency System
+-   **Love (❤️):** The primary "active" currency. The main upgrades, like "More Love Per Pet," are purchased with Love.
+-   **Treats (🐟):** The primary "idle" currency. The `treats` counter is a passive resource that will be used for future upgrades.
+
+### "Day Job" Progression
+-   **Satirical Theme:** The idle mechanic is framed as the player getting a series of absurd day jobs to earn money for their cat.
+-   **Progression Ladder:** Each job has multiple promotion levels (e.g., from "Unpaid Intern" to "VP of Corrugation" at the Box Factory).
+-   **Idle Income:** Each promotion level increases the player's passive `Treats per second`.
+
+### Developer Mode
+-   **Activation:** Appending `?dev=true` to the URL activates a debug panel.
+-   **Live Data:** The panel provides a real-time view of the game's hidden mechanics, including the cat's `Energy`, `Pounce Confidence`, `Cursor Velocity`, `Proximity Multiplier`, and `Movement Novelty`. This was instrumental in tuning the game's feel.
+
+### Technical Architecture
+-   **Multi-Page App Setup:** The project is configured as a multi-page application within Vite, with separate HTML entry points for different "labs."
+-   **Service Worker:** A PWA service worker is configured for offline caching. Crucially, it is set up to handle a multi-page app structure correctly, using `directoryIndex` and `ignoreURLParametersMatching` to serve the right pages and avoid caching bugs. This was a significant technical hurdle that required careful debugging.
+-   **Reusable Components:** Key UI elements, like the `HeartIcon` and `FishIcon`, are built as reusable React components to ensure visual consistency. 

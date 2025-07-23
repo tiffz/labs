@@ -1,12 +1,14 @@
-/* Custom styles for Cat Clicker */
+/* General Body & Layout */
 body {
-    font-family: sans-serif;
-    background-color: #f0f0f0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    margin: 0;
+  font-family: 'Roboto', sans-serif; /* M3 default font */
+  background-color: #fef7ff; /* M3 Surface color */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  margin: 0;
+  padding: 1rem; /* M3 edge-to-edge padding */
+  box-sizing: border-box;
 }
 
 body.wand-mode-active,
@@ -14,16 +16,108 @@ body.wand-mode-active * {
   cursor: default !important;
 }
 
+/* Main Game Container - Follows M3 Card/Surface guidelines */
 .game-container {
-    text-align: center;
-    background-color: white;
-    padding: 2rem;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: flex-start;
+  gap: 24px; /* M3 spacing token */
+  background-color: #fef7ff; /* M3 Surface */
+  padding: 0; /* Let children handle padding */
+  border-radius: 12px; /* M3 medium radius */
+  box-shadow: none; /* Let panels handle their own elevation */
+  width: 100%;
+  max-width: 1200px;
 }
 
+/* Main Panel (Cat) */
+.main-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-grow: 1; /* Take up more space */
+  width: 500px;
+  max-width: 500px;
+}
+
+/* Job Panel (Right Column) */
+.job-panel {
+  flex-shrink: 0;
+  width: 340px;
+  background-color: #fffbff; /* M3 Surface Container */
+  border: 1px solid #cac4d0; /* M3 Outline */
+  border-radius: 12px; /* M3 medium radius */
+  padding: 16px; /* M3 spacing */
+  height: auto; /* Let content define height */
+}
+
+.job-panel h3 {
+  font-size: 1.5rem; /* M3 Headline Small */
+  font-weight: 400;
+  margin: 0 0 16px 0;
+  text-align: center;
+  border-bottom: 1px solid #cac4d0; /* M3 Outline */
+  padding-bottom: 16px;
+}
+
+.job-panel-intro {
+  font-size: 0.875rem; /* M3 Body Medium */
+  color: #49454f; /* M3 On-Surface-Variant */
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.job {
+  border-top: 1px solid #e7e0ec; /* M3 Outline Variant */
+  padding-top: 16px;
+  margin-top: 16px;
+}
+.job:first-of-type {
+  border-top: none;
+  margin-top: 0;
+}
+
+.job h4 {
+  font-size: 1rem; /* M3 Title Medium */
+  font-weight: 500;
+  margin: 0 0 8px 0;
+  color: #1d1b20; /* M3 On-Surface */
+}
+
+.job p {
+  margin: 4px 0;
+  font-size: 0.875rem; /* M3 Body Medium */
+  color: #49454f; /* M3 On-Surface-Variant */
+}
+
+/* M3 Outlined Button style for Job Promotions */
+.job-action button {
+  width: 100%;
+  margin-top: 12px;
+  font-size: 0.875rem; /* M3 Label Large */
+  font-weight: 500;
+  line-height: 1.4;
+  padding: 10px 24px;
+  border: 1px solid #79747e; /* M3 Outline */
+  border-radius: 20px; /* Full pill shape */
+  background-color: transparent;
+  color: #6750a4; /* M3 Primary */
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.job-action button:hover {
+  background-color: rgba(103, 80, 164, 0.08); /* M3 Primary hover state layer */
+}
+.job-action button:disabled {
+  border-color: rgba(28, 27, 31, 0.12); /* M3 disabled outline */
+  color: rgba(28, 27, 31, 0.38); /* M3 disabled text */
+  background-color: transparent;
+  cursor: not-allowed;
+}
+
+
+/* Cat & Stats Styling */
 .cat-container {
-    margin: 2rem 0;
+    margin: 24px 0; /* M3 spacing */
     position: relative;
 }
 
@@ -48,53 +142,63 @@ body.wand-mode-active * {
     transform: scale(0.9);
 }
 
-.treat-counter {
-    font-size: 1.5rem;
-}
-
 .stats-container {
-    margin-bottom: 1rem;
+    margin-bottom: 16px;
+    text-align: center;
+}
+.stats-container p {
+  font-size: 1.25rem; /* M3 Title Large */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 8px 0;
+  color: #1d1b20; /* M3 On-Surface */
 }
 
 .upgrades-container {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    margin-top: 2rem;
+    gap: 8px; /* M3 spacing */
+    margin-top: 16px;
     position: relative;
     z-index: 20;
+    width: 100%;
+    max-width: 300px;
 }
 
-button {
-    padding: 0.5rem 1rem;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-    background-color: #eee;
+/* M3 Filled Button style for main upgrades */
+.upgrades-container button {
+    padding: 10px 24px;
+    border-radius: 20px; /* Full pill shape */
+    border: none;
+    background-color: #6750a4; /* M3 Primary */
+    color: #ffffff; /* M3 On-Primary */
     cursor: pointer;
+    font-size: 0.875rem; /* M3 Label Large */
+    font-weight: 500;
     transition: background-color 0.2s;
 }
 
-button:hover:not(:disabled) {
-    background-color: #ddd;
+.upgrades-container button:hover:not(:disabled) {
+    background-color: #5e4894; /* Darker shade for hover */
 }
 
-button:disabled {
+.upgrades-container button:disabled {
     cursor: not-allowed;
-    opacity: 0.5;
+    background-color: rgba(28, 27, 31, 0.12); /* M3 disabled container */
+    color: rgba(28, 27, 31, 0.38); /* M3 disabled text */
+    opacity: 1; /* Remove default opacity */
 }
+
 
 .cat-svg {
   width: 250px;
   height: auto;
   overflow: visible;
 }
-
 .cat-svg #cat-container {
   transform-origin: 100px 110px;
   transition: transform 0.1s ease-in-out;
-}
-
-.cat-svg #cat-container:active {
 }
 
 #head {
@@ -118,16 +222,16 @@ button:disabled {
     z-index: 100;
   }
   
-  @keyframes fly-up {
-    0% {
-      transform: translateY(0) translateX(0) rotate(0) scale(var(--scale));
-      opacity: 1;
-    }
-    100% {
-      transform: translateY(-100px) translateX(var(--translate-x)) rotate(var(--rotation)) scale(var(--scale));
-      opacity: 0;
-    }
+@keyframes fly-up {
+  0% {
+    transform: translateY(0) translateX(0) rotate(0) scale(var(--scale));
+    opacity: 1;
   }
+  100% {
+    transform: translateY(-100px) translateX(var(--translate-x)) rotate(var(--rotation)) scale(var(--scale));
+    opacity: 0;
+  }
+}
 
 @keyframes head-bob {
   0%,
@@ -259,47 +363,39 @@ button:disabled {
   75% {
     transform: rotate(5deg);
   }
-}
+} 
 
 .love-icon {
   display: inline-block;
   vertical-align: middle;
   width: 1.2em;
   height: 1.2em;
-  margin-right: 0.25rem;
+  margin-right: 8px; /* M3 Spacing */
   position: relative;
   top: -0.1em; /* Fine-tune vertical alignment */
 }
 
+.treat-icon {
+  display: inline-block;
+  vertical-align: middle;
+  width: 1.2em;
+  height: 1.2em;
+  margin-right: 8px; /* M3 Spacing */
+  position: relative;
+  top: -0.1em;
+}
+
 .cat-fact-container {
-  margin: 1rem auto;
-  padding: 0 1rem;
-  max-width: 500px;
+  margin: 8px auto 16px; /* M3 spacing */
+  padding: 0 16px;
+  max-width: 400px; /* Reduced for better readability */
   font-style: italic;
-  color: #555;
+  color: #49454f; /* M3 On-Surface-Variant */
   text-align: center;
-  min-height: 4em; /* Prevent layout shift when fact length changes */
-}
-
-.dev-panel {
-  position: fixed;
-  top: 1rem;
-  right: 1rem;
-  background-color: rgba(0, 0, 0, 0.8);
-  color: white;
-  padding: 1rem;
-  border-radius: 8px;
-  font-family: monospace;
-  z-index: 1000;
-  max-width: 300px;
-}
-
-.dev-panel h3 {
-  margin-top: 0;
-  border-bottom: 1px solid #555;
-  padding-bottom: 0.5rem;
-}
-
-.dev-panel p {
-  margin: 0.5rem 0;
+  height: 4em; /* Set a fixed height */
+  display: flex; /* Use flexbox for alignment */
+  align-items: center; /* Vertically center */
+  justify-content: center; /* Horizontally center */
+  width: 100%;
+  box-sizing: border-box;
 } 

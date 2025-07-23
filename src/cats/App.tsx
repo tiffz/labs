@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import ReactDOM from 'react-dom';
 import Cat from './Cat';
 import Heart from './Heart';
@@ -6,8 +6,11 @@ import Zzz from './Zzz';
 import WandToy from './WandToy';
 import DevPanel from './DevPanel';
 import HeartIcon from './HeartIcon';
+import FishIcon from './FishIcon';
 import CatFact from './CatFact';
+import JobPanel from './JobPanel';
 import { catFacts } from './catFacts';
+import { jobData } from './jobData';
 
 interface HeartType {
   id: number;
@@ -31,7 +34,8 @@ interface ZzzType {
 function App() {
   const [love, setLove] = useState(0);
   const [lovePerClick, setLovePerClick] = useState(1);
-  const [lovePerSecond, setLovePerSecond] = useState(0);
+  const [treats, setTreats] = useState(0);
+  const [jobLevels, setJobLevels] = useState<{ [key: string]: number }>({});
   const [isPetting, setIsPetting] = useState(false);
   const [lastClickTime, setLastClickTime] = useState(0);
   const [wiggleDuration, setWiggleDuration] = useState<number | null>(null);
@@ -68,7 +72,17 @@ function App() {
   const [proximityMultiplierDisplay, setProximityMultiplierDisplay] = useState(1);
   const [movementNoveltyDisplay, setMovementNoveltyDisplay] = useState(1.0);
   const [rapidClickCount, setRapidClickCount] = useState(0);
-  const [currentFact, setCurrentFact] = useState(catFacts[Math.floor(Math.random() * catFacts.length)]);
+  const [currentFact] = useState(catFacts[Math.floor(Math.random() * catFacts.length)]);
+
+  const treatsPerSecond = useMemo(() => {
+    return jobData.reduce((total, job) => {
+      const currentLevel = jobLevels[job.id] || 0;
+      if (currentLevel > 0) {
+        return total + job.levels[currentLevel - 1].treatsPerSecond;
+      }
+      return total;
+    }, 0);
+  }, [jobLevels]);
 
   const energyRef = useRef(energy);
   useEffect(() => {
@@ -495,12 +509,23 @@ function App() {
         clearTimeout(zzzTimeoutRef.current);
       }
       zzzTimeoutRef.current = window.setTimeout(() => {
+        // Calculate position right before spawning
+        let spawnX = window.innerWidth / 2;
+        let spawnY = window.innerHeight / 2 - 20;
+
+        if (catRef.current) {
+          const catRect = catRef.current.getBoundingClientRect();
+          // Approximate position of the cat's head within the SVG
+          spawnX = catRect.left + catRect.width * 0.5;
+          spawnY = catRect.top + catRect.height * 0.2;
+        }
+
         setZzzs((currentZzzs) => [
           ...currentZzzs,
           {
             id: Date.now(),
-            x: window.innerWidth / 2 + Math.random() * 20 - 10,
-            y: window.innerHeight / 2 - 20 + Math.random() * 10,
+            x: spawnX + (Math.random() * 40 - 20),
+            y: spawnY + (Math.random() * 20 - 10),
             translateX: Math.random() * 40 - 20,
             rotation: Math.random() * 60 - 30,
             scale: Math.random() * 0.4 + 0.8,
@@ -527,23 +552,14 @@ function App() {
   }, [isSleeping]);
 
   useEffect(() => {
-    const factInterval = setInterval(() => {
-      const randomIndex = Math.floor(Math.random() * catFacts.length);
-      setCurrentFact(catFacts[randomIndex]);
-    }, 20000); // Change fact every 20 seconds
-
-    return () => clearInterval(factInterval);
-  }, []);
-
-  useEffect(() => {
-    const loveInterval = setInterval(() => {
-      setLove((prevLove) => prevLove + lovePerSecond);
+    const treatInterval = setInterval(() => {
+      setTreats((prevTreats) => prevTreats + treatsPerSecond);
     }, 1000);
 
     return () => {
-      clearInterval(loveInterval);
+      clearInterval(treatInterval);
     };
-  }, [lovePerSecond]);
+  }, [treatsPerSecond]);
 
   const handleUpgradeLovePerClick = () => {
     const cost = lovePerClick * 10;
@@ -553,11 +569,20 @@ function App() {
     }
   };
 
-  const handleUpgradeLovePerSecond = () => {
-    const cost = (lovePerSecond + 1) * 15;
-    if (love >= cost) {
-      setLove(love - cost);
-      setLovePerSecond(lovePerSecond + 1);
+  const handlePromotion = (jobId: string) => {
+    const currentLevel = jobLevels[jobId] || 0;
+    const job = jobData.find(j => j.id === jobId);
+    if (!job || currentLevel >= job.levels.length) {
+      return; // Job not found or max level
+    }
+
+    const promotionCost = job.levels[currentLevel].cost;
+    if (love >= promotionCost) {
+      setLove(l => l - promotionCost);
+      setJobLevels(prevLevels => ({
+        ...prevLevels,
+        [jobId]: currentLevel + 1,
+      }));
     }
   };
 
@@ -582,8 +607,8 @@ function App() {
           lastVelocity={lastVelocityDisplay}
           proximityMultiplier={proximityMultiplierDisplay}
           lovePerClick={lovePerClick}
-          lovePerSecond={lovePerSecond}
           movementNovelty={movementNoveltyDisplay}
+          treatsPerSecond={treatsPerSecond}
         />
       )}
       {ReactDOM.createPortal(
@@ -623,54 +648,58 @@ function App() {
         </>,
         document.getElementById('heart-container')!
       )}
-      <h1>Cat Clicker</h1>
-      <div className="stats-container">
-        <p><HeartIcon className="love-icon" /> {love}</p>
+      <div className="main-panel">
+        <div className="stats-container">
+          <p><HeartIcon className="love-icon" /> {love.toFixed(0)}</p>
+          <p><FishIcon className="treat-icon" /> {treats.toFixed(0)}</p>
+        </div>
+        <CatFact fact={currentFact} />
+        <div className="cat-container">
+          {wandMode && (
+            <div className="wand-click-area" onClick={handleWandClick} />
+          )}
+          <Cat
+            ref={catRef}
+            onClick={handleCatClick}
+            onEyeClick={handleEyeClick}
+            onEarClick={handleEarClick}
+            isPetting={isPetting}
+            isStartled={isStartled}
+            isSleeping={isSleeping}
+            isDrowsy={isDrowsy}
+            isPouncing={isPouncing}
+            isJumping={isJumping}
+            isPlaying={isPlaying}
+            pounceTarget={pounceTarget}
+            wigglingEar={wigglingEar}
+            wiggleDuration={wiggleDuration}
+            lastHeart={lastHeart}
+            wandMode={wandMode}
+          />
+        </div>
+        <div className="upgrades-container">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setWandMode(!wandMode);
+              setWandInitialPosition({ x: e.clientX, y: e.clientY });
+            }}
+          >
+            {wandMode ? 'Put away wand' : 'Play with wand'}
+          </button>
+          <button onClick={handleUpgradeLovePerClick} disabled={love < lovePerClick * 10}>
+            More Love Per Pet (Cost: {lovePerClick * 10})
+          </button>
+          <button onClick={handleUpgradePounce} disabled={love < lovePerPounce * 10}>
+            More Love From Pouncing (Cost: {lovePerPounce * 10})
+          </button>
+        </div>
       </div>
-      <CatFact fact={currentFact} />
-      <div className="cat-container">
-        {wandMode && (
-          <div className="wand-click-area" onClick={handleWandClick} />
-        )}
-        <Cat
-          ref={catRef}
-          onClick={handleCatClick}
-          onEyeClick={handleEyeClick}
-          onEarClick={handleEarClick}
-          isPetting={isPetting}
-          isStartled={isStartled}
-          isSleeping={isSleeping}
-          isDrowsy={isDrowsy}
-          isPouncing={isPouncing}
-          isJumping={isJumping}
-          isPlaying={isPlaying}
-          pounceTarget={pounceTarget}
-          wigglingEar={wigglingEar}
-          wiggleDuration={wiggleDuration}
-          lastHeart={lastHeart}
-          wandMode={wandMode}
-        />
-      </div>
-      <div className="upgrades-container">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setWandMode(!wandMode);
-            setWandInitialPosition({ x: e.clientX, y: e.clientY });
-          }}
-        >
-          {wandMode ? 'Put away wand' : 'Play with wand'}
-        </button>
-        <button onClick={handleUpgradeLovePerClick} disabled={love < lovePerClick * 10}>
-          More Love Per Pet (Cost: {lovePerClick * 10})
-        </button>
-        <button onClick={handleUpgradePounce} disabled={love < lovePerPounce * 10}>
-          More Love From Pouncing (Cost: {lovePerPounce * 10})
-        </button>
-        <button onClick={handleUpgradeLovePerSecond} disabled={love < (lovePerSecond + 1) * 15}>
-          Passive Love Income (Cost: {(lovePerSecond + 1) * 15})
-        </button>
-      </div>
+      <JobPanel
+        jobLevels={jobLevels}
+        onPromote={handlePromotion}
+        currentLove={love}
+      />
     </div>
   );
 }
