@@ -1,4 +1,4 @@
-import React, { useRef, useLayoutEffect } from 'react';
+import React, { useRef } from 'react';
 import HeartIcon from './HeartIcon';
 import './cats.css';
 
@@ -9,7 +9,7 @@ interface HeartProps {
   rotation: number;
   scale: number;
   animationDuration: number;
-  onMount?: (el: HTMLDivElement) => void;
+  onAnimationEnd: () => void;
 }
 
 const Heart: React.FC<HeartProps> = ({
@@ -19,15 +19,9 @@ const Heart: React.FC<HeartProps> = ({
   rotation,
   scale,
   animationDuration,
-  onMount,
+  onAnimationEnd,
 }) => {
   const ref = useRef<HTMLDivElement>(null);
-
-  useLayoutEffect(() => {
-    if (ref.current && onMount) {
-      onMount(ref.current);
-    }
-  }, [onMount]);
 
   return (
     <div
@@ -40,9 +34,10 @@ const Heart: React.FC<HeartProps> = ({
           '--translate-x': `${translateX}px`,
           '--rotation': `${rotation}deg`,
           '--scale': scale,
-          '--animation-duration': `${animationDuration}s`,
+          animationDuration: `${animationDuration}s`,
         } as React.CSSProperties
       }
+      onAnimationEnd={onAnimationEnd}
     >
       <HeartIcon stroke="white" strokeWidth="2" />
     </div>

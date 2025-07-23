@@ -201,6 +201,11 @@ body.wand-mode-active * {
   transition: transform 0.1s ease-in-out;
 }
 
+#head-tilt-wrapper {
+  transform-origin: 100px 110px; /* Base of the head */
+  transition: transform 0.2s ease-out;
+}
+
 #head {
   animation: head-bob 2.5s ease-in-out infinite;
   transform-origin: bottom center;

@@ -5,6 +5,7 @@ interface CatProps {
   onEyeClick: (event: React.MouseEvent) => void;
   onEarClick: (ear: 'left' | 'right', event: React.MouseEvent) => void;
   onNoseClick: (event: React.MouseEvent) => void;
+  onCheekClick: (side: 'left' | 'right', event: React.MouseEvent) => void;
   isPetting: boolean;
   isStartled: boolean;
   isSleeping: boolean;
@@ -13,6 +14,7 @@ interface CatProps {
   isJumping: boolean;
   isPlaying: boolean;
   isSmiling: boolean;
+  headTiltAngle: number;
   pounceTarget: { x: number; y: number };
   wigglingEar: 'left' | 'right' | null;
   wiggleDuration: number | null;
@@ -30,6 +32,7 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
       onEyeClick,
       onEarClick,
       onNoseClick,
+      onCheekClick,
       isPetting,
       isStartled,
       isSleeping,
@@ -38,6 +41,7 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
       isJumping,
       isPlaying,
       isSmiling,
+      headTiltAngle,
       pounceTarget,
       wigglingEar,
       wiggleDuration,
@@ -218,7 +222,7 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
             y: heartRect.top + heartRect.height / 2,
           };
         }
-        
+
         const catRect = catElement.getBoundingClientRect();
         const eyeLeftCenter = {
           x: catRect.left + (catRect.width * (90 / 220)),
@@ -265,15 +269,17 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
       };
     }, [lastHeart, catRef, isPouncing, pounceTarget, wandMode]);
 
-    const containerClasses = [
+    const catContainerClasses = [
       isPetting ? 'is-petting' : '',
-      wiggleDuration ? 'is-wiggling' : '',
+      wigglingEar ? 'is-wiggling' : '',
       isPlaying ? 'playing' : '',
     ]
       .filter(Boolean)
       .join(' ');
 
     const earStyle = wiggleDuration ? { animationDuration: `${wiggleDuration}s` } : {};
+
+    const headTiltTransform = `rotate(${headTiltAngle}deg)`;
 
     return (
       <svg
@@ -284,8 +290,7 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
       >
         <g
           id="cat-container"
-          className={containerClasses}
-          transform="translate(10, 20)"
+          className={catContainerClasses}
           onClick={onClick}
           style={{ cursor: 'pointer' }}
         >
@@ -296,163 +301,191 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
               fill="#212121"
             />
           </g>
-          
+
           {/* Body */}
           <g id="body">
-            <path
-              d="M 30 100 C -20 185, 220 185, 170 100 Z"
-              fill="#212121"
-            />
+            <path d="M 30 100 C -20 185, 220 185, 170 100 C 158.24 80, 41.76 80, 30 100 Z" fill="#212121" />
           </g>
-
-          {/* Head */}
-          <g id="head">
-            <path
-              d="M 30 100 C 20 40, 180 40, 170 100 C 170 110, 30 110, 30 100 Z"
-              fill="#212121"
-            />
-            {/* Left ear */}
-            <g
-              id="left-ear"
-              className={wigglingEar === 'left' ? 'ear-wiggling' : ''}
-              style={earStyle}
-              onClick={(e) => {
-                e.stopPropagation();
-                onEarClick('left', e);
-              }}
-            >
+          <g id="head-tilt-wrapper" style={{ transform: headTiltTransform, transformOrigin: '100px 110px' }}>
+            <g id="head">
               <path
-                d="M 50 70 L 60 45 L 80 70 Z"
+                d="M 30 100 C 20 40, 180 40, 170 100 C 170 120, 30 120, 30 100 Z"
                 fill="#212121"
               />
-            </g>
-            {/* Right ear */}
-            <g
-              id="right-ear"
-              className={wigglingEar === 'right' ? 'ear-wiggling' : ''}
-              style={earStyle}
-              onClick={(e) => {
-                e.stopPropagation();
-                onEarClick('right', e);
-              }}
-            >
-              <path
-                d="M 120 70 L 140 45 L 150 70 Z"
-                fill="#212121"
-              />
-            </g>
-            
-            {/* Face */}
-            <g id="face" transform="translate(0, -5)">
-              {/* Jumping Eyes */}
-              <g className={`eye-jumping ${isJumping || isSmiling ? '' : 'hidden'}`}>
-                <path
-                  d="M 74 82 Q 80 77, 86 82"
-                  stroke="white"
-                  strokeWidth="1.5"
-                  fill="none"
-                />
-                <path
-                  d="M 114 82 Q 120 77, 126 82"
-                  stroke="white"
-                  strokeWidth="1.5"
-                  fill="none"
-                />
-              </g>
-
-              {/* Sleeping Eyes */}
-              <g className={`eye-sleeping ${isSleeping && !isJumping ? '' : 'hidden'}`}>
-                <path
-                  d="M 74 82 Q 80 87, 86 82"
-                  stroke="white"
-                  strokeWidth="1.5"
-                  fill="none"
-                />
-                <path
-                  d="M 114 82 Q 120 87, 126 82"
-                  stroke="white"
-                  strokeWidth="1.5"
-                  fill="none"
-                />
-              </g>
-
-              {/* Drowsy Eyes */}
+              {/* Left ear */}
               <g
-                className={`eye-drowsy ${
-                  !isSleeping && isDrowsy && isBlinking && !isJumping ? '' : 'hidden'
-                }`}
+                id="left-ear"
+                className={wigglingEar === 'left' ? 'ear-wiggling' : ''}
+                style={earStyle}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEarClick('left', e);
+                }}
               >
                 <path
-                  d="M 74 82 Q 80 87, 86 82"
-                  stroke="white"
-                  strokeWidth="1.5"
-                  fill="none"
+                  d="M 50 70 L 60 45 L 80 70 Z"
+                  fill="#212121"
                 />
+              </g>
+              {/* Right ear */}
+              <g
+                id="right-ear"
+                className={wigglingEar === 'right' ? 'ear-wiggling' : ''}
+                style={earStyle}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEarClick('right', e);
+                }}
+              >
                 <path
-                  d="M 114 82 Q 120 87, 126 82"
-                  stroke="white"
-                  strokeWidth="1.5"
-                  fill="none"
+                  d="M 120 70 L 140 45 L 150 70 Z"
+                  fill="#212121"
                 />
               </g>
 
-              {/* Open Eyes */}
-              <g
-                className={`eye-open ${
-                  !isSleeping && !isStartled && (!isDrowsy || !isBlinking) && !isJumping && !isSmiling
-                    ? ''
-                    : 'hidden'
-                }`}
-                onClick={onEyeClick}
-              >
-                <g>
-                  <circle cx="80" cy="80" r="10" fill="white" />
+              {/* Face */}
+              <g id="face" transform="translate(0, -5)">
+                {/* Cheeks (invisible click targets) */}
+                <g id="cheeks">
+                  {/* Left Cheek */}
                   <circle
-                    cx={pupilsPos.left.x}
-                    cy={pupilsPos.left.y}
-                    r="5"
-                    fill="black"
+                    cx="60"
+                    cy="95"
+                    r="25"
+                    fill="rgba(0,0,0,0)"
+                    style={{ cursor: 'pointer' }}
+                    onClick={(e) => onCheekClick('left', e)}
+                  />
+                  {/* Right Cheek */}
+                  <circle
+                    cx="140"
+                    cy="95"
+                    r="25"
+                    fill="rgba(0,0,0,0)"
+                    style={{ cursor: 'pointer' }}
+                    onClick={(e) => onCheekClick('right', e)}
                   />
                 </g>
-                <g>
-                  <circle cx="120" cy="80" r="10" fill="white" />
-                  <circle
-                    cx={pupilsPos.right.x}
-                    cy={pupilsPos.right.y}
-                    r="5"
-                    fill="black"
+
+                {/* Jumping Eyes */}
+                <g
+                  className={`eye-jumping ${
+                    isJumping || isSmiling ? '' : 'hidden'
+                  }`}
+                  onClick={onEyeClick}
+                >
+                  <path
+                    d="M 74 82 Q 80 77, 86 82"
+                    stroke="white"
+                    strokeWidth="1.5"
+                    fill="none"
+                  />
+                  <path
+                    d="M 114 82 Q 120 77, 126 82"
+                    stroke="white"
+                    strokeWidth="1.5"
+                    fill="none"
                   />
                 </g>
-              </g>
 
-              {/* Startled Eyes */}
-              <g
-                className={`eye-startled ${
-                  !isSleeping && isStartled && !isJumping ? '' : 'hidden'
-                }`}
-                onClick={onEyeClick}
-              >
+                {/* Sleeping Eyes */}
+                <g className={`eye-sleeping ${isSleeping && !isJumping ? '' : 'hidden'}`} onClick={onEyeClick}>
+                  <path
+                    d="M 74 82 Q 80 87, 86 82"
+                    stroke="white"
+                    strokeWidth="1.5"
+                    fill="none"
+                  />
+                  <path
+                    d="M 114 82 Q 120 87, 126 82"
+                    stroke="white"
+                    strokeWidth="1.5"
+                    fill="none"
+                  />
+                </g>
+
+                {/* Drowsy Eyes */}
+                <g
+                  className={`eye-drowsy ${
+                    !isSleeping && isDrowsy && isBlinking && !isJumping ? '' : 'hidden'
+                  }`}
+                  onClick={onEyeClick}
+                >
+                  <path
+                    d="M 74 82 Q 80 87, 86 82"
+                    stroke="white"
+                    strokeWidth="1.5"
+                    fill="none"
+                  />
+                  <path
+                    d="M 114 82 Q 120 87, 126 82"
+                    stroke="white"
+                    strokeWidth="1.5"
+                    fill="none"
+                  />
+                </g>
+
+                {/* Open Eyes */}
+                <g
+                  className={`eye-open ${
+                    !isSleeping &&
+                    !isStartled &&
+                    (!isDrowsy || !isBlinking) &&
+                    !isJumping &&
+                    !isSmiling
+                      ? ''
+                      : 'hidden'
+                  }`}
+                  onClick={onEyeClick}
+                >
+                  <g>
+                    <circle cx="80" cy="80" r="10" fill="white" />
+                    <circle
+                      cx={pupilsPos.left.x}
+                      cy={pupilsPos.left.y}
+                      r="5"
+                      fill="black"
+                    />
+                  </g>
+                  <g>
+                    <circle cx="120" cy="80" r="10" fill="white" />
+                    <circle
+                      cx={pupilsPos.right.x}
+                      cy={pupilsPos.right.y}
+                      r="5"
+                      fill="black"
+                    />
+                  </g>
+                </g>
+
+                {/* Startled Eyes */}
+                <g
+                  className={`eye-startled ${
+                    !isSleeping && isStartled && !isJumping ? '' : 'hidden'
+                  }`}
+                  onClick={onEyeClick}
+                >
+                  <path
+                    d="M 75 75 L 85 80 L 75 85"
+                    stroke="white"
+                    strokeWidth="1.5"
+                    fill="none"
+                  />
+                  <path
+                    d="M 125 75 L 115 80 L 125 85"
+                    stroke="white"
+                    strokeWidth="1.5"
+                    fill="none"
+                  />
+                </g>
+                {/* Nose */}
                 <path
-                  d="M 75 75 L 85 80 L 75 85"
-                  stroke="white"
-                  strokeWidth="1.5"
-                  fill="none"
-                />
-                <path
-                  d="M 125 75 L 115 80 L 125 85"
-                  stroke="white"
-                  strokeWidth="1.5"
-                  fill="none"
+                  d="M 97 90 L 103 90 L 100 94 Z"
+                  fill="white"
+                  onClick={onNoseClick}
+                  style={{ cursor: 'pointer' }}
                 />
               </g>
-              {/* Smile */}
-              {/* Nose */}
-              <path
-                d="M 97 90 L 103 90 L 100 94 Z"
-                fill="white"
-                onClick={onNoseClick}
-                style={{ cursor: 'pointer' }}
-              />
             </g>
           </g>
         </g>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import ReactDOM from 'react-dom';
 import Cat from './Cat';
 import Heart from './Heart';
@@ -37,11 +37,8 @@ function App() {
   const [treats, setTreats] = useState(0);
   const [jobLevels, setJobLevels] = useState<{ [key: string]: number }>({});
   const [isPetting, setIsPetting] = useState(false);
-  const [lastClickTime, setLastClickTime] = useState(0);
-  const [wiggleDuration, setWiggleDuration] = useState<number | null>(null);
   const [hearts, setHearts] = useState<HeartType[]>([]);
   const [isStartled, setIsStartled] = useState(false);
-  const [lastHeart, setLastHeart] = useState<HTMLDivElement | null>(null);
   const [isSleeping, setIsSleeping] = useState(false);
   const [isDrowsy, setIsDrowsy] = useState(false);
   const [zzzs, setZzzs] = useState<ZzzType[]>([]);
@@ -58,6 +55,8 @@ function App() {
   const [lovePerPounce, setLovePerPounce] = useState(3);
   const [trackableHeartId, setTrackableHeartId] = useState<number | null>(null);
   const [isSmiling, setIsSmiling] = useState(false);
+  const [headTiltAngle, setHeadTiltAngle] = useState(0);
+  
   const catRef = useRef<SVGSVGElement>(null);
   const shakeTimeoutRef = useRef<number | null>(null);
   const pounceConfidenceRef = useRef(0);
@@ -68,6 +67,9 @@ function App() {
   const movementNoveltyRef = useRef(1.0);
   const [energy, setEnergy] = useState(100); // Cat's energy, 0-100
   const [isDevMode, setIsDevMode] = useState(false);
+  
+  const cheekClickFlag = useRef(false);
+  
   const [pounceConfidenceDisplay, setPounceConfidenceDisplay] = useState(0);
   const [lastVelocityDisplay, setLastVelocityDisplay] = useState(0);
   const [proximityMultiplierDisplay, setProximityMultiplierDisplay] = useState(1);
@@ -113,19 +115,26 @@ function App() {
   // Energy regeneration
   useEffect(() => {
     const energyInterval = setInterval(() => {
-      // Takes ~10 mins to fully regenerate from 0
       setEnergy(currentEnergy => Math.min(100, currentEnergy + 100 / 600));
     }, 1000);
 
     return () => clearInterval(energyInterval);
   }, []);
 
+  useEffect(() => {
+    let smileTimer: number;
+    if (isSmiling) {
+      smileTimer = window.setTimeout(() => setIsSmiling(false), 750);
+    }
+    return () => clearTimeout(smileTimer);
+  }, [isSmiling]);
+  
   const handleCatClick = (event: React.MouseEvent) => {
-    const energyMultiplier = 1 + energy / 100; // up to 2x
+    if (pounceState.current.isActive) return;
+
+    const energyMultiplier = 1 + energy / 100;
     const loveFromClick = Math.round(lovePerClick * energyMultiplier);
     setLove(t => t + loveFromClick);
-
-    // Deplete energy from petting
     setEnergy(e => Math.max(0, e - 1));
     
     setIsPetting(true);
@@ -133,214 +142,136 @@ function App() {
 
     const now = Date.now();
 
-    // --- JUMP LOGIC ---
-    if (!wandMode && !isJumping) {
-      const JUMP_WINDOW_MS = 500; // how far back to look for clicks
-      const JUMP_CLICK_THRESHOLD = 4; // how many clicks needed to be a 'burst'
-      const JUMP_CHANCE = 0.1 + (energy / 100) * 0.5; // 10% to 60% chance based on energy
+    if (!cheekClickFlag.current && !wandMode && !isJumping) {
+      const JUMP_WINDOW_MS = 500;
+      const JUMP_CLICK_THRESHOLD = 4;
+      const JUMP_CHANCE = 0.1 + (energy / 100) * 0.5;
 
       clickTimestampsRef.current.push(now);
-      // Remove clicks that are too old to be part of the burst
       clickTimestampsRef.current = clickTimestampsRef.current.filter(
         (timestamp) => now - timestamp < JUMP_WINDOW_MS
       );
-      if (isDevMode) {
-        setRapidClickCount(clickTimestampsRef.current.length);
-      }
+      if (isDevMode) setRapidClickCount(clickTimestampsRef.current.length);
       
-      if (clickTimestampsRef.current.length >= JUMP_CLICK_THRESHOLD) {
-        if (Math.random() < JUMP_CHANCE) {
-          setLove(current => current + loveFromClick); // Bonus love!
-          setIsJumping(true);
-          // Reset burst detection after a successful jump
-          clickTimestampsRef.current = [];
-          if (isDevMode) {
-            setRapidClickCount(0);
-          }
-          setTimeout(() => {
-            setIsJumping(false);
-          }, 500); // Duration of the jump animation
-        }
+      if (clickTimestampsRef.current.length >= JUMP_CLICK_THRESHOLD && Math.random() < JUMP_CHANCE) {
+        setLove(current => current + loveFromClick);
+        setIsJumping(true);
+        clickTimestampsRef.current = [];
+        if (isDevMode) setRapidClickCount(0);
+        setTimeout(() => setIsJumping(false), 500);
       }
     }
-
-    const interval = now - lastClickTime;
+    
+    // Reset cheek flag after use
+    if (cheekClickFlag.current) {
+        cheekClickFlag.current = false;
+    }
 
     const maxHeartSize = 2.0;
     const minHeartSize = 0.5;
-    // Logarithmic growth for heart size
     const growthFactor = 0.2;
-    const calculatedScale =
-      minHeartSize + Math.log(lovePerClick) * growthFactor;
+    const calculatedScale = minHeartSize + Math.log(lovePerClick) * growthFactor;
     const baseScale = Math.min(calculatedScale, maxHeartSize);
-    const randomScale = baseScale + (Math.random() - 0.5) * 0.2; // Add some variation
+    const randomScale = baseScale + (Math.random() - 0.5) * 0.2;
 
     const newHeart: HeartType = {
       id: now,
       x: event.clientX,
       y: event.clientY,
-      translateX: Math.random() * 40 - 20, // -20px to 20px
-      rotation: Math.random() * 60 - 30, // -30deg to 30deg
+      translateX: Math.random() * 40 - 20,
+      rotation: Math.random() * 60 - 30,
       scale: randomScale,
       animationDuration: 1,
     };
     setHearts((currentHearts) => [...currentHearts, newHeart]);
-
-    setTimeout(() => {
-      setHearts((currentHearts) =>
-        currentHearts.filter((heart) => heart.id !== newHeart.id)
-      );
-      setLastHeart(null);
-    }, 1000);
-
-    if (interval < 300) { // Fast click detected
-      // Map the click interval (50ms-300ms) to an animation duration (0.4s-1.0s)
-      const clampedInterval = Math.max(50, Math.min(interval, 300));
-      // Faster click (smaller interval) -> shorter duration
-      const newDuration = 0.4 + ((clampedInterval - 50) / (300 - 50)) * 0.6;
-      
-      setWiggleDuration(newDuration);
-      setTimeout(() => setWiggleDuration(null), newDuration * 1000);
-    }
-    setLastClickTime(now);
   };
 
+  const removeHeart = (id: number) => {
+    setHearts((currentHearts) =>
+      currentHearts.filter((heart) => heart.id !== id)
+    );
+  };
+  
   const handleWandClick = () => {
-    if (shakeTimeoutRef.current) {
-      clearTimeout(shakeTimeoutRef.current);
-    }
-    // Significantly increase the confidence from a direct shake action
+    if (shakeTimeoutRef.current) clearTimeout(shakeTimeoutRef.current);
     pounceConfidenceRef.current += 35;
-    
-    // Shaking the toy costs a little energy
     setEnergy(e => Math.max(0, e - 0.5));
-
     setIsShaking(false);
     requestAnimationFrame(() => {
       setIsShaking(true);
-      shakeTimeoutRef.current = window.setTimeout(
-        () => setIsShaking(false),
-        500
-      );
+      shakeTimeoutRef.current = window.setTimeout(() => setIsShaking(false), 500);
     });
-
     if (isPouncing) {
       setIsPlaying(true);
-      setLove((currentLove) => currentLove + 1); // Subsequent clicks are worth 1
+      setLove((currentLove) => currentLove + 1);
       setTimeout(() => setIsPlaying(false), 300);
-      return;
     }
-
-    if (!catRef.current) return;
   };
+
+  const pounceState = React.useRef({
+    isActive: false,
+  });
 
   useEffect(() => {
     if (!wandMode) {
       pounceConfidenceRef.current = 0;
-      if (isDevMode) {
-        setPounceConfidenceDisplay(0);
-      }
+      if (isDevMode) setPounceConfidenceDisplay(0);
       return;
     }
 
     const pouncePlanningInterval = setInterval(() => {
       if (!catRef.current) return;
-
-      // Drain a tiny bit of energy just for keeping the cat engaged with the wand
       setEnergy(e => Math.max(0, e - 0.05));
 
       const catRect = catRef.current.getBoundingClientRect();
       const catCenterX = catRect.left + catRect.width / 2;
       const catCenterY = catRect.top + catRect.height / 2;
       const currentWandPosition = wandPositionRef.current;
-      const distanceToCat = Math.sqrt(
-        Math.pow(currentWandPosition.x - catCenterX, 2) +
-          Math.pow(currentWandPosition.y - catCenterY, 2)
-      );
+      const distanceToCat = Math.hypot(currentWandPosition.x - catCenterX, currentWandPosition.y - catCenterY);
 
-      // --- Confidence Calculation ---
       const now = Date.now();
       const timeDelta = now - lastWandMoveTimeRef.current;
-      let proximityMultiplier = 1.0;
-      const veryCloseDistance = 60; // The "super interested" zone
-      const nearDistance = 220; // The "moderately interested" zone
+      let proximityMultiplier = 0.3;
+      const veryCloseDistance = 60;
+      const nearDistance = 220;
 
       if (distanceToCat < veryCloseDistance) {
-        // When very close, even tiny movements are exciting. Exponentially ramp up multiplier.
         proximityMultiplier = 1 + Math.pow((veryCloseDistance - distanceToCat) / 25, 2.2);
       } else if (distanceToCat < nearDistance) {
-        // When near, there's some interest, but not a huge boost.
         const progress = (distanceToCat - veryCloseDistance) / (nearDistance - veryCloseDistance);
-        proximityMultiplier = 1.0 - progress * 0.7; // goes from 1.0 down to 0.3
-      } else {
-        // When far, cat is less interested, velocity is less impactful.
-        proximityMultiplier = 0.3;
+        proximityMultiplier = 1.0 - progress * 0.7;
       }
 
-      let velocityConfidence = 0;
-      let suddenStopConfidence = 0;
-      let suddenStartConfidence = 0;
+      let velocityConfidence = 0, suddenStopConfidence = 0, suddenStartConfidence = 0;
 
-      // timeDelta check to avoid noisy calculations on first render or lag
       if (timeDelta > 16) { 
-        const distanceMoved = Math.sqrt(
-          Math.pow(currentWandPosition.x - lastWandPositionRef.current.x, 2) +
-            Math.pow(currentWandPosition.y - lastWandPositionRef.current.y, 2)
-        );
-
+        const distanceMoved = Math.hypot(currentWandPosition.x - lastWandPositionRef.current.x, currentWandPosition.y - lastWandPositionRef.current.y);
         const velocity = distanceMoved / timeDelta;
         
-        // --- Boredom / Novelty Calculation ---
         velocityHistoryRef.current.push(velocity);
-        if (velocityHistoryRef.current.length > 20) { // Look at a shorter history (~2s)
-          velocityHistoryRef.current.shift(); 
-        }
+        if (velocityHistoryRef.current.length > 20) velocityHistoryRef.current.shift(); 
 
         const highVelocityThreshold = 1.5;
         const recentFastMoves = velocityHistoryRef.current.filter(v => v > highVelocityThreshold).length;
         const historyRatio = velocityHistoryRef.current.length > 0 ? recentFastMoves / velocityHistoryRef.current.length : 0;
         
-        if (historyRatio > 0.5) { // Lower threshold to trigger boredom
-            // If most of the recent movements were fast, the cat gets bored faster.
-            movementNoveltyRef.current = Math.max(0.1, movementNoveltyRef.current - 0.1);
-        } else {
-            // If movement is not boring, novelty regenerates faster.
-            movementNoveltyRef.current = Math.min(1.0, movementNoveltyRef.current + 0.06);
-        }
-        const movementNovelty = movementNoveltyRef.current;
+        movementNoveltyRef.current = historyRatio > 0.5 
+            ? Math.max(0.1, movementNoveltyRef.current - 0.1)
+            : Math.min(1.0, movementNoveltyRef.current + 0.06);
 
-        // --- Confidence from Movement ---
-        if (velocity > 0.1) { 
-          // Raw velocity confidence, dampened by boredom
-          velocityConfidence = (velocity * 8) * movementNovelty; 
-        }
+        if (velocity > 0.1) velocityConfidence = (velocity * 8) * movementNoveltyRef.current; 
+        if (lastVelocityRef.current > 1.6 && velocity < 0.3) suddenStopConfidence = (20 * proximityMultiplier);
+        if (lastVelocityRef.current < 0.4 && velocity > 1.5) suddenStartConfidence = (25 * proximityMultiplier);
         
-        // Sudden Stop bonus, amplified by proximity
-        if (lastVelocityRef.current > 1.6 && velocity < 0.3) {
-            suddenStopConfidence = (20 * proximityMultiplier);
-        }
-
-        // Sudden Start bonus, also amplified by proximity
-        if (lastVelocityRef.current < 0.4 && velocity > 1.5) {
-            suddenStartConfidence = (25 * proximityMultiplier);
-        }
-
-        // Update refs for next calculation
         lastVelocityRef.current = velocity;
       }
       lastWandMoveTimeRef.current = now;
       lastWandPositionRef.current = currentWandPosition;
       
-      // Combine confidences. More energy makes the cat more playful.
-      const energyBoost = 1 + (energyRef.current / 100); // up to 2x confidence boost
+      const energyBoost = 1 + (energyRef.current / 100);
       const totalConfidenceGain = (velocityConfidence + suddenStopConfidence + suddenStartConfidence);
       pounceConfidenceRef.current += totalConfidenceGain * energyBoost;
-
-      // Decay confidence over time. Slower decay to reward sustained play.
-      pounceConfidenceRef.current = Math.max(
-        0,
-        pounceConfidenceRef.current * 0.90
-      );
+      pounceConfidenceRef.current = Math.max(0, pounceConfidenceRef.current * 0.90);
 
       if (isDevMode) {
         setPounceConfidenceDisplay(pounceConfidenceRef.current);
@@ -349,42 +280,29 @@ function App() {
         setMovementNoveltyDisplay(movementNoveltyRef.current);
       }
 
-      // Pounce condition
       if (pounceConfidenceRef.current > 75 && !isPouncing) {
-        pounceConfidenceRef.current = 0; // Reset after pouncing
-        velocityHistoryRef.current = []; // Clear history after pounce
-        movementNoveltyRef.current = 1.0; // Reset boredom as well
-
-        // Pouncing costs more energy
+        pounceConfidenceRef.current = 0;
+        velocityHistoryRef.current = [];
+        movementNoveltyRef.current = 1.0;
         setEnergy(e => Math.max(0, e - 5));
 
         const vectorX = currentWandPosition.x - catCenterX;
         const vectorY = currentWandPosition.y - catCenterY;
-        const pounceDistance = Math.sqrt(
-          vectorX * vectorX + vectorY * vectorY
-        );
+        const pounceDistance = Math.hypot(vectorX, vectorY);
         const maxPounce = 30 + Math.random() * 20;
         const angle = Math.atan2(vectorY, vectorX);
         const randomAngleOffset = (Math.random() - 0.5) * 0.4;
         const newAngle = angle + randomAngleOffset;
 
-        const pounceX =
-          pounceDistance > 0 ? Math.cos(newAngle) * maxPounce : 0;
-        const pounceY =
-          pounceDistance > 0 ? Math.sin(newAngle) * maxPounce : 0;
+        const pounceX = pounceDistance > 0 ? Math.cos(newAngle) * maxPounce : 0;
+        const pounceY = pounceDistance > 0 ? Math.sin(newAngle) * maxPounce : 0;
 
         setPounceTarget({ x: pounceX, y: pounceY });
 
-        const pounceLove = Math.round(
-          (lovePerPounce + pounceDistance / 20) * energyBoost
-        );
+        const pounceLove = Math.round((lovePerPounce + pounceDistance / 20) * energyBoost);
         setLove((currentLove) => currentLove + pounceLove);
 
-        // Create a burst of hearts at the click location
-        const newHearts: HeartType[] = [];
-        const heartCount = Math.max(1, Math.round(pounceDistance / 40));
-        for (let i = 0; i < heartCount; i++) {
-          newHearts.push({
+        const newHearts: HeartType[] = Array.from({ length: Math.max(1, Math.round(pounceDistance / 40)) }, (_, i) => ({
             id: Date.now() + i,
             x: currentWandPosition.x + (Math.random() - 0.5) * 40,
             y: currentWandPosition.y + (Math.random() - 0.5) * 40,
@@ -392,69 +310,38 @@ function App() {
             rotation: Math.random() * 80 - 40,
             scale: Math.random() * 0.5 + 0.5,
             animationDuration: Math.random() * 0.5 + 0.5,
-          });
-        }
+        }));
         setHearts((currentHearts) => [...currentHearts, ...newHearts]);
-        setTrackableHeartId(newHearts[newHearts.length - 1].id);
+        const lastHeartId = newHearts[newHearts.length - 1]?.id;
+        if (lastHeartId) setTrackableHeartId(lastHeartId);
 
-        // Remove the hearts after a delay
-        setTimeout(() => {
-          setHearts((currentHearts) =>
-            currentHearts.filter(
-              (heart) => !newHearts.some((nh) => nh.id === heart.id)
-            )
-          );
-        }, 1000);
-
+        setTimeout(() => setHearts((currentHearts) => currentHearts.filter((heart) => !newHearts.some((nh) => nh.id === heart.id))), 1000);
         setIsPouncing(true);
-        setTimeout(() => {
-          setIsPouncing(false);
-        }, 500);
-
-        // Clear the heart tracking after the hearts have disappeared
-        setTimeout(() => {
-          setTrackableHeartId(null);
-        }, 1000);
+        setTimeout(() => setIsPouncing(false), 500);
+        setTimeout(() => setTrackableHeartId(null), 1000);
       }
     }, 100);
 
-    return () => {
-      clearInterval(pouncePlanningInterval);
-    };
-  }, [
-    wandMode,
-    isPouncing,
-    lovePerPounce,
-    isDevMode,
-  ]);
-
-  const handleEyeClick = (event: React.MouseEvent) => {
-    event.stopPropagation();
-    if (isStartled) {
-      return;
-    }
-    setIsStartled(true);
-    setTimeout(() => {
-      setIsStartled(false);
-    }, 500);
-  };
+    return () => clearInterval(pouncePlanningInterval);
+  }, [wandMode, isPouncing, lovePerPounce, isDevMode]);
 
   const handleEarClick = (ear: 'left' | 'right', event: React.MouseEvent) => {
-    if (wigglingEar) {
-      return;
-    }
+    if (wigglingEar) return;
     handleCatClick(event);
     setWigglingEar(ear);
-    setTimeout(() => {
-      setWigglingEar(null);
-    }, 500);
+    setTimeout(() => setWigglingEar(null), 500);
   };
-
+  
+  const handleEyeClick = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    setIsStartled(true);
+    setTimeout(() => setIsStartled(false), 500);
+  };
+  
   const handleNoseClick = (event: React.MouseEvent) => {
     event.stopPropagation();
     setIsSmiling(true);
-    setLove(l => l + 5); // A little bonus for a nose boop
-
+    setLove((l) => l + 5);
     const now = Date.now();
     const newHeart: HeartType = {
       id: now,
@@ -466,10 +353,56 @@ function App() {
       animationDuration: 0.8,
     };
     setHearts((currentHearts) => [...currentHearts, newHeart]);
+  };
+
+  const handleCheekClick = (side: 'left' | 'right', event: React.MouseEvent) => {
+    event.stopPropagation();
+    cheekClickFlag.current = true;
+    handleCatClick(event);
+
+    if (Math.random() < 0.25) setIsSmiling(true);
+    
+    if (!catRef.current) return;
+
+    const catRect = catRef.current.getBoundingClientRect();
+    const clickXInCatSvg = ((event.clientX - catRect.left) / catRect.width) * 220; // 220 is the viewBox width
+
+    const MAX_TILT = 7; // Max tilt in degrees
+    const MIN_TILT = 1;  // Min tilt in degrees
+    const TILT_RANGE = MAX_TILT - MIN_TILT;
+
+    let tiltFactor = 0; // 0 to 1
+
+    if (side === 'left') {
+        const leftCheekInnerEdge = 85;
+        const leftCheekOuterEdge = 35;
+        const cheekWidth = leftCheekInnerEdge - leftCheekOuterEdge;
+        const clampedX = Math.max(leftCheekOuterEdge, Math.min(leftCheekInnerEdge, clickXInCatSvg));
+        tiltFactor = (leftCheekInnerEdge - clampedX) / cheekWidth;
+    } else { // right side
+        const rightCheekInnerEdge = 115;
+        const rightCheekOuterEdge = 165;
+        const cheekWidth = rightCheekOuterEdge - rightCheekInnerEdge;
+        const clampedX = Math.max(rightCheekInnerEdge, Math.min(rightCheekOuterEdge, clickXInCatSvg));
+        tiltFactor = (clampedX - rightCheekInnerEdge) / cheekWidth;
+    }
+
+    const tiltDegrees = MIN_TILT + (tiltFactor * TILT_RANGE);
+    const finalAngle = side === 'left' ? -tiltDegrees : tiltDegrees;
+    
+    setHeadTiltAngle(finalAngle);
 
     setTimeout(() => {
-      setIsSmiling(false);
-    }, 500); // Smile duration
+        setHeadTiltAngle(0);
+    }, 500);
+  };
+
+  const handleUpgradeLovePerClick = () => {
+    const cost = lovePerClick * 10;
+    if (love >= cost) {
+      setLove(love - cost);
+      setLovePerClick(lovePerClick + 1);
+    }
   };
 
   const handleUpgradePounce = () => {
@@ -486,12 +419,10 @@ function App() {
     setZzzs([]);
   }, []);
 
-  useEffect(() => {
-    if (trackableHeartId === null) {
-      setLastHeart(null);
-    }
-  }, [trackableHeartId]);
-
+  const removeZzz = (id: number) => {
+    setZzzs((currentZzzs) => currentZzzs.filter((zzz) => zzz.id !== id));
+  };
+  
   useEffect(() => {
     let drowsinessTimer: number;
     let sleepTimer: number;
@@ -500,17 +431,14 @@ function App() {
       wakeUp();
       clearTimeout(drowsinessTimer);
       clearTimeout(sleepTimer);
-      drowsinessTimer = window.setTimeout(() => {
-        setIsDrowsy(true);
-      }, 20000); // 20 seconds
+      drowsinessTimer = window.setTimeout(() => setIsDrowsy(true), 20000);
       sleepTimer = window.setTimeout(() => {
         setIsDrowsy(false);
         setIsSleeping(true);
-      }, 30000); // 30 seconds
+      }, 30000);
     };
 
     resetInactivityTimer();
-
     document.addEventListener('mousemove', resetInactivityTimer);
     document.addEventListener('mousedown', resetInactivityTimer);
 
@@ -528,96 +456,55 @@ function App() {
     const decayFactor = 0.98;
 
     const scheduleNextZzz = (delay: number) => {
-      if (zzzTimeoutRef.current) {
-        clearTimeout(zzzTimeoutRef.current);
-      }
+      if (zzzTimeoutRef.current) clearTimeout(zzzTimeoutRef.current);
       zzzTimeoutRef.current = window.setTimeout(() => {
-        // Calculate position right before spawning
-        let spawnX = window.innerWidth / 2;
-        let spawnY = window.innerHeight / 2 - 20;
-
+        let spawnX = window.innerWidth / 2, spawnY = window.innerHeight / 2 - 20;
         if (catRef.current) {
           const catRect = catRef.current.getBoundingClientRect();
-          // Approximate position of the cat's head within the SVG
           spawnX = catRect.left + catRect.width * 0.5;
           spawnY = catRect.top + catRect.height * 0.2;
         }
 
-        setZzzs((currentZzzs) => [
-          ...currentZzzs,
-          {
+        setZzzs((currentZzzs) => [...currentZzzs, {
             id: Date.now(),
             x: spawnX + (Math.random() * 40 - 20),
             y: spawnY + (Math.random() * 20 - 10),
             translateX: Math.random() * 40 - 20,
             rotation: Math.random() * 60 - 30,
             scale: Math.random() * 0.4 + 0.8,
-          },
-        ]);
-        const nextDelay = Math.max(minDelay, delay * decayFactor);
-        scheduleNextZzz(nextDelay);
+        }]);
+        scheduleNextZzz(Math.max(minDelay, delay * decayFactor));
       }, delay);
     };
 
-    if (isSleeping) {
-      scheduleNextZzz(initialDelay);
-    } else {
-      if (zzzTimeoutRef.current) {
-        clearTimeout(zzzTimeoutRef.current);
-      }
-    }
+    if (isSleeping) scheduleNextZzz(initialDelay);
+    else if (zzzTimeoutRef.current) clearTimeout(zzzTimeoutRef.current);
 
     return () => {
-      if (zzzTimeoutRef.current) {
-        clearTimeout(zzzTimeoutRef.current);
-      }
+      if (zzzTimeoutRef.current) clearTimeout(zzzTimeoutRef.current);
     };
   }, [isSleeping]);
 
   useEffect(() => {
-    const treatInterval = setInterval(() => {
-      setTreats((prevTreats) => prevTreats + treatsPerSecond);
-    }, 1000);
-
-    return () => {
-      clearInterval(treatInterval);
-    };
+    const treatInterval = setInterval(() => setTreats((prevTreats) => prevTreats + treatsPerSecond), 1000);
+    return () => clearInterval(treatInterval);
   }, [treatsPerSecond]);
-
-  const handleUpgradeLovePerClick = () => {
-    const cost = lovePerClick * 10;
-    if (love >= cost) {
-      setLove(love - cost);
-      setLovePerClick(lovePerClick + 1);
-    }
-  };
 
   const handlePromotion = (jobId: string) => {
     const currentLevel = jobLevels[jobId] || 0;
     const job = jobData.find(j => j.id === jobId);
-    if (!job || currentLevel >= job.levels.length) {
-      return; // Job not found or max level
-    }
-
+    if (!job || currentLevel >= job.levels.length) return;
     const promotionCost = job.levels[currentLevel].cost;
     if (love >= promotionCost) {
       setLove(l => l - promotionCost);
-      setJobLevels(prevLevels => ({
-        ...prevLevels,
-        [jobId]: currentLevel + 1,
-      }));
+      setJobLevels(prevLevels => ({...prevLevels, [jobId]: currentLevel + 1}));
     }
   };
 
   useEffect(() => {
-    if (wandMode) {
-      document.body.classList.add('wand-mode-active');
-    } else {
-      document.body.classList.remove('wand-mode-active');
-    }
-    return () => {
-      document.body.classList.remove('wand-mode-active');
-    };
+    if (wandMode) document.body.classList.add('wand-mode-active');
+    else document.body.classList.remove('wand-mode-active');
+    return () => document.body.classList.remove('wand-mode-active');
   }, [wandMode]);
 
   return (
@@ -639,28 +526,12 @@ function App() {
           {hearts.map((heart) => (
             <Heart
               key={heart.id}
-              onMount={
-                heart.id === trackableHeartId
-                  ? (el) => setLastHeart(el)
-                  : undefined
-              }
-              x={heart.x}
-              y={heart.y}
-              translateX={heart.translateX}
-              rotation={heart.rotation}
-              scale={heart.scale}
-              animationDuration={heart.animationDuration}
+              {...heart}
+              onAnimationEnd={() => removeHeart(heart.id)}
             />
           ))}
           {zzzs.map((zzz) => (
-            <Zzz
-              key={zzz.id}
-              x={zzz.x}
-              y={zzz.y}
-              translateX={zzz.translateX}
-              rotation={zzz.rotation}
-              scale={zzz.scale}
-            />
+            <Zzz key={zzz.id} {...zzz} onAnimationEnd={() => removeZzz(zzz.id)} />
           ))}
           {wandMode && (
             <WandToy
@@ -687,6 +558,7 @@ function App() {
             onEyeClick={handleEyeClick}
             onEarClick={handleEarClick}
             onNoseClick={handleNoseClick}
+            onCheekClick={handleCheekClick}
             isPetting={isPetting}
             isStartled={isStartled}
             isSleeping={isSleeping}
@@ -695,10 +567,18 @@ function App() {
             isJumping={isJumping}
             isPlaying={isPlaying}
             isSmiling={isSmiling}
+            headTiltAngle={headTiltAngle}
             pounceTarget={pounceTarget}
             wigglingEar={wigglingEar}
-            wiggleDuration={wiggleDuration}
-            lastHeart={lastHeart}
+            wiggleDuration={null}
+            lastHeart={
+              trackableHeartId !== null &&
+              hearts.find((h) => h.id === trackableHeartId)
+                ? document.querySelector<HTMLDivElement>(
+                    `[data-heart-id="${trackableHeartId}"]`
+                  )
+                : null
+            }
             wandMode={wandMode}
           />
         </div>
