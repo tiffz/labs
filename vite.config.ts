@@ -19,7 +19,27 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       workbox: {
+        // This will cache all assets, including all your html entry points
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+      },
+      // A simple manifest is fine
+      manifest: {
+        name: 'Tiffany\'s Lab',
+        short_name: 'Labs',
+        description: 'A collection of Tiffany\'s experiments',
+        theme_color: '#ffffff',
+        icons: [
+          {
+            src: 'pwa-192x192.png',
+            sizes: '192x192',
+            type: 'image/png'
+          },
+          {
+            src: 'pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png'
+          }
+        ]
       },
     }),
     viteStaticCopy({
@@ -31,6 +51,7 @@ export default defineConfig({
       ],
     }),
   ],
+  publicDir: '../public',
   root: 'src',
   build: {
     outDir: '../dist',
