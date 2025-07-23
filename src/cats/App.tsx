@@ -6,6 +6,8 @@ import Zzz from './Zzz';
 import WandToy from './WandToy';
 import DevPanel from './DevPanel';
 import HeartIcon from './HeartIcon';
+import CatFact from './CatFact';
+import { catFacts } from './catFacts';
 
 interface HeartType {
   id: number;
@@ -66,6 +68,7 @@ function App() {
   const [proximityMultiplierDisplay, setProximityMultiplierDisplay] = useState(1);
   const [movementNoveltyDisplay, setMovementNoveltyDisplay] = useState(1.0);
   const [rapidClickCount, setRapidClickCount] = useState(0);
+  const [currentFact, setCurrentFact] = useState(catFacts[Math.floor(Math.random() * catFacts.length)]);
 
   const energyRef = useRef(energy);
   useEffect(() => {
@@ -524,6 +527,15 @@ function App() {
   }, [isSleeping]);
 
   useEffect(() => {
+    const factInterval = setInterval(() => {
+      const randomIndex = Math.floor(Math.random() * catFacts.length);
+      setCurrentFact(catFacts[randomIndex]);
+    }, 20000); // Change fact every 20 seconds
+
+    return () => clearInterval(factInterval);
+  }, []);
+
+  useEffect(() => {
     const loveInterval = setInterval(() => {
       setLove((prevLove) => prevLove + lovePerSecond);
     }, 1000);
@@ -615,6 +627,7 @@ function App() {
       <div className="stats-container">
         <p><HeartIcon className="love-icon" /> {love}</p>
       </div>
+      <CatFact fact={currentFact} />
       <div className="cat-container">
         {wandMode && (
           <div className="wand-click-area" onClick={handleWandClick} />

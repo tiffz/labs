@@ -271,6 +271,16 @@ button:disabled {
   top: -0.1em; /* Fine-tune vertical alignment */
 }
 
+.cat-fact-container {
+  margin: 1rem auto;
+  padding: 0 1rem;
+  max-width: 500px;
+  font-style: italic;
+  color: #555;
+  text-align: center;
+  min-height: 4em; /* Prevent layout shift when fact length changes */
+}
+
 .dev-panel {
   position: fixed;
   top: 1rem;
