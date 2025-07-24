@@ -194,6 +194,10 @@ function App() {
       animationDuration: 1,
     };
     setHearts((currentHearts) => [...currentHearts, newHeart]);
+    setTrackableHeartId(newHeart.id);
+    setTimeout(() => {
+        setTrackableHeartId(null);
+    }, 1000);
   };
 
   const removeHeart = (id: number) => {

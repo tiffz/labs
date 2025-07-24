@@ -27,3 +27,6 @@ dist-ssr
 src/dev-dist
 
 build
+
+# TypeScript
+tsconfig.tsbuildinfo

@@ -141,7 +141,6 @@ body.wand-mode-active * {
 .cat:active {
     transform: scale(0.9);
 }
-
 .stats-container {
     margin-bottom: 16px;
     text-align: center;

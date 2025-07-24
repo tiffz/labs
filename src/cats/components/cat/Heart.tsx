@@ -3,6 +3,7 @@ import HeartIcon from '../../icons/HeartIcon';
 import '../../styles/cats.css';
 
 interface HeartProps {
+  id: number;
   x: number;
   y: number;
   translateX: number;
@@ -13,6 +14,7 @@ interface HeartProps {
 }
 
 const Heart: React.FC<HeartProps> = ({
+  id,
   x,
   y,
   translateX,
@@ -25,6 +27,7 @@ const Heart: React.FC<HeartProps> = ({
 
   return (
     <div
+      data-heart-id={id}
       className="heart"
       ref={ref}
       style={
