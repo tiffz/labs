@@ -45,6 +45,7 @@ function App() {
   const [zzzs, setZzzs] = useState<ZzzType[]>([]);
   const zzzTimeoutRef = useRef<number | null>(null);
   const [wigglingEar, setWigglingEar] = useState<'left' | 'right' | null>(null);
+  const [isSubtleWiggling, setIsSubtleWiggling] = useState(false);
   const [wandMode, setWandMode] = useState(false);
   const [isJumping, setIsJumping] = useState(false);
   const clickTimestampsRef = useRef<number[]>([]);
@@ -140,6 +141,14 @@ function App() {
     
     setIsPetting(true);
     setTimeout(() => setIsPetting(false), 200);
+
+    // Subtle ear wiggle on pet
+    if (!wigglingEar && !isSubtleWiggling && Math.random() < 0.4) {
+      setIsSubtleWiggling(true);
+      setTimeout(() => {
+        setIsSubtleWiggling(false);
+      }, 500);
+    }
 
     const now = Date.now();
 
@@ -327,10 +336,32 @@ function App() {
   }, [wandMode, isPouncing, lovePerPounce, isDevMode]);
 
   const handleEarClick = (ear: 'left' | 'right', event: React.MouseEvent) => {
-    if (wigglingEar) return;
-    handleCatClick(event);
+    if (wigglingEar || isSubtleWiggling) return;
+
+    // Generate love and heart without triggering the subtle wiggle
+    const energyMultiplier = 1 + energy / 100;
+    const loveFromClick = Math.round(lovePerClick * energyMultiplier);
+    setLove((t) => t + loveFromClick);
+    setEnergy((e) => Math.max(0, e - 1));
+    setIsPetting(true);
+    setTimeout(() => setIsPetting(false), 200);
+    const now = Date.now();
+    const newHeart: HeartType = {
+      id: now,
+      x: event.clientX,
+      y: event.clientY,
+      translateX: Math.random() * 40 - 20,
+      rotation: Math.random() * 60 - 30,
+      scale: 1.0,
+      animationDuration: 1,
+    };
+    setHearts((currentHearts) => [...currentHearts, newHeart]);
+
+    // Trigger the specific ear wiggle
     setWigglingEar(ear);
-    setTimeout(() => setWigglingEar(null), 500);
+    setTimeout(() => {
+      setWigglingEar(null);
+    }, 500);
   };
   
   const handleEyeClick = (event: React.MouseEvent) => {
@@ -568,10 +599,10 @@ function App() {
             isJumping={isJumping}
             isPlaying={isPlaying}
             isSmiling={isSmiling}
+            isSubtleWiggling={isSubtleWiggling}
             headTiltAngle={headTiltAngle}
             pounceTarget={pounceTarget}
             wigglingEar={wigglingEar}
-            wiggleDuration={null}
             lastHeart={
               trackableHeartId !== null &&
               hearts.find((h) => h.id === trackableHeartId)

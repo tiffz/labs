@@ -14,10 +14,10 @@ interface CatProps {
   isJumping: boolean;
   isPlaying: boolean;
   isSmiling: boolean;
+  isSubtleWiggling: boolean;
   headTiltAngle: number;
   pounceTarget: { x: number; y: number };
   wigglingEar: 'left' | 'right' | null;
-  wiggleDuration: number | null;
   lastHeart: HTMLDivElement | null;
   wandMode: boolean;
 }
@@ -41,10 +41,10 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
       isJumping,
       isPlaying,
       isSmiling,
+      isSubtleWiggling,
       headTiltAngle,
       pounceTarget,
       wigglingEar,
-      wiggleDuration,
       lastHeart,
       wandMode,
     } = props;
@@ -269,15 +269,16 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
       };
     }, [lastHeart, catRef, isPouncing, pounceTarget, wandMode]);
 
-    const catContainerClasses = [
+    const svgClasses = [
+      'cat-svg',
       isPetting ? 'is-petting' : '',
-      wigglingEar ? 'is-wiggling' : '',
+      wigglingEar === 'left' ? 'wiggling-left' : '',
+      wigglingEar === 'right' ? 'wiggling-right' : '',
+      isSubtleWiggling ? 'subtle-wiggling' : '',
       isPlaying ? 'playing' : '',
     ]
       .filter(Boolean)
       .join(' ');
-
-    const earStyle = wiggleDuration ? { animationDuration: `${wiggleDuration}s` } : {};
 
     const headTiltTransform = `rotate(${headTiltAngle}deg)`;
 
@@ -299,11 +300,10 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
         ref={catRef}
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 220 200"
-        className="cat-svg"
+        className={svgClasses}
       >
         <g
           id="cat-container"
-          className={catContainerClasses}
           onClick={onClick}
           style={{ cursor: 'pointer' }}
         >
@@ -328,8 +328,7 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
               {/* Left ear */}
               <g
                 id="left-ear"
-                className={wigglingEar === 'left' ? 'ear-wiggling' : ''}
-                style={earStyle}
+                className="ear-wiggling-left"
                 onClick={(e) => {
                   e.stopPropagation();
                   onEarClick('left', e);
@@ -343,8 +342,7 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
               {/* Right ear */}
               <g
                 id="right-ear"
-                className={wigglingEar === 'right' ? 'ear-wiggling' : ''}
-                style={earStyle}
+                className="ear-wiggling-right"
                 onClick={(e) => {
                   e.stopPropagation();
                   onEarClick('right', e);
