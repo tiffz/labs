@@ -8,7 +8,7 @@ import js from '@eslint/js';
 export default [
   // Global ignores
   {
-    ignores: ['dist/'],
+    ignores: ['dist/', 'dev-dist/', 'node_modules/', '*.min.js', 'build/', 'coverage/'],
   },
 
   // Base JS and TS configs
@@ -17,7 +17,7 @@ export default [
 
   // Config for Node.js files (e.g., config files in root)
   {
-    files: ['eslint.config.js', 'vite.config.ts', 'postcss.config.js'],
+    files: ['eslint.config.js', 'vite.config.ts', 'vite.config.js', 'postcss.config.js'],
     languageOptions: {
       globals: {
         ...globals.node,
