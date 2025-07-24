@@ -49,8 +49,14 @@ jobs:
         echo "=== DEPENDENCY INSTALLATION ==="
         echo "Before install - node_modules exists: $(test -d node_modules && echo 'YES' || echo 'NO')"
         
-        echo "Running npm ci with full verbosity..."
-        npm ci --verbose 2>&1 | tee npm-install.log
+        echo "Applying Rollup fix - removing package-lock.json and node_modules..."
+        rm -rf node_modules package-lock.json
+        
+        echo "Running npm install to regenerate lock file..."
+        npm install 2>&1 | tee npm-install.log
+        
+        echo "Running npm ci for clean install..."
+        npm ci --verbose 2>&1 | tee -a npm-install.log
         
         echo "After install - node_modules exists: $(test -d node_modules && echo 'YES' || echo 'NO')"
         echo "node_modules size: $(du -sh node_modules 2>/dev/null || echo 'N/A')"
