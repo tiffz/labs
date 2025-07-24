@@ -1,7 +1,5 @@
 import React from 'react';
-import type { JobData } from '../../data/jobData';
 import { jobData } from '../../data/jobData';
-import FishIcon from '../../icons/FishIcon';
 import Job from './Job';
 
 interface JobPanelProps {

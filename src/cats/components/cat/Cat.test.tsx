@@ -22,9 +22,9 @@ const getDefaultProps = (overrides: Partial<React.ComponentProps<typeof Cat>> = 
     headTiltAngle: 0,
     pounceTarget: { x: 0, y: 0 },
     wigglingEar: null,
-    wiggleDuration: null,
     lastHeart: null,
     wandMode: false,
+    isSubtleWiggling: false,
   };
   return { ...defaultProps, ...overrides };
 };
@@ -34,41 +34,41 @@ describe('Cat Component Eye States', () => {
     const props = getDefaultProps();
     render(<Cat {...props} />);
     const openEyes = screen.getByTestId('eye-open');
-    expect(openEyes).not.toHaveClass('hidden');
+    expect(openEyes.className).not.toContain('hidden');
   });
 
   it('shows sleepy eyes when isSleeping is true', () => {
     const props = getDefaultProps({ isSleeping: true });
     render(<Cat {...props} />);
     const sleepyEyes = screen.getByTestId('eye-sleepy');
-    expect(sleepyEyes).not.toHaveClass('hidden');
+    expect(sleepyEyes.className).not.toContain('hidden');
     const openEyes = screen.getByTestId('eye-open');
-    expect(openEyes).toHaveClass('hidden');
+    expect(openEyes.className).toContain('hidden');
   });
 
   it('shows happy eyes when isJumping is true', () => {
     const props = getDefaultProps({ isJumping: true });
     render(<Cat {...props} />);
     const happyEyes = screen.getByTestId('eye-happy');
-    expect(happyEyes).not.toHaveClass('hidden');
+    expect(happyEyes.className).not.toContain('hidden');
     const openEyes = screen.getByTestId('eye-open');
-    expect(openEyes).toHaveClass('hidden');
+    expect(openEyes.className).toContain('hidden');
   });
 
   it('shows happy eyes when isSmiling is true', () => {
     const props = getDefaultProps({ isSmiling: true });
     render(<Cat {...props} />);
     const happyEyes = screen.getByTestId('eye-happy');
-    expect(happyEyes).not.toHaveClass('hidden');
+    expect(happyEyes.className).not.toContain('hidden');
   });
 
   it('shows startled eyes when isStartled is true', () => {
     const props = getDefaultProps({ isStartled: true });
     render(<Cat {...props} />);
     const startledEyes = screen.getByTestId('eye-startled');
-    expect(startledEyes).not.toHaveClass('hidden');
+    expect(startledEyes.className).not.toContain('hidden');
     const openEyes = screen.getByTestId('eye-open');
-    expect(openEyes).toHaveClass('hidden');
+    expect(openEyes.className).toContain('hidden');
   });
 
   describe('drowsy and blinking states', () => {
@@ -87,8 +87,8 @@ describe('Cat Component Eye States', () => {
       // Initially, eyes should be open
       const openEyes = screen.getByTestId('eye-open');
       const sleepyEyes = screen.getByTestId('eye-sleepy');
-      expect(openEyes).not.toHaveClass('hidden');
-      expect(sleepyEyes).toHaveClass('hidden');
+      expect(openEyes.className).not.toContain('hidden');
+      expect(sleepyEyes.className).toContain('hidden');
 
       // Advance time to the point of the first blink
       act(() => {
@@ -96,8 +96,8 @@ describe('Cat Component Eye States', () => {
       });
 
       // Now the eyes should be sleepy (blinking)
-      expect(sleepyEyes).not.toHaveClass('hidden');
-      expect(openEyes).toHaveClass('hidden');
+      expect(sleepyEyes.className).not.toContain('hidden');
+      expect(openEyes.className).toContain('hidden');
 
       // Advance time to the end of the blink
       act(() => {
@@ -105,8 +105,8 @@ describe('Cat Component Eye States', () => {
       });
 
       // Eyes should be open again
-      expect(openEyes).not.toHaveClass('hidden');
-      expect(sleepyEyes).toHaveClass('hidden');
+      expect(openEyes.className).not.toContain('hidden');
+      expect(sleepyEyes.className).toContain('hidden');
     });
   });
   
@@ -116,7 +116,7 @@ describe('Cat Component Eye States', () => {
     const startledEyes = screen.getByTestId('eye-startled');
     const happyEyes = screen.getByTestId('eye-happy');
     
-    expect(startledEyes).not.toHaveClass('hidden');
-    expect(happyEyes).toHaveClass('hidden');
+    expect(startledEyes.className).not.toContain('hidden');
+    expect(happyEyes.className).toContain('hidden');
   });
 }); 
