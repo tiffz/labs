@@ -1,0 +1,35 @@
+name: Debug CI
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Check Node.js version
+      run: |
+        node --version
+        npm --version
+        
+    - name: List files
+      run: |
+        pwd
+        ls -la
+        
+    - name: Check package.json
+      run: |
+        cat package.json
+        
+    - name: Install dependencies with verbose output
+      run: npm ci --verbose
+      
+    - name: Run tests with debug info
+      run: |
+        npm test -- --version
+        npm test 

@@ -10,6 +10,10 @@ jobs:
   test:
     runs-on: ubuntu-latest
     
+    env:
+      CI: true
+      NODE_ENV: test
+    
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -18,10 +22,19 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '20'
-        cache: 'npm'
+        # Temporarily disable cache to rule out cache issues
+        # cache: 'npm'
         
-    - name: Install dependencies
-      run: npm ci
+    - name: Verify package files
+      run: |
+        ls -la
+        node --version
+        npm --version
+        
+    - name: Clean install dependencies
+      run: |
+        rm -rf node_modules
+        npm ci --verbose
       
     - name: Run linter
       run: npm run lint
