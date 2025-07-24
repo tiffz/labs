@@ -281,6 +281,19 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
 
     const headTiltTransform = `rotate(${headTiltAngle}deg)`;
 
+    let activeEyeState: 'sleeping' | 'startled' | 'happy' | 'drowsy' | 'open' = 'open';
+
+    if (isSleeping) {
+      activeEyeState = 'sleeping';
+    } else if (isStartled) {
+      activeEyeState = 'startled';
+    } else if (isJumping || isSmiling) {
+      activeEyeState = 'happy';
+    } else if (isDrowsy) {
+      activeEyeState = 'drowsy';
+    }
+
+
     return (
       <svg
         ref={catRef}
@@ -367,10 +380,10 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
                   />
                 </g>
 
-                {/* Jumping Eyes */}
+                {/* Happy Eyes */}
                 <g
-                  className={`eye-jumping ${
-                    isJumping || isSmiling ? '' : 'hidden'
+                  className={`eye-happy ${
+                    activeEyeState === 'happy' ? '' : 'hidden'
                   }`}
                   onClick={onEyeClick}
                 >
@@ -389,7 +402,7 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
                 </g>
 
                 {/* Sleeping Eyes */}
-                <g className={`eye-sleeping ${isSleeping && !isJumping ? '' : 'hidden'}`} onClick={onEyeClick}>
+                <g className={`eye-sleeping ${activeEyeState === 'sleeping' ? '' : 'hidden'}`} onClick={onEyeClick}>
                   <path
                     d="M 74 82 Q 80 87, 86 82"
                     stroke="white"
@@ -407,7 +420,7 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
                 {/* Drowsy Eyes */}
                 <g
                   className={`eye-drowsy ${
-                    !isSleeping && isDrowsy && isBlinking && !isJumping ? '' : 'hidden'
+                    activeEyeState === 'drowsy' && isBlinking ? '' : 'hidden'
                   }`}
                   onClick={onEyeClick}
                 >
@@ -428,13 +441,7 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
                 {/* Open Eyes */}
                 <g
                   className={`eye-open ${
-                    !isSleeping &&
-                    !isStartled &&
-                    (!isDrowsy || !isBlinking) &&
-                    !isJumping &&
-                    !isSmiling
-                      ? ''
-                      : 'hidden'
+                    activeEyeState === 'open' && !isBlinking ? '' : 'hidden'
                   }`}
                   onClick={onEyeClick}
                 >
@@ -461,7 +468,7 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
                 {/* Startled Eyes */}
                 <g
                   className={`eye-startled ${
-                    !isSleeping && isStartled && !isJumping ? '' : 'hidden'
+                    activeEyeState === 'startled' ? '' : 'hidden'
                   }`}
                   onClick={onEyeClick}
                 >
