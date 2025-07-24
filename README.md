@@ -9,7 +9,7 @@ labs/
   src/
     index.html         # Landing page with links to all micro-apps
     zines/           # Example micro-app: Minizine Magic Maker
-      index.html 
+      index.html
       ...
     cats/            # (Add more micro-apps here)
       ...
@@ -52,27 +52,60 @@ labs/
 ## Development & Build
 
 - **Start the dev server:**
+
   ```sh
   npm start
   ```
+
   Visit `/zines/` or any other app at `/yourapp/`.
 
+- **Run tests:**
+
+  ```sh
+  npm test
+  ```
+
+  Runs the comprehensive test suite (48 tests) across all components.
+
+- **Check code quality:**
+
+  ```sh
+  npm run lint
+  ```
+
+  Runs ESLint to check code style and quality.
+
 - **Build for production:**
+
   ```sh
   npm run build
   ```
+
   Output is in the `build/` directory.
 
 - **Deploy to GitHub Pages:**
   ```sh
   npm run deploy
   ```
+  Runs tests first - deployment is blocked if tests fail.
+
+## Quality Assurance
+
+This project maintains high standards through automated quality checks:
+
+- **Tests:** 48 comprehensive tests covering all major components and functionality
+- **Pre-commit hooks:** Tests and linting must pass before commits are allowed
+- **CI/CD integration:** GitHub Actions runs full test suite on every push/PR
+- **Deployment protection:** Failed tests block production deployment
 
 ## Notes for Contributors
 
 - **Always keep each micro-app isolated in its own folder under `src/`.**
 - **Do not move or merge app code into the root or other app folders.**
 - **When adding a new app, always update the Vite config and landing page.**
+- **Write tests for new components and features - place test files alongside the code they test.**
+- **Ensure all tests pass before committing:** `npm test`
+- **Run linting before committing:** `npm run lint`
 - **When editing an app, use the app’s own CSS and assets unless you are intentionally sharing code.**
 - **If you see custom CSS classes (e.g., `.card-bg`, `.font-heading`), do not remove them—they are required for the original look and feel.**
 - **If you add new dependencies, make sure they are compatible with all apps.**

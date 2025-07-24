@@ -78,16 +78,32 @@ npm run test:watch  # or npm run test -- --watch
 
 ### Test Coverage
 
-Our tests focus on:
+Our comprehensive test suite includes **48 tests** covering:
+
+#### **Component Testing**
+
+- **Cat Component (13 tests):** Complete eye state management, eye-tracking system, animation setup
+- **WandToy Component (19 tests):** Mouse tracking, wiggle animations, lifecycle management, shaking states
+- **App Component (16 tests):** Wand mode functionality, component integration, state transitions, system robustness
+
+#### **Key Testing Areas**
 
 - Component rendering and state management
-- User interactions and event handling
-- Integration between components
-- Edge cases and error conditions
+- User interactions and event handling (clicks, mouse movement, mode switching)
+- Integration between components (App ↔ Cat ↔ WandToy)
+- Complex animation systems and DOM manipulation
+- Error handling and edge cases
+- State cleanup and memory management
 
-The eye-tracking tests specifically cover:
+#### **Advanced Testing Techniques**
 
-- Pupil positioning and movement
-- Mouse event handling
-- Heart tracking priority
-- Component setup and cleanup
+- **Portal Mocking:** `ReactDOM.createPortal` for heart rendering
+- **Animation Mocking:** `requestAnimationFrame`, `DOMMatrix`, `getComputedStyle`
+- **Timer Control:** Fake timers for precise time-based testing
+- **DOM Environment:** Proper setup and cleanup of required DOM elements
+
+#### **Regression Prevention**
+
+- **Eye-tracking bug prevention:** Comprehensive tests ensure the cat's eyes follow hearts correctly
+- **Wand toy system protection:** Complex pouncing mechanics with proximity, velocity, and novelty detection
+- **State management validation:** Proper cleanup and transitions under all conditions
