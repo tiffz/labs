@@ -8,6 +8,11 @@ jobs:
   minimal-test:
     runs-on: ubuntu-latest
     
+    env:
+      CI: true
+      NODE_ENV: test
+      HUSKY: 0
+    
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -27,8 +32,10 @@ jobs:
         echo "Package.json exists:"
         cat package.json | head -20
         
-    - name: Install dependencies
-      run: npm install
+    - name: Install dependencies (CI method)
+      run: |
+        rm -rf node_modules
+        npm ci --verbose
       
     - name: Test each CI step individually
       run: |
