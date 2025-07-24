@@ -30,8 +30,17 @@ jobs:
     - name: Install dependencies
       run: npm install
       
-    - name: Run single test
+    - name: Test each CI step individually
       run: |
-        echo "Testing npm scripts..."
-        npm run lint --if-present
-        echo "Lint completed" 
+        echo "=== Testing npm scripts one by one ==="
+        
+        echo "1. Testing lint..."
+        npm run lint || echo "LINT FAILED with exit code $?"
+        
+        echo "2. Testing build..."
+        npm run build || echo "BUILD FAILED with exit code $?"
+        
+        echo "3. Testing npm test..."
+        npm test || echo "TEST FAILED with exit code $?"
+        
+        echo "=== All steps attempted ===" 
