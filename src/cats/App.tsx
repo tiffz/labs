@@ -1,16 +1,17 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import ReactDOM from 'react-dom';
-import Cat from './Cat';
-import Heart from './Heart';
-import Zzz from './Zzz';
-import WandToy from './WandToy';
-import DevPanel from './DevPanel';
-import HeartIcon from './HeartIcon';
-import FishIcon from './FishIcon';
-import CatFact from './CatFact';
-import JobPanel from './JobPanel';
-import { catFacts } from './catFacts';
-import { jobData } from './jobData';
+import Cat from './components/cat/Cat';
+import Heart from './components/cat/Heart';
+import Zzz from './components/cat/Zzz';
+import WandToy from './components/cat/WandToy';
+import DevPanel from './components/ui/DevPanel';
+import HeartIcon from './icons/HeartIcon';
+import FishIcon from './icons/FishIcon';
+import CatFact from './components/ui/CatFact';
+import JobPanel from './components/jobs/JobPanel';
+import { catFacts } from './data/catFacts';
+import { jobData } from './data/jobData';
+import './styles/cats.css';
 
 interface HeartType {
   id: number;

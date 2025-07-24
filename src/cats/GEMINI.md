@@ -49,7 +49,18 @@ The logic for the wand toy interaction is designed to feel organic and skillful,
 -   **Multi-Page App Setup:** The project is configured as a multi-page application within Vite, with separate HTML entry points for different "labs."
 -   **Service Worker:** A PWA service worker is configured for offline caching. Crucially, it is set up to handle a multi-page app structure correctly, using `directoryIndex` and `ignoreURLParametersMatching` to serve the right pages and avoid caching bugs. This was a significant technical hurdle that required careful debugging.
 -   **Reusable Components:** Key UI elements, like the `HeartIcon` and `FishIcon`, are built as reusable React components to ensure visual consistency.
-## 4. Testing
+## 4. Project Structure
+The `cats` micro-app follows a feature-based folder structure to keep the code organized and maintainable:
+-   `/components`: Contains all React components, further divided by feature.
+    -   `/components/cat`: Components directly related to the cat SVG and its animations (`Cat.tsx`, `Heart.tsx`, etc.).
+    -   `/components/jobs`: Components for the "Day Job" feature (`JobPanel.tsx`, `Job.tsx`).
+    -   `/components/ui`: General-purpose UI components (`DevPanel.tsx`, `CatFact.tsx`).
+-   `/data`: Holds static data and type definitions (`jobData.ts`, `catFacts.ts`).
+-   `/icons`: Contains reusable SVG icon components (`HeartIcon.tsx`, `FishIcon.tsx`).
+-   `/styles`: Global and component-specific stylesheets (`cats.css`).
+-   `/test`: Contains shared testing setup and utilities (`setupTests.ts`).
+
+## 5. Testing
 The project uses **Vitest** for unit testing, integrated directly into the Vite development environment. This allows for fast, efficient, and reliable testing of our React components.
 
 ### Technology Stack
@@ -61,10 +72,11 @@ The project uses **Vitest** for unit testing, integrated directly into the Vite 
 ### Running Tests
 To run the entire test suite once, use the following command:
 ```bash
-npm test
+npx vitest run
 ```
 This command will execute all `*.test.tsx` files and provide a summary of the results in the console. The tests are configured to run in a simulated DOM environment, so they do not require a browser.
 
 ### Test Philosophy
--   **Focus on Behavior:** Our tests are written to verify the component's behavior from a user's perspective, rather than its internal implementation details. For example, we test that the correct eyes *appear* on screen based on the component's props, not that a specific internal state variable is set.
+-   **Co-location:** Test files (`*.test.tsx`) are located directly alongside the component file they are testing (e.g., `Cat.test.tsx` lives next to `Cat.tsx`). This makes tests easy to find and encourages testing as part of the development workflow. Shared testing setup resides in the `/test` directory.
+-   **Behavior-Driven:** Our tests are written to verify the component's behavior from a user's perspective, rather than its internal implementation details. For example, we test that the correct eyes *appear* on screen based on the component's props, not that a specific internal state variable is set.
 -   **Prevent Regressions:** The primary goal of our test suite is to prevent regressions. The detailed tests for the cat's eye states, for instance, were created to lock in the correct, complex rendering logic and ensure it doesn't break in the future. 

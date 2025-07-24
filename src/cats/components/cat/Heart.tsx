@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
-import HeartIcon from './HeartIcon';
-import './cats.css';
+import HeartIcon from '../../icons/HeartIcon';
+import '../../styles/cats.css';
 
 interface HeartProps {
   x: number;

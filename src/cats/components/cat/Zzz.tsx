@@ -1,5 +1,5 @@
 import React from 'react';
-import './cats.css';
+import '../../styles/cats.css';
 
 interface ZzzProps {
   x: number;

@@ -23,4 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 
+# Vite
+src/dev-dist
+
 build

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import './cats.css';
+import '../../styles/cats.css';
 
 interface WandToyProps {
   isShaking: boolean;
