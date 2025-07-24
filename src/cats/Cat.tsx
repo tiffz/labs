@@ -281,18 +281,18 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
 
     const headTiltTransform = `rotate(${headTiltAngle}deg)`;
 
-    let activeEyeState: 'sleeping' | 'startled' | 'happy' | 'drowsy' | 'open' = 'open';
+    // Determine the single, definitive eye state based on a clear priority
+    let activeEyeState: 'sleepy' | 'startled' | 'happy' | 'open';
 
-    if (isSleeping) {
-      activeEyeState = 'sleeping';
+    if (isSleeping || (isDrowsy && isBlinking)) {
+      activeEyeState = 'sleepy';
     } else if (isStartled) {
       activeEyeState = 'startled';
     } else if (isJumping || isSmiling) {
       activeEyeState = 'happy';
-    } else if (isDrowsy) {
-      activeEyeState = 'drowsy';
+    } else {
+      activeEyeState = 'open';
     }
-
 
     return (
       <svg
@@ -382,6 +382,7 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
 
                 {/* Happy Eyes */}
                 <g
+                  data-testid="eye-happy"
                   className={`eye-happy ${
                     activeEyeState === 'happy' ? '' : 'hidden'
                   }`}
@@ -401,26 +402,11 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
                   />
                 </g>
 
-                {/* Sleeping Eyes */}
-                <g className={`eye-sleeping ${activeEyeState === 'sleeping' ? '' : 'hidden'}`} onClick={onEyeClick}>
-                  <path
-                    d="M 74 82 Q 80 87, 86 82"
-                    stroke="white"
-                    strokeWidth="1.5"
-                    fill="none"
-                  />
-                  <path
-                    d="M 114 82 Q 120 87, 126 82"
-                    stroke="white"
-                    strokeWidth="1.5"
-                    fill="none"
-                  />
-                </g>
-
-                {/* Drowsy Eyes */}
+                {/* Sleepy Eyes */}
                 <g
-                  className={`eye-drowsy ${
-                    activeEyeState === 'drowsy' && isBlinking ? '' : 'hidden'
+                  data-testid="eye-sleepy"
+                  className={`eye-sleeping ${
+                    activeEyeState === 'sleepy' ? '' : 'hidden'
                   }`}
                   onClick={onEyeClick}
                 >
@@ -440,8 +426,9 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
 
                 {/* Open Eyes */}
                 <g
+                  data-testid="eye-open"
                   className={`eye-open ${
-                    activeEyeState === 'open' && !isBlinking ? '' : 'hidden'
+                    activeEyeState === 'open' ? '' : 'hidden'
                   }`}
                   onClick={onEyeClick}
                 >
@@ -467,6 +454,7 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
 
                 {/* Startled Eyes */}
                 <g
+                  data-testid="eye-startled"
                   className={`eye-startled ${
                     activeEyeState === 'startled' ? '' : 'hidden'
                   }`}

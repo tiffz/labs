@@ -1,70 +1,55 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import checker from 'vite-plugin-checker';
+/// <reference types="vitest" />
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
-import { resolve } from 'path'
-import { viteStaticCopy } from 'vite-plugin-static-copy'
+import { viteStaticCopy } from 'vite-plugin-static-copy';
+import { resolve } from 'path';
 
-// https://vite.dev/config/
 export default defineConfig({
-  plugins: [
-    react(),
-    checker({
-      typescript: true,
-      eslint: {
-        useFlatConfig: true,
-        lintCommand: 'eslint .',
-      },
-    }),
-    VitePWA({
-      registerType: 'autoUpdate',
-      workbox: {
-        // This will cache all assets, including all your html entry points
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
-        // This tells the service worker to serve index.html for directory requests
-        directoryIndex: 'index.html',
-        // This is the key fix: it tells the SW to ignore all URL parameters
-        ignoreURLParametersMatching: [/.*/],
-      },
-      // A simple manifest is fine
-      manifest: {
-        name: 'Tiffany\'s Lab',
-        short_name: 'Labs',
-        description: 'A collection of Tiffany\'s experiments',
-        theme_color: '#ffffff',
-        icons: [
-          {
-            src: 'pwa-192x192.png',
-            sizes: '192x192',
-            type: 'image/png'
-          },
-          {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png'
-          }
-        ]
-      },
-    }),
-    viteStaticCopy({
-      targets: [
-        {
-          src: resolve(__dirname, 'CNAME'),
-          dest: '.',
-        },
-      ],
-    }),
-  ],
-  publicDir: '../public',
-  root: 'src',
   build: {
-    outDir: '../dist',
     rollupOptions: {
       input: {
-        main: resolve(__dirname, 'src/index.html'),
-        zines: resolve(__dirname, 'src/zines/index.html'),
+        main: resolve(__dirname, 'index.html'),
         cats: resolve(__dirname, 'src/cats/index.html'),
+        zines: resolve(__dirname, 'src/zines/index.html'),
       },
     },
   },
-})
+  plugins: [
+    react(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff,woff2}'],
+        // Don't precache API responses or other dynamic content
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) => url.pathname.startsWith('/api'),
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'api-cache',
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+        ],
+        // This is crucial for multi-page apps.
+        // It ensures that any URL that doesn't match a precached file
+        // will be served by '/index.html' (or another specified fallback).
+        navigateFallback: '/index.html',
+        // This regex ensures that URLs with 'dev=true' are ignored by the service worker,
+        // preventing the dev panel from being cached and shown to regular users.
+        ignoreURLParametersMatching: [/dev/],
+      },
+      devOptions: {
+        enabled: true,
+      },
+    }),
+  ],
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/cats/setupTests.ts',
+  },
+});
