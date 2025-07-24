@@ -17,6 +17,14 @@ jobs:
       with:
         node-version: '20'
         
+    - name: Show current directory and files
+      run: |
+        echo "Current directory: $(pwd)"
+        echo "Files in root:"
+        ls -la
+        echo "Files in src:"
+        ls -la src/ || echo "No src directory"
+        
     - name: Install dependencies
       run: npm ci
       
@@ -27,4 +35,7 @@ jobs:
       run: npm run lint
       
     - name: Build project
-      run: npm run build 
+      run: |
+        echo "Creating dist directory..."
+        mkdir -p dist
+        npm run build 
