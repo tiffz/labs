@@ -1,0 +1,37 @@
+name: Minimal Test
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  minimal-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        
+    - name: Show environment
+      run: |
+        echo "Node version: $(node --version)"
+        echo "NPM version: $(npm --version)"
+        echo "Working directory: $(pwd)"
+        echo "Files in current directory:"
+        ls -la
+        echo "Package.json exists:"
+        cat package.json | head -20
+        
+    - name: Install dependencies
+      run: npm install
+      
+    - name: Run single test
+      run: |
+        echo "Testing npm scripts..."
+        npm run lint --if-present
+        echo "Lint completed" 
