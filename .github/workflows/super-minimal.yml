@@ -1,0 +1,47 @@
+name: Super Minimal
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  just-deps:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        
+    - name: Show environment details
+      run: |
+        echo "=== Environment ==="
+        node --version
+        npm --version
+        pwd
+        whoami
+        echo "=== Files ==="
+        ls -la
+        echo "=== Package.json exists? ==="
+        cat package.json | head -10
+        echo "=== Package-lock.json exists? ==="
+        ls -la package-lock.json
+        
+    - name: Test npm install only
+      run: |
+        echo "=== Testing npm ci ==="
+        npm ci
+        echo "=== Install completed ==="
+        
+    - name: Test individual scripts
+      run: |
+        echo "=== Testing npm run lint ==="
+        npm run lint || echo "LINT FAILED: $?"
+        echo "=== Testing npm test ==="  
+        npm test || echo "TEST FAILED: $?"
+        echo "=== Testing npm run build ==="
+        npm run build || echo "BUILD FAILED: $?" 
