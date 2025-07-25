@@ -11,6 +11,7 @@ import CatFact from './components/ui/CatFact';
 import JobPanel from './components/jobs/JobPanel';
 import { catFacts } from './data/catFacts';
 import { jobData } from './data/jobData';
+import { useWandSystem } from './hooks/useWandSystem';
 import './styles/cats.css';
 
 interface HeartType {
@@ -46,38 +47,54 @@ function App() {
   const zzzTimeoutRef = useRef<number | null>(null);
   const [wigglingEar, setWigglingEar] = useState<'left' | 'right' | null>(null);
   const [isSubtleWiggling, setIsSubtleWiggling] = useState(false);
-  const [wandMode, setWandMode] = useState(false);
   const [isJumping, setIsJumping] = useState(false);
   const clickTimestampsRef = useRef<number[]>([]);
-  const [isShaking, setIsShaking] = useState(false);
-  const [wandInitialPosition, setWandInitialPosition] = useState({ x: 0, y: 0 });
-  const [isPouncing, setIsPouncing] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [pounceTarget, setPounceTarget] = useState({ x: 0, y: 0 });
   const [lovePerPounce, setLovePerPounce] = useState(3);
   const [trackableHeartId, setTrackableHeartId] = useState<number | null>(null);
   const [isSmiling, setIsSmiling] = useState(false);
   const [headTiltAngle, setHeadTiltAngle] = useState(0);
   
   const catRef = useRef<SVGSVGElement>(null);
-  const shakeTimeoutRef = useRef<number | null>(null);
-  const pounceConfidenceRef = useRef(0);
-  const lastWandPositionRef = useRef({ x: 0, y: 0 });
-  const lastWandMoveTimeRef = useRef(0);
-  const lastVelocityRef = useRef(0);
-  const velocityHistoryRef = useRef<number[]>([]);
-  const movementNoveltyRef = useRef(1.0);
   const [energy, setEnergy] = useState(100); // Cat's energy, 0-100
   const [isDevMode, setIsDevMode] = useState(false);
   
   const cheekClickFlag = useRef(false);
-  
-  const [pounceConfidenceDisplay, setPounceConfidenceDisplay] = useState(0);
-  const [lastVelocityDisplay, setLastVelocityDisplay] = useState(0);
-  const [proximityMultiplierDisplay, setProximityMultiplierDisplay] = useState(1);
-  const [movementNoveltyDisplay, setMovementNoveltyDisplay] = useState(1.0);
   const [rapidClickCount, setRapidClickCount] = useState(0);
   const [currentFact] = useState(catFacts[Math.floor(Math.random() * catFacts.length)]);
+
+  // === WAND SYSTEM ===
+  const { state: wandState, actions: wandActions } = useWandSystem({
+    catRef: catRef as React.RefObject<SVGSVGElement>,
+    lovePerPounce,
+    isDevMode,
+    callbacks: {
+      onLoveGained: (amount) => setLove(current => current + amount),
+      onHeartSpawned: (newHearts) => {
+        setHearts(currentHearts => [...currentHearts, ...newHearts]);
+        // Remove hearts after animation
+        setTimeout(() => {
+          setHearts(currentHearts => 
+            currentHearts.filter(heart => !newHearts.some(nh => nh.id === heart.id))
+          );
+        }, 1000);
+      },
+      onTrackableHeartSet: (heartId) => setTrackableHeartId(heartId),
+    },
+  });
+
+  // Extract wand state for easier access
+  const { 
+    wandMode, 
+    isShaking, 
+    isPouncing, 
+    isPlaying, 
+    pounceTarget, 
+    wandInitialPosition,
+    pounceConfidence,
+    lastVelocity,
+    proximityMultiplier,
+    movementNovelty
+  } = wandState;
 
   const treatsPerSecond = useMemo(() => {
     return jobData.reduce((total, job) => {
@@ -94,25 +111,12 @@ function App() {
     energyRef.current = energy;
   }, [energy]);
 
-  const wandPositionRef = useRef({ x: 0, y: 0 });
-
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('dev') === 'true') {
       setIsDevMode(true);
     }
   }, []);
-
-  useEffect(() => {
-    if (!wandMode) return;
-    const handleMouseMove = (event: MouseEvent) => {
-      wandPositionRef.current = { x: event.clientX, y: event.clientY };
-    };
-    document.addEventListener('mousemove', handleMouseMove);
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-    };
-  }, [wandMode]);
 
   // Energy regeneration
   useEffect(() => {
@@ -132,7 +136,7 @@ function App() {
   }, [isSmiling]);
   
   const handleCatClick = (event: React.MouseEvent) => {
-    if (pounceState.current.isActive) return;
+    if (isPouncing) return;
 
     const energyMultiplier = 1 + energy / 100;
     const loveFromClick = Math.round(lovePerClick * energyMultiplier);
@@ -207,137 +211,13 @@ function App() {
   };
   
   const handleWandClick = () => {
-    if (shakeTimeoutRef.current) clearTimeout(shakeTimeoutRef.current);
-    pounceConfidenceRef.current += 35;
-    setEnergy(e => Math.max(0, e - 0.5));
-    setIsShaking(false);
-    requestAnimationFrame(() => {
-      setIsShaking(true);
-      shakeTimeoutRef.current = window.setTimeout(() => setIsShaking(false), 500);
-    });
-    if (isPouncing) {
-      setIsPlaying(true);
-      setLove((currentLove) => currentLove + 1);
-      setTimeout(() => setIsPlaying(false), 300);
-    }
+    wandActions.handleWandClick();
   };
 
-  const pounceState = React.useRef({
-    isActive: false,
-  });
-
+  // Update the wand system with current energy when it changes
   useEffect(() => {
-    if (!wandMode) {
-      pounceConfidenceRef.current = 0;
-      if (isDevMode) setPounceConfidenceDisplay(0);
-      return;
-    }
-
-    const pouncePlanningInterval = setInterval(() => {
-      if (!catRef.current) return;
-      setEnergy(e => Math.max(0, e - 0.05));
-
-      const catRect = catRef.current.getBoundingClientRect();
-      const catCenterX = catRect.left + catRect.width / 2;
-      const catCenterY = catRect.top + catRect.height / 2;
-      const currentWandPosition = wandPositionRef.current;
-      const distanceToCat = Math.hypot(currentWandPosition.x - catCenterX, currentWandPosition.y - catCenterY);
-
-      const now = Date.now();
-      const timeDelta = now - lastWandMoveTimeRef.current;
-      let proximityMultiplier = 0.3;
-      const veryCloseDistance = 60;
-      const nearDistance = 220;
-
-      if (distanceToCat < veryCloseDistance) {
-        proximityMultiplier = 1 + Math.pow((veryCloseDistance - distanceToCat) / 25, 2.2);
-      } else if (distanceToCat < nearDistance) {
-        const progress = (distanceToCat - veryCloseDistance) / (nearDistance - veryCloseDistance);
-        proximityMultiplier = 1.0 - progress * 0.7;
-      }
-
-      let velocityConfidence = 0, suddenStopConfidence = 0, suddenStartConfidence = 0;
-
-      if (timeDelta > 16) { 
-        const distanceMoved = Math.hypot(currentWandPosition.x - lastWandPositionRef.current.x, currentWandPosition.y - lastWandPositionRef.current.y);
-        const velocity = distanceMoved / timeDelta;
-        
-        velocityHistoryRef.current.push(velocity);
-        if (velocityHistoryRef.current.length > 20) velocityHistoryRef.current.shift(); 
-
-        const highVelocityThreshold = 1.5;
-        const recentFastMoves = velocityHistoryRef.current.filter(v => v > highVelocityThreshold).length;
-        const historyRatio = velocityHistoryRef.current.length > 0 ? recentFastMoves / velocityHistoryRef.current.length : 0;
-        
-        movementNoveltyRef.current = historyRatio > 0.5 
-            ? Math.max(0.1, movementNoveltyRef.current - 0.1)
-            : Math.min(1.0, movementNoveltyRef.current + 0.06);
-
-        if (velocity > 0.1) velocityConfidence = (velocity * 8) * movementNoveltyRef.current; 
-        if (lastVelocityRef.current > 1.6 && velocity < 0.3) suddenStopConfidence = (20 * proximityMultiplier);
-        if (lastVelocityRef.current < 0.4 && velocity > 1.5) suddenStartConfidence = (25 * proximityMultiplier);
-        
-        lastVelocityRef.current = velocity;
-      }
-      lastWandMoveTimeRef.current = now;
-      lastWandPositionRef.current = currentWandPosition;
-      
-      const energyBoost = 1 + (energyRef.current / 100);
-      const totalConfidenceGain = (velocityConfidence + suddenStopConfidence + suddenStartConfidence);
-      pounceConfidenceRef.current += totalConfidenceGain * energyBoost;
-      pounceConfidenceRef.current = Math.max(0, pounceConfidenceRef.current * 0.90);
-
-      if (isDevMode) {
-        setPounceConfidenceDisplay(pounceConfidenceRef.current);
-        setLastVelocityDisplay(lastVelocityRef.current);
-        setProximityMultiplierDisplay(proximityMultiplier);
-        setMovementNoveltyDisplay(movementNoveltyRef.current);
-      }
-
-      if (pounceConfidenceRef.current > 75 && !isPouncing) {
-        pounceConfidenceRef.current = 0;
-        velocityHistoryRef.current = [];
-        movementNoveltyRef.current = 1.0;
-        setEnergy(e => Math.max(0, e - 5));
-
-        const vectorX = currentWandPosition.x - catCenterX;
-        const vectorY = currentWandPosition.y - catCenterY;
-        const pounceDistance = Math.hypot(vectorX, vectorY);
-        const maxPounce = 30 + Math.random() * 20;
-        const angle = Math.atan2(vectorY, vectorX);
-        const randomAngleOffset = (Math.random() - 0.5) * 0.4;
-        const newAngle = angle + randomAngleOffset;
-
-        const pounceX = pounceDistance > 0 ? Math.cos(newAngle) * maxPounce : 0;
-        const pounceY = pounceDistance > 0 ? Math.sin(newAngle) * maxPounce : 0;
-
-        setPounceTarget({ x: pounceX, y: pounceY });
-
-        const pounceLove = Math.round((lovePerPounce + pounceDistance / 20) * energyBoost);
-        setLove((currentLove) => currentLove + pounceLove);
-
-        const newHearts: HeartType[] = Array.from({ length: Math.max(1, Math.round(pounceDistance / 40)) }, (_, i) => ({
-            id: Date.now() + i,
-            x: currentWandPosition.x + (Math.random() - 0.5) * 40,
-            y: currentWandPosition.y + (Math.random() - 0.5) * 40,
-            translateX: Math.random() * 60 - 30,
-            rotation: Math.random() * 80 - 40,
-            scale: Math.random() * 0.5 + 0.5,
-            animationDuration: Math.random() * 0.5 + 0.5,
-        }));
-        setHearts((currentHearts) => [...currentHearts, ...newHearts]);
-        const lastHeartId = newHearts[newHearts.length - 1]?.id;
-        if (lastHeartId) setTrackableHeartId(lastHeartId);
-
-        setTimeout(() => setHearts((currentHearts) => currentHearts.filter((heart) => !newHearts.some((nh) => nh.id === heart.id))), 1000);
-        setIsPouncing(true);
-        setTimeout(() => setIsPouncing(false), 500);
-        setTimeout(() => setTrackableHeartId(null), 1000);
-      }
-    }, 100);
-
-    return () => clearInterval(pouncePlanningInterval);
-  }, [wandMode, isPouncing, lovePerPounce, isDevMode]);
+    wandActions.setEnergy(energy);
+  }, [energy, wandActions]);
 
   const handleEarClick = (ear: 'left' | 'right', event: React.MouseEvent) => {
     if (wigglingEar || isSubtleWiggling) return;
@@ -548,12 +428,12 @@ function App() {
       {isDevMode && (
         <DevPanel
           energy={energy}
-          pounceConfidence={pounceConfidenceDisplay}
+          pounceConfidence={pounceConfidence}
           rapidClickCount={rapidClickCount}
-          lastVelocity={lastVelocityDisplay}
-          proximityMultiplier={proximityMultiplierDisplay}
+          lastVelocity={lastVelocity}
+          proximityMultiplier={proximityMultiplier}
           lovePerClick={lovePerClick}
-          movementNovelty={movementNoveltyDisplay}
+          movementNovelty={movementNovelty}
           treatsPerSecond={treatsPerSecond}
         />
       )}
@@ -622,8 +502,7 @@ function App() {
           <button
             onClick={(e) => {
               e.stopPropagation();
-              setWandMode(!wandMode);
-              setWandInitialPosition({ x: e.clientX, y: e.clientY });
+              wandActions.toggleWandMode({ x: e.clientX, y: e.clientY });
             }}
           >
             {wandMode ? 'Put away wand' : 'Play with wand'}
