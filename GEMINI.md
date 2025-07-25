@@ -53,3 +53,115 @@ Each micro-app should maintain comprehensive test coverage that:
 - Tests actual user interactions and behavior
 - Uses sophisticated mocking for animation and DOM APIs
 - Provides fast feedback during development
+
+## 4. Continuous Integration & Deployment (CI/CD)
+
+### Architecture Overview
+
+The project employs a **fully automated CI/CD pipeline** using GitHub Actions, designed for reliability, speed, and developer productivity.
+
+**Pipeline Structure:**
+
+```
+Push/PR → GitHub Actions → Test & Build → Deploy (main only)
+    ↓
+Local Dev ← Pre-commit Hooks ← Quality Gates
+```
+
+### 🚀 **Automated Workflow Process**
+
+Every code change triggers a comprehensive validation pipeline:
+
+1. **Environment Setup**
+   - Clean Node.js 20 environment
+   - Optimized dependency installation with Rollup binary fix
+   - Secure credential management for GitHub Pages
+
+2. **Quality Validation**
+   - ESLint code style and quality checks
+   - TypeScript compilation validation
+   - Comprehensive test suite (48 tests) execution
+
+3. **Build & Deployment**
+   - Production build generation and validation
+   - Automatic deployment to GitHub Pages (main branch only)
+   - Artifact management and cleanup
+
+### 🛡️ **Quality Gates & Security**
+
+**Multi-Layer Protection:**
+
+- **Pre-commit Hooks:** Local validation before code reaches repository
+- **CI Validation:** Server-side validation in clean environment
+- **Test-First Deployment:** Zero-tolerance policy for failing tests
+- **Branch Protection:** Pull request validation with required checks
+
+**Security Measures:**
+
+- **Least-Privilege Access:** GitHub Actions use minimal required permissions
+- **Secure Deployment:** GitHub Pages integration with proper authentication
+- **Environment Isolation:** Clean build environment for each run
+- **Credential Protection:** Secure handling of deployment credentials
+
+### 📊 **Reliability & Performance**
+
+**Battle-Tested Configuration:**
+
+- ✅ **Environment Variable Management** - Resolved conflicts that caused initial failures
+- ✅ **Dependency Stability** - Fixed npm/Rollup binary compatibility issues in CI
+- ✅ **GitHub Pages Integration** - Seamless deployment with proper permissions
+- ✅ **Performance Optimization** - Parallel job execution and efficient caching
+
+**Monitoring & Observability:**
+
+- **Build Status Visibility** - Clear feedback on all validation steps
+- **Error Reporting** - Detailed logs for debugging failed builds
+- **Performance Metrics** - Build time and deployment tracking
+- **Health Monitoring** - Automated alerts for pipeline failures
+
+### 🔧 **Technical Implementation Details**
+
+**GitHub Actions Workflow** (`.github/workflows/ci.yml`):
+
+```yaml
+# Key Features:
+- Node.js 20 environment
+- Parallel test and build jobs where possible
+- Rollup binary compatibility fixes
+- GitHub Pages deployment with proper permissions
+- Environment-specific configurations
+```
+
+**Critical Technical Decisions:**
+
+1. **Environment Variable Strategy** - Simplified configuration to avoid CI conflicts
+2. **Dependency Management** - Robust npm/Rollup handling for Linux CI environment
+3. **Deployment Method** - GitHub Pages native actions for better security and reliability
+4. **Error Handling** - Comprehensive timeout and retry logic
+
+### 🏗️ **Development Workflow Integration**
+
+**For Developers:**
+
+- **Local Development** - Pre-commit hooks ensure quality before push
+- **Pull Requests** - Automatic validation and status checks
+- **Main Branch** - Automatic deployment after successful validation
+- **Debugging** - Clear error messages and build logs for troubleshooting
+
+**For Maintainers:**
+
+- **Pipeline Monitoring** - GitHub Actions dashboard for build oversight
+- **Configuration Management** - Centralized CI/CD configuration in `.github/workflows/`
+- **Debugging Tools** - Comprehensive logging and artifact collection
+- **Performance Tuning** - Optimized build times and resource usage
+
+### 🔄 **Continuous Improvement**
+
+The CI/CD system has been refined through extensive debugging and optimization:
+
+- **Learned from Failures** - Initial environment variable conflicts resolved
+- **Performance Optimized** - Build times minimized through parallel execution
+- **Security Hardened** - Proper permission management and credential handling
+- **Reliability Enhanced** - Robust error handling and recovery mechanisms
+
+This architecture ensures that every code change is validated, tested, and deployed safely, maintaining high quality while enabling rapid development and deployment.

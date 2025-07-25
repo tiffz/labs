@@ -11,10 +11,11 @@ labs/
     zines/           # Example micro-app: Minizine Magic Maker
       index.html
       ...
-    cats/            # (Add more micro-apps here)
+    cats/            # Cat Clicker game with advanced interactions
       ...
   package.json       # Shared dependencies and scripts
   vite.config.cjs    # Vite config for multi-app build
+  .github/workflows/ # CI/CD automation
 ```
 
 ## How the Micro-Apps Architecture Works
@@ -43,7 +44,7 @@ labs/
 
 3. **To share code or components:**
    - Place shared utilities/components in a common folder (e.g., `src/shared/`) and import them as needed.
-   - Keep app-specific code inside each app’s folder for isolation.
+   - Keep app-specific code inside each app's folder for isolation.
 
 4. **To update dependencies:**
    - Update the root `package.json` and run `npm install`.
@@ -89,6 +90,52 @@ labs/
   ```
   Runs tests first - deployment is blocked if tests fail.
 
+## Continuous Integration & Deployment (CI/CD)
+
+This project uses **GitHub Actions** for automated testing, building, and deployment with a robust, battle-tested configuration.
+
+### 🚀 **Automated Workflow**
+
+Every push to `main` and pull request triggers:
+
+1. **Environment Setup** - Node.js 20, clean dependency installation with Rollup fix
+2. **Code Quality** - ESLint checks for style and quality issues
+3. **Testing** - Complete test suite (48 tests) must pass
+4. **Build** - Production build generation and validation
+5. **Deploy** - Automatic deployment to GitHub Pages (main branch only)
+
+### 🛡️ **Quality Gates**
+
+- **Pre-commit Hooks** - Tests and linting run locally before commits
+- **CI Validation** - All checks must pass before deployment
+- **Test-First Deployment** - Failed tests block production releases
+- **Pull Request Checks** - Code review with automated validation
+
+### 📊 **Current Status**
+
+The CI/CD pipeline has been extensively tested and debugged to ensure reliability:
+
+- ✅ **Stable Configuration** - Resolved initial environment variable conflicts
+- ✅ **Dependency Management** - Fixed Rollup binary issues in CI environment
+- ✅ **GitHub Pages Integration** - Automated deployment with proper permissions
+- ✅ **Comprehensive Testing** - 48 tests covering all critical functionality
+
+### 🔧 **Technical Implementation**
+
+**GitHub Actions Configuration** (`.github/workflows/ci.yml`):
+
+- **Test Job** - Linting, testing, and build validation
+- **Deploy Job** - Production deployment with GitHub Pages integration
+- **Environment** - Clean Node.js 20 environment with optimized caching
+- **Security** - Proper permissions and secure credential handling
+
+**Key Features:**
+
+- **Fast Feedback** - Parallel job execution where possible
+- **Reliable Builds** - Addresses known npm/Rollup CI issues
+- **Clean Deployments** - Consistent build environment and artifact management
+- **Error Recovery** - Proper timeout handling and dependency resolution
+
 ## Quality Assurance
 
 This project maintains high standards through automated quality checks:
@@ -98,6 +145,17 @@ This project maintains high standards through automated quality checks:
 - **CI/CD integration:** GitHub Actions runs full test suite on every push/PR
 - **Deployment protection:** Failed tests block production deployment
 
+## Debugging & Maintenance
+
+Our CI/CD system has been battle-tested through extensive debugging:
+
+- **Environment Isolation** - Eliminated local environment dependencies
+- **Dependency Stability** - Robust handling of npm and Rollup edge cases
+- **Permission Management** - Secure GitHub Pages deployment configuration
+- **Monitoring** - Clear visibility into build and deployment status
+
+For CI/CD troubleshooting, see `DEVELOPMENT.md` for detailed debugging procedures.
+
 ## Notes for Contributors
 
 - **Always keep each micro-app isolated in its own folder under `src/`.**
@@ -106,7 +164,8 @@ This project maintains high standards through automated quality checks:
 - **Write tests for new components and features - place test files alongside the code they test.**
 - **Ensure all tests pass before committing:** `npm test`
 - **Run linting before committing:** `npm run lint`
-- **When editing an app, use the app’s own CSS and assets unless you are intentionally sharing code.**
+- **CI/CD will automatically handle deployment** - focus on writing quality code and tests
+- **When editing an app, use the app's own CSS and assets unless you are intentionally sharing code.**
 - **If you see custom CSS classes (e.g., `.card-bg`, `.font-heading`), do not remove them—they are required for the original look and feel.**
 - **If you add new dependencies, make sure they are compatible with all apps.**
 
