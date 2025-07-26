@@ -17,7 +17,7 @@ export default [
 
   // Config for Node.js files (e.g., config files in root)
   {
-    files: ['eslint.config.js', 'vite.config.ts', 'vite.config.js', 'postcss.config.js'],
+    files: ['eslint.config.js', 'vite.config.ts', 'vite.config.js', 'postcss.config.js', 'tailwind.config.js'],
     languageOptions: {
       globals: {
         ...globals.node,

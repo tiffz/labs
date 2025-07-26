@@ -14,7 +14,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     
-    <!-- Aggressive font preloading and inline critical CSS -->
+    <!-- Font loading with FOUC prevention -->
     <style>
         /* Inline critical font CSS to prevent FOUC */
         @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Kalam:wght@300;400;700&family=Gaegu:wght@300;400;700&display=block');
@@ -32,7 +32,6 @@
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
             text-rendering: optimizeLegibility;
-            /* Prevent layout shift during font loading */
             font-display: block;
         }
         
@@ -53,27 +52,6 @@
             visibility: visible;
         }
     </style>
-    
-    <!-- Tailwind CSS via local CDN without production warnings -->
-    <script>
-        // Suppress Tailwind production warning
-        window.process = { env: { NODE_ENV: 'development' } };
-    </script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        // Configure Tailwind to be less noisy
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        'heading': ['Caveat', 'Brush Script MT', 'cursive'],
-                        'body': ['Kalam', 'Comic Sans MS', 'sans-serif'],
-                        'handwriting': ['Gaegu', 'Comic Sans MS', 'monospace']
-                    }
-                }
-            }
-        }
-    </script>
     
     <!-- StPageFlip library for realistic page turning -->
     <script src="https://unpkg.com/page-flip@2.0.7/dist/js/page-flip.browser.js"></script>
