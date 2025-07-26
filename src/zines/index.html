@@ -12,6 +12,9 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
+    <!-- StPageFlip library for realistic page turning -->
+    <script src="https://unpkg.com/page-flip@2.0.7/dist/js/page-flip.browser.js"></script>
+    
     <!-- Analytics -->
     <script async src="/analytics.js"></script>
     
@@ -101,9 +104,93 @@
         .zine-layout-container { background-color: #FFFFFF; padding: 20px; border-radius: 20px; box-shadow: 0 8px 16px rgba(121, 85, 72, 0.15); }
         
         .book-preview-container { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 10px 0; background-color: transparent; border-radius: 12px; }
-        .book-spread-wrapper { width: 100%; max-width: var(--book-wrapper-max-width, 700px); aspect-ratio: var(--book-aspect-ratio, 1 / 1.414); position: relative; }
-        .book-spread { display: flex; width: 100%; height: 100%; box-shadow: 0 6px 15px rgba(0,0,0,0.15); background-color: white; }
-        .book-page { flex: 1; background-color: white; overflow: hidden; display: flex; align-items: center; justify-content: center; border: 1px solid #F0F0F0; cursor: pointer; }
+                .book-spread-wrapper { 
+            width: 100%; 
+            max-width: var(--book-wrapper-max-width, 700px); 
+            margin: 0 auto;
+            position: relative;
+            min-height: 400px; /* Ensure space for loading message */
+        }
+        
+        /* StPageFlip container styling */
+        .pageflip-book {
+            box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+            margin: 0 auto;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        
+        .pageflip-book.book-loading {
+            opacity: 0;
+            visibility: hidden;
+        }
+        
+        .pageflip-book.book-ready {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .book-loading-placeholder {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            width: 100%;
+        }
+        
+        .loading-text {
+            color: var(--text-color);
+            font-family: 'Kalam', cursive;
+            font-size: 16px;
+            opacity: 0.7;
+        }
+        
+        /* Page styling for StPageFlip - matches ZinePageDisplay */
+        .pageflip-page {
+            background-color: white;
+            border: 1px solid #F0F0F0;
+            overflow: hidden;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        .pageflip-page .zine-page-display {
+            width: 100% !important;
+            height: 100% !important;
+        }
+        
+        .pageflip-page .zine-page-display img {
+            width: 100% !important;
+            height: 100% !important;
+        }
+        
+        /* Blank pages for cover simulation - immediately invisible */
+        .pageflip-page.blank-page {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+        }
+        
+        .pageflip-page.blank-page * {
+            background: transparent !important;
+            border: none !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+        }
+        
+        /* Smooth transitions for all pages to prevent jarring movements */
+        .pageflip-page {
+            transition: opacity 0.1s ease, visibility 0.1s ease;
+        }
+        
+        /* Ensure covers have smooth positioning */
+        .pageflip-book {
+            overflow: hidden;
+        }
         .page-content-wrapper { width: 100%; height: 100%; position: relative; }
         .page-face { position: absolute; top:0; left:0; width:100%; height:100%; display: flex; align-items: center; justify-content: center; }
         .page-face img { max-width: 100%; max-height: 100%; }
@@ -129,8 +216,8 @@
             if (window.React && window.ReactDOM) {
                 const { useState, useEffect, useMemo, useCallback, useRef } = React;
 
-                const PAGE_SLOTS_CONFIG = [ /* As before */ { id: 'page4', label: 'Page 4', notes: 'Top Left on Sheet', rotation: 180, gridOrder: 1 }, { id: 'page3', label: 'Page 3', notes: 'Top Center-Left', rotation: 180, gridOrder: 2 }, { id: 'page2', label: 'Page 2', notes: 'Top Center-Right', rotation: 180, gridOrder: 3 }, { id: 'page1', label: 'Page 1', notes: 'Top Right on Sheet', rotation: 180, gridOrder: 4 }, { id: 'page5', label: 'Page 5', notes: 'Bottom Left on Sheet', rotation: 0, gridOrder: 5 }, { id: 'page6', label: 'Page 6', notes: 'Bottom Center-Left', rotation: 0, gridOrder: 6 }, { id: 'backCover', label: 'Back Cover', notes: 'Bottom Center-Right', rotation: 0, gridOrder: 7 }, { id: 'frontCover', label: 'Front Cover', notes: 'Bottom Right on Sheet', rotation: 0, gridOrder: 8 }, ];
-                const BOOK_VIEW_ORDER = [ /* As before */ { type: 'single', pageSlotId: 'frontCover', label: 'Front Cover' }, { type: 'spread', leftPageSlotId: 'page1', rightPageSlotId: 'page2', leftLabel: 'Page 1', rightLabel: 'Page 2' }, { type: 'spread', leftPageSlotId: 'page3', rightPageSlotId: 'page4', leftLabel: 'Page 3', rightLabel: 'Page 4' }, { type: 'spread', leftPageSlotId: 'page5', rightPageSlotId: 'page6', leftLabel: 'Page 5', rightLabel: 'Page 6' }, { type: 'single', pageSlotId: 'backCover', label: 'Back Cover' }, ];
+                const PAGE_SLOTS_CONFIG = [ /* Grid order for edit layout */ { id: 'page4', label: 'Page 4', notes: 'Top Left on Sheet', rotation: 180, gridOrder: 1 }, { id: 'page3', label: 'Page 3', notes: 'Top Center-Left', rotation: 180, gridOrder: 2 }, { id: 'page2', label: 'Page 2', notes: 'Top Center-Right', rotation: 180, gridOrder: 3 }, { id: 'page1', label: 'Page 1', notes: 'Top Right on Sheet', rotation: 180, gridOrder: 4 }, { id: 'page5', label: 'Page 5', notes: 'Bottom Left on Sheet', rotation: 0, gridOrder: 5 }, { id: 'page6', label: 'Page 6', notes: 'Bottom Center-Left', rotation: 0, gridOrder: 6 }, { id: 'backCover', label: 'Back Cover', notes: 'Bottom Center-Right', rotation: 0, gridOrder: 7 }, { id: 'frontCover', label: 'Front Cover', notes: 'Bottom Right on Sheet', rotation: 0, gridOrder: 8 }, ];
+                const BOOK_READING_ORDER = [ /* Reading order with correctly positioned blanks */ 'blankBeforeFront', 'frontCover', 'page1', 'page2', 'page3', 'page4', 'page5', 'page6', 'backCover', 'blankAfterBack' ];
                 const DUMMY_PLACEHOLDER_IMAGE = "data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22100%22%20height%3D%22100%22%20viewBox%3D%220%200%20100%20100%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20fill%3D%22%23FFFFFF%22%2F%3E%3C%2Fsvg%3E"; 
                 
                 const FILENAME_MAP = {
@@ -213,28 +300,258 @@
                     </div> ); 
                 }
                 function BookPreview({ images, imageFitModes, paperConfig }) {
-                    const [currentViewIndex, setCurrentViewIndex] = useState(0);
-                    const currentView = BOOK_VIEW_ORDER[currentViewIndex];
+                    const [currentPage, setCurrentPage] = useState(0);
+                    const [pageCount, setPageCount] = useState(0);
+                    const [isBookReady, setIsBookReady] = useState(false);
+                    const bookRef = useRef(null);
+                    const pageFlipRef = useRef(null);
 
-                    const navigate = (newIndex) => {
-                        if (newIndex < 0 || newIndex >= BOOK_VIEW_ORDER.length) return;
-                        setCurrentViewIndex(newIndex);
+                    // Calculate display text for current page position
+                    const getPageDisplayText = useCallback((stPageFlipCurrentPage) => {
+                        const totalRealPages = 8; // Front, Page1-6, Back
+                        
+                        // Map StPageFlip position to logical page numbers
+                        if (stPageFlipCurrentPage <= 1) {
+                            // First spread: blank + frontCover
+                            return `Page 1 of ${totalRealPages}`;
+                        } else if (stPageFlipCurrentPage <= 3) {
+                            // Second spread: page1 + page2  
+                            return `Pages 2-3 of ${totalRealPages}`;
+                        } else if (stPageFlipCurrentPage <= 5) {
+                            // Third spread: page3 + page4
+                            return `Pages 4-5 of ${totalRealPages}`;
+                        } else if (stPageFlipCurrentPage <= 7) {
+                            // Fourth spread: page5 + page6
+                            return `Pages 6-7 of ${totalRealPages}`;
+                        } else {
+                            // Fifth spread: backCover + blank
+                            return `Page 8 of ${totalRealPages}`;
+                        }
+                    }, []);
+
+                    // Calculate page dimensions to match exact aspect ratio used elsewhere
+                    const pageWidth = useMemo(() => {
+                        const zinePageW = paperConfig.width / 4;
+                        const zinePageH = paperConfig.height / 2;
+                        const aspectRatio = zinePageW / zinePageH;
+                        
+                        // Base width for good display size, maintain aspect ratio
+                        const baseWidth = 400;
+                        return baseWidth;
+                    }, [paperConfig.width, paperConfig.height]);
+
+                    const pageHeight = useMemo(() => {
+                        const zinePageW = paperConfig.width / 4;
+                        const zinePageH = paperConfig.height / 2;
+                        const aspectRatio = zinePageW / zinePageH;
+                        
+                        const baseWidth = 400;
+                        return Math.round(baseWidth / aspectRatio);
+                    }, [paperConfig.width, paperConfig.height]);
+
+                    // Create pages data in book reading order with blank pages
+                    const pagesData = useMemo(() => {
+                        const pages = [];
+                        BOOK_READING_ORDER.forEach(pageId => {
+                            if (pageId.startsWith('blank')) {
+                                // Create blank page for cover simulation
+                                pages.push({
+                                    id: pageId,
+                                    label: 'Blank',
+                                    imageSrc: 'data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22100%22%20height%3D%22100%22%20viewBox%3D%220%200%20100%20100%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20fill%3D%22%23FFFFFF%22%20opacity%3D%220%22%2F%3E%3C%2Fsvg%3E',
+                                    fitMode: 'cover',
+                                    isBlank: true
+                                });
+                            } else {
+                                const slot = PAGE_SLOTS_CONFIG.find(s => s.id === pageId);
+                                if (slot) {
+                                    const imageSrc = images[slot.id] || DUMMY_PLACEHOLDER_IMAGE;
+                                    const fitMode = imageFitModes[slot.id] || 'cover';
+                                    pages.push({
+                                        id: slot.id,
+                                        label: slot.label,
+                                        imageSrc,
+                                        fitMode,
+                                        isBlank: false
+                                    });
+                                }
+                            }
+                        });
+                        return pages;
+                    }, [images, imageFitModes]);
+
+                    // Initialize StPageFlip
+                    useEffect(() => {
+                        if (!bookRef.current || !window.St) return;
+
+                        // Hide book during setup to prevent flash
+                        setIsBookReady(false);
+
+                        // Clean up existing instance
+                        if (pageFlipRef.current) {
+                            pageFlipRef.current.destroy();
+                        }
+
+                        // Create page elements using React to render ZinePageDisplay
+                        bookRef.current.innerHTML = '';
+                        pagesData.forEach((page, index) => {
+                            const pageElement = document.createElement('div');
+                            pageElement.className = 'pageflip-page';
+                            pageElement.style.width = '100%';
+                            pageElement.style.height = '100%';
+                            
+                            // Style blank pages to be invisible immediately
+                            if (page.isBlank) {
+                                pageElement.classList.add('blank-page');
+                                // Apply styles immediately to prevent flash
+                                pageElement.style.backgroundColor = 'transparent';
+                                pageElement.style.border = 'none';
+                                pageElement.style.opacity = '0';
+                                pageElement.style.visibility = 'hidden';
+                                pageElement.style.pointerEvents = 'none';
+                            }
+                            
+                            // Create a temporary container for React rendering
+                            const reactContainer = document.createElement('div');
+                            reactContainer.style.width = '100%';
+                            reactContainer.style.height = '100%';
+                            pageElement.appendChild(reactContainer);
+                            
+                            if (page.isBlank) {
+                                // For blank pages, create an immediately invisible div
+                                const blankDiv = document.createElement('div');
+                                blankDiv.style.width = '100%';
+                                blankDiv.style.height = '100%';
+                                blankDiv.style.backgroundColor = 'transparent';
+                                blankDiv.style.opacity = '0';
+                                blankDiv.style.visibility = 'hidden';
+                                blankDiv.style.border = 'none';
+                                blankDiv.style.pointerEvents = 'none';
+                                reactContainer.appendChild(blankDiv);
+                            } else {
+                                // Render ZinePageDisplay with same props as used elsewhere
+                                const zineDisplay = React.createElement(ZinePageDisplay, {
+                                    imageSrc: page.imageSrc,
+                                    fitMode: page.fitMode,
+                                    rotation: 0,
+                                    altText: page.label,
+                                    paperConfig: paperConfig,
+                                    isPrintSlot: false
+                                });
+                                
+                                ReactDOM.render(zineDisplay, reactContainer);
+                            }
+                            
+                            bookRef.current.appendChild(pageElement);
+                        });
+
+                        // Initialize PageFlip with slight delay to prevent flash
+                        setTimeout(() => {
+                            try {
+                                pageFlipRef.current = new window.St.PageFlip(bookRef.current, {
+                                    width: pageWidth,
+                                    height: pageHeight,
+                                    size: 'stretch',
+                                    minWidth: 300,
+                                    maxWidth: 800,
+                                    minHeight: 400,
+                                    maxHeight: 1000,
+                                    maxShadowOpacity: 0.5,
+                                    showCover: false, // Use blank page trick to simulate covers
+                                    mobileScrollSupport: false,
+                                    flippingTime: 600, // Slightly faster for better feel
+                                    usePortrait: true,
+                                    drawShadow: true,
+                                    startPage: 0,
+                                    autoSize: true
+                                });
+
+                                pageFlipRef.current.loadFromHTML(document.querySelectorAll('.pageflip-page'));
+                            
+                            // Event listeners
+                            pageFlipRef.current.on('flip', (e) => {
+                                setCurrentPage(e.data);
+                            });
+
+                            pageFlipRef.current.on('init', (e) => {
+                                setPageCount(pageFlipRef.current.getPageCount());
+                                setCurrentPage(e.data.page);
+                                // Book is now fully ready - show it
+                                setTimeout(() => setIsBookReady(true), 100);
+                            });
+
+                        } catch (error) {
+                            console.error('Failed to initialize PageFlip:', error);
+                        }
+                        }, 50); // Small delay to let DOM settle
+
+                        return () => {
+                            if (pageFlipRef.current) {
+                                pageFlipRef.current.destroy();
+                                pageFlipRef.current = null;
+                            }
+                            // Clean up React components
+                            if (bookRef.current) {
+                                Array.from(bookRef.current.querySelectorAll('.pageflip-page')).forEach(pageElement => {
+                                    const reactContainer = pageElement.querySelector('div');
+                                    if (reactContainer) {
+                                        ReactDOM.unmountComponentAtNode(reactContainer);
+                                    }
+                                });
+                            }
+                        };
+                    }, [pagesData, pageWidth, pageHeight]);
+
+                    const goToPreviousPage = () => {
+                        if (pageFlipRef.current) {
+                            pageFlipRef.current.flipPrev();
+                        }
                     };
 
-                    const goToPreviousView = () => navigate(currentViewIndex - 1);
-                    const goToNextView = () => navigate(currentViewIndex + 1);
-                    const handlePageClick = (isRightPage) => { if (currentView.type === 'single') { if (currentViewIndex === 0) goToNextView(); else if (currentViewIndex === BOOK_VIEW_ORDER.length - 1) goToPreviousView(); } else if (currentView.type === 'spread') { if (isRightPage) goToNextView(); else goToPreviousView(); } }; 
-                    const singlePageAspectRatio = useMemo(() => { const zinePageH = paperConfig.height / 2; const zinePageW = paperConfig.width / 4; if (zinePageW === 0 || zinePageH === 0) return '0.7 / 1'; return `${zinePageW} / ${zinePageH}`; }, [paperConfig]);
-                    const bookSpreadWrapperStyle = useMemo(() => { if (currentView.type === 'single') { return { '--book-aspect-ratio': singlePageAspectRatio, '--book-wrapper-max-width': '350px' }; } else { const [w, h] = singlePageAspectRatio.split('/').map(s => parseFloat(s.trim())); return { '--book-aspect-ratio': `${w * 2} / ${h}`, '--book-wrapper-max-width': '700px' }; } }, [currentView.type, singlePageAspectRatio]);
-                    
-                    const renderPage = (pageSlotId, label, isRightPageForClick = false) => { 
-                        const imageSrc = images[pageSlotId] || DUMMY_PLACEHOLDER_IMAGE; 
-                        const fitMode = imageFitModes[pageSlotId] || 'cover'; 
-                        return ( <div className="book-page" onClick={() => handlePageClick(isRightPageForClick)}> 
-                            <ZinePageDisplay imageSrc={imageSrc} fitMode={fitMode} altText={label} paperConfig={paperConfig} rotation={0} /> 
-                        </div> ); 
+                    const goToNextPage = () => {
+                        if (pageFlipRef.current) {
+                            pageFlipRef.current.flipNext();
+                        }
                     };
-                    return ( <div className="book-preview-container"> <div className="book-spread-wrapper" style={bookSpreadWrapperStyle}> <div className="book-spread"> {currentView.type === 'single' ? ( renderPage(currentView.pageSlotId, currentView.label, currentViewIndex === 0) ) : ( <> {renderPage(currentView.leftPageSlotId, currentView.leftLabel, false)} {renderPage(currentView.rightPageSlotId, currentView.rightLabel, true)} </> )} </div> </div> <div className="book-navigation"> <button onClick={goToPreviousView} disabled={currentViewIndex === 0} className="custom-button-secondary disabled:opacity-50 disabled:cursor-not-allowed">← Prev</button> <span className="nav-text"> {currentView.type === 'single' ? currentView.label : `${currentView.leftLabel} & ${currentView.rightLabel}`} </span> <button onClick={goToNextView} disabled={currentViewIndex === BOOK_VIEW_ORDER.length - 1} className="custom-button-secondary disabled:opacity-50 disabled:cursor-not-allowed">Next →</button> </div> </div> );
+
+                    return ( 
+                        <div className="book-preview-container"> 
+                            <div className="book-spread-wrapper"> 
+                                <div 
+                                    ref={bookRef} 
+                                    className={`pageflip-book ${isBookReady ? 'book-ready' : 'book-loading'}`}
+                                    style={{
+                                        opacity: isBookReady ? 1 : 0,
+                                        visibility: isBookReady ? 'visible' : 'hidden'
+                                    }}
+                                ></div>
+                                {!isBookReady && (
+                                    <div className="book-loading-placeholder">
+                                        <div className="loading-text">Preparing your zine...</div>
+                                    </div>
+                                )}
+                            </div> 
+                            <div className="book-navigation"> 
+                                <button 
+                                    onClick={goToPreviousPage} 
+                                    disabled={!isBookReady || currentPage === 0} 
+                                    className="custom-button-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    ← Prev
+                                </button> 
+                                <span className="nav-text"> 
+                                    {isBookReady ? getPageDisplayText(currentPage) : 'Loading...'}
+                                </span> 
+                                <button 
+                                    onClick={goToNextPage} 
+                                    disabled={!isBookReady || currentPage >= pageCount - 1} 
+                                    className="custom-button-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Next →
+                                </button> 
+                            </div> 
+                        </div> 
+                    );
                 }
                 function PrintSheetCanvas({ images, imageFitModes, paperConfig, pageSlotsConfig }) { /* As before, with clipping */ const canvasRef = useRef(null); useEffect(() => { const canvas = canvasRef.current; if (!canvas) return; const ctx = canvas.getContext('2d'); if (!ctx) return; const isLandscape = paperConfig.width >= paperConfig.height; const paperWidthInUnits = isLandscape ? paperConfig.width : paperConfig.height; const paperHeightInUnits = isLandscape ? paperConfig.height : paperConfig.width; let pixelWidth = paperWidthInUnits * paperConfig.dpi; let pixelHeight = paperHeightInUnits * paperConfig.dpi; const MAX_CANVAS_DIM = 16000; if (pixelWidth > MAX_CANVAS_DIM || pixelHeight > MAX_CANVAS_DIM) { const scaleDown = Math.min(MAX_CANVAS_DIM / pixelWidth, MAX_CANVAS_DIM / pixelHeight); pixelWidth *= scaleDown; pixelHeight *= scaleDown; console.warn("Canvas scaled down."); } canvas.width = pixelWidth; canvas.height = pixelHeight; ctx.fillStyle = 'white'; ctx.fillRect(0, 0, canvas.width, canvas.height); const panelWidth = canvas.width / 4; const panelHeight = canvas.height / 2; const imageLoadPromises = []; pageSlotsConfig.forEach(slotConfig => { const imageSrc = images[slotConfig.id]; if (imageSrc) { const promise = new Promise((resolve, reject) => { const img = new Image(); img.onload = () => resolve({ img, slotConfig }); img.onerror = () => reject(new Error(`Failed to load image for ${slotConfig.label}`)); img.src = imageSrc; }); imageLoadPromises.push(promise); }}); Promise.all(imageLoadPromises).then(loadedImagesData => { loadedImagesData.forEach(({ img, slotConfig }) => { const col = (slotConfig.gridOrder - 1) % 4; const row = Math.floor((slotConfig.gridOrder - 1) / 4); const x = col * panelWidth; const y = row * panelHeight; const fitMode = imageFitModes[slotConfig.id] || 'cover'; ctx.save(); ctx.translate(x + panelWidth / 2, y + panelHeight / 2); if (slotConfig.rotation === 180) ctx.rotate(Math.PI); ctx.beginPath(); ctx.rect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight); ctx.clip(); let dw, dh, dx, dy; const imgAspectRatio = img.width / img.height; const panelAspectRatio = panelWidth / panelHeight; if (fitMode === 'contain') { if (imgAspectRatio > panelAspectRatio) { dw = panelWidth; dh = panelWidth / imgAspectRatio; } else { dh = panelHeight; dw = panelHeight * imgAspectRatio; }} else { /* cover */ if (imgAspectRatio > panelAspectRatio) { dh = panelHeight; dw = panelHeight * imgAspectRatio; } else { dw = panelWidth; dh = panelWidth / imgAspectRatio; }} dx = -dw / 2; dy = -dh / 2; ctx.drawImage(img, dx, dy, dw, dh); ctx.restore(); }); }).catch(error => console.error("Error loading images for canvas:", error)); }, [images, imageFitModes, paperConfig, pageSlotsConfig]); return ( <div id="printSheetCanvasContainer" className="w-full h-auto" style={{aspectRatio: `${paperConfig.width}/${paperConfig.height}`}}> <canvas ref={canvasRef} id="printSheetCanvas" /> </div> ); }
 
@@ -341,7 +658,7 @@
                                     </div>
                                     {viewMode === 'edit' && (<> <div className="flex justify-center mb-3"> <div className="text-center"> <button className="custom-button-secondary" onClick={() => multipleFilesInputRef.current && multipleFilesInputRef.current.click()}>Upload Multiple Images</button> <input type="file" multiple accept="image/*" ref={multipleFilesInputRef} className="hidden" onChange={handleMultipleFilesSelected}/> <p className="text-xs text-amber-700 mt-1">Tip: Name files "page1", "frontcover", etc. for auto-placement!</p> </div> </div> <p className="text-xs text-amber-700 mb-3 text-center">Click slots to upload. Drag & drop to reorder. Use 'Fit' or 'Fill'.</p> </>)}
                                     {viewMode === 'printPreview' && (<p className="text-xs text-amber-700 mb-3 text-center">This is how your zine will look on a single sheet for printing.</p>)}
-                                    {viewMode === 'bookPreview' && (<p className="text-xs text-amber-700 mb-3 text-center">Preview your zine as a flippable booklet. Click pages to turn.</p>)}
+                                    {viewMode === 'bookPreview' && (<p className="text-xs text-amber-700 mb-3 text-center">Realistic book experience! Covers appear as single pages, spreads show page ranges, all with silky-smooth floppy animation.</p>)}
                                     
                                     {viewMode === 'edit' ? (
                                         <div className="aspect-ratio-container-for-grid custom-shadow-lg" style={{ '--aspect-ratio-padding': aspectRatioPaddingForGrid, '--grid-gap': '8px', '--grid-padding': '8px', '--grid-bg-color': '#FFE0B2', '--grid-border': 'none', '--grid-border-radius': '12px' }} onDragLeave={handleDragLeave}>
