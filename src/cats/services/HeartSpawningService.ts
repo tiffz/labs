@@ -38,24 +38,28 @@ export class HeartSpawningService {
     // Get configuration for this interaction type
     const visualConfig = this.getVisualConfig(interactionType);
     
+    // Generate base timestamp for consistent IDs
+    const baseTimestamp = Date.now();
+    
+    // Set trackable heart for the first heart (synchronously for tests)
+    if (heartCount > 0) {
+      const firstHeartId = baseTimestamp; // ID of first heart (index 0)
+      this.events.onTrackableHeartSet(firstHeartId);
+      
+      // Clear trackable heart after duration
+      setTimeout(() => {
+        this.events.onTrackableHeartSet(null);
+      }, visualConfig.trackableDuration);
+    }
+    
     // Spawn hearts with appropriate delays and variations
     for (let i = 0; i < heartCount; i++) {
       const delay = i * visualConfig.delayBetweenHearts;
       
       setTimeout(() => {
-        const heart = this.createHeart(position, loveAmount, visualConfig, i);
+        const heart = this.createHeart(position, loveAmount, visualConfig, i, baseTimestamp);
         this.events.onHeartSpawned(heart);
       }, delay);
-    }
-    
-    // Set trackable heart for the first heart
-    if (heartCount > 0) {
-      const heartId = Date.now();
-      this.events.onTrackableHeartSet(heartId);
-      
-      setTimeout(() => {
-        this.events.onTrackableHeartSet(null);
-      }, visualConfig.trackableDuration);
     }
   }
 
@@ -97,7 +101,8 @@ export class HeartSpawningService {
       velocityMultiplier: number;
       trackableDuration: number;
     },
-    heartIndex: number
+    heartIndex: number,
+    baseTimestamp: number
   ): HeartVisuals {
     // Calculate heart size based on love amount
     const baseScale = this.calculateHeartScale(loveAmount);
@@ -113,7 +118,7 @@ export class HeartSpawningService {
     const spreadY = Math.sin(spreadAngle) * spreadDistance * Math.random();
     
     return {
-      id: Date.now() + heartIndex, // Unique ID
+      id: baseTimestamp + heartIndex, // Unique ID using consistent base timestamp
       x: position.x + spreadX,
       y: position.y + spreadY,
       translateX: (Math.random() - 0.5) * 40 * visualConfig.spreadMultiplier,
