@@ -66,7 +66,7 @@ function App() {
   const { state: wandState, actions: wandActions } = useWandSystem({
     catRef: catRef as React.RefObject<SVGSVGElement>,
     lovePerPounce,
-    isDevMode,
+    energy,
     callbacks: {
       onLoveGained: (amount) => setLove(current => current + amount),
       onHeartSpawned: (newHearts) => {
@@ -79,6 +79,7 @@ function App() {
         }, 1000);
       },
       onTrackableHeartSet: (heartId) => setTrackableHeartId(heartId),
+      onEnergyChanged: (energyDelta) => setEnergy(currentEnergy => Math.max(0, currentEnergy + energyDelta)),
     },
   });
 
@@ -165,13 +166,13 @@ function App() {
       clickTimestampsRef.current = clickTimestampsRef.current.filter(
         (timestamp) => now - timestamp < JUMP_WINDOW_MS
       );
-      if (isDevMode) setRapidClickCount(clickTimestampsRef.current.length);
+      setRapidClickCount(clickTimestampsRef.current.length);
       
       if (clickTimestampsRef.current.length >= JUMP_CLICK_THRESHOLD && Math.random() < JUMP_CHANCE) {
         setLove(current => current + loveFromClick);
         setIsJumping(true);
         clickTimestampsRef.current = [];
-        if (isDevMode) setRapidClickCount(0);
+        setRapidClickCount(0);
         setTimeout(() => setIsJumping(false), 500);
       }
     }
@@ -422,6 +423,19 @@ function App() {
     else document.body.classList.remove('wand-mode-active');
     return () => document.body.classList.remove('wand-mode-active');
   }, [wandMode]);
+
+  // Ear twitching when pouncing starts
+  useEffect(() => {
+    if (isPouncing && !wigglingEar && !isSubtleWiggling) {
+      // 70% chance for ear twitching when pouncing - higher than petting (40%)
+      if (Math.random() < 0.7) {
+        setIsSubtleWiggling(true);
+        setTimeout(() => {
+          setIsSubtleWiggling(false);
+        }, 600); // Slightly longer than petting (500ms) for hunting focus
+      }
+    }
+  }, [isPouncing, wigglingEar, isSubtleWiggling]);
 
   return (
     <div className="game-container">

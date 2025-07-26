@@ -1,5 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
 
+// === ANIMATION CONSTANTS ===
+const ANIMATION_TIMINGS = {
+  PETTING_DURATION: 200,
+  EAR_WIGGLE_DURATION: 600,
+  HAPPY_PLAY_MIN: 1000,
+  HAPPY_PLAY_MAX: 3000,
+  RETURN_BASE_DURATION: 250,
+  RETURN_MIN_DURATION: 150,
+  FRAME_INTERVAL: 1000 / 60, // 60fps
+} as const;
+
+const POUNCE_ANIMATION = {
+  PREP_PHASE_RATIO: 0.15, // First 15% is butt waggle
+  BASE_WAGGLE: 0.12,
+  WAGGLE_FREQUENCY_BASE: 4,
+  HORIZONTAL_WAGGLE_MULTIPLIER: 0.3,
+  HORIZONTAL_MOVEMENT_SCALE: 8,
+  EXCITEMENT_SPEEDUP: 60,
+} as const;
+
 interface CatProps {
   onClick: (event: React.MouseEvent) => void;
   onEyeClick: (event: React.MouseEvent) => void;
@@ -53,6 +73,7 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
       right: { x: 120, y: 80 },
     });
     const [isBlinking, setIsBlinking] = useState(false);
+    const [isHappyPlaying, setIsHappyPlaying] = useState(false);
     const drowsinessState = useRef({
       startTime: 0,
       drowsinessTimer: null as number | null,
@@ -74,6 +95,12 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
       overshootX: 0,
       overshootY: 0,
       duration: 500,
+      returning: false,
+      returnStartTime: 0,
+      returnStartX: 0,
+      returnStartY: 0,
+      excitementLevel: 0, // Track rapid pouncing excitement
+      lastPounceTime: 0,
     });
 
     useEffect(() => {
@@ -127,21 +154,73 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
 
     useEffect(() => {
       if (isPouncing && !pounceState.current.isActive) {
+        const now = Date.now();
+        const timeSinceLastPounce = now - pounceState.current.lastPounceTime;
+        
+        // Calculate excitement level based on rapid pouncing
+        if (timeSinceLastPounce < 2000) { // If pouncing within 2 seconds
+          pounceState.current.excitementLevel = Math.min(3, pounceState.current.excitementLevel + 1);
+        } else {
+          pounceState.current.excitementLevel = Math.max(0, pounceState.current.excitementLevel - 1);
+        }
+        
+        // If cat was returning and gets interrupted, boost excitement even more
+        if (pounceState.current.returning) {
+          pounceState.current.excitementLevel = Math.min(3, pounceState.current.excitementLevel + 0.5);
+        }
+        
+        // Calculate distance for potential future use
+        // const distance = Math.hypot(pounceTarget.x, pounceTarget.y);
+        
         pounceState.current = {
-          startTime: Date.now(),
+          startTime: now,
           isActive: true,
           x: pounceTarget.x,
           y: pounceTarget.y,
-          arcHeight: 20 + Math.random() * 20, // Varies between 20 and 40
-          overshootX: (Math.random() - 0.5) * 10, // Varies between -5 and 5
-          overshootY: (Math.random() - 0.5) * 10, // Varies between -5 and 5
-          duration: 450 + Math.random() * 100, // Varies between 450ms and 550ms
+          arcHeight: 25 + Math.random() * 25, // Varies between 25 and 50 - more dramatic
+          overshootX: (Math.random() - 0.5) * 16, // Varies between -8 and 8 - more realistic overshoot
+          overshootY: (Math.random() - 0.5) * 16, // Varies between -8 and 8
+          duration: 420 + Math.random() * 80, // Slightly faster for more dynamic feel
+          returning: false,
+          returnStartTime: 0,
+          returnStartX: 0,
+          returnStartY: 0,
+          excitementLevel: pounceState.current.excitementLevel,
+          lastPounceTime: now,
         };
       }
       if (!isPouncing) {
         pounceState.current.isActive = false;
+        pounceState.current.returning = false;
+        
+        // Gradually decay excitement when not pouncing
+        const now = Date.now();
+        const timeSinceLastPounce = now - pounceState.current.lastPounceTime;
+        if (timeSinceLastPounce > 3000 && pounceState.current.excitementLevel > 0) {
+          pounceState.current.excitementLevel = Math.max(0, pounceState.current.excitementLevel - 0.1);
+        }
       }
     }, [isPouncing, pounceTarget]);
+
+
+
+    // Random happy face when playing close to toy
+    useEffect(() => {
+      if (isPlaying && wandMode) {
+        // Check if close to toy (within 50px)
+        const distance = Math.hypot(pounceTarget.x, pounceTarget.y);
+        if (distance < 150) {
+          // 30% chance to be happy when playing close to toy
+          if (Math.random() < 0.3) {
+            setIsHappyPlaying(true);
+            const timeout = setTimeout(() => setIsHappyPlaying(false), ANIMATION_TIMINGS.HAPPY_PLAY_MIN + Math.random() * (ANIMATION_TIMINGS.HAPPY_PLAY_MAX - ANIMATION_TIMINGS.HAPPY_PLAY_MIN));
+            return () => clearTimeout(timeout);
+          }
+        }
+      } else {
+        setIsHappyPlaying(false);
+      }
+    }, [isPlaying, wandMode, pounceTarget]);
 
     useEffect(() => {
       let target = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
@@ -155,12 +234,23 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
 
       document.addEventListener('mousemove', handleMouseMove);
 
-      const animate = () => {
+      // Throttle animation updates to 60fps for smoother performance
+      let lastAnimationTime = 0;
+      const frameInterval = ANIMATION_TIMINGS.FRAME_INTERVAL;
+
+      const animate = (currentTime: number) => {
         const catElement = catRef && 'current' in catRef ? catRef.current : null;
         if (!catElement) {
           animationFrameId = requestAnimationFrame(animate);
           return;
         }
+
+        // Throttle to target FPS
+        if (currentTime - lastAnimationTime < frameInterval) {
+          animationFrameId = requestAnimationFrame(animate);
+          return;
+        }
+        lastAnimationTime = currentTime;
 
         // Pounce Animation
         if (pounceState.current.isActive) {
@@ -168,31 +258,129 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
             (Date.now() - pounceState.current.startTime) /
             pounceState.current.duration;
           if (progress < 1) {
-            const yOffset =
-              -Math.sin(progress * Math.PI) * pounceState.current.arcHeight;
-            const targetX =
-              pounceState.current.x + pounceState.current.overshootX;
-            const targetY =
-              pounceState.current.y + pounceState.current.overshootY;
-            const currentPounceX = targetX * progress;
-            const currentPounceY = targetY * progress;
-            catElement.style.transform = `translate(${currentPounceX}px, ${
-              currentPounceY + yOffset
-            }px)`;
+            let scale = 1;
+            let currentPounceX = 0;
+            let currentPounceY = 0;
+            let yOffset = 0;
+            
+            // Phase 1: Enhanced butt waggle preparation - first 15% of animation  
+            if (progress < POUNCE_ANIMATION.PREP_PHASE_RATIO) {
+              const prepProgress = progress / POUNCE_ANIMATION.PREP_PHASE_RATIO;
+              
+              // Enhanced butt waggle for every pounce regardless of trigger
+              const distance = Math.hypot(pounceState.current.x, pounceState.current.y);
+              const distanceIntensity = Math.min(1, distance / 80); // More sensitive to distance
+              const excitementMultiplier = 1 + (pounceState.current.excitementLevel * 0.4); // More excitement effect
+              const randomVariation = 0.8 + Math.random() * 0.4; // 0.8-1.2 variation
+              
+              const baseWaggle = 0.12; // Increased base waggle for more visibility
+              const dynamicWaggle = baseWaggle * distanceIntensity * excitementMultiplier * randomVariation;
+              
+              // Multi-axis waggle for more realistic cat behavior
+              const waggleFrequency = 4 + pounceState.current.excitementLevel;
+              const waggleIntensity = dynamicWaggle * (1 - prepProgress * 0.7); // Fade slightly toward launch
+              
+              // Primary vertical waggle (butt raising)
+              scale = 1 + (Math.sin(prepProgress * Math.PI * waggleFrequency) * waggleIntensity);
+              
+              // Add subtle horizontal waggle 
+              const horizontalWaggle = Math.sin(prepProgress * Math.PI * waggleFrequency * 1.3) * waggleIntensity * 0.3;
+              currentPounceX = horizontalWaggle * 8; // Small side-to-side movement
+              
+              // Stay mostly in place during prep with micro-movements
+            }
+            // Phase 2: Launch and flight - remaining 85%
+            else {
+              const flightProgress = (progress - 0.15) / 0.85;
+              
+              // Smooth easing for natural movement
+              const easeProgress = flightProgress < 0.5 
+                ? 2 * flightProgress * flightProgress 
+                : 1 - Math.pow(-2 * flightProgress + 2, 2) / 2;
+              
+              // Natural arc - higher at the beginning, trailing off
+              const arcProgress = Math.sin(flightProgress * Math.PI);
+              yOffset = -arcProgress * pounceState.current.arcHeight;
+              
+              const targetX = pounceState.current.x + pounceState.current.overshootX;
+              const targetY = pounceState.current.y + pounceState.current.overshootY;
+              
+              currentPounceX = targetX * easeProgress;
+              currentPounceY = targetY * easeProgress;
+              
+              // Return to normal size after prep phase
+              scale = 1;
+            }
+            
+            catElement.style.transform = `translate(${currentPounceX.toFixed(2)}px, ${
+              (currentPounceY + yOffset).toFixed(2)
+            }px) scale(${scale.toFixed(3)})`;
           } else {
-            pounceState.current.isActive = false; // End the pounce
+            pounceState.current.isActive = false;
+            // Start smooth return to center immediately, no landing bounce
+            pounceState.current.returning = true;
+            pounceState.current.returnStartTime = Date.now();
+            pounceState.current.returnStartX = pounceState.current.x + pounceState.current.overshootX;
+            pounceState.current.returnStartY = pounceState.current.y + pounceState.current.overshootY;
           }
-        } else if (wandMode) {
-          // Drift back to center if not pouncing
+        }
+        
+                  // Smooth return to center animation
+          if (pounceState.current.returning) {
+            // Much faster return for snappier gameplay
+            const baseReturnDuration = 250; // Reduced from 350ms
+            const excitementSpeedup = pounceState.current.excitementLevel * 60; // Up to 180ms faster when very excited
+            const returnDuration = Math.max(150, baseReturnDuration - excitementSpeedup);
+          
+          const returnProgress = Math.min(1, (Date.now() - pounceState.current.returnStartTime) / returnDuration);
+          
+          // Smooth ease-out for natural settling, with excitement causing slight tremor
+          const easeOut = 1 - Math.pow(1 - returnProgress, 3);
+          let currentX = pounceState.current.returnStartX * (1 - easeOut);
+          let currentY = pounceState.current.returnStartY * (1 - easeOut);
+          
+          // Add excitement tremor when very excited
+          if (pounceState.current.excitementLevel > 1) {
+            const tremor = pounceState.current.excitementLevel * 0.5;
+            const trembleX = Math.sin(Date.now() * 0.03) * tremor;
+            const trembleY = Math.cos(Date.now() * 0.025) * tremor;
+            currentX += trembleX;
+            currentY += trembleY;
+          }
+          
+          catElement.style.transform = `translate(${currentX.toFixed(2)}px, ${currentY.toFixed(2)}px)`;
+          
+          if (returnProgress >= 1) {
+            pounceState.current.returning = false;
+            catElement.style.transform = 'translate(0px, 0px)';
+          }
+        } else if (wandMode && !pounceState.current.returning) {
+          // Only drift if not actively returning from pounce
           const currentTransform = new DOMMatrix(
             getComputedStyle(catElement).transform
           );
           const currentX = currentTransform.m41;
           const currentY = currentTransform.m42;
-          const driftFactor = 0.1;
-          catElement.style.transform = `translate(${
-            currentX * (1 - driftFactor)
-          }px, ${currentY * (1 - driftFactor)}px)`;
+          
+          if (isPlaying) {
+            // When playing, stay closer to center and let the CSS batting animation handle the movement
+            const distance = Math.hypot(currentX, currentY);
+            if (distance > 15.0) { // Pull back toward center when playing but too far out
+              const driftFactor = 0.06; // Faster drift back to center when playing
+              const newX = currentX * (1 - driftFactor);
+              const newY = currentY * (1 - driftFactor);
+              catElement.style.transform = `translate(${newX.toFixed(2)}px, ${newY.toFixed(2)}px)`;
+            }
+          } else {
+            // Normal drift back to center when not playing
+            const distance = Math.hypot(currentX, currentY);
+            if (distance > 1.0) {
+              const driftFactor = 0.02; // Very gentle
+              const newX = currentX * (1 - driftFactor);
+              const newY = currentY * (1 - driftFactor);
+              catElement.style.transform = `translate(${newX.toFixed(2)}px, ${newY.toFixed(2)}px)`;
+            }
+          }
         } else if (jumpState.current.isActive) {
           const progress =
             (Date.now() - jumpState.current.startTime) / jumpState.current.duration;
@@ -209,8 +397,8 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
           const currentTransform = new DOMMatrix(
             getComputedStyle(catElement).transform
           );
-          if (currentTransform.m41 !== 0 || currentTransform.m42 !== 0) {
-            catElement.style.transform = `translate(0, 0)`;
+          if (currentTransform.m41 !== 0 || currentTransform.m42 !== 0 || currentTransform.a !== 1) {
+            catElement.style.transform = `translate(0, 0) scale(1)`;
           }
         }
 
@@ -267,7 +455,7 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
         document.removeEventListener('mousemove', handleMouseMove);
         cancelAnimationFrame(animationFrameId);
       };
-    }, [lastHeart, catRef, isPouncing, pounceTarget, wandMode]);
+    }, [lastHeart, catRef, isPouncing, pounceTarget, wandMode, isPlaying]);
 
     const svgClasses = [
       'cat-svg',
@@ -289,7 +477,7 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
       activeEyeState = 'sleepy';
     } else if (isStartled) {
       activeEyeState = 'startled';
-    } else if (isJumping || isSmiling) {
+    } else if (isJumping || isSmiling || isHappyPlaying) {
       activeEyeState = 'happy';
     } else {
       activeEyeState = 'open';

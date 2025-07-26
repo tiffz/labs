@@ -34,19 +34,52 @@ export interface WandSystemCallbacks {
     animationDuration: number;
   }>) => void;
   onTrackableHeartSet: (heartId: number | null) => void;
+  onEnergyChanged: (energyDelta: number) => void;
 }
 
 interface UseWandSystemProps {
   catRef: React.RefObject<SVGSVGElement>;
   lovePerPounce: number;
-  isDevMode: boolean;
+  energy: number;
   callbacks: WandSystemCallbacks;
 }
+
+// === CONSTANTS ===
+const ANIMATION_DURATIONS = {
+  POUNCE: 500,
+  PLAYING_DURING_POUNCE: 500,
+  PLAYING_REGULAR: 300,
+  SHAKE: 500,
+  HEART_CLEANUP: 1000,
+} as const;
+
+const COOLDOWNS = {
+  POUNCE: 1200,
+  PLAYING_DURING_POUNCE: 150,
+  PLAYING_REGULAR: 300,
+} as const;
+
+const CONFIDENCE_THRESHOLDS = {
+  POUNCE_TRIGGER: 85,
+  VELOCITY_MIN: 0.1,
+  SUDDEN_STOP_MIN: 1.6,
+  SUDDEN_STOP_MAX: 0.3,
+  SUDDEN_START_MAX: 0.4,
+  SUDDEN_START_MIN: 1.5,
+  CONFIDENCE_DECAY: 0.90,
+} as const;
+
+const CONFIDENCE_MULTIPLIERS = {
+  VELOCITY: 12,
+  SUDDEN_STOP: 30,
+  SUDDEN_START: 35,
+  CLICK_BOOST: 18,
+} as const;
 
 export const useWandSystem = ({
   catRef,
   lovePerPounce,
-  isDevMode,
+  energy,
   callbacks
 }: UseWandSystemProps) => {
   // === CORE STATE ===
@@ -58,7 +91,6 @@ export const useWandSystem = ({
   const [wandInitialPosition, setWandInitialPosition] = useState({ x: 0, y: 0 });
 
   // === INTERNAL TRACKING STATE ===
-  const [energy, setEnergy] = useState(100);
   const wandPositionRef = useRef({ x: 0, y: 0 });
   const shakeTimeoutRef = useRef<number | null>(null);
   const pounceConfidenceRef = useRef(0);
@@ -68,6 +100,8 @@ export const useWandSystem = ({
   const velocityHistoryRef = useRef<number[]>([]);
   const movementNoveltyRef = useRef(1.0);
   const energyRef = useRef(energy);
+  const lastPounceTimeRef = useRef(0);
+  const lastPlayTimeRef = useRef(0);
 
   // === DEBUG STATE ===
   const [pounceConfidenceDisplay, setPounceConfidenceDisplay] = useState(0);
@@ -100,13 +134,15 @@ export const useWandSystem = ({
   useEffect(() => {
     if (!wandMode) {
       pounceConfidenceRef.current = 0;
-      if (isDevMode) setPounceConfidenceDisplay(0);
+      setPounceConfidenceDisplay(0);
       return;
     }
 
+    // Initialize timing when wand mode starts
+    lastWandMoveTimeRef.current = Date.now();
+
     const pouncePlanningInterval = setInterval(() => {
       if (!catRef.current) return;
-      setEnergy(e => Math.max(0, e - 0.05));
 
       const catRect = catRef.current.getBoundingClientRect();
       const catCenterX = catRect.left + catRect.width / 2;
@@ -148,9 +184,9 @@ export const useWandSystem = ({
             ? Math.max(0.1, movementNoveltyRef.current - 0.1)
             : Math.min(1.0, movementNoveltyRef.current + 0.06);
 
-        if (velocity > 0.1) velocityConfidence = (velocity * 8) * movementNoveltyRef.current; 
-        if (lastVelocityRef.current > 1.6 && velocity < 0.3) suddenStopConfidence = (20 * proximityMultiplier);
-        if (lastVelocityRef.current < 0.4 && velocity > 1.5) suddenStartConfidence = (25 * proximityMultiplier);
+        if (velocity > CONFIDENCE_THRESHOLDS.VELOCITY_MIN) velocityConfidence = (velocity * CONFIDENCE_MULTIPLIERS.VELOCITY) * movementNoveltyRef.current; 
+        if (lastVelocityRef.current > CONFIDENCE_THRESHOLDS.SUDDEN_STOP_MIN && velocity < CONFIDENCE_THRESHOLDS.SUDDEN_STOP_MAX) suddenStopConfidence = (CONFIDENCE_MULTIPLIERS.SUDDEN_STOP * proximityMultiplier);
+        if (lastVelocityRef.current < CONFIDENCE_THRESHOLDS.SUDDEN_START_MAX && velocity > CONFIDENCE_THRESHOLDS.SUDDEN_START_MIN) suddenStartConfidence = (CONFIDENCE_MULTIPLIERS.SUDDEN_START * proximityMultiplier);
         
         lastVelocityRef.current = velocity;
       }
@@ -160,29 +196,35 @@ export const useWandSystem = ({
       const energyBoost = 1 + (energyRef.current / 100);
       const totalConfidenceGain = (velocityConfidence + suddenStopConfidence + suddenStartConfidence);
       pounceConfidenceRef.current += totalConfidenceGain * energyBoost;
-      pounceConfidenceRef.current = Math.max(0, pounceConfidenceRef.current * 0.90);
+      pounceConfidenceRef.current = Math.max(0, pounceConfidenceRef.current * CONFIDENCE_THRESHOLDS.CONFIDENCE_DECAY);
 
-      // Update debug displays
-      if (isDevMode) {
-        setPounceConfidenceDisplay(pounceConfidenceRef.current);
-        setLastVelocityDisplay(lastVelocityRef.current);
-        setProximityMultiplierDisplay(proximityMultiplier);
-        setMovementNoveltyDisplay(movementNoveltyRef.current);
-      }
+      // Update debug displays (always update so they're available when dev mode is toggled)
+      setPounceConfidenceDisplay(pounceConfidenceRef.current);
+      setLastVelocityDisplay(lastVelocityRef.current);
+      setProximityMultiplierDisplay(proximityMultiplier);
+      setMovementNoveltyDisplay(movementNoveltyRef.current);
 
       // === POUNCE TRIGGER ===
-      if (pounceConfidenceRef.current > 75 && !isPouncing) {
+      const timeSinceLastPounce = now - lastPounceTimeRef.current;
+      
+      if (pounceConfidenceRef.current > CONFIDENCE_THRESHOLDS.POUNCE_TRIGGER && !isPouncing && timeSinceLastPounce > COOLDOWNS.POUNCE) {
         pounceConfidenceRef.current = 0;
         velocityHistoryRef.current = [];
         movementNoveltyRef.current = 1.0;
-        setEnergy(e => Math.max(0, e - 5));
+        lastPounceTimeRef.current = now;
+        callbacks.onEnergyChanged(-5);
 
         const vectorX = currentWandPosition.x - catCenterX;
         const vectorY = currentWandPosition.y - catCenterY;
         const pounceDistance = Math.hypot(vectorX, vectorY);
-        const maxPounce = 30 + Math.random() * 20;
+        
+        // Even more aggressive pouncing - scale based on distance to wand
+        const baseMaxPounce = 50; // Increased from 35
+        const distanceBonus = Math.min(25, pounceDistance / 6); // Up to 25px bonus, more sensitive to distance
+        const maxPounce = baseMaxPounce + distanceBonus + Math.random() * 20;
+        
         const angle = Math.atan2(vectorY, vectorX);
-        const randomAngleOffset = (Math.random() - 0.5) * 0.4;
+        const randomAngleOffset = (Math.random() - 0.5) * 0.3;
         const newAngle = angle + randomAngleOffset;
 
         const pounceX = pounceDistance > 0 ? Math.cos(newAngle) * maxPounce : 0;
@@ -209,13 +251,14 @@ export const useWandSystem = ({
         if (lastHeartId) callbacks.onTrackableHeartSet(lastHeartId);
 
         setIsPouncing(true);
-        setTimeout(() => setIsPouncing(false), 500);
-        setTimeout(() => callbacks.onTrackableHeartSet(null), 1000);
+        setTimeout(() => setIsPouncing(false), ANIMATION_DURATIONS.POUNCE);
+        setTimeout(() => callbacks.onTrackableHeartSet(null), ANIMATION_DURATIONS.HEART_CLEANUP);
       }
     }, 100);
 
     return () => clearInterval(pouncePlanningInterval);
-  }, [wandMode, isPouncing, lovePerPounce, isDevMode, catRef, callbacks]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wandMode, isPouncing, lovePerPounce]); // callbacks and catRef intentionally omitted to prevent restarts
 
   // === ACTIONS ===
   const toggleWandMode = useCallback((initialPosition: { x: number; y: number }) => {
@@ -231,21 +274,35 @@ export const useWandSystem = ({
     });
   }, []);
 
+  // === SIMPLIFIED PLAYING STATE HANDLER ===
   const handleWandClick = useCallback(() => {
     if (shakeTimeoutRef.current) clearTimeout(shakeTimeoutRef.current);
-    pounceConfidenceRef.current += 35;
-    setEnergy(e => Math.max(0, e - 0.5));
+    pounceConfidenceRef.current += CONFIDENCE_MULTIPLIERS.CLICK_BOOST;
+    
     setIsShaking(false);
     requestAnimationFrame(() => {
       setIsShaking(true);
-      shakeTimeoutRef.current = window.setTimeout(() => setIsShaking(false), 500);
+      shakeTimeoutRef.current = window.setTimeout(() => setIsShaking(false), ANIMATION_DURATIONS.SHAKE);
     });
-    if (isPouncing) {
-      setIsPlaying(true);
-      callbacks.onLoveGained(1);
-      setTimeout(() => setIsPlaying(false), 300);
+    
+    // Unified playing state logic
+    if (wandMode) {
+      const now = Date.now();
+      const timeSinceLastPlay = now - lastPlayTimeRef.current;
+      const isInPounceMode = isPouncing;
+      
+      const playCooldown = isInPounceMode ? COOLDOWNS.PLAYING_DURING_POUNCE : COOLDOWNS.PLAYING_REGULAR;
+      const playDuration = isInPounceMode ? ANIMATION_DURATIONS.PLAYING_DURING_POUNCE : ANIMATION_DURATIONS.PLAYING_REGULAR;
+      const loveReward = isInPounceMode ? 2 : 1;
+      
+      if (timeSinceLastPlay > playCooldown) {
+        lastPlayTimeRef.current = now;
+        setIsPlaying(true);
+        callbacks.onLoveGained(loveReward);
+        setTimeout(() => setIsPlaying(false), playDuration);
+      }
     }
-  }, [isPouncing, callbacks]);
+  }, [isPouncing, wandMode, callbacks]);
 
   // === CLEANUP ===
   useEffect(() => {
@@ -272,7 +329,10 @@ export const useWandSystem = ({
   const actions: WandSystemActions = {
     toggleWandMode,
     handleWandClick,
-    setEnergy,
+    setEnergy: () => {
+      // This is now handled by the parent component
+      // We don't need to do anything here since energy comes from props
+    },
   };
 
   return { state, actions };
