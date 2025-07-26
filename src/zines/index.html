@@ -94,7 +94,7 @@
         .view-mode-selector button:hover { background-color: #FFE0B2; }
         .view-mode-selector button.active { background-color: #FF8A65; color: white; box-shadow: inset 0 1px 3px rgba(0,0,0,0.15); }
 
-        .input-field { border: 2px dashed var(--input-border); border-radius: 10px; padding: 10px; color: var(--text-color); background-color: var(--input-bg); width: 100%; }
+        .input-field { border: 2px dashed var(--input-border); border-radius: 10px; padding: 10px; color: var(--text-color); background-color: var(--input-bg); width: 100%; height: 42px; box-sizing: border-box; font-size: 14px; }
         .input-field:focus { border-color: var(--input-focus-border); box-shadow: 0 0 0 2px rgba(255, 171, 145, 0.3); outline: none; }
         .card-bg { background-color: #FFFFFF; border-radius: 20px; }
         .instruction-card-bg { background-color: #E0F2F1; border: 1px dashed var(--accent-light-teal); color: #004D40; border-radius: 16px; }
@@ -144,11 +144,11 @@
                 function PaperConfiguration({ paperConfig, onConfigChange }) { 
                     const handleInputChange = (e) => { const { name, value, type } = e.target; onConfigChange({ ...paperConfig, [name]: type === 'number' ? (parseFloat(value) || 0) : value }); }; 
                     return ( <div className="card-bg p-6 custom-shadow mb-8"> <h2 className="font-heading text-3xl font-bold mb-5" style={{color: 'var(--heading-color)'}}> <span className="mr-3 text-3xl">🎨</span> Paper Settings </h2> 
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4"> {/* Changed to 2-col on small screens */}
-                            <div><label htmlFor="width" className="block text-sm font-secondary-text mb-1 text-orange-800">Width</label><input type="number" name="width" id="width" value={paperConfig.width} onChange={handleInputChange} className="input-field" step="0.1"/></div> 
-                            <div><label htmlFor="height" className="block text-sm font-secondary-text mb-1 text-orange-800">Height</label><input type="number" name="height" id="height" value={paperConfig.height} onChange={handleInputChange} className="input-field" step="0.1"/></div> 
-                            <div><label htmlFor="unit" className="block text-sm font-secondary-text mb-1 text-orange-800">Unit</label><select name="unit" id="unit" value={paperConfig.unit} onChange={handleInputChange} className="input-field"><option value="in">Inches (in)</option><option value="cm">Centimeters (cm)</option><option value="mm">Millimeters (mm)</option></select></div> 
-                            <div><label htmlFor="dpi" className="block text-sm font-secondary-text mb-1 text-orange-800">Print DPI</label><input type="number" name="dpi" id="dpi" value={paperConfig.dpi} onChange={handleInputChange} className="input-field" step="1"/></div> 
+                        <div className="flex flex-wrap gap-4">
+                            <div className="flex-1 min-w-24"><label htmlFor="width" className="block text-sm font-secondary-text mb-1 text-orange-800">Width</label><input type="number" name="width" id="width" value={paperConfig.width} onChange={handleInputChange} className="input-field" step="0.1"/></div> 
+                            <div className="flex-1 min-w-24"><label htmlFor="height" className="block text-sm font-secondary-text mb-1 text-orange-800">Height</label><input type="number" name="height" id="height" value={paperConfig.height} onChange={handleInputChange} className="input-field" step="0.1"/></div> 
+                            <div className="flex-1 min-w-32"><label htmlFor="unit" className="block text-sm font-secondary-text mb-1 text-orange-800">Unit</label><select name="unit" id="unit" value={paperConfig.unit} onChange={handleInputChange} className="input-field"><option value="in">Inches (in)</option><option value="cm">Centimeters (cm)</option><option value="mm">Millimeters (mm)</option></select></div> 
+                            <div className="flex-1 min-w-24"><label htmlFor="dpi" className="block text-sm font-secondary-text mb-1 text-orange-800">Print DPI</label><input type="number" name="dpi" id="dpi" value={paperConfig.dpi} onChange={handleInputChange} className="input-field" step="1"/></div> 
                         </div> 
                         <p className="mt-4 text-xs font-secondary-text text-orange-700"><span className="inline mr-1">💡</span>Set your desired print resolution. 300 DPI is standard for good quality prints. Ensure your printer settings match.</p> 
                     </div> ); 
@@ -324,11 +324,11 @@
                             </div>
                         )}
                         <div className="container mx-auto p-4 md:p-6">
-                            <header className="mb-10 text-center"> <h1 className="font-heading text-5xl md:text-6xl font-bold text-orange-600">Minizine Magic Maker</h1> <p className="text-amber-700 mt-3 text-xl">Craft your tiny tales & art!</p> </header>
+                            <header className="mb-10 text-center"> <h1 className="font-heading text-5xl md:text-6xl font-bold text-orange-600">Minizine Maker</h1> <p className="text-amber-700 mt-3 text-xl">Craft your tiny tales & art!</p> </header>
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start"> 
                                 <div className="lg:col-span-1 space-y-8"> 
                                     <PaperConfiguration paperConfig={paperConfig} onConfigChange={handlePaperConfigChange} />
-                                    <div className="instruction-card-bg p-5 rounded-xl custom-shadow-sm"> <h3 className="font-heading text-2xl font-bold mb-3 text-teal-700 flex items-center"><span className="mr-2 text-2xl">📜</span> Folding Guide</h3> <ol className="list-decimal list-inside space-y-1.5 text-sm text-teal-800 font-secondary-text"> <li>Download your zine as a PNG.</li> <li>Open the PNG and print it. Ensure printer settings match your paper size & DPI, use **Landscape** orientation, and scale to **100%** (Actual Size). Print on one side.</li> <li>Fold hotdog style (lengthwise).</li><li>Fold hamburger style (widthwise).</li><li>Fold outer edges to center crease.</li> <li>Unfold last two. Cut along center horizontal crease (3 panels long).</li><li>Refold into booklet! (Search "8 page zine fold" for videos).</li> </ol> </div>
+                                    <div className="instruction-card-bg p-5 rounded-xl custom-shadow-sm"> <h3 className="font-heading text-2xl font-bold mb-3 text-teal-700 flex items-center"><span className="mr-2 text-2xl">📜</span> Folding Guide</h3> <ol className="list-decimal list-inside space-y-1.5 text-sm text-teal-800 font-secondary-text"> <li>Download your zine as a PNG.</li> <li>Open the PNG and print it. Ensure printer settings match your paper size & DPI, use **Landscape** orientation, and scale to **100%** (Actual Size). Print on one side.</li> <li>Fold hotdog style (lengthwise).</li><li>Fold hamburger style (widthwise).</li><li>Fold outer edges to center crease.</li> <li>Unfold last two. Cut along center horizontal crease (2 panels long).</li><li>Refold into booklet! (Search "8 page zine fold" for videos).</li> </ol> </div>
                                 </div>
                                 <div className="lg:col-span-2 zine-layout-container"> 
                                     <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-3">
