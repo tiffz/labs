@@ -390,3 +390,107 @@ Our comprehensive test suite includes **48 tests** covering:
 - **Eye-tracking bug prevention:** Comprehensive tests ensure the cat's eyes follow hearts correctly
 - **Wand toy system protection:** Complex pouncing mechanics with proximity, velocity, and novelty detection
 - **State management validation:** Proper cleanup and transitions under all conditions
+
+## Analytics Integration
+
+The Labs site includes modern Google Analytics 4 (GA4) tracking across all micro-apps with smart service worker compatibility.
+
+### Analytics Features
+
+- **Unified GA4 tracking** across all apps (landing page, Cat Clicker, Zine Maker)
+- **Service worker compatible** using beacon transport
+- **Micro-app detection** automatically tracks which app users visit
+- **Custom event tracking** for user interactions
+- **Modern GA4 events** with enhanced measurement
+
+### Configuration
+
+Analytics configuration is centralized in `/public/analytics.js`:
+
+```javascript
+const ANALYTICS_CONFIG = {
+  ga4Id: 'G-25C3B5B84M', // Your GA4 Measurement ID
+};
+```
+
+### Usage Examples
+
+**Basic Event Tracking:**
+
+```javascript
+// Track any custom event
+window.labsAnalytics?.trackEvent('button_click', {
+  category: 'User Interaction',
+  label: 'header_cta',
+  value: 1,
+});
+```
+
+**Micro-app Specific Tracking:**
+
+```javascript
+// Automatically detects app context
+window.labsAnalytics?.trackMicroApp('cat-clicker', 'game_start', {
+  difficulty: 'normal',
+  love_level: 0,
+});
+```
+
+**Cat Clicker Examples (already implemented):**
+
+- Cat petting interactions with love gained and energy level
+- Wand mode toggles with current game state
+- Upgrade purchases with cost and new levels
+
+**GA4 Event Structure:**
+All events follow GA4's enhanced measurement format with automatic parameters like `page_location`, `page_title`, and custom parameters you provide.
+
+### Service Worker Compatibility
+
+The analytics system automatically:
+
+- Uses `beacon` transport for reliability
+- Detects service worker presence
+- Continues tracking even with offline functionality
+- Handles network interruptions gracefully
+
+### App Detection
+
+Analytics automatically detects which micro-app the user is on:
+
+- `/cats/` → `cat-clicker`
+- `/zines/` → `zine-maker`
+- Root → `landing`
+
+Each app visit is automatically tracked with referrer information.
+
+### TypeScript Support
+
+Type declarations are included in `src/vite-env.d.ts` for full IntelliSense support:
+
+```typescript
+interface LabsAnalytics {
+  trackEvent(eventName: string, parameters?: AnalyticsEventParameters): void;
+  trackMicroApp(
+    appName: string,
+    action: string,
+    details?: AnalyticsEventParameters
+  ): void;
+}
+```
+
+### GA4 Benefits
+
+- **Enhanced measurement** automatically tracks scrolls, outbound clicks, site search, video engagement
+- **Cross-platform tracking** with unified user journey insights
+- **Privacy-focused** with built-in data controls and consent mode
+- **Machine learning insights** for better understanding user behavior
+- **Future-proof** as the current Google Analytics standard
+
+### Privacy Considerations
+
+- Analytics only tracks usage patterns and interactions
+- No personal information is collected
+- Uses Google Analytics 4 privacy controls and consent mode
+- Respects Do Not Track browser settings
+- GDPR and privacy regulation compliant

@@ -1,5 +1,14 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import ReactDOM from 'react-dom';
+
+// Analytics types
+declare global {
+  interface Window {
+    labsAnalytics?: {
+      trackEvent(eventName: string, parameters?: Record<string, unknown>): void;
+    };
+  }
+}
 import Cat from './components/cat/Cat';
 import Heart from './components/cat/Heart';
 import Zzz from './components/cat/Zzz';
@@ -207,6 +216,17 @@ function App() {
     setLove(t => t + loveFromClick);
     catActions.addEnergy(-1); // Use cat system's energy management
     
+    // Track cat interaction
+    if (typeof window !== 'undefined' && window.labsAnalytics) {
+      window.labsAnalytics.trackEvent('cat_pet', {
+        category: 'Cat Interaction',
+        label: wandMode ? 'wand_mode' : 'normal_mode',
+        value: loveFromClick,
+        love_gained: loveFromClick,
+        energy_level: catEnergy
+      });
+    }
+    
     setIsPetting(true);
     setTimeout(() => setIsPetting(false), 200);
 
@@ -365,6 +385,18 @@ function App() {
     if (love >= cost) {
       setLove(love - cost);
       setLovePerClick(lovePerClick + 1);
+      
+      // Track upgrade purchase
+      if (typeof window !== 'undefined' && window.labsAnalytics) {
+        window.labsAnalytics.trackEvent('upgrade_purchase', {
+          category: 'Game Progression',
+          label: 'love_per_click',
+          value: cost,
+          upgrade_type: 'love_per_click',
+          new_level: lovePerClick + 1,
+          cost: cost
+        });
+      }
     }
   };
 
@@ -571,6 +603,18 @@ function App() {
           <button
             onClick={(e) => {
               e.stopPropagation();
+              
+              // Track wand mode toggle
+              if (typeof window !== 'undefined' && window.labsAnalytics) {
+                window.labsAnalytics.trackEvent('wand_mode_toggle', {
+                  category: 'Cat Interaction',
+                  label: wandMode ? 'disabled' : 'enabled',
+                  new_mode: wandMode ? 'normal' : 'wand',
+                  love_level: love,
+                  energy_level: catEnergy
+                });
+              }
+              
               catActions.toggleWandMode();
             }}
           >
