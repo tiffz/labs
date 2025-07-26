@@ -2,6 +2,26 @@
 
 This document outlines the vision, architecture, and implementation details for the "Cat Clicker" micro-app. It serves as a reference for future development and ensures that Gemini can easily understand and contribute to the project.
 
+## Recent Enhancements (2025)
+
+### Custom Cat Favicon
+
+The Cat Clicker now features a custom SVG favicon that perfectly captures the kawaii aesthetic of the game. The favicon design process involved multiple iterations to achieve:
+
+- **Blobby egg shape** - Wider bottom, narrower top matching the game cat's proportions
+- **Frame-breaking effect** - Cat extends beyond the squarecle background for visual impact
+- **Optimized positioning** - Cat positioned lower with eyes in bottom half for "peeking up" cuteness
+- **Perfect proportions** - Bigger ears, larger eyes, and chunky body that feels adorable at small sizes
+
+### Optimized Testing Workflow
+
+The project now uses intelligent path detection to optimize development speed:
+
+- **Code changes** trigger full test suite (139 comprehensive tests)
+- **Documentation/asset changes** (like favicon tweaks) skip tests for faster deployment
+- **Smart pre-commit hooks** only run tests when TypeScript/JavaScript files are staged
+- **Dual CI/CD workflows** provide fast asset deployment while maintaining code quality
+
 ## 1. Core Gameplay Loop
 
 **Cat Clicker** is an incremental game with two primary currencies:

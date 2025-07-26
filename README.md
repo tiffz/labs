@@ -63,10 +63,12 @@ labs/
 - **Run tests:**
 
   ```sh
-  npm test
+  npm test              # Run all tests (139 tests)
+  npm run test:watch    # Run tests in watch mode for development
+  npm run test:changed  # Only test if TypeScript/JS files changed since last commit
   ```
 
-  Runs the comprehensive test suite (48 tests) across all components.
+  Runs the comprehensive test suite (139 tests) across all components.
 
 - **Check code quality:**
 
@@ -92,17 +94,32 @@ labs/
 
 ## Continuous Integration & Deployment (CI/CD)
 
-This project uses **GitHub Actions** for automated testing, building, and deployment with a robust, battle-tested configuration.
+This project uses **GitHub Actions** for automated testing, building, and deployment with an **intelligent, optimized workflow** that only runs tests when code changes.
 
-### 🚀 **Automated Workflow**
+### 🚀 **Smart Automated Workflow**
 
-Every push to `main` and pull request triggers:
+The CI/CD system intelligently responds to different types of changes:
+
+**For Code Changes** (TypeScript, JavaScript, configs):
 
 1. **Environment Setup** - Node.js 20, clean dependency installation with Rollup fix
 2. **Code Quality** - ESLint checks for style and quality issues
-3. **Testing** - Complete test suite (48 tests) must pass
+3. **Testing** - Complete test suite (139 tests) must pass
 4. **Build** - Production build generation and validation
 5. **Deploy** - Automatic deployment to GitHub Pages (main branch only)
+
+**For Documentation & Assets** (Markdown, SVG, images, CSS):
+
+1. **Environment Setup** - Node.js 20, clean dependency installation
+2. **Build** - Production build generation (tests skipped for speed)
+3. **Deploy** - Fast deployment to GitHub Pages
+
+### ⚡ **Performance Optimizations**
+
+- **Intelligent Path Detection** - Only runs full test suite when code files change
+- **Fast Asset Deployment** - Documentation and visual updates deploy in ~2 minutes vs ~5 minutes
+- **Smart Pre-commit Hooks** - Local tests only run when TypeScript/JavaScript files are staged
+- **Dual Workflows** - Separate optimized pipelines for code vs. documentation changes
 
 ### 🛡️ **Quality Gates**
 
@@ -140,10 +157,11 @@ The CI/CD pipeline has been extensively tested and debugged to ensure reliabilit
 
 This project maintains high standards through automated quality checks:
 
-- **Tests:** 48 comprehensive tests covering all major components and functionality
-- **Pre-commit hooks:** Tests and linting must pass before commits are allowed
-- **CI/CD integration:** GitHub Actions runs full test suite on every push/PR
+- **Tests:** 139 comprehensive tests covering all major components and functionality
+- **Smart Pre-commit hooks:** Tests only run when code files change, linting runs on all changes
+- **Intelligent CI/CD:** GitHub Actions runs full test suite for code changes, fast deployment for docs/assets
 - **Deployment protection:** Failed tests block production deployment
+- **Performance optimized:** Documentation updates deploy faster without sacrificing code quality
 
 ## Debugging & Maintenance
 
