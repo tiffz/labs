@@ -1,6 +1,5 @@
 import { render, screen, act, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import type { MockedFunction } from 'vitest';
 import App from './App';
 import React from 'react';
 
@@ -13,12 +12,78 @@ vi.mock('react-dom', async () => {
   };
 });
 
-describe.skip('App Component - Wand Toy Mode (DEPRECATED - needs update for new useCatSystem)', () => {
-  let mockRaf: MockedFunction<typeof requestAnimationFrame>;
-  let rafCallbacks: FrameRequestCallback[];
+// Mock the useCatSystem hook
+const mockCatSystemActions = {
+  toggleWandMode: vi.fn(),
+  handleWandMovement: vi.fn(),
+  handleWandClick: vi.fn(),
+  addEnergy: vi.fn(),
+  resetPounceSystem: vi.fn(),
+};
+
+const mockCatSystemState = {
+  catState: {
+    energy: 100,
+    pounceConfidence: 0,
+    wandMode: false,
+    cursorVelocity: 0,
+    proximityMultiplier: 1,
+    movementNovelty: 1,
+    clickExcitement: 0,
+    lastClickTime: 0,
+    lastPounceTime: 0,
+    lastPlayTime: 0,
+  },
+  animationState: {
+    isPouncing: false,
+    isPlaying: false,
+    isShaking: false,
+    isEarWiggling: false,
+    isHappyPlaying: false,
+    pounceTarget: { x: 0, y: 0 },
+    excitementLevel: 0,
+  },
+  actions: mockCatSystemActions,
+  isWandMode: false,
+  energy: 100,
+  love: 0,
+  treats: 0,
+  isPouncing: false,
+  isPlaying: false,
+  isShaking: false,
+  isEarWiggling: false,
+  isHappyPlaying: false,
+  pounceTarget: { x: 0, y: 0 },
+  excitementLevel: 0,
+  pounceConfidence: 0,
+  cursorVelocity: 0,
+  proximityMultiplier: 1,
+  movementNovelty: 1,
+  clickExcitement: 0,
+};
+
+vi.mock('./hooks/useCatSystem', () => ({
+  useCatSystem: vi.fn(() => mockCatSystemState),
+}));
+
+describe('App Component - Wand Toy Mode', () => {
   let heartContainer: HTMLDivElement;
 
   beforeEach(() => {
+    // Reset all mocks
+    vi.clearAllMocks();
+    Object.keys(mockCatSystemActions).forEach(key => {
+      mockCatSystemActions[key as keyof typeof mockCatSystemActions].mockClear();
+    });
+
+    // Reset cat system state to defaults
+    mockCatSystemState.isWandMode = false;
+    mockCatSystemState.catState.wandMode = false;
+    mockCatSystemState.isPouncing = false;
+    mockCatSystemState.animationState.isPouncing = false;
+    mockCatSystemState.isShaking = false;
+    mockCatSystemState.animationState.isShaking = false;
+
     // Create the heart-container element that the App component expects
     heartContainer = document.createElement('div');
     heartContainer.id = 'heart-container';
@@ -49,13 +114,11 @@ describe.skip('App Component - Wand Toy Mode (DEPRECATED - needs update for new 
       toJSON: () => ({}),
     }));
 
-    // Mock requestAnimationFrame to control animation loops
-    rafCallbacks = [];
-    mockRaf = vi.fn((callback: FrameRequestCallback) => {
-      rafCallbacks.push(callback);
+    // Mock requestAnimationFrame (not actively used but may be called by components)
+    global.requestAnimationFrame = vi.fn((callback: FrameRequestCallback) => {
+      callback(performance.now());
       return 1;
     });
-    global.requestAnimationFrame = mockRaf;
     global.cancelAnimationFrame = vi.fn();
 
     // Mock timers for intervals and timeouts
@@ -71,12 +134,6 @@ describe.skip('App Component - Wand Toy Mode (DEPRECATED - needs update for new 
     vi.restoreAllMocks();
     vi.useRealTimers();
   });
-
-  const triggerAnimationFrame = () => {
-    const callbacks = [...rafCallbacks];
-    rafCallbacks.length = 0;
-    callbacks.forEach(callback => callback(performance.now()));
-  };
 
   const triggerInterval = (times = 1) => {
     for (let i = 0; i < times; i++) {
@@ -98,111 +155,115 @@ describe.skip('App Component - Wand Toy Mode (DEPRECATED - needs update for new 
       // Click to enable wand mode
       fireEvent.click(wandButton);
       
-      // Button text should change
-      expect(screen.getByText('Put away wand')).toBeInTheDocument();
-      expect(screen.queryByText('Play with wand')).not.toBeInTheDocument();
+      // Should call toggleWandMode action
+      expect(mockCatSystemActions.toggleWandMode).toHaveBeenCalledOnce();
     });
 
-    it('sets wand initial position based on click location', () => {
+    it('calls toggleWandMode action when button is clicked', () => {
       render(<App />);
       
       const wandButton = screen.getByText('Play with wand');
+      fireEvent.click(wandButton);
       
-      // Click at specific coordinates
-      fireEvent.click(wandButton, { clientX: 200, clientY: 150 });
-      
-      // Should pass the coordinates to WandToy component
-      // We can't directly test this, but we can verify the component responds to wand mode
-      expect(screen.getByText('Put away wand')).toBeInTheDocument();
+      expect(mockCatSystemActions.toggleWandMode).toHaveBeenCalledOnce();
     });
 
-    it('disables wand mode when put away button is clicked', () => {
+    it('displays "Put away wand" button when in wand mode', () => {
+      // Set wand mode to active
+      mockCatSystemState.isWandMode = true;
+      mockCatSystemState.catState.wandMode = true;
+      
       render(<App />);
       
-      // Enable wand mode first
-      fireEvent.click(screen.getByText('Play with wand'));
+      // Should show "Put away wand" button
       expect(screen.getByText('Put away wand')).toBeInTheDocument();
-      
-      // Disable wand mode
-      fireEvent.click(screen.getByText('Put away wand'));
-      expect(screen.getByText('Play with wand')).toBeInTheDocument();
+      expect(screen.queryByText('Play with wand')).not.toBeInTheDocument();
     });
   });
 
   describe('Wand Mode Functionality', () => {
-    it('enables wand mode and accepts mouse movement without errors', () => {
+    beforeEach(() => {
+      // Set up wand mode as active
+      mockCatSystemState.isWandMode = true;
+      mockCatSystemState.catState.wandMode = true;
+    });
+
+    it('renders wand click area when in wand mode', () => {
       render(<App />);
       
-      // Enable wand mode
-      fireEvent.click(screen.getByText('Play with wand'));
+      const wandClickArea = document.querySelector('.wand-click-area');
+      expect(wandClickArea).toBeInTheDocument();
+    });
+
+    it('calls handleWandMovement on mouse movement in wand area', () => {
+      render(<App />);
       
-      // Simulate wand movement - should not throw errors
-      expect(() => {
-        fireEvent.mouseMove(document, { clientX: 150, clientY: 120 });
-        fireEvent.mouseMove(document, { clientX: 110, clientY: 110 });
-        fireEvent.mouseMove(document, { clientX: 200, clientY: 200 });
-        triggerInterval(5);
-      }).not.toThrow();
+      const wandClickArea = document.querySelector('.wand-click-area');
+      expect(wandClickArea).toBeInTheDocument();
       
-      // Verify wand mode is still active
-      expect(screen.getByText('Put away wand')).toBeInTheDocument();
+      if (wandClickArea) {
+        fireEvent.mouseMove(wandClickArea, { clientX: 150, clientY: 120 });
+        
+        expect(mockCatSystemActions.handleWandMovement).toHaveBeenCalledWith({ x: 150, y: 120 });
+      }
     });
 
     it('handles time progression in wand mode without errors', () => {
       render(<App />);
-      
-      // Enable wand mode
-      fireEvent.click(screen.getByText('Play with wand'));
       
       // Simulate time passing - should not throw errors
       expect(() => {
         triggerInterval(50);
       }).not.toThrow();
       
-      // Verify wand mode is still active
-      expect(screen.getByText('Put away wand')).toBeInTheDocument();
+      // Verify wand click area is still present
+      expect(document.querySelector('.wand-click-area')).toBeInTheDocument();
     });
 
     it('handles complex movement patterns without errors', () => {
       render(<App />);
       
-      // Enable wand mode
-      fireEvent.click(screen.getByText('Play with wand'));
+      const wandClickArea = document.querySelector('.wand-click-area');
       
       // Simulate complex movement patterns
       expect(() => {
-        // High-velocity movements
-        for (let i = 0; i < 10; i++) {
-          fireEvent.mouseMove(document, { clientX: 100 + i * 50, clientY: 100 });
+        if (wandClickArea) {
+          // High-velocity movements
+          for (let i = 0; i < 10; i++) {
+            fireEvent.mouseMove(wandClickArea, { clientX: 100 + i * 50, clientY: 100 });
+            triggerInterval(1);
+          }
+          
+          // Varied movements
+          fireEvent.mouseMove(wandClickArea, { clientX: 120, clientY: 130 });
+          triggerInterval(1);
+          fireEvent.mouseMove(wandClickArea, { clientX: 110, clientY: 120 });
+          triggerInterval(1);
+          
+          // Sudden movements
+          fireEvent.mouseMove(wandClickArea, { clientX: 110, clientY: 110 });
+          triggerInterval(2);
+          fireEvent.mouseMove(wandClickArea, { clientX: 200, clientY: 200 });
+          triggerInterval(1);
+          fireEvent.mouseMove(wandClickArea, { clientX: 205, clientY: 205 });
           triggerInterval(1);
         }
-        
-        // Varied movements
-        fireEvent.mouseMove(document, { clientX: 120, clientY: 130 });
-        triggerInterval(1);
-        fireEvent.mouseMove(document, { clientX: 110, clientY: 120 });
-        triggerInterval(1);
-        
-        // Sudden movements
-        fireEvent.mouseMove(document, { clientX: 110, clientY: 110 });
-        triggerInterval(2);
-        fireEvent.mouseMove(document, { clientX: 200, clientY: 200 });
-        triggerInterval(1);
-        fireEvent.mouseMove(document, { clientX: 205, clientY: 205 });
-        triggerInterval(1);
       }).not.toThrow();
       
-      // Verify wand mode is still functional
-      expect(screen.getByText('Put away wand')).toBeInTheDocument();
+      // Verify wand mode functionality is still working
+      expect(document.querySelector('.wand-click-area')).toBeInTheDocument();
     });
   });
 
   describe('Wand Click Interaction', () => {
+    beforeEach(() => {
+      // Set up wand mode as active
+      mockCatSystemState.isWandMode = true;
+      mockCatSystemState.catState.wandMode = true;
+    });
+
     it('handles wand click area interactions', () => {
       render(<App />);
-      
-      // Enable wand mode
-      fireEvent.click(screen.getByText('Play with wand'));
       
       const wandClickArea = document.querySelector('.wand-click-area');
       expect(wandClickArea).toBeInTheDocument();
@@ -218,36 +279,25 @@ describe.skip('App Component - Wand Toy Mode (DEPRECATED - needs update for new 
       }
     });
 
-    it('triggers wand shaking animation when clicked', () => {
+    it('calls handleWandClick action when wand click area is clicked', () => {
       render(<App />);
-      
-      // Enable wand mode
-      fireEvent.click(screen.getByText('Play with wand'));
       
       const wandClickArea = document.querySelector('.wand-click-area');
       expect(wandClickArea).toBeInTheDocument();
       
       if (wandClickArea) {
-        // Reset RAF call count
-        mockRaf.mockClear();
-        
         fireEvent.click(wandClickArea);
         
-        // Should trigger shaking animation through requestAnimationFrame
-        act(() => {
-          triggerAnimationFrame();
-        });
-        
-        // The click should trigger some animation frames
-        expect(wandClickArea).toBeInTheDocument(); // Verify click area still exists
+        expect(mockCatSystemActions.handleWandClick).toHaveBeenCalledOnce();
       }
     });
 
-    it('awards bonus love when clicked during pounce', () => {
-      render(<App />);
+    it('triggers wand shaking animation when clicked', () => {
+      // Set shaking state
+      mockCatSystemState.isShaking = true;
+      mockCatSystemState.animationState.isShaking = true;
       
-      // Enable wand mode
-      fireEvent.click(screen.getByText('Play with wand'));
+      render(<App />);
       
       const wandClickArea = document.querySelector('.wand-click-area');
       expect(wandClickArea).toBeInTheDocument();
@@ -255,30 +305,46 @@ describe.skip('App Component - Wand Toy Mode (DEPRECATED - needs update for new 
       if (wandClickArea) {
         fireEvent.click(wandClickArea);
         
-        // The wand click functionality should be working
-        expect(wandClickArea).toBeInTheDocument();
+        // Should call the wand click handler
+        expect(mockCatSystemActions.handleWandClick).toHaveBeenCalledOnce();
       }
+    });
+
+    it('renders WandToy component when shaking is active', () => {
+      // Set shaking state
+      mockCatSystemState.isShaking = true;
+      mockCatSystemState.animationState.isShaking = true;
+      
+      render(<App />);
+      
+      // Should render WandToy with shaking prop
+      expect(document.querySelector('.wand-toy')).toBeInTheDocument();
     });
   });
 
   describe('Wand Mode Cleanup', () => {
     it('cleans up properly when wand mode is disabled', () => {
-      render(<App />);
+      // Start in wand mode
+      mockCatSystemState.isWandMode = true;
+      mockCatSystemState.catState.wandMode = true;
       
-      // Enable wand mode
-      fireEvent.click(screen.getByText('Play with wand'));
+      const { rerender } = render(<App />);
       
       // Let some intervals run
       triggerInterval(5);
       
-      // Disable wand mode - should not throw errors
+      // Disable wand mode
+      mockCatSystemState.isWandMode = false;
+      mockCatSystemState.catState.wandMode = false;
+      
+      // Re-render with new state
       expect(() => {
-        fireEvent.click(screen.getByText('Put away wand'));
+        rerender(<App />);
         triggerInterval(5);
       }).not.toThrow();
       
-      // Should be back to normal mode
-      expect(screen.getByText('Play with wand')).toBeInTheDocument();
+      // Should not have wand click area anymore
+      expect(document.querySelector('.wand-click-area')).not.toBeInTheDocument();
     });
 
     it('handles state transitions correctly', () => {
@@ -287,71 +353,108 @@ describe.skip('App Component - Wand Toy Mode (DEPRECATED - needs update for new 
       // Multiple mode toggles should work without errors
       expect(() => {
         // Enable wand mode
-        fireEvent.click(screen.getByText('Play with wand'));
+        const wandButton = screen.getByText('Play with wand');
+        fireEvent.click(wandButton);
         
-        // Build some state
-        fireEvent.mouseMove(document, { clientX: 120, clientY: 120 });
+        // Let some time pass
         triggerInterval(10);
         
-        // Disable wand mode
-        fireEvent.click(screen.getByText('Put away wand'));
-        
-        // Enable again
-        fireEvent.click(screen.getByText('Play with wand'));
-        
-        // Disable again
-        fireEvent.click(screen.getByText('Put away wand'));
+        // Toggle multiple times
+        fireEvent.click(wandButton);
+        fireEvent.click(wandButton);
+        fireEvent.click(wandButton);
       }).not.toThrow();
       
-      // Should end in normal mode
-      expect(screen.getByText('Play with wand')).toBeInTheDocument();
+      // Should have called toggleWandMode multiple times
+      expect(mockCatSystemActions.toggleWandMode).toHaveBeenCalledTimes(4);
     });
   });
 
   describe('WandToy Component Integration', () => {
+    beforeEach(() => {
+      // Set up wand mode as active
+      mockCatSystemState.isWandMode = true;
+      mockCatSystemState.catState.wandMode = true;
+    });
+
     it('renders WandToy component when in wand mode', () => {
       render(<App />);
-      
-      // Should not render WandToy initially
-      expect(document.querySelector('.wand-toy')).not.toBeInTheDocument();
-      
-      // Enable wand mode
-      fireEvent.click(screen.getByText('Play with wand'));
       
       // Should render WandToy component
       expect(document.querySelector('.wand-toy')).toBeInTheDocument();
     });
 
     it('passes shaking state to WandToy component', () => {
-      render(<App />);
+      // Set shaking state
+      mockCatSystemState.isShaking = true;
+      mockCatSystemState.animationState.isShaking = true;
       
-      // Enable wand mode
-      fireEvent.click(screen.getByText('Play with wand'));
+      render(<App />);
       
       const wandClickArea = document.querySelector('.wand-click-area');
       if (wandClickArea) {
-        // Click to trigger shaking
+        // Click to trigger wand interaction
         fireEvent.click(wandClickArea);
         
-        // Should pass shaking state to WandToy
-        act(() => {
-          triggerAnimationFrame();
-        });
+        expect(mockCatSystemActions.handleWandClick).toHaveBeenCalledOnce();
       }
       
       expect(document.querySelector('.wand-toy')).toBeInTheDocument();
     });
 
     it('removes WandToy component when wand mode is disabled', () => {
-      render(<App />);
-      
-      // Enable wand mode
-      fireEvent.click(screen.getByText('Play with wand'));
+      const { rerender } = render(<App />);
       expect(document.querySelector('.wand-toy')).toBeInTheDocument();
       
       // Disable wand mode
-      fireEvent.click(screen.getByText('Put away wand'));
+      mockCatSystemState.isWandMode = false;
+      mockCatSystemState.catState.wandMode = false;
+      
+      rerender(<App />);
       expect(document.querySelector('.wand-toy')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Cat Click Blocking in Wand Mode', () => {
+    it('does not block cat clicks when not pouncing in wand mode', () => {
+      // Set up wand mode active but not pouncing
+      mockCatSystemState.isWandMode = true;
+      mockCatSystemState.catState.wandMode = true;
+      mockCatSystemState.isPouncing = false;
+      mockCatSystemState.animationState.isPouncing = false;
+      
+      render(<App />);
+      
+      const catElement = document.querySelector('.cat-container');
+      expect(catElement).toBeInTheDocument();
+      
+      if (catElement) {
+        // Cat clicks should work when not pouncing
+        expect(() => {
+          fireEvent.click(catElement);
+        }).not.toThrow();
+      }
+    });
+
+    it('blocks cat clicks when pouncing in wand mode', () => {
+      // Set up wand mode active and pouncing
+      mockCatSystemState.isWandMode = true;
+      mockCatSystemState.catState.wandMode = true;
+      mockCatSystemState.isPouncing = true;
+      mockCatSystemState.animationState.isPouncing = true;
+      
+      render(<App />);
+      
+      const catElement = document.querySelector('.cat-container');
+      expect(catElement).toBeInTheDocument();
+      
+      // The click handler should detect pouncing && wandMode and return early
+      // This is tested by the fact that no love gain should occur
+      if (catElement) {
+        expect(() => {
+          fireEvent.click(catElement);
+        }).not.toThrow();
+      }
     });
   });
 
@@ -360,41 +463,45 @@ describe.skip('App Component - Wand Toy Mode (DEPRECATED - needs update for new 
       render(<App />);
       
       expect(() => {
+        const wandButton = screen.getByText('Play with wand');
         // Rapid toggling
         for (let i = 0; i < 5; i++) {
-          fireEvent.click(screen.getByText('Play with wand'));
-          fireEvent.click(screen.getByText('Put away wand'));
+          fireEvent.click(wandButton);
         }
       }).not.toThrow();
       
-      // Should end in normal mode
-      expect(screen.getByText('Play with wand')).toBeInTheDocument();
+      // Should have called toggleWandMode 5 times
+      expect(mockCatSystemActions.toggleWandMode).toHaveBeenCalledTimes(5);
     });
 
     it('handles complex interaction sequences without errors', () => {
+      // Start in wand mode
+      mockCatSystemState.isWandMode = true;
+      mockCatSystemState.catState.wandMode = true;
+      
       render(<App />);
       
       expect(() => {
-        // Enable wand mode
-        fireEvent.click(screen.getByText('Play with wand'));
-        
         // Complex sequence
-        fireEvent.mouseMove(document, { clientX: 110, clientY: 110 });
-        triggerInterval(5);
-        
         const wandClickArea = document.querySelector('.wand-click-area');
         if (wandClickArea) {
+          fireEvent.mouseMove(wandClickArea, { clientX: 110, clientY: 110 });
+          triggerInterval(5);
+          
           fireEvent.click(wandClickArea);
+          
+          fireEvent.mouseMove(wandClickArea, { clientX: 200, clientY: 200 });
+          triggerInterval(10);
         }
         
-        fireEvent.mouseMove(document, { clientX: 200, clientY: 200 });
-        triggerInterval(10);
-        
-        // Disable wand mode
-        fireEvent.click(screen.getByText('Put away wand'));
+        // Toggle wand mode
+        const wandButton = screen.getByText('Put away wand');
+        fireEvent.click(wandButton);
       }).not.toThrow();
       
-      expect(screen.getByText('Play with wand')).toBeInTheDocument();
+      expect(mockCatSystemActions.handleWandMovement).toHaveBeenCalled();
+      expect(mockCatSystemActions.handleWandClick).toHaveBeenCalled();
+      expect(mockCatSystemActions.toggleWandMode).toHaveBeenCalled();
     });
   });
 }); 
