@@ -35,6 +35,8 @@ interface CatProps {
   isPlaying: boolean;
   isSmiling: boolean;
   isSubtleWiggling: boolean;
+  isHappyPlaying: boolean;
+  isEarWiggling: boolean;
   headTiltAngle: number;
   pounceTarget: { x: number; y: number };
   wigglingEar: 'left' | 'right' | null;
@@ -62,18 +64,16 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
       isPlaying,
       isSmiling,
       isSubtleWiggling,
+      isHappyPlaying,
+      isEarWiggling,
       headTiltAngle,
       pounceTarget,
       wigglingEar,
       lastHeart,
       wandMode,
     } = props;
-    const [pupilsPos, setPupilsPos] = useState({
-      left: { x: 80, y: 80 },
-      right: { x: 120, y: 80 },
-    });
+      // Removed pupilsPos state - now using direct DOM manipulation for smooth animation
     const [isBlinking, setIsBlinking] = useState(false);
-    const [isHappyPlaying, setIsHappyPlaying] = useState(false);
     const drowsinessState = useRef({
       startTime: 0,
       drowsinessTimer: null as number | null,
@@ -102,6 +102,16 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
       excitementLevel: 0, // Track rapid pouncing excitement
       lastPounceTime: 0,
     });
+
+    // Refs for animation loop to prevent stale closures and infinite re-renders
+    const wandModeRef = React.useRef(wandMode);
+    const isPlayingRef = React.useRef(isPlaying);
+    const lastHeartRef = React.useRef(lastHeart);
+    
+    // Update refs when values change (without causing re-renders)
+    wandModeRef.current = wandMode;
+    isPlayingRef.current = isPlaying;
+    lastHeartRef.current = lastHeart;
 
     useEffect(() => {
       const drowsinessTimerRef = drowsinessState.current;
@@ -204,33 +214,17 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
 
 
 
-    // Random happy face when playing close to toy
-    useEffect(() => {
-      if (isPlaying && wandMode) {
-        // Check if close to toy (within 50px)
-        const distance = Math.hypot(pounceTarget.x, pounceTarget.y);
-        if (distance < 150) {
-          // 30% chance to be happy when playing close to toy
-          if (Math.random() < 0.3) {
-            setIsHappyPlaying(true);
-            const timeout = setTimeout(() => setIsHappyPlaying(false), ANIMATION_TIMINGS.HAPPY_PLAY_MIN + Math.random() * (ANIMATION_TIMINGS.HAPPY_PLAY_MAX - ANIMATION_TIMINGS.HAPPY_PLAY_MIN));
-            return () => clearTimeout(timeout);
-          }
-        }
-      } else {
-        setIsHappyPlaying(false);
-      }
-    }, [isPlaying, wandMode, pounceTarget]);
+    // Happy face logic is now handled by AnimationController
 
     useEffect(() => {
       let target = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
       let animationFrameId: number;
 
-      const handleMouseMove = (event: MouseEvent) => {
-        if (!lastHeart) {
-          target = { x: event.clientX, y: event.clientY };
-        }
-      };
+              const handleMouseMove = (event: MouseEvent) => {
+          if (!lastHeartRef.current) {
+            target = { x: event.clientX, y: event.clientY };
+          }
+        };
 
       document.addEventListener('mousemove', handleMouseMove);
 
@@ -354,7 +348,7 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
             pounceState.current.returning = false;
             catElement.style.transform = 'translate(0px, 0px)';
           }
-        } else if (wandMode && !pounceState.current.returning) {
+        } else if (wandModeRef.current && !pounceState.current.returning) {
           // Only drift if not actively returning from pounce
           const currentTransform = new DOMMatrix(
             getComputedStyle(catElement).transform
@@ -362,7 +356,7 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
           const currentX = currentTransform.m41;
           const currentY = currentTransform.m42;
           
-          if (isPlaying) {
+          if (isPlayingRef.current) {
             // When playing, stay closer to center and let the CSS batting animation handle the movement
             const distance = Math.hypot(currentX, currentY);
             if (distance > 15.0) { // Pull back toward center when playing but too far out
@@ -403,8 +397,8 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
         }
 
         // Eye Tracking
-        if (lastHeart && lastHeart.isConnected) {
-          const heartRect = lastHeart.getBoundingClientRect();
+        if (lastHeartRef.current && lastHeartRef.current.isConnected) {
+          const heartRect = lastHeartRef.current.getBoundingClientRect();
           target = {
             x: heartRect.left + heartRect.width / 2,
             y: heartRect.top + heartRect.height / 2,
@@ -433,18 +427,30 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
         const desiredPupilRightX = 120 + Math.cos(angleRight) * maxPupilOffset;
         const desiredPupilRightY = 80 + Math.sin(angleRight) * maxPupilOffset;
 
-        setPupilsPos((currentPos) => {
-          const lerpFactor = 0.1;
-          const newLeftX = currentPos.left.x + (desiredPupilLeftX - currentPos.left.x) * lerpFactor;
-          const newLeftY = currentPos.left.y + (desiredPupilLeftY - currentPos.left.y) * lerpFactor;
-          const newRightX = currentPos.right.x + (desiredPupilRightX - currentPos.right.x) * lerpFactor;
-          const newRightY = currentPos.right.y + (desiredPupilRightY - currentPos.right.y) * lerpFactor;
-
-          return {
-            left: { x: newLeftX, y: newLeftY },
-            right: { x: newRightX, y: newRightY },
-          };
-        });
+        // Update pupils directly in DOM to avoid React re-renders
+        if (catElement) {
+          const leftPupil = catElement.querySelector('#pupil-left');
+          const rightPupil = catElement.querySelector('#pupil-right');
+          
+          if (leftPupil && rightPupil) {
+            // Use direct DOM manipulation instead of React state
+            const lerpFactor = 0.1;
+            const currentLeftX = parseFloat(leftPupil.getAttribute('cx') || '80');
+            const currentLeftY = parseFloat(leftPupil.getAttribute('cy') || '80');
+            const currentRightX = parseFloat(rightPupil.getAttribute('cx') || '120');
+            const currentRightY = parseFloat(rightPupil.getAttribute('cy') || '80');
+            
+            const newLeftX = currentLeftX + (desiredPupilLeftX - currentLeftX) * lerpFactor;
+            const newLeftY = currentLeftY + (desiredPupilLeftY - currentLeftY) * lerpFactor;
+            const newRightX = currentRightX + (desiredPupilRightX - currentRightX) * lerpFactor;
+            const newRightY = currentRightY + (desiredPupilRightY - currentRightY) * lerpFactor;
+            
+            leftPupil.setAttribute('cx', newLeftX.toString());
+            leftPupil.setAttribute('cy', newLeftY.toString());
+            rightPupil.setAttribute('cx', newRightX.toString());
+            rightPupil.setAttribute('cy', newRightY.toString());
+          }
+        }
 
         animationFrameId = requestAnimationFrame(animate);
       };
@@ -455,7 +461,7 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
         document.removeEventListener('mousemove', handleMouseMove);
         cancelAnimationFrame(animationFrameId);
       };
-    }, [lastHeart, catRef, isPouncing, pounceTarget, wandMode, isPlaying]);
+    }, [catRef]); // Include catRef dependency
 
     const svgClasses = [
       'cat-svg',
@@ -463,6 +469,7 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
       wigglingEar === 'left' ? 'wiggling-left' : '',
       wigglingEar === 'right' ? 'wiggling-right' : '',
       isSubtleWiggling ? 'subtle-wiggling' : '',
+      isEarWiggling ? 'ear-wiggling' : '',
       isPlaying ? 'playing' : '',
     ]
       .filter(Boolean)
@@ -489,6 +496,7 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 220 200"
         className={svgClasses}
+        data-cat-ref="true"
       >
         <g
           id="cat-container"
@@ -621,8 +629,9 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
                   <g>
                     <circle cx="80" cy="80" r="10" fill="white" />
                     <circle
-                      cx={pupilsPos.left.x}
-                      cy={pupilsPos.left.y}
+                      id="pupil-left"
+                      cx="80"
+                      cy="80"
                       r="5"
                       fill="black"
                     />
@@ -630,8 +639,9 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
                   <g>
                     <circle cx="120" cy="80" r="10" fill="white" />
                     <circle
-                      cx={pupilsPos.right.x}
-                      cy={pupilsPos.right.y}
+                      id="pupil-right"
+                      cx="120"
+                      cy="80"
                       r="5"
                       fill="black"
                     />

@@ -11,7 +11,8 @@ import CatFact from './components/ui/CatFact';
 import JobPanel from './components/jobs/JobPanel';
 import { catFacts } from './data/catFacts';
 import { jobData } from './data/jobData';
-import { useWandSystem } from './hooks/useWandSystem';
+import { useCatSystem } from './hooks/useCatSystem';
+import { HeartSpawningService, type HeartVisuals } from './services/HeartSpawningService';
 import './styles/cats.css';
 
 interface HeartType {
@@ -58,44 +59,103 @@ function App() {
   const [energy, setEnergy] = useState(100); // Cat's energy, 0-100
   const [isDevMode, setIsDevMode] = useState(false);
   
+  // Heart spawning service
+  const heartSpawningService = useMemo(() => {
+    return new HeartSpawningService({
+      onHeartSpawned: (heart: HeartVisuals) => {
+        const newHeart: HeartType = {
+          id: heart.id,
+          x: heart.x,
+          y: heart.y,
+          translateX: heart.translateX,
+          rotation: heart.rotation,
+          scale: heart.scale,
+          animationDuration: heart.animationDuration,
+        };
+        setHearts((currentHearts) => [...currentHearts, newHeart]);
+      },
+      onTrackableHeartSet: (heartId: number | null) => {
+        setTrackableHeartId(heartId);
+      }
+    });
+  }, []);
+  
   const cheekClickFlag = useRef(false);
   const [rapidClickCount, setRapidClickCount] = useState(0);
   const [currentFact] = useState(catFacts[Math.floor(Math.random() * catFacts.length)]);
 
-  // === WAND SYSTEM ===
-  const { state: wandState, actions: wandActions } = useWandSystem({
-    catRef: catRef as React.RefObject<SVGSVGElement>,
-    lovePerPounce,
-    energy,
-    callbacks: {
-      onLoveGained: (amount) => setLove(current => current + amount),
-      onHeartSpawned: (newHearts) => {
-        setHearts(currentHearts => [...currentHearts, ...newHearts]);
-        // Remove hearts after animation
-        setTimeout(() => {
-          setHearts(currentHearts => 
-            currentHearts.filter(heart => !newHearts.some(nh => nh.id === heart.id))
-          );
-        }, 1000);
-      },
-      onTrackableHeartSet: (heartId) => setTrackableHeartId(heartId),
-      onEnergyChanged: (energyDelta) => setEnergy(currentEnergy => Math.max(0, currentEnergy + energyDelta)),
-    },
+  // === Stable callbacks to prevent infinite loops ===
+  const onLoveGained = useCallback((amount: number) => {
+    setLove(current => current + amount);
+  }, []);
+
+  const onEnergyChanged = useCallback((newEnergy: number) => {
+    setEnergy(newEnergy);
+  }, []);
+
+  const onHeartSpawned = useCallback((position: { x: number; y: number }) => {
+    const newHeart: HeartType = {
+      id: Date.now(),
+      x: position.x,
+      y: position.y,
+      translateX: Math.random() * 40 - 20,
+      rotation: Math.random() * 60 - 30,
+      scale: 1.0,
+      animationDuration: 1,
+    };
+    setHearts(currentHearts => [...currentHearts, newHeart]);
+    // Remove heart after animation
+    setTimeout(() => {
+      setHearts(currentHearts => 
+        currentHearts.filter(heart => heart.id !== newHeart.id)
+      );
+    }, 1000);
+  }, []);
+
+  const onTrackableHeartSet = useCallback((heartId: number | null) => {
+    setTrackableHeartId(heartId);
+  }, []);
+
+  const onTreatsGained = useCallback((amount: number) => {
+    setTreats(current => current + amount);
+  }, []);
+
+  // === CAT SYSTEM (Clean Architecture) ===
+  const {
+    // Cat-specific state
+    energy: catEnergy,
+    isWandMode: wandMode,
+    isPouncing,
+    isPlaying,
+    isShaking,
+    isEarWiggling,
+    isHappyPlaying,
+    pounceTarget,
+     
+     // Actions
+     actions: catActions,
+    
+    // Debug values
+    pounceConfidence,
+    cursorVelocity: lastVelocity,
+    proximityMultiplier,
+    movementNovelty,
+    clickExcitement,
+  } = useCatSystem({
+    initialEnergy: energy, // Pass current energy as initial value
+    currentLove: love,     // Pass global state
+    currentTreats: treats, // Pass global state
+    
+    // Stable callback functions
+    onLoveGained,
+    onEnergyChanged,
+    onHeartSpawned,
+    onTrackableHeartSet,
+    onTreatsGained,
   });
 
-  // Extract wand state for easier access
-  const { 
-    wandMode, 
-    isShaking, 
-    isPouncing, 
-    isPlaying, 
-    pounceTarget, 
-    wandInitialPosition,
-    pounceConfidence,
-    lastVelocity,
-    proximityMultiplier,
-    movementNovelty
-  } = wandState;
+  // Keep reference to current energy for compatibility
+  const wandInitialPosition = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
 
   const treatsPerSecond = useMemo(() => {
     return jobData.reduce((total, job) => {
@@ -107,10 +167,12 @@ function App() {
     }, 0);
   }, [jobLevels]);
 
-  const energyRef = useRef(energy);
+  // Use cat energy from the cat system
+  const energyRef = useRef(catEnergy);
   useEffect(() => {
-    energyRef.current = energy;
-  }, [energy]);
+    energyRef.current = catEnergy;
+    setEnergy(catEnergy); // Keep App's energy state in sync for other components
+  }, [catEnergy]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -137,12 +199,13 @@ function App() {
   }, [isSmiling]);
   
   const handleCatClick = (event: React.MouseEvent) => {
-    if (isPouncing) return;
+    // Only block clicks when actively pouncing in wand mode
+    if (isPouncing && wandMode) return;
 
-    const energyMultiplier = 1 + energy / 100;
+    const energyMultiplier = 1 + catEnergy / 100;
     const loveFromClick = Math.round(lovePerClick * energyMultiplier);
     setLove(t => t + loveFromClick);
-    setEnergy(e => Math.max(0, e - 1));
+    catActions.addEnergy(-1); // Use cat system's energy management
     
     setIsPetting(true);
     setTimeout(() => setIsPetting(false), 200);
@@ -160,7 +223,7 @@ function App() {
     if (!cheekClickFlag.current && !wandMode && !isJumping) {
       const JUMP_WINDOW_MS = 500;
       const JUMP_CLICK_THRESHOLD = 4;
-      const JUMP_CHANCE = 0.1 + (energy / 100) * 0.5;
+      const JUMP_CHANCE = 0.1 + (catEnergy / 100) * 0.5;
 
       clickTimestampsRef.current.push(now);
       clickTimestampsRef.current = clickTimestampsRef.current.filter(
@@ -182,27 +245,14 @@ function App() {
         cheekClickFlag.current = false;
     }
 
-    const maxHeartSize = 2.0;
-    const minHeartSize = 0.5;
-    const growthFactor = 0.2;
-    const calculatedScale = minHeartSize + Math.log(lovePerClick) * growthFactor;
-    const baseScale = Math.min(calculatedScale, maxHeartSize);
-    const randomScale = baseScale + (Math.random() - 0.5) * 0.2;
-
-    const newHeart: HeartType = {
-      id: now,
-      x: event.clientX,
-      y: event.clientY,
-      translateX: Math.random() * 40 - 20,
-      rotation: Math.random() * 60 - 30,
-      scale: randomScale,
-      animationDuration: 1,
-    };
-    setHearts((currentHearts) => [...currentHearts, newHeart]);
-    setTrackableHeartId(newHeart.id);
-    setTimeout(() => {
-        setTrackableHeartId(null);
-    }, 1000);
+    // Only spawn click-based hearts when wand is NOT active
+    if (!wandMode) {
+      heartSpawningService.spawnHearts({
+        position: { x: event.clientX, y: event.clientY },
+        loveAmount: loveFromClick,
+        interactionType: 'petting'
+      });
+    }
   };
 
   const removeHeart = (id: number) => {
@@ -212,35 +262,31 @@ function App() {
   };
   
   const handleWandClick = () => {
-    wandActions.handleWandClick();
+    catActions.handleWandClick();
   };
 
-  // Update the wand system with current energy when it changes
-  useEffect(() => {
-    wandActions.setEnergy(energy);
-  }, [energy, wandActions]);
+  // Energy is now managed by the cat system automatically
 
   const handleEarClick = (ear: 'left' | 'right', event: React.MouseEvent) => {
     if (wigglingEar || isSubtleWiggling) return;
 
+    // Skip heart spawning when wand is active
+    if (wandMode) return;
+
     // Generate love and heart without triggering the subtle wiggle
-    const energyMultiplier = 1 + energy / 100;
+    const energyMultiplier = 1 + catEnergy / 100;
     const loveFromClick = Math.round(lovePerClick * energyMultiplier);
     setLove((t) => t + loveFromClick);
-    setEnergy((e) => Math.max(0, e - 1));
+    catActions.addEnergy(-1);
     setIsPetting(true);
     setTimeout(() => setIsPetting(false), 200);
-    const now = Date.now();
-    const newHeart: HeartType = {
-      id: now,
-      x: event.clientX,
-      y: event.clientY,
-      translateX: Math.random() * 40 - 20,
-      rotation: Math.random() * 60 - 30,
-      scale: 1.0,
-      animationDuration: 1,
-    };
-    setHearts((currentHearts) => [...currentHearts, newHeart]);
+    
+    // Use unified heart spawning
+    heartSpawningService.spawnHearts({
+      position: { x: event.clientX, y: event.clientY },
+      loveAmount: loveFromClick,
+      interactionType: 'petting'
+    });
 
     // Trigger the specific ear wiggle
     setWigglingEar(ear);
@@ -257,19 +303,19 @@ function App() {
   
   const handleNoseClick = (event: React.MouseEvent) => {
     event.stopPropagation();
+    
+    // Skip heart spawning when wand is active
+    if (wandMode) return;
+    
     setIsSmiling(true);
     setLove((l) => l + 5);
-    const now = Date.now();
-    const newHeart: HeartType = {
-      id: now,
-      x: event.clientX,
-      y: event.clientY,
-      translateX: Math.random() * 20 - 10,
-      rotation: Math.random() * 20 - 10,
-      scale: 0.6,
-      animationDuration: 0.8,
-    };
-    setHearts((currentHearts) => [...currentHearts, newHeart]);
+    
+    // Use unified heart spawning
+    heartSpawningService.spawnHearts({
+      position: { x: event.clientX, y: event.clientY },
+      loveAmount: 5,
+      interactionType: 'petting'
+    });
   };
 
   const handleCheekClick = (side: 'left' | 'right', event: React.MouseEvent) => {
@@ -441,13 +487,14 @@ function App() {
     <div className="game-container">
       {isDevMode && (
         <DevPanel
-          energy={energy}
+          energy={catEnergy}
           pounceConfidence={pounceConfidence}
           rapidClickCount={rapidClickCount}
           lastVelocity={lastVelocity}
           proximityMultiplier={proximityMultiplier}
           lovePerClick={lovePerClick}
           movementNovelty={movementNovelty}
+          clickExcitement={clickExcitement}
           treatsPerSecond={treatsPerSecond}
         />
       )}
@@ -480,7 +527,13 @@ function App() {
         <CatFact fact={currentFact} />
         <div className="cat-container">
           {wandMode && (
-            <div className="wand-click-area" onClick={handleWandClick} />
+            <div 
+              className="wand-click-area" 
+              onClick={handleWandClick}
+              onMouseMove={(e) => {
+                catActions.handleWandMovement({ x: e.clientX, y: e.clientY });
+              }}
+            />
           )}
           <Cat
             ref={catRef}
@@ -498,6 +551,8 @@ function App() {
             isPlaying={isPlaying}
             isSmiling={isSmiling}
             isSubtleWiggling={isSubtleWiggling}
+            isHappyPlaying={isHappyPlaying}
+            isEarWiggling={isEarWiggling}
             headTiltAngle={headTiltAngle}
             pounceTarget={pounceTarget}
             wigglingEar={wigglingEar}
@@ -516,7 +571,7 @@ function App() {
           <button
             onClick={(e) => {
               e.stopPropagation();
-              wandActions.toggleWandMode({ x: e.clientX, y: e.clientY });
+              catActions.toggleWandMode();
             }}
           >
             {wandMode ? 'Put away wand' : 'Play with wand'}

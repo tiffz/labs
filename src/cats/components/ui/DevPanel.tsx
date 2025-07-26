@@ -8,6 +8,7 @@ interface DevPanelProps {
   proximityMultiplier: number;
   lovePerClick: number;
   movementNovelty: number;
+  clickExcitement: number;
   treatsPerSecond: number;
 }
 
@@ -19,6 +20,7 @@ const DevPanel: React.FC<DevPanelProps> = ({
   proximityMultiplier,
   lovePerClick,
   movementNovelty,
+  clickExcitement,
   treatsPerSecond,
 }) => {
   return (
@@ -38,6 +40,9 @@ const DevPanel: React.FC<DevPanelProps> = ({
       </p>
       <p>
         <strong>Movement Novelty:</strong> {movementNovelty.toFixed(2)}
+      </p>
+      <p>
+        <strong>Click Excitement:</strong> {clickExcitement.toFixed(2)}
       </p>
       <p>
         <strong>Rapid Clicks:</strong> {rapidClickCount}

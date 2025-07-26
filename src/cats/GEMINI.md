@@ -149,3 +149,254 @@ Tests are integrated into the development workflow:
 - **Pre-commit Hooks:** All tests must pass before commits are allowed
 - **Continuous Integration:** GitHub Actions runs the full test suite on every push and pull request
 - **Deployment Blocking:** Failed tests prevent deployment to production
+
+## 6. Modern Architecture (2024 Updates)
+
+This section documents major architectural improvements and lessons learned from recent refactoring sessions, ensuring future development follows established patterns and avoids known pitfalls.
+
+### Clean Architecture Principles
+
+The Cat Clicker now follows a **Clean Architecture** pattern with clear separation of concerns:
+
+#### **Game State Layer (Pure Business Logic)**
+
+- **File:** `src/cats/game/GameState.ts`
+- **Purpose:** Contains pure business logic for cat behavior, pounce calculations, and wand interactions
+- **Key Features:**
+  - No React dependencies
+  - Pure functions and state management
+  - Event-driven communication with other layers
+  - Testable in isolation
+
+#### **Animation Controller Layer (Pure Presentation)**
+
+- **File:** `src/cats/animation/AnimationController.ts`
+- **Purpose:** Manages visual effects, timing, and animation orchestration
+- **Key Features:**
+  - Handles visual timing without knowing game rules
+  - Manages cat-specific animations (pouncing, ear wiggling, etc.)
+  - Timer and animation frame management
+  - Clean separation from business logic
+
+#### **React Integration Layer**
+
+- **File:** `src/cats/hooks/useCatSystem.ts`
+- **Purpose:** Bridges pure game logic with React component state
+- **Key Features:**
+  - Event-driven state synchronization
+  - Stable callback management
+  - Performance-optimized updates
+  - Prevents infinite re-render loops
+
+### Unified Heart Spawning System
+
+#### **Architecture Decision**
+
+We implemented a centralized `HeartSpawningService` to eliminate code duplication and create consistent heart behavior across different interaction types.
+
+- **File:** `src/cats/services/HeartSpawningService.ts`
+- **Problem Solved:** Previously, petting hearts and pouncing hearts had separate, inconsistent spawning logic
+- **Benefits:**
+  - Single source of truth for heart calculations
+  - Consistent scaling based on love amount
+  - Configurable visual behaviors per interaction type
+  - Performance optimization with heart count limits
+
+#### **Interaction-Specific Configurations**
+
+**Petting Hearts (Gentle & Calm):**
+
+- 100ms delays between hearts
+- Tighter grouping (1.0x spread)
+- Slower animation (1.2s duration)
+- Standard float velocity
+
+**Pouncing Hearts (Fast & Energetic):**
+
+- 50ms delays between hearts
+- More scattered (1.5x spread)
+- Faster animation (0.8s duration)
+- Increased float velocity (1.3x)
+
+#### **Smart Heart Scaling**
+
+- Heart count: 1 heart per 2.5 love (minimum 1, maximum 5)
+- Heart size: Logarithmic scaling based on love amount
+- Performance: Capped at 5 hearts to prevent lag
+
+### Click Excitement System
+
+#### **Problem Statement**
+
+The original wand system felt too "clicky" rather than skill-based. Users wanted a more formula-driven interaction that rewards timing and proximity.
+
+#### **Solution: Dual Confidence System**
+
+We implemented separate tracking for movement-based and click-based excitement:
+
+**Click Excitement (`clickExcitement`):**
+
+- Builds from wand clicks scaled by proximity
+- Time-based decay (starts after 500ms delay)
+- Contributes 30% to overall pounce confidence
+- Caps at 100 points for balance
+
+**Movement Confidence (`pounceConfidence`):**
+
+- Builds from wand movement patterns
+- Influenced by velocity changes and novelty
+- Combined with click excitement for total confidence
+- Triggers pounces when threshold is reached
+
+#### **Benefits**
+
+- More reactive feel (clicks work anywhere on screen)
+- Formula-based rather than direct "click to pounce"
+- Proximity matters (distant clicks less effective)
+- Transparent via debug panel for tuning
+
+### React State Management Lessons
+
+#### **Critical Learning: Infinite Re-render Prevention**
+
+During this refactoring, we encountered and solved several infinite re-render scenarios. These patterns should be avoided:
+
+**❌ Anti-Patterns to Avoid:**
+
+```typescript
+// DON'T: Frequent state updates in useEffect
+useEffect(() => {
+  setStateEveryFrame(newValue); // Causes infinite loops
+}, [frequentlyChangingValue]);
+
+// DON'T: Unstable callback dependencies
+const callback = () => {
+  /* logic */
+}; // Recreated every render
+useEffect(() => {
+  setupSystem(callback);
+}, [callback]); // Infinite loop
+
+// DON'T: Direct DOM manipulation triggering state
+useEffect(() => {
+  element.addEventListener('event', () => {
+    setState(newValue); // Can cause loops
+  });
+}, []);
+```
+
+**✅ Preferred Patterns:**
+
+```typescript
+// DO: Event-driven state updates
+const forceUpdate = useCallback(() => {
+  setReactState(gameState.getReactState());
+}, []);
+
+// DO: Stable callbacks with useCallback
+const stableCallback = useCallback((data) => {
+  // Handle data
+}, []); // Empty deps when truly stable
+
+// DO: Ref-based access in animations
+const valueRef = useRef(value);
+useEffect(() => {
+  const animate = () => {
+    // Use valueRef.current to avoid dependencies
+    doAnimation(valueRef.current);
+    requestAnimationFrame(animate);
+  };
+  animate();
+}, []); // Minimal dependencies
+```
+
+#### **State Synchronization Strategy**
+
+- **Game Logic:** Pure state management outside React
+- **React State:** Only for triggering re-renders
+- **Event Callbacks:** Bridge between layers
+- **Performance:** Update React state only when UI needs to change
+
+### Testing Architecture Improvements
+
+#### **New Test Categories Added**
+
+1. **HeartSpawningService Tests (15 tests):** Comprehensive coverage of unified heart system
+2. **Click Excitement System Tests (19 tests):** Complete coverage of new click mechanics
+3. **Petting/Wand Integration Tests (17 tests):** Prevention of mode-switching bugs
+
+#### **Testing Philosophy Reinforced**
+
+- **Co-location:** Tests live next to the code they test
+- **Behavior-driven:** Test what users experience, not internal implementation
+- **Async-aware:** Proper handling of timeouts and delayed effects
+- **Regression prevention:** Tests specifically designed to catch known failure modes
+
+### Performance Optimizations
+
+#### **DOM Manipulation Strategy**
+
+- **High-frequency updates:** Direct DOM manipulation (pupil tracking)
+- **Infrequent updates:** React state updates (mode changes, pouncing)
+- **Animation loops:** `requestAnimationFrame` with ref-based access
+- **Memory management:** Proper cleanup of timers and event listeners
+
+#### **Heart Rendering Optimization**
+
+- **Performance caps:** Maximum 5 hearts per spawn
+- **Staggered timing:** Delayed spawning prevents frame drops
+- **Portal rendering:** Hearts rendered outside main component tree
+- **Automatic cleanup:** Hearts remove themselves after animation
+
+### Development Workflow Improvements
+
+#### **Build & Quality Assurance**
+
+- **Linting:** ESLint with TypeScript rules enforced
+- **Build verification:** All builds must complete successfully
+- **Test coverage:** 112+ tests across all major systems
+- **Type safety:** Strict TypeScript configuration
+
+#### **Debugging Tools**
+
+- **Dev panel:** Real-time visibility into click excitement and pounce confidence
+- **Debug logging:** Structured logging for state transitions (removable)
+- **Component inspection:** React DevTools integration
+- **Performance monitoring:** Animation frame rate tracking
+
+### Future Architecture Guidelines
+
+#### **When Adding New Features:**
+
+1. **Separate concerns:** Keep game logic, animation, and React separate
+2. **Event-driven:** Use callbacks for cross-layer communication
+3. **Test first:** Write tests that prevent regressions
+4. **Performance conscious:** Consider high-frequency vs low-frequency updates
+5. **User-focused:** Design APIs around user interactions, not internal convenience
+
+#### **When Refactoring:**
+
+1. **Preserve interfaces:** Keep public APIs stable during internal changes
+2. **Incremental approach:** Change one layer at a time
+3. **Test coverage:** Ensure tests pass at each step
+4. **Monitor performance:** Watch for regressions in animation smoothness
+5. **Document decisions:** Update this file with learnings
+
+### Technical Debt Management
+
+#### **Resolved in This Session:**
+
+- ✅ Unified heart spawning (eliminated code duplication)
+- ✅ Click excitement system (improved user experience)
+- ✅ Infinite re-render loops (architectural fixes)
+- ✅ Test coverage gaps (comprehensive new tests)
+- ✅ Linting issues (code quality improvements)
+
+#### **Ongoing Considerations:**
+
+- Monitor animation performance as features are added
+- Consider caching strategies for heart spawning
+- Evaluate state management scaling as game grows
+- Regular performance auditing of animation loops
+
+This architecture has proven stable and performant through multiple refactoring sessions and should serve as the foundation for future development.
