@@ -8,6 +8,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "test": "vitest run",
+    "test:watch": "vitest",
+    "test:changed": "git diff --name-only HEAD~1 -- '*.ts' '*.tsx' '*.js' '*.jsx' '*.json' | head -1 > /dev/null && npm test || echo 'No TypeScript/JavaScript files changed, skipping tests'",
     "preview": "vite preview",
     "deploy": "npm test && npm run build && gh-pages -d dist",
     "prepare": "husky"

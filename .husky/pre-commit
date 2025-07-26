@@ -1,7 +1,12 @@
 #!/usr/bin/env sh
 
-# Run tests before commit
-npm test
+# Check if any TypeScript/JavaScript files are staged
+if git diff --cached --name-only --quiet -- '*.ts' '*.tsx' '*.js' '*.jsx' '*.json' 'package*.json' 'vite.config.*' 'vitest.config.*' 'tsconfig*.json' 'eslint.config.*'; then
+  echo "No TypeScript/JavaScript files changed, skipping tests..."
+else
+  echo "TypeScript/JavaScript files detected, running tests..."
+  npm test
+fi
 
-# Run lint-staged for changed files
+# Run lint-staged for changed files (this is already optimized to only run on changed files)
 npx lint-staged

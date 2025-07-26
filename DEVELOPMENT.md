@@ -275,6 +275,72 @@ npm run build
 
 This debugging guide represents real-world experience fixing complex CI/CD issues. Keep it updated as new challenges arise.
 
+## Optimized Testing Workflow
+
+To improve development efficiency, testing and builds are now optimized to only run when relevant files change:
+
+### What Triggers Full Tests & Builds:
+
+**TypeScript/JavaScript files:**
+
+- `*.ts`, `*.tsx`, `*.js`, `*.jsx`
+- `*.json`, `package*.json`
+- Config files: `vite.config.*`, `vitest.config.*`, `tsconfig*.json`, `eslint.config.*`
+- Workflow files: `.github/workflows/**`
+
+### What Skips Tests (Assets & Docs Only):
+
+**Documentation & Assets:**
+
+- `*.md`, `*.svg`, `*.png`, `*.jpg`, `*.gif`
+- `*.css`, `*.html`
+- `public/**`, `CNAME`, `LICENSE`
+
+### Available Scripts:
+
+```bash
+# Run all tests (always)
+npm test
+
+# Run tests in watch mode for development
+npm run test:watch
+
+# Run tests only if TypeScript/JS files changed since last commit
+npm run test:changed
+
+# Standard development
+npm run dev
+
+# Build (always runs)
+npm run build
+```
+
+### Git Hooks:
+
+- **Pre-commit**: Only runs tests if TypeScript/JavaScript files are staged
+- **lint-staged**: Always runs (already optimized to only process changed files)
+
+### GitHub Actions:
+
+- **CI/CD Pipeline**: Only triggers on TypeScript/JavaScript changes
+- **Deploy Docs & Assets**: Only triggers on documentation/asset changes
+- Both deploy to GitHub Pages, but docs deployment skips tests
+
+This means:
+
+- ✅ Favicon SVG changes → Quick deploy (no tests)
+- ✅ Markdown updates → Quick deploy (no tests)
+- ✅ TypeScript changes → Full test suite + deploy
+- ✅ Config changes → Full test suite + deploy
+
+## Development Workflow
+
+1. **For code changes**: Normal workflow, tests will run
+2. **For docs/assets**: Commit directly, tests will be skipped
+3. **Mixed changes**: Tests will run (safety first)
+
+The system errs on the side of running tests when in doubt to maintain code quality.
+
 ## Testing
 
 ### Running Tests

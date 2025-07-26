@@ -3,8 +3,32 @@ name: CI/CD
 on:
   push:
     branches: [ main, master ]
+    paths:
+      - '**.ts'
+      - '**.tsx' 
+      - '**.js'
+      - '**.jsx'
+      - '**.json'
+      - 'package*.json'
+      - '.github/workflows/**'
+      - 'vite.config.*'
+      - 'vitest.config.*'
+      - 'tsconfig*.json'
+      - 'eslint.config.*'
   pull_request:
     branches: [ main, master ]
+    paths:
+      - '**.ts'
+      - '**.tsx'
+      - '**.js' 
+      - '**.jsx'
+      - '**.json'
+      - 'package*.json'
+      - '.github/workflows/**'
+      - 'vite.config.*'
+      - 'vitest.config.*'
+      - 'tsconfig*.json'
+      - 'eslint.config.*'
 
 jobs:
   test:
