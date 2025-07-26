@@ -165,3 +165,190 @@ The CI/CD system has been refined through extensive debugging and optimization:
 - **Reliability Enhanced** - Robust error handling and recovery mechanisms
 
 This architecture ensures that every code change is validated, tested, and deployed safely, maintaining high quality while enabling rapid development and deployment.
+
+## 5. Micro-App Development Guidelines
+
+### Technology Stack Standards
+
+**Core Technologies:**
+
+- **React 18**: Functional components with modern hooks pattern
+- **TypeScript**: Strict mode enabled for all new micro-apps
+- **Vite**: Build tool for fast development and optimized production builds
+- **Vitest + React Testing Library**: Testing framework for comprehensive coverage
+
+**CSS Framework Standards:**
+
+- **Tailwind CSS v3.4.x**: Use stable v3 branch only (v4 has breaking changes)
+- **PostCSS Integration**: Always use `tailwindcss` plugin, not `@tailwindcss/postcss`
+- **Configuration**: Use `module.exports` syntax in `tailwind.config.js` for Node.js compatibility
+
+### Dependency Management Best Practices
+
+**Version Compatibility Guidelines:**
+
+```json
+// package.json - Recommended ranges
+{
+  "tailwindcss": "^3.4.0", // ✅ Stable v3
+  "postcss": "^8.4.0", // ✅ Latest stable
+  "autoprefixer": "^10.4.0", // ✅ Current major
+  "vitest": "^3.0.0", // ✅ Latest stable
+  "typescript": "^5.0.0" // ✅ Current stable
+}
+```
+
+**Critical Version Notes:**
+
+- **Tailwind CSS v4**: Experimental with breaking changes. Use v3.4.x for production
+- **React 18**: Required for modern hooks and concurrent features
+- **Node.js 20**: CI/CD environment standard
+
+### Configuration Patterns
+
+**ESLint Configuration:**
+
+```javascript
+// eslint.config.js - Node.js files pattern
+{
+  files: ['*.config.js', 'tailwind.config.js', 'postcss.config.js'],
+  languageOptions: {
+    globals: { ...globals.node }
+  }
+}
+```
+
+**PostCSS Setup:**
+
+```javascript
+// postcss.config.js - Standard pattern
+export default {
+  plugins: {
+    tailwindcss: {}, // ✅ Correct for v3
+    autoprefixer: {},
+  },
+};
+```
+
+**Tailwind Config Pattern:**
+
+```javascript
+// tailwind.config.js - Use CommonJS for Node.js compatibility
+module.exports = {
+  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+  theme: { extend: {} },
+  plugins: [],
+};
+```
+
+### Testing Standards
+
+**Test Organization:**
+
+```
+src/app-name/
+├── App.test.tsx           # Main component tests
+├── components/
+│   ├── Component.tsx
+│   └── Component.test.tsx # Co-located component tests
+└── test/
+    └── setupTests.ts      # Shared test utilities
+```
+
+**Required Test Coverage:**
+
+- **Component Rendering**: All major components must render without errors
+- **User Interactions**: Click handlers, form inputs, navigation
+- **State Management**: State changes and side effects
+- **External Dependencies**: Proper mocking of third-party libraries
+
+**Mock Patterns:**
+
+```typescript
+// External library mocking
+global.window.ExternalLib = {
+  method: vi.fn().mockImplementation(() => ({
+    /* mock */
+  })),
+};
+
+// Canvas API mocking for image processing
+Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
+  value: () => ({
+    /* canvas methods */
+  }),
+});
+```
+
+### Performance Optimization Patterns
+
+**Font Loading (FOUC Prevention):**
+
+```html
+<!-- Standard pattern for all micro-apps -->
+<style>
+  @import url('fonts-url');
+  body {
+    visibility: hidden;
+  }
+  body.fonts-loaded {
+    visibility: visible;
+  }
+</style>
+<script>
+  document.fonts.ready.then(() => {
+    document.body.classList.add('fonts-loaded');
+  });
+</script>
+```
+
+**Analytics Integration:**
+
+```javascript
+// Environment-aware analytics loading
+if (window.location.hostname !== 'localhost') {
+  const script = document.createElement('script');
+  script.src = '/analytics.js';
+  document.head.appendChild(script);
+}
+```
+
+### Architecture Guidelines
+
+**Component Structure:**
+
+- **Modular Components**: Extract reusable components into separate files
+- **Type Safety**: Define interfaces in `types/index.ts`
+- **Constants**: Centralize configuration in `constants/index.ts`
+- **Styles**: External CSS files with Tailwind integration
+
+**State Management:**
+
+- **Local State**: Use `useState` for component-specific state
+- **Shared State**: Prop drilling or context for cross-component state
+- **Side Effects**: Proper cleanup in `useEffect` hooks
+- **Performance**: `useCallback` and `useMemo` for expensive operations
+
+### Common Pitfalls & Solutions
+
+**Tailwind CSS Version Issues:**
+
+- ❌ **Problem**: Installing Tailwind v4 breaks existing configurations
+- ✅ **Solution**: Always specify v3.x range in package.json
+
+**React 18 API Changes:**
+
+- ❌ **Problem**: Using deprecated `ReactDOM.render()`
+- ✅ **Solution**: Use `createRoot()` for all React 18 applications
+
+**ESLint Configuration:**
+
+- ❌ **Problem**: `module` not defined in config files
+- ✅ **Solution**: Add config files to Node.js globals in ESLint config
+
+**Testing External Libraries:**
+
+- ❌ **Problem**: Third-party libraries break in test environment
+- ✅ **Solution**: Comprehensive mocking strategies in test setup
+
+This standardization ensures consistency across all micro-apps while incorporating lessons learned from production deployments and refactoring experiences.
