@@ -9,6 +9,8 @@ labs/
   src/
     index.html         # Landing page with links to all micro-apps
     404.html           # Custom 404 page with hot purplish pink styling
+    shared/            # Shared code and utilities across all micro-apps
+      test/            # Shared testing setup and utilities
     zines/             # Example micro-app: Minizine Magic Maker
       index.html
       ...
@@ -27,7 +29,8 @@ labs/
       favicon-cats.svg # Cat app icon
       favicon-zines.svg # Zines app icon
   package.json         # Shared dependencies and scripts
-  vite.config.ts       # Vite config for multi-app build
+  vite.config.ts       # Unified Vite config for multi-app build
+  tsconfig.json        # Unified TypeScript configuration
   .github/workflows/   # CI/CD automation
 ```
 
@@ -50,7 +53,7 @@ labs/
    - Create a new folder under `src/` (e.g., `src/myapp/`).
    - Add your `main.tsx`, `App.tsx`, and any other files/assets you need.
    - Create a new HTML entry (e.g., `myapp/index.html`) based on `zines/index.html`.
-   - Update `vite.config.cjs` to add your new app as an entry point in the `rollupOptions.input` section.
+   - Update `vite.config.ts` to add your new app as an entry point in the `rollupOptions.input` section.
    - Add a link to your app in the root `index.html` landing page.
 
 2. **To edit an existing app:**
@@ -59,7 +62,7 @@ labs/
    - If your app needs special fonts or assets, add them to its own HTML or CSS files.
 
 3. **To share code or components:**
-   - Place shared utilities/components in a common folder (e.g., `src/shared/`) and import them as needed.
+   - Place shared utilities/components in `src/shared/` and import them as needed.
    - Keep app-specific code inside each app's folder for isolation.
 
 4. **To update dependencies:**
@@ -79,12 +82,10 @@ labs/
 - **Run tests:**
 
   ```sh
-  npm test              # Run all tests (139 tests)
+  npm test              # Run all tests
   npm run test:watch    # Run tests in watch mode for development
   npm run test:changed  # Only test if TypeScript/JS files changed since last commit
   ```
-
-  Runs the comprehensive test suite (139 tests) across all components.
 
 - **Check code quality:**
 
@@ -100,13 +101,21 @@ labs/
   npm run build
   ```
 
-  Output is in the `dist/` directory. The build process automatically includes the custom 404 page.
+  Output is in the `dist/` directory. The build process automatically includes the custom 404 page and CNAME file.
 
 - **Deploy to GitHub Pages:**
   ```sh
   npm run deploy
   ```
   Runs tests first - deployment is blocked if tests fail.
+
+## Configuration
+
+The project uses a streamlined setup:
+
+- **Single TypeScript Config**: `tsconfig.json` handles all code
+- **Automated Build**: `npm run build` handles everything automatically
+- **Multi-App Support**: `vite.config.ts` configures multiple entry points
 
 ## Continuous Integration & Deployment (CI/CD)
 
@@ -120,7 +129,7 @@ The CI/CD system intelligently responds to different types of changes:
 
 1. **Environment Setup** - Node.js 20, clean dependency installation with Rollup fix
 2. **Code Quality** - ESLint checks for style and quality issues
-3. **Testing** - Complete test suite (139 tests) must pass
+3. **Testing** - Complete test suite must pass
 4. **Build** - Production build generation and validation
 5. **Deploy** - Automatic deployment to GitHub Pages (main branch only)
 

@@ -2,6 +2,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+import { viteStaticCopy } from 'vite-plugin-static-copy';
 import { resolve } from 'path';
 
 export default defineConfig({
@@ -25,6 +26,12 @@ export default defineConfig({
   },
   plugins: [
     react(),
+    viteStaticCopy({
+      targets: [
+        { src: '../src/404.html', dest: '.' },
+        { src: '../CNAME', dest: '.' }
+      ]
+    }),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'favicon-cats.svg', 'favicon-zines.svg'],
@@ -39,48 +46,23 @@ export default defineConfig({
           {
             src: 'favicon.svg',
             sizes: '32x32',
-            type: 'image/svg+xml',
-            purpose: 'any maskable'
-          },
-          {
-            src: 'favicon-cats.svg',
-            sizes: '32x32',
-            type: 'image/svg+xml'
-          },
-          {
-            src: 'favicon-zines.svg',
-            sizes: '32x32',
             type: 'image/svg+xml'
           }
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff,woff2}'],
-        runtimeCaching: [
-          {
-            urlPattern: ({ url }) => url.pathname.startsWith('/api'),
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'api-cache',
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-            },
-          },
-        ],
-        // Multi-root architecture: specific fallbacks for each app
-        navigateFallback: undefined, // No global fallback
-        navigateFallbackDenylist: [/^\/404\.html/], // Never intercept 404 page
-        ignoreURLParametersMatching: [/dev/],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        navigateFallback: undefined,
+        navigateFallbackDenylist: [/^\/404\.html/],
       },
       devOptions: {
-        enabled: false, // Disable PWA in dev mode to avoid issues
+        enabled: false,
       },
     }),
   ],
   test: {
     globals: true,
     environment: 'jsdom',
-    setupFiles: './cats/test/setupTests.ts',
+    setupFiles: './shared/test/setupTests.ts',
   },
 });

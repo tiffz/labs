@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host",
-    "build": "vite build && cp src/404.html dist/404.html && cp CNAME dist/CNAME",
+    "build": "vite build",
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -30,7 +30,6 @@
     "@eslint/js": "^9.30.1",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
-    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^24.0.15",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
@@ -51,7 +50,6 @@
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.35.1",
     "vite": "^7.0.4",
-    "vite-plugin-checker": "^0.10.1",
     "vite-plugin-pwa": "^1.0.1",
     "vite-plugin-static-copy": "^3.1.1",
     "vitest": "^3.2.4"

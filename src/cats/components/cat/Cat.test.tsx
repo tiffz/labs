@@ -1,7 +1,6 @@
 import { render, screen, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import Cat from './Cat';
-import React from 'react';
 
 // A helper function to create default props and allow overriding
 const getDefaultProps = (overrides: Partial<React.ComponentProps<typeof Cat>> = {}) => {
@@ -19,6 +18,8 @@ const getDefaultProps = (overrides: Partial<React.ComponentProps<typeof Cat>> = 
     isJumping: false,
     isPlaying: false,
     isSmiling: false,
+    isHappyPlaying: false,
+    isEarWiggling: false,
     headTiltAngle: 0,
     pounceTarget: { x: 0, y: 0 },
     wigglingEar: null,

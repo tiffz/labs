@@ -2,7 +2,7 @@ import { render, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { MockedFunction } from 'vitest';
 import WandToy from './WandToy';
-import React from 'react';
+
 
 describe('WandToy Component', () => {
   let mockRaf: MockedFunction<typeof requestAnimationFrame>;
