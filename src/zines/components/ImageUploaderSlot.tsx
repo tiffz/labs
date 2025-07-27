@@ -122,7 +122,6 @@ const ImageUploaderSlot: React.FC<ImageUploadProps> = ({
   return (
     <div
       className={classNames}
-      onClick={() => !isPreviewMode && !imageSrc && !isUploading && inputRef.current && inputRef.current.click()}
       draggable={!isPreviewMode && !!imageSrc}
       onDragStart={(e) => {
         if (!isPreviewMode && imageSrc) {
@@ -205,7 +204,15 @@ const ImageUploaderSlot: React.FC<ImageUploadProps> = ({
         </div>
       ) : (
         !isPreviewMode && (
-          <div className="placeholder-content flex flex-col items-center text-center" onClick={() => !isUploading && inputRef.current && inputRef.current.click()}>
+          <div 
+            className={`placeholder-content flex flex-col items-center text-center ${isUploading ? 'pointer-events-none opacity-50' : 'cursor-pointer'}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!isUploading && inputRef.current) {
+                inputRef.current.click();
+              }
+            }}
+          >
             <span className="text-3xl mb-1 text-orange-400">🖼️</span>
             <span className="text-xs font-semibold text-amber-800">{slot.label}</span>
             <span className="text-xs text-amber-600">{slot.notes}</span>

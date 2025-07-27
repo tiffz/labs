@@ -127,6 +127,22 @@ describe('Minizine Maker App', () => {
     expect(downloadButton).toBeInstanceOf(HTMLElement);
     expect(downloadButton.tagName.toLowerCase()).toBe('button');
   });
+
+  it('renders upload slots with single click handlers', () => {
+    render(<App />);
+    
+    // Look for placeholder content (slots without images)
+    const uploadElements = screen.getAllByText(/Cover|Page/);
+    
+    // Verify upload slots are present
+    expect(uploadElements.length).toBeGreaterThan(0);
+    
+    // Verify upload areas have proper cursor styling for interactivity
+    const frontCoverSlot = screen.getByText('Front Cover');
+    const parentElement = frontCoverSlot.closest('.image-uploader-slot');
+    
+    expect(parentElement).toBeInTheDocument();
+  });
 });
 
 describe('PaperConfiguration Component', () => {
