@@ -47,6 +47,73 @@ The application's design is heavily inspired by **Google's Material Design 3 (M3
 - **Dynamic States:** The cat has multiple states, including `petting`, `drowsy`, `sleeping`, `startled`, and `pouncing`, each with unique animations and behaviors.
 - **Happy Jumps:** Rapidly petting the cat has a chance to trigger a "happy jump," which rewards bonus Love and features a joyful `^^` eye expression.
 
+## Recent Major Architectural Changes (Session 2024-12-19)
+
+### Treat-to-Love Economic System
+
+#### **Core Innovation**
+
+Added a passive economic engine where treats automatically convert to love, creating the foundation for the game's progression system.
+
+- **Conversion Rate**: Configurable treats per second that can be processed
+- **Love Multiplier**: Amount of love gained per treat converted
+- **Centralized Logic**: `calculatePassiveIncome()` function for consistent economic calculations
+- **Real-time Updates**: Synchronized with all UI displays and debug tools
+
+#### **Dual Upgrade Paths**
+
+- **Feeding Upgrades**: Improve conversion efficiency (bigger food bowl, autofeeder, puzzle maze, treat ball)
+- **Playing Upgrades**: Enhance direct interactions (petting technique, play engagement)
+- **Infinite Progression**: All upgrade paths continue beyond predefined levels with scaling costs
+
+### UI/UX Transformation
+
+#### **Tabbed Interface Revolution**
+
+Consolidated the growing number of game systems into a clean, scalable interface:
+
+- **Day Jobs**: Existing job progression system
+- **Feeding**: New treat-to-love conversion upgrades
+- **Playing**: Direct interaction enhancement upgrades
+- **Responsive Design**: Adapts to mobile with proper dev panel integration
+
+#### **Currency Tooltip System**
+
+Replaced simple conversion badges with detailed economic breakdowns:
+
+- **Treat Flow Tooltip**: Shows earnings, conversion, and savings with cat personality
+- **Love Generation Tooltip**: Displays complete conversion process with hunger warnings
+- **Exclusive Visibility**: `TooltipManager` ensures only one tooltip at a time
+- **Information Hierarchy**: Primary totals first, breakdown details second
+
+#### **Material Design Icon Integration**
+
+Systematic replacement of emojis with SVG icons for visual consistency:
+
+- **Fish → Heart**: Visual representation of treat-to-love conversion
+- **Consistent Sizing**: Standardized icon dimensions across all components
+- **Component Reuse**: `HeartIcon` and `FishIcon` used throughout interface
+
+### Technical Architecture Improvements
+
+#### **Shared Component System**
+
+- **`CostDisplay.tsx`**: Unified cost presentation with inline/block modes
+- **Consistent Styling**: Red backgrounds for unaffordable costs, clean styling for affordable
+- **Type Safety**: Full TypeScript integration with proper prop interfaces
+
+#### **Infinite Scaling Engine**
+
+- **Data Structure**: `infiniteScaling` parameters for all upgrade types
+- **Utility Functions**: `getInfiniteUpgradeCost()`, `getInfiniteUpgradeEffect()`, `getInfiniteUpgradeName()`
+- **Balance Formula**: Exponential cost scaling with logarithmic effect scaling
+
+#### **Design System Standards**
+
+- **Whole Numbers Only**: All currency displays use `Math.floor()` for casual gaming feel
+- **Z-Index Hierarchy**: Proper layering system preventing UI conflicts
+- **Component Consistency**: Shared styling patterns across all panels
+
 ### Advanced Pounce Logic
 
 The logic for the wand toy interaction is designed to feel organic and skillful, rewarding players who play like they would with a real cat.

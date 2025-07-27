@@ -16,10 +16,13 @@ import WandToy from './components/cat/WandToy';
 import DevPanel from './components/ui/DevPanel';
 import HeartIcon from './icons/HeartIcon';
 import FishIcon from './icons/FishIcon';
+import CurrencyTooltip from './components/ui/CurrencyTooltip';
 import CatFact from './components/ui/CatFact';
-import JobPanel from './components/jobs/JobPanel';
+import TabbedPanel from './components/panels/TabbedPanel';
 import { catFacts } from './data/catFacts';
 import { jobData } from './data/jobData';
+import { upgradeData, getInfiniteUpgradeCost, getInfiniteUpgradeEffect } from './data/upgradeData';
+import { playingUpgradeData, getInfinitePlayingUpgradeCost, getInfinitePlayingUpgradeEffect } from './data/playingUpgradeData';
 import { useCatSystem } from './hooks/useCatSystem';
 import { HeartSpawningService, type HeartVisuals } from './services/HeartSpawningService';
 import './styles/cats.css';
@@ -48,6 +51,8 @@ function App() {
   const [lovePerClick, setLovePerClick] = useState(1);
   const [treats, setTreats] = useState(0);
   const [jobLevels, setJobLevels] = useState<{ [key: string]: number }>({});
+  const [upgradeLevels, setUpgradeLevels] = useState<{ [key: string]: number }>({});
+  const [playingUpgradeLevels, setPlayingUpgradeLevels] = useState<{ [key: string]: number }>({});
   const [isPetting, setIsPetting] = useState(false);
   const [hearts, setHearts] = useState<HeartType[]>([]);
   const [isStartled, setIsStartled] = useState(false);
@@ -175,6 +180,55 @@ function App() {
       return total;
     }, 0);
   }, [jobLevels]);
+
+  // Calculate treat-to-love conversion rate and love multiplier
+  const conversionRate = useMemo(() => {
+    return upgradeData
+      .filter(upgrade => upgrade.type === 'conversion_rate')
+      .reduce((total, upgrade) => {
+        const currentLevel = upgradeLevels[upgrade.id] || 0;
+        let upgradeEffect = upgrade.baseEffect;
+        
+        // Add effects from predefined levels
+        for (let i = 0; i < Math.min(currentLevel, upgrade.levels.length); i++) {
+          upgradeEffect += upgrade.levels[i].effect;
+        }
+        
+        // Add effects from infinite levels
+        for (let i = upgrade.levels.length; i < currentLevel; i++) {
+          const infiniteEffect = getInfiniteUpgradeEffect(upgrade, i);
+          if (infiniteEffect) {
+            upgradeEffect += infiniteEffect;
+          }
+        }
+        
+        return total + (upgradeEffect - upgrade.baseEffect); // Don't double-count base effect
+      }, 1); // Base conversion rate is 1 treat per second
+  }, [upgradeLevels]);
+
+  const loveMultiplier = useMemo(() => {
+    return upgradeData
+      .filter(upgrade => upgrade.type === 'love_multiplier')
+      .reduce((total, upgrade) => {
+        const currentLevel = upgradeLevels[upgrade.id] || 0;
+        let upgradeEffect = upgrade.baseEffect;
+        
+        // Add effects from predefined levels
+        for (let i = 0; i < Math.min(currentLevel, upgrade.levels.length); i++) {
+          upgradeEffect += upgrade.levels[i].effect;
+        }
+        
+        // Add effects from infinite levels
+        for (let i = upgrade.levels.length; i < currentLevel; i++) {
+          const infiniteEffect = getInfiniteUpgradeEffect(upgrade, i);
+          if (infiniteEffect) {
+            upgradeEffect += infiniteEffect;
+          }
+        }
+        
+        return total + (upgradeEffect - upgrade.baseEffect); // Don't double-count base effect
+      }, 1); // Base love multiplier is 1 love per treat
+  }, [upgradeLevels]);
 
   // Use cat energy from the cat system
   const energyRef = useRef(catEnergy);
@@ -380,33 +434,7 @@ function App() {
     }, 500);
   };
 
-  const handleUpgradeLovePerClick = () => {
-    const cost = lovePerClick * 10;
-    if (love >= cost) {
-      setLove(love - cost);
-      setLovePerClick(lovePerClick + 1);
-      
-      // Track upgrade purchase
-      if (typeof window !== 'undefined' && window.labsAnalytics) {
-        window.labsAnalytics.trackEvent('upgrade_purchase', {
-          category: 'Game Progression',
-          label: 'love_per_click',
-          value: cost,
-          upgrade_type: 'love_per_click',
-          new_level: lovePerClick + 1,
-          cost: cost
-        });
-      }
-    }
-  };
 
-  const handleUpgradePounce = () => {
-    const cost = lovePerPounce * 10;
-    if (love >= cost) {
-      setLove(love - cost);
-      setLovePerPounce(lovePerPounce + 5);
-    }
-  };
 
   const wakeUp = useCallback(() => {
     setIsSleeping(false);
@@ -480,10 +508,67 @@ function App() {
     };
   }, [isSleeping]);
 
+  // Centralized passive income calculation
+  const calculatePassiveIncome = useCallback((currentTreats: number, deltaTimeSeconds: number) => {
+    // Calculate treats gained from jobs
+    const treatsGained = treatsPerSecond * deltaTimeSeconds;
+    
+    // Calculate total treats after gaining from jobs
+    const totalTreats = currentTreats + treatsGained;
+    
+    // Calculate how many treats can be converted to love
+    const maxConvertibleTreats = conversionRate * deltaTimeSeconds;
+    const treatsToConvert = Math.min(totalTreats, maxConvertibleTreats);
+    
+    // Calculate love gained and remaining treats
+    const loveGained = treatsToConvert * loveMultiplier;
+    const finalTreats = totalTreats - treatsToConvert;
+    
+    return {
+      treatsGained,
+      treatsToConvert,
+      loveGained,
+      finalTreats
+    };
+  }, [treatsPerSecond, conversionRate, loveMultiplier]);
+
+  // Handle time skip for debugging - now using centralized logic
+  const handleTimeSkip = useCallback(() => {
+    const oneDayInSeconds = 24 * 60 * 60;
+    const result = calculatePassiveIncome(treats, oneDayInSeconds);
+    
+    setTreats(result.finalTreats);
+    setLove(prev => prev + result.loveGained);
+    
+    console.log(`Time skipped 1 day:`, {
+      treatsGained: result.treatsGained.toFixed(1),
+      treatsConverted: result.treatsToConvert.toFixed(1),
+      loveGained: result.loveGained.toFixed(1),
+      finalTreats: result.finalTreats.toFixed(1)
+    });
+  }, [treats, calculatePassiveIncome, setTreats, setLove]);
+
+  // Debug functions to give resources
+  const giveDebugTreats = useCallback(() => {
+    setTreats(prev => prev + 1000);
+    console.log('Gave 1000 treats');
+  }, [setTreats]);
+
+  const giveDebugLove = useCallback(() => {
+    setLove(prev => prev + 1000);
+    console.log('Gave 1000 love');
+  }, [setLove]);
+
   useEffect(() => {
-    const treatInterval = setInterval(() => setTreats((prevTreats) => prevTreats + treatsPerSecond), 1000);
+    const treatInterval = setInterval(() => {
+      setTreats(currentTreats => {
+        const result = calculatePassiveIncome(currentTreats, 1); // 1 second
+        setLove(prev => prev + result.loveGained);
+        return result.finalTreats;
+      });
+    }, 1000);
     return () => clearInterval(treatInterval);
-  }, [treatsPerSecond]);
+  }, [calculatePassiveIncome, setLove]);
 
   const handlePromotion = (jobId: string) => {
     const currentLevel = jobLevels[jobId] || 0;
@@ -495,6 +580,72 @@ function App() {
       setJobLevels(prevLevels => ({...prevLevels, [jobId]: currentLevel + 1}));
     }
   };
+
+  const handleUpgrade = (upgradeId: string) => {
+    const currentLevel = upgradeLevels[upgradeId] || 0;
+    const upgrade = upgradeData.find(u => u.id === upgradeId);
+    if (!upgrade) return;
+    
+    // Determine if using predefined or infinite level
+    const usePredefinedLevel = currentLevel < upgrade.levels.length;
+    
+    let treatCost: number;
+    let loveCost: number;
+    
+    if (usePredefinedLevel) {
+      const upgradeLevel = upgrade.levels[currentLevel];
+      treatCost = upgradeLevel.treatCost;
+      loveCost = upgradeLevel.loveCost;
+    } else {
+      const infiniteCost = getInfiniteUpgradeCost(upgrade, currentLevel);
+      if (!infiniteCost) return;
+      treatCost = infiniteCost.treatCost;
+      loveCost = infiniteCost.loveCost;
+    }
+    
+    if (treats >= treatCost && love >= loveCost) {
+      setTreats(t => t - treatCost);
+      setLove(l => l - loveCost);
+      setUpgradeLevels(prevLevels => ({...prevLevels, [upgradeId]: currentLevel + 1}));
+    }
+  };
+
+  // Handle playing upgrades
+  const handlePlayingUpgrade = useCallback((upgradeId: string) => {
+    const currentLevel = playingUpgradeLevels[upgradeId] || 0;
+    const upgrade = playingUpgradeData.find(u => u.id === upgradeId);
+    if (!upgrade) return;
+    
+    // Determine if using predefined or infinite level
+    const usePredefinedLevel = currentLevel < upgrade.levels.length;
+    
+    let loveCost: number;
+    let effectValue: number;
+    
+    if (usePredefinedLevel) {
+      const upgradeLevel = upgrade.levels[currentLevel];
+      loveCost = upgradeLevel.loveCost;
+      effectValue = upgradeLevel.effect;
+    } else {
+      const infiniteCost = getInfinitePlayingUpgradeCost(upgrade, currentLevel);
+      const infiniteEffect = getInfinitePlayingUpgradeEffect(upgrade, currentLevel);
+      if (!infiniteCost || !infiniteEffect) return;
+      loveCost = infiniteCost.loveCost;
+      effectValue = infiniteEffect;
+    }
+    
+    if (love >= loveCost) {
+      setLove(l => l - loveCost);
+      setPlayingUpgradeLevels(prevLevels => ({...prevLevels, [upgradeId]: currentLevel + 1}));
+      
+      // Update the actual game values
+      if (upgradeId === 'love_per_pet') {
+        setLovePerClick(current => current + effectValue);
+      } else if (upgradeId === 'love_per_pounce') {
+        setLovePerPounce(current => current + effectValue);
+      }
+    }
+  }, [playingUpgradeLevels, love, setLove, setLovePerClick, setLovePerPounce]);
 
   useEffect(() => {
     if (wandMode) document.body.classList.add('wand-mode-active');
@@ -528,6 +679,12 @@ function App() {
           movementNovelty={movementNovelty}
           clickExcitement={clickExcitement}
           treatsPerSecond={treatsPerSecond}
+          conversionRate={conversionRate}
+          loveMultiplier={loveMultiplier}
+          currentTreats={treats}
+          onTimeSkip={handleTimeSkip}
+          onGiveTreats={giveDebugTreats}
+          onGiveLove={giveDebugLove}
         />
       )}
       {ReactDOM.createPortal(
@@ -553,8 +710,32 @@ function App() {
       )}
       <div className="main-panel">
         <div className="stats-container">
-          <p><HeartIcon className="love-icon" /> {love.toFixed(0)}</p>
-          <p><FishIcon className="treat-icon" /> {treats.toFixed(0)}</p>
+          <div className="currency-display">
+            <CurrencyTooltip
+              type="love"
+              treatsPerSecond={treatsPerSecond}
+              conversionRate={conversionRate}
+              loveMultiplier={loveMultiplier}
+              currentTreats={treats}
+            >
+              <div className="currency-chip">
+                <HeartIcon className="currency-icon" />
+                <span className="currency-value">{love.toFixed(0)}</span>
+              </div>
+            </CurrencyTooltip>
+            <CurrencyTooltip
+              type="treats"
+              treatsPerSecond={treatsPerSecond}
+              conversionRate={conversionRate}
+              loveMultiplier={loveMultiplier}
+              currentTreats={treats}
+            >
+              <div className="currency-chip">
+                <FishIcon className="currency-icon" />
+                <span className="currency-value">{treats.toFixed(0)}</span>
+              </div>
+            </CurrencyTooltip>
+          </div>
         </div>
         <CatFact fact={currentFact} />
         <div className="cat-container">
@@ -620,18 +801,20 @@ function App() {
           >
             {wandMode ? 'Put away wand' : 'Play with wand'}
           </button>
-          <button onClick={handleUpgradeLovePerClick} disabled={love < lovePerClick * 10}>
-            More Love Per Pet (Cost: {lovePerClick * 10})
-          </button>
-          <button onClick={handleUpgradePounce} disabled={love < lovePerPounce * 10}>
-            More Love From Pouncing (Cost: {lovePerPounce * 10})
-          </button>
+
         </div>
       </div>
-      <JobPanel
+      <TabbedPanel
         jobLevels={jobLevels}
         onPromote={handlePromotion}
+        upgradeLevels={upgradeLevels}
+        onUpgrade={handleUpgrade}
+        playingUpgradeLevels={playingUpgradeLevels}
+        onPlayingUpgrade={handlePlayingUpgrade}
+        lovePerClick={lovePerClick}
+        lovePerPounce={lovePerPounce}
         currentLove={love}
+        currentTreats={treats}
       />
     </div>
   );

@@ -26,7 +26,7 @@ body.wand-mode-active * {
   border-radius: 12px; /* M3 medium radius */
   box-shadow: none; /* Let panels handle their own elevation */
   width: 100%;
-  max-width: 1200px;
+  max-width: 1400px; /* Wider to accommodate dev panel */
 }
 
 /* Main Panel (Cat) */
@@ -39,15 +39,115 @@ body.wand-mode-active * {
   max-width: 500px;
 }
 
-/* Job Panel (Right Column) */
-.job-panel {
+/* ==================== TABBED PANEL STYLES ==================== */
+
+.tabbed-panel {
   flex-shrink: 0;
-  width: 340px;
+  width: 480px; /* Much bigger */
+  min-width: 480px; /* Prevent panel from shrinking */
+  max-width: 480px; /* Prevent panel from growing */
   background-color: #fffbff; /* M3 Surface Container */
   border: 1px solid #cac4d0; /* M3 Outline */
   border-radius: 12px; /* M3 medium radius */
-  padding: 16px; /* M3 spacing */
-  height: auto; /* Let content define height */
+  height: 85vh; /* Fixed height for scrolling */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* Prevent horizontal scroll */
+}
+
+.tab-headers {
+  display: flex;
+  background-color: #f7f2fa; /* M3 Surface Container Low */
+  border-radius: 12px 12px 0 0;
+  border-bottom: 1px solid #e7e0ec;
+  overflow: hidden; /* Prevent any scrolling */
+}
+
+.tab-headers::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.tab-header {
+  flex: 1; /* Equal width tabs */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 20px; /* More padding for bigger panel */
+  border: none;
+  background: transparent;
+  color: #49454f; /* M3 On Surface Variant */
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 0;
+  white-space: nowrap; /* Prevent text wrapping */
+  min-width: 0; /* Prevent flex items from overflowing */
+  overflow: hidden; /* Prevent individual tab overflow */
+}
+
+.tab-header:first-child {
+  border-radius: 12px 0 0 0;
+}
+
+.tab-header:last-child {
+  border-radius: 0 12px 0 0;
+}
+
+.tab-header:hover {
+  background-color: rgba(103, 80, 164, 0.08);
+  color: #6750a4;
+}
+
+.tab-header.active {
+  background-color: #6750a4; /* M3 Primary */
+  color: #ffffff; /* M3 On Primary */
+}
+
+.tab-header.active:hover {
+  background-color: #553c9a; /* Darker primary */
+}
+
+.tab-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.tab-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden; /* Prevent horizontal scrolling */
+  padding: 0; /* Let child components handle padding */
+  width: 100%; /* Ensure full width usage */
+  box-sizing: border-box; /* Include padding in width calculations */
+}
+
+/* Update Job Panel for tabbed context */
+.tabbed-panel .job-panel {
+  width: 100%;
+  border: none;
+  border-radius: 0;
+  height: 100%;
+  background: transparent;
+  padding: 24px; /* M3 spacing */
+  overflow-y: auto; /* Allow vertical scrolling */
+  overflow-x: hidden; /* Prevent horizontal overflow */
+  box-sizing: border-box; /* Include padding in width calculations */
+}
+
+.job-panel-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.job-panel-header .panel-icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  margin-top: 2px;
 }
 
 .job-panel h3 {
@@ -70,6 +170,8 @@ body.wand-mode-active * {
   border-top: 1px solid #e7e0ec; /* M3 Outline Variant */
   padding-top: 16px;
   margin-top: 16px;
+  width: 100%; /* Ensure items don't exceed panel width */
+  box-sizing: border-box; /* Include padding in width calculations */
 }
 .job:first-of-type {
   border-top: none;
@@ -149,8 +251,77 @@ body.wand-mode-active * {
   transform: scale(0.9);
 }
 .stats-container {
-  margin-bottom: 16px;
+  margin-bottom: 24px; /* Increased M3 spacing */
   text-align: center;
+}
+
+.stats-container .currency-display {
+  display: flex;
+  justify-content: center;
+  gap: 16px; /* M3 spacing */
+  margin-bottom: 16px;
+}
+
+.stats-container .currency-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px; /* M3 spacing */
+  background-color: #ffffff;
+  border: 1px solid #e7e0ec; /* M3 Surface Variant */
+  border-radius: 16px; /* M3 pill shape */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12); /* M3 Elevation 1 */
+}
+
+.stats-container .currency-chip .currency-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.stats-container .currency-chip .currency-value {
+  font-size: 1.125rem; /* M3 Title Medium */
+  font-weight: 500;
+  color: #21005d; /* M3 On Surface */
+  min-width: 40px;
+  text-align: right;
+}
+
+.conversion-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: #6750a4; /* M3 Primary */
+  background-color: rgba(103, 80, 164, 0.1);
+  padding: 4px 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(103, 80, 164, 0.2);
+  margin: 4px auto;
+  max-width: 140px;
+  animation: conversionPulse 2s ease-in-out infinite;
+}
+
+.conversion-arrow {
+  font-size: 0.75rem;
+}
+
+.conversion-rate {
+  font-weight: 500;
+  font-size: 0.75rem;
+}
+
+@keyframes conversionPulse {
+  0%,
+  100% {
+    background-color: rgba(103, 80, 164, 0.1);
+    border-color: rgba(103, 80, 164, 0.2);
+  }
+  50% {
+    background-color: rgba(103, 80, 164, 0.2);
+    border-color: rgba(103, 80, 164, 0.3);
+  }
 }
 .stats-container p {
   font-size: 1.25rem; /* M3 Title Large */
@@ -170,6 +341,12 @@ body.wand-mode-active * {
   z-index: 20;
   width: 100%;
   max-width: 300px;
+}
+
+.wand-icon {
+  width: 18px;
+  height: 18px;
+  margin-right: 8px;
 }
 
 /* M3 Filled Button style for main upgrades */
@@ -496,28 +673,27 @@ body.wand-mode-active * {
 
 /* DevPanel - Fixed positioning to prevent layout shifts */
 .dev-panel {
-  position: fixed;
-  top: 20px;
-  left: 20px;
-  width: 250px;
+  width: 300px; /* Slightly bigger */
   min-height: 200px;
-  background-color: rgba(0, 0, 0, 0.8);
-  color: white;
-  padding: 16px;
+  max-height: 80vh;
+  overflow-y: auto;
+  background-color: rgba(26, 26, 26, 0.95); /* Darker, more opaque */
+  color: #ffffff; /* Pure white text */
+  padding: 20px; /* More padding */
   border-radius: 8px;
   font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
   font-size: 12px;
-  z-index: 1000;
-  contain: layout style; /* Prevent affecting main layout */
   backdrop-filter: blur(4px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3); /* Brighter border */
   box-sizing: border-box;
+  flex-shrink: 0; /* Don't shrink in flex layout */
 }
 
 .dev-panel h3 {
   margin: 0 0 12px 0;
   font-size: 14px;
   font-weight: bold;
+  color: #ffffff; /* Pure white */
   border-bottom: 1px solid rgba(255, 255, 255, 0.3);
   padding-bottom: 8px;
 }
@@ -526,6 +702,7 @@ body.wand-mode-active * {
   margin: 4px 0;
   font-family: inherit;
   line-height: 1.4;
+  color: #ffffff; /* White text for all paragraphs */
   white-space: nowrap; /* Prevent text wrapping that causes layout shifts */
 }
 
@@ -533,5 +710,486 @@ body.wand-mode-active * {
   display: inline-block;
   width: 140px; /* Fixed width for labels to prevent text shifting */
   font-weight: normal;
-  color: #ccc;
+  color: #cccccc; /* Light gray for labels */
+}
+
+/* ==================== UPGRADE PANEL STYLES ==================== */
+
+.tabbed-panel .upgrade-panel,
+.tabbed-panel .playing-panel {
+  width: 100%;
+  border: none;
+  border-radius: 0;
+  height: 100%;
+  background: transparent;
+  margin-top: 0;
+  max-height: none;
+  overflow-y: auto; /* Allow vertical scrolling */
+  overflow-x: hidden; /* Prevent horizontal overflow */
+  padding: 24px; /* M3 spacing */
+  box-sizing: border-box; /* Include padding in width calculations */
+}
+
+.upgrade-panel h3,
+.playing-panel h3 {
+  font-size: 1.5rem; /* M3 Headline Small */
+  font-weight: 400;
+  margin: 0 0 16px 0;
+  text-align: center;
+  border-bottom: 1px solid #cac4d0; /* M3 Outline */
+  padding-bottom: 16px;
+}
+
+.upgrade-panel .panel-intro,
+.playing-panel .panel-intro {
+  font-size: 0.875rem; /* M3 Body Medium */
+  color: #49454f; /* M3 On-Surface-Variant */
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.panel-intro {
+  font-size: 0.875rem;
+  color: #49454f; /* M3 On Surface Variant */
+  margin: 4px 0 0 0;
+}
+
+.conversion-stats {
+  background-color: #f7f2fa; /* M3 Surface Container Low */
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+  border: 1px solid #e7e0ec;
+}
+
+.stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.stat:last-child {
+  margin-bottom: 0;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: #49454f; /* M3 On Surface Variant */
+}
+
+.stat-value {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #21005d; /* M3 On Surface */
+}
+
+.upgrade-section,
+.playing-section {
+  margin-bottom: 24px;
+}
+
+.upgrade-section:last-child,
+.playing-section:last-child {
+  margin-bottom: 0;
+}
+
+.section-title {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #1d1b20; /* M3 On Surface - less colorful */
+  margin: 0 0 4px 0;
+}
+
+.section-description {
+  font-size: 0.75rem;
+  color: #49454f; /* M3 On Surface Variant */
+  margin: 0 0 12px 0;
+}
+
+.upgrade-item {
+  border-top: 1px solid #e7e0ec; /* M3 Outline Variant */
+  padding-top: 16px;
+  margin-top: 16px;
+  width: 100%; /* Ensure items don't exceed panel width */
+  box-sizing: border-box; /* Include padding in width calculations */
+}
+.upgrade-item:first-of-type {
+  border-top: none;
+  margin-top: 0;
+}
+
+.upgrade-header {
+  margin-bottom: 8px;
+}
+
+.upgrade-info {
+  width: 100%;
+}
+
+.upgrade-name {
+  font-size: 1rem; /* M3 Title Medium */
+  font-weight: 500;
+  margin: 0 0 8px 0;
+  color: #1d1b20; /* M3 On-Surface */
+}
+
+.upgrade-description {
+  font-size: 0.875rem; /* M3 Body Medium */
+  color: #49454f; /* M3 On-Surface-Variant */
+  margin: 4px 0;
+}
+
+.upgrade-stats {
+  margin-bottom: 8px;
+}
+
+.current-effect {
+  font-size: 0.875rem;
+  color: #49454f; /* M3 On Surface Variant */
+  margin: 4px 0;
+}
+
+.upgrade-level {
+  font-size: 0.875rem;
+  color: #49454f; /* M3 On Surface Variant */
+  margin: 4px 0;
+}
+
+.upgrade-purchase {
+  border-top: 1px solid #f7f2fa;
+  padding-top: 8px;
+}
+
+.next-upgrade {
+  font-size: 0.875rem;
+  color: #49454f; /* M3 On Surface Variant */
+  margin: 4px 0;
+}
+
+.upgrade-cost {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap; /* Allow wrapping on narrow screens */
+  width: 100%; /* Ensure cost doesn't exceed panel width */
+}
+
+.cost {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+  min-width: 0; /* Allow shrinking */
+  flex-shrink: 1; /* Allow cost items to shrink */
+}
+
+.cost.affordable {
+  /* No background for affordable items to reduce visual clutter */
+  color: #49454f; /* Default text color */
+}
+
+.cost.expensive {
+  background-color: #ffebee; /* Light red */
+  color: #c62828; /* Dark red */
+}
+
+/* Inline cost display for Job components */
+.inline-cost {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 8px;
+}
+
+.inline-cost:last-child {
+  margin-right: 0;
+}
+
+.cost-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.upgrade-button {
+  width: 100%;
+  margin-top: 12px;
+  font-size: 0.875rem; /* M3 Label Large */
+  font-weight: 500;
+  line-height: 1.4;
+  padding: 10px 24px;
+  border: 1px solid #79747e; /* M3 Outline */
+  border-radius: 20px; /* Full pill shape */
+  background-color: transparent;
+  color: #6750a4; /* M3 Primary */
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.upgrade-button.available {
+  border-color: #6750a4;
+  background-color: #6750a4;
+  color: #ffffff;
+}
+
+.upgrade-button.available:hover {
+  background-color: #553c9a;
+  border-color: #553c9a;
+}
+
+.upgrade-button.disabled {
+  border-color: #e7e0ec;
+  background-color: transparent;
+  color: #939094; /* M3 On-Surface Disabled */
+  cursor: not-allowed;
+}
+
+.max-level {
+  text-align: center;
+  font-size: 0.75rem;
+  color: #49454f; /* More subtle */
+  font-weight: 500;
+  padding: 8px;
+  background-color: #f7f2fa;
+  border-radius: 6px;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .game-container {
+    flex-direction: column;
+    gap: 16px;
+    max-width: 100%;
+    padding: 16px;
+  }
+
+  .main-panel {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .tabbed-panel {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    height: 60vh !important; /* Shorter on smaller screens */
+  }
+
+  .dev-panel {
+    width: 100% !important;
+    max-height: 40vh;
+    order: -1; /* Show dev panel at top on mobile */
+  }
+
+  .stats-container .currency-display {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .game-container {
+    padding: 12px;
+    gap: 12px;
+  }
+}
+
+/* Dev Panel Styles */
+.dev-section {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2); /* White border for dev panel */
+}
+
+.dev-section:last-child {
+  border-bottom: none;
+}
+
+.dev-section h4 {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #ffffff; /* White headers instead of purple */
+  margin: 0 0 12px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Currency tooltip styles */
+.currency-tooltip-wrapper {
+  position: relative;
+  display: inline-block;
+  padding: 4px; /* Small padding to make hover target slightly larger */
+  margin: -4px; /* Offset the padding to maintain layout */
+}
+
+.currency-tooltip-container {
+  position: relative;
+  display: inline-block;
+  z-index: 1001;
+}
+
+.currency-tooltip {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 4px; /* Smaller gap */
+  z-index: 10000; /* Much higher z-index to appear above everything */
+  pointer-events: auto;
+  animation: tooltipFadeIn 0.2s ease-out;
+}
+
+/* Remove the extended hover area - it was causing unexpected tooltip triggers */
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.currency-tooltip-content {
+  background: #ffffff;
+  color: #49454f;
+  padding: 16px 20px;
+  border-radius: 12px;
+  border: 1px solid #e7e0ec;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  min-width: 280px;
+  max-width: 320px;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+/* Arrow with proper border */
+.currency-tooltip-content::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 9px solid transparent;
+  border-bottom-color: #e7e0ec; /* Border color */
+  z-index: 10001; /* Higher than tooltip content */
+}
+
+.currency-tooltip-content::after {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 8px solid transparent;
+  border-bottom-color: #ffffff; /* Fill color */
+  margin-bottom: -1px; /* Overlap to hide border gap */
+  z-index: 10002; /* Highest to appear on top */
+}
+
+/* Primary total display */
+.tooltip-total {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e7e0ec;
+}
+
+.tooltip-total-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.tooltip-total-text {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1c1b1f;
+}
+
+/* Breakdown section */
+.tooltip-breakdown {
+  margin-bottom: 12px;
+}
+
+.tooltip-breakdown-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 0.8rem;
+  color: #79747e;
+}
+
+.tooltip-breakdown-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.tooltip-conversion {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.conversion-arrow {
+  font-size: 0.7rem;
+  color: #79747e;
+  margin: 0 2px;
+}
+
+.tooltip-warning {
+  margin: 8px 0;
+  padding: 8px 12px;
+  background: #fef7f0;
+  border: 1px solid #f9dedc;
+  border-radius: 8px;
+  color: #c62828;
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.tooltip-flavor {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #e7e0ec;
+  font-style: italic;
+  font-size: 0.8rem;
+  color: #79747e;
+  text-align: center;
+  line-height: 1.3;
+}
+
+.dev-button {
+  width: 100%;
+  padding: 10px 16px;
+  border: 1px solid #ffffff; /* White outline */
+  border-radius: 20px;
+  background-color: transparent; /* Transparent background */
+  color: #ffffff; /* White text */
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 8px;
+}
+
+.dev-button:last-child {
+  margin-bottom: 0;
+}
+
+.dev-button:hover {
+  background-color: #ffffff; /* White background on hover */
+  color: #1a1a1a; /* Dark text on hover */
+  border-color: #ffffff;
 }
