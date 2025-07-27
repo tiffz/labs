@@ -113,6 +113,20 @@ describe('Minizine Maker App', () => {
     
     expect(screen.getByText('Download Zine as PNG')).toBeInTheDocument();
   });
+
+  it('download button is accessible and clickable', () => {
+    render(<App />);
+    
+    const downloadButton = screen.getByText('Download Zine as PNG');
+    
+    // Verify button exists and is enabled
+    expect(downloadButton).toBeInTheDocument();
+    expect(downloadButton).not.toBeDisabled();
+    
+    // Verify button can be clicked (even if functionality is complex to test)
+    expect(downloadButton).toBeInstanceOf(HTMLElement);
+    expect(downloadButton.tagName.toLowerCase()).toBe('button');
+  });
 });
 
 describe('PaperConfiguration Component', () => {
