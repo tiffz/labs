@@ -8,14 +8,27 @@ This project is a monorepo for experimental and portfolio frontend micro-apps, b
 labs/
   src/
     index.html         # Landing page with links to all micro-apps
-    zines/           # Example micro-app: Minizine Magic Maker
+    404.html           # Custom 404 page with hot purplish pink styling
+    zines/             # Example micro-app: Minizine Magic Maker
       index.html
       ...
-    cats/            # Cat Clicker game with advanced interactions
+    cats/              # Cat Clicker game with advanced interactions
       ...
-  package.json       # Shared dependencies and scripts
-  vite.config.cjs    # Vite config for multi-app build
-  .github/workflows/ # CI/CD automation
+  public/              # Organized static assets
+    styles/            # Shared and page-specific CSS
+      shared.css       # Common styles (bubbles, layout)
+      index.css        # Home page specific styles
+      404.css          # 404 page specific styles
+    scripts/           # JavaScript files
+      shared.js        # Common functionality (bubble interactions)
+      analytics.js     # Analytics tracking
+    icons/             # Organized favicon files
+      favicon.svg      # Main labs icon
+      favicon-cats.svg # Cat app icon
+      favicon-zines.svg # Zines app icon
+  package.json         # Shared dependencies and scripts
+  vite.config.ts       # Vite config for multi-app build
+  .github/workflows/   # CI/CD automation
 ```
 
 ## How the Micro-Apps Architecture Works
@@ -26,7 +39,10 @@ labs/
 - **All apps share the same React, TypeScript, and other dependencies** (defined in the root `package.json`).
 - **Vite is configured for multiple HTML entry points** (e.g., `/zines/` loads `zines/index.html` and `src/zines/main.tsx`).
 - **The root `index.html` is a landing page** that links to all available micro-apps.
-- **All apps are built together** and output to the `build/` directory for deployment (e.g., to GitHub Pages).
+- **Custom 404 page** (`src/404.html`) provides helpful navigation for invalid URLs with beautiful styling.
+- **Organized static assets** in `public/` with dedicated folders for styles, scripts, and icons.
+- **Shared resources** (`shared.css`, `shared.js`) provide common functionality like bubble animations across pages.
+- **All apps are built together** and output to the `dist/` directory for deployment (e.g., to GitHub Pages).
 
 ## How to Add or Edit a Micro-App
 
@@ -55,10 +71,10 @@ labs/
 - **Start the dev server:**
 
   ```sh
-  npm start
+  npm run dev
   ```
 
-  Visit `/zines/` or any other app at `/yourapp/`.
+  Visit `/zines/` or any other app at `/yourapp/`. The custom 404 page is available at `/404.html`.
 
 - **Run tests:**
 
@@ -84,7 +100,7 @@ labs/
   npm run build
   ```
 
-  Output is in the `build/` directory.
+  Output is in the `dist/` directory. The build process automatically includes the custom 404 page.
 
 - **Deploy to GitHub Pages:**
   ```sh

@@ -1,0 +1,70 @@
+/* Styles specific to the main labs index page */
+
+.apps-grid {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.app-card {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  padding: 1.5rem;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.app-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.app-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  flex-shrink: 0;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.app-icon.cats {
+  background-image: url('/icons/favicon-cats.svg');
+}
+
+.app-icon.zines {
+  background-image: url('/icons/favicon-zines.svg');
+}
+
+.app-info {
+  text-align: left;
+}
+
+.app-title {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  color: #1f2937;
+}
+
+.app-description {
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+.footer {
+  font-size: 0.9rem;
+  color: #9ca3af;
+}
+
+@media (max-width: 480px) {
+  .app-card {
+    padding: 1rem;
+  }
+}

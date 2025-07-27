@@ -31,10 +31,11 @@ Each subdirectory within `src` (e.g., `src/cats`, `src/zines`) represents a dist
 
 Each micro-app maintains its own distinct favicon to reinforce visual identity:
 
-- **Root Favicon:** `public/favicon.svg` contains the lab beaker icon used for the main landing page
-- **App-Specific Favicons:** Each micro-app references a unique favicon file in the public directory (e.g., `favicon-cats.svg`, `favicon-zines.svg`)
-- **Unique References:** Micro-app HTML files use `/favicon-[appname].svg` to reference their specific favicon
+- **Root Favicon:** `public/icons/favicon.svg` contains the lab beaker icon used for the main landing page
+- **App-Specific Favicons:** Each micro-app references a unique favicon file in the icons directory (e.g., `favicon-cats.svg`, `favicon-zines.svg`)
+- **Unique References:** Micro-app HTML files use `/icons/favicon-[appname].svg` to reference their specific favicon
 - **Consistent Design:** All favicons follow a squircle background pattern with app-specific iconography
+- **Organized Structure:** All favicon files are centralized in the `public/icons/` directory for easy management
 
 ## 3. Quality Assurance & Testing
 
@@ -175,7 +176,155 @@ The CI/CD system has been refined through extensive debugging and optimization:
 
 This architecture ensures that every code change is validated, tested, and deployed safely, maintaining high quality while enabling rapid development and deployment.
 
-## 5. Micro-App Development Guidelines
+## 5. Recent Architectural Improvements (2024)
+
+### Custom 404 Page Implementation
+
+The project now includes a sophisticated custom 404 page that enhances user experience for invalid URLs:
+
+**Key Features:**
+
+- **Beautiful Design**: Hot purplish pink gradient styling (`#e879f9` → `#c026d3`) matching the site's aesthetic
+- **Interactive Elements**: Shared bubble animations and hover effects for visual consistency
+- **Helpful Navigation**: Clear back-to-home button and suggestions for valid app routes
+- **URL Display**: JavaScript-powered current URL display to help users understand what went wrong
+- **Responsive Design**: Mobile-friendly layout with consistent typography
+
+**Implementation Details:**
+
+```html
+<!-- 404 page structure -->
+src/404.html # Direct HTML file (no template complexity) public/styles/404.css #
+Page-specific styling public/styles/shared.css # Common elements (bubbles,
+layout) public/scripts/shared.js # Interactive bubble effects
+```
+
+**Development & Production:**
+
+- **Development**: Accessible at `http://localhost:5173/404.html`
+- **Production**: Automatically copied during build process (`npm run build`)
+- **Multi-root Architecture**: Configured for proper PWA service worker handling
+
+### Organized Asset Architecture
+
+The project has been restructured with a clean, organized approach to static assets:
+
+**Directory Structure:**
+
+```
+public/
+├── styles/              # Centralized CSS management
+│   ├── shared.css       # Common styles (bubbles, typography, layout)
+│   ├── index.css        # Home page specific styles (app grid, cards)
+│   └── 404.css          # 404 page specific styles (error code, navigation)
+├── scripts/             # JavaScript organization
+│   ├── shared.js        # Common functionality (bubble interactions)
+│   └── analytics.js     # Analytics tracking
+└── icons/               # Favicon management
+    ├── favicon.svg      # Main labs icon
+    ├── favicon-cats.svg # Cat app icon
+    └── favicon-zines.svg # Zines app icon
+```
+
+**Shared Resource Strategy:**
+
+- **CSS Modularity**: Common styles (bubble animations, typography) extracted into `shared.css`
+- **JavaScript Reusability**: Interactive elements (hover effects, click animations) in `shared.js`
+- **Icon Organization**: App-specific favicons grouped in dedicated directory
+- **Performance Benefits**: Cached shared resources reduce redundant downloads
+
+### Simplified Build Process
+
+Moved away from complex template generation to straightforward, maintainable HTML files:
+
+**Previous Approach (Removed):**
+
+- ❌ Complex template system with `scripts/build-pages.js`
+- ❌ Template files requiring placeholder replacement
+- ❌ Build-time HTML generation adding complexity
+
+**Current Approach (Simplified):**
+
+- ✅ Direct HTML files (`src/index.html`, `src/404.html`)
+- ✅ Shared resources via standard HTML links and script tags
+- ✅ Simple build process: `vite build && cp src/404.html dist/404.html`
+- ✅ Easy to edit and maintain without template syntax
+
+**Benefits of Simplification:**
+
+- **Developer Experience**: Direct editing of HTML without template abstraction
+- **Maintainability**: Easier debugging and modification
+- **Performance**: Faster build times without template processing
+- **Reliability**: Fewer moving parts, less likely to break
+
+### Multi-Root Application Architecture
+
+Enhanced Vite configuration to properly handle multiple entry points:
+
+**Configuration Updates:**
+
+```typescript
+// vite.config.ts - Multi-page setup
+rollupOptions: {
+  input: {
+    main: resolve(__dirname, 'src/index.html'),    // Landing page
+    cats: resolve(__dirname, 'src/cats/index.html'), // Cat app
+    zines: resolve(__dirname, 'src/zines/index.html'), // Zines app
+    // 404.html copied separately for production compatibility
+  },
+}
+```
+
+**PWA Service Worker Configuration:**
+
+```typescript
+// Optimized for multi-root architecture
+VitePWA({
+  navigateFallback: undefined, // No global fallback (not SPA)
+  navigateFallbackDenylist: [/^\/404\.html/], // Let 404s be handled naturally
+});
+```
+
+**Development vs Production:**
+
+- **Development**: Vite serves from `src/` directory with hot reload
+- **Production**: Clean build to `dist/` with automatic 404.html inclusion
+- **Asset Loading**: Organized public directory structure maintained in both environments
+
+### Migration Benefits
+
+This architectural evolution provides several key improvements:
+
+1. **Reduced Complexity**: Eliminated unnecessary build scripts and template systems
+2. **Better Developer Experience**: Direct HTML editing with immediate feedback
+3. **Improved Performance**: Shared resources and optimized asset organization
+4. **Enhanced UX**: Beautiful 404 page with helpful navigation
+5. **Maintainability**: Cleaner codebase with logical file organization
+6. **Scalability**: Easy to add new pages following established patterns
+
+### Best Practices Established
+
+**For Asset Organization:**
+
+- Place shared resources in `public/styles/shared.css` and `public/scripts/shared.js`
+- Use page-specific CSS files for unique styling needs
+- Organize icons in dedicated `public/icons/` directory
+
+**For Page Development:**
+
+- Create direct HTML files in `src/` directory
+- Reference shared and specific assets via standard HTML tags
+- Maintain consistent design patterns (bubbles, typography, colors)
+
+**For Build Process:**
+
+- Keep build commands simple and transparent
+- Use post-build scripts only when necessary (like 404.html copying)
+- Maintain clear separation between development and production workflows
+
+This foundation provides a robust, maintainable architecture for continued development of the labs monorepo.
+
+## 6. Micro-App Development Guidelines
 
 ### Technology Stack Standards
 

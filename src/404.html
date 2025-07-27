@@ -6,15 +6,15 @@
     <link rel="apple-touch-icon" href="/icons/favicon.svg" />
     <meta name="theme-color" content="#8b5cf6" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="A collection of experimental apps and tools by Tiff Zhang" />
-    <title>Tiff Zhang Labs</title>
+    <meta name="description" content="Page not found - Tiff Zhang Labs" />
+    <title>404 - Page Not Found | Tiff Zhang Labs</title>
     
     <!-- Analytics -->
     <script src="/scripts/analytics.js"></script>
     
     <!-- Styles -->
     <link rel="stylesheet" href="/styles/shared.css" />
-    <link rel="stylesheet" href="/styles/index.css" />
+    <link rel="stylesheet" href="/styles/404.css" />
   </head>
   <body>
     <!-- Floating bubbles -->
@@ -26,27 +26,23 @@
     <div class="bubble" style="--size: 38px; --start-x: 85%; --final-x: 80%; --duration: 13s; --delay: 14s;"></div>
     
     <div class="container">
-      <h1>Tiff Zhang Labs</h1>
-      <p class="subtitle">A collection of experimental apps and tools</p>
+      <div class="error-code">404</div>
+      <h1>Page Not Found</h1>
+      <p class="subtitle">Oops! The page you're looking for doesn't exist.</p>
       
-      <div class="apps-grid">
-        <a href="/cats/" class="app-card">
-          <div class="app-icon cats"></div>
-          <div class="app-info">
-            <h3 class="app-title">Cat Clicker</h3>
-            <p class="app-description">Click a cat for the greater good</p>
-          </div>
-        </a>
-        
-        <a href="/zines/" class="app-card">
-          <div class="app-icon zines"></div>
-          <div class="app-info">
-            <h3 class="app-title">Minizine Maker</h3>
-            <p class="app-description">Layout your zine pages into the standard 8-page minizine format</p>
-          </div>
-        </a>
+      <div class="url-display">
+        <script>document.write('You tried to visit: <strong>' + window.location.pathname + '</strong>');</script>
       </div>
       
+      <a href="/" class="home-button">← Back to Home</a>
+      
+      <div class="suggestions">
+        <p>You might be looking for:</p>
+        <ul>
+          <li><a href="/cats/">Cat Clicker Game</a></li>
+          <li><a href="/zines/">Minizine Maker</a></li>
+        </ul>
+      </div>
     </div>
 
     <!-- Scripts -->

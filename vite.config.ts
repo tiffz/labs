@@ -7,16 +7,21 @@ import { resolve } from 'path';
 export default defineConfig({
   root: 'src',
   publicDir: '../public',
+
   build: {
     outDir: '../dist',
     emptyOutDir: true,
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'src/index.html'),
+        
         cats: resolve(__dirname, 'src/cats/index.html'),
         zines: resolve(__dirname, 'src/zines/index.html'),
       },
     },
+  },
+  server: {
+    middlewareMode: false,
   },
   plugins: [
     react(),
@@ -63,7 +68,9 @@ export default defineConfig({
             },
           },
         ],
-        navigateFallback: '/index.html',
+        // Multi-root architecture: specific fallbacks for each app
+        navigateFallback: undefined, // No global fallback
+        navigateFallbackDenylist: [/^\/404\.html/], // Never intercept 404 page
         ignoreURLParametersMatching: [/dev/],
       },
       devOptions: {
