@@ -27,6 +27,15 @@ Each subdirectory within `src` (e.g., `src/cats`, `src/zines`) represents a dist
 - **Vite for Multi-Page:** The project uses Vite's `rollupOptions` to configure a multi-page application. The `vite.config.ts` file in the root is the single source of truth for the build process, and it must contain an entry for each micro-app's `index.html`.
 - **Documentation:** Each micro-app is encouraged to have its own `GEMINI.md` file that details its specific architecture, features, and conventions, like the one found in `src/cats/GEMINI.md`.
 
+### Favicon Structure
+
+Each micro-app maintains its own distinct favicon to reinforce visual identity:
+
+- **Root Favicon:** `public/favicon.svg` contains the lab beaker icon used for the main landing page
+- **App-Specific Favicons:** Each micro-app references a unique favicon file in the public directory (e.g., `favicon-cats.svg`, `favicon-zines.svg`)
+- **Unique References:** Micro-app HTML files use `/favicon-[appname].svg` to reference their specific favicon
+- **Consistent Design:** All favicons follow a squircle background pattern with app-specific iconography
+
 ## 3. Quality Assurance & Testing
 
 ### Comprehensive Test Coverage
