@@ -22,6 +22,33 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      includeAssets: ['favicon.svg', 'favicon-cats.svg', 'favicon-zines.svg'],
+      manifest: {
+        name: 'Tiff Zhang Labs',
+        short_name: 'Labs',
+        description: 'A collection of experimental apps and tools by Tiff Zhang',
+        theme_color: '#8b5cf6',
+        background_color: '#ffffff',
+        display: 'standalone',
+        icons: [
+          {
+            src: 'favicon.svg',
+            sizes: '32x32',
+            type: 'image/svg+xml',
+            purpose: 'any maskable'
+          },
+          {
+            src: 'favicon-cats.svg',
+            sizes: '32x32',
+            type: 'image/svg+xml'
+          },
+          {
+            src: 'favicon-zines.svg',
+            sizes: '32x32',
+            type: 'image/svg+xml'
+          }
+        ]
+      },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff,woff2}'],
         runtimeCaching: [
