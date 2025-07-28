@@ -2,11 +2,14 @@ import React, { useState } from 'react';
 import JobPanel from '../jobs/JobPanel';
 import UpgradePanel from '../upgrades/UpgradePanel';
 import PlayingPanel from '../playing/PlayingPanel';
+import GoalsPanel from './GoalsPanel';
+import type { Goal } from '../../data/eventData';
 
 interface TabbedPanelProps {
   // Job panel props
   jobLevels: { [key: string]: number };
   onPromote: (jobId: string) => void;
+  unlockedJobs: string[];
   
   // Upgrade panel props
   upgradeLevels: { [key: string]: number };
@@ -18,22 +21,29 @@ interface TabbedPanelProps {
   lovePerClick: number;
   lovePerPounce: number;
   
+  // Goals panel props
+  activeGoals: Goal[];
+  completedGoals: Goal[];
+  
   // Shared currency props
   currentLove: number;
   currentTreats: number;
 }
 
-type TabId = 'jobs' | 'feeding' | 'playing';
+type TabId = 'jobs' | 'feeding' | 'playing' | 'goals';
 
 const TabbedPanel: React.FC<TabbedPanelProps> = ({
   jobLevels,
   onPromote,
+  unlockedJobs,
   upgradeLevels,
   onUpgrade,
   playingUpgradeLevels,
   onPlayingUpgrade,
   lovePerClick,
   lovePerPounce,
+  activeGoals,
+  completedGoals,
   currentLove,
   currentTreats,
 }) => {
@@ -61,6 +71,15 @@ const TabbedPanel: React.FC<TabbedPanelProps> = ({
         >
           Playing
         </button>
+        <button
+          className={`tab-header ${activeTab === 'goals' ? 'active' : ''}`}
+          onClick={() => setActiveTab('goals')}
+        >
+          Goals
+          {activeGoals.length > 0 && (
+            <span className="tab-badge">{activeGoals.length}</span>
+          )}
+        </button>
       </div>
 
       {/* Tab Content */}
@@ -70,6 +89,7 @@ const TabbedPanel: React.FC<TabbedPanelProps> = ({
             jobLevels={jobLevels}
             onPromote={onPromote}
             currentLove={currentLove}
+            unlockedJobs={unlockedJobs}
           />
         )}
         {activeTab === 'feeding' && (
@@ -87,6 +107,12 @@ const TabbedPanel: React.FC<TabbedPanelProps> = ({
             currentLove={currentLove}
             lovePerClick={lovePerClick}
             lovePerPounce={lovePerPounce}
+          />
+        )}
+        {activeTab === 'goals' && (
+          <GoalsPanel
+            activeGoals={activeGoals}
+            completedGoals={completedGoals}
           />
         )}
       </div>

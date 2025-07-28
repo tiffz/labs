@@ -2,11 +2,57 @@
 
 This document outlines the vision, architecture, and implementation details for the "Cat Clicker" micro-app. It serves as a reference for future development and ensures that Gemini can easily understand and contribute to the project.
 
-## Recent Enhancements (2025)
+## Recent Major Enhancements (2025)
+
+### Unified Notification & Goal System
+
+The Cat Clicker underwent a significant architectural overhaul to create a unified, robust notification and progression system:
+
+**Key Improvements:**
+
+- **Replaced complex EventSystem** with a simplified unified notification system
+- **Eliminated duplicate toasts** by combining story events and goal completions into single notifications
+- **Fixed persistent wand mode bugs** where toasts would disappear or become uninteractive
+- **Improved notification stacking** with proper z-index hierarchy and visual polish
+- **Enhanced goal progression** with clear visual indicators and rewards
+
+**Technical Architecture:**
+
+- **NotificationQueue Component**: Queue-based system replacing the old buggy single-toast approach
+- **Goal System**: Clean goal tracking with automatic completion detection and reward distribution
+- **Unified Data Structure**: `GameNotification` interface combining stories, goals, and rewards
+- **Z-Index Management**: Comprehensive layering system ensuring proper element visibility across all game modes
+
+**Files Involved:**
+
+- `src/cats/data/notificationData.ts` - Unified notification definitions
+- `src/cats/data/goalData.ts` - Goal system and reward structure
+- `src/cats/components/ui/NotificationQueue.tsx` - New queue-based toast system
+- `src/cats/App.tsx` - Simplified notification logic and goal completion tracking
+- `src/cats/styles/cats.css` - Enhanced visual design and z-index hierarchy
+
+### Early Game Job Progression
+
+Restored the guided early game experience by limiting initial job availability:
+
+- **Single Starting Job**: Only "Cardboard Box Factory" available initially
+- **Clear Progression Path**: Players must complete goals to unlock additional career paths
+- **Visual Feedback**: Locked jobs indicator shows "2 more career paths to discover"
+- **Balanced Difficulty**: Prevents overwhelming new players with too many options
+
+### Toast & UI Polish
+
+Comprehensive visual improvements to the notification system:
+
+- **Increased Toast Size**: Wider notifications (420-500px) for better readability
+- **Enhanced Typography**: Larger fonts throughout (15-25% increases) for improved accessibility
+- **Better Spacing**: More breathing room around icons and content elements
+- **Simplified Design**: Removed unnecessary icons and quotes for cleaner appearance
+- **Improved Rewards Display**: Clear visual indicators for treats and love gains
 
 ### Custom Cat Favicon
 
-The Cat Clicker now features a custom SVG favicon that perfectly captures the kawaii aesthetic of the game. The favicon design process involved multiple iterations to achieve:
+The Cat Clicker features a custom SVG favicon that perfectly captures the kawaii aesthetic:
 
 - **Blobby egg shape** - Wider bottom, narrower top matching the game cat's proportions
 - **Frame-breaking effect** - Cat extends beyond the squarecle background for visual impact
@@ -15,19 +61,26 @@ The Cat Clicker now features a custom SVG favicon that perfectly captures the ka
 
 ### Optimized Testing Workflow
 
-The project now uses intelligent path detection to optimize development speed:
+The project uses intelligent path detection to optimize development speed:
 
 - **Code changes** trigger full test suite (139 comprehensive tests)
-- **Documentation/asset changes** (like favicon tweaks) skip tests for faster deployment
+- **Documentation/asset changes** skip tests for faster deployment
 - **Smart pre-commit hooks** only run tests when TypeScript/JavaScript files are staged
 - **Dual CI/CD workflows** provide fast asset deployment while maintaining code quality
 
 ## 1. Core Gameplay Loop
 
-**Cat Clicker** is an incremental game with two primary currencies:
+**Cat Clicker** is an incremental game with two primary currencies and a unified progression system:
 
 - **Love (❤️):** Earned by interacting directly with the cat (petting, playing with the wand). Love is spent on upgrades that improve these direct interactions.
 - **Treats (🐟):** Earned passively by acquiring "Day Jobs." Treats are the foundation for the game's idle progression.
+
+**Progression System:**
+
+- **Story Events**: Triggered by reaching currency thresholds, providing narrative context and new goals
+- **Goal Completion**: Clear objectives guide players through the game progression
+- **Unified Notifications**: Single toast system provides both story flavor and mechanical rewards
+- **Job Unlocking**: Career paths unlock as players complete specific milestones
 
 The core loop is satirical and wholesome: the player must work a series of humorous day jobs not for themselves, but to provide a better life for their cat.
 
@@ -37,6 +90,13 @@ The application's design is heavily inspired by **Google's Material Design 3 (M3
 
 - **Layout:** The game uses a responsive two-panel layout. The left panel is for direct cat interaction, while the right panel is dedicated to the "Day Job" progression system.
 - **Component Styling:** All interactive elements, such as buttons and panels, are styled according to M3 specifications, using appropriate color palettes, corner radiuses, and elevation shadows.
+- **Z-Index Hierarchy:** Comprehensive layering system ensures proper element visibility:
+  - **Base Elements**: 10-100 (wand click areas, basic UI)
+  - **Currency Indicators**: 1001
+  - **Wand Toy**: 15000 (top priority for interaction)
+  - **Notifications**: 11000-15000 (adaptive based on context)
+  - **Currency Tooltips**: 10000-10002
+- **Notification Design:** Modern toast system with proper stacking, readable typography, and clear reward indicators
 - **Typography & Spacing:** The application follows M3's type scale and spacing guidelines to ensure visual harmony and readability.
 
 ## 3. Key Features & Mechanics
@@ -94,7 +154,54 @@ Systematic replacement of emojis with SVG icons for visual consistency:
 - **Consistent Sizing**: Standardized icon dimensions across all components
 - **Component Reuse**: `HeartIcon` and `FishIcon` used throughout interface
 
+### Event System & Guided Onboarding (2025)
+
+#### **Core Innovation**
+
+Added a sophisticated event and goal system that creates a guided onboarding experience, naturally introducing players to game mechanics through narrative-driven progression.
+
+- **Event System**: Context-aware events that trigger based on game state (love/treats thresholds, job acquisitions, upgrades)
+- **Goal Tracking**: Active goals with clear objectives and rewards that guide player progression
+- **Narrative Flow**: Gentle, humorous events that maintain the game's cute and understated tone
+
+#### **Onboarding Progression**
+
+**Phase 1: Discovery (20 Love)**
+
+- Event: "A Gentle Meow" - Cat expresses hunger with gentle, hopeful eyes
+- Goal: Find a way to earn treats → Guides player to jobs system
+
+**Phase 2: Reality Check (First Job)**
+
+- Event: "A Learning Experience" - Humorous realization that unpaid intern gives no treats
+- Goal: Earn a promotion → Motivates progression within job system
+- Reward: 25 treat signing bonus when first paying job is achieved
+
+**Phase 3: Feeding Introduction (50 Treats)**
+
+- Event: "Mealtime Anticipation" - Cat notices treats and hopes for feeding setup
+- Goal: Buy first food bowl → Introduces automatic treat-to-love conversion system
+
+#### **Technical Architecture**
+
+- **Clean Separation**: EventSystem service manages pure business logic separate from React
+- **State-Driven**: Events trigger based on game state changes, not direct player actions
+- **Reward System**: Goals can provide love/treats rewards with custom messages
+- **Deep Cloning**: Proper event isolation prevents cross-instance contamination
+
+#### **UI/UX Integration**
+
+- **Event Notifications**: Modal-style notifications with tone-based styling (cute, humorous, encouraging)
+- **Goal Tracker**: Persistent sidebar showing active goals and their rewards
+- **Job Unlocking**: Progressive revelation with hints about locked career paths
+
 ### Technical Architecture Improvements
+
+#### **Progressive Game Mechanics**
+
+- **Starting State**: Conversion rate begins at 0 (no automatic feeding until first food bowl)
+- **Job Gating**: Only Box Factory available initially, with UI hints about future unlocks
+- **Unpaid Labor**: First job position gives 0 treats/second, creating meaningful progression moment
 
 #### **Shared Component System**
 
@@ -110,7 +217,7 @@ Systematic replacement of emojis with SVG icons for visual consistency:
 
 #### **Design System Standards**
 
-- **Whole Numbers Only**: All currency displays use `Math.floor()` for casual gaming feel
+- **Whole Numbers Only**: All currency displays use `Math.floor()` for casual gaming feel [[memory:4474452]]
 - **Z-Index Hierarchy**: Proper layering system preventing UI conflicts
 - **Component Consistency**: Shared styling patterns across all panels
 

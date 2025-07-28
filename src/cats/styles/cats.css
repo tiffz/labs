@@ -16,6 +16,27 @@ body.wand-mode-active * {
   cursor: default !important;
 }
 
+/* Ensure notifications always show above wand mode */
+body.wand-mode-active .notification-queue {
+  z-index: 12000 !important; /* Above everything including currency tooltips */
+  pointer-events: auto !important;
+}
+
+body.wand-mode-active .toast-notification {
+  position: absolute !important; /* Keep absolute positioning for proper stacking */
+  pointer-events: auto !important;
+}
+
+body.wand-mode-active .toast-notification.visible {
+  pointer-events: auto !important;
+  /* Remove fixed positioning that breaks stacking */
+}
+
+/* Ensure wand click area doesn't interfere with notifications */
+.wand-click-area {
+  z-index: 10 !important; /* Keep wand area below notifications */
+}
+
 /* Main Game Container - Follows M3 Card/Surface guidelines */
 .game-container {
   display: flex;
@@ -72,6 +93,7 @@ body.wand-mode-active * {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
   padding: 12px 20px; /* More padding for bigger panel */
   border: none;
   background: transparent;
@@ -114,6 +136,27 @@ body.wand-mode-active * {
   flex-shrink: 0;
 }
 
+.tab-badge {
+  background: #ffffff; /* White on primary background */
+  color: #6750a4; /* M3 Primary */
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: all 0.2s ease;
+}
+
+.tab-header:not(.active) .tab-badge {
+  background: #6750a4; /* M3 Primary */
+  color: #ffffff;
+}
+
 .tab-content {
   flex: 1;
   overflow-y: auto;
@@ -148,15 +191,6 @@ body.wand-mode-active * {
   height: 24px;
   flex-shrink: 0;
   margin-top: 2px;
-}
-
-.job-panel h3 {
-  font-size: 1.5rem; /* M3 Headline Small */
-  font-weight: 400;
-  margin: 0 0 16px 0;
-  text-align: center;
-  border-bottom: 1px solid #cac4d0; /* M3 Outline */
-  padding-bottom: 16px;
 }
 
 .job-panel-intro {
@@ -583,7 +617,7 @@ body.wand-mode-active * {
   pointer-events: none;
   transform: translate(-50%, 0);
   transform-origin: top center;
-  z-index: 30;
+  z-index: 15000; /* Above everything including toasts */
 }
 
 .wand-toy.shaking {
@@ -730,28 +764,11 @@ body.wand-mode-active * {
   box-sizing: border-box; /* Include padding in width calculations */
 }
 
-.upgrade-panel h3,
-.playing-panel h3 {
-  font-size: 1.5rem; /* M3 Headline Small */
-  font-weight: 400;
-  margin: 0 0 16px 0;
-  text-align: center;
-  border-bottom: 1px solid #cac4d0; /* M3 Outline */
-  padding-bottom: 16px;
-}
-
-.upgrade-panel .panel-intro,
-.playing-panel .panel-intro {
+.panel-intro {
   font-size: 0.875rem; /* M3 Body Medium */
   color: #49454f; /* M3 On-Surface-Variant */
   text-align: center;
   margin-bottom: 24px;
-}
-
-.panel-intro {
-  font-size: 0.875rem;
-  color: #49454f; /* M3 On Surface Variant */
-  margin: 4px 0 0 0;
 }
 
 .conversion-stats {
@@ -1036,11 +1053,12 @@ body.wand-mode-active * {
   position: absolute;
   top: 100%;
   left: 50%;
-  transform: translateX(-50%);
+  margin-left: -140px; /* Half of min-width (280px) to center */
   margin-top: 4px; /* Smaller gap */
   z-index: 10000; /* Much higher z-index to appear above everything */
   pointer-events: auto;
-  animation: tooltipFadeIn 0.2s ease-out;
+  opacity: 0;
+  animation: tooltipFadeIn 0.2s ease-out forwards;
 }
 
 /* Remove the extended hover area - it was causing unexpected tooltip triggers */
@@ -1048,11 +1066,11 @@ body.wand-mode-active * {
 @keyframes tooltipFadeIn {
   from {
     opacity: 0;
-    transform: translateX(-50%) translateY(-4px);
+    transform: translateY(-4px);
   }
   to {
     opacity: 1;
-    transform: translateX(-50%) translateY(0);
+    transform: translateY(0);
   }
 }
 
@@ -1074,7 +1092,7 @@ body.wand-mode-active * {
   content: '';
   position: absolute;
   bottom: 100%;
-  left: 50%;
+  left: 140px; /* Match the centering offset */
   transform: translateX(-50%);
   border: 9px solid transparent;
   border-bottom-color: #e7e0ec; /* Border color */
@@ -1085,7 +1103,7 @@ body.wand-mode-active * {
   content: '';
   position: absolute;
   bottom: 100%;
-  left: 50%;
+  left: 140px; /* Match the centering offset */
   transform: translateX(-50%);
   border: 8px solid transparent;
   border-bottom-color: #ffffff; /* Fill color */
@@ -1192,4 +1210,710 @@ body.wand-mode-active * {
   background-color: #ffffff; /* White background on hover */
   color: #1a1a1a; /* Dark text on hover */
   border-color: #ffffff;
+}
+
+/* Event System Styles */
+.event-notification-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(29, 27, 32, 0.6); /* M3 scrim overlay */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000; /* Above currency indicators */
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s cubic-bezier(0.05, 0.7, 0.1, 1); /* M3 easing */
+}
+
+.event-notification-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.event-notification {
+  background: #fffbff; /* M3 Surface Container */
+  border-radius: 28px; /* M3 extra large radius */
+  padding: 40px;
+  max-width: 420px;
+  margin: 20px;
+  box-shadow:
+    0 8px 16px rgba(103, 80, 164, 0.15),
+    0 4px 8px rgba(103, 80, 164, 0.1); /* M3 elevation 3 with primary color */
+  transform: scale(0.95) translateY(20px);
+  transition: all 0.4s cubic-bezier(0.05, 0.7, 0.1, 1);
+  border: 1px solid #e7e0ec; /* M3 Outline Variant */
+}
+
+.event-notification-overlay.visible .event-notification {
+  transform: scale(1) translateY(0);
+}
+
+.event-notification-cute {
+  background: linear-gradient(
+    135deg,
+    #fef7ff 0%,
+    #f7f2fa 100%
+  ); /* Soft purple gradient */
+  border-left: 4px solid #e879f9; /* Bright pink accent */
+}
+
+.event-notification-humorous {
+  background: linear-gradient(
+    135deg,
+    #fff8f5 0%,
+    #fef7ff 100%
+  ); /* Warm gradient */
+  border-left: 4px solid #a855f7; /* Purple accent */
+}
+
+.event-notification-encouraging {
+  background: linear-gradient(
+    135deg,
+    #f7f2fa 0%,
+    #fffbff 100%
+  ); /* Purple gradient */
+  border-left: 4px solid #6750a4; /* Primary purple */
+}
+
+.event-notification-informative {
+  background: linear-gradient(
+    135deg,
+    #fffbff 0%,
+    #f7f2fa 100%
+  ); /* Default gradient */
+  border-left: 4px solid #7c3aed; /* Deep purple */
+}
+
+.event-title {
+  margin: 0 0 20px 0;
+  color: #21005d; /* M3 On Surface */
+  font-size: 1.5rem; /* M3 Headline Small */
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.event-message {
+  margin: 0 0 28px 0;
+  line-height: 1.6;
+  color: #49454f; /* M3 On Surface Variant */
+  font-size: 1rem; /* M3 Body Large */
+}
+
+.event-goal {
+  background: rgba(103, 80, 164, 0.08); /* M3 Primary surface tint */
+  border-radius: 16px; /* M3 large radius */
+  padding: 28px;
+  margin-top: 28px;
+  border: 1px solid rgba(103, 80, 164, 0.2);
+}
+
+.goal-header {
+  color: #6750a4; /* M3 Primary */
+  font-weight: 600;
+  margin-bottom: 12px;
+  font-size: 0.875rem; /* M3 Body Medium */
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.goal-description {
+  margin: 0;
+  color: #1d1b20; /* M3 On Surface */
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.event-dismiss-btn {
+  background: #6750a4; /* M3 Primary */
+  color: #ffffff; /* M3 On Primary */
+  border: none;
+  border-radius: 20px; /* M3 full radius for button */
+  padding: 16px 32px;
+  font-weight: 500;
+  font-size: 0.875rem; /* M3 Label Large */
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.05, 0.7, 0.1, 1);
+  width: 100%;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-top: 24px;
+}
+
+.event-dismiss-btn:hover {
+  background: #553c9a; /* Darker primary */
+  box-shadow: 0 2px 4px rgba(103, 80, 164, 0.3);
+}
+
+/* Locked Jobs Hint */
+.locked-jobs-hint {
+  margin-top: 20px;
+  padding: 16px;
+  background: rgba(103, 80, 164, 0.05); /* M3 Primary surface tint */
+  border-radius: 12px; /* M3 medium radius */
+  text-align: center;
+  border: 1px dashed rgba(103, 80, 164, 0.3);
+  transition: all 0.2s cubic-bezier(0.05, 0.7, 0.1, 1);
+}
+
+.locked-jobs-hint:hover {
+  background: rgba(103, 80, 164, 0.08);
+  border-color: rgba(103, 80, 164, 0.4);
+}
+
+.locked-jobs-text {
+  margin: 0;
+  color: #49454f; /* M3 On Surface Variant */
+  font-size: 0.875rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.lock-icon {
+  color: #6750a4; /* M3 Primary */
+  opacity: 0.7;
+}
+
+/* Reward Notification Styles */
+.reward-notification-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(29, 27, 32, 0.6); /* M3 scrim overlay */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2100; /* Above event notifications */
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s cubic-bezier(0.05, 0.7, 0.1, 1);
+}
+
+.reward-notification-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.reward-notification {
+  background: linear-gradient(
+    135deg,
+    #6750a4 0%,
+    #553c9a 100%
+  ); /* M3 Primary gradient */
+  border-radius: 28px; /* M3 extra large radius */
+  padding: 32px;
+  max-width: 400px;
+  margin: 20px;
+  box-shadow:
+    0 12px 24px rgba(103, 80, 164, 0.25),
+    0 6px 12px rgba(103, 80, 164, 0.15); /* M3 elevation 4 */
+  transform: scale(0.9) translateY(40px);
+  transition: all 0.5s cubic-bezier(0.05, 0.7, 0.1, 1);
+  color: #ffffff; /* M3 On Primary */
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.reward-notification::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.1) 100%
+  );
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.reward-notification-overlay.visible .reward-notification {
+  transform: scale(1) translateY(0);
+}
+
+.reward-header {
+  margin-bottom: 20px;
+  position: relative;
+  z-index: 1;
+}
+
+.celebration-icon {
+  font-size: 3rem;
+  margin-bottom: 12px;
+  animation: bounce 0.6s ease-in-out;
+}
+
+@keyframes bounce {
+  0%,
+  20%,
+  50%,
+  80%,
+  100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-10px);
+  }
+  60% {
+    transform: translateY(-5px);
+  }
+}
+
+.reward-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.reward-content {
+  margin-bottom: 24px;
+  position: relative;
+  z-index: 1;
+}
+
+.goal-completed-text {
+  font-size: 1rem;
+  margin: 0 0 12px 0;
+  color: rgba(255, 255, 255, 0.9);
+  font-style: italic;
+}
+
+.reward-message {
+  font-size: 0.875rem;
+  margin: 0 0 20px 0;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.5;
+}
+
+.reward-items {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.reward-item {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  padding: 12px 20px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px);
+}
+
+.reward-amount {
+  display: block;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 4px;
+}
+
+.reward-type {
+  display: block;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.8);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.reward-claim-btn {
+  background: rgba(255, 255, 255, 0.9);
+  color: #6750a4; /* M3 Primary */
+  border: none;
+  border-radius: 20px;
+  padding: 16px 32px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.05, 0.7, 0.1, 1);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  position: relative;
+  z-index: 1;
+  min-width: 160px;
+}
+
+.reward-claim-btn:hover {
+  background: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Notification Queue System */
+.notification-queue {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 11000; /* Above currency tooltips (10000) to ensure visibility */
+  pointer-events: none; /* Container doesn't interfere with layout */
+  width: 500px; /* Fixed width for consistent positioning */
+  height: 0; /* Don't take up layout space */
+}
+
+/* Individual Toast Notification */
+.toast-notification {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  transform: translateY(100px);
+  background: #4c3575; /* Darker purple */
+  color: #ffffff;
+  border-radius: 18px;
+  padding: 16px 20px;
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.8),
+    0 4px 12px rgba(0, 0, 0, 0.2); /* White glow + shadow */
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.05, 0.7, 0.1, 1);
+  max-width: 500px;
+  min-width: 420px;
+  margin: 0 auto; /* Center horizontally */
+  pointer-events: none; /* Individual toast starts non-interactive */
+  will-change: transform, opacity;
+  contain: layout style paint; /* Prevent layout influence */
+  backface-visibility: hidden; /* Prevent animation flicker */
+}
+
+.toast-notification.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto; /* Only enable interaction when visible */
+}
+
+.toast-item {
+  position: relative;
+  transition: transform 0.3s ease-out;
+}
+
+.toast-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.toast-icon {
+  font-size: 1.25rem;
+  animation: toastBounce 0.6s ease-in-out;
+  margin-right: 4px;
+}
+
+@keyframes toastBounce {
+  0%,
+  20%,
+  50%,
+  80%,
+  100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-2px);
+  }
+  60% {
+    transform: translateY(-1px);
+  }
+}
+
+.toast-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.toast-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  margin-bottom: 3px;
+  color: #ffffff;
+}
+
+.toast-goal {
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-style: italic;
+  line-height: 1.4;
+}
+
+.toast-rewards {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-right: 6px;
+}
+
+.toast-reward-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 4px 8px;
+  border-radius: 8px;
+}
+
+.toast-reward-icon {
+  width: 10px;
+  height: 10px;
+}
+
+.toast-claim-btn {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.toast-claim-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.toast-new-goal {
+  font-size: 0.8125rem;
+  color: #e879f9; /* Bright pink for new goal */
+  font-weight: 600;
+  margin-top: 6px;
+}
+
+/* Event Toast Styles */
+.event-toast {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: #4c3575; /* Same dark purple as goal toasts */
+  color: #ffffff;
+  border-radius: 16px;
+  padding: 12px 16px;
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.8),
+    0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 1600; /* Above goal toasts */
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.05, 0.7, 0.1, 1);
+  max-width: 400px;
+  min-width: 320px;
+  pointer-events: none; /* Always prevent document flow interference */
+  will-change: transform, opacity;
+  isolation: isolate; /* Create stacking context to prevent interference */
+  position: fixed; /* Ensure truly out-of-flow positioning */
+  contain: layout style paint; /* Prevent layout influence */
+}
+
+.event-toast.visible {
+  pointer-events: auto; /* Only enable when visible and user needs to interact */
+}
+
+.event-toast.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.event-toast .toast-new-goal {
+  font-size: 0.6875rem;
+  color: #e879f9; /* Pink accent for new goal */
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+/* Goals Panel Styles */
+.tabbed-panel .goals-panel {
+  width: 100%;
+  border: none;
+  border-radius: 0;
+  height: 100%;
+  background: transparent;
+  padding: 24px; /* M3 spacing */
+  overflow-y: auto; /* Allow vertical scrolling */
+  overflow-x: hidden; /* Prevent horizontal overflow */
+  box-sizing: border-box; /* Include padding in width calculations */
+}
+
+.goals-section {
+  margin-bottom: 24px;
+}
+
+.goals-section:first-of-type {
+  margin-top: 24px;
+}
+
+.goals-section:last-child {
+  margin-bottom: 0;
+}
+
+.section-title {
+  margin: 0 0 16px 0;
+  color: #6750a4; /* M3 Primary */
+  font-size: 0.875rem; /* M3 Body Medium */
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.goals-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.goal-card {
+  background: #f7f2fa; /* M3 Surface Container Low */
+  border-radius: 8px; /* Smaller radius to match other panels */
+  padding: 16px;
+  border: 1px solid #e7e0ec; /* M3 Outline Variant */
+  transition: all 0.2s cubic-bezier(0.05, 0.7, 0.1, 1);
+  box-sizing: border-box;
+}
+
+.goal-card.primary {
+  border-left: 4px solid #6750a4; /* M3 Primary */
+  background: linear-gradient(
+    135deg,
+    rgba(103, 80, 164, 0.05) 0%,
+    rgba(103, 80, 164, 0.02) 100%
+  );
+}
+
+.goal-card.secondary {
+  border-left: 2px solid rgba(103, 80, 164, 0.4);
+}
+
+.goal-card.completed {
+  border-left: 3px solid rgba(103, 80, 164, 0.6); /* Muted primary */
+  background: rgba(103, 80, 164, 0.03);
+  opacity: 0.7;
+}
+
+.goal-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.goal-card-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.goal-card-title {
+  font-weight: 600;
+  color: #1d1b20; /* M3 On Surface */
+  font-size: 1rem;
+  line-height: 1.4;
+  flex: 1;
+  min-width: 0;
+}
+
+.main-goal-badge {
+  background: #6750a4; /* M3 Primary */
+  color: #ffffff;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.completed-badge {
+  background: rgba(103, 80, 164, 0.2); /* Muted primary background */
+  color: #6750a4; /* M3 Primary */
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 6px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  min-width: 20px;
+  height: 20px;
+}
+
+.goal-card-description {
+  color: #49454f; /* M3 On Surface Variant */
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.goal-card-reward {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.reward-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6750a4; /* M3 Primary */
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.reward-items {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.goal-card .reward-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.875rem;
+  color: #6750a4; /* M3 Primary */
+  font-weight: 600;
+}
+
+.goal-card .reward-icon {
+  width: 14px;
+  height: 14px;
+  opacity: 0.8;
+}
+
+.no-goals {
+  text-align: center;
+  padding: 40px 20px;
+  color: #49454f; /* M3 On Surface Variant */
+  font-style: italic;
+}
+
+.no-goals p {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
 }

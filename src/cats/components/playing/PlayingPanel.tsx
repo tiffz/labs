@@ -37,9 +37,8 @@ const PlayingPanel: React.FC<PlayingPanelProps> = ({
 
   return (
     <div className="playing-panel">
-      <h3>Playing & Interaction</h3>
       <p className="panel-intro">
-        Improve your relationship and interaction skills with your cat.
+        Train hard so you can play hard.
       </p>
       
       <div className="playing-section">

@@ -25,6 +25,14 @@ import { upgradeData, getInfiniteUpgradeCost, getInfiniteUpgradeEffect } from '.
 import { playingUpgradeData, getInfinitePlayingUpgradeCost, getInfinitePlayingUpgradeEffect } from './data/playingUpgradeData';
 import { useCatSystem } from './hooks/useCatSystem';
 import { HeartSpawningService, type HeartVisuals } from './services/HeartSpawningService';
+// Jobs are now always unlocked for simplicity
+import { gameNotifications } from './data/notificationData';
+import type { Goal } from './data/goalData';
+import { gameGoals } from './data/goalData';
+
+import NotificationQueue, { type Notification } from './components/ui/NotificationQueue';
+
+
 import './styles/cats.css';
 
 interface HeartType {
@@ -98,6 +106,13 @@ function App() {
   const [rapidClickCount, setRapidClickCount] = useState(0);
   const [currentFact] = useState(catFacts[Math.floor(Math.random() * catFacts.length)]);
 
+  // === Notification System State ===
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [triggeredNotifications, setTriggeredNotifications] = useState<Set<string>>(new Set());
+  const [activeGoals, setActiveGoals] = useState<Goal[]>([]);
+  const [completedGoals, setCompletedGoals] = useState<Goal[]>([]);
+
+
   // === Stable callbacks to prevent infinite loops ===
   const onLoveGained = useCallback((amount: number) => {
     setLove(current => current + amount);
@@ -169,7 +184,7 @@ function App() {
   });
 
   // Keep reference to current energy for compatibility
-  const wandInitialPosition = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+  const [wandInitialPosition, setWandInitialPosition] = useState({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
 
   const treatsPerSecond = useMemo(() => {
     return jobData.reduce((total, job) => {
@@ -203,7 +218,7 @@ function App() {
         }
         
         return total + (upgradeEffect - upgrade.baseEffect); // Don't double-count base effect
-      }, 1); // Base conversion rate is 1 treat per second
+      }, 0); // Base conversion rate is 0 treat per second - must buy food bowl to start conversion
   }, [upgradeLevels]);
 
   const loveMultiplier = useMemo(() => {
@@ -252,6 +267,131 @@ function App() {
 
     return () => clearInterval(energyInterval);
   }, []);
+
+  // Check for goal completion
+  useEffect(() => {
+    for (const goal of activeGoals) {
+      if (goal.isCompleted) continue;
+
+      let isCompleted = false;
+
+      switch (goal.type) {
+        case 'get_job': {
+          const jobId = goal.target?.jobId;
+          isCompleted = jobId ? (jobLevels[jobId] || 0) > 0 : false;
+          break;
+        }
+        case 'get_paying_job':
+          // Check if any job level > 1 (meaning they got a promotion from unpaid intern)
+          isCompleted = Object.values(jobLevels).some(level => level > 1);
+          break;
+        case 'buy_upgrade': {
+          const upgradeId = goal.target?.upgradeId;
+          isCompleted = upgradeId ? (upgradeLevels[upgradeId] || 0) > 0 : false;
+          break;
+        }
+        case 'reach_currency': {
+          const currencyType = goal.target?.currencyType;
+          const targetAmount = goal.target?.amount || 0;
+          if (currencyType === 'love') {
+            isCompleted = love >= targetAmount;
+          } else if (currencyType === 'treats') {
+            isCompleted = treats >= targetAmount;
+          }
+          break;
+        }
+      }
+
+      if (isCompleted) {
+        console.log('🎯 Goal completed:', goal.title);
+        
+        // Move from active to completed
+        setActiveGoals(prev => prev.filter(g => g.id !== goal.id));
+        setCompletedGoals(prev => [{ ...goal, isCompleted: true }, ...prev]);
+        
+        // Apply goal rewards
+        if (goal.reward) {
+          if (goal.reward.love) {
+            setLove(prev => prev + goal.reward!.love!);
+          }
+          if (goal.reward.treats) {
+            setTreats(prev => prev + goal.reward!.treats!);
+          }
+        }
+      }
+    }
+  }, [love, treats, jobLevels, upgradeLevels, activeGoals]);
+
+  // Check for triggered notifications when game state changes
+  useEffect(() => {
+    for (const gameNotification of gameNotifications) {
+      // Skip if already triggered
+      if (triggeredNotifications.has(gameNotification.id)) continue;
+
+      let shouldTrigger = false;
+
+      switch (gameNotification.trigger.type) {
+        case 'love_threshold':
+          shouldTrigger = love >= (gameNotification.trigger.value || 0);
+          break;
+        case 'treats_threshold':
+          shouldTrigger = treats >= (gameNotification.trigger.value || 0);
+          break;
+        case 'goal_completed': {
+          const goalId = gameNotification.trigger.goalId;
+          shouldTrigger = goalId ? completedGoals.some(g => g.id === goalId) : false;
+          break;
+        }
+      }
+
+      if (shouldTrigger) {
+        console.log('🎉 Notification triggered:', gameNotification.title);
+        
+        // Mark as triggered
+        setTriggeredNotifications(prev => new Set([...prev, gameNotification.id]));
+        
+        // Add to notification queue, including goal rewards if this is a goal completion
+        let notificationWithRewards = { ...gameNotification };
+        if (gameNotification.trigger.type === 'goal_completed') {
+          const completedGoal = completedGoals.find(g => g.id === gameNotification.trigger.goalId);
+          if (completedGoal?.reward) {
+            notificationWithRewards = {
+              ...gameNotification,
+              reward: completedGoal.reward
+            };
+          }
+        }
+        
+        const notification: Notification = {
+          id: `notification-${gameNotification.id}-${Date.now()}`,
+          notification: notificationWithRewards,
+          timestamp: Date.now()
+        };
+        setNotifications(prev => [...prev, notification]);
+        
+        // Apply rewards
+        if (gameNotification.reward) {
+          if (gameNotification.reward.love) {
+            setLove(prev => prev + gameNotification.reward!.love!);
+          }
+          if (gameNotification.reward.treats) {
+            setTreats(prev => prev + gameNotification.reward!.treats!);
+          }
+        }
+        
+        // Add goal if specified
+        if (gameNotification.addsGoal) {
+          const goalToAdd = gameGoals.find(g => g.id === gameNotification.addsGoal);
+          if (goalToAdd && !activeGoals.find(g => g.id === goalToAdd.id)) {
+            console.log('📋 Adding goal:', goalToAdd.title);
+            setActiveGoals(prev => [...prev, { ...goalToAdd }]);
+          }
+        }
+      }
+    }
+  }, [love, treats, jobLevels, upgradeLevels, triggeredNotifications, completedGoals, activeGoals]);
+
+
 
   useEffect(() => {
     let smileTimer: number;
@@ -344,16 +484,16 @@ function App() {
   const handleEarClick = (ear: 'left' | 'right', event: React.MouseEvent) => {
     if (wigglingEar || isSubtleWiggling) return;
 
-    // Skip heart spawning when wand is active
-    if (wandMode) return;
-
-    // Generate love and heart without triggering the subtle wiggle
+    // Generate love and energy changes regardless of wand mode
     const energyMultiplier = 1 + catEnergy / 100;
     const loveFromClick = Math.round(lovePerClick * energyMultiplier);
     setLove((t) => t + loveFromClick);
     catActions.addEnergy(-1);
     setIsPetting(true);
     setTimeout(() => setIsPetting(false), 200);
+    
+    // Skip heart spawning and visual effects when wand is active, but allow love updates
+    if (wandMode) return;
     
     // Use unified heart spawning
     heartSpawningService.spawnHearts({
@@ -378,11 +518,12 @@ function App() {
   const handleNoseClick = (event: React.MouseEvent) => {
     event.stopPropagation();
     
-    // Skip heart spawning when wand is active
-    if (wandMode) return;
-    
+    // Generate love regardless of wand mode
     setIsSmiling(true);
     setLove((l) => l + 5);
+    
+    // Skip heart spawning when wand is active, but allow love updates
+    if (wandMode) return;
     
     // Use unified heart spawning
     heartSpawningService.spawnHearts({
@@ -666,8 +807,22 @@ function App() {
     }
   }, [isPouncing, wigglingEar, isSubtleWiggling]);
 
+
+
+  const handleNotificationDismiss = (notificationId: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== notificationId));
+  };
+
+
+
   return (
     <div className="game-container">
+
+      <NotificationQueue 
+        notifications={notifications}
+        onDismiss={handleNotificationDismiss} 
+      />
+
       {isDevMode && (
         <DevPanel
           energy={catEnergy}
@@ -736,6 +891,7 @@ function App() {
               </div>
             </CurrencyTooltip>
           </div>
+
         </div>
         <CatFact fact={currentFact} />
         <div className="cat-container">
@@ -796,6 +952,11 @@ function App() {
                 });
               }
               
+              // Set initial wand position to current mouse position if enabling
+              if (!wandMode) {
+                setWandInitialPosition({ x: e.clientX, y: e.clientY });
+              }
+              
               catActions.toggleWandMode();
             }}
           >
@@ -807,12 +968,15 @@ function App() {
       <TabbedPanel
         jobLevels={jobLevels}
         onPromote={handlePromotion}
+                  unlockedJobs={['box_factory']}
         upgradeLevels={upgradeLevels}
         onUpgrade={handleUpgrade}
         playingUpgradeLevels={playingUpgradeLevels}
         onPlayingUpgrade={handlePlayingUpgrade}
         lovePerClick={lovePerClick}
         lovePerPounce={lovePerPounce}
+                    activeGoals={activeGoals}
+            completedGoals={completedGoals}
         currentLove={love}
         currentTreats={treats}
       />

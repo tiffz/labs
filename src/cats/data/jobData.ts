@@ -15,7 +15,7 @@ export const jobData: JobData[] = [
     id: 'box_factory',
     name: 'Cardboard Box Factory',
     levels: [
-      { title: 'Unpaid Intern', cost: 10, treatsPerSecond: 0.5 },
+      { title: 'Unpaid Intern', cost: 10, treatsPerSecond: 0 },
       { title: 'Box Folder', cost: 50, treatsPerSecond: 1 },
       { title: 'Senior Box Inspector', cost: 250, treatsPerSecond: 3 },
       { title: 'Chief Box Enthusiast', cost: 1000, treatsPerSecond: 10 },

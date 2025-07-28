@@ -38,16 +38,11 @@ const UpgradePanel: React.FC<UpgradePanelProps> = ({
 
   return (
     <div className="upgrade-panel">
-      <h3>Treat Conversion</h3>
       <p className="panel-intro">
-        Upgrade your treat-to-love conversion system.
+        Hard work pays off. Feed your cat treats to get love.
       </p>
-      
-
 
       <div className="upgrade-section">
-        <h4 className="section-title">Conversion Speed</h4>
-        <p className="section-description">Increase how fast treats convert to love</p>
         {conversionUpgrades.map((upgrade) => (
           <Upgrade
             key={upgrade.id}

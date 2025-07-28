@@ -73,8 +73,8 @@ export const upgradeData: UpgradeData[] = [
   // Conversion Rate Upgrades (how fast treats convert to love)
   {
     id: 'food_bowl',
-    name: 'Food Bowl Upgrades',
-    description: 'Increase treat conversion speed',
+    name: 'Food Bowls',
+    description: 'Leave out treats for your cat to eat in a food bowl',
     type: 'conversion_rate',
     icon: 'restaurant', // Material Design restaurant icon
     baseEffect: 1, // Base: 1 treat converts per second
@@ -96,7 +96,7 @@ export const upgradeData: UpgradeData[] = [
   {
     id: 'autofeeder',
     name: 'Automatic Feeders',
-    description: 'Automate treat dispensing for faster conversion',
+    description: 'With the power of automation, your cat can eat more treats',
     type: 'conversion_rate',
     icon: 'precision_manufacturing', // Material Design automation icon
     baseEffect: 1,
@@ -118,9 +118,9 @@ export const upgradeData: UpgradeData[] = [
 
   // Love Multiplier Upgrades (how much love per treat conversion)
   {
-    id: 'puzzle_feeder',
-    name: 'Puzzle Feeders',
-    description: 'Make treats more engaging and loving',
+    id: 'interactive_feeder',
+    name: 'Interactive Feeders',
+    description: 'Make feeding more fun!',
     type: 'love_multiplier',
     icon: 'extension', // Material Design puzzle icon
     baseEffect: 1, // Base: 1 treat = 1 love
