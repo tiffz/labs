@@ -726,10 +726,6 @@ function App() {
           lovePerClick={lovePerClick}
           movementNovelty={movementNovelty}
           clickExcitement={clickExcitement}
-          treatsPerSecond={treatsPerSecond}
-          conversionRate={conversionRate}
-          loveMultiplier={loveMultiplier}
-          currentTreats={treats}
           onTimeSkip={handleTimeSkip}
           onGiveTreats={giveDebugTreats}
           onGiveLove={giveDebugLove}

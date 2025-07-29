@@ -956,7 +956,7 @@ body.wand-mode-active * {
 }
 
 /* Responsive Design */
-@media (max-width: 1200px) {
+@media (max-width: 1024px) {
   .game-container {
     flex-direction: column;
     gap: 16px;

@@ -9,10 +9,6 @@ interface DevPanelProps {
   lovePerClick: number;
   movementNovelty: number;
   clickExcitement: number;
-  treatsPerSecond: number;
-  conversionRate: number;
-  loveMultiplier: number;
-  currentTreats: number;
   onTimeSkip: () => void;
   onGiveTreats: () => void;
   onGiveLove: () => void;
@@ -27,10 +23,6 @@ const DevPanel: React.FC<DevPanelProps> = ({
   lovePerClick,
   movementNovelty,
   clickExcitement,
-  treatsPerSecond,
-  conversionRate,
-  loveMultiplier,
-  currentTreats,
   onTimeSkip,
   onGiveTreats,
   onGiveLove,
@@ -65,22 +57,6 @@ const DevPanel: React.FC<DevPanelProps> = ({
         <p>
           <strong>Rapid Clicks:</strong> {rapidClickCount}
         </p>
-      </div>
-
-      <div className="dev-section">
-        <h4>Treats & Love Generation</h4>
-        <p>
-                      <strong>Treats per Second:</strong> {Math.floor(treatsPerSecond)}
-        </p>
-                  <p>
-            <strong>Conversion Rate:</strong> {Math.floor(conversionRate)} treats/sec
-          </p>
-          <p>
-            <strong>Love per Treat:</strong> {Math.floor(loveMultiplier)}x
-          </p>
-                  <p>
-            <strong>Love per Second:</strong> {currentTreats > 0 && treatsPerSecond > 0 ? Math.floor(Math.min(conversionRate, treatsPerSecond) * loveMultiplier) : '0'} ❤️/sec
-          </p>
       </div>
 
       <div className="dev-section">
