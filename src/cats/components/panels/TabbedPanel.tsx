@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import JobPanel from '../jobs/JobPanel';
+import JobPanel from './JobPanel';
 import UpgradePanel from '../upgrades/UpgradePanel';
 import PlayingPanel from '../playing/PlayingPanel';
 import GoalsPanel from './GoalsPanel';
-import type { Goal } from '../../data/eventData';
+import type { Goal } from '../../data/goalData';
 
 interface TabbedPanelProps {
   // Job panel props

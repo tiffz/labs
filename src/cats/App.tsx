@@ -25,12 +25,12 @@ import { upgradeData, getInfiniteUpgradeCost, getInfiniteUpgradeEffect } from '.
 import { playingUpgradeData, getInfinitePlayingUpgradeCost, getInfinitePlayingUpgradeEffect } from './data/playingUpgradeData';
 import { useCatSystem } from './hooks/useCatSystem';
 import { HeartSpawningService, type HeartVisuals } from './services/HeartSpawningService';
-// Jobs are now always unlocked for simplicity
-import { gameNotifications } from './data/notificationData';
-import type { Goal } from './data/goalData';
-import { gameGoals } from './data/goalData';
+import { useGoalSystem } from './hooks/useGoalSystem';
+import { useNotificationSystem } from './hooks/useNotificationSystem';
+import type { GameState } from './game/types';
 
-import NotificationQueue, { type Notification } from './components/ui/NotificationQueue';
+
+import NotificationQueue from './components/ui/NotificationQueue';
 
 
 import './styles/cats.css';
@@ -54,13 +54,22 @@ interface ZzzType {
   scale: number;
 }
 
+const initialGameState: GameState = {
+  love: 0,
+  treats: 0,
+  unlockedJobs: ['box_factory'],
+  jobLevels: {},
+  upgradeLevels: {},
+  playingUpgradeLevels: {},
+  completedGoals: [],
+  activeGoals: [],
+};
+
 function App() {
-  const [love, setLove] = useState(0);
+  const [gameState, setGameState] = useState<GameState>(initialGameState);
+  const { love, treats, jobLevels, upgradeLevels, playingUpgradeLevels } = gameState;
+
   const [lovePerClick, setLovePerClick] = useState(1);
-  const [treats, setTreats] = useState(0);
-  const [jobLevels, setJobLevels] = useState<{ [key: string]: number }>({});
-  const [upgradeLevels, setUpgradeLevels] = useState<{ [key: string]: number }>({});
-  const [playingUpgradeLevels, setPlayingUpgradeLevels] = useState<{ [key: string]: number }>({});
   const [isPetting, setIsPetting] = useState(false);
   const [hearts, setHearts] = useState<HeartType[]>([]);
   const [isStartled, setIsStartled] = useState(false);
@@ -80,6 +89,10 @@ function App() {
   const catRef = useRef<SVGSVGElement>(null);
   const [energy, setEnergy] = useState(100); // Cat's energy, 0-100
   const [isDevMode, setIsDevMode] = useState(false);
+
+  // Systems
+  const { activeGoals, completedGoals, addGoal } = useGoalSystem(gameState, setGameState);
+  const { notificationQueue, setNotificationQueue } = useNotificationSystem(gameState, addGoal);
   
   // Heart spawning service
   const heartSpawningService = useMemo(() => {
@@ -106,16 +119,9 @@ function App() {
   const [rapidClickCount, setRapidClickCount] = useState(0);
   const [currentFact] = useState(catFacts[Math.floor(Math.random() * catFacts.length)]);
 
-  // === Notification System State ===
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [triggeredNotifications, setTriggeredNotifications] = useState<Set<string>>(new Set());
-  const [activeGoals, setActiveGoals] = useState<Goal[]>([]);
-  const [completedGoals, setCompletedGoals] = useState<Goal[]>([]);
-
-
   // === Stable callbacks to prevent infinite loops ===
   const onLoveGained = useCallback((amount: number) => {
-    setLove(current => current + amount);
+    setGameState(current => ({ ...current, love: current.love + amount }));
   }, []);
 
   const onEnergyChanged = useCallback((newEnergy: number) => {
@@ -146,7 +152,7 @@ function App() {
   }, []);
 
   const onTreatsGained = useCallback((amount: number) => {
-    setTreats(current => current + amount);
+    setGameState(current => ({ ...current, treats: current.treats + amount }));
   }, []);
 
   // === CAT SYSTEM (Clean Architecture) ===
@@ -268,131 +274,6 @@ function App() {
     return () => clearInterval(energyInterval);
   }, []);
 
-  // Check for goal completion
-  useEffect(() => {
-    for (const goal of activeGoals) {
-      if (goal.isCompleted) continue;
-
-      let isCompleted = false;
-
-      switch (goal.type) {
-        case 'get_job': {
-          const jobId = goal.target?.jobId;
-          isCompleted = jobId ? (jobLevels[jobId] || 0) > 0 : false;
-          break;
-        }
-        case 'get_paying_job':
-          // Check if any job level > 1 (meaning they got a promotion from unpaid intern)
-          isCompleted = Object.values(jobLevels).some(level => level > 1);
-          break;
-        case 'buy_upgrade': {
-          const upgradeId = goal.target?.upgradeId;
-          isCompleted = upgradeId ? (upgradeLevels[upgradeId] || 0) > 0 : false;
-          break;
-        }
-        case 'reach_currency': {
-          const currencyType = goal.target?.currencyType;
-          const targetAmount = goal.target?.amount || 0;
-          if (currencyType === 'love') {
-            isCompleted = love >= targetAmount;
-          } else if (currencyType === 'treats') {
-            isCompleted = treats >= targetAmount;
-          }
-          break;
-        }
-      }
-
-      if (isCompleted) {
-        console.log('🎯 Goal completed:', goal.title);
-        
-        // Move from active to completed
-        setActiveGoals(prev => prev.filter(g => g.id !== goal.id));
-        setCompletedGoals(prev => [{ ...goal, isCompleted: true }, ...prev]);
-        
-        // Apply goal rewards
-        if (goal.reward) {
-          if (goal.reward.love) {
-            setLove(prev => prev + goal.reward!.love!);
-          }
-          if (goal.reward.treats) {
-            setTreats(prev => prev + goal.reward!.treats!);
-          }
-        }
-      }
-    }
-  }, [love, treats, jobLevels, upgradeLevels, activeGoals]);
-
-  // Check for triggered notifications when game state changes
-  useEffect(() => {
-    for (const gameNotification of gameNotifications) {
-      // Skip if already triggered
-      if (triggeredNotifications.has(gameNotification.id)) continue;
-
-      let shouldTrigger = false;
-
-      switch (gameNotification.trigger.type) {
-        case 'love_threshold':
-          shouldTrigger = love >= (gameNotification.trigger.value || 0);
-          break;
-        case 'treats_threshold':
-          shouldTrigger = treats >= (gameNotification.trigger.value || 0);
-          break;
-        case 'goal_completed': {
-          const goalId = gameNotification.trigger.goalId;
-          shouldTrigger = goalId ? completedGoals.some(g => g.id === goalId) : false;
-          break;
-        }
-      }
-
-      if (shouldTrigger) {
-        console.log('🎉 Notification triggered:', gameNotification.title);
-        
-        // Mark as triggered
-        setTriggeredNotifications(prev => new Set([...prev, gameNotification.id]));
-        
-        // Add to notification queue, including goal rewards if this is a goal completion
-        let notificationWithRewards = { ...gameNotification };
-        if (gameNotification.trigger.type === 'goal_completed') {
-          const completedGoal = completedGoals.find(g => g.id === gameNotification.trigger.goalId);
-          if (completedGoal?.reward) {
-            notificationWithRewards = {
-              ...gameNotification,
-              reward: completedGoal.reward
-            };
-          }
-        }
-        
-        const notification: Notification = {
-          id: `notification-${gameNotification.id}-${Date.now()}`,
-          notification: notificationWithRewards,
-          timestamp: Date.now()
-        };
-        setNotifications(prev => [...prev, notification]);
-        
-        // Apply rewards
-        if (gameNotification.reward) {
-          if (gameNotification.reward.love) {
-            setLove(prev => prev + gameNotification.reward!.love!);
-          }
-          if (gameNotification.reward.treats) {
-            setTreats(prev => prev + gameNotification.reward!.treats!);
-          }
-        }
-        
-        // Add goal if specified
-        if (gameNotification.addsGoal) {
-          const goalToAdd = gameGoals.find(g => g.id === gameNotification.addsGoal);
-          if (goalToAdd && !activeGoals.find(g => g.id === goalToAdd.id)) {
-            console.log('📋 Adding goal:', goalToAdd.title);
-            setActiveGoals(prev => [...prev, { ...goalToAdd }]);
-          }
-        }
-      }
-    }
-  }, [love, treats, jobLevels, upgradeLevels, triggeredNotifications, completedGoals, activeGoals]);
-
-
-
   useEffect(() => {
     let smileTimer: number;
     if (isSmiling) {
@@ -407,7 +288,7 @@ function App() {
 
     const energyMultiplier = 1 + catEnergy / 100;
     const loveFromClick = Math.round(lovePerClick * energyMultiplier);
-    setLove(t => t + loveFromClick);
+    onLoveGained(loveFromClick);
     catActions.addEnergy(-1); // Use cat system's energy management
     
     // Track cat interaction
@@ -446,7 +327,7 @@ function App() {
       setRapidClickCount(clickTimestampsRef.current.length);
       
       if (clickTimestampsRef.current.length >= JUMP_CLICK_THRESHOLD && Math.random() < JUMP_CHANCE) {
-        setLove(current => current + loveFromClick);
+        onLoveGained(loveFromClick);
         setIsJumping(true);
         clickTimestampsRef.current = [];
         setRapidClickCount(0);
@@ -487,7 +368,7 @@ function App() {
     // Generate love and energy changes regardless of wand mode
     const energyMultiplier = 1 + catEnergy / 100;
     const loveFromClick = Math.round(lovePerClick * energyMultiplier);
-    setLove((t) => t + loveFromClick);
+    onLoveGained(loveFromClick);
     catActions.addEnergy(-1);
     setIsPetting(true);
     setTimeout(() => setIsPetting(false), 200);
@@ -520,7 +401,7 @@ function App() {
     
     // Generate love regardless of wand mode
     setIsSmiling(true);
-    setLove((l) => l + 5);
+    onLoveGained(5);
     
     // Skip heart spawning when wand is active, but allow love updates
     if (wandMode) return;
@@ -678,8 +559,7 @@ function App() {
     const oneDayInSeconds = 24 * 60 * 60;
     const result = calculatePassiveIncome(treats, oneDayInSeconds);
     
-    setTreats(result.finalTreats);
-    setLove(prev => prev + result.loveGained);
+    setGameState(prev => ({ ...prev, treats: result.finalTreats, love: prev.love + result.loveGained }));
     
     console.log(`Time skipped 1 day:`, {
       treatsGained: result.treatsGained.toFixed(1),
@@ -687,29 +567,28 @@ function App() {
       loveGained: result.loveGained.toFixed(1),
       finalTreats: result.finalTreats.toFixed(1)
     });
-  }, [treats, calculatePassiveIncome, setTreats, setLove]);
+  }, [treats, calculatePassiveIncome]);
 
   // Debug functions to give resources
   const giveDebugTreats = useCallback(() => {
-    setTreats(prev => prev + 1000);
+    setGameState(prev => ({ ...prev, treats: prev.treats + 1000 }));
     console.log('Gave 1000 treats');
-  }, [setTreats]);
+  }, []);
 
   const giveDebugLove = useCallback(() => {
-    setLove(prev => prev + 1000);
+    setGameState(prev => ({ ...prev, love: prev.love + 1000 }));
     console.log('Gave 1000 love');
-  }, [setLove]);
+  }, []);
 
   useEffect(() => {
     const treatInterval = setInterval(() => {
-      setTreats(currentTreats => {
-        const result = calculatePassiveIncome(currentTreats, 1); // 1 second
-        setLove(prev => prev + result.loveGained);
-        return result.finalTreats;
+      setGameState(current => {
+        const result = calculatePassiveIncome(current.treats, 1); // 1 second
+        return { ...current, treats: result.finalTreats, love: current.love + result.loveGained };
       });
     }, 1000);
     return () => clearInterval(treatInterval);
-  }, [calculatePassiveIncome, setLove]);
+  }, [calculatePassiveIncome]);
 
   const handlePromotion = (jobId: string) => {
     const currentLevel = jobLevels[jobId] || 0;
@@ -717,8 +596,11 @@ function App() {
     if (!job || currentLevel >= job.levels.length) return;
     const promotionCost = job.levels[currentLevel].cost;
     if (love >= promotionCost) {
-      setLove(l => l - promotionCost);
-      setJobLevels(prevLevels => ({...prevLevels, [jobId]: currentLevel + 1}));
+      setGameState(prev => ({
+        ...prev,
+        love: prev.love - promotionCost,
+        jobLevels: { ...prev.jobLevels, [jobId]: currentLevel + 1 },
+      }));
     }
   };
 
@@ -745,14 +627,18 @@ function App() {
     }
     
     if (treats >= treatCost && love >= loveCost) {
-      setTreats(t => t - treatCost);
-      setLove(l => l - loveCost);
-      setUpgradeLevels(prevLevels => ({...prevLevels, [upgradeId]: currentLevel + 1}));
+      setGameState(prev => ({
+        ...prev,
+        treats: prev.treats - treatCost,
+        love: prev.love - loveCost,
+        upgradeLevels: { ...prev.upgradeLevels, [upgradeId]: currentLevel + 1 },
+      }));
     }
   };
 
   // Handle playing upgrades
   const handlePlayingUpgrade = useCallback((upgradeId: string) => {
+    const { love, playingUpgradeLevels } = gameState;
     const currentLevel = playingUpgradeLevels[upgradeId] || 0;
     const upgrade = playingUpgradeData.find(u => u.id === upgradeId);
     if (!upgrade) return;
@@ -776,8 +662,11 @@ function App() {
     }
     
     if (love >= loveCost) {
-      setLove(l => l - loveCost);
-      setPlayingUpgradeLevels(prevLevels => ({...prevLevels, [upgradeId]: currentLevel + 1}));
+      setGameState(prev => ({ 
+        ...prev,
+        love: prev.love - loveCost,
+        playingUpgradeLevels: { ...prev.playingUpgradeLevels, [upgradeId]: currentLevel + 1 },
+      }));
       
       // Update the actual game values
       if (upgradeId === 'love_per_pet') {
@@ -786,7 +675,7 @@ function App() {
         setLovePerPounce(current => current + effectValue);
       }
     }
-  }, [playingUpgradeLevels, love, setLove, setLovePerClick, setLovePerPounce]);
+  }, [gameState, setGameState, setLovePerClick, setLovePerPounce]);
 
   useEffect(() => {
     if (wandMode) document.body.classList.add('wand-mode-active');
@@ -810,7 +699,7 @@ function App() {
 
 
   const handleNotificationDismiss = (notificationId: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== notificationId));
+    setNotificationQueue(prev => prev.filter(n => n.id !== notificationId));
   };
 
 
@@ -819,7 +708,11 @@ function App() {
     <div className="game-container">
 
       <NotificationQueue 
-        notifications={notifications}
+        notifications={notificationQueue.map(n => ({
+          id: n.id,
+          notification: n,
+          timestamp: Date.now(),
+        }))}
         onDismiss={handleNotificationDismiss} 
       />
 
@@ -968,15 +861,15 @@ function App() {
       <TabbedPanel
         jobLevels={jobLevels}
         onPromote={handlePromotion}
-                  unlockedJobs={['box_factory']}
+        unlockedJobs={gameState.unlockedJobs}
         upgradeLevels={upgradeLevels}
         onUpgrade={handleUpgrade}
         playingUpgradeLevels={playingUpgradeLevels}
         onPlayingUpgrade={handlePlayingUpgrade}
         lovePerClick={lovePerClick}
         lovePerPounce={lovePerPounce}
-                    activeGoals={activeGoals}
-            completedGoals={completedGoals}
+        activeGoals={activeGoals}
+        completedGoals={completedGoals}
         currentLove={love}
         currentTreats={treats}
       />

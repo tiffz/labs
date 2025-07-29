@@ -3,7 +3,7 @@ export interface GameNotification {
   title: string;
   message: string;
   trigger: {
-    type: 'love_threshold' | 'treats_threshold' | 'job_acquired' | 'job_promoted' | 'upgrade_bought' | 'goal_completed';
+    type: 'love_threshold' | 'treats_threshold' | 'job_acquired' | 'job_promoted' | 'upgrade_bought' | 'goal_completed' | 'playing_upgrade_bought';
     value?: number;
     jobId?: string;
     upgradeId?: string;
@@ -75,6 +75,16 @@ export const gameNotifications: GameNotification[] = [
     },
     reward: {
       love: 15
+    },
+    hasBeenTriggered: false
+  },
+  {
+    id: 'bought_first_toy',
+    title: 'First Toy!',
+    message: 'Your cat seems to enjoy the new toy. They are batting it around with excitement.',
+    trigger: {
+      type: 'playing_upgrade_bought',
+      upgradeId: 'love_per_pet'
     },
     hasBeenTriggered: false
   }

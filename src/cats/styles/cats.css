@@ -16,22 +16,6 @@ body.wand-mode-active * {
   cursor: default !important;
 }
 
-/* Ensure notifications always show above wand mode */
-body.wand-mode-active .notification-queue {
-  z-index: 12000 !important; /* Above everything including currency tooltips */
-  pointer-events: auto !important;
-}
-
-body.wand-mode-active .toast-notification {
-  position: absolute !important; /* Keep absolute positioning for proper stacking */
-  pointer-events: auto !important;
-}
-
-body.wand-mode-active .toast-notification.visible {
-  pointer-events: auto !important;
-  /* Remove fixed positioning that breaks stacking */
-}
-
 /* Ensure wand click area doesn't interfere with notifications */
 .wand-click-area {
   z-index: 10 !important; /* Keep wand area below notifications */
@@ -635,10 +619,6 @@ body.wand-mode-active .toast-notification.visible {
   75% {
     transform: translate(-50%, 0) rotate(-10deg);
   }
-}
-
-.playing {
-  /* Apply playing effect that works with pounce animations */
 }
 
 .playing #cat-container {
@@ -1567,18 +1547,17 @@ body.wand-mode-active .toast-notification.visible {
   bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 11000; /* Above currency tooltips (10000) to ensure visibility */
+  z-index: 16000; /* Above wand toy (15000) */
   pointer-events: none; /* Container doesn't interfere with layout */
   width: 500px; /* Fixed width for consistent positioning */
-  height: 0; /* Don't take up layout space */
+  display: flex;
+  flex-direction: column-reverse; /* Stack from bottom up */
+  gap: 10px; /* Space between toasts */
+  align-items: center; /* Center toasts horizontally */
 }
 
 /* Individual Toast Notification */
 .toast-notification {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
   transform: translateY(100px);
   background: #4c3575; /* Darker purple */
   color: #ffffff;
@@ -1594,8 +1573,9 @@ body.wand-mode-active .toast-notification.visible {
   margin: 0 auto; /* Center horizontally */
   pointer-events: none; /* Individual toast starts non-interactive */
   will-change: transform, opacity;
-  contain: layout style paint; /* Prevent layout influence */
   backface-visibility: hidden; /* Prevent animation flicker */
+  width: 100%; /* Ensure full width */
+  position: relative; /* Remove absolute positioning */
 }
 
 .toast-notification.visible {

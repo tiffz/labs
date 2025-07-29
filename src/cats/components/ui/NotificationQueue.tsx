@@ -86,7 +86,7 @@ const NotificationQueue: React.FC<NotificationQueueProps> = ({
     return () => {
       timers.forEach(timer => clearTimeout(timer));
     };
-  }, [notifications, visibleNotifications, onDismiss]);
+  }, [notifications, onDismiss, visibleNotifications]);
 
   // Clean up visibility state when notifications are removed
   useEffect(() => {
@@ -100,16 +100,12 @@ const NotificationQueue: React.FC<NotificationQueueProps> = ({
 
   return (
     <div className="notification-queue">
-      {notifications.map((notification, index) => (
+      {notifications.map((notification) => (
         <div
           key={notification.id}
           className={`toast-notification ${
             visibleNotifications.includes(notification.id) ? 'visible' : ''
           }`}
-          style={{
-            transform: `translateY(${index * -120}px)`, // Increased from -80px to -120px for better readability
-            zIndex: 11000 + index // Fix: newer toasts (higher index) should have higher z-index
-          }}
         >
           <ToastItem
             notification={notification}
