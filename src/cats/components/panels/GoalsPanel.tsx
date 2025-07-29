@@ -10,7 +10,7 @@ interface GoalsPanelProps {
 
 const GoalsPanel: React.FC<GoalsPanelProps> = ({ activeGoals, completedGoals }) => {
   return (
-    <div className="goals-panel">
+    <div className="panel">
       <p className="panel-intro">
         Help your cat live their best life.
       </p>

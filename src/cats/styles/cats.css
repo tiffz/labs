@@ -151,7 +151,7 @@ body.wand-mode-active * {
 }
 
 /* Update Job Panel for tabbed context */
-.tabbed-panel .job-panel {
+.tabbed-panel .panel {
   width: 100%;
   border: none;
   border-radius: 0;

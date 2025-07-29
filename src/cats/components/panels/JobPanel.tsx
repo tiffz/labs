@@ -14,7 +14,7 @@ const JobPanel: React.FC<JobPanelProps> = ({ jobLevels, onPromote, currentLove, 
   const lockedJobsCount = jobData.length - unlockedJobData.length;
 
   return (
-    <div className="job-panel">
+    <div className="panel">
       <p className="job-panel-intro">
         Your cat needs a better life. It&apos;s time to get a job.
       </p>

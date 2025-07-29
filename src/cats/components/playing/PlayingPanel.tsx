@@ -36,7 +36,7 @@ const PlayingPanel: React.FC<PlayingPanelProps> = ({
   };
 
   return (
-    <div className="playing-panel">
+    <div className="panel">
       <p className="panel-intro">
         Train hard so you can play hard.
       </p>

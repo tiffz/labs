@@ -37,7 +37,7 @@ const UpgradePanel: React.FC<UpgradePanelProps> = ({
   };
 
   return (
-    <div className="upgrade-panel">
+    <div className="panel">
       <p className="panel-intro">
         Hard work pays off. Feed your cat treats to get love.
       </p>
