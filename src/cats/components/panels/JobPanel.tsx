@@ -1,6 +1,6 @@
 import React from 'react';
 import { jobData } from '../../data/jobData';
-import Job from '../jobs/Job';
+import ItemCard from '../ui/ItemCard';
 
 interface JobPanelProps {
   jobLevels: { [key: string]: number };
@@ -18,16 +18,56 @@ const JobPanel: React.FC<JobPanelProps> = ({ jobLevels, onPromote, currentLove, 
       <p className="job-panel-intro">
         Your cat needs a better life. It&apos;s time to get a job.
       </p>
-      {unlockedJobData.map((job) => (
-        <Job
-          key={job.id}
-          job={job}
-          level={jobLevels[job.id] || 0}
-          onPromote={() => onPromote(job.id)}
-          canPromote={currentLove >= (job.levels[jobLevels[job.id] || 0]?.cost || Infinity)}
-          currentLove={currentLove}
-        />
-      ))}
+      <div className="upgrade-section">
+        {unlockedJobData.map((job) => {
+          const level = jobLevels[job.id] || 0;
+          const currentLevelInfo = level > 0 ? job.levels[level - 1] : null;
+          const nextLevelInfo = level < job.levels.length ? job.levels[level] : null;
+          const canPromote = nextLevelInfo ? currentLove >= nextLevelInfo.cost : false;
+
+          if (!nextLevelInfo) {
+            return (
+              <ItemCard
+                key={job.id}
+                title={job.name}
+                description={job.description}
+                level={level}
+                levelName={currentLevelInfo?.title}
+                currentEffectDisplay={
+                  currentLevelInfo ? `${Math.floor(currentLevelInfo.treatsPerSecond)} treats/sec` : 'Unemployed'
+                }
+                nextLevelName="Max Level"
+                nextEffectDisplay="No more promotions"
+                loveCost={undefined}
+                canAfford={false}
+                onAction={() => {}}
+                actionText="Maxed"
+                currentLove={currentLove}
+              />
+            );
+          }
+
+          return (
+            <ItemCard
+              key={job.id}
+              title={job.name}
+              description={job.description}
+              level={level}
+              levelName={currentLevelInfo?.title}
+              currentEffectDisplay={
+                currentLevelInfo ? `${Math.floor(currentLevelInfo.treatsPerSecond)} treats/sec` : 'Unemployed'
+              }
+              nextLevelName={nextLevelInfo.title}
+              nextEffectDisplay={`${Math.floor(nextLevelInfo.treatsPerSecond)} treats/sec`}
+              loveCost={nextLevelInfo.cost}
+              canAfford={canPromote}
+              onAction={() => onPromote(job.id)}
+              actionText="Promote"
+              currentLove={currentLove}
+            />
+          );
+        })}
+      </div>
       {lockedJobsCount > 0 && (
         <div className="locked-jobs-hint">
           <div className="locked-jobs-text">

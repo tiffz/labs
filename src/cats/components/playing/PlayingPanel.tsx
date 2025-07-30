@@ -1,6 +1,6 @@
 import React from 'react';
-import { playingUpgradeData, getInfinitePlayingUpgradeCost } from '../../data/playingUpgradeData';
-import PlayingUpgrade from './PlayingUpgrade';
+import { playingUpgradeData, getInfinitePlayingUpgradeCost, getInfinitePlayingUpgradeEffect, getInfinitePlayingUpgradeName } from '../../data/playingUpgradeData';
+import ItemCard from '../ui/ItemCard';
 
 interface PlayingPanelProps {
   playingUpgradeLevels: { [key: string]: number };
@@ -22,7 +22,6 @@ const PlayingPanel: React.FC<PlayingPanelProps> = ({
     const upgrade = playingUpgradeData.find(u => u.id === upgradeId);
     if (!upgrade) return false;
     
-    // Determine if using predefined or infinite level
     const usePredefinedLevel = currentLevel < upgrade.levels.length;
     
     if (usePredefinedLevel) {
@@ -35,6 +34,48 @@ const PlayingPanel: React.FC<PlayingPanelProps> = ({
     }
   };
 
+  const renderPlayingUpgrade = (upgrade: typeof playingUpgradeData[0]) => {
+    const level = playingUpgradeLevels[upgrade.id] || 0;
+    const usePredefinedLevel = level < upgrade.levels.length;
+
+    let currentValue = upgrade.id === 'love_per_pet' ? lovePerClick : lovePerPounce;
+    for (let i = 0; i < Math.min(level, upgrade.levels.length); i++) {
+      currentValue += upgrade.levels[i].effect;
+    }
+    for (let i = upgrade.levels.length; i < level; i++) {
+      const infiniteEffectValue = getInfinitePlayingUpgradeEffect(upgrade, i);
+      if (infiniteEffectValue) {
+        currentValue += infiniteEffectValue;
+      }
+    }
+
+    const nextLevelInfo = usePredefinedLevel
+      ? upgrade.levels[level]
+      : {
+          name: getInfinitePlayingUpgradeName(upgrade, level)!,
+          effect: getInfinitePlayingUpgradeEffect(upgrade, level)!,
+          loveCost: getInfinitePlayingUpgradeCost(upgrade, level)!.loveCost,
+        };
+
+    return (
+      <ItemCard
+        key={upgrade.id}
+        title={upgrade.name}
+        description={upgrade.description}
+        level={level}
+        levelName={usePredefinedLevel && level > 0 ? upgrade.levels[level - 1].name : undefined}
+        currentEffectDisplay={`${Math.round(currentValue)} ❤️ per action`}
+        nextLevelName={nextLevelInfo.name}
+        nextEffectDisplay={`${Math.round(currentValue + nextLevelInfo.effect)} ❤️ per action`}
+        loveCost={nextLevelInfo.loveCost}
+        canAfford={canAffordUpgrade(upgrade.id)}
+        onAction={() => onPlayingUpgrade(upgrade.id)}
+        actionText="Upgrade"
+        currentLove={currentLove}
+      />
+    );
+  };
+
   return (
     <div className="panel">
       <p className="panel-intro">
@@ -42,24 +83,7 @@ const PlayingPanel: React.FC<PlayingPanelProps> = ({
       </p>
       
       <div className="playing-section">
-        {playingUpgradeData.map((upgrade) => {
-          // Pass the current actual values
-          const upgradeWithValue = {
-            ...upgrade,
-            currentValue: upgrade.id === 'love_per_pet' ? lovePerClick : lovePerPounce
-          };
-          
-          return (
-            <PlayingUpgrade
-              key={upgrade.id}
-              upgrade={upgradeWithValue}
-              level={playingUpgradeLevels[upgrade.id] || 0}
-              onUpgrade={() => onPlayingUpgrade(upgrade.id)}
-              canUpgrade={canAffordUpgrade(upgrade.id)}
-              currentLove={currentLove}
-            />
-          );
-        })}
+        {playingUpgradeData.map(renderPlayingUpgrade)}
       </div>
     </div>
   );

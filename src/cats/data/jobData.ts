@@ -7,6 +7,7 @@ export interface JobLevel {
 export interface JobData {
   id: string;
   name: string;
+  description: string;
   levels: JobLevel[];
 }
 
@@ -14,6 +15,7 @@ export const jobData: JobData[] = [
   {
     id: 'box_factory',
     name: 'Box Factory',
+    description: 'A reliable and sturdy career in the art of cardboard.',
     levels: [
       { title: 'Unpaid Intern', cost: 10, treatsPerSecond: 0 },
       { title: 'Box Folder', cost: 50, treatsPerSecond: 1 },
@@ -25,6 +27,7 @@ export const jobData: JobData[] = [
   {
     id: 'software_developer',
     name: 'Software Developer',
+    description: 'Use your paws to write code and catch bugs.',
     levels: [
       { title: 'Junior Keyboard Warmer', cost: 100, treatsPerSecond: 2 },
       { title: 'Bug Catcher', cost: 750, treatsPerSecond: 8 },
@@ -36,6 +39,7 @@ export const jobData: JobData[] = [
   {
     id: 'librarian',
     name: 'Librarian',
+    description: 'Ensure silence and order among the towering shelves.',
     levels: [
       { title: 'Book Dust Sniffer', cost: 500, treatsPerSecond: 10 },
       { title: 'Page Turner', cost: 2500, treatsPerSecond: 30 },

@@ -1897,3 +1897,294 @@ body.wand-mode-active * {
   font-size: 0.875rem;
   line-height: 1.5;
 }
+
+/* ItemCard component styles */
+.item-card {
+  background-color: transparent; /* Removed background */
+  border: none; /* Removed border */
+  border-top: 1px solid #e7e0ec; /* Separator for stacked view */
+  border-radius: 0; /* No radius needed without borders */
+  padding: 16px 8px; /* Adjusted padding */
+  display: flex;
+  flex-direction: column;
+  transition: background-color 0.2s ease-in-out;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.item-card:hover {
+  background-color: #f7f2fa; /* Subtle hover effect */
+  border-radius: 12px; /* Rounded corners on hover */
+}
+
+@media (min-width: 600px) {
+  /* Corresponds to grid taking effect */
+  .item-card {
+    border: 1px solid #e7e0ec; /* Use full border on grid */
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .item-card:hover {
+    border-color: #d0c0d9;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05); /* Lighter shadow */
+  }
+}
+
+.item-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.item-card-title {
+  font-size: 1rem; /* M3 Title Medium */
+  font-weight: 500;
+  color: #1d1b20; /* M3 On-Surface */
+  margin: 0;
+}
+
+.item-card-level {
+  font-size: 0.75rem; /* M3 Label Small */
+  font-weight: 500;
+  color: #49454f; /* M3 On-Surface-Variant */
+  background-color: #e8def8; /* M3 Primary Container */
+  padding: 4px 8px;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+.item-card-description {
+  font-size: 0.875rem; /* M3 Body Medium */
+  color: #49454f; /* M3 On-Surface-Variant */
+  margin: 0 0 12px 0;
+  line-height: 1.4;
+  flex-grow: 1; /* Allow description to take up space */
+}
+
+.item-card-body {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: auto; /* Push to bottom */
+  gap: 16px;
+}
+
+.item-card-effects {
+  font-size: 0.875rem;
+  color: #49454f;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.item-card-effects strong {
+  color: #1d1b20;
+}
+
+.item-card-effects .next-level-name {
+  font-size: 0.8em;
+  color: #6750a4; /* M3 Primary */
+  font-style: italic;
+}
+
+.item-card-purchase {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  text-align: right;
+}
+
+.item-card-button {
+  padding: 10px 16px; /* M3 Button style */
+  border-radius: 20px; /* Pill shape */
+  border: 1px solid #79747e; /* M3 Outline */
+  font-weight: 500;
+  font-size: 0.875rem; /* M3 Label Large */
+  cursor: pointer;
+  transition: background-color 0.2s;
+  min-width: 120px;
+}
+
+.item-card-button.available {
+  background-color: #6750a4; /* M3 Primary */
+  color: #ffffff; /* M3 On-Primary */
+  border-color: #6750a4;
+}
+
+.item-card-button.available:hover {
+  background-color: #553c9a;
+}
+
+.item-card-button.disabled {
+  background-color: transparent;
+  color: #939094; /* M3 On-Surface Disabled */
+  border-color: #e7e0ec;
+  cursor: not-allowed;
+}
+
+/* Upgrade Item - Kept for backwards compatibility if needed, but should be removed */
+.upgrade-item {
+  border-top: 1px solid #e7e0ec; /* M3 Outline Variant */
+  padding-top: 16px;
+  margin-top: 16px;
+  width: 100%; /* Ensure items don't exceed panel width */
+  box-sizing: border-box; /* Include padding in width calculations */
+}
+.upgrade-item:first-of-type {
+  border-top: none;
+  margin-top: 0;
+}
+
+.upgrade-header {
+  margin-bottom: 8px;
+}
+
+.upgrade-info {
+  width: 100%;
+}
+
+.upgrade-name {
+  font-size: 1rem; /* M3 Title Medium */
+  font-weight: 500;
+  margin: 0 0 8px 0;
+  color: #1d1b20; /* M3 On-Surface */
+}
+
+.upgrade-description {
+  font-size: 0.875rem; /* M3 Body Medium */
+  color: #49454f; /* M3 On-Surface-Variant */
+  margin: 4px 0;
+}
+
+.upgrade-stats {
+  margin-bottom: 8px;
+}
+
+.current-effect {
+  font-size: 0.875rem;
+  color: #49454f; /* M3 On Surface Variant */
+  margin: 4px 0;
+}
+
+.upgrade-level {
+  font-size: 0.875rem;
+  color: #49454f; /* M3 On Surface Variant */
+  margin: 4px 0;
+}
+
+.upgrade-purchase {
+  border-top: 1px solid #f7f2fa;
+  padding-top: 8px;
+}
+
+.next-upgrade {
+  font-size: 0.875rem;
+  color: #49454f; /* M3 On Surface Variant */
+  margin: 4px 0;
+}
+
+.upgrade-cost {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap; /* Allow wrapping on narrow screens */
+  width: 100%; /* Ensure cost doesn't exceed panel width */
+}
+
+.cost {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+  min-width: 0; /* Allow shrinking */
+  flex-shrink: 1; /* Allow cost items to shrink */
+}
+
+.cost.affordable {
+  /* No background for affordable items to reduce visual clutter */
+  color: #49454f; /* Default text color */
+}
+
+.cost.expensive {
+  background-color: #ffebee; /* Light red */
+  color: #c62828; /* Dark red */
+}
+
+/* Inline cost display for Job components */
+.inline-cost {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 8px;
+}
+
+.inline-cost:last-child {
+  margin-right: 0;
+}
+
+.cost-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.upgrade-button {
+  width: 100%;
+  margin-top: 12px;
+  font-size: 0.875rem; /* M3 Label Large */
+  font-weight: 500;
+  line-height: 1.4;
+  padding: 10px 24px;
+  border: 1px solid #79747e; /* M3 Outline */
+  border-radius: 20px; /* Full pill shape */
+  background-color: transparent;
+  color: #6750a4; /* M3 Primary */
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.upgrade-button.available {
+  border-color: #6750a4;
+  background-color: #6750a4;
+  color: #ffffff;
+}
+
+.upgrade-button.available:hover {
+  background-color: #553c9a;
+  border-color: #553c9a;
+}
+
+.upgrade-button.disabled {
+  border-color: #e7e0ec;
+  background-color: transparent;
+  color: #939094; /* M3 On-Surface Disabled */
+  cursor: not-allowed;
+}
+
+.max-level {
+  text-align: center;
+  font-size: 0.75rem;
+  color: #49454f; /* More subtle */
+  font-weight: 500;
+  padding: 8px;
+  background-color: #f7f2fa;
+  border-radius: 6px;
+}
+
+.upgrade-section .section-description {
+  margin-bottom: 15px;
+  font-size: 0.9em;
+  color: #666;
+}
+
+.upgrade-section,
+.playing-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
