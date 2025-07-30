@@ -57,8 +57,8 @@ const UpgradePanel: React.FC<UpgradePanelProps> = ({
       </div>
 
       <div className="upgrade-section">
-        <h4 className="section-title">Love Efficiency</h4>
-        <p className="section-description">Increase love gained per treat conversion</p>
+        <h4 className="section-title">Quality</h4>
+        <p className="section-description">Improve the meal experience to get more love per treat</p>
         {multiplierUpgrades.map((upgrade) => (
           <Upgrade
             key={upgrade.id}
