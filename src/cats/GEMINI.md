@@ -4,6 +4,34 @@ This document outlines the vision, architecture, and implementation details for 
 
 ## Recent Major Enhancements (2025)
 
+### Modern Things System (Cookie Clicker-Inspired)
+
+The Cat Clicker features a completely redesigned progression system that replaces the traditional feeding upgrades with an engaging "Things" mechanic:
+
+**Key Features:**
+
+- **Cookie Clicker-Style Interaction**: Simplified UI showing only name, cost, and quantity with detailed tooltips on hover
+- **Dense Grid Layout**: 3-5 items per row in responsive grid for maximum information density
+- **Two Categories**: "Feeding" (improves treat-to-love conversion) and "Environment" (provides passive benefits)
+- **No Levels**: Each Thing is purchasable multiple times with escalating prices (compound growth)
+- **Professional Tooltips**: Fixed-position tooltips with seamless border connections and smart positioning
+
+**Technical Implementation:**
+
+- **Intelligent Positioning**: Advanced tooltip system prevents overlap and container clipping
+- **Dynamic Pricing**: Each Thing uses `basePrice * priceMultiplier^quantity` formula
+- **Effect Types**: `love_per_treat`, `treat_consumption_rate`, and `auto_love_rate` mechanics
+- **Smart UI**: Contextual fish icon colors (blue when affordable, gray when expensive)
+- **Material Design Icons**: Professional iconography matching game's aesthetic
+
+**Files Involved:**
+
+- `src/cats/data/thingsData.ts` - Thing definitions and pricing calculations
+- `src/cats/components/things/ThingCard.tsx` - Individual Thing display with tooltips
+- `src/cats/components/things/ThingsPanel.tsx` - Grid layout and category organization
+- `src/cats/components/panels/TabbedPanel.tsx` - Updated to include Things tab
+- `src/cats/styles/cats.css` - Comprehensive tooltip and grid styling
+
 ### Unified Notification & Goal System
 
 The Cat Clicker underwent a significant architectural overhaul to create a unified, robust notification and progression system:
@@ -120,11 +148,11 @@ Added a passive economic engine where treats automatically convert to love, crea
 - **Centralized Logic**: `calculatePassiveIncome()` function for consistent economic calculations
 - **Real-time Updates**: Synchronized with all UI displays and debug tools
 
-#### **Dual Upgrade Paths**
+#### **Dual Progression Paths**
 
-- **Feeding Upgrades**: Improve conversion efficiency (bigger food bowl, autofeeder, puzzle maze, treat ball)
+- **Things System**: Cookie Clicker-style purchasable items that improve efficiency (ceramic bowls, feeders, cat trees, beds)
 - **Playing Upgrades**: Enhance direct interactions (petting technique, play engagement)
-- **Infinite Progression**: All upgrade paths continue beyond predefined levels with scaling costs
+- **Scalable Progression**: Things use compound pricing, Playing upgrades have infinite scaling with predefined levels
 
 ### UI/UX Transformation
 
@@ -132,9 +160,10 @@ Added a passive economic engine where treats automatically convert to love, crea
 
 Consolidated the growing number of game systems into a clean, scalable interface:
 
-- **Day Jobs**: Existing job progression system
-- **Feeding**: New treat-to-love conversion upgrades
+- **Jobs**: Career progression system for passive treat income
+- **Things**: Cookie Clicker-inspired purchasable items with compound pricing
 - **Playing**: Direct interaction enhancement upgrades
+- **Goals**: Achievement tracking and progression guidance
 - **Responsive Design**: Adapts to mobile with proper dev panel integration
 
 #### **Currency Tooltip System**
@@ -153,6 +182,17 @@ Systematic replacement of emojis with SVG icons for visual consistency:
 - **Fish → Heart**: Visual representation of treat-to-love conversion
 - **Consistent Sizing**: Standardized icon dimensions across all components
 - **Component Reuse**: `HeartIcon` and `FishIcon` used throughout interface
+
+#### **Advanced Tooltip System**
+
+Professional-grade tooltip system that prevents clipping and provides seamless visual connections:
+
+- **Fixed Positioning**: Uses `position: fixed` with viewport calculations to prevent container clipping
+- **Intelligent Side Detection**: Automatically switches between left and right positioning based on available space
+- **Seamless Border Connection**: Triangle arrows connect directly to tooltip edges with perfect alignment
+- **Smart Overlap Prevention**: Advanced positioning logic ensures tooltips never cover the items they describe
+- **Performance Optimized**: Uses `getBoundingClientRect()` with scroll offsets for precise positioning
+- **Responsive Triangle**: Dynamic triangle sizing and positioning based on gap distance
 
 ### Event System & Guided Onboarding (2025)
 
@@ -177,10 +217,10 @@ Added a sophisticated event and goal system that creates a guided onboarding exp
 - Goal: Earn a promotion → Motivates progression within job system
 - Reward: 25 treat signing bonus when first paying job is achieved
 
-**Phase 3: Feeding Introduction (50 Treats)**
+**Phase 3: Things Introduction (50 Treats)**
 
 - Event: "Mealtime Anticipation" - Cat notices treats and hopes for feeding setup
-- Goal: Buy first food bowl → Introduces automatic treat-to-love conversion system
+- Goal: Buy first ceramic bowl → Introduces the Things system for treat-to-love conversion
 
 #### **Technical Architecture**
 
@@ -267,7 +307,7 @@ The `cats` micro-app follows a feature-based folder structure to keep the code o
 
 ## 5. Testing
 
-The project uses **Vitest** for unit testing, integrated directly into the Vite development environment. This allows for fast, efficient, and reliable testing of our React components. The Cat Clicker has comprehensive test coverage with **48 tests** across all major components and functionality.
+The project uses **Vitest** for unit testing, integrated directly into the Vite development environment. This allows for fast, efficient, and reliable testing of our React components. The Cat Clicker has comprehensive test coverage with **155 tests** across all major components and functionality.
 
 ### Technology Stack
 
@@ -288,7 +328,7 @@ This command will execute all `*.test.tsx` files and provide a summary of the re
 
 ### Test Coverage Overview
 
-Our comprehensive test suite includes **48 tests** organized across three main test files:
+Our comprehensive test suite includes **155 tests** organized across multiple test files covering all game systems:
 
 #### **Cat Component Tests (13 tests)**
 
@@ -548,7 +588,7 @@ useEffect(() => {
 
 - **Linting:** ESLint with TypeScript rules enforced
 - **Build verification:** All builds must complete successfully
-- **Test coverage:** 112+ tests across all major systems
+- **Test coverage:** 155+ tests across all major systems
 - **Type safety:** Strict TypeScript configuration
 
 #### **Debugging Tools**

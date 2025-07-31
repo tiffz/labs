@@ -1,6 +1,7 @@
 import React from 'react';
 import { playingUpgradeData, getInfinitePlayingUpgradeCost, getInfinitePlayingUpgradeEffect, getInfinitePlayingUpgradeName } from '../../data/playingUpgradeData';
 import ItemCard from '../ui/ItemCard';
+import MaterialIcon from '../../icons/MaterialIcon';
 
 interface PlayingPanelProps {
   playingUpgradeLevels: { [key: string]: number };
@@ -39,6 +40,8 @@ const PlayingPanel: React.FC<PlayingPanelProps> = ({
     const usePredefinedLevel = level < upgrade.levels.length;
 
     let currentValue = upgrade.id === 'love_per_pet' ? lovePerClick : lovePerPounce;
+    // This loop is incorrect for playing upgrades, it should be done in the game state
+    // but for now, we'll just sum up the effects for display
     for (let i = 0; i < Math.min(level, upgrade.levels.length); i++) {
       currentValue += upgrade.levels[i].effect;
     }
@@ -57,21 +60,39 @@ const PlayingPanel: React.FC<PlayingPanelProps> = ({
           loveCost: getInfinitePlayingUpgradeCost(upgrade, level)!.loveCost,
         };
 
+    const tooltipContent = (
+      <div>
+        <div className="item-tooltip-header">
+          <MaterialIcon icon={upgrade.icon} className="item-tooltip-icon" />
+          <h4 className="item-tooltip-title">{upgrade.name}</h4>
+        </div>
+        <p className="item-tooltip-description">{upgrade.description}</p>
+        <div className="item-tooltip-effects">
+          <div className="item-tooltip-effect-line">
+            <strong>Current:</strong> {`${Math.round(currentValue)} ❤️ per action`}
+          </div>
+          <div className="item-tooltip-effect-line">
+            <strong>Next:</strong> {`${Math.round(currentValue + nextLevelInfo.effect)} ❤️ per action`}
+          </div>
+          <div className="item-tooltip-effect-line" style={{ fontStyle: 'italic', fontSize: '0.75rem' }}>
+            ({nextLevelInfo.name})
+          </div>
+        </div>
+      </div>
+    );
+
     return (
       <ItemCard
         key={upgrade.id}
+        id={upgrade.id}
         title={upgrade.name}
-        description={upgrade.description}
         level={level}
-        levelName={usePredefinedLevel && level > 0 ? upgrade.levels[level - 1].name : undefined}
-        currentEffectDisplay={`${Math.round(currentValue)} ❤️ per action`}
-        nextLevelName={nextLevelInfo.name}
-        nextEffectDisplay={`${Math.round(currentValue + nextLevelInfo.effect)} ❤️ per action`}
         loveCost={nextLevelInfo.loveCost}
         canAfford={canAffordUpgrade(upgrade.id)}
         onAction={() => onPlayingUpgrade(upgrade.id)}
-        actionText="Upgrade"
         currentLove={currentLove}
+        tooltipContent={tooltipContent}
+        icon={upgrade.icon}
       />
     );
   };

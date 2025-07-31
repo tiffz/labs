@@ -23,6 +23,7 @@ import { catFacts } from './data/catFacts';
 import { jobData } from './data/jobData';
 import { upgradeData, getInfiniteUpgradeCost, getInfiniteUpgradeEffect } from './data/upgradeData';
 import { playingUpgradeData, getInfinitePlayingUpgradeCost, getInfinitePlayingUpgradeEffect } from './data/playingUpgradeData';
+import { thingsData, getThingPrice, getThingTotalEffect } from './data/thingsData';
 import { useCatSystem } from './hooks/useCatSystem';
 import { HeartSpawningService, type HeartVisuals } from './services/HeartSpawningService';
 import { useGoalSystem } from './hooks/useGoalSystem';
@@ -61,13 +62,14 @@ const initialGameState: GameState = {
   jobLevels: {},
   upgradeLevels: {},
   playingUpgradeLevels: {},
+  thingQuantities: {},
   completedGoals: [],
   activeGoals: [],
 };
 
 function App() {
   const [gameState, setGameState] = useState<GameState>(initialGameState);
-  const { love, treats, jobLevels, upgradeLevels, playingUpgradeLevels } = gameState;
+  const { love, treats, jobLevels, upgradeLevels, playingUpgradeLevels, thingQuantities } = gameState;
 
   const [lovePerClick, setLovePerClick] = useState(1);
   const [isPetting, setIsPetting] = useState(false);
@@ -202,9 +204,10 @@ function App() {
     }, 0);
   }, [jobLevels]);
 
-  // Calculate treat-to-love conversion rate and love multiplier
+  // Calculate treat-to-love conversion rate including Things effects
   const conversionRate = useMemo(() => {
-    return upgradeData
+    // Calculate effects from traditional upgrades
+    const upgradeBonus = upgradeData
       .filter(upgrade => upgrade.type === 'conversion_rate')
       .reduce((total, upgrade) => {
         const currentLevel = upgradeLevels[upgrade.id] || 0;
@@ -224,11 +227,22 @@ function App() {
         }
         
         return total + (upgradeEffect - upgrade.baseEffect); // Don't double-count base effect
-      }, 0); // Base conversion rate is 0 treat per second - must buy food bowl to start conversion
-  }, [upgradeLevels]);
+      }, 0);
+    
+    // Calculate effects from treat consumption rate Things (like ceramic bowl)
+    const treatConsumptionBonus = thingsData
+      .filter(thing => thing.category === 'feeding' && thing.effectType === 'treat_consumption_rate')
+      .reduce((total, thing) => {
+        const quantity = thingQuantities[thing.id] || 0;
+        return total + getThingTotalEffect(thing, quantity);
+      }, 0);
+    
+    return upgradeBonus + treatConsumptionBonus; // Base conversion rate is 0 - must buy food bowl or ceramic bowl to start conversion
+  }, [upgradeLevels, thingQuantities]);
 
   const loveMultiplier = useMemo(() => {
-    return upgradeData
+    // Calculate effects from traditional upgrades
+    const upgradeBonus = upgradeData
       .filter(upgrade => upgrade.type === 'love_multiplier')
       .reduce((total, upgrade) => {
         const currentLevel = upgradeLevels[upgrade.id] || 0;
@@ -248,8 +262,18 @@ function App() {
         }
         
         return total + (upgradeEffect - upgrade.baseEffect); // Don't double-count base effect
-      }, 1); // Base love multiplier is 1 love per treat
-  }, [upgradeLevels]);
+      }, 0);
+    
+    // Calculate effects from love per treat Things
+    const lovePerTreatBonus = thingsData
+      .filter(thing => thing.category === 'feeding' && thing.effectType === 'love_per_treat')
+      .reduce((total, thing) => {
+        const quantity = thingQuantities[thing.id] || 0;
+        return total + getThingTotalEffect(thing, quantity);
+      }, 0);
+    
+    return 1 + upgradeBonus + lovePerTreatBonus; // Base love multiplier is 1 love per treat
+  }, [upgradeLevels, thingQuantities]);
 
   // Use cat energy from the cat system
   const energyRef = useRef(catEnergy);
@@ -530,6 +554,16 @@ function App() {
     };
   }, [isSleeping]);
 
+  // Calculate auto love per second from environment Things
+  const autoLovePerSecond = useMemo(() => {
+    return thingsData
+      .filter(thing => thing.category === 'environment' && thing.effectType === 'auto_love_rate')
+      .reduce((total, thing) => {
+        const quantity = thingQuantities[thing.id] || 0;
+        return total + getThingTotalEffect(thing, quantity);
+      }, 0);
+  }, [thingQuantities]);
+
   // Centralized passive income calculation
   const calculatePassiveIncome = useCallback((currentTreats: number, deltaTimeSeconds: number) => {
     // Calculate treats gained from jobs
@@ -542,17 +576,20 @@ function App() {
     const maxConvertibleTreats = conversionRate * deltaTimeSeconds;
     const treatsToConvert = Math.min(totalTreats, maxConvertibleTreats);
     
-    // Calculate love gained and remaining treats
-    const loveGained = treatsToConvert * loveMultiplier;
+    // Calculate love gained from treats and auto-generation
+    const loveFromTreats = treatsToConvert * loveMultiplier;
+    const autoLoveGained = autoLovePerSecond * deltaTimeSeconds;
+    const totalLoveGained = loveFromTreats + autoLoveGained;
     const finalTreats = totalTreats - treatsToConvert;
     
     return {
       treatsGained,
       treatsToConvert,
-      loveGained,
+      loveGained: totalLoveGained,
+      autoLoveGained,
       finalTreats
     };
-  }, [treatsPerSecond, conversionRate, loveMultiplier]);
+  }, [treatsPerSecond, conversionRate, loveMultiplier, autoLovePerSecond]);
 
   // Handle time skip for debugging - now using centralized logic
   const handleTimeSkip = useCallback(() => {
@@ -676,6 +713,24 @@ function App() {
       }
     }
   }, [gameState, setGameState, setLovePerClick, setLovePerPounce]);
+
+  // Handle thing purchases
+  const handlePurchaseThing = useCallback((thingId: string) => {
+    const { treats, thingQuantities } = gameState;
+    const currentQuantity = thingQuantities[thingId] || 0;
+    const thing = thingsData.find(t => t.id === thingId);
+    if (!thing) return;
+    
+    const price = getThingPrice(thing, currentQuantity);
+    
+    if (treats >= price) {
+      setGameState(prev => ({
+        ...prev,
+        treats: prev.treats - price,
+        thingQuantities: { ...prev.thingQuantities, [thingId]: currentQuantity + 1 },
+      }));
+    }
+  }, [gameState]);
 
   useEffect(() => {
     if (wandMode) document.body.classList.add('wand-mode-active');
@@ -860,6 +915,8 @@ function App() {
         unlockedJobs={gameState.unlockedJobs}
         upgradeLevels={upgradeLevels}
         onUpgrade={handleUpgrade}
+        thingQuantities={thingQuantities}
+        onPurchaseThing={handlePurchaseThing}
         playingUpgradeLevels={playingUpgradeLevels}
         onPlayingUpgrade={handlePlayingUpgrade}
         lovePerClick={lovePerClick}

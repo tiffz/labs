@@ -1,3 +1,5 @@
+import React from 'react';
+
 interface MaterialIconProps {
   icon: string;
   className?: string;
@@ -5,52 +7,27 @@ interface MaterialIconProps {
   size?: number;
 }
 
-const MaterialIcon = ({ icon, className, color = "#6750a4", size = 24 }: MaterialIconProps) => {
-  const iconPaths: Record<string, string> = {
-    restaurant: "M8.1,13.34L3.91,9.16C2.35,7.59 2.35,5.06 3.91,3.5L10.93,10.5L8.1,13.34M14.88,11.53C16.32,12.97 16.32,15.24 14.88,16.68C13.44,18.12 11.17,18.12 9.73,16.68L5.78,12.73L7.19,11.31L11.14,15.26C11.73,15.85 12.68,15.85 13.27,15.26C13.86,14.67 13.86,13.72 13.27,13.13L9.32,9.18L10.73,7.77L14.88,11.53Z",
-    precision_manufacturing: "M19,8L15,12H9A2,2 0 0,1 7,10V6A2,2 0 0,1 9,4H15L19,8M9,6V10H15L17,8L15,6H9M7,18A1,1 0 0,0 8,19H12A1,1 0 0,0 13,18V15H7V18Z",
-    extension: "M20.5,11H19V7C19,5.89 18.1,5 17,5H13V3.5A2.5,2.5 0 0,0 10.5,1A2.5,2.5 0 0,0 8,3.5V5H4C2.89,5 2,5.89 2,7V10.8H3.5C5,10.8 6.2,12 6.2,13.5C6.2,15 5,16.2 3.5,16.2H2V20C2,21.11 2.89,22 4,22H7.8V20.5C7.8,19 9,17.8 10.5,17.8C12,17.8 13.2,19 13.2,20.5V22H17C18.11,22 19,21.11 19,20V16H20.5A2.5,2.5 0 0,0 23,13.5A2.5,2.5 0 0,0 20.5,11Z",
-    star: "M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.46,13.97L5.82,21L12,17.27Z",
-    nature: "M13,16.12C16.47,15.71 19.17,12.76 19.17,9.17C19.17,5.3 16.04,2.17 12.17,2.17A7,7 0 0,0 5.17,9.17C5.17,12.64 7.69,15.5 11,16.06V20H6V22H18V20H13V16.12M12.17,4.17A5,5 0 0,1 17.17,9.17C17.17,11.94 15.5,14.3 13.13,15.12L13,15.17V18H11V15.17L10.87,15.12C8.5,14.3 6.83,11.94 6.83,9.17A5,5 0 0,1 11.83,4.17H12.17Z",
-    touch_app: "M9,11.24V7.5C9,6.12 10.12,5 11.5,5S14,6.12 14,7.5V12L15.03,12.03C15.53,12.05 16,12.47 16,13V21C16,22.1 15.1,23 14,23H10C8.9,23 8,22.1 8,21V13C8,12.47 8.47,12 9,12V11.24M11.5,3C9,3 7,5 7,7.5V11.24C6.41,11.71 6,12.31 6,13V21C6,23.21 7.79,25 10,25H14C16.21,25 18,23.21 18,21V13C18,12.31 17.59,11.71 17,11.24V7.5C17,5 15,3 12.5,3H11.5Z",
-    sports_esports: "M21.58,16.09L21.12,15C22.67,14.74 24,12.76 24,10.5C24,7.46 21.54,5 18.5,5H5.5C2.46,5 0,7.46 0,10.5C0,12.76 1.33,14.74 2.88,15L2.42,16.09C2.16,16.65 2.5,17.26 3.08,17.26H4.09L4.17,17.5L5.08,20.58C5.22,21.09 5.68,21.5 6.21,21.5H17.79C18.32,21.5 18.78,21.09 18.92,20.58L19.83,17.5L19.91,17.26H20.92C21.5,17.26 21.84,16.65 21.58,16.09M7,12C6.45,12 6,11.55 6,11C6,10.45 6.45,10 7,10C7.55,10 8,10.45 8,11C8,11.55 7.55,12 7,12M9,9C8.45,9 8,8.55 8,8C8,7.45 8.45,7 9,7C9.55,7 10,7.45 10,8C10,8.55 9.55,9 9,9M15,9C14.45,9 14,8.55 14,8C14,7.45 14.45,7 15,7C15.55,7 16,7.45 16,8C16,8.55 15.55,9 15,9M17,12C16.45,12 16,11.55 16,11C16,10.45 16.45,10 17,10C17.55,10 18,10.45 18,11C18,11.55 17.55,12 17,12Z"
-  };
-
-  const iconPath = iconPaths[icon];
-  
-  if (!iconPath) {
-    // Fallback for unknown icons
-    return (
-      <div 
-        className={className}
-        style={{ 
-          width: size, 
-          height: size, 
-          backgroundColor: color, 
-          borderRadius: '50%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'white',
-          fontSize: '10px',
-          fontWeight: 'bold'
-        }}
-      >
-        {icon.slice(0, 2).toUpperCase()}
-      </div>
-    );
+const MaterialIcon: React.FC<MaterialIconProps> = ({ 
+  icon, 
+  className,
+  color,
+  size
+}) => {
+  const style: React.CSSProperties = {};
+  if (color) {
+    style.color = color;
+  }
+  if (size) {
+    style.fontSize = `${size}px`;
   }
 
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      className={className}
-      fill={color}
+    <span
+      className={`material-symbols-outlined ${className || ''}`}
+      style={style}
     >
-      <path d={iconPath} />
-    </svg>
+      {icon}
+    </span>
   );
 };
 

@@ -24,7 +24,7 @@ const CostDisplay: React.FC<CostDisplayProps> = ({
     if (treatCost !== undefined) {
       parts.push(
         <span key="treats" className="inline-cost">
-          <FishIcon className="cost-icon" /> {treatCost.toLocaleString()}
+          <FishIcon className="cost-icon fish-icon" /> {treatCost.toLocaleString()}
         </span>
       );
     }
@@ -45,7 +45,7 @@ const CostDisplay: React.FC<CostDisplayProps> = ({
     <div className="upgrade-cost">
       {treatCost !== undefined && (
         <div className={`cost ${currentTreats >= treatCost ? 'affordable' : 'expensive'}`}>
-          <FishIcon className="cost-icon" />
+          <FishIcon className="cost-icon fish-icon" />
           {treatCost.toLocaleString()}
         </div>
       )}

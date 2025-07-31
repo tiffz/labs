@@ -1,6 +1,7 @@
 import React from 'react';
 import { upgradeData, getInfiniteUpgradeCost, getInfiniteUpgradeEffect, getInfiniteUpgradeName } from '../../data/upgradeData';
 import ItemCard from '../ui/ItemCard';
+import MaterialIcon from '../../icons/MaterialIcon';
 
 interface UpgradePanelProps {
   upgradeLevels: { [key: string]: number };
@@ -15,8 +16,8 @@ const UpgradePanel: React.FC<UpgradePanelProps> = ({
   currentTreats, 
   currentLove
 }) => {
-  const conversionUpgrades = upgradeData.filter(u => u.type === 'conversion_rate');
-  const multiplierUpgrades = upgradeData.filter(u => u.type === 'love_multiplier');
+  // For now, all upgrades are love_multiplier type
+  const allUpgrades = upgradeData;
 
   const canAffordUpgrade = (upgradeId: string) => {
     const currentLevel = upgradeLevels[upgradeId] || 0;
@@ -66,24 +67,42 @@ const UpgradePanel: React.FC<UpgradePanelProps> = ({
           treatCost: getInfiniteUpgradeCost(upgrade, level)!.treatCost,
           loveCost: getInfiniteUpgradeCost(upgrade, level)!.loveCost,
         };
+        
+    const tooltipContent = (
+      <div>
+        <div className="item-tooltip-header">
+          <MaterialIcon icon={upgrade.icon} className="item-tooltip-icon" />
+          <h4 className="item-tooltip-title">{upgrade.name}</h4>
+        </div>
+        <p className="item-tooltip-description">{upgrade.description}</p>
+        <div className="item-tooltip-effects">
+          <div className="item-tooltip-effect-line">
+            <strong>Current:</strong> {formatEffect(currentEffect, upgrade.type)}
+          </div>
+          <div className="item-tooltip-effect-line">
+            <strong>Next:</strong> {formatEffect(currentEffect + nextLevelInfo.effect, upgrade.type)}
+          </div>
+          <div className="item-tooltip-effect-line" style={{ fontStyle: 'italic', fontSize: '0.75rem' }}>
+            ({nextLevelInfo.name})
+          </div>
+        </div>
+      </div>
+    );
 
     return (
       <ItemCard
         key={upgrade.id}
+        id={upgrade.id}
         title={upgrade.name}
-        description={upgrade.description}
         level={level}
-        levelName={usePredefinedLevel && level > 0 ? upgrade.levels[level - 1].name : undefined}
-        currentEffectDisplay={formatEffect(currentEffect, upgrade.type)}
-        nextLevelName={nextLevelInfo.name}
-        nextEffectDisplay={formatEffect(currentEffect + nextLevelInfo.effect, upgrade.type)}
         treatCost={nextLevelInfo.treatCost}
         loveCost={nextLevelInfo.loveCost}
         canAfford={canAffordUpgrade(upgrade.id)}
         onAction={() => onUpgrade(upgrade.id)}
-        actionText="Upgrade"
         currentTreats={currentTreats}
         currentLove={currentLove}
+        tooltipContent={tooltipContent}
+        icon={upgrade.icon}
       />
     );
   };
@@ -95,13 +114,9 @@ const UpgradePanel: React.FC<UpgradePanelProps> = ({
       </p>
 
       <div className="upgrade-section">
-        {conversionUpgrades.map(renderUpgrade)}
-      </div>
-
-      <div className="upgrade-section">
         <h4 className="section-title">Quality</h4>
         <p className="section-description">Improve the meal experience to get more love per treat</p>
-        {multiplierUpgrades.map(renderUpgrade)}
+        {allUpgrades.map(renderUpgrade)}
       </div>
     </div>
   );

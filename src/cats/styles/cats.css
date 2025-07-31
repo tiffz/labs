@@ -2188,3 +2188,490 @@ body.wand-mode-active * {
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 12px;
 }
+
+/* Old ItemCard styles removed - replaced with new Material Design consistent styles */
+
+/* Ensure panels don't cut off tooltips but allow scrolling */
+.panel {
+  overflow-y: auto;
+  overflow-x: visible; /* Allow tooltips to extend horizontally */
+  padding-bottom: 100px; /* Add more space at the bottom for tooltips */
+}
+
+/* Grid layout for panels */
+.upgrade-section,
+.playing-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.tab-content {
+  overflow-y: auto;
+  overflow-x: visible; /* Allow tooltips to extend outside */
+  position: relative;
+  z-index: 1;
+}
+
+.tabbed-panel {
+  position: relative; /* Ensure this is a positioning context */
+  overflow: visible; /* Allow tooltips to extend outside */
+}
+
+/* ItemCard styles - matching game's Material Design theme */
+.item-card-wrapper {
+  position: relative; /* Required for absolute positioning of tooltip */
+  display: block;
+  width: 100%;
+}
+
+.item-card-button {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #e7e0ec;
+  border-radius: 8px;
+  background-color: #f7f2fa;
+  color: #49454f;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  font-family: inherit;
+  font-size: 0.875rem;
+  text-align: left;
+}
+
+.item-card-button:hover {
+  background-color: #f3edf7;
+  border-color: #cac4d0;
+}
+
+/* Available state - subtle highlight instead of aggressive purple */
+.item-card-button.available {
+  background-color: #f3edf7; /* Light purple tint */
+  color: #6750a4; /* Purple text */
+  border-color: #6750a4; /* Purple border */
+  font-weight: 500; /* Slightly bolder text */
+}
+
+.item-card-button.available:hover {
+  background-color: #e8def8; /* Slightly darker on hover */
+  border-color: #553c9a;
+}
+
+.item-card-button.available .item-card-title {
+  color: #6750a4; /* Purple title */
+}
+
+.item-card-button.available .item-card-icon {
+  color: #6750a4; /* Purple icon */
+}
+
+.item-card-button.available .item-card-level {
+  background-color: #6750a4; /* Purple badge background */
+  color: #ffffff; /* White text on purple badge */
+}
+
+/* Disabled state - better readability */
+.item-card-button.disabled {
+  background-color: #f9f9f9; /* Light gray background */
+  color: #939393; /* Medium gray text - more readable than before */
+  border-color: #e5e5e5;
+  cursor: not-allowed;
+}
+
+.item-card-button.disabled .item-card-title {
+  color: #939393; /* Consistent medium gray */
+}
+
+.item-card-button.disabled .item-card-icon {
+  color: #939393; /* Consistent medium gray */
+}
+
+.item-card-button.disabled .item-card-level {
+  background-color: #e5e5e5; /* Light gray badge */
+  color: #939393; /* Medium gray text */
+}
+
+.item-card-main-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.item-card-icon {
+  font-size: 20px;
+  color: inherit;
+  margin-right: 0;
+}
+
+.item-card-title {
+  font-weight: 500;
+  color: inherit;
+  flex: 1;
+}
+
+.item-card-level {
+  background-color: #e7e0ec;
+  color: #49454f;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  min-width: fit-content;
+}
+
+.item-card-cost {
+  margin-left: 16px;
+}
+
+/* ItemCard tooltip - positioned to the right to avoid cutoff */
+.item-card-tooltip {
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  margin-left: 12px; /* Increased gap for better spacing */
+  transform: translateY(-50%);
+  z-index: 10000;
+  pointer-events: auto;
+  opacity: 0;
+  animation: tooltipFadeIn 0.2s ease-out forwards;
+}
+
+.item-card-tooltip-content {
+  background: #ffffff;
+  color: #49454f;
+  padding: 16px 20px;
+  border-radius: 12px;
+  border: 1px solid #e7e0ec;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  min-width: 280px;
+  max-width: 320px;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  position: relative;
+}
+
+/* Arrow pointing left (towards the button) */
+.item-card-tooltip-content::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 100%;
+  transform: translateY(-50%);
+  border: 9px solid transparent;
+  border-right-color: #e7e0ec; /* Border color */
+  z-index: 10001;
+}
+
+.item-card-tooltip-content::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 100%;
+  transform: translateY(-50%);
+  border: 8px solid transparent;
+  border-right-color: #ffffff; /* Fill color */
+  margin-right: -1px; /* Overlap to hide border gap */
+  z-index: 10002;
+}
+
+/* Tooltip content styling - matching CurrencyTooltip structure */
+.item-tooltip-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e7e0ec;
+}
+
+.item-tooltip-icon {
+  font-size: 20px;
+  color: #6750a4; /* M3 Primary */
+}
+
+.item-tooltip-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1c1b1f;
+  margin: 0;
+}
+
+.item-tooltip-description {
+  margin-bottom: 12px;
+  color: #49454f;
+  line-height: 1.4;
+}
+
+.item-tooltip-effects {
+  margin-bottom: 8px;
+}
+
+.item-tooltip-effect-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 0.8rem;
+  color: #79747e;
+}
+
+/* Things Panel Styles */
+.things-section {
+  margin-bottom: 32px;
+  overflow: visible; /* Allow tooltips to extend outside section */
+}
+
+.things-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+  margin-top: 16px;
+  overflow: visible; /* Allow tooltips to extend outside grid */
+}
+
+/* Responsive grid adjustments - SMALLER minimums on larger screens for MORE density */
+@media (max-width: 768px) {
+  .things-grid {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .things-grid {
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 6px;
+  }
+}
+
+/* Thing Card - Compact design for dense layout */
+.thing-card-wrapper {
+  position: relative;
+}
+
+.thing-card {
+  width: 100%;
+  padding: 12px 8px;
+  border: 1px solid #cac4d0;
+  border-radius: 8px;
+  background-color: #fffbff;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  font-family: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+  min-height: 110px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.thing-card:hover {
+  background-color: #f7f2fa;
+  border-color: #6750a4;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.thing-card.affordable {
+  background-color: #f3edf7;
+  border-color: #6750a4;
+  color: #6750a4;
+  box-shadow: 0 2px 8px rgba(103, 80, 164, 0.1);
+}
+
+.thing-card.affordable:hover {
+  background-color: #e8def8;
+  border-color: #553c9a;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(103, 80, 164, 0.2);
+}
+
+.thing-card.expensive {
+  background-color: #faf9fc;
+  color: #79747e;
+  border-color: #e7e0ec;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.thing-card.expensive:hover {
+  transform: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background-color: #faf9fc;
+}
+
+.thing-card-icon {
+  font-size: 24px;
+  color: inherit;
+  margin-bottom: 4px;
+}
+
+.thing-card-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+}
+
+.thing-card-name {
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.2;
+  color: inherit;
+}
+
+.thing-card-quantity {
+  font-size: 0.7rem;
+  color: inherit;
+  opacity: 0.8;
+}
+
+.thing-card-cost {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Fish icons blue when affordable, gray when expensive */
+.thing-card.affordable .cost-icon.fish-icon {
+  color: #00a5e0 !important;
+}
+
+.thing-card.expensive .cost-icon.fish-icon {
+  color: #939393 !important;
+}
+
+/* Style the inline cost display within thing cards */
+.thing-card .inline-cost {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.thing-card .cost-icon {
+  width: 14px;
+  height: 14px;
+  color: inherit;
+}
+
+/* Thing Card Tooltip - Using fixed positioning to avoid container clipping */
+.thing-card-tooltip {
+  /* Position set via inline styles */
+  z-index: 10000;
+  pointer-events: none;
+  opacity: 0;
+  animation: tooltipFadeIn 0.2s ease-out forwards;
+  width: max-content;
+  max-width: 220px;
+  background: #ffffff;
+  color: #49454f;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid #e7e0ec;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  font-size: 0.8rem;
+  line-height: 1.3;
+}
+
+/* Triangle for right-side tooltip (default) */
+.thing-card-tooltip::before {
+  content: '';
+  position: absolute;
+  top: 18px;
+  left: -8px;
+  width: 0;
+  height: 0;
+  border: 8px solid transparent;
+  border-right-color: #e7e0ec;
+  border-left: none;
+  z-index: 10001;
+}
+
+.thing-card-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 19px;
+  left: -7px;
+  width: 0;
+  height: 0;
+  border: 7px solid transparent;
+  border-right-color: #ffffff;
+  border-left: none;
+  z-index: 10002;
+}
+
+/* Triangle for left-side tooltip */
+.thing-card-tooltip.left-side::before {
+  left: auto;
+  right: -8px;
+  width: 0;
+  height: 0;
+  border: 8px solid transparent;
+  border-left-color: #e7e0ec;
+  border-right: none;
+}
+
+.thing-card-tooltip.left-side::after {
+  left: auto;
+  right: -7px;
+  width: 0;
+  height: 0;
+  border: 7px solid transparent;
+  border-left-color: #ffffff;
+  border-right: none;
+}
+
+.thing-tooltip-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e7e0ec;
+}
+
+.thing-tooltip-icon {
+  font-size: 16px;
+  color: #6750a4;
+}
+
+.thing-tooltip-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1c1b1f;
+  margin: 0;
+}
+
+.thing-tooltip-description {
+  margin-bottom: 8px;
+  color: #49454f;
+  line-height: 1.3;
+  font-size: 0.75rem;
+}
+
+.thing-tooltip-effects {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.thing-tooltip-effect,
+.thing-tooltip-price {
+  font-size: 0.75rem;
+  color: #79747e;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}

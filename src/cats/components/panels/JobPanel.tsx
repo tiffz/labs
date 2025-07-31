@@ -1,9 +1,10 @@
 import React from 'react';
 import { jobData } from '../../data/jobData';
 import ItemCard from '../ui/ItemCard';
+import MaterialIcon from '../../icons/MaterialIcon';
 
 interface JobPanelProps {
-  jobLevels: { [key: string]: number };
+  jobLevels: { [key:string]: number };
   onPromote: (jobId: string) => void;
   currentLove: number;
   unlockedJobs: string[];
@@ -13,60 +14,65 @@ const JobPanel: React.FC<JobPanelProps> = ({ jobLevels, onPromote, currentLove, 
   const unlockedJobData = jobData.filter(job => unlockedJobs.includes(job.id));
   const lockedJobsCount = jobData.length - unlockedJobData.length;
 
+  const renderJob = (job: typeof jobData[0]) => {
+    const level = jobLevels[job.id] || 0;
+    const currentLevelInfo = level > 0 ? job.levels[level - 1] : null;
+    const nextLevelInfo = level < job.levels.length ? job.levels[level] : null;
+    const canPromote = nextLevelInfo ? currentLove >= nextLevelInfo.cost : false;
+
+    const tooltipContent = (
+      <div>
+        <div className="item-tooltip-header">
+          <MaterialIcon icon={job.icon} className="item-tooltip-icon" />
+          <h4 className="item-tooltip-title">{job.name}</h4>
+        </div>
+        <p className="item-tooltip-description">{job.description}</p>
+        <div className="item-tooltip-effects">
+          <div className="item-tooltip-effect-line">
+            <strong>Current:</strong> {currentLevelInfo ? `${Math.floor(currentLevelInfo.treatsPerSecond)} treats/sec` : 'Unemployed'}
+          </div>
+          {nextLevelInfo && (
+            <div className="item-tooltip-effect-line">
+              <strong>Next:</strong> {`${Math.floor(nextLevelInfo.treatsPerSecond)} treats/sec`}
+            </div>
+          )}
+          {nextLevelInfo && (
+            <div className="item-tooltip-effect-line" style={{ fontStyle: 'italic', fontSize: '0.75rem' }}>
+              ({nextLevelInfo.title})
+            </div>
+          )}
+          {level > 0 && !nextLevelInfo && (
+            <div className="item-tooltip-effect-line" style={{ fontStyle: 'italic', color: '#6750a4' }}>
+              Max level reached!
+            </div>
+          )}
+        </div>
+      </div>
+    );
+
+    return (
+      <ItemCard
+        key={job.id}
+        id={job.id}
+        title={job.name}
+        level={level}
+        loveCost={nextLevelInfo?.cost}
+        canAfford={canPromote}
+        onAction={() => onPromote(job.id)}
+        currentLove={currentLove}
+        tooltipContent={tooltipContent}
+        icon={job.icon}
+      />
+    );
+  };
+
   return (
     <div className="panel">
       <p className="job-panel-intro">
         Your cat needs a better life. It&apos;s time to get a job.
       </p>
       <div className="upgrade-section">
-        {unlockedJobData.map((job) => {
-          const level = jobLevels[job.id] || 0;
-          const currentLevelInfo = level > 0 ? job.levels[level - 1] : null;
-          const nextLevelInfo = level < job.levels.length ? job.levels[level] : null;
-          const canPromote = nextLevelInfo ? currentLove >= nextLevelInfo.cost : false;
-
-          if (!nextLevelInfo) {
-            return (
-              <ItemCard
-                key={job.id}
-                title={job.name}
-                description={job.description}
-                level={level}
-                levelName={currentLevelInfo?.title}
-                currentEffectDisplay={
-                  currentLevelInfo ? `${Math.floor(currentLevelInfo.treatsPerSecond)} treats/sec` : 'Unemployed'
-                }
-                nextLevelName="Max Level"
-                nextEffectDisplay="No more promotions"
-                loveCost={undefined}
-                canAfford={false}
-                onAction={() => {}}
-                actionText="Maxed"
-                currentLove={currentLove}
-              />
-            );
-          }
-
-          return (
-            <ItemCard
-              key={job.id}
-              title={job.name}
-              description={job.description}
-              level={level}
-              levelName={currentLevelInfo?.title}
-              currentEffectDisplay={
-                currentLevelInfo ? `${Math.floor(currentLevelInfo.treatsPerSecond)} treats/sec` : 'Unemployed'
-              }
-              nextLevelName={nextLevelInfo.title}
-              nextEffectDisplay={`${Math.floor(nextLevelInfo.treatsPerSecond)} treats/sec`}
-              loveCost={nextLevelInfo.cost}
-              canAfford={canPromote}
-              onAction={() => onPromote(job.id)}
-              actionText="Promote"
-              currentLove={currentLove}
-            />
-          );
-        })}
+        {unlockedJobData.map(renderJob)}
       </div>
       {lockedJobsCount > 0 && (
         <div className="locked-jobs-hint">

@@ -2,10 +2,11 @@ export interface Goal {
   id: string;
   title: string;
   description: string;
-  type: 'get_job' | 'get_paying_job' | 'buy_upgrade' | 'reach_currency';
+  type: 'get_job' | 'get_paying_job' | 'buy_upgrade' | 'buy_thing' | 'reach_currency';
   target?: {
     jobId?: string;
     upgradeId?: string;
+    thingId?: string;
     currencyType?: 'love' | 'treats';
     amount?: number;
   };
@@ -47,9 +48,9 @@ export const gameGoals: Goal[] = [
     id: 'buy_first_food_bowl',
     title: 'Buy a food bowl',
     description: 'Get your cat a proper food bowl to enjoy those treats.',
-    type: 'buy_upgrade',
+    type: 'buy_thing',
     target: {
-      upgradeId: 'food_bowl'
+      thingId: 'ceramic_bowl'
     },
     reward: {
       love: 15,

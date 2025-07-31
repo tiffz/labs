@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import JobPanel from './JobPanel';
-import UpgradePanel from '../upgrades/UpgradePanel';
 import PlayingPanel from '../playing/PlayingPanel';
 import GoalsPanel from './GoalsPanel';
+import ThingsPanel from '../things/ThingsPanel';
 import type { Goal } from '../../data/goalData';
 
 interface TabbedPanelProps {
@@ -11,9 +11,11 @@ interface TabbedPanelProps {
   onPromote: (jobId: string) => void;
   unlockedJobs: string[];
   
-  // Upgrade panel props
-  upgradeLevels: { [key: string]: number };
-  onUpgrade: (upgradeId: string) => void;
+  // Legacy upgrade props removed - replaced by Things system
+  
+  // Things panel props
+  thingQuantities: { [key: string]: number };
+  onPurchaseThing: (thingId: string) => void;
   
   // Playing panel props
   playingUpgradeLevels: { [key: string]: number };
@@ -30,14 +32,14 @@ interface TabbedPanelProps {
   currentTreats: number;
 }
 
-type TabId = 'jobs' | 'feeding' | 'playing' | 'goals';
+type TabId = 'jobs' | 'things' | 'playing' | 'goals';
 
 const TabbedPanel: React.FC<TabbedPanelProps> = ({
   jobLevels,
   onPromote,
   unlockedJobs,
-  upgradeLevels,
-  onUpgrade,
+  thingQuantities,
+  onPurchaseThing,
   playingUpgradeLevels,
   onPlayingUpgrade,
   lovePerClick,
@@ -60,10 +62,10 @@ const TabbedPanel: React.FC<TabbedPanelProps> = ({
           Jobs
         </button>
         <button
-          className={`tab-header ${activeTab === 'feeding' ? 'active' : ''}`}
-          onClick={() => setActiveTab('feeding')}
+          className={`tab-header ${activeTab === 'things' ? 'active' : ''}`}
+          onClick={() => setActiveTab('things')}
         >
-          Feeding
+          Things
         </button>
         <button
           className={`tab-header ${activeTab === 'playing' ? 'active' : ''}`}
@@ -92,12 +94,11 @@ const TabbedPanel: React.FC<TabbedPanelProps> = ({
             unlockedJobs={unlockedJobs}
           />
         )}
-        {activeTab === 'feeding' && (
-          <UpgradePanel
-            upgradeLevels={upgradeLevels}
-            onUpgrade={onUpgrade}
+        {activeTab === 'things' && (
+          <ThingsPanel
+            thingQuantities={thingQuantities}
+            onPurchaseThing={onPurchaseThing}
             currentTreats={currentTreats}
-            currentLove={currentLove}
           />
         )}
         {activeTab === 'playing' && (
