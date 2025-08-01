@@ -654,14 +654,11 @@ function App() {
     // Check if player has required experience for promotion
     if (!canPromoteToNextLevel(jobData, jobId, currentLevel, currentExperience)) return;
     
-    const promotionCost = job.levels[currentLevel].cost;
-    if (love >= promotionCost) {
-      setGameState(prev => ({
-        ...prev,
-        love: prev.love - promotionCost,
-        jobLevels: { ...prev.jobLevels, [jobId]: currentLevel + 1 },
-      }));
-    }
+    // Promotions are now purely experience-based, no love cost
+    setGameState(prev => ({
+      ...prev,
+      jobLevels: { ...prev.jobLevels, [jobId]: currentLevel + 1 },
+    }));
   };
 
   const handleTraining = (jobId: string) => {

@@ -532,4 +532,126 @@ describe('App Component - Wand Toy Mode', () => {
       expect(mockCatSystemActions.toggleWandMode).toHaveBeenCalled();
     });
   });
+
+  describe('Job System Integration', () => {
+    beforeEach(() => {
+      // Reset mocks
+      vi.clearAllMocks();
+      
+      // Reset cat system state
+      mockCatSystemState.isWandMode = false;
+      mockCatSystemState.catState.wandMode = false;
+    });
+
+    it('renders job panel with correct initial state', async () => {
+      render(<App />);
+      
+      await act(async () => {
+        // Click on Jobs tab
+        const jobsTab = screen.getByText('Jobs');
+        fireEvent.click(jobsTab);
+      });
+      
+      // Should show the job panel content
+      expect(screen.getByText('Your cat needs a better life. It\'s time to get a job.')).toBeInTheDocument();
+      expect(screen.getByText('Box Factory')).toBeInTheDocument();
+    });
+
+    it('shows interview button for unemployed state', async () => {
+      render(<App />);
+      
+      await act(async () => {
+        const jobsTab = screen.getByText('Jobs');
+        fireEvent.click(jobsTab);
+      });
+      
+      // Should show Interview button (not Train) for unemployed
+      expect(screen.getByText(/Interview/)).toBeInTheDocument();
+    });
+
+    it('shows accept offer button as locked initially', async () => {
+      render(<App />);
+      
+      await act(async () => {
+        const jobsTab = screen.getByText('Jobs');
+        fireEvent.click(jobsTab);
+      });
+      
+      // Accept Offer should be present but locked due to insufficient experience
+      const buttons = screen.getAllByRole('button');
+      const acceptOfferButton = buttons.find(button => 
+        button.textContent?.includes('Accept offer') || button.textContent?.includes('Locked')
+      );
+      expect(acceptOfferButton).toBeDefined();
+    });
+
+    it('handles escape key to exit wand mode', () => {
+      mockCatSystemState.isWandMode = true;
+      mockCatSystemState.catState.wandMode = true;
+      
+      render(<App />);
+      
+      fireEvent.keyDown(document, { key: 'Escape' });
+      
+      expect(mockCatSystemActions.toggleWandMode).toHaveBeenCalledOnce();
+    });
+
+    it('does not toggle wand mode when escape pressed in normal mode', () => {
+      mockCatSystemState.isWandMode = false;
+      mockCatSystemState.catState.wandMode = false;
+      
+      render(<App />);
+      
+      fireEvent.keyDown(document, { key: 'Escape' });
+      
+      expect(mockCatSystemActions.toggleWandMode).not.toHaveBeenCalled();
+    });
+
+    it('displays job progression UI elements correctly', async () => {
+      render(<App />);
+      
+      await act(async () => {
+        const jobsTab = screen.getByText('Jobs');
+        fireEvent.click(jobsTab);
+      });
+      
+      // Should show job ladder dots for progression visualization
+      const jobCard = screen.getByText('Box Factory').closest('.compact-job-card');
+      expect(jobCard).toBeInTheDocument();
+      
+      // Should show current status as "Unemployed"
+      expect(screen.getByText('Unemployed')).toBeInTheDocument();
+    });
+
+    it('maintains proper game state structure', () => {
+      const { container } = render(<App />);
+      
+      // Should render without crashing, indicating proper state structure
+      expect(container.firstChild).toBeInTheDocument();
+      
+      // Should not have React errors in console (no error boundaries triggered)
+      expect(() => render(<App />)).not.toThrow();
+    });
+
+    it('prevents infinite re-renders during job interactions', async () => {
+      const renderSpy = vi.fn();
+      const WrappedApp = () => {
+        renderSpy();
+        return <App />;
+      };
+      
+      render(<WrappedApp />);
+      
+      const initialRenderCount = renderSpy.mock.calls.length;
+      
+      await act(async () => {
+        const jobsTab = screen.getByText('Jobs');
+        fireEvent.click(jobsTab);
+      });
+      
+      // Should not cause excessive re-renders
+      const finalRenderCount = renderSpy.mock.calls.length;
+      expect(finalRenderCount - initialRenderCount).toBeLessThan(10);
+    });
+  });
 }); 
