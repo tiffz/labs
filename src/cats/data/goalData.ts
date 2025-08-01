@@ -2,10 +2,9 @@ export interface Goal {
   id: string;
   title: string;
   description: string;
-  type: 'get_job' | 'get_paying_job' | 'buy_upgrade' | 'buy_thing' | 'reach_currency';
+  type: 'get_job' | 'get_paying_job' | 'buy_thing' | 'reach_currency';
   target?: {
     jobId?: string;
-    upgradeId?: string;
     thingId?: string;
     currencyType?: 'love' | 'treats';
     amount?: number;

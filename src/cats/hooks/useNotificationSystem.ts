@@ -51,11 +51,7 @@ export const useNotificationSystem = (
               isTriggered = true;
             }
             break;
-          case 'upgrade_bought':
-            if (trigger.upgradeId && (gameState.upgradeLevels[trigger.upgradeId] || 0) > 0) {
-              isTriggered = true;
-            }
-            break;
+
           case 'playing_upgrade_bought':
             if (trigger.upgradeId && (gameState.playingUpgradeLevels[trigger.upgradeId] || 0) > 0) {
               isTriggered = true;

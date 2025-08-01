@@ -569,7 +569,7 @@ describe('App Component - Wand Toy Mode', () => {
       expect(screen.getByText(/Interview/)).toBeInTheDocument();
     });
 
-    it('shows accept offer button as locked initially', async () => {
+    it('shows interview button for unemployed state', async () => {
       render(<App />);
       
       await act(async () => {
@@ -577,12 +577,11 @@ describe('App Component - Wand Toy Mode', () => {
         fireEvent.click(jobsTab);
       });
       
-      // Accept Offer should be present but locked due to insufficient experience
-      const buttons = screen.getAllByRole('button');
-      const acceptOfferButton = buttons.find(button => 
-        button.textContent?.includes('Accept offer') || button.textContent?.includes('Locked')
-      );
-      expect(acceptOfferButton).toBeDefined();
+      // Should show Interview button for unemployed state (not Accept Offer initially)
+      expect(screen.getByText(/Interview/)).toBeInTheDocument();
+      
+      // Should show job description and looking for work status
+      expect(screen.getByText('Looking for work')).toBeInTheDocument();
     });
 
     it('handles escape key to exit wand mode', () => {
@@ -607,7 +606,7 @@ describe('App Component - Wand Toy Mode', () => {
       expect(mockCatSystemActions.toggleWandMode).not.toHaveBeenCalled();
     });
 
-    it('displays job progression UI elements correctly', async () => {
+    it('displays interview UI elements correctly', async () => {
       render(<App />);
       
       await act(async () => {
@@ -615,12 +614,100 @@ describe('App Component - Wand Toy Mode', () => {
         fireEvent.click(jobsTab);
       });
       
-      // Should show job ladder dots for progression visualization
+      // Should show compact job card in interview state
       const jobCard = screen.getByText('Box Factory').closest('.compact-job-card');
       expect(jobCard).toBeInTheDocument();
+      expect(jobCard).toHaveClass('interview-state');
       
-      // Should show current status as "Unemployed"
-      expect(screen.getByText('Unemployed')).toBeInTheDocument();
+      // Should show current status as "Looking for work" (not "Unemployed")
+      expect(screen.getByText('Looking for work')).toBeInTheDocument();
+    });
+
+    it('shows no feedback area initially when no rejection exists', async () => {
+      render(<App />);
+      
+      await act(async () => {
+        const jobsTab = screen.getByText('Jobs');
+        fireEvent.click(jobsTab);
+      });
+      
+      // Should not show feedback area when no rejection reason exists
+      const feedbackArea = document.querySelector('.interview-feedback');
+      expect(feedbackArea).not.toBeInTheDocument();
+      
+      // Should still show the interview button
+      expect(screen.getByTitle(/Interview for this position/)).toBeInTheDocument();
+    });
+
+    it('displays clean interview UI without clutter', async () => {
+      render(<App />);
+      
+      await act(async () => {
+        const jobsTab = screen.getByText('Jobs');
+        fireEvent.click(jobsTab);
+      });
+      
+      // Should not show feedback area when no rejection exists (cleaner UI)
+      const feedbackArea = document.querySelector('.interview-feedback');
+      expect(feedbackArea).not.toBeInTheDocument();
+      
+      // Should show essential interview elements
+      expect(screen.getByText('Box Factory')).toBeInTheDocument();
+      expect(screen.getByText('Looking for work')).toBeInTheDocument();
+    });
+
+    it('maintains clean layout without unnecessary elements', async () => {
+      render(<App />);
+      
+      await act(async () => {
+        const jobsTab = screen.getByText('Jobs');
+        fireEvent.click(jobsTab);
+      });
+      
+      // Should have a compact job card structure
+      const jobCard = document.querySelector('.compact-job-card');
+      expect(jobCard).toBeInTheDocument();
+      expect(jobCard).toHaveClass('interview-state');
+      
+      // Should not have feedback area cluttering the UI initially
+      const feedbackArea = document.querySelector('.interview-feedback');
+      expect(feedbackArea).not.toBeInTheDocument();
+    });
+
+    it('shows proper interview structure in unemployed state', async () => {
+      render(<App />);
+      
+      await act(async () => {
+        const jobsTab = screen.getByText('Jobs');
+        fireEvent.click(jobsTab);
+      });
+      
+      // Should not show feedback area initially (no rejection yet)
+      const feedbackArea = document.querySelector('.interview-feedback');
+      expect(feedbackArea).not.toBeInTheDocument();
+      
+      // Should show the interview UI elements
+      expect(screen.getByText('Looking for work')).toBeInTheDocument();
+      
+      // Should have interview button available
+      expect(screen.getByTitle(/Interview for this position/)).toBeInTheDocument();
+    });
+
+    it('interview button has proper accessibility and styling', async () => {
+      render(<App />);
+      
+      await act(async () => {
+        const jobsTab = screen.getByText('Jobs');
+        fireEvent.click(jobsTab);
+      });
+      
+      // Interview button should be properly labeled and accessible
+      const interviewButton = screen.getByTitle(/Interview for this position/);
+      expect(interviewButton).toBeInTheDocument();
+      expect(interviewButton).toHaveClass('interview-btn');
+      
+      // Button should show love cost
+      expect(screen.getByText(/Interview \(3/)).toBeInTheDocument();
     });
 
     it('maintains proper game state structure', () => {

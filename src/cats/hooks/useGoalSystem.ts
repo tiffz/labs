@@ -7,7 +7,7 @@ export const useGoalSystem = (
   gameState: GameState,
   setGameState: React.Dispatch<React.SetStateAction<GameState>>,
 ) => {
-  const { activeGoals: activeGoalIds, completedGoals: completedGoalIds, jobLevels, upgradeLevels, thingQuantities, love, treats } = gameState;
+  const { activeGoals: activeGoalIds, completedGoals: completedGoalIds, jobLevels, thingQuantities, love, treats } = gameState;
 
   const addGoal = useCallback((goalId: string) => {
     const goal = gameGoals.find(g => g.id === goalId);
@@ -50,11 +50,7 @@ export const useGoalSystem = (
               isCompleted = true;
             }
             break;
-          case 'buy_upgrade':
-            if (goal.target?.upgradeId && (upgradeLevels[goal.target.upgradeId] || 0) > 0) {
-              isCompleted = true;
-            }
-            break;
+
           case 'buy_thing':
             if (goal.target?.thingId && (thingQuantities[goal.target.thingId] || 0) > 0) {
               isCompleted = true;
@@ -76,7 +72,7 @@ export const useGoalSystem = (
     };
 
     checkGoals();
-  }, [activeGoalIds, jobLevels, upgradeLevels, thingQuantities, love, treats, completeGoal]);
+  }, [activeGoalIds, jobLevels, thingQuantities, love, treats, completeGoal]);
 
   const activeGoals: Goal[] = gameGoals.filter(g => activeGoalIds.includes(g.id));
   const completedGoals: Goal[] = gameGoals.filter(g => completedGoalIds.includes(g.id)).map(g => ({ ...g, isCompleted: true }));

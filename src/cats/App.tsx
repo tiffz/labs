@@ -22,7 +22,8 @@ import TabbedPanel from './components/panels/TabbedPanel';
 import { catFacts } from './data/catFacts';
 import { jobData } from './data/jobData';
 import { performTraining, canPromoteToNextLevel } from './data/jobTrainingSystem';
-import { upgradeData, getInfiniteUpgradeEffect } from './data/upgradeData';
+import { performInterview, canAffordInterview } from './data/interviewSystem';
+
 import { playingUpgradeData, getInfinitePlayingUpgradeCost, getInfinitePlayingUpgradeEffect } from './data/playingUpgradeData';
 import { thingsData, getThingPrice, getThingTotalEffect } from './data/thingsData';
 import { useCatSystem } from './hooks/useCatSystem';
@@ -62,7 +63,7 @@ const initialGameState: GameState = {
   unlockedJobs: ['box_factory'],
   jobLevels: {},
   jobExperience: {},
-  upgradeLevels: {},
+  jobInterviews: {},
   playingUpgradeLevels: {},
   thingQuantities: {},
   completedGoals: [],
@@ -71,7 +72,7 @@ const initialGameState: GameState = {
 
 function App() {
   const [gameState, setGameState] = useState<GameState>(initialGameState);
-  const { love, treats, jobLevels, jobExperience, upgradeLevels, playingUpgradeLevels, thingQuantities } = gameState;
+  const { love, treats, jobLevels, jobExperience, jobInterviews, playingUpgradeLevels, thingQuantities } = gameState;
 
   const [lovePerClick, setLovePerClick] = useState(1);
   const [isPetting, setIsPetting] = useState(false);
@@ -206,31 +207,8 @@ function App() {
     }, 0);
   }, [jobLevels]);
 
-  // Calculate treat-to-love conversion rate including Things effects
+  // Calculate treat-to-love conversion rate from Things effects
   const conversionRate = useMemo(() => {
-    // Calculate effects from traditional upgrades
-    const upgradeBonus = upgradeData
-      .filter(upgrade => upgrade.type === 'conversion_rate')
-      .reduce((total, upgrade) => {
-        const currentLevel = upgradeLevels[upgrade.id] || 0;
-        let upgradeEffect = upgrade.baseEffect;
-        
-        // Add effects from predefined levels
-        for (let i = 0; i < Math.min(currentLevel, upgrade.levels.length); i++) {
-          upgradeEffect += upgrade.levels[i].effect;
-        }
-        
-        // Add effects from infinite levels
-        for (let i = upgrade.levels.length; i < currentLevel; i++) {
-          const infiniteEffect = getInfiniteUpgradeEffect(upgrade, i);
-          if (infiniteEffect) {
-            upgradeEffect += infiniteEffect;
-          }
-        }
-        
-        return total + (upgradeEffect - upgrade.baseEffect); // Don't double-count base effect
-      }, 0);
-    
     // Calculate effects from treat consumption rate Things (like ceramic bowl)
     const treatConsumptionBonus = thingsData
       .filter(thing => thing.category === 'feeding' && thing.effectType === 'treat_consumption_rate')
@@ -239,33 +217,10 @@ function App() {
         return total + getThingTotalEffect(thing, quantity);
       }, 0);
     
-    return upgradeBonus + treatConsumptionBonus; // Base conversion rate is 0 - must buy food bowl or ceramic bowl to start conversion
-  }, [upgradeLevels, thingQuantities]);
+    return treatConsumptionBonus; // Base conversion rate is 0 - must buy food bowl or ceramic bowl to start conversion
+  }, [thingQuantities]);
 
   const loveMultiplier = useMemo(() => {
-    // Calculate effects from traditional upgrades
-    const upgradeBonus = upgradeData
-      .filter(upgrade => upgrade.type === 'love_multiplier')
-      .reduce((total, upgrade) => {
-        const currentLevel = upgradeLevels[upgrade.id] || 0;
-        let upgradeEffect = upgrade.baseEffect;
-        
-        // Add effects from predefined levels
-        for (let i = 0; i < Math.min(currentLevel, upgrade.levels.length); i++) {
-          upgradeEffect += upgrade.levels[i].effect;
-        }
-        
-        // Add effects from infinite levels
-        for (let i = upgrade.levels.length; i < currentLevel; i++) {
-          const infiniteEffect = getInfiniteUpgradeEffect(upgrade, i);
-          if (infiniteEffect) {
-            upgradeEffect += infiniteEffect;
-          }
-        }
-        
-        return total + (upgradeEffect - upgrade.baseEffect); // Don't double-count base effect
-      }, 0);
-    
     // Calculate effects from love per treat Things
     const lovePerTreatBonus = thingsData
       .filter(thing => thing.category === 'feeding' && thing.effectType === 'love_per_treat')
@@ -274,8 +229,8 @@ function App() {
         return total + getThingTotalEffect(thing, quantity);
       }, 0);
     
-    return 1 + upgradeBonus + lovePerTreatBonus; // Base love multiplier is 1 love per treat
-  }, [upgradeLevels, thingQuantities]);
+    return 1 + lovePerTreatBonus; // Base love multiplier is 1 love per treat
+  }, [thingQuantities]);
 
   // Use cat energy from the cat system
   const energyRef = useRef(catEnergy);
@@ -647,18 +602,35 @@ function App() {
   const handlePromotion = (jobId: string) => {
     const currentLevel = jobLevels[jobId] || 0;
     const currentExperience = jobExperience[jobId] || 0;
+    const interviewState = jobInterviews[jobId];
     const job = jobData.find(j => j.id === jobId);
     
     if (!job || currentLevel >= job.levels.length) return;
     
-    // Check if player has required experience for promotion
-    if (!canPromoteToNextLevel(jobData, jobId, currentLevel, currentExperience)) return;
-    
-    // Promotions are now purely experience-based, no love cost
-    setGameState(prev => ({
-      ...prev,
-      jobLevels: { ...prev.jobLevels, [jobId]: currentLevel + 1 },
-    }));
+    // If level 0 (unemployed), this is accepting a job offer
+    if (currentLevel === 0) {
+      // Must have a job offer to accept
+      if (!interviewState?.hasOffer) return;
+      
+      // Accept the job offer - clear interview state and set to level 1
+      setGameState(prev => ({
+        ...prev,
+        jobLevels: { ...prev.jobLevels, [jobId]: 1 },
+        jobInterviews: { 
+          ...prev.jobInterviews, 
+          [jobId]: { hasOffer: false, lastRejectionReason: undefined } 
+        },
+      }));
+    } else {
+      // Regular promotion (level > 0) - check experience requirements  
+      if (!canPromoteToNextLevel(jobData, jobId, currentLevel, currentExperience)) return;
+      
+      // Promotions are purely experience-based, no love cost
+      setGameState(prev => ({
+        ...prev,
+        jobLevels: { ...prev.jobLevels, [jobId]: currentLevel + 1 },
+      }));
+    }
   };
 
   const handleTraining = (jobId: string) => {
@@ -682,7 +654,27 @@ function App() {
     }
   };
 
-
+  const handleInterview = (jobId: string) => {
+    if (!canAffordInterview(love, jobId)) return;
+    
+    const interviewResult = performInterview(jobId);
+    
+    // Deduct love cost
+    setGameState(prev => ({
+      ...prev,
+      love: prev.love - interviewResult.loveCost,
+      jobInterviews: {
+        ...prev.jobInterviews,
+        [jobId]: {
+          hasOffer: interviewResult.success,
+          lastRejectionReason: interviewResult.success ? undefined : interviewResult.message,
+        },
+      },
+    }));
+    
+    // Show result message (we could show this in a notification later)
+    console.log(`Interview result: ${interviewResult.message}`);
+  };
 
   // Handle playing upgrades
   const handlePlayingUpgrade = useCallback((upgradeId: string) => {
@@ -923,8 +915,10 @@ function App() {
       <TabbedPanel
         jobLevels={jobLevels}
         jobExperience={jobExperience}
+        jobInterviews={jobInterviews}
         onPromote={handlePromotion}
         onTrain={handleTraining}
+        onInterview={handleInterview}
         unlockedJobs={gameState.unlockedJobs}
         thingQuantities={thingQuantities}
         onPurchaseThing={handlePurchaseThing}

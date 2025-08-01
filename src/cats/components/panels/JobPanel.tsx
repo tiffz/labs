@@ -6,6 +6,8 @@ import {
   canPromoteToNextLevel,
   getExperienceRequiredForPromotion 
 } from '../../data/jobTrainingSystem';
+import { calculateInterviewCost, canAffordInterview } from '../../data/interviewSystem';
+import type { JobInterviewState } from '../../game/types';
 
 import MaterialIcon from '../../icons/MaterialIcon';
 import HeartIcon from '../../icons/HeartIcon';
@@ -14,18 +16,110 @@ import FishIcon from '../../icons/FishIcon';
 interface JobPanelProps {
   jobLevels: { [key:string]: number };
   jobExperience: { [key:string]: number };
+  jobInterviews: { [key:string]: JobInterviewState };
   onPromote: (jobId: string) => void;
   onTrain: (jobId: string) => void;
+  onInterview: (jobId: string) => void;
   currentLove: number;
   unlockedJobs: string[];
 }
 
-const JobPanel: React.FC<JobPanelProps> = ({ jobLevels, jobExperience, onPromote, onTrain, currentLove, unlockedJobs }) => {
+const JobPanel: React.FC<JobPanelProps> = ({ jobLevels, jobExperience, jobInterviews, onPromote, onTrain, onInterview, currentLove, unlockedJobs }) => {
   const unlockedJobData = jobData.filter(job => unlockedJobs.includes(job.id));
   const lockedJobsCount = jobData.length - unlockedJobData.length;
 
   const renderJob = (job: typeof jobData[0]) => {
     const level = jobLevels[job.id] || 0;
+    const interviewState = jobInterviews[job.id] || { hasOffer: false };
+    
+    // If not employed yet (level 0), show interview UI
+    if (level === 0) {
+      return renderInterviewUI(job, interviewState);
+    }
+    
+    // If employed (level > 0), show normal job UI
+    return renderEmployedUI(job, level);
+  };
+
+  const renderInterviewUI = (job: typeof jobData[0], interviewState: JobInterviewState) => {
+    const interviewCost = calculateInterviewCost(job.id);
+    const canAfford = canAffordInterview(currentLove, job.id);
+    
+    if (interviewState.hasOffer) {
+      // Player has received a job offer - show accept button
+      return (
+        <div key={job.id} className="compact-job-card offer-state">
+          <div className="job-main-info">
+            <MaterialIcon icon={job.icon} className="job-icon-small" />
+            <div className="job-details">
+              <div className="job-name">{job.name}</div>
+              <div className="job-progress">
+                <span className="job-current">Job Offer Received!</span>
+              </div>
+            </div>
+            <span className="income-indicator">
+              <FishIcon className="treats-icon-small" />
+              {Math.floor(job.levels[0].treatsPerSecond)}/sec
+            </span>
+          </div>
+          {interviewState.lastRejectionReason && (
+            <div className="interview-feedback">
+              <strong>Rejection:</strong> <em>&ldquo;{interviewState.lastRejectionReason}&rdquo;</em>
+            </div>
+          )}
+          <div className="job-actions-compact">
+            <button 
+              className="action-btn accept-offer-btn ready"
+              onClick={() => onPromote(job.id)}
+              title="Accept the job offer and start working!"
+            >
+              <MaterialIcon icon="check_circle" />
+              <span className="btn-text">Accept Offer</span>
+            </button>
+          </div>
+        </div>
+      );
+    } else {
+      // Player is interviewing - show interview button and rejection reason
+      return (
+        <div key={job.id} className="compact-job-card interview-state">
+          <div className="job-main-info">
+            <MaterialIcon icon={job.icon} className="job-icon-small" />
+            <div className="job-details">
+              <div className="job-name">{job.name}</div>
+              <div className="job-progress">
+                <span className="job-current">Looking for work</span>
+              </div>
+            </div>
+            <span className="income-indicator">
+              <FishIcon className="treats-icon-small" />
+              {Math.floor(job.levels[0].treatsPerSecond)}/sec
+            </span>
+          </div>
+          {interviewState.lastRejectionReason && (
+            <div className="interview-feedback">
+              <strong>Rejection:</strong> <em>&ldquo;{interviewState.lastRejectionReason}&rdquo;</em>
+            </div>
+          )}
+          <div className="job-actions-compact">
+            <button 
+              className={`action-btn interview-btn ${canAfford ? 'affordable' : 'expensive'}`}
+              onClick={() => canAfford && onInterview(job.id)}
+              disabled={!canAfford}
+              title={`Interview for this position (costs ${interviewCost} love)`}
+            >
+              <MaterialIcon icon="person" />
+              <span className="btn-text">
+                Interview ({interviewCost} <HeartIcon className="love-icon-small" />)
+              </span>
+            </button>
+          </div>
+        </div>
+      );
+    }
+  };
+
+  const renderEmployedUI = (job: typeof jobData[0], level: number) => {
     const experience = jobExperience[job.id] || 0;
     const currentLevelInfo = level > 0 ? job.levels[level - 1] : null;
     const nextLevelInfo = level < job.levels.length ? job.levels[level] : null;
@@ -42,7 +136,7 @@ const JobPanel: React.FC<JobPanelProps> = ({ jobLevels, jobExperience, onPromote
     // Experience progress calculation
     const experienceProgress = requiredExperience ? Math.min(experience / requiredExperience, 1) : 1;
 
-        // Build compact job ladder for this job
+    // Build compact job ladder for this job
     const ladderDots = job.levels.map((levelInfo, index) => (
       <span 
         key={index} 

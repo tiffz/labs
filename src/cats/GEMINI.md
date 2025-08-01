@@ -64,6 +64,39 @@ Improved the wand toy interaction system with intuitive keyboard controls:
 - `src/cats/App.tsx` - Escape key event handler and wand mode integration
 - `src/cats/App.test.tsx` - Keyboard interaction tests and edge case coverage
 
+### Interview System Implementation
+
+Complete dice-roll based job interview system for initial employment:
+
+**Key Features:**
+
+- **Dice Roll Mechanics**: 35% success rate for Box Factory (balanced for ~3 attempts needed)
+- **Humorous Rejection System**: 25 unique rejection messages from interviewer's perspective about cat-obsessed human
+- **Clean UI Design**: Minimal red italic text for rejections, no background clutter, one-line formatting
+- **Seamless State Transitions**: Interview → Job Offer → Employed states use identical layout spacing
+- **Dynamic Actions**: "Interview" for unemployed, "Accept Offer" after success, no placeholder text
+
+**Game Balance:**
+
+- **Interview Costs**: 3 love for Box Factory, scales up for harder jobs (Software Developer: 5, Librarian: 7)
+- **Success Rates**: Box Factory 35%, Software Developer 15%, Librarian 12% (progressively harder)
+- **Human-Centric Humor**: All rejection messages focus on cat obsession rather than assuming player is a cat
+
+**Technical Implementation:**
+
+- **Probability System**: `Math.random()` based success determination with configurable rates per job
+- **Message Formatting**: UI adds italic quotes around raw message text for consistent presentation
+- **State Management**: `JobInterviewState` tracks offer status and last rejection for seamless UI updates
+- **Layout Consistency**: Interview and employed states use identical CSS spacing to prevent visual jumping
+
+**Files Involved:**
+
+- `src/cats/data/interviewSystem.ts` - Interview mechanics, success/failure logic, and message data
+- `src/cats/components/panels/JobPanel.tsx` - Conditional UI rendering for interview vs employed states
+- `src/cats/game/types.ts` - `JobInterviewState` interface for tracking offers and rejections
+- `src/cats/styles/cats.css` - Clean styling for rejection feedback (red italic text, no backgrounds)
+- `src/cats/data/interviewSystem.test.ts` - Comprehensive test coverage (18 tests)
+
 ### Modern Things System (Cookie Clicker-Inspired)
 
 The Cat Clicker features a completely redesigned progression system that replaces the traditional feeding upgrades with an engaging "Things" mechanic:
@@ -163,6 +196,12 @@ The project uses intelligent path detection to optimize development speed:
 - **Love (❤️):** Earned by interacting directly with the cat (petting, playing with the wand). Love is spent on upgrades that improve these direct interactions.
 - **Treats (🐟):** Earned passively by acquiring "Day Jobs." Treats are the foundation for the game's idle progression.
 
+**Player Character & Narrative:**
+
+- **The Player is Human**: The player character is explicitly a cat-obsessed human, not a cat themselves. All game flavor text, interview rejections, and narrative elements should reflect this distinction.
+- **Cat-Human Relationship**: The human player cares for their cat companion and works jobs to afford a better life for their feline friend.
+- **Humor Style**: The comedy comes from the player being an eccentric, cat-obsessed person whose dedication to their cat affects their professional and social interactions.
+
 **Progression System:**
 
 - **Story Events**: Triggered by reaching currency thresholds, providing narrative context and new goals
@@ -170,7 +209,7 @@ The project uses intelligent path detection to optimize development speed:
 - **Unified Notifications**: Single toast system provides both story flavor and mechanical rewards
 - **Job Unlocking**: Career paths unlock as players complete specific milestones
 
-The core loop is satirical and wholesome: the player must work a series of humorous day jobs not for themselves, but to provide a better life for their cat.
+The core loop is satirical and wholesome: the player (a human) must work a series of humorous day jobs to provide a better life for their beloved cat.
 
 ## 2. UI/UX Vision & Design System
 
@@ -338,9 +377,12 @@ The logic for the wand toy interaction is designed to feel organic and skillful,
 ### "Day Job" Progression
 
 - **Satirical Theme:** The idle mechanic is framed as the player getting a series of absurd day jobs to earn money for their cat.
-- **Experience-Based Career Ladder:** Each job has multiple promotion levels (e.g., from "Unpaid Intern" to "Supreme Box Overlord" at the Box Factory) that require specific experience points to unlock.
-- **Training System:** Players spend love currency to train/interview, gaining randomized experience with luck bonuses, creating engaging skill-building progression.
-- **Idle Income:** Each promotion level significantly increases the player's passive `Treats per second`, with final positions earning 100+ treats/second.
+- **Two-Stage Progression System:**
+  - **Interview Stage:** For unemployed players, interviews are dice-roll based with 35% success rate (~3 attempts needed). Features humorous rejection quotes from interviewer's perspective about cat-obsessed human behavior.
+  - **Career Ladder:** Once hired, players advance through promotion levels (e.g., from "Unpaid Intern" to "Supreme Box Overlord" at the Box Factory) using experience points earned through training.
+- **Training System:** Employed players spend love currency to train, gaining randomized experience with luck bonuses for skill-building progression.
+- **Idle Income:** Each promotion level significantly increases passive `Treats per second`, with final positions earning 100+ treats/second.
+- **Seamless UI Transitions:** Interview, job offer, and employed states use identical layouts to prevent visual jumping during progression.
 
 ### Developer Mode
 
