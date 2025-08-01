@@ -1,14 +1,16 @@
+export interface NotificationTrigger {
+  type: 'love_threshold' | 'treats_threshold' | 'job_acquired' | 'job_promoted' | 'upgrade_bought' | 'goal_completed' | 'skill_trained';
+  value?: number;
+  jobId?: string;
+  skillId?: string;
+  goalId?: string;
+}
+
 export interface GameNotification {
   id: string;
   title: string;
   message: string;
-  trigger: {
-    type: 'love_threshold' | 'treats_threshold' | 'job_acquired' | 'job_promoted' | 'upgrade_bought' | 'goal_completed' | 'playing_upgrade_bought';
-    value?: number;
-    jobId?: string;
-    upgradeId?: string;
-    goalId?: string;
-  };
+  trigger: NotificationTrigger;
   reward?: {
     love?: number;
     treats?: number;

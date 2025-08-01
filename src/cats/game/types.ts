@@ -1,11 +1,18 @@
 import type { GlobalGameState } from "./GameState";
 
+export interface SkillIncrementState {
+  lastAttemptMessage?: string;
+  lastAttemptSuccess?: boolean;
+}
+
 export interface GameState extends GlobalGameState {
   unlockedJobs: string[];
   jobLevels: { [key: string]: number };
   jobExperience: { [key: string]: number };
   jobInterviews: { [key: string]: JobInterviewState };
-  playingUpgradeLevels: { [key: string]: number };
+  skillLevels: { [key: string]: number };
+  skillIncrements: { [skillId: string]: { [levelIndex: number]: number } };
+  skillAttempts: { [skillId: string]: SkillIncrementState };
   thingQuantities: { [key: string]: number };
   completedGoals: string[];
   activeGoals: string[];

@@ -185,11 +185,11 @@ const JobPanel: React.FC<JobPanelProps> = ({ jobLevels, jobExperience, jobInterv
                     className={`action-btn train-btn ${canAffordTrain ? 'affordable' : 'expensive'}`}
                     onClick={() => onTrain(job.id)}
                     disabled={!canAffordTrain}
-                    title={`${level === 0 ? 'Interview' : 'Train'} for ${trainingCost} love`}
+                    title={`${level === 0 ? 'Interview' : 'Work'} for ${trainingCost} love`}
                   >
-                    <MaterialIcon icon={level === 0 ? "person" : "school"} />
+                    <MaterialIcon icon={level === 0 ? "person" : "business_center"} />
                     <span className="btn-text">
-                      {level === 0 ? 'Interview' : 'Train'} ({trainingCost}
+                      {level === 0 ? 'Interview' : 'Work'} ({trainingCost}
                       <HeartIcon className="love-icon-small" />)
                     </span>
                   </button>

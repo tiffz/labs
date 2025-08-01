@@ -24,7 +24,8 @@ import { jobData } from './data/jobData';
 import { performTraining, canPromoteToNextLevel } from './data/jobTrainingSystem';
 import { performInterview, canAffordInterview } from './data/interviewSystem';
 
-import { playingUpgradeData, getInfinitePlayingUpgradeCost, getInfinitePlayingUpgradeEffect } from './data/playingUpgradeData';
+import { skillData, getSkillEffect } from './data/skillData';
+import { performSkillTrainingAttempt } from './data/skillTrainingSystem';
 import { thingsData, getThingPrice, getThingTotalEffect } from './data/thingsData';
 import { useCatSystem } from './hooks/useCatSystem';
 import { HeartSpawningService, type HeartVisuals } from './services/HeartSpawningService';
@@ -64,7 +65,9 @@ const initialGameState: GameState = {
   jobLevels: {},
   jobExperience: {},
   jobInterviews: {},
-  playingUpgradeLevels: {},
+  skillLevels: {},
+  skillIncrements: {},
+  skillAttempts: {},
   thingQuantities: {},
   completedGoals: [],
   activeGoals: [],
@@ -72,9 +75,9 @@ const initialGameState: GameState = {
 
 function App() {
   const [gameState, setGameState] = useState<GameState>(initialGameState);
-  const { love, treats, jobLevels, jobExperience, jobInterviews, playingUpgradeLevels, thingQuantities } = gameState;
+  const { love, treats, jobLevels, jobExperience, jobInterviews, skillLevels, skillIncrements, skillAttempts, thingQuantities } = gameState;
 
-  const [lovePerClick, setLovePerClick] = useState(1);
+
   const [isPetting, setIsPetting] = useState(false);
   const [hearts, setHearts] = useState<HeartType[]>([]);
   const [isStartled, setIsStartled] = useState(false);
@@ -86,7 +89,7 @@ function App() {
   const [isSubtleWiggling, setIsSubtleWiggling] = useState(false);
   const [isJumping, setIsJumping] = useState(false);
   const clickTimestampsRef = useRef<number[]>([]);
-  const [lovePerPounce, setLovePerPounce] = useState(3);
+
   const [trackableHeartId, setTrackableHeartId] = useState<number | null>(null);
   const [isSmiling, setIsSmiling] = useState(false);
   const [headTiltAngle, setHeadTiltAngle] = useState(0);
@@ -232,6 +235,19 @@ function App() {
     return 1 + lovePerTreatBonus; // Base love multiplier is 1 love per treat
   }, [thingQuantities]);
 
+  // Calculate skill-enhanced love per click and love per pounce
+  const skillEnhancedLovePerClick = useMemo(() => {
+    const baseValue = 1;
+    const pettingSkillBonus = getSkillEffect('petting_technique', skillIncrements['petting_technique'] || {});
+    return baseValue + pettingSkillBonus;
+  }, [skillIncrements]);
+
+  const skillEnhancedLovePerPounce = useMemo(() => {
+    const baseValue = 3;
+    const wandSkillBonus = getSkillEffect('wand_technique', skillIncrements['wand_technique'] || {});
+    return baseValue + wandSkillBonus;
+  }, [skillIncrements]);
+
   // Use cat energy from the cat system
   const energyRef = useRef(catEnergy);
   useEffect(() => {
@@ -268,7 +284,7 @@ function App() {
     if (isPouncing && wandMode) return;
 
     const energyMultiplier = 1 + catEnergy / 100;
-    const loveFromClick = Math.round(lovePerClick * energyMultiplier);
+    const loveFromClick = Math.round(skillEnhancedLovePerClick * energyMultiplier);
     onLoveGained(loveFromClick);
     catActions.addEnergy(-1); // Use cat system's energy management
     
@@ -348,7 +364,7 @@ function App() {
 
     // Generate love and energy changes regardless of wand mode
     const energyMultiplier = 1 + catEnergy / 100;
-    const loveFromClick = Math.round(lovePerClick * energyMultiplier);
+    const loveFromClick = Math.round(skillEnhancedLovePerClick * energyMultiplier);
     onLoveGained(loveFromClick);
     catActions.addEnergy(-1);
     setIsPetting(true);
@@ -676,46 +692,70 @@ function App() {
     console.log(`Interview result: ${interviewResult.message}`);
   };
 
-  // Handle playing upgrades
-  const handlePlayingUpgrade = useCallback((upgradeId: string) => {
-    const { love, playingUpgradeLevels } = gameState;
-    const currentLevel = playingUpgradeLevels[upgradeId] || 0;
-    const upgrade = playingUpgradeData.find(u => u.id === upgradeId);
-    if (!upgrade) return;
+  // Handle skill training attempts
+  const handleSkillTraining = useCallback((skillId: string) => {
+    const currentIncrements = skillIncrements[skillId] || {};
+    const trainingResult = performSkillTrainingAttempt(skillId, currentIncrements);
     
-    // Determine if using predefined or infinite level
-    const usePredefinedLevel = currentLevel < upgrade.levels.length;
-    
-    let loveCost: number;
-    let effectValue: number;
-    
-    if (usePredefinedLevel) {
-      const upgradeLevel = upgrade.levels[currentLevel];
-      loveCost = upgradeLevel.loveCost;
-      effectValue = upgradeLevel.effect;
-    } else {
-      const infiniteCost = getInfinitePlayingUpgradeCost(upgrade, currentLevel);
-      const infiniteEffect = getInfinitePlayingUpgradeEffect(upgrade, currentLevel);
-      if (!infiniteCost || !infiniteEffect) return;
-      loveCost = infiniteCost.loveCost;
-      effectValue = infiniteEffect;
-    }
-    
-    if (love >= loveCost) {
-      setGameState(prev => ({ 
-        ...prev,
-        love: prev.love - loveCost,
-        playingUpgradeLevels: { ...prev.playingUpgradeLevels, [upgradeId]: currentLevel + 1 },
-      }));
+    if (trainingResult && love >= trainingResult.loveCost) {
+      setGameState(prev => {
+        const newSkillIncrements = { ...prev.skillIncrements };
+        const newSkillLevels = { ...prev.skillLevels };
+        const newSkillAttempts = { ...prev.skillAttempts };
+        
+        // Update last attempt message and success status
+        newSkillAttempts[skillId] = {
+          lastAttemptMessage: trainingResult.message,
+          lastAttemptSuccess: trainingResult.success,
+        };
+        
+        // If successful, unlock the increment
+        if (trainingResult.success && trainingResult.increment) {
+          // Find which level and increment this was for
+          const skill = skillData.find(s => s.id === skillId);
+          if (skill) {
+            for (let levelIndex = 0; levelIndex < skill.levels.length; levelIndex++) {
+              const currentLevelIncrements = newSkillIncrements[skillId]?.[levelIndex] || 0;
+              const totalIncrements = skill.levels[levelIndex].increments.length;
+              
+              if (currentLevelIncrements < totalIncrements) {
+                // Initialize the skill increments if it doesn't exist
+                if (!newSkillIncrements[skillId]) {
+                  newSkillIncrements[skillId] = {};
+                }
+                
+                // Unlock this increment
+                newSkillIncrements[skillId][levelIndex] = currentLevelIncrements + 1;
+                
+                // Check if this completes the level
+                if (newSkillIncrements[skillId][levelIndex] >= totalIncrements) {
+                  // Level up!
+                  newSkillLevels[skillId] = (newSkillLevels[skillId] || 0) + 1;
+                  console.log(`Skill level up! ${skillId} improved to level ${newSkillLevels[skillId]}!`);
+                }
+                break;
+              }
+            }
+          }
+        }
+        
+        return {
+          ...prev,
+          love: prev.love - trainingResult.loveCost,
+          skillIncrements: newSkillIncrements,
+          skillLevels: newSkillLevels,
+          skillAttempts: newSkillAttempts,
+        };
+      });
       
-      // Update the actual game values
-      if (upgradeId === 'love_per_pet') {
-        setLovePerClick(current => current + effectValue);
-      } else if (upgradeId === 'love_per_pounce') {
-        setLovePerPounce(current => current + effectValue);
+      // Show training feedback
+      if (trainingResult.success) {
+        console.log(`Success! ${trainingResult.message}`);
+      } else {
+        console.log(`Training attempt: ${trainingResult.message}`);
       }
     }
-  }, [gameState, setGameState, setLovePerClick, setLovePerPounce]);
+  }, [setGameState, skillIncrements, love]);
 
   // Handle thing purchases
   const handlePurchaseThing = useCallback((thingId: string) => {
@@ -781,7 +821,7 @@ function App() {
           rapidClickCount={rapidClickCount}
           lastVelocity={lastVelocity}
           proximityMultiplier={proximityMultiplier}
-          lovePerClick={lovePerClick}
+          lovePerClick={skillEnhancedLovePerClick}
           movementNovelty={movementNovelty}
           clickExcitement={clickExcitement}
           onTimeSkip={handleTimeSkip}
@@ -922,10 +962,12 @@ function App() {
         unlockedJobs={gameState.unlockedJobs}
         thingQuantities={thingQuantities}
         onPurchaseThing={handlePurchaseThing}
-        playingUpgradeLevels={playingUpgradeLevels}
-        onPlayingUpgrade={handlePlayingUpgrade}
-        lovePerClick={lovePerClick}
-        lovePerPounce={lovePerPounce}
+        skillLevels={skillLevels}
+        skillIncrements={skillIncrements}
+        skillAttempts={skillAttempts}
+        onSkillTrain={handleSkillTraining}
+        lovePerClick={skillEnhancedLovePerClick}
+        lovePerPounce={skillEnhancedLovePerPounce}
         activeGoals={activeGoals}
         completedGoals={completedGoals}
         currentLove={love}

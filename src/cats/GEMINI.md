@@ -13,7 +13,7 @@ The Cat Clicker features a completely redesigned job system that transforms care
 - **Experience-Driven Progression**: Players must train/interview to gain experience points before promotions become available
 - **Love-to-Experience Training**: Spend love currency on training sessions with randomized experience gains (with luck bonuses)
 - **Compact Visual Design**: One-line job ladder with dot indicators showing current position and progress
-- **Contextual Actions**: "Interview" button for unemployed players, "Train" for employed, with dynamic cost display
+- **Contextual Actions**: "Interview" button for unemployed players, "Work" for employed, with dynamic cost display
 - **Pure Experience Promotions**: "Accept Offer"/"Ask for Promotion" buttons depend solely on experience thresholds, not love costs
 - **Incremental Progression**: Starting job (Unpaid Intern) requires 3 experience points, encouraging 2-3 training sessions
 - **Extended Career Paths**: Box Factory expanded to 13 levels (from Unpaid Intern to Supreme Box Overlord)
@@ -96,6 +96,65 @@ Complete dice-roll based job interview system for initial employment:
 - `src/cats/game/types.ts` - `JobInterviewState` interface for tracking offers and rejections
 - `src/cats/styles/cats.css` - Clean styling for rejection feedback (red italic text, no backgrounds)
 - `src/cats/data/interviewSystem.test.ts` - Comprehensive test coverage (18 tests)
+
+### Comprehensive Skills System
+
+A complete skill development system that replaces the old playing upgrades, allowing players to master various cat-caring techniques through training and experience progression:
+
+**Key Features:**
+
+- **Six Distinct Skills**: Petting Technique, Wand Play Technique, Interior Design, Food Preparation, Work Ethic, and Work Intelligence
+- **Auto-Leveling System**: Skills automatically level up when experience thresholds are reached (no manual promotion needed)
+- **Experience-Based Training**: Spend love to train skills, gaining randomized experience with luck bonuses
+- **Immediate Passive Effects**: Each skill level provides instant game improvements (love per pet, job treats multiplier, etc.)
+- **Visual Progress Tracking**: Compact skill ladder dots and experience progress bars
+- **Master Level Achievement**: Skills max out at different levels (7-9) with "Master Level" indicators
+
+**Skill Types and Effects:**
+
+1. **Petting Technique** (`love_per_pet`): +1 love per pet per level (9 levels: Gentle Strokes → Supreme Pet Master)
+2. **Wand Play Technique** (`love_per_pounce`): +2 love per pounce per level (8 levels: Basic Wiggling → Apex Toy Handler)
+3. **Interior Design** (`furniture_love_multiplier`): +10% furniture love bonus per level (7 levels: Box Placement → Interior Architect)
+4. **Food Preparation** (`feeding_effect_multiplier`): +15% feeding effect bonus per level (7 levels: Bowl Filling → Master Chef)
+5. **Work Ethic** (`training_experience_multiplier`): +20% training XP bonus per level (7 levels: Showing Up → Peak Performance)
+6. **Work Intelligence** (`job_treats_multiplier`): +10% job treats bonus per level (7 levels: Basic Competence → Industry Expert)
+
+**Game Balance:**
+
+- **Training Economics**: Base cost of 3 love per session, increases by 0.8% per total experience point
+- **Experience Gains**: 1-6 XP per session (base 3 ± 40% variance) with 20% luck chance (1.8x multiplier)
+- **Progressive Requirements**: Early levels need 5-15 XP, later levels require 200-300 XP for meaningful progression
+- **Immediate Benefits**: All effects apply instantly upon leveling, providing continuous motivation
+
+**Technical Implementation:**
+
+- **Modular Skill System**: Dedicated `skillData.ts` with configurable effect types and progression curves
+- **Auto-Leveling Logic**: `checkForSkillLevelUp()` function automatically promotes skills based on experience
+- **Effect Integration**: Skills directly modify game mechanics (love per click, job income, etc.) through `getSkillEffect()`
+- **Visual Consistency**: Aligned with job card design system for cohesive UI/UX experience
+- **State Management**: `skillLevels` and `skillExperience` in GameState for persistent progression tracking
+
+**Files Involved:**
+
+- `src/cats/data/skillData.ts` - Skill definitions, effect calculations, and progression logic
+- `src/cats/data/skillTrainingSystem.ts` - Training mechanics, cost calculations, and auto-leveling
+- `src/cats/components/skills/SkillsPanel.tsx` - Complete UI with ladder visualization and training actions
+- `src/cats/game/types.ts` - Updated GameState interface with skill tracking (removed playingUpgradeLevels)
+- `src/cats/App.tsx` - Skill training handlers, effect calculations, and state integration
+- `src/cats/components/panels/TabbedPanel.tsx` - Updated to show "Skills" tab instead of "Playing"
+- `src/cats/data/skillData.test.ts` - Unit tests for skill data and helper functions (16 tests)
+- `src/cats/data/skillTrainingSystem.test.ts` - Training system tests and integration (23 tests)
+- `src/cats/components/skills/SkillsPanel.test.tsx` - UI component tests (16 tests)
+
+**Recent UI/Visual Improvements:**
+
+- **Aligned with Job Card Design**: Skills now use identical styling to job cards for visual consistency (same background, borders, padding, hover effects)
+- **Discrete Progress System**: Replaced continuous experience bars with discrete dot-based progress indicators for clearer advancement visualization
+- **Chance-Based Training**: Training attempts now use dice-roll mechanics with success/failure feedback messages for engaging progression
+- **Elegant Typography**: Consistent font sizes, colors, and spacing matching Material Design 3 principles
+- **Simplified Color Palette**: Reduced visual clutter by removing excessive background colors and using subtle accent colors
+- **Compact Level Indicators**: Added "Lv. X" indicators for quick skill level reference
+- **Icon Consistency**: Standardized skill icons with proper Material Design styling and coloring
 
 ### Modern Things System (Cookie Clicker-Inspired)
 
