@@ -1,7 +1,8 @@
 export interface JobLevel {
   title: string;
-  cost: number;
+  cost: number; // Keep for compatibility but set to 0 for promotions
   treatsPerSecond: number;
+  experienceRequired: number; // Experience needed to unlock this level
 }
 
 export interface JobData {
@@ -19,11 +20,19 @@ export const jobData: JobData[] = [
     description: 'A reliable and sturdy career in the art of cardboard.',
     icon: 'conveyor_belt',
     levels: [
-      { title: 'Unpaid Intern', cost: 10, treatsPerSecond: 0 },
-      { title: 'Box Folder', cost: 50, treatsPerSecond: 1 },
-      { title: 'Senior Box Inspector', cost: 250, treatsPerSecond: 3 },
-      { title: 'Chief Box Enthusiast', cost: 1000, treatsPerSecond: 10 },
-      { title: 'VP of Cardboard', cost: 5000, treatsPerSecond: 25 },
+      { title: 'Unpaid Intern', cost: 10, treatsPerSecond: 0, experienceRequired: 3 },
+      { title: 'Box Folder', cost: 0, treatsPerSecond: 1, experienceRequired: 5 },
+      { title: 'Box Tape Specialist', cost: 0, treatsPerSecond: 2, experienceRequired: 12 },
+      { title: 'Cardboard Quality Inspector', cost: 0, treatsPerSecond: 4, experienceRequired: 22 },
+      { title: 'Box Assembly Coordinator', cost: 0, treatsPerSecond: 7, experienceRequired: 35 },
+      { title: 'Senior Box Inspector', cost: 0, treatsPerSecond: 11, experienceRequired: 52 },
+      { title: 'Packaging Process Leader', cost: 0, treatsPerSecond: 16, experienceRequired: 75 },
+      { title: 'Chief Box Enthusiast', cost: 0, treatsPerSecond: 23, experienceRequired: 105 },
+      { title: 'Cardboard Engineering Manager', cost: 0, treatsPerSecond: 32, experienceRequired: 145 },
+      { title: 'VP of Cardboard Operations', cost: 0, treatsPerSecond: 45, experienceRequired: 200 },
+      { title: 'Director of Global Box Strategy', cost: 0, treatsPerSecond: 65, experienceRequired: 275 },
+      { title: 'Chief Cardboard Officer', cost: 0, treatsPerSecond: 95, experienceRequired: 375 },
+      { title: 'Supreme Box Overlord', cost: 0, treatsPerSecond: 140, experienceRequired: 500 },
     ],
   },
   {
@@ -32,11 +41,11 @@ export const jobData: JobData[] = [
     description: 'Use your paws to write code and catch bugs.',
     icon: 'work',
     levels: [
-      { title: 'Junior Keyboard Warmer', cost: 100, treatsPerSecond: 2 },
-      { title: 'Bug Catcher', cost: 750, treatsPerSecond: 8 },
-      { title: 'String Theorist', cost: 3000, treatsPerSecond: 20 },
-      { title: 'Lead Architect', cost: 12000, treatsPerSecond: 50 },
-      { title: 'Principal Engineer', cost: 50000, treatsPerSecond: 150 },
+      { title: 'Junior Keyboard Warmer', cost: 100, treatsPerSecond: 3, experienceRequired: 0 },
+      { title: 'Bug Catcher', cost: 0, treatsPerSecond: 12, experienceRequired: 15 },
+      { title: 'String Theorist', cost: 0, treatsPerSecond: 30, experienceRequired: 35 },
+      { title: 'Lead Architect', cost: 0, treatsPerSecond: 80, experienceRequired: 70 },
+      { title: 'Principal Engineer', cost: 0, treatsPerSecond: 200, experienceRequired: 120 },
     ],
   },
   {
@@ -45,14 +54,15 @@ export const jobData: JobData[] = [
     description: 'Ensure silence and order among the towering shelves.',
     icon: 'school',
     levels: [
-      { title: 'Book Dust Sniffer', cost: 500, treatsPerSecond: 10 },
-      { title: 'Page Turner', cost: 2500, treatsPerSecond: 30 },
-      { title: 'Lead Shusher', cost: 15000, treatsPerSecond: 100 },
-      { title: 'Head of the Cardboard Box Section', cost: 75000, treatsPerSecond: 400 },
+      { title: 'Book Dust Sniffer', cost: 500, treatsPerSecond: 15, experienceRequired: 0 },
+      { title: 'Page Turner', cost: 0, treatsPerSecond: 45, experienceRequired: 20 },
+      { title: 'Lead Shusher', cost: 0, treatsPerSecond: 120, experienceRequired: 45 },
+      { title: 'Head of the Cardboard Box Section', cost: 0, treatsPerSecond: 350, experienceRequired: 80 },
       {
         title: 'Director of Dewey Decimal Disturbance',
-        cost: 300000,
-        treatsPerSecond: 1200,
+        cost: 0,
+        treatsPerSecond: 900,
+        experienceRequired: 140,
       },
     ],
   },

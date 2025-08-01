@@ -1,6 +1,38 @@
 # Cat Clicker Game - Changelog
 
-## [Latest Session] - 2025-07-27
+## [Latest Session] - 2025-01-14
+
+### 🎮 Major Job System Overhaul
+
+- **Experience-Based Progression**: Completely redesigned job system requiring players to train/interview for experience points before promotions
+- **Love-to-Experience Training**: New training mechanic where players spend love currency to gain randomized experience with luck bonuses
+- **Extended Career Paths**: Box Factory expanded from 6 to 13 levels (Unpaid Intern → Supreme Box Overlord)
+- **Escape Key Controls**: Added keyboard shortcut to exit wand mode instantly with Escape key
+
+### 🎨 UI/UX Polish
+
+- **Compact Job Ladder**: One-line visual progression with dot indicators showing current position and next steps
+- **Contextual Actions**: "Interview" button for unemployed, "Train" for employed, with dynamic love cost display
+- **Pure Experience Promotions**: "Accept Offer"/"Ask for Promotion" buttons based solely on experience thresholds
+- **Material Design Integration**: Fish icons for treats/sec, heart icons for love costs, proper centering and sizing
+- **Progressive Difficulty**: Starting position requires 3 experience points, encouraging 2-3 training sessions before first job
+
+### 🛠️ Technical Implementation
+
+- **Modular Training System**: New `jobTrainingSystem.ts` with configurable parameters and promotion logic
+- **Experience State Management**: Added `jobExperience` tracking to GameState with proper React integration
+- **Performance Optimizations**: Minimal re-renders with memoization and efficient state updates
+- **Enhanced Test Coverage**: Updated to 157 comprehensive tests with full job system coverage
+- **Clean Architecture**: Separated business logic from UI components for maintainable code
+
+### 🎯 Game Balance Improvements
+
+- **Training Economics**: Base cost of 2 love per session with slight increases based on current experience
+- **Randomized Rewards**: 1-3 experience per training with 20% luck chance for 1.5x bonus multiplier
+- **Meaningful Progression**: Early jobs require 3-5 experience, later positions need 100+ for balanced pacing
+- **Significant Income Growth**: Final job levels earn 140+ treats/second for satisfying long-term progression
+
+## [Previous Session] - 2025-07-27
 
 ### 🎮 Major Features Added
 

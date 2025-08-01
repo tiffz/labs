@@ -21,7 +21,8 @@ import CatFact from './components/ui/CatFact';
 import TabbedPanel from './components/panels/TabbedPanel';
 import { catFacts } from './data/catFacts';
 import { jobData } from './data/jobData';
-import { upgradeData, getInfiniteUpgradeCost, getInfiniteUpgradeEffect } from './data/upgradeData';
+import { performTraining, canPromoteToNextLevel } from './data/jobTrainingSystem';
+import { upgradeData, getInfiniteUpgradeEffect } from './data/upgradeData';
 import { playingUpgradeData, getInfinitePlayingUpgradeCost, getInfinitePlayingUpgradeEffect } from './data/playingUpgradeData';
 import { thingsData, getThingPrice, getThingTotalEffect } from './data/thingsData';
 import { useCatSystem } from './hooks/useCatSystem';
@@ -60,6 +61,7 @@ const initialGameState: GameState = {
   treats: 0,
   unlockedJobs: ['box_factory'],
   jobLevels: {},
+  jobExperience: {},
   upgradeLevels: {},
   playingUpgradeLevels: {},
   thingQuantities: {},
@@ -69,7 +71,7 @@ const initialGameState: GameState = {
 
 function App() {
   const [gameState, setGameState] = useState<GameState>(initialGameState);
-  const { love, treats, jobLevels, upgradeLevels, playingUpgradeLevels, thingQuantities } = gameState;
+  const { love, treats, jobLevels, jobExperience, upgradeLevels, playingUpgradeLevels, thingQuantities } = gameState;
 
   const [lovePerClick, setLovePerClick] = useState(1);
   const [isPetting, setIsPetting] = useState(false);
@@ -644,8 +646,14 @@ function App() {
 
   const handlePromotion = (jobId: string) => {
     const currentLevel = jobLevels[jobId] || 0;
+    const currentExperience = jobExperience[jobId] || 0;
     const job = jobData.find(j => j.id === jobId);
+    
     if (!job || currentLevel >= job.levels.length) return;
+    
+    // Check if player has required experience for promotion
+    if (!canPromoteToNextLevel(jobData, jobId, currentLevel, currentExperience)) return;
+    
     const promotionCost = job.levels[currentLevel].cost;
     if (love >= promotionCost) {
       setGameState(prev => ({
@@ -656,37 +664,28 @@ function App() {
     }
   };
 
-  const handleUpgrade = (upgradeId: string) => {
-    const currentLevel = upgradeLevels[upgradeId] || 0;
-    const upgrade = upgradeData.find(u => u.id === upgradeId);
-    if (!upgrade) return;
+  const handleTraining = (jobId: string) => {
+    const currentExperience = jobExperience[jobId] || 0;
+    const trainingResult = performTraining(jobId, currentExperience);
     
-    // Determine if using predefined or infinite level
-    const usePredefinedLevel = currentLevel < upgrade.levels.length;
-    
-    let treatCost: number;
-    let loveCost: number;
-    
-    if (usePredefinedLevel) {
-      const upgradeLevel = upgrade.levels[currentLevel];
-      treatCost = upgradeLevel.treatCost;
-      loveCost = upgradeLevel.loveCost;
-    } else {
-      const infiniteCost = getInfiniteUpgradeCost(upgrade, currentLevel);
-      if (!infiniteCost) return;
-      treatCost = infiniteCost.treatCost;
-      loveCost = infiniteCost.loveCost;
-    }
-    
-    if (treats >= treatCost && love >= loveCost) {
+    if (love >= trainingResult.loveCost) {
       setGameState(prev => ({
         ...prev,
-        treats: prev.treats - treatCost,
-        love: prev.love - loveCost,
-        upgradeLevels: { ...prev.upgradeLevels, [upgradeId]: currentLevel + 1 },
+        love: prev.love - trainingResult.loveCost,
+        jobExperience: { 
+          ...prev.jobExperience, 
+          [jobId]: (prev.jobExperience[jobId] || 0) + trainingResult.experienceGained 
+        },
       }));
+      
+      // TODO: Add juicy feedback animation for training result
+      if (trainingResult.wasLucky) {
+        console.log(`Lucky training! Gained ${trainingResult.experienceGained} experience (bonus: ${trainingResult.bonusAmount})`);
+      }
     }
   };
+
+
 
   // Handle playing upgrades
   const handlePlayingUpgrade = useCallback((upgradeId: string) => {
@@ -926,10 +925,10 @@ function App() {
       </div>
       <TabbedPanel
         jobLevels={jobLevels}
+        jobExperience={jobExperience}
         onPromote={handlePromotion}
+        onTrain={handleTraining}
         unlockedJobs={gameState.unlockedJobs}
-        upgradeLevels={upgradeLevels}
-        onUpgrade={handleUpgrade}
         thingQuantities={thingQuantities}
         onPurchaseThing={handlePurchaseThing}
         playingUpgradeLevels={playingUpgradeLevels}

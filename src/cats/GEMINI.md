@@ -4,6 +4,66 @@ This document outlines the vision, architecture, and implementation details for 
 
 ## Recent Major Enhancements (2025)
 
+### Experience-Based Job Progression System
+
+The Cat Clicker features a completely redesigned job system that transforms career progression from simple cost-based unlocks into an engaging, skill-building experience:
+
+**Key Features:**
+
+- **Experience-Driven Progression**: Players must train/interview to gain experience points before promotions become available
+- **Love-to-Experience Training**: Spend love currency on training sessions with randomized experience gains (with luck bonuses)
+- **Compact Visual Design**: One-line job ladder with dot indicators showing current position and progress
+- **Contextual Actions**: "Interview" button for unemployed players, "Train" for employed, with dynamic cost display
+- **Pure Experience Promotions**: "Accept Offer"/"Ask for Promotion" buttons depend solely on experience thresholds, not love costs
+- **Incremental Progression**: Starting job (Unpaid Intern) requires 3 experience points, encouraging 2-3 training sessions
+- **Extended Career Paths**: Box Factory expanded to 13 levels (from Unpaid Intern to Supreme Box Overlord)
+
+**Game Balance:**
+
+- **Training Economics**: Base cost of 2 love per training session, with slight increases based on current experience
+- **Randomized Gains**: 1-3 experience per session with 20% chance of luck bonus (1.5x multiplier)
+- **Progressive Difficulty**: Early promotions require 3-5 experience, later ones need 100+ for meaningful progression pacing
+- **Treats Rewards**: Each promotion significantly increases passive income, with final levels earning 140+ treats/second
+
+**Technical Implementation:**
+
+- **Modular Training System**: Dedicated `jobTrainingSystem.ts` with configurable parameters per job type
+- **Experience State**: New `jobExperience: { [key: string]: number }` in GameState for per-job tracking
+- **UI Polish**: Material Design icons, fish/heart currency indicators, hover tooltips with detailed progression info
+- **Performance Optimized**: Minimal re-renders with proper React state management and memoization
+
+**Files Involved:**
+
+- `src/cats/data/jobTrainingSystem.ts` - Training mechanics, cost calculations, and promotion logic
+- `src/cats/data/jobData.ts` - Extended job definitions with experience requirements
+- `src/cats/components/panels/JobPanel.tsx` - Compact UI with ladder visualization and interactive buttons
+- `src/cats/game/types.ts` - Updated GameState interface with jobExperience tracking
+- `src/cats/App.tsx` - Integration of training handlers and experience state management
+- `src/cats/styles/cats.css` - Comprehensive styling for compact job cards and visual polish
+
+### Enhanced Wand Mode Controls
+
+Improved the wand toy interaction system with intuitive keyboard controls:
+
+**Key Features:**
+
+- **Escape Key Exit**: Press `Escape` while in wand mode to instantly return to normal petting mode
+- **Seamless Integration**: Global keyboard listener that only activates when wand mode is active
+- **Clean Event Handling**: Proper event listener cleanup to prevent memory leaks
+- **User Experience**: Provides quick escape route when players want to switch interaction modes
+
+**Technical Implementation:**
+
+- **Global Event Listener**: `keydown` event handler in main App component
+- **Conditional Logic**: Only responds to Escape key when `wandMode` is active
+- **Proper Cleanup**: Event listener removal on component unmount and dependency changes
+- **Test Coverage**: Comprehensive tests ensuring keyboard functionality works correctly
+
+**Files Involved:**
+
+- `src/cats/App.tsx` - Escape key event handler and wand mode integration
+- `src/cats/App.test.tsx` - Keyboard interaction tests and edge case coverage
+
 ### Modern Things System (Cookie Clicker-Inspired)
 
 The Cat Clicker features a completely redesigned progression system that replaces the traditional feeding upgrades with an engaging "Things" mechanic:
@@ -91,7 +151,7 @@ The Cat Clicker features a custom SVG favicon that perfectly captures the kawaii
 
 The project uses intelligent path detection to optimize development speed:
 
-- **Code changes** trigger full test suite (139 comprehensive tests)
+- **Code changes** trigger full test suite (157 comprehensive tests)
 - **Documentation/asset changes** skip tests for faster deployment
 - **Smart pre-commit hooks** only run tests when TypeScript/JavaScript files are staged
 - **Dual CI/CD workflows** provide fast asset deployment while maintaining code quality
@@ -278,8 +338,9 @@ The logic for the wand toy interaction is designed to feel organic and skillful,
 ### "Day Job" Progression
 
 - **Satirical Theme:** The idle mechanic is framed as the player getting a series of absurd day jobs to earn money for their cat.
-- **Progression Ladder:** Each job has multiple promotion levels (e.g., from "Unpaid Intern" to "VP of Corrugation" at the Box Factory).
-- **Idle Income:** Each promotion level increases the player's passive `Treats per second`.
+- **Experience-Based Career Ladder:** Each job has multiple promotion levels (e.g., from "Unpaid Intern" to "Supreme Box Overlord" at the Box Factory) that require specific experience points to unlock.
+- **Training System:** Players spend love currency to train/interview, gaining randomized experience with luck bonuses, creating engaging skill-building progression.
+- **Idle Income:** Each promotion level significantly increases the player's passive `Treats per second`, with final positions earning 100+ treats/second.
 
 ### Developer Mode
 
@@ -307,7 +368,7 @@ The `cats` micro-app follows a feature-based folder structure to keep the code o
 
 ## 5. Testing
 
-The project uses **Vitest** for unit testing, integrated directly into the Vite development environment. This allows for fast, efficient, and reliable testing of our React components. The Cat Clicker has comprehensive test coverage with **155 tests** across all major components and functionality.
+The project uses **Vitest** for unit testing, integrated directly into the Vite development environment. This allows for fast, efficient, and reliable testing of our React components. The Cat Clicker has comprehensive test coverage with **157 tests** across all major components and functionality.
 
 ### Technology Stack
 
@@ -328,7 +389,7 @@ This command will execute all `*.test.tsx` files and provide a summary of the re
 
 ### Test Coverage Overview
 
-Our comprehensive test suite includes **155 tests** organized across multiple test files covering all game systems:
+Our comprehensive test suite includes **157 tests** organized across multiple test files covering all game systems:
 
 #### **Cat Component Tests (13 tests)**
 
@@ -588,7 +649,7 @@ useEffect(() => {
 
 - **Linting:** ESLint with TypeScript rules enforced
 - **Build verification:** All builds must complete successfully
-- **Test coverage:** 155+ tests across all major systems
+- **Test coverage:** 157+ tests across all major systems
 - **Type safety:** Strict TypeScript configuration
 
 #### **Debugging Tools**

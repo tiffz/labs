@@ -1,68 +1,125 @@
 import React from 'react';
 import { jobData } from '../../data/jobData';
-import ItemCard from '../ui/ItemCard';
+import { 
+  calculateTrainingCost, 
+  canAffordTraining, 
+  canPromoteToNextLevel,
+  getExperienceRequiredForPromotion 
+} from '../../data/jobTrainingSystem';
+
 import MaterialIcon from '../../icons/MaterialIcon';
+import HeartIcon from '../../icons/HeartIcon';
+import FishIcon from '../../icons/FishIcon';
 
 interface JobPanelProps {
   jobLevels: { [key:string]: number };
+  jobExperience: { [key:string]: number };
   onPromote: (jobId: string) => void;
+  onTrain: (jobId: string) => void;
   currentLove: number;
   unlockedJobs: string[];
 }
 
-const JobPanel: React.FC<JobPanelProps> = ({ jobLevels, onPromote, currentLove, unlockedJobs }) => {
+const JobPanel: React.FC<JobPanelProps> = ({ jobLevels, jobExperience, onPromote, onTrain, currentLove, unlockedJobs }) => {
   const unlockedJobData = jobData.filter(job => unlockedJobs.includes(job.id));
   const lockedJobsCount = jobData.length - unlockedJobData.length;
 
   const renderJob = (job: typeof jobData[0]) => {
     const level = jobLevels[job.id] || 0;
+    const experience = jobExperience[job.id] || 0;
     const currentLevelInfo = level > 0 ? job.levels[level - 1] : null;
     const nextLevelInfo = level < job.levels.length ? job.levels[level] : null;
-    const canPromote = nextLevelInfo ? currentLove >= nextLevelInfo.cost : false;
+    
+    // Training costs and affordability
+    const trainingCost = calculateTrainingCost(job.id, experience);
+    const canAffordTrain = canAffordTraining(currentLove, job.id, experience);
+    
+    // Promotion requirements
+    const requiredExperience = getExperienceRequiredForPromotion(jobData, job.id, level);
+    const canPromoteExp = canPromoteToNextLevel(jobData, job.id, level, experience);
+    const canPromote = canPromoteExp; // Only depends on experience, not love
 
-    const tooltipContent = (
-      <div>
-        <div className="item-tooltip-header">
-          <MaterialIcon icon={job.icon} className="item-tooltip-icon" />
-          <h4 className="item-tooltip-title">{job.name}</h4>
-        </div>
-        <p className="item-tooltip-description">{job.description}</p>
-        <div className="item-tooltip-effects">
-          <div className="item-tooltip-effect-line">
-            <strong>Current:</strong> {currentLevelInfo ? `${Math.floor(currentLevelInfo.treatsPerSecond)} treats/sec` : 'Unemployed'}
+    // Experience progress calculation
+    const experienceProgress = requiredExperience ? Math.min(experience / requiredExperience, 1) : 1;
+
+        // Build compact job ladder for this job
+    const ladderDots = job.levels.map((levelInfo, index) => (
+      <span 
+        key={index} 
+        className={`ladder-dot ${index < level ? 'completed' : index === level ? 'current' : 'locked'}`}
+        title={`${levelInfo.title} (${Math.floor(levelInfo.treatsPerSecond)} treats/sec)`}
+      >
+        {index < level ? '●' : index === level ? '◉' : '○'}
+      </span>
+    ));
+
+
+
+    return (
+      <div key={job.id} className="compact-job-card">
+        <div className="job-main-info">
+          <MaterialIcon icon={job.icon} className="job-icon-small" />
+          <div className="job-details">
+            <div className="job-name">{job.name}</div>
+            <div className="job-progress">
+              <span className="job-ladder-compact">{ladderDots}</span>
+              <span className="job-current">
+                {currentLevelInfo ? (
+                  <>
+                    {currentLevelInfo.title}
+                                         <span className="income-indicator"> ({Math.floor(currentLevelInfo.treatsPerSecond)} <FishIcon className="treats-icon-small" />/sec)</span>
+                  </>
+                ) : 'Unemployed'}
+              </span>
+            </div>
+            {nextLevelInfo && (
+              <div className="experience-bar-compact">
+                <div 
+                  className="experience-fill-compact" 
+                  style={{ width: `${experienceProgress * 100}%` }}
+                />
+                <span className="experience-text">{experience}/{requiredExperience} XP</span>
+              </div>
+            )}
           </div>
+        </div>
+
+        <div className="job-actions-compact">
           {nextLevelInfo && (
-            <div className="item-tooltip-effect-line">
-              <strong>Next:</strong> {`${Math.floor(nextLevelInfo.treatsPerSecond)} treats/sec`}
-            </div>
+            <>
+                                <button 
+                    className={`action-btn train-btn ${canAffordTrain ? 'affordable' : 'expensive'}`}
+                    onClick={() => onTrain(job.id)}
+                    disabled={!canAffordTrain}
+                    title={`${level === 0 ? 'Interview' : 'Train'} for ${trainingCost} love`}
+                  >
+                    <MaterialIcon icon={level === 0 ? "person" : "school"} />
+                    <span className="btn-text">
+                      {level === 0 ? 'Interview' : 'Train'} ({trainingCost}
+                      <HeartIcon className="love-icon-small" />)
+                    </span>
+                  </button>
+                  <button 
+                    className={`action-btn promote-btn ${canPromote ? 'ready' : 'needs-exp'}`}
+                    onClick={() => onPromote(job.id)}
+                    disabled={!canPromote}
+                    title={canPromote ? (level === 0 ? 'Accept the job offer!' : 'Ask for a promotion now!') : `Need ${(requiredExperience || 0) - experience} more XP`}
+                  >
+                    <MaterialIcon icon="trending_up" />
+                    <span className="btn-text">
+                      {canPromote ? (level === 0 ? 'Accept offer' : 'Ask for promotion') : 'Locked'}
+                    </span>
+                  </button>
+            </>
           )}
-          {nextLevelInfo && (
-            <div className="item-tooltip-effect-line" style={{ fontStyle: 'italic', fontSize: '0.75rem' }}>
-              ({nextLevelInfo.title})
-            </div>
-          )}
-          {level > 0 && !nextLevelInfo && (
-            <div className="item-tooltip-effect-line" style={{ fontStyle: 'italic', color: '#6750a4' }}>
-              Max level reached!
+          {!nextLevelInfo && level > 0 && (
+            <div className="max-level-compact">
+              <MaterialIcon icon="workspace_premium" />
+              <span>Max Level</span>
             </div>
           )}
         </div>
       </div>
-    );
-
-    return (
-      <ItemCard
-        key={job.id}
-        id={job.id}
-        title={job.name}
-        level={level}
-        loveCost={nextLevelInfo?.cost}
-        canAfford={canPromote}
-        onAction={() => onPromote(job.id)}
-        currentLove={currentLove}
-        tooltipContent={tooltipContent}
-        icon={job.icon}
-      />
     );
   };
 
@@ -71,7 +128,7 @@ const JobPanel: React.FC<JobPanelProps> = ({ jobLevels, onPromote, currentLove, 
       <p className="job-panel-intro">
         Your cat needs a better life. It&apos;s time to get a job.
       </p>
-      <div className="upgrade-section">
+      <div className="enhanced-jobs-section">
         {unlockedJobData.map(renderJob)}
       </div>
       {lockedJobsCount > 0 && (

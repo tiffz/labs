@@ -8,7 +8,9 @@ import type { Goal } from '../../data/goalData';
 interface TabbedPanelProps {
   // Job panel props
   jobLevels: { [key: string]: number };
+  jobExperience: { [key: string]: number };
   onPromote: (jobId: string) => void;
+  onTrain: (jobId: string) => void;
   unlockedJobs: string[];
   
   // Legacy upgrade props removed - replaced by Things system
@@ -36,7 +38,9 @@ type TabId = 'jobs' | 'things' | 'playing' | 'goals';
 
 const TabbedPanel: React.FC<TabbedPanelProps> = ({
   jobLevels,
+  jobExperience,
   onPromote,
+  onTrain,
   unlockedJobs,
   thingQuantities,
   onPurchaseThing,
@@ -89,7 +93,9 @@ const TabbedPanel: React.FC<TabbedPanelProps> = ({
         {activeTab === 'jobs' && (
           <JobPanel
             jobLevels={jobLevels}
+            jobExperience={jobExperience}
             onPromote={onPromote}
+            onTrain={onTrain}
             currentLove={currentLove}
             unlockedJobs={unlockedJobs}
           />
