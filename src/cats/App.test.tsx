@@ -179,6 +179,34 @@ describe('App Component - Wand Toy Mode', () => {
       expect(screen.getByText('Put away wand')).toBeInTheDocument();
       expect(screen.queryByText('Play with wand')).not.toBeInTheDocument();
     });
+
+    it('exits wand mode when Escape key is pressed', () => {
+      // Set wand mode to active
+      mockCatSystemState.isWandMode = true;
+      mockCatSystemState.catState.wandMode = true;
+      
+      render(<App />);
+      
+      // Press Escape key
+      fireEvent.keyDown(document, { key: 'Escape' });
+      
+      // Should call toggleWandMode action to exit wand mode
+      expect(mockCatSystemActions.toggleWandMode).toHaveBeenCalledOnce();
+    });
+
+    it('does not toggle wand mode when Escape key is pressed in normal mode', () => {
+      // Ensure wand mode is inactive
+      mockCatSystemState.isWandMode = false;
+      mockCatSystemState.catState.wandMode = false;
+      
+      render(<App />);
+      
+      // Press Escape key
+      fireEvent.keyDown(document, { key: 'Escape' });
+      
+      // Should NOT call toggleWandMode action
+      expect(mockCatSystemActions.toggleWandMode).not.toHaveBeenCalled();
+    });
   });
 
   describe('Wand Mode Functionality', () => {

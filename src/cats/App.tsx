@@ -554,6 +554,21 @@ function App() {
     };
   }, [isSleeping]);
 
+  // Escape key handler to exit wand mode
+  useEffect(() => {
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && wandMode) {
+        catActions.toggleWandMode();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscapeKey);
+    
+    return () => {
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, [wandMode, catActions]);
+
   // Calculate auto love per second from environment Things
   const autoLovePerSecond = useMemo(() => {
     return thingsData
