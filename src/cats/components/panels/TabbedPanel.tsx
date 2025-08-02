@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import JobPanel from './JobPanel';
 import SkillsPanel from '../skills/SkillsPanel';
-import GoalsPanel from './GoalsPanel';
+import MeritsPanel from './MeritsPanel';
 import ThingsPanel from '../things/ThingsPanel';
-import type { Goal } from '../../data/goalData';
+import type { Merit } from '../../data/meritData';
 import type { JobInterviewState, SkillIncrementState } from '../../game/types';
 
 interface TabbedPanelProps {
@@ -30,16 +30,16 @@ interface TabbedPanelProps {
   lovePerClick: number;
   lovePerPounce: number;
   
-  // Goals panel props
-  activeGoals: Goal[];
-  completedGoals: Goal[];
+  // Merits panel props
+  earnedMerits: Merit[];
+  availableMerits: Merit[];
   
   // Shared currency props
   currentLove: number;
   currentTreats: number;
 }
 
-type TabId = 'jobs' | 'things' | 'skills' | 'goals';
+type TabId = 'jobs' | 'things' | 'skills' | 'merits';
 
 const TabbedPanel: React.FC<TabbedPanelProps> = ({
   jobLevels,
@@ -55,8 +55,8 @@ const TabbedPanel: React.FC<TabbedPanelProps> = ({
   skillIncrements,
   skillAttempts,
   onSkillTrain,
-  activeGoals,
-  completedGoals,
+  earnedMerits,
+  availableMerits,
   currentLove,
   currentTreats,
 }) => {
@@ -85,13 +85,10 @@ const TabbedPanel: React.FC<TabbedPanelProps> = ({
           Skills
         </button>
         <button
-          className={`tab-header ${activeTab === 'goals' ? 'active' : ''}`}
-          onClick={() => setActiveTab('goals')}
+          className={`tab-header ${activeTab === 'merits' ? 'active' : ''}`}
+          onClick={() => setActiveTab('merits')}
         >
-          Goals
-          {activeGoals.length > 0 && (
-            <span className="tab-badge">{activeGoals.length}</span>
-          )}
+          Merits
         </button>
       </div>
 
@@ -125,10 +122,10 @@ const TabbedPanel: React.FC<TabbedPanelProps> = ({
             currentLove={currentLove}
           />
         )}
-        {activeTab === 'goals' && (
-          <GoalsPanel
-            activeGoals={activeGoals}
-            completedGoals={completedGoals}
+        {activeTab === 'merits' && (
+          <MeritsPanel
+            earnedMerits={earnedMerits}
+            availableMerits={availableMerits}
           />
         )}
       </div>

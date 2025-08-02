@@ -19,7 +19,6 @@ const ThingCard: React.FC<ThingCardProps> = ({
   onPurchase,
 }) => {
   const [showTooltip, setShowTooltip] = useState(false);
-  const [useLeftSide, setUseLeftSide] = useState(false);
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
   const price = getThingPrice(thing, quantity);
   const canAfford = currentTreats >= price;
@@ -56,20 +55,14 @@ const ThingCard: React.FC<ThingCardProps> = ({
 
   const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    const windowWidth = window.innerWidth;
-    const tooltipWidth = 220; // max-width of tooltip
+    const tooltipWidth = 240; // max-width of tooltip
     const tooltipHeight = 120; // reduced estimate for more accurate positioning
-    const spaceOnRight = windowWidth - rect.right;
-    const spaceOnLeft = rect.left;
     const spaceAbove = rect.top;
     
-    // Determine which side to show tooltip
-    const useLeft = spaceOnRight < tooltipWidth + 30 && spaceOnLeft > tooltipWidth + 30;
-    setUseLeftSide(useLeft);
+    // Always show tooltip on the left side for consistency
     
     // Simple, conservative positioning - align with top of Thing by default
     let top = rect.top + window.scrollY;
-    let left;
     
     // Only adjust vertically if we'd go off screen
     if (top + tooltipHeight > window.innerHeight + window.scrollY) {
@@ -82,13 +75,9 @@ const ThingCard: React.FC<ThingCardProps> = ({
       }
     }
     
-    // Horizontal positioning with spacing
-    const horizontalGap = 8; // Reduced to match triangle positioning
-    if (useLeft) {
-      left = rect.left + window.scrollX - tooltipWidth - horizontalGap;
-    } else {
-      left = rect.right + window.scrollX + horizontalGap;
-    }
+    // Always position on the left side with extra spacing
+    const horizontalGap = 16;
+    const left = rect.left + window.scrollX - tooltipWidth - horizontalGap;
     
     setTooltipPosition({ top, left });
     setShowTooltip(true);
@@ -127,7 +116,7 @@ const ThingCard: React.FC<ThingCardProps> = ({
 
       {showTooltip && (
         <div 
-          className={`thing-card-tooltip ${useLeftSide ? 'left-side' : ''}`}
+          className="thing-card-tooltip left-side"
           style={{
             position: 'fixed',
             top: `${tooltipPosition.top}px`,

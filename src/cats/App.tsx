@@ -29,7 +29,7 @@ import { performSkillTrainingAttempt } from './data/skillTrainingSystem';
 import { thingsData, getThingPrice, getThingTotalEffect } from './data/thingsData';
 import { useCatSystem } from './hooks/useCatSystem';
 import { HeartSpawningService, type HeartVisuals } from './services/HeartSpawningService';
-import { useGoalSystem } from './hooks/useGoalSystem';
+import { useMeritSystem } from './hooks/useMeritSystem';
 import { useNotificationSystem } from './hooks/useNotificationSystem';
 import type { GameState } from './game/types';
 
@@ -69,8 +69,7 @@ const initialGameState: GameState = {
   skillIncrements: {},
   skillAttempts: {},
   thingQuantities: {},
-  completedGoals: [],
-  activeGoals: [],
+  earnedMerits: [],
 };
 
 function App() {
@@ -99,8 +98,8 @@ function App() {
   const [isDevMode, setIsDevMode] = useState(false);
 
   // Systems
-  const { activeGoals, completedGoals, addGoal } = useGoalSystem(gameState, setGameState);
-  const { notificationQueue, setNotificationQueue } = useNotificationSystem(gameState, addGoal);
+  const { notificationQueue, setNotificationQueue, addNotificationToQueue } = useNotificationSystem(gameState);
+  const { earnedMerits, availableMerits } = useMeritSystem(gameState, setGameState, addNotificationToQueue);
   
   // Heart spawning service
   const heartSpawningService = useMemo(() => {
@@ -968,8 +967,8 @@ function App() {
         onSkillTrain={handleSkillTraining}
         lovePerClick={skillEnhancedLovePerClick}
         lovePerPounce={skillEnhancedLovePerPounce}
-        activeGoals={activeGoals}
-        completedGoals={completedGoals}
+        earnedMerits={earnedMerits}
+        availableMerits={availableMerits}
         currentLove={love}
         currentTreats={treats}
       />

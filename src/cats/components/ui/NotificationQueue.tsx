@@ -22,7 +22,7 @@ const ToastItem: React.FC<{
 
   return (
     <div className="toast-content">
-      <div className="toast-icon">🎉</div>
+      <div className="toast-icon">{gameNotification.type === 'merit' ? '🏆' : '🎉'}</div>
       <div className="toast-text">
         <div className="toast-title">{gameNotification.title}</div>
         <div className="toast-goal">{gameNotification.message}</div>

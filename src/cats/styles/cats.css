@@ -1726,176 +1726,438 @@ body.wand-mode-active * {
   margin-top: 4px;
 }
 
-/* Goals Panel Styles */
-.tabbed-panel .goals-panel {
-  width: 100%;
-  border: none;
-  border-radius: 0;
+/* Merits Panel Styles */
+.merits-panel {
+  display: flex;
+  flex-direction: column;
   height: 100%;
-  background: transparent;
-  padding: 24px; /* M3 spacing */
-  overflow-y: auto; /* Allow vertical scrolling */
-  overflow-x: hidden; /* Prevent horizontal overflow */
-  box-sizing: border-box; /* Include padding in width calculations */
 }
 
-.goals-section {
+.merits-header {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e7e0ec;
+}
+
+.merits-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1d1b20;
+}
+
+.merits-title-icon {
+  width: 20px;
+  height: 20px;
+  color: #6750a4;
+}
+
+.merits-panel-intro {
+  font-size: 0.875rem; /* M3 Body Medium - same as job-panel-intro */
+  color: #49454f; /* M3 On-Surface-Variant - same as job-panel-intro */
+  text-align: center;
   margin-bottom: 24px;
 }
 
-.goals-section:first-of-type {
-  margin-top: 24px;
+.merit-badges-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+  gap: 12px;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: visible;
+  padding: 12px 6px;
+  justify-items: center;
 }
 
-.goals-section:last-child {
-  margin-bottom: 0;
+.merit-badge-wrapper {
+  position: relative;
+  display: block;
+  width: 64px;
 }
 
-.section-title {
-  margin: 0 0 16px 0;
-  color: #6750a4; /* M3 Primary */
-  font-size: 0.875rem; /* M3 Body Medium */
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-}
-
-.goals-list {
+.merit-badge {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-}
-
-.goal-card {
-  background: #f7f2fa; /* M3 Surface Container Low */
-  border-radius: 8px; /* Smaller radius to match other panels */
-  padding: 16px;
-  border: 1px solid #e7e0ec; /* M3 Outline Variant */
-  transition: all 0.2s cubic-bezier(0.05, 0.7, 0.1, 1);
-  box-sizing: border-box;
-}
-
-.goal-card.primary {
-  border-left: 4px solid #6750a4; /* M3 Primary */
-  background: linear-gradient(
-    135deg,
-    rgba(103, 80, 164, 0.05) 0%,
-    rgba(103, 80, 164, 0.02) 100%
-  );
-}
-
-.goal-card.secondary {
-  border-left: 2px solid rgba(103, 80, 164, 0.4);
-}
-
-.goal-card.completed {
-  border-left: 3px solid rgba(103, 80, 164, 0.6); /* Muted primary */
-  background: rgba(103, 80, 164, 0.03);
-  opacity: 0.7;
-}
-
-.goal-card-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
-
-.goal-card-header-right {
-  display: flex;
   align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 64px;
 }
 
-.goal-card-title {
-  font-weight: 600;
-  color: #1d1b20; /* M3 On Surface */
-  font-size: 1rem;
-  line-height: 1.4;
-  flex: 1;
-  min-width: 0;
+.merit-badge:hover {
+  transform: translateY(-1px);
 }
 
-.main-goal-badge {
-  background: #6750a4; /* M3 Primary */
-  color: #ffffff;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  padding: 4px 8px;
-  border-radius: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+.merit-badge.earned:hover {
+  transform: translateY(-2px);
 }
 
-.completed-badge {
-  background: rgba(103, 80, 164, 0.2); /* Muted primary background */
-  color: #6750a4; /* M3 Primary */
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 4px 6px;
-  border-radius: 12px;
+/* Main Badge Circle */
+.badge-circle {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.08);
   display: flex;
   align-items: center;
   justify-content: center;
-  line-height: 1;
-  min-width: 20px;
+  background: #ffffff;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.12),
+    0 1px 2px rgba(0, 0, 0, 0.24);
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.merit-badge.earned .badge-circle {
+  background: #ffffff;
+  border: 1px solid var(--merit-color, #6750a4);
+  box-shadow:
+    0 0 8px rgba(var(--merit-rgb), 0.3),
+    0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.badge-circle:hover {
+  box-shadow:
+    0 3px 6px rgba(0, 0, 0, 0.16),
+    0 2px 4px rgba(0, 0, 0, 0.23);
+}
+
+.merit-badge.locked .badge-circle {
+  background: #fafafa;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+/* Badge Inner Circle - Color Background */
+.badge-inner-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.merit-badge.earned .badge-inner-ring {
+  background: linear-gradient(
+    135deg,
+    var(--merit-color, #6750a4) 0%,
+    var(--merit-color-light, #8a7fb8) 100%
+  );
+}
+
+.merit-badge.locked .badge-inner-ring {
+  background: #f5f5f5;
+}
+
+.badge-icon {
+  width: 20px;
   height: 20px;
-}
-
-.goal-card-description {
-  color: #49454f; /* M3 On Surface Variant */
-  font-size: 0.875rem;
-  line-height: 1.5;
-  margin-bottom: 12px;
-}
-
-.goal-card-reward {
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
 }
 
-.reward-label {
-  font-size: 0.75rem;
+.merit-badge.earned .badge-icon {
+  color: #ffffff;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
+}
+
+.merit-badge.locked .badge-icon {
+  color: #9e9e9e;
+  filter: none;
+}
+
+/* Badge Shine Effect */
+.badge-shine {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.4) 0%,
+    rgba(255, 255, 255, 0.1) 100%
+  );
+  border-radius: 50%;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.merit-badge.earned:hover .badge-shine {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.6) 0%,
+    rgba(255, 255, 255, 0.2) 100%
+  );
+}
+
+/* Badge Title */
+.badge-title {
+  margin-top: 6px;
+  font-size: 0.6rem;
+  font-weight: 500;
+  color: #616161;
+  text-align: center;
+  line-height: 1.1;
+  max-width: 64px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.01em;
+}
+
+.merit-badge.earned .badge-title {
+  color: #424242;
   font-weight: 600;
-  color: #6750a4; /* M3 Primary */
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 
-.reward-items {
+/* Merit Badge Tooltip Styles */
+.merit-badge-tooltip {
+  position: fixed;
+  z-index: 20000;
+  pointer-events: none;
+  opacity: 0;
+  animation: tooltipFadeIn 0.2s ease-out forwards;
+  width: 240px;
+  background: #ffffff;
+  color: #49454f;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid #e7e0ec;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  font-size: 0.8rem;
+  line-height: 1.3;
+}
+
+/* Triangle for right-side tooltip (default) */
+.merit-badge-tooltip::before {
+  content: '';
+  position: absolute;
+  top: 18px;
+  left: -8px;
+  width: 0;
+  height: 0;
+  border: 8px solid transparent;
+  border-right-color: #e7e0ec;
+  border-left: none;
+  z-index: 10001;
+}
+
+.merit-badge-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 19px;
+  left: -7px;
+  width: 0;
+  height: 0;
+  border: 7px solid transparent;
+  border-right-color: #ffffff;
+  border-left: none;
+  z-index: 10002;
+}
+
+/* Triangle for left-side tooltip */
+.merit-badge-tooltip.left-side::before {
+  left: auto;
+  right: -8px;
+  width: 0;
+  height: 0;
+  border: 8px solid transparent;
+  border-left-color: #e7e0ec;
+  border-right: none;
+}
+
+.merit-badge-tooltip.left-side::after {
+  left: auto;
+  right: -7px;
+  width: 0;
+  height: 0;
+  border: 7px solid transparent;
+  border-left-color: #ffffff;
+  border-right: none;
+}
+
+.merit-tooltip-header {
   display: flex;
+  align-items: center;
   gap: 8px;
-  align-items: center;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e7e0ec;
 }
 
-.goal-card .reward-item {
+.merit-status-badge {
+  margin-left: auto;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 0.875rem;
-  color: #6750a4; /* M3 Primary */
-  font-weight: 600;
+  gap: 2px;
 }
 
-.goal-card .reward-icon {
-  width: 14px;
-  height: 14px;
+.merit-status-badge.earned {
+  background: #e8f5e8;
+  color: #2e7d2e;
+  border: 1px solid #c8e6c8;
+}
+
+.merit-status-badge.locked {
+  background: #f5f5f5;
+  color: #757575;
+  border: 1px solid #e0e0e0;
+}
+
+.merit-tooltip-icon {
+  font-size: 16px;
+  color: #6750a4;
+}
+
+.merit-tooltip-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1c1b1f;
+  margin: 0;
+}
+
+.merit-tooltip-description {
+  margin-bottom: 8px;
+  color: #49454f;
+  line-height: 1.3;
+  font-size: 0.75rem;
+}
+
+.merit-tooltip-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.merit-tooltip-requirement,
+.merit-tooltip-rewards {
+  font-size: 0.75rem;
+  color: #79747e;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-wrap: wrap;
+}
+
+.reward-detail {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 4px;
+}
+
+.tooltip-breakdown-icon {
+  width: 10px;
+  height: 10px;
   opacity: 0.8;
 }
 
-.no-goals {
-  text-align: center;
-  padding: 40px 20px;
-  color: #49454f; /* M3 On Surface Variant */
-  font-style: italic;
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.no-goals p {
-  margin: 0;
-  font-size: 0.875rem;
-  line-height: 1.5;
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .merit-badges-container {
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    gap: 8px;
+    padding: 8px 4px;
+  }
+
+  .merit-badge-wrapper,
+  .merit-badge {
+    width: 56px;
+  }
+
+  .badge-circle {
+    width: 44px;
+    height: 44px;
+  }
+
+  .badge-inner-ring {
+    width: 36px;
+    height: 36px;
+  }
+
+  .badge-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .badge-title {
+    font-size: 0.55rem;
+    max-width: 56px;
+    margin-top: 4px;
+  }
+
+  .badge-shine {
+    top: 1px;
+    left: 1px;
+    width: 10px;
+    height: 10px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .merit-badges-container {
+    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+    gap: 14px;
+  }
+
+  .merit-badge-wrapper,
+  .merit-badge {
+    width: 68px;
+  }
+
+  .badge-circle {
+    width: 52px;
+    height: 52px;
+  }
+
+  .badge-inner-ring {
+    width: 42px;
+    height: 42px;
+  }
+
+  .badge-icon {
+    width: 22px;
+    height: 22px;
+  }
+
+  .badge-title {
+    font-size: 0.65rem;
+    max-width: 68px;
+  }
 }
 
 /* ItemCard component styles */
@@ -2573,8 +2835,7 @@ body.wand-mode-active * {
   pointer-events: none;
   opacity: 0;
   animation: tooltipFadeIn 0.2s ease-out forwards;
-  width: max-content;
-  max-width: 220px;
+  width: 240px;
   background: #ffffff;
   color: #49454f;
   padding: 12px 16px;
@@ -2583,33 +2844,6 @@ body.wand-mode-active * {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   font-size: 0.8rem;
   line-height: 1.3;
-}
-
-/* Triangle for right-side tooltip (default) */
-.thing-card-tooltip::before {
-  content: '';
-  position: absolute;
-  top: 18px;
-  left: -8px;
-  width: 0;
-  height: 0;
-  border: 8px solid transparent;
-  border-right-color: #e7e0ec;
-  border-left: none;
-  z-index: 10001;
-}
-
-.thing-card-tooltip::after {
-  content: '';
-  position: absolute;
-  top: 19px;
-  left: -7px;
-  width: 0;
-  height: 0;
-  border: 7px solid transparent;
-  border-right-color: #ffffff;
-  border-left: none;
-  z-index: 10002;
 }
 
 /* Triangle for left-side tooltip */

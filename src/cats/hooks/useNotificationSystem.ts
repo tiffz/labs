@@ -5,7 +5,6 @@ import { gameNotifications } from '../data/notificationData';
 
 export const useNotificationSystem = (
   gameState: GameState,
-  addGoal: (goalId: string) => void,
 ) => {
   const [notifications, setNotifications] = useState<GameNotification[]>(gameNotifications);
   const [notificationQueue, setNotificationQueue] = useState<GameNotification[]>([]);
@@ -15,12 +14,17 @@ export const useNotificationSystem = (
     if (notification && !notification.hasBeenTriggered) {
       setNotificationQueue(prev => [...prev, notification]);
       setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, hasBeenTriggered: true } : n));
-      
-      if (notification.addsGoal) {
-        addGoal(notification.addsGoal);
-      }
     }
-  }, [notifications, addGoal]);
+  }, [notifications]);
+
+  const triggerManualNotification = useCallback((notificationId: string) => {
+    const notification = notifications.find(n => n.id === notificationId);
+    if (notification) {
+      // For manual notifications (like merits), we always trigger them
+      setNotificationQueue(prev => [...prev, notification]);
+      // Don't mark merit notifications as "hasBeenTriggered" since they can be re-displayed
+    }
+  }, [notifications]);
 
   useEffect(() => {
     const checkTriggers = () => {
@@ -57,11 +61,12 @@ export const useNotificationSystem = (
               isTriggered = true;
             }
             break;
-          case 'goal_completed':
-            if (trigger.goalId && gameState.completedGoals.includes(trigger.goalId)) {
+          case 'thing_purchased':
+            if (trigger.thingId && (gameState.thingQuantities[trigger.thingId] || 0) > 0) {
               isTriggered = true;
             }
             break;
+          // Note: goal_completed trigger type removed - replaced by merit system
           default:
             break;
         }
@@ -75,5 +80,17 @@ export const useNotificationSystem = (
     checkTriggers();
   }, [gameState, notifications, triggerNotification]);
 
-  return { notificationQueue, setNotificationQueue };
+  const addNotificationToQueue = useCallback((notification: { title: string; message: string; type?: 'merit' | 'general' }) => {
+    const gameNotification = {
+      id: `manual_${Date.now()}`,
+      title: notification.title,
+      message: notification.message,
+      trigger: { type: 'merit_manual' as const },
+      hasBeenTriggered: false,
+      type: notification.type || 'general'
+    };
+    setNotificationQueue(prev => [...prev, gameNotification]);
+  }, []);
+
+  return { notificationQueue, setNotificationQueue, triggerManualNotification, addNotificationToQueue };
 }; 

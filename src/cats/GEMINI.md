@@ -184,31 +184,31 @@ The Cat Clicker features a completely redesigned progression system that replace
 - `src/cats/components/panels/TabbedPanel.tsx` - Updated to include Things tab
 - `src/cats/styles/cats.css` - Comprehensive tooltip and grid styling
 
-### Unified Notification & Goal System
+### Unified Notification & Merit System
 
 The Cat Clicker underwent a significant architectural overhaul to create a unified, robust notification and progression system:
 
 **Key Improvements:**
 
 - **Replaced complex EventSystem** with a simplified unified notification system
-- **Eliminated duplicate toasts** by combining story events and goal completions into single notifications
+- **Eliminated duplicate toasts** by combining story events and merit awards into single notifications
 - **Fixed persistent wand mode bugs** where toasts would disappear or become uninteractive
 - **Improved notification stacking** with proper z-index hierarchy and visual polish
-- **Enhanced goal progression** with clear visual indicators and rewards
+- **Enhanced merit progression** with clear visual indicators and rewards
 
 **Technical Architecture:**
 
 - **NotificationQueue Component**: Queue-based system replacing the old buggy single-toast approach
-- **Goal System**: Clean goal tracking with automatic completion detection and reward distribution
-- **Unified Data Structure**: `GameNotification` interface combining stories, goals, and rewards
+- **Merit System**: Achievement tracking with automatic merit awards and reward distribution
+- **Unified Data Structure**: `GameNotification` interface combining stories, merits, and rewards
 - **Z-Index Management**: Comprehensive layering system ensuring proper element visibility across all game modes
 
 **Files Involved:**
 
 - `src/cats/data/notificationData.ts` - Unified notification definitions
-- `src/cats/data/goalData.ts` - Goal system and reward structure
+- `src/cats/data/meritData.ts` - Merit system and achievement definitions
 - `src/cats/components/ui/NotificationQueue.tsx` - New queue-based toast system
-- `src/cats/App.tsx` - Simplified notification logic and goal completion tracking
+- `src/cats/App.tsx` - Simplified notification logic and merit achievement tracking
 - `src/cats/styles/cats.css` - Enhanced visual design and z-index hierarchy
 
 ### Early Game Job Progression
@@ -216,7 +216,7 @@ The Cat Clicker underwent a significant architectural overhaul to create a unifi
 Restored the guided early game experience by limiting initial job availability:
 
 - **Single Starting Job**: Only "Cardboard Box Factory" available initially
-- **Clear Progression Path**: Players must complete goals to unlock additional career paths
+- **Clear Progression Path**: Players earn merits automatically as they achieve milestones
 - **Visual Feedback**: Locked jobs indicator shows "2 more career paths to discover"
 - **Balanced Difficulty**: Prevents overwhelming new players with too many options
 
@@ -264,7 +264,7 @@ The project uses intelligent path detection to optimize development speed:
 **Progression System:**
 
 - **Story Events**: Triggered by reaching currency thresholds, providing narrative context and new goals
-- **Goal Completion**: Clear objectives guide players through the game progression
+- **Merit Awards**: Automatic achievements celebrate player milestones and progression
 - **Unified Notifications**: Single toast system provides both story flavor and mechanical rewards
 - **Job Unlocking**: Career paths unlock as players complete specific milestones
 
@@ -321,7 +321,7 @@ Consolidated the growing number of game systems into a clean, scalable interface
 - **Jobs**: Career progression system for passive treat income
 - **Things**: Cookie Clicker-inspired purchasable items with compound pricing
 - **Playing**: Direct interaction enhancement upgrades
-- **Goals**: Achievement tracking and progression guidance
+- **Merits**: Achievement tracking and milestone celebration
 - **Responsive Design**: Adapts to mobile with proper dev panel integration
 
 #### **Currency Tooltip System**
@@ -356,41 +356,41 @@ Professional-grade tooltip system that prevents clipping and provides seamless v
 
 #### **Core Innovation**
 
-Added a sophisticated event and goal system that creates a guided onboarding experience, naturally introducing players to game mechanics through narrative-driven progression.
+Added a sophisticated event and merit system that creates a rewarding progression experience, automatically celebrating player achievements through narrative-driven milestones.
 
 - **Event System**: Context-aware events that trigger based on game state (love/treats thresholds, job acquisitions, upgrades)
-- **Goal Tracking**: Active goals with clear objectives and rewards that guide player progression
+- **Merit Tracking**: Automatic achievement awards that celebrate player milestones and progression
 - **Narrative Flow**: Gentle, humorous events that maintain the game's cute and understated tone
 
 #### **Onboarding Progression**
 
 **Phase 1: Discovery (20 Love)**
 
-- Event: "A Gentle Meow" - Cat expresses hunger with gentle, hopeful eyes
-- Goal: Find a way to earn treats → Guides player to jobs system
+- Merit: "First Bond" - Cat expresses growing connection with gentle, hopeful eyes
+- Merit: First job achievement → Celebrates entering the workforce
 
 **Phase 2: Reality Check (First Job)**
 
-- Event: "A Learning Experience" - Humorous realization that unpaid intern gives no treats
-- Goal: Earn a promotion → Motivates progression within job system
+- Merit: "Learning Experience" - Humorous realization that unpaid intern gives no treats
+- Merit: First promotion milestone → Celebrates career advancement
 - Reward: 25 treat signing bonus when first paying job is achieved
 
 **Phase 3: Things Introduction (50 Treats)**
 
 - Event: "Mealtime Anticipation" - Cat notices treats and hopes for feeding setup
-- Goal: Buy first ceramic bowl → Introduces the Things system for treat-to-love conversion
+- Merit: First purchase achievement → Celebrates improving cat's quality of life
 
 #### **Technical Architecture**
 
 - **Clean Separation**: EventSystem service manages pure business logic separate from React
 - **State-Driven**: Events trigger based on game state changes, not direct player actions
-- **Reward System**: Goals can provide love/treats rewards with custom messages
+- **Reward System**: Merits provide love/treats rewards with celebratory messages
 - **Deep Cloning**: Proper event isolation prevents cross-instance contamination
 
 #### **UI/UX Integration**
 
 - **Event Notifications**: Modal-style notifications with tone-based styling (cute, humorous, encouraging)
-- **Goal Tracker**: Persistent sidebar showing active goals and their rewards
+- **Merit Tracker**: Tab showing earned achievements and available milestones
 - **Job Unlocking**: Progressive revelation with hints about locked career paths
 
 ### Technical Architecture Improvements

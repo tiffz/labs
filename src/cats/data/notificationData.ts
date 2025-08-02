@@ -1,9 +1,10 @@
 export interface NotificationTrigger {
-  type: 'love_threshold' | 'treats_threshold' | 'job_acquired' | 'job_promoted' | 'upgrade_bought' | 'goal_completed' | 'skill_trained';
+  type: 'love_threshold' | 'treats_threshold' | 'job_acquired' | 'job_promoted' | 'upgrade_bought' | 'skill_trained' | 'merit_manual' | 'thing_purchased';
   value?: number;
   jobId?: string;
   skillId?: string;
-  goalId?: string;
+  meritId?: string;
+  thingId?: string;
 }
 
 export interface GameNotification {
@@ -15,79 +16,12 @@ export interface GameNotification {
     love?: number;
     treats?: number;
   };
-  addsGoal?: string; // Goal ID to add when this notification triggers
-  newGoalMessage?: string; // Optional message to show when adding a goal
+  // Note: addsGoal and newGoalMessage removed - replaced by merit system
   hasBeenTriggered: boolean;
+  type?: 'merit' | 'general'; // Add type to distinguish notification types
 }
 
 export const gameNotifications: GameNotification[] = [
-  {
-    id: 'first_love_milestone',
-    title: 'A Gentle Meow',
-    message: 'Your cat looks up with hopeful eyes and a soft tummy rumble. Time for treats?',
-    trigger: {
-      type: 'love_threshold',
-      value: 20
-    },
-    addsGoal: 'get_first_job',
-    newGoalMessage: 'New Goal: Start earning treats',
-    hasBeenTriggered: false
-  },
-  {
-    id: 'got_first_job_unified',
-    title: 'Learning Experience',
-    message: 'Awkward! Your unpaid internship gives zero treats. Your cat appreciates the effort though.',
-    trigger: {
-      type: 'goal_completed',
-      goalId: 'get_first_job'
-    },
-    addsGoal: 'get_paying_job',
-    newGoalMessage: 'New Goal: Get a promotion',
-    hasBeenTriggered: false
-  },
-  {
-    id: 'first_promotion_unified',
-    title: 'First Paycheck!',
-    message: 'Finally earning treats! Your cat will be so happy.',
-    trigger: {
-      type: 'goal_completed',
-      goalId: 'get_paying_job'
-    },
-    hasBeenTriggered: false
-  },
-  {
-    id: 'first_treats_milestone',
-    title: 'Mealtime Anticipation',
-    message: 'Your cat notices the treats and sits hopefully by where their bowl should be. Tail twitching.',
-    trigger: {
-      type: 'treats_threshold',
-      value: 30
-    },
-    addsGoal: 'buy_first_food_bowl',
-    newGoalMessage: 'New Goal: Buy a food bowl',
-    hasBeenTriggered: false
-  },
-  {
-    id: 'bought_food_bowl_unified',
-    title: 'Proper Dining Setup',
-    message: 'Yay! Your cat is no longer eating off the floor.',
-    trigger: {
-      type: 'goal_completed',
-      goalId: 'buy_first_food_bowl'
-    },
-    reward: {
-      love: 15
-    },
-    hasBeenTriggered: false
-  },
-  {
-    id: 'bought_first_toy',
-    title: 'First Toy!',
-    message: 'Your cat seems to enjoy the new toy. They are batting it around with excitement.',
-    trigger: {
-      type: 'playing_upgrade_bought',
-      upgradeId: 'love_per_pet'
-    },
-    hasBeenTriggered: false
-  }
+  // All merit notifications are now handled automatically by the merit system
+  // This array is kept for future non-merit notifications if needed
 ]; 

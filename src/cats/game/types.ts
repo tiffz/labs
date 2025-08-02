@@ -14,8 +14,7 @@ export interface GameState extends GlobalGameState {
   skillIncrements: { [skillId: string]: { [levelIndex: number]: number } };
   skillAttempts: { [skillId: string]: SkillIncrementState };
   thingQuantities: { [key: string]: number };
-  completedGoals: string[];
-  activeGoals: string[];
+  earnedMerits: string[];
 }
 
 export interface JobInterviewState {
