@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ReactDOM from 'react-dom';
 import MaterialIcon from '../../icons/MaterialIcon';
 import CostDisplay from '../ui/CostDisplay';
 import FishIcon from '../../icons/FishIcon';
@@ -114,7 +115,7 @@ const ThingCard: React.FC<ThingCardProps> = ({
         </div>
       </button>
 
-      {showTooltip && (
+      {showTooltip && ReactDOM.createPortal(
         <div 
           className="thing-card-tooltip left-side"
           style={{
@@ -141,7 +142,8 @@ const ThingCard: React.FC<ThingCardProps> = ({
               <strong>Cost:</strong> {price} <FishIcon className="tooltip-breakdown-icon" />
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ReactDOM from 'react-dom';
 import type { Merit } from '../../data/meritData';
 import HeartIcon from '../../icons/HeartIcon';
 import FishIcon from '../../icons/FishIcon';
@@ -69,13 +70,15 @@ const MeritsPanel: React.FC<MeritsPanelProps> = ({ earnedMerits, availableMerits
 
   return (
     <div className="panel merits-panel">
-              <div className="merits-header">
-          <h3 className="merits-title">
-            <MaterialIcon icon="emoji_events" className="merits-title-icon" />
-            Achievements ({earnedMerits.length}/{allMerits.length})
-          </h3>
-        </div>
-      <p className="merits-panel-intro">Help your cat live their best life.</p>
+      <p className="panel-intro">
+        Help your cat live their best life.
+      </p>
+      <div className="merits-header">
+        <h3 className="merits-title">
+          <MaterialIcon icon="emoji_events" className="merits-title-icon" />
+          Achievements ({earnedMerits.length}/{allMerits.length})
+        </h3>
+      </div>
       
       <div className="merit-badges-container">
         {allMerits.map((merit) => {
@@ -123,7 +126,7 @@ const MeritsPanel: React.FC<MeritsPanelProps> = ({ earnedMerits, availableMerits
                 <div className="badge-title">{merit.title}</div>
               </div>
 
-              {showTooltip === merit.id && (
+              {showTooltip === merit.id && ReactDOM.createPortal(
                 <div 
                   className="merit-badge-tooltip left-side"
                   style={{
@@ -160,7 +163,8 @@ const MeritsPanel: React.FC<MeritsPanelProps> = ({ earnedMerits, availableMerits
                       </div>
                     )}
                   </div>
-                </div>
+                </div>,
+                document.body
               )}
             </div>
           );
