@@ -40,7 +40,7 @@ const ThingsPanel: React.FC<ThingsPanelProps> = ({
 
       <div className="things-section">
         <h4 className="section-title">Environment</h4>
-        <p className="section-description">A nice home is a happy home.</p>
+        <p className="section-description">A furnished home is a happy home.</p>
         <div className="things-grid">
           {environmentThings.map(thing => (
             <ThingCard

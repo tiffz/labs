@@ -2,854 +2,201 @@
 
 This document outlines the vision, architecture, and implementation details for the "Cat Clicker" micro-app. It serves as a reference for future development and ensures that Gemini can easily understand and contribute to the project.
 
-## Recent Major Enhancements (2025)
+## Core Game Systems
 
-### Merit System Overhaul & Skills System Replacement (January 2025)
+### Love-Per-Interaction System
 
-The Cat Clicker has undergone a complete transformation of its progression systems, replacing the tedious Skills system with an intuitive Merit-based upgrade system and dynamic love-per-interaction scaling:
+The game uses a dynamic love calculation system that scales with player progression:
 
-**Major Changes:**
+- **1% Scaling**: Base love earned is always 1% of current love held (minimum 1, maximum 100)
+- **Proportional Growth**: Encourages maintaining love reserves for higher interaction rewards
+- **Multiplier Compatible**: Works with cat energy, happiness, and merit upgrade multipliers
+- **Real-Time Feedback**: Current base love visible in currency tooltip
 
-- **Skills System Removed**: Completely eliminated the old skill training system that players found tedious and confusing
-- **Love-Per-Interaction System**: Simple 1% scaling where base love is always 1% of current love on hand, providing direct proportional feedback
-- **Merit-Based Upgrades**: Transform earned merits into permanent player upgrades with linear cost progression (1, 2, 3... merits per level)
-- **Unified Merits Tab**: Combined achievements and upgrades into a single, polished interface with Material Design 3 styling
+### Achievement System
 
-**Love-Per-Interaction Features:**
+The game features two distinct achievement types that work together:
 
-- **Simple 1% Scaling**: Base love is always 1% of current love held, rounded down (minimum 1, maximum 100)
-- **Direct Proportional Growth**: 100 love = 1 base, 500 love = 5 base, 1000 love = 10 base, etc.
-- **Real-Time Feedback**: Visible in currency tooltip, encouraging players to maintain love reserves
-- **Multiplier Compatible**: Works with existing cat energy, happiness, and merit upgrade multipliers
+#### Milestones
 
-**Merit Upgrade System:**
+Progressive achievements that build on each other:
 
-- **Five Core Upgrades**: Gentle Touch (+20% petting), Play Master (+25% pouncing), Home Designer (+15% furniture), Nutrition Expert (+12% feeding), Work Ethic (+10% job treats)
-- **Linear Progression**: Each upgrade level costs 1 more merit than the previous (level 1=1 merit, level 2=2 merits, etc.)
-- **Visual Progress**: Dense UI with 10-level indicators showing filled notches for purchased levels
-- **Smart Spending**: "Available to spend" counter with detailed breakdown tooltip showing earned/spent/available merits
+- **Love Milestones**: 10 → 100 → 1K → 10K → 100K → 1M → 10M
+- **Treat Milestones**: 10 → 100 → 1K → 10K → 100K → 1M
+- **Job/Thing Milestones**: Unlock specific items and reach job levels
+- **Merit Rewards**: Each milestone grants 1 Merit point for upgrades
 
-**UI/UX Enhancements:**
+#### Awards
 
-- **Subtab Design**: Clean Material Design 3 tabs for "Upgrades" and "Achievements" with badge counters
-- **Restored Badge Design**: Circular achievement badges with dynamic colors, gradients, and professional styling
-- **Merit Counter Chip**: Elegant white chip showing available merits with comprehensive hover tooltip
-- **Consistent Iconography**: Golden "kid_star" icons throughout, with proper currency colors (red hearts, blue fish)
+Secret achievements for special interactions:
 
-**Technical Implementation:**
+- **"Boop"**: First nose click discovery
+- **"Joy Bringer"**: First happy jump trigger
+- **Special Action Tracking**: Nose clicks, happy jumps, ear clicks, cheek pets
+- **Hidden Until Unlocked**: Mysterious descriptions encourage exploration
 
-- **Love Per Interaction System**: `src/cats/data/lovePerInteractionSystem.ts` with configurable thresholds and logarithmic scaling
-- **Merit Upgrade Data**: `src/cats/data/meritUpgradeData.ts` with upgrade definitions and cost calculations
-- **State Management**: Removed `skillLevels`, `skillIncrements`, `totalLoveEverEarned`; added proper merit spending tracking
-- **Component Architecture**: Merged upgrade functionality into existing `MeritsPanel.tsx` with clean separation of concerns
+### Merit Upgrade System
 
-**Files Modified:**
+Permanent upgrades purchased with Merit points earned from achievements:
 
-- `src/cats/data/lovePerInteractionSystem.ts` - New dynamic love calculation system
-- `src/cats/data/meritUpgradeData.ts` - Merit upgrade definitions and cost logic
-- `src/cats/components/panels/MeritsPanel.tsx` - Unified merits interface with subtabs
-- `src/cats/components/panels/TabbedPanel.tsx` - Removed skills panel integration
-- `src/cats/components/ui/CurrencyTooltip.tsx` - Updated to show love-per-interaction stats
-- `src/cats/App.tsx` - Integrated merit multipliers and love calculation
-- `src/cats/game/types.ts` - Cleaned up GameState interface
-- `src/cats/styles/cats.css` - Extensive UI polish and Material Design 3 styling
-- `src/cats/hooks/useNotificationSystem.ts` - Removed skill notification triggers
+- **Gentle Touch**: +20% love from petting (per level)
+- **Play Master**: +25% love from pouncing (per level)
+- **Home Designer**: +15% love from furniture (per level)
+- **Nutrition Expert**: +12% feeding effectiveness (per level)
+- **Work Ethic**: +10% treats from jobs (per level)
+- **Linear Cost Progression**: Level 1 = 1 merit, Level 2 = 2 merits, etc.
 
-**Testing Coverage:**
+## Design Principles
 
-- **New Test Suites**: 36 new tests covering love-per-interaction system and merit upgrade logic
-- **Updated Component Tests**: Revised MeritsPanel tests for new tabbed interface
-- **Integration Tests**: All 282 tests passing with comprehensive coverage of new systems
+### User Experience
 
-### Experience-Based Job Progression System
+- **High Information Density**: Compact layouts that maximize content while maintaining readability
+- **Material Design 3**: Consistent iconography and modern styling throughout
+- **Progressive Disclosure**: Secret achievements and hidden mechanics encourage exploration
+- **Immediate Feedback**: Real-time visual responses to all player actions
 
-The Cat Clicker features a completely redesigned job system that transforms career progression from simple cost-based unlocks into an engaging, skill-building experience:
+### Game Balance
 
-**Key Features:**
-
-- **Experience-Driven Progression**: Players must train/interview to gain experience points before promotions become available
-- **Love-to-Experience Training**: Spend love currency on training sessions with randomized experience gains (with luck bonuses)
-- **Compact Visual Design**: One-line job ladder with dot indicators showing current position and progress
-- **Contextual Actions**: "Interview" button for unemployed players, "Work" for employed, with dynamic cost display
-- **Pure Experience Promotions**: "Accept Offer"/"Ask for Promotion" buttons depend solely on experience thresholds, not love costs
-- **Incremental Progression**: Starting job (Unpaid Intern) requires 3 experience points, encouraging 2-3 training sessions
-- **Extended Career Paths**: Box Factory expanded to 13 levels (from Unpaid Intern to Supreme Box Overlord)
-
-**Game Balance:**
-
-- **Training Economics**: Base cost of 2 love per training session, with slight increases based on current experience
-- **Randomized Gains**: 1-3 experience per session with 20% chance of luck bonus (1.5x multiplier)
-- **Progressive Difficulty**: Early promotions require 3-5 experience, later ones need 100+ for meaningful progression pacing
-- **Treats Rewards**: Each promotion significantly increases passive income, with final levels earning 140+ treats/second
-
-**Technical Implementation:**
-
-- **Modular Training System**: Dedicated `jobTrainingSystem.ts` with configurable parameters per job type
-- **Experience State**: New `jobExperience: { [key: string]: number }` in GameState for per-job tracking
-- **UI Polish**: Material Design icons, fish/heart currency indicators, hover tooltips with detailed progression info
-- **Performance Optimized**: Minimal re-renders with proper React state management and memoization
-
-**Files Involved:**
-
-- `src/cats/data/jobTrainingSystem.ts` - Training mechanics, cost calculations, and promotion logic
-- `src/cats/data/jobData.ts` - Extended job definitions with experience requirements
-- `src/cats/components/panels/JobPanel.tsx` - Compact UI with ladder visualization and interactive buttons
-- `src/cats/game/types.ts` - Updated GameState interface with jobExperience tracking
-- `src/cats/App.tsx` - Integration of training handlers and experience state management
-- `src/cats/styles/cats.css` - Comprehensive styling for compact job cards and visual polish
-
-### Enhanced Wand Mode Controls
-
-Improved the wand toy interaction system with intuitive keyboard controls:
-
-**Key Features:**
-
-- **Escape Key Exit**: Press `Escape` while in wand mode to instantly return to normal petting mode
-- **Seamless Integration**: Global keyboard listener that only activates when wand mode is active
-- **Clean Event Handling**: Proper event listener cleanup to prevent memory leaks
-- **User Experience**: Provides quick escape route when players want to switch interaction modes
-
-**Technical Implementation:**
-
-- **Global Event Listener**: `keydown` event handler in main App component
-- **Conditional Logic**: Only responds to Escape key when `wandMode` is active
-- **Proper Cleanup**: Event listener removal on component unmount and dependency changes
-- **Test Coverage**: Comprehensive tests ensuring keyboard functionality works correctly
-
-**Files Involved:**
-
-- `src/cats/App.tsx` - Escape key event handler and wand mode integration
-- `src/cats/App.test.tsx` - Keyboard interaction tests and edge case coverage
-
-### Interview System Implementation
-
-Complete dice-roll based job interview system for initial employment:
-
-**Key Features:**
-
-- **Dice Roll Mechanics**: 35% success rate for Box Factory (balanced for ~3 attempts needed)
-- **Humorous Rejection System**: 25 unique rejection messages from interviewer's perspective about cat-obsessed human
-- **Clean UI Design**: Minimal red italic text for rejections, no background clutter, one-line formatting
-- **Seamless State Transitions**: Interview → Job Offer → Employed states use identical layout spacing
-- **Dynamic Actions**: "Interview" for unemployed, "Accept Offer" after success, no placeholder text
-
-**Game Balance:**
-
-- **Interview Costs**: 3 love for Box Factory, scales up for harder jobs (Software Developer: 5, Librarian: 7)
-- **Success Rates**: Box Factory 35%, Software Developer 15%, Librarian 12% (progressively harder)
-- **Human-Centric Humor**: All rejection messages focus on cat obsession rather than assuming player is a cat
-
-**Technical Implementation:**
-
-- **Probability System**: `Math.random()` based success determination with configurable rates per job
-- **Message Formatting**: UI adds italic quotes around raw message text for consistent presentation
-- **State Management**: `JobInterviewState` tracks offer status and last rejection for seamless UI updates
-- **Layout Consistency**: Interview and employed states use identical CSS spacing to prevent visual jumping
-
-**Files Involved:**
-
-- `src/cats/data/interviewSystem.ts` - Interview mechanics, success/failure logic, and message data
-- `src/cats/components/panels/JobPanel.tsx` - Conditional UI rendering for interview vs employed states
-- `src/cats/game/types.ts` - `JobInterviewState` interface for tracking offers and rejections
-- `src/cats/styles/cats.css` - Clean styling for rejection feedback (red italic text, no backgrounds)
-- `src/cats/data/interviewSystem.test.ts` - Comprehensive test coverage (18 tests)
-
-### Comprehensive Skills System
-
-A complete skill development system that replaces the old playing upgrades, allowing players to master various cat-caring techniques through training and experience progression:
-
-**Key Features:**
-
-- **Six Distinct Skills**: Petting Technique, Wand Play Technique, Interior Design, Food Preparation, Work Ethic, and Work Intelligence
-- **Auto-Leveling System**: Skills automatically level up when experience thresholds are reached (no manual promotion needed)
-- **Experience-Based Training**: Spend love to train skills, gaining randomized experience with luck bonuses
-- **Immediate Passive Effects**: Each skill level provides instant game improvements (love per pet, job treats multiplier, etc.)
-- **Visual Progress Tracking**: Compact skill ladder dots and experience progress bars
-- **Master Level Achievement**: Skills max out at different levels (7-9) with "Master Level" indicators
-
-**Skill Types and Effects:**
-
-1. **Petting Technique** (`love_per_pet`): +1 love per pet per level (9 levels: Gentle Strokes → Supreme Pet Master)
-2. **Wand Play Technique** (`love_per_pounce`): +2 love per pounce per level (8 levels: Basic Wiggling → Apex Toy Handler)
-3. **Interior Design** (`furniture_love_multiplier`): +10% furniture love bonus per level (7 levels: Box Placement → Interior Architect)
-4. **Food Preparation** (`feeding_effect_multiplier`): +15% feeding effect bonus per level (7 levels: Bowl Filling → Master Chef)
-5. **Work Ethic** (`training_experience_multiplier`): +20% training XP bonus per level (7 levels: Showing Up → Peak Performance)
-6. **Work Intelligence** (`job_treats_multiplier`): +10% job treats bonus per level (7 levels: Basic Competence → Industry Expert)
-
-**Game Balance:**
-
-- **Training Economics**: Base cost of 3 love per session, increases by 0.8% per total experience point
-- **Experience Gains**: 1-6 XP per session (base 3 ± 40% variance) with 20% luck chance (1.8x multiplier)
-- **Progressive Requirements**: Early levels need 5-15 XP, later levels require 200-300 XP for meaningful progression
-- **Immediate Benefits**: All effects apply instantly upon leveling, providing continuous motivation
-
-**Technical Implementation:**
-
-- **Modular Skill System**: Dedicated `skillData.ts` with configurable effect types and progression curves
-- **Auto-Leveling Logic**: `checkForSkillLevelUp()` function automatically promotes skills based on experience
-- **Effect Integration**: Skills directly modify game mechanics (love per click, job income, etc.) through `getSkillEffect()`
-- **Visual Consistency**: Aligned with job card design system for cohesive UI/UX experience
-- **State Management**: `skillLevels` and `skillExperience` in GameState for persistent progression tracking
-
-**Files Involved:**
-
-- `src/cats/data/skillData.ts` - Skill definitions, effect calculations, and progression logic
-- `src/cats/data/skillTrainingSystem.ts` - Training mechanics, cost calculations, and auto-leveling
-- `src/cats/components/skills/SkillsPanel.tsx` - Complete UI with ladder visualization and training actions
-- `src/cats/game/types.ts` - Updated GameState interface with skill tracking (removed playingUpgradeLevels)
-- `src/cats/App.tsx` - Skill training handlers, effect calculations, and state integration
-- `src/cats/components/panels/TabbedPanel.tsx` - Updated to show "Skills" tab instead of "Playing"
-- `src/cats/data/skillData.test.ts` - Unit tests for skill data and helper functions (16 tests)
-- `src/cats/data/skillTrainingSystem.test.ts` - Training system tests and integration (23 tests)
-- `src/cats/components/skills/SkillsPanel.test.tsx` - UI component tests (16 tests)
-
-**Recent UI/Visual Improvements:**
-
-- **Aligned with Job Card Design**: Skills now use identical styling to job cards for visual consistency (same background, borders, padding, hover effects)
-- **Discrete Progress System**: Replaced continuous experience bars with discrete dot-based progress indicators for clearer advancement visualization
-- **Chance-Based Training**: Training attempts now use dice-roll mechanics with success/failure feedback messages for engaging progression
-- **Elegant Typography**: Consistent font sizes, colors, and spacing matching Material Design 3 principles
-- **Simplified Color Palette**: Reduced visual clutter by removing excessive background colors and using subtle accent colors
-- **Compact Level Indicators**: Added "Lv. X" indicators for quick skill level reference
-- **Icon Consistency**: Standardized skill icons with proper Material Design styling and coloring
-
-### Modern Things System (Cookie Clicker-Inspired)
-
-The Cat Clicker features a completely redesigned progression system that replaces the traditional feeding upgrades with an engaging "Things" mechanic:
-
-**Key Features:**
-
-- **Cookie Clicker-Style Interaction**: Simplified UI showing only name, cost, and quantity with detailed tooltips on hover
-- **Dense Grid Layout**: 3-5 items per row in responsive grid for maximum information density
-- **Two Categories**: "Feeding" (improves treat-to-love conversion) and "Environment" (provides passive benefits)
-- **No Levels**: Each Thing is purchasable multiple times with escalating prices (compound growth)
-- **Professional Tooltips**: Fixed-position tooltips with seamless border connections and smart positioning
-
-**Technical Implementation:**
-
-- **Intelligent Positioning**: Advanced tooltip system prevents overlap and container clipping
-- **Dynamic Pricing**: Each Thing uses `basePrice * priceMultiplier^quantity` formula
-- **Effect Types**: `love_per_treat`, `treat_consumption_rate`, and `auto_love_rate` mechanics
-- **Smart UI**: Contextual fish icon colors (blue when affordable, gray when expensive)
-- **Material Design Icons**: Professional iconography matching game's aesthetic
-
-**Files Involved:**
-
-- `src/cats/data/thingsData.ts` - Thing definitions and pricing calculations
-- `src/cats/components/things/ThingCard.tsx` - Individual Thing display with tooltips
-- `src/cats/components/things/ThingsPanel.tsx` - Grid layout and category organization
-- `src/cats/components/panels/TabbedPanel.tsx` - Updated to include Things tab
-- `src/cats/styles/cats.css` - Comprehensive tooltip and grid styling
-
-### Unified Notification & Merit System
-
-The Cat Clicker underwent a significant architectural overhaul to create a unified, robust notification and progression system:
-
-**Key Improvements:**
-
-- **Replaced complex EventSystem** with a simplified unified notification system
-- **Eliminated duplicate toasts** by combining story events and merit awards into single notifications
-- **Fixed persistent wand mode bugs** where toasts would disappear or become uninteractive
-- **Improved notification stacking** with proper z-index hierarchy and visual polish
-- **Enhanced merit progression** with clear visual indicators and rewards
-
-**Technical Architecture:**
-
-- **NotificationQueue Component**: Queue-based system replacing the old buggy single-toast approach
-- **Merit System**: Achievement tracking with automatic merit awards and reward distribution
-- **Unified Data Structure**: `GameNotification` interface combining stories, merits, and rewards
-- **Z-Index Management**: Comprehensive layering system ensuring proper element visibility across all game modes
-
-**Files Involved:**
-
-- `src/cats/data/notificationData.ts` - Unified notification definitions
-- `src/cats/data/meritData.ts` - Merit system and achievement definitions
-- `src/cats/components/ui/NotificationQueue.tsx` - New queue-based toast system
-- `src/cats/App.tsx` - Simplified notification logic and merit achievement tracking
-- `src/cats/styles/cats.css` - Enhanced visual design and z-index hierarchy
-
-### Early Game Job Progression
-
-Restored the guided early game experience by limiting initial job availability:
-
-- **Single Starting Job**: Only "Cardboard Box Factory" available initially
-- **Clear Progression Path**: Players earn merits automatically as they achieve milestones
-- **Visual Feedback**: Locked jobs indicator shows "2 more career paths to discover"
-- **Balanced Difficulty**: Prevents overwhelming new players with too many options
-
-### Toast & UI Polish
-
-Comprehensive visual improvements to the notification system:
-
-- **Increased Toast Size**: Wider notifications (420-500px) for better readability
-- **Enhanced Typography**: Larger fonts throughout (15-25% increases) for improved accessibility
-- **Better Spacing**: More breathing room around icons and content elements
-- **Simplified Design**: Removed unnecessary icons and quotes for cleaner appearance
-- **Improved Rewards Display**: Clear visual indicators for treats and love gains
-
-### Custom Cat Favicon
-
-The Cat Clicker features a custom SVG favicon that perfectly captures the kawaii aesthetic:
-
-- **Blobby egg shape** - Wider bottom, narrower top matching the game cat's proportions
-- **Frame-breaking effect** - Cat extends beyond the squarecle background for visual impact
-- **Optimized positioning** - Cat positioned lower with eyes in bottom half for "peeking up" cuteness
-- **Perfect proportions** - Bigger ears, larger eyes, and chunky body that feels adorable at small sizes
-
-### Optimized Testing Workflow
-
-The project uses intelligent path detection to optimize development speed:
-
-- **Code changes** trigger full test suite (157 comprehensive tests)
-- **Documentation/asset changes** skip tests for faster deployment
-- **Smart pre-commit hooks** only run tests when TypeScript/JavaScript files are staged
-- **Dual CI/CD workflows** provide fast asset deployment while maintaining code quality
-
-## 1. Core Gameplay Loop
-
-**Cat Clicker** is an incremental game with two primary currencies and a unified progression system:
-
-- **Love (❤️):** Earned by interacting directly with the cat (petting, playing with the wand). Love is spent on upgrades that improve these direct interactions.
-- **Treats (🐟):** Earned passively by acquiring "Day Jobs." Treats are the foundation for the game's idle progression.
-
-**Player Character & Narrative:**
-
-- **The Player is Human**: The player character is explicitly a cat-obsessed human, not a cat themselves. All game flavor text, interview rejections, and narrative elements should reflect this distinction.
-- **Cat-Human Relationship**: The human player cares for their cat companion and works jobs to afford a better life for their feline friend.
-- **Humor Style**: The comedy comes from the player being an eccentric, cat-obsessed person whose dedication to their cat affects their professional and social interactions.
-
-**Progression System:**
-
-- **Story Events**: Triggered by reaching currency thresholds, providing narrative context and new goals
-- **Merit Awards**: Automatic achievements celebrate player milestones and progression
-- **Unified Notifications**: Single toast system provides both story flavor and mechanical rewards
-- **Job Unlocking**: Career paths unlock as players complete specific milestones
-
-The core loop is satirical and wholesome: the player (a human) must work a series of humorous day jobs to provide a better life for their beloved cat.
-
-## 2. UI/UX Vision & Design System
-
-The application's design is heavily inspired by **Google's Material Design 3 (M3)** system. The goal is a clean, modern, and professional UI that feels intuitive and delightful to use.
-
-- **Layout:** The game uses a responsive two-panel layout. The left panel is for direct cat interaction, while the right panel is dedicated to the "Day Job" progression system.
-- **Component Styling:** All interactive elements, such as buttons and panels, are styled according to M3 specifications, using appropriate color palettes, corner radiuses, and elevation shadows.
-- **Z-Index Hierarchy:** Comprehensive layering system ensures proper element visibility:
-  - **Base Elements**: 10-100 (wand click areas, basic UI)
-  - **Currency Indicators**: 1001
-  - **Wand Toy**: 15000 (top priority for interaction)
-  - **Notifications**: 11000-15000 (adaptive based on context)
-  - **Currency Tooltips**: 10000-10002
-- **Notification Design:** Modern toast system with proper stacking, readable typography, and clear reward indicators
-- **Typography & Spacing:** The application follows M3's type scale and spacing guidelines to ensure visual harmony and readability.
-
-## 3. Key Features & Mechanics
-
-### Cat Animation & Interaction
-
-- **SVG Cat:** The cat is a modular SVG, allowing for individual parts like the head, tail, and eyes to be animated independently.
-- **Dynamic States:** The cat has multiple states, including `petting`, `drowsy`, `sleeping`, `startled`, and `pouncing`, each with unique animations and behaviors.
-- **Happy Jumps:** Rapidly petting the cat has a chance to trigger a "happy jump," which rewards bonus Love and features a joyful `^^` eye expression.
-
-## Recent Major Architectural Changes (Session 2024-12-19)
-
-### Treat-to-Love Economic System
-
-#### **Core Innovation**
-
-Added a passive economic engine where treats automatically convert to love, creating the foundation for the game's progression system.
-
-- **Conversion Rate**: Configurable treats per second that can be processed
-- **Love Multiplier**: Amount of love gained per treat converted
-- **Centralized Logic**: `calculatePassiveIncome()` function for consistent economic calculations
-- **Real-time Updates**: Synchronized with all UI displays and debug tools
-
-#### **Dual Progression Paths**
-
-- **Things System**: Cookie Clicker-style purchasable items that improve efficiency (ceramic bowls, feeders, cat trees, beds)
-- **Playing Upgrades**: Enhance direct interactions (petting technique, play engagement)
-- **Scalable Progression**: Things use compound pricing, Playing upgrades have infinite scaling with predefined levels
-
-### UI/UX Transformation
-
-#### **Tabbed Interface Revolution**
-
-Consolidated the growing number of game systems into a clean, scalable interface:
-
-- **Jobs**: Career progression system for passive treat income
-- **Things**: Cookie Clicker-inspired purchasable items with compound pricing
-- **Playing**: Direct interaction enhancement upgrades
-- **Merits**: Achievement tracking and milestone celebration
-- **Responsive Design**: Adapts to mobile with proper dev panel integration
-
-#### **Currency Tooltip System**
-
-Replaced simple conversion badges with detailed economic breakdowns:
-
-- **Treat Flow Tooltip**: Shows earnings, conversion, and savings with cat personality
-- **Love Generation Tooltip**: Displays complete conversion process with hunger warnings
-- **Exclusive Visibility**: `TooltipManager` ensures only one tooltip at a time
-- **Information Hierarchy**: Primary totals first, breakdown details second
-
-#### **Material Design Icon Integration**
-
-Systematic replacement of emojis with SVG icons for visual consistency:
-
-- **Fish → Heart**: Visual representation of treat-to-love conversion
-- **Consistent Sizing**: Standardized icon dimensions across all components
-- **Component Reuse**: `HeartIcon` and `FishIcon` used throughout interface
-
-#### **Advanced Tooltip System**
-
-Professional-grade tooltip system that prevents clipping and provides seamless visual connections:
-
-- **Fixed Positioning**: Uses `position: fixed` with viewport calculations to prevent container clipping
-- **Intelligent Side Detection**: Automatically switches between left and right positioning based on available space
-- **Seamless Border Connection**: Triangle arrows connect directly to tooltip edges with perfect alignment
-- **Smart Overlap Prevention**: Advanced positioning logic ensures tooltips never cover the items they describe
-- **Performance Optimized**: Uses `getBoundingClientRect()` with scroll offsets for precise positioning
-- **Responsive Triangle**: Dynamic triangle sizing and positioning based on gap distance
-
-### Event System & Guided Onboarding (2025)
-
-#### **Core Innovation**
-
-Added a sophisticated event and merit system that creates a rewarding progression experience, automatically celebrating player achievements through narrative-driven milestones.
-
-- **Event System**: Context-aware events that trigger based on game state (love/treats thresholds, job acquisitions, upgrades)
-- **Merit Tracking**: Automatic achievement awards that celebrate player milestones and progression
-- **Narrative Flow**: Gentle, humorous events that maintain the game's cute and understated tone
-
-#### **Onboarding Progression**
-
-**Phase 1: Discovery (20 Love)**
-
-- Merit: "First Bond" - Cat expresses growing connection with gentle, hopeful eyes
-- Merit: First job achievement → Celebrates entering the workforce
-
-**Phase 2: Reality Check (First Job)**
-
-- Merit: "Learning Experience" - Humorous realization that unpaid intern gives no treats
-- Merit: First promotion milestone → Celebrates career advancement
-- Reward: 25 treat signing bonus when first paying job is achieved
-
-**Phase 3: Things Introduction (50 Treats)**
-
-- Event: "Mealtime Anticipation" - Cat notices treats and hopes for feeding setup
-- Merit: First purchase achievement → Celebrates improving cat's quality of life
-
-#### **Technical Architecture**
-
-- **Clean Separation**: EventSystem service manages pure business logic separate from React
-- **State-Driven**: Events trigger based on game state changes, not direct player actions
-- **Reward System**: Merits provide love/treats rewards with celebratory messages
-- **Deep Cloning**: Proper event isolation prevents cross-instance contamination
-
-#### **UI/UX Integration**
-
-- **Event Notifications**: Modal-style notifications with tone-based styling (cute, humorous, encouraging)
-- **Merit Tracker**: Tab showing earned achievements and available milestones
-- **Job Unlocking**: Progressive revelation with hints about locked career paths
-
-### Technical Architecture Improvements
-
-#### **Progressive Game Mechanics**
-
-- **Starting State**: Conversion rate begins at 0 (no automatic feeding until first food bowl)
-- **Job Gating**: Only Box Factory available initially, with UI hints about future unlocks
-- **Unpaid Labor**: First job position gives 0 treats/second, creating meaningful progression moment
-
-#### **Shared Component System**
-
-- **`CostDisplay.tsx`**: Unified cost presentation with inline/block modes
-- **Consistent Styling**: Red backgrounds for unaffordable costs, clean styling for affordable
-- **Type Safety**: Full TypeScript integration with proper prop interfaces
-
-#### **Infinite Scaling Engine**
-
-- **Data Structure**: `infiniteScaling` parameters for all upgrade types
-- **Utility Functions**: `getInfiniteUpgradeCost()`, `getInfiniteUpgradeEffect()`, `getInfiniteUpgradeName()`
-- **Balance Formula**: Exponential cost scaling with logarithmic effect scaling
-
-#### **Design System Standards**
-
-- **Whole Numbers Only**: All currency displays use `Math.floor()` for casual gaming feel [[memory:4474452]]
-- **Z-Index Hierarchy**: Proper layering system preventing UI conflicts
-- **Component Consistency**: Shared styling patterns across all panels
-
-### Advanced Pounce Logic
-
-The logic for the wand toy interaction is designed to feel organic and skillful, rewarding players who play like they would with a real cat.
-
-- **Pounce Confidence:** The cat has an internal "pounce confidence" meter that is influenced by player actions.
-- **Proximity Multiplier:** The cat becomes hyper-focused when the toy is close, dramatically amplifying the excitement from small, twitchy movements.
-- **Movement Novelty:** The cat gets "bored" of repetitive, high-speed movements (like circling the mouse). To keep the cat engaged, the player must use varied, jerky motions that mimic prey.
-- **Sudden Start/Stop Bonuses:** The cat is most excited by sudden changes in velocity, rewarding the player for skillful, unpredictable play.
-
-### Dual-Currency System
-
-- **Love (❤️):** The primary "active" currency. The main upgrades, like "More Love Per Pet," are purchased with Love.
-- **Treats (🐟):** The primary "idle" currency. The `treats` counter is a passive resource that will be used for future upgrades.
-
-### "Day Job" Progression
-
-- **Satirical Theme:** The idle mechanic is framed as the player getting a series of absurd day jobs to earn money for their cat.
-- **Two-Stage Progression System:**
-  - **Interview Stage:** For unemployed players, interviews are dice-roll based with 35% success rate (~3 attempts needed). Features humorous rejection quotes from interviewer's perspective about cat-obsessed human behavior.
-  - **Career Ladder:** Once hired, players advance through promotion levels (e.g., from "Unpaid Intern" to "Supreme Box Overlord" at the Box Factory) using experience points earned through training.
-- **Training System:** Employed players spend love currency to train, gaining randomized experience with luck bonuses for skill-building progression.
-- **Idle Income:** Each promotion level significantly increases passive `Treats per second`, with final positions earning 100+ treats/second.
-- **Seamless UI Transitions:** Interview, job offer, and employed states use identical layouts to prevent visual jumping during progression.
-
-### Developer Mode
-
-- **Activation:** Appending `?dev=true` to the URL activates a debug panel.
-- **Live Data:** The panel provides a real-time view of the game's hidden mechanics, including the cat's `Energy`, `Pounce Confidence`, `Cursor Velocity`, `Proximity Multiplier`, and `Movement Novelty`. This was instrumental in tuning the game's feel.
+- **Proportional Scaling**: Love-per-interaction scales with player progression to maintain engagement
+- **Merit Economy**: Achievement rewards create meaningful upgrade progression
+- **Training Investment**: Experience-based job progression requires strategic love spending
+- **Discovery Rewards**: Special interactions provide unique achievement unlocks
 
 ### Technical Architecture
 
-- **Multi-Page App Setup:** The project is configured as a multi-page application within Vite, with separate HTML entry points for different "labs."
-- **Service Worker:** A PWA service worker is configured for offline caching. Crucially, it is set up to handle a multi-page app structure correctly, using `directoryIndex` and `ignoreURLParametersMatching` to serve the right pages and avoid caching bugs. This was a significant technical hurdle that required careful debugging.
-- **Reusable Components:** Key UI elements, like the `HeartIcon` and `FishIcon`, are built as reusable React components to ensure visual consistency.
+- **Centralized State**: GameState manages all progression and achievement tracking
+- **Modular Systems**: Separate systems for achievements, jobs, interactions, and UI
+- **Comprehensive Testing**: 290+ tests covering all game mechanics and edge cases
+- **Performance First**: Optimized rendering and minimal state updates
 
-## 4. Project Structure
+## Job System
 
-The `cats` micro-app follows a feature-based folder structure to keep the code organized and maintainable:
+### Career Progression
 
-- `/components`: Contains all React components, further divided by feature.
-  - `/components/cat`: Components directly related to the cat SVG and its animations (`Cat.tsx`, `Heart.tsx`, etc.).
-  - `/components/jobs`: Components for the "Day Job" feature (`JobPanel.tsx`, `Job.tsx`).
-  - `/components/ui`: General-purpose UI components (`DevPanel.tsx`, `CatFact.tsx`).
-- `/data`: Holds static data and type definitions (`jobData.ts`, `catFacts.ts`).
-- `/icons`: Contains reusable SVG icon components (`HeartIcon.tsx`, `FishIcon.tsx`).
-- `/styles`: Global and component-specific stylesheets (`cats.css`).
-- `/test`: Contains shared testing setup and utilities (`setupTests.ts`).
+Experience-driven advancement system:
 
-## 5. Testing
+- **Training**: Spend love to gain randomized experience (1-3 points, 20% luck bonus)
+- **Interview**: 35% success rate for initial employment (Box Factory)
+- **Promotion**: Purely experience-based thresholds (3-100+ points required)
+- **Rewards**: Increasing treats per second with each promotion
 
-The project uses **Vitest** for unit testing, integrated directly into the Vite development environment. This allows for fast, efficient, and reliable testing of our React components. The Cat Clicker has comprehensive test coverage with **157 tests** across all major components and functionality.
+### UI Design
 
-### Technology Stack
+- **Compact Ladder**: One-line job visualization with progress dots
+- **Contextual Actions**: Interview → Accept Offer → Work → Promote flow
+- **Material Icons**: Consistent visual language with currency indicators
 
-- **Test Runner:** [Vitest](https://vitest.dev/)
-- **Testing Framework:** [@testing-library/react](https://testing-library.com/docs/react-testing-library/intro/)
-- **DOM Assertions:** [@testing-library/jest-dom](https://github.com/testing-library/jest-dom)
-- **DOM Environment:** `jsdom`
+## Interactive Systems
 
-### Running Tests
+### Cat Interactions
 
-To run the entire test suite once, use the following command:
+- **Petting**: Primary love-earning interaction with energy/happiness multipliers
+- **Wand Toy**: Alternate interaction mode (Escape key to exit)
+- **Special Areas**: Nose, ears, cheeks provide unique award opportunities
 
-```bash
-npm test
-```
+### Notification System
 
-This command will execute all `*.test.tsx` files and provide a summary of the results in the console. The tests are configured to run in a simulated DOM environment, so they do not require a browser.
+- **Achievement Alerts**: Milestone and award notifications
+- **Merit Rewards**: Clear feedback for progression unlocks
+- **Job Updates**: Interview results and promotion celebrations
 
-### Test Coverage Overview
+## Technical Implementation
 
-Our comprehensive test suite includes **157 tests** organized across multiple test files covering all game systems:
+### Core Architecture
 
-#### **Cat Component Tests (13 tests)**
-
-- **Eye States (7 tests):** Complete coverage of all eye expressions and states (open, sleepy, happy, startled, drowsy, blinking)
-- **Eye Tracking (6 tests):** Comprehensive testing of the sophisticated eye-tracking system, including mouse following, heart tracking, animation setup, and constraints
-
-#### **WandToy Component Tests (19 tests)**
-
-- **Initial Rendering (3 tests):** Component setup, SVG feather rendering, and initial transforms
-- **Shaking State (3 tests):** Animation state management and prop updates
-- **Mouse Movement Tracking (6 tests):** Position updates, wiggle calculations, velocity factors, and directional components
-- **Animation System (4 tests):** Animation frame loops, cleanup, and lifecycle management
-- **Component Lifecycle (3 tests):** State persistence and initialization
-
-#### **App Component Tests (16 tests)**
-
-- **Wand Mode Toggle (3 tests):** Mode switching, button functionality, and state transitions
-- **Wand Mode Functionality (3 tests):** Error-free operation under complex movement patterns and time progression
-- **Wand Click Interaction (3 tests):** Click handling, animation triggering, and interaction feedback
-- **Cleanup & State Management (2 tests):** Proper cleanup when disabling wand mode and state transition handling
-- **Component Integration (3 tests):** WandToy rendering, state passing, and component lifecycle
-- **System Robustness (2 tests):** Rapid mode switching and complex interaction sequences
-
-### Test Philosophy
-
-- **Co-location:** Test files (`*.test.tsx`) are located directly alongside the component file they are testing (e.g., `Cat.test.tsx` lives next to `Cat.tsx`). This makes tests easy to find and encourages testing as part of the development workflow. Shared testing setup resides in the `/test` directory.
-- **Behavior-Driven:** Our tests are written to verify the component's behavior from a user's perspective, rather than its internal implementation details. For example, we test that the correct eyes _appear_ on screen based on the component's props, not that a specific internal state variable is set.
-- **Functional Focus:** Tests focus on **what the system does** rather than **how it does it internally**. This makes tests resistant to refactoring and ensures they catch real functional regressions.
-- **Error Prevention:** Tests use `expect().not.toThrow()` patterns to catch runtime errors and ensure robust operation under complex conditions.
-
-### Advanced Testing Techniques
-
-Our test suite employs sophisticated mocking and testing strategies:
-
-- **Portal Mocking:** `ReactDOM.createPortal` is mocked to handle heart rendering in tests
-- **Animation Mocking:** `requestAnimationFrame`, `DOMMatrix`, and `getComputedStyle` are mocked for testing animated components
-- **Timer Control:** Fake timers with `vi.useFakeTimers()` for precise control over time-based interactions
-- **DOM Environment Setup:** Proper cleanup and setup of DOM elements (like `heart-container`) required by the application
-
-### Regression Prevention
-
-The primary goal of our test suite is to prevent regressions:
-
-- **Eye Tracking Bug Prevention:** The detailed eye-tracking tests were specifically created after a regression where the cat's eyes stopped following hearts, ensuring this sophisticated feature never breaks again
-- **Wand Toy System Protection:** Comprehensive coverage of the complex pouncing mechanics, including proximity calculations, movement novelty, and velocity detection
-- **State Management Validation:** Tests ensure proper cleanup, state transitions, and component lifecycle management under all conditions
-
-### CI/CD Integration
-
-Tests are integrated into the development workflow:
-
-- **Pre-commit Hooks:** All tests must pass before commits are allowed
-- **Continuous Integration:** GitHub Actions runs the full test suite on every push and pull request
-- **Deployment Blocking:** Failed tests prevent deployment to production
-
-## 6. Modern Architecture (2024 Updates)
-
-This section documents major architectural improvements and lessons learned from recent refactoring sessions, ensuring future development follows established patterns and avoids known pitfalls.
-
-### Clean Architecture Principles
-
-The Cat Clicker now follows a **Clean Architecture** pattern with clear separation of concerns:
-
-#### **Game State Layer (Pure Business Logic)**
-
-- **File:** `src/cats/game/GameState.ts`
-- **Purpose:** Contains pure business logic for cat behavior, pounce calculations, and wand interactions
-- **Key Features:**
-  - No React dependencies
-  - Pure functions and state management
-  - Event-driven communication with other layers
-  - Testable in isolation
-
-#### **Animation Controller Layer (Pure Presentation)**
-
-- **File:** `src/cats/animation/AnimationController.ts`
-- **Purpose:** Manages visual effects, timing, and animation orchestration
-- **Key Features:**
-  - Handles visual timing without knowing game rules
-  - Manages cat-specific animations (pouncing, ear wiggling, etc.)
-  - Timer and animation frame management
-  - Clean separation from business logic
-
-#### **React Integration Layer**
-
-- **File:** `src/cats/hooks/useCatSystem.ts`
-- **Purpose:** Bridges pure game logic with React component state
-- **Key Features:**
-  - Event-driven state synchronization
-  - Stable callback management
-  - Performance-optimized updates
-  - Prevents infinite re-render loops
-
-### Unified Heart Spawning System
-
-#### **Architecture Decision**
-
-We implemented a centralized `HeartSpawningService` to eliminate code duplication and create consistent heart behavior across different interaction types.
-
-- **File:** `src/cats/services/HeartSpawningService.ts`
-- **Problem Solved:** Previously, petting hearts and pouncing hearts had separate, inconsistent spawning logic
-- **Benefits:**
-  - Single source of truth for heart calculations
-  - Consistent scaling based on love amount
-  - Configurable visual behaviors per interaction type
-  - Performance optimization with heart count limits
-
-#### **Interaction-Specific Configurations**
-
-**Petting Hearts (Gentle & Calm):**
-
-- 100ms delays between hearts
-- Tighter grouping (1.0x spread)
-- Slower animation (1.2s duration)
-- Standard float velocity
-
-**Pouncing Hearts (Fast & Energetic):**
-
-- 50ms delays between hearts
-- More scattered (1.5x spread)
-- Faster animation (0.8s duration)
-- Increased float velocity (1.3x)
-
-#### **Smart Heart Scaling**
-
-- Heart count: 1 heart per 2.5 love (minimum 1, maximum 5)
-- Heart size: Logarithmic scaling based on love amount
-- Performance: Capped at 5 hearts to prevent lag
-
-### Click Excitement System
-
-#### **Problem Statement**
-
-The original wand system felt too "clicky" rather than skill-based. Users wanted a more formula-driven interaction that rewards timing and proximity.
-
-#### **Solution: Dual Confidence System**
-
-We implemented separate tracking for movement-based and click-based excitement:
-
-**Click Excitement (`clickExcitement`):**
-
-- Builds from wand clicks scaled by proximity
-- Time-based decay (starts after 500ms delay)
-- Contributes 30% to overall pounce confidence
-- Caps at 100 points for balance
-
-**Movement Confidence (`pounceConfidence`):**
-
-- Builds from wand movement patterns
-- Influenced by velocity changes and novelty
-- Combined with click excitement for total confidence
-- Triggers pounces when threshold is reached
-
-#### **Benefits**
-
-- More reactive feel (clicks work anywhere on screen)
-- Formula-based rather than direct "click to pounce"
-- Proximity matters (distant clicks less effective)
-- Transparent via debug panel for tuning
-
-### React State Management Lessons
-
-#### **Critical Learning: Infinite Re-render Prevention**
-
-During this refactoring, we encountered and solved several infinite re-render scenarios. These patterns should be avoided:
-
-**❌ Anti-Patterns to Avoid:**
+#### State Management (`src/cats/game/types.ts`)
 
 ```typescript
-// DON'T: Frequent state updates in useEffect
-useEffect(() => {
-  setStateEveryFrame(newValue); // Causes infinite loops
-}, [frequentlyChangingValue]);
+interface GameState {
+  // Currency & Progress
+  love: number;
+  treats: number;
+  totalClicks: number;
 
-// DON'T: Unstable callback dependencies
-const callback = () => {
-  /* logic */
-}; // Recreated every render
-useEffect(() => {
-  setupSystem(callback);
-}, [callback]); // Infinite loop
-
-// DON'T: Direct DOM manipulation triggering state
-useEffect(() => {
-  element.addEventListener('event', () => {
-    setState(newValue); // Can cause loops
-  });
-}, []);
-```
-
-**✅ Preferred Patterns:**
-
-```typescript
-// DO: Event-driven state updates
-const forceUpdate = useCallback(() => {
-  setReactState(gameState.getReactState());
-}, []);
-
-// DO: Stable callbacks with useCallback
-const stableCallback = useCallback((data) => {
-  // Handle data
-}, []); // Empty deps when truly stable
-
-// DO: Ref-based access in animations
-const valueRef = useRef(value);
-useEffect(() => {
-  const animate = () => {
-    // Use valueRef.current to avoid dependencies
-    doAnimation(valueRef.current);
-    requestAnimationFrame(animate);
+  // Achievement System
+  earnedMerits: string[];
+  spentMerits: { [upgradeId: string]: number };
+  earnedAwards: string[];
+  specialActions: {
+    noseClicks: number;
+    happyJumps: number;
+    earClicks: number;
+    cheekPets: number;
   };
-  animate();
-}, []); // Minimal dependencies
+
+  // Job System
+  jobLevels: { [jobId: string]: number };
+  jobExperience: { [jobId: string]: number };
+
+  // Items & Mood
+  thingQuantities: { [itemId: string]: number };
+  currentMood: CatMood;
+  lovePerTreat: number;
+}
 ```
 
-#### **State Synchronization Strategy**
+#### Achievement System (`src/cats/hooks/useAchievementSystem.ts`)
 
-- **Game Logic:** Pure state management outside React
-- **React State:** Only for triggering re-renders
-- **Event Callbacks:** Bridge between layers
-- **Performance:** Update React state only when UI needs to change
+- **Centralized Logic**: Single hook manages both milestone and award checking
+- **Real-time Tracking**: Automatically detects achievement completion
+- **Notification Integration**: Seamless alert system for new unlocks
+- **Merit Distribution**: Awards merit points for upgrade purchases
 
-### Testing Architecture Improvements
+#### Component Structure
 
-#### **New Test Categories Added**
+- **MeritsPanel**: Three-tab interface (Upgrades, Milestones, Awards)
+- **MilestonePanel**: Linear progress visualization with connecting lines
+- **AwardPanel**: Secret badge system with discovery mechanics
+- **JobPanel**: Compact career ladder with experience tracking
 
-1. **HeartSpawningService Tests (15 tests):** Comprehensive coverage of unified heart system
-2. **Click Excitement System Tests (19 tests):** Complete coverage of new click mechanics
-3. **Petting/Wand Integration Tests (17 tests):** Prevention of mode-switching bugs
+### Key Data Files
 
-#### **Testing Philosophy Reinforced**
+#### Achievement Data (`src/cats/data/`)
 
-- **Co-location:** Tests live next to the code they test
-- **Behavior-driven:** Test what users experience, not internal implementation
-- **Async-aware:** Proper handling of timeouts and delayed effects
-- **Regression prevention:** Tests specifically designed to catch known failure modes
+- **milestoneData.ts**: Progressive achievement definitions with targets and rewards
+- **awardData.ts**: Secret achievement criteria and unlock conditions
+- **achievementData.ts**: Unified types and data aggregation
 
-### Performance Optimizations
+#### Game Systems (`src/cats/data/`)
 
-#### **DOM Manipulation Strategy**
+- **jobData.ts**: Career progression definitions and experience requirements
+- **jobTrainingSystem.ts**: Training mechanics and cost calculations
+- **interviewSystem.ts**: Job interview probability and rejection messages
+- **lovePerInteractionSystem.ts**: Dynamic love scaling calculations
+- **meritUpgradeData.ts**: Permanent upgrade definitions and effects
+- **thingsData.ts**: Purchasable items and their passive bonuses
 
-- **High-frequency updates:** Direct DOM manipulation (pupil tracking)
-- **Infrequent updates:** React state updates (mode changes, pouncing)
-- **Animation loops:** `requestAnimationFrame` with ref-based access
-- **Memory management:** Proper cleanup of timers and event listeners
+#### Components (`src/cats/components/`)
 
-#### **Heart Rendering Optimization**
+- **panels/MeritsPanel.tsx**: Three-tab achievement interface
+- **panels/MilestonePanel.tsx**: Linear progress visualization
+- **panels/AwardPanel.tsx**: Secret badge discovery system
+- **panels/JobPanel.tsx**: Career ladder with training actions
+- **panels/ThingsPanel.tsx**: Item shop and inventory management
+- **cat/Cat.tsx**: Interactive cat with special click areas
 
-- **Performance caps:** Maximum 5 hearts per spawn
-- **Staggered timing:** Delayed spawning prevents frame drops
-- **Portal rendering:** Hearts rendered outside main component tree
-- **Automatic cleanup:** Hearts remove themselves after animation
+## Development Guidelines
 
-### Development Workflow Improvements
+### Adding New Features
 
-#### **Build & Quality Assurance**
+1. **Follow Modular Design**: Keep data, components, and logic separated
+2. **Test-Driven Development**: Write tests for new functionality
+3. **Material Design Consistency**: Use established iconography and styling patterns
+4. **Performance First**: Consider impact on game loop and animation smoothness
+5. **User Experience**: Maintain high information density while ensuring usability
 
-- **Linting:** ESLint with TypeScript rules enforced
-- **Build verification:** All builds must complete successfully
-- **Test coverage:** 157+ tests across all major systems
-- **Type safety:** Strict TypeScript configuration
+### Code Quality Standards
 
-#### **Debugging Tools**
+- **290+ Tests**: Comprehensive coverage across all game systems
+- **TypeScript Strict Mode**: Full type safety and error prevention
+- **ESLint Compliance**: Clean, consistent code style
+- **Component Co-location**: Tests live alongside the code they test
 
-- **Dev panel:** Real-time visibility into click excitement and pounce confidence
-- **Debug logging:** Structured logging for state transitions (removable)
-- **Component inspection:** React DevTools integration
-- **Performance monitoring:** Animation frame rate tracking
+### Architecture Principles
 
-### Future Architecture Guidelines
+- **Centralized State**: GameState manages all progression and achievement data
+- **Event-Driven Updates**: React components respond to game state changes
+- **Separation of Concerns**: Business logic separate from UI presentation
+- **Optimized Rendering**: Minimal state updates for smooth performance
 
-#### **When Adding New Features:**
-
-1. **Separate concerns:** Keep game logic, animation, and React separate
-2. **Event-driven:** Use callbacks for cross-layer communication
-3. **Test first:** Write tests that prevent regressions
-4. **Performance conscious:** Consider high-frequency vs low-frequency updates
-5. **User-focused:** Design APIs around user interactions, not internal convenience
-
-#### **When Refactoring:**
-
-1. **Preserve interfaces:** Keep public APIs stable during internal changes
-2. **Incremental approach:** Change one layer at a time
-3. **Test coverage:** Ensure tests pass at each step
-4. **Monitor performance:** Watch for regressions in animation smoothness
-5. **Document decisions:** Update this file with learnings
-
-### Technical Debt Management
-
-#### **Resolved in This Session:**
-
-- ✅ Unified heart spawning (eliminated code duplication)
-- ✅ Click excitement system (improved user experience)
-- ✅ Infinite re-render loops (architectural fixes)
-- ✅ Test coverage gaps (comprehensive new tests)
-- ✅ Linting issues (code quality improvements)
-
-#### **Ongoing Considerations:**
-
-- Monitor animation performance as features are added
-- Consider caching strategies for heart spawning
-- Evaluate state management scaling as game grows
-- Regular performance auditing of animation loops
-
-This architecture has proven stable and performant through multiple refactoring sessions and should serve as the foundation for future development.
+This documentation focuses on the current state of the Cat Clicker game and its architecture. For implementation details, refer to the codebase structure and comprehensive test suite.

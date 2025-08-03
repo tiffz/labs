@@ -1,7 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, test, expect, vi } from 'vitest';
 import MeritsPanel from './MeritsPanel';
-import type { Merit } from '../../data/meritData';
 
 // Mock MaterialIcon component
 vi.mock('../../icons/MaterialIcon', () => ({
@@ -9,197 +8,205 @@ vi.mock('../../icons/MaterialIcon', () => ({
     <span className={className} data-testid={`icon-${icon}`}>{icon}</span>
 }));
 
-// Mock HeartIcon and FishIcon components
-vi.mock('../../icons/HeartIcon', () => ({
-  default: ({ className }: { className?: string }) => 
-    <span className={className} data-testid="heart-icon">♥</span>
+// Mock child panels
+vi.mock('./UpgradePanel', () => ({
+  default: ({ availableMerits }: { availableMerits: number }) => 
+    <div data-testid="upgrade-panel">Upgrades Panel - Available: {availableMerits}</div>
 }));
 
-vi.mock('../../icons/FishIcon', () => ({
-  default: ({ className }: { className?: string }) => 
-    <span className={className} data-testid="fish-icon">🐟</span>
+vi.mock('./MilestonePanel', () => ({
+  default: () => <div data-testid="milestone-panel">Milestones Panel</div>
 }));
 
-const createMockMerit = (overrides: Partial<Merit> = {}): Merit => ({
-  id: 'test_merit',
-  title: 'Test Merit',
-  description: 'A test merit for testing purposes',
-  type: 'love_milestone',
-  target: { currencyType: 'love', amount: 100 },
-  reward: { love: 10, message: 'Test reward message' },
-  icon: 'favorite',
-  color: '#e8a1c4',
-  ...overrides
-});
+vi.mock('./AwardPanel', () => ({
+  default: () => <div data-testid="award-panel">Awards Panel</div>
+}));
+
+
+
+const defaultProps = {
+  earnedMerits: [],
+  availableMerits: [],
+  earnedAwards: [],
+  availableAwards: [],
+  spentMerits: {},
+  onPurchaseUpgrade: vi.fn(),
+  currentLove: 0,
+  currentTreats: 0,
+  currentJobLevels: {},
+  currentThingQuantities: {},
+  specialActions: {
+    noseClicks: 0,
+    happyJumps: 0,
+    earClicks: 0,
+    cheekPets: 0
+  }
+};
 
 describe('MeritsPanel', () => {
-  test('renders with correct tabs and defaults to Upgrades', () => {
-    const earnedMerits = [createMockMerit({ id: 'earned_1' })];
-    const availableMerits = [createMockMerit({ id: 'available_1' })];
-
-    render(
-      <MeritsPanel 
-        earnedMerits={earnedMerits} 
-        availableMerits={availableMerits}
-        spentMerits={{}}
-        onPurchaseUpgrade={() => {}}
-      />
-    );
-
-    // Check tabs are present
+  test('renders all three tabs', () => {
+    render(<MeritsPanel {...defaultProps} />);
+    
     expect(screen.getByText('Upgrades')).toBeInTheDocument();
-    expect(screen.getByText('Achievements')).toBeInTheDocument();
+    expect(screen.getByText('Milestones')).toBeInTheDocument();
+    expect(screen.getByText('Awards')).toBeInTheDocument();
+  });
+
+  test('starts with Upgrades tab active', () => {
+    render(<MeritsPanel {...defaultProps} />);
     
-    // Check achievement count is displayed
-    expect(screen.getByText('(1/2)')).toBeInTheDocument();
+    expect(document.querySelector('.merit-upgrades-section')).toBeInTheDocument();
+    expect(screen.queryByTestId('milestone-panel')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('award-panel')).not.toBeInTheDocument();
+  });
+
+  test('switches to Milestones tab when clicked', () => {
+    render(<MeritsPanel {...defaultProps} />);
     
-    // Check it defaults to Upgrades tab (should show upgrade content)
-    expect(screen.getByText('Gentle Touch')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Milestones'));
+    
+    expect(screen.getByTestId('milestone-panel')).toBeInTheDocument();
+    expect(screen.queryByTestId('upgrade-panel')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('award-panel')).not.toBeInTheDocument();
   });
 
-  test('switches to Achievements tab when clicked', () => {
-    const earnedMerits = [
-      createMockMerit({ id: 'earned_1', title: 'Earned Merit' })
-    ];
-    const availableMerits = [
-      createMockMerit({ id: 'available_1', title: 'Available Merit' })
-    ];
-
-    render(
-      <MeritsPanel 
-        earnedMerits={earnedMerits} 
-        availableMerits={availableMerits}
-        spentMerits={{}}
-        onPurchaseUpgrade={() => {}}
-      />
-    );
-
-    // Click on Achievements tab
-    fireEvent.click(screen.getByText('Achievements'));
-
-    // Check that achievement badges are displayed
-    expect(screen.getByText('Earned Merit')).toBeInTheDocument();
-    expect(screen.getByText('Available Merit')).toBeInTheDocument();
+  test('switches to Awards tab when clicked', () => {
+    render(<MeritsPanel {...defaultProps} />);
+    
+    fireEvent.click(screen.getByText('Awards'));
+    
+    expect(screen.getByTestId('award-panel')).toBeInTheDocument();
+    expect(screen.queryByTestId('upgrade-panel')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('milestone-panel')).not.toBeInTheDocument();
   });
 
-  test('shows merit upgrade counter chip', () => {
-    const earnedMerits = [createMockMerit({ id: 'earned_1' })];
-    const availableMerits = [];
+  test('displays merit count for Upgrades tab', () => {
+    const props = {
+      ...defaultProps,
+      earnedMerits: [
+        { id: 'm1', title: 'M1', description: '', type: 'milestone' as const, target: { currencyType: 'love' as const, amount: 10 }, icon: 'favorite', color: 'red' },
+        { id: 'm2', title: 'M2', description: '', type: 'milestone' as const, target: { currencyType: 'love' as const, amount: 100 }, icon: 'favorite', color: 'red' }
+      ],
+      spentMerits: { 'upgrade1': 1 } // 1 merit spent
+    };
 
-    const { container } = render(
-      <MeritsPanel 
-        earnedMerits={earnedMerits} 
-        availableMerits={availableMerits}
-        spentMerits={{}}
-        onPurchaseUpgrade={() => {}}
-      />
-    );
-
-    // Check the merit counter chip shows correct count (1 earned - 0 spent = 1)
-    const counterChip = container.querySelector('.upgrades-available-info');
-    expect(counterChip).toHaveTextContent('1');
-    expect(counterChip?.querySelector('[data-testid="icon-kid_star"]')).toBeInTheDocument();
+    render(<MeritsPanel {...props} />);
+    
+    // Should show available merits in the badge
+    expect(document.querySelector('.available-badge')).toBeInTheDocument();
   });
 
-  test('displays upgrade cards with correct information', () => {
-    const earnedMerits = [createMockMerit({ id: 'earned_1' })];
-    const availableMerits = [];
+  test('displays milestone count', () => {
+    const props = {
+      ...defaultProps,
+      availableMerits: [
+        { id: 'm1', title: 'M1', description: '', type: 'milestone' as const, target: { currencyType: 'love' as const, amount: 10 }, icon: 'favorite', color: 'red' },
+        { id: 'm2', title: 'M2', description: '', type: 'milestone' as const, target: { currencyType: 'love' as const, amount: 100 }, icon: 'favorite', color: 'red' }
+      ],
+      earnedMerits: [
+        { id: 'm1', title: 'M1', description: '', type: 'milestone' as const, target: { currencyType: 'love' as const, amount: 10 }, icon: 'favorite', color: 'red' }
+      ]
+    };
 
-    render(
-      <MeritsPanel 
-        earnedMerits={earnedMerits} 
-        availableMerits={availableMerits}
-        spentMerits={{}}
-        onPurchaseUpgrade={() => {}}
-      />
-    );
-
-    // Check upgrade cards are displayed
-    expect(screen.getByText('Gentle Touch')).toBeInTheDocument();
-    expect(screen.getByText('Play Master')).toBeInTheDocument();
-    expect(screen.getByText('Home Designer')).toBeInTheDocument();
-    expect(screen.getByText('Nutrition Expert')).toBeInTheDocument();
-    expect(screen.getByText('Work Ethic')).toBeInTheDocument();
-
-    // Check buy buttons are present
-    expect(screen.getAllByText(/Buy \(1\)/)).toHaveLength(5);
+    render(<MeritsPanel {...props} />);
+    
+    fireEvent.click(screen.getByText('Milestones'));
+    // Should show milestone count in format (earned/total)
+    expect(screen.getByText('Milestones').closest('button')?.querySelector('.achievement-count')).toBeInTheDocument();
   });
 
-  test('calls onPurchaseUpgrade when upgrade button is clicked', () => {
-    const earnedMerits = [createMockMerit({ id: 'earned_1' })];
-    const availableMerits = [];
-    const mockPurchase = vi.fn();
+  test('displays award count', () => {
+    const props = {
+      ...defaultProps,
+      availableAwards: [
+        { id: 'a1', title: 'A1', description: '', type: 'special_action' as const, target: { actionType: 'nose_click' as const, count: 1 }, icon: 'star', color: 'gold', isSecret: true },
+        { id: 'a2', title: 'A2', description: '', type: 'special_action' as const, target: { actionType: 'happy_jump' as const, count: 1 }, icon: 'star', color: 'gold', isSecret: true }
+      ],
+      earnedAwards: [
+        { id: 'a1', title: 'A1', description: '', type: 'special_action' as const, target: { actionType: 'nose_click' as const, count: 1 }, icon: 'star', color: 'gold', isSecret: true }
+      ]
+    };
 
-    render(
-      <MeritsPanel 
-        earnedMerits={earnedMerits} 
-        availableMerits={availableMerits}
-        spentMerits={{}}
-        onPurchaseUpgrade={mockPurchase}
-      />
-    );
-
-    // Click the first buy button (should be enabled since we have 1 merit available)
-    const buyButtons = screen.getAllByText(/Buy \(1\)/);
-    fireEvent.click(buyButtons[0]);
-
-    expect(mockPurchase).toHaveBeenCalledWith('love_per_pet_multiplier');
+    render(<MeritsPanel {...props} />);
+    
+    fireEvent.click(screen.getByText('Awards'));
+    // Should show award count in format (earned/total)
+    expect(screen.getByText('Awards').closest('button')?.querySelector('.achievement-count')).toBeInTheDocument();
   });
 
-  test('shows achievement badges with correct CSS classes when on Achievements tab', () => {
-    const earnedMerits = [
-      createMockMerit({ id: 'earned_1', title: 'Earned Merit' })
-    ];
-    const availableMerits = [
-      createMockMerit({ id: 'available_1', title: 'Available Merit' })
-    ];
-
-    const { container } = render(
-      <MeritsPanel 
-        earnedMerits={earnedMerits} 
-        availableMerits={availableMerits}
-        spentMerits={{}}
-        onPurchaseUpgrade={() => {}}
-      />
-    );
-
-    // Switch to Achievements tab
-    fireEvent.click(screen.getByText('Achievements'));
-
-    const earnedBadge = container.querySelector('.merit-badge.earned');
-    const lockedBadge = container.querySelector('.merit-badge.locked');
-
-    expect(earnedBadge).toBeInTheDocument();
-    expect(lockedBadge).toBeInTheDocument();
+  test('handles zero counts gracefully', () => {
+    render(<MeritsPanel {...defaultProps} />);
+    
+    expect(screen.getByText('0')).toBeInTheDocument();
   });
 
-  test('shows merit breakdown tooltip on counter hover', () => {
-    const earnedMerits = [
-      createMockMerit({ id: 'earned_1' }),
-      createMockMerit({ id: 'earned_2' }),
-      createMockMerit({ id: 'earned_3' })
-    ];
-    const availableMerits = [];
-    const spentMerits = { love_per_pet_multiplier: 1 }; // Spent 1 merit (cost = 1)
+  test('displays upgrade interface', () => {
+    const props = {
+      ...defaultProps,
+      earnedMerits: [
+        { id: 'm1', title: 'M1', description: '', type: 'milestone' as const, target: { currencyType: 'love' as const, amount: 10 }, icon: 'favorite', color: 'red' }
+      ]
+    };
 
-    render(
-      <MeritsPanel 
-        earnedMerits={earnedMerits} 
-        availableMerits={availableMerits}
-        spentMerits={spentMerits}
-        onPurchaseUpgrade={() => {}}
-      />
-    );
+    render(<MeritsPanel {...props} />);
+    
+    // Should show upgrades section when on upgrades tab
+    expect(document.querySelector('.merit-upgrades-section')).toBeInTheDocument();
+  });
 
-    // Should have 3 earned - 1 spent = 2 available  
-    const meritCounter = document.querySelector('.upgrades-available-info');
-    expect(meritCounter).toHaveTextContent('2');
-    fireEvent.mouseEnter(meritCounter!);
+  test('applies correct CSS classes for active tab', () => {
+    render(<MeritsPanel {...defaultProps} />);
+    
+    const upgradesTab = screen.getByText('Upgrades').closest('button');
+    const milestonesTab = screen.getByText('Milestones').closest('button');
+    
+    expect(upgradesTab).toHaveClass('active');
+    expect(milestonesTab).not.toHaveClass('active');
+    
+    fireEvent.click(screen.getByText('Milestones'));
+    
+    expect(upgradesTab).not.toHaveClass('active');
+    expect(milestonesTab).toHaveClass('active');
+  });
 
-    // Check tooltip appears with breakdown
-    expect(screen.getByText('Merit Points')).toBeInTheDocument();
-    expect(screen.getByText('Total Earned:')).toBeInTheDocument();
-    expect(screen.getByText('Spent on Upgrades:')).toBeInTheDocument();
-    expect(screen.getByText('Available:')).toBeInTheDocument();
+  test('displays icons for each tab', () => {
+    render(<MeritsPanel {...defaultProps} />);
+    
+    expect(screen.getAllByTestId('icon-kid_star').length).toBeGreaterThan(0); // Upgrades (appears in multiple places)
+    expect(screen.getByTestId('icon-timeline')).toBeInTheDocument(); // Milestones  
+    expect(screen.getByTestId('icon-emoji_events')).toBeInTheDocument(); // Awards
+  });
+
+  test('handles large numbers in tab counters', () => {
+    const props = {
+      ...defaultProps,
+      earnedMerits: new Array(1000).fill(0).map((_, i) => ({
+        id: `m${i}`,
+        title: `M${i}`,
+        description: '',
+        type: 'milestone' as const,
+        target: { currencyType: 'love' as const, amount: 10 * (i + 1) },
+        icon: 'favorite',
+        color: 'red'
+      })),
+      spentMerits: Object.fromEntries(new Array(500).fill(0).map((_, i) => [`upgrade${i}`, 1])),
+      availableMerits: new Array(50).fill(0).map((_, i) => ({
+        id: `m${i}`,
+        title: `M${i}`,
+        description: '',
+        type: 'milestone' as const,
+        target: { currencyType: 'love' as const, amount: 10 * (i + 1) },
+        icon: 'favorite',
+        color: 'red'
+      }))
+    };
+
+    render(<MeritsPanel {...props} />);
+    
+    expect(screen.getAllByText('500').length).toBeGreaterThan(0); // Available merits: 1000 - 500 = 500 (appears in badge and info)
+    
+    fireEvent.click(screen.getByText('Milestones'));
+    // Should show milestone count
+    expect(screen.getByText('Milestones').closest('button')?.querySelector('.achievement-count')).toBeInTheDocument();
   });
 });

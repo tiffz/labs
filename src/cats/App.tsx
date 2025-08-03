@@ -32,7 +32,7 @@ import { getTotalMeritUpgradeMultiplier, getMeritUpgradeCost } from './data/meri
 import { thingsData, getThingPrice, getThingTotalEffect } from './data/thingsData';
 import { useCatSystem } from './hooks/useCatSystem';
 import { HeartSpawningService, type HeartVisuals } from './services/HeartSpawningService';
-import { useMeritSystem } from './hooks/useMeritSystem';
+import { useAchievementSystem } from './hooks/useAchievementSystem';
 import { useNotificationSystem } from './hooks/useNotificationSystem';
 import type { GameState } from './game/types';
 
@@ -71,6 +71,15 @@ const initialGameState: GameState = {
   thingQuantities: {},
   earnedMerits: [],
   spentMerits: {},
+  // New achievement system fields
+  earnedAwards: [],
+  awardProgress: {},
+  specialActions: {
+    noseClicks: 0,
+    earClicks: 0,
+    cheekPets: 0,
+    happyJumps: 0,
+  },
 };
 
 function App() {
@@ -100,7 +109,13 @@ function App() {
 
   // Systems
   const { notificationQueue, setNotificationQueue, addNotificationToQueue } = useNotificationSystem(gameState);
-  const { earnedMerits, availableMerits } = useMeritSystem(gameState, setGameState, addNotificationToQueue);
+  const { 
+    earnedMerits, 
+    availableMerits, 
+    earnedAwards,
+    availableAwards,
+    trackSpecialAction 
+  } = useAchievementSystem(gameState, setGameState, addNotificationToQueue);
   
   // Heart spawning service
   const heartSpawningService = useMemo(() => {
@@ -337,6 +352,10 @@ function App() {
       if (clickTimestampsRef.current.length >= JUMP_CLICK_THRESHOLD && Math.random() < JUMP_CHANCE) {
         onLoveGained(loveFromClick);
         setIsJumping(true);
+        
+        // Track happy jump for awards
+        trackSpecialAction('happyJumps');
+        
         clickTimestampsRef.current = [];
         setRapidClickCount(0);
         setTimeout(() => setIsJumping(false), 500);
@@ -372,6 +391,9 @@ function App() {
 
   const handleEarClick = (ear: 'left' | 'right', event: React.MouseEvent) => {
     if (wigglingEar || isSubtleWiggling) return;
+
+    // Track ear click for awards
+    trackSpecialAction('earClicks');
 
     // Generate love and energy changes regardless of wand mode
     const energyMultiplier = 1 + catEnergy / 100;
@@ -412,6 +434,9 @@ function App() {
   const handleNoseClick = (event: React.MouseEvent) => {
     event.stopPropagation();
     
+    // Track nose click for Boop award
+    trackSpecialAction('noseClicks');
+    
     // Generate love regardless of wand mode
     setIsSmiling(true);
     const loveFromNose = calculateFinalLoveGain(
@@ -437,6 +462,9 @@ function App() {
     event.stopPropagation();
     cheekClickFlag.current = true;
     handleCatClick(event);
+
+    // Track cheek pet for awards
+    trackSpecialAction('cheekPets');
 
     if (Math.random() < 0.25) setIsSmiling(true);
     
@@ -948,6 +976,9 @@ function App() {
         onPurchaseUpgrade={handlePurchaseUpgrade}
         earnedMerits={earnedMerits}
         availableMerits={availableMerits}
+        earnedAwards={earnedAwards}
+        availableAwards={availableAwards}
+        specialActions={gameState.specialActions}
         currentLove={love}
         currentTreats={treats}
       />

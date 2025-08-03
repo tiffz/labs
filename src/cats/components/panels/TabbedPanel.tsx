@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import JobPanel from './JobPanel';
 import MeritsPanel from './MeritsPanel';
 import ThingsPanel from '../things/ThingsPanel';
-import type { Merit } from '../../data/meritData';
+import type { Milestone, Award } from '../../data/achievementData';
 import type { JobInterviewState } from '../../game/types';
 
 interface TabbedPanelProps {
@@ -25,9 +25,17 @@ interface TabbedPanelProps {
   spentMerits: { [upgradeId: string]: number };
   onPurchaseUpgrade: (upgradeId: string) => void;
   
-  // Merits panel props
-  earnedMerits: Merit[];
-  availableMerits: Merit[];
+  // Achievement system props
+  earnedMerits: Milestone[];
+  availableMerits: Milestone[];
+  earnedAwards: Award[];
+  availableAwards: Award[];
+  specialActions: {
+    noseClicks: number;
+    earClicks: number;
+    cheekPets: number;
+    happyJumps: number;
+  };
   
   // Shared currency props
   currentLove: number;
@@ -50,6 +58,9 @@ const TabbedPanel: React.FC<TabbedPanelProps> = ({
   onPurchaseUpgrade,
   earnedMerits,
   availableMerits,
+  earnedAwards,
+  availableAwards,
+  specialActions,
   currentLove,
   currentTreats,
 }) => {
@@ -106,8 +117,15 @@ const TabbedPanel: React.FC<TabbedPanelProps> = ({
           <MeritsPanel
             earnedMerits={earnedMerits}
             availableMerits={availableMerits}
+            earnedAwards={earnedAwards}
+            availableAwards={availableAwards}
             spentMerits={spentMerits}
             onPurchaseUpgrade={onPurchaseUpgrade}
+            currentLove={currentLove}
+            currentTreats={currentTreats}
+            currentJobLevels={jobLevels}
+            currentThingQuantities={thingQuantities}
+            specialActions={specialActions}
           />
         )}
       </div>

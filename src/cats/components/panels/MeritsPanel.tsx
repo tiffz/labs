@@ -1,33 +1,50 @@
 import React, { useState } from 'react';
 import ReactDOM from 'react-dom';
-import type { Merit } from '../../data/meritData';
+import type { Milestone, Award } from '../../data/achievementData';
 import MaterialIcon from '../../icons/MaterialIcon';
-// Using MaterialIcon for consistency
-import HeartIcon from '../../icons/HeartIcon';
-import FishIcon from '../../icons/FishIcon';
 import { 
   meritUpgradeData, 
   getMeritUpgradeCost,
   getAvailableMeritPoints 
 } from '../../data/meritUpgradeData';
+import MilestonePanel from './MilestonePanel';
+import AwardPanel from './AwardPanel';
 
 interface MeritsPanelProps {
-  earnedMerits: Merit[];
-  availableMerits: Merit[];
+  earnedMerits: Milestone[];
+  availableMerits: Milestone[];
+  earnedAwards: Award[];
+  availableAwards: Award[];
   // Merit upgrades props
   spentMerits: { [upgradeId: string]: number };
   onPurchaseUpgrade: (upgradeId: string) => void;
+  // Game state for progress tracking
+  currentLove: number;
+  currentTreats: number;
+  currentJobLevels: { [key: string]: number };
+  currentThingQuantities: { [key: string]: number };
+  specialActions: {
+    noseClicks: number;
+    earClicks: number;
+    cheekPets: number;
+    happyJumps: number;
+  };
 }
 
 const MeritsPanel: React.FC<MeritsPanelProps> = ({
   earnedMerits,
   availableMerits,
+  earnedAwards,
+  availableAwards,
   spentMerits,
   onPurchaseUpgrade,
+  currentLove,
+  currentTreats,
+  currentJobLevels,
+  currentThingQuantities,
+  specialActions,
 }) => {
-  const [showTooltip, setShowTooltip] = useState<string | null>(null);
-  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
-  const [showAchievements, setShowAchievements] = useState(false);
+  const [activeTab, setActiveTab] = useState<'upgrades' | 'milestones' | 'awards'>('upgrades');
   const [showMeritBreakdown, setShowMeritBreakdown] = useState(false);
   const [meritBreakdownPosition, setMeritBreakdownPosition] = useState({ top: 0, left: 0 });
 
@@ -66,18 +83,7 @@ const MeritsPanel: React.FC<MeritsPanelProps> = ({
     }
   };
 
-  const handleMeritHover = (merit: Merit, event: React.MouseEvent) => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    setTooltipPosition({
-      top: rect.top - 10,
-      left: rect.left - 280, // Position further to the left to avoid cutoff
-    });
-    setShowTooltip(merit.id);
-  };
-
-  const handleMeritLeave = () => {
-    setShowTooltip(null);
-  };
+  // Removed unused merit hover handlers - now handled by individual panels
 
   return (
     <div className="panel merits-panel">
@@ -89,26 +95,34 @@ const MeritsPanel: React.FC<MeritsPanelProps> = ({
         {/* Sub-navigation */}
         <div className="merit-subtabs">
           <button
-            className={`merit-subtab ${!showAchievements ? 'active' : ''}`}
-            onClick={() => setShowAchievements(false)}
+            className={`merit-subtab ${activeTab === 'upgrades' ? 'active' : ''}`}
+            onClick={() => setActiveTab('upgrades')}
           >
             <MaterialIcon icon="kid_star" className="subtab-icon" />
             <span>Upgrades</span>
             {availablePoints > 0 && <span className="available-badge">{availablePoints}</span>}
           </button>
           <button
-            className={`merit-subtab ${showAchievements ? 'active' : ''}`}
-            onClick={() => setShowAchievements(true)}
+            className={`merit-subtab ${activeTab === 'milestones' ? 'active' : ''}`}
+            onClick={() => setActiveTab('milestones')}
+          >
+            <MaterialIcon icon="timeline" className="subtab-icon" />
+            <span>Milestones</span>
+            <span className="achievement-count">({earnedMerits.length}/{earnedMerits.length + availableMerits.length})</span>
+          </button>
+          <button
+            className={`merit-subtab ${activeTab === 'awards' ? 'active' : ''}`}
+            onClick={() => setActiveTab('awards')}
           >
             <MaterialIcon icon="emoji_events" className="subtab-icon" />
-            <span>Achievements</span>
-            <span className="achievement-count">({earnedMerits.length}/{earnedMerits.length + availableMerits.length})</span>
+            <span>Awards</span>
+            <span className="achievement-count">({earnedAwards.length}/{earnedAwards.length + availableAwards.length})</span>
           </button>
         </div>
       </div>
 
-            {/* Player Upgrades Section - Only show when achievements are hidden */}
-      {!showAchievements && (
+            {/* Player Upgrades Section */}
+      {activeTab === 'upgrades' && (
         <div className="merit-upgrades-section">
           <div 
             className="upgrades-available-info"
@@ -179,125 +193,28 @@ const MeritsPanel: React.FC<MeritsPanelProps> = ({
         </div>
       )}
 
-      {/* Merit Achievements Section - Only show when toggled */}
-      {showAchievements && (
-        <div className="merit-achievements-section">
-          
-          <div className="merit-badges-container">
-            {[...earnedMerits, ...availableMerits].map((merit) => {
-              const isEarned = earnedMerits.some(e => e.id === merit.id);
-              
-              return (
-                <div 
-                  key={merit.id} 
-                  className="merit-badge-wrapper"
-                  onMouseEnter={(e) => handleMeritHover(merit, e)}
-                  onMouseLeave={handleMeritLeave}
-                >
-                  <div 
-                    className={`merit-badge ${isEarned ? 'earned' : 'locked'}`}
-                  >
-                    {/* Main Badge Circle */}
-                    <div 
-                      className="badge-circle"
-                      style={{ 
-                        '--merit-color': merit.color,
-                        '--merit-rgb': merit.color.replace('#', '').match(/.{2}/g)?.map(hex => parseInt(hex, 16)).join(', ')
-                      } as React.CSSProperties}
-                    >
-                      {/* Badge Inner Ring with dynamic color */}
-                      <div 
-                        className="badge-inner-ring"
-                        style={{ 
-                          '--merit-color': merit.color,
-                          '--merit-color-light': merit.color + '40' // Back to transparency approach for maximum visibility
-                        } as React.CSSProperties}
-                      >
-                        <MaterialIcon 
-                          icon={merit.icon} 
-                          className="badge-icon"
-                        />
-                      </div>
-                      
-                      {/* Earned Badge Shine Effect */}
-                      {isEarned && <div className="badge-shine"></div>}
-                    </div>
-                    
-                    {/* Badge Title (always visible but small) */}
-                    <div className="badge-title">{merit.title}</div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+      {/* Milestones Section */}
+      {activeTab === 'milestones' && (
+        <MilestonePanel
+          earnedMilestones={earnedMerits}
+          availableMilestones={availableMerits}
+          currentLove={currentLove}
+          currentTreats={currentTreats}
+          currentJobLevels={currentJobLevels}
+          currentThingQuantities={currentThingQuantities}
+        />
       )}
 
-      {/* Merit Tooltip */}
-      {showTooltip && ReactDOM.createPortal(
-        (() => {
-          const merit = [...earnedMerits, ...availableMerits].find(m => m.id === showTooltip);
-          if (!merit) return null;
-          
-          const isEarned = earnedMerits.some(earned => earned.id === merit.id);
-          
-          return (
-            <div 
-              className="merit-badge-tooltip left-side"
-              style={{
-                position: 'fixed',
-                top: `${tooltipPosition.top}px`,
-                left: `${tooltipPosition.left}px`,
-              }}
-            >
-              <div className="merit-tooltip-header">
-                <MaterialIcon icon={merit.icon} className="merit-tooltip-icon" />
-                <h4 className="merit-tooltip-title">{merit.title}</h4>
-                <div className={`merit-status-badge ${isEarned ? 'earned' : 'locked'}`}>
-                  {isEarned ? '✓ Earned' : 'Not Earned'}
-                </div>
-              </div>
-              <p className="merit-tooltip-description">{merit.description}</p>
-              <div className="merit-tooltip-details">
-                <div className="merit-tooltip-requirement">
-                  <strong>Requirement:</strong> {(() => {
-                    switch (merit.type) {
-                      case 'love_milestone':
-                        return `Reach ${merit.target?.amount} love`;
-                      case 'treats_milestone':
-                        return `Reach ${merit.target?.amount} treats`;
-                      case 'job_achievement':
-                        return 'Get your first job';
-                      case 'promotion_milestone':
-                        return merit.target?.jobLevel ? `Reach level ${merit.target.jobLevel} in any job` : 'Get a promotion';
-                      case 'purchase_achievement':
-                        return 'Make a purchase';
-                      default:
-                        return merit.description;
-                    }
-                  })()}
-                </div>
-                {merit.reward && (
-                  <div className="merit-tooltip-rewards">
-                    <strong>Rewards:</strong>
-                    {merit.reward.love && (
-                      <span className="reward-detail love-reward">
-                        +{merit.reward.love} <HeartIcon className="tooltip-breakdown-icon love-icon" />
-                      </span>
-                    )}
-                    {merit.reward.treats && (
-                      <span className="reward-detail treats-reward">
-                        +{merit.reward.treats} <FishIcon className="tooltip-breakdown-icon treats-icon" />
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })(),
-        document.body
+      {/* Awards Section */}
+      {activeTab === 'awards' && (
+        <AwardPanel
+          earnedAwards={earnedAwards}
+          availableAwards={availableAwards}
+          specialActions={specialActions}
+        />
       )}
+
+      {/* Tooltips are now handled by individual panels */}
 
       {/* Merit Breakdown Tooltip */}
       {showMeritBreakdown && ReactDOM.createPortal(
