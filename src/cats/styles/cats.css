@@ -157,7 +157,7 @@ body.wand-mode-active * {
   border-radius: 0;
   height: 100%;
   background: transparent;
-  padding: 24px; /* M3 spacing */
+  padding: 16px; /* Reduced from 24px */
   overflow-y: auto; /* Allow vertical scrolling */
   overflow-x: visible; /* Allow tooltips to extend horizontally */
   box-sizing: border-box; /* Include padding in width calculations */
@@ -1736,7 +1736,6 @@ body.wand-mode-active * {
 .merits-header {
   margin-bottom: 16px;
   padding-bottom: 12px;
-  border-bottom: 1px solid #e7e0ec;
 }
 
 .merits-title {
@@ -1753,172 +1752,6 @@ body.wand-mode-active * {
   width: 20px;
   height: 20px;
   color: #6750a4;
-}
-
-.merit-badges-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
-  gap: 12px;
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: visible;
-  padding: 12px 6px;
-  justify-items: center;
-}
-
-.merit-badge-wrapper {
-  position: relative;
-  display: block;
-  width: 64px;
-}
-
-.merit-badge {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  cursor: pointer;
-  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-  width: 64px;
-}
-
-.merit-badge:hover {
-  transform: translateY(-1px);
-}
-
-.merit-badge.earned:hover {
-  transform: translateY(-2px);
-}
-
-/* Main Badge Circle */
-.badge-circle {
-  position: relative;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #ffffff;
-  box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.12),
-    0 1px 2px rgba(0, 0, 0, 0.24);
-  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-  overflow: hidden;
-}
-
-.merit-badge.earned .badge-circle {
-  background: #ffffff;
-  border: 1px solid var(--merit-color, #6750a4);
-  box-shadow:
-    0 0 8px rgba(var(--merit-rgb), 0.3),
-    0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.badge-circle:hover {
-  box-shadow:
-    0 3px 6px rgba(0, 0, 0, 0.16),
-    0 2px 4px rgba(0, 0, 0, 0.23);
-}
-
-.merit-badge.locked .badge-circle {
-  background: #fafafa;
-  border: 1px solid #e0e0e0;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
-}
-
-/* Badge Inner Circle - Color Background */
-.badge-inner-ring {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1;
-}
-
-.merit-badge.earned .badge-inner-ring {
-  background: linear-gradient(
-    135deg,
-    var(--merit-color, #6750a4) 0%,
-    var(--merit-color-light, #8a7fb8) 100%
-  );
-}
-
-.merit-badge.locked .badge-inner-ring {
-  background: #f5f5f5;
-}
-
-.badge-icon {
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.merit-badge.earned .badge-icon {
-  color: #ffffff;
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
-}
-
-.merit-badge.locked .badge-icon {
-  color: #9e9e9e;
-  filter: none;
-}
-
-/* Badge Shine Effect */
-.badge-shine {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 12px;
-  height: 12px;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.4) 0%,
-    rgba(255, 255, 255, 0.1) 100%
-  );
-  border-radius: 50%;
-  z-index: 4;
-  pointer-events: none;
-}
-
-.merit-badge.earned:hover .badge-shine {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.6) 0%,
-    rgba(255, 255, 255, 0.2) 100%
-  );
-}
-
-/* Badge Title */
-.badge-title {
-  margin-top: 6px;
-  font-size: 0.6rem;
-  font-weight: 500;
-  color: #616161;
-  text-align: center;
-  line-height: 1.1;
-  max-width: 64px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  letter-spacing: 0.01em;
-}
-
-.merit-badge.earned .badge-title {
-  color: #424242;
-  font-weight: 600;
 }
 
 /* Merit Badge Tooltip Styles */
@@ -3210,7 +3043,727 @@ body.wand-mode-active * {
 
 /* Interview states now use same spacing as employed states for consistent transitions */
 
-/* ==================== SKILLS SYSTEM STYLES ==================== */
+/* ==================== UNIFIED MERITS PANEL STYLES ==================== */
+
+.merits-header {
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+}
+
+.merits-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1d1b20;
+}
+
+.merits-title-icon {
+  width: 24px;
+  height: 24px;
+  color: #6750a4;
+  font-variation-settings: 'FILL' 1; /* Make star filled */
+}
+
+.merit-points-display {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 0.875rem;
+}
+
+.available-points {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #e8def8;
+  border-radius: 16px;
+  color: #6750a4;
+  font-weight: 600;
+  border: 1px solid #d0bcff;
+}
+
+.available-points .merit-icon {
+  color: #f57c00;
+}
+
+/* Merit Sub-navigation - Simplified */
+.merit-subtabs {
+  display: inline-flex;
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  margin: 0 0 4px 0;
+  border: none;
+}
+
+.merit-subtab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: #666;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  border-bottom: 2px solid transparent;
+}
+
+.merit-subtab:hover {
+  color: #6750a4;
+}
+
+.merit-subtab.active {
+  color: #6750a4;
+  font-weight: 600;
+  border-bottom-color: #6750a4;
+}
+
+.merit-subtabs::after {
+  content: none;
+}
+
+.subtab-icon {
+  width: 18px;
+  height: 18px;
+  font-variation-settings: 'FILL' 1;
+  line-height: 1;
+}
+
+/* Merit Stats Styling - Simplified */
+.merit-stats {
+  display: flex;
+  gap: 32px;
+  margin: 16px 0 20px 0;
+  padding: 12px 16px;
+  background: #fafafa;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.merit-stat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stat-icon {
+  width: 18px;
+  height: 18px;
+  font-variation-settings: 'FILL' 1;
+  color: #f57c00;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: #49454f;
+  font-weight: 500;
+  letter-spacing: 0.025em;
+}
+
+.stat-value {
+  font-size: 0.875rem;
+  color: #1d1b20;
+  font-weight: 700;
+  min-width: 20px;
+  text-align: center;
+}
+
+.available-badge {
+  background: #ff4444;
+  color: white;
+  border-radius: 12px;
+  padding: 3px 8px;
+  font-size: 0.625rem;
+  font-weight: 700;
+  margin-left: 6px;
+  animation: pulse-badge 2s infinite;
+  box-shadow: 0 1px 3px rgba(255, 68, 68, 0.4);
+}
+
+.achievement-count {
+  color: inherit;
+  opacity: 0.7;
+  font-size: 0.75rem;
+  margin-left: 4px;
+  font-weight: 400;
+}
+
+.merit-subtab.active .achievement-count {
+  opacity: 0.9;
+}
+
+@keyframes pulse-badge {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.85;
+  }
+}
+
+.merit-icon {
+  width: 16px;
+  height: 16px;
+  font-variation-settings: 'FILL' 1;
+  color: #f57c00;
+}
+
+.earned-text,
+.spent-text {
+  color: #49454f;
+  font-weight: 500;
+}
+
+/* Merit Upgrades Section - Simplified */
+.merit-upgrades-section {
+  margin-bottom: 16px;
+  margin-top: 0px;
+}
+
+.merit-upgrades-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.merit-upgrade-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  transition: border-color 0.2s ease;
+}
+
+.merit-upgrade-row:hover {
+  border-color: #6750a4;
+}
+
+.upgrade-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.upgrade-icon {
+  font-size: 20px;
+  color: #6750a4;
+  background: #f5f5f5;
+  padding: 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.upgrade-details {
+  min-width: 0;
+  flex: 1;
+}
+
+.upgrade-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 2px 0;
+}
+
+.upgrade-effect {
+  font-size: 0.75rem;
+  color: #666;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.upgrade-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  min-width: 80px;
+}
+
+.level-indicators {
+  display: flex;
+  gap: 3px;
+  padding: 2px;
+}
+
+.level-notch {
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background: #e0e0e0;
+  transition: background-color 0.2s ease;
+}
+
+.level-notch.filled {
+  background: #6750a4;
+}
+
+.level-text {
+  font-size: 0.75rem;
+  color: #49454f;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+}
+
+.upgrade-action {
+  flex-shrink: 0;
+}
+
+.upgrade-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border: 1px solid #6750a4;
+  border-radius: 4px;
+  background: #fff;
+  color: #6750a4;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 60px;
+  height: 32px;
+}
+
+.upgrade-btn.available {
+  border-color: #6750a4;
+  background: #fff;
+  color: #6750a4;
+}
+
+.upgrade-btn.available:hover {
+  background: #6750a4;
+  color: #fff;
+}
+
+.upgrade-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f5f5f5;
+  color: #999;
+  border-color: #ddd;
+}
+
+.maxed-badge {
+  background: #fff8e1;
+  color: #f57c00;
+  border: 1px solid #ffcc02;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 0.625rem;
+  font-weight: 600;
+}
+
+/* Merit Achievements Section - Simplified */
+.merit-achievements-section {
+  margin-top: 0px;
+}
+
+/* Flavor text */
+.merits-flavor-text {
+  font-size: 0.875rem;
+  color: #49454f;
+  margin: 0 0 16px 0;
+  text-align: center;
+  font-style: italic;
+}
+
+/* Merit Badges Container and Styling - Original Refined Design */
+.merit-badges-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+  gap: 12px;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: visible;
+  padding: 12px 6px;
+  justify-items: center;
+}
+
+.merit-badge-wrapper {
+  position: relative;
+  display: block;
+  width: 64px;
+}
+
+.merit-badge {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 64px;
+}
+
+.merit-badge:hover {
+  transform: translateY(-1px);
+}
+
+.merit-badge.earned:hover {
+  transform: translateY(-2px);
+}
+
+/* Main Badge Circle */
+.badge-circle {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.12),
+    0 1px 2px rgba(0, 0, 0, 0.24);
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.merit-badge.earned .badge-circle {
+  background: #ffffff;
+  border: 1px solid var(--merit-color, #6750a4);
+  box-shadow:
+    0 0 8px rgba(var(--merit-rgb), 0.3),
+    0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.badge-circle:hover {
+  box-shadow:
+    0 3px 6px rgba(0, 0, 0, 0.16),
+    0 2px 4px rgba(0, 0, 0, 0.23);
+}
+
+.merit-badge.locked .badge-circle {
+  background: #fafafa;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+/* Badge Inner Circle - Color Background */
+.badge-inner-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.merit-badge.earned .badge-inner-ring {
+  background: linear-gradient(
+    135deg,
+    var(--merit-color, #6750a4) 0%,
+    var(--merit-color-light, #8a7fb8) 100%
+  );
+}
+
+.merit-badge.locked .badge-inner-ring {
+  background: #f5f5f5;
+}
+
+.badge-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.merit-badge.earned .badge-icon {
+  color: #ffffff;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
+}
+
+.merit-badge.locked .badge-icon {
+  color: #9e9e9e;
+  filter: none;
+}
+
+/* Badge Shine Effect */
+.badge-shine {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.4) 0%,
+    rgba(255, 255, 255, 0.1) 100%
+  );
+  border-radius: 50%;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.merit-badge.earned:hover .badge-shine {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.6) 0%,
+    rgba(255, 255, 255, 0.2) 100%
+  );
+}
+
+/* Badge Title */
+.badge-title {
+  margin-top: 6px;
+  font-size: 0.6rem;
+  font-weight: 500;
+  color: #616161;
+  text-align: center;
+  line-height: 1.1;
+  max-width: 64px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.01em;
+}
+
+.merit-badge.earned .badge-title {
+  color: #424242;
+  font-weight: 600;
+}
+
+/* Merit Badge Tooltips - Simple */
+.merit-badge-tooltip {
+  background: #fff;
+  color: #333;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 12px;
+  max-width: 280px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 20000;
+  font-size: 0.875rem;
+}
+
+.merit-badge-tooltip.left-side::before {
+  content: '';
+  position: absolute;
+  top: 18px;
+  right: -6px;
+  width: 0;
+  height: 0;
+  border: 6px solid transparent;
+  border-left-color: #ddd;
+  border-right: none;
+}
+
+.merit-badge-tooltip.left-side::after {
+  content: '';
+  position: absolute;
+  top: 19px;
+  right: -5px;
+  width: 0;
+  height: 0;
+  border: 5px solid transparent;
+  border-left-color: #fff;
+  border-right: none;
+}
+
+.merit-badge-tooltip.right-side::before {
+  content: '';
+  position: absolute;
+  top: 18px;
+  left: -6px;
+  width: 0;
+  height: 0;
+  border: 6px solid transparent;
+  border-right-color: #ddd;
+  border-left: none;
+}
+
+.merit-badge-tooltip.right-side::after {
+  content: '';
+  position: absolute;
+  top: 19px;
+  left: -5px;
+  width: 0;
+  height: 0;
+  border: 5px solid transparent;
+  border-right-color: #fff;
+  border-left: none;
+}
+
+.merit-tooltip-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.merit-tooltip-icon {
+  width: 20px;
+  height: 20px;
+  color: #6750a4;
+}
+
+.merit-tooltip-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin: 0;
+  flex: 1;
+  color: #333;
+}
+
+.merit-status-badge {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.625rem;
+  font-weight: 600;
+}
+
+.merit-status-badge.earned {
+  background: #e8f5e8;
+  color: #2e7d32;
+}
+
+.merit-status-badge.locked {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.merit-tooltip-description {
+  color: #666;
+  margin: 0 0 8px 0;
+  line-height: 1.3;
+}
+
+.merit-tooltip-details {
+  font-size: 0.75rem;
+}
+
+.merit-tooltip-reward {
+  color: #6750a4;
+  font-weight: 600;
+}
+
+.merit-tooltip-requirement {
+  margin-bottom: 8px;
+  font-size: 0.75rem;
+  color: #666;
+}
+
+.merit-tooltip-rewards {
+  font-size: 0.75rem;
+  color: #333;
+}
+
+.reward-detail {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 12px;
+  font-weight: 600;
+}
+
+.tooltip-breakdown-icon {
+  width: 14px;
+  height: 14px;
+  font-variation-settings: 'FILL' 1;
+}
+
+.love-icon {
+  color: red !important;
+}
+
+.treats-icon {
+  color: #00a5e0 !important;
+}
+
+.upgrades-available-info {
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 16px;
+  padding: 8px 14px;
+  font-size: 0.875rem;
+  color: #6750a4;
+  margin-bottom: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  min-width: 60px;
+  justify-content: center;
+  line-height: 1;
+}
+
+.upgrades-available-info:hover {
+  background: #f8f9fa;
+  border-color: #6750a4;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.upgrades-available-info .merit-icon {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  font-size: 16px;
+}
+
+.merit-breakdown-line {
+  margin-bottom: 4px;
+  font-size: 0.75rem;
+  color: #666;
+}
+
+.merit-breakdown-line:last-child {
+  margin-bottom: 0;
+  color: #6750a4;
+  font-weight: 600;
+}
+
+/* Cost star styling - Simplified */
+.cost-star {
+  width: 14px;
+  height: 14px;
+  color: #f57c00;
+  font-variation-settings: 'FILL' 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ==================== SKILLS SYSTEM STYLES (REMOVED) ==================== */
 
 .skills-section-compact {
   display: flex;

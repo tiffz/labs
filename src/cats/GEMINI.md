@@ -4,6 +4,63 @@ This document outlines the vision, architecture, and implementation details for 
 
 ## Recent Major Enhancements (2025)
 
+### Merit System Overhaul & Skills System Replacement (January 2025)
+
+The Cat Clicker has undergone a complete transformation of its progression systems, replacing the tedious Skills system with an intuitive Merit-based upgrade system and dynamic love-per-interaction scaling:
+
+**Major Changes:**
+
+- **Skills System Removed**: Completely eliminated the old skill training system that players found tedious and confusing
+- **Love-Per-Interaction System**: Simple 1% scaling where base love is always 1% of current love on hand, providing direct proportional feedback
+- **Merit-Based Upgrades**: Transform earned merits into permanent player upgrades with linear cost progression (1, 2, 3... merits per level)
+- **Unified Merits Tab**: Combined achievements and upgrades into a single, polished interface with Material Design 3 styling
+
+**Love-Per-Interaction Features:**
+
+- **Simple 1% Scaling**: Base love is always 1% of current love held, rounded down (minimum 1, maximum 100)
+- **Direct Proportional Growth**: 100 love = 1 base, 500 love = 5 base, 1000 love = 10 base, etc.
+- **Real-Time Feedback**: Visible in currency tooltip, encouraging players to maintain love reserves
+- **Multiplier Compatible**: Works with existing cat energy, happiness, and merit upgrade multipliers
+
+**Merit Upgrade System:**
+
+- **Five Core Upgrades**: Gentle Touch (+20% petting), Play Master (+25% pouncing), Home Designer (+15% furniture), Nutrition Expert (+12% feeding), Work Ethic (+10% job treats)
+- **Linear Progression**: Each upgrade level costs 1 more merit than the previous (level 1=1 merit, level 2=2 merits, etc.)
+- **Visual Progress**: Dense UI with 10-level indicators showing filled notches for purchased levels
+- **Smart Spending**: "Available to spend" counter with detailed breakdown tooltip showing earned/spent/available merits
+
+**UI/UX Enhancements:**
+
+- **Subtab Design**: Clean Material Design 3 tabs for "Upgrades" and "Achievements" with badge counters
+- **Restored Badge Design**: Circular achievement badges with dynamic colors, gradients, and professional styling
+- **Merit Counter Chip**: Elegant white chip showing available merits with comprehensive hover tooltip
+- **Consistent Iconography**: Golden "kid_star" icons throughout, with proper currency colors (red hearts, blue fish)
+
+**Technical Implementation:**
+
+- **Love Per Interaction System**: `src/cats/data/lovePerInteractionSystem.ts` with configurable thresholds and logarithmic scaling
+- **Merit Upgrade Data**: `src/cats/data/meritUpgradeData.ts` with upgrade definitions and cost calculations
+- **State Management**: Removed `skillLevels`, `skillIncrements`, `totalLoveEverEarned`; added proper merit spending tracking
+- **Component Architecture**: Merged upgrade functionality into existing `MeritsPanel.tsx` with clean separation of concerns
+
+**Files Modified:**
+
+- `src/cats/data/lovePerInteractionSystem.ts` - New dynamic love calculation system
+- `src/cats/data/meritUpgradeData.ts` - Merit upgrade definitions and cost logic
+- `src/cats/components/panels/MeritsPanel.tsx` - Unified merits interface with subtabs
+- `src/cats/components/panels/TabbedPanel.tsx` - Removed skills panel integration
+- `src/cats/components/ui/CurrencyTooltip.tsx` - Updated to show love-per-interaction stats
+- `src/cats/App.tsx` - Integrated merit multipliers and love calculation
+- `src/cats/game/types.ts` - Cleaned up GameState interface
+- `src/cats/styles/cats.css` - Extensive UI polish and Material Design 3 styling
+- `src/cats/hooks/useNotificationSystem.ts` - Removed skill notification triggers
+
+**Testing Coverage:**
+
+- **New Test Suites**: 36 new tests covering love-per-interaction system and merit upgrade logic
+- **Updated Component Tests**: Revised MeritsPanel tests for new tabbed interface
+- **Integration Tests**: All 282 tests passing with comprehensive coverage of new systems
+
 ### Experience-Based Job Progression System
 
 The Cat Clicker features a completely redesigned job system that transforms career progression from simple cost-based unlocks into an engaging, skill-building experience:

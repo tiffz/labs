@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import JobPanel from './JobPanel';
-import SkillsPanel from '../skills/SkillsPanel';
 import MeritsPanel from './MeritsPanel';
 import ThingsPanel from '../things/ThingsPanel';
 import type { Merit } from '../../data/meritData';
-import type { JobInterviewState, SkillIncrementState } from '../../game/types';
+import type { JobInterviewState } from '../../game/types';
 
 interface TabbedPanelProps {
   // Job panel props
@@ -22,13 +21,9 @@ interface TabbedPanelProps {
   thingQuantities: { [key: string]: number };
   onPurchaseThing: (thingId: string) => void;
   
-  // Skills panel props
-  skillLevels: { [key: string]: number };
-  skillIncrements: { [skillId: string]: { [levelIndex: number]: number } };
-  skillAttempts: { [skillId: string]: SkillIncrementState };
-  onSkillTrain: (skillId: string) => void;
-  lovePerClick: number;
-  lovePerPounce: number;
+  // Merit upgrades panel props
+  spentMerits: { [upgradeId: string]: number };
+  onPurchaseUpgrade: (upgradeId: string) => void;
   
   // Merits panel props
   earnedMerits: Merit[];
@@ -39,7 +34,7 @@ interface TabbedPanelProps {
   currentTreats: number;
 }
 
-type TabId = 'jobs' | 'things' | 'skills' | 'merits';
+type TabId = 'jobs' | 'things' | 'merits';
 
 const TabbedPanel: React.FC<TabbedPanelProps> = ({
   jobLevels,
@@ -51,10 +46,8 @@ const TabbedPanel: React.FC<TabbedPanelProps> = ({
   unlockedJobs,
   thingQuantities,
   onPurchaseThing,
-  skillLevels,
-  skillIncrements,
-  skillAttempts,
-  onSkillTrain,
+  spentMerits,
+  onPurchaseUpgrade,
   earnedMerits,
   availableMerits,
   currentLove,
@@ -78,12 +71,7 @@ const TabbedPanel: React.FC<TabbedPanelProps> = ({
         >
           Things
         </button>
-        <button
-          className={`tab-header ${activeTab === 'skills' ? 'active' : ''}`}
-          onClick={() => setActiveTab('skills')}
-        >
-          Skills
-        </button>
+
         <button
           className={`tab-header ${activeTab === 'merits' ? 'active' : ''}`}
           onClick={() => setActiveTab('merits')}
@@ -113,19 +101,13 @@ const TabbedPanel: React.FC<TabbedPanelProps> = ({
             currentTreats={currentTreats}
           />
         )}
-        {activeTab === 'skills' && (
-          <SkillsPanel
-            skillLevels={skillLevels}
-            skillIncrements={skillIncrements}
-            skillAttempts={skillAttempts}
-            onSkillTrain={onSkillTrain}
-            currentLove={currentLove}
-          />
-        )}
+
         {activeTab === 'merits' && (
           <MeritsPanel
             earnedMerits={earnedMerits}
             availableMerits={availableMerits}
+            spentMerits={spentMerits}
+            onPurchaseUpgrade={onPurchaseUpgrade}
           />
         )}
       </div>

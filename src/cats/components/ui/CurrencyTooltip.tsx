@@ -10,6 +10,8 @@ interface CurrencyTooltipProps {
   conversionRate: number;
   loveMultiplier: number;
   currentTreats: number;
+  // New love per interaction props
+  baseLovePerInteraction?: number;
 }
 
 const CurrencyTooltip: React.FC<CurrencyTooltipProps> = ({
@@ -18,7 +20,8 @@ const CurrencyTooltip: React.FC<CurrencyTooltipProps> = ({
   treatsPerSecond,
   conversionRate,
   loveMultiplier,
-  currentTreats
+  currentTreats,
+  baseLovePerInteraction
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
@@ -129,6 +132,12 @@ const CurrencyTooltip: React.FC<CurrencyTooltipProps> = ({
               <HeartIcon className="tooltip-breakdown-icon" />
                              <span>Love multiplier: <strong>{Math.floor(loveMultiplier)}x</strong> per treat</span>
             </div>
+            {baseLovePerInteraction && (
+              <div className="tooltip-breakdown-line">
+                <HeartIcon className="tooltip-breakdown-icon" />
+                               <span>Love per interaction: <strong>{baseLovePerInteraction}</strong> base</span>
+              </div>
+            )}
           </div>
           
           {isHungry && (
@@ -136,6 +145,8 @@ const CurrencyTooltip: React.FC<CurrencyTooltipProps> = ({
               <span>Your cat wants more treats than you can provide!</span>
             </div>
           )}
+          
+
           
           <div className="tooltip-flavor">
             {lovePerSecond > 0 

@@ -56,11 +56,7 @@ export const useNotificationSystem = (
             }
             break;
 
-          case 'skill_trained':
-            if (trigger.skillId && (gameState.skillLevels[trigger.skillId] || 0) > 0) {
-              isTriggered = true;
-            }
-            break;
+
           case 'thing_purchased':
             if (trigger.thingId && (gameState.thingQuantities[trigger.thingId] || 0) > 0) {
               isTriggered = true;

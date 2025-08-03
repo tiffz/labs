@@ -1,20 +1,14 @@
 import type { GlobalGameState } from "./GameState";
 
-export interface SkillIncrementState {
-  lastAttemptMessage?: string;
-  lastAttemptSuccess?: boolean;
-}
-
 export interface GameState extends GlobalGameState {
   unlockedJobs: string[];
   jobLevels: { [key: string]: number };
   jobExperience: { [key: string]: number };
   jobInterviews: { [key: string]: JobInterviewState };
-  skillLevels: { [key: string]: number };
-  skillIncrements: { [skillId: string]: { [levelIndex: number]: number } };
-  skillAttempts: { [skillId: string]: SkillIncrementState };
   thingQuantities: { [key: string]: number };
   earnedMerits: string[];
+  // New merit upgrade system
+  spentMerits: { [upgradeId: string]: number }; // Track merit points spent on each upgrade
 }
 
 export interface JobInterviewState {
