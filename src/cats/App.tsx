@@ -1,5 +1,8 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import ReactDOM from 'react-dom';
+import { useStableCallback } from './hooks/useStableCallback';
+import { useRenderTracker } from './utils/debugUtils';
+import './utils/errorLogger'; // Initialize error logging in development
 
 // Analytics types
 declare global {
@@ -9,35 +12,25 @@ declare global {
     };
   }
 }
-import Cat from './components/cat/Cat';
-import Heart from './components/cat/Heart';
-import Zzz from './components/cat/Zzz';
-import WandToy from './components/cat/WandToy';
+import CatInteractionManager from './components/game/CatInteractionManager';
+import Heart from './components/game/Heart';
+import Zzz from './components/game/Zzz';
+import WandToy from './components/game/WandToy';
 import DevPanel from './components/ui/DevPanel';
-import HeartIcon from './icons/HeartIcon';
-import FishIcon from './icons/FishIcon';
-import CurrencyTooltip from './components/ui/CurrencyTooltip';
-import CatFact from './components/ui/CatFact';
+import CurrencyDisplay from './components/ui/CurrencyDisplay';
 import TabbedPanel from './components/panels/TabbedPanel';
-import { catFacts } from './data/catFacts';
-import { jobData } from './data/jobData';
-import { performTraining, canPromoteToNextLevel } from './data/jobTrainingSystem';
-import { performInterview, canAffordInterview } from './data/interviewSystem';
 
-import { 
-  calculateBaseLovePerInteraction, 
-  calculateFinalLoveGain
-} from './data/lovePerInteractionSystem';
-import { getTotalMeritUpgradeMultiplier, getMeritUpgradeCost } from './data/meritUpgradeData';
-import { thingsData, getThingPrice, getThingTotalEffect } from './data/thingsData';
 import { useCatSystem } from './hooks/useCatSystem';
 import { HeartSpawningService, type HeartVisuals } from './services/HeartSpawningService';
 import { useAchievementSystem } from './hooks/useAchievementSystem';
 import { useNotificationSystem } from './hooks/useNotificationSystem';
+import { useGameStateManager } from './hooks/useGameStateManager';
+import { GameEconomyService } from './services/GameEconomyService';
 import type { GameState } from './game/types';
 
 
 import NotificationQueue from './components/ui/NotificationQueue';
+import { ErrorReporter } from './components/ui/ErrorReporter';
 
 
 import './styles/cats.css';
@@ -83,29 +76,24 @@ const initialGameState: GameState = {
 };
 
 function App() {
-  const [gameState, setGameState] = useState<GameState>(initialGameState);
+  // Track renders in development
+  useRenderTracker('App');
+  const gameStateManager = useGameStateManager({ initialState: initialGameState });
+  const { gameState } = gameStateManager;
   const { love, treats, jobLevels, jobExperience, jobInterviews, thingQuantities, spentMerits } = gameState;
 
 
-  const [isPetting, setIsPetting] = useState(false);
   const [hearts, setHearts] = useState<HeartType[]>([]);
-  const [isStartled, setIsStartled] = useState(false);
-  const [isSleeping, setIsSleeping] = useState(false);
-  const [isDrowsy, setIsDrowsy] = useState(false);
   const [zzzs, setZzzs] = useState<ZzzType[]>([]);
   const zzzTimeoutRef = useRef<number | null>(null);
-  const [wigglingEar, setWigglingEar] = useState<'left' | 'right' | null>(null);
-  const [isSubtleWiggling, setIsSubtleWiggling] = useState(false);
-  const [isJumping, setIsJumping] = useState(false);
-  const clickTimestampsRef = useRef<number[]>([]);
-
   const [trackableHeartId, setTrackableHeartId] = useState<number | null>(null);
-  const [isSmiling, setIsSmiling] = useState(false);
-  const [headTiltAngle, setHeadTiltAngle] = useState(0);
-  
-  const catRef = useRef<SVGSVGElement>(null);
-  const [energy, setEnergy] = useState(100); // Cat's energy, 0-100
+  // Energy is now managed by useCatSystem only
   const [isDevMode, setIsDevMode] = useState(false);
+  const [wandInitialPosition, setWandInitialPosition] = useState({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
+  
+  // Restore sleep/drowsy state for proper Z spawning and cat behavior
+  const [isSleeping, setIsSleeping] = useState(false);
+  const [isDrowsy, setIsDrowsy] = useState(false);
 
   // Systems
   const { notificationQueue, setNotificationQueue, addNotificationToQueue } = useNotificationSystem(gameState);
@@ -115,7 +103,7 @@ function App() {
     earnedAwards,
     availableAwards,
     trackSpecialAction 
-  } = useAchievementSystem(gameState, setGameState, addNotificationToQueue);
+  } = useAchievementSystem(gameState, gameStateManager.updateState, addNotificationToQueue);
   
   // Heart spawning service
   const heartSpawningService = useMemo(() => {
@@ -137,24 +125,17 @@ function App() {
       }
     });
   }, []);
-  
-  const cheekClickFlag = useRef(false);
-  const [rapidClickCount, setRapidClickCount] = useState(0);
-  const [currentFact] = useState(catFacts[Math.floor(Math.random() * catFacts.length)]);
+
 
   // === Stable callbacks to prevent infinite loops ===
-  const onLoveGained = useCallback((amount: number) => {
-    setGameState(current => ({ 
-      ...current, 
-      love: current.love + amount
-    }));
-  }, []);
+  const onLoveGained = useStableCallback<(amount: number) => void>((amount: number) => {
+    gameStateManager.currency.addLove(amount);
+  });
 
-  const onEnergyChanged = useCallback((newEnergy: number) => {
-    setEnergy(newEnergy);
-  }, []);
+  // Energy is now managed entirely by useCatSystem
 
-  const onHeartSpawned = useCallback((position: { x: number; y: number }) => {
+  const onHeartSpawned = useStableCallback<(position: { x: number; y: number }) => void>((position: { x: number; y: number }) => {
+
     const newHeart: HeartType = {
       id: Date.now(),
       x: position.x,
@@ -171,15 +152,17 @@ function App() {
         currentHearts.filter(heart => heart.id !== newHeart.id)
       );
     }, 1000);
-  }, []);
+  });
 
-  const onTrackableHeartSet = useCallback((heartId: number | null) => {
+  const onTrackableHeartSet = useStableCallback<(heartId: number | null) => void>((heartId: number | null) => {
+
     setTrackableHeartId(heartId);
-  }, []);
+  });
 
-  const onTreatsGained = useCallback((amount: number) => {
-    setGameState(current => ({ ...current, treats: current.treats + amount }));
-  }, []);
+  const onTreatsGained = useStableCallback<(amount: number) => void>((amount: number) => {
+
+    gameStateManager.currency.addTreats(amount);
+  });
 
   // === CAT SYSTEM (Clean Architecture) ===
   const {
@@ -203,78 +186,42 @@ function App() {
     movementNovelty,
     clickExcitement,
   } = useCatSystem({
-    initialEnergy: energy, // Pass current energy as initial value
     currentLove: love,     // Pass global state
     currentTreats: treats, // Pass global state
     
     // Stable callback functions
     onLoveGained,
-    onEnergyChanged,
     onHeartSpawned,
     onTrackableHeartSet,
     onTreatsGained,
   });
 
-  // Keep reference to current energy for compatibility
-  const [wandInitialPosition, setWandInitialPosition] = useState({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
 
-  const treatsPerSecond = useMemo(() => {
-    return jobData.reduce((total, job) => {
-      const currentLevel = jobLevels[job.id] || 0;
-      if (currentLevel > 0) {
-        return total + job.levels[currentLevel - 1].treatsPerSecond;
-      }
-      return total;
-    }, 0);
-  }, [jobLevels]);
 
-  // Calculate treat-to-love conversion rate from Things effects
-  const conversionRate = useMemo(() => {
-    // Calculate effects from treat consumption rate Things (like ceramic bowl)
-    const treatConsumptionBonus = thingsData
-      .filter(thing => thing.category === 'feeding' && thing.effectType === 'treat_consumption_rate')
-      .reduce((total, thing) => {
-        const quantity = thingQuantities[thing.id] || 0;
-        return total + getThingTotalEffect(thing, quantity);
-      }, 0);
-    
-    return treatConsumptionBonus; // Base conversion rate is 0 - must buy food bowl or ceramic bowl to start conversion
-  }, [thingQuantities]);
+  // Create stable string keys for economy calculation dependencies
+  const jobLevelsKey = JSON.stringify(gameState.jobLevels);
+  const spentMeritsKey = JSON.stringify(gameState.spentMerits);
+  const thingQuantitiesKey = JSON.stringify(gameState.thingQuantities);
 
-  const loveMultiplier = useMemo(() => {
-    // Calculate effects from love per treat Things
-    const lovePerTreatBonus = thingsData
-      .filter(thing => thing.category === 'feeding' && thing.effectType === 'love_per_treat')
-      .reduce((total, thing) => {
-        const quantity = thingQuantities[thing.id] || 0;
-        return total + getThingTotalEffect(thing, quantity);
-      }, 0);
-    
-    return 1 + lovePerTreatBonus; // Base love multiplier is 1 love per treat
-  }, [thingQuantities]);
-
-  // Calculate base love per interaction from current love on hand
-  const baseLovePerInteraction = useMemo(() => {
-    return calculateBaseLovePerInteraction(love);
-  }, [love]);
+  // Calculate all economic values using the centralized service
+  // Only recalculate when structural game state changes, not when love/treats change from passive income
+  const economy = useMemo(() => {
+    return GameEconomyService.calculateEconomy(gameState);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameState, jobLevelsKey, spentMeritsKey, thingQuantitiesKey]);
   
-  // Calculate merit-based multipliers
-  const meritMultipliers = useMemo(() => {
-    return {
-      lovePetMultiplier: getTotalMeritUpgradeMultiplier(spentMerits, 'love_per_pet_multiplier'),
-      lovePounceMultiplier: getTotalMeritUpgradeMultiplier(spentMerits, 'love_per_pounce_multiplier'),
-      loveInteractionMultiplier: getTotalMeritUpgradeMultiplier(spentMerits, 'love_per_interaction_multiplier'),
-    };
-  }, [spentMerits]);
+  // Extract individual values for backwards compatibility
+  const { baseLovePerInteraction } = economy;
   
 
 
-  // Use cat energy from the cat system
+  // Use cat energy from the cat system directly
   const energyRef = useRef(catEnergy);
-  useEffect(() => {
-    energyRef.current = catEnergy;
-    setEnergy(catEnergy); // Keep App's energy state in sync for other components
-  }, [catEnergy]);
+  energyRef.current = catEnergy; // No useEffect needed for simple ref updates
+  
+  // Store latest catActions in ref to avoid stale closures
+  const catActionsRef = useRef(catActions);
+  catActionsRef.current = catActions;
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -283,233 +230,24 @@ function App() {
     }
   }, []);
 
-  // Energy regeneration
-  useEffect(() => {
-    const energyInterval = setInterval(() => {
-      setEnergy(currentEnergy => Math.min(100, currentEnergy + 100 / 600));
-    }, 1000);
+  // Energy regeneration is now handled by useCatSystem
 
-    return () => clearInterval(energyInterval);
-  }, []);
 
-  useEffect(() => {
-    let smileTimer: number;
-    if (isSmiling) {
-      smileTimer = window.setTimeout(() => setIsSmiling(false), 750);
-    }
-    return () => clearTimeout(smileTimer);
-  }, [isSmiling]);
   
-  const handleCatClick = (event: React.MouseEvent) => {
-    // Only block clicks when actively pouncing in wand mode
-    if (isPouncing && wandMode) return;
-
-    const energyMultiplier = 1 + catEnergy / 100;
-    const loveFromClick = calculateFinalLoveGain(
-      baseLovePerInteraction,
-      'petting',
-      energyMultiplier,
-      meritMultipliers
-    );
-    onLoveGained(loveFromClick);
-    catActions.addEnergy(-1); // Use cat system's energy management
-    
-    // Track cat interaction
-    if (typeof window !== 'undefined' && window.labsAnalytics) {
-      window.labsAnalytics.trackEvent('cat_pet', {
-        category: 'Cat Interaction',
-        label: wandMode ? 'wand_mode' : 'normal_mode',
-        value: loveFromClick,
-        love_gained: loveFromClick,
-        energy_level: catEnergy
-      });
-    }
-    
-    setIsPetting(true);
-    setTimeout(() => setIsPetting(false), 200);
-
-    // Subtle ear wiggle on pet
-    if (!wigglingEar && !isSubtleWiggling && Math.random() < 0.4) {
-      setIsSubtleWiggling(true);
-      setTimeout(() => {
-        setIsSubtleWiggling(false);
-      }, 500);
-    }
-
-    const now = Date.now();
-
-    if (!cheekClickFlag.current && !wandMode && !isJumping) {
-      const JUMP_WINDOW_MS = 500;
-      const JUMP_CLICK_THRESHOLD = 4;
-      const JUMP_CHANCE = 0.1 + (catEnergy / 100) * 0.5;
-
-      clickTimestampsRef.current.push(now);
-      clickTimestampsRef.current = clickTimestampsRef.current.filter(
-        (timestamp) => now - timestamp < JUMP_WINDOW_MS
-      );
-      setRapidClickCount(clickTimestampsRef.current.length);
-      
-      if (clickTimestampsRef.current.length >= JUMP_CLICK_THRESHOLD && Math.random() < JUMP_CHANCE) {
-        onLoveGained(loveFromClick);
-        setIsJumping(true);
-        
-        // Track happy jump for awards
-        trackSpecialAction('happyJumps');
-        
-        clickTimestampsRef.current = [];
-        setRapidClickCount(0);
-        setTimeout(() => setIsJumping(false), 500);
-      }
-    }
-    
-    // Reset cheek flag after use
-    if (cheekClickFlag.current) {
-        cheekClickFlag.current = false;
-    }
-
-    // Only spawn click-based hearts when wand is NOT active
-    if (!wandMode) {
-      heartSpawningService.spawnHearts({
-        position: { x: event.clientX, y: event.clientY },
-        loveAmount: loveFromClick,
-        interactionType: 'petting'
-      });
-    }
-  };
-
   const removeHeart = (id: number) => {
     setHearts((currentHearts) =>
       currentHearts.filter((heart) => heart.id !== id)
     );
   };
-  
-  const handleWandClick = () => {
-    catActions.handleWandClick();
-  };
-
-  // Energy is now managed by the cat system automatically
-
-  const handleEarClick = (ear: 'left' | 'right', event: React.MouseEvent) => {
-    if (wigglingEar || isSubtleWiggling) return;
-
-    // Track ear click for awards
-    trackSpecialAction('earClicks');
-
-    // Generate love and energy changes regardless of wand mode
-    const energyMultiplier = 1 + catEnergy / 100;
-    const loveFromClick = calculateFinalLoveGain(
-      baseLovePerInteraction,
-      'petting',
-      energyMultiplier,
-      meritMultipliers
-    );
-    onLoveGained(loveFromClick);
-    catActions.addEnergy(-1);
-    setIsPetting(true);
-    setTimeout(() => setIsPetting(false), 200);
-    
-    // Skip heart spawning and visual effects when wand is active, but allow love updates
-    if (wandMode) return;
-    
-    // Use unified heart spawning
-    heartSpawningService.spawnHearts({
-      position: { x: event.clientX, y: event.clientY },
-      loveAmount: loveFromClick,
-      interactionType: 'petting'
-    });
-
-    // Trigger the specific ear wiggle
-    setWigglingEar(ear);
-    setTimeout(() => {
-      setWigglingEar(null);
-    }, 500);
-  };
-  
-  const handleEyeClick = (event: React.MouseEvent) => {
-    event.stopPropagation();
-    setIsStartled(true);
-    setTimeout(() => setIsStartled(false), 500);
-  };
-  
-  const handleNoseClick = (event: React.MouseEvent) => {
-    event.stopPropagation();
-    
-    // Track nose click for Boop award
-    trackSpecialAction('noseClicks');
-    
-    // Generate love regardless of wand mode
-    setIsSmiling(true);
-    const loveFromNose = calculateFinalLoveGain(
-      baseLovePerInteraction,
-      'petting',
-      1, // No energy multiplier for nose clicks
-      meritMultipliers
-    );
-    onLoveGained(loveFromNose);
-    
-    // Skip heart spawning when wand is active, but allow love updates
-    if (wandMode) return;
-    
-    // Use unified heart spawning
-    heartSpawningService.spawnHearts({
-      position: { x: event.clientX, y: event.clientY },
-      loveAmount: 5,
-      interactionType: 'petting'
-    });
-  };
-
-  const handleCheekClick = (side: 'left' | 'right', event: React.MouseEvent) => {
-    event.stopPropagation();
-    cheekClickFlag.current = true;
-    handleCatClick(event);
-
-    // Track cheek pet for awards
-    trackSpecialAction('cheekPets');
-
-    if (Math.random() < 0.25) setIsSmiling(true);
-    
-    if (!catRef.current) return;
-
-    const catRect = catRef.current.getBoundingClientRect();
-    const clickXInCatSvg = ((event.clientX - catRect.left) / catRect.width) * 220; // 220 is the viewBox width
-
-    const MAX_TILT = 7; // Max tilt in degrees
-    const MIN_TILT = 1;  // Min tilt in degrees
-    const TILT_RANGE = MAX_TILT - MIN_TILT;
-
-    let tiltFactor = 0; // 0 to 1
-
-    if (side === 'left') {
-        const leftCheekInnerEdge = 85;
-        const leftCheekOuterEdge = 35;
-        const cheekWidth = leftCheekInnerEdge - leftCheekOuterEdge;
-        const clampedX = Math.max(leftCheekOuterEdge, Math.min(leftCheekInnerEdge, clickXInCatSvg));
-        tiltFactor = (leftCheekInnerEdge - clampedX) / cheekWidth;
-    } else { // right side
-        const rightCheekInnerEdge = 115;
-        const rightCheekOuterEdge = 165;
-        const cheekWidth = rightCheekOuterEdge - rightCheekInnerEdge;
-        const clampedX = Math.max(rightCheekInnerEdge, Math.min(rightCheekOuterEdge, clickXInCatSvg));
-        tiltFactor = (clampedX - rightCheekInnerEdge) / cheekWidth;
-    }
-
-    const tiltDegrees = MIN_TILT + (tiltFactor * TILT_RANGE);
-    const finalAngle = side === 'left' ? -tiltDegrees : tiltDegrees;
-    
-    setHeadTiltAngle(finalAngle);
-
-    setTimeout(() => {
-        setHeadTiltAngle(0);
-    }, 500);
-  };
 
 
 
-  const wakeUp = useCallback(() => {
+  const wakeUp = useStableCallback(() => {
+
     setIsSleeping(false);
     setIsDrowsy(false);
     setZzzs([]);
-  }, []);
+  });
 
   const removeZzz = (id: number) => {
     setZzzs((currentZzzs) => currentZzzs.filter((zzz) => zzz.id !== id));
@@ -542,6 +280,14 @@ function App() {
     };
   }, [wakeUp]);
 
+  // Use ref for cat position to avoid triggering re-renders
+  const catPositionRef = useRef<{x: number, y: number} | null>(null);
+
+  const handleCatPositionUpdate = useStableCallback<(position: {x: number, y: number}) => void>((position: {x: number, y: number}) => {
+
+    catPositionRef.current = position;
+  });
+
   useEffect(() => {
     const initialDelay = 2500;
     const minDelay = 1000;
@@ -550,12 +296,9 @@ function App() {
     const scheduleNextZzz = (delay: number) => {
       if (zzzTimeoutRef.current) clearTimeout(zzzTimeoutRef.current);
       zzzTimeoutRef.current = window.setTimeout(() => {
-        let spawnX = window.innerWidth / 2, spawnY = window.innerHeight / 2 - 20;
-        if (catRef.current) {
-          const catRect = catRef.current.getBoundingClientRect();
-          spawnX = catRect.left + catRect.width * 0.5;
-          spawnY = catRect.top + catRect.height * 0.2;
-        }
+        // Use cat position if available, fallback to screen center
+        const spawnX = catPositionRef.current?.x || window.innerWidth / 2;
+        const spawnY = (catPositionRef.current?.y || window.innerHeight / 2) - 40; // Above cat's head
 
         setZzzs((currentZzzs) => [...currentZzzs, {
             id: Date.now(),
@@ -579,9 +322,11 @@ function App() {
 
   // Escape key handler to exit wand mode
   useEffect(() => {
+    if (!wandMode) return; // Only add listener when in wand mode
+    
     const handleEscapeKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && wandMode) {
-        catActions.toggleWandMode();
+      if (event.key === 'Escape') {
+        catActionsRef.current.toggleWandMode();
       }
     };
 
@@ -590,199 +335,87 @@ function App() {
     return () => {
       document.removeEventListener('keydown', handleEscapeKey);
     };
-  }, [wandMode, catActions]);
+  }, [wandMode]); // Remove catActions dependency
 
-  // Calculate auto love per second from environment Things
-  const autoLovePerSecond = useMemo(() => {
-    return thingsData
-      .filter(thing => thing.category === 'environment' && thing.effectType === 'auto_love_rate')
-      .reduce((total, thing) => {
-        const quantity = thingQuantities[thing.id] || 0;
-        return total + getThingTotalEffect(thing, quantity);
-      }, 0);
-  }, [thingQuantities]);
-
-  // Centralized passive income calculation
-  const calculatePassiveIncome = useCallback((currentTreats: number, deltaTimeSeconds: number) => {
-    // Calculate treats gained from jobs
-    const treatsGained = treatsPerSecond * deltaTimeSeconds;
-    
-    // Calculate total treats after gaining from jobs
-    const totalTreats = currentTreats + treatsGained;
-    
-    // Calculate how many treats can be converted to love
-    const maxConvertibleTreats = conversionRate * deltaTimeSeconds;
-    const treatsToConvert = Math.min(totalTreats, maxConvertibleTreats);
-    
-    // Calculate love gained from treats and auto-generation
-    const loveFromTreats = treatsToConvert * loveMultiplier;
-    const autoLoveGained = autoLovePerSecond * deltaTimeSeconds;
-    const totalLoveGained = loveFromTreats + autoLoveGained;
-    const finalTreats = totalTreats - treatsToConvert;
-    
-    return {
-      treatsGained,
-      treatsToConvert,
-      loveGained: totalLoveGained,
-      autoLoveGained,
-      finalTreats
+  // Global key handler for wand mode toggle
+  useEffect(() => {
+    const handleGlobalKeys = (event: KeyboardEvent) => {
+      if (event.key === 'w' || event.key === 'W') {
+        catActionsRef.current.toggleWandMode();
+      }
     };
-  }, [treatsPerSecond, conversionRate, loveMultiplier, autoLovePerSecond]);
+
+    document.addEventListener('keydown', handleGlobalKeys);
+    
+    return () => {
+      document.removeEventListener('keydown', handleGlobalKeys);
+    };
+  }, []); // No dependencies - always active
 
   // Handle time skip for debugging - now using centralized logic
-  const handleTimeSkip = useCallback(() => {
+  const handleTimeSkip = useStableCallback(() => {
+
     const oneDayInSeconds = 24 * 60 * 60;
-    const result = calculatePassiveIncome(treats, oneDayInSeconds);
+    const currentState = gameStateManager.gameState;
+    const currentEconomy = GameEconomyService.calculateEconomy(currentState);
+    const result = GameEconomyService.calculatePassiveIncome(currentState.treats, oneDayInSeconds, currentEconomy);
     
-    setGameState(prev => ({ ...prev, treats: result.finalTreats, love: prev.love + result.loveGained }));
-    
-    console.log(`Time skipped 1 day:`, {
-      treatsGained: result.treatsGained.toFixed(1),
-      treatsConverted: result.treatsToConvert.toFixed(1),
-      loveGained: result.loveGained.toFixed(1),
-      finalTreats: result.finalTreats.toFixed(1)
-    });
-  }, [treats, calculatePassiveIncome]);
+    gameStateManager.debug.skipTime(result.finalTreats, result.loveGained);
+  });
 
   // Debug functions to give resources
-  const giveDebugTreats = useCallback(() => {
-    setGameState(prev => ({ ...prev, treats: prev.treats + 1000 }));
-    console.log('Gave 1000 treats');
-  }, []);
+  const giveDebugTreats = useStableCallback(() => {
 
-  const giveDebugLove = useCallback(() => {
-    setGameState(prev => ({ ...prev, love: prev.love + 1000 }));
-    console.log('Gave 1000 love');
-  }, []);
+    gameStateManager.debug.giveDebugTreats();
+  });
+
+  const giveDebugLove = useStableCallback(() => {
+
+    gameStateManager.debug.giveDebugLove();
+  });
+
+  // Store gameStateManager in a ref to avoid restarting interval on every change
+  const gameStateManagerRef = useRef(gameStateManager);
+  gameStateManagerRef.current = gameStateManager;
 
   useEffect(() => {
     const treatInterval = setInterval(() => {
-      setGameState(current => {
-        const result = calculatePassiveIncome(current.treats, 1); // 1 second
-        return { ...current, treats: result.finalTreats, love: current.love + result.loveGained };
-      });
+      // Get current state from ref to avoid dependency issues
+      const currentState = gameStateManagerRef.current.gameState;
+      const currentEconomy = GameEconomyService.calculateEconomy(currentState);
+      const result = GameEconomyService.calculatePassiveIncome(currentState.treats, 1, currentEconomy);
+      
+      // Only apply if there's actually income to apply (avoid unnecessary state updates)
+      if (result.treatsGained > 0 || result.loveGained > 0) {
+        gameStateManagerRef.current.currency.applyPassiveIncome(result.finalTreats, result.loveGained);
+      }
     }, 1000);
     return () => clearInterval(treatInterval);
-  }, [calculatePassiveIncome]);
+  }, []); // Empty deps - interval runs once and uses ref for current values
 
   const handlePromotion = (jobId: string) => {
-    const currentLevel = jobLevels[jobId] || 0;
-    const currentExperience = jobExperience[jobId] || 0;
-    const interviewState = jobInterviews[jobId];
-    const job = jobData.find(j => j.id === jobId);
-    
-    if (!job || currentLevel >= job.levels.length) return;
-    
-    // If level 0 (unemployed), this is accepting a job offer
-    if (currentLevel === 0) {
-      // Must have a job offer to accept
-      if (!interviewState?.hasOffer) return;
-      
-      // Accept the job offer - clear interview state and set to level 1
-      setGameState(prev => ({
-        ...prev,
-        jobLevels: { ...prev.jobLevels, [jobId]: 1 },
-        jobInterviews: { 
-          ...prev.jobInterviews, 
-          [jobId]: { hasOffer: false, lastRejectionReason: undefined } 
-        },
-      }));
-    } else {
-      // Regular promotion (level > 0) - check experience requirements  
-      if (!canPromoteToNextLevel(jobData, jobId, currentLevel, currentExperience)) return;
-      
-      // Promotions are purely experience-based, no love cost
-      setGameState(prev => ({
-        ...prev,
-        jobLevels: { ...prev.jobLevels, [jobId]: currentLevel + 1 },
-      }));
-    }
+    gameStateManager.jobs.promoteJob(jobId);
   };
 
   const handleTraining = (jobId: string) => {
-    const currentExperience = jobExperience[jobId] || 0;
-    const trainingResult = performTraining(jobId, currentExperience);
-    
-    if (love >= trainingResult.loveCost) {
-      setGameState(prev => ({
-        ...prev,
-        love: prev.love - trainingResult.loveCost,
-        jobExperience: { 
-          ...prev.jobExperience, 
-          [jobId]: (prev.jobExperience[jobId] || 0) + trainingResult.experienceGained 
-        },
-      }));
-      
-      // TODO: Add juicy feedback animation for training result
-      if (trainingResult.wasLucky) {
-        console.log(`Lucky training! Gained ${trainingResult.experienceGained} experience (bonus: ${trainingResult.bonusAmount})`);
-      }
-    }
+    gameStateManager.jobs.trainForJob(jobId);
   };
 
   const handleInterview = (jobId: string) => {
-    if (!canAffordInterview(love, jobId)) return;
-    
-    const interviewResult = performInterview(jobId);
-    
-    // Deduct love cost
-    setGameState(prev => ({
-      ...prev,
-      love: prev.love - interviewResult.loveCost,
-      jobInterviews: {
-        ...prev.jobInterviews,
-        [jobId]: {
-          hasOffer: interviewResult.success,
-          lastRejectionReason: interviewResult.success ? undefined : interviewResult.message,
-        },
-      },
-    }));
-    
-    // Show result message (we could show this in a notification later)
-    console.log(`Interview result: ${interviewResult.message}`);
+    gameStateManager.jobs.interviewForJob(jobId);
   };
 
   // Handle merit upgrade purchases
-  const handlePurchaseUpgrade = useCallback((upgradeId: string) => {
-    setGameState(prev => {
-      const currentLevel = prev.spentMerits[upgradeId] || 0;
-      const cost = getMeritUpgradeCost(currentLevel);
-      const availablePoints = prev.earnedMerits.length - Object.values(prev.spentMerits).reduce((sum, spent) => sum + spent, 0);
-      
-      // Check if player can afford this upgrade
-      if (availablePoints < cost) {
-        console.log(`Cannot afford upgrade: need ${cost} merits, have ${availablePoints}`);
-        return prev;
-      }
-      
-      // Apply the upgrade
-      return {
-        ...prev,
-        spentMerits: {
-          ...prev.spentMerits,
-          [upgradeId]: currentLevel + 1
-        }
-      };
-    });
-  }, []);
+  const handlePurchaseUpgrade = useStableCallback<(upgradeId: string) => void>((upgradeId: string) => {
+
+    gameStateManager.purchases.buyUpgrade(upgradeId);
+  });
 
   // Handle thing purchases
-  const handlePurchaseThing = useCallback((thingId: string) => {
-    const { treats, thingQuantities } = gameState;
-    const currentQuantity = thingQuantities[thingId] || 0;
-    const thing = thingsData.find(t => t.id === thingId);
-    if (!thing) return;
-    
-    const price = getThingPrice(thing, currentQuantity);
-    
-    if (treats >= price) {
-      setGameState(prev => ({
-        ...prev,
-        treats: prev.treats - price,
-        thingQuantities: { ...prev.thingQuantities, [thingId]: currentQuantity + 1 },
-      }));
-    }
-  }, [gameState]);
+  const handlePurchaseThing = useStableCallback<(thingId: string) => void>((thingId: string) => {
+
+    gameStateManager.purchases.buyThing(thingId);
+  });
 
   useEffect(() => {
     if (wandMode) document.body.classList.add('wand-mode-active');
@@ -790,44 +423,49 @@ function App() {
     return () => document.body.classList.remove('wand-mode-active');
   }, [wandMode]);
 
-  // Ear twitching when pouncing starts
-  useEffect(() => {
-    if (isPouncing && !wigglingEar && !isSubtleWiggling) {
-      // 70% chance for ear twitching when pouncing - higher than petting (40%)
-      if (Math.random() < 0.7) {
-        setIsSubtleWiggling(true);
-        setTimeout(() => {
-          setIsSubtleWiggling(false);
-        }, 600); // Slightly longer than petting (500ms) for hunting focus
-      }
-    }
-  }, [isPouncing, wigglingEar, isSubtleWiggling]);
 
 
+
+
+  // Track stable timestamps for notifications
+  const timestampMapRef = useRef<Map<string, number>>(new Map());
 
   const handleNotificationDismiss = (notificationId: string) => {
     setNotificationQueue(prev => prev.filter(n => n.id !== notificationId));
+    // Clean up timestamp map
+    timestampMapRef.current.delete(notificationId);
   };
-
-
+  
+  // Memoize notifications to prevent infinite re-renders
+  const memoizedNotifications = useMemo(() => 
+    notificationQueue.map((n) => {
+      // Get or create a stable timestamp for this notification ID
+      if (!timestampMapRef.current.has(n.id)) {
+        timestampMapRef.current.set(n.id, Date.now() + Math.random());
+      }
+      return {
+        id: n.id,
+        notification: n,
+        timestamp: timestampMapRef.current.get(n.id)!,
+      };
+    }), [notificationQueue]
+  );
 
   return (
     <div className="game-container">
 
       <NotificationQueue 
-        notifications={notificationQueue.map(n => ({
-          id: n.id,
-          notification: n,
-          timestamp: Date.now(),
-        }))}
+        notifications={memoizedNotifications}
         onDismiss={handleNotificationDismiss} 
       />
+
+      <ErrorReporter />
 
       {isDevMode && (
         <DevPanel
           energy={catEnergy}
           pounceConfidence={pounceConfidence}
-          rapidClickCount={rapidClickCount}
+          rapidClickCount={0}
           lastVelocity={lastVelocity}
           proximityMultiplier={proximityMultiplier}
           lovePerClick={baseLovePerInteraction}
@@ -861,106 +499,34 @@ function App() {
       )}
       <div className="main-panel">
         <div className="stats-container">
-          <div className="currency-display">
-            <CurrencyTooltip
-              type="love"
-              treatsPerSecond={treatsPerSecond}
-              conversionRate={conversionRate}
-              loveMultiplier={loveMultiplier}
-              currentTreats={treats}
-              baseLovePerInteraction={baseLovePerInteraction}
-            >
-              <div className="currency-chip">
-                <HeartIcon className="currency-icon" />
-                <span className="currency-value">{love.toFixed(0)}</span>
-              </div>
-            </CurrencyTooltip>
-            <CurrencyTooltip
-              type="treats"
-              treatsPerSecond={treatsPerSecond}
-              conversionRate={conversionRate}
-              loveMultiplier={loveMultiplier}
-              currentTreats={treats}
-            >
-              <div className="currency-chip">
-                <FishIcon className="currency-icon" />
-                <span className="currency-value">{treats.toFixed(0)}</span>
-              </div>
-            </CurrencyTooltip>
-          </div>
-
-        </div>
-        <CatFact fact={currentFact} />
-        <div className="cat-container">
-          {wandMode && (
-            <div 
-              className="wand-click-area" 
-              onClick={handleWandClick}
-              onMouseMove={(e) => {
-                catActions.handleWandMovement({ x: e.clientX, y: e.clientY });
-              }}
-            />
-          )}
-          <Cat
-            ref={catRef}
-            onClick={handleCatClick}
-            onEyeClick={handleEyeClick}
-            onEarClick={handleEarClick}
-            onNoseClick={handleNoseClick}
-            onCheekClick={handleCheekClick}
-            isPetting={isPetting}
-            isStartled={isStartled}
-            isSleeping={isSleeping}
-            isDrowsy={isDrowsy}
-            isPouncing={isPouncing}
-            isJumping={isJumping}
-            isPlaying={isPlaying}
-            isSmiling={isSmiling}
-            isSubtleWiggling={isSubtleWiggling}
-            isHappyPlaying={isHappyPlaying}
-            isEarWiggling={isEarWiggling}
-            headTiltAngle={headTiltAngle}
-            pounceTarget={pounceTarget}
-            wigglingEar={wigglingEar}
-            lastHeart={
-              trackableHeartId !== null &&
-              hearts.find((h) => h.id === trackableHeartId)
-                ? document.querySelector<HTMLDivElement>(
-                    `[data-heart-id="${trackableHeartId}"]`
-                  )
-                : null
-            }
-            wandMode={wandMode}
+          <CurrencyDisplay 
+            love={love} 
+            treats={treats} 
+            economy={economy} 
           />
         </div>
-        <div className="upgrades-container">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              
-              // Track wand mode toggle
-              if (typeof window !== 'undefined' && window.labsAnalytics) {
-                window.labsAnalytics.trackEvent('wand_mode_toggle', {
-                  category: 'Cat Interaction',
-                  label: wandMode ? 'disabled' : 'enabled',
-                  new_mode: wandMode ? 'normal' : 'wand',
-                  love_level: love,
-                  energy_level: catEnergy
-                });
-              }
-              
-              // Set initial wand position to current mouse position if enabling
-              if (!wandMode) {
-                setWandInitialPosition({ x: e.clientX, y: e.clientY });
-              }
-              
-              catActions.toggleWandMode();
-            }}
-          >
-            {wandMode ? 'Put away wand' : 'Play with wand'}
-          </button>
-
-        </div>
+        <CatInteractionManager
+          economy={economy}
+          love={love}
+          catEnergy={catEnergy}
+          wandMode={wandMode}
+          isPouncing={isPouncing}
+          isPlaying={isPlaying}
+          isShaking={isShaking}
+          isEarWiggling={isEarWiggling}
+          isHappyPlaying={isHappyPlaying}
+          pounceTarget={pounceTarget}
+          catActions={catActions}
+          trackableHeartId={trackableHeartId}
+          hearts={hearts}
+          onLoveGained={onLoveGained}
+          onWandInitialPositionSet={setWandInitialPosition}
+          onCatPositionUpdate={handleCatPositionUpdate}
+          trackSpecialAction={trackSpecialAction}
+          heartSpawningService={heartSpawningService}
+          isSleeping={isSleeping}
+          isDrowsy={isDrowsy}
+        />
       </div>
       <TabbedPanel
         jobLevels={jobLevels}

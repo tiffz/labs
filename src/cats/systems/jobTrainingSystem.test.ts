@@ -7,7 +7,7 @@ import {
   canPromoteToNextLevel,
   getTrainingConfig
 } from './jobTrainingSystem';
-import { jobData } from './jobData';
+import { jobData } from '../data/jobData';
 
 describe('Job Training System', () => {
   beforeEach(() => {

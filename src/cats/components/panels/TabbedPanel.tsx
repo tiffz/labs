@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import JobPanel from './JobPanel';
 import MeritsPanel from './MeritsPanel';
-import ThingsPanel from '../things/ThingsPanel';
+import ThingsPanel from './ThingsPanel';
 import type { Milestone, Award } from '../../data/achievementData';
 import type { JobInterviewState } from '../../game/types';
 

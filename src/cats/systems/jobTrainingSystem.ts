@@ -1,4 +1,4 @@
-import type { JobData } from './jobData';
+import type { JobData } from '../data/jobData';
 
 export interface TrainingResult {
   experienceGained: number;

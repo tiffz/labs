@@ -50,7 +50,7 @@ describe('milestoneData', () => {
     const groups = new Map<string, Milestone[]>();
     
     allMilestones.forEach(milestone => {
-      const groupKey = `${milestone.target.currencyType}_${milestone.type}`;
+      const groupKey = `${milestone.target.currencyType || 'other'}`;
       if (!groups.has(groupKey)) {
         groups.set(groupKey, []);
       }

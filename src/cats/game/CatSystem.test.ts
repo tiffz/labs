@@ -21,7 +21,6 @@ describe('Cat System Architecture', () => {
         onPlayingTriggered: vi.fn(),
         onLoveGained: vi.fn(),
         onTreatsGained: vi.fn(),
-        onEnergyChanged: vi.fn(),
       };
 
       gameState = new CatGameStateManager({
@@ -42,7 +41,6 @@ describe('Cat System Architecture', () => {
       
       actions.updateEnergy(-10);
       expect(gameState.getState().energy).toBe(90);
-      expect(mockEvents.onEnergyChanged).toHaveBeenCalledWith(90);
       
       // Should clamp to 0-100 range
       actions.updateEnergy(-200);
@@ -107,7 +105,6 @@ describe('Cat System Architecture', () => {
       
       // Should have triggered pounce
       expect(mockEvents.onPounceTriggered).toHaveBeenCalled();
-      expect(mockEvents.onEnergyChanged).toHaveBeenCalledWith(95); // -5 energy
     });
 
     test('should respect pounce cooldown', () => {
@@ -281,7 +278,6 @@ describe('Cat System Architecture', () => {
         onPlayingTriggered: vi.fn(),
         onLoveGained: vi.fn(),
         onTreatsGained: vi.fn(),
-        onEnergyChanged: vi.fn(),
       };
 
       const catGameState = new CatGameStateManager({ energy: 50 }, gameEvents);

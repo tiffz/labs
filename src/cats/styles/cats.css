@@ -21,6 +21,43 @@ body.wand-mode-active * {
   z-index: 10 !important; /* Keep wand area below notifications */
 }
 
+/* Wand toy styles */
+.wand-toy {
+  position: fixed;
+  pointer-events: none;
+  z-index: 1000;
+  transition: transform 0.1s ease-out;
+}
+
+.wand-toy.shaking {
+  animation: wand-shake 0.6s ease-in-out;
+}
+
+@keyframes wand-shake {
+  0%,
+  100% {
+    transform: translate(-50%, 0) rotate(0deg) scale(1);
+  }
+  15% {
+    transform: translate(-50%, 0) rotate(-12deg) scale(1.15);
+  }
+  30% {
+    transform: translate(-50%, 0) rotate(8deg) scale(1.1);
+  }
+  45% {
+    transform: translate(-50%, 0) rotate(-10deg) scale(1.12);
+  }
+  60% {
+    transform: translate(-50%, 0) rotate(6deg) scale(1.08);
+  }
+  75% {
+    transform: translate(-50%, 0) rotate(-8deg) scale(1.1);
+  }
+  90% {
+    transform: translate(-50%, 0) rotate(4deg) scale(1.05);
+  }
+}
+
 /* Main Game Container - Follows M3 Card/Surface guidelines */
 .game-container {
   display: flex;
@@ -244,7 +281,7 @@ body.wand-mode-active * {
   align-items: center;
   justify-content: center;
   contain: layout style; /* Remove paint containment to prevent clipping */
-  overflow: hidden; /* Allow pounce animations to extend beyond container */
+  overflow: visible; /* Allow pounce animations to extend beyond container */
 }
 
 .wand-click-area {

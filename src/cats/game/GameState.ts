@@ -60,7 +60,6 @@ export interface CatGameEvents {
   onPlayingTriggered: (playData: { intensity: number; duration: number }) => void;
   onLoveGained: (amount: number) => void;  // Request to global love system
   onTreatsGained: (amount: number) => void;  // Request to global treats system
-  onEnergyChanged: (newEnergy: number) => void;
 }
 
 /**
@@ -126,12 +125,10 @@ export class CatGameStateManager {
     return {
       updateEnergy: (delta: number) => {
         this.state.energy = Math.max(0, Math.min(100, this.state.energy + delta));
-        this.events.onEnergyChanged(this.state.energy);
       },
       
       setEnergy: (energy: number) => {
         this.state.energy = Math.max(0, Math.min(100, energy));
-        this.events.onEnergyChanged(this.state.energy);
       },
 
       toggleWandMode: () => {

@@ -14,7 +14,6 @@ describe('Petting/Wand Mode Integration', () => {
       onPlayingTriggered: vi.fn(),
       onLoveGained: vi.fn(),
       onTreatsGained: vi.fn(),
-      onEnergyChanged: vi.fn(),
     };
 
     mockAnimationEvents = {

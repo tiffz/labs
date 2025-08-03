@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { GameState } from '../game/types';
 import type { GameNotification } from '../data/notificationData';
 import { gameNotifications } from '../data/notificationData';
@@ -8,6 +8,9 @@ export const useNotificationSystem = (
 ) => {
   const [notifications, setNotifications] = useState<GameNotification[]>(gameNotifications);
   const [notificationQueue, setNotificationQueue] = useState<GameNotification[]>([]);
+  
+  // Use refs to track last checked values to prevent infinite loops from frequent love/treats updates
+  const lastCheckedRef = useRef({ love: 0, treats: 0 });
 
   const triggerNotification = useCallback((notificationId: string) => {
     const notification = notifications.find(n => n.id === notificationId);
@@ -27,6 +30,16 @@ export const useNotificationSystem = (
   }, [notifications]);
 
   useEffect(() => {
+    const currentValues = { love: gameState.love, treats: gameState.treats };
+    const lastValues = lastCheckedRef.current;
+    
+    // Only check love/treats thresholds if they've increased significantly or on first check
+    const isFirstCheck = lastValues.love === 0 && lastValues.treats === 0;
+    const shouldCheckThresholds = 
+      isFirstCheck ||
+      currentValues.love > lastValues.love + 5 || // Check every 5 love increase
+      currentValues.treats > lastValues.treats + 2; // Check every 2 treats increase
+    
     const checkTriggers = () => {
       notifications.forEach(notification => {
         if (notification.hasBeenTriggered) return;
@@ -36,12 +49,14 @@ export const useNotificationSystem = (
 
         switch (trigger.type) {
           case 'love_threshold':
-            if (trigger.value && gameState.love >= trigger.value) {
+            // Only check threshold triggers if we should check thresholds
+            if (shouldCheckThresholds && trigger.value && gameState.love >= trigger.value) {
               isTriggered = true;
             }
             break;
           case 'treats_threshold':
-            if (trigger.value && gameState.treats >= trigger.value) {
+            // Only check threshold triggers if we should check thresholds
+            if (shouldCheckThresholds && trigger.value && gameState.treats >= trigger.value) {
               isTriggered = true;
             }
             break;
@@ -55,8 +70,6 @@ export const useNotificationSystem = (
               isTriggered = true;
             }
             break;
-
-
           case 'thing_purchased':
             if (trigger.thingId && (gameState.thingQuantities[trigger.thingId] || 0) > 0) {
               isTriggered = true;
@@ -71,10 +84,15 @@ export const useNotificationSystem = (
           triggerNotification(notification.id);
         }
       });
+      
+      // Update last checked values if we checked thresholds
+      if (shouldCheckThresholds) {
+        lastCheckedRef.current = currentValues;
+      }
     };
 
     checkTriggers();
-  }, [gameState, notifications, triggerNotification]);
+  }, [gameState.unlockedJobs, gameState.jobLevels, gameState.thingQuantities, gameState.love, gameState.treats, notifications, triggerNotification]);
 
   const addNotificationToQueue = useCallback((notification: { title: string; message: string; type?: 'merit' | 'general' }) => {
     const gameNotification = {

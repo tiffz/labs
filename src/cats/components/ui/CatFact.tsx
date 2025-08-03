@@ -7,7 +7,7 @@ interface CatFactProps {
 const CatFact: React.FC<CatFactProps> = ({ fact }) => {
   return (
     <div className="cat-fact-container">
-      <p>&ldquo;{fact}&rdquo;</p>
+      <p data-testid="cat-fact">&ldquo;{fact}&rdquo;</p>
     </div>
   );
 };

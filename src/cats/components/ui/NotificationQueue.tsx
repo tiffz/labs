@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import type { GameNotification } from '../../data/notificationData';
 import HeartIcon from '../../icons/HeartIcon';
 import FishIcon from '../../icons/FishIcon';
@@ -26,9 +26,7 @@ const ToastItem: React.FC<{
       <div className="toast-text">
         <div className="toast-title">{gameNotification.title}</div>
         <div className="toast-goal">{gameNotification.message}</div>
-        {gameNotification.newGoalMessage && (
-          <div className="toast-new-goal">{gameNotification.newGoalMessage}</div>
-        )}
+
       </div>
       {(() => {
         const reward = gameNotification.reward;
@@ -88,13 +86,15 @@ const NotificationQueue: React.FC<NotificationQueueProps> = ({
     };
   }, [notifications, onDismiss, visibleNotifications]);
 
+  // Memoize current notification IDs to prevent infinite re-renders
+  const currentIds = useMemo(() => notifications.map(n => n.id), [notifications]);
+
   // Clean up visibility state when notifications are removed
   useEffect(() => {
-    const currentIds = notifications.map(n => n.id);
     setVisibleNotifications(prev => 
       prev.filter(id => currentIds.includes(id))
     );
-  }, [notifications]);
+  }, [currentIds]);
 
   if (notifications.length === 0) return null;
 

@@ -179,9 +179,6 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
           pounceState.current.excitementLevel = Math.min(3, pounceState.current.excitementLevel + 0.5);
         }
         
-        // Calculate distance for potential future use
-        // const distance = Math.hypot(pounceTarget.x, pounceTarget.y);
-        
         pounceState.current = {
           startTime: now,
           isActive: true,
@@ -497,9 +494,11 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
         viewBox="0 0 220 200"
         className={svgClasses}
         data-cat-ref="true"
+        data-testid="cat"
       >
         <g
           id="cat-container"
+          data-testid="cat-body"
           onClick={onClick}
           style={{ cursor: 'pointer' }}
         >

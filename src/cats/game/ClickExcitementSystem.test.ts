@@ -11,7 +11,6 @@ describe('Click Excitement System', () => {
       onPlayingTriggered: vi.fn(),
       onLoveGained: vi.fn(),
       onTreatsGained: vi.fn(),
-      onEnergyChanged: vi.fn(),
     };
     gameState = new CatGameStateManager({}, mockEvents);
   });

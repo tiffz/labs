@@ -3,27 +3,39 @@ import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useAchievementSystem } from './useAchievementSystem';
 import type { GameState } from '../game/types';
 
+// Extend Window interface for testing
+declare global {
+  interface Window {
+    labsAnalytics?: {
+      trackEvent: (event: string, data?: Record<string, unknown>) => void;
+    };
+  }
+}
+
 // Mock analytics
 const mockAnalytics = {
   trackEvent: vi.fn()
 };
 
 beforeEach(() => {
-  // @ts-expect-error - Adding analytics to window for testing
   window.labsAnalytics = mockAnalytics;
   vi.clearAllMocks();
 });
 
 afterEach(() => {
-  // @ts-expect-error - Removing analytics from window after test
   delete window.labsAnalytics;
 });
 
 const createMockGameState = (overrides: Partial<GameState> = {}): GameState => ({
   love: 0,
   treats: 0,
+  unlockedJobs: ['box_factory'],
+  jobLevels: {},
+  jobExperience: {},
+  jobInterviews: {},
+  thingQuantities: {},
   earnedMerits: [],
-  spentMerits: 0,
+  spentMerits: {},
   earnedAwards: [],
   awardProgress: {},
   specialActions: {
@@ -32,11 +44,6 @@ const createMockGameState = (overrides: Partial<GameState> = {}): GameState => (
     earClicks: 0,
     cheekPets: 0
   },
-  jobLevels: {},
-  thingQuantities: {},
-  totalClicks: 0,
-  lovePerTreat: 1,
-  currentMood: 'content',
   ...overrides
 });
 
@@ -47,8 +54,7 @@ describe('useAchievementSystem', () => {
   test('should check milestones and award them when criteria are met', () => {
     const gameState = createMockGameState({
       love: 100,
-      treats: 50,
-      totalClicks: 25
+      treats: 50
     });
 
     renderHook(() => useAchievementSystem(
@@ -102,7 +108,7 @@ describe('useAchievementSystem', () => {
     if (setGameStateCalls.length > 0) {
       const updateFn = setGameStateCalls[0][0];
       const newState = updateFn(gameState);
-      expect(newState.earnedMerits.filter(id => id === 'love_friend')).toHaveLength(1);
+      expect(newState.earnedMerits.filter((id: string) => id === 'love_friend')).toHaveLength(1);
     }
   });
 
@@ -125,7 +131,6 @@ describe('useAchievementSystem', () => {
     const gameState = createMockGameState({
       love: 1000,
       treats: 1000,
-      totalClicks: 100,
       specialActions: {
         noseClicks: 1,
         happyJumps: 1,
@@ -194,8 +199,7 @@ describe('useAchievementSystem', () => {
   test('should handle edge cases with zero values', () => {
     const gameState = createMockGameState({
       love: 0,
-      treats: 0,
-      totalClicks: 0
+      treats: 0
     });
 
     expect(() => {
@@ -208,7 +212,6 @@ describe('useAchievementSystem', () => {
   });
 
   test('should handle missing analytics gracefully', () => {
-    // @ts-expect-error - Removing analytics to test fallback
     delete window.labsAnalytics;
 
     const gameState = createMockGameState({

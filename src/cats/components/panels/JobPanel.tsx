@@ -5,8 +5,8 @@ import {
   canAffordTraining, 
   canPromoteToNextLevel,
   getExperienceRequiredForPromotion 
-} from '../../data/jobTrainingSystem';
-import { calculateInterviewCost, canAffordInterview } from '../../data/interviewSystem';
+} from '../../systems/jobTrainingSystem';
+import { calculateInterviewCost, canAffordInterview } from '../../systems/interviewSystem';
 import type { JobInterviewState } from '../../game/types';
 
 import MaterialIcon from '../../icons/MaterialIcon';

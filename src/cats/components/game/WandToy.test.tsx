@@ -65,9 +65,9 @@ describe('WandToy Component', () => {
       const { container } = render(<WandToy {...defaultProps} />);
       
       const wandToy = container.querySelector('.wand-toy');
-      // Initial wiggle should be 0, so transform should just be translate and rotate(0deg)
+      // Initial transform should just be translate (wiggle applied via direct DOM manipulation)
       expect(wandToy).toHaveStyle({
-        transform: 'translate(-50%, 0) rotate(0deg)',
+        transform: 'translate(-50%, 0)',
       });
     });
   });
@@ -139,7 +139,7 @@ describe('WandToy Component', () => {
       
       // Start at initial position
       expect(wandToy).toHaveStyle({
-        transform: 'translate(-50%, 0) rotate(0deg)',
+        transform: 'translate(-50%, 0)',
       });
       
       // Move right (positive deltaX should create positive wiggle)
@@ -206,11 +206,15 @@ describe('WandToy Component', () => {
   });
 
   describe('Wiggle Animation', () => {
-    it('sets up animation frame loop for wiggle smoothing', () => {
-      render(<WandToy {...defaultProps} />);
+    it('uses CSS transitions for smooth wiggle decay', () => {
+      const { container } = render(<WandToy {...defaultProps} />);
       
-      // Should call requestAnimationFrame to start the smoothing loop
-      expect(mockRaf).toHaveBeenCalled();
+      const wandToy = container.querySelector('.wand-toy');
+      
+      // Should have CSS transition for smooth wiggle decay
+      expect(wandToy).toHaveStyle({
+        transition: 'transform 0.1s ease-out',
+      });
     });
 
          it('smoothly reduces wiggle over time', () => {
@@ -235,14 +239,14 @@ describe('WandToy Component', () => {
        expect(smoothedTransform).toContain('rotate(');
      });
 
-    it('cleans up animation frame on unmount', () => {
-      const cancelAnimationFrameSpy = vi.spyOn(global, 'cancelAnimationFrame');
+    it('cleans up event listeners on unmount', () => {
+      const removeEventListenerSpy = vi.spyOn(document, 'removeEventListener');
       
       const { unmount } = render(<WandToy {...defaultProps} />);
       
       unmount();
       
-      expect(cancelAnimationFrameSpy).toHaveBeenCalled();
+      expect(removeEventListenerSpy).toHaveBeenCalledWith('mousemove', expect.any(Function));
     });
   });
 

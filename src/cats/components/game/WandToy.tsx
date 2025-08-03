@@ -8,58 +8,61 @@ interface WandToyProps {
 
 const WandToy: React.FC<WandToyProps> = ({ isShaking, initialPosition }) => {
   const [position, setPosition] = useState(() => initialPosition);
-  const [wiggle, setWiggle] = useState(0);
   const lastPositionRef = useRef(initialPosition);
-  const animationFrameRef = useRef<number>(0);
+  const wandRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
       const newPosition = { x: event.clientX, y: event.clientY };
       setPosition(newPosition);
 
-      const deltaX = newPosition.x - lastPositionRef.current.x;
-      const deltaY = newPosition.y - lastPositionRef.current.y;
-      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-      
-      const maxWiggle = 35;
-      const velocityFactor = 1.5;
-      let newWiggle = Math.min(distance * velocityFactor, maxWiggle);
+      // Apply wiggle effect directly to DOM for better performance
+      if (wandRef.current) {
+        const deltaX = newPosition.x - lastPositionRef.current.x;
+        const deltaY = newPosition.y - lastPositionRef.current.y;
+        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        
+        const maxWiggle = 35;
+        const velocityFactor = 1.5;
+        let wiggleAmount = Math.min(distance * velocityFactor, maxWiggle);
 
-      // Add horizontal direction to the wiggle
-      newWiggle *= Math.sign(deltaX);
+        // Add horizontal direction to the wiggle
+        wiggleAmount *= Math.sign(deltaX);
 
-      // Add some randomness
-      newWiggle += (Math.random() - 0.5) * 10;
-      
-      setWiggle(newWiggle);
+        // Add some randomness
+        wiggleAmount += (Math.random() - 0.5) * 10;
+        
+        // Apply transform directly to DOM (no React re-render)
+        wandRef.current.style.transform = `rotate(${wiggleAmount}deg)`;
+        
+        // Automatically decay the wiggle effect via CSS transition
+        setTimeout(() => {
+          if (wandRef.current) {
+            wandRef.current.style.transform = 'rotate(0deg)';
+          }
+        }, 100);
+      }
 
       lastPositionRef.current = newPosition;
     };
 
     document.addEventListener('mousemove', handleMouseMove);
 
-    const smoothWiggle = () => {
-      setWiggle(currentWiggle => currentWiggle * 0.85);
-      animationFrameRef.current = requestAnimationFrame(smoothWiggle);
-    };
-    animationFrameRef.current = requestAnimationFrame(smoothWiggle);
-
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
     };
   }, []);
 
   return (
     <div
+      ref={wandRef}
       className={`wand-toy ${isShaking ? 'shaking' : ''}`}
       style={{
         left: `${position.x}px`,
         top: `${position.y}px`,
-        transform: `translate(-50%, 0) rotate(${wiggle}deg)`,
+        transform: 'translate(-50%, 0)',
         transformOrigin: '50% 0',
+        transition: 'transform 0.1s ease-out', // Smooth wiggle decay
       }}
     >
       <svg

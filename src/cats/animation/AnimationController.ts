@@ -46,7 +46,7 @@ export class CatAnimationController {
     POUNCE: 500,
     PLAYING: 300,
     PLAYING_DURING_POUNCE: 500,
-    SHAKE: 500,
+    SHAKE: 600,
     EAR_WIGGLE: 600,
     HEART_CLEANUP: 1000,
     RETURN_TO_CENTER: 250,
