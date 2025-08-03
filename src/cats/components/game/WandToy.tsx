@@ -1,23 +1,26 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import '../../styles/cats.css';
+import type { MouseState } from '../../hooks/useMouseTracking';
 
 interface WandToyProps {
   isShaking: boolean;
   initialPosition: { x: number; y: number };
+  mouseState: MouseState;
 }
 
-const WandToy: React.FC<WandToyProps> = ({ isShaking, initialPosition }) => {
-  const [position, setPosition] = useState(() => initialPosition);
+const WandToy: React.FC<WandToyProps> = ({ isShaking, initialPosition, mouseState }) => {
   const lastPositionRef = useRef(initialPosition);
   const wandRef = useRef<HTMLDivElement>(null);
+  const currentPositionRef = useRef(initialPosition);
 
   useEffect(() => {
-    const handleMouseMove = (event: MouseEvent) => {
-      const newPosition = { x: event.clientX, y: event.clientY };
-      setPosition(newPosition);
-
-      // Apply wiggle effect directly to DOM for better performance
+    const handleMouseMove = (newPosition: { x: number; y: number }) => {
+      // Update position directly in DOM without React state update
       if (wandRef.current) {
+        wandRef.current.style.left = `${newPosition.x}px`;
+        wandRef.current.style.top = `${newPosition.y}px`;
+        
+        // Apply wiggle effect directly to DOM for better performance
         const deltaX = newPosition.x - lastPositionRef.current.x;
         const deltaY = newPosition.y - lastPositionRef.current.y;
         const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
@@ -33,33 +36,33 @@ const WandToy: React.FC<WandToyProps> = ({ isShaking, initialPosition }) => {
         wiggleAmount += (Math.random() - 0.5) * 10;
         
         // Apply transform directly to DOM (no React re-render)
-        wandRef.current.style.transform = `rotate(${wiggleAmount}deg)`;
+        wandRef.current.style.transform = `translate(-50%, 0) rotate(${wiggleAmount}deg)`;
         
         // Automatically decay the wiggle effect via CSS transition
         setTimeout(() => {
           if (wandRef.current) {
-            wandRef.current.style.transform = 'rotate(0deg)';
+            wandRef.current.style.transform = 'translate(-50%, 0) rotate(0deg)';
           }
         }, 100);
       }
 
+      currentPositionRef.current = newPosition;
       lastPositionRef.current = newPosition;
     };
 
-    document.addEventListener('mousemove', handleMouseMove);
+    // Register with unified mouse tracking system
+    const unsubscribe = mouseState.onMouseMove(handleMouseMove);
 
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-    };
-  }, []);
+    return unsubscribe;
+  }, [mouseState.onMouseMove]);
 
   return (
     <div
       ref={wandRef}
       className={`wand-toy ${isShaking ? 'shaking' : ''}`}
       style={{
-        left: `${position.x}px`,
-        top: `${position.y}px`,
+        left: `${initialPosition.x}px`,
+        top: `${initialPosition.y}px`,
         transform: 'translate(-50%, 0)',
         transformOrigin: '50% 0',
         transition: 'transform 0.1s ease-out', // Smooth wiggle decay

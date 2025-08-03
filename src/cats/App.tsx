@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import ReactDOM from 'react-dom';
 import { useStableCallback } from './hooks/useStableCallback';
-import { useRenderTracker } from './utils/debugUtils';
-import './utils/errorLogger'; // Initialize error logging in development
+
+import { useMouseTracking } from './hooks/useMouseTracking';
+// import './utils/errorLogger'; // TEMPORARILY DISABLED - Initialize error logging in development
 
 // Analytics types
 declare global {
@@ -76,10 +77,15 @@ const initialGameState: GameState = {
 };
 
 function App() {
-  // Track renders in development
-  useRenderTracker('App');
+
+  
+  // Unified mouse tracking system
+  const mouseState = useMouseTracking();
+  
   const gameStateManager = useGameStateManager({ initialState: initialGameState });
   const { gameState } = gameStateManager;
+  
+
   const { love, treats, jobLevels, jobExperience, jobInterviews, thingQuantities, spentMerits } = gameState;
 
 
@@ -198,17 +204,17 @@ function App() {
 
 
 
-  // Create stable string keys for economy calculation dependencies
-  const jobLevelsKey = JSON.stringify(gameState.jobLevels);
-  const spentMeritsKey = JSON.stringify(gameState.spentMerits);
-  const thingQuantitiesKey = JSON.stringify(gameState.thingQuantities);
+  // Create stable string keys for economy calculation dependencies to prevent unnecessary recalculations
+  const jobLevelsKey = useMemo(() => JSON.stringify(gameState.jobLevels), [gameState.jobLevels]);
+  const spentMeritsKey = useMemo(() => JSON.stringify(gameState.spentMerits), [gameState.spentMerits]);
+  const thingQuantitiesKey = useMemo(() => JSON.stringify(gameState.thingQuantities), [gameState.thingQuantities]);
+  const unlockedJobsKey = useMemo(() => JSON.stringify(gameState.unlockedJobs), [gameState.unlockedJobs]);
 
   // Calculate all economic values using the centralized service
   // Only recalculate when structural game state changes, not when love/treats change from passive income
   const economy = useMemo(() => {
     return GameEconomyService.calculateEconomy(gameState);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gameState, jobLevelsKey, spentMeritsKey, thingQuantitiesKey]);
+  }, [jobLevelsKey, spentMeritsKey, thingQuantitiesKey, unlockedJobsKey]);
   
   // Extract individual values for backwards compatibility
   const { baseLovePerInteraction } = economy;
@@ -242,23 +248,19 @@ function App() {
 
 
 
-  const wakeUp = useStableCallback(() => {
-
-    setIsSleeping(false);
-    setIsDrowsy(false);
-    setZzzs([]);
-  });
+  // Note: wakeUp function removed - now handled directly in inactivity detection
 
   const removeZzz = (id: number) => {
     setZzzs((currentZzzs) => currentZzzs.filter((zzz) => zzz.id !== id));
   };
   
+  // UNIFIED: Inactivity detection using centralized mouse tracking
   useEffect(() => {
     let drowsinessTimer: number;
     let sleepTimer: number;
+    let lastResetTime = 0;
 
-    const resetInactivityTimer = () => {
-      wakeUp();
+    const startInactivityTimers = () => {
       clearTimeout(drowsinessTimer);
       clearTimeout(sleepTimer);
       drowsinessTimer = window.setTimeout(() => setIsDrowsy(true), 20000);
@@ -268,17 +270,38 @@ function App() {
       }, 30000);
     };
 
-    resetInactivityTimer();
-    document.addEventListener('mousemove', resetInactivityTimer);
+    const resetInactivityTimer = () => {
+      const now = Date.now();
+      // Throttle to once every 100ms to prevent excessive calls
+      if (now - lastResetTime < 100) return;
+      lastResetTime = now;
+      
+      // Only update state if it actually needs to change - prevents unnecessary re-renders
+      if (isSleeping) setIsSleeping(false);
+      if (isDrowsy) setIsDrowsy(false);
+      if (zzzs.length > 0) setZzzs([]);
+      startInactivityTimers();
+    };
+
+    // Register mouse move callback with unified system
+    const unsubscribe = mouseState.onMouseMove(resetInactivityTimer);
+    
+    // Also listen for mouse down events
     document.addEventListener('mousedown', resetInactivityTimer);
+
+    // Initialize on mount
+    setIsSleeping(false);
+    setIsDrowsy(false);
+    setZzzs([]);
+    startInactivityTimers();
 
     return () => {
       clearTimeout(drowsinessTimer);
       clearTimeout(sleepTimer);
-      document.removeEventListener('mousemove', resetInactivityTimer);
+      unsubscribe();
       document.removeEventListener('mousedown', resetInactivityTimer);
     };
-  }, [wakeUp]);
+  }, [mouseState.onMouseMove]); // Only depends on the stable onMouseMove function
 
   // Use ref for cat position to avoid triggering re-renders
   const catPositionRef = useRef<{x: number, y: number} | null>(null);
@@ -459,7 +482,7 @@ function App() {
         onDismiss={handleNotificationDismiss} 
       />
 
-      <ErrorReporter />
+              <ErrorReporter />
 
       {isDevMode && (
         <DevPanel
@@ -492,6 +515,7 @@ function App() {
             <WandToy
               isShaking={isShaking}
               initialPosition={wandInitialPosition}
+              mouseState={mouseState}
             />
           )}
         </>,
@@ -526,6 +550,7 @@ function App() {
           heartSpawningService={heartSpawningService}
           isSleeping={isSleeping}
           isDrowsy={isDrowsy}
+          mouseState={mouseState}
         />
       </div>
       <TabbedPanel

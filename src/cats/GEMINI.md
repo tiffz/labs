@@ -79,6 +79,71 @@ Successfully identified and resolved critical infinite rendering issues:
 - ✅ Added 'w' key handler for wand mode activation
 - ✅ Comprehensive error logging and debugging tools
 
+### Unified Mouse Tracking System (August 2025)
+
+Eliminated mouse movement-induced render loops and unified all mouse tracking into a single, performant system:
+
+**Architecture Overview:**
+
+- **Single Event Listener**: One `document.addEventListener('mousemove')` serves entire application
+- **Ref-Based State**: Mouse position stored in refs, never triggers React re-renders
+- **Callback System**: Components register callbacks via `onMouseMove()` for position updates
+- **Smooth Tracking**: Optional 60fps throttled position updates for animations
+- **Centralized API**: All mouse-dependent features use unified `useMouseTracking` hook
+
+**Components Integrated:**
+
+- **Inactivity Detection**: Optimized to only update state when cats are actually sleeping/drowsy
+- **Cat Eye Tracking**: Uses `smoothPositionRef` for fluid eye movement animations
+- **Wand Toy Interaction**: Registers callbacks for wiggle effects and direct DOM manipulation
+- **Performance Monitoring**: No longer triggers on mouse movement
+
+**Performance Benefits:**
+
+- ✅ **Zero render loops** during mouse movement (was 60+ renders/second)
+- ✅ **Conditional state updates** only when UI actually needs to change
+- ✅ **Direct DOM manipulation** for animations (bypasses React render cycle)
+- ✅ **Unified event handling** eliminates redundant mouse listeners
+- ✅ **Separation of concerns** between mouse tracking and render logic
+
+**Design Principles:**
+
+1. **Mouse tracking should never trigger React re-renders** - Use refs and callbacks
+2. **State updates should be conditional** - Only update when state actually changes
+3. **Direct DOM manipulation for performance-critical animations** - Bypass React for high-frequency updates
+4. **Single source of truth for mouse position** - All components use unified system
+5. **Callback-based subscription model** - Clean registration/cleanup of mouse listeners
+
+**Implementation Details:**
+
+```typescript
+// Unified mouse tracking interface (ref-based, no React state)
+interface MouseState {
+  positionRef: React.RefObject<MousePosition>; // Current position
+  lastMovementTimeRef: React.RefObject<number>; // Last movement time
+  smoothPositionRef: React.RefObject<MousePosition>; // Throttled for animations
+  hasRecentMovement: (thresholdMs?: number) => boolean; // Inactivity detection
+  onMouseMove: (callback: Function) => () => void; // Register/cleanup callbacks
+}
+
+// Example: Optimized inactivity detection
+const resetInactivityTimer = () => {
+  // Only update state if it actually needs to change
+  if (isSleeping) setIsSleeping(false);
+  if (isDrowsy) setIsDrowsy(false);
+  if (zzzs.length > 0) setZzzs([]);
+  startInactivityTimers();
+};
+```
+
+**Testing Coverage:**
+
+- ✅ **12 comprehensive tests** for `useMouseTracking` hook
+- ✅ **Render loop prevention verification** - confirms no state updates on mouse movement
+- ✅ **Component integration tests** - `WandToy` updated for unified system
+- ✅ **Callback system testing** - registration, cleanup, and multiple subscribers
+- ✅ **Performance regression tests** - ensures no render loops reintroduced
+
 ## Design Principles
 
 ### User Experience
@@ -317,3 +382,114 @@ Comprehensive test coverage for refactoring safety:
 - **StateSynchronization.regression.test.ts**: Cross-system state consistency tests
 
 These tools and patterns ensure the codebase remains maintainable and stable during future development.
+
+## Achievement System Stability (August 2025)
+
+### Duplicate Achievement Prevention
+
+Fixed critical race condition bug where achievements could be awarded multiple times:
+
+#### Root Cause
+
+- **Asynchronous State Updates**: React state updates are asynchronous, so `earnedMerits` didn't update immediately
+- **Rapid Succession Calls**: `checkAllAchievements` called multiple times before state propagated
+- **Insufficient Guards**: Only checking `earnedMerits.includes(id)` was not sufficient for race conditions
+
+#### Solution Implemented
+
+```typescript
+// processingAchievementsRef prevents race conditions
+const processingAchievementsRef = useRef<Set<string>>(new Set());
+
+const awardAchievement = useCallback(
+  (achievement: Achievement) => {
+    // FIRST: Check if currently being processed (most important check)
+    if (processingAchievementsRef.current.has(achievement.id)) {
+      return; // Race condition protection
+    }
+
+    // SECOND: Check if already earned
+    const alreadyEarned = earnedMerits.includes(achievement.id);
+    if (alreadyEarned) return;
+
+    // Mark as processing IMMEDIATELY
+    processingAchievementsRef.current.add(achievement.id);
+
+    // Update state...
+
+    // Remove from processing after React state propagates
+    setTimeout(() => {
+      processingAchievementsRef.current.delete(achievement.id);
+    }, 50);
+  },
+  [earnedMerits, earnedAwards]
+); // Include current state in dependencies
+```
+
+#### Key Principles
+
+1. **Priority-based Protection**: Process status check comes FIRST, before state checks
+2. **Immediate Tracking**: Add to processing set before any async operations
+3. **Delayed Cleanup**: Allow 50ms for React state to propagate before cleanup
+4. **Current State Dependencies**: Include `earnedMerits/earnedAwards` in callback dependencies
+
+### Error Reporter Stability
+
+Fixed infinite recursion loop in development error logger:
+
+#### Root Cause
+
+- **Self-logging**: Error reporter logged `"📝 Error log updated"` messages
+- **Pattern Matching**: Console interceptor caught messages containing "error" keyword
+- **Infinite Loop**: Each error log triggered new error logs, exponentially growing
+
+#### Solution
+
+```typescript
+console.log = (...args) => {
+  if (
+    args.some((arg) => String(arg).toLowerCase().includes('error')) &&
+    !args.some((arg) => String(arg).includes('🎯 [CALLBACK]')) &&
+    !args.some((arg) => String(arg).includes('📝 Error log updated'))
+  ) {
+    // Fixed
+    this.logError('log', args);
+  }
+  originalLog.apply(console, args);
+};
+```
+
+#### Lessons Learned
+
+- **Exclude Self-References**: Error loggers must never log their own status messages
+- **Pattern Specificity**: Generic pattern matching ("error" keyword) too broad for production
+- **Recursive Detection**: Always consider if logging systems can trigger themselves
+
+### Regression Testing for Stability
+
+Added comprehensive tests to prevent future regressions:
+
+```typescript
+// Race condition protection tests
+test('prevents duplicate achievement awards - race condition protection', async () => {
+  // Simulates rapid successive calls before React state updates
+});
+
+test('prevents duplicate awards when already earned', async () => {
+  // Tests that already earned achievements are never re-awarded
+});
+
+test('handles rapid state changes without duplicate awards', async () => {
+  // Tests rapid state changes don't bypass protection
+});
+```
+
+### Dead Code Elimination
+
+Removed unused development utilities:
+
+- **debugUtils.ts**: `useRenderTracker` function (commented out, never used)
+- **Phantom References**: Fixed linter pointing to non-existent file paths
+- **Unused Variables**: Cleaned up test files with unused destructured values
+
+These fixes ensure robust achievement awarding, stable error reporting, and cleaner codebase maintenance.

@@ -144,12 +144,17 @@ export const useCatSystem = ({
     }
   }, [initialEnergy]);
 
+  // Create a stable reference to forceUpdate to prevent actions recreation
+  const forceUpdateRef = useRef<() => void>(() => {});
+  
   // Sync cat state changes to React state on demand
   const forceUpdate = useCallback(() => {
     if (!catGameStateRef.current || !animationControllerRef.current) return;
     
     const newCatState = catGameStateRef.current.getState();
     const newAnimationState = animationControllerRef.current.getReactState();
+    
+    
     
     // Only update React state if values actually changed to prevent unnecessary re-renders
     setCatState(prevCatState => {
@@ -171,11 +176,15 @@ export const useCatSystem = ({
         prevAnimationState.isShaking !== newAnimationState.isShaking ||
         prevAnimationState.isEarWiggling !== newAnimationState.isEarWiggling ||
         prevAnimationState.isHappyPlaying !== newAnimationState.isHappyPlaying ||
-        JSON.stringify(prevAnimationState.pounceTarget) !== JSON.stringify(newAnimationState.pounceTarget)
+        prevAnimationState.pounceTarget.x !== newAnimationState.pounceTarget.x ||
+        prevAnimationState.pounceTarget.y !== newAnimationState.pounceTarget.y
       );
       return hasChanged ? newAnimationState : prevAnimationState;
     });
   }, []);
+  
+  // Update the ref so actions can always access the latest forceUpdate
+  forceUpdateRef.current = forceUpdate;
 
   // Mouse tracking and wand logic for when wand mode is active
   useEffect(() => {
@@ -184,20 +193,24 @@ export const useCatSystem = ({
     let wandPosition = { x: 0, y: 0 };
     let lastPosition = { x: 0, y: 0 };
     let lastMoveTime = Date.now();
+    let lastUpdateTime = Date.now();
     const velocityHistory: number[] = [];
 
     const handleMouseMove = (event: MouseEvent) => {
       wandPosition = { x: event.clientX, y: event.clientY };
+      lastMoveTime = Date.now();
     };
 
     const updateWandStats = () => {
       if (!catGameStateRef.current) return;
 
       const now = Date.now();
-      const timeDelta = now - lastMoveTime;
+      const timeDelta = now - lastUpdateTime;
+      
+      // Calculate distance for both velocity and update logic
+      const distance = Math.hypot(wandPosition.x - lastPosition.x, wandPosition.y - lastPosition.y);
 
       if (timeDelta > 16) {
-        const distance = Math.hypot(wandPosition.x - lastPosition.x, wandPosition.y - lastPosition.y);
         const velocity = distance / timeDelta;
 
         velocityHistory.push(velocity);
@@ -207,23 +220,26 @@ export const useCatSystem = ({
         catGameStateRef.current.getActions().processWandMovement(wandPosition, now);
 
         lastPosition = wandPosition;
-        lastMoveTime = now;
+        lastUpdateTime = now;
       }
 
-      // Update React state with latest debug values (disabled in tests)
-      // Only force update if wand mode is active and there's recent movement
-      if (process.env.NODE_ENV !== 'test' && catGameStateRef.current?.getState().wandMode && timeDelta <= 1000) {
-        forceUpdate();
+      // Only force update if there's been recent movement (within 1000ms), we're in wand mode, and there's actual movement
+      const hasRecentMovement = (now - lastMoveTime) < 1000;
+      const isStillWandMode = catGameStateRef.current?.getState().wandMode;
+      const hasSignificantMovement = distance > 10; // Only update for significant mouse movement
+      
+      if (process.env.NODE_ENV !== 'test' && isStillWandMode && hasRecentMovement && hasSignificantMovement) {
+        forceUpdateRef.current?.();
       }
     };
 
     document.addEventListener('mousemove', handleMouseMove);
     
-    // Completely disable interval in test environment to prevent hanging
+    // Smart interval that only runs when needed and less frequently
     let interval: NodeJS.Timeout | undefined;
     if (process.env.NODE_ENV !== 'test') {
-      // Reduce frequency from 50ms to 100ms (from 20fps to 10fps) to prevent excessive re-renders
-      interval = setInterval(updateWandStats, 100);
+      // Reduce frequency to 500ms (2fps) and only update when there's significant change
+      interval = setInterval(updateWandStats, 500);
     }
 
     return () => {
@@ -232,7 +248,7 @@ export const useCatSystem = ({
         clearInterval(interval);
       }
     };
-  }, [catState.wandMode, forceUpdate]);
+  }, [catState.wandMode]); // Remove forceUpdate from dependencies
 
   // Animation state will be updated on-demand via forceUpdate() calls
   // CSS/SVG animations handle smooth transitions without React state updates
@@ -249,7 +265,7 @@ export const useCatSystem = ({
       
       catGameStateRef.current.getActions().toggleWandMode();
       
-      forceUpdate();
+      forceUpdateRef.current?.();
     },
 
     handleWandMovement: (position: { x: number; y: number }) => {
@@ -260,21 +276,21 @@ export const useCatSystem = ({
     handleWandClick: () => {
       catGameStateRef.current?.getActions().processWandClick(Date.now());
       animationControllerRef.current?.onWandClicked(); // Trigger wand shake animation
-      forceUpdate();
+      forceUpdateRef.current?.();
     },
 
     // Cat-specific actions only
     addEnergy: (amount: number) => {
       catGameStateRef.current?.getActions().updateEnergy(amount);
-      forceUpdate();
+      forceUpdateRef.current?.();
     },
 
     // Utility
     resetPounceSystem: () => {
       catGameStateRef.current?.getActions().resetConfidence();
-      forceUpdate();
+      forceUpdateRef.current?.();
     },
-  }), [forceUpdate]);
+  }), []); // No dependencies - actions object is stable and uses refs for latest values
 
   return {
     // Current state (for rendering)

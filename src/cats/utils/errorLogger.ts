@@ -16,8 +16,13 @@ interface ErrorLog {
 class ErrorLogger {
   private errors: ErrorLog[] = [];
   private isEnabled = process.env.NODE_ENV === 'development';
+  // Set to false to disable error interception for debugging
+  private interceptConsole = true;
   
   constructor() {
+    // TEMPORARILY DISABLED - Debugging recursion issues
+    return;
+    
     if (!this.isEnabled) return;
     
     this.setupConsoleInterception();
@@ -29,12 +34,15 @@ class ErrorLogger {
   }
   
   private setupConsoleInterception() {
+    if (!this.interceptConsole) return;
+    
     const originalError = console.error;
     const originalWarn = console.warn;
     const originalLog = console.log;
     
     console.error = (...args) => {
       this.logError('error', args);
+      // Always call original error to ensure it appears in console
       originalError.apply(console, args);
     };
     
@@ -45,9 +53,13 @@ class ErrorLogger {
     
     // Optionally capture console.log too
     console.log = (...args) => {
-      // Only log if it looks like an error (but ignore debug callback logs)
-      if (args.some(arg => String(arg).toLowerCase().includes('error')) && 
-          !args.some(arg => String(arg).includes('🎯 [CALLBACK]'))) {
+      // Only log if it looks like an error (but ignore debug callback logs and our own logger messages)
+      const argString = args.map(arg => String(arg)).join(' ');
+      if (argString.toLowerCase().includes('error') && 
+          !argString.includes('🎯 [CALLBACK]') &&
+          !argString.includes('📝 Report updated') &&
+          !argString.includes('📝 Error log updated') &&
+          !argString.includes('🧹 Report cleared')) {
         this.logError('log', args);
       }
       originalLog.apply(console, args);
@@ -106,7 +118,7 @@ class ErrorLogger {
     localStorage.setItem('errorLog', errorReport);
     localStorage.setItem('errorLogUrl', url);
     
-    console.log('📝 Error log updated. Run `window.downloadErrorLog()` to download, or check localStorage.errorLog');
+    console.log('📝 Report updated. Run `window.downloadErrorLog()` to download, or check localStorage.errorLog');
   }
   
   private generateReport(): string {
@@ -140,6 +152,15 @@ ${error.url ? `File: ${error.url}:${error.line}:${error.column}` : ''}
   public clearErrors() {
     this.errors = [];
     localStorage.removeItem('errorLog');
+    localStorage.removeItem('errorLogUrl');
+    console.log('🧹 Report cleared');
+  }
+  
+  public clearAllStorage() {
+    // Nuclear option: clear all localStorage
+    localStorage.clear();
+    sessionStorage.clear();
+    console.log('🧹 All browser storage cleared');
   }
   
   public downloadReport() {
@@ -166,6 +187,7 @@ declare global {
     downloadErrorLog?: () => void;
     clearErrorLog?: () => void;
     getErrorLog?: () => unknown[];
+    clearAllStorage?: () => void;
   }
 }
 
@@ -174,6 +196,7 @@ if (process.env.NODE_ENV === 'development') {
   window.downloadErrorLog = () => errorLogger.downloadReport();
   window.clearErrorLog = () => errorLogger.clearErrors();
   window.getErrorLog = () => errorLogger.getErrors();
+  window.clearAllStorage = () => errorLogger.clearAllStorage();
 }
 
 export default errorLogger;

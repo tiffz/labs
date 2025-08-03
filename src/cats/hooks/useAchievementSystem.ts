@@ -1,6 +1,6 @@
-import { useEffect, useCallback, useRef, useMemo } from 'react';
+import { useEffect, useCallback, useMemo, useRef } from 'react';
 import type { GameState } from '../game/types';
-import { allAchievements, getAchievementById, isMilestone, isAward, type Milestone, type Award } from '../data/achievementData';
+import { allAchievements, isMilestone, isAward, type Milestone, type Award, type Achievement } from '../data/achievementData';
 
 export const useAchievementSystem = (
   gameState: GameState,
@@ -9,8 +9,10 @@ export const useAchievementSystem = (
 ) => {
   const { earnedMerits, earnedAwards, awardProgress, specialActions, jobLevels, thingQuantities, love, treats } = gameState;
   
-  // Use refs to track last checked values to prevent infinite loops from frequent love/treats updates
-  const lastCheckedRef = useRef({ love: 0, treats: 0, earnedMerits: 0, earnedAwards: 0 });
+  // Track achievements currently being processed to prevent race condition duplicates
+  const processingAchievementsRef = useRef<Set<string>>(new Set());
+  
+
   
   // Create stable dependencies that only change when achievement-relevant values change
   const jobLevelStableKey = useMemo(() => {
@@ -31,35 +33,42 @@ export const useAchievementSystem = (
     return earnedAwards.length;
   }, [earnedAwards.length]);
 
-  const awardAchievement = useCallback((achievementId: string) => {
-    const achievement = getAchievementById(achievementId);
+  const awardAchievement = useCallback((achievement: Achievement) => {
     if (!achievement) return;
 
-    // Check if already earned
-    const alreadyEarned = isMilestone(achievement) 
-      ? earnedMerits.includes(achievementId)
-      : earnedAwards.includes(achievementId);
-    
-    if (alreadyEarned) return;
-
-    // Add to appropriate earned list
-    if (isMilestone(achievement)) {
-      setGameState(prev => ({
-        ...prev,
-        earnedMerits: [...prev.earnedMerits, achievementId],
-        love: prev.love + (achievement.reward?.love || 0),
-        treats: prev.treats + (achievement.reward?.treats || 0),
-      }));
-    } else {
-      setGameState(prev => ({
-        ...prev,
-        earnedAwards: [...prev.earnedAwards, achievementId],
-        love: prev.love + (achievement.reward?.love || 0),
-        treats: prev.treats + (achievement.reward?.treats || 0),
-      }));
+    // FIRST: Check if currently being processed (most important check)
+    if (processingAchievementsRef.current.has(achievement.id)) {
+      return;
     }
+    
+    // SECOND: Check if already earned using current state from the hook
+    const alreadyEarned = isMilestone(achievement) 
+      ? earnedMerits.includes(achievement.id)
+      : earnedAwards.includes(achievement.id);
+    
+    if (alreadyEarned) {
+      return;
+    }
+    
+    // Mark as being processed IMMEDIATELY
+    processingAchievementsRef.current.add(achievement.id);
 
-    // Create notification
+    // Update game state
+    setGameState(prev => {
+      return isMilestone(achievement) ? {
+        ...prev,
+        earnedMerits: [...prev.earnedMerits, achievement.id],
+        love: prev.love + (achievement.reward?.love || 0),
+        treats: prev.treats + (achievement.reward?.treats || 0),
+      } : {
+        ...prev,
+        earnedAwards: [...prev.earnedAwards, achievement.id],
+        love: prev.love + (achievement.reward?.love || 0),
+        treats: prev.treats + (achievement.reward?.treats || 0),
+      };
+    });
+
+    // Create notification and track analytics
     const notificationTitle = achievement.notification?.title || achievement.title;
     const notificationMessage = achievement.notification?.message || achievement.reward?.message || achievement.description;
     
@@ -79,7 +88,12 @@ export const useAchievementSystem = (
         treatsReward: achievement.reward?.treats || 0
       });
     }
-  }, [earnedMerits, earnedAwards, setGameState, addNotificationToQueue]);
+    
+    // Remove from processing set after a short delay to ensure React state has updated
+    setTimeout(() => {
+      processingAchievementsRef.current.delete(achievement.id);
+    }, 50); // Small delay to ensure state updates have propagated
+  }, [setGameState, addNotificationToQueue]);
 
   // Track special actions for awards
   const trackSpecialAction = useCallback((actionType: 'noseClicks' | 'earClicks' | 'cheekPets' | 'happyJumps') => {
@@ -143,82 +157,34 @@ export const useAchievementSystem = (
     }
   }, [specialActions]);
 
-  // Check achievements without love/treats in dependencies to prevent infinite loops from passive income
+  // Check all achievements (milestones and awards)
+  const checkAllAchievements = useCallback(() => {
+    // Check milestones
+    const milestones = allAchievements.filter(isMilestone);
+    milestones.forEach(milestone => {
+      if (!earnedMerits.includes(milestone.id) && checkMilestoneCondition(milestone)) {
+        awardAchievement(milestone);
+      }
+    });
+
+    // Check awards
+    const awards = allAchievements.filter(isAward);
+    awards.forEach(award => {
+      if (!earnedAwards.includes(award.id) && checkAwardCondition(award)) {
+        awardAchievement(award);
+      }
+    });
+  }, [awardAchievement, checkAwardCondition, checkMilestoneCondition, earnedAwards, earnedMerits]);
+
+  // Initial check on mount
   useEffect(() => {
-    const checkAchievements = () => {
-      allAchievements.forEach(achievement => {
-        const achievementId = achievement.id;
-        
-        // Skip if already earned
-        const alreadyEarned = isMilestone(achievement)
-          ? earnedMerits.includes(achievementId)
-          : earnedAwards.includes(achievementId);
-        
-        if (alreadyEarned) return;
+    checkAllAchievements();
+  }, [checkAllAchievements]);
 
-        let shouldAward = false;
-
-        if (isMilestone(achievement)) {
-          // Check milestone conditions
-          shouldAward = checkMilestoneCondition(achievement);
-        } else {
-          // Check award conditions
-          shouldAward = checkAwardCondition(achievement);
-        }
-
-        if (shouldAward) {
-          awardAchievement(achievementId);
-        }
-      });
-    };
-
-    checkAchievements();
-  }, [earnedMeritsStableKey, earnedAwardsStableKey, jobLevelStableKey, thingQuantityStableKey, specialActions, awardAchievement, checkAwardCondition, checkMilestoneCondition, earnedMerits, earnedAwards]);
-  
-  // Separate effect for love/treats with throttling to prevent infinite loops
+  // Check achievements when relevant game state changes
   useEffect(() => {
-    const currentValues = { love, treats };
-    const lastValues = lastCheckedRef.current;
-    
-    // Only check if there are significant changes (to prevent infinite loops from passive income)
-    const isFirstCheck = lastValues.love === 0 && lastValues.treats === 0;
-    const hasSignificantLoveChange = Math.abs(currentValues.love - lastValues.love) >= 5;
-    const hasSignificantTreatsChange = Math.abs(currentValues.treats - lastValues.treats) >= 2;
-    
-    if (!isFirstCheck && !hasSignificantLoveChange && !hasSignificantTreatsChange) return;
-    
-    const checkLoveTreatAchievements = () => {
-      allAchievements.forEach(achievement => {
-        const achievementId = achievement.id;
-        
-        // Skip if already earned
-        const alreadyEarned = isMilestone(achievement)
-          ? earnedMerits.includes(achievementId)
-          : earnedAwards.includes(achievementId);
-        
-        if (alreadyEarned) return;
-
-        // Only check love/treat based achievements
-        if (isMilestone(achievement)) {
-          const target = achievement.target;
-          if (target && (target.currencyType === 'love' || target.currencyType === 'treats')) {
-            const shouldAward = checkMilestoneCondition(achievement);
-            if (shouldAward) {
-              awardAchievement(achievementId);
-            }
-          }
-        }
-      });
-    };
-
-    checkLoveTreatAchievements();
-    lastCheckedRef.current = { 
-      love: currentValues.love, 
-      treats: currentValues.treats,
-      earnedMerits: earnedMerits.length,
-      earnedAwards: earnedAwards.length
-    };
-  }, [love, treats, earnedMerits, earnedAwards, awardAchievement, checkMilestoneCondition]);
+    checkAllAchievements();
+  }, [earnedMeritsStableKey, earnedAwardsStableKey, jobLevelStableKey, thingQuantityStableKey, specialActions, love, treats]);
 
   // Get earned achievements with proper typing
   const earnedMilestones: Milestone[] = allAchievements

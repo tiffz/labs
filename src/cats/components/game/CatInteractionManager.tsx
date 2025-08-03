@@ -11,15 +11,10 @@ import CatFact from '../ui/CatFact';
 import { calculateFinalLoveGain } from '../../systems/lovePerInteractionSystem';
 import { catFacts } from '../../data/catFacts';
 import type { EconomyCalculations } from '../../services/GameEconomyService';
+import type { MouseState } from '../../hooks/useMouseTracking';
 
-// Analytics types
-declare global {
-  interface Window {
-    labsAnalytics?: {
-      trackEvent(eventName: string, parameters?: Record<string, unknown>): void;
-    };
-  }
-}
+// Analytics types are declared in vite-env.d.ts
+// No need to redeclare here
 
 interface HeartType {
   id: number;
@@ -74,6 +69,9 @@ interface CatInteractionManagerProps {
       interactionType: 'petting' | 'pouncing';
     }) => void;
   };
+  
+  // Unified mouse tracking
+  mouseState: MouseState;
 }
 
 const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
@@ -97,6 +95,7 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
   onCatPositionUpdate,
   trackSpecialAction,
   heartSpawningService,
+  mouseState,
 }) => {
   // Local cat visual state
   const [isPetting, setIsPetting] = useState(false);
@@ -415,6 +414,7 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
               : null
           }
           wandMode={wandMode}
+          mouseState={mouseState}
         />
       </div>
       <div className="upgrades-container">

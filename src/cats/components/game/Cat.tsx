@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import type { MouseState } from '../../hooks/useMouseTracking';
 
 // === ANIMATION CONSTANTS ===
 const ANIMATION_TIMINGS = {
@@ -38,6 +39,7 @@ interface CatProps {
   isHappyPlaying: boolean;
   isEarWiggling: boolean;
   headTiltAngle: number;
+  mouseState: MouseState;
   pounceTarget: { x: number; y: number };
   wigglingEar: 'left' | 'right' | null;
   lastHeart: HTMLDivElement | null;
@@ -67,6 +69,7 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
       isHappyPlaying,
       isEarWiggling,
       headTiltAngle,
+      mouseState,
       pounceTarget,
       wigglingEar,
       lastHeart,
@@ -216,14 +219,6 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
     useEffect(() => {
       let target = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
       let animationFrameId: number;
-
-              const handleMouseMove = (event: MouseEvent) => {
-          if (!lastHeartRef.current) {
-            target = { x: event.clientX, y: event.clientY };
-          }
-        };
-
-      document.addEventListener('mousemove', handleMouseMove);
 
       // Throttle animation updates to 60fps for smoother performance
       let lastAnimationTime = 0;
@@ -413,13 +408,16 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
         };
         const maxPupilOffset = 4;
 
-        const angleLeft = Math.atan2(target.y - eyeLeftCenter.y, target.x - eyeLeftCenter.x);
+        // Use unified mouse tracking for eye movement
+        const currentTarget = !lastHeartRef.current ? mouseState.smoothPositionRef.current : target;
+        
+        const angleLeft = Math.atan2(currentTarget.y - eyeLeftCenter.y, currentTarget.x - eyeLeftCenter.x);
         const desiredPupilLeftX = 80 + Math.cos(angleLeft) * maxPupilOffset;
         const desiredPupilLeftY = 80 + Math.sin(angleLeft) * maxPupilOffset;
 
         const angleRight = Math.atan2(
-          target.y - eyeRightCenter.y,
-          target.x - eyeRightCenter.x
+          currentTarget.y - eyeRightCenter.y,
+          currentTarget.x - eyeRightCenter.x
         );
         const desiredPupilRightX = 120 + Math.cos(angleRight) * maxPupilOffset;
         const desiredPupilRightY = 80 + Math.sin(angleRight) * maxPupilOffset;
@@ -455,10 +453,9 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
       animationFrameId = requestAnimationFrame(animate);
 
       return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
         cancelAnimationFrame(animationFrameId);
       };
-    }, [catRef]); // Include catRef dependency
+    }, [catRef]); // Only catRef dependency - smoothPositionRef is stable
 
     const svgClasses = [
       'cat-svg',

@@ -28,19 +28,23 @@ export const ErrorReporter: React.FC<ErrorReporterProps> = ({ isVisible = true }
       const errorLog = localStorage.getItem('errorLog');
       if (errorLog) {
         const lines = errorLog.split('\n').filter(line => line.includes('--- Error'));
-        setErrorCount(lines.length);
+        const newErrorCount = lines.length;
+        
+        // Only update state if the count actually changed to prevent unnecessary re-renders
+        setErrorCount(prevCount => prevCount !== newErrorCount ? newErrorCount : prevCount);
         
         // Get latest error message
         const errorLines = errorLog.split('\n');
         const lastErrorIndex = errorLines.findLastIndex(line => line.startsWith('Message:'));
         if (lastErrorIndex >= 0) {
-          setLatestError(errorLines[lastErrorIndex].replace('Message: ', ''));
+          const newLatestError = errorLines[lastErrorIndex].replace('Message: ', '');
+          setLatestError(prevError => prevError !== newLatestError ? newLatestError : prevError);
         }
       }
     };
 
-    // Check every second
-    const interval = setInterval(checkErrors, 1000);
+    // Check every 5 seconds instead of every second to reduce update frequency during render loops
+    const interval = setInterval(checkErrors, 5000);
     checkErrors(); // Initial check
 
     return () => clearInterval(interval);
