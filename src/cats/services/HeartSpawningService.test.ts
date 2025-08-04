@@ -306,4 +306,78 @@ describe('HeartSpawningService', () => {
       expect(heart.y).toBeDefined();
     });
   });
+
+  describe('regression tests', () => {
+    test('should cap heart size at 1.4 to prevent oversized hearts (regression for scale bug)', async () => {
+      // This test ensures that hearts don't become too large at very high love amounts
+      // Previous max was 2.0, now capped at 1.4 (~70% of original max size)
+      // Random variation can add up to 0.1, so effective max is ~1.5
+      
+      const veryHighLoveAmounts = [
+        1050154, // User's reported value
+        10000000, // 10M love
+        100000000, // 100M love
+      ];
+
+      for (const loveAmount of veryHighLoveAmounts) {
+        // Clear previous calls before each test
+        mockOnHeartSpawned.mockClear();
+        
+        const config: HeartConfig = {
+          position: { x: 100, y: 100 },
+          loveAmount,
+          interactionType: 'petting'
+        };
+
+        heartSpawningService.spawnHearts(config);
+        
+        // Wait for the heart to spawn (it's async)
+        await new Promise<void>(resolve => setTimeout(resolve, 10));
+        
+        // Get the spawned heart
+        expect(mockOnHeartSpawned).toHaveBeenCalled();
+        const heart = mockOnHeartSpawned.mock.calls[0][0];
+        
+        // Heart scale should never exceed 1.4 + random variation (the new cap + randomness)
+        // The random variation can add up to 0.1, so we allow up to 1.5
+        expect(heart.scale).toBeLessThanOrEqual(1.5);
+        
+        // Should still be reasonably sized (not smaller than minimum)
+        expect(heart.scale).toBeGreaterThanOrEqual(0.2); // Updated for new minScale of 0.3 with variation
+      }
+    });
+
+    test('should maintain reasonable heart sizes across love range', async () => {
+      // Verify that heart scaling works well across different love amounts
+      const testCases = [
+        { love: 1, expectedMaxScale: 0.4 }, // Updated for slower growth factor
+        { love: 100, expectedMaxScale: 0.6 }, // Updated for slower growth factor  
+        { love: 10000, expectedMaxScale: 0.8 }, // Updated for slower growth factor
+        { love: 1000000, expectedMaxScale: 1.1 }, // Updated for slower growth factor
+        { love: 1000000000, expectedMaxScale: 1.4 }, // Should hit the cap
+      ];
+
+      for (const { love, expectedMaxScale } of testCases) {
+        const config: HeartConfig = {
+          position: { x: 100, y: 100 },
+          loveAmount: love,
+          interactionType: 'petting'
+        };
+
+        // Clear previous calls
+        mockOnHeartSpawned.mockClear();
+        
+        heartSpawningService.spawnHearts(config);
+        
+        // Wait for the heart to spawn (it's async)
+        await new Promise<void>(resolve => setTimeout(resolve, 10));
+        
+        const heart = mockOnHeartSpawned.mock.calls[0][0];
+        
+        // Heart should not exceed the expected maximum for this love amount
+        expect(heart.scale).toBeLessThanOrEqual(expectedMaxScale + 0.1); // Small tolerance for variation
+        expect(heart.scale).toBeGreaterThanOrEqual(0.2); // Minimum scale with variation
+      }
+    });
+  });
 }); 

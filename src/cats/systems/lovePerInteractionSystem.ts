@@ -10,8 +10,8 @@ export function calculateBaseLovePerInteraction(currentLove: number): number {
   // This ensures it always scales directly with how much love you have
   const baseLove = Math.floor(currentLove * 0.01);
   
-  // Ensure minimum of 1, and cap at 100 to prevent excessive numbers
-  return Math.max(1, Math.min(100, baseLove));
+  // Ensure minimum of 1, no cap
+  return Math.max(1, baseLove);
 }
 
 export function calculateFinalLoveGain(

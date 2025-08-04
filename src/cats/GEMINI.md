@@ -8,7 +8,7 @@ This document outlines the vision, architecture, and implementation details for 
 
 The game uses a dynamic love calculation system that scales with player progression:
 
-- **1% Scaling**: Base love earned is always 1% of current love held (minimum 1, maximum 100)
+- **1% Scaling**: Base love earned is always 1% of current love held (minimum 1)
 - **Proportional Growth**: Encourages maintaining love reserves for higher interaction rewards
 - **Multiplier Compatible**: Works with cat energy, happiness, and merit upgrade multipliers
 - **Real-Time Feedback**: Current base love visible in currency tooltip

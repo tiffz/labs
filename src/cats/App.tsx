@@ -169,6 +169,16 @@ function App() {
     gameStateManager.currency.addTreats(amount);
   });
 
+  // Create stable string keys for economy calculation dependencies to prevent unnecessary recalculations
+  // Calculate all economic values using the centralized service
+  // Only recalculate when structural game state changes, not when love/treats change from passive income
+  const economy = useMemo(() => {
+    return GameEconomyService.calculateEconomy(gameState);
+  }, [gameState]);
+  
+  // Extract individual values for backwards compatibility
+  const { baseLovePerInteraction } = economy;
+
   // === CAT SYSTEM (Clean Architecture) ===
   const {
     // Cat-specific state
@@ -193,6 +203,7 @@ function App() {
   } = useCatSystem({
     currentLove: love,     // Pass global state
     currentTreats: treats, // Pass global state
+    economyData: economy,  // Pass economy data for love calculations
     
     // Stable callback functions
     onLoveGained,
@@ -200,18 +211,6 @@ function App() {
     onTrackableHeartSet,
     onTreatsGained,
   });
-
-
-
-  // Create stable string keys for economy calculation dependencies to prevent unnecessary recalculations
-  // Calculate all economic values using the centralized service
-  // Only recalculate when structural game state changes, not when love/treats change from passive income
-  const economy = useMemo(() => {
-    return GameEconomyService.calculateEconomy(gameState);
-  }, [gameState]);
-  
-  // Extract individual values for backwards compatibility
-  const { baseLovePerInteraction } = economy;
   
 
 

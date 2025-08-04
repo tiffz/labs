@@ -57,7 +57,7 @@ export interface CatGameEvents {
     wandPosition: { x: number; y: number };
     catPosition: { x: number; y: number };
   }) => void;
-  onPlayingTriggered: (playData: { intensity: number; duration: number }) => void;
+  onPlayingTriggered: (playData: { intensity: number; duration: number; interactionType: 'pouncing' | 'playing_during_wand'; catEnergy: number }) => void;
   onLoveGained: (amount: number) => void;  // Request to global love system
   onTreatsGained: (amount: number) => void;  // Request to global treats system
 }
@@ -309,12 +309,16 @@ export class CatGameStateManager {
     const cooldown = isPouncing ? CatGameStateManager.COOLDOWNS.PLAYING_DURING_POUNCE : CatGameStateManager.COOLDOWNS.PLAYING_REGULAR;
     
     if (timeSinceLastPlay > cooldown) {
-      const loveAmount = isPouncing ? 2 : 1;
       const duration = isPouncing ? 500 : 300;
       const intensity = isPouncing ? 1.5 : 1.0;
+      const interactionType = isPouncing ? 'pouncing' : 'playing_during_wand';
       
-      this.events.onPlayingTriggered({ intensity, duration });
-      this.events.onLoveGained(loveAmount);  // Request love from global system
+      this.events.onPlayingTriggered({ 
+        intensity, 
+        duration, 
+        interactionType,
+        catEnergy: this.state.energy 
+      });
       this.state.lastPlayTime = timestamp;
     }
   }

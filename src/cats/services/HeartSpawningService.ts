@@ -129,10 +129,10 @@ export class HeartSpawningService {
   }
 
   private calculateHeartScale(loveAmount: number): number {
-    // Scale hearts based on love amount
-    const minScale = 0.5;
-    const maxScale = 2.0;
-    const growthFactor = 0.15;
+    // Scale hearts based on love amount - very conservative for incremental game
+    const minScale = 0.3; // Reduced from 0.5 to make hearts smaller at low love amounts
+    const maxScale = 1.4; // Reduced from 2.0 to ~70% of original max size
+    const growthFactor = 0.05; // Reduced from 0.15 to much slower scaling for trillion-scale game
     
     const calculatedScale = minScale + Math.log(Math.max(1, loveAmount)) * growthFactor;
     return Math.min(calculatedScale, maxScale);

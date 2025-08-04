@@ -302,7 +302,7 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
     // Use unified heart spawning
     heartSpawningService.spawnHearts({
       position: { x: event.clientX, y: event.clientY },
-      loveAmount: 5,
+      loveAmount: loveFromNose,
       interactionType: 'petting'
     });
   };

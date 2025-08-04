@@ -11,6 +11,8 @@ import { CatGameStateManager } from '../game/GameState';
 import { CatAnimationController } from '../animation/AnimationController';
 import type { CatGameState, CatGameEvents } from '../game/GameState';
 import type { AnimationEvents } from '../animation/AnimationController';
+import { calculateFinalLoveGain } from '../systems/lovePerInteractionSystem';
+import type { EconomyCalculations } from '../services/GameEconomyService';
 
 interface CatSystemProps {
   // Cat-specific initial state
@@ -19,6 +21,9 @@ interface CatSystemProps {
   // Global game state (passed in, not managed here)
   currentLove?: number;
   currentTreats?: number;
+  
+  // Economy data for love calculations
+  economyData?: EconomyCalculations;
   
   // External callbacks for global systems
   onLoveGained?: (amount: number) => void;    // Request to add love to global system
@@ -34,11 +39,16 @@ export const useCatSystem = ({
   initialEnergy = 100,
   currentLove = 0,
   currentTreats = 0,
+  economyData,
   onLoveGained,
   onTreatsGained,
   onHeartSpawned,
   onTrackableHeartSet,
 }: CatSystemProps = {}) => {
+  
+  // Store economy data in a ref to avoid recreating the system when it changes
+  const economyDataRef = useRef(economyData);
+  economyDataRef.current = economyData;
   
   // React state for triggering re-renders (cat-specific only)
   const [catState, setCatState] = useState<CatGameState>(() => ({
@@ -79,20 +89,37 @@ export const useCatSystem = ({
   
         animationControllerRef.current?.onPounceTriggered(pounceData);
         
-        // Calculate love reward based on pounce intensity and energy
-        const energyBoost = 1 + (pounceData.catEnergy || 100) / 100;
-        const baseReward = 3; // Base love per pounce
-        const distanceBonus = Math.min(5, pounceData.distance / 40); // Distance bonus
-        const pounceLove = Math.round((baseReward + distanceBonus) * energyBoost);
-        
-
-        
-        // Give love reward AND trigger heart spawning
-        onLoveGained?.(pounceLove); // Update global love counter
-        animationControllerRef.current?.onLoveGained(pounceLove); // Spawn hearts at wand position
+        // Calculate love reward using the base love per interaction system
+        if (economyDataRef.current) {
+          const energyMultiplier = 1 + (pounceData.catEnergy || 100) / 100;
+          const pounceLove = calculateFinalLoveGain(
+            economyDataRef.current.baseLovePerInteraction,
+            'pouncing',
+            energyMultiplier,
+            economyDataRef.current.meritMultipliers
+          );
+          
+          // Give love reward AND trigger heart spawning
+          onLoveGained?.(pounceLove); // Update global love counter
+          animationControllerRef.current?.onLoveGained(pounceLove); // Spawn hearts at wand position
+        }
       },
       onPlayingTriggered: (playData) => {
         animationControllerRef.current?.onPlayingTriggered(playData);
+        
+        // Calculate love reward using the base love per interaction system
+        if (economyDataRef.current) {
+          const energyMultiplier = 1 + playData.catEnergy / 100;
+          const playLove = calculateFinalLoveGain(
+            economyDataRef.current.baseLovePerInteraction,
+            playData.interactionType,
+            energyMultiplier,
+            economyDataRef.current.meritMultipliers
+          );
+          
+          // Give love reward
+          onLoveGained?.(playLove);
+        }
       },
       onLoveGained: (amount) => {
     
@@ -133,7 +160,7 @@ export const useCatSystem = ({
       // Cleanup
       animationControllerRef.current?.cleanup();
     };
-  }, [onHeartSpawned, onLoveGained, onTrackableHeartSet, onTreatsGained]); // Clean initialization - no energy dependency
+  }, [onHeartSpawned, onLoveGained, onTrackableHeartSet, onTreatsGained]); // Clean initialization - no energy or economy dependency
 
   // Separate effect: Sync energy when it changes
   useEffect(() => {
