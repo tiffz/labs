@@ -226,6 +226,9 @@ describe('App Regression Tests', () => {
 
     afterEach(() => {
       consoleErrorSpy.mockRestore();
+      // Clean up any lingering timers and animation frames
+      vi.clearAllTimers();
+      vi.useRealTimers();
     });
 
     it('should transition cat to sleeping state after 30 seconds of inactivity', async () => {
@@ -241,8 +244,6 @@ describe('App Regression Tests', () => {
       // Verify cat shows sleeping eyes
       const sleepyEyes = screen.getByTestId('eye-sleepy');
       expect(sleepyEyes.classList.contains('hidden')).toBe(false);
-      
-      vi.useRealTimers();
     });
 
     it('should wake up cat when mouse is moved during sleep', async () => {
@@ -268,8 +269,7 @@ describe('App Regression Tests', () => {
       const openEyes = screen.getByTestId('eye-open');
       expect(openEyes.classList.contains('hidden')).toBe(false);
       expect(sleepyEyes.classList.contains('hidden')).toBe(true);
-      
-      vi.useRealTimers();
+
     });
 
     it('should wake up cat when clicked during sleep', async () => {
@@ -296,8 +296,7 @@ describe('App Regression Tests', () => {
       const openEyes = screen.getByTestId('eye-open');
       expect(openEyes.classList.contains('hidden')).toBe(false);
       expect(sleepyEyes.classList.contains('hidden')).toBe(true);
-      
-      vi.useRealTimers();
+
     });
 
     it('should reset sleep timers after waking up', async () => {
@@ -338,8 +337,7 @@ describe('App Regression Tests', () => {
       // Should be sleeping again
       expect(sleepyEyes.classList.contains('hidden')).toBe(false);
       expect(openEyes.classList.contains('hidden')).toBe(true);
-      
-      vi.useRealTimers();
+
     });
 
     it('should not cause console errors during sleep state transitions', async () => {
@@ -373,8 +371,7 @@ describe('App Regression Tests', () => {
         !call[0].includes('An update to') && !call[0].includes('not wrapped in act')
       );
       expect(reactErrors).toHaveLength(0);
-      
-      vi.useRealTimers();
+
     });
   });
 });
