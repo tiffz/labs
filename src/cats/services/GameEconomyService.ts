@@ -24,7 +24,7 @@ export interface EconomyCalculations {
   };
 }
 
-export interface PassiveIncomeResult {
+interface PassiveIncomeResult {
   treatsGained: number;
   treatsToConvert: number;
   loveGained: number;

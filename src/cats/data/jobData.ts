@@ -1,4 +1,4 @@
-export interface JobLevel {
+interface JobLevel {
   title: string;
   treatsPerSecond: number;
   experienceRequired: number; // Experience needed to unlock this level

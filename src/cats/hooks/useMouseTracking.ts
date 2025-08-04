@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 
-export interface MousePosition {
+interface MousePosition {
   x: number;
   y: number;
 }

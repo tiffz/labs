@@ -8,7 +8,7 @@
 
 import { HeartSpawningService } from '../services/HeartSpawningService';
 
-export interface AnimationState {
+interface AnimationState {
   // Cat animation states
   isPouncing: boolean;
   isPlaying: boolean;

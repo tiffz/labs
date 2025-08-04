@@ -1,4 +1,4 @@
-export interface NotificationTrigger {
+interface NotificationTrigger {
   type: 'love_threshold' | 'treats_threshold' | 'job_acquired' | 'job_promoted' | 'upgrade_bought' | 'skill_trained' | 'merit_manual' | 'thing_purchased';
   value?: number;
   jobId?: string;

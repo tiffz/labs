@@ -1,4 +1,4 @@
-export interface MeritUpgrade {
+interface MeritUpgrade {
   id: string;
   name: string;
   description: string;

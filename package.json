@@ -12,11 +12,14 @@
     "test:changed": "git diff --name-only HEAD~1 -- '*.ts' '*.tsx' '*.js' '*.jsx' '*.json' | head -1 > /dev/null && npm test || echo 'No TypeScript/JavaScript files changed, skipping tests'",
     "preview": "vite preview",
     "deploy": "npm test && npm run build && gh-pages -d dist",
+    "knip": "knip",
+    "knip:fix": "knip --fix",
     "prepare": "husky"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
-      "eslint --fix"
+      "eslint --fix",
+      "bash -c 'npm run knip -- --no-exit-code'"
     ],
     "*.{json,css,md}": [
       "prettier --write"
@@ -43,6 +46,7 @@
     "globals": "^16.3.0",
     "husky": "^9.1.7",
     "jsdom": "^26.1.0",
+    "knip": "^5.62.0",
     "lint-staged": "^15.3.0",
     "postcss": "^8.5.6",
     "prettier": "^3.6.2",

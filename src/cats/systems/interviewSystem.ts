@@ -1,4 +1,4 @@
-export interface InterviewResult {
+interface InterviewResult {
   success: boolean;
   message: string;
   loveCost: number;
@@ -40,7 +40,7 @@ const successReasons = [
   "Something about you feels right. Welcome to the team!"
 ];
 
-export interface InterviewConfig {
+interface InterviewConfig {
   baseLoveCost: number;
   successRate: number; // Probability of success (0.0 to 1.0)
 }

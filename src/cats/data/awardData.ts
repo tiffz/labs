@@ -145,17 +145,3 @@ export const gameAwards: Award[] = [
   }
 ];
 
-// Helper function to get awards by type
-export function getAwardsByType(type: Award['type']): Award[] {
-  return gameAwards.filter(award => award.type === type);
-}
-
-// Helper function to check if an award is unlocked
-export function isAwardUnlocked(awardId: string, earnedAwards: string[]): boolean {
-  return earnedAwards.includes(awardId);
-}
-
-// Get all awards that should be displayed (unlocked + next locked placeholder if any)
-export function getDisplayableAwards(): Award[] {
-  return gameAwards; // For now return all - UI will handle hiding/showing
-}

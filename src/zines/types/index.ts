@@ -93,7 +93,7 @@ export interface StPageFlipInstance {
   destroy(): void;
 }
 
-export interface StPageFlipConfig {
+interface StPageFlipConfig {
   width: number;
   height: number;
   size: string;

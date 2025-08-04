@@ -33,7 +33,7 @@ export interface GlobalGameState {
   treats: number;
 }
 
-export interface CatGameActions {
+interface CatGameActions {
   // Cat-specific state mutations
   updateEnergy: (delta: number) => void;
   setEnergy: (energy: number) => void;

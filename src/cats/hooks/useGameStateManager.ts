@@ -13,7 +13,7 @@ import { getMeritUpgradeCost } from '../data/meritUpgradeData';
 import { getThingPrice, thingsData } from '../data/thingsData';
 import { jobData } from '../data/jobData';
 
-export interface GameStateManager {
+interface GameStateManager {
   // Current state
   gameState: GameState;
   

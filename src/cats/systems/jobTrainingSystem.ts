@@ -1,13 +1,13 @@
 import type { JobData } from '../data/jobData';
 
-export interface TrainingResult {
+interface TrainingResult {
   experienceGained: number;
   loveCost: number;
   wasLucky: boolean; // For juicy feedback when player gets bonus experience
   bonusAmount?: number;
 }
 
-export interface TrainingConfig {
+interface TrainingConfig {
   baseLoveCost: number;
   baseExperienceGain: number;
   randomnessRange: number; // +/- percentage variance
@@ -16,7 +16,7 @@ export interface TrainingConfig {
 }
 
 // Training configurations for different job types
-export const trainingConfigs: { [jobId: string]: TrainingConfig } = {
+const trainingConfigs: { [jobId: string]: TrainingConfig } = {
   box_factory: {
     baseLoveCost: 2,
     baseExperienceGain: 4,
