@@ -13,6 +13,43 @@ import { getMeritUpgradeCost } from '../data/meritUpgradeData';
 import { getThingPrice, thingsData } from '../data/thingsData';
 import { jobData } from '../data/jobData';
 
+// Define the order in which jobs unlock (when reaching level 5 in previous job)
+const JOB_UNLOCK_ORDER = [
+  'box_factory',      // Starting job (always unlocked)
+  'software_developer',
+  'librarian', 
+  'chef',
+  'artist',
+  'detective',
+  'scientist',
+  'astronaut',
+  'entrepreneur'
+];
+
+// Function to check if new jobs should be unlocked based on current progress
+const checkJobUnlocks = (gameState: GameState): string[] => {
+  const currentUnlocked = [...gameState.unlockedJobs];
+  let newUnlocks = false;
+
+  for (let i = 0; i < JOB_UNLOCK_ORDER.length - 1; i++) {
+    const currentJobId = JOB_UNLOCK_ORDER[i];
+    const nextJobId = JOB_UNLOCK_ORDER[i + 1];
+    
+    // If current job is unlocked but next job isn't
+    if (currentUnlocked.includes(currentJobId) && !currentUnlocked.includes(nextJobId)) {
+      const currentJobLevel = gameState.jobLevels[currentJobId] || 0;
+      
+      // Unlock next job when reaching level 5 in current job
+      if (currentJobLevel >= 5) {
+        currentUnlocked.push(nextJobId);
+        newUnlocks = true;
+      }
+    }
+  }
+
+  return newUnlocks ? currentUnlocked : gameState.unlockedJobs;
+};
+
 interface GameStateManager {
   // Current state
   gameState: GameState;
@@ -97,24 +134,36 @@ export const useGameStateManager = ({
       if (!interviewState?.hasOffer) return false;
       
       // Accept the job offer - clear interview state and set to level 1
-      setGameState(prev => ({
-        ...prev,
-        jobLevels: { ...prev.jobLevels, [jobId]: 1 },
-        jobInterviews: { 
-          ...prev.jobInterviews, 
-          [jobId]: { hasOffer: false, lastRejectionReason: undefined } 
-        },
-      }));
+      setGameState(prev => {
+        const newState = {
+          ...prev,
+          jobLevels: { ...prev.jobLevels, [jobId]: 1 },
+          jobInterviews: { 
+            ...prev.jobInterviews, 
+            [jobId]: { hasOffer: false, lastRejectionReason: undefined } 
+          },
+        };
+        
+        // Check for job unlocks after promotion
+        const updatedUnlocks = checkJobUnlocks(newState);
+        return { ...newState, unlockedJobs: updatedUnlocks };
+      });
       return true;
     } else {
       // Regular promotion (level > 0) - check experience requirements  
       if (!canPromoteToNextLevel(jobData, jobId, currentLevel, currentExperience)) return false;
       
       // Promotions are purely experience-based, no love cost
-      setGameState(prev => ({
-        ...prev,
-        jobLevels: { ...prev.jobLevels, [jobId]: currentLevel + 1 },
-      }));
+      setGameState(prev => {
+        const newState = {
+          ...prev,
+          jobLevels: { ...prev.jobLevels, [jobId]: currentLevel + 1 },
+        };
+        
+        // Check for job unlocks after promotion
+        const updatedUnlocks = checkJobUnlocks(newState);
+        return { ...newState, unlockedJobs: updatedUnlocks };
+      });
       return true;
     }
   }, [gameState.jobLevels, gameState.jobExperience, gameState.jobInterviews]);

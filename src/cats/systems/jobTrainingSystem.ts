@@ -18,31 +18,73 @@ interface TrainingConfig {
 // Training configurations for different job types
 const trainingConfigs: { [jobId: string]: TrainingConfig } = {
   box_factory: {
-    baseLoveCost: 2,
+    baseLoveCost: 3,
     baseExperienceGain: 4,
     randomnessRange: 0.4, // ±40% variance
     luckChance: 0.20, // 20% chance for bonus
     luckMultiplier: 2.0, // Double experience when lucky
   },
   software_developer: {
-    baseLoveCost: 3,
+    baseLoveCost: 5,
     baseExperienceGain: 5,
     randomnessRange: 0.5, // ±50% variance (more unpredictable)
     luckChance: 0.25, // 25% chance for bonus
     luckMultiplier: 1.8,
   },
   librarian: {
-    baseLoveCost: 4,
+    baseLoveCost: 8,
     baseExperienceGain: 6,
     randomnessRange: 0.3, // ±30% variance (more stable)
     luckChance: 0.30, // 30% chance for bonus
     luckMultiplier: 1.5,
   },
+  chef: {
+    baseLoveCost: 12,
+    baseExperienceGain: 7,
+    randomnessRange: 0.35, // ±35% variance (creative but precise)
+    luckChance: 0.22, // 22% chance for bonus
+    luckMultiplier: 2.2, // High rewards for culinary inspiration
+  },
+  artist: {
+    baseLoveCost: 15,
+    baseExperienceGain: 6,
+    randomnessRange: 0.6, // ±60% variance (very creative/unpredictable)
+    luckChance: 0.35, // 35% chance for bonus
+    luckMultiplier: 1.6, // Steady artistic growth
+  },
+  detective: {
+    baseLoveCost: 20,
+    baseExperienceGain: 8,
+    randomnessRange: 0.3, // ±30% variance (methodical investigation)
+    luckChance: 0.18, // 18% chance for bonus
+    luckMultiplier: 2.5, // Big breakthroughs when they happen
+  },
+  scientist: {
+    baseLoveCost: 25,
+    baseExperienceGain: 9,
+    randomnessRange: 0.4, // ±40% variance (experimental nature)
+    luckChance: 0.15, // 15% chance for bonus
+    luckMultiplier: 3.0, // Major discoveries have huge impact
+  },
+  astronaut: {
+    baseLoveCost: 35,
+    baseExperienceGain: 10,
+    randomnessRange: 0.25, // ±25% variance (precision required)
+    luckChance: 0.12, // 12% chance for bonus
+    luckMultiplier: 2.8, // Space missions are high-stakes
+  },
+  entrepreneur: {
+    baseLoveCost: 50,
+    baseExperienceGain: 12,
+    randomnessRange: 0.7, // ±70% variance (most unpredictable)
+    luckChance: 0.20, // 20% chance for bonus
+    luckMultiplier: 3.5, // Startup success can be explosive
+  },
 };
 
 // Default config for jobs without specific training configs
 const defaultTrainingConfig: TrainingConfig = {
-  baseLoveCost: 3,
+  baseLoveCost: 15,
   baseExperienceGain: 4,
   randomnessRange: 0.4,
   luckChance: 0.20,
@@ -56,10 +98,37 @@ export function getTrainingConfig(jobId: string): TrainingConfig {
 export function calculateTrainingCost(jobId: string, currentExperience: number): number {
   const config = getTrainingConfig(jobId);
   
-  // Training gets slightly more expensive as you gain experience
-  const experienceMultiplier = 1 + (currentExperience * 0.01); // 1% increase per experience point
+  // Gentle start, aggressive later scaling for better player experience
+  // First 20 experience points: gentle polynomial growth (1.6 exponent)
+  // After 20 experience: exponential growth kicks in
+  let experienceMultiplier: number;
   
-  return Math.ceil(config.baseLoveCost * experienceMultiplier);
+  if (currentExperience <= 20) {
+    // Gentle polynomial scaling: starts at 1x, grows slowly
+    experienceMultiplier = 1 + Math.pow(currentExperience, 1.6) * 0.008;
+  } else {
+    // Switch to exponential after experience 20
+    const gentlePhaseMax = 1 + Math.pow(20, 1.6) * 0.008; // ~2.4x at experience 20
+    const exponentialGrowth = Math.pow(1.12, currentExperience - 20); // 1.12^(exp-20)
+    experienceMultiplier = gentlePhaseMax * exponentialGrowth;
+  }
+  
+  // Additional job-tier scaling - later jobs cost more
+  const jobTierMultipliers: { [key: string]: number } = {
+    'box_factory': 1.0,
+    'software_developer': 1.2,
+    'librarian': 1.4,
+    'chef': 1.8,
+    'artist': 2.2,
+    'detective': 2.8,
+    'scientist': 3.5,
+    'astronaut': 4.5,
+    'entrepreneur': 6.0
+  };
+  
+  const tierMultiplier = jobTierMultipliers[jobId] || 1.0;
+  
+  return Math.ceil(config.baseLoveCost * experienceMultiplier * tierMultiplier);
 }
 
 export function performTraining(jobId: string, currentExperience: number): TrainingResult {

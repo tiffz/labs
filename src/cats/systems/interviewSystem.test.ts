@@ -23,7 +23,7 @@ describe('Interview System', () => {
 
     it('uses default config for unknown job types', () => {
       const cost = calculateInterviewCost('unknown_job');
-      expect(cost).toBe(4); // Default base cost
+      expect(cost).toBe(15); // Default base cost (updated for gentler early game progression)
     });
   });
 
@@ -92,7 +92,7 @@ describe('Interview System', () => {
 
     it('returns default config for unknown job', () => {
       const config = getInterviewConfig('unknown_job');
-      expect(config.baseLoveCost).toBe(4);
+      expect(config.baseLoveCost).toBe(15); // Updated default base cost for gentler early game progression
       expect(config.successRate).toBe(0.18);
     });
   });

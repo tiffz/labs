@@ -52,18 +52,42 @@ const interviewConfigs: { [jobId: string]: InterviewConfig } = {
     successRate: 0.35, // 35% success rate = ~3 attempts needed on average
   },
   software_developer: {
-    baseLoveCost: 5,
-    successRate: 0.15, // Harder to get
+    baseLoveCost: 6,
+    successRate: 0.30, // Gentler progression
   },
   librarian: {
-    baseLoveCost: 7,
-    successRate: 0.12, // Even harder
+    baseLoveCost: 12,
+    successRate: 0.25, // More accessible early game
+  },
+  chef: {
+    baseLoveCost: 25,
+    successRate: 0.22, // Creative field is competitive
+  },
+  artist: {
+    baseLoveCost: 50,
+    successRate: 0.20, // Artistic talent valued
+  },
+  detective: {
+    baseLoveCost: 100,
+    successRate: 0.18, // Requires specialized skills
+  },
+  scientist: {
+    baseLoveCost: 200,
+    successRate: 0.15, // Highly competitive field
+  },
+  astronaut: {
+    baseLoveCost: 400,
+    successRate: 0.12, // Elite profession
+  },
+  entrepreneur: {
+    baseLoveCost: 800,
+    successRate: 0.10, // High risk, high reward
   },
 };
 
 // Default config for unknown jobs
 const defaultInterviewConfig: InterviewConfig = {
-  baseLoveCost: 4,
+  baseLoveCost: 15,
   successRate: 0.18,
 };
 

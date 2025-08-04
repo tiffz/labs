@@ -23,7 +23,7 @@ describe('Job Training System', () => {
   describe('Training Cost Calculation', () => {
     it('calculates base training cost correctly', () => {
       const cost = calculateTrainingCost('box_factory', 0);
-      expect(cost).toBe(2); // Base cost for box_factory
+      expect(cost).toBe(3); // Base cost for box_factory (updated for incremental game scaling)
     });
 
     it('increases training cost with experience', () => {
@@ -34,7 +34,7 @@ describe('Job Training System', () => {
 
     it('uses default config for unknown job types', () => {
       const cost = calculateTrainingCost('unknown_job', 0);
-      expect(cost).toBe(3); // Default base cost
+      expect(cost).toBe(15); // Default base cost (updated for incremental game scaling)
     });
   });
 
@@ -46,7 +46,7 @@ describe('Job Training System', () => {
       expect(result).toHaveProperty('loveCost');
       expect(result).toHaveProperty('wasLucky');
       expect(result.experienceGained).toBeGreaterThan(0);
-      expect(result.loveCost).toBe(2); // Base cost for box_factory
+      expect(result.loveCost).toBe(3); // Base cost for box_factory (updated for incremental game scaling)
     });
 
     it('applies luck bonus when random chance triggers', () => {
@@ -146,7 +146,7 @@ describe('Job Training System', () => {
 
     it('returns default config for unknown job', () => {
       const config = getTrainingConfig('unknown_job');
-      expect(config.baseLoveCost).toBe(3);
+      expect(config.baseLoveCost).toBe(15); // Updated default base cost for incremental game scaling
       expect(config.baseExperienceGain).toBe(4);
     });
   });
