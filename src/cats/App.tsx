@@ -3,7 +3,6 @@ import ReactDOM from 'react-dom';
 import { useStableCallback } from './hooks/useStableCallback';
 
 import { useMouseTracking } from './hooks/useMouseTracking';
-// import './utils/errorLogger'; // TEMPORARILY DISABLED - Initialize error logging in development
 
 // Analytics types
 declare global {
@@ -205,16 +204,11 @@ function App() {
 
 
   // Create stable string keys for economy calculation dependencies to prevent unnecessary recalculations
-  const jobLevelsKey = useMemo(() => JSON.stringify(gameState.jobLevels), [gameState.jobLevels]);
-  const spentMeritsKey = useMemo(() => JSON.stringify(gameState.spentMerits), [gameState.spentMerits]);
-  const thingQuantitiesKey = useMemo(() => JSON.stringify(gameState.thingQuantities), [gameState.thingQuantities]);
-  const unlockedJobsKey = useMemo(() => JSON.stringify(gameState.unlockedJobs), [gameState.unlockedJobs]);
-
   // Calculate all economic values using the centralized service
   // Only recalculate when structural game state changes, not when love/treats change from passive income
   const economy = useMemo(() => {
     return GameEconomyService.calculateEconomy(gameState);
-  }, [jobLevelsKey, spentMeritsKey, thingQuantitiesKey, unlockedJobsKey]);
+  }, [gameState]);
   
   // Extract individual values for backwards compatibility
   const { baseLovePerInteraction } = economy;
@@ -254,54 +248,61 @@ function App() {
     setZzzs((currentZzzs) => currentZzzs.filter((zzz) => zzz.id !== id));
   };
   
-  // UNIFIED: Inactivity detection using centralized mouse tracking
-  useEffect(() => {
-    let drowsinessTimer: number;
-    let sleepTimer: number;
-    let lastResetTime = 0;
+  // Store timer functions in refs to avoid recreating them
+  const timersRef = useRef<{
+    drowsinessTimer: number;
+    sleepTimer: number;
+    lastResetTime: number;
+  }>({ drowsinessTimer: 0, sleepTimer: 0, lastResetTime: 0 });
 
-    const startInactivityTimers = () => {
-      clearTimeout(drowsinessTimer);
-      clearTimeout(sleepTimer);
-      drowsinessTimer = window.setTimeout(() => setIsDrowsy(true), 20000);
-      sleepTimer = window.setTimeout(() => {
-        setIsDrowsy(false);
-        setIsSleeping(true);
-      }, 30000);
-    };
+  const startInactivityTimers = useStableCallback(() => {
+    clearTimeout(timersRef.current.drowsinessTimer);
+    clearTimeout(timersRef.current.sleepTimer);
+    timersRef.current.drowsinessTimer = window.setTimeout(() => setIsDrowsy(true), 20000);
+    timersRef.current.sleepTimer = window.setTimeout(() => {
+      setIsDrowsy(false);
+      setIsSleeping(true);
+    }, 30000);
+  });
 
-    const resetInactivityTimer = () => {
-      const now = Date.now();
-      // Throttle to once every 100ms to prevent excessive calls
-      if (now - lastResetTime < 100) return;
-      lastResetTime = now;
-      
-      // Only update state if it actually needs to change - prevents unnecessary re-renders
-      if (isSleeping) setIsSleeping(false);
-      if (isDrowsy) setIsDrowsy(false);
-      if (zzzs.length > 0) setZzzs([]);
-      startInactivityTimers();
-    };
-
-    // Register mouse move callback with unified system
-    const unsubscribe = mouseState.onMouseMove(resetInactivityTimer);
+  const resetInactivityTimer = useStableCallback(() => {
+    const now = Date.now();
+    // Throttle to once every 100ms to prevent excessive calls
+    if (now - timersRef.current.lastResetTime < 100) return;
+    timersRef.current.lastResetTime = now;
     
-    // Also listen for mouse down events
-    document.addEventListener('mousedown', resetInactivityTimer);
+    // Use functional updates to avoid reading current state
+    setIsSleeping(prev => prev ? false : prev);
+    setIsDrowsy(prev => prev ? false : prev);
+    setZzzs(prev => prev.length > 0 ? [] : prev);
+    startInactivityTimers();
+  });
 
-    // Initialize on mount
+  // Initialize sleep state and timers on mount
+  useEffect(() => {
     setIsSleeping(false);
     setIsDrowsy(false);
     setZzzs([]);
     startInactivityTimers();
 
+    // Capture current timers for cleanup
+    const timers = timersRef.current;
     return () => {
-      clearTimeout(drowsinessTimer);
-      clearTimeout(sleepTimer);
+      clearTimeout(timers.drowsinessTimer);
+      clearTimeout(timers.sleepTimer);
+    };
+  }, [startInactivityTimers]);
+
+  // Register mouse event listeners
+  useEffect(() => {
+    const unsubscribe = mouseState.onMouseMove(resetInactivityTimer);
+    document.addEventListener('mousedown', resetInactivityTimer);
+
+    return () => {
       unsubscribe();
       document.removeEventListener('mousedown', resetInactivityTimer);
     };
-  }, [mouseState.onMouseMove]); // Only depends on the stable onMouseMove function
+  }, [mouseState, resetInactivityTimer]);
 
   // Use ref for cat position to avoid triggering re-renders
   const catPositionRef = useRef<{x: number, y: number} | null>(null);

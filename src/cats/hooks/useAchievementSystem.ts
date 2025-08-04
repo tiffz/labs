@@ -93,7 +93,7 @@ export const useAchievementSystem = (
     setTimeout(() => {
       processingAchievementsRef.current.delete(achievement.id);
     }, 50); // Small delay to ensure state updates have propagated
-  }, [setGameState, addNotificationToQueue]);
+  }, [setGameState, addNotificationToQueue, earnedAwards, earnedMerits]);
 
   // Track special actions for awards
   const trackSpecialAction = useCallback((actionType: 'noseClicks' | 'earClicks' | 'cheekPets' | 'happyJumps') => {
@@ -184,7 +184,7 @@ export const useAchievementSystem = (
   // Check achievements when relevant game state changes
   useEffect(() => {
     checkAllAchievements();
-  }, [earnedMeritsStableKey, earnedAwardsStableKey, jobLevelStableKey, thingQuantityStableKey, specialActions, love, treats]);
+  }, [checkAllAchievements, earnedMeritsStableKey, earnedAwardsStableKey, jobLevelStableKey, thingQuantityStableKey, specialActions, love, treats]);
 
   // Get earned achievements with proper typing
   const earnedMilestones: Milestone[] = allAchievements

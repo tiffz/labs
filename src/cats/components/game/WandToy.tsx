@@ -54,7 +54,7 @@ const WandToy: React.FC<WandToyProps> = ({ isShaking, initialPosition, mouseStat
     const unsubscribe = mouseState.onMouseMove(handleMouseMove);
 
     return unsubscribe;
-  }, [mouseState.onMouseMove]);
+  }, [mouseState]);
 
   return (
     <div

@@ -455,7 +455,7 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
       return () => {
         cancelAnimationFrame(animationFrameId);
       };
-    }, [catRef]); // Only catRef dependency - smoothPositionRef is stable
+    }, [catRef, mouseState.smoothPositionRef]); // Include smoothPositionRef dependency
 
     const svgClasses = [
       'cat-svg',

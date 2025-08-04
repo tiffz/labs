@@ -216,4 +216,165 @@ describe('App Regression Tests', () => {
       );
     });
   });
+
+  describe('Sleep System Functionality', () => {
+    let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(() => {
+      consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('should transition cat to sleeping state after 30 seconds of inactivity', async () => {
+      vi.useFakeTimers();
+      
+      render(<App />);
+      
+      // Advance time to trigger sleep (30 seconds) and wrap in act()
+      act(() => {
+        vi.advanceTimersByTime(30000);
+      });
+      
+      // Verify cat shows sleeping eyes
+      const sleepyEyes = screen.getByTestId('eye-sleepy');
+      expect(sleepyEyes.classList.contains('hidden')).toBe(false);
+      
+      vi.useRealTimers();
+    });
+
+    it('should wake up cat when mouse is moved during sleep', async () => {
+      vi.useFakeTimers();
+      
+      render(<App />);
+      
+      // Put cat to sleep
+      act(() => {
+        vi.advanceTimersByTime(30000);
+      });
+      
+      // Verify cat is sleeping
+      const sleepyEyes = screen.getByTestId('eye-sleepy');
+      expect(sleepyEyes.classList.contains('hidden')).toBe(false);
+      
+      // Move mouse to wake up cat
+      act(() => {
+        fireEvent.mouseMove(document, { clientX: 100, clientY: 100 });
+      });
+      
+      // Verify cat is awake
+      const openEyes = screen.getByTestId('eye-open');
+      expect(openEyes.classList.contains('hidden')).toBe(false);
+      expect(sleepyEyes.classList.contains('hidden')).toBe(true);
+      
+      vi.useRealTimers();
+    });
+
+    it('should wake up cat when clicked during sleep', async () => {
+      vi.useFakeTimers();
+      
+      render(<App />);
+      
+      // Put cat to sleep
+      act(() => {
+        vi.advanceTimersByTime(30000);
+      });
+      
+      // Verify cat is sleeping
+      const sleepyEyes = screen.getByTestId('eye-sleepy');
+      expect(sleepyEyes.classList.contains('hidden')).toBe(false);
+      
+      // Click on cat to wake it up
+      const cat = screen.getByTestId('cat');
+      act(() => {
+        fireEvent.mouseDown(cat);
+      });
+      
+      // Verify cat is awake
+      const openEyes = screen.getByTestId('eye-open');
+      expect(openEyes.classList.contains('hidden')).toBe(false);
+      expect(sleepyEyes.classList.contains('hidden')).toBe(true);
+      
+      vi.useRealTimers();
+    });
+
+    it('should reset sleep timers after waking up', async () => {
+      vi.useFakeTimers();
+      
+      render(<App />);
+      
+      // Put cat to sleep
+      act(() => {
+        vi.advanceTimersByTime(30000);
+      });
+      
+      // Wake up cat
+      act(() => {
+        fireEvent.mouseMove(document, { clientX: 100, clientY: 100 });
+      });
+      
+      // Verify cat is awake
+      const openEyes = screen.getByTestId('eye-open');
+      const sleepyEyes = screen.getByTestId('eye-sleepy');
+      expect(openEyes.classList.contains('hidden')).toBe(false);
+      expect(sleepyEyes.classList.contains('hidden')).toBe(true);
+      
+      // Wait 29 seconds (just before sleep threshold)
+      act(() => {
+        vi.advanceTimersByTime(29000);
+      });
+      
+      // Should still be awake
+      expect(openEyes.classList.contains('hidden')).toBe(false);
+      expect(sleepyEyes.classList.contains('hidden')).toBe(true);
+      
+      // Wait 1 more second to trigger sleep again
+      act(() => {
+        vi.advanceTimersByTime(1000);
+      });
+      
+      // Should be sleeping again
+      expect(sleepyEyes.classList.contains('hidden')).toBe(false);
+      expect(openEyes.classList.contains('hidden')).toBe(true);
+      
+      vi.useRealTimers();
+    });
+
+    it('should not cause console errors during sleep state transitions', async () => {
+      vi.useFakeTimers();
+      
+      render(<App />);
+      
+      // Transition through drowsy to sleep
+      act(() => {
+        vi.advanceTimersByTime(20000); // Drowsy at 20s
+        vi.advanceTimersByTime(10000); // Sleep at 30s
+      });
+      
+      // Wake up
+      act(() => {
+        fireEvent.mouseMove(document, { clientX: 100, clientY: 100 });
+      });
+      
+      // Sleep again
+      act(() => {
+        vi.advanceTimersByTime(30000);
+      });
+      
+      // Wake up again
+      act(() => {
+        fireEvent.click(screen.getByTestId('cat'));
+      });
+      
+      // Should have no React warnings (but filter out act warnings which are expected in tests)
+      const reactErrors = consoleErrorSpy.mock.calls.filter(call => 
+        !call[0].includes('An update to') && !call[0].includes('not wrapped in act')
+      );
+      expect(reactErrors).toHaveLength(0);
+      
+      vi.useRealTimers();
+    });
+  });
 });

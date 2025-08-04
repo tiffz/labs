@@ -157,6 +157,13 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
     // Only block clicks when actively pouncing in wand mode
     if (isPouncing && wandMode) return;
 
+    // If cat is sleeping, just wake it up instead of processing normal interaction
+    if (isSleeping) {
+      // The parent App.tsx will handle waking up via the document mousedown listener
+      // Don't process love/energy when sleeping - just let the wake-up happen
+      return;
+    }
+
     const energyMultiplier = 1 + catEnergy / 100;
     const loveFromClick = calculateFinalLoveGain(
       baseLovePerInteraction,
