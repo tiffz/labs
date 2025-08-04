@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+
+# Allow indexing of main pages
+Allow: /cats/
+Allow: /zines/
+
+# Block search engine crawling of certain files
+Disallow: /404.html
+Disallow: /*.css$
+Disallow: /*.js$
+Disallow: /icons/
+Disallow: /scripts/
+Disallow: /styles/

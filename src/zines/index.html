@@ -13,10 +13,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     
-    <!-- Font loading with FOUC prevention -->
+    <!-- Optimized font loading with preload and font-display: swap -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Kalam:wght@300;400;700&family=Gaegu:wght@300;400;700&display=swap">
+    
+    <!-- Critical font CSS to prevent FOUC -->
     <style>
-        /* Inline critical font CSS to prevent FOUC */
-        @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Kalam:wght@300;400;700&family=Gaegu:wght@300;400;700&display=block');
         
         /* Font variables with strong fallbacks */
         :root {
@@ -31,7 +32,7 @@
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
             text-rendering: optimizeLegibility;
-            font-display: block;
+            font-display: swap;
         }
         
         .font-heading {
