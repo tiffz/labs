@@ -453,7 +453,7 @@ body.wand-mode-active * {
 
 #tail {
   animation: tail-wag 3s ease-in-out infinite;
-  transform-origin: bottom left;
+  transform-origin: 155px 148px;
 }
 
 .is-petting #head {
@@ -504,8 +504,35 @@ body.wand-mode-active * {
   100% {
     transform: rotate(0deg);
   }
+  25% {
+    transform: rotate(-6deg);
+  }
   50% {
-    transform: rotate(-10deg);
+    transform: rotate(8deg);
+  }
+  75% {
+    transform: rotate(-4deg);
+  }
+}
+
+@keyframes tail-flick {
+  0% {
+    transform: rotate(0deg);
+  }
+  20% {
+    transform: rotate(8deg);
+  }
+  40% {
+    transform: rotate(-4deg);
+  }
+  60% {
+    transform: rotate(6deg);
+  }
+  80% {
+    transform: rotate(-3deg);
+  }
+  100% {
+    transform: rotate(0deg);
   }
 }
 
@@ -631,6 +658,11 @@ body.wand-mode-active * {
 .cat-svg.ear-wiggling #right-ear {
   animation: ear-wiggle-right 0.5s ease-in-out;
   transform-origin: bottom center;
+}
+
+/* Tail flicking animation */
+.cat-svg.tail-flicking #tail {
+  animation: tail-flick 0.6s ease-in-out;
 }
 
 .wand-toy {

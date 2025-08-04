@@ -23,6 +23,7 @@ const getDefaultProps = (overrides: Partial<React.ComponentProps<typeof Cat>> = 
     onEarClick: vi.fn(),
     onNoseClick: vi.fn(),
     onCheekClick: vi.fn(),
+    onTailClick: vi.fn(),
     isPetting: false,
     isStartled: false,
     isSleeping: false,
@@ -33,6 +34,7 @@ const getDefaultProps = (overrides: Partial<React.ComponentProps<typeof Cat>> = 
     isSmiling: false,
     isHappyPlaying: false,
     isEarWiggling: false,
+    isTailFlicking: false,
     headTiltAngle: 0,
     mouseState: mockMouseState,
     pounceTarget: { x: 0, y: 0 },
@@ -269,5 +271,13 @@ describe('Cat Component Eye Tracking', () => {
 
     expect(leftEye.getAttribute('r')).toBe('10');
     expect(rightEye.getAttribute('r')).toBe('10');
+  });
+
+  it('applies tail-flicking class when isTailFlicking is true', () => {
+    const props = getDefaultProps({ isTailFlicking: true });
+    render(<Cat {...props} />);
+    
+    const catSvg = screen.getByTestId('cat');
+    expect(catSvg).toHaveClass('tail-flicking');
   });
 }); 

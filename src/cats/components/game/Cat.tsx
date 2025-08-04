@@ -27,6 +27,7 @@ interface CatProps {
   onEarClick: (ear: 'left' | 'right', event: React.MouseEvent) => void;
   onNoseClick: (event: React.MouseEvent) => void;
   onCheekClick: (side: 'left' | 'right', event: React.MouseEvent) => void;
+  onTailClick: (event: React.MouseEvent) => void;
   isPetting: boolean;
   isStartled: boolean;
   isSleeping: boolean;
@@ -38,6 +39,7 @@ interface CatProps {
   isSubtleWiggling: boolean;
   isHappyPlaying: boolean;
   isEarWiggling: boolean;
+  isTailFlicking: boolean;
   headTiltAngle: number;
   mouseState: MouseState;
   pounceTarget: { x: number; y: number };
@@ -57,6 +59,7 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
       onEarClick,
       onNoseClick,
       onCheekClick,
+      onTailClick,
       isPetting,
       isStartled,
       isSleeping,
@@ -68,6 +71,7 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
       isSubtleWiggling,
       isHappyPlaying,
       isEarWiggling,
+      isTailFlicking,
       headTiltAngle,
       mouseState,
       pounceTarget,
@@ -479,6 +483,7 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
       isSubtleWiggling ? 'subtle-wiggling' : '',
       isEarWiggling ? 'ear-wiggling' : '',
       isPlaying ? 'playing' : '',
+      isTailFlicking ? 'tail-flicking' : '',
     ]
       .filter(Boolean)
       .join(' ');
@@ -516,8 +521,13 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
           {/* Tail */}
           <g id="tail">
             <path
-              d="M 160 150 C 210 150, 210 90, 170 80 L 160 90 C 200 100, 200 145, 155 145 Z"
+              d="M 155 148 C 165 145, 180 135, 190 115 C 200 95, 195 85, 192 88 C 189 91, 185 100, 178 115 C 170 130, 162 142, 155 148"
               fill="#212121"
+              onClick={(e) => {
+                e.stopPropagation();
+                onTailClick(e);
+              }}
+              style={{ cursor: 'pointer' }}
             />
           </g>
 

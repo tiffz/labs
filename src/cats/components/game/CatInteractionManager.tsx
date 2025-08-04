@@ -105,6 +105,7 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
   const [isJumping, setIsJumping] = useState(false);
   const [isSmiling, setIsSmiling] = useState(false);
   const [headTiltAngle, setHeadTiltAngle] = useState(0);
+  const [isTailFlicking, setIsTailFlicking] = useState(false);
 
   
   // Refs and other state
@@ -279,6 +280,18 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
     setIsStartled(true);
     setTimeout(() => setIsStartled(false), 500);
   };
+
+  const handleTailClick = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    
+    // Set startled face (same as eye click)
+    setIsStartled(true);
+    setTimeout(() => setIsStartled(false), 500);
+    
+    // Trigger tail flick animation
+    setIsTailFlicking(true);
+    setTimeout(() => setIsTailFlicking(false), 600);
+  };
   
   const handleNoseClick = (event: React.MouseEvent) => {
     event.stopPropagation();
@@ -398,6 +411,7 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
           onEarClick={handleEarClick}
           onNoseClick={handleNoseClick}
           onCheekClick={handleCheekClick}
+          onTailClick={handleTailClick}
           isPetting={isPetting}
           isStartled={isStartled}
           isSleeping={isSleeping}
@@ -409,6 +423,7 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
           isSubtleWiggling={isSubtleWiggling}
           isHappyPlaying={isHappyPlaying}
           isEarWiggling={isEarWiggling}
+          isTailFlicking={isTailFlicking}
           headTiltAngle={headTiltAngle}
           pounceTarget={pounceTarget || { x: 0, y: 0 }}
           wigglingEar={wigglingEar}
