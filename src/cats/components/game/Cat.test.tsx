@@ -1,4 +1,4 @@
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, act, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import Cat from './Cat';
 import type { MouseState } from '../../hooks/useMouseTracking';
@@ -279,5 +279,68 @@ describe('Cat Component Eye Tracking', () => {
     
     const catSvg = screen.getByTestId('cat');
     expect(catSvg).toHaveClass('tail-flicking');
+  });
+});
+
+describe('Cat Tail Click Interactions', () => {
+  it('calls onTailClick handler when tail is clicked', () => {
+    const mockOnTailClick = vi.fn();
+    const props = getDefaultProps({ onTailClick: mockOnTailClick });
+    const { container } = render(<Cat {...props} />);
+    
+    // Find the tail element (it's a path inside the tail group)
+    const tailElement = container.querySelector('#tail path');
+    expect(tailElement).toBeTruthy();
+    
+    // Click the tail
+    fireEvent.click(tailElement!);
+    
+    // Verify the handler was called
+    expect(mockOnTailClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('prevents event propagation when tail is clicked', () => {
+    const mockOnTailClick = vi.fn();
+    const mockOnClick = vi.fn();
+    const props = getDefaultProps({ 
+      onTailClick: mockOnTailClick,
+      onClick: mockOnClick 
+    });
+    const { container } = render(<Cat {...props} />);
+    
+    const tailElement = container.querySelector('#tail path');
+    fireEvent.click(tailElement!);
+    
+    // Tail click should be called, but main cat click should not (due to stopPropagation)
+    expect(mockOnTailClick).toHaveBeenCalledTimes(1);
+    expect(mockOnClick).not.toHaveBeenCalled();
+  });
+
+  it('applies correct CSS classes for tail flicking and startled states', () => {
+    const props = getDefaultProps({ 
+      isTailFlicking: true, 
+      isStartled: true 
+    });
+    render(<Cat {...props} />);
+    
+    const catSvg = screen.getByTestId('cat');
+    expect(catSvg).toHaveClass('tail-flicking');
+    
+    // Verify startled eyes are shown
+    const startledEyes = screen.getByTestId('eye-startled');
+    expect(startledEyes.classList.contains('hidden')).toBe(false);
+    
+    // Verify open eyes are hidden when startled
+    const openEyes = screen.getByTestId('eye-open');
+    expect(openEyes.classList.contains('hidden')).toBe(true);
+  });
+
+  it('tail element has pointer cursor styling', () => {
+    const props = getDefaultProps();
+    const { container } = render(<Cat {...props} />);
+    
+    const tailElement = container.querySelector('#tail path');
+    expect(tailElement).toBeTruthy();
+    expect(tailElement).toHaveStyle({ cursor: 'pointer' });
   });
 }); 
