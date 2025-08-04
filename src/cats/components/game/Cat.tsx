@@ -219,21 +219,29 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
     useEffect(() => {
       let target = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
       let animationFrameId: number;
+      let isActive = true;
 
       // Throttle animation updates to 60fps for smoother performance
       let lastAnimationTime = 0;
       const frameInterval = ANIMATION_TIMINGS.FRAME_INTERVAL;
 
       const animate = (currentTime: number) => {
+        // Check if the effect is still active before continuing
+        if (!isActive) return;
+
         const catElement = catRef && 'current' in catRef ? catRef.current : null;
         if (!catElement) {
-          animationFrameId = requestAnimationFrame(animate);
+          if (isActive) {
+            animationFrameId = requestAnimationFrame(animate);
+          }
           return;
         }
 
         // Throttle to target FPS
         if (currentTime - lastAnimationTime < frameInterval) {
-          animationFrameId = requestAnimationFrame(animate);
+          if (isActive) {
+            animationFrameId = requestAnimationFrame(animate);
+          }
           return;
         }
         lastAnimationTime = currentTime;
@@ -447,13 +455,19 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
           }
         }
 
-        animationFrameId = requestAnimationFrame(animate);
+        // Only schedule next frame if still active
+        if (isActive) {
+          animationFrameId = requestAnimationFrame(animate);
+        }
       };
 
       animationFrameId = requestAnimationFrame(animate);
 
       return () => {
-        cancelAnimationFrame(animationFrameId);
+        isActive = false;
+        if (animationFrameId) {
+          cancelAnimationFrame(animationFrameId);
+        }
       };
     }, [catRef, mouseState.smoothPositionRef]); // Include smoothPositionRef dependency
 

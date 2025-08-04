@@ -72,7 +72,12 @@ export function useMouseTracking(options: UseMouseTrackingOptions = {}): MouseSt
   useEffect(() => {
     if (!enableSmoothTracking) return;
 
+    let isActive = true;
+
     const animate = (currentTime: number) => {
+      // Check if the effect is still active before continuing
+      if (!isActive) return;
+      
       // Throttle to target FPS
       if (currentTime - lastSmoothUpdateRef.current >= frameInterval) {
         const currentPosition = positionRef.current;
@@ -87,14 +92,19 @@ export function useMouseTracking(options: UseMouseTrackingOptions = {}): MouseSt
         lastSmoothUpdateRef.current = currentTime;
       }
       
-      animationFrameRef.current = requestAnimationFrame(animate);
+      // Only schedule next frame if still active
+      if (isActive) {
+        animationFrameRef.current = requestAnimationFrame(animate);
+      }
     };
 
     animationFrameRef.current = requestAnimationFrame(animate);
 
     return () => {
+      isActive = false;
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = 0;
       }
     };
   }, [enableSmoothTracking, frameInterval]);

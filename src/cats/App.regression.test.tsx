@@ -229,6 +229,12 @@ describe('App Regression Tests', () => {
       // Clean up any lingering timers and animation frames
       vi.clearAllTimers();
       vi.useRealTimers();
+      
+      // Cancel all pending animation frames to prevent lingering callbacks
+      const globalWithHelper = global as typeof global & { __cancelAllAnimationFrames?: () => void };
+      if (globalWithHelper.__cancelAllAnimationFrames) {
+        globalWithHelper.__cancelAllAnimationFrames();
+      }
     });
 
     it('should transition cat to sleeping state after 30 seconds of inactivity', async () => {
