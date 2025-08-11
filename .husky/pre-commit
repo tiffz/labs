@@ -10,3 +10,6 @@ fi
 
 # Run lint-staged for changed files (this is already optimized to only run on changed files)
 npx lint-staged
+
+# Run knip strictly to block dead code from entering the repo
+npm run knip

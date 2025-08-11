@@ -6,6 +6,9 @@ const config: KnipConfig = {
     'src/cats/index.html',
     'src/zines/index.html',
     'src/404.html',
+    // Include TS entry points explicitly so transitive deps are tracked
+    'src/cats/main.tsx',
+    'src/zines/main.tsx',
     'src/**/*.test.{ts,tsx}',
   ],
   project: [
@@ -13,14 +16,17 @@ const config: KnipConfig = {
     'public/**/*.js',
   ],
   ignore: [
-    // Main entry points that appear unused but are loaded by HTML
-    'src/cats/main.tsx',
-    'src/zines/main.tsx',
     // Public scripts loaded by HTML files
     'public/scripts/analytics.js',
     'public/scripts/shared.js',
     // Test setup files
     'src/shared/test/setupTests.ts',
+    // Deprecated/parked UI & systems (kept for future work but not referenced)
+    'src/cats/components/ui/CatFact.tsx',
+    'src/cats/components/ui/NotificationQueue.tsx',
+    'src/cats/hooks/useNotificationSystem.ts',
+    'src/cats/data/notificationData.ts',
+    'src/cats/services/CatPositionService.ts',
   ],
   ignoreDependencies: [
     // Dependencies used in HTML files or other non-TS contexts

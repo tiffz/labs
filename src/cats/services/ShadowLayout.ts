@@ -1,18 +1,18 @@
-export interface ScreenPositionLike {
+interface ScreenPositionLike {
   x: number;
   y: number; // bottom offset from game layer bottom, in px
   scale: number;
 }
 
 // Keep these in sync with CatInteractionManager shadow config
-export const SHADOW_BASE_WIDTH = 230; // px at scale=1 (wider, reads as body footprint)
-export const SHADOW_HEIGHT_RATIO = 0.24; // flatter ellipse for a grounded feel
-export const SHADOW_VERTICAL_OFFSET = 18; // push shadow lower so it is more visible beneath cat
-export const HORIZONTAL_OFFSET_PX = -6; // smaller left bias to reduce perceived left-shift
+const SHADOW_BASE_WIDTH = 230; // px at scale=1 (wider, reads as body footprint)
+const SHADOW_HEIGHT_RATIO = 0.24; // flatter ellipse for a grounded feel
+const SHADOW_VERTICAL_OFFSET = 18; // push shadow lower so it is more visible beneath cat
+const HORIZONTAL_OFFSET_PX = -6; // smaller left bias to reduce perceived left-shift
 export const SHADOW_OFFSET_X = 0; // no bias; center exactly under body
-export const MIN_SHADOW_DROP_PX = 8; // ensure a visible rim even at small scales
+const MIN_SHADOW_DROP_PX = 8; // ensure a visible rim even at small scales
 
-export interface ShadowLayout {
+interface ShadowLayout {
   left: number; // container left (px)
   bottom: number; // container bottom (px)
   width: number; // ellipse width (px)

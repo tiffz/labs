@@ -17,14 +17,14 @@ export interface ScreenPosition {
   scale: number; // Scale factor for perspective
 }
 
-export interface FloorDimensions {
+interface FloorDimensions {
   screenWidth: number;  // Floor width in screen pixels
   screenHeight: number; // Floor height in screen pixels
   worldWidth: number;   // Floor width in world units
   worldDepth: number;   // Floor depth in world units
 }
 
-export class CatCoordinateSystem {
+class CatCoordinateSystem {
   // World dimensions (logical units)
   private static readonly WORLD_WIDTH = 1600; // pixels - matches current world width
   private static readonly WORLD_DEPTH = 920;  // Extend logical range so clamp aligns better with floor extremes
