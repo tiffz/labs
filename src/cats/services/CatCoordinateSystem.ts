@@ -33,7 +33,7 @@ export class CatCoordinateSystem {
   // Perspective settings
   // Adjusted for larger Z-range
   private static readonly MIN_SCALE = 0.4;    // Smaller when far back
-  private static readonly MAX_SCALE = 1.4;    // Larger when close (slightly reduced for stability)
+  private static readonly MAX_SCALE = 1.55;    // Slightly larger when close to avoid looking too small at front
   private static readonly PERSPECTIVE_STRENGTH = 0.0; // Eliminate skew coupling X with Z for now
   
   // Boundaries  

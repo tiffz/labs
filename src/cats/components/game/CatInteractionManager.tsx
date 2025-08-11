@@ -422,14 +422,16 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
             const catLeftPx = Math.round(roundedCatLeft - catWidthPx / 2);
             // Use SVG foot anchor so feet meet baseline irrespective of extra viewBox padding
             const catHeightPx = Math.round(catWidthPx * (VIEWBOX_H / VIEWBOX_W));
-            const footGapPx = Math.round(FOOT_GAP_RATIO * catHeightPx);
+            const footGapPx = FOOT_GAP_RATIO * catHeightPx; // no rounding for invariance
             // Apply current jump delta (cat y above ground) to keep vertical movement visible
-            const jumpDeltaPx = Math.max(0, Math.round(catScreenPosition.y - groundScreen.y));
+            const jumpDeltaPx = Math.max(0, catScreenPosition.y - groundScreen.y); // no rounding for invariance
             // Ratio-based overlap (scale invariant) with back correction (eased)
             const k = SHADOW_HEIGHT > 0 ? footGapPx / SHADOW_HEIGHT : 0;
+            // Slight mass-center correction: the body’s visual center is a bit left of x due to tail
+            const BODY_CENTER_BIAS_PX = -8;
             const floorH = Math.max(1, catCoordinateSystem.getFloorDimensions().screenHeight);
             const t = groundScreen.y / floorH; // 1 at back → 0 at front
-            const zBackCorrectionPx = Math.round(60 * Math.pow(t, 2)); // ease so mid-arc is flatter
+            const zBackCorrectionPx = Math.round(50 * Math.pow(t, 2)); // slightly reduced to lift cat ~3-5px at back
             let catBottomPx = shadowLayout.bottom + (OVERLAP_RATIO - k) * SHADOW_HEIGHT + jumpDeltaPx - zBackCorrectionPx;
             // Ensure a minimum visible rim of the shadow at all times (avoid full coverage)
             const MIN_SHADOW_RIM_PX = 12;
@@ -450,9 +452,10 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
             // Keep shadow within floor bounds to ensure visibility at back
             const floorH2 = Math.max(1, catCoordinateSystem.getFloorDimensions().screenHeight);
             const adjustedShadowBottom = Math.max(0, Math.min(shadowLayout.bottom, floorH2 - SHADOW_HEIGHT));
-            // Center shadow under container center (constant pixel bias only)
+            // Center shadow under cat screen X (constant pixel bias only)
             const containerCenterPx = catLeftPx + catWidthPx / 2;
-            const adjustedShadowLeft = Math.round(containerCenterPx - SHADOW_WIDTH / 2 + SHADOW_OFFSET_X);
+            // Keep shadow horizontally aligned to the same rounded center as the cat container to avoid sub-pixel drift
+            const adjustedShadowLeft = Math.round(roundedCatLeft - SHADOW_WIDTH / 2 + SHADOW_OFFSET_X + BODY_CENTER_BIAS_PX);
             // Debug logging (throttled) to analyze drift behaviors end-to-end
             if (typeof window !== 'undefined' && (window as unknown as { __CAT_DEBUG__?: boolean }).__CAT_DEBUG__ !== false) {
               const now = performance.now();
