@@ -16,21 +16,23 @@ import CatInteractionManager from './components/game/CatInteractionManager';
 import Heart from './components/game/Heart';
 import Zzz from './components/game/Zzz';
 import WandToy from './components/game/WandToy';
+import World2D from './components/game/World2D';
 import DevPanel from './components/ui/DevPanel';
+import html2canvas from 'html2canvas';
 import CurrencyDisplay from './components/ui/CurrencyDisplay';
 import TabbedPanel from './components/panels/TabbedPanel';
 
 import { useCatSystem } from './hooks/useCatSystem';
+import { useCatPositionNew } from './hooks/useCatPositionNew';
+
+import { useEventsSystem } from './hooks/useEventsSystem';
 import { HeartSpawningService, type HeartVisuals } from './services/HeartSpawningService';
 import { useAchievementSystem } from './hooks/useAchievementSystem';
-import { useNotificationSystem } from './hooks/useNotificationSystem';
 import { useGameStateManager } from './hooks/useGameStateManager';
 import { GameEconomyService } from './services/GameEconomyService';
 import type { GameState } from './game/types';
-
-
-import NotificationQueue from './components/ui/NotificationQueue';
 import { ErrorReporter } from './components/ui/ErrorReporter';
+import { catCoordinateSystem } from './services/CatCoordinateSystem';
 
 
 import './styles/cats.css';
@@ -84,6 +86,29 @@ function App() {
   const gameStateManager = useGameStateManager({ initialState: initialGameState });
   const { gameState } = gameStateManager;
   
+  // Cat positioning for world-aware movement (new coordinate system)
+  const { renderData, pounceToPosition, moveCatTo, nudgeX, nudgeZ, jumpOnce, } = useCatPositionNew();
+  // Use world coordinates for camera follow to avoid feedback jitter
+  const catWorldPosition = renderData.worldCoordinates;
+  const catScreenPosition = renderData.screenPosition;
+  const catPosition = renderData.worldCoordinates; // For backwards compatibility
+  
+  // Events system for game interaction logging
+  const {
+    events,
+    addAchievementEvent,
+    logPetting,
+    logPouncing,
+    logHappy,
+    logNoseClick,
+    logEarClick,
+    logCheekPet,
+    clearEvents
+  } = useEventsSystem();
+  
+  // Initialize cat's rest and world position on mount
+  // Position initialization is now handled automatically by the new coordinate system
+  
 
   const { love, treats, jobLevels, jobExperience, jobInterviews, thingQuantities, spentMerits } = gameState;
 
@@ -94,21 +119,24 @@ function App() {
   const [trackableHeartId, setTrackableHeartId] = useState<number | null>(null);
   // Energy is now managed by useCatSystem only
   const [isDevMode, setIsDevMode] = useState(false);
-  const [wandInitialPosition, setWandInitialPosition] = useState({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
+  const [playerControlMode, setPlayerControlMode] = useState(false);
+  // Removed: wandInitialPosition was unused
   
   // Restore sleep/drowsy state for proper Z spawning and cat behavior
   const [isSleeping, setIsSleeping] = useState(false);
   const [isDrowsy, setIsDrowsy] = useState(false);
 
   // Systems
-  const { notificationQueue, setNotificationQueue, addNotificationToQueue } = useNotificationSystem(gameState);
+  // Notification system removed - replaced with Events system
   const { 
     earnedMerits, 
     availableMerits, 
     earnedAwards,
     availableAwards,
     trackSpecialAction 
-  } = useAchievementSystem(gameState, gameStateManager.updateState, addNotificationToQueue);
+  } = useAchievementSystem(gameState, gameStateManager.updateState, (notification: { title: string; message: string; type?: 'merit' | 'general' }) => {
+    addAchievementEvent(notification.title, notification.message);
+  });
   
   // Heart spawning service
   const heartSpawningService = useMemo(() => {
@@ -205,11 +233,18 @@ function App() {
     currentTreats: treats, // Pass global state
     economyData: economy,  // Pass economy data for love calculations
     
+    // Cat state flags
+    isSleeping,
+    isDrowsy,
+    
     // Stable callback functions
     onLoveGained,
     onHeartSpawned,
     onTrackableHeartSet,
     onTreatsGained,
+    
+    // Cat movement function
+    pounceToPosition,
   });
   
 
@@ -304,10 +339,9 @@ function App() {
   }, [mouseState, resetInactivityTimer]);
 
   // Use ref for cat position to avoid triggering re-renders
-  const catPositionRef = useRef<{x: number, y: number} | null>(null);
+  const catPositionRef = useRef<{x: number, y: number, z?: number} | null>(null);
 
-  const handleCatPositionUpdate = useStableCallback<(position: {x: number, y: number}) => void>((position: {x: number, y: number}) => {
-
+  const handleCatPositionUpdate = useStableCallback<(position: {x: number, y: number, z?: number}) => void>((position: {x: number, y: number, z?: number}) => {
     catPositionRef.current = position;
   });
 
@@ -320,7 +354,18 @@ function App() {
       if (zzzTimeoutRef.current) clearTimeout(zzzTimeoutRef.current);
       zzzTimeoutRef.current = window.setTimeout(() => {
         // Use cat position if available, fallback to screen center
-        const spawnX = catPositionRef.current?.x || window.innerWidth / 2;
+        // Adjust for camera panning: Zzz should be positioned within the world content's coordinates
+        // Use computed style to read current camera translateX
+        const contentEl = document.querySelector('.world-content') as HTMLElement | null;
+        const transform = contentEl ? getComputedStyle(contentEl).transform : '';
+        let cameraOffset = 0;
+        if (transform && transform !== 'none') {
+          const m = transform.match(/matrix\([^,]+, [^,]+, [^,]+, [^,]+, ([^,]+), ([^)]+)\)/);
+          if (m) {
+            cameraOffset = parseFloat(m[1]) * -1; // matrix translates are positive left; our transform is negative
+          }
+        }
+        const spawnX = (catPositionRef.current?.x || window.innerWidth / 2) - cameraOffset;
         const spawnY = (catPositionRef.current?.y || window.innerHeight / 2) - 40; // Above cat's head
 
         setZzzs((currentZzzs) => [...currentZzzs, {
@@ -343,22 +388,69 @@ function App() {
     };
   }, [isSleeping]);
 
-  // Escape key handler to exit wand mode
+  // Escape key handler for wand/player modes
   useEffect(() => {
-    if (!wandMode) return; // Only add listener when in wand mode
-    
     const handleEscapeKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        catActionsRef.current.toggleWandMode();
+        if (playerControlMode) {
+          setPlayerControlMode(false);
+        } else if (wandMode) {
+          catActionsRef.current.toggleWandMode();
+        }
       }
     };
-
     document.addEventListener('keydown', handleEscapeKey);
-    
-    return () => {
-      document.removeEventListener('keydown', handleEscapeKey);
+    return () => document.removeEventListener('keydown', handleEscapeKey);
+  }, [playerControlMode, wandMode]);
+
+  // Player control keyboard handler
+  useEffect(() => {
+    if (!playerControlMode) return;
+    const held = { left: false, right: false, up: false, down: false };
+    const onDown = (e: KeyboardEvent) => {
+      const prev = { ...held };
+      if (e.key === 'ArrowLeft') held.left = true;
+      if (e.key === 'ArrowRight') held.right = true;
+      if (e.key === 'ArrowUp') held.up = true;
+      if (e.key === 'ArrowDown') held.down = true;
+      if (e.code === 'Space') jumpOnce();
+      if (prev.left !== held.left || prev.right !== held.right || prev.up !== held.up || prev.down !== held.down) {
+        // Mark activity to prevent sleep while running
+        resetInactivityTimer();
+      }
     };
-  }, [wandMode]); // Remove catActions dependency
+    const onUp = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') held.left = false;
+      if (e.key === 'ArrowRight') held.right = false;
+      if (e.key === 'ArrowUp') held.up = false;
+      if (e.key === 'ArrowDown') held.down = false;
+    };
+    // Continuous RAF-based movement
+    let raf: number | null = null;
+    let last = performance.now();
+    const step = () => {
+      const now = performance.now();
+      const dt = Math.min(0.033, (now - last) / 1000);
+      last = now;
+      // Disable lateral motion while jumping
+      const jumping = (document as unknown as { isCatJumping?: boolean }).isCatJumping === true;
+      if (!jumping) {
+        const dx = (held.right ? 1 : 0) - (held.left ? 1 : 0);
+        const dz = (held.down ? 1 : 0) - (held.up ? 1 : 0);
+        if (dx !== 0) nudgeX(dx * 260 * dt);
+        if (dz !== 0) nudgeZ(dz * 220 * dt);
+      }
+      raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    window.addEventListener('keydown', onDown);
+    window.addEventListener('keyup', onUp);
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+      window.removeEventListener('keydown', onDown);
+      window.removeEventListener('keyup', onUp);
+    };
+  }, [playerControlMode, nudgeX, nudgeZ, jumpOnce, resetInactivityTimer]);
 
   // Global key handler for wand mode toggle
   useEffect(() => {
@@ -450,55 +542,35 @@ function App() {
 
 
 
-  // Track stable timestamps for notifications
-  const timestampMapRef = useRef<Map<string, number>>(new Map());
-
-  const handleNotificationDismiss = (notificationId: string) => {
-    setNotificationQueue(prev => prev.filter(n => n.id !== notificationId));
-    // Clean up timestamp map
-    timestampMapRef.current.delete(notificationId);
-  };
-  
-  // Memoize notifications to prevent infinite re-renders
-  const memoizedNotifications = useMemo(() => 
-    notificationQueue.map((n) => {
-      // Get or create a stable timestamp for this notification ID
-      if (!timestampMapRef.current.has(n.id)) {
-        timestampMapRef.current.set(n.id, Date.now() + Math.random());
-      }
-      return {
-        id: n.id,
-        notification: n,
-        timestamp: timestampMapRef.current.get(n.id)!,
-      };
-    }), [notificationQueue]
-  );
+  // Notification system completely removed - replaced with Events system
 
   return (
-    <div className="game-container">
-
-      <NotificationQueue 
-        notifications={memoizedNotifications}
-        onDismiss={handleNotificationDismiss} 
-      />
-
-              <ErrorReporter />
-
-      {isDevMode && (
-        <DevPanel
-          energy={catEnergy}
-          pounceConfidence={pounceConfidence}
-          rapidClickCount={0}
-          lastVelocity={lastVelocity}
-          proximityMultiplier={proximityMultiplier}
-          lovePerClick={baseLovePerInteraction}
-          movementNovelty={movementNovelty}
-          clickExcitement={clickExcitement}
-          onTimeSkip={handleTimeSkip}
-          onGiveTreats={giveDebugTreats}
-          onGiveLove={giveDebugLove}
+    <div className="game-layout">
+      {/* Currency Display - Fixed outside world */}
+      <div className="currency-overlay">
+        <CurrencyDisplay 
+          love={love} 
+          treats={treats} 
+          economy={economy} 
         />
-      )}
+      </div>
+
+      {/* World Viewport */}
+      <div className="world-viewport-container">
+        <World2D 
+          catWorldPosition={catWorldPosition} 
+          enableCameraFollow={true}
+          wandMode={wandMode}
+          onWandToggle={catActions.toggleWandMode}
+          playerControlMode={playerControlMode}
+          onToggleRunMode={() => setPlayerControlMode(v => !v)}
+        >
+          <ErrorReporter />
+
+          {/* UI Overlays */}
+          <div className="ui-overlay-container" />
+
+      {/* Animated Elements Portal */}
       {ReactDOM.createPortal(
         <>
           {hearts.map((heart) => (
@@ -512,67 +584,145 @@ function App() {
             <Zzz key={zzz.id} {...zzz} onAnimationEnd={() => removeZzz(zzz.id)} />
           ))}
           {wandMode && (
-            <WandToy
-              isShaking={isShaking}
-              initialPosition={wandInitialPosition}
-              mouseState={mouseState}
-            />
+              <WandToy
+                onWandClick={() => catActions.handleWandClick({ x: 0, y: 0 })}
+                initialPosition={{ x: window.innerWidth / 2, y: window.innerHeight / 2 }}
+                mouseState={mouseState}
+              />
           )}
         </>,
         document.getElementById('heart-container')!
       )}
-      <div className="main-panel">
-        <div className="stats-container">
-          <CurrencyDisplay 
-            love={love} 
-            treats={treats} 
-            economy={economy} 
-          />
-        </div>
-        <CatInteractionManager
-          economy={economy}
-          love={love}
-          catEnergy={catEnergy}
-          wandMode={wandMode}
-          isPouncing={isPouncing}
-          isPlaying={isPlaying}
-          isShaking={isShaking}
-          isEarWiggling={isEarWiggling}
-          isHappyPlaying={isHappyPlaying}
-          pounceTarget={pounceTarget}
-          catActions={catActions}
-          trackableHeartId={trackableHeartId}
-          hearts={hearts}
-          onLoveGained={onLoveGained}
-          onWandInitialPositionSet={setWandInitialPosition}
-          onCatPositionUpdate={handleCatPositionUpdate}
-          trackSpecialAction={trackSpecialAction}
-          heartSpawningService={heartSpawningService}
-          isSleeping={isSleeping}
-          isDrowsy={isDrowsy}
-          mouseState={mouseState}
+
+      {/* Cat in the 2D World */}
+      {(() => {
+        // Use new coordinate system - no manual perspective calculation needed
+        return (
+          <CatInteractionManager
+        economy={economy}
+        catEnergy={catEnergy}
+        wandMode={wandMode}
+        isPouncing={isPouncing}
+        isPlaying={isPlaying}
+        isShaking={isShaking}
+        isEarWiggling={isEarWiggling}
+        isHappyPlaying={isHappyPlaying}
+        pounceTarget={pounceTarget}
+        pounceConfidence={pounceConfidence}
+        catActions={catActions}
+        trackableHeartId={trackableHeartId}
+        hearts={hearts}
+        onLoveGained={onLoveGained}
+        onCatPositionUpdate={handleCatPositionUpdate}
+        trackSpecialAction={trackSpecialAction}
+        heartSpawningService={heartSpawningService}
+        isSleeping={isSleeping}
+        isDrowsy={isDrowsy}
+        mouseState={mouseState}
+        catWorldCoords={catPosition}
+        shadowCoords={(() => {
+          const shadowBase = catCoordinateSystem.catToScreen({ x: catPosition.x, y: 0, z: catPosition.z });
+          // Use world X; keep projected Y/scale so shadow sits on the floor depth for this Z
+          return { x: catPosition.x, y: shadowBase.y, scale: shadowBase.scale * 0.8 };
+        })()}
+        eventLoggers={{
+          logPetting,
+          logPouncing,
+          logHappy,
+          logNoseClick,
+          logEarClick,
+          logCheekPet
+        }}
+      />
+        );
+      })()}
+        </World2D>
+      </div>
+
+      {/* Side Panel - Fixed outside world viewport */}
+      <div className="side-panel-fixed">
+        <TabbedPanel
+          jobLevels={jobLevels}
+          jobExperience={jobExperience}
+          jobInterviews={jobInterviews}
+          onPromote={handlePromotion}
+          onTrain={handleTraining}
+          onInterview={handleInterview}
+          unlockedJobs={gameState.unlockedJobs}
+          thingQuantities={thingQuantities}
+          onPurchaseThing={handlePurchaseThing}
+          spentMerits={spentMerits}
+          onPurchaseUpgrade={handlePurchaseUpgrade}
+          earnedMerits={earnedMerits}
+          availableMerits={availableMerits}
+          earnedAwards={earnedAwards}
+          availableAwards={availableAwards}
+          specialActions={gameState.specialActions}
+          currentLove={love}
+          currentTreats={treats}
+          gameEvents={events}
+          onClearEvents={clearEvents}
         />
       </div>
-      <TabbedPanel
-        jobLevels={jobLevels}
-        jobExperience={jobExperience}
-        jobInterviews={jobInterviews}
-        onPromote={handlePromotion}
-        onTrain={handleTraining}
-        onInterview={handleInterview}
-        unlockedJobs={gameState.unlockedJobs}
-        thingQuantities={thingQuantities}
-        onPurchaseThing={handlePurchaseThing}
-        spentMerits={spentMerits}
-        onPurchaseUpgrade={handlePurchaseUpgrade}
-        earnedMerits={earnedMerits}
-        availableMerits={availableMerits}
-        earnedAwards={earnedAwards}
-        availableAwards={availableAwards}
-        specialActions={gameState.specialActions}
-        currentLove={love}
-        currentTreats={treats}
-      />
+
+      {/* Dev Panel - Fixed to viewport, outside world */}
+      {isDevMode && (
+        <div className="dev-panel-overlay">
+          <DevPanel
+            energy={catEnergy}
+            pounceConfidence={pounceConfidence}
+            rapidClickCount={0}
+            lastVelocity={lastVelocity}
+            proximityMultiplier={proximityMultiplier}
+            lovePerClick={baseLovePerInteraction}
+            movementNovelty={movementNovelty}
+            clickExcitement={clickExcitement}
+            onTimeSkip={handleTimeSkip}
+            onGiveTreats={giveDebugTreats}
+            onGiveLove={giveDebugLove}
+            catWorldCoords={catPosition}
+            catScreenCoords={catScreenPosition}
+            shadowCoords={(() => {
+              const shadowBase = catCoordinateSystem.catToScreen({ x: catPosition.x, y: 0, z: catPosition.z });
+              return { x: catPosition.x, y: shadowBase.y, scale: shadowBase.scale * 0.8 };
+            })()}
+            onMoveCat={(x, y, z) => {
+              // Use direct move for dev controls to avoid arc/teleport
+              console.log(`[CAT-DEBUG] onMoveCat called: x=${x}, y=${y}, z=${z}`);
+              moveCatTo({ x, y, z }, 200);
+            }}
+            onNudgeY={(delta) => {
+              const base = catPosition.y;
+              // Positive delta means visually up → increase world Y
+              moveCatTo({ y: base + Math.sign(delta) * Math.abs(delta) }, 120);
+            }}
+            onJump={() => {
+              document.dispatchEvent(new CustomEvent('cat-happy-jump'));
+            }}
+            onSendSnapshot={async () => {
+              if (!import.meta.env.DEV) return;
+              try {
+                const root = document.body as HTMLElement;
+                const canvas = await html2canvas(root, { useCORS: true, logging: false, backgroundColor: null, windowWidth: window.innerWidth, windowHeight: window.innerHeight });
+                const blob: Blob | null = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+                const form = new FormData();
+                form.append('meta', new Blob([JSON.stringify({
+                  timestamp: new Date().toISOString(),
+                  gameState,
+                  catWorldCoords: catPosition,
+                  catScreenCoords: catWorldPosition,
+                  economy,
+                })], { type: 'application/json' }), 'meta.json');
+                if (blob) form.append('screenshot', blob, 'screenshot.png');
+                await fetch('/__debug_snapshot', { method: 'POST', body: form });
+                console.log('[CAT-DEBUG] Snapshot sent');
+              } catch (e) {
+                console.error('Snapshot failed', e);
+              }
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }

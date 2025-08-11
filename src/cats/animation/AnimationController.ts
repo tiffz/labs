@@ -32,6 +32,7 @@ export interface AnimationEvents {
   // Visual effect callbacks
   onHeartSpawned: (position: { x: number; y: number }) => void;
   onTrackableHeartSet: (heartId: number | null) => void;
+  onPounceComplete?: () => void; // new optional hook for event logs
 }
 
 /**
@@ -106,7 +107,11 @@ export class CatAnimationController {
     wandPosition: { x: number; y: number };
     catPosition: { x: number; y: number };
   }) {
-    if (this.state.isPouncing) return; // Don't interrupt existing pounce
+    // debug removed
+    if (this.state.isPouncing) {
+      // debug removed
+      return; // Don't interrupt existing pounce
+    }
 
     // Store wand position for heart spawning
     this.state.lastWandPosition = pounceData.wandPosition;
@@ -122,6 +127,7 @@ export class CatAnimationController {
     this.state.pounceIntensity = pounceData.intensity;
     this.state.excitementLevel = Math.min(3, this.state.excitementLevel + pounceData.intensity);
     
+    // debug removed
     this.startPounceAnimation();
     this.maybeStartEarWiggle();
   }
@@ -132,7 +138,7 @@ export class CatAnimationController {
   onPlayingTriggered(playData: { intensity: number; duration: number }) {
     this.state.playingIntensity = playData.intensity;
     this.startPlayingAnimation(playData.duration);
-    this.maybeStartShakeAnimation();
+    this.startShakeAnimation();
     this.maybeShowHappyFace();
   }
 
@@ -140,7 +146,7 @@ export class CatAnimationController {
    * Handle wand clicks (always shake for feedback)
    */
   onWandClicked() {
-    this.maybeStartShakeAnimation();
+    this.startShakeAnimation();
   }
 
   /**
@@ -180,6 +186,8 @@ export class CatAnimationController {
       this.state.currentAnimationPhase = 'idle';
       this.state.animationProgress = 0;
       this.stopAnimationLoop();
+      // Notify pounce completion for logging
+      this.events.onPounceComplete?.();
     }, CatAnimationController.ANIMATION_DURATIONS.RETURN_TO_CENTER);
   }
 
@@ -201,10 +209,13 @@ export class CatAnimationController {
     }
   }
 
-  private maybeStartShakeAnimation() {
+  private startShakeAnimation() {
+    // debug removed
     this.state.isShaking = true;
+    // debug removed
     
     this.scheduleTimer(() => {
+      // debug removed
       this.state.isShaking = false;
     }, CatAnimationController.ANIMATION_DURATIONS.SHAKE);
   }

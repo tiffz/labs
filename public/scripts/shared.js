@@ -1,5 +1,15 @@
 // Shared bubble interaction functionality
 
+// Material Icons font loading detection
+document.fonts.ready.then(function() {
+  document.documentElement.classList.add('fonts-loaded');
+});
+
+// Fallback for older browsers
+setTimeout(function() {
+  document.documentElement.classList.add('fonts-loaded');
+}, 1000);
+
 document.addEventListener('DOMContentLoaded', function() {
   const bubbles = document.querySelectorAll('.bubble');
   

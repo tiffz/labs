@@ -1,9 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 interface DevPanelProps {
   energy: number;
   pounceConfidence: number;
-  rapidClickCount: number;
   lastVelocity: number;
   proximityMultiplier: number;
   lovePerClick: number;
@@ -12,12 +11,20 @@ interface DevPanelProps {
   onTimeSkip: () => void;
   onGiveTreats: () => void;
   onGiveLove: () => void;
+  // Cat position data
+  catWorldCoords?: { x: number; y: number; z: number };
+  catScreenCoords?: { x: number; y: number; scale: number };
+  shadowCoords?: { x: number; y: number; scale: number };
+  onMoveCat?: (x: number, y: number, z: number) => void;
+  onNudgeY?: (deltaY: number) => void;
+  onJump?: () => void;
+  // Dev-only snapshot sender (provided in dev)
+  onSendSnapshot?: () => void;
 }
 
 const DevPanel: React.FC<DevPanelProps> = ({
   energy,
   pounceConfidence,
-  rapidClickCount,
   lastVelocity,
   proximityMultiplier,
   lovePerClick,
@@ -26,50 +33,141 @@ const DevPanel: React.FC<DevPanelProps> = ({
   onTimeSkip,
   onGiveTreats,
   onGiveLove,
+  catWorldCoords,
+  catScreenCoords,
+  shadowCoords,
+  onMoveCat,
+  onNudgeY,
+  onJump,
+  onSendSnapshot,
 }) => {
+  const [activeTab, setActiveTab] = useState<'stats' | 'position' | 'controls'>('stats');
+
   return (
-    <div className="dev-panel">
-      <h3>Dev Info</h3>
-      
-      <div className="dev-section">
-        <h4>Interaction & Pouncing</h4>
-        <p>
-          <strong>Energy:</strong> {energy.toFixed(2)} / 100
-        </p>
-        <p>
-          <strong>Love per Click:</strong> {lovePerClick}
-        </p>
-        <p>
-          <strong>Pounce Confidence:</strong> {pounceConfidence.toFixed(2)}
-        </p>
-        <p>
-          <strong>Cursor Velocity:</strong> {lastVelocity.toFixed(2)}
-        </p>
-        <p>
-          <strong>Proximity Multiplier:</strong> {proximityMultiplier.toFixed(2)}x
-        </p>
-        <p>
-          <strong>Movement Novelty:</strong> {movementNovelty.toFixed(2)}
-        </p>
-        <p>
-          <strong>Click Excitement:</strong> {clickExcitement.toFixed(2)}
-        </p>
-        <p>
-          <strong>Rapid Clicks:</strong> {rapidClickCount}
-        </p>
+    <div className="dev-panel-compact">
+      <div className="dev-panel-header">
+        <span className="dev-panel-title">🔧 Dev</span>
+        <div className="dev-panel-tabs">
+          <button 
+            className={`dev-tab ${activeTab === 'stats' ? 'active' : ''}`}
+            onClick={() => setActiveTab('stats')}
+          >
+            Stats
+          </button>
+          <button 
+            className={`dev-tab ${activeTab === 'position' ? 'active' : ''}`}
+            onClick={() => setActiveTab('position')}
+          >
+            Pos
+          </button>
+          <button 
+            className={`dev-tab ${activeTab === 'controls' ? 'active' : ''}`}
+            onClick={() => setActiveTab('controls')}
+          >
+            Ctrl
+          </button>
+        </div>
+        {import.meta.env.DEV && onSendSnapshot && (
+          <button className="compact-button" style={{ marginLeft: 'auto' }} onClick={onSendSnapshot}>
+            🧪 Send Snapshot
+          </button>
+        )}
       </div>
 
-      <div className="dev-section">
-        <h4>Debug Controls</h4>
-        <button className="dev-button" onClick={onTimeSkip}>
-          Skip Forward 1 Day
-        </button>
-        <button className="dev-button" onClick={onGiveTreats}>
-          Give 1000 Treats
-        </button>
-        <button className="dev-button" onClick={onGiveLove}>
-          Give 1000 Love
-        </button>
+      <div className="dev-panel-content">
+        {activeTab === 'stats' && (
+          <div className="dev-tab-content">
+            <div className="compact-stats">
+              <div className="stat-row">
+                <span>Energy:</span> <span>{energy.toFixed(0)}/100</span>
+              </div>
+              <div className="stat-row">
+                <span>Love/Click:</span> <span>{lovePerClick}</span>
+              </div>
+              <div className="stat-row">
+                <span>Pounce:</span> <span>{pounceConfidence.toFixed(1)}</span>
+              </div>
+              <div className="stat-row">
+                <span>Velocity:</span> <span>{lastVelocity.toFixed(1)}</span>
+              </div>
+              <div className="stat-row">
+                <span>Proximity:</span> <span>{proximityMultiplier.toFixed(1)}x</span>
+              </div>
+              <div className="stat-row">
+                <span>Movement:</span> <span>{movementNovelty.toFixed(1)}</span>
+              </div>
+              <div className="stat-row">
+                <span>Excitement:</span> <span>{clickExcitement.toFixed(1)}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'controls' && (
+          <div className="dev-tab-content">
+            <div className="control-grid">
+              <button className="compact-button" onClick={onTimeSkip}>
+                ⏩ Skip Day
+              </button>
+              <button className="compact-button" onClick={onGiveTreats}>
+                🐟 +1000 Treats
+              </button>
+              <button className="compact-button" onClick={onGiveLove}>
+                ❤️ +1000 Love
+              </button>
+              {import.meta.env.DEV && onSendSnapshot && (
+                <button className="compact-button" onClick={onSendSnapshot}>
+                  🧪 Send Snapshot
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'position' && catWorldCoords && catScreenCoords && shadowCoords && (
+          <div className="dev-tab-content">
+            <div className="position-compact">
+              <div className="coord-compact">
+                <div className="coord-label">Cat (3D):</div>
+                <div className="coord-values">
+                  x:{catWorldCoords.x.toFixed(0)} y:{catWorldCoords.y.toFixed(0)} z:{catWorldCoords.z.toFixed(0)}
+                </div>
+              </div>
+              <div className="coord-compact">
+                <div className="coord-label">Cat (Pixels):</div>
+                <div className="coord-values">
+                  x:{catScreenCoords.x.toFixed(0)} y:{catScreenCoords.y.toFixed(0)} @{catScreenCoords.scale.toFixed(2)}x
+                </div>
+              </div>
+              <div className="coord-compact">
+                <div className="coord-label">Shadow (Pixels):</div>
+                <div className="coord-values">
+                  x:{shadowCoords.x.toFixed(0)} y:{shadowCoords.y.toFixed(0)} @{shadowCoords.scale.toFixed(2)}x
+                </div>
+              </div>
+            </div>
+            
+            {onMoveCat && (
+              <div className="movement-compact">
+                <div className="move-controls">
+                  <button className="move-btn" onClick={() => onMoveCat(catWorldCoords.x - 50, catWorldCoords.y, catWorldCoords.z)}>←</button>
+                  <button className="move-btn" onClick={() => onMoveCat(catWorldCoords.x + 50, catWorldCoords.y, catWorldCoords.z)}>→</button>
+                  <button className="move-btn" onClick={() => onMoveCat(catWorldCoords.x, catWorldCoords.y, Math.max(0, catWorldCoords.z - 30))}>↑ Far</button>
+                  <button className="move-btn" onClick={() => onMoveCat(catWorldCoords.x, catWorldCoords.y, Math.min(1000, catWorldCoords.z + 30))}>↓ Near</button>
+                </div>
+                <div className="action-controls">
+                  <button className="compact-button" onClick={() => onJump && onJump()}>🐱 Jump</button>
+                  <button className="compact-button" onClick={() => onNudgeY && onNudgeY(+10)}>Up</button>
+                  <button className="compact-button" onClick={() => onNudgeY && onNudgeY(-10)}>Down</button>
+                  <button className="compact-button" onClick={() => onMoveCat(560, 0, 400)}>
+                    🏠 Reset
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
       </div>
     </div>
   );

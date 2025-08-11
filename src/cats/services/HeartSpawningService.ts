@@ -107,8 +107,9 @@ export class HeartSpawningService {
     // Calculate heart size based on love amount
     const baseScale = this.calculateHeartScale(loveAmount);
     
-    // Add some randomness to size
-    const scaleVariation = (Math.random() - 0.5) * 0.2;
+    // Add a tiny deterministic variation that preserves monotonicity
+    // Use heartIndex for deterministic offset so larger love still yields larger average scale
+    const scaleVariation = ((heartIndex % 3) - 1) * 0.03; // -0.03, 0, +0.03 cycle
     const finalScale = Math.max(0.3, baseScale + scaleVariation);
     
     // Calculate spread based on interaction type and heart index

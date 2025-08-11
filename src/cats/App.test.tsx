@@ -147,7 +147,7 @@ describe('App Component - Wand Toy Mode', () => {
     it('toggles wand mode when wand button is clicked', () => {
       render(<App />);
       
-      const wandButton = screen.getByText('Play with wand');
+      const wandButton = screen.getByTitle('Play with wand');
       
       // Should start in normal mode
       expect(wandButton).toBeInTheDocument();
@@ -162,7 +162,7 @@ describe('App Component - Wand Toy Mode', () => {
     it('calls toggleWandMode action when button is clicked', () => {
       render(<App />);
       
-      const wandButton = screen.getByText('Play with wand');
+      const wandButton = screen.getByTitle('Play with wand');
       fireEvent.click(wandButton);
       
       expect(mockCatSystemActions.toggleWandMode).toHaveBeenCalledOnce();
@@ -176,8 +176,8 @@ describe('App Component - Wand Toy Mode', () => {
       render(<App />);
       
       // Should show "Put away wand" button
-      expect(screen.getByText('Put away wand')).toBeInTheDocument();
-      expect(screen.queryByText('Play with wand')).not.toBeInTheDocument();
+      expect(screen.getByTitle('Put away wand')).toBeInTheDocument();
+      expect(screen.queryByTitle('Play with wand')).not.toBeInTheDocument();
     });
 
     it('exits wand mode when Escape key is pressed', () => {
@@ -381,7 +381,7 @@ describe('App Component - Wand Toy Mode', () => {
       // Multiple mode toggles should work without errors
       expect(() => {
         // Enable wand mode
-        const wandButton = screen.getByText('Play with wand');
+        const wandButton = screen.getByTitle('Play with wand');
         fireEvent.click(wandButton);
         
         // Let some time pass
@@ -491,7 +491,7 @@ describe('App Component - Wand Toy Mode', () => {
       render(<App />);
       
       expect(() => {
-        const wandButton = screen.getByText('Play with wand');
+        const wandButton = screen.getByTitle('Play with wand');
         // Rapid toggling
         for (let i = 0; i < 5; i++) {
           fireEvent.click(wandButton);
@@ -523,7 +523,7 @@ describe('App Component - Wand Toy Mode', () => {
         }
         
         // Toggle wand mode
-        const wandButton = screen.getByText('Put away wand');
+        const wandButton = screen.getByTitle('Put away wand');
         fireEvent.click(wandButton);
       }).not.toThrow();
       

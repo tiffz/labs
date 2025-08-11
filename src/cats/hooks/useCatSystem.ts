@@ -13,6 +13,7 @@ import type { CatGameState, CatGameEvents } from '../game/GameState';
 import type { AnimationEvents } from '../animation/AnimationController';
 import { calculateFinalLoveGain } from '../systems/lovePerInteractionSystem';
 import type { EconomyCalculations } from '../services/GameEconomyService';
+import { catCoordinateSystem } from '../services/CatCoordinateSystem';
 
 interface CatSystemProps {
   // Cat-specific initial state
@@ -21,6 +22,10 @@ interface CatSystemProps {
   // Global game state (passed in, not managed here)
   currentLove?: number;
   currentTreats?: number;
+  
+  // Cat state flags  
+  isSleeping?: boolean;
+  isDrowsy?: boolean;
   
   // Economy data for love calculations
   economyData?: EconomyCalculations;
@@ -33,17 +38,29 @@ interface CatSystemProps {
   // Animation callbacks
   onHeartSpawned?: (position: { x: number; y: number }) => void;
   onTrackableHeartSet?: (heartId: number | null) => void;
+  
+  // Cat movement callback
+  pounceToPosition?: (
+    targetWorldX: number,
+    targetY: number,
+    targetZ: number,
+    maxSpeed?: number,
+    onComplete?: () => void
+  ) => void;
 }
 
 export const useCatSystem = ({
   initialEnergy = 100,
   currentLove = 0,
   currentTreats = 0,
+  isSleeping = false,
+  isDrowsy = false,
   economyData,
   onLoveGained,
   onTreatsGained,
   onHeartSpawned,
   onTrackableHeartSet,
+  pounceToPosition,
 }: CatSystemProps = {}) => {
   
   // Store economy data in a ref to avoid recreating the system when it changes
@@ -86,8 +103,61 @@ export const useCatSystem = ({
     // Cat game events that trigger animations and global systems
     const catGameEvents: CatGameEvents = {
       onPounceTriggered: (pounceData) => {
-  
+        // Don't pounce if cat is sleeping or drowsy
+        if (isSleeping || isDrowsy) {
+          console.log('Pounce blocked - cat is sleeping or drowsy');
+          return;
+        }
+        
         animationControllerRef.current?.onPounceTriggered(pounceData);
+        
+        // PROPER pouncing - chase the wand toy
+        const wandScreenX = pounceData.wandPosition.x;
+        const wandScreenY = pounceData.wandPosition.y;
+        console.log('Pounce triggered! Wand at screen:', wandScreenX, wandScreenY, 'Cat energy:', pounceData.catEnergy);
+        
+        // Convert wand screen coordinates to world coordinates properly
+        const wandWorldCoords = catCoordinateSystem.screenPositionToWorldCoordinates(
+          wandScreenX,
+          wandScreenY,
+          200 // Target Z depth for pounce
+        );
+        
+        console.log('Wand conversion:', { 
+          screen: { x: wandScreenX, y: wandScreenY }, 
+          world: wandWorldCoords 
+        });
+        
+        // Calculate pounce excitement - higher energy = more dramatic pounce
+        const energy = pounceData.catEnergy || 50;
+        const excitement = Math.min(1, energy / 100);
+        
+        // Dynamic pounce parameters based on excitement
+        const pounceHeight = 30 + excitement * 30; // 30-60 world units
+        const pounceZ = 200 + excitement * 50;      // 200-250 forward movement (reasonable range)
+        const pounceDuration = 800 - excitement * 300; // 500-800ms (faster when excited)
+        
+        if (pounceToPosition) {
+          pounceToPosition(
+            wandWorldCoords.x,      // Actually move toward the wand X position
+            pounceZ,         // Dynamic forward movement 
+            pounceHeight,    // Dynamic jump height
+            pounceDuration,  // Dynamic speed
+            () => {
+              console.log('Pounce toward wand completed at:', wandWorldCoords.x);
+              // After pounce, gradually return to rest position after a delay
+              setTimeout(() => {
+                if (pounceToPosition) {
+                  const restX = 560; // Default rest position
+                  const restZ = 180; // Default rest depth (more moderate in new range)
+                  pounceToPosition(restX, restZ, 0, 1500, () => {
+                    console.log('Return to rest completed');
+                  });
+                }
+              }, 800 + Math.random() * 1200); // Random delay before returning
+            }
+          );
+        }
         
         // Calculate love reward using the base love per interaction system
         if (economyDataRef.current) {
@@ -140,6 +210,10 @@ export const useCatSystem = ({
       onTrackableHeartSet: (heartId) => {
         onTrackableHeartSet?.(heartId);
       },
+      onPounceComplete: () => {
+        const evt = new CustomEvent('cat-pounce-complete');
+        document.dispatchEvent(evt);
+      }
     };
 
     // Create cat game state manager (only manages cat-specific state)
@@ -160,7 +234,10 @@ export const useCatSystem = ({
       // Cleanup
       animationControllerRef.current?.cleanup();
     };
-  }, [onHeartSpawned, onLoveGained, onTrackableHeartSet, onTreatsGained]); // Clean initialization - no energy or economy dependency
+  // Clean initialization effect - we intentionally avoid isSleeping/isDrowsy/pounceToPosition
+  // to prevent re-creating the entire system on prop changes; those are handled via refs/logic inside
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onHeartSpawned, onLoveGained, onTrackableHeartSet, onTreatsGained]);
 
   // Separate effect: Sync energy when it changes
   useEffect(() => {

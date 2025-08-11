@@ -2,6 +2,26 @@
 
 This document outlines the vision, architecture, and implementation details for the "Cat Clicker" micro-app. It serves as a reference for future development and ensures that Gemini can easily understand and contribute to the project.
 
+## 🎮 **Recent Major Update: 2D World Environment**
+
+The game has undergone a **massive architectural transformation** from a simple click interface to a fully immersive 2D side-view world environment inspired by "Night in the Woods."
+
+### **New World Features**
+
+- **📐 Fixed-size 2D world** with horizontal camera panning
+- **🏠 Detailed house interior** with furniture, windows, door, and multiple rooms
+- **🐱 3D-positioned cat** with perspective scaling and realistic shadow system
+- **🎥 Camera controls** with arrow buttons and auto-follow during interactions
+- **🪄 Integrated wand toy** that moves within the world space
+- **🎯 World-aware interactions** with proper coordinate mapping
+
+### **Visual Style**
+
+- **🎨 Pastel color palette** with soft pinks, blues, and earth tones
+- **📐 Vector-style graphics** with clean lines and geometric shapes
+- **🌟 Material Design icons** for UI controls
+- **💫 Responsive design** that adapts to different viewport sizes
+
 ## Core Game Systems
 
 ### Love-Per-Interaction System
@@ -45,6 +65,90 @@ Permanent upgrades purchased with Merit points earned from achievements:
 - **Nutrition Expert**: +12% feeding effectiveness (per level)
 - **Work Ethic**: +10% treats from jobs (per level)
 - **Linear Cost Progression**: Level 1 = 1 merit, Level 2 = 2 merits, etc.
+
+## 🏗️ **2D World Architecture**
+
+### **Core Systems**
+
+#### **World Coordinate System**
+
+- **`WorldCoordinateSystem.ts`**: Central service managing 3D world coordinates and screen position mapping
+- **`WorldCoordinates`**: Logical units (x, y, z) where Y=20 is cat's resting height on the ground
+- **`ScreenPosition`**: Pixel coordinates with perspective scaling for rendering
+- **Perspective Scaling**: Min 0.3x (far) to Max 1.4x (near) with smooth transitions
+- **Responsive Floor**: Dynamically calculates floor dimensions based on viewport size
+
+#### Single-source world-to-screen projection
+
+- All projection goes through `worldToScreen()` and `getShadowPosition()` in `WorldCoordinateSystem.ts`.
+- The cat’s shadow derives strictly from the cat’s world coordinates. No separate shadow state is kept.
+- UI inputs (mouse, debug moves) use `screenPositionToWorldCoordinates()`/`screenToWorld()` to convert screen to world space.
+- Grounding rule: when the cat is at resting height (Y=20), the shadow’s X and Y match the cat’s ground projection across Z.
+- WORLD_DEPTH is logical; Z travel remaps to the full pixel height of the visible floor for responsive correctness.
+
+#### **Cat Positioning Service**
+
+- **`CatPositionServiceNew.ts`**: Manages cat movement, animations, and physics
+- **`useCatPositionNew.ts`**: React hook exposing cat position data and movement functions
+- **Physics-based Movement**: Smooth animations with pouncing arcs and gravity
+- **Boundary Enforcement**: Prevents cat from clipping into walls (Z: 100-320 range)
+- **Return-to-Rest**: Cat automatically returns to default position when idle
+
+#### **Integrated Shadow System**
+
+- **Dynamic Shadows**: Real-time shadow calculation based on cat's 3D position
+- **Perspective-aware**: Shadow size and position adapt to cat's depth in the world
+- **Height Response**: Shadows shrink when cat jumps, positioned at floor level
+- **Visual Grounding**: Ensures cat always appears connected to the ground
+
+### **World Layout**
+
+#### **House Interior Design**
+
+- **Back Wall**: Window with cross-frame design showing outside sky view
+- **Side Furniture**: Bookshelf with multiple shelves and decorative items
+- **Floor Elements**: Wooden flooring with decorative rug patterns
+- **Lighting**: Soft ambient lighting creating depth and atmosphere
+- **Scale**: Everything designed to work with cat's perspective scaling system
+
+#### **Camera System**
+
+- **Horizontal Panning**: Left/right arrow buttons for manual camera control
+- **Auto-follow**: Camera smoothly tracks cat during wand toy interactions
+- **Recenter Button**: Quick button to snap camera back to cat's position
+- **Boundary Limits**: Camera movement constrained to world boundaries
+
+### **User Interface Integration**
+
+#### **Fixed UI Elements**
+
+- **Side Panel**: Game controls remain fixed outside the world viewport
+- **Currency Display**: Love and treats counters positioned above world
+- **Control Buttons**: Wand toggle and camera controls at bottom of world view
+- **Dev Panel**: Debug controls positioned in bottom-left corner (dev mode only)
+
+#### **World-Embedded Elements**
+
+- **Cat**: Fully integrated with world coordinate system and perspective
+- **Wand Toy**: Moves within world space and responds to camera position
+- **Hearts**: Spawn from cat and animate within the world coordinate system
+- **Interactive Areas**: All click detection accounts for world coordinate mapping
+
+### **Technical Implementation**
+
+#### **Component Architecture**
+
+- **`World2D.tsx`**: Main world container with camera controls and scene layout
+- **`CatInteractionManager.tsx`**: Handles cat interactions within world coordinate space
+- **`WandToy.tsx`**: Wand positioning and animation within world boundaries
+- **CSS-based World**: All world elements positioned using absolute CSS with transforms
+
+#### **Coordinate Mapping**
+
+- **Screen to World**: Mouse clicks converted to world coordinates for accurate interaction
+- **World to Screen**: Cat position mapped to screen pixels with perspective scaling
+- **Camera Offset**: All world elements adjusted for current camera position
+- **Responsive Scaling**: World size adapts to viewport dimensions while maintaining proportions
 
 ## Recent Technical Improvements
 
@@ -263,7 +367,7 @@ Pure game data definitions without business logic:
 - **meritUpgradeData.ts**: Permanent upgrade definitions and effects
 - **thingsData.ts**: Purchasable items and their passive bonuses
 - **achievementData.ts**: Milestone and award definitions
-- **catFacts.ts**: Dynamic content for user engagement
+  // catFacts removed from current design
 
 #### Systems Layer (`src/cats/systems/`)
 
@@ -352,6 +456,16 @@ Automatic error capture and reporting system:
 - **Window Error Handling**: Catches unhandled errors and promise rejections
 - **Development UI**: In-app error display with copy/download functionality
 - **Systematic Debugging**: Replace manual console inspection with automated logging
+
+#### Server-Side Logging (`serverLogger`)
+
+For debugging issues that require terminal-visible logs during development:
+
+- **`serverLogger.log()`**: Sends log messages to the Vite development server terminal
+- **Use Case**: Debugging coordinate systems, animations, and state synchronization issues
+- **Best Practice**: Use sparingly for critical debugging, comment out when not needed
+- **Example**: `serverLogger.log('🔴 [DEBUG] Shadow position:', shadowPosition)`
+- **Terminal Output**: Messages appear in the `npm run dev` console for real-time debugging
 
 ### Refactoring Patterns Learned
 

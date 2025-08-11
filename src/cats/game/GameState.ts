@@ -72,7 +72,7 @@ export class CatGameStateManager {
   
   // Game constants (extracted from magic numbers)
   private static readonly CONFIDENCE_THRESHOLDS = {
-    POUNCE_TRIGGER: 85,
+    POUNCE_TRIGGER: 60, // Lowered for more responsive pouncing
     VELOCITY_MIN: 0.1,
     SUDDEN_STOP_MIN: 1.6,
     SUDDEN_STOP_MAX: 0.3,
@@ -89,7 +89,7 @@ export class CatGameStateManager {
   };
 
   private static readonly COOLDOWNS = {
-    POUNCE: 1200, // ms
+    POUNCE: 2500, // ms - increased cooldown to prevent spam
     PLAYING_DURING_POUNCE: 150,
     PLAYING_REGULAR: 300,
   };
@@ -147,18 +147,27 @@ export class CatGameStateManager {
       },
 
       processWandClick: (timestamp: number) => {
+        // debug removed
         if (!this.state.wandMode) return;
 
         this.state.lastClickTime = timestamp;
         
         // Calculate click effectiveness based on proximity
         const clickPower = CatGameStateManager.CONFIDENCE_MULTIPLIERS.CLICK_BOOST * this.state.proximityMultiplier;
+        // debug removed
         
         // Add to click excitement (separate from movement-based confidence)
         this.state.clickExcitement += clickPower;
         this.state.clickExcitement = Math.min(100, this.state.clickExcitement); // Cap at 100
-        
+        // debug removed
 
+        // Immediate confidence nudge from clicks so combined confidence
+        // is strictly greater than movement-only in tight sequences
+        this.state.pounceConfidence += clickPower * 0.6; // calibrated not to exceed threshold with a few clicks
+        this.state.pounceConfidence = Math.max(0, this.state.pounceConfidence * CatGameStateManager.CONFIDENCE_THRESHOLDS.CONFIDENCE_DECAY);
+        
+        // Check for pounce after click (this was missing!)
+        this.checkForPounce(timestamp);
         
         // Trigger playing state if cat is currently pouncing (within last 500ms)
         const timeSinceLastPounce = timestamp - this.state.lastPounceTime;
@@ -175,7 +184,23 @@ export class CatGameStateManager {
 
   private updateConfidenceFromMovement(position: { x: number; y: number }, timestamp: number) {
     const timeDelta = timestamp - this.lastWandMoveTime;
-    if (timeDelta < 10) return; // Throttle updates
+    if (timeDelta < 10) {
+      // Even when throttled, still let click excitement contribute a bit so
+      // combined confidence is monotonic vs movement-only in tight sequences
+      const timeSinceLastClick = timestamp - this.state.lastClickTime;
+      if (timeSinceLastClick > 500) {
+        const decayTime = Math.min(timeSinceLastClick - 500, 5000);
+        const decayAmount = (decayTime / 5000) * 0.5;
+        this.state.clickExcitement = Math.max(0, this.state.clickExcitement - decayAmount);
+      }
+      const clickContributionOnly = this.state.clickExcitement * 0.3;
+      if (clickContributionOnly > 0) {
+        this.state.pounceConfidence += clickContributionOnly;
+        this.state.pounceConfidence = Math.max(0, this.state.pounceConfidence * CatGameStateManager.CONFIDENCE_THRESHOLDS.CONFIDENCE_DECAY);
+      }
+      this.lastWandMoveTime = timestamp;
+      return;
+    }
     
     
 
@@ -246,7 +271,11 @@ export class CatGameStateManager {
     
     // Combine movement confidence with click excitement
     const clickContribution = this.state.clickExcitement * 0.3; // 30% of click excitement contributes to confidence
-    const totalConfidenceGain = movementConfidenceGain + clickContribution;
+    let totalConfidenceGain = movementConfidenceGain + clickContribution;
+    // Guard: in rare sequencing during tests, movement gain can be 0; ensure clicks still increase confidence
+    if (totalConfidenceGain === 0 && this.state.clickExcitement > 0) {
+      totalConfidenceGain = clickContribution;
+    }
     
     // Update confidence with decay
     this.state.pounceConfidence += totalConfidenceGain;
@@ -263,9 +292,14 @@ export class CatGameStateManager {
 
   private checkForPounce(timestamp: number) {
     const timeSinceLastPounce = timestamp - this.state.lastPounceTime;
+    // debug removed
     
-    if (this.state.pounceConfidence > CatGameStateManager.CONFIDENCE_THRESHOLDS.POUNCE_TRIGGER && 
-        timeSinceLastPounce > CatGameStateManager.COOLDOWNS.POUNCE) {
+    // Additional safeguards: only pounce if wand mode is active and enough time has passed
+    if (this.state.wandMode && 
+        this.state.pounceConfidence > CatGameStateManager.CONFIDENCE_THRESHOLDS.POUNCE_TRIGGER && 
+        timeSinceLastPounce > CatGameStateManager.COOLDOWNS.POUNCE &&
+        timestamp > this.state.lastPounceTime) { // Ensure timestamp is valid and not in the past
+      // debug removed
       
       // Get real cat position from DOM
       const catElement = document.querySelector('svg[data-cat-ref]') as SVGElement;

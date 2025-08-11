@@ -24,13 +24,14 @@ body.wand-mode-active * {
 /* Wand toy styles */
 .wand-toy {
   position: fixed;
-  pointer-events: none;
+  pointer-events: auto; /* Enable click events */
   z-index: 1000;
+  transform: translate(-50%, 0); /* Default centering transform */
   transition: transform 0.1s ease-out;
 }
 
 .wand-toy.shaking {
-  animation: wand-shake 0.6s ease-in-out;
+  animation: wand-shake 0.6s ease-in-out !important;
 }
 
 @keyframes wand-shake {
@@ -38,23 +39,11 @@ body.wand-mode-active * {
   100% {
     transform: translate(-50%, 0) rotate(0deg) scale(1);
   }
-  15% {
-    transform: translate(-50%, 0) rotate(-12deg) scale(1.15);
-  }
-  30% {
-    transform: translate(-50%, 0) rotate(8deg) scale(1.1);
-  }
-  45% {
-    transform: translate(-50%, 0) rotate(-10deg) scale(1.12);
-  }
-  60% {
-    transform: translate(-50%, 0) rotate(6deg) scale(1.08);
+  25% {
+    transform: translate(-50%, 0) rotate(-8deg) scale(1.05);
   }
   75% {
-    transform: translate(-50%, 0) rotate(-8deg) scale(1.1);
-  }
-  90% {
-    transform: translate(-50%, 0) rotate(4deg) scale(1.05);
+    transform: translate(-50%, 0) rotate(8deg) scale(1.05);
   }
 }
 
@@ -84,25 +73,30 @@ body.wand-mode-active * {
 /* ==================== TABBED PANEL STYLES ==================== */
 
 .tabbed-panel {
-  flex-shrink: 0;
-  width: 480px; /* Much bigger */
-  min-width: 480px; /* Prevent panel from shrinking */
-  max-width: 480px; /* Prevent panel from growing */
-  background-color: #fffbff; /* M3 Surface Container */
-  border: 1px solid #cac4d0; /* M3 Outline */
-  border-radius: 12px; /* M3 medium radius */
-  height: 85vh; /* Fixed height for scrolling */
+  /* Remove all fixed sizing - let container control this */
   display: flex;
   flex-direction: column;
-  overflow: hidden; /* Allow tooltips to extend outside */
+  height: 100%;
+  width: 100%;
+  background-color: #fffbff; /* M3 Surface Container */
+  overflow: visible; /* Allow tabs to be clickable */
+  box-sizing: border-box;
 }
 
 .tab-headers {
   display: flex;
   background-color: #f7f2fa; /* M3 Surface Container Low */
-  border-radius: 12px 12px 0 0;
+  border-radius: 0; /* Remove all rounded corners */
   border-bottom: 1px solid #e7e0ec;
-  overflow: hidden; /* Prevent any scrolling */
+  overflow: visible; /* Allow tabs to be clickable */
+  pointer-events: auto; /* Ensure interaction works */
+  position: relative; /* Proper stacking context */
+  z-index: 10; /* Above tab content */
+  box-sizing: border-box;
+  width: 100%;
+  /* Prevent layout shift when content changes */
+  flex-shrink: 0;
+  min-height: 44px; /* Fixed height to prevent shifting */
 }
 
 .tab-headers::-webkit-scrollbar {
@@ -115,27 +109,36 @@ body.wand-mode-active * {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 12px 20px; /* More padding for bigger panel */
+  padding: 12px 8px; /* Reduced padding to fit 4 tabs */
   border: none;
   background: transparent;
   color: #49454f; /* M3 On Surface Variant */
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
-  border-radius: 0;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+  border-radius: 0 !important; /* Force no rounded corners */
   white-space: nowrap; /* Prevent text wrapping */
   min-width: 0; /* Prevent flex items from overflowing */
-  overflow: hidden; /* Prevent individual tab overflow */
+  overflow: visible; /* Allow content to be visible */
+  pointer-events: auto; /* Ensure clicks work */
+  position: relative; /* Ensure proper stacking */
+  z-index: 11; /* Above tab headers background */
+  /* Ensure click events aren't blocked */
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  /* Debug: ensure proper clickable area */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  /* Ensure the button takes up its full allocated space */
+  box-sizing: border-box;
 }
 
-.tab-header:first-child {
-  border-radius: 12px 0 0 0;
-}
-
-.tab-header:last-child {
-  border-radius: 0 12px 0 0;
-}
+/* Removed rounded corners for rectangular design */
 
 .tab-header:hover {
   background-color: rgba(103, 80, 164, 0.08);
@@ -181,10 +184,24 @@ body.wand-mode-active * {
 .tab-content {
   flex: 1;
   overflow-y: auto;
-  overflow-x: visible; /* Allow tooltips to extend horizontally */
+  overflow-x: hidden; /* Prevent horizontal scrolling issues */
   padding: 0; /* Let child components handle padding */
   width: 100%; /* Ensure full width usage */
   box-sizing: border-box; /* Include padding in width calculations */
+  /* Ensure consistent sizing regardless of content */
+  min-height: 0; /* Allow flex shrinking */
+}
+
+/* Apply padding only to specific panels that need it */
+.tab-content .job-panel,
+.tab-content .things-panel,
+.tab-content .merits-panel {
+  padding: 16px;
+}
+
+/* Events panel handles its own padding structure */
+.tab-content .events-panel {
+  padding: 0;
 }
 
 /* Update Job Panel for tabbed context */
@@ -665,31 +682,6 @@ body.wand-mode-active * {
   animation: tail-flick 0.6s ease-in-out;
 }
 
-.wand-toy {
-  position: absolute;
-  pointer-events: none;
-  transform: translate(-50%, 0);
-  transform-origin: top center;
-  z-index: 15000; /* Above everything including toasts */
-}
-
-.wand-toy.shaking {
-  animation: shake 0.5s ease-in-out;
-}
-
-@keyframes shake {
-  0%,
-  100% {
-    transform: translate(-50%, 0) rotate(0deg);
-  }
-  25% {
-    transform: translate(-50%, 0) rotate(10deg);
-  }
-  75% {
-    transform: translate(-50%, 0) rotate(-10deg);
-  }
-}
-
 .playing #cat-container {
   animation: play-bat 0.6s ease-in-out infinite;
 }
@@ -739,20 +731,7 @@ body.wand-mode-active * {
   top: -0.1em;
 }
 
-.cat-fact-container {
-  margin: 8px auto 16px; /* M3 spacing */
-  padding: 0 16px;
-  max-width: 400px; /* Reduced for better readability */
-  font-style: italic;
-  color: #49454f; /* M3 On-Surface-Variant */
-  text-align: center;
-  height: 4em; /* Set a fixed height */
-  display: flex; /* Use flexbox for alignment */
-  align-items: center; /* Vertically center */
-  justify-content: center; /* Horizontally center */
-  width: 100%;
-  box-sizing: border-box;
-}
+/* Cat facts removed */
 
 /* DevPanel - Fixed positioning to prevent layout shifts */
 .dev-panel {
@@ -3939,8 +3918,8 @@ body.wand-mode-active * {
   color: #9e9e9e;
 }
 
-.milestone-icon-small {
-  font-size: 14px;
+.milestone-icon-small.material-symbols-outlined {
+  font-size: 14px !important; /* Slightly larger than 12px, smaller than default 24px */
 }
 
 .milestone-item-compact:hover .milestone-icon-compact {
@@ -3988,7 +3967,7 @@ body.wand-mode-active * {
   border-radius: 12px;
   padding: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
+  z-index: 2100; /* Above side panel (z-index: 2000) */
   width: 280px;
   height: 100px;
   position: fixed;
@@ -4284,4 +4263,1498 @@ body.wand-mode-active * {
 .tooltip-breakdown-icon {
   width: 12px;
   height: 12px;
+}
+
+/* ==================== LAYOUT SYSTEM ==================== */
+
+/* Game Layout - Side-by-side structure */
+.game-layout {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #2d3748;
+  box-sizing: border-box; /* Ensure proper sizing calculations */
+}
+
+.world-viewport-container {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box; /* Ensure proper sizing calculations */
+}
+
+.side-panel-fixed {
+  width: 450px;
+  min-width: 450px;
+  max-width: 450px;
+  height: 100vh;
+  background: #ffffff;
+  border-left: 1px solid #e2e8f0;
+  overflow: hidden; /* Prevent panel from scrolling, let content scroll */
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box; /* Include border in width calculations */
+}
+
+.side-panel-fixed .tabbed-panel {
+  /* Simply ensure it fills the container properly */
+  height: 100%;
+  width: 100%;
+  overflow: visible;
+}
+
+/* Update body for new layout */
+body {
+  font-family: 'Roboto', sans-serif;
+  background-color: #2d3748;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* ==================== 2D WORLD STYLES ==================== */
+
+.world-2d-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: linear-gradient(180deg, #f5e6d3 0%, #f0dcc9 100%);
+}
+
+/* Camera System */
+.world-viewport {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.world-content {
+  position: relative;
+  width: 1600px; /* Fixed world width */
+  height: 100%;
+  transition: transform 0.2s ease-out;
+}
+
+/* During active resize, turn off transition to avoid ‘shake’ */
+.world-content[data-resizing='true'] {
+  transition: none !important;
+}
+
+/* Camera Controls */
+.pan-button {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 50px;
+  height: 50px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(103, 80, 164, 0.9);
+  color: white;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 1500;
+}
+
+.pan-button.pan-left {
+  left: 20px;
+}
+
+.pan-button.pan-right {
+  right: 470px; /* Account for 450px side panel + 20px margin */
+}
+
+.pan-button:hover:not(:disabled) {
+  background: rgba(103, 80, 164, 1);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.pan-button:disabled {
+  background: rgba(0, 0, 0, 0.3);
+  cursor: not-allowed;
+  transform: translateY(-50%);
+}
+
+/* Bottom Center Controls */
+.bottom-controls {
+  position: fixed;
+  bottom: 20px;
+  /* Position relative to viewport center, accounting for side panel */
+  left: calc(50% - 225px); /* 450px side panel / 2 */
+  transform: translateX(-50%);
+  display: flex;
+  gap: 12px;
+  z-index: 1600;
+}
+
+.control-button {
+  width: 50px;
+  height: 50px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(103, 80, 164, 0.9);
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.control-button:hover {
+  background: rgba(103, 80, 164, 1);
+  transform: scale(1.1);
+}
+
+/* Material Icons font loading prevention */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined', sans-serif;
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+
+  /* Prevent text fallback during font load */
+  font-display: swap;
+
+  /* Set dimensions to prevent layout shift */
+  width: 1em;
+  height: 1em;
+
+  /* Start visible, transition if needed */
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
+
+/* Specific button styles inherit from .control-button */
+
+.world-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+}
+
+/* Sky gradient removed - walls extend to top */
+
+.house-interior {
+  position: absolute;
+  top: 0; /* Extend to top */
+  left: 0;
+  right: 0;
+  bottom: 0; /* Full height */
+  background: linear-gradient(180deg, #f5e6d3 0%, #f0dcc9 100%);
+  z-index: 2;
+}
+
+/* Back Wall */
+.back-wall {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 40%; /* Use bottom positioning to stay with floor */
+  background: linear-gradient(180deg, #ffeee6 0%, #f5e6d3 100%);
+}
+
+/* Window */
+.window {
+  position: absolute;
+  top: 15%;
+  left: 15%;
+  width: 280px; /* Scale up window */
+  height: 220px; /* Scale up proportionally */
+}
+
+.window-frame {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #8d6e63;
+  border-radius: 8px;
+  padding: 8px;
+  /* Single continuous gradient background for all panes */
+  background-image: linear-gradient(
+    180deg,
+    #b8e6f5 0%,
+    #d4f0d4 50%,
+    #e8f5e8 100%
+  );
+  background-clip: padding-box;
+}
+
+.window-pane {
+  position: absolute;
+  background: transparent; /* Remove individual pane backgrounds */
+  border-radius: 4px;
+}
+
+.window-pane-1 {
+  top: 8px;
+  left: 8px;
+  width: 88px;
+  height: 72px;
+}
+
+.window-pane-2 {
+  top: 8px;
+  right: 8px;
+  width: 88px;
+  height: 72px;
+}
+
+.window-pane-3 {
+  bottom: 8px;
+  left: 8px;
+  width: 88px;
+  height: 72px;
+}
+
+.window-pane-4 {
+  bottom: 8px;
+  right: 8px;
+  width: 88px;
+  height: 72px;
+}
+
+.window-cross-vertical {
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  bottom: 8px;
+  width: 3px; /* Much thinner lines */
+  background: #8d6e63;
+  transform: translateX(-50%);
+}
+
+.window-cross-horizontal {
+  position: absolute;
+  top: 50%;
+  left: 8px;
+  right: 8px;
+  height: 3px; /* Much thinner lines */
+  background: #8d6e63;
+  transform: translateY(-50%);
+}
+
+.window-sill {
+  position: absolute;
+  bottom: -12px;
+  left: -8px;
+  right: -8px;
+  height: 16px;
+  background: #e6b87d;
+  border-radius: 4px;
+}
+
+/* Door */
+.door {
+  position: absolute;
+  bottom: 0; /* Start from floor */
+  right: 15%;
+  width: 90px; /* More realistic width */
+  height: 260px; /* More realistic height */
+}
+
+.door-frame {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #8d6e63;
+  border-radius: 6px 6px 0 0;
+  padding: 3px;
+}
+
+.door-panel {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, #d7a3a3 0%, #c2827b 50%, #8d6e63 100%);
+  border-radius: 4px 4px 0 0;
+}
+
+.door-handle {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  background: #f4d03f;
+  border-radius: 50%;
+  transform: translateY(-50%);
+  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Wall Decorations */
+.wall-decorations {
+  position: absolute;
+  top: 25%;
+  left: 40%;
+  right: 40%;
+  height: 30%;
+}
+
+.picture-frame {
+  position: absolute;
+  background: #d7a3a3;
+  border-radius: 4px;
+  padding: 8px;
+}
+
+.picture-1 {
+  top: 0;
+  left: 0;
+  width: 80px;
+  height: 60px;
+}
+
+.picture-2 {
+  top: 20px;
+  right: 0;
+  width: 60px;
+  height: 80px;
+}
+
+.frame-border {
+  width: 100%;
+  height: 100%;
+
+  border-radius: 2px;
+}
+
+.picture-content {
+  width: 100%;
+  height: 100%;
+  border-radius: 1px;
+}
+
+.picture-cat {
+  background: linear-gradient(45deg, #ffb6c1 0%, #ffc0cb 50%, #ffb6c1 100%);
+}
+
+.picture-abstract {
+  background: linear-gradient(
+    135deg,
+    #9370db 0%,
+    #8a2be2 33%,
+    #4b0082 66%,
+    #9370db 100%
+  );
+}
+
+/* Furniture */
+.furniture {
+  position: absolute;
+  bottom: 0; /* Align with floor */
+  left: 0;
+  right: 0;
+  height: 100%; /* Full height from floor to ceiling */
+  z-index: 2; /* Ensure visible above back wall and under game-content */
+}
+
+/* Bookshelf */
+.bookshelf {
+  position: absolute;
+  left: 5%;
+  bottom: 40%; /* Start from floor level */
+  width: 160px; /* Scale up for larger cat */
+  height: 320px; /* Balanced height for 3 shelves with reasonable gaps */
+  background: #e8b8b8;
+  border-radius: 6px;
+}
+
+/* Remove artificial shelf lines - the bookshelf background creates natural divisions */
+
+.shelf {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  height: 70px; /* Scale up shelf height */
+  background: #a0522d;
+  border-radius: 3px;
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  padding: 6px;
+}
+
+.shelf-1 {
+  top: 30px;
+}
+
+.shelf-2 {
+  top: 120px; /* Middle shelf with more space */
+}
+
+.shelf-3 {
+  top: 220px; /* Third shelf positioned for even gaps */
+}
+
+.book {
+  width: 18px; /* Scale up book width */
+  height: 54px; /* Scale up book height */
+  border-radius: 2px 2px 0 0;
+}
+
+.book-red {
+  background: #f5a3a3;
+}
+.book-blue {
+  background: #a3c5f5;
+}
+.book-green {
+  background: #a3f5a3;
+}
+.book-yellow {
+  background: #f5f5a3;
+}
+.book-purple {
+  background: #c5a3f5;
+}
+.book-orange {
+  background: #f5c5a3;
+}
+.book-teal {
+  background: #a3f5f5;
+}
+.book-pink {
+  background: #f5a3c5;
+}
+
+.plant-pot {
+  width: 20px;
+  height: 24px;
+  background: #d7a3a3;
+  border-radius: 2px 2px 8px 8px;
+  position: relative;
+}
+
+.plant-leaves {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 16px;
+  height: 16px;
+  background: #228b22;
+  border-radius: 50% 10px 50% 10px;
+}
+
+.decorative-vase {
+  width: 16px;
+  height: 20px;
+  background: linear-gradient(180deg, #d4af37 0%, #b8860b 100%);
+  border-radius: 2px;
+  position: relative;
+}
+
+/* Make it look like a small picture frame */
+.decorative-vase::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  right: 2px;
+  bottom: 2px;
+  background: #87ceeb;
+  border-radius: 1px;
+}
+
+/* Side Table */
+.side-table {
+  position: absolute;
+  right: 20%;
+  bottom: 0;
+  width: 80px;
+  height: 100px;
+}
+
+.table-top {
+  position: absolute;
+  top: 20px;
+  left: 0;
+  right: 0;
+  height: 16px;
+  background: #d7a3a3;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.table-legs {
+  position: absolute;
+  bottom: 0;
+  left: 8px;
+  right: 8px;
+  height: 80px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    transparent 40%,
+    #654321 40%,
+    #654321 60%,
+    transparent 60%,
+    transparent 100%
+  );
+}
+
+.table-legs::before,
+.table-legs::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  width: 8px;
+  height: 100%;
+  background: #654321;
+  border-radius: 2px;
+}
+
+.table-legs::before {
+  left: 0;
+}
+
+.table-legs::after {
+  right: 0;
+}
+
+.table-items {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.lamp {
+  position: relative;
+  width: 32px;
+  height: 40px;
+}
+
+.lamp-base {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 16px;
+  height: 20px;
+  background: #4a4a4a;
+  border-radius: 2px 2px 8px 8px;
+}
+
+.lamp-shade {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 32px;
+  height: 24px;
+  background: linear-gradient(180deg, #f0e68c 0%, #daa520 100%);
+  border-radius: 50% 50% 0 0;
+  border: 2px solid #b8860b;
+}
+
+/* Cat Tree */
+.cat-tree {
+  position: absolute;
+  right: 5%;
+  bottom: 0;
+  width: 60px;
+  height: 160px;
+}
+
+.tree-base {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 20px;
+  background: #d7a3a3;
+  border-radius: 8px;
+}
+
+.tree-post {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 16px;
+  height: 100px;
+  background: #a0522d;
+  border-radius: 4px;
+}
+
+.tree-platform {
+  position: absolute;
+  top: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50px;
+  height: 12px;
+  background: #d7a3a3;
+  border-radius: 4px;
+}
+
+.hanging-toy {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 60px;
+}
+
+.toy-string {
+  width: 100%;
+  height: 50px;
+  background: #654321;
+}
+
+.toy-ball {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 8px;
+  height: 8px;
+  background: #ff69b4;
+  border-radius: 50%;
+}
+
+/* Couch - redesigned for side-scrolling view */
+.couch {
+  position: absolute;
+  left: 20%;
+  bottom: 40%; /* Up against wall base (floor is 40% height) */
+  width: 270px; /* Scale up couch */
+  height: 180px; /* Fixed height to prevent shrinking */
+  z-index: 2;
+}
+
+.couch-base {
+  position: absolute;
+  bottom: 20px;
+  left: 15px;
+  right: 15px;
+  height: 30px;
+  background: #d7a3a3;
+  border-radius: 4px;
+}
+
+.couch-back {
+  position: absolute;
+  bottom: 50px;
+  left: 15px;
+  right: 15px;
+  height: 45px;
+  background: linear-gradient(180deg, #e8b8b8 0%, #d7a3a3 100%);
+  border-radius: 6px 6px 0 0;
+
+  border-bottom: none;
+}
+
+.couch-arm {
+  position: absolute;
+  bottom: 50px;
+  width: 20px;
+  height: 50px;
+  background: #d7a3a3;
+  border-radius: 6px;
+}
+
+.couch-arm-left {
+  left: 0;
+}
+
+.couch-arm-right {
+  right: 0;
+}
+
+.cushion {
+  position: absolute;
+  bottom: 50px;
+  width: 35px;
+  height: 12px;
+  background: #f5b2b2;
+  border-radius: 15px 15px 0 0;
+}
+
+.cushion-1 {
+  left: 35px;
+}
+
+.cushion-2 {
+  left: 70px;
+}
+
+.cushion-3 {
+  left: 105px;
+}
+
+/* Kitchen Counter */
+.kitchen-counter {
+  position: absolute;
+  right: 12%;
+  bottom: 40%; /* Against wall base */
+  width: 240px; /* Scale up */
+  height: 220px; /* Fixed height to prevent shrinking */
+  z-index: 2;
+}
+
+.counter-top {
+  position: absolute;
+  top: 100px; /* Attach to base top */
+  left: 0;
+  right: 0;
+  height: 20px;
+  background: #b8860b;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.counter-base {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 100px;
+  background: #654321;
+  border-radius: 4px;
+}
+
+.cabinet-door {
+  position: absolute;
+  bottom: 10px;
+  width: 80px;
+  height: 70px;
+  background: #d7a3a3;
+
+  border-radius: 4px;
+}
+
+.cabinet-door-1 {
+  left: 10px;
+}
+
+.cabinet-door-2 {
+  right: 10px;
+}
+
+.counter-items {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 20px;
+}
+
+/* Remove distracting bowls (discs) */
+.counter-items {
+  display: none;
+}
+
+/* Floor */
+.floor {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(180deg, #f0dcc9 0%, #e8d1b8 100%);
+}
+
+.floor-pattern {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    linear-gradient(90deg, rgba(230, 184, 125, 0.1) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(230, 184, 125, 0.1) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.rug {
+  position: absolute;
+  bottom: 0; /* Sit on floor */
+  left: 560px; /* Center on cat's rest position */
+  transform: translateX(-50%); /* Center the rug */
+  width: 380px; /* Bigger rug to better accommodate cat */
+  height: 40%; /* Taller for better proportion */
+  background: linear-gradient(45deg, #e1a3a3 0%, #f5b2b2 50%, #e1a3a3 100%);
+  border-radius: 50%;
+}
+
+.rug-pattern {
+  position: absolute;
+  top: 20%;
+  left: 20%;
+  right: 20%;
+  bottom: 20%;
+  background:
+    radial-gradient(
+      circle at center,
+      rgba(255, 255, 255, 0.2) 20%,
+      transparent 21%
+    ),
+    radial-gradient(
+      circle at 30% 70%,
+      rgba(255, 255, 255, 0.1) 15%,
+      transparent 16%
+    ),
+    radial-gradient(
+      circle at 70% 30%,
+      rgba(255, 255, 255, 0.1) 12%,
+      transparent 13%
+    );
+}
+
+/* Game Content Layer */
+.game-content-layer {
+  position: absolute;
+  bottom: 0; /* Align game content layer baseline with the floor baseline */
+  left: 0;
+  right: 0;
+  height: 40%; /* Match floor height exactly */
+  z-index: 10;
+}
+
+/* Cat positioning in 2D world */
+.world-2d-container .cat-container {
+  /* position: absolute is set inline via React for world positioning */
+  width: auto; /* Width controlled inline (300 * scale) for accurate centering */
+  height: auto; /* Let content determine height */
+  margin: 0;
+}
+
+.world-2d-container .cat-svg {
+  width: 100%;
+  height: auto;
+  position: relative;
+  z-index: 5;
+  transform-origin: center bottom;
+  /* Restore original cat animations */
+  will-change: transform;
+  /* Improve SVG scaling crispness */
+  image-rendering: -webkit-optimize-contrast;
+  shape-rendering: geometricPrecision;
+  text-rendering: geometricPrecision;
+}
+
+/* Dynamic shadow will be handled by React component - no static CSS shadow */
+
+/* Events Panel Styles - Dense "A Dark Room" Style */
+.events-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--surface-color);
+  font-family:
+    'Comic Sans MS', 'Chalkduster', 'Bradley Hand', cursive, sans-serif;
+}
+
+.events-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--surface-variant-color);
+}
+
+.events-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--on-surface-color);
+}
+
+/* Events controls removed - no longer needed */
+
+.events-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 16px 4px 16px; /* Increased padding on both sides */
+  position: relative;
+}
+
+/* Bottom fade effect */
+.events-content::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background: linear-gradient(transparent, var(--surface-color));
+  pointer-events: none;
+}
+
+.events-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  text-align: center;
+  color: var(--on-surface-variant-color);
+  font-style: italic;
+  font-size: 11px;
+}
+
+.events-empty .material-icon {
+  font-size: 24px;
+  margin-bottom: 8px;
+  opacity: 0.4;
+}
+
+.events-empty p {
+  margin: 0;
+}
+
+.events-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px; /* Increased from 1px */
+}
+
+/* Subtle fade-in keyframes */
+@keyframes event-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.event-entry {
+  padding: 4px 6px; /* Increased from 2px 4px */
+  line-height: 1.4; /* Increased from 1.3 */
+  animation: event-fade-in 0.8s ease-out;
+}
+
+.event-text {
+  font-size: 12px; /* Increased from 11px */
+  color: var(--on-surface-color);
+  margin: 0;
+}
+
+.event-achievement {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px; /* Increased from 11px to match other text */
+  color: #b8860b; /* Darker gold for better contrast */
+  font-weight: 600; /* Increased from 500 */
+  padding: 3px 0; /* Increased from 2px */
+  background: rgba(184, 134, 11, 0.1); /* Subtle background */
+  border-radius: 4px;
+  padding: 4px 6px; /* Add proper padding for background */
+}
+
+.achievement-icon {
+  font-size: 14px; /* Increased from 12px */
+  color: #b8860b; /* Darker gold for better contrast */
+}
+
+/* Restore original cat animations in 2D world */
+.world-2d-container #head-tilt-wrapper {
+  transform-origin: 100px 110px; /* Use original transform origin */
+  transition: transform 0.2s ease-out;
+}
+
+.world-2d-container #head {
+  animation: head-bob 2.5s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+
+.world-2d-container #tail {
+  animation: tail-wag 3s ease-in-out infinite;
+  transform-origin: 155px 148px; /* Use original tail origin */
+}
+
+.world-2d-container .is-petting #head {
+  animation: head-bob-petting 0.2s ease-in-out;
+}
+
+.world-2d-container #cat-container {
+  transform-origin: 100px 110px; /* Use original cat container origin */
+}
+
+/* Upgrades container in 2D world - fixed position outside world transform */
+.upgrades-container {
+  position: fixed !important;
+  bottom: 30px;
+  left: calc(50% - 200px);
+  transform: translateX(-50%);
+  max-width: 200px;
+  margin-top: 0;
+  z-index: 1600;
+}
+
+/* 2D World Physics Constraints */
+.world-2d-container .cat-svg {
+  /* Ensure cat never goes below ground level */
+  min-height: 200px;
+}
+
+/* Updated pounce animations for 2D physics */
+.world-2d-container #cat-container {
+  /* Add gravity effect to pounce animations */
+  transition: transform 0.1s ease-out;
+}
+
+/* Prevent cat from moving too far horizontally in 2D world */
+.world-2d-container .cat-container {
+  /* Constrain horizontal movement to stay within reasonable bounds */
+  overflow: visible;
+  max-width: 400px;
+}
+
+/* Enhanced 2D movement for side-scrolling */
+@keyframes side-pounce-arc {
+  0% {
+    transform: translateY(0) translateX(0);
+  }
+  50% {
+    transform: translateY(-60px) translateX(var(--pounce-x, 0));
+  }
+  100% {
+    transform: translateY(0) translateX(var(--pounce-x, 0));
+  }
+}
+
+/* 2D world-specific jumping animation */
+.world-2d-container .cat-svg.pouncing {
+  animation: side-pounce-arc 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Tail wag animation updated for side view */
+.world-2d-container #tail {
+  animation: side-tail-wag 3s ease-in-out infinite;
+}
+
+@keyframes side-tail-wag {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-8deg);
+  }
+  50% {
+    transform: rotate(12deg);
+  }
+  75% {
+    transform: rotate(-6deg);
+  }
+}
+
+/* Side-view head bob */
+.world-2d-container #head {
+  animation: side-head-bob 2.5s ease-in-out infinite;
+}
+
+@keyframes side-head-bob {
+  0%,
+  100% {
+    transform: translateY(0) translateX(0);
+  }
+  50% {
+    transform: translateY(2px) translateX(1px);
+  }
+}
+
+/* UI Overlay System */
+.ui-overlay-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 1000;
+  /* Constrain to world viewport area only */
+}
+
+.ui-overlay-container > * {
+  pointer-events: auto;
+}
+
+/* Currency Display Overlay */
+.currency-overlay {
+  position: fixed;
+  top: 20px;
+  /* Center in the viewport area (50vw = center of screen, minus half the side panel width) */
+  left: calc((100vw - 450px) / 2);
+  transform: translateX(-50%); /* Center the currency display itself */
+  z-index: 1600;
+}
+
+.currency-overlay .currency-display {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+}
+
+.currency-overlay .currency-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background-color: #ffffff;
+  border: 1px solid #e7e0ec;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+/* Side Panel Overlay */
+.side-panel-overlay {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  bottom: 20px;
+  width: 400px;
+  z-index: 100;
+}
+
+.side-panel-overlay .tabbed-panel {
+  width: 400px !important;
+  min-width: 400px !important;
+  max-width: 400px !important;
+  height: calc(100vh - 40px) !important;
+  max-height: calc(100vh - 40px) !important;
+  /* Prevent size changes during tab switches */
+  flex-shrink: 0;
+}
+
+/* Dev Panel Overlay */
+.dev-panel-overlay {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  z-index: 1000;
+  width: min(320px, 32vw);
+  max-height: min(45vh, 420px);
+  background: rgba(0, 0, 0, 0.65);
+  border-radius: 8px;
+  color: white;
+  font-size: 12px;
+  overflow: hidden;
+}
+
+/* Compact Dev Panel Styling */
+.dev-panel-compact {
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 8px;
+  color: white;
+  font-size: 11px;
+  overflow: hidden;
+  backdrop-filter: blur(3px);
+}
+
+.dev-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.dev-panel-title {
+  font-weight: bold;
+  font-size: 12px;
+}
+
+.dev-panel-tabs {
+  display: flex;
+  gap: 2px;
+}
+
+.dev-tab {
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dev-tab:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.dev-tab.active {
+  background: rgba(255, 255, 255, 0.25);
+  color: white;
+}
+
+.dev-panel-content {
+  padding: 12px;
+  min-height: 120px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.dev-tab-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Stats Tab */
+.compact-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 0;
+  font-family: monospace;
+}
+
+.stat-row span:first-child {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.stat-row span:last-child {
+  color: white;
+  font-weight: bold;
+}
+
+/* Controls Tab */
+.control-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.compact-button {
+  padding: 6px 8px;
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  color: white;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.compact-button:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Position Tab */
+.position-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.coord-compact {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: monospace;
+  font-size: 10px;
+}
+
+.coord-label {
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: bold;
+}
+
+.coord-values {
+  color: white;
+}
+
+.movement-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.move-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 4px;
+}
+
+.move-btn {
+  padding: 6px;
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  color: white;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.move-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.action-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+
+/* Remove old body centering for fullscreen layout */
+body {
+  font-family: 'Roboto', sans-serif;
+  background-color: transparent; /* Let the 2D world handle background */
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  overflow: hidden; /* Prevent scrolling in 2D world */
+  /* Remove display flex to prevent interference with currency display */
+  display: block;
+  align-items: unset;
+  justify-content: unset;
+  min-height: unset;
+}
+
+/* Override game container for fullscreen 2D world */
+.game-container {
+  display: block; /* Remove flex layout */
+  align-items: unset;
+  gap: unset;
+  background-color: transparent;
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
+  width: 100vw;
+  height: 100vh;
+  max-width: unset;
+}
+
+/* Responsive adjustments for 2D world */
+@media (max-width: 1200px) {
+  .side-panel-fixed {
+    width: 400px;
+    min-width: 400px;
+    max-width: 400px;
+  }
+
+  .pan-button.pan-right {
+    right: 420px; /* Account for 400px side panel + 20px margin */
+  }
+
+  .bottom-controls {
+    left: calc(50% - 200px); /* 400px side panel / 2 */
+  }
+
+  .currency-overlay {
+    left: calc((100vw - 400px) / 2); /* Center of viewport area (400px panel) */
+  }
+}
+
+@media (max-width: 1024px) {
+  .side-panel-fixed {
+    width: 350px;
+    min-width: 350px;
+    max-width: 350px;
+  }
+
+  .pan-button.pan-right {
+    right: 370px; /* Account for 350px side panel + 20px margin */
+  }
+
+  .bottom-controls {
+    left: calc(50% - 175px); /* 350px side panel / 2 */
+  }
+
+  .currency-overlay {
+    left: calc((100vw - 350px) / 2); /* Center of viewport area (350px panel) */
+  }
+
+  .currency-overlay {
+    top: 10px;
+  }
+
+  .dev-panel-overlay {
+    top: 10px;
+    left: 10px;
+  }
+}
+
+@media (max-width: 768px) {
+  .game-layout {
+    flex-direction: column;
+  }
+
+  .side-panel-fixed {
+    width: 100vw;
+    min-width: 100vw;
+    max-width: 100vw;
+    height: 40vh;
+    border-left: none;
+    border-top: 2px solid #e2e8f0;
+    order: 2;
+  }
+
+  .world-viewport-container {
+    height: 60vh;
+    order: 1;
+  }
+
+  .pan-button.pan-right {
+    right: 20px; /* Back to normal position on mobile since panel is at bottom */
+  }
+
+  .bottom-controls {
+    left: 50%; /* Center on mobile since panel is at bottom */
+  }
+
+  .currency-overlay {
+    left: 50vw; /* Center on mobile since panel is at bottom */
+    top: 5px;
+  }
+}
+
+.currency-overlay .currency-display {
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
 }

@@ -1,25 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { MouseState } from '../../hooks/useMouseTracking';
+// useCatPosition import removed - using new coordinate system via props
 
 // === ANIMATION CONSTANTS ===
-const ANIMATION_TIMINGS = {
-  PETTING_DURATION: 200,
-  EAR_WIGGLE_DURATION: 600,
-  HAPPY_PLAY_MIN: 1000,
-  HAPPY_PLAY_MAX: 3000,
-  RETURN_BASE_DURATION: 250,
-  RETURN_MIN_DURATION: 150,
-  FRAME_INTERVAL: 1000 / 60, // 60fps
-} as const;
-
-const POUNCE_ANIMATION = {
-  PREP_PHASE_RATIO: 0.15, // First 15% is butt waggle
-  BASE_WAGGLE: 0.12,
-  WAGGLE_FREQUENCY_BASE: 4,
-  HORIZONTAL_WAGGLE_MULTIPLIER: 0.3,
-  HORIZONTAL_MOVEMENT_SCALE: 8,
-  EXCITEMENT_SPEEDUP: 60,
-} as const;
+// Constants removed - using direct values in code for clarity
 
 interface CatProps {
   onClick: (event: React.MouseEvent) => void;
@@ -46,6 +30,7 @@ interface CatProps {
   wigglingEar: 'left' | 'right' | null;
   lastHeart: HTMLDivElement | null;
   wandMode: boolean;
+  pounceConfidence: number;
 }
 
 const Cat = React.forwardRef<SVGSVGElement, CatProps>(
@@ -78,20 +63,20 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
       wigglingEar,
       lastHeart,
       wandMode,
+      // pounceConfidence, // Disabled for now
     } = props;
       // Removed pupilsPos state - now using direct DOM manipulation for smooth animation
     const [isBlinking, setIsBlinking] = useState(false);
+    
+    // Position data now comes from props via the new coordinate system
+    // Old useCatPosition hook removed to eliminate dual positioning systems
+    
     const drowsinessState = useRef({
       startTime: 0,
       drowsinessTimer: null as number | null,
     });
 
-    const jumpState = React.useRef({
-      startTime: 0,
-      isActive: false,
-      jumpHeight: 30,
-      duration: 500,
-    });
+    // jumpState removed - using new coordinate system for animations
 
     const pounceState = React.useRef({
       startTime: 0,
@@ -155,46 +140,74 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
       };
     }, [isDrowsy]);
 
-    useEffect(() => {
-      if (isJumping && !jumpState.current.isActive) {
-        jumpState.current = {
-          startTime: Date.now(),
-          isActive: true,
-          jumpHeight: 20 + Math.random() * 20, // Varies between 20 and 40
-          duration: 450 + Math.random() * 100, // Varies between 450ms and 550ms
-        };
-      }
-      if (!isJumping) {
-        jumpState.current.isActive = false;
-      }
-    }, [isJumping]);
+    // Happy jump effect integrated with 3D positioning
+    // Happy jump animation disabled - needs integration with new coordinate system
+    // TODO: Re-implement happy jumps using new positioning system
 
+    // DISABLED: Confidence-based pounce preparation - causing animation loops
+    // useEffect(() => {
+    //   if (!wandMode || isPouncing || isJumping || isAnimating) return;
+    //   
+    //   // Confidence thresholds for different preparation stages  
+    //   const CONFIDENCE_THRESHOLDS = {
+    //     READY_STANCE: 30,     // Cat gets into ready position
+    //     CROUCH_PREP: 50,      // Cat crouches lower, moves forward slightly
+    //     STRIKE_READY: 60      // Final positioning before strike
+    //   };
+    //   
+    //   if (pounceConfidence >= CONFIDENCE_THRESHOLDS.READY_STANCE) {
+    //     let targetZ = 0.5; // Default rest position
+    //     let targetY = 0;   // Ground level
+    //     
+    //     if (pounceConfidence >= CONFIDENCE_THRESHOLDS.STRIKE_READY) {
+    //       // Final strike preparation: move closer, crouch low
+    //       targetZ = 0.7 + pounceConfidence * 0.003; // Move forward based on confidence
+    //       targetY = -0.1; // Slight crouch below ground level
+    //       
+    //     } else if (pounceConfidence >= CONFIDENCE_THRESHOLDS.CROUCH_PREP) {
+    //       // Mid preparation: move slightly forward, slight crouch
+    //       targetZ = 0.6 + (pounceConfidence - CONFIDENCE_THRESHOLDS.CROUCH_PREP) * 0.002;
+    //       targetY = -0.05; // Light crouch
+    //       
+    //     } else {
+    //       // Early preparation: alert stance, move forward a bit
+    //       targetZ = 0.55 + (pounceConfidence - CONFIDENCE_THRESHOLDS.READY_STANCE) * 0.001;
+    //       targetY = 0; // Normal ground level
+    //     }
+    //     
+    //     // Smooth transition to preparation position
+    //     moveCatTo({ y: targetY, z: targetZ }, 400);
+    //   }
+    // }, [pounceConfidence, wandMode, isPouncing, isJumping, isAnimating, moveCatTo]);
+
+    // World-aware pouncing system that follows wand toy
     useEffect(() => {
       if (isPouncing && !pounceState.current.isActive) {
         const now = Date.now();
         const timeSinceLastPounce = now - pounceState.current.lastPounceTime;
         
         // Calculate excitement level based on rapid pouncing
-        if (timeSinceLastPounce < 2000) { // If pouncing within 2 seconds
+        if (timeSinceLastPounce < 2000) {
           pounceState.current.excitementLevel = Math.min(3, pounceState.current.excitementLevel + 1);
         } else {
           pounceState.current.excitementLevel = Math.max(0, pounceState.current.excitementLevel - 1);
         }
         
-        // If cat was returning and gets interrupted, boost excitement even more
         if (pounceState.current.returning) {
           pounceState.current.excitementLevel = Math.min(3, pounceState.current.excitementLevel + 0.5);
         }
+        
+        // Pounce calculation disabled - using new coordinate system
         
         pounceState.current = {
           startTime: now,
           isActive: true,
           x: pounceTarget.x,
           y: pounceTarget.y,
-          arcHeight: 25 + Math.random() * 25, // Varies between 25 and 50 - more dramatic
-          overshootX: (Math.random() - 0.5) * 16, // Varies between -8 and 8 - more realistic overshoot
-          overshootY: (Math.random() - 0.5) * 16, // Varies between -8 and 8
-          duration: 420 + Math.random() * 80, // Slightly faster for more dynamic feel
+          arcHeight: 25 + Math.random() * 25,
+          overshootX: (Math.random() - 0.5) * 16,
+          overshootY: (Math.random() - 0.5) * 16,
+          duration: 0, // Will be calculated by chaseWorldTarget
           returning: false,
           returnStartTime: 0,
           returnStartX: 0,
@@ -202,7 +215,11 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
           excitementLevel: pounceState.current.excitementLevel,
           lastPounceTime: now,
         };
+        
+        // Chase functionality disabled - using new pounce system from useCatSystem
+        // TODO: Integrate with new coordinate system for visual pounce animation
       }
+      
       if (!isPouncing) {
         pounceState.current.isActive = false;
         pounceState.current.returning = false;
@@ -214,23 +231,47 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
           pounceState.current.excitementLevel = Math.max(0, pounceState.current.excitementLevel - 0.1);
         }
       }
-    }, [isPouncing, pounceTarget]);
+    // We intentionally keep this effect static because chase/pounce animation
+    // is handled by the new coordinate system. Adding dependencies causes
+    // unnecessary restarts of disabled logic.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // DISABLED: Gradual return to rest when idle - causing animation loops
+    // useEffect(() => {
+    //   if (!isPouncing && !isJumping && !isAnimating) {
+    //     const idleTimer = setTimeout(() => {
+    //       // Check if cat is far from rest position
+    //       const restPos = 560; // Default rest position
+    //       const currentPos = worldPosition.x;
+    //       const distance = Math.abs(currentPos - restPos);
+    //       
+    //       // If cat is more than 200px from rest, gradually return
+    //       if (distance > 200) {
+    //         returnToRest(2000 + Math.random() * 1000);
+    //       }
+    //       
+    //       // Return Z position to neutral when idle (only if significantly off)
+    //       if (Math.abs(position.z) > 0.3) {
+    //         moveCatTo({ z: 0.5 }, 1200); // Move to stable rest Z position
+    //       }
+    //     }, 3000); // Wait 3 seconds of inactivity
+    //     
+    //     return () => clearTimeout(idleTimer);
+    //   }
+    // }, [isPouncing, isJumping, isAnimating, worldPosition.x, returnToRest, moveCatTo]);
 
 
 
     // Happy face logic is now handled by AnimationController
 
+    // Pupil tracking effect (only non-conflicting animation)
     useEffect(() => {
-      let target = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
       let animationFrameId: number;
       let isActive = true;
+      let target = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
 
-      // Throttle animation updates to 60fps for smoother performance
-      let lastAnimationTime = 0;
-      const frameInterval = ANIMATION_TIMINGS.FRAME_INTERVAL;
-
-      const animate = (currentTime: number) => {
-        // Check if the effect is still active before continuing
+      const animate = () => {
         if (!isActive) return;
 
         const catElement = catRef && 'current' in catRef ? catRef.current : null;
@@ -239,165 +280,6 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
             animationFrameId = requestAnimationFrame(animate);
           }
           return;
-        }
-
-        // Throttle to target FPS
-        if (currentTime - lastAnimationTime < frameInterval) {
-          if (isActive) {
-            animationFrameId = requestAnimationFrame(animate);
-          }
-          return;
-        }
-        lastAnimationTime = currentTime;
-
-        // Pounce Animation
-        if (pounceState.current.isActive) {
-          const progress =
-            (Date.now() - pounceState.current.startTime) /
-            pounceState.current.duration;
-          if (progress < 1) {
-            let scale = 1;
-            let currentPounceX = 0;
-            let currentPounceY = 0;
-            let yOffset = 0;
-            
-            // Phase 1: Enhanced butt waggle preparation - first 15% of animation  
-            if (progress < POUNCE_ANIMATION.PREP_PHASE_RATIO) {
-              const prepProgress = progress / POUNCE_ANIMATION.PREP_PHASE_RATIO;
-              
-              // Enhanced butt waggle for every pounce regardless of trigger
-              const distance = Math.hypot(pounceState.current.x, pounceState.current.y);
-              const distanceIntensity = Math.min(1, distance / 80); // More sensitive to distance
-              const excitementMultiplier = 1 + (pounceState.current.excitementLevel * 0.4); // More excitement effect
-              const randomVariation = 0.8 + Math.random() * 0.4; // 0.8-1.2 variation
-              
-              const baseWaggle = 0.12; // Increased base waggle for more visibility
-              const dynamicWaggle = baseWaggle * distanceIntensity * excitementMultiplier * randomVariation;
-              
-              // Multi-axis waggle for more realistic cat behavior
-              const waggleFrequency = 4 + pounceState.current.excitementLevel;
-              const waggleIntensity = dynamicWaggle * (1 - prepProgress * 0.7); // Fade slightly toward launch
-              
-              // Primary vertical waggle (butt raising)
-              scale = 1 + (Math.sin(prepProgress * Math.PI * waggleFrequency) * waggleIntensity);
-              
-              // Add subtle horizontal waggle 
-              const horizontalWaggle = Math.sin(prepProgress * Math.PI * waggleFrequency * 1.3) * waggleIntensity * 0.3;
-              currentPounceX = horizontalWaggle * 8; // Small side-to-side movement
-              
-              // Stay mostly in place during prep with micro-movements
-            }
-            // Phase 2: Launch and flight - remaining 85%
-            else {
-              const flightProgress = (progress - 0.15) / 0.85;
-              
-              // Smooth easing for natural movement
-              const easeProgress = flightProgress < 0.5 
-                ? 2 * flightProgress * flightProgress 
-                : 1 - Math.pow(-2 * flightProgress + 2, 2) / 2;
-              
-              // Natural arc - higher at the beginning, trailing off
-              const arcProgress = Math.sin(flightProgress * Math.PI);
-              yOffset = -arcProgress * pounceState.current.arcHeight;
-              
-              const targetX = pounceState.current.x + pounceState.current.overshootX;
-              const targetY = pounceState.current.y + pounceState.current.overshootY;
-              
-              currentPounceX = targetX * easeProgress;
-              currentPounceY = targetY * easeProgress;
-              
-              // Return to normal size after prep phase
-              scale = 1;
-            }
-            
-            catElement.style.transform = `translate(${currentPounceX.toFixed(2)}px, ${
-              (currentPounceY + yOffset).toFixed(2)
-            }px) scale(${scale.toFixed(3)})`;
-          } else {
-            pounceState.current.isActive = false;
-            // Start smooth return to center immediately, no landing bounce
-            pounceState.current.returning = true;
-            pounceState.current.returnStartTime = Date.now();
-            pounceState.current.returnStartX = pounceState.current.x + pounceState.current.overshootX;
-            pounceState.current.returnStartY = pounceState.current.y + pounceState.current.overshootY;
-          }
-        }
-        
-                  // Smooth return to center animation
-          if (pounceState.current.returning) {
-            // Much faster return for snappier gameplay
-            const baseReturnDuration = 250; // Reduced from 350ms
-            const excitementSpeedup = pounceState.current.excitementLevel * 60; // Up to 180ms faster when very excited
-            const returnDuration = Math.max(150, baseReturnDuration - excitementSpeedup);
-          
-          const returnProgress = Math.min(1, (Date.now() - pounceState.current.returnStartTime) / returnDuration);
-          
-          // Smooth ease-out for natural settling, with excitement causing slight tremor
-          const easeOut = 1 - Math.pow(1 - returnProgress, 3);
-          let currentX = pounceState.current.returnStartX * (1 - easeOut);
-          let currentY = pounceState.current.returnStartY * (1 - easeOut);
-          
-          // Add excitement tremor when very excited
-          if (pounceState.current.excitementLevel > 1) {
-            const tremor = pounceState.current.excitementLevel * 0.5;
-            const trembleX = Math.sin(Date.now() * 0.03) * tremor;
-            const trembleY = Math.cos(Date.now() * 0.025) * tremor;
-            currentX += trembleX;
-            currentY += trembleY;
-          }
-          
-          catElement.style.transform = `translate(${currentX.toFixed(2)}px, ${currentY.toFixed(2)}px)`;
-          
-          if (returnProgress >= 1) {
-            pounceState.current.returning = false;
-            catElement.style.transform = 'translate(0px, 0px)';
-          }
-        } else if (wandModeRef.current && !pounceState.current.returning) {
-          // Only drift if not actively returning from pounce
-          const currentTransform = new DOMMatrix(
-            getComputedStyle(catElement).transform
-          );
-          const currentX = currentTransform.m41;
-          const currentY = currentTransform.m42;
-          
-          if (isPlayingRef.current) {
-            // When playing, stay closer to center and let the CSS batting animation handle the movement
-            const distance = Math.hypot(currentX, currentY);
-            if (distance > 15.0) { // Pull back toward center when playing but too far out
-              const driftFactor = 0.06; // Faster drift back to center when playing
-              const newX = currentX * (1 - driftFactor);
-              const newY = currentY * (1 - driftFactor);
-              catElement.style.transform = `translate(${newX.toFixed(2)}px, ${newY.toFixed(2)}px)`;
-            }
-          } else {
-            // Normal drift back to center when not playing
-            const distance = Math.hypot(currentX, currentY);
-            if (distance > 1.0) {
-              const driftFactor = 0.02; // Very gentle
-              const newX = currentX * (1 - driftFactor);
-              const newY = currentY * (1 - driftFactor);
-              catElement.style.transform = `translate(${newX.toFixed(2)}px, ${newY.toFixed(2)}px)`;
-            }
-          }
-        } else if (jumpState.current.isActive) {
-          const progress =
-            (Date.now() - jumpState.current.startTime) / jumpState.current.duration;
-          if (progress < 1) {
-            const jumpYOffset =
-              -Math.sin(progress * Math.PI) * jumpState.current.jumpHeight;
-            catElement.style.transform = `translateY(${jumpYOffset}px)`;
-          } else {
-            jumpState.current.isActive = false;
-            catElement.style.transform = 'translateY(0px)';
-          }
-        } else {
-          // Not in wand mode, not jumping - ensure it's at rest.
-          const currentTransform = new DOMMatrix(
-            getComputedStyle(catElement).transform
-          );
-          if (currentTransform.m41 !== 0 || currentTransform.m42 !== 0 || currentTransform.a !== 1) {
-            catElement.style.transform = `translate(0, 0) scale(1)`;
-          }
         }
 
         // Eye Tracking
@@ -504,14 +386,22 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
     }
 
     return (
-      <svg
-        ref={catRef}
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 220 200"
-        className={svgClasses}
-        data-cat-ref="true"
-        data-testid="cat"
-      >
+      <div className="cat-with-shadow">
+        {/* Shadow removed - now rendered in CatInteractionManager with new coordinate system */}
+        
+        {/* Cat SVG with dynamic positioning */}
+        <svg
+          ref={catRef}
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 220 200"
+          className={svgClasses}
+          data-cat-ref="true"
+          data-testid="cat"
+          style={{
+            display: 'block',
+            width: '100%'
+          }}
+        >
         <g
           id="cat-container"
           data-testid="cat-body"
@@ -701,6 +591,7 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
           </g>
         </g>
       </svg>
+      </div>
     );
   }
 );

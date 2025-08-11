@@ -56,6 +56,95 @@ export default defineConfig({
     middlewareMode: false,
   },
   plugins: [
+    // Debug logging plugin for cat game
+    {
+      name: 'debug-logger',
+      configureServer(server) {
+        server.middlewares.use('/__debug_log', (req, res, next) => {
+          if (req.method === 'POST') {
+            let body = '';
+            req.on('data', chunk => {
+              body += chunk.toString();
+            });
+            req.on('end', () => {
+              try {
+                const logData = JSON.parse(body);
+                const timestamp = new Date(logData.timestamp).toLocaleTimeString();
+                console.log(`\n[CAT-DEBUG ${timestamp}] ${logData.message}`);
+                if (logData.data) {
+                  console.log(logData.data);
+                }
+              } catch (error) {
+                console.log('\n[CAT-DEBUG] Failed to parse log data', error);
+              }
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end('{"status":"ok"}');
+            });
+          } else {
+            next();
+          }
+        });
+        // Snapshot receiver (dev only): stores meta JSON and screenshot into a temp folder
+        server.middlewares.use('/__debug_snapshot', async (req: import('http').IncomingMessage & { headers: Record<string, string> }, res: import('http').ServerResponse, next: () => void) => {
+          if (req.method !== 'POST') return next();
+          try {
+            // Naive multipart parser for small dev payloads
+            const chunks: Uint8Array[] = [];
+            req.on('data', (c: Uint8Array) => chunks.push(c));
+            req.on('end', async () => {
+              const boundaryMatch = (req.headers['content-type'] || '').match(/boundary=(.*)$/);
+              const boundary = boundaryMatch ? `--${boundaryMatch[1]}` : '';
+              const raw = Buffer.concat(chunks);
+              const parts = boundary ? raw.toString('binary').split(boundary) : [];
+
+              // Prepare temp folder
+              const fs = await import('node:fs');
+              const path = await import('node:path');
+              // Save under project workspace in a gitignored directory
+              const baseDir = path.join(process.cwd(), '.debug-snapshots');
+              if (!fs.existsSync(baseDir)) fs.mkdirSync(baseDir, { recursive: true });
+              const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+              const snapshotDir = path.join(baseDir, `snapshot-${stamp}`);
+              fs.mkdirSync(snapshotDir);
+
+              let metaSaved = false;
+              let screenshotSaved = false;
+
+              for (const part of parts) {
+                // Skip preamble/epilogue
+                if (!part.includes('Content-Disposition')) continue;
+                const [headers, bodySep] = part.split('\r\n\r\n');
+                if (!headers || !bodySep) continue;
+                // Remove trailing CRLF and boundary markers
+                const body = bodySep.replace(/\r\n--\r\n?$/, '');
+                const nameMatch = headers.match(/name="([^"]+)"/);
+                const filenameMatch = headers.match(/filename="([^"]+)"/);
+                const name = nameMatch ? nameMatch[1] : '';
+
+                if (name === 'meta') {
+                  const metaPath = path.join(snapshotDir, 'meta.json');
+                  fs.writeFileSync(metaPath, Buffer.from(body, 'binary'));
+                  metaSaved = true;
+                } else if (name === 'screenshot' && filenameMatch) {
+                  const filePath = path.join(snapshotDir, filenameMatch[1] || 'screenshot.png');
+                  fs.writeFileSync(filePath, Buffer.from(body, 'binary'));
+                  screenshotSaved = true;
+                }
+              }
+
+              const msg = `[CAT-DEBUG] Snapshot saved at ${snapshotDir} (meta: ${metaSaved}, screenshot: ${screenshotSaved})`;
+              console.log(`\n${msg}`);
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ ok: true, dir: snapshotDir, metaSaved, screenshotSaved }));
+            });
+          } catch (error) {
+            console.log('\n[CAT-DEBUG] Failed to save snapshot', error);
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end('{"ok":false}');
+          }
+        });
+      }
+    },
     react({
       // Enable Fast Refresh in development
       fastRefresh: true,

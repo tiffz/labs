@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import JobPanel from './JobPanel';
 import MeritsPanel from './MeritsPanel';
 import ThingsPanel from './ThingsPanel';
+import EventsPanel from './EventsPanel';
 import type { Milestone, Award } from '../../data/achievementData';
 import type { JobInterviewState } from '../../game/types';
+import type { GameEvent } from './EventsPanel';
 
 interface TabbedPanelProps {
   // Job panel props
@@ -40,9 +42,13 @@ interface TabbedPanelProps {
   // Shared currency props
   currentLove: number;
   currentTreats: number;
+  
+  // Events panel props
+  gameEvents: GameEvent[];
+  onClearEvents?: () => void;
 }
 
-type TabId = 'jobs' | 'things' | 'merits';
+type TabId = 'events' | 'jobs' | 'things' | 'merits';
 
 const TabbedPanel: React.FC<TabbedPanelProps> = ({
   jobLevels,
@@ -63,13 +69,21 @@ const TabbedPanel: React.FC<TabbedPanelProps> = ({
   specialActions,
   currentLove,
   currentTreats,
+  gameEvents,
+  onClearEvents,
 }) => {
-  const [activeTab, setActiveTab] = useState<TabId>('jobs');
+  const [activeTab, setActiveTab] = useState<TabId>('events');
 
   return (
     <div className="tabbed-panel">
       {/* Tab Headers */}
       <div className="tab-headers">
+        <button
+          className={`tab-header ${activeTab === 'events' ? 'active' : ''}`}
+          onClick={() => setActiveTab('events')}
+        >
+          Events
+        </button>
         <button
           className={`tab-header ${activeTab === 'jobs' ? 'active' : ''}`}
           onClick={() => setActiveTab('jobs')}
@@ -82,7 +96,6 @@ const TabbedPanel: React.FC<TabbedPanelProps> = ({
         >
           Things
         </button>
-
         <button
           className={`tab-header ${activeTab === 'merits' ? 'active' : ''}`}
           onClick={() => setActiveTab('merits')}
@@ -93,6 +106,12 @@ const TabbedPanel: React.FC<TabbedPanelProps> = ({
 
       {/* Tab Content */}
       <div className="tab-content">
+        {activeTab === 'events' && (
+          <EventsPanel
+            events={gameEvents}
+            onClearEvents={onClearEvents}
+          />
+        )}
         {activeTab === 'jobs' && (
           <JobPanel
             jobLevels={jobLevels}

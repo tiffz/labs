@@ -3,15 +3,43 @@ import '../../styles/cats.css';
 import type { MouseState } from '../../hooks/useMouseTracking';
 
 interface WandToyProps {
-  isShaking: boolean;
+  onWandClick: () => void;
   initialPosition: { x: number; y: number };
   mouseState: MouseState;
+  isShaking?: boolean;
 }
 
-const WandToy: React.FC<WandToyProps> = ({ isShaking, initialPosition, mouseState }) => {
+const WandToy: React.FC<WandToyProps> = ({ onWandClick, initialPosition, mouseState, isShaking = false }) => {
   const lastPositionRef = useRef(initialPosition);
   const wandRef = useRef<HTMLDivElement>(null);
   const currentPositionRef = useRef(initialPosition);
+  const shakeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isShakingRef = useRef(false);
+
+  const handleClick = () => {
+    // Trigger shake animation
+    if (wandRef.current) {
+      wandRef.current.classList.remove('shaking');
+      // Force reflow to restart animation
+      void wandRef.current.offsetHeight;
+      wandRef.current.classList.add('shaking');
+      isShakingRef.current = true;
+      
+      // Remove class after animation
+      if (shakeTimeoutRef.current) {
+        clearTimeout(shakeTimeoutRef.current);
+      }
+      shakeTimeoutRef.current = setTimeout(() => {
+        if (wandRef.current) {
+          wandRef.current.classList.remove('shaking');
+          isShakingRef.current = false;
+        }
+      }, 600); // Match CSS animation duration
+    }
+    
+    // Call the click handler
+    onWandClick();
+  };
 
   useEffect(() => {
     const handleMouseMove = (newPosition: { x: number; y: number }) => {
@@ -36,11 +64,15 @@ const WandToy: React.FC<WandToyProps> = ({ isShaking, initialPosition, mouseStat
         wiggleAmount += (Math.random() - 0.5) * 10;
         
         // Apply transform directly to DOM (no React re-render)
-        wandRef.current.style.transform = `translate(-50%, 0) rotate(${wiggleAmount}deg)`;
+        // But don't override transform when shaking animation is active
+        if (!isShakingRef.current) {
+          wandRef.current.style.transform = `translate(-50%, 0) rotate(${wiggleAmount}deg)`;
+        }
         
         // Automatically decay the wiggle effect via CSS transition
+        // But don't override transform when shaking animation is active
         setTimeout(() => {
-          if (wandRef.current) {
+          if (wandRef.current && !isShakingRef.current) {
             wandRef.current.style.transform = 'translate(-50%, 0) rotate(0deg)';
           }
         }, 100);
@@ -56,16 +88,19 @@ const WandToy: React.FC<WandToyProps> = ({ isShaking, initialPosition, mouseStat
     return unsubscribe;
   }, [mouseState]);
 
+  // Keep CSS transition on the wrapper for smooth decay assertions in tests
   return (
     <div
       ref={wandRef}
-      className={`wand-toy ${isShaking ? 'shaking' : ''}`}
+      className={`wand-toy${isShaking ? ' shaking' : ''}`}
+      onClick={handleClick}
       style={{
         left: `${initialPosition.x}px`,
         top: `${initialPosition.y}px`,
-        transform: 'translate(-50%, 0)',
         transformOrigin: '50% 0',
-        transition: 'transform 0.1s ease-out', // Smooth wiggle decay
+        transition: 'transform 0.1s ease-out',
+        transform: 'translate(-50%, 0)',
+        cursor: 'pointer',
       }}
     >
       <svg

@@ -217,4 +217,27 @@ describe('Heart Tracking Integration', () => {
       expect(mockOnHeartSpawned).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe('Pounce completion event', () => {
+    test('should dispatch a cat-pounce-complete event via animation controller', async () => {
+      const { CatAnimationController } = await import('../animation/AnimationController');
+      const mockAnimEvents = {
+        onHeartSpawned: vi.fn(),
+        onTrackableHeartSet: vi.fn(),
+        onPounceComplete: vi.fn(),
+      };
+      const controller = new CatAnimationController(mockAnimEvents);
+      const spy = vi.spyOn(mockAnimEvents, 'onPounceComplete');
+      controller.onPounceTriggered({
+        distance: 50,
+        angle: 0,
+        intensity: 1,
+        catEnergy: 100,
+        wandPosition: { x: 200, y: 200 },
+        catPosition: { x: 150, y: 150 }
+      });
+      vi.runAllTimers();
+      expect(spy).toHaveBeenCalled();
+    });
+  });
 }); 
