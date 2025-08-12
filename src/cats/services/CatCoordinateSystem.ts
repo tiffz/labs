@@ -27,18 +27,18 @@ interface FloorDimensions {
 class CatCoordinateSystem {
   // World dimensions (logical units)
   private static readonly WORLD_WIDTH = 1600; // pixels - matches current world width
-  private static readonly WORLD_DEPTH = 920;  // Extend logical range so clamp aligns better with floor extremes
+  private static readonly WORLD_DEPTH = 1200;  // Extend logical range so scale keeps growing through full front travel
   private static readonly WORLD_HEIGHT = 400; // logical units - maximum height
   
   // Perspective settings
   // Adjusted for larger Z-range
   private static readonly MIN_SCALE = 0.4;    // Smaller when far back
-  private static readonly MAX_SCALE = 1.55;    // Slightly larger when close to avoid looking too small at front
+  private static readonly MAX_SCALE = 1.9;    // Larger at front to prevent perceived smallness near camera
   private static readonly PERSPECTIVE_STRENGTH = 0.0; // Eliminate skew coupling X with Z for now
   
   // Boundaries  
-  private static readonly WALL_DEPTH = 780;     // Stronger back clamp so cat cannot touch wall
-  private static readonly FLOOR_MARGIN = -80; // Allow near-front approach but prevent overshoot visually
+  private static readonly WALL_DEPTH = 0;       // True back wall at 0 for a clean [0..WORLD_DEPTH] mapping
+  private static readonly FLOOR_MARGIN = 0; // Use the true front as clamp to avoid visual overshoot artifacts
   
   private viewportWidth: number = 800;
   private viewportHeight: number = 600;
@@ -89,13 +89,6 @@ class CatCoordinateSystem {
       worldDepth: CatCoordinateSystem.WORLD_DEPTH
     };
     
-    // Debug floor dimensions (temporarily disabled)
-    // console.log(`🏠 Floor dimensions:`, {
-    //   'viewport': { width: this.viewportWidth, height: this.viewportHeight },
-    //   'floor height (40%)': floorScreenHeight,
-    //   'world dimensions': { width: CatCoordinateSystem.WORLD_WIDTH, depth: CatCoordinateSystem.WORLD_DEPTH }
-    // });
-    
     return dimensions;
   }
   
@@ -106,35 +99,23 @@ class CatCoordinateSystem {
     const floor = this.getFloorDimensions();
     
     // Calculate perspective scale based on Z depth (clamped to valid range including floor margin)
-    const maxZ = CatCoordinateSystem.WORLD_DEPTH - CatCoordinateSystem.FLOOR_MARGIN;
-    // Add a small safety margin so the cat's body never intersects the wall visually
-    const WALL_SAFETY = 30; // world units
-    const zClamped = Math.max(CatCoordinateSystem.WALL_DEPTH + WALL_SAFETY, Math.min(maxZ, coords.z));
-    // Normalize Z within the valid movement range [WALL_DEPTH, WORLD_DEPTH - FLOOR_MARGIN]
-    const zNormalized = (zClamped - CatCoordinateSystem.WALL_DEPTH) / (maxZ - CatCoordinateSystem.WALL_DEPTH);
+    const maxZForClamp = CatCoordinateSystem.WORLD_DEPTH - CatCoordinateSystem.FLOOR_MARGIN;
+    // Clamp to world bounds without extra safety to preserve full scale range toward front
+    const zClamped = Math.max(CatCoordinateSystem.WALL_DEPTH, Math.min(maxZForClamp, coords.z));
+    // Normalize Z within [WALL_DEPTH, maxZForClamp] so scale reaches MAX exactly at the visual front
+    const normDenom = Math.max(1, (maxZForClamp - CatCoordinateSystem.WALL_DEPTH));
+    const zNormalizedRaw = (zClamped - CatCoordinateSystem.WALL_DEPTH) / normDenom;
+    const zNormalized = Math.max(0, Math.min(1, zNormalizedRaw));
     
 
     // Ease-out scaling so change near back wall is more subtle
-    const eased = 1 - Math.pow(1 - zNormalized, 1.8);
+    // Use a gentle curve that is strictly increasing and avoids flattening near the front
+    const eased = zNormalized; // linear for strict monotonicity; keeps growing to MAX at front
     const scale = CatCoordinateSystem.MIN_SCALE + 
                   (CatCoordinateSystem.MAX_SCALE - CatCoordinateSystem.MIN_SCALE) * eased;
     
     // Calculate screen X in world-content coordinates (camera applied by CSS in World2D)
     const screenX = coords.x;
-    
-    // DEBUG hook removed to avoid unused variables and noise
-    
-    // Debug logging (commented out to reduce noise)
-    // console.log('WorldToScreen debug:', {
-    //   inputCoords: coords,
-    //   cameraX: this.cameraX,
-    //   viewportWidth: this.viewportWidth,
-    //   viewportHeight: this.viewportHeight,
-    //   floor,
-    //   zNormalized,
-    //   scale,
-    //   screenX
-    // });
     
     // Calculate screen Y with perspective
     // Y=0 is the floor level, positive Y moves up
@@ -166,20 +147,6 @@ class CatCoordinateSystem {
 
     // Pure math: no heuristic lift; the view layer controls overlap
     const correctedBottom = bottomOffset;
-    
-    // Debug logging disabled now that wall walking is fixed
-    // if (coords.z === 0) {
-    //   console.log('🏠 BACK WALL DEBUG Z=0 (with CSS offset fix):', {
-    //     zNormalized: zNormalized,
-    //     floorScreenHeight: floor.screenHeight,
-    //     floorDepthOffset: floorDepthOffset,
-    //     gameContentLayerOffset: gameContentLayerOffset,
-    //     bottomOffset: bottomOffset,
-    //     note: 'Should position cat at BACK of room (accounting for 15% CSS offset)'
-    //   });
-    // }
-    
-
     
     return {
       x: screenX,

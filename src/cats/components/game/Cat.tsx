@@ -386,8 +386,7 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
     }
 
     return (
-      <div className="cat-with-shadow">
-        {/* Shadow removed - now rendered in CatInteractionManager with new coordinate system */}
+      <div className="cat-container-internal">
         
         {/* Cat SVG with dynamic positioning */}
         <svg

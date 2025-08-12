@@ -234,7 +234,7 @@ export class CatPositionService {
     onUpdate?: (worldPos: { x: number }, position: CatPosition3D) => void,
     onComplete?: () => void
   ): void {
-    console.log('CatPositionService: chaseWorldTarget called', { targetWorldX, onUpdate: !!onUpdate, onComplete: !!onComplete });
+    // Reduced noisy logging in production
     const startWorldX = this.worldPosition.x;
     const startZ = this.position.z;
     const distance = Math.abs(targetWorldX - startWorldX);
@@ -249,7 +249,7 @@ export class CatPositionService {
         startTime = currentTime;
       }
       
-      console.log('CatPositionService: animate function called', { currentTime, lastFrameTime, elapsed: currentTime - startTime });
+      // Debug removed
       // Throttle to ~60fps for smoother animation
       if (currentTime - lastFrameTime < 16) {
         requestAnimationFrame(animate);
@@ -281,7 +281,7 @@ export class CatPositionService {
       
       const worldPos = this.getWorldPosition();
       const position = this.getPosition();
-      console.log('CatPositionService: calling onUpdate callback', { worldPos, position, progress, easeProgress });
+      // Debug removed
       onUpdate?.(worldPos, position);
       
       if (progress < 1) {
@@ -291,7 +291,7 @@ export class CatPositionService {
       }
     };
     
-    console.log('CatPositionService: Starting animation with requestAnimationFrame');
+    // Debug removed
     requestAnimationFrame(animate);
   }
 

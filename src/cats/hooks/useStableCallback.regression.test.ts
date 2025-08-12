@@ -76,9 +76,9 @@ describe('useStableCallback Regression Tests', () => {
   describe('useStableHandlers', () => {
     it('should maintain stable references for multiple handlers', () => {
       const handlers = {
-        onClick: () => console.log('click'),
-        onHover: () => console.log('hover'),
-        onSubmit: () => console.log('submit')
+        onClick: () => {},
+        onHover: () => {},
+        onSubmit: () => {}
       };
 
       const { result, rerender } = renderHook(() => useStableHandlers(handlers));

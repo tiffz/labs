@@ -38,7 +38,7 @@ describe('Pouncing Heart Integration Tests', () => {
       await new Promise(resolve => setTimeout(resolve, 200)); // Wait longer for async spawning
       
       const pettingHeartCount = mockOnHeartSpawned.mock.calls.length;
-      console.log(`Petting: ${pettingLove} love → ${pettingHeartCount} hearts`);
+      // keep tests quiet
       
       // Clear and test pouncing hearts
       mockOnHeartSpawned.mockClear();
@@ -53,7 +53,7 @@ describe('Pouncing Heart Integration Tests', () => {
       await new Promise(resolve => setTimeout(resolve, 200)); // Wait longer for async spawning
       
       const pouncingHeartCount = mockOnHeartSpawned.mock.calls.length;
-      console.log(`Pouncing: ${pouncingLove} love → ${pouncingHeartCount} hearts`);
+      // keep tests quiet
       
       // Pouncing should spawn more hearts than petting
       expect(pouncingHeartCount).toBeGreaterThan(pettingHeartCount);

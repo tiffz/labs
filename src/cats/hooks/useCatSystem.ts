@@ -105,7 +105,6 @@ export const useCatSystem = ({
       onPounceTriggered: (pounceData) => {
         // Don't pounce if cat is sleeping or drowsy
         if (isSleeping || isDrowsy) {
-          console.log('Pounce blocked - cat is sleeping or drowsy');
           return;
         }
         
@@ -114,7 +113,7 @@ export const useCatSystem = ({
         // PROPER pouncing - chase the wand toy
         const wandScreenX = pounceData.wandPosition.x;
         const wandScreenY = pounceData.wandPosition.y;
-        console.log('Pounce triggered! Wand at screen:', wandScreenX, wandScreenY, 'Cat energy:', pounceData.catEnergy);
+        // Debug removed; rely on DevPanel overlay instead
         
         // Convert wand screen coordinates to world coordinates properly
         const wandWorldCoords = catCoordinateSystem.screenPositionToWorldCoordinates(
@@ -123,10 +122,7 @@ export const useCatSystem = ({
           200 // Target Z depth for pounce
         );
         
-        console.log('Wand conversion:', { 
-          screen: { x: wandScreenX, y: wandScreenY }, 
-          world: wandWorldCoords 
-        });
+        // Removed noisy wand conversion logs
         
         // Calculate pounce excitement - higher energy = more dramatic pounce
         const energy = pounceData.catEnergy || 50;
@@ -144,15 +140,13 @@ export const useCatSystem = ({
             pounceHeight,    // Dynamic jump height
             pounceDuration,  // Dynamic speed
             () => {
-              console.log('Pounce toward wand completed at:', wandWorldCoords.x);
+              // Completed pounce
               // After pounce, gradually return to rest position after a delay
               setTimeout(() => {
                 if (pounceToPosition) {
                   const restX = 560; // Default rest position
                   const restZ = 180; // Default rest depth (more moderate in new range)
-                  pounceToPosition(restX, restZ, 0, 1500, () => {
-                    console.log('Return to rest completed');
-                  });
+                  pounceToPosition(restX, restZ, 0, 1500);
                 }
               }, 800 + Math.random() * 1200); // Random delay before returning
             }

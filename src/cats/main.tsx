@@ -101,3 +101,18 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <App />
   </StrictMode>
 ) 
+
+// Mark fonts as loaded as soon as the Material Symbols stylesheet is ready to avoid ligature text flash
+try {
+  if (document.fonts) {
+    document.fonts.ready.then(() => {
+      document.documentElement.classList.add('fonts-loaded');
+    }).catch(() => {
+      document.documentElement.classList.add('fonts-loaded');
+    });
+  } else {
+    document.documentElement.classList.add('fonts-loaded');
+  }
+} catch {
+  document.documentElement.classList.add('fonts-loaded');
+}

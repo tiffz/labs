@@ -5148,6 +5148,11 @@ body {
   width: auto; /* Width controlled inline (300 * scale) for accurate centering */
   height: auto; /* Let content determine height */
   margin: 0;
+  /* Neutralize legacy container behavior that interferes with math-driven sizing */
+  display: block !important; /* disable legacy flex centering */
+  align-items: normal !important;
+  justify-content: normal !important;
+  contain: none !important; /* allow content size to influence container correctly */
 }
 
 .world-2d-container .cat-svg {
@@ -5162,6 +5167,106 @@ body {
   image-rendering: -webkit-optimize-contrast;
   shape-rendering: geometricPrecision;
   text-rendering: geometricPrecision;
+}
+
+/* Walking bob applies to the container to ensure visibility */
+.cat-container.walking {
+  animation: cat-walk-bob 0.7s ease-in-out infinite;
+}
+
+@keyframes cat-walk-bob {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(3px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+/* ==== WORLD RENDER OVERRIDES (prevent legacy CSS interference) ==== */
+/* Keep absolute-position math as the single source of truth */
+.world-2d-container .cat-container {
+  /* Ensure legacy block styles do not interfere */
+  margin: 0 !important;
+}
+
+/* Disable transitions that introduce subpixel drift across z */
+.world-2d-container .cat-container,
+.world-2d-container .cat-container * {
+  transition: none !important;
+}
+
+/* Do not cancel walking animation, but neutralize other animations/transforms */
+.world-2d-container .cat-container:not(.walking) {
+  animation: none !important;
+}
+
+/* Prevent stray transforms on the top-level SVG from altering layout */
+/* Allow our SVG to scale naturally inside its absolutely positioned box */
+.world-2d-container .cat-svg {
+  transform: none;
+}
+/* Material Symbols: prefer swap to reduce FOUT */
+@font-face {
+  font-family: 'Material Symbols Outlined';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Material Symbols Outlined');
+}
+
+.material-symbols-outlined,
+.material-icons {
+  font-family:
+    'Material Symbols Outlined',
+    'Material Icons',
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    Ubuntu,
+    Cantarell,
+    Noto Sans,
+    Arial,
+    sans-serif;
+}
+
+/* Prevent ligature text flash until font is ready */
+.material-symbols-outlined,
+.material-icons {
+  visibility: hidden;
+}
+html.fonts-loaded .material-symbols-outlined,
+html.fonts-loaded .material-icons {
+  visibility: visible;
+}
+
+/* Material Symbols font hint to reduce FOUT by preferring installed font and swapping quickly */
+@font-face {
+  font-family: 'Material Symbols Outlined';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Material Symbols Outlined');
+}
+
+.material-symbols-outlined,
+.material-icons {
+  font-family:
+    'Material Symbols Outlined',
+    'Material Icons',
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    Ubuntu,
+    Cantarell,
+    Noto Sans,
+    Arial,
+    sans-serif;
 }
 
 /* Dynamic shadow will be handled by React component - no static CSS shadow */
@@ -5323,8 +5428,8 @@ body {
 
 /* 2D World Physics Constraints */
 .world-2d-container .cat-svg {
-  /* Ensure cat never goes below ground level */
-  min-height: 200px;
+  /* Allow full scale range – avoid forcing minimum height that breaks projection math */
+  min-height: 0;
 }
 
 /* Updated pounce animations for 2D physics */
@@ -5337,7 +5442,8 @@ body {
 .world-2d-container .cat-container {
   /* Constrain horizontal movement to stay within reasonable bounds */
   overflow: visible;
-  max-width: 400px;
+  /* Remove max-width cap so perspective scaling at front isn't clamped */
+  max-width: none;
 }
 
 /* Enhanced 2D movement for side-scrolling */

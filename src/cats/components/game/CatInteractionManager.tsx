@@ -119,15 +119,28 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
   const [wigglingEar, setWigglingEar] = useState<'left' | 'right' | null>(null);
   const [isSubtleWiggling, setIsSubtleWiggling] = useState(false);
   const [isJumping, setIsJumping] = useState(false);
+  const [isWalkingUI, setIsWalkingUI] = useState(false);
+  const walkingPrevWorldXRef = useRef<number | null>(null);
+  const walkingTimerRef = useRef<number | null>(null);
   const rapidClickTimestampsRef = useRef<number[]>([]);
   const [isSmiling, setIsSmiling] = useState(false);
   const [headTiltAngle, setHeadTiltAngle] = useState(0);
   const [isTailFlicking, setIsTailFlicking] = useState(false);
+  // Debug: capture DOM rects of containers for snapshots
+  const shadowContainerRef = useRef<HTMLDivElement | null>(null);
+  const catContainerRef = useRef<HTMLDivElement | null>(null);
   // Fixed geometry from SVG viewBox for stable anchors (avoid animation-induced drift)
   const VIEWBOX_W = 220;
   const VIEWBOX_H = 200;
   const FEET_LINE_Y = 185; // stable feet line in viewBox coords
-  const FOOT_GAP_RATIO = (VIEWBOX_H - FEET_LINE_Y) / VIEWBOX_H; // ~0.075
+  // const FOOT_GAP_RATIO = (VIEWBOX_H - FEET_LINE_Y) / VIEWBOX_H; // kept for reference
+  // Default logical mass box for perceived body (ignored if SVG-driven box available)
+  const MASS_LEFT = 48;   // viewBox units
+  const MASS_RIGHT = 162; // viewBox units
+  const MASS_TOP = 62;    // viewBox units
+  const MASS_BOTTOM = 182; // viewBox units
+  const MASS_CENTER_X = (MASS_LEFT + MASS_RIGHT) / 2;
+  const lastMassBoxVBRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
 
 
   
@@ -150,6 +163,38 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
   
 
   const { baseLovePerInteraction, meritMultipliers } = economy;
+
+  // Walking UI latch driven by world X deltas; ensures class clears even without re-render activity
+  useEffect(() => {
+    const prev = walkingPrevWorldXRef.current ?? catWorldCoords.x;
+    const dx = Math.abs(catWorldCoords.x - prev);
+    walkingPrevWorldXRef.current = catWorldCoords.x;
+    if (dx > 0.5 && !isJumping) {
+      setIsWalkingUI(true);
+      if (walkingTimerRef.current) {
+        clearTimeout(walkingTimerRef.current);
+      }
+      walkingTimerRef.current = window.setTimeout(() => {
+        setIsWalkingUI(false);
+        walkingTimerRef.current = null;
+      }, 280);
+    }
+    return () => {
+      // no-op
+    };
+  }, [catWorldCoords.x, isJumping]);
+
+  // Auto-enable overlay via URL param overlay=1 for easy verification
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('overlay') === '1') {
+        (window as unknown as { __CAT_OVERLAY__?: boolean }).__CAT_OVERLAY__ = true;
+      }
+    } catch {
+      // ignore malformed URLs in overlay toggler
+    }
+  }, []);
 
   // Handle smile timeout
   useEffect(() => {
@@ -415,55 +460,105 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
             // Shadow dimensions - scale already calculated
             const SHADOW_WIDTH = shadowLayout.width;
             const SHADOW_HEIGHT = shadowLayout.height;
-            // Single aesthetic parameter: how much of the shadow should be overlapped (0..1)
-            const OVERLAP_RATIO = 0.56; // fraction of shadow height to cover
+            // Remove ratio-based coupling; we will anchor feet to ground baseline
             // Compute absolute-positioned cat container without transforms
-            const catWidthPx = Math.round(300 * scale);
+            const catWidthPx = 300 * scale;
             const catLeftPx = Math.round(roundedCatLeft - catWidthPx / 2);
             // Use SVG foot anchor so feet meet baseline irrespective of extra viewBox padding
-            const catHeightPx = Math.round(catWidthPx * (VIEWBOX_H / VIEWBOX_W));
-            const footGapPx = FOOT_GAP_RATIO * catHeightPx; // no rounding for invariance
+            const catHeightPx = catWidthPx * (VIEWBOX_H / VIEWBOX_W);
+            // Foot gap must scale with vertical dimension (height), not width
+            const footGapPx = (VIEWBOX_H - FEET_LINE_Y) / VIEWBOX_H * catHeightPx;
             // Apply current jump delta (cat y above ground) to keep vertical movement visible
             const jumpDeltaPx = Math.max(0, catScreenPosition.y - groundScreen.y); // no rounding for invariance
-            // Ratio-based overlap (scale invariant) with back correction (eased)
-            const k = SHADOW_HEIGHT > 0 ? footGapPx / SHADOW_HEIGHT : 0;
-            // Slight mass-center correction: the body’s visual center is a bit left of x due to tail
-            const BODY_CENTER_BIAS_PX = -8;
-            const floorH = Math.max(1, catCoordinateSystem.getFloorDimensions().screenHeight);
-            const t = groundScreen.y / floorH; // 1 at back → 0 at front
-            const zBackCorrectionPx = Math.round(50 * Math.pow(t, 2)); // slightly reduced to lift cat ~3-5px at back
-            let catBottomPx = shadowLayout.bottom + (OVERLAP_RATIO - k) * SHADOW_HEIGHT + jumpDeltaPx - zBackCorrectionPx;
-            // Ensure a minimum visible rim of the shadow at all times (avoid full coverage)
-            const MIN_SHADOW_RIM_PX = 12;
-            const shadowTopPx = shadowLayout.bottom + SHADOW_HEIGHT;
-            if (catBottomPx > shadowTopPx - MIN_SHADOW_RIM_PX) {
-              catBottomPx = shadowTopPx - MIN_SHADOW_RIM_PX;
-            }
-            catBottomPx = Math.round(catBottomPx);
+            // Body center bias set to 0 to avoid perceived horizontal shift scaling with Z
+            // const BODY_CENTER_BIAS_PX = 0; // no bias in simplified model
+            // Minimal model: no clamps, no rims – pure math from coordinate system
+            // Visibility-safe render: clamp container and translate inner so on-screen top stays at baseline
+            const groundY = groundScreen.y;
+            // Maintain constant visual overlap across scales at all Z:
+            // Align CAT FEET (the lowest contour of the SVG) to the vertical center of the shadow ellipse
+            // Feet line equals container bottom + footGapPx. To make feet == shadow center, set FEET_OFFSET = 0.
+            const FEET_OFFSET_PX = 0;
+            // Define target visual bottom from the baseline (which equals the feet line).
+            const baseline = groundY + FEET_OFFSET_PX;
+            // target visual bottom (derived): baseline - footGapPx + jumpDeltaPx
+            // Place container at clamped baseline (without jump), then translate inner by clampDelta - jumpDelta
+            const unclampedContainerBottom = baseline - footGapPx;
+            const catContainerBottomPx = Math.max(0, unclampedContainerBottom);
+            const clampDelta = catContainerBottomPx - unclampedContainerBottom; // >= 0 when clamped
+            const catInnerTranslateY = clampDelta - jumpDeltaPx; // positive moves down, negative moves up
+            // Visual bottom equals container bottom minus inner translate (CSS translateY positive moves down)
+            const catBottomPx = catContainerBottomPx - catInnerTranslateY;
+            // Derive shadow vertical position directly from cat feet line for exact lock
+            const floorHeight = catCoordinateSystem.getFloorDimensions().screenHeight;
+            // compute feetLinePx only if overlay is enabled (to avoid linter warning)
+            const overlayEnabled = typeof window !== 'undefined' && (window as unknown as { __CAT_OVERLAY__?: boolean }).__CAT_OVERLAY__ === true;
+            // remove unused local; compute inline where needed
+            // Anchor the shadow so its CENTER equals the ground baseline (feet baseline)
+            const desiredShadowCenter = Math.min(groundY, floorHeight);
+            const adjustedShadowBottom = desiredShadowCenter - (SHADOW_HEIGHT / 2); // allow negative; parent overflow is visible
+            const shadowInnerTranslateY = 0; // no inner translation needed when container is anchored correctly
+            const shadowTopPx = adjustedShadowBottom + SHADOW_HEIGHT; // top is center + height/2
+            const shadowCenterPx = adjustedShadowBottom + (SHADOW_HEIGHT / 2);
+            // Prefer anchoring by top to avoid rounding via element height in DOMRect calculations
+            const shadowContainerTopPx = floorHeight - shadowTopPx;
+            // overlayEnabled already computed above
+            // Add walking class when moving horizontally at ground (simple heuristic via last position)
             const catContainerStyle: React.CSSProperties = {
               position: 'absolute',
               left: `${catLeftPx}px`,
-              bottom: `${catBottomPx}px`,
+              bottom: `${catContainerBottomPx}px`,
               width: `${catWidthPx}px`,
               height: 'auto',
               zIndex: 6,
+              outline: overlayEnabled ? '1px dashed rgba(0,255,255,0.6)' : undefined,
             };
 
-            // Keep shadow within floor bounds to ensure visibility at back
-            const floorH2 = Math.max(1, catCoordinateSystem.getFloorDimensions().screenHeight);
-            const adjustedShadowBottom = Math.max(0, Math.min(shadowLayout.bottom, floorH2 - SHADOW_HEIGHT));
-            // Center shadow under cat screen X (constant pixel bias only)
-            const containerCenterPx = catLeftPx + catWidthPx / 2;
-            // Keep shadow horizontally aligned to the same rounded center as the cat container to avoid sub-pixel drift
-            const adjustedShadowLeft = Math.round(roundedCatLeft - SHADOW_WIDTH / 2 + SHADOW_OFFSET_X + BODY_CENTER_BIAS_PX);
-            // Debug logging (throttled) to analyze drift behaviors end-to-end
+            // Determine mass box from live SVG when available
+            let massBoxVB = lastMassBoxVBRef.current;
+            try {
+              if (catRef.current) {
+                const svg = catRef.current as unknown as SVGSVGElement;
+                const bodyNode = svg.querySelector('#body') as unknown as SVGGElement | null;
+                const headNode = svg.querySelector('#head') as unknown as SVGGElement | null;
+                if (
+                  bodyNode &&
+                  headNode &&
+                  typeof (bodyNode as unknown as { getBBox?: () => DOMRect }).getBBox === 'function' &&
+                  typeof (headNode as unknown as { getBBox?: () => DOMRect }).getBBox === 'function'
+                ) {
+                  const b1 = (bodyNode as unknown as { getBBox: () => DOMRect }).getBBox();
+                  const b2 = (headNode as unknown as { getBBox: () => DOMRect }).getBBox();
+                  const x = Math.min(b1.x, b2.x);
+                  const y = Math.min(b1.y, b2.y);
+                  const right = Math.max(b1.x + b1.width, b2.x + b2.width);
+                  const bottom = Math.max(b1.y + b1.height, b2.y + b2.height);
+                  massBoxVB = { x, y, width: right - x, height: bottom - y };
+                  lastMassBoxVBRef.current = massBoxVB;
+                }
+              }
+            } catch {
+              // ignore SVG measurement failures; fall back to default mass box
+            }
+
+            const effectiveMassCenterXVB = massBoxVB ? (massBoxVB.x + massBoxVB.width / 2) : MASS_CENTER_X;
+            // Perceived mass center offset in px from geometric center
+            const massCenterOffsetPx = ((effectiveMassCenterXVB - VIEWBOX_W / 2) / VIEWBOX_W) * catWidthPx;
+            const adjustedShadowLeft = Math.round(catScreenPosition.x - SHADOW_WIDTH / 2 + massCenterOffsetPx);
+            // Debug logging (throttled) to analyze drift behaviors end-to-end and expose to snapshots
             if (typeof window !== 'undefined' && (window as unknown as { __CAT_DEBUG__?: boolean }).__CAT_DEBUG__ !== false) {
               const now = performance.now();
               const w = window as unknown as { __catShadowLastLogTs?: number };
               w.__catShadowLastLogTs = w.__catShadowLastLogTs || 0;
-              if (now - (w.__catShadowLastLogTs ?? 0) > 200) {
+                if (now - (w.__catShadowLastLogTs ?? 0) > 200) {
                 w.__catShadowLastLogTs = now;
-                console.log('[CAT-SHADOW] frame', {
+                const shadowCenterX = adjustedShadowLeft + SHADOW_WIDTH / 2;
+                const catPerceivedCenterX = roundedCatLeft + Math.round(massCenterOffsetPx);
+                const shadowRect = shadowContainerRef.current?.getBoundingClientRect?.();
+                const catRect = catContainerRef.current?.getBoundingClientRect?.();
+                const worldEl = document.querySelector('.world-content') as HTMLElement | null;
+                const worldTransform = worldEl ? getComputedStyle(worldEl).transform : undefined;
+                const frame = {
                   world: catWorldCoords,
                   catScreen: catScreenPosition,
                   groundScreen,
@@ -477,29 +572,85 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
                     catHeightPx,
                     footGapPx,
                     jumpDeltaPx,
-                    zBackCorrectionPx,
-                    catBottomPx,
-                    containerCenterPx,
+                    zBackCorrectionPx: 0,
+                    catBottomPx: catBottomPx,
+                    containerCenterPx: roundedCatLeft,
                     adjustedShadowLeft,
+                    massCenterOffsetPx,
+                    massBox: (() => {
+                      const scaleY = catHeightPx / VIEWBOX_H;
+                      const vb = massBoxVB || { x: MASS_LEFT, y: MASS_TOP, width: MASS_RIGHT - MASS_LEFT, height: MASS_BOTTOM - MASS_TOP };
+                      const leftPx = catLeftPx + (vb.x / VIEWBOX_W) * catWidthPx;
+                      const widthPx = (vb.width / VIEWBOX_W) * catWidthPx;
+                      const feet = catBottomPx + footGapPx;
+                      const bottomPx = feet + (FEET_LINE_Y - (vb.y + vb.height)) * scaleY;
+                      const heightPx = vb.height * scaleY;
+                      return { leftPx, bottomPx, widthPx, heightPx };
+                    })(),
                   },
-                });
+                   measures: {
+                    feetLinePx: catBottomPx + footGapPx,
+                    visualShadowTopPx: shadowTopPx,
+                    visualShadowCenterPx: shadowCenterPx,
+                    deltaPx: (catBottomPx + footGapPx) - shadowCenterPx,
+                    horizontalDeltaPx: Math.round(catPerceivedCenterX - shadowCenterX),
+                    catPerceivedCenterX,
+                    shadowCenterX,
+                  },
+                  domRects: {
+                    shadow: shadowRect ? { left: shadowRect.left, top: shadowRect.top, width: shadowRect.width, height: shadowRect.height } : null,
+                    cat: catRect ? { left: catRect.left, top: catRect.top, width: catRect.width, height: catRect.height } : null,
+                    worldTransform,
+                  },
+                };
+                (window as unknown as { __CAT_LAST_OVERLAY__?: unknown }).__CAT_LAST_OVERLAY__ = frame;
+                console.debug('[CAT-SHADOW] frame', frame);
               }
+            }
+            // Track last X to toggle walking animation heuristically
+            if (typeof window !== 'undefined') {
+              (window as unknown as { __prevCatX?: number }).__prevCatX = catWorldCoords.x;
             }
             const shadowContainerStyle: React.CSSProperties = {
               position: 'absolute',
               left: `${adjustedShadowLeft}px`,
-              bottom: `${adjustedShadowBottom}px`,
+              top: `${shadowContainerTopPx}px`,
               width: `${SHADOW_WIDTH}px`,
               height: 'auto',
               zIndex: 4,
+              outline: overlayEnabled ? '1px dashed rgba(255,255,0,0.6)' : undefined,
             };
             
         return (
           <React.Fragment>
+            {/* === DEBUG OVERLAY (toggle with window.__CAT_OVERLAY__=true) === */}
+            {overlayEnabled && (
+              <>
+                <div style={{ position: 'absolute', left: `${Math.round(roundedCatLeft) - 120}px`, bottom: `${Math.round(shadowCenterPx)}px`, width: '240px', height: '2px', background: 'rgba(0, 150, 255, 0.9)', zIndex: 9999, pointerEvents: 'none' }} />
+                <div style={{ position: 'absolute', left: `${Math.round(roundedCatLeft) - 120}px`, bottom: `${Math.round((catBottomPx + footGapPx)) }px`, width: '240px', height: '2px', background: 'rgba(255, 80, 80, 0.9)', zIndex: 9999, pointerEvents: 'none' }} />
+                <div style={{ position: 'absolute', left: `${Math.round(roundedCatLeft) - 120}px`, bottom: `${Math.round(floorHeight)}px`, width: '240px', height: '1px', background: 'rgba(0,255,255,0.6)', zIndex: 9999, pointerEvents: 'none' }} />
+                {/* Mass bounding box visualization (SVG-driven if available) */}
+                {(() => {
+                  const vb = lastMassBoxVBRef.current || { x: MASS_LEFT, y: MASS_TOP, width: MASS_RIGHT - MASS_LEFT, height: MASS_BOTTOM - MASS_TOP };
+                  const scaleY = catHeightPx / VIEWBOX_H;
+                  const leftPx = Math.round(catLeftPx + (vb.x / VIEWBOX_W) * catWidthPx);
+                  const widthPx = Math.round((vb.width / VIEWBOX_W) * catWidthPx);
+                  const feetLine = catBottomPx + footGapPx;
+                  const bottomPx = Math.round(feetLine + (FEET_LINE_Y - (vb.y + vb.height)) * scaleY);
+                  const heightPx = Math.round(vb.height * scaleY);
+                  return <div style={{ position: 'absolute', left: `${leftPx}px`, bottom: `${bottomPx}px`, width: `${widthPx}px`, height: `${heightPx}px`, border: '1px dashed rgba(0,255,255,0.6)', zIndex: 9999, pointerEvents: 'none' }} />;
+                })()}
+                <div style={{ position: 'absolute', left: `${Math.round(roundedCatLeft) + 10}px`, bottom: `${Math.round(catBottomPx) + 10}px`, color: '#fff', background: 'rgba(0,0,0,0.5)', fontSize: '10px', padding: '2px 4px', borderRadius: '3px', zIndex: 9999, pointerEvents: 'none' }}>
+                  {`v-ovl ${Math.round(catWorldCoords.z)} z | scale ${scale.toFixed(2)} | feet ${Math.round(catBottomPx + footGapPx)} | center ${Math.round(shadowCenterPx)} | Δ ${Math.round((catBottomPx + footGapPx) - shadowCenterPx)}`}
+                </div>
+              </>
+            )}
+
             {/* === SHADOW CONTAINER: Always at ground level === */}
-              <div 
+            <div 
               className="cat-shadow-container" 
               style={shadowContainerStyle}
+              ref={shadowContainerRef}
             >
               <div
                 className="cat-shadow-simple"
@@ -509,14 +660,18 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
                   height: `${SHADOW_HEIGHT}px`,
                   borderRadius: '50%',
                   background: `rgba(0, 0, 0, 0.25)`,
-                  transform: `translateX(${SHADOW_OFFSET_X}px)`,
+                  transform: `translate(${SHADOW_OFFSET_X}px, ${shadowInnerTranslateY}px)`,
                   zIndex: 1, // Behind cat
                 }}
               />
             </div>
             
             {/* === CAT CONTAINER: At calculated screen position === */}
-            <div className="cat-container cat-tight" style={catContainerStyle}>
+            {(() => {
+              const walkingClass = isWalkingUI && jumpDeltaPx === 0 ? 'walking' : '';
+              return (
+                <div className={`cat-container cat-tight ${walkingClass}`} style={catContainerStyle} ref={catContainerRef}>
+                  <div style={{ transform: `translateY(${catInnerTranslateY}px)` }}>
               <Cat
                 ref={catRef}
                 onClick={handleCatClick}
@@ -553,6 +708,10 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
                 pounceConfidence={pounceConfidence}
               />
             </div>
+          </div>
+              );
+            })()}
+            
           </React.Fragment>
         );
       })()}

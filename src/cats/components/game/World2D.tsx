@@ -212,7 +212,7 @@ const World2D: React.FC<World2DProps> = ({
       </div>
 
       {/* World Viewport */}
-      <div className="world-viewport">
+      <div className="world-viewport" data-camera-x={cameraX}>
         <div 
           className="world-content" 
           style={{ 

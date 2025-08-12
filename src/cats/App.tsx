@@ -585,7 +585,7 @@ function App() {
           ))}
           {wandMode && (
               <WandToy
-                onWandClick={() => catActions.handleWandClick({ x: 0, y: 0 })}
+                onWandClick={() => catActions.handleWandClick()}
                 initialPosition={{ x: window.innerWidth / 2, y: window.innerHeight / 2 }}
                 mouseState={mouseState}
               />
@@ -671,7 +671,6 @@ function App() {
           <DevPanel
             energy={catEnergy}
             pounceConfidence={pounceConfidence}
-            rapidClickCount={0}
             lastVelocity={lastVelocity}
             proximityMultiplier={proximityMultiplier}
             lovePerClick={baseLovePerInteraction}
@@ -688,7 +687,7 @@ function App() {
             })()}
             onMoveCat={(x, y, z) => {
               // Use direct move for dev controls to avoid arc/teleport
-              console.log(`[CAT-DEBUG] onMoveCat called: x=${x}, y=${y}, z=${z}`);
+              console.debug(`[CAT-DEBUG] onMoveCat called: x=${x}, y=${y}, z=${z}`);
               moveCatTo({ x, y, z }, 200);
             }}
             onNudgeY={(delta) => {
@@ -706,16 +705,18 @@ function App() {
                 const canvas = await html2canvas(root, { useCORS: true, logging: false, backgroundColor: null, windowWidth: window.innerWidth, windowHeight: window.innerHeight });
                 const blob: Blob | null = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
                 const form = new FormData();
+                const overlay = (window as unknown as { __CAT_LAST_OVERLAY__?: unknown }).__CAT_LAST_OVERLAY__;
                 form.append('meta', new Blob([JSON.stringify({
                   timestamp: new Date().toISOString(),
                   gameState,
                   catWorldCoords: catPosition,
                   catScreenCoords: catWorldPosition,
                   economy,
+                  overlay,
                 })], { type: 'application/json' }), 'meta.json');
                 if (blob) form.append('screenshot', blob, 'screenshot.png');
                 await fetch('/__debug_snapshot', { method: 'POST', body: form });
-                console.log('[CAT-DEBUG] Snapshot sent');
+                console.debug('[CAT-DEBUG] Snapshot sent');
               } catch (e) {
                 console.error('Snapshot failed', e);
               }

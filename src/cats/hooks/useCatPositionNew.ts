@@ -11,11 +11,24 @@ export const useCatPositionNew = () => {
     catPositionServiceNew.getRenderData()
   );
   const [isAnimating, setIsAnimating] = useState(false);
+  const [velocity, setVelocity] = useState<{ vx: number; vz: number }>({ vx: 0, vz: 0 });
+  const [isMoving, setIsMoving] = useState(false);
   // Removed internal RAF loop; keyboard handled in App
 
   // Update render data when position changes
   const handleUpdate = useCallback((newRenderData: CatRenderData) => {
     setRenderData(newRenderData);
+    try {
+      const current = catPositionServiceNew.getCatCoordinates();
+      const prev = (catPositionServiceNew as unknown as { _lastCoords?: { x: number; z: number } })._lastCoords || current;
+      const vx = current.x - prev.x;
+      const vz = current.z - prev.z;
+      setVelocity({ vx, vz });
+      setIsMoving(Math.hypot(vx, vz) > 0.1);
+      (catPositionServiceNew as unknown as { _lastCoords?: { x: number; z: number } })._lastCoords = { x: current.x, z: current.z };
+    } catch {
+      // ignore velocity calc errors
+    }
   }, []);
 
   // Move cat to a specific position
@@ -163,7 +176,7 @@ export const useCatPositionNew = () => {
     // });
       // Debug position right before happy jump triggers
       const preJumpData = catPositionServiceNew.getRenderData();
-      console.log('🎯 Pre-Jump Position:', {
+      console.debug('🎯 Pre-Jump Position:', {
         worldCoords: catPositionServiceNew.getCatCoordinates(),
         screenPos: preJumpData.screenPosition,
         timestamp: performance.now()
@@ -171,7 +184,7 @@ export const useCatPositionNew = () => {
       
       // CRITICAL: Check for React state vs Service state mismatch
       const statesMatch = JSON.stringify(preJumpData.screenPosition) === JSON.stringify(renderData.screenPosition);
-      console.log('🔥 STATE SYNC CHECK:', {
+      console.debug('🔥 STATE SYNC CHECK:', {
         'Service screen pos': preJumpData.screenPosition,
         'React renderData screen pos': renderData.screenPosition,
         'Service world coords': catPositionServiceNew.getCatCoordinates(),
@@ -181,17 +194,17 @@ export const useCatPositionNew = () => {
       
       // FIX: If states don't match, force React to use Service's current state (including camera offset)
       if (!statesMatch) {
-        console.log('🔄 FORCING STATE SYNC - React and Service states differ, syncing React to Service');
-        console.log('Before sync - Service coords:', catPositionServiceNew.getCatCoordinates());
-        console.log('Before sync - React coords:', renderData.worldCoordinates);
+        console.debug('🔄 FORCING STATE SYNC - React and Service states differ, syncing React to Service');
+        console.debug('Before sync - Service coords:', catPositionServiceNew.getCatCoordinates());
+        console.debug('Before sync - React coords:', renderData.worldCoordinates);
         
         // Force React to use the Service's current fresh state (includes camera offset)
         const freshServiceData = catPositionServiceNew.getRenderData();
         setRenderData(freshServiceData);
         
-        console.log('After sync - Fresh Service state:', freshServiceData.screenPosition);
-        console.log('After sync - Old React state:', renderData.screenPosition);
-        console.log('✅ SYNC COMPLETE - Forced React to use Service state');
+        console.debug('After sync - Fresh Service state:', freshServiceData.screenPosition);
+        console.debug('After sync - Old React state:', renderData.screenPosition);
+        console.debug('✅ SYNC COMPLETE - Forced React to use Service state');
         
         // Force the Service to use consistent coordinates
         catPositionServiceNew.setPosition(freshServiceData.worldCoordinates);
@@ -221,6 +234,8 @@ export const useCatPositionNew = () => {
     screenPosition: renderData.screenPosition,
     // shadow is computed in CatInteractionManager directly from world coords
     isAnimating,
+    velocity,
+    isMoving,
     
     // Movement functions
     moveCatTo,
