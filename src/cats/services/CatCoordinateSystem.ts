@@ -56,8 +56,8 @@ class CatCoordinateSystem {
    */
   updateViewport(): void {
     if (typeof window !== 'undefined') {
-      this.viewportWidth = window.innerWidth - this.sidePanelWidth;
-      this.viewportHeight = window.innerHeight;
+      this.viewportWidth = Math.max(0, Math.round(window.innerWidth - this.sidePanelWidth));
+      this.viewportHeight = Math.max(0, Math.round(window.innerHeight));
     }
   }
   

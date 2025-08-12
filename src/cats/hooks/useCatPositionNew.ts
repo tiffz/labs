@@ -7,9 +7,16 @@ import type { CatCoordinates } from '../services/CatCoordinateSystem';
  * Hook for managing cat's position using the new world coordinate system
  */
 export const useCatPositionNew = () => {
-  const [renderData, setRenderData] = useState<CatRenderData>(() => 
-    catPositionServiceNew.getRenderData()
-  );
+  const [renderData, setRenderData] = useState<CatRenderData>(() => {
+    // Ensure viewport is up-to-date before the first projection to avoid
+    // an initial misalignment in production builds (pre-effect render).
+    try {
+      catPositionServiceNew.updateViewport();
+    } catch {
+      // ignore if window not available (SSR/tests)
+    }
+    return catPositionServiceNew.getRenderData();
+  });
   const [isAnimating, setIsAnimating] = useState(false);
   const [velocity, setVelocity] = useState<{ vx: number; vz: number }>({ vx: 0, vz: 0 });
   const [isMoving, setIsMoving] = useState(false);

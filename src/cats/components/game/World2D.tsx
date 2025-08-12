@@ -82,6 +82,13 @@ const World2D: React.FC<World2DProps> = ({
     if (typeof window !== 'undefined') {
       // Force recalculation on initial mount to ensure consistency
       handleResize();
+      // Also proactively push latest viewport to the coordinate system
+      try {
+        catCoordinateSystem.setSidePanelWidth(getSidePanelWidth());
+        catCoordinateSystem.updateViewport();
+      } catch {
+        // ignore in non-DOM contexts
+      }
       
       window.addEventListener('resize', handleResize);
       return () => window.removeEventListener('resize', handleResize);
