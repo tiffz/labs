@@ -458,8 +458,8 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
 
             const roundedCatLeft = Math.round(catScreenPosition.x);
             // Shadow dimensions - scale already calculated
-            const SHADOW_WIDTH = shadowLayout.width;
-            const SHADOW_HEIGHT = shadowLayout.height;
+            const SHADOW_WIDTH = Math.round(shadowLayout.width);
+            const SHADOW_HEIGHT = Math.round(shadowLayout.height);
             // Remove ratio-based coupling; we will anchor feet to ground baseline
             // Compute absolute-positioned cat container without transforms
             const catWidthPx = 300 * scale;
@@ -476,17 +476,25 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
             // Visibility-safe render: clamp container and translate inner so on-screen top stays at baseline
             const groundY = groundScreen.y;
             // Maintain constant visual overlap across scales at all Z:
-            // Align CAT FEET (the lowest contour of the SVG) to the vertical center of the shadow ellipse
-            // Feet line equals container bottom + footGapPx. To make feet == shadow center, set FEET_OFFSET = 0.
+            // Align the bottom of the visual mass box (body/head envelope) to the shadow center
+            // Strategy:
+            // - Place container bottom at the baseline (shadow center)
+            // - Shift inner SVG up by the offset from container-bottom → mass-bottom so mass-bottom sits on the baseline
             const FEET_OFFSET_PX = 0;
-            // Define target visual bottom from the baseline (which equals the feet line).
             const baseline = groundY + FEET_OFFSET_PX;
-            // target visual bottom (derived): baseline - footGapPx + jumpDeltaPx
-            // Place container at clamped baseline (without jump), then translate inner by clampDelta - jumpDelta
-            const unclampedContainerBottom = baseline - footGapPx;
+            // Snap baseline to whole pixels to eliminate subpixel gaps in screenshots
+            const baselineRounded = Math.round(baseline);
+            // Container anchored to baseline; clamp to viewport bottom for safety
+            const unclampedContainerBottom = baselineRounded;
             const catContainerBottomPx = Math.max(0, unclampedContainerBottom);
             const clampDelta = catContainerBottomPx - unclampedContainerBottom; // >= 0 when clamped
-            const catInnerTranslateY = clampDelta - jumpDeltaPx; // positive moves down, negative moves up
+            // Compute mass-bottom offset from container-bottom in pixels
+            const vbForMass = lastMassBoxVBRef.current || { x: MASS_LEFT, y: MASS_TOP, width: MASS_RIGHT - MASS_LEFT, height: MASS_BOTTOM - MASS_TOP };
+            const scaleY = catHeightPx / VIEWBOX_H;
+            const deltaMassFromFeetPx = (FEET_LINE_Y - (vbForMass.y + vbForMass.height)) * scaleY; // positive if mass-bottom is above feet
+            const massBottomOffsetPx = footGapPx + deltaMassFromFeetPx;
+            // Translate inner up by mass-bottom offset; subtract jump delta so jumps move the body upward
+            const catInnerTranslateY = massBottomOffsetPx + clampDelta - jumpDeltaPx; // positive moves down, negative up
             // Visual bottom equals container bottom minus inner translate (CSS translateY positive moves down)
             const catBottomPx = catContainerBottomPx - catInnerTranslateY;
             // Derive shadow vertical position directly from cat feet line for exact lock
@@ -495,13 +503,13 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
             const overlayEnabled = typeof window !== 'undefined' && (window as unknown as { __CAT_OVERLAY__?: boolean }).__CAT_OVERLAY__ === true;
             // remove unused local; compute inline where needed
             // Anchor the shadow so its CENTER equals the ground baseline (feet baseline)
-            const desiredShadowCenter = Math.min(groundY, floorHeight);
+            const desiredShadowCenter = Math.min(baselineRounded, floorHeight);
             const adjustedShadowBottom = desiredShadowCenter - (SHADOW_HEIGHT / 2); // allow negative; parent overflow is visible
             const shadowInnerTranslateY = 0; // no inner translation needed when container is anchored correctly
             const shadowTopPx = adjustedShadowBottom + SHADOW_HEIGHT; // top is center + height/2
             const shadowCenterPx = adjustedShadowBottom + (SHADOW_HEIGHT / 2);
-            // Prefer anchoring by top to avoid rounding via element height in DOMRect calculations
-            const shadowContainerTopPx = floorHeight - shadowTopPx;
+            // Use bottom-based anchoring to match cat container and avoid top/bottom conversion drift
+            const shadowContainerBottomPx = adjustedShadowBottom;
             // overlayEnabled already computed above
             // Add walking class when moving horizontally at ground (simple heuristic via last position)
             const catContainerStyle: React.CSSProperties = {
@@ -545,6 +553,11 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
             // Perceived mass center offset in px from geometric center
             const massCenterOffsetPx = ((effectiveMassCenterXVB - VIEWBOX_W / 2) / VIEWBOX_W) * catWidthPx;
             const adjustedShadowLeft = Math.round(catScreenPosition.x - SHADOW_WIDTH / 2 + massCenterOffsetPx);
+            // Precompute key baselines for debug overlay
+            const feetLinePxExact = catBottomPx + footGapPx;
+            const massBottomLinePxExact = catBottomPx + (footGapPx + ((FEET_LINE_Y - ((lastMassBoxVBRef.current || { x: MASS_LEFT, y: MASS_TOP, width: MASS_RIGHT - MASS_LEFT, height: MASS_BOTTOM - MASS_TOP }).y + (lastMassBoxVBRef.current || { x: MASS_LEFT, y: MASS_TOP, width: MASS_RIGHT - MASS_LEFT, height: MASS_BOTTOM - MASS_TOP }).height)) * (catHeightPx / VIEWBOX_H)));
+            const feetLinePx = Math.round(feetLinePxExact);
+            const massBottomLinePx = Math.round(massBottomLinePxExact);
             // Debug logging (throttled) to analyze drift behaviors end-to-end and expose to snapshots
             if (typeof window !== 'undefined' && (window as unknown as { __CAT_DEBUG__?: boolean }).__CAT_DEBUG__ !== false) {
               const now = performance.now();
@@ -552,7 +565,7 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
               w.__catShadowLastLogTs = w.__catShadowLastLogTs || 0;
                 if (now - (w.__catShadowLastLogTs ?? 0) > 200) {
                 w.__catShadowLastLogTs = now;
-                const shadowCenterX = adjustedShadowLeft + SHADOW_WIDTH / 2;
+                 const shadowCenterX = adjustedShadowLeft + SHADOW_WIDTH / 2;
                 const catPerceivedCenterX = roundedCatLeft + Math.round(massCenterOffsetPx);
                 const shadowRect = shadowContainerRef.current?.getBoundingClientRect?.();
                 const catRect = catContainerRef.current?.getBoundingClientRect?.();
@@ -582,17 +595,18 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
                       const vb = massBoxVB || { x: MASS_LEFT, y: MASS_TOP, width: MASS_RIGHT - MASS_LEFT, height: MASS_BOTTOM - MASS_TOP };
                       const leftPx = catLeftPx + (vb.x / VIEWBOX_W) * catWidthPx;
                       const widthPx = (vb.width / VIEWBOX_W) * catWidthPx;
-                      const feet = catBottomPx + footGapPx;
-                      const bottomPx = feet + (FEET_LINE_Y - (vb.y + vb.height)) * scaleY;
+                       const bottomPx = massBottomLinePxExact;
                       const heightPx = vb.height * scaleY;
                       return { leftPx, bottomPx, widthPx, heightPx };
                     })(),
                   },
                    measures: {
-                    feetLinePx: catBottomPx + footGapPx,
+                    feetLinePx,
+                    massBottomLinePx,
                     visualShadowTopPx: shadowTopPx,
                     visualShadowCenterPx: shadowCenterPx,
-                    deltaPx: (catBottomPx + footGapPx) - shadowCenterPx,
+                    feetDeltaPx: feetLinePx - shadowCenterPx,
+                    massDeltaPx: massBottomLinePx - shadowCenterPx,
                     horizontalDeltaPx: Math.round(catPerceivedCenterX - shadowCenterX),
                     catPerceivedCenterX,
                     shadowCenterX,
@@ -614,7 +628,7 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
             const shadowContainerStyle: React.CSSProperties = {
               position: 'absolute',
               left: `${adjustedShadowLeft}px`,
-              top: `${shadowContainerTopPx}px`,
+              bottom: `${shadowContainerBottomPx}px`,
               width: `${SHADOW_WIDTH}px`,
               height: 'auto',
               zIndex: 4,

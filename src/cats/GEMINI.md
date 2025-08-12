@@ -101,6 +101,17 @@ Permanent upgrades purchased with Merit points earned from achievements:
 - **Height Response**: Shadows shrink when cat jumps, positioned at floor level
 - **Visual Grounding**: Ensures cat always appears connected to the ground
 
+#### Shadow Baseline and Mass-Box Alignment (current)
+
+- **Baseline definition**: The visual baseline is the ground projection of the cat at `y=0`. The shadow's vertical center is anchored to this baseline at all times.
+- **Mass-box anchoring**: The bottom of the cat's visual mass box (combined body/head envelope) is aligned to the shadow's vertical center. This is achieved by anchoring the cat container bottom to the baseline and translating the inner SVG by the computed mass-bottom offset.
+- **Pixel stability**: Baseline and shadow dimensions are rounded to whole pixels to avoid half-pixel gaps in screenshots.
+- **Debug overlay**: Enable with `?overlay=1` to view:
+  - `massBottomLinePx` (mass-box bottom), `visualShadowCenterPx` (shadow center)
+  - `massDeltaPx` (mass bottom − shadow center), `feetDeltaPx` (feet − shadow center)
+  - Expect `massDeltaPx = 0` at rest; during jumps, `massBottom` rises by the jump delta while shadow remains at baseline.
+- **Regression test**: See `src/cats/integration/MassBottomAlignment.test.ts`.
+
 ### **World Layout**
 
 #### **House Interior Design**
