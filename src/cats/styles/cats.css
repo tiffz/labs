@@ -5438,6 +5438,12 @@ html.fonts-loaded .material-icons {
   transition: transform 0.1s ease-out;
 }
 
+/* Restore smooth cheek-tilt on the head while keeping container transitions disabled */
+.world-2d-container .cat-svg #head-tilt-wrapper {
+  transition: transform 140ms ease-in-out !important;
+  will-change: transform;
+}
+
 /* Prevent cat from moving too far horizontally in 2D world */
 .world-2d-container .cat-container {
   /* Constrain horizontal movement to stay within reasonable bounds */
