@@ -5,9 +5,11 @@ test.describe('Cats app bootstrap', () => {
     // Stub external noise before navigation
     await page.addInitScript(() => {
       type E2EWindow = Window & {
+        __E2E__?: boolean;
         labsAnalyticsInitialized?: boolean;
         gtag?: (...args: unknown[]) => void;
       };
+      (window as unknown as E2EWindow).__E2E__ = true;
       (window as unknown as E2EWindow).labsAnalyticsInitialized = true;
       (window as unknown as E2EWindow).gtag = () => {};
     });
@@ -16,7 +18,9 @@ test.describe('Cats app bootstrap', () => {
     await page.route('**/*google-analytics.com/**', route => route.fulfill({ status: 204, contentType: 'text/plain', body: '' }));
     await page.route('**/*fonts.googleapis.com/**', route => route.fulfill({ status: 200, contentType: 'text/css', body: '/* fonts disabled in e2e */' }));
     await page.route('**/*fonts.gstatic.com/**', route => route.fulfill({ status: 204, contentType: 'font/woff2', body: '' }));
-    await page.route('**/scripts/analytics.js', route => route.fulfill({ status: 200, contentType: 'application/javascript', body: 'window.labsAnalyticsInitialized=true;window.gtag=function(){};console.log("GA disabled in E2E");' }));
+    await page.route('**/scripts/analytics.js', route => route.fulfill({ status: 200, contentType: 'application/javascript', body: 'window.__E2E__=true;window.labsAnalyticsInitialized=true;window.gtag=function(){};console.log("GA disabled in E2E");' }));
+    await page.route('**/__debug_log', route => route.fulfill({ status: 204 }));
+    await page.route('**/__debug_snapshot', route => route.fulfill({ status: 204 }));
 
     const errors: string[] = [];
     page.on('console', msg => {

@@ -29,6 +29,7 @@
     <script>
       (function () {
         try {
+          if (window && window.__E2E__) return; // Disabled during E2E tests
           if (!/^(localhost|127\.0\.0\.1)/.test(location.hostname)) return;
           var send = function (level, message, data) {
             try {

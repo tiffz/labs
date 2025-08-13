@@ -13,8 +13,16 @@ class ServerLogger {
   }
 
   constructor() {
-    // Enable in dev mode only
+    // Enable in dev mode only, and skip entirely during E2E runs
     this.isEnabled = import.meta.env.DEV;
+
+    if (typeof window !== 'undefined') {
+      // Playwright/E2E hint set via addInitScript in tests
+      const isE2E = Boolean((window as unknown as { __E2E__?: boolean }).__E2E__);
+      if (isE2E) {
+        this.isEnabled = false;
+      }
+    }
 
     if (this.isEnabled && typeof window !== 'undefined') {
       // Global error hooks to capture uncaught exceptions and unhandled rejections

@@ -12,6 +12,7 @@ interface CatViewProps {
   shadowCenterOverride?: number;
   catRef: React.RefObject<SVGSVGElement>;
   catElement: React.ReactElement;
+  walking?: boolean;
 }
 
 // Visual constants (kept here to isolate math)
@@ -23,7 +24,7 @@ const MASS_RIGHT = 162;
 const MASS_TOP = 62;
 const MASS_BOTTOM = 182;
 
-const CatView: React.FC<CatViewProps> = ({ catWorldCoords, shadowCenterOverride, catRef, catElement }) => {
+const CatView: React.FC<CatViewProps> = ({ catWorldCoords, shadowCenterOverride, catRef, catElement, walking }) => {
   const lastMassBoxVBRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
   const overlayEnabled = isOverlayEnabled();
 
@@ -140,7 +141,7 @@ const CatView: React.FC<CatViewProps> = ({ catWorldCoords, shadowCenterOverride,
           }}
         />
       </div>
-      <div className={"cat-container cat-tight"} style={catContainerStyle}>
+      <div className={`cat-container cat-tight${walking ? ' walking' : ''}`} style={catContainerStyle}>
         <div style={{ transform: `translateY(${catInnerTranslateY}px)` }}>
           {React.cloneElement(catElement, { ref: catRef })}
         </div>

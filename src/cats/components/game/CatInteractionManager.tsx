@@ -6,9 +6,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { isOverlayEnabled, OverlayColors } from '../debug/overlay';
-import { layerForZ } from '../rendering/zLayer';
-import { MassBoxOverlay } from '../debug/overlay.tsx';
+import { isOverlayEnabled } from '../debug/overlay';
 import { catCoordinateSystem } from '../../services/CatCoordinateSystem';
 import { computeShadowLayout } from '../../services/ShadowLayout';
 import Cat from './Cat';
@@ -127,7 +125,6 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
   const [isSubtleWiggling, setIsSubtleWiggling] = useState(false);
   const [isJumping, setIsJumping] = useState(false);
   const [isWalkingUI, setIsWalkingUI] = useState(false);
-  void isWalkingUI; // consumed by CatView via class; suppress unused until fully migrated
   const walkingPrevWorldXRef = useRef<number | null>(null);
   const walkingTimerRef = useRef<number | null>(null);
   const rapidClickTimestampsRef = useRef<number[]>([]);
@@ -634,25 +631,7 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
             {/* === DEBUG OVERLAY (toggle with window.__CAT_OVERLAY__=true) === */}
             {overlayEnabled && (
               <>
-                {/* Use shared overlay color system for consistency */}
-                <div style={{ position: 'absolute', left: `${Math.round(roundedCatLeft) - 120}px`, bottom: `${Math.round(shadowCenterPx)}px`, width: '240px', height: '2px', background: OverlayColors.baseline, zIndex: layerForZ(catWorldCoords.z ?? 0) + 10, pointerEvents: 'none' }} />
-                {/* mass-bottom helper line retained; baseline line handled by shared components elsewhere */}
-                <div style={{ position: 'absolute', left: `${Math.round(roundedCatLeft) - 120}px`, bottom: `${Math.round((catBottomPx + footGapPx)) }px`, width: '240px', height: '2px', background: '#ff5050', zIndex: layerForZ(catWorldCoords.z ?? 0) + 10, pointerEvents: 'none' }} />
-                {/* Remove legacy outer cyan baseline line; rely on BaselineOverlay elsewhere */}
-                {/* Mass bounding box visualization (SVG-driven if available) */}
-                {(() => {
-                  const vb = lastMassBoxVBRef.current || { x: MASS_LEFT, y: MASS_TOP, width: MASS_RIGHT - MASS_LEFT, height: MASS_BOTTOM - MASS_TOP };
-                  const scaleY = catHeightPx / VIEWBOX_H;
-                  const leftPx = Math.round(catLeftPx + (vb.x / VIEWBOX_W) * catWidthPx);
-                  const widthPx = Math.round((vb.width / VIEWBOX_W) * catWidthPx);
-                  const feetLine = catBottomPx + footGapPx;
-                  const bottomPx = Math.round(feetLine + (FEET_LINE_Y - (vb.y + vb.height)) * scaleY);
-                  const heightPx = Math.round(vb.height * scaleY);
-                  return <MassBoxOverlay left={leftPx} bottom={bottomPx} width={widthPx} height={heightPx} />;
-                })()}
-                <div style={{ position: 'absolute', left: `${Math.round(roundedCatLeft) + 10}px`, bottom: `${Math.round(catBottomPx) + 10}px`, color: '#fff', background: 'rgba(0,0,0,0.5)', fontSize: '10px', padding: '2px 4px', borderRadius: '3px', zIndex: layerForZ(catWorldCoords.z ?? 0) + 10, pointerEvents: 'none' }}>
-                  {`v-ovl ${Math.round(catWorldCoords.z)} z | scale ${scale.toFixed(2)} | feet ${Math.round(catBottomPx + footGapPx)} | center ${Math.round(shadowCenterPx)} | Δ ${Math.round((catBottomPx + footGapPx) - shadowCenterPx)}`}
-                </div>
+                {/* Unified overlays now handled in CatView; legacy lines removed */}
               </>
             )}
 
@@ -661,6 +640,7 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
               catWorldCoords={catWorldCoords}
               shadowCenterOverride={shadowCenterOverride}
               catRef={catRef as React.RefObject<SVGSVGElement>}
+              walking={isWalkingUI}
               catElement={(
                 <Cat
                   onClick={handleCatClick}
