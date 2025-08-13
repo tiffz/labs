@@ -15,6 +15,59 @@ class ServerLogger {
   constructor() {
     // Enable in dev mode only
     this.isEnabled = import.meta.env.DEV;
+
+    if (this.isEnabled && typeof window !== 'undefined') {
+      // Global error hooks to capture uncaught exceptions and unhandled rejections
+      window.addEventListener('error', (e: ErrorEvent) => {
+        try {
+          this.error('window.onerror', {
+            message: e.message,
+            filename: e.filename,
+            lineno: e.lineno,
+            colno: e.colno,
+            stack: e.error?.stack || String(e.error)
+          });
+        } catch {
+          // ignore
+        }
+      });
+      window.addEventListener('unhandledrejection', (e: PromiseRejectionEvent) => {
+        try {
+          this.error('unhandledrejection', {
+            reason: (e.reason && (e.reason.stack || e.reason.message)) || String(e.reason)
+          });
+        } catch {
+          // ignore
+        }
+      });
+
+      // Proxy console methods to also send to the server (avoid loops)
+      const original = {
+        log: console.log.bind(console),
+        info: console.info.bind(console),
+        warn: console.warn.bind(console),
+        error: console.error.bind(console),
+        debug: console.debug.bind(console),
+      } as const;
+
+      const forward = (level: keyof typeof original) =>
+        (...args: unknown[]) => {
+          try {
+            const message = args.map(a => (typeof a === 'string' ? a : '')).join(' ').trim();
+            const data = args.length ? args : undefined;
+            this.sendToServer(level, message || `[${level}]`, data);
+          } catch {
+            // ignore
+          }
+          original[level](...args);
+        };
+
+      console.log = forward('log');
+      console.info = forward('info');
+      console.warn = forward('warn');
+      console.error = forward('error');
+      console.debug = forward('debug');
+    }
   }
 
   private async sendToServer(level: string, message: string, data?: unknown) {

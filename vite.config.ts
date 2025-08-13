@@ -70,10 +70,16 @@ export default defineConfig({
               try {
                 const logData = JSON.parse(body);
                 const timestamp = new Date(logData.timestamp).toLocaleTimeString();
-                console.log(`\n[CAT-DEBUG ${timestamp}] ${logData.message}`);
-                if (logData.data) {
-                  console.log(logData.data);
-                }
+                const level = (logData.level || 'info').toUpperCase();
+                const line = `\n[CAT-DEBUG ${timestamp}] [${level}] ${logData.message}`;
+                 const method = String(level || 'info').toLowerCase();
+                 const out: (...args: unknown[]) => void =
+                   method === 'error' ? console.error :
+                   method === 'warn' ? console.warn :
+                   method === 'debug' ? console.debug :
+                   method === 'info' ? console.info : console.log;
+                out(line);
+                if (logData.data) out(logData.data);
               } catch (error) {
                 console.log('\n[CAT-DEBUG] Failed to parse log data', error);
               }
@@ -85,7 +91,7 @@ export default defineConfig({
           }
         });
         // Snapshot receiver (dev only): stores meta JSON and screenshot into a temp folder
-        server.middlewares.use('/__debug_snapshot', async (req: import('http').IncomingMessage & { headers: Record<string, string> }, res: import('http').ServerResponse, next: () => void) => {
+        server.middlewares.use('/__debug_snapshot', async (req, res, next) => {
           if (req.method !== 'POST') return next();
           try {
             // Naive multipart parser for small dev payloads
@@ -145,10 +151,7 @@ export default defineConfig({
         });
       }
     },
-    react({
-      // Enable Fast Refresh in development
-      fastRefresh: true,
-    }),
+    react(),
     viteStaticCopy({
       targets: [
         { src: '../src/404.html', dest: '.' },
@@ -157,12 +160,10 @@ export default defineConfig({
       ]
     }),
     compression({
-      algorithm: 'gzip',
-      ext: '.gz',
+      algorithms: ['gzip'],
     }),
     compression({
-      algorithm: 'brotliCompress',
-      ext: '.br',
+      algorithms: ['brotliCompress'],
     }),
     // Bundle analyzer - only in analyze mode
     ...(process.env.ANALYZE ? [visualizer({

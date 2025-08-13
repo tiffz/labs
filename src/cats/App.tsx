@@ -12,7 +12,10 @@ declare global {
     };
   }
 }
-import CatInteractionManager from './components/game/CatInteractionManager';
+// CatInteractionManager is used via Actor
+import WorldRenderer from './components/game/WorldRenderer';
+import { useWorld } from './context/useWorld';
+import { spawnCat, spawnFurniture } from './engine/spawn';
 import Heart from './components/game/Heart';
 import Zzz from './components/game/Zzz';
 import WandToy from './components/game/WandToy';
@@ -80,6 +83,7 @@ const initialGameState: GameState = {
 function App() {
 
   
+  const world = useWorld();
   // Unified mouse tracking system
   const mouseState = useMouseTracking();
   
@@ -259,8 +263,14 @@ function App() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('dev') === 'true') {
+    const devParam = params.get('dev');
+    if (devParam === 'true' || devParam === '1') {
       setIsDevMode(true);
+    }
+    // Also allow overlay to be toggled globally here for non-cat overlays
+    const overlayParam = params.get('overlay');
+    if (overlayParam === 'true' || overlayParam === '1') {
+      (window as unknown as { __CAT_OVERLAY__?: boolean }).__CAT_OVERLAY__ = true;
     }
   }, []);
 
@@ -594,46 +604,48 @@ function App() {
         document.getElementById('heart-container')!
       )}
 
-      {/* Cat in the 2D World */}
+      {/* World entities (ECS bridge) */}
       {(() => {
-        // Use new coordinate system - no manual perspective calculation needed
+        // Ensure a cat entity exists that mirrors current catPosition
+        const existing = Array.from(world.renderables.entries()).find(([, r]) => r.kind === 'cat');
+        let catId = existing?.[0];
+        if (!catId) {
+          catId = spawnCat(world, { x: catPosition.x, y: catPosition.y, z: catPosition.z });
+          // Seed a demo furniture piece behind the cat once
+          const existingFurniture = Array.from(world.renderables.entries()).find(([, r]) => r.kind === 'furniture');
+          if (!existingFurniture) {
+            spawnFurniture(world, { x: catPosition.x + 240, y: 0, z: Math.max(0, (catPosition.z || 0) + 200) });
+          }
+        } else {
+          // Keep ECS transform in sync with current service position (bridge during migration)
+          world.transforms.set(catId, { x: catPosition.x, y: catPosition.y, z: catPosition.z });
+        }
         return (
-          <CatInteractionManager
-        economy={economy}
-        catEnergy={catEnergy}
-        wandMode={wandMode}
-        isPouncing={isPouncing}
-        isPlaying={isPlaying}
-        isShaking={isShaking}
-        isEarWiggling={isEarWiggling}
-        isHappyPlaying={isHappyPlaying}
-        pounceTarget={pounceTarget}
-        pounceConfidence={pounceConfidence}
-        catActions={catActions}
-        trackableHeartId={trackableHeartId}
-        hearts={hearts}
-        onLoveGained={onLoveGained}
-        onCatPositionUpdate={handleCatPositionUpdate}
-        trackSpecialAction={trackSpecialAction}
-        heartSpawningService={heartSpawningService}
-        isSleeping={isSleeping}
-        isDrowsy={isDrowsy}
-        mouseState={mouseState}
-        catWorldCoords={catPosition}
-        shadowCoords={(() => {
-          const shadowBase = catCoordinateSystem.catToScreen({ x: catPosition.x, y: 0, z: catPosition.z });
-          // Use world X; keep projected Y/scale so shadow sits on the floor depth for this Z
-          return { x: catPosition.x, y: shadowBase.y, scale: shadowBase.scale * 0.8 };
-        })()}
-        eventLoggers={{
-          logPetting,
-          logPouncing,
-          logHappy,
-          logNoseClick,
-          logEarClick,
-          logCheekPet
-        }}
-      />
+          <WorldRenderer
+            economy={economy}
+            mouseState={mouseState}
+            ui={{
+              catEnergy,
+              wandMode,
+              isPouncing,
+              isPlaying,
+              isShaking,
+              isEarWiggling,
+              isHappyPlaying,
+              pounceTarget,
+              pounceConfidence,
+              catActions,
+              trackableHeartId,
+              hearts,
+              isSleeping,
+              isDrowsy,
+              onLoveGained,
+              onCatPositionUpdate: handleCatPositionUpdate,
+              trackSpecialAction,
+              heartSpawningService,
+              eventLoggers: { logPetting, logPouncing, logHappy, logNoseClick, logEarClick, logCheekPet },
+            }}
+          />
         );
       })()}
         </World2D>
@@ -687,7 +699,6 @@ function App() {
             })()}
             onMoveCat={(x, y, z) => {
               // Use direct move for dev controls to avoid arc/teleport
-              console.debug(`[CAT-DEBUG] onMoveCat called: x=${x}, y=${y}, z=${z}`);
               moveCatTo({ x, y, z }, 200);
             }}
             onNudgeY={(delta) => {

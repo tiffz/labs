@@ -88,16 +88,6 @@ export class CatPositionServiceNew {
     // Clamp target to valid bounds
     const clampedTarget = catCoordinateSystem.clampToWorldBounds(finalCoords);
     
-    // Debug initialization teleportation for debug panel moves
-    console.debug('🎮 Debug Panel Move Debug:', {
-      'Internal coords': this.worldCoordinates,
-      'Start coords (clamped)': startCoords,
-      'Target coords': targetCoords,
-      'Final target (clamped)': clampedTarget,
-      'Start coords match internal?': JSON.stringify(this.worldCoordinates) === JSON.stringify(startCoords),
-      'Animation type': 'Position Move'
-    });
-    
     let startTime: number | null = null;
     this.isAnimating = true;
     
@@ -302,42 +292,6 @@ export class CatPositionServiceNew {
     // Use current position but ensure it's within bounds
     const currentCoords = catCoordinateSystem.clampToWorldBounds(this.worldCoordinates);
     
-    // Debug initialization teleportation issues - detailed render state
-    const beforeRenderData = this.getRenderData();
-    console.debug('🚀 Happy Jump Start Debug:', {
-      'Internal coords': this.worldCoordinates,
-      'Clamped coords': currentCoords,
-      'Coords match?': JSON.stringify(this.worldCoordinates) === JSON.stringify(currentCoords),
-      'Already animating?': this.isAnimating,
-      'Current time': performance.now(),
-      'Before render screen pos': beforeRenderData.screenPosition,
-      'Animation type': 'Happy Jump'
-    });
-    
-    // CRITICAL: Force a fresh render data calculation to check for staleness
-    try {
-      const freshRenderData = catCoordinateSystem.catToScreen(this.worldCoordinates);
-      const shadowData = catCoordinateSystem.getShadowPosition(this.worldCoordinates);
-      console.debug('🔥 FRESH STATE CHECK:', {
-        'Service internal coords': this.worldCoordinates,
-        'Fresh calculated screen pos': freshRenderData,
-        'Cached render screen pos': beforeRenderData.screenPosition,
-        'Fresh vs cached match?': JSON.stringify(freshRenderData) === JSON.stringify(beforeRenderData.screenPosition),
-        'Shadow pos': shadowData,
-        'WorldCoordSystem camera info': ((): Record<string, unknown> => {
-          try {
-            const floor = catCoordinateSystem.getFloorDimensions();
-            const world = catCoordinateSystem.getWorldDimensions();
-            return { floorHeight: floor.screenHeight, world };
-          } catch {
-            return {};
-          }
-        })()
-      });
-    } catch (error) {
-      console.error('🚨 Debug error:', error);
-    }
-    
     // Create a physics-based jump animation with proper timing
     let startTime: number | null = null;
     const halfT = (duration / 1000) / 2;
@@ -348,20 +302,10 @@ export class CatPositionServiceNew {
       // Set start time on first frame to avoid timing issues
       if (startTime === null) {
         startTime = currentTime;
-        console.debug('🕐 Happy Jump Timing:', { firstFrame: true, currentTime, startTime });
-        console.debug('🎯 First Frame Coords:', { 
-          beforeAnimation: currentCoords,
-          internalState: this.worldCoordinates
-        });
       }
       
       const elapsed = currentTime - startTime;
       const progress = Math.min(Math.max(elapsed / duration, 0), 1);
-      
-      // Debug timing issues
-      if (elapsed < 0 || !Number.isFinite(elapsed)) {
-        console.warn('🚨 Happy Jump Timing Error:', { elapsed, currentTime, startTime, progress });
-      }
       
       // Physics-based vertical: y(t) = v0*t - 0.5*g*t^2
       const tSec = elapsed / 1000;
@@ -370,7 +314,6 @@ export class CatPositionServiceNew {
       
       // Ensure Y value stays sane (should not happen with proper timing)
       if (!Number.isFinite(newY)) {
-        console.warn('Happy jump Y calculation error:', { maxHeight, newY, progress, elapsed, startTime, currentTime });
         this.isAnimating = false;
         this.animationId = null;
         onComplete?.();
@@ -378,29 +321,6 @@ export class CatPositionServiceNew {
       }
       
       this.worldCoordinates = { ...currentCoords, y: newY };
-      
-      // Debug first frame to catch visual jumps
-      const renderData = this.getRenderData();
-      if (startTime === currentTime) {
-        console.debug('🎬 First Frame Update:', {
-          newY: newY,
-          beforeCoords: currentCoords,
-          afterCoords: this.worldCoordinates,
-          renderData: renderData.screenPosition,
-          coordsChanged: JSON.stringify(currentCoords) !== JSON.stringify(this.worldCoordinates),
-          yChanged: currentCoords.y !== newY
-        });
-      }
-      
-      // Debug animation frame data
-      if (progress === 0) {
-        // serverLogger.log('🎬 Animation Starting From:', {
-        //   startingScreenPos: renderData.screenPosition,
-        //   worldCoords: this.worldCoordinates,
-        //   animationType: 'Happy Jump',
-        //   cameraX: (catCoordinateSystem as any).cameraX
-        // });
-      }
       
       // Notify callback of render data update
       onUpdate?.(this.getRenderData());

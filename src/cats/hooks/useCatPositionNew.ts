@@ -183,35 +183,15 @@ export const useCatPositionNew = () => {
     // });
       // Debug position right before happy jump triggers
       const preJumpData = catPositionServiceNew.getRenderData();
-      console.debug('🎯 Pre-Jump Position:', {
-        worldCoords: catPositionServiceNew.getCatCoordinates(),
-        screenPos: preJumpData.screenPosition,
-        timestamp: performance.now()
-      });
       
       // CRITICAL: Check for React state vs Service state mismatch
       const statesMatch = JSON.stringify(preJumpData.screenPosition) === JSON.stringify(renderData.screenPosition);
-      console.debug('🔥 STATE SYNC CHECK:', {
-        'Service screen pos': preJumpData.screenPosition,
-        'React renderData screen pos': renderData.screenPosition,
-        'Service world coords': catPositionServiceNew.getCatCoordinates(),
-        'React renderData world coords': renderData.worldCoordinates,
-        'States match?': statesMatch
-      });
       
       // FIX: If states don't match, force React to use Service's current state (including camera offset)
       if (!statesMatch) {
-        console.debug('🔄 FORCING STATE SYNC - React and Service states differ, syncing React to Service');
-        console.debug('Before sync - Service coords:', catPositionServiceNew.getCatCoordinates());
-        console.debug('Before sync - React coords:', renderData.worldCoordinates);
-        
         // Force React to use the Service's current fresh state (includes camera offset)
         const freshServiceData = catPositionServiceNew.getRenderData();
         setRenderData(freshServiceData);
-        
-        console.debug('After sync - Fresh Service state:', freshServiceData.screenPosition);
-        console.debug('After sync - Old React state:', renderData.screenPosition);
-        console.debug('✅ SYNC COMPLETE - Forced React to use Service state');
         
         // Force the Service to use consistent coordinates
         catPositionServiceNew.setPosition(freshServiceData.worldCoordinates);

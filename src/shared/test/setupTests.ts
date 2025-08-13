@@ -90,3 +90,10 @@ global.DOMMatrix = class DOMMatrix {
   e = 0;
   f = 0;
 } as typeof DOMMatrix; 
+
+// Silence GA / external network calls during tests to avoid noisy console errors
+Object.defineProperty(window, 'gtag', {
+  configurable: true,
+  writable: true,
+  value: () => undefined,
+});

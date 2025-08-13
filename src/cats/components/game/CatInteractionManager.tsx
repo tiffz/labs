@@ -6,6 +6,9 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
+import { isOverlayEnabled, OverlayColors } from '../debug/overlay';
+import { layerForZ } from '../rendering/zLayer';
+import { MassBoxOverlay } from '../debug/overlay.tsx';
 import { catCoordinateSystem } from '../../services/CatCoordinateSystem';
 import { computeShadowLayout, SHADOW_OFFSET_X } from '../../services/ShadowLayout';
 import Cat from './Cat';
@@ -77,6 +80,8 @@ interface CatInteractionManagerProps {
   catWorldCoords: { x: number; y: number; z: number };
   // Deprecated: shadow is computed internally from cat world coords to keep a single source of truth
   shadowCoords?: { x: number; y: number; scale: number };
+  // Optional: when provided, use this as the visual baseline (shadow center)
+  shadowCenterOverride?: number;
   
   // Event logging functions
   eventLoggers?: {
@@ -111,6 +116,7 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
   heartSpawningService,
   mouseState,
   catWorldCoords,
+  shadowCenterOverride,
   eventLoggers,
 }) => {
   // Local cat visual state
@@ -130,6 +136,7 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
   const shadowContainerRef = useRef<HTMLDivElement | null>(null);
   const catContainerRef = useRef<HTMLDivElement | null>(null);
   // Fixed geometry from SVG viewBox for stable anchors (avoid animation-induced drift)
+  // Pull from central constants to keep consistency across systems
   const VIEWBOX_W = 220;
   const VIEWBOX_H = 200;
   const FEET_LINE_Y = 185; // stable feet line in viewBox coords
@@ -184,11 +191,12 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
     };
   }, [catWorldCoords.x, isJumping]);
 
-  // Auto-enable overlay via URL param overlay=1 for easy verification
+  // Auto-enable overlay via URL param overlay=1 or overlay=true for easy verification
   useEffect(() => {
     try {
       const params = new URLSearchParams(window.location.search);
-      if (params.get('overlay') === '1') {
+      const overlayParam = params.get('overlay');
+      if (overlayParam === '1' || overlayParam === 'true') {
         (window as unknown as { __CAT_OVERLAY__?: boolean }).__CAT_OVERLAY__ = true;
       }
     } catch {
@@ -451,9 +459,10 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
 
             // No runtime measurement; use fixed geometry to avoid drift from animations
             
-            // Compute shadow from ground projection (y locked at 0) to avoid moving with cat Y
+            // Compute shadow from ground projection (y locked at 0) or use override from ECS
             const groundScreen = catCoordinateSystem.catToScreen({ x: catWorldCoords.x, y: 0, z: catWorldCoords.z });
-            const shadowLayout = computeShadowLayout({ x: catScreenPosition.x, y: groundScreen.y, scale: groundScreen.scale });
+            const baselineY = shadowCenterOverride ?? groundScreen.y;
+            const shadowLayout = computeShadowLayout({ x: catScreenPosition.x, y: baselineY, scale: groundScreen.scale });
             
 
             const roundedCatLeft = Math.round(catScreenPosition.x);
@@ -474,7 +483,7 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
             // const BODY_CENTER_BIAS_PX = 0; // no bias in simplified model
             // Minimal model: no clamps, no rims – pure math from coordinate system
             // Visibility-safe render: clamp container and translate inner so on-screen top stays at baseline
-            const groundY = groundScreen.y;
+            const groundY = baselineY;
             // Maintain constant visual overlap across scales at all Z:
             // Align the bottom of the visual mass box (body/head envelope) to the shadow center
             // Strategy:
@@ -500,7 +509,7 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
             // Derive shadow vertical position directly from cat feet line for exact lock
             const floorHeight = catCoordinateSystem.getFloorDimensions().screenHeight;
             // compute feetLinePx only if overlay is enabled (to avoid linter warning)
-            const overlayEnabled = typeof window !== 'undefined' && (window as unknown as { __CAT_OVERLAY__?: boolean }).__CAT_OVERLAY__ === true;
+            const overlayEnabled = isOverlayEnabled();
             // remove unused local; compute inline where needed
             // Anchor the shadow so its CENTER equals the ground baseline (feet baseline)
             const desiredShadowCenter = Math.min(baselineRounded, floorHeight);
@@ -518,8 +527,7 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
               bottom: `${catContainerBottomPx}px`,
               width: `${catWidthPx}px`,
               height: 'auto',
-              zIndex: 6,
-              outline: overlayEnabled ? '1px dashed rgba(0,255,255,0.6)' : undefined,
+              zIndex: layerForZ(catWorldCoords.z ?? 0, 'entity'),
             };
 
             // Determine mass box from live SVG when available
@@ -618,7 +626,6 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
                   },
                 };
                 (window as unknown as { __CAT_LAST_OVERLAY__?: unknown }).__CAT_LAST_OVERLAY__ = frame;
-                console.debug('[CAT-SHADOW] frame', frame);
               }
             }
             // Track last X to toggle walking animation heuristically
@@ -631,7 +638,7 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
               bottom: `${shadowContainerBottomPx}px`,
               width: `${SHADOW_WIDTH}px`,
               height: 'auto',
-              zIndex: 4,
+              zIndex: layerForZ(catWorldCoords.z ?? 0, 'shadow'),
               outline: overlayEnabled ? '1px dashed rgba(255,255,0,0.6)' : undefined,
             };
             
@@ -640,9 +647,11 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
             {/* === DEBUG OVERLAY (toggle with window.__CAT_OVERLAY__=true) === */}
             {overlayEnabled && (
               <>
-                <div style={{ position: 'absolute', left: `${Math.round(roundedCatLeft) - 120}px`, bottom: `${Math.round(shadowCenterPx)}px`, width: '240px', height: '2px', background: 'rgba(0, 150, 255, 0.9)', zIndex: 9999, pointerEvents: 'none' }} />
-                <div style={{ position: 'absolute', left: `${Math.round(roundedCatLeft) - 120}px`, bottom: `${Math.round((catBottomPx + footGapPx)) }px`, width: '240px', height: '2px', background: 'rgba(255, 80, 80, 0.9)', zIndex: 9999, pointerEvents: 'none' }} />
-                <div style={{ position: 'absolute', left: `${Math.round(roundedCatLeft) - 120}px`, bottom: `${Math.round(floorHeight)}px`, width: '240px', height: '1px', background: 'rgba(0,255,255,0.6)', zIndex: 9999, pointerEvents: 'none' }} />
+                {/* Use shared overlay color system for consistency */}
+                <div style={{ position: 'absolute', left: `${Math.round(roundedCatLeft) - 120}px`, bottom: `${Math.round(shadowCenterPx)}px`, width: '240px', height: '2px', background: OverlayColors.baseline, zIndex: layerForZ(catWorldCoords.z ?? 0) + 10, pointerEvents: 'none' }} />
+                {/* mass-bottom helper line retained; baseline line handled by shared components elsewhere */}
+                <div style={{ position: 'absolute', left: `${Math.round(roundedCatLeft) - 120}px`, bottom: `${Math.round((catBottomPx + footGapPx)) }px`, width: '240px', height: '2px', background: '#ff5050', zIndex: layerForZ(catWorldCoords.z ?? 0) + 10, pointerEvents: 'none' }} />
+                {/* Remove legacy outer cyan baseline line; rely on BaselineOverlay elsewhere */}
                 {/* Mass bounding box visualization (SVG-driven if available) */}
                 {(() => {
                   const vb = lastMassBoxVBRef.current || { x: MASS_LEFT, y: MASS_TOP, width: MASS_RIGHT - MASS_LEFT, height: MASS_BOTTOM - MASS_TOP };
@@ -652,9 +661,9 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
                   const feetLine = catBottomPx + footGapPx;
                   const bottomPx = Math.round(feetLine + (FEET_LINE_Y - (vb.y + vb.height)) * scaleY);
                   const heightPx = Math.round(vb.height * scaleY);
-                  return <div style={{ position: 'absolute', left: `${leftPx}px`, bottom: `${bottomPx}px`, width: `${widthPx}px`, height: `${heightPx}px`, border: '1px dashed rgba(0,255,255,0.6)', zIndex: 9999, pointerEvents: 'none' }} />;
+                  return <MassBoxOverlay left={leftPx} bottom={bottomPx} width={widthPx} height={heightPx} />;
                 })()}
-                <div style={{ position: 'absolute', left: `${Math.round(roundedCatLeft) + 10}px`, bottom: `${Math.round(catBottomPx) + 10}px`, color: '#fff', background: 'rgba(0,0,0,0.5)', fontSize: '10px', padding: '2px 4px', borderRadius: '3px', zIndex: 9999, pointerEvents: 'none' }}>
+                <div style={{ position: 'absolute', left: `${Math.round(roundedCatLeft) + 10}px`, bottom: `${Math.round(catBottomPx) + 10}px`, color: '#fff', background: 'rgba(0,0,0,0.5)', fontSize: '10px', padding: '2px 4px', borderRadius: '3px', zIndex: layerForZ(catWorldCoords.z ?? 0) + 10, pointerEvents: 'none' }}>
                   {`v-ovl ${Math.round(catWorldCoords.z)} z | scale ${scale.toFixed(2)} | feet ${Math.round(catBottomPx + footGapPx)} | center ${Math.round(shadowCenterPx)} | Δ ${Math.round((catBottomPx + footGapPx) - shadowCenterPx)}`}
                 </div>
               </>

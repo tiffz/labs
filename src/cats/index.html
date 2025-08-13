@@ -24,6 +24,53 @@
     
     <!-- Analytics -->
     <script async src="/scripts/analytics.js"></script>
+
+    <!-- Dev-only early error/logger hook (captures errors before module load) -->
+    <script>
+      (function () {
+        try {
+          if (!/^(localhost|127\.0\.0\.1)/.test(location.hostname)) return;
+          var send = function (level, message, data) {
+            try {
+              fetch('/__debug_log', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  timestamp: new Date().toISOString(),
+                  level: level || 'info',
+                  message: message || '',
+                  data: data ? JSON.stringify(data) : undefined
+                })
+              });
+            } catch (e) { /* noop */ }
+          };
+          window.addEventListener('error', function (e) {
+            send('error', 'early window.onerror', {
+              message: e.message,
+              filename: e.filename,
+              lineno: e.lineno,
+              colno: e.colno,
+              stack: (e.error && (e.error.stack || e.error.message)) || String(e.error)
+            });
+          }, true);
+          window.addEventListener('unhandledrejection', function (e) {
+            send('error', 'early unhandledrejection', {
+              reason: (e.reason && (e.reason.stack || e.reason.message)) || String(e.reason)
+            });
+          });
+          var original = { log: console.log, info: console.info, warn: console.warn, error: console.error, debug: console.debug };
+          ['log','info','warn','error','debug'].forEach(function(k){
+            console[k] = function(){
+              try {
+                var msg = Array.prototype.map.call(arguments, function(a){ return typeof a === 'string' ? a : ''; }).join(' ').trim();
+                send(k, msg, Array.prototype.slice.call(arguments));
+              } catch(_) {}
+              return original[k].apply(console, arguments);
+            };
+          });
+        } catch (_) { /* noop */ }
+      })();
+    </script>
 </head>
 <body>
     <div id="root"></div>

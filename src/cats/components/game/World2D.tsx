@@ -307,17 +307,6 @@ const World2D: React.FC<World2DProps> = ({
                 </div>
               </div>
             </div>
-            
-            {/* Cat Tree/Scratching Post */}
-            <div className="cat-tree">
-              <div className="tree-base" />
-              <div className="tree-post" />
-              <div className="tree-platform" />
-              <div className="hanging-toy">
-                <div className="toy-string" />
-                <div className="toy-ball" />
-              </div>
-            </div>
 
             {/* Additional Furniture for wider world */}
             {/* Couch */}
