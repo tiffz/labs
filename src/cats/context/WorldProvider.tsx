@@ -1,6 +1,6 @@
 import React from 'react';
 import { World, SystemRunner, GameLoop } from '../engine';
-import { MovementSystem, ShadowSystem } from '../engine';
+import { MovementSystem, ShadowSystem, CatInputBridgeSystem, CatStateSystem } from '../engine';
 import { WorldContext } from './WorldContextCore';
 
 const WorldProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -12,6 +12,8 @@ const WorldProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     const systems = new SystemRunner();
     systems.add(MovementSystem);
     systems.add(ShadowSystem);
+    systems.add(CatInputBridgeSystem);
+    systems.add(CatStateSystem);
     const loop = new GameLoop(world, systems);
     worldRef.current = world;
     loopRef.current = loop;

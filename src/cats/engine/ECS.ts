@@ -33,7 +33,14 @@ export interface CatBehavior {
   state: 'idle' | 'alert' | 'pouncePrep' | 'pouncing' | 'recover' | 'sleeping';
 }
 
-export type Component = Transform3 | Velocity3 | Renderable | ShadowProps | Clickable | CatBehavior;
+export interface CatIntent {
+  sleeping?: boolean;
+  alert?: boolean;
+  pouncePrep?: boolean;
+  pouncing?: boolean;
+}
+
+export type Component = Transform3 | Velocity3 | Renderable | ShadowProps | Clickable | CatBehavior | CatIntent;
 
 class ComponentStore<T extends object> {
   private data = new Map<EntityId, T>();
@@ -58,6 +65,7 @@ export class World {
   readonly shadows = new ComponentStore<ShadowProps>();
   readonly clickables = new ComponentStore<Clickable>();
   readonly cats = new ComponentStore<CatBehavior>();
+  readonly catIntents = new ComponentStore<CatIntent>();
 }
 
 // System runner

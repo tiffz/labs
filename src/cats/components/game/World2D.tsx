@@ -308,17 +308,7 @@ const World2D: React.FC<World2DProps> = ({
               </div>
             </div>
 
-            {/* Additional Furniture for wider world */}
-            {/* Couch */}
-            <div className="couch">
-              <div className="couch-base" />
-              <div className="couch-back" />
-              <div className="couch-arm couch-arm-left" />
-              <div className="couch-arm couch-arm-right" />
-              <div className="cushion cushion-1" />
-              <div className="cushion cushion-2" />
-              <div className="cushion cushion-3" />
-            </div>
+            {/* Additional Furniture for wider world (legacy DOM couch removed; ECS-driven Couch component is used instead) */}
 
             {/* Kitchen Counter */}
             <div className="kitchen-counter">

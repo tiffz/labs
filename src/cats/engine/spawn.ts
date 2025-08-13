@@ -7,6 +7,7 @@ export function spawnCat(world: World, initial: { x: number; y: number; z: numbe
   world.renderables.set(id, { kind: 'cat' });
   world.shadows.set(id, {});
   world.cats.set(id, { state: 'idle' });
+  world.catIntents.set(id, {});
   return id;
 }
 
