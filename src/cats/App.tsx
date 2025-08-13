@@ -15,7 +15,7 @@ declare global {
 // CatInteractionManager is used via Actor
 import WorldRenderer from './components/game/WorldRenderer';
 import { useWorld } from './context/useWorld';
-import { spawnCat, spawnFurniture } from './engine/spawn';
+import { spawnCat, spawnFurniture, spawnCouch } from './engine/spawn';
 import Heart from './components/game/Heart';
 import Zzz from './components/game/Zzz';
 import WandToy from './components/game/WandToy';
@@ -615,6 +615,7 @@ function App() {
           const existingFurniture = Array.from(world.renderables.entries()).find(([, r]) => r.kind === 'furniture');
           if (!existingFurniture) {
             spawnFurniture(world, { x: catPosition.x + 240, y: 0, z: Math.max(0, (catPosition.z || 0) + 200) });
+            spawnCouch(world, { x: catPosition.x - 260, y: 0, z: Math.max(0, (catPosition.z || 0) + 140) });
           }
         } else {
           // Keep ECS transform in sync with current service position (bridge during migration)

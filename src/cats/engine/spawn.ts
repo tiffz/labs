@@ -21,4 +21,8 @@ export function spawnFurniture(
   return id;
 }
 
+export function spawnCouch(world: World, initial: { x: number; y: number; z: number }): EntityId {
+  return spawnFurniture(world, initial, 'couch');
+}
+
 

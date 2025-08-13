@@ -10,8 +10,9 @@ import { isOverlayEnabled, OverlayColors } from '../debug/overlay';
 import { layerForZ } from '../rendering/zLayer';
 import { MassBoxOverlay } from '../debug/overlay.tsx';
 import { catCoordinateSystem } from '../../services/CatCoordinateSystem';
-import { computeShadowLayout, SHADOW_OFFSET_X } from '../../services/ShadowLayout';
+import { computeShadowLayout } from '../../services/ShadowLayout';
 import Cat from './Cat';
+import CatView from './CatView';
 import { calculateFinalLoveGain } from '../../systems/lovePerInteractionSystem';
 import type { EconomyCalculations } from '../../services/GameEconomyService';
 import type { MouseState } from '../../hooks/useMouseTracking';
@@ -126,6 +127,7 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
   const [isSubtleWiggling, setIsSubtleWiggling] = useState(false);
   const [isJumping, setIsJumping] = useState(false);
   const [isWalkingUI, setIsWalkingUI] = useState(false);
+  void isWalkingUI; // consumed by CatView via class; suppress unused until fully migrated
   const walkingPrevWorldXRef = useRef<number | null>(null);
   const walkingTimerRef = useRef<number | null>(null);
   const rapidClickTimestampsRef = useRef<number[]>([]);
@@ -448,7 +450,7 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
 
         return (
         <>
-          {(() => {
+      {(() => {
             // SHADOW SYSTEM CONFIG comes from shared ShadowLayout for test parity
             
             // Convert cat coordinates to screen position
@@ -514,21 +516,14 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
             // Anchor the shadow so its CENTER equals the ground baseline (feet baseline)
             const desiredShadowCenter = Math.min(baselineRounded, floorHeight);
             const adjustedShadowBottom = desiredShadowCenter - (SHADOW_HEIGHT / 2); // allow negative; parent overflow is visible
-            const shadowInnerTranslateY = 0; // no inner translation needed when container is anchored correctly
+            // visuals now handled in CatView
             const shadowTopPx = adjustedShadowBottom + SHADOW_HEIGHT; // top is center + height/2
             const shadowCenterPx = adjustedShadowBottom + (SHADOW_HEIGHT / 2);
             // Use bottom-based anchoring to match cat container and avoid top/bottom conversion drift
-            const shadowContainerBottomPx = adjustedShadowBottom;
+            // visuals now handled in CatView
             // overlayEnabled already computed above
             // Add walking class when moving horizontally at ground (simple heuristic via last position)
-            const catContainerStyle: React.CSSProperties = {
-              position: 'absolute',
-              left: `${catLeftPx}px`,
-              bottom: `${catContainerBottomPx}px`,
-              width: `${catWidthPx}px`,
-              height: 'auto',
-              zIndex: layerForZ(catWorldCoords.z ?? 0, 'entity'),
-            };
+            // visuals now handled in CatView
 
             // Determine mass box from live SVG when available
             let massBoxVB = lastMassBoxVBRef.current;
@@ -632,15 +627,7 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
             if (typeof window !== 'undefined') {
               (window as unknown as { __prevCatX?: number }).__prevCatX = catWorldCoords.x;
             }
-            const shadowContainerStyle: React.CSSProperties = {
-              position: 'absolute',
-              left: `${adjustedShadowLeft}px`,
-              bottom: `${shadowContainerBottomPx}px`,
-              width: `${SHADOW_WIDTH}px`,
-              height: 'auto',
-              zIndex: layerForZ(catWorldCoords.z ?? 0, 'shadow'),
-              outline: overlayEnabled ? '1px dashed rgba(255,255,0,0.6)' : undefined,
-            };
+            // visuals now handled in CatView
             
         return (
           <React.Fragment>
@@ -669,71 +656,48 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
               </>
             )}
 
-            {/* === SHADOW CONTAINER: Always at ground level === */}
-            <div 
-              className="cat-shadow-container" 
-              style={shadowContainerStyle}
-              ref={shadowContainerRef}
-            >
-              <div
-                className="cat-shadow-simple"
-                style={{
-                  position: 'relative',
-                  width: '100%',
-                  height: `${SHADOW_HEIGHT}px`,
-                  borderRadius: '50%',
-                  background: `rgba(0, 0, 0, 0.25)`,
-                  transform: `translate(${SHADOW_OFFSET_X}px, ${shadowInnerTranslateY}px)`,
-                  zIndex: 1, // Behind cat
-                }}
-              />
-            </div>
-            
-            {/* === CAT CONTAINER: At calculated screen position === */}
-            {(() => {
-              const walkingClass = isWalkingUI && jumpDeltaPx === 0 ? 'walking' : '';
-              return (
-                <div className={`cat-container cat-tight ${walkingClass}`} style={catContainerStyle} ref={catContainerRef}>
-                  <div style={{ transform: `translateY(${catInnerTranslateY}px)` }}>
-              <Cat
-                ref={catRef}
-                onClick={handleCatClick}
-                onEyeClick={handleEyeClick}
-                onEarClick={handleEarClick}
-                onNoseClick={handleNoseClick}
-                onCheekClick={handleCheekClick}
-                onTailClick={handleTailClick}
-                isPetting={isPetting}
-                isStartled={isStartled}
-                isSleeping={isSleeping}
-                isDrowsy={isDrowsy}
-                isPouncing={isPouncing}
-                isJumping={isJumping}
-                isPlaying={isPlaying}
-                isSmiling={isSmiling}
-                isSubtleWiggling={isSubtleWiggling}
-                isHappyPlaying={isHappyPlaying}
-                isEarWiggling={isEarWiggling}
-                isTailFlicking={isTailFlicking}
-                headTiltAngle={headTiltAngle}
-                pounceTarget={pounceTarget || { x: 0, y: 0 }}
-                wigglingEar={wigglingEar}
-                lastHeart={
-                  trackableHeartId !== null &&
-                  hearts.find((h) => h.id === trackableHeartId)
-                    ? document.querySelector<HTMLDivElement>(
-                        `[data-heart-id="${trackableHeartId}"]`
-                      )
-                    : null
-                }
-                wandMode={wandMode}
-                mouseState={mouseState}
-                pounceConfidence={pounceConfidence}
-              />
-            </div>
-          </div>
-              );
-            })()}
+            {/* === CAT VIEW (visuals only) === */}
+            <CatView
+              catWorldCoords={catWorldCoords}
+              shadowCenterOverride={shadowCenterOverride}
+              catRef={catRef as React.RefObject<SVGSVGElement>}
+              catElement={(
+                <Cat
+                  onClick={handleCatClick}
+                  onEyeClick={handleEyeClick}
+                  onEarClick={handleEarClick}
+                  onNoseClick={handleNoseClick}
+                  onCheekClick={handleCheekClick}
+                  onTailClick={handleTailClick}
+                  isPetting={isPetting}
+                  isStartled={isStartled}
+                  isSleeping={isSleeping}
+                  isDrowsy={isDrowsy}
+                  isPouncing={isPouncing}
+                  isJumping={isJumping}
+                  isPlaying={isPlaying}
+                  isSmiling={isSmiling}
+                  isSubtleWiggling={isSubtleWiggling}
+                  isHappyPlaying={isHappyPlaying}
+                  isEarWiggling={isEarWiggling}
+                  isTailFlicking={isTailFlicking}
+                  headTiltAngle={headTiltAngle}
+                  pounceTarget={pounceTarget || { x: 0, y: 0 }}
+                  wigglingEar={wigglingEar}
+                  lastHeart={
+                    trackableHeartId !== null &&
+                    hearts.find((h) => h.id === trackableHeartId)
+                      ? document.querySelector<HTMLDivElement>(
+                          `[data-heart-id="${trackableHeartId}"]`
+                        )
+                      : null
+                  }
+                  wandMode={wandMode}
+                  mouseState={mouseState}
+                  pounceConfidence={pounceConfidence}
+                />
+              )}
+            />
             
           </React.Fragment>
         );

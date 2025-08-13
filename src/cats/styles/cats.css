@@ -4874,75 +4874,7 @@ body {
   border: 2px solid #b8860b;
 }
 
-/* Couch - redesigned for side-scrolling view */
-.couch {
-  position: absolute;
-  left: 20%;
-  bottom: 40%; /* Up against wall base (floor is 40% height) */
-  width: 270px; /* Scale up couch */
-  height: 180px; /* Fixed height to prevent shrinking */
-  z-index: 2;
-}
-
-.couch-base {
-  position: absolute;
-  bottom: 20px;
-  left: 15px;
-  right: 15px;
-  height: 30px;
-  background: #d7a3a3;
-  border-radius: 4px;
-}
-
-.couch-back {
-  position: absolute;
-  bottom: 50px;
-  left: 15px;
-  right: 15px;
-  height: 45px;
-  background: linear-gradient(180deg, #e8b8b8 0%, #d7a3a3 100%);
-  border-radius: 6px 6px 0 0;
-
-  border-bottom: none;
-}
-
-.couch-arm {
-  position: absolute;
-  bottom: 50px;
-  width: 20px;
-  height: 50px;
-  background: #d7a3a3;
-  border-radius: 6px;
-}
-
-.couch-arm-left {
-  left: 0;
-}
-
-.couch-arm-right {
-  right: 0;
-}
-
-.cushion {
-  position: absolute;
-  bottom: 50px;
-  width: 35px;
-  height: 12px;
-  background: #f5b2b2;
-  border-radius: 15px 15px 0 0;
-}
-
-.cushion-1 {
-  left: 35px;
-}
-
-.cushion-2 {
-  left: 70px;
-}
-
-.cushion-3 {
-  left: 105px;
-}
+/* Legacy CSS couch removed (replaced by ECS SVG Couch component) */
 
 /* Kitchen Counter */
 .kitchen-counter {
@@ -5505,7 +5437,7 @@ html.fonts-loaded .material-icons {
 /* Dev Panel Overlay */
 .dev-panel-overlay {
   position: fixed;
-  bottom: 20px;
+  top: 20px;
   left: 20px;
   z-index: 1000;
   width: min(320px, 32vw);

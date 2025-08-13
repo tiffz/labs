@@ -5,6 +5,7 @@ import type { MouseState } from '../../hooks/useMouseTracking';
 import Actor from './Actor';
 // import FurnitureView from './FurnitureView';
 import ScratchingPost from './furniture/ScratchingPost';
+import Couch from './furniture/Couch';
 
 interface WorldRendererProps {
   economy: EconomyCalculations;
@@ -34,9 +35,12 @@ const WorldRenderer: React.FC<WorldRendererProps> = ({ economy, mouseState, ui }
       const t = world.transforms.get(entityId);
       if (t) {
         // Choose demo component: scratching post; fallback to rectangle
-        actors.push(
-          <ScratchingPost key={entityId} x={t.x} z={t.z} />
-        );
+        actors.push(<ScratchingPost key={entityId} x={t.x} z={t.z} />);
+      }
+    } else if (renderable.kind === 'couch') {
+      const t = world.transforms.get(entityId);
+      if (t) {
+        actors.push(<Couch key={entityId} x={t.x} z={t.z} />);
       }
     }
     // Future: handle furniture, hearts, etc.
