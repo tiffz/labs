@@ -271,10 +271,36 @@ rollupOptions: {
     main: resolve(__dirname, 'src/index.html'),    // Landing page
     cats: resolve(__dirname, 'src/cats/index.html'), // Cat app
     zines: resolve(__dirname, 'src/zines/index.html'), // Zines app
+    corp: resolve(__dirname, 'src/corp/index.html'), // Corporate Ladder game
     // 404.html copied separately for production compatibility
   },
 }
 ```
+
+### E2E Test Organization (Playwright)
+
+E2E tests are co-located with each micro-app for clarity and maintenance:
+
+- Place E2E specs under `src/<app>/e2e/` (e.g., `src/cats/e2e/`, `src/zines/e2e/`, `src/corp/e2e/`).
+- The Playwright config is set to discover tests in those folders and still supports legacy `e2e/` at the repo root.
+- Example stability test for the Corp app lives at `src/corp/e2e/corp-init.spec.ts`.
+
+Playwright config snippet:
+
+```ts
+// playwright.config.ts
+export default defineConfig({
+  testDir: '.',
+  testMatch: ['src/**/e2e/**/*.spec.ts', 'e2e/**/*.spec.ts'],
+  webServer: {
+    command: 'npm run dev',
+    url: 'http://localhost:5173',
+    reuseExistingServer: true,
+  },
+});
+```
+
+This layout keeps tests near their app context while preserving the existing root E2E folder during migration.
 
 **PWA Service Worker Configuration:**
 

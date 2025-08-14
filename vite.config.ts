@@ -23,7 +23,8 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, 'src/index.html'),
         cats: resolve(__dirname, 'src/cats/index.html'),
-        zines: resolve(__dirname, 'src/zines/index.html'),
+          zines: resolve(__dirname, 'src/zines/index.html'),
+          corp: resolve(__dirname, 'src/corp/index.html'),
       },
       output: {
         manualChunks: {
@@ -174,7 +175,7 @@ export default defineConfig({
     })] : []),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'favicon-cats.svg', 'favicon-zines.svg'],
+      includeAssets: ['favicon.svg', 'favicon-cats.svg', 'favicon-zines.svg', 'favicon-corp.svg', 'lightbulb-noto.png'],
       manifest: {
         name: 'Tiff Zhang Labs',
         short_name: 'Labs',
@@ -204,6 +205,8 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: './shared/test/setupTests.ts',
+    include: ['**/*.test.{js,ts,jsx,tsx}'],
+    exclude: ['src/**/e2e/**', 'e2e/**', 'node_modules/**', 'dist/**'],
     testTimeout: 30000, // 30 seconds max per test
     hookTimeout: 30000, // 30 seconds max for setup/teardown
   },

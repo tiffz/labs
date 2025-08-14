@@ -1,7 +1,12 @@
 import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
-  testDir: 'e2e',
+  // Discover tests in app folders (e.g., src/cats/e2e, src/zines/e2e, src/corp/e2e) and legacy root e2e/
+  testDir: '.',
+  testMatch: [
+    'src/**/e2e/**/*.spec.ts',
+    'e2e/**/*.spec.ts',
+  ],
   timeout: 30_000,
   retries: 0,
   use: {
