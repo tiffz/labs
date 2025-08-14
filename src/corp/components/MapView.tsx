@@ -9,9 +9,11 @@ type Props = {
   startCol: number;
   startRow: number;
   tileSize: number;
+  offsetLeft?: number;
+  offsetTop?: number;
 };
 
-export function MapView({ state, tilesX, tilesY, startCol, startRow, tileSize }: Props) {
+export function MapView({ state, tilesX, tilesY, startCol, startRow, tileSize, offsetLeft = 0, offsetTop = 0 }: Props) {
   const { tiles, entities, fog } = useMemo(() => {
     const tiles: Array<{ key: string; className: string; left: number; top: number; z: number }> = [];
     const fog: Array<{ key: string; className: string; left: number; top: number }> = [];
@@ -46,7 +48,12 @@ export function MapView({ state, tilesX, tilesY, startCol, startRow, tileSize }:
 
   return (
     <>
-      <div className="map-container" id="map-container" data-origin={`${startCol},${startRow}`} style={{ width: tilesX * tileSize, height: tilesY * tileSize }}>
+      <div
+        className="map-container"
+        id="map-container"
+        data-origin={`${startCol},${startRow}`}
+        style={{ width: tilesX * tileSize, height: tilesY * tileSize, left: offsetLeft, top: offsetTop }}
+      >
         {tiles.map(t => (
           <div key={t.key} className={t.className} style={{ left: t.left, top: t.top, zIndex: t.z }} />
         ))}
@@ -54,7 +61,11 @@ export function MapView({ state, tilesX, tilesY, startCol, startRow, tileSize }:
           <div key={e.id} id={e.id} data-pos={`${e.mapX},${e.mapY}`} className="entity" style={{ left: e.left, top: e.top, zIndex: e.z }}>{e.emoji}</div>
         ))}
       </div>
-      <div className="fog-container" id="fog-container" style={{ width: tilesX * tileSize, height: tilesY * tileSize }}>
+      <div
+        className="fog-container"
+        id="fog-container"
+        style={{ width: tilesX * tileSize, height: tilesY * tileSize, left: offsetLeft, top: offsetTop }}
+      >
         {fog.map(f => (
           <div key={f.key} className={f.className} style={{ left: f.left, top: f.top }} />
         ))}

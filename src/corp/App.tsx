@@ -230,12 +230,20 @@ export default function CorpApp() {
   const { stateRef, version, takePlayerTurn, restart, useResizeObserver } = useGame();
   const viewportRef = useRef<HTMLDivElement>(null);
   const { width, height } = useResizeObserver(viewportRef);
+  const [winSize, setWinSize] = useState<{ w: number; h: number }>({ w: window.innerWidth, h: window.innerHeight });
+  useEffect(() => {
+    const onResize = () => setWinSize({ w: window.innerWidth, h: window.innerHeight });
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
   const state = stateRef.current;
 
-  const tilesX = Math.max(1, Math.ceil((width || window.innerWidth) / TILE_SIZE));
-  const tilesY = Math.max(1, Math.ceil((height || window.innerHeight) / TILE_SIZE));
-  const startCol = (state?.player.pos.x ?? 0) - Math.floor(tilesX / 2);
-  const startRow = (state?.player.pos.y ?? 0) - Math.floor(tilesY / 2);
+  const widthEff = width || viewportRef.current?.clientWidth || winSize.w;
+  const heightEff = height || viewportRef.current?.clientHeight || winSize.h;
+  const tilesX = Math.max(1, Math.ceil(widthEff / TILE_SIZE));
+  const tilesY = Math.max(1, Math.ceil(heightEff / TILE_SIZE));
+  const startCol = tilesX > 0 ? (state?.player.pos.x ?? 0) - Math.floor(tilesX / 2) : 0;
+  const startRow = tilesY > 0 ? (state?.player.pos.y ?? 0) - Math.floor(tilesY / 2) : 0;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -251,9 +259,15 @@ export default function CorpApp() {
     takePlayerTurn('use_item', { name });
   }, [takePlayerTurn]);
 
+  // Center the map inside the viewport by offsetting the container when there is extra space
+  const mapWidthPx = tilesX * TILE_SIZE;
+  const mapHeightPx = tilesY * TILE_SIZE;
+  const offsetLeft = widthEff > mapWidthPx ? Math.floor((widthEff - mapWidthPx) / 2) : 0;
+  const offsetTop = heightEff > mapHeightPx ? Math.floor((heightEff - mapHeightPx) / 2) : 0;
+
   return (
     <div className="game-container" id="game-container" key={version}>
-      <div className="viewport" id="viewport" ref={viewportRef} style={{ minHeight: 300 }}>
+      <div className="viewport" id="viewport" ref={viewportRef}>
         {state ? (
           <MapView
             state={state}
@@ -262,11 +276,21 @@ export default function CorpApp() {
             startCol={startCol}
             startRow={startRow}
             tileSize={TILE_SIZE}
+            offsetLeft={offsetLeft}
+            offsetTop={offsetTop}
           />
         ) : (
           <>
-            <div className="map-container" id="map-container" style={{ width: tilesX * TILE_SIZE, height: tilesY * TILE_SIZE }} />
-            <div className="fog-container" id="fog-container" style={{ width: tilesX * TILE_SIZE, height: tilesY * TILE_SIZE }} />
+            <div
+              className="map-container"
+              id="map-container"
+              style={{ width: mapWidthPx, height: mapHeightPx, left: offsetLeft, top: offsetTop }}
+            />
+            <div
+              className="fog-container"
+              id="fog-container"
+              style={{ width: mapWidthPx, height: mapHeightPx, left: offsetLeft, top: offsetTop }}
+            />
           </>
         )}
       </div>
