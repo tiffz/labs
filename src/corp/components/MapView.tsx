@@ -17,19 +17,32 @@ export function MapView({ state, tilesX, tilesY, startCol, startRow, tileSize, o
   const { tiles, entities, fog } = useMemo(() => {
     const tiles: Array<{ key: string; className: string; left: number; top: number; z: number }> = [];
     const fog: Array<{ key: string; className: string; left: number; top: number }> = [];
+    function hasVisibleNeighbor(mx: number, my: number): boolean {
+      for (let oy = -1; oy <= 1; oy++) {
+        for (let ox = -1; ox <= 1; ox++) {
+          if (ox === 0 && oy === 0) continue;
+          const nx = mx + ox;
+          const ny = my + oy;
+          if (nx < 0 || ny < 0 || nx >= MAP_WIDTH || ny >= MAP_HEIGHT) continue;
+          if (state.map[ny][nx].visible) return true;
+        }
+      }
+      return false;
+    }
     for (let y = 0; y < tilesY; y++) {
       for (let x = 0; x < tilesX; x++) {
         const mapX = startCol + x;
         const mapY = startRow + y;
         if (mapX < 0 || mapX >= MAP_WIDTH || mapY < 0 || mapY >= MAP_HEIGHT) continue;
         const tile: Tile = state.map[mapY][mapX];
+        const soft = !tile.visible && hasVisibleNeighbor(mapX, mapY);
         const isWall = tile.isWall;
         const isFrontWall = isWall && (mapY + 1 >= MAP_HEIGHT || !state.map[mapY + 1][mapX].isWall);
-        if (tile.visible || tile.revealed) {
+        if (tile.visible || tile.revealed || soft) {
           const klass = `tile ${isWall ? 'wall' : 'floor'}${isFrontWall ? ' front-face' : ''}`;
           tiles.push({ key: `t-${mapX}-${mapY}`, className: klass, left: x * tileSize, top: y * tileSize - (isWall ? tileSize * 0.5 : 0), z: y });
         }
-        const tileState = tile.visible ? 'visible' : tile.revealed ? 'revealed' : 'hidden';
+        const tileState = tile.visible ? 'visible' : soft ? 'soft' : tile.revealed ? 'revealed' : 'hidden';
         if (tileState !== 'visible') fog.push({ key: `f-${mapX}-${mapY}`, className: `fog-tile ${tileState}`, left: x * tileSize, top: y * tileSize });
       }
     }

@@ -59,6 +59,7 @@ body {
 .fog-tile.visible {
   opacity: 0;
 }
+.fog-tile.soft,
 .fog-tile.revealed {
   opacity: 0.6;
 }
