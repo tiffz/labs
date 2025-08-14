@@ -56,6 +56,26 @@ interface ActorProps {
 // This keeps behavior stable while we migrate to full ECS usage.
 const Actor: React.FC<ActorProps> = ({ entityId, economy, mouseState, ui }) => {
   const world = useWorld();
+  // Ensure we re-read the latest transform each world tick
+  const [, force] = React.useState(0);
+  React.useEffect(() => {
+    const onTick = () => force((v) => (v + 1) & 0x3fffffff);
+    window.addEventListener('world-tick', onTick);
+    return () => window.removeEventListener('world-tick', onTick);
+  }, []);
+
+  // Bridge UI pounce start to a small upward impulse in ECS for visible hop
+  const prevPouncingRef = React.useRef<boolean>(ui.isPouncing);
+  React.useEffect(() => {
+    const was = prevPouncingRef.current;
+    if (!was && ui.isPouncing) {
+      // Rising edge: request a jump impulse in ECS
+      const intent = world.catIntents.get(entityId) || {};
+      intent.happyJump = true;
+      world.catIntents.set(entityId, intent);
+    }
+    prevPouncingRef.current = ui.isPouncing;
+  }, [ui.isPouncing, world, entityId]);
   const t = world.transforms.get(entityId);
   if (!t) return null;
 
@@ -66,6 +86,7 @@ const Actor: React.FC<ActorProps> = ({ entityId, economy, mouseState, ui }) => {
 
   return (
     <CatInteractionManager
+      entityId={entityId}
       economy={economy}
       catEnergy={ui.catEnergy}
       wandMode={ui.wandMode}

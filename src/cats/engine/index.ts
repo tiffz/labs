@@ -4,5 +4,6 @@ export * from './systems/MovementSystem';
 export * from './systems/ShadowSystem';
 export * from './systems/CatInputBridgeSystem';
 export * from './systems/CatStateSystem';
+export * from './systems/JumpImpulseSystem';
 
 

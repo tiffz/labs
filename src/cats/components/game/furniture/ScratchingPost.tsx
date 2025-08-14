@@ -20,12 +20,13 @@ const ScratchingPost: React.FC<ScratchingPostProps> = ({ x, z }) => {
   const ground = catCoordinateSystem.catToScreen({ x, y: 0, z });
   const w = Math.round(BASE_W * ground.scale);
   const h = Math.round(BASE_H * ground.scale);
-  const left = Math.round(ground.x - w / 2);
+  const left = ground.x - w / 2; // keep subpixel to avoid cat collision jitter
   const bottom = Math.round(ground.y);
 
   const containerStyle: React.CSSProperties = {
     position: 'absolute',
-    left: `${left}px`,
+    left: '0px',
+    transform: `translate3d(${left}px, 0, 0)`,
     bottom: `${bottom}px`,
     width: `${w}px`,
     height: `${h}px`,

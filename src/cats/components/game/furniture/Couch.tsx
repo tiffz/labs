@@ -18,16 +18,18 @@ const Couch: React.FC<CouchProps> = ({ x, z }) => {
   const ground = catCoordinateSystem.catToScreen({ x, y: 0, z });
   const w = Math.round(VB_W * 1.15 * ground.scale);
   const h = Math.round(VB_H * 1.15 * ground.scale);
-  const left = Math.round(ground.x - w / 2);
+  const left = ground.x - w / 2; // keep subpixel to avoid transform snapping
   const bottom = Math.round(ground.y);
 
   const style: React.CSSProperties = {
     position: 'absolute',
-    left: `${left}px`,
+    left: '0px',
     bottom: `${bottom}px`,
+    transform: `translate3d(${left}px, 0, 0)`,
     width: `${w}px`,
     height: `${h}px`,
     zIndex: layerForZ(z, 'entity'),
+    willChange: 'transform',
   };
 
   // Mass box for overlays (seat + arms + back) - hug to arm edges horizontally

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useWorld } from '../../context/useWorld';
 
 interface DevPanelProps {
   energy: number;
@@ -41,7 +42,7 @@ const DevPanel: React.FC<DevPanelProps> = ({
   onJump,
   onSendSnapshot,
 }) => {
-  const [activeTab, setActiveTab] = useState<'stats' | 'position' | 'controls'>('stats');
+  const [activeTab, setActiveTab] = useState<'stats' | 'position' | 'controls' | 'ecs'>('stats');
 
   return (
     <div className="dev-panel-compact">
@@ -65,6 +66,12 @@ const DevPanel: React.FC<DevPanelProps> = ({
             onClick={() => setActiveTab('controls')}
           >
             Ctrl
+          </button>
+          <button 
+            className={`dev-tab ${activeTab === 'ecs' ? 'active' : ''}`}
+            onClick={() => setActiveTab('ecs')}
+          >
+            ECS
           </button>
         </div>
         {import.meta.env.DEV && onSendSnapshot && (
@@ -100,6 +107,12 @@ const DevPanel: React.FC<DevPanelProps> = ({
                 <span>Excitement:</span> <span>{clickExcitement.toFixed(1)}</span>
               </div>
             </div>
+          </div>
+        )}
+
+        {activeTab === 'ecs' && (
+          <div className="dev-tab-content">
+            <DebugEcsPanel />
           </div>
         )}
 
@@ -174,3 +187,42 @@ const DevPanel: React.FC<DevPanelProps> = ({
 };
 
 export default DevPanel; 
+
+// Live ECS debug panel that syncs directly from world and DOM every frame
+const DebugEcsPanel: React.FC = () => {
+  const world = useWorld();
+  const [state, setState] = useState<{ walking: boolean; bobAmpl: string; speedInst: number; speedSmooth: number; dtMs: number }>(() => ({ walking: false, bobAmpl: '0px', speedInst: 0, speedSmooth: 0, dtMs: 0 }));
+  useEffect(() => {
+    let raf: number | null = null;
+    const step = () => {
+      try {
+        const dbg = (world as unknown as { __debug?: Record<string, unknown> }).__debug || {};
+        const walking = Boolean((dbg as { domWalkingClass?: boolean }).domWalkingClass);
+        const bobAmpl = String((dbg as { domBobAmpl?: string }).domBobAmpl || '0px');
+        const speedInst = Number((dbg as { walkSpeedInst?: number }).walkSpeedInst || 0);
+        const speedSmooth = Number((dbg as { walkSpeedScreen?: number }).walkSpeedScreen || 0);
+        const dtMs = Number((dbg as { dtMs?: number }).dtMs || 0);
+        setState(s => {
+          if (s.walking !== walking || s.bobAmpl !== bobAmpl || s.speedInst !== speedInst || s.speedSmooth !== speedSmooth || s.dtMs !== dtMs) {
+            return { walking, bobAmpl, speedInst, speedSmooth, dtMs };
+          }
+          return s;
+        });
+      } catch {
+        // no-op
+      }
+      raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => { if (raf) cancelAnimationFrame(raf); };
+  }, [world]);
+  return (
+    <div className="compact-stats" style={{ fontSize: 11, lineHeight: 1.4 }}>
+      <div className="stat-row"><span>Walking:</span> <span>{String(state.walking)}</span></div>
+      <div className="stat-row"><span>Bob Ampl:</span> <span>{state.bobAmpl}</span></div>
+      <div className="stat-row"><span>Speed Inst:</span> <span>{state.speedInst.toFixed(1)} px/s</span></div>
+      <div className="stat-row"><span>Speed Smooth:</span> <span>{state.speedSmooth.toFixed(1)} px/s</span></div>
+      <div className="stat-row"><span>dt:</span> <span>{state.dtMs} ms</span></div>
+    </div>
+  );
+};

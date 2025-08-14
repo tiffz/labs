@@ -171,40 +171,10 @@ export const useCatPositionNew = () => {
       updateViewport();
     };
 
-    // Listen for happy jump nudge: quick up/down arc using animateToPosition
+    // Listen for happy jump signal: now handled by ECS JumpImpulseSystem; legacy no-op for compatibility
       const handleHappyJump = () => {
-    // serverLogger.log('🚀 HAPPY JUMP TRIGGERED');
-    
-    // Debug camera state and coordinate calculations
-    // serverLogger.log('📷 CAMERA STATE AT HAPPY JUMP:', {
-    //   'Current camera X': (catCoordinateSystem as any).cameraX || 'undefined', 
-    //   'Viewport width': catCoordinateSystem.viewportWidth,
-    //   'Cat world coords': catPositionServiceNew.getCatCoordinates()
-    // });
-      // Debug position right before happy jump triggers
-      const preJumpData = catPositionServiceNew.getRenderData();
-      
-      // CRITICAL: Check for React state vs Service state mismatch
-      const statesMatch = JSON.stringify(preJumpData.screenPosition) === JSON.stringify(renderData.screenPosition);
-      
-      // FIX: If states don't match, force React to use Service's current state (including camera offset)
-      if (!statesMatch) {
-        // Force React to use the Service's current fresh state (includes camera offset)
-        const freshServiceData = catPositionServiceNew.getRenderData();
-        setRenderData(freshServiceData);
-        
-        // Force the Service to use consistent coordinates
-        catPositionServiceNew.setPosition(freshServiceData.worldCoordinates);
-        
-        // Don't return early - proceed with animation using the fresh state
-      }
-      
-      // Use simulateHappyJump which handles position smoothly without teleportation
-      setIsAnimating(true);
-      catPositionServiceNew.simulateHappyJump(500, 40, handleUpdate, () => {
-        setIsAnimating(false);
-      });
-    };
+        /* no-op: ECS handles jump arc via physics */
+      };
     document.addEventListener('cat-happy-jump', handleHappyJump as EventListener);
 
     window.addEventListener('resize', handleResize);

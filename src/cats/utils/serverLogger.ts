@@ -96,11 +96,6 @@ class ServerLogger {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(logData)
-      }).catch(() => {
-        // Fallback to console if server endpoint fails (debug only)
-        if (import.meta.env.DEV) {
-          console.debug(`[${level.toUpperCase()}] ${message}`, data || '');
-        }
       });
     } catch {
       // Silent fail - don't break the app

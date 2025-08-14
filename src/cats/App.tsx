@@ -274,6 +274,41 @@ function App() {
     }
   }, []);
 
+  // Dev hotkey: press 's' to send snapshot when dev mode is enabled
+  useEffect(() => {
+    if (!isDevMode) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() === 's') {
+        (async () => {
+          try {
+            const root = document.body as HTMLElement;
+            const canvas = await html2canvas(root, { useCORS: true, logging: false, backgroundColor: null, windowWidth: window.innerWidth, windowHeight: window.innerHeight });
+            const blob: Blob | null = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+            const form = new FormData();
+            const overlay = (window as unknown as { __CAT_LAST_OVERLAY__?: unknown }).__CAT_LAST_OVERLAY__;
+            const ecs = (window as unknown as { __ECS_DEBUG__?: unknown }).__ECS_DEBUG__;
+            form.append('meta', new Blob([JSON.stringify({
+              timestamp: new Date().toISOString(),
+              gameState,
+              catWorldCoords: catPosition,
+              catScreenCoords: catWorldPosition,
+              economy,
+              overlay,
+              ecs,
+            })], { type: 'application/json' }), 'meta.json');
+            if (blob) form.append('screenshot', blob, 'screenshot.png');
+            await fetch('/__debug_snapshot', { method: 'POST', body: form });
+            console.debug('[CAT-DEBUG] Snapshot sent (hotkey)');
+          } catch (e) {
+            console.error('Snapshot failed (hotkey)', e);
+          }
+        })();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isDevMode, gameState, catPosition, catWorldPosition, economy]);
+
   // Energy regeneration is now handled by useCatSystem
 
 
@@ -416,6 +451,7 @@ function App() {
   // Player control keyboard handler
   useEffect(() => {
     if (!playerControlMode) return;
+    const worldRef = { current: world };
     const held = { left: false, right: false, up: false, down: false };
     const onDown = (e: KeyboardEvent) => {
       const prev = { ...held };
@@ -423,7 +459,17 @@ function App() {
       if (e.key === 'ArrowRight') held.right = true;
       if (e.key === 'ArrowUp') held.up = true;
       if (e.key === 'ArrowDown') held.down = true;
-      if (e.code === 'Space') jumpOnce();
+      if (e.code === 'Space' || e.key === ' ') {
+        e.preventDefault();
+        // In run mode, trigger ECS jump intent directly on the cat entity
+        const existing = Array.from(worldRef.current.renderables.entries()).find(([, r]) => r.kind === 'cat');
+        const catId = existing?.[0];
+        if (catId) {
+          const intent = worldRef.current.catIntents.get(catId) || {};
+          intent.happyJump = true;
+          worldRef.current.catIntents.set(catId, intent);
+        }
+      }
       if (prev.left !== held.left || prev.right !== held.right || prev.up !== held.up || prev.down !== held.down) {
         // Mark activity to prevent sleep while running
         resetInactivityTimer();
@@ -440,16 +486,14 @@ function App() {
     let last = performance.now();
     const step = () => {
       const now = performance.now();
-      const dt = Math.min(0.033, (now - last) / 1000);
+      const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
       // Disable lateral motion while jumping
-      const jumping = (document as unknown as { isCatJumping?: boolean }).isCatJumping === true;
-      if (!jumping) {
+      // Always allow lateral motion; ECS handles vertical independently
         const dx = (held.right ? 1 : 0) - (held.left ? 1 : 0);
         const dz = (held.down ? 1 : 0) - (held.up ? 1 : 0);
         if (dx !== 0) nudgeX(dx * 260 * dt);
         if (dz !== 0) nudgeZ(dz * 220 * dt);
-      }
       raf = requestAnimationFrame(step);
     };
     raf = requestAnimationFrame(step);
@@ -460,7 +504,7 @@ function App() {
       window.removeEventListener('keydown', onDown);
       window.removeEventListener('keyup', onUp);
     };
-  }, [playerControlMode, nudgeX, nudgeZ, jumpOnce, resetInactivityTimer]);
+  }, [playerControlMode, nudgeX, nudgeZ, jumpOnce, resetInactivityTimer, world]);
 
   // Global key handler for wand mode toggle
   useEffect(() => {
@@ -619,7 +663,9 @@ function App() {
           }
         } else {
           // Keep ECS transform in sync with current service position (bridge during migration)
-          world.transforms.set(catId, { x: catPosition.x, y: catPosition.y, z: catPosition.z });
+          // Preserve ECS-controlled Y (jump/physics) to avoid overriding happy jumps
+          const current = world.transforms.get(catId) || { x: catPosition.x, y: catPosition.y, z: catPosition.z };
+          world.transforms.set(catId, { x: catPosition.x, y: current.y, z: catPosition.z });
         }
         return (
           <WorldRenderer
@@ -718,6 +764,7 @@ function App() {
                 const blob: Blob | null = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
                 const form = new FormData();
                 const overlay = (window as unknown as { __CAT_LAST_OVERLAY__?: unknown }).__CAT_LAST_OVERLAY__;
+                const ecs = (window as unknown as { __ECS_DEBUG__?: unknown }).__ECS_DEBUG__;
                 form.append('meta', new Blob([JSON.stringify({
                   timestamp: new Date().toISOString(),
                   gameState,
@@ -725,6 +772,7 @@ function App() {
                   catScreenCoords: catWorldPosition,
                   economy,
                   overlay,
+                  ecs,
                 })], { type: 'application/json' }), 'meta.json');
                 if (blob) form.append('screenshot', blob, 'screenshot.png');
                 await fetch('/__debug_snapshot', { method: 'POST', body: form });

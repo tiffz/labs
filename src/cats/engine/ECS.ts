@@ -38,9 +38,25 @@ export interface CatIntent {
   alert?: boolean;
   pouncePrep?: boolean;
   pouncing?: boolean;
+  noseBoop?: boolean;
+  earLeft?: boolean;
+  earRight?: boolean;
+  tailFlick?: boolean;
+  cheekPet?: boolean;
+  startled?: boolean;
+  subtleWiggle?: boolean;
+  happyJump?: boolean;
 }
 
-export type Component = Transform3 | Velocity3 | Renderable | ShadowProps | Clickable | CatBehavior | CatIntent;
+export interface CatAnim {
+  smiling?: boolean;
+  earWiggle?: 'left' | 'right' | null;
+  tailFlicking?: boolean;
+  startled?: boolean;
+  subtleWiggle?: boolean;
+}
+
+export type Component = Transform3 | Velocity3 | Renderable | ShadowProps | Clickable | CatBehavior | CatIntent | CatAnim;
 
 class ComponentStore<T extends object> {
   private data = new Map<EntityId, T>();
@@ -66,6 +82,7 @@ export class World {
   readonly clickables = new ComponentStore<Clickable>();
   readonly cats = new ComponentStore<CatBehavior>();
   readonly catIntents = new ComponentStore<CatIntent>();
+  readonly catAnims = new ComponentStore<CatAnim>();
 }
 
 // System runner

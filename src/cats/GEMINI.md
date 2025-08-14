@@ -618,3 +618,54 @@ Removed unused development utilities:
 - **Unused Variables**: Cleaned up test files with unused destructured values
 
 These fixes ensure robust achievement awarding, stable error reporting, and cleaner codebase maintenance.
+
+## ECS Migration (2025)
+
+### Overview
+
+- The cat game now uses an Entity-Component-System architecture.
+- React renders views; ECS owns world state, physics-ish timers, and animation flags.
+
+### Entities and Components
+
+- `World`: central store with typed component maps
+- Components:
+  - `Transform3` (x, y, z), `Velocity3`
+  - `Renderable` (kind: `cat`, `furniture`, `couch`, ...)
+  - `ShadowProps` (centerY, layout)
+  - `CatBehavior` (state: `idle | alert | pouncePrep | pouncing | recover | sleeping`)
+  - `CatIntent` (inputs): `sleeping`, `alert`, `pouncePrep`, `noseBoop`, `earLeft/earRight`, `tailFlick`, `cheekPet`, `startled`, `subtleWiggle`
+  - `CatAnim` (outputs): `smiling`, `earWiggle`, `tailFlicking`, `startled`, `subtleWiggle`
+
+### Systems
+
+- `MovementSystem`: integrates basic velocity → transform (placeholder)
+- `ShadowSystem`: projects ground baseline and sizes shadow from world coords
+- `CatInputBridgeSystem`: ensures `CatIntent` exists per cat (temporary)
+- `CatStateSystem`: explicit transitions and timers
+  - Flow: idle → alert → pouncePrep → pouncing → recover → idle
+  - `alert` decays back to `idle` if no follow-up input
+  - Animation outputs set from intents with expiries
+    - Smile: 750ms, Ear wiggle: 500ms, Tail flick: 600ms
+    - `startled`/`subtleWiggle` are one-frame latches
+
+### React Integration
+
+- `WorldRenderer`: sorts by `z` and renders cats/furniture
+- `CatView`: owns layout math and shadow alignment; `CatInteractionManager` handles inputs
+- A `world-tick` CustomEvent is dispatched from the game loop each frame; React subscribes to reflect ECS updates without polling timers
+
+### Shadow Alignment Invariant
+
+- Visual bottom of the cat mass-box aligns with the shadow vertical center at the ground baseline
+- Baseline and layout are rounded to whole pixels to prevent drift/gaps
+
+### Tests
+
+- Unit tests cover `CatStateSystem` transitions and animation expiry
+- E2E tests ensure boot without errors and interactions work (fonts/analytics stubbed)
+
+### Status
+
+- Smile/ear/tail/startled/subtle wiggle now ECS-driven; React passes ECS-derived flags to `Cat`
+- Legacy local flags are being removed in favor of ECS outputs for clarity and maintainability

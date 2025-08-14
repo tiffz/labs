@@ -577,7 +577,7 @@ body.wand-mode-active * {
 .eye-startled,
 .eye-sleeping,
 .eye-happy {
-  transition: opacity 0.05s ease-in-out;
+  transition: opacity 0.16s ease-in-out;
 }
 
 .hidden {
@@ -4342,7 +4342,7 @@ body {
   transition: transform 0.2s ease-out;
 }
 
-/* During active resize, turn off transition to avoid ‘shake’ */
+/* During active resize, turn off transition to avoid 'shake' */
 .world-content[data-resizing='true'] {
   transition: none !important;
 }
@@ -5034,19 +5034,29 @@ body {
 }
 
 /* Walking bob applies to the container to ensure visibility */
-.cat-container.walking {
-  animation: cat-walk-bob 0.7s ease-in-out infinite;
+.cat-walk-bobber {
+  animation: none !important;
+  animation-play-state: paused !important;
+}
+.cat-inner.walking .cat-walk-bobber {
+  animation: cat-walk-bob 0.7s ease-in-out infinite !important;
+  will-change: transform;
+  animation-play-state: running !important;
+}
+.cat-inner:not(.walking) .cat-walk-bobber {
+  animation: none !important;
+  animation-play-state: paused !important;
 }
 
 @keyframes cat-walk-bob {
   0% {
-    transform: translateY(0);
+    transform: translate3d(0, 0, 0);
   }
   50% {
-    transform: translateY(3px);
+    transform: translate3d(0, var(--bob-ampl, 3px), 0);
   }
   100% {
-    transform: translateY(0);
+    transform: translate3d(0, 0, 0);
   }
 }
 
@@ -5064,7 +5074,7 @@ body {
 }
 
 /* Do not cancel walking animation, but neutralize other animations/transforms */
-.world-2d-container .cat-container:not(.walking) {
+.world-2d-container .cat-inner:not(.walking) .cat-walk-bobber {
   animation: none !important;
 }
 

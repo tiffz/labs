@@ -14,6 +14,8 @@ import CatView from './CatView';
 import { calculateFinalLoveGain } from '../../systems/lovePerInteractionSystem';
 import type { EconomyCalculations } from '../../services/GameEconomyService';
 import type { MouseState } from '../../hooks/useMouseTracking';
+import { useWorld } from '../../context/useWorld';
+// serverLogger temporarily disabled for noise reduction
 
 // Analytics types are declared in vite-env.d.ts
 // No need to redeclare here
@@ -29,6 +31,7 @@ interface HeartType {
 }
 
 interface CatInteractionManagerProps {
+  entityId?: string;
   // Economy and love calculations
   economy: EconomyCalculations;
   
@@ -114,23 +117,27 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
   trackSpecialAction,
   heartSpawningService,
   mouseState,
+  entityId,
   catWorldCoords,
   shadowCenterOverride,
   eventLoggers,
 }) => {
   // Local cat visual state
   const [isPetting, setIsPetting] = useState(false);
-  const [isStartled, setIsStartled] = useState(false);
-  const [wigglingEar, setWigglingEar] = useState<'left' | 'right' | null>(null);
-  const [isSubtleWiggling, setIsSubtleWiggling] = useState(false);
+  // Startled and subtle wiggle now driven by ECS (catAnims)
   const [isJumping, setIsJumping] = useState(false);
   const [isWalkingUI, setIsWalkingUI] = useState(false);
   const walkingPrevWorldXRef = useRef<number | null>(null);
-  const walkingTimerRef = useRef<number | null>(null);
+  const walkingLastActiveRef = useRef<number>(0);
+  const walkingLastTsRef = useRef<number | null>(null);
+  const filteredSpeedRef = useRef<number>(0);
+  const walkingWarmupStartRef = useRef<number>(performance.now());
+  const lastNearZeroRef = useRef<number>(performance.now());
+  const debugRafRef = useRef<number | null>(null);
   const rapidClickTimestampsRef = useRef<number[]>([]);
-  const [isSmiling, setIsSmiling] = useState(false);
+  // Smile now driven by ECS (catAnims.smiling)
   const [headTiltAngle, setHeadTiltAngle] = useState(0);
-  const [isTailFlicking, setIsTailFlicking] = useState(false);
+  // Tail flick now driven by ECS (catAnims.tailFlicking)
   // Debug: capture DOM rects of containers for snapshots
   const shadowContainerRef = useRef<HTMLDivElement | null>(null);
   const catContainerRef = useRef<HTMLDivElement | null>(null);
@@ -167,50 +174,184 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
   const cheekClickFlag = useRef(false);
   // Removed unused clickTimestampsRef (using rapidClickTimestampsRef instead)
   
-
   const { baseLovePerInteraction, meritMultipliers } = economy;
 
-  // Walking UI latch driven by world X deltas; ensures class clears even without re-render activity
-  useEffect(() => {
-    const prev = walkingPrevWorldXRef.current ?? catWorldCoords.x;
-    const dx = Math.abs(catWorldCoords.x - prev);
-    walkingPrevWorldXRef.current = catWorldCoords.x;
-    if (dx > 0.5 && !isJumping) {
-      setIsWalkingUI(true);
-      if (walkingTimerRef.current) {
-        clearTimeout(walkingTimerRef.current);
-      }
-      walkingTimerRef.current = window.setTimeout(() => {
-        setIsWalkingUI(false);
-        walkingTimerRef.current = null;
-      }, 280);
-    }
-    return () => {
-      // no-op
-    };
-  }, [catWorldCoords.x, isJumping]);
+  // Note: smile is now primarily driven by ECS `catAnims.smiling`. Local fallback kept for existing flows.
 
-  // Auto-enable overlay via URL param overlay=1 or overlay=true for easy verification
+  const world = useWorld();
+
+  // ECS anim flags snapshot to drive re-render on changes
+  const [animFlags, setAnimFlags] = useState<{ smiling: boolean; earWiggle: 'left' | 'right' | null; tailFlicking: boolean; startled: boolean; subtleWiggle: boolean }>(() => {
+    const a = entityId ? world.catAnims.get(entityId) : undefined;
+    return {
+      smiling: Boolean(a?.smiling),
+      earWiggle: (a?.earWiggle as 'left' | 'right' | null) || null,
+      tailFlicking: Boolean(a?.tailFlicking),
+      startled: Boolean(a?.startled),
+      subtleWiggle: Boolean(a?.subtleWiggle),
+    };
+  });
+  const effectiveWigglingEar = animFlags.earWiggle;
+
   useEffect(() => {
-    try {
-      const params = new URLSearchParams(window.location.search);
-      const overlayParam = params.get('overlay');
-      if (overlayParam === '1' || overlayParam === 'true') {
-        (window as unknown as { __CAT_OVERLAY__?: boolean }).__CAT_OVERLAY__ = true;
+    if (!entityId) return;
+    const onTick = () => {
+      const a = world.catAnims.get(entityId) || {};
+      const next = {
+        smiling: Boolean(a.smiling),
+        earWiggle: (a.earWiggle as 'left' | 'right' | null) || null,
+        tailFlicking: Boolean(a.tailFlicking),
+        startled: Boolean(a.startled),
+        subtleWiggle: Boolean(a.subtleWiggle),
+      };
+      const prev = animFlags;
+      if (
+        prev.smiling !== next.smiling ||
+        prev.earWiggle !== next.earWiggle ||
+        prev.tailFlicking !== next.tailFlicking ||
+        prev.startled !== next.startled ||
+        prev.subtleWiggle !== next.subtleWiggle
+      ) {
+        setAnimFlags(next);
       }
-    } catch {
-      // ignore malformed URLs in overlay toggler
-    }
+    };
+    window.addEventListener('world-tick', onTick);
+    return () => window.removeEventListener('world-tick', onTick);
+  }, [entityId, world, animFlags]);
+
+  // Drive a lightweight re-render each world tick so position updates are reflected even when anim flags are unchanged
+  const [, forceRender] = useState(0);
+  useEffect(() => {
+    const onTick = () => forceRender((v) => (v + 1) & 0x3fffffff);
+    window.addEventListener('world-tick', onTick);
+    return () => window.removeEventListener('world-tick', onTick);
   }, []);
 
-  // Handle smile timeout
+  // Walking UI latch based on smoothed horizontal speed to avoid hotspot jitter
   useEffect(() => {
-    let smileTimer: number;
-    if (isSmiling) {
-      smileTimer = window.setTimeout(() => setIsSmiling(false), 750);
+    // If cat is airborne or pouncing, ensure walking anim is off
+    if (catWorldCoords.y > 1 || isPouncing) {
+      if (isWalkingUI) setIsWalkingUI(false);
+      walkingPrevWorldXRef.current = catWorldCoords.x;
+      walkingLastTsRef.current = performance.now();
+      return;
     }
-    return () => clearTimeout(smileTimer);
-  }, [isSmiling]);
+    const now = performance.now();
+    const currentX = Math.round(catWorldCoords.x);
+    const prevX = walkingPrevWorldXRef.current ?? currentX;
+    const prevTs = walkingLastTsRef.current ?? now;
+    const dt = Math.max(1, now - prevTs); // ms
+    const dx = Math.abs(currentX - prevX);
+    const instSpeed = (dx / dt) * 1000; // px/sec
+    // Exponential smoothing
+    const alpha = 0.25;
+    filteredSpeedRef.current = filteredSpeedRef.current * (1 - alpha) + instSpeed * alpha;
+
+    // Thresholds with hysteresis
+    const START_SPEED = 18; // px/sec (raise to reduce false positives)
+    const STOP_SPEED = 6;   // px/sec
+    const INACTIVITY_MS = 260;
+    const WARMUP_MS = 400;
+    const NEAR_ZERO_SPEED = 0.8; // px/sec
+    const NEAR_ZERO_TIMEOUT_MS = 300;
+
+    // Warmup window: do not enable walking immediately after mount
+    const allowWalking = now - (walkingWarmupStartRef.current || now) > WARMUP_MS;
+
+    if (allowWalking && !isJumping && filteredSpeedRef.current >= START_SPEED) {
+      walkingLastActiveRef.current = now;
+      if (!isWalkingUI) setIsWalkingUI(true);
+    } else if (
+      isWalkingUI &&
+      filteredSpeedRef.current <= STOP_SPEED &&
+      now - walkingLastActiveRef.current > INACTIVITY_MS
+    ) {
+      setIsWalkingUI(false);
+      filteredSpeedRef.current = 0;
+    }
+
+    // Hard idle clamp: if instantaneous speed is near zero for a short window, force walking off
+    if (instSpeed <= NEAR_ZERO_SPEED) {
+      if (!lastNearZeroRef.current) lastNearZeroRef.current = now;
+      if (now - (lastNearZeroRef.current || now) > NEAR_ZERO_TIMEOUT_MS) {
+        if (isWalkingUI) setIsWalkingUI(false);
+        filteredSpeedRef.current = 0;
+      }
+    } else {
+      lastNearZeroRef.current = now;
+    }
+
+    // Quantize input X before diff to avoid half-px flickers tripping the latch
+    walkingPrevWorldXRef.current = currentX;
+    walkingLastTsRef.current = now;
+    // Debug is written from CatView to keep parity with DOM
+  }, [catWorldCoords.x, catWorldCoords.y, isPouncing, isJumping, isWalkingUI]);
+
+  // Ensure walking state decays even when X stops changing by ticking on world updates
+  useEffect(() => {
+    const onWorldTick = () => {
+      // If cat is airborne or pouncing, ensure walking anim is off
+      if (catWorldCoords.y > 1 || isPouncing) {
+        if (isWalkingUI) setIsWalkingUI(false);
+        walkingPrevWorldXRef.current = catWorldCoords.x;
+        walkingLastTsRef.current = performance.now();
+        return;
+      }
+      const now = performance.now();
+      const currentX = Math.round(catWorldCoords.x);
+      const prevX = walkingPrevWorldXRef.current ?? currentX;
+      const prevTs = walkingLastTsRef.current ?? now;
+      const dt = Math.max(1, now - prevTs); // ms
+      const dx = Math.abs(currentX - prevX);
+      const instSpeed = (dx / dt) * 1000; // px/sec
+      const alpha = 0.25;
+      filteredSpeedRef.current = filteredSpeedRef.current * (1 - alpha) + instSpeed * alpha;
+
+      const START_SPEED = 18;
+      const STOP_SPEED = 6;
+      const INACTIVITY_MS = 260;
+      const WARMUP_MS = 400;
+      const NEAR_ZERO_SPEED = 0.8;
+      const NEAR_ZERO_TIMEOUT_MS = 300;
+      const allowWalking = now - (walkingWarmupStartRef.current || now) > WARMUP_MS;
+
+      let nextWalking = isWalkingUI;
+      if (allowWalking && !isJumping && filteredSpeedRef.current >= START_SPEED) {
+        walkingLastActiveRef.current = now;
+        nextWalking = true;
+      } else if (
+        nextWalking &&
+        filteredSpeedRef.current <= STOP_SPEED &&
+        now - walkingLastActiveRef.current > INACTIVITY_MS
+      ) {
+        nextWalking = false;
+      }
+
+      if (instSpeed <= NEAR_ZERO_SPEED) {
+        if (!lastNearZeroRef.current) lastNearZeroRef.current = now;
+        if (now - (lastNearZeroRef.current || now) > NEAR_ZERO_TIMEOUT_MS) {
+          nextWalking = false;
+        }
+      } else {
+        lastNearZeroRef.current = now;
+      }
+
+      if (nextWalking !== isWalkingUI) {
+        setIsWalkingUI(nextWalking);
+        if (!nextWalking) filteredSpeedRef.current = 0;
+      }
+
+      walkingPrevWorldXRef.current = currentX;
+      walkingLastTsRef.current = now;
+      // Debug is written from CatView to keep parity with DOM
+    };
+    window.addEventListener('world-tick', onWorldTick);
+    return () => {
+      window.removeEventListener('world-tick', onWorldTick);
+      if (debugRafRef.current) cancelAnimationFrame(debugRafRef.current);
+      debugRafRef.current = null;
+    };
+  }, [catWorldCoords.x, catWorldCoords.y, isPouncing, isJumping, isWalkingUI, world]);
 
   const handleCatClick = (event: React.MouseEvent) => {
     // Only block clicks when actively pouncing in wand mode
@@ -232,6 +373,20 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
     );
     onLoveGained(loveFromClick);
     catActions.addEnergy(-1);
+    // Mirror into ECS intent to drive state machine during transition
+    if (entityId) {
+      const intent = world.catIntents.get(entityId) || {};
+      intent.alert = true;
+      intent.pouncePrep = true;
+      world.catIntents.set(entityId, intent);
+      // reset flags shortly after to avoid latching
+      window.setTimeout(() => {
+        const i2 = world.catIntents.get(entityId) || {};
+        i2.alert = false;
+        i2.pouncePrep = false;
+        world.catIntents.set(entityId, i2);
+      }, 50);
+    }
     
     // Track cat interaction
     if (typeof window !== 'undefined' && window.labsAnalytics) {
@@ -250,12 +405,11 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
     // Log petting event
     eventLoggers?.logPetting();
 
-    // Subtle ear wiggle on pet
-    if (!wigglingEar && !isSubtleWiggling && Math.random() < 0.4) {
-      setIsSubtleWiggling(true);
-      setTimeout(() => {
-        setIsSubtleWiggling(false);
-      }, 500);
+    // Subtle ear wiggle on pet (ECS-driven)
+    if (!effectiveWigglingEar && Math.random() < 0.4 && entityId) {
+      const intent = world.catIntents.get(entityId) || {};
+      intent.subtleWiggle = true;
+      world.catIntents.set(entityId, intent);
     }
 
     const now = Date.now();
@@ -272,8 +426,14 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
       if (rapidClickTimestampsRef.current.length >= JUMP_CLICK_THRESHOLD) {
         setIsJumping(true);
         
-        // Temporarily nudge cat world Y for visual arc via custom event the system listens to
-        document.dispatchEvent(new CustomEvent('cat-happy-jump'));
+        // Trigger ECS-driven happy jump (impulse handled in JumpImpulseSystem)
+        if (entityId) {
+          const intent = world.catIntents.get(entityId) || {};
+          intent.happyJump = true;
+          world.catIntents.set(entityId, intent);
+        }
+        // Back-compat for tests/instrumentation expecting this signal
+        try { document.dispatchEvent(new CustomEvent('cat-happy-jump')); } catch { /* no-op */ }
         trackSpecialAction('happyJumps');
         eventLoggers?.logHappy();
         // Visual jump handled by world Y nudge for a short burst
@@ -300,7 +460,7 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
   };
 
   const handleEarClick = (ear: 'left' | 'right', event: React.MouseEvent) => {
-    if (wigglingEar || isSubtleWiggling) return;
+    if (effectiveWigglingEar) return;
 
     // Track ear click for awards
     trackSpecialAction('earClicks');
@@ -321,6 +481,12 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
     setIsPetting(true);
     setTimeout(() => setIsPetting(false), 200);
     
+    // Mark ECS intent for ear wiggle (and smile via boop if desired)
+    if (entityId) {
+      const intent = world.catIntents.get(entityId) || {};
+      if (ear === 'left') intent.earLeft = true; else intent.earRight = true;
+      world.catIntents.set(entityId, intent);
+    }
     // Skip heart spawning and visual effects when wand is active, but allow love updates
     if (wandMode) return;
     
@@ -331,29 +497,56 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
       interactionType: 'petting'
     });
 
-    // Trigger the specific ear wiggle
-    setWigglingEar(ear);
-    setTimeout(() => {
-      setWigglingEar(null);
-    }, 500);
+    // Mirror to ECS intent for future ear-driven behaviors
+    if (entityId) {
+      const intent = world.catIntents.get(entityId) || {};
+      if (ear === 'left') intent.earLeft = true; else intent.earRight = true;
+      intent.alert = true;
+      world.catIntents.set(entityId, intent);
+      window.setTimeout(() => {
+        const i2 = world.catIntents.get(entityId) || {};
+        i2.alert = false; i2.earLeft = false; i2.earRight = false;
+        world.catIntents.set(entityId, i2);
+      }, 50);
+    }
   };
   
   const handleEyeClick = (event: React.MouseEvent) => {
     event.stopPropagation();
-    setIsStartled(true);
-    setTimeout(() => setIsStartled(false), 500);
+    if (entityId) {
+      const intent = world.catIntents.get(entityId) || {};
+      intent.startled = true;
+      world.catIntents.set(entityId, intent);
+      // Clear after one rendered frame so systems observe a single-tick pulse
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const i2 = world.catIntents.get(entityId) || {};
+          i2.startled = false;
+          world.catIntents.set(entityId, i2);
+        });
+      });
+    }
   };
 
   const handleTailClick = (event: React.MouseEvent) => {
     event.stopPropagation();
-    
-    // Set startled face (same as eye click)
-    setIsStartled(true);
-    setTimeout(() => setIsStartled(false), 500);
-    
-    // Trigger tail flick animation
-    setIsTailFlicking(true);
-    setTimeout(() => setIsTailFlicking(false), 600);
+    if (entityId) {
+      const intent = world.catIntents.get(entityId) || {};
+      intent.startled = true;
+      intent.alert = true;
+      intent.tailFlick = true;
+      world.catIntents.set(entityId, intent);
+      // Clear after one rendered frame so systems observe a single-tick pulse
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const i2 = world.catIntents.get(entityId) || {};
+          i2.tailFlick = false;
+          i2.alert = false;
+          i2.startled = false;
+          world.catIntents.set(entityId, i2);
+        });
+      });
+    }
   };
   
   const handleNoseClick = (event: React.MouseEvent) => {
@@ -365,8 +558,7 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
     // Log nose click event
     eventLoggers?.logNoseClick();
     
-    // Generate love regardless of wand mode
-    setIsSmiling(true);
+    // Generate love regardless of wand mode; ECS smiling handled via intents
     const loveFromNose = calculateFinalLoveGain(
       baseLovePerInteraction,
       'petting',
@@ -384,6 +576,13 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
       loveAmount: loveFromNose,
       interactionType: 'petting'
     });
+
+    if (entityId) {
+      const intent = world.catIntents.get(entityId) || {};
+      intent.alert = true;
+      intent.noseBoop = true;
+      world.catIntents.set(entityId, intent);
+    }
   };
 
   const handleCheekClick = (side: 'left' | 'right', event: React.MouseEvent) => {
@@ -399,9 +598,24 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
     // Log cheek pet event
     eventLoggers?.logCheekPet();
 
-    if (Math.random() < 0.25) setIsSmiling(true);
+    // Optional smile handled by ECS intents only
     
     if (!catRef.current) return;
+
+    if (entityId) {
+      const intent = world.catIntents.get(entityId) || {};
+      intent.alert = true;
+      intent.pouncePrep = true;
+      intent.cheekPet = true; // trigger smiling via ECS
+      world.catIntents.set(entityId, intent);
+      window.setTimeout(() => {
+        const i2 = world.catIntents.get(entityId) || {};
+        i2.alert = false;
+        i2.pouncePrep = false;
+        // cheekPet is edge-triggered; CatStateSystem consumes and times the smile
+        world.catIntents.set(entityId, i2);
+      }, 50);
+    }
 
     const catRect = catRef.current.getBoundingClientRect();
     const clickXInCatSvg = ((event.clientX - catRect.left) / catRect.width) * 220; // 220 is the viewBox width
@@ -635,49 +849,64 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
               </>
             )}
 
-            {/* === CAT VIEW (visuals only) === */}
-            <CatView
-              catWorldCoords={catWorldCoords}
-              shadowCenterOverride={shadowCenterOverride}
-              catRef={catRef as React.RefObject<SVGSVGElement>}
-              walking={isWalkingUI}
-              catElement={(
-                <Cat
-                  onClick={handleCatClick}
-                  onEyeClick={handleEyeClick}
-                  onEarClick={handleEarClick}
-                  onNoseClick={handleNoseClick}
-                  onCheekClick={handleCheekClick}
-                  onTailClick={handleTailClick}
-                  isPetting={isPetting}
-                  isStartled={isStartled}
-                  isSleeping={isSleeping}
-                  isDrowsy={isDrowsy}
-                  isPouncing={isPouncing}
-                  isJumping={isJumping}
-                  isPlaying={isPlaying}
-                  isSmiling={isSmiling}
-                  isSubtleWiggling={isSubtleWiggling}
-                  isHappyPlaying={isHappyPlaying}
-                  isEarWiggling={isEarWiggling}
-                  isTailFlicking={isTailFlicking}
-                  headTiltAngle={headTiltAngle}
-                  pounceTarget={pounceTarget || { x: 0, y: 0 }}
-                  wigglingEar={wigglingEar}
-                  lastHeart={
-                    trackableHeartId !== null &&
-                    hearts.find((h) => h.id === trackableHeartId)
-                      ? document.querySelector<HTMLDivElement>(
-                          `[data-heart-id="${trackableHeartId}"]`
-                        )
-                      : null
-                  }
-                  wandMode={wandMode}
-                  mouseState={mouseState}
-                  pounceConfidence={pounceConfidence}
+            {/* === CAT VIEW (visuals only) with ECS-derived flags === */}
+            {(() => {
+              const ecsState = entityId ? world.cats.get(entityId)?.state : undefined;
+              const ecsIsSleeping = ecsState === 'sleeping';
+              const ecsIsPouncing = ecsState === 'pouncePrep' || ecsState === 'pouncing';
+              const effectiveIsSleeping = isSleeping || ecsIsSleeping;
+              const effectiveIsPouncing = isPouncing || ecsIsPouncing;
+              const effectiveIsSmiling = animFlags.smiling;
+              const effectiveWigglingEar = animFlags.earWiggle;
+              const effectiveTailFlicking = animFlags.tailFlicking;
+              const effectiveIsStartled = animFlags.startled;
+              const effectiveIsSubtleWiggling = animFlags.subtleWiggle;
+
+              return (
+                <CatView
+                  catWorldCoords={catWorldCoords}
+                  shadowCenterOverride={shadowCenterOverride}
+                  catRef={catRef as React.RefObject<SVGSVGElement>}
+                  walking={isWalkingUI}
+                  catElement={(
+                    <Cat
+                      onClick={handleCatClick}
+                      onEyeClick={handleEyeClick}
+                      onEarClick={handleEarClick}
+                      onNoseClick={handleNoseClick}
+                      onCheekClick={handleCheekClick}
+                      onTailClick={handleTailClick}
+                      isPetting={isPetting}
+                       isStartled={effectiveIsStartled}
+                       isSleeping={effectiveIsSleeping}
+                      isDrowsy={isDrowsy}
+                      isPouncing={effectiveIsPouncing}
+                      isJumping={isJumping}
+                      isPlaying={isPlaying}
+                       isSmiling={effectiveIsSmiling}
+                       isSubtleWiggling={effectiveIsSubtleWiggling}
+                      isHappyPlaying={isHappyPlaying}
+                      isEarWiggling={isEarWiggling}
+                       isTailFlicking={effectiveTailFlicking}
+                      headTiltAngle={headTiltAngle}
+                      pounceTarget={pounceTarget || { x: 0, y: 0 }}
+                      wigglingEar={effectiveWigglingEar}
+                      lastHeart={
+                        trackableHeartId !== null &&
+                        hearts.find((h) => h.id === trackableHeartId)
+                          ? document.querySelector<HTMLDivElement>(
+                              `[data-heart-id="${trackableHeartId}"]`
+                            )
+                          : null
+                      }
+                      wandMode={wandMode}
+                      mouseState={mouseState}
+                      pounceConfidence={pounceConfidence}
+                    />
+                  )}
                 />
-              )}
-            />
+              );
+            })()}
             
           </React.Fragment>
         );

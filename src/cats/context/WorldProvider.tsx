@@ -1,6 +1,6 @@
 import React from 'react';
 import { World, SystemRunner, GameLoop } from '../engine';
-import { MovementSystem, ShadowSystem, CatInputBridgeSystem, CatStateSystem } from '../engine';
+import { MovementSystem, ShadowSystem, CatInputBridgeSystem, CatStateSystem, JumpImpulseSystem } from '../engine';
 import { WorldContext } from './WorldContextCore';
 
 const WorldProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -10,6 +10,8 @@ const WorldProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   if (!worldRef.current) {
     const world = new World();
     const systems = new SystemRunner();
+    // Order: jump impulse → movement (gravity/integration) → shadow → input bridge → state machine
+    systems.add(JumpImpulseSystem);
     systems.add(MovementSystem);
     systems.add(ShadowSystem);
     systems.add(CatInputBridgeSystem);
@@ -17,6 +19,10 @@ const WorldProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     const loop = new GameLoop(world, systems);
     worldRef.current = world;
     loopRef.current = loop;
+    // Expose ECS debug data for DevPanel
+    (window as unknown as { __ECS_DEBUG__?: unknown }).__ECS_DEBUG__ = {
+      get world() { return world; },
+    } as unknown;
   }
 
   React.useEffect(() => {
