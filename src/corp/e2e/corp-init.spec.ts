@@ -8,8 +8,8 @@ import { test, expect, Page } from '@playwright/test';
 const gotoCorp = async (page: Page) => {
   await page.goto('/corp/', { waitUntil: 'domcontentloaded' });
   // Wait for the game init to run
-  await page.waitForSelector('#map-container');
-  await page.waitForSelector('#fog-container');
+  await page.waitForSelector('#map-container', { state: 'attached' });
+  await page.waitForSelector('#fog-container', { state: 'attached' });
 };
 
 const nextFrame = async (page: Page) => {

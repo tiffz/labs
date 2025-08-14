@@ -18,9 +18,9 @@ export default defineConfig({
     trace: 'off',
   },
   webServer: {
-    command: 'npm run dev',
+    command: 'vite --host --open=false --strictPort --port=5173',
     url: 'http://localhost:5173',
-    reuseExistingServer: true,
+    reuseExistingServer: false,
     stderr: 'pipe',
     stdout: 'pipe',
     timeout: 60_000,

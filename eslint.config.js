@@ -37,10 +37,6 @@ export default [
       globals: {
         ...globals.browser,
       },
-      parserOptions: {
-        project: 'tsconfig.json',
-        tsconfigRootDir: import.meta.dirname,
-      },
     },
     settings: {
       react: {
