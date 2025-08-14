@@ -46,7 +46,7 @@ body {
   top: 0;
   left: 0;
   pointer-events: none;
-  z-index: 100;
+  z-index: 999; /* ensure fog always overlays tiles and walls */
 }
 .fog-tile {
   --tile-size: 32px;

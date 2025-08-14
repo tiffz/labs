@@ -88,7 +88,19 @@ export function seedEntities(state: GameState, map: Tile[][], rooms: Array<{ x: 
     if (Math.random() > 0.5) {
       const pos = { x: rand(room.x, room.x + room.width - 1), y: rand(room.y, room.y + room.height - 1) };
       const type = state.coworkerTypes[rand(0, state.coworkerTypes.length - 1)];
-      coworkers.push({ id: `coworker-${i}-${Date.now()}`, pos, emoji: type.emoji, name: type.name, effects: type.effects, behavior: type.behavior });
+      coworkers.push({
+        id: `coworker-${i}-${Date.now()}`,
+        pos,
+        emoji: type.emoji,
+        name: type.name,
+        effects: type.effects,
+        behavior: type.behavior,
+        productivity: type.base.productivity,
+        maxProductivity: type.base.maxProductivity,
+        happiness: type.base.happiness,
+        reputation: type.base.reputation,
+        ai: type.ai,
+      } as GameState['coworkers'][number]);
     }
     if (Math.random() < ITEM_SPAWN_CHANCE) {
       const pos = { x: rand(room.x, room.x + room.width - 1), y: rand(room.y, room.y + room.height - 1) };

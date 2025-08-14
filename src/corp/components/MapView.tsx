@@ -43,7 +43,18 @@ export function MapView({ state, tilesX, tilesY, startCol, startRow, tileSize, o
           tiles.push({ key: `t-${mapX}-${mapY}`, className: klass, left: x * tileSize, top: y * tileSize - (isWall ? tileSize * 0.5 : 0), z: y });
         }
         const tileState = tile.visible ? 'visible' : soft ? 'soft' : tile.revealed ? 'revealed' : 'hidden';
-        if (tileState !== 'visible') fog.push({ key: `f-${mapX}-${mapY}`, className: `fog-tile ${tileState}`, left: x * tileSize, top: y * tileSize });
+        if (tileState !== 'visible') fog.push({ key: `f-${mapX}-${mapY}`, className: `fog-tile ${tileState}`, left: (x + 1) * tileSize, top: (y + 1) * tileSize });
+      }
+    }
+
+    // Extend fog beyond world bounds by 1 tile in all directions to cover wall overhangs
+    const margin = 1;
+    for (let y = -margin; y < tilesY + margin; y++) {
+      for (let x = -margin; x < tilesX + margin; x++) {
+        const mapX = startCol + x;
+        const mapY = startRow + y;
+        if (mapX >= 0 && mapX < MAP_WIDTH && mapY >= 0 && mapY < MAP_HEIGHT) continue; // only out-of-bounds
+        fog.push({ key: `oob-${mapX}-${mapY}`, className: 'fog-tile hidden', left: (x + 1) * tileSize, top: (y + 1) * tileSize });
       }
     }
     const list = [...state.items, ...state.coworkers, ...state.computers, ...state.dogs, state.player, state.elevator].filter(Boolean);
@@ -77,7 +88,7 @@ export function MapView({ state, tilesX, tilesY, startCol, startRow, tileSize, o
       <div
         className="fog-container"
         id="fog-container"
-        style={{ width: tilesX * tileSize, height: tilesY * tileSize, left: offsetLeft, top: offsetTop }}
+        style={{ width: (tilesX + 2) * tileSize, height: (tilesY + 2) * tileSize, left: offsetLeft - tileSize, top: offsetTop - tileSize }}
       >
         {fog.map(f => (
           <div key={f.key} className={f.className} style={{ left: f.left, top: f.top }} />

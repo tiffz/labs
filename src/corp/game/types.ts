@@ -17,6 +17,11 @@ export type Coworker = Entity & {
   name: string;
   effects: { productivity: number; happiness: number; reputation: number };
   behavior: 'chase' | 'flee';
+  productivity: number;
+  maxProductivity: number;
+  happiness: number;
+  reputation: number;
+  ai: CoworkerAIConfig;
 };
 
 export type CoworkerType = {
@@ -24,6 +29,16 @@ export type CoworkerType = {
   emoji: string;
   effects: { productivity: number; happiness: number; reputation: number };
   behavior: 'chase' | 'flee';
+  base: { productivity: number; maxProductivity: number; happiness: number; reputation: number };
+  ai: CoworkerAIConfig;
+};
+
+export type CoworkerAIConfig = {
+  happinessLowThreshold: number; // below -> seek player to chat
+  happinessSatisfiedThreshold: number; // stop chasing after this
+  happinessPerChat: number; // self happiness gain on chat
+  productivityLowThreshold: number; // below -> seek computer
+  productivityPerWork: number; // gain when on computer
 };
 
 export type ItemType = {

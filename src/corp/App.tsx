@@ -75,22 +75,58 @@ function useGame() {
   const handleNpcTurns = useCallback(() => {
     const state = stateRef.current!;
     state.coworkers.forEach(coworker => {
-      if (!state.map[coworker.pos.y][coworker.pos.x].visible) return;
-      let dx = 0, dy = 0;
-      if (coworker.behavior === 'chase') { dx = Math.sign(state.player.pos.x - coworker.pos.x); dy = Math.sign(state.player.pos.y - coworker.pos.y); }
-      else { dx = -Math.sign(state.player.pos.x - coworker.pos.x); dy = -Math.sign(state.player.pos.y - coworker.pos.y); }
-      if (dx === 0 && dy === 0) return;
-      const nextPos = { x: coworker.pos.x + dx, y: coworker.pos.y + dy };
-      const isPlayerPos = nextPos.x === state.player.pos.x && nextPos.y === state.player.pos.y;
-      const isOccupied = state.coworkers.some(c => c !== coworker && c.pos.x === nextPos.x && c.pos.y === nextPos.y);
-      if (isPlayerPos && coworker.behavior === 'chase') {
-        addMessage(`${coworker.name} caught you!`);
-        const teamworkBonus = 1 + (state.player.skills.teamwork * 0.05);
-        state.player.productivity = clamp(state.player.productivity + (coworker.effects.productivity / teamworkBonus), 0, state.player.maxProductivity);
-        state.player.happiness = clamp(state.player.happiness + (coworker.effects.happiness * teamworkBonus), 0, 100);
-        state.player.reputation = clamp(state.player.reputation + (coworker.effects.reputation * teamworkBonus), 0, 100);
-      } else if (state.map[nextPos.y]?.[nextPos.x]?.walkable && !isOccupied && !isPlayerPos) {
-        coworker.pos = nextPos;
+      // Tick down coworker productivity each turn
+      coworker.productivity = clamp(coworker.productivity - 1, 0, coworker.maxProductivity);
+
+      // Decide goal: boost happiness by chatting with player, or boost productivity by seeking computer
+      let target: { x: number; y: number } | null = null;
+      let intent: 'chat' | 'work' | 'idle' = 'idle';
+
+      if (coworker.happiness < coworker.ai.happinessLowThreshold) {
+        intent = 'chat';
+        target = state.player.pos;
+      } else if (coworker.productivity < coworker.ai.productivityLowThreshold) {
+        intent = 'work';
+        // naive: find nearest computer by Manhattan distance
+        let best = Infinity;
+        state.computers.forEach(pc => {
+          const d = Math.abs(pc.pos.x - coworker.pos.x) + Math.abs(pc.pos.y - coworker.pos.y);
+          if (d < best) { best = d; target = pc.pos; }
+        });
+      }
+
+      if (target) {
+        const dx = Math.sign(target.x - coworker.pos.x);
+        const dy = Math.sign(target.y - coworker.pos.y);
+        const nextPos = { x: coworker.pos.x + dx, y: coworker.pos.y + dy };
+        const isPlayerPos = nextPos.x === state.player.pos.x && nextPos.y === state.player.pos.y;
+        const isOccupied = state.coworkers.some(c => c !== coworker && c.pos.x === nextPos.x && c.pos.y === nextPos.y);
+        if (isPlayerPos && intent === 'chat') {
+          addMessage(`${coworker.name} chats with you.`);
+          coworker.happiness = clamp(coworker.happiness + coworker.ai.happinessPerChat, 0, 100);
+          // Player receives effects when being chatted to
+          const teamworkBonus = 1 + (state.player.skills.teamwork * 0.05);
+          state.player.productivity = clamp(state.player.productivity + (coworker.effects.productivity / teamworkBonus), 0, state.player.maxProductivity);
+          state.player.happiness = clamp(state.player.happiness + (coworker.effects.happiness * teamworkBonus), 0, 100);
+          state.player.reputation = clamp(state.player.reputation + (coworker.effects.reputation * teamworkBonus), 0, 100);
+          // If satisfied, stop chasing
+          if (coworker.happiness >= coworker.ai.happinessSatisfiedThreshold) intent = 'idle';
+        } else if (state.map[nextPos.y]?.[nextPos.x]?.walkable && !isOccupied && !isPlayerPos) {
+          coworker.pos = nextPos;
+        }
+      } else {
+        // Idle slight wander near current position
+        const dx = Math.floor(Math.random() * 3) - 1;
+        const dy = Math.floor(Math.random() * 3) - 1;
+        const nextPos = { x: coworker.pos.x + dx, y: coworker.pos.y + dy };
+        const isPlayerPos = nextPos.x === state.player.pos.x && nextPos.y === state.player.pos.y;
+        const isOccupied = state.coworkers.some(c => c !== coworker && c.pos.x === nextPos.x && c.pos.y === nextPos.y);
+        if (state.map[nextPos.y]?.[nextPos.x]?.walkable && !isOccupied && !isPlayerPos) coworker.pos = nextPos;
+      }
+
+      // If standing on a computer and needs productivity, work
+      if (state.computers.some(pc => pc.pos.x === coworker.pos.x && pc.pos.y === coworker.pos.y)) {
+        coworker.productivity = clamp(coworker.productivity + coworker.ai.productivityPerWork, 0, coworker.maxProductivity);
       }
     });
   }, [addMessage, clamp]);
@@ -196,10 +232,10 @@ function useGame() {
       player: { id: 'player', pos: { x: 0, y: 0 }, emoji: '🧑‍💼', name: 'You', productivity: 200, maxProductivity: 200, happiness: 100, reputation: 100, inventory: {}, skills: { proficiency: 0, teamwork: 0 } },
       messages: [], gameOver: false, floor: 1,
       coworkerTypes: [
-        { emoji: '🗣️', name: 'Chatty Charlotte', effects: { productivity: -15, happiness: 10, reputation: 0 }, behavior: 'chase' },
-        { emoji: '🤫', name: 'The Gossiper', effects: { productivity: -5, happiness: 0, reputation: -15 }, behavior: 'chase' },
-        { emoji: '😴', name: 'Slacker Sam', effects: { productivity: -10, happiness: 5, reputation: -5 }, behavior: 'chase' },
-        { emoji: '🏃', name: 'Productivity Guru', effects: { productivity: 30, happiness: 0, reputation: 0 }, behavior: 'flee' },
+        { emoji: '🗣️', name: 'Chatty Charlotte', effects: { productivity: -15, happiness: 10, reputation: 0 }, behavior: 'chase', base: { productivity: 120, maxProductivity: 120, happiness: 40, reputation: 60 }, ai: { happinessLowThreshold: 50, happinessSatisfiedThreshold: 75, happinessPerChat: 25, productivityLowThreshold: 40, productivityPerWork: 15 } },
+        { emoji: '🤫', name: 'The Gossiper', effects: { productivity: -5, happiness: 0, reputation: -15 }, behavior: 'chase', base: { productivity: 130, maxProductivity: 130, happiness: 50, reputation: 50 }, ai: { happinessLowThreshold: 45, happinessSatisfiedThreshold: 70, happinessPerChat: 20, productivityLowThreshold: 35, productivityPerWork: 15 } },
+        { emoji: '😴', name: 'Slacker Sam', effects: { productivity: -10, happiness: 5, reputation: -5 }, behavior: 'chase', base: { productivity: 100, maxProductivity: 100, happiness: 60, reputation: 40 }, ai: { happinessLowThreshold: 55, happinessSatisfiedThreshold: 80, happinessPerChat: 20, productivityLowThreshold: 30, productivityPerWork: 10 } },
+        { emoji: '🏃', name: 'Productivity Guru', effects: { productivity: 30, happiness: 0, reputation: 0 }, behavior: 'flee', base: { productivity: 160, maxProductivity: 160, happiness: 70, reputation: 70 }, ai: { happinessLowThreshold: 30, happinessSatisfiedThreshold: 60, happinessPerChat: 15, productivityLowThreshold: 60, productivityPerWork: 25 } },
       ],
       itemTypes: [
         { name: 'a fresh coffee', emoji: '☕', effects: { productivity: 20, happiness: 0, reputation: 0 } },

@@ -11,7 +11,7 @@ const makeState = () => ({
   gameOver: false,
   floor: 1,
   coworkerTypes: [
-    { emoji: '🗣️', name: 'Chatty Charlotte', effects: { productivity: -15, happiness: 10, reputation: 0 }, behavior: 'chase' },
+    { emoji: '🗣️', name: 'Chatty Charlotte', effects: { productivity: -15, happiness: 10, reputation: 0 }, behavior: 'chase', base: { productivity: 100, maxProductivity: 100, happiness: 50, reputation: 50 }, ai: { happinessLowThreshold: 40, happinessSatisfiedThreshold: 70, happinessPerChat: 20, productivityLowThreshold: 40, productivityPerWork: 10 } },
   ],
   itemTypes: [
     { name: 'a fresh coffee', emoji: '☕', effects: { productivity: 20, happiness: 0, reputation: 0 } },
