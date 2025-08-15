@@ -56,32 +56,10 @@ export const useCatPositionNew = () => {
     );
   }, [handleUpdate]);
 
-  // Direct control helpers for player-control mode
-  const nudgeX = useCallback((delta: number) => {
-    const current = catPositionServiceNew.getCatCoordinates();
-    catPositionServiceNew.setPosition({ x: current.x + delta });
-    setRenderData(catPositionServiceNew.getRenderData());
-  }, []);
+  // Direct control helpers removed; motion is ECS-driven now
 
-  const nudgeZ = useCallback((delta: number) => {
-    const current = catPositionServiceNew.getCatCoordinates();
-    catPositionServiceNew.setPosition({ z: current.z + delta });
-    setRenderData(catPositionServiceNew.getRenderData());
-  }, []);
-
-  const jumpOnce = useCallback(() => {
-    setIsAnimating(true);
-    // Ensure a tiny y>0 at start to avoid clamping baseline when at back wall
-    const current = catPositionServiceNew.getCatCoordinates();
-    catPositionServiceNew.setPosition({ y: Math.max(1, current.y) });
-    (document as unknown as { isCatJumping?: boolean }).isCatJumping = true;
-    catPositionServiceNew.simulateHappyJump(500, 60, handleUpdate, () => {
-      // Snap back to y=0 when done
-      catPositionServiceNew.setPosition({ y: 0 });
-      setIsAnimating(false);
-      (document as unknown as { isCatJumping?: boolean }).isCatJumping = false;
-    });
-  }, [handleUpdate]);
+  // Jump once removed; ECS JumpImpulseSystem handles happy jumps
+  const jumpOnce = useCallback(() => {}, []);
 
   // Continuous movement loop for run mode consumers
   // Removed internal run loop (handled by App)
@@ -201,8 +179,6 @@ export const useCatPositionNew = () => {
     chaseTarget,
     returnToRest,
     resetCatPosition,
-    nudgeX,
-    nudgeZ,
     jumpOnce,
     
     // System functions

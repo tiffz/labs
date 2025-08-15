@@ -91,9 +91,23 @@ function App() {
   const { gameState } = gameStateManager;
   
   // Cat positioning for world-aware movement (new coordinate system)
-  const { renderData, pounceToPosition, moveCatTo, nudgeX, nudgeZ, jumpOnce, } = useCatPositionNew();
-  // Use world coordinates for camera follow to avoid feedback jitter
-  const catWorldPosition = renderData.worldCoordinates;
+  const { renderData, moveCatTo, jumpOnce, } = useCatPositionNew();
+  // Use ECS world coordinates for camera follow to avoid feedback jitter
+  const [ecsCatWorldPosition, setEcsCatWorldPosition] = useState<{ x: number; y: number; z: number }>(() => renderData.worldCoordinates);
+  useEffect(() => {
+    const onTick = () => {
+      try {
+        const existing = Array.from(world.renderables.entries()).find(([, r]) => r.kind === 'cat');
+        const catId = existing?.[0];
+        if (!catId) return;
+        const t = world.transforms.get(catId);
+        if (!t) return;
+        setEcsCatWorldPosition(prev => (prev.x !== t.x || prev.y !== t.y || prev.z !== t.z) ? { x: t.x, y: t.y, z: t.z } : prev);
+      } catch {/* ignore in tests */}
+    };
+    window.addEventListener('world-tick', onTick);
+    return () => window.removeEventListener('world-tick', onTick);
+  }, [world]);
   const catScreenPosition = renderData.screenPosition;
   const catPosition = renderData.worldCoordinates; // For backwards compatibility
   
@@ -248,7 +262,7 @@ function App() {
     onTreatsGained,
     
     // Cat movement function
-    pounceToPosition,
+    // pounceToPosition intentionally omitted; ECS controls pounce visuals
   });
   
 
@@ -307,7 +321,7 @@ function App() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [isDevMode, gameState, catPosition, catWorldPosition, economy]);
+  }, [isDevMode, gameState, catPosition, catScreenPosition, economy]);
 
   // Energy regeneration is now handled by useCatSystem
 
@@ -483,17 +497,17 @@ function App() {
     };
     // Continuous RAF-based movement
     let raf: number | null = null;
-    let last = performance.now();
+    // Keep a RAF loop to continuously feed input to ECS; no time integration here
     const step = () => {
-      const now = performance.now();
-      const dt = Math.min(0.05, (now - last) / 1000);
-      last = now;
-      // Disable lateral motion while jumping
-      // Always allow lateral motion; ECS handles vertical independently
+        // Always allow lateral motion; ECS handles vertical independently
         const dx = (held.right ? 1 : 0) - (held.left ? 1 : 0);
         const dz = (held.down ? 1 : 0) - (held.up ? 1 : 0);
-        if (dx !== 0) nudgeX(dx * 260 * dt);
-        if (dz !== 0) nudgeZ(dz * 220 * dt);
+        const existing = Array.from(worldRef.current.renderables.entries()).find(([, r]) => r.kind === 'cat');
+        const catId = existing?.[0];
+        if (catId) {
+          worldRef.current.runControls.set(catId, { moveX: dx, moveZ: dz });
+          console.debug('[RUN] keys', { dx, dz });
+        }
       raf = requestAnimationFrame(step);
     };
     raf = requestAnimationFrame(step);
@@ -504,7 +518,7 @@ function App() {
       window.removeEventListener('keydown', onDown);
       window.removeEventListener('keyup', onUp);
     };
-  }, [playerControlMode, nudgeX, nudgeZ, jumpOnce, resetInactivityTimer, world]);
+  }, [playerControlMode, jumpOnce, resetInactivityTimer, world]);
 
   // Global key handler for wand mode toggle
   useEffect(() => {
@@ -612,7 +626,7 @@ function App() {
       {/* World Viewport */}
       <div className="world-viewport-container">
         <World2D 
-          catWorldPosition={catWorldPosition} 
+          catWorldPosition={ecsCatWorldPosition} 
           enableCameraFollow={true}
           wandMode={wandMode}
           onWandToggle={catActions.toggleWandMode}
@@ -648,9 +662,9 @@ function App() {
         document.getElementById('heart-container')!
       )}
 
-      {/* World entities (ECS bridge) */}
+      {/* World entities (ECS-driven) */}
       {(() => {
-        // Ensure a cat entity exists that mirrors current catPosition
+        // Ensure a cat entity exists (spawn once)
         const existing = Array.from(world.renderables.entries()).find(([, r]) => r.kind === 'cat');
         let catId = existing?.[0];
         if (!catId) {
@@ -661,11 +675,6 @@ function App() {
             spawnFurniture(world, { x: catPosition.x + 240, y: 0, z: Math.max(0, (catPosition.z || 0) + 200) });
             spawnCouch(world, { x: catPosition.x - 260, y: 0, z: Math.max(0, (catPosition.z || 0) + 140) });
           }
-        } else {
-          // Keep ECS transform in sync with current service position (bridge during migration)
-          // Preserve ECS-controlled Y (jump/physics) to avoid overriding happy jumps
-          const current = world.transforms.get(catId) || { x: catPosition.x, y: catPosition.y, z: catPosition.z };
-          world.transforms.set(catId, { x: catPosition.x, y: current.y, z: catPosition.z });
         }
         return (
           <WorldRenderer

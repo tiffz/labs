@@ -117,7 +117,10 @@ export const CatStateSystem: System = (world) => {
           // Apply an upward impulse at pounce start for a visible hop
           const v = world.velocities.get(id) || { vx: 0, vy: 0, vz: 0 };
           const blendedVy = Math.abs(v.vy) > 1 ? (v.vy * 0.4 + 220 * 0.6) : 220;
+          // Add a small forward lunge along Z during pounce
+          // Apply only upward hop; forward motion is controlled by player input (run controls)
           world.velocities.set(id, { ...v, vy: blendedVy });
+          console.debug('[POUNCE] start', { id, vy: blendedVy, vz: (world.velocities.get(id)?.vz || 0) });
           try {
             const dbg = (world as unknown as { __debug?: Record<string, unknown> }).__debug || {};
             const key = String(id);
@@ -135,12 +138,16 @@ export const CatStateSystem: System = (world) => {
         if (performance.now() - entry.t0 >= POUNCE_MS) {
           nextState = 'recover';
           timers.set(id, { t0: performance.now(), phase: 'recover' });
+          // No forced Z damping here; run system handles drift when not pouncing
+          console.debug('[POUNCE] recover', { id, vz: (world.velocities.get(id) || { vz: 0 }).vz });
         }
       }
       if (cat.state === 'recover' && entry?.phase === 'recover') {
         if (performance.now() - entry.t0 >= RECOVER_MS) {
           nextState = 'idle';
           timers.delete(id);
+          // No forced Z reset; avoid snapping
+          console.debug('[POUNCE] end', { id });
         }
       }
 

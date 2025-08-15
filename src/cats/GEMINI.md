@@ -639,15 +639,16 @@ These fixes ensure robust achievement awarding, stable error reporting, and clea
 
 ### Systems
 
-- `MovementSystem`: integrates basic velocity → transform (placeholder)
+- `MovementSystem`: integrates velocity → transform with gravity (-640 px/s²) and world-bounds clamping
+- `JumpImpulseSystem`: applies upward jump impulses (happy jump, pounce hop) with blending
 - `ShadowSystem`: projects ground baseline and sizes shadow from world coords
-- `CatInputBridgeSystem`: ensures `CatIntent` exists per cat (temporary)
+- `CatInputBridgeSystem`: placeholder to ensure `CatIntent` exists (kept minimal)
 - `CatStateSystem`: explicit transitions and timers
   - Flow: idle → alert → pouncePrep → pouncing → recover → idle
   - `alert` decays back to `idle` if no follow-up input
   - Animation outputs set from intents with expiries
     - Smile: 750ms, Ear wiggle: 500ms, Tail flick: 600ms
-    - `startled`/`subtleWiggle` are one-frame latches
+    - `startled` holds ~450ms, refreshes on retrigger; `subtleWiggle` is one-frame latch
 
 ### React Integration
 
@@ -668,4 +669,17 @@ These fixes ensure robust achievement awarding, stable error reporting, and clea
 ### Status
 
 - Smile/ear/tail/startled/subtle wiggle now ECS-driven; React passes ECS-derived flags to `Cat`
-- Legacy local flags are being removed in favor of ECS outputs for clarity and maintainability
+- Happy jump and pounce hop are ECS-driven via `JumpImpulseSystem`
+- World loop uses fixed sub-steps (10ms) and clamps long frames to 25ms for smooth physics
+- Cat X clamps to world width, preventing edge teleports; render uses translate3d and pixel rounding where needed
+- DevPanel ECS tab mirrors DOM/ECS metrics (walking, bob ampl, speed, dt)
+
+### React ↔ ECS contract
+
+- React views subscribe to `world-tick` and pull from component maps; no timers in views
+- `Actor` listens to `ui.isPouncing` rising edge and emits a one-shot ECS `happyJump` for pounce hop
+- Spacebar in run mode sets `happyJump` intent directly (no DOM events required)
+
+### Removed bridge
+
+- The App-level transform bridge that copied `useCatPositionNew` into ECS has been removed. ECS `Transform3` is the single source of truth for position. `useCatPositionNew` remains for camera/UI helpers but no longer overwrites ECS transforms.

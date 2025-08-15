@@ -191,7 +191,7 @@ export default DevPanel;
 // Live ECS debug panel that syncs directly from world and DOM every frame
 const DebugEcsPanel: React.FC = () => {
   const world = useWorld();
-  const [state, setState] = useState<{ walking: boolean; bobAmpl: string; speedInst: number; speedSmooth: number; dtMs: number }>(() => ({ walking: false, bobAmpl: '0px', speedInst: 0, speedSmooth: 0, dtMs: 0 }));
+  const [state, setState] = useState<{ walking: boolean; bobAmpl: string; speedInst: number; speedSmooth: number; dtMs: number; runSpeed?: number; runSpeedX?: number; runSpeedZ?: number }>(() => ({ walking: false, bobAmpl: '0px', speedInst: 0, speedSmooth: 0, dtMs: 0 }));
   useEffect(() => {
     let raf: number | null = null;
     const step = () => {
@@ -202,9 +202,12 @@ const DebugEcsPanel: React.FC = () => {
         const speedInst = Number((dbg as { walkSpeedInst?: number }).walkSpeedInst || 0);
         const speedSmooth = Number((dbg as { walkSpeedScreen?: number }).walkSpeedScreen || 0);
         const dtMs = Number((dbg as { dtMs?: number }).dtMs || 0);
+        const runSpeed = Number((dbg as { runSpeed?: number }).runSpeed || 0);
+        const runSpeedX = Number((dbg as { runSpeedX?: number }).runSpeedX || 0);
+        const runSpeedZ = Number((dbg as { runSpeedZ?: number }).runSpeedZ || 0);
         setState(s => {
-          if (s.walking !== walking || s.bobAmpl !== bobAmpl || s.speedInst !== speedInst || s.speedSmooth !== speedSmooth || s.dtMs !== dtMs) {
-            return { walking, bobAmpl, speedInst, speedSmooth, dtMs };
+          if (s.walking !== walking || s.bobAmpl !== bobAmpl || s.speedInst !== speedInst || s.speedSmooth !== speedSmooth || s.dtMs !== dtMs || s.runSpeed !== runSpeed || s.runSpeedX !== runSpeedX || s.runSpeedZ !== runSpeedZ) {
+            return { walking, bobAmpl, speedInst, speedSmooth, dtMs, runSpeed, runSpeedX, runSpeedZ };
           }
           return s;
         });
@@ -222,6 +225,8 @@ const DebugEcsPanel: React.FC = () => {
       <div className="stat-row"><span>Bob Ampl:</span> <span>{state.bobAmpl}</span></div>
       <div className="stat-row"><span>Speed Inst:</span> <span>{state.speedInst.toFixed(1)} px/s</span></div>
       <div className="stat-row"><span>Speed Smooth:</span> <span>{state.speedSmooth.toFixed(1)} px/s</span></div>
+      <div className="stat-row"><span>Run Speed:</span> <span>{(state.runSpeed || 0).toFixed(1)} px/s</span></div>
+      <div className="stat-row"><span>Run X/Z:</span> <span>{(state.runSpeedX || 0).toFixed(1)} / {(state.runSpeedZ || 0).toFixed(1)} px/s</span></div>
       <div className="stat-row"><span>dt:</span> <span>{state.dtMs} ms</span></div>
     </div>
   );

@@ -24,12 +24,9 @@ export const MovementSystem = (world: World, dtMs: number): void => {
     const nextX = t.x + v.vx * dt;
     const clampedX = Math.max(bounds.minX, Math.min(bounds.maxX, nextX));
 
-    world.transforms.set(id, {
-      x: clampedX,
-      y: clampedY,
-      z: t.z + v.vz * dt,
-      scale: t.scale,
-    });
+    const nextZ = t.z + v.vz * dt;
+    const clampedZ = Math.max(0, Math.min(catCoordinateSystem.getWorldDimensions().depth, nextZ));
+    world.transforms.set(id, { x: clampedX, y: clampedY, z: clampedZ, scale: t.scale });
     world.velocities.set(id, { vx: v.vx, vy: landed ? 0 : vyAfter, vz: v.vz });
   }
 };

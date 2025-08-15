@@ -73,9 +73,34 @@ const Actor: React.FC<ActorProps> = ({ entityId, economy, mouseState, ui }) => {
       const intent = world.catIntents.get(entityId) || {};
       intent.happyJump = true;
       world.catIntents.set(entityId, intent);
+
+      // Horizontal assist: aim toward current wand/mouse world X at the moment of pounce
+      const t = world.transforms.get(entityId);
+      if (t) {
+        // Prefer ECS-provided pounce target (relative to cat). Positive = right, negative = left.
+        let dir = Math.sign(ui.pounceTarget?.x ?? 0);
+        // Fallback to current mouse world position if target is neutral
+        if (dir === 0) {
+          const screenX = (window as unknown as { __mouseX__?: number }).__mouseX__ ?? (typeof window !== 'undefined' ? window.innerWidth / 2 : 0);
+          const screenY = (window as unknown as { __mouseY__?: number }).__mouseY__ ?? (typeof window !== 'undefined' ? window.innerHeight / 2 : 0);
+          const targetWorld = catCoordinateSystem.screenPositionToWorldCoordinates(screenX, screenY, t.z);
+          dir = Math.sign(targetWorld.x - t.x);
+        }
+        if (dir !== 0) {
+          const start = performance.now();
+          const DURATION_MS = 520; // even longer assist to travel far across the screen
+          const FEED = () => {
+            const now = performance.now();
+            if (now - start > DURATION_MS) return;
+            world.runControls.set(entityId, { moveX: dir, moveZ: 0, boost: true });
+            requestAnimationFrame(FEED);
+          };
+          requestAnimationFrame(FEED);
+        }
+      }
     }
     prevPouncingRef.current = ui.isPouncing;
-  }, [ui.isPouncing, world, entityId]);
+  }, [ui.isPouncing, ui.pounceTarget?.x, world, entityId]);
   const t = world.transforms.get(entityId);
   if (!t) return null;
 

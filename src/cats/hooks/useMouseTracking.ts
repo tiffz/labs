@@ -118,6 +118,9 @@ export function useMouseTracking(options: UseMouseTrackingOptions = {}): MouseSt
       // Update refs immediately - NO REACT STATE UPDATES
       positionRef.current = newPosition;
       lastMovementTimeRef.current = now;
+      // Expose for systems that need world mapping from current cursor
+      (window as unknown as { __mouseX__?: number }).__mouseX__ = event.clientX;
+      (window as unknown as { __mouseY__?: number }).__mouseY__ = event.clientY;
       
       // Call registered callbacks
       callbacksRef.current.forEach(callback => {

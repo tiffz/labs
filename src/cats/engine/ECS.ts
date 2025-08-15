@@ -56,7 +56,13 @@ export interface CatAnim {
   subtleWiggle?: boolean;
 }
 
-export type Component = Transform3 | Velocity3 | Renderable | ShadowProps | Clickable | CatBehavior | CatIntent | CatAnim;
+export interface RunControlIntent {
+  moveX?: number; // -1..1
+  moveZ?: number; // -1..1
+  boost?: boolean; // hint for boosted speed (e.g., pounce assist)
+}
+
+export type Component = Transform3 | Velocity3 | Renderable | ShadowProps | Clickable | CatBehavior | CatIntent | CatAnim | RunControlIntent;
 
 class ComponentStore<T extends object> {
   private data = new Map<EntityId, T>();
@@ -83,6 +89,7 @@ export class World {
   readonly cats = new ComponentStore<CatBehavior>();
   readonly catIntents = new ComponentStore<CatIntent>();
   readonly catAnims = new ComponentStore<CatAnim>();
+  readonly runControls = new ComponentStore<RunControlIntent>();
 }
 
 // System runner
