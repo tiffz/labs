@@ -39,7 +39,7 @@ export const RunControlSystem = (world: World, _dtMs: number): void => {
       }
     }
     // Clear one-shot intent; App feeds again while keys are held
-    world.runControls.set(id, { moveX: 0, moveZ: 0 });
+    world.runControls.set(id, { moveX: 0, moveZ: 0, boost: ctrl.boost });
   }
 };
 

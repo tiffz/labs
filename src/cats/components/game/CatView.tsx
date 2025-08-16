@@ -53,14 +53,17 @@ const CatView: React.FC<CatViewProps> = ({ catWorldCoords, shadowCenterOverride,
     const catScreen = catCoordinateSystem.catToScreen(catWorldCoords);
     const ground = catCoordinateSystem.catToScreen({ x: catWorldCoords.x, y: 0, z: catWorldCoords.z });
     const baselineY = shadowCenterOverride ?? ground.y;
-    const shadowLayout = computeShadowLayout({ x: catScreen.x, y: baselineY, scale: ground.scale });
+    const shadowLayout = computeShadowLayout({ x: catScreen.x, y: baselineY, scale: ground.scale }, catWorldCoords.y);
 
     const widthPx = 300 * catScreen.scale;
     // Avoid rounding X so horizontal motion stays smooth without 1px jitter
+    // Apply sub-pixel smoothing for smoother movement
     const leftPx = catScreen.x - widthPx / 2;
     const heightPx = widthPx * (VIEWBOX_H / VIEWBOX_W);
     const footGapPx = ((VIEWBOX_H - FEET_LINE_Y) / VIEWBOX_H) * heightPx;
-    const jumpDeltaPx = Math.max(0, catScreen.y - ground.y);
+    // Scale jump height based on z position for perspective depth
+    const rawJumpDelta = Math.max(0, catScreen.y - ground.y);
+    const jumpDeltaPx = rawJumpDelta * catScreen.scale;
     const baselineRounded = Math.round(baselineY);
     const containerBottom = Math.max(0, baselineRounded);
     const clampDelta = containerBottom - baselineRounded;
@@ -97,8 +100,8 @@ const CatView: React.FC<CatViewProps> = ({ catWorldCoords, shadowCenterOverride,
     const visualBottomPx = containerBottom - innerTranslateY;
 
     const massCenterOffsetPx = (((massVB.x + massVB.width / 2) - VIEWBOX_W / 2) / VIEWBOX_W) * widthPx;
-    const sLeftRaw = catScreen.x - Math.round(shadowLayout.width) / 2 + massCenterOffsetPx;
-    const sLeft = Math.round(sLeftRaw); // lock to 1px to further reduce shimmer
+    const sLeftRaw = catScreen.x - shadowLayout.width / 2 + massCenterOffsetPx;
+    const sLeft = sLeftRaw; // Use sub-pixel precision for smoother movement
     const sBottom = Math.round((baselineRounded) - Math.round(shadowLayout.height) / 2);
 
     const feetPx = Math.round(visualBottomPx + footGapPx);
@@ -112,8 +115,8 @@ const CatView: React.FC<CatViewProps> = ({ catWorldCoords, shadowCenterOverride,
       catInnerTranslateY: innerTranslateY,
       shadowLeft: sLeft,
       shadowBottom: sBottom,
-      shadowWidth: Math.round(shadowLayout.width),
-      shadowHeight: Math.round(shadowLayout.height),
+      shadowWidth: shadowLayout.width,
+      shadowHeight: shadowLayout.height,
       feetLinePx: feetPx,
       massBottomLinePx: massBottomPx,
       containerBottom,
@@ -124,7 +127,7 @@ const CatView: React.FC<CatViewProps> = ({ catWorldCoords, shadowCenterOverride,
     position: 'absolute',
     left: '0px',
     bottom: `${shadowBottom}px`,
-    transform: `translate3d(${shadowLeft}px, 0, 0)`,
+    transform: `translate3d(${shadowLeft.toFixed(2)}px, 0, 0)`,
     width: `${shadowWidth}px`,
     height: 'auto',
     zIndex: layerForZ(catWorldCoords.z ?? 0, 'shadow'),
@@ -135,7 +138,7 @@ const CatView: React.FC<CatViewProps> = ({ catWorldCoords, shadowCenterOverride,
     position: 'absolute',
     left: '0px',
     bottom: `${Math.round(containerBottom)}px`,
-    transform: `translate3d(${Math.round(catLeftPx)}px, 0, 0)`,
+    transform: `translate3d(${catLeftPx.toFixed(2)}px, 0, 0)`,
     width: `${catWidthPx}px`,
     height: 'auto',
     zIndex: layerForZ(catWorldCoords.z ?? 0, 'entity'),

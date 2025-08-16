@@ -128,6 +128,7 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
   const [isJumping, setIsJumping] = useState(false);
   const [isWalkingUI, setIsWalkingUI] = useState(false);
   const walkingPrevWorldXRef = useRef<number | null>(null);
+  const walkingPrevWorldZRef = useRef<number | null>(null);
   const walkingLastActiveRef = useRef<number>(0);
   const walkingLastTsRef = useRef<number | null>(null);
   const filteredSpeedRef = useRef<number>(0);
@@ -135,6 +136,7 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
   const lastNearZeroRef = useRef<number>(performance.now());
   const debugRafRef = useRef<number | null>(null);
   const rapidClickTimestampsRef = useRef<number[]>([]);
+  const timeoutRefs = useRef<NodeJS.Timeout[]>([]);
   // Smile now driven by ECS (catAnims.smiling)
   const [headTiltAngle, setHeadTiltAngle] = useState(0);
   // Tail flick now driven by ECS (catAnims.tailFlicking)
@@ -171,7 +173,18 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
           // Check if the rect is valid (DOM element is actually rendered)
           if (catRect.width === 0 || catRect.height === 0) {
             // DOM not ready yet, try again after a short delay
-            setTimeout(() => requestAnimationFrame(updatePosition), 10);
+            // Use setTimeout instead of requestAnimationFrame for test compatibility
+            const timeoutId = setTimeout(() => {
+              if (typeof requestAnimationFrame !== 'undefined') {
+                requestAnimationFrame(updatePosition);
+              } else {
+                // Fallback for test environment
+                setTimeout(updatePosition, 16);
+              }
+            }, 10);
+            // Store timeout for cleanup
+            if (!timeoutRefs.current) timeoutRefs.current = [];
+            timeoutRefs.current.push(timeoutId);
             return;
           }
           
@@ -268,16 +281,22 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
     if (catWorldCoords.y > 1 || isPouncing) {
       if (isWalkingUI) setIsWalkingUI(false);
       walkingPrevWorldXRef.current = catWorldCoords.x;
+      walkingPrevWorldZRef.current = catWorldCoords.z;
       walkingLastTsRef.current = performance.now();
       return;
     }
     const now = performance.now();
     const currentX = Math.round(catWorldCoords.x);
+    const currentZ = Math.round(catWorldCoords.z);
     const prevX = walkingPrevWorldXRef.current ?? currentX;
+    const prevZ = walkingPrevWorldZRef.current ?? currentZ;
     const prevTs = walkingLastTsRef.current ?? now;
     const dt = Math.max(1, now - prevTs); // ms
     const dx = Math.abs(currentX - prevX);
-    const instSpeed = (dx / dt) * 1000; // px/sec
+    const dz = Math.abs(currentZ - prevZ);
+    // Calculate combined movement speed (both X and Z axes)
+    const totalDistance = Math.sqrt(dx * dx + dz * dz);
+    const instSpeed = (totalDistance / dt) * 1000; // px/sec
     // Exponential smoothing
     const alpha = 0.25;
     filteredSpeedRef.current = filteredSpeedRef.current * (1 - alpha) + instSpeed * alpha;
@@ -316,11 +335,12 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
       lastNearZeroRef.current = now;
     }
 
-    // Quantize input X before diff to avoid half-px flickers tripping the latch
+    // Quantize input X and Z before diff to avoid half-px flickers tripping the latch
     walkingPrevWorldXRef.current = currentX;
+    walkingPrevWorldZRef.current = currentZ;
     walkingLastTsRef.current = now;
     // Debug is written from CatView to keep parity with DOM
-  }, [catWorldCoords.x, catWorldCoords.y, isPouncing, isJumping, isWalkingUI]);
+  }, [catWorldCoords.x, catWorldCoords.z, catWorldCoords.y, isPouncing, isJumping, isWalkingUI]);
 
   // Ensure walking state decays even when X stops changing by ticking on world updates
   useEffect(() => {
@@ -329,16 +349,22 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
       if (catWorldCoords.y > 1 || isPouncing) {
         if (isWalkingUI) setIsWalkingUI(false);
         walkingPrevWorldXRef.current = catWorldCoords.x;
+        walkingPrevWorldZRef.current = catWorldCoords.z;
         walkingLastTsRef.current = performance.now();
         return;
       }
       const now = performance.now();
       const currentX = Math.round(catWorldCoords.x);
+      const currentZ = Math.round(catWorldCoords.z);
       const prevX = walkingPrevWorldXRef.current ?? currentX;
+      const prevZ = walkingPrevWorldZRef.current ?? currentZ;
       const prevTs = walkingLastTsRef.current ?? now;
       const dt = Math.max(1, now - prevTs); // ms
       const dx = Math.abs(currentX - prevX);
-      const instSpeed = (dx / dt) * 1000; // px/sec
+      const dz = Math.abs(currentZ - prevZ);
+      // Calculate combined movement speed (both X and Z axes)
+      const totalDistance = Math.sqrt(dx * dx + dz * dz);
+      const instSpeed = (totalDistance / dt) * 1000; // px/sec
       const alpha = 0.25;
       filteredSpeedRef.current = filteredSpeedRef.current * (1 - alpha) + instSpeed * alpha;
 
@@ -377,6 +403,7 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
       }
 
       walkingPrevWorldXRef.current = currentX;
+      walkingPrevWorldZRef.current = currentZ;
       walkingLastTsRef.current = now;
       // Debug is written from CatView to keep parity with DOM
     };
@@ -385,8 +412,11 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
       window.removeEventListener('world-tick', onWorldTick);
       if (debugRafRef.current) cancelAnimationFrame(debugRafRef.current);
       debugRafRef.current = null;
+      // Clear any pending timeouts
+      timeoutRefs.current.forEach(clearTimeout);
+      timeoutRefs.current = [];
     };
-  }, [catWorldCoords.x, catWorldCoords.y, isPouncing, isJumping, isWalkingUI, world]);
+  }, [catWorldCoords.x, catWorldCoords.y, catWorldCoords.z, isPouncing, isJumping, isWalkingUI, world]);
 
   const handleCatClick = (event: React.MouseEvent) => {
     // Only block clicks when actively pouncing in wand mode
