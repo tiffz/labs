@@ -5705,6 +5705,93 @@ body {
   }
 }
 
+/* States Tab Styles */
+.states-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.state-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.state-label {
+  font-weight: bold;
+  font-size: 11px;
+  color: #ccc;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.state-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.state-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+}
+
+.state-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transition: background 0.2s ease;
+}
+
+.state-dot.active {
+  background: #4caf50;
+  box-shadow: 0 0 4px rgba(76, 175, 80, 0.5);
+}
+
+.state-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 9px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  margin-left: auto;
+}
+
+.state-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.state-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.state-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.info-item {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.8);
+  padding: 2px 0;
+}
+
+/* ECS Section in Position Tab */
+.ecs-section {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 @media (max-width: 768px) {
   .game-layout {
     flex-direction: column;

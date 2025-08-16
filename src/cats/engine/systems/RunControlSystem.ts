@@ -34,7 +34,6 @@ export const RunControlSystem = (world: World, _dtMs: number): void => {
         (dbg as { runSpeed?: number }).runSpeed = Math.hypot(speedX, speedZ);
         (dbg as { lastRunInput?: unknown }).lastRunInput = { id, moveX: ctrl.moveX || 0, moveZ: ctrl.moveZ || 0, ts: performance.now() };
         (world as unknown as { __debug?: Record<string, unknown> }).__debug = dbg;
-        console.debug('[RUN] input', { id, moveX: ctrl.moveX || 0, moveZ: ctrl.moveZ || 0, speedX, speedZ });
       } catch {
         // no-op
       }

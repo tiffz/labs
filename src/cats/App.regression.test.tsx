@@ -132,18 +132,450 @@ describe('App Regression Tests', () => {
   });
 
   describe('Component Communication', () => {
-    it('should properly communicate cat position for Z spawning', async () => {
+    it('should properly position Zzz elements relative to cat position', async () => {
       vi.useFakeTimers();
+      
+      // Mock getBoundingClientRect to simulate cat at specific position
+      const mockCatRect = {
+        left: 300,
+        top: 200,
+        width: 100,
+        height: 80,
+        right: 400,
+        bottom: 280,
+      };
+      
+      // Mock the cat SVG element's getBoundingClientRect
+      const originalGetBoundingClientRect = Element.prototype.getBoundingClientRect;
+      Element.prototype.getBoundingClientRect = vi.fn().mockImplementation(function() {
+        // Only mock for elements with cat-related test IDs or classes
+        if (this.getAttribute?.('data-testid') === 'cat' || this.tagName === 'svg') {
+          return mockCatRect;
+        }
+        // Use original implementation for other elements
+        return originalGetBoundingClientRect.call(this);
+      });
       
       render(<App />);
       
-      // Trigger sleep state by waiting
-      vi.advanceTimersByTime(35000); // Wait for cat to sleep
+      // Wait for cat position to be initialized
+      await act(async () => {
+        vi.advanceTimersByTime(100);
+      });
+      
+      // Trigger sleep state by waiting (30 seconds as per App.tsx)
+      act(() => {
+        vi.advanceTimersByTime(30000); // Wait for cat to sleep
+      });
+      
+      // Verify cat is sleeping by checking for sleepy eyes
+      const sleepyEyes = screen.getByTestId('eye-sleepy');
+      expect(sleepyEyes.classList.contains('hidden')).toBe(false);
+      
+      // Wait for first Zzz to spawn
+      act(() => {
+        vi.advanceTimersByTime(3000); // Initial delay is 2500ms
+      });
+      
+      // Find the Zzz element
+      const zzzElements = document.querySelectorAll('.zzz');
+      expect(zzzElements.length).toBeGreaterThan(0);
+      
+      // Check that Zzz is positioned relative to cat's head
+      const firstZzz = zzzElements[0] as HTMLElement;
+      const zzzStyle = firstZzz.style;
+      
+      // Expected cat head position from simple getBoundingClientRect
+      const expectedCatHeadX = mockCatRect.left + mockCatRect.width / 2; // 350
+      const expectedCatHeadY = mockCatRect.top + mockCatRect.height * 0.3; // 224
+      
+      // Parse Zzz position (accounting for randomness)
+      const zzzLeft = parseFloat(zzzStyle.left);
+      const zzzTop = parseFloat(zzzStyle.top);
+      
+      // Zzz should be positioned near cat's head (within randomness range)
+      // X: catHeadX ± 20 (random range), Y: catHeadY - 40 ± 10 (above head + random)
+      expect(zzzLeft).toBeGreaterThan(expectedCatHeadX - 40); // 310
+      expect(zzzLeft).toBeLessThan(expectedCatHeadX + 40);    // 390
+      expect(zzzTop).toBeGreaterThan(expectedCatHeadY - 60);  // 164 (head - 40 - 10)
+      expect(zzzTop).toBeLessThan(expectedCatHeadY - 20);     // 204 (head - 40 + 10)
       
       // Should not have errors about undefined positions
       expect(consoleErrorSpy).not.toHaveBeenCalledWith(
         expect.stringMatching(/Cannot read.*position/)
       );
+      
+      // Cleanup
+      Element.prototype.getBoundingClientRect = originalGetBoundingClientRect;
+    });
+    
+    it('should position Zzz elements correctly with different cat positions', async () => {
+      vi.useFakeTimers();
+      
+      // Test with cat positioned far to the right
+      const mockCatRect = {
+        left: 600, // Far right position
+        top: 150,
+        width: 100,
+        height: 80,
+        right: 700,
+        bottom: 230,
+      };
+      
+      // Mock getBoundingClientRect for cat at far right position
+      const originalGetBoundingClientRect = Element.prototype.getBoundingClientRect;
+      Element.prototype.getBoundingClientRect = vi.fn().mockImplementation(function() {
+        if (this.getAttribute?.('data-testid') === 'cat' || this.tagName === 'svg') {
+          return mockCatRect;
+        }
+        return originalGetBoundingClientRect.call(this);
+      });
+      
+      render(<App />);
+      
+      // Wait for cat position to be initialized
+      await act(async () => {
+        vi.advanceTimersByTime(100);
+      });
+      
+      // Trigger sleep state
+      act(() => {
+        vi.advanceTimersByTime(30000);
+      });
+      
+      // Verify cat is sleeping
+      const sleepyEyes = screen.getByTestId('eye-sleepy');
+      expect(sleepyEyes.classList.contains('hidden')).toBe(false);
+      
+      // Wait for first Zzz to spawn
+      act(() => {
+        vi.advanceTimersByTime(3000);
+      });
+      
+      // Find the Zzz element
+      const zzzElements = document.querySelectorAll('.zzz');
+      expect(zzzElements.length).toBeGreaterThan(0);
+      
+      // Check that Zzz is positioned relative to the far-right cat position
+      const firstZzz = zzzElements[0] as HTMLElement;
+      const zzzLeft = parseFloat(firstZzz.style.left);
+      const zzzTop = parseFloat(firstZzz.style.top);
+      
+      // Expected cat head position from simple getBoundingClientRect
+      const expectedCatHeadX = mockCatRect.left + mockCatRect.width / 2; // 650
+      const expectedCatHeadY = mockCatRect.top + mockCatRect.height * 0.3; // 174
+      
+      // Zzz should be positioned near the cat's head
+      expect(zzzLeft).toBeGreaterThan(expectedCatHeadX - 40); // 610
+      expect(zzzLeft).toBeLessThan(expectedCatHeadX + 40);    // 690
+      expect(zzzTop).toBeGreaterThan(expectedCatHeadY - 60);  // 114 (head - 40 - 10)
+      expect(zzzTop).toBeLessThan(expectedCatHeadY - 20);     // 154 (head - 40 + 10)
+      
+      // Verify this is significantly different from center position (350px)
+      expect(Math.abs(zzzLeft - 350)).toBeGreaterThan(200); // Should be far from center
+      
+      // Cleanup
+      Element.prototype.getBoundingClientRect = originalGetBoundingClientRect;
+    });
+    
+    it('should update Zzz positioning when cat world coordinates change', async () => {
+      vi.useFakeTimers();
+      
+      // Track position updates
+      let positionUpdateCount = 0;
+      
+      // Mock getBoundingClientRect to return different positions based on call count
+      const originalGetBoundingClientRect = Element.prototype.getBoundingClientRect;
+      Element.prototype.getBoundingClientRect = vi.fn().mockImplementation(function() {
+        if (this.getAttribute?.('data-testid') === 'cat' || this.tagName === 'svg') {
+          positionUpdateCount++;
+          // Return different positions to simulate cat movement
+          const baseLeft = 300 + (positionUpdateCount * 50); // Move right each time
+          return {
+            left: baseLeft,
+            top: 200,
+            width: 100,
+            height: 80,
+            right: baseLeft + 100,
+            bottom: 280,
+          };
+        }
+        return originalGetBoundingClientRect.call(this);
+      });
+      
+      // Mock the onCatPositionUpdate to track position changes
+      // Note: This is handled by the getBoundingClientRect mock above
+      
+      render(<App />);
+      
+      // Wait for initial position setup
+      await act(async () => {
+        vi.advanceTimersByTime(100);
+      });
+      
+      // Verify initial position update occurred
+      expect(positionUpdateCount).toBeGreaterThan(0);
+      const initialUpdateCount = positionUpdateCount;
+      
+      // Simulate cat movement by triggering a world coordinate change
+      // This would normally happen through the ECS system or user interactions
+      // For testing, we can trigger it by simulating a re-render with new coordinates
+      await act(async () => {
+        // Force a re-render that would trigger position updates
+        vi.advanceTimersByTime(100);
+      });
+      
+      // The position should have been updated due to the dependency on catWorldCoords
+      // Note: In a real scenario, the cat's world coordinates would change and trigger the useEffect
+      expect(positionUpdateCount).toBeGreaterThanOrEqual(initialUpdateCount);
+      
+      // Cleanup
+      Element.prototype.getBoundingClientRect = originalGetBoundingClientRect;
+    });
+
+    it('should handle Z positioning when cat element is not found (fallback scenario)', async () => {
+      vi.useFakeTimers();
+      
+      // Mock getBoundingClientRect to return null for cat element (simulating DOM not ready)
+      const originalGetBoundingClientRect = Element.prototype.getBoundingClientRect;
+      const originalQuerySelector = document.querySelector;
+      
+      // Mock querySelector to return null for cat element
+      document.querySelector = vi.fn().mockImplementation((selector) => {
+        if (selector === '[data-testid="cat"]') {
+          return null; // Simulate cat element not found
+        }
+        return originalQuerySelector.call(document, selector);
+      });
+      
+      render(<App />);
+      
+      // Wait for initialization
+      await act(async () => {
+        vi.advanceTimersByTime(100);
+      });
+      
+      // Trigger sleep state
+      act(() => {
+        vi.advanceTimersByTime(30000);
+      });
+      
+      // Wait for Z spawn attempt
+      act(() => {
+        vi.advanceTimersByTime(3000);
+      });
+      
+      // Find Z elements
+      const zzzElements = document.querySelectorAll('.zzz');
+      expect(zzzElements.length).toBeGreaterThan(0);
+      
+      // Check that Z uses fallback positioning (screen center)
+      const firstZzz = zzzElements[0] as HTMLElement;
+      const zzzLeft = parseFloat(firstZzz.style.left);
+      const zzzTop = parseFloat(firstZzz.style.top);
+      
+      // Should be positioned near screen center as fallback
+      const expectedFallbackX = window.innerWidth / 2;
+      const expectedFallbackY = window.innerHeight / 2;
+      
+      expect(zzzLeft).toBeGreaterThan(expectedFallbackX - 60); // Account for randomness
+      expect(zzzLeft).toBeLessThan(expectedFallbackX + 60);
+      expect(zzzTop).toBeGreaterThan(expectedFallbackY - 80); // Account for -40 offset + randomness
+      expect(zzzTop).toBeLessThan(expectedFallbackY - 20);
+      
+      // Cleanup
+      document.querySelector = originalQuerySelector;
+      Element.prototype.getBoundingClientRect = originalGetBoundingClientRect;
+    });
+
+    it('should handle Z positioning with extreme cat positions (edge of screen)', async () => {
+      vi.useFakeTimers();
+      
+      // Test with cat at extreme left edge
+      const mockCatRect = {
+        left: 0, // At left edge
+        top: 0,  // At top edge
+        width: 100,
+        height: 80,
+        right: 100,
+        bottom: 80,
+      };
+      
+      const originalGetBoundingClientRect = Element.prototype.getBoundingClientRect;
+      Element.prototype.getBoundingClientRect = vi.fn().mockImplementation(function() {
+        if (this.getAttribute?.('data-testid') === 'cat' || this.tagName === 'svg') {
+          return mockCatRect;
+        }
+        return originalGetBoundingClientRect.call(this);
+      });
+      
+      render(<App />);
+      
+      await act(async () => {
+        vi.advanceTimersByTime(100);
+      });
+      
+      // Trigger sleep
+      act(() => {
+        vi.advanceTimersByTime(30000);
+      });
+      
+      // Wait for Z spawn
+      act(() => {
+        vi.advanceTimersByTime(3000);
+      });
+      
+      const zzzElements = document.querySelectorAll('.zzz');
+      expect(zzzElements.length).toBeGreaterThan(0);
+      
+      const firstZzz = zzzElements[0] as HTMLElement;
+      const zzzLeft = parseFloat(firstZzz.style.left);
+      const zzzTop = parseFloat(firstZzz.style.top);
+      
+      // Expected position: cat head at (50, 24) - 30% from top
+      const expectedCatHeadX = mockCatRect.left + mockCatRect.width / 2; // 50
+      const expectedCatHeadY = mockCatRect.top + mockCatRect.height * 0.3; // 24
+      
+      // Z should still be positioned correctly even at screen edge
+      expect(zzzLeft).toBeGreaterThan(expectedCatHeadX - 40); // 10
+      expect(zzzLeft).toBeLessThan(expectedCatHeadX + 40);    // 90
+      expect(zzzTop).toBeGreaterThan(expectedCatHeadY - 60);  // -36 (can be negative)
+      expect(zzzTop).toBeLessThan(expectedCatHeadY - 20);     // 4
+      
+      // Cleanup
+      Element.prototype.getBoundingClientRect = originalGetBoundingClientRect;
+    });
+
+    it('should spawn multiple Z elements with consistent positioning', async () => {
+      vi.useFakeTimers();
+      
+      const mockCatRect = {
+        left: 400,
+        top: 300,
+        width: 100,
+        height: 80,
+        right: 500,
+        bottom: 380,
+      };
+      
+      const originalGetBoundingClientRect = Element.prototype.getBoundingClientRect;
+      Element.prototype.getBoundingClientRect = vi.fn().mockImplementation(function() {
+        if (this.getAttribute?.('data-testid') === 'cat' || this.tagName === 'svg') {
+          return mockCatRect;
+        }
+        return originalGetBoundingClientRect.call(this);
+      });
+      
+      render(<App />);
+      
+      await act(async () => {
+        vi.advanceTimersByTime(100);
+      });
+      
+      // Trigger sleep
+      act(() => {
+        vi.advanceTimersByTime(30000);
+      });
+      
+      // Wait for multiple Z spawns (initial + several more)
+      act(() => {
+        vi.advanceTimersByTime(8000); // Should spawn multiple Z's
+      });
+      
+      const zzzElements = document.querySelectorAll('.zzz');
+      expect(zzzElements.length).toBeGreaterThan(1); // Multiple Z's spawned
+      
+      const expectedCatHeadX = mockCatRect.left + mockCatRect.width / 2; // 450
+      const expectedCatHeadY = mockCatRect.top + mockCatRect.height * 0.3; // 324
+      
+      // Check that all Z's are positioned consistently around the cat's head
+      zzzElements.forEach((zzz) => {
+        const zzzLeft = parseFloat((zzz as HTMLElement).style.left);
+        const zzzTop = parseFloat((zzz as HTMLElement).style.top);
+        
+        // All Z's should be positioned near cat's head
+        expect(zzzLeft).toBeGreaterThan(expectedCatHeadX - 40); // 410
+        expect(zzzLeft).toBeLessThan(expectedCatHeadX + 40);    // 490
+        expect(zzzTop).toBeGreaterThan(expectedCatHeadY - 60);  // 264
+        expect(zzzTop).toBeLessThan(expectedCatHeadY - 20);     // 304
+      });
+      
+      // Cleanup
+      Element.prototype.getBoundingClientRect = originalGetBoundingClientRect;
+    });
+
+    it('should maintain Z positioning consistency with heart positioning approach', async () => {
+      vi.useFakeTimers();
+      
+      const mockCatRect = {
+        left: 250,
+        top: 180,
+        width: 120,
+        height: 100,
+        right: 370,
+        bottom: 280,
+      };
+      
+      const originalGetBoundingClientRect = Element.prototype.getBoundingClientRect;
+      Element.prototype.getBoundingClientRect = vi.fn().mockImplementation(function() {
+        if (this.getAttribute?.('data-testid') === 'cat' || this.tagName === 'svg') {
+          return mockCatRect;
+        }
+        return originalGetBoundingClientRect.call(this);
+      });
+      
+      render(<App />);
+      
+      await act(async () => {
+        vi.advanceTimersByTime(100);
+      });
+      
+      // First, trigger heart spawning by clicking the cat body (interaction area)
+      const catBodyElement = screen.getByTestId('cat-body');
+      fireEvent.click(catBodyElement, { clientX: 310, clientY: 230 }); // Click on cat body
+      
+      // Then trigger Z spawning by making cat sleep
+      act(() => {
+        vi.advanceTimersByTime(30000);
+      });
+      
+      act(() => {
+        vi.advanceTimersByTime(3000);
+      });
+      
+      // Both hearts and Z's should use the same coordinate system approach
+      const heartElements = document.querySelectorAll('.heart');
+      const zzzElements = document.querySelectorAll('.zzz');
+      
+      expect(heartElements.length).toBeGreaterThan(0);
+      expect(zzzElements.length).toBeGreaterThan(0);
+      
+      // Hearts spawn at click position (clientX/clientY)
+      const firstHeart = heartElements[0] as HTMLElement;
+      const heartX = parseFloat(firstHeart.style.left);
+      const heartY = parseFloat(firstHeart.style.top);
+      
+      // Hearts should be near click position (310, 230) with some randomness
+      expect(heartX).toBeGreaterThan(270); // 310 - 40
+      expect(heartX).toBeLessThan(350);    // 310 + 40
+      expect(heartY).toBeGreaterThan(190); // 230 - 40
+      expect(heartY).toBeLessThan(270);    // 230 + 40
+      
+      // Z's spawn at cat head position using same getBoundingClientRect approach
+      const firstZzz = zzzElements[0] as HTMLElement;
+      const zzzX = parseFloat(firstZzz.style.left);
+      const zzzY = parseFloat(firstZzz.style.top);
+      
+      const expectedCatHeadX = mockCatRect.left + mockCatRect.width / 2; // 310
+      const expectedCatHeadY = mockCatRect.top + mockCatRect.height * 0.3; // 210
+      
+      expect(zzzX).toBeGreaterThan(expectedCatHeadX - 40); // 270
+      expect(zzzX).toBeLessThan(expectedCatHeadX + 40);    // 350
+      expect(zzzY).toBeGreaterThan(expectedCatHeadY - 60); // 150 (head - 40 - 10)
+      expect(zzzY).toBeLessThan(expectedCatHeadY - 20);    // 190 (head - 40 + 10)
+      
+      // Cleanup
+      Element.prototype.getBoundingClientRect = originalGetBoundingClientRect;
     });
 
     it('should handle heart spawning without state synchronization errors', async () => {

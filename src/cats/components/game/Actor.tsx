@@ -32,7 +32,7 @@ interface ActorProps {
     isSleeping: boolean;
     isDrowsy: boolean;
     onLoveGained: (amt: number) => void;
-    onCatPositionUpdate: (p: { x: number; y: number; z?: number }) => void;
+    onCatPositionUpdate?: (p: { x: number; y: number; z?: number }) => void;
     trackSpecialAction: (a: 'noseClicks' | 'earClicks' | 'cheekPets' | 'happyJumps') => void;
     heartSpawningService: {
       spawnHearts: (config: {

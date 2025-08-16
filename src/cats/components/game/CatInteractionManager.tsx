@@ -63,7 +63,7 @@ interface CatInteractionManagerProps {
   // Callbacks to parent
   onLoveGained: (amount: number) => void;
   // initial wand position is handled in parent
-  onCatPositionUpdate: (position: { x: number; y: number; z?: number }) => void;
+  onCatPositionUpdate?: (position: { x: number; y: number; z?: number }) => void;
   trackSpecialAction: (action: 'noseClicks' | 'earClicks' | 'cheekPets' | 'happyJumps') => void;
   
   // Heart spawning service
@@ -163,14 +163,49 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
   // Update parent with cat position for Z spawning
   useEffect(() => {
     if (catRef.current) {
-      const catRect = catRef.current.getBoundingClientRect();
-      const position = {
-        x: catRect.left + catRect.width / 2,
-        y: catRect.top + catRect.height * 0.3, // Cat's head position
+      // Use requestAnimationFrame to ensure DOM is fully settled
+      const updatePosition = () => {
+        if (catRef.current) {
+          const catRect = catRef.current.getBoundingClientRect();
+          
+          // Check if the rect is valid (DOM element is actually rendered)
+          if (catRect.width === 0 || catRect.height === 0) {
+            // DOM not ready yet, try again after a short delay
+            setTimeout(() => requestAnimationFrame(updatePosition), 10);
+            return;
+          }
+          
+          // Simple approach: getBoundingClientRect already accounts for camera position
+          // No camera compensation needed - the DOM position is already correct
+          const headCenterX = catRect.left + catRect.width / 2;
+          const headCenterY = catRect.top + catRect.height * 0.3; // 30% from top for head
+          
+          // Debug logging for simple approach (disabled for production)
+          // if (typeof window !== 'undefined' && (window as any).__CAT_DEBUG__ !== false) {
+          //   console.log('[Z-SIMPLE-FINAL] Position update:', {
+          //     catWorldCoords,
+          //     catRect: { left: catRect.left, top: catRect.top, width: catRect.width, height: catRect.height },
+          //     headCenterX,
+          //     headCenterY,
+          //     approach: 'simple getBoundingClientRect (no camera compensation)',
+          //     xCalculation: `${catRect.left} + ${catRect.width}/2 = ${headCenterX}`,
+          //     yCalculation: `${catRect.top} + ${catRect.height} * 0.3 = ${headCenterY}`,
+          //     isInitialPosition: catWorldCoords.x === 560 && catWorldCoords.z === 720
+          //   });
+          // }
+          
+          const position = {
+            x: headCenterX,
+            y: headCenterY,
+          };
+          onCatPositionUpdate?.(position);
+        }
       };
-      onCatPositionUpdate(position);
+      
+      // Use requestAnimationFrame to ensure the DOM is fully rendered
+      requestAnimationFrame(updatePosition);
     }
-  }, [onCatPositionUpdate]);
+  }, [onCatPositionUpdate, catWorldCoords.x, catWorldCoords.y, catWorldCoords.z]);
   const cheekClickFlag = useRef(false);
   // Removed unused clickTimestampsRef (using rapidClickTimestampsRef instead)
   

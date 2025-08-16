@@ -313,6 +313,73 @@ Experience-driven advancement system:
 - **Merit Rewards**: Clear feedback for progression unlocks
 - **Job Updates**: Interview results and promotion celebrations
 
+### Visual Effects System
+
+The game uses a **unified coordinate system approach** for all cat-related visual effects, ensuring consistent positioning across all scenarios including camera panning, cat movement, and initialization states.
+
+#### **Hearts (Love Effects)**
+
+Hearts spawn from user interactions using **direct screen coordinates**:
+
+```typescript
+// Hearts use mouse click coordinates - always accurate
+heartSpawningService.spawnHearts({
+  position: { x: event.clientX, y: event.clientY }, // Direct screen coordinates
+  loveAmount: calculatedLove,
+  interactionType: 'petting' | 'pouncing',
+});
+```
+
+**Key Features:**
+
+- **Mouse-based positioning**: Uses `event.clientX/clientY` for perfect accuracy
+- **Automatic camera handling**: Screen coordinates work in all camera positions
+- **Interaction-aware**: Different visual styles for petting vs pouncing
+- **Love-scaled**: Heart count and size scale with love amount
+
+#### **Sleep Z's (Sleep Effects)**
+
+Z's spawn from the cat's head using the **same coordinate system as hearts**:
+
+```typescript
+// Z's use direct DOM queries - same approach as hearts
+const catElement = document.querySelector('[data-testid="cat"]') as HTMLElement;
+if (catElement) {
+  const catRect = catElement.getBoundingClientRect();
+  spawnX = catRect.left + catRect.width / 2; // Cat center
+  spawnY = catRect.top + catRect.height * 0.3; // Cat head (30% from top)
+}
+```
+
+**Key Features:**
+
+- **Real-time positioning**: Fresh DOM query at each spawn for accuracy
+- **Camera-aware**: `getBoundingClientRect()` automatically handles CSS transforms
+- **Head-targeted**: Spawns from anatomically correct cat head position
+- **Fallback robust**: Uses screen center if cat element not found
+
+#### **Unified Positioning Principles**
+
+Both hearts and Z's follow the same core principles:
+
+1. **Screen Coordinate System**: All effects use viewport-relative coordinates
+2. **No Manual Camera Compensation**: `getBoundingClientRect()` handles transforms automatically
+3. **DOM-based Positioning**: Direct queries ensure real-time accuracy
+4. **Fallback Strategies**: Graceful degradation when elements aren't available
+5. **Test-friendly**: Mockable `getBoundingClientRect()` for comprehensive testing
+
+#### **Edge Cases Handled**
+
+The visual effects system robustly handles:
+
+- **Camera Panning**: Effects follow cat seamlessly during camera movement
+- **Initialization**: No positioning bugs during app startup
+- **Extreme Positions**: Works correctly when cat is at screen edges
+- **DOM Readiness**: Fallback positioning when elements aren't fully rendered
+- **Multiple Effects**: Consistent positioning across simultaneous spawns
+
+This unified approach eliminates the complex position tracking systems previously used and ensures visual effects work perfectly in all game scenarios.
+
 ## Technical Implementation
 
 ### Core Architecture

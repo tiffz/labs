@@ -16,11 +16,14 @@ interface DevPanelProps {
   catWorldCoords?: { x: number; y: number; z: number };
   catScreenCoords?: { x: number; y: number; scale: number };
   shadowCoords?: { x: number; y: number; scale: number };
-  onMoveCat?: (x: number, y: number, z: number) => void;
-  onNudgeY?: (deltaY: number) => void;
-  onJump?: () => void;
   // Dev-only snapshot sender (provided in dev)
   onSendSnapshot?: () => void;
+  // Cat state management
+  isSleeping?: boolean;
+  isDrowsy?: boolean;
+  onToggleSleep?: () => void;
+  onToggleDrowsy?: () => void;
+  onResetInactivity?: () => void;
 }
 
 const DevPanel: React.FC<DevPanelProps> = ({
@@ -37,12 +40,14 @@ const DevPanel: React.FC<DevPanelProps> = ({
   catWorldCoords,
   catScreenCoords,
   shadowCoords,
-  onMoveCat,
-  onNudgeY,
-  onJump,
   onSendSnapshot,
+  isSleeping,
+  isDrowsy,
+  onToggleSleep,
+  onToggleDrowsy,
+  onResetInactivity,
 }) => {
-  const [activeTab, setActiveTab] = useState<'stats' | 'position' | 'controls' | 'ecs'>('stats');
+  const [activeTab, setActiveTab] = useState<'stats' | 'position' | 'controls' | 'states'>('stats');
 
   return (
     <div className="dev-panel-compact">
@@ -68,15 +73,15 @@ const DevPanel: React.FC<DevPanelProps> = ({
             Ctrl
           </button>
           <button 
-            className={`dev-tab ${activeTab === 'ecs' ? 'active' : ''}`}
-            onClick={() => setActiveTab('ecs')}
+            className={`dev-tab ${activeTab === 'states' ? 'active' : ''}`}
+            onClick={() => setActiveTab('states')}
           >
-            ECS
+            States
           </button>
         </div>
         {import.meta.env.DEV && onSendSnapshot && (
           <button className="compact-button" style={{ marginLeft: 'auto' }} onClick={onSendSnapshot}>
-            🧪 Send Snapshot
+            📸 Snapshot
           </button>
         )}
       </div>
@@ -107,12 +112,6 @@ const DevPanel: React.FC<DevPanelProps> = ({
                 <span>Excitement:</span> <span>{clickExcitement.toFixed(1)}</span>
               </div>
             </div>
-          </div>
-        )}
-
-        {activeTab === 'ecs' && (
-          <div className="dev-tab-content">
-            <DebugEcsPanel />
           </div>
         )}
 
@@ -160,24 +159,65 @@ const DevPanel: React.FC<DevPanelProps> = ({
               </div>
             </div>
             
-            {onMoveCat && (
-              <div className="movement-compact">
-                <div className="move-controls">
-                  <button className="move-btn" onClick={() => onMoveCat(catWorldCoords.x - 50, catWorldCoords.y, catWorldCoords.z)}>←</button>
-                  <button className="move-btn" onClick={() => onMoveCat(catWorldCoords.x + 50, catWorldCoords.y, catWorldCoords.z)}>→</button>
-                  <button className="move-btn" onClick={() => onMoveCat(catWorldCoords.x, catWorldCoords.y, Math.max(0, catWorldCoords.z - 30))}>↑ Far</button>
-                  <button className="move-btn" onClick={() => onMoveCat(catWorldCoords.x, catWorldCoords.y, Math.min(1000, catWorldCoords.z + 30))}>↓ Near</button>
-                </div>
-                <div className="action-controls">
-                  <button className="compact-button" onClick={() => onJump && onJump()}>🐱 Jump</button>
-                  <button className="compact-button" onClick={() => onNudgeY && onNudgeY(+10)}>Up</button>
-                  <button className="compact-button" onClick={() => onNudgeY && onNudgeY(-10)}>Down</button>
-                  <button className="compact-button" onClick={() => onMoveCat(560, 0, 400)}>
-                    🏠 Reset
-                  </button>
+            <div className="ecs-section">
+              <DebugEcsPanel />
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'states' && (
+          <div className="dev-tab-content">
+            <div className="states-compact">
+              <div className="state-section">
+                <div className="state-label">Sleep States</div>
+                <div className="state-controls">
+                  <div className="state-indicator">
+                    <span className={`state-dot ${isSleeping ? 'active' : ''}`}></span>
+                    <span>Sleeping: {isSleeping ? 'Yes' : 'No'}</span>
+                    {onToggleSleep && (
+                      <button className="state-btn" onClick={onToggleSleep}>
+                        {isSleeping ? 'Wake' : 'Sleep'}
+                      </button>
+                    )}
+                  </div>
+                  <div className="state-indicator">
+                    <span className={`state-dot ${isDrowsy ? 'active' : ''}`}></span>
+                    <span>Drowsy: {isDrowsy ? 'Yes' : 'No'}</span>
+                    {onToggleDrowsy && (
+                      <button className="state-btn" onClick={onToggleDrowsy}>
+                        {isDrowsy ? 'Drowsy' : 'Alert'}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
-            )}
+              
+              <div className="state-section">
+                <div className="state-label">Actions</div>
+                <div className="state-actions">
+                  {onResetInactivity && (
+                    <button className="compact-button" onClick={onResetInactivity}>
+                      🔄 Reset Inactivity
+                    </button>
+                  )}
+                </div>
+              </div>
+              
+              <div className="state-section">
+                <div className="state-label">Visual Effects</div>
+                <div className="state-info">
+                  <div className="info-item">
+                    💤 Zzz elements spawn when sleeping
+                  </div>
+                  <div className="info-item">
+                    😴 Sleepy eyes show when drowsy/sleeping
+                  </div>
+                  <div className="info-item">
+                    ⏰ Sleep after 30s inactivity
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

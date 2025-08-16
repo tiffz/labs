@@ -91,7 +91,7 @@ function App() {
   const { gameState } = gameStateManager;
   
   // Cat positioning for world-aware movement (new coordinate system)
-  const { renderData, moveCatTo, jumpOnce, } = useCatPositionNew();
+  const { renderData, jumpOnce, } = useCatPositionNew();
   // Use ECS world coordinates for camera follow to avoid feedback jitter
   const [ecsCatWorldPosition, setEcsCatWorldPosition] = useState<{ x: number; y: number; z: number }>(() => renderData.worldCoordinates);
   useEffect(() => {
@@ -397,12 +397,7 @@ function App() {
     };
   }, [mouseState, resetInactivityTimer]);
 
-  // Use ref for cat position to avoid triggering re-renders
-  const catPositionRef = useRef<{x: number, y: number, z?: number} | null>(null);
-
-  const handleCatPositionUpdate = useStableCallback<(position: {x: number, y: number, z?: number}) => void>((position: {x: number, y: number, z?: number}) => {
-    catPositionRef.current = position;
-  });
+  // Cat position tracking removed - Z's now use direct DOM queries like hearts
 
   useEffect(() => {
     const initialDelay = 2500;
@@ -412,25 +407,22 @@ function App() {
     const scheduleNextZzz = (delay: number) => {
       if (zzzTimeoutRef.current) clearTimeout(zzzTimeoutRef.current);
       zzzTimeoutRef.current = window.setTimeout(() => {
-        // Use cat position if available, fallback to screen center
-        // Adjust for camera panning: Zzz should be positioned within the world content's coordinates
-        // Use computed style to read current camera translateX
-        const contentEl = document.querySelector('.world-content') as HTMLElement | null;
-        const transform = contentEl ? getComputedStyle(contentEl).transform : '';
-        let cameraOffset = 0;
-        if (transform && transform !== 'none') {
-          const m = transform.match(/matrix\([^,]+, [^,]+, [^,]+, [^,]+, ([^,]+), ([^)]+)\)/);
-          if (m) {
-            cameraOffset = parseFloat(m[1]) * -1; // matrix translates are positive left; our transform is negative
-          }
+        // Get cat's current screen position directly from DOM - same approach as hearts
+        const catElement = document.querySelector('[data-testid="cat"]') as HTMLElement;
+        let spawnX = window.innerWidth / 2;
+        let spawnY = window.innerHeight / 2;
+        
+        if (catElement) {
+          const catRect = catElement.getBoundingClientRect();
+          // Use cat's head position - same calculation as hearts would use
+          spawnX = catRect.left + catRect.width / 2;
+          spawnY = catRect.top + catRect.height * 0.3; // 30% from top for head
         }
-        const spawnX = (catPositionRef.current?.x || window.innerWidth / 2) - cameraOffset;
-        const spawnY = (catPositionRef.current?.y || window.innerHeight / 2) - 40; // Above cat's head
 
         setZzzs((currentZzzs) => [...currentZzzs, {
             id: Date.now(),
             x: spawnX + (Math.random() * 40 - 20),
-            y: spawnY + (Math.random() * 20 - 10),
+            y: spawnY - 40 + (Math.random() * 20 - 10), // Above cat's head
             translateX: Math.random() * 40 - 20,
             rotation: Math.random() * 60 - 30,
             scale: Math.random() * 0.4 + 0.8,
@@ -506,7 +498,6 @@ function App() {
         const catId = existing?.[0];
         if (catId) {
           worldRef.current.runControls.set(catId, { moveX: dx, moveZ: dz });
-          console.debug('[RUN] keys', { dx, dz });
         }
       raf = requestAnimationFrame(step);
     };
@@ -696,7 +687,7 @@ function App() {
               isSleeping,
               isDrowsy,
               onLoveGained,
-              onCatPositionUpdate: handleCatPositionUpdate,
+              // onCatPositionUpdate removed - Z's use direct DOM queries
               trackSpecialAction,
               heartSpawningService,
               eventLoggers: { logPetting, logPouncing, logHappy, logNoseClick, logEarClick, logCheekPet },
@@ -753,18 +744,6 @@ function App() {
               const shadowBase = catCoordinateSystem.catToScreen({ x: catPosition.x, y: 0, z: catPosition.z });
               return { x: catPosition.x, y: shadowBase.y, scale: shadowBase.scale * 0.8 };
             })()}
-            onMoveCat={(x, y, z) => {
-              // Use direct move for dev controls to avoid arc/teleport
-              moveCatTo({ x, y, z }, 200);
-            }}
-            onNudgeY={(delta) => {
-              const base = catPosition.y;
-              // Positive delta means visually up → increase world Y
-              moveCatTo({ y: base + Math.sign(delta) * Math.abs(delta) }, 120);
-            }}
-            onJump={() => {
-              document.dispatchEvent(new CustomEvent('cat-happy-jump'));
-            }}
             onSendSnapshot={async () => {
               if (!import.meta.env.DEV) return;
               try {
@@ -790,6 +769,12 @@ function App() {
                 console.error('Snapshot failed', e);
               }
             }}
+            // Sleep state management
+            isSleeping={isSleeping}
+            isDrowsy={isDrowsy}
+            onToggleSleep={() => setIsSleeping(prev => !prev)}
+            onToggleDrowsy={() => setIsDrowsy(prev => !prev)}
+            onResetInactivity={resetInactivityTimer}
           />
         </div>
       )}
