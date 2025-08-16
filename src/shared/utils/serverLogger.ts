@@ -1,18 +1,22 @@
 /**
  * Server Logger - Sends console logs to Vite dev server terminal
+ * Shared utility for all micro-apps in the labs project
  */
 class ServerLogger {
   private static instance: ServerLogger;
   private isEnabled = false;
+  private appName: string;
 
-  static getInstance(): ServerLogger {
+  static getInstance(appName: string = 'APP'): ServerLogger {
     if (!ServerLogger.instance) {
-      ServerLogger.instance = new ServerLogger();
+      ServerLogger.instance = new ServerLogger(appName);
     }
     return ServerLogger.instance;
   }
 
-  constructor() {
+  constructor(appName: string = 'APP') {
+    this.appName = appName.toUpperCase();
+    
     // Enable in dev mode only, and skip entirely during E2E runs
     this.isEnabled = import.meta.env.DEV;
 
@@ -84,6 +88,7 @@ class ServerLogger {
     try {
       const logData = {
         timestamp: new Date().toISOString(),
+        app: this.appName,
         level,
         message,
         data: data ? JSON.stringify(data, null, 2) : undefined
@@ -119,4 +124,39 @@ class ServerLogger {
   }
 }
 
-export const serverLogger = ServerLogger.getInstance();
+/**
+ * Install server logging and error handling for a micro-app
+ * Call this BEFORE importing any other app modules to capture import-time errors
+ */
+export function installServerLogger(appName: string) {
+  const serverLogger = ServerLogger.getInstance(appName);
+
+  // Global error wiring for dev: send to dev server
+  if (import.meta.env.DEV && typeof window !== 'undefined') {
+    window.addEventListener('error', (event: ErrorEvent) => {
+      try {
+        serverLogger.error('window.onerror', {
+          message: event.message,
+          filename: event.filename,
+          lineno: event.lineno,
+          colno: event.colno,
+          error: event.error?.stack || String(event.error)
+        });
+      } catch {
+        // ignore
+      }
+    }, true);
+    
+    window.addEventListener('unhandledrejection', (event: PromiseRejectionEvent) => {
+      try {
+        serverLogger.error('unhandledrejection', {
+          reason: event.reason?.stack || String(event.reason)
+        });
+      } catch {
+        // ignore
+      }
+    });
+  }
+
+  return serverLogger;
+}

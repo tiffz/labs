@@ -219,7 +219,7 @@ const CatView: React.FC<CatViewProps> = ({ catWorldCoords, shadowCenterOverride,
       <div ref={containerRef} className={`cat-container cat-tight`} style={catContainerStyle}>
         <div ref={innerRef} className={`cat-inner${walking ? ' walking' : ''}`} style={{ transform: `translate3d(0, ${catInnerTranslateY.toFixed(2)}px, 0)`, ['--bob-ampl' as unknown as string]: walking ? '3px' : '0px' }}>
           <div ref={bobberRef} className="cat-walk-bobber">
-            {React.cloneElement(catElement as unknown as React.ReactElement<SVGSVGElement>, { ref: catRef })}
+            {React.cloneElement(catElement, { ref: catRef } as React.RefAttributes<SVGSVGElement>)}
           </div>
         </div>
       </div>

@@ -305,7 +305,7 @@ function App() {
               timestamp: new Date().toISOString(),
               gameState,
               catWorldCoords: catPosition,
-              catScreenCoords: catWorldPosition,
+              catScreenCoords: ecsCatWorldPosition,
               economy,
               overlay,
               ecs,
@@ -321,7 +321,7 @@ function App() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [isDevMode, gameState, catPosition, catScreenPosition, economy]);
+  }, [isDevMode, gameState, catPosition, catScreenPosition, economy, ecsCatWorldPosition]);
 
   // Energy regeneration is now handled by useCatSystem
 
@@ -778,7 +778,7 @@ function App() {
                   timestamp: new Date().toISOString(),
                   gameState,
                   catWorldCoords: catPosition,
-                  catScreenCoords: catWorldPosition,
+                  catScreenCoords: ecsCatWorldPosition,
                   economy,
                   overlay,
                   ecs,

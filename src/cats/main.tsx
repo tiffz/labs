@@ -1,37 +1,14 @@
 import { StrictMode } from 'react'
 import ReactDOM from 'react-dom/client'
 // Initialize server logger BEFORE any app modules so import-time errors are captured
-import { serverLogger } from './utils/serverLogger'
+import { installServerLogger } from '../shared/utils/serverLogger'
 import './styles/cats.css'
 import App from './App.tsx'
 import { CoordinateSystemProvider } from './context/CoordinateSystemContext'
 import WorldProvider from './context/WorldProvider'
 
-// Global error wiring for dev: send to dev server
-if (import.meta.env.DEV && typeof window !== 'undefined') {
-  window.addEventListener('error', (event: ErrorEvent) => {
-    try {
-      serverLogger.error('window.onerror', {
-        message: event.message,
-        filename: event.filename,
-        lineno: event.lineno,
-        colno: event.colno,
-        error: event.error?.stack || String(event.error)
-      });
-    } catch {
-      // ignore
-    }
-  }, true);
-  window.addEventListener('unhandledrejection', (event: PromiseRejectionEvent) => {
-    try {
-      serverLogger.error('unhandledrejection', {
-        reason: event.reason?.stack || String(event.reason)
-      });
-    } catch {
-      // ignore
-    }
-  });
-}
+// Install server logging for this app
+installServerLogger('CATS');
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <StrictMode>

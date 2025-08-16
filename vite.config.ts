@@ -57,7 +57,7 @@ export default defineConfig({
     middlewareMode: false,
   },
   plugins: [
-    // Debug logging plugin for cat game
+    // Debug logging plugin for all micro-apps
     {
       name: 'debug-logger',
       configureServer(server) {
@@ -72,7 +72,8 @@ export default defineConfig({
                 const logData = JSON.parse(body);
                 const timestamp = new Date(logData.timestamp).toLocaleTimeString();
                 const level = (logData.level || 'info').toUpperCase();
-                const line = `\n[CAT-DEBUG ${timestamp}] [${level}] ${logData.message}`;
+                const app = logData.app || 'APP';
+                const line = `\n[${app}-DEBUG ${timestamp}] [${level}] ${logData.message}`;
                  const method = String(level || 'info').toLowerCase();
                  const out: (...args: unknown[]) => void =
                    method === 'error' ? console.error :
@@ -82,7 +83,7 @@ export default defineConfig({
                 out(line);
                 if (logData.data) out(logData.data);
               } catch (error) {
-                console.log('\n[CAT-DEBUG] Failed to parse log data', error);
+                console.log('\n[LABS-DEBUG] Failed to parse log data', error);
               }
               res.writeHead(200, { 'Content-Type': 'application/json' });
               res.end('{"status":"ok"}');
@@ -139,13 +140,13 @@ export default defineConfig({
                 }
               }
 
-              const msg = `[CAT-DEBUG] Snapshot saved at ${snapshotDir} (meta: ${metaSaved}, screenshot: ${screenshotSaved})`;
+              const msg = `[LABS-DEBUG] Snapshot saved at ${snapshotDir} (meta: ${metaSaved}, screenshot: ${screenshotSaved})`;
               console.log(`\n${msg}`);
               res.writeHead(200, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify({ ok: true, dir: snapshotDir, metaSaved, screenshotSaved }));
             });
           } catch (error) {
-            console.log('\n[CAT-DEBUG] Failed to save snapshot', error);
+            console.log('\n[LABS-DEBUG] Failed to save snapshot', error);
             res.writeHead(500, { 'Content-Type': 'application/json' });
             res.end('{"ok":false}');
           }
