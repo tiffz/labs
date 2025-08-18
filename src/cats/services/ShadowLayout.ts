@@ -6,9 +6,13 @@ interface ScreenPositionLike {
 
 // Keep these in sync with CatInteractionManager shadow config
 const SHADOW_BASE_WIDTH = 230; // px at scale=1 (wider, reads as body footprint)
-const SHADOW_HEIGHT_RATIO = 0.32; // slightly taller ellipse for better contact under feet
+const SHADOW_HEIGHT_RATIO = 0.16; // Reduced from 0.32 to half the height for more realistic shadows
 const HORIZONTAL_OFFSET_PX = 0; // center under body
 export const SHADOW_OFFSET_X = 0; // kept for compatibility
+
+// Absolute shadow height that all objects should use for consistency
+// Calculated as: SHADOW_BASE_WIDTH * 0.8 * SHADOW_HEIGHT_RATIO = 230 * 0.8 * 0.16 = 29.44
+export const ABSOLUTE_SHADOW_HEIGHT = SHADOW_BASE_WIDTH * 0.8 * SHADOW_HEIGHT_RATIO;
 
 interface ShadowLayout {
   left: number; // container left (px)

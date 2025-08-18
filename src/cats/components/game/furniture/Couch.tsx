@@ -11,9 +11,9 @@ interface CouchProps {
 }
 
 // Simple SVG couch with tight viewBox and baseline-aligned shadow
-// Tightened height so the bounding box hugs the art more closely
-const VB_W = 270;
-const VB_H = 120;
+// Scaled up to 1.7x original dimensions for more realistic proportions
+const VB_W = 459; // 270 * 1.7
+const VB_H = 204; // 120 * 1.7
 
 const Couch: React.FC<CouchProps> = ({ x, z }) => {
   const ground = catCoordinateSystem.catToScreen({ x, y: 0, z });
@@ -34,7 +34,7 @@ const Couch: React.FC<CouchProps> = ({ x, z }) => {
   };
 
   // Mass box for overlays (seat + arms + back) - hug to arm edges horizontally
-  const MASS = { left: 0, right: VB_W, top: 8, bottom: 110 };
+  const MASS = { left: 0, right: VB_W, top: 14, bottom: 187 }; // Scaled by 1.7x
 
   return (
     <div className="couch" aria-label="couch" style={style}>
@@ -72,28 +72,28 @@ const Couch: React.FC<CouchProps> = ({ x, z }) => {
           <FurnitureShadow kind="couch" viewBoxWidth={VB_W} viewBoxHeight={VB_H} />
 
           {/* Back extended down to avoid background gaps */}
-          <rect x={15} y={24} width={VB_W - 30} height={74} rx={10} fill="url(#couchBody)" />
+          <rect x={26} y={41} width={VB_W - 51} height={126} rx={17} fill="url(#couchBody)" />
 
           {/* Seat block removed per design – cushions will sit directly above base */}
 
           {/* Four evenly spaced plush cushions; no gaps; subtle top-to-bottom gradient */}
           {(() => {
-            const paddingX = 18;
+            const paddingX = 31; // 18 * 1.7
             const gap = 0;
             const count = 4;
             const avail = VB_W - paddingX * 2 - gap * (count - 1);
             const cw = avail / count;
             const cx = (i: number) => paddingX + i * (cw + gap);
-            const cy = 28; // connect to base visually
-            const ch = 24;
+            const cy = 48; // 28 * 1.7 - connect to base visually
+            const ch = 41; // 24 * 1.7
             const nodes = [] as JSX.Element[];
             for (let i = 0; i < count; i++) {
               const x0 = cx(i);
               const y0 = cy;
               const x1 = x0 + cw;
               const y1 = y0 + ch;
-              const rTop = 11;
-              const rBot = 6; // slightly less round on bottom corners
+              const rTop = 19; // 11 * 1.7
+              const rBot = 10; // 6 * 1.7 - slightly less round on bottom corners
               const d = `M ${x0} ${y0} H ${x1} V ${y1 - rTop} Q ${x1} ${y1} ${x1 - rTop} ${y1} H ${x0 + rTop} Q ${x0} ${y1} ${x0} ${y1 - rTop} V ${y0 + rBot} Q ${x0} ${y0} ${x0 + rBot} ${y0} H ${x1 - rBot} Q ${x1} ${y0} ${x1} ${y0 + rBot} Z`;
               nodes.push(<path key={i} d={d} fill="url(#cushionGrad)" />);
             }
@@ -101,14 +101,14 @@ const Couch: React.FC<CouchProps> = ({ x, z }) => {
           })()}
 
           {/* Base drawn after cushions so it covers cushion bottoms; extended downward */}
-          <rect x={15} y={4} width={VB_W - 30} height={28} rx={6} fill="url(#baseGrad)" />
+          <rect x={26} y={7} width={VB_W - 51} height={48} rx={10} fill="url(#baseGrad)" />
 
           {/* Arms drawn last to layer above base and cushions */}
           {(() => {
-            const armW = 22;
-            const armH = 60;
-            const rTop = 10;
-            const rBottom = 3;
+            const armW = 37; // 22 * 1.7
+            const armH = 102; // 60 * 1.7
+            const rTop = 17; // 10 * 1.7
+            const rBottom = 5; // 3 * 1.7
             const L = `M 0 ${rBottom} Q 0 0 ${rBottom} 0 H ${armW - rBottom} Q ${armW} 0 ${armW} ${rBottom} V ${armH - rTop} Q ${armW} ${armH} ${armW - rTop} ${armH} H ${rTop} Q 0 ${armH} 0 ${armH - rTop} Z`;
             const rx = VB_W - armW;
             const R = `M ${rx} ${rBottom} Q ${rx} 0 ${rx + rBottom} 0 H ${rx + armW - rBottom} Q ${rx + armW} 0 ${rx + armW} ${rBottom} V ${armH - rTop} Q ${rx + armW} ${armH} ${rx + armW - rTop} ${armH} H ${rx + rTop} Q ${rx} ${armH} ${rx} ${armH - rTop} Z`;

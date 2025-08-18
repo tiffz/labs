@@ -215,7 +215,7 @@ describe('CatStateSystem', () => {
     expect(world.catAnims.get(id)?.startled).toBe(false);
   });
 
-  test('pounce start applies a vertical hop impulse (vy > 0)', () => {
+  test('pounce start transitions to pouncing state', () => {
     const world = new World();
     const systems = new SystemRunner();
     systems.add(CatStateSystem);
@@ -236,9 +236,8 @@ describe('CatStateSystem', () => {
     systems.step(world, 16);
     expect(world.cats.get(id)?.state).toBe('pouncing');
 
-    // On transition, vy should have been nudged upward
-    const v = world.velocities.get(id);
-    expect(v?.vy || 0).toBeGreaterThan(0);
+    // Pounce jump impulse is now handled by JumpImpulseSystem via Actor component
+    // This test only verifies state transition
   });
 });
 

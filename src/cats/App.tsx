@@ -475,6 +475,7 @@ function App() {
         if (catId) {
           const intent = worldRef.current.catIntents.get(catId) || {};
           intent.happyJump = true;
+          intent.jumpType = 'powerful'; // Run mode uses powerful jumps
           worldRef.current.catIntents.set(catId, intent);
         }
       }

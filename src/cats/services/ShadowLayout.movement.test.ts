@@ -15,7 +15,7 @@ describe('ShadowLayout Movement Improvements', () => {
       // At ground level, shadow should be full size
       // Base width (230) * scale (1.0) * base shadow scale (0.8) = 184
       expect(layout.width).toBe(230 * 1.0 * 0.8);
-      expect(layout.height).toBe(layout.width * 0.32); // Height ratio
+      expect(layout.height).toBe(layout.width * 0.16); // Height ratio (reduced from 0.32 to 0.16)
     });
 
     it('should reduce shadow size as height increases', () => {
@@ -74,12 +74,12 @@ describe('ShadowLayout Movement Improvements', () => {
       const groundLayout = computeShadowLayout(baseScreenPosition, 0);
       const heightLayout = computeShadowLayout(baseScreenPosition, 200);
 
-      // Aspect ratio should remain the same (height = width * 0.32)
+      // Aspect ratio should remain the same (height = width * 0.16)
       const groundAspectRatio = groundLayout.height / groundLayout.width;
       const heightAspectRatio = heightLayout.height / heightLayout.width;
 
       expect(heightAspectRatio).toBeCloseTo(groundAspectRatio, 5);
-      expect(groundAspectRatio).toBeCloseTo(0.32, 3);
+      expect(groundAspectRatio).toBeCloseTo(0.16, 3); // Updated from 0.32 to 0.16
     });
 
     it('should handle negative heights gracefully', () => {

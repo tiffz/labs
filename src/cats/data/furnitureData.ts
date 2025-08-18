@@ -109,7 +109,7 @@ const FURNITURE_CONFIGS: Record<string, FurnitureConfig> = {
   // Free-standing floor furniture
   couch: {
     kind: 'couch',
-    bounds: { width: 270, height: 120, depth: STANDARD_FLOOR_FURNITURE_DEPTH },
+    bounds: { width: 459, height: 204, depth: STANDARD_FLOOR_FURNITURE_DEPTH }, // Scaled to 1.7x (270→459, 120→204)
     constraints: { wallMounted: false, occupiesFloor: true, rotatable: true },
     displayName: 'Couch',
   },

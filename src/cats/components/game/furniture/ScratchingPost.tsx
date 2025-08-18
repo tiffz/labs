@@ -71,7 +71,12 @@ const ScratchingPost: React.FC<ScratchingPostProps> = ({ x, z }) => {
 
         {/* Flip Y so 0 is at the floor; draw everything in upright world coords */}
         <g transform={`translate(0 ${BASE_H}) scale(1,-1)`}>
-          <FurnitureShadow kind="furniture" viewBoxWidth={BASE_W} viewBoxHeight={BASE_H} />
+          <FurnitureShadow 
+            kind="furniture" 
+            viewBoxWidth={BASE_W} 
+            viewBoxHeight={BASE_H}
+            massWidth={capW} // Use cap width (44) as the actual mass width instead of full viewBox (80)
+          />
           {/* Post */}
           <rect x={postX} y={0} width={postW} height={postH} rx={3} fill="url(#postGrad)" />
           <rect x={postX} y={0} width={postW} height={postH} rx={3} fill="url(#ropeRidges)" opacity={0.55} />

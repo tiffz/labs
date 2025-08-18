@@ -46,6 +46,7 @@ export interface CatIntent {
   startled?: boolean;
   subtleWiggle?: boolean;
   happyJump?: boolean;
+  jumpType?: 'happy' | 'powerful'; // Type of jump: happy (light bounce) or powerful (run/pounce)
 }
 
 export interface CatAnim {
@@ -62,7 +63,12 @@ export interface RunControlIntent {
   boost?: boolean; // hint for boosted speed (e.g., pounce assist)
 }
 
-export type Component = Transform3 | Velocity3 | Renderable | ShadowProps | Clickable | CatBehavior | CatIntent | CatAnim | RunControlIntent;
+export interface JumpState {
+  hasDoubleJumped?: boolean; // Whether the double jump has been used in this jump cycle
+  isGrounded?: boolean; // Whether the cat is currently on the ground
+}
+
+export type Component = Transform3 | Velocity3 | Renderable | ShadowProps | Clickable | CatBehavior | CatIntent | CatAnim | RunControlIntent | JumpState;
 
 class ComponentStore<T extends object> {
   private data = new Map<EntityId, T>();
@@ -90,6 +96,7 @@ export class World {
   readonly catIntents = new ComponentStore<CatIntent>();
   readonly catAnims = new ComponentStore<CatAnim>();
   readonly runControls = new ComponentStore<RunControlIntent>();
+  readonly jumpStates = new ComponentStore<JumpState>();
 }
 
 // System runner

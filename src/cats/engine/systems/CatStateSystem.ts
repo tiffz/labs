@@ -114,13 +114,8 @@ export const CatStateSystem: System = (world) => {
         if (performance.now() - entry.t0 >= PREP_MS) {
           nextState = 'pouncing';
           timers.set(id, { t0: performance.now(), phase: 'pounce' });
-          // Apply an upward impulse at pounce start for a visible hop
-          const v = world.velocities.get(id) || { vx: 0, vy: 0, vz: 0 };
-          const blendedVy = Math.abs(v.vy) > 1 ? (v.vy * 0.4 + 220 * 0.6) : 220;
-          // Add a small forward lunge along Z during pounce
-          // Apply only upward hop; forward motion is controlled by player input (run controls)
-          world.velocities.set(id, { ...v, vy: blendedVy });
-          console.debug('[POUNCE] start', { id, vy: blendedVy, vz: (world.velocities.get(id)?.vz || 0) });
+          // Pounce jump impulse is now handled by JumpImpulseSystem via Actor component
+          console.debug('[POUNCE] start', { id, vz: (world.velocities.get(id)?.vz || 0) });
           try {
             const dbg = (world as unknown as { __debug?: Record<string, unknown> }).__debug || {};
             const key = String(id);

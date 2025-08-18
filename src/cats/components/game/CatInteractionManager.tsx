@@ -480,8 +480,8 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
     const now = Date.now();
     // Happy jump trigger: N rapid clicks in a short window when not in wand mode
     if (!cheekClickFlag.current && !wandMode && !isJumping) {
-      const JUMP_WINDOW_MS = 800;
-      const JUMP_CLICK_THRESHOLD = 3;
+      const JUMP_WINDOW_MS = 1200; // Increased from 800ms to make it less frequent
+      const JUMP_CLICK_THRESHOLD = 5; // Increased from 3 to require more clicks
 
       rapidClickTimestampsRef.current.push(now);
       rapidClickTimestampsRef.current = rapidClickTimestampsRef.current.filter(
@@ -495,6 +495,7 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
         if (entityId) {
           const intent = world.catIntents.get(entityId) || {};
           intent.happyJump = true;
+          intent.jumpType = 'happy'; // Happy jumps are light bounces
           world.catIntents.set(entityId, intent);
         }
         // Back-compat for tests/instrumentation expecting this signal

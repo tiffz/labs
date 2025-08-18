@@ -72,6 +72,7 @@ const Actor: React.FC<ActorProps> = ({ entityId, economy, mouseState, ui }) => {
       // Rising edge: request a jump impulse in ECS
       const intent = world.catIntents.get(entityId) || {};
       intent.happyJump = true;
+      intent.jumpType = 'powerful'; // Pounce uses powerful jumps
       world.catIntents.set(entityId, intent);
 
       // Horizontal assist: aim toward current wand/mouse world X at the moment of pounce
