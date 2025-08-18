@@ -1,11 +1,16 @@
 import { describe, test, expect, vi, beforeEach, type MockedFunction } from 'vitest';
 import { HeartSpawningService, type HeartConfig, type HeartSpawningEvents, type HeartVisuals } from './HeartSpawningService';
+import { setupTestCleanup, createTestTimeout } from '../../shared/test/testUtils';
 
 describe('HeartSpawningService', () => {
   let heartSpawningService: HeartSpawningService;
   let mockOnHeartSpawned: MockedFunction<(heart: HeartVisuals) => void>;
   let mockOnTrackableHeartSet: MockedFunction<(heartId: number | null) => void>;
   let mockEvents: HeartSpawningEvents;
+  
+  // Set up automatic cleanup for timers, DOM, and mocks
+  const cleanup = setupTestCleanup();
+  const testTimeout = createTestTimeout(cleanup.timers);
 
   beforeEach(() => {
     mockOnHeartSpawned = vi.fn();
@@ -28,7 +33,7 @@ describe('HeartSpawningService', () => {
       heartSpawningService.spawnHearts(config);
       
       // Wait for the first heart to spawn
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await testTimeout(10);
       
       // Should spawn at least 1 heart
       expect(mockOnHeartSpawned).toHaveBeenCalled();
@@ -44,7 +49,7 @@ describe('HeartSpawningService', () => {
       heartSpawningService.spawnHearts(config);
       
       // Wait for all delayed hearts to spawn
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await testTimeout(500);
       
       // Should spawn 4 hearts for 10 love
       expect(mockOnHeartSpawned).toHaveBeenCalledTimes(4);
@@ -60,7 +65,7 @@ describe('HeartSpawningService', () => {
       heartSpawningService.spawnHearts(config);
       
       // Wait for all delayed hearts to spawn (5 hearts * 100ms delay = 500ms)
-      await new Promise(resolve => setTimeout(resolve, 600));
+      await testTimeout(600);
       
       // Should cap at 5 hearts
       expect(mockOnHeartSpawned).toHaveBeenCalledTimes(5);

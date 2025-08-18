@@ -6,6 +6,8 @@
 import { render, screen, act, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import App from './App';
+// TODO: Implement test cleanup patterns
+// import { setupTestCleanup, mockAnimationFrame } from '../shared/test/testUtils';
 
 describe('App Regression Tests', () => {
   let consoleWarnSpy: ReturnType<typeof vi.spyOn>;

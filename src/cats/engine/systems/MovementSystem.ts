@@ -22,9 +22,23 @@ export const MovementSystem = (world: World, dtMs: number): void => {
     const worldDims = catCoordinateSystem.getWorldDimensions();
     const bounds = { minX: 0, maxX: worldDims.width };
     const nextX = t.x + v.vx * dt;
-    const clampedX = Math.max(bounds.minX, Math.min(bounds.maxX, nextX));
-
     const nextZ = t.z + v.vz * dt;
+    
+    // Lightweight collision detection for cats (performance optimized)
+    if (isCat) {
+      // Prevent cat from going behind wall-mounted furniture by adding wall buffer
+      const wallBuffer = 30; // Minimum distance from wall (z=0)
+      const minZ = wallBuffer; // Cat cannot go closer to wall than this
+      const clampedZ = Math.max(minZ, Math.min(catCoordinateSystem.getWorldDimensions().depth, nextZ));
+      
+      const clampedX = Math.max(bounds.minX, Math.min(bounds.maxX, nextX));
+      world.transforms.set(id, { x: clampedX, y: clampedY, z: clampedZ, scale: t.scale });
+      world.velocities.set(id, { vx: v.vx, vy: landed ? 0 : vyAfter, vz: v.vz });
+      return; // Early return for cats with wall collision
+    }
+    
+    // Non-cat entities use normal boundary clamping
+    const clampedX = Math.max(bounds.minX, Math.min(bounds.maxX, nextX));
     const clampedZ = Math.max(0, Math.min(catCoordinateSystem.getWorldDimensions().depth, nextZ));
     world.transforms.set(id, { x: clampedX, y: clampedY, z: clampedZ, scale: t.scale });
     world.velocities.set(id, { vx: v.vx, vy: landed ? 0 : vyAfter, vz: v.vz });

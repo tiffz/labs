@@ -1,19 +1,20 @@
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import App from '../App';
+import { setupTestCleanup } from '../../shared/test/testUtils';
 
 describe('Happy Jump', () => {
+  // Set up automatic cleanup for timers, DOM, and mocks
+  const cleanup = setupTestCleanup();
+  
   it('dispatches a happy-jump signal after rapid clicks', async () => {
     vi.useFakeTimers();
-    // Portal root for App
-    const portalContainer = document.createElement('div');
-    portalContainer.id = 'heart-container';
-    document.body.appendChild(portalContainer);
+    
+    // Portal root for App - using managed DOM cleanup
+    cleanup.dom.createElement('div', { id: 'heart-container' });
 
-    // Portal root for hearts
-    const portal = document.createElement('div');
-    portal.id = 'heart-container';
-    document.body.appendChild(portal);
+    // Portal root for hearts - using managed DOM cleanup  
+    cleanup.dom.createElement('div', { id: 'heart-container' });
 
     render(<App />);
     const cat = screen.getByTestId('cat-body');

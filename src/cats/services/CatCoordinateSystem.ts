@@ -26,8 +26,8 @@ interface FloorDimensions {
 
 class CatCoordinateSystem {
   // World dimensions (logical units)
-  private static readonly WORLD_WIDTH = 1600; // pixels - matches current world width
-  private static readonly WORLD_DEPTH = 1200;  // Extend logical range so scale keeps growing through full front travel
+  private static readonly WORLD_WIDTH = 1400; // Slightly reduced from 1600 for cozier feel
+  private static readonly WORLD_DEPTH = 1200;  // Keep depth for perspective scaling
   private static readonly WORLD_HEIGHT = 400; // logical units - maximum height
   
   // Perspective settings
@@ -225,7 +225,7 @@ class CatCoordinateSystem {
    */
   getDefaultCatPosition(): CatCoordinates {
     return {
-      x: CatCoordinateSystem.WORLD_WIDTH * 0.35, // 35% across the world width
+      x: CatCoordinateSystem.WORLD_WIDTH / 2, // Center of the world (700)
       y: 0,  // Logical ground level
       z: CatCoordinateSystem.WORLD_DEPTH * 0.6   // 60% closer - more reasonable default size
     };

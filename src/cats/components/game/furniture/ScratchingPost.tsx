@@ -1,6 +1,7 @@
 import React from 'react';
 import { isOverlayEnabled } from '../../debug/overlay';
 import { MassBoxOverlay, BaselineOverlay } from '../../debug/overlay.tsx';
+import { FurnitureShadow } from './FurnitureShadow';
 import { layerForZ } from '../../rendering/zLayer';
 import { catCoordinateSystem } from '../../../services/CatCoordinateSystem';
 
@@ -34,7 +35,6 @@ const ScratchingPost: React.FC<ScratchingPostProps> = ({ x, z }) => {
   };
 
   // Geometry in SVG coordinates
-  const baseShadowCY = 0; // center on baseline to match cat shadow convention
   const postW = 10;
   const postX = (BASE_W - postW) / 2; // center post dynamically
   const postH = 110; // height of rope section
@@ -71,8 +71,7 @@ const ScratchingPost: React.FC<ScratchingPostProps> = ({ x, z }) => {
 
         {/* Flip Y so 0 is at the floor; draw everything in upright world coords */}
         <g transform={`translate(0 ${BASE_H}) scale(1,-1)`}>
-          {/* Floor shadow centered on baseline, matches cat: box bottom touches shadow center */}
-          <ellipse cx={BASE_W / 2} cy={baseShadowCY} rx={28} ry={9} fill="rgba(0,0,0,0.16)" />
+          <FurnitureShadow kind="furniture" viewBoxWidth={BASE_W} viewBoxHeight={BASE_H} />
           {/* Post */}
           <rect x={postX} y={0} width={postW} height={postH} rx={3} fill="url(#postGrad)" />
           <rect x={postX} y={0} width={postW} height={postH} rx={3} fill="url(#ropeRidges)" opacity={0.55} />

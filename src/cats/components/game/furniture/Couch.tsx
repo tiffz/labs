@@ -3,6 +3,7 @@ import { catCoordinateSystem } from '../../../services/CatCoordinateSystem';
 import { layerForZ } from '../../rendering/zLayer';
 import { isOverlayEnabled } from '../../debug/overlay';
 import { BaselineOverlay, MassBoxOverlay } from '../../debug/overlay.tsx';
+import { FurnitureShadow } from './FurnitureShadow';
 
 interface CouchProps {
   x: number;
@@ -68,8 +69,7 @@ const Couch: React.FC<CouchProps> = ({ x, z }) => {
 
         {/* Flip Y to make y=0 baseline */}
         <g transform={`translate(0 ${VB_H}) scale(1,-1)`}>
-          {/* Baseline shadow */}
-          <ellipse cx={VB_W / 2} cy={0} rx={VB_W * 0.36} ry={VB_H * 0.12} fill="rgba(0,0,0,0.16)" />
+          <FurnitureShadow kind="couch" viewBoxWidth={VB_W} viewBoxHeight={VB_H} />
 
           {/* Back extended down to avoid background gaps */}
           <rect x={15} y={24} width={VB_W - 30} height={74} rx={10} fill="url(#couchBody)" />

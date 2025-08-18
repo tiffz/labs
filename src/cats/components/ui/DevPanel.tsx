@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useWorld } from '../../context/useWorld';
+import { FurniturePlacementService } from '../../services/FurniturePlacementService';
 
 interface DevPanelProps {
   energy: number;
@@ -48,7 +49,41 @@ const DevPanel: React.FC<DevPanelProps> = ({
   onResetInactivity,
 }) => {
   const [activeTab, setActiveTab] = useState<'stats' | 'position' | 'controls' | 'states'>('stats');
+  const world = useWorld(); // Now automatically reactive!
+  
+  // Furniture randomization handler - memoized to prevent recreation on every render
+  const handleRandomizeFurniture = useCallback(() => {
+    // Randomize furniture button clicked
+    console.log('World renderables count:', world.renderables.size);
+    console.log('World transforms count:', world.transforms.size);
+    console.log('All renderables:', Array.from(world.renderables.entries()));
+    console.log('All transforms:', Array.from(world.transforms.entries()));
+    
+    // Check if reactive system is set up
+    
+    // Use the comprehensive furniture placement service to randomize all furniture
+    try {
+      const placementService = new FurniturePlacementService(world);
+      const results = placementService.randomizeAllFurniture();
+      
+      if (results.failed.length > 0) {
+        console.warn(`⚠️ Failed to move ${results.failed.length} items:`, results.failed);
+        results.failed.forEach(failure => {
+          console.warn(`  - ${failure.kind} (${failure.entityId}): ${failure.reason}`);
+        });
+      }
+      
+      // Force a manual re-render by dispatching a custom event as fallback
+      window.dispatchEvent(new CustomEvent('world-update', { detail: { type: 'all-furniture-randomized', results } }));
+      
+    } catch (error) {
+      console.error('❌ Error during furniture randomization:', error);
+      alert(`ERROR: ${(error as Error).message}`);
+    }
+  }, [world]);
 
+  // console.log('🔍 DevPanel rendering! activeTab:', activeTab);
+  
   return (
     <div className="dev-panel-compact">
       <div className="dev-panel-header">
@@ -89,6 +124,7 @@ const DevPanel: React.FC<DevPanelProps> = ({
       <div className="dev-panel-content">
         {activeTab === 'stats' && (
           <div className="dev-tab-content">
+            {/* {console.log('🔍 RENDERING STATS TAB - Button should be visible!')} */}
             <div className="compact-stats">
               <div className="stat-row">
                 <span>Energy:</span> <span>{energy.toFixed(0)}/100</span>
@@ -112,6 +148,16 @@ const DevPanel: React.FC<DevPanelProps> = ({
                 <span>Excitement:</span> <span>{clickExcitement.toFixed(1)}</span>
               </div>
             </div>
+            <div className="control-grid" style={{ marginTop: '8px' }}>
+              {/* {console.log('🔍 RENDERING RANDOMIZE BUTTON!')} */}
+              <button 
+                className="compact-button" 
+                style={{ backgroundColor: 'red', color: 'white' }}
+                onClick={handleRandomizeFurniture}
+              >
+                🏠 Randomize Furniture
+              </button>
+            </div>
           </div>
         )}
 
@@ -126,6 +172,12 @@ const DevPanel: React.FC<DevPanelProps> = ({
               </button>
               <button className="compact-button" onClick={onGiveLove}>
                 ❤️ +1000 Love
+              </button>
+              <button className="compact-button" onClick={() => alert('Test button works!')}>
+                🧪 Test Button
+              </button>
+              <button className="compact-button" onClick={handleRandomizeFurniture}>
+                🏠 Randomize Furniture
               </button>
               {import.meta.env.DEV && onSendSnapshot && (
                 <button className="compact-button" onClick={onSendSnapshot}>

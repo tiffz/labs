@@ -15,7 +15,9 @@ declare global {
 // CatInteractionManager is used via Actor
 import WorldRenderer from './components/game/WorldRenderer';
 import { useWorld } from './context/useWorld';
-import { spawnCat, spawnFurniture, spawnCouch } from './engine/spawn';
+import { spawnCat, spawnFurniture, spawnCouch, spawnCounter, spawnDoor, spawnWindow, spawnRug, spawnLamp, spawnBookshelf, spawnPainting } from './engine/spawn';
+import { RugPlacementService } from './services/RugPlacementService';
+
 import Heart from './components/game/Heart';
 import Zzz from './components/game/Zzz';
 import WandToy from './components/game/WandToy';
@@ -660,11 +662,28 @@ function App() {
         let catId = existing?.[0];
         if (!catId) {
           catId = spawnCat(world, { x: catPosition.x, y: catPosition.y, z: catPosition.z });
-          // Seed a demo furniture piece behind the cat once
+          // Seed demo furniture pieces once with proper placement
           const existingFurniture = Array.from(world.renderables.entries()).find(([, r]) => r.kind === 'furniture');
           if (!existingFurniture) {
-            spawnFurniture(world, { x: catPosition.x + 240, y: 0, z: Math.max(0, (catPosition.z || 0) + 200) });
-            spawnCouch(world, { x: catPosition.x - 260, y: 0, z: Math.max(0, (catPosition.z || 0) + 140) });
+
+            
+            // Wall-mounted furniture (no floor space) - wall is at z=0, using 0-1400 coordinate system
+            spawnWindow(world, { x: 500, y: 250, z: 0 }); // On back wall, elevated - spans 185 to 815
+            spawnDoor(world, { x: 850, y: 0, z: 0 }); // On back wall, at floor level - spans 730 to 970
+            spawnPainting(world, { x: 300, y: 250, z: 0 }, 'cat', 'large'); // High on wall - spans 195 to 405 (left of window)
+            spawnPainting(world, { x: 700, y: 220, z: 0 }, 'abstract', 'small'); // High on wall - spans 625 to 775 (right of window)
+            
+            // Wall-mounted floor furniture (against wall, with shadows) - using 0-1400 coordinate system
+            spawnCounter(world, { x: 1200, y: 0, z: 0 }); // Mounted to wall at z=0 - spans 1000 to 1400
+            spawnBookshelf(world, { x: 160, y: 0, z: 0 }); // Mounted to wall at z=0 - spans 0 to 320
+            
+            // Free-standing floor furniture - distributed across 0-1400 coordinate system
+            spawnFurniture(world, { x: 900, y: 0, z: 300 }); // Scratching post - mid room
+            spawnCouch(world, { x: 400, y: 0, z: 200 }); // Couch - closer to front
+            // Use safe rug placement to prevent wall clipping
+            const safeRugPos = RugPlacementService.findValidRugPosition(700, 400);
+            spawnRug(world, { x: safeRugPos.x, y: 0, z: safeRugPos.z });
+            spawnLamp(world, { x: 750, y: 0, z: 250 }); // Lamp - mid room
           }
         }
         return (

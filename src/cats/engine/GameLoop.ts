@@ -11,22 +11,16 @@ export class GameLoop {
     const tick = (ts: number) => {
       if (this.lastTs == null) this.lastTs = ts;
       const dtMsRaw = ts - this.lastTs;
-      // Clamp overall delta, then integrate in smaller fixed sub-steps to avoid big physics jumps
-      // Clamp to 25ms for tighter responsiveness
-      const dtClamped = Math.min(25, dtMsRaw);
+      // Clamp overall delta for stability but allow 60fps
+      const dtClamped = Math.min(25, dtMsRaw); // Back to 25ms for smooth 60fps
       this.lastTs = ts;
       (this.world as unknown as { __debug?: Record<string, unknown> }).__debug = {
         ...(this.world as unknown as { __debug?: Record<string, unknown> }).__debug,
         dtMs: Math.round(dtClamped),
       };
-      let remaining = dtClamped;
-      // Use 10ms sub-steps (~100Hz) for smooth arcs without excessive CPU
-      const subStep = 10; // ms
-      while (remaining > 0) {
-        const step = Math.min(subStep, remaining);
-      this.systems.step(this.world, step);
-        remaining -= step;
-      }
+      
+      // Run systems directly without sub-stepping for better performance
+      this.systems.step(this.world, dtClamped);
       // Publish simplified ECS debug snapshot for HUD/DevPanel
       if (typeof window !== 'undefined') {
         try {

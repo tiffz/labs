@@ -1,11 +1,16 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { HeartSpawningService } from '../services/HeartSpawningService';
 import type { HeartConfig } from '../services/HeartSpawningService';
+import { setupTestCleanup, createTestTimeout } from '../../shared/test/testUtils';
 
 describe('Pouncing Heart Integration Tests', () => {
   let heartSpawningService: HeartSpawningService;
   let mockOnHeartSpawned: ReturnType<typeof vi.fn>;
   let mockOnTrackableHeartSet: ReturnType<typeof vi.fn>;
+  
+  // Set up automatic cleanup for timers, DOM, and mocks
+  const cleanup = setupTestCleanup();
+  const testTimeout = createTestTimeout(cleanup.timers);
 
   beforeEach(() => {
     mockOnHeartSpawned = vi.fn();
@@ -35,7 +40,7 @@ describe('Pouncing Heart Integration Tests', () => {
       };
       
       heartSpawningService.spawnHearts(pettingConfig);
-      await new Promise(resolve => setTimeout(resolve, 200)); // Wait longer for async spawning
+      await testTimeout(200); // Wait longer for async spawning
       
       const pettingHeartCount = mockOnHeartSpawned.mock.calls.length;
       // keep tests quiet
@@ -50,7 +55,7 @@ describe('Pouncing Heart Integration Tests', () => {
       };
       
       heartSpawningService.spawnHearts(pouncingConfig);
-      await new Promise(resolve => setTimeout(resolve, 200)); // Wait longer for async spawning
+      await testTimeout(200); // Wait longer for async spawning
       
       const pouncingHeartCount = mockOnHeartSpawned.mock.calls.length;
       // keep tests quiet
@@ -91,7 +96,7 @@ describe('Pouncing Heart Integration Tests', () => {
       heartSpawningService.spawnHearts(pouncingConfig);
       
       // Wait for async spawning
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await testTimeout(100);
       
       // Both should spawn hearts (verified by the service being called)
       expect(mockOnHeartSpawned).toHaveBeenCalled();

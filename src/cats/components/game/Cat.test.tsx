@@ -2,6 +2,7 @@ import { render, screen, act, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import Cat from './Cat';
 import type { MouseState } from '../../hooks/useMouseTracking';
+import { setupTestCleanup, mockAnimationFrame } from '../../../shared/test/testUtils';
 
 // Mock mouseState for testing - ALL REFS, NO STATE
 const mockPositionRef = { current: { x: 100, y: 100 } };
@@ -139,6 +140,8 @@ describe('Cat Component Eye States', () => {
 });
 
 describe('Cat Component Eye Tracking', () => {
+  // Set up automatic cleanup for timers, DOM, and mocks
+  const cleanup = setupTestCleanup();
   beforeEach(() => {
     // Mock getBoundingClientRect for the cat SVG element
     Element.prototype.getBoundingClientRect = vi.fn(() => ({
@@ -197,16 +200,14 @@ describe('Cat Component Eye Tracking', () => {
   });
 
   it('sets up animation frame loop for pupil updates', () => {
-    const rafSpy = vi.spyOn(global, 'requestAnimationFrame').mockImplementation(() => {
-      // Don't actually call the callback to avoid infinite loop
-      return 1;
-    });
+    // Mock requestAnimationFrame using the utility
+    mockAnimationFrame(cleanup.mocks);
 
     const props = getDefaultProps();
     render(<Cat {...props} />);
 
     // Should have requested an animation frame
-    expect(rafSpy).toHaveBeenCalled();
+    expect(global.requestAnimationFrame).toHaveBeenCalled();
   });
 
   it('tracks lastHeart instead of mouse when heart is provided', () => {

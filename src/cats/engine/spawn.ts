@@ -26,4 +26,35 @@ export function spawnCouch(world: World, initial: { x: number; y: number; z: num
   return spawnFurniture(world, initial, 'couch');
 }
 
+export function spawnCounter(world: World, initial: { x: number; y: number; z: number }): EntityId {
+  return spawnFurniture(world, initial, 'counter');
+}
+
+export function spawnDoor(world: World, initial: { x: number; y: number; z: number }): EntityId {
+  return spawnFurniture(world, initial, 'door');
+}
+
+export function spawnWindow(world: World, initial: { x: number; y: number; z: number }): EntityId {
+  return spawnFurniture(world, initial, 'window');
+}
+
+export function spawnRug(world: World, initial: { x: number; y: number; z: number }): EntityId {
+  return spawnFurniture(world, initial, 'rug');
+}
+
+export function spawnLamp(world: World, initial: { x: number; y: number; z: number }): EntityId {
+  return spawnFurniture(world, initial, 'lamp');
+}
+
+export function spawnBookshelf(world: World, initial: { x: number; y: number; z: number }): EntityId {
+  return spawnFurniture(world, initial, 'bookshelf');
+}
+
+export function spawnPainting(world: World, initial: { x: number; y: number; z: number }, variant: 'cat' | 'abstract' = 'cat', size: 'small' | 'large' = 'large'): EntityId {
+  const id = world.entities.create();
+  world.transforms.set(id, { x: initial.x, y: initial.y, z: initial.z });
+  world.renderables.set(id, { kind: `painting-${variant}-${size}` });
+  return id;
+}
+
 

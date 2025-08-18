@@ -23,7 +23,7 @@ const World2D: React.FC<World2DProps> = ({
   playerControlMode = false
   , onToggleRunMode
 }) => {
-  const worldWidth = 1600; // Fixed world size
+  const worldWidth = 1400; // Match CatCoordinateSystem.WORLD_WIDTH
   
   // Camera system: Math-based approach that works for any world/viewport size
   // Principle: Camera X can range from 0 to (worldWidth - viewportWidth) 
@@ -236,99 +236,15 @@ const World2D: React.FC<World2DProps> = ({
       <div className="house-interior">
         {/* Back Wall */}
         <div className="back-wall">
-          {/* Window */}
-          <div className="window">
-            <div className="window-frame">
-              <div className="window-pane window-pane-1" />
-              <div className="window-pane window-pane-2" />
-              <div className="window-pane window-pane-3" />
-              <div className="window-pane window-pane-4" />
-              <div className="window-cross-vertical" />
-              <div className="window-cross-horizontal" />
-            </div>
-            <div className="window-sill" />
-          </div>
-          
-          {/* Door */}
-          <div className="door">
-            <div className="door-frame">
-              <div className="door-panel" />
-              <div className="door-handle" />
-            </div>
-          </div>
-          
-          {/* Wall Decorations */}
-          <div className="wall-decorations">
-            <div className="picture-frame picture-1">
-              <div className="frame-border">
-                <div className="picture-content picture-cat" />
-              </div>
-            </div>
-            <div className="picture-frame picture-2">
-              <div className="frame-border">
-                <div className="picture-content picture-abstract" />
-              </div>
-            </div>
-          </div>
+          {/* Legacy CSS furniture removed - now handled by ECS system */}
         </div>
         
-                  {/* Furniture */}
-          <div className="furniture">
-            {/* Bookshelf */}
-            <div className="bookshelf">
-              <div className="shelf shelf-1">
-                <div className="book book-red" />
-                <div className="book book-blue" />
-                <div className="book book-green" />
-                <div className="book book-yellow" />
-              </div>
-              <div className="shelf shelf-2">
-                <div className="book book-purple" />
-                <div className="book book-orange" />
-                <div className="plant-pot">
-                  <div className="plant-leaves" />
-                </div>
-              </div>
-              <div className="shelf shelf-3">
-                <div className="book book-teal" />
-                <div className="decorative-vase" />
-                <div className="book book-pink" />
-              </div>
-            </div>
-            
-            {/* Side Table */}
-            <div className="side-table">
-              <div className="table-top" />
-              <div className="table-legs" />
-              <div className="table-items">
-                <div className="lamp">
-                  <div className="lamp-base" />
-                  <div className="lamp-shade" />
-                </div>
-              </div>
-            </div>
-
-            {/* Additional Furniture for wider world (legacy DOM couch removed; ECS-driven Couch component is used instead) */}
-
-            {/* Kitchen Counter */}
-            <div className="kitchen-counter">
-              <div className="counter-top" />
-              <div className="counter-base" />
-              <div className="cabinet-door cabinet-door-1" />
-              <div className="cabinet-door cabinet-door-2" />
-              <div className="counter-items">
-                <div className="food-bowl" />
-                <div className="water-bowl" />
-              </div>
-            </div>
-          </div>
+          {/* Legacy CSS furniture removed - now handled by ECS system */}
         
         {/* Floor */}
         <div className="floor">
           <div className="floor-pattern" />
-          <div className="rug">
-            <div className="rug-pattern" />
-          </div>
+          {/* Rug now handled by ECS system */}
         </div>
         
           {/* Game Content (Cat and UI elements) */}
