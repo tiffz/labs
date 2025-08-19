@@ -237,7 +237,8 @@ const World2D: React.FC<World2DProps> = ({
       
       setCameraX(targetCameraX); // Immediate follow for now - can add smooth interpolation later
     }
-  }, [catWorldPosition.x, catWorldPosition.y, catWorldPosition.z, enableCameraFollow, maxCameraX, viewportWidth, cameraX]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [catWorldPosition.x, catWorldPosition.y, catWorldPosition.z, enableCameraFollow, maxCameraX, viewportWidth]); // Intentionally omitting cameraX to prevent infinite loops
 
   // Handle keyboard controls
   useEffect(() => {

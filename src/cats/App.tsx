@@ -629,7 +629,7 @@ function App() {
       {/* World Viewport */}
       <div className="world-viewport-container">
         <World2D 
-          catWorldPosition={renderData.worldCoordinates} 
+          catWorldPosition={ecsCatWorldPosition} 
           enableCameraFollow={true}
           wandMode={wandMode}
           onWandToggle={catActions.toggleWandMode}
