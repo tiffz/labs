@@ -60,16 +60,26 @@ describe('Responsive World Scaling', () => {
         
         const floor = catCoordinateSystem.getFloorDimensions();
         
-        // World scale should be between 0 and 1, and should be 1.0 for normal-sized viewports
+        // World scale should be positive and reasonable
         expect(floor.worldScale).toBeGreaterThan(0);
-        expect(floor.worldScale).toBeLessThanOrEqual(1);
         
-        // For viewports with height >= 400, world scale should be 1.0
-        if (height >= 400) {
-          expect(floor.worldScale).toBe(1.0);
+        // Calculate expected scale based on new intelligent scaling logic
+        // Account for side panel dimensions (default: 450px width, 0px height)
+        const viewportWidth = width - 450; // Default side panel width
+        const viewportHeight = height - 0;  // Default side panel height
+        const aspectRatio = viewportWidth / viewportHeight;
+        const isColumnView = aspectRatio < 0.8;
+        
+        if (isColumnView) {
+          // Column view: Scale based on width, clamped to 0.6-1.2 range
+          const widthScale = viewportWidth / 800; // BASE_VIEWPORT_WIDTH = 800
+          const expectedScale = Math.max(0.6, Math.min(1.2, widthScale));
+          expect(floor.worldScale).toBeCloseTo(expectedScale, 2);
         } else {
-          // For smaller viewports, world scale should be proportional
-          expect(floor.worldScale).toBeCloseTo(height / 400, 2);
+          // Landscape view: Scale based on floor height
+          const floorHeight = viewportHeight * 0.4; // FIXED_FLOOR_RATIO = 0.4
+          const expectedScale = floorHeight / 320; // BASE_FLOOR_HEIGHT = 320
+          expect(floor.worldScale).toBeCloseTo(expectedScale, 2);
         }
       });
     });
@@ -113,7 +123,7 @@ describe('Responsive World Scaling', () => {
             
             // Scale should include both perspective and world scaling
             expect(screenPos.scale).toBeGreaterThan(0.1); // Min scale with world scaling
-            expect(screenPos.scale).toBeLessThan(2.0); // Max scale with world scaling
+            expect(screenPos.scale).toBeLessThan(4.0); // Max scale with new intelligent scaling
           });
         });
 
@@ -193,8 +203,10 @@ describe('Responsive World Scaling', () => {
       expect(floor.screenHeight).toBeGreaterThan(0);
       expect(floor.screenWidth).toBeGreaterThan(0);
       
-      // World scale should be very small but not zero
-      expect(floor.worldScale).toBeCloseTo(240 / 400, 2);
+      // With new intelligent scaling: 320x240 is column view (aspect ratio = 1.33 > 0.8 is false)
+      // Actually, 320/240 = 1.33, which is > 0.8, so it's landscape view
+      // Landscape view: scale = floorHeight / 320 = (240 * 0.4) / 320 = 96/320 = 0.3
+      expect(floor.worldScale).toBeCloseTo(0.3, 2);
     });
 
     it('should handle extremely large viewports correctly', () => {
@@ -203,8 +215,9 @@ describe('Responsive World Scaling', () => {
       
       const floor = catCoordinateSystem.getFloorDimensions();
       
-      // World scale should be 1.0 (no scaling needed)
-      expect(floor.worldScale).toBe(1.0);
+      // With new intelligent scaling: 4000x3000 is landscape view (aspect ratio = 1.33 > 0.8)
+      // Landscape view: scale = floorHeight / 320 = (3000 * 0.4) / 320 = 1200/320 = 3.75
+      expect(floor.worldScale).toBeCloseTo(3.75, 2);
       expect(floor.screenHeight).toBeCloseTo(3000 * 0.4, 1);
       expect(floor.screenWidth).toBe(4000 - 450); // Default panel width
     });

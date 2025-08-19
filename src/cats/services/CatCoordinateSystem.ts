@@ -118,6 +118,13 @@ class CatCoordinateSystem {
     // Ignored by projection; camera is applied in CSS transform in World2D.
     this.cameraX = cameraX;
   }
+
+  /**
+   * Get current camera position
+   */
+  getCameraX(): number {
+    return this.cameraX;
+  }
   
   /**
    * Set side panel width
@@ -138,31 +145,41 @@ class CatCoordinateSystem {
   }
   
   /**
-   * Get current floor dimensions with fixed proportions and uniform world scaling
+   * Get current floor dimensions with fixed height and uniform world scaling
    */
   getFloorDimensions(): FloorDimensions {
-    // Fixed proportions: 40% floor, 60% wall of the game viewport
+    // FIXED FLOOR HEIGHT: Always 40% of viewport height
     const FIXED_FLOOR_RATIO = 0.4;
-    
-    // Define minimum world height needed to show all content
-    // Be more conservative with world scaling to maintain natural proportions
-    // Only scale when viewport is extremely small and content truly cannot fit
-    // Most responsive scenarios should work without world scaling
-    const MIN_WORLD_HEIGHT = 400; // More conservative threshold
-    
-    // Calculate world scale based on viewport height only when absolutely necessary
-    const worldScale = Math.min(1.0, this.viewportHeight / MIN_WORLD_HEIGHT);
-    
-    // FIXED: Floor should be 40% of the game viewport height
-    // In column layout, this maintains proper proportions within the available game space
     const floorScreenHeight = this.viewportHeight * FIXED_FLOOR_RATIO;
+    
+    // INTELLIGENT WORLD SCALING: Consider both width and height constraints
+    // Base dimensions for 1.0 scale (landscape orientation)
+    const BASE_FLOOR_HEIGHT = 320; // 40% of 800px viewport
+    const BASE_VIEWPORT_WIDTH = 800;
+    
+    // Detect layout mode based on aspect ratio
+    const aspectRatio = this.viewportWidth / this.viewportHeight;
+    const isColumnView = aspectRatio < 0.8; // Narrow, tall layout
+    
+    let worldScale: number;
+    
+    if (isColumnView) {
+      // In column view: Scale based on width to use vertical space efficiently
+      // Allow objects to be larger to take advantage of vertical space
+      const widthScale = this.viewportWidth / BASE_VIEWPORT_WIDTH;
+      // Clamp to reasonable range - don't make things too small or too large
+      worldScale = Math.max(0.6, Math.min(1.2, widthScale));
+    } else {
+      // In landscape view: Scale based on floor height as before
+      worldScale = floorScreenHeight / BASE_FLOOR_HEIGHT;
+    }
     
     const dimensions = {
       screenWidth: this.viewportWidth,
       screenHeight: floorScreenHeight,
       worldWidth: CatCoordinateSystem.WORLD_WIDTH,
       worldDepth: CatCoordinateSystem.WORLD_DEPTH,
-      worldScale: worldScale // Add world scale for uniform scaling
+      worldScale: worldScale // Intelligent scaling for different layouts
     };
     
     return dimensions;

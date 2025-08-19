@@ -73,6 +73,11 @@ const World2D: React.FC<World2DProps> = ({
   // Start with a default camera position - will be properly centered in useEffect
   const [cameraX, setCameraX] = useState(0);
   
+  // Sync camera position with coordinate system
+  useEffect(() => {
+    catCoordinateSystem.setCameraX(cameraX);
+  }, [cameraX]);
+  
   // Track when manual centering is happening to prevent camera following override
   const isManualCenteringRef = useRef(false);
   
@@ -106,26 +111,18 @@ const World2D: React.FC<World2DProps> = ({
     // Prevent camera following from overriding manual centering
     isManualCenteringRef.current = true;
     
-    // FIXED: Camera should use the same coordinate system as cat rendering
-    // Get the cat's actual screen position from the coordinate system
-    // const floor = catCoordinateSystem.getFloorDimensions(); // Removed unused variable
-    
-    // FIXED: Use consistent coordinate system for both cat position and viewport
-    // The coordinate system returns positions in scaled world coordinates
+    // Use catToScreen to get the cat's screen position (this handles all scaling correctly)
     const catScreenPos = catCoordinateSystem.catToScreen({
       x: catWorldPosition.x,
       y: catWorldPosition.y ?? 0,
       z: catWorldPosition.z ?? (1200 * 0.6)
     });
-    const catScreenX = catScreenPos.x;
-    
-    // Viewport width must be in the same coordinate system as catScreenX
-    // Since catScreenX is already scaled by worldScale, viewport width should be unscaled
-    const effectiveViewportWidth = viewportWidth;
     
     // Camera position to center the cat
-    const idealCameraX = catScreenX - effectiveViewportWidth / 2;
+    const idealCameraX = catScreenPos.x - viewportWidth / 2;
     const clampedCameraX = Math.max(0, Math.min(maxCameraX, idealCameraX));
+    
+    // Center the cat on screen
     
     setCameraX(clampedCameraX);
     
@@ -219,32 +216,28 @@ const World2D: React.FC<World2DProps> = ({
   // Enable camera following for shadow system to work correctly
   useEffect(() => {
     if (enableCameraFollow && !isManualCenteringRef.current) {
-      // FIXED: Use same coordinate system as manual centering and cat rendering
-      // Get the cat's actual screen position from the coordinate system
-      // const floor = catCoordinateSystem.getFloorDimensions(); // Removed unused variable
-      
-      // Use the coordinate system to get the cat's actual screen position
-      // This ensures consistency with how the cat is actually rendered
+      // Use catToScreen to get the cat's screen position (same as manual centering)
       const catScreenPos = catCoordinateSystem.catToScreen({
         x: catWorldPosition.x,
         y: catWorldPosition.y ?? 0,
         z: catWorldPosition.z ?? (1200 * 0.6)
       });
-      const catScreenX = catScreenPos.x;
-      
-      // Viewport width in the scaled world coordinates
-      const effectiveViewportWidth = viewportWidth;
       
       // Camera position to center the cat
-      const targetCameraX = Math.max(0, Math.min(maxCameraX, catScreenX - effectiveViewportWidth / 2));
+      const targetCameraX = Math.max(0, Math.min(maxCameraX, catScreenPos.x - viewportWidth / 2));
       
-
-      
-
+      console.log('[CAMERA DEBUG] Auto follow:', {
+        catWorldPos: catWorldPosition.x,
+        catScreenX: catScreenPos.x,
+        viewportWidth,
+        maxCameraX,
+        targetCameraX,
+        currentCameraX: cameraX
+      });
       
       setCameraX(targetCameraX); // Immediate follow for now - can add smooth interpolation later
     }
-  }, [catWorldPosition.x, catWorldPosition.y, catWorldPosition.z, enableCameraFollow, maxCameraX, viewportWidth]);
+  }, [catWorldPosition.x, catWorldPosition.y, catWorldPosition.z, enableCameraFollow, maxCameraX, viewportWidth, cameraX]);
 
   // Handle keyboard controls
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import { useStableCallback } from './hooks/useStableCallback';
 
@@ -609,8 +609,13 @@ function App() {
 
   // Notification system completely removed - replaced with Events system
 
+  const viewportProviderProps = useMemo(() => ({
+    floorRatio,
+    isResizing
+  }), [floorRatio, isResizing]);
+
   return (
-    <ViewportProvider floorRatio={floorRatio} isResizing={isResizing}>
+    <ViewportProvider {...viewportProviderProps}>
       <div className="game-layout">
       {/* Currency Display - Fixed outside world */}
       <div className="currency-overlay">
@@ -630,10 +635,10 @@ function App() {
           onWandToggle={catActions.toggleWandMode}
           playerControlMode={playerControlMode}
           onToggleRunMode={() => setPlayerControlMode(v => !v)}
-          onViewportChange={(newFloorRatio, newIsResizing) => {
-            setFloorRatio(newFloorRatio);
-            setIsResizing(newIsResizing);
-          }}
+          onViewportChange={useCallback((newFloorRatio: number, newIsResizing: boolean) => {
+            setFloorRatio(prev => prev === newFloorRatio ? prev : newFloorRatio);
+            setIsResizing(prev => prev === newIsResizing ? prev : newIsResizing);
+          }, [])}
         >
           <ErrorReporter />
 
