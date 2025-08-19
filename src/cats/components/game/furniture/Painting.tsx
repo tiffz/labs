@@ -20,13 +20,13 @@ const Painting: React.FC<PaintingProps> = ({ x, y, z, variant = 'cat', size = 'l
   const VB_W = size === 'large' ? 210 : 150; // Increased from 140/100 (1.5x bigger)
   const VB_H = size === 'large' ? 150 : 210; // Increased from 100/140 (1.5x bigger)
 
-  // Use Y position from placement system, or fallback to default elevated position
-  const elevatedY = y ?? (size === 'large' ? 250 : 220);
-  const ground = catCoordinateSystem.catToScreen({ x, y: elevatedY, z });
-  const w = Math.round(VB_W * ground.scale);
-  const h = Math.round(VB_H * ground.scale);
-  const left = ground.x - w / 2;
-  const bottom = Math.round(ground.y);
+  // Use the actual Y coordinate from spawn data - no fallback overrides
+  const actualY = y;
+  const wallScreen = catCoordinateSystem.wallToScreen({ x, y: actualY, z });
+  const w = Math.round(VB_W * wallScreen.scale);
+  const h = Math.round(VB_H * wallScreen.scale);
+  const left = wallScreen.x - w / 2;
+  const bottom = Math.round(wallScreen.y);
 
 
 

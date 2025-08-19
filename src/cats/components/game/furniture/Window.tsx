@@ -15,13 +15,13 @@ const VB_W = 630; // Increased from 420 (1.5x bigger)
 const VB_H = 480; // Increased from 320 (1.5x bigger)
 
 const Window: React.FC<WindowProps> = ({ x, z }) => {
-  // Use the EXACT same approach as paintings - ignore props and use hardcoded elevation
-  const elevatedY = 250; // Same as large paintings
-  const ground = catCoordinateSystem.catToScreen({ x, y: elevatedY, z });
-  const w = Math.round(VB_W * ground.scale);
-  const h = Math.round(VB_H * ground.scale);
-  const left = ground.x - w / 2;
-  const bottom = Math.round(ground.y);
+  // Windows are spawned at Y=180, use that coordinate
+  const wallY = 180; // Use the actual spawn Y coordinate
+  const wallScreen = catCoordinateSystem.wallToScreen({ x, y: wallY, z });
+  const w = Math.round(VB_W * wallScreen.scale);
+  const h = Math.round(VB_H * wallScreen.scale);
+  const left = wallScreen.x - w / 2;
+  const bottom = Math.round(wallScreen.y);
 
 
 

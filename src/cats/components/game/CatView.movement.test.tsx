@@ -9,6 +9,7 @@ import { catCoordinateSystem } from '../../services/CatCoordinateSystem';
 vi.mock('../../services/CatCoordinateSystem', () => ({
   catCoordinateSystem: {
     catToScreen: vi.fn(),
+    getFloorRatio: vi.fn(() => 0.4), // Mock floor ratio
   },
 }));
 

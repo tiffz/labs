@@ -4476,7 +4476,10 @@ body {
   top: 0;
   left: 0;
   right: 0;
-  bottom: 40%; /* Use bottom positioning to stay with floor */
+  bottom: var(
+    --floor-height,
+    40vh
+  ); /* Use exact floor height from coordinate system */
   background: linear-gradient(180deg, #ffeee6 0%, #f5e6d3 100%);
 }
 
@@ -4857,7 +4860,7 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 40%;
+  height: var(--floor-height, 40vh);
   background: linear-gradient(180deg, #f0dcc9 0%, #e8d1b8 100%);
 }
 
@@ -4914,7 +4917,10 @@ body {
   bottom: 0; /* Align game content layer baseline with the floor baseline */
   left: 0;
   right: 0;
-  height: 40%; /* Match floor height exactly */
+  height: var(
+    --floor-height,
+    40vh
+  ); /* Use exact floor height from coordinate system */
   z-index: 10;
 }
 
@@ -5720,8 +5726,15 @@ body {
   }
 
   .world-viewport-container {
-    height: 60vh;
+    height: 40vh; /* Game gets remaining 40vh when panel takes 60vh */
     order: 1;
+  }
+
+  .pan-button {
+    /* Position relative to game viewport, not full window */
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
   }
 
   .pan-button.pan-right {
@@ -5729,6 +5742,9 @@ body {
   }
 
   .bottom-controls {
+    /* Position relative to game viewport, not full window */
+    position: absolute;
+    bottom: 20px;
     left: 50%; /* Center on mobile since panel is at bottom */
   }
 

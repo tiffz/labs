@@ -22,6 +22,7 @@ interface FloorDimensions {
   screenHeight: number; // Floor height in screen pixels
   worldWidth: number;   // Floor width in world units
   worldDepth: number;   // Floor depth in world units
+  worldScale: number;   // Uniform world scale factor
 }
 
 class CatCoordinateSystem {
@@ -41,14 +42,41 @@ class CatCoordinateSystem {
   private static readonly FLOOR_MARGIN = 0; // Use the true front as clamp to avoid visual overshoot artifacts
   
   private viewportWidth: number = 800;
-  private viewportHeight: number = 600;
+  public viewportHeight: number = 600; // Made public for door height calculation
   private sidePanelWidth: number = 450;
+  private sidePanelHeight: number = 0;
   // Camera is applied by the world view (World2D) via CSS transform.
   // Keep here for backward compatibility but ignore in projection to avoid double-applying camera.
   private cameraX: number = 0;
   
+  // Event emitter for coordinate system changes
+  private listeners: Set<() => void> = new Set();
+  private notificationPending: boolean = false;
+  private batchedUpdatePending: boolean = false;
+  
   constructor() {
     this.updateViewport();
+  }
+  
+  // Subscribe to coordinate system changes
+  subscribe(listener: () => void): () => void {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  }
+  
+  // Notify all listeners of coordinate system changes (debounced to avoid render loops)
+  private notifyListeners(): void {
+    // Debounce notifications to prevent excessive updates
+    if (this.notificationPending) {
+      return;
+    }
+    
+    this.notificationPending = true;
+    // Use setTimeout to break out of the current render cycle
+    setTimeout(() => {
+      this.notificationPending = false;
+      this.listeners.forEach(listener => listener());
+    }, 0);
   }
   
   /**
@@ -57,8 +85,30 @@ class CatCoordinateSystem {
   updateViewport(): void {
     if (typeof window !== 'undefined') {
       this.viewportWidth = Math.max(0, Math.round(window.innerWidth - this.sidePanelWidth));
-      this.viewportHeight = Math.max(0, Math.round(window.innerHeight));
+      this.viewportHeight = Math.max(0, Math.round(window.innerHeight - this.sidePanelHeight));
     }
+    // Only notify listeners if not in a batch (batch will notify once at the end)
+    if (!this.batchedUpdatePending) {
+      this.notifyListeners();
+    }
+  }
+  
+  /**
+   * Batch multiple coordinate system updates to prevent inconsistent states
+   */
+  batchUpdate(updateFn: () => void): void {
+    if (this.batchedUpdatePending) {
+      // Already in a batch, just execute the update
+      updateFn();
+      return;
+    }
+    
+    this.batchedUpdatePending = true;
+    updateFn();
+    this.batchedUpdatePending = false;
+    
+    // Notify listeners once after all batched updates
+    this.notifyListeners();
   }
   
   /**
@@ -74,26 +124,52 @@ class CatCoordinateSystem {
    */
   setSidePanelWidth(width: number): void {
     this.sidePanelWidth = width;
-    this.updateViewport();
+    // Don't automatically call updateViewport() to avoid render loops
+    // Caller should explicitly call updateViewport() when ready
+  }
+
+  /**
+   * Set side panel height (for column layout when panel is at bottom)
+   */
+  setSidePanelHeight(height: number): void {
+    this.sidePanelHeight = height;
+    // Don't automatically call updateViewport() to avoid render loops
+    // Caller should explicitly call updateViewport() when ready
   }
   
   /**
-   * Get current floor dimensions
+   * Get current floor dimensions with fixed proportions and uniform world scaling
    */
   getFloorDimensions(): FloorDimensions {
-    const floorScreenHeight = this.viewportHeight * 0.4; // 40% of viewport
+    // Fixed proportions: 40% floor, 60% wall of the game viewport
+    const FIXED_FLOOR_RATIO = 0.4;
+    
+    // Define minimum world height needed to show all content
+    // Be more conservative with world scaling to maintain natural proportions
+    // Only scale when viewport is extremely small and content truly cannot fit
+    // Most responsive scenarios should work without world scaling
+    const MIN_WORLD_HEIGHT = 400; // More conservative threshold
+    
+    // Calculate world scale based on viewport height only when absolutely necessary
+    const worldScale = Math.min(1.0, this.viewportHeight / MIN_WORLD_HEIGHT);
+    
+    // FIXED: Floor should be 40% of the game viewport height
+    // In column layout, this maintains proper proportions within the available game space
+    const floorScreenHeight = this.viewportHeight * FIXED_FLOOR_RATIO;
+    
     const dimensions = {
       screenWidth: this.viewportWidth,
       screenHeight: floorScreenHeight,
       worldWidth: CatCoordinateSystem.WORLD_WIDTH,
-      worldDepth: CatCoordinateSystem.WORLD_DEPTH
+      worldDepth: CatCoordinateSystem.WORLD_DEPTH,
+      worldScale: worldScale // Add world scale for uniform scaling
     };
     
     return dimensions;
   }
   
   /**
-   * Convert world coordinates to screen position
+   * Convert world coordinates to screen position with uniform world scaling
    */
   catToScreen(coords: CatCoordinates): ScreenPosition {
     const floor = this.getFloorDimensions();
@@ -111,13 +187,16 @@ class CatCoordinateSystem {
     // Ease-out scaling so change near back wall is more subtle
     // Use a gentle curve that is strictly increasing and avoids flattening near the front
     const eased = zNormalized; // linear for strict monotonicity; keeps growing to MAX at front
-    const scale = CatCoordinateSystem.MIN_SCALE + 
-                  (CatCoordinateSystem.MAX_SCALE - CatCoordinateSystem.MIN_SCALE) * eased;
+    const perspectiveScale = CatCoordinateSystem.MIN_SCALE + 
+                            (CatCoordinateSystem.MAX_SCALE - CatCoordinateSystem.MIN_SCALE) * eased;
+    
+    // Apply uniform world scaling to perspective scale
+    const scale = perspectiveScale * floor.worldScale;
     
     // Calculate screen X in world-content coordinates (camera applied by CSS in World2D)
-    const screenX = coords.x;
+    const screenX = coords.x * floor.worldScale;
     
-    // Calculate screen Y with perspective
+    // Calculate screen Y with simplified positioning
     // Y=0 is the floor level, positive Y moves up
     
     const VISUAL_GROUND_LEVEL = 0;
@@ -132,7 +211,7 @@ class CatCoordinateSystem {
     // At front edge, at 0.
     const floorDepthOffset = floor.screenHeight * (1 - zNormalized);
     
-    // Jump height (only for Y > 0)
+    // Jump height (only for Y > 0) - scale with world scale
     const jumpHeight = heightRatio * floor.screenHeight * 0.9;
     
     // Final position: measured from bottom of game content layer (not viewport)
@@ -254,6 +333,54 @@ class CatCoordinateSystem {
       y: worldY,
       z: targetZ
     });
+  }
+
+  /**
+   * Get current floor ratio for CSS and responsive scaling
+   */
+  getFloorRatio(): number {
+    const floor = this.getFloorDimensions();
+    return floor.screenHeight / this.viewportHeight;
+  }
+
+  /**
+   * Convert wall-mounted furniture coordinates to screen position with uniform world scaling
+   */
+  wallToScreen(coords: CatCoordinates): ScreenPosition {
+    const floor = this.getFloorDimensions();
+    
+    // Use the same perspective scaling as floor furniture for consistency
+    // Calculate perspective scale based on Z depth (same as catToScreen)
+    const maxZForClamp = CatCoordinateSystem.WORLD_DEPTH - CatCoordinateSystem.FLOOR_MARGIN;
+    const zClamped = Math.max(CatCoordinateSystem.WALL_DEPTH, Math.min(maxZForClamp, coords.z));
+    const normDenom = Math.max(1, (maxZForClamp - CatCoordinateSystem.WALL_DEPTH));
+    const zNormalizedRaw = (zClamped - CatCoordinateSystem.WALL_DEPTH) / normDenom;
+    const zNormalized = Math.max(0, Math.min(1, zNormalizedRaw));
+    
+    // Use same scaling as floor furniture with uniform world scaling
+    const eased = zNormalized;
+    const perspectiveScale = CatCoordinateSystem.MIN_SCALE + 
+                            (CatCoordinateSystem.MAX_SCALE - CatCoordinateSystem.MIN_SCALE) * eased;
+    const scale = perspectiveScale * floor.worldScale;
+    
+    // Wall furniture coordinates use uniform world scaling
+    // X positioning: Apply world scale for consistent scaling
+    const screenX = coords.x * floor.worldScale;
+    
+    // Y positioning: Use uniform world scaling like floor furniture
+    // Wall furniture should scale uniformly with the world, not independently
+    
+    // Apply uniform world scaling to Y coordinate (same as floor furniture)
+    const scaledY = coords.y * floor.worldScale;
+    
+    // Position above floor level (floor.screenHeight is the floor-wall junction)
+    const screenY = floor.screenHeight + scaledY;
+    
+    return {
+      x: screenX,
+      y: screenY,
+      scale: scale // Use perspective scale with world scaling
+    };
   }
 
   /**

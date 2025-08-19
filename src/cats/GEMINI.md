@@ -22,6 +22,17 @@ The game has undergone a **massive architectural transformation** from a simple 
 - **🌟 Material Design icons** for UI controls
 - **💫 Responsive design** that adapts to different viewport sizes
 
+### **Responsive World Scaling System**
+
+The game features a sophisticated responsive coordinate system that maintains consistent world proportions across different screen sizes:
+
+- **Fixed Floor Ratio**: Floor always occupies 40% of viewport height
+- **World Scaling**: Uniform scaling when viewport becomes too small (< 400px height)
+- **Perspective Scaling**: Objects scale based on Z-depth for 3D effect
+- **Consistent Positioning**: Floor elements (like rugs) scale with world dimensions, not perspective
+- **Reactive Updates**: All components automatically re-render when coordinate system changes
+- **Comprehensive Testing**: 59 tests covering various viewport sizes and aspect ratios
+
 ## Core Game Systems
 
 ### Love-Per-Interaction System

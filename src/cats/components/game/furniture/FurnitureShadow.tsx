@@ -1,6 +1,7 @@
 import React from 'react';
 import { getFurnitureConfig } from '../../../data/furnitureData';
 import { ABSOLUTE_SHADOW_HEIGHT } from '../../../services/ShadowLayout';
+// import { catCoordinateSystem } from '../../../services/CatCoordinateSystem'; // Removed unused import
 
 interface FurnitureShadowProps {
   kind: string;
@@ -23,6 +24,7 @@ export const FurnitureShadow: React.FC<FurnitureShadowProps> = ({ kind, viewBoxW
   // Calculate shadow dimensions - use mass width (or full width) and adjust height for proper proportions
   const shadowWidth = massWidth ?? viewBoxWidth; // Use mass width if provided, otherwise full viewBox width
   
+  // With uniform world scaling, shadows scale naturally with the coordinate system
   // For narrow objects, reduce shadow height to maintain proper proportions
   // This prevents oversized shadows on small furniture like lamps and scratching posts
   const aspectRatio = shadowWidth / ABSOLUTE_SHADOW_HEIGHT;

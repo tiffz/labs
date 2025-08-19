@@ -16,7 +16,6 @@ declare global {
 import WorldRenderer from './components/game/WorldRenderer';
 import { useWorld } from './context/useWorld';
 import { spawnCat, spawnFurniture, spawnCouch, spawnCounter, spawnDoor, spawnWindow, spawnRug, spawnLamp, spawnBookshelf, spawnPainting } from './engine/spawn';
-import { RugPlacementService } from './services/RugPlacementService';
 
 import Heart from './components/game/Heart';
 import Zzz from './components/game/Zzz';
@@ -38,7 +37,7 @@ import { GameEconomyService } from './services/GameEconomyService';
 import type { GameState } from './game/types';
 import { ErrorReporter } from './components/ui/ErrorReporter';
 import { catCoordinateSystem } from './services/CatCoordinateSystem';
-
+import { ViewportProvider } from './context/ViewportContext';
 
 import './styles/cats.css';
 
@@ -91,6 +90,10 @@ function App() {
   
   const gameStateManager = useGameStateManager({ initialState: initialGameState });
   const { gameState } = gameStateManager;
+  
+  // Viewport state management - centralized for both cat and furniture
+  const [floorRatio, setFloorRatio] = useState(0.4);
+  const [isResizing, setIsResizing] = useState(false);
   
   // Cat positioning for world-aware movement (new coordinate system)
   const { renderData, jumpOnce, } = useCatPositionNew();
@@ -607,7 +610,8 @@ function App() {
   // Notification system completely removed - replaced with Events system
 
   return (
-    <div className="game-layout">
+    <ViewportProvider floorRatio={floorRatio} isResizing={isResizing}>
+      <div className="game-layout">
       {/* Currency Display - Fixed outside world */}
       <div className="currency-overlay">
         <CurrencyDisplay 
@@ -620,12 +624,16 @@ function App() {
       {/* World Viewport */}
       <div className="world-viewport-container">
         <World2D 
-          catWorldPosition={ecsCatWorldPosition} 
+          catWorldPosition={renderData.worldCoordinates} 
           enableCameraFollow={true}
           wandMode={wandMode}
           onWandToggle={catActions.toggleWandMode}
           playerControlMode={playerControlMode}
           onToggleRunMode={() => setPlayerControlMode(v => !v)}
+          onViewportChange={(newFloorRatio, newIsResizing) => {
+            setFloorRatio(newFloorRatio);
+            setIsResizing(newIsResizing);
+          }}
         >
           <ErrorReporter />
 
@@ -669,10 +677,11 @@ function App() {
 
             
             // Wall-mounted furniture (no floor space) - wall is at z=0, using 0-1400 coordinate system
-            spawnWindow(world, { x: 500, y: 250, z: 0 }); // On back wall, elevated - spans 185 to 815
+            // Y coordinates: 0-400 logical wall height, where 0=floor level, 400=ceiling
+            spawnWindow(world, { x: 600, y: 180, z: 0 }); // On back wall, mid-height (45% up wall) - spans 285 to 915
             spawnDoor(world, { x: 850, y: 0, z: 0 }); // On back wall, at floor level - spans 730 to 970
-            spawnPainting(world, { x: 300, y: 250, z: 0 }, 'cat', 'large'); // High on wall - spans 195 to 405 (left of window)
-            spawnPainting(world, { x: 700, y: 220, z: 0 }, 'abstract', 'small'); // High on wall - spans 625 to 775 (right of window)
+            spawnPainting(world, { x: 200, y: 180, z: 0 }, 'cat', 'large'); // Mid-height on wall (45% up) - spans 95 to 305
+            spawnPainting(world, { x: 1000, y: 160, z: 0 }, 'abstract', 'small'); // Slightly lower (40% up wall) - spans 925 to 1075
             
             // Wall-mounted floor furniture (against wall, with shadows) - using 0-1400 coordinate system
             spawnCounter(world, { x: 1200, y: 0, z: 0 }); // Mounted to wall at z=0 - spans 1000 to 1400
@@ -681,9 +690,13 @@ function App() {
             // Free-standing floor furniture - distributed across 0-1400 coordinate system
             spawnFurniture(world, { x: 900, y: 0, z: 300 }); // Scratching post - mid room
             spawnCouch(world, { x: 400, y: 0, z: 200 }); // Couch - closer to front
-            // Use safe rug placement to prevent wall clipping
-            const safeRugPos = RugPlacementService.findValidRugPosition(700, 400);
-            spawnRug(world, { x: safeRugPos.x, y: 0, z: safeRugPos.z });
+            // Use fixed rug position for consistent scaling with other furniture
+            // Position rug very close to front to prevent wall collision at extreme scaling
+            // Rug visual depth (VB_H=100) extends backward in perspective view
+            // Position rug at fixed location that aligns with cat's default position
+            // This ensures consistent relative positioning during viewport scaling
+            // while allowing the cat to move freely around the world
+            spawnRug(world, { x: 700, y: 0, z: 720 }); // Fixed position matching cat's default
             spawnLamp(world, { x: 750, y: 0, z: 250 }); // Lamp - mid room
           }
         }
@@ -799,6 +812,7 @@ function App() {
         </div>
       )}
     </div>
+    </ViewportProvider>
   );
 }
 

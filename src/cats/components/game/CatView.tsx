@@ -53,9 +53,10 @@ const CatView: React.FC<CatViewProps> = ({ catWorldCoords, shadowCenterOverride,
     const catScreen = catCoordinateSystem.catToScreen(catWorldCoords);
     const ground = catCoordinateSystem.catToScreen({ x: catWorldCoords.x, y: 0, z: catWorldCoords.z });
     const baselineY = shadowCenterOverride ?? ground.y;
+    // const floorRatio = catCoordinateSystem.getFloorRatio(); // Removed unused variable
     const shadowLayout = computeShadowLayout({ x: catScreen.x, y: baselineY, scale: ground.scale }, catWorldCoords.y);
 
-    const widthPx = 300 * catScreen.scale;
+    const widthPx = 300 * ground.scale;
     // Avoid rounding X so horizontal motion stays smooth without 1px jitter
     // Apply sub-pixel smoothing for smoother movement
     const leftPx = catScreen.x - widthPx / 2;

@@ -30,9 +30,13 @@ export function computeShadowLayout(catScreen: ScreenPositionLike, yHeight: numb
   // Clamp yHeight to non-negative values to prevent shadow enlargement below ground
   const clampedHeight = Math.max(0, yHeight);
   const heightScale = Math.max(0.3, 1 - (clampedHeight / 400)); // Scale from 1.0 to 0.3 as height increases
+  
+  // With uniform world scaling, shadows scale naturally with the coordinate system
+  // No additional floor ratio scaling needed
   const shadowScale = catScreen.scale * 0.8 * heightScale; // slightly smaller so cat mass visually overhangs
   const width = SHADOW_BASE_WIDTH * shadowScale;
-  const height = width * SHADOW_HEIGHT_RATIO;
+  const height = width * SHADOW_HEIGHT_RATIO; // Simple height calculation
+  
   // Center the shadow vertically on the baseline to avoid scale-induced visual drift
   const centerY = catScreen.y;
   const bottom = centerY - height / 2; // allow negative; renderer can clamp visually

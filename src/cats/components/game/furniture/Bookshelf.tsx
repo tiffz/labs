@@ -1,5 +1,6 @@
 import React from 'react';
 import { catCoordinateSystem } from '../../../services/CatCoordinateSystem';
+import { useCoordinateSystem } from '../../../hooks/useCoordinateSystem';
 import { layerForZ } from '../../rendering/zLayer';
 import { isOverlayEnabled } from '../../debug/overlay';
 import { BaselineOverlay, MassBoxOverlay } from '../../debug/overlay.tsx';
@@ -16,10 +17,20 @@ const VB_W = 320; // Doubled from 160 (2x bigger and wider)
 const VB_H = 640; // Doubled from 320 (2x bigger)
 
 const Bookshelf: React.FC<BookshelfProps> = ({ x, z }) => {
+  // Subscribe to coordinate system changes to ensure consistent positioning
+  useCoordinateSystem(); // Triggers re-render when coordinate system updates
+
+  // Bookshelf is positioned exactly at floor-wall junction
   const ground = catCoordinateSystem.catToScreen({ x, y: 0, z });
+  
+  // Calculate bookshelf dimensions using floor scaling for consistency
   const w = Math.round(VB_W * ground.scale);
   const h = Math.round(VB_H * ground.scale);
+  
+  // No individual scaling - bookshelf should scale uniformly with the world
+  
   const left = ground.x - w / 2;
+  // Position bookshelf exactly at floor level (same as other furniture)
   const bottom = Math.round(ground.y);
 
   const style: React.CSSProperties = {

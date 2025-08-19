@@ -2,25 +2,28 @@ import { useState, useEffect, useCallback } from 'react';
 import { catPositionServiceNew } from '../services/CatPositionServiceNew';
 import type { CatRenderData } from '../services/CatPositionServiceNew';
 import type { CatCoordinates } from '../services/CatCoordinateSystem';
+import { useCoordinateSystem } from './useCoordinateSystem';
 
 /**
  * Hook for managing cat's position using the new world coordinate system
  */
 export const useCatPositionNew = () => {
+  // Subscribe to coordinate system changes to ensure consistent positioning
+  const coordinateVersion = useCoordinateSystem(); // Triggers re-render when coordinate system updates
+  
   const [renderData, setRenderData] = useState<CatRenderData>(() => {
-    // Ensure viewport is up-to-date before the first projection to avoid
-    // an initial misalignment in production builds (pre-effect render).
-    try {
-      catPositionServiceNew.updateViewport();
-    } catch {
-      // ignore if window not available (SSR/tests)
-    }
+    // Get fresh render data - no need to update viewport since World2D handles coordinate system
     return catPositionServiceNew.getRenderData();
   });
   const [isAnimating, setIsAnimating] = useState(false);
   const [velocity, setVelocity] = useState<{ vx: number; vz: number }>({ vx: 0, vz: 0 });
   const [isMoving, setIsMoving] = useState(false);
   // Removed internal RAF loop; keyboard handled in App
+  
+  // Update render data when coordinate system changes (triggered by useCoordinateSystem)
+  useEffect(() => {
+    setRenderData(catPositionServiceNew.getRenderData());
+  }, [coordinateVersion]); // Re-run when coordinate system version changes
 
   // Update render data when position changes
   const handleUpdate = useCallback((newRenderData: CatRenderData) => {
@@ -136,31 +139,22 @@ export const useCatPositionNew = () => {
     setRenderData(catPositionServiceNew.getRenderData());
   }, []);
 
-  // Update viewport for responsive layout
-  const updateViewport = useCallback((sidePanelWidth?: number) => {
-    catPositionServiceNew.updateViewport(sidePanelWidth);
-    // Update render data to reflect viewport change
-    setRenderData(catPositionServiceNew.getRenderData());
-  }, []);
+  // Viewport updates are handled by ViewportContext - no need for manual updates
 
-  // Listen for window resize events
+  // Don't listen for resize events here - World2D handles coordinate system updates
+  // This hook should just react to coordinate system changes, not drive them
   useEffect(() => {
-    const handleResize = () => {
-      updateViewport();
-    };
-
     // Listen for happy jump signal: now handled by ECS JumpImpulseSystem; legacy no-op for compatibility
       const handleHappyJump = () => {
         /* no-op: ECS handles jump arc via physics */
       };
     document.addEventListener('cat-happy-jump', handleHappyJump as EventListener);
 
-    window.addEventListener('resize', handleResize);
+    // Don't listen for resize events - World2D handles coordinate system updates
     return () => {
-      window.removeEventListener('resize', handleResize);
       document.removeEventListener('cat-happy-jump', handleHappyJump as EventListener);
     };
-  }, [updateViewport, handleUpdate, renderData.screenPosition, renderData.worldCoordinates]);
+  }, [handleUpdate, renderData.screenPosition, renderData.worldCoordinates]);
 
   return {
     // Current state
@@ -183,7 +177,6 @@ export const useCatPositionNew = () => {
     
     // System functions
     updateCamera,
-    updateViewport,
     
     // World info
     getWorldBounds: catPositionServiceNew.getWorldBounds.bind(catPositionServiceNew)

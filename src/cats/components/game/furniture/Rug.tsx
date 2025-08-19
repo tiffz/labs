@@ -1,5 +1,6 @@
 import React from 'react';
 import { catCoordinateSystem } from '../../../services/CatCoordinateSystem';
+import { useCoordinateSystem } from '../../../hooks/useCoordinateSystem';
 
 import { isOverlayEnabled } from '../../debug/overlay';
 import { BaselineOverlay, MassBoxOverlay } from '../../debug/overlay.tsx';
@@ -11,19 +12,29 @@ interface RugProps {
 }
 
 // Cute pink oval rug - floor element that goes under other furniture
-// Wider design with warmer pink palette, reduced height for better perspective
+// Wider design with warmer pink palette, minimal height to prevent wall collision
 const VB_W = 280; // Made wider to look more floor-like
-const VB_H = 100; // Reduced height for better perspective and less Z-axis overlap
+const VB_H = 60;  // Further reduced height to minimize Z-axis projection and prevent wall collision
 
 const Rug: React.FC<RugProps> = ({ x, z }) => {
+  // Subscribe to coordinate system changes to ensure consistent positioning
+  useCoordinateSystem(); // Triggers re-render when coordinate system updates
+  
+  // Use fixed coordinates like other furniture - no dynamic positioning based on cat
   const ground = catCoordinateSystem.catToScreen({ x, y: 0, z });
-  const w = Math.round(VB_W * ground.scale);
-  const h = Math.round(VB_H * ground.scale);
+  const floor = catCoordinateSystem.getFloorDimensions();
+  
+  // FIXED: Rug should scale with floor dimensions, not with perspective scale
+  // The rug is a floor element and should scale consistently with the floor itself
+  // Only apply world scaling (like the floor), not perspective scaling
+  const w = Math.round(VB_W * floor.worldScale);
+  const h = Math.round(VB_H * floor.worldScale);
   const left = ground.x - w / 2;
   const bottom = Math.round(ground.y);
   
   // Rug positioning debug logs removed - positioning is working correctly
 
+  // Use simple positioning with uniform world scaling (no additional floor scaling needed)
   const style: React.CSSProperties = {
     position: 'absolute',
     left: '0px',
@@ -58,17 +69,17 @@ const Rug: React.FC<RugProps> = ({ x, z }) => {
           {/* No shadow for floor rugs - they go under other furniture */}
 
           {/* Main pink oval rug */}
-          <ellipse cx={VB_W / 2} cy={VB_H / 2} rx={VB_W / 2 - 8} ry={VB_H / 2 - 8} fill="url(#rugPink)" />
+          <ellipse cx={VB_W / 2} cy={VB_H / 2} rx={VB_W / 2 - 8} ry={VB_H / 2 - 4} fill="url(#rugPink)" />
           
           {/* Inner lighter oval for depth */}
-          <ellipse cx={VB_W / 2} cy={VB_H / 2} rx={VB_W / 2 - 20} ry={VB_H / 2 - 20} fill="url(#rugPinkInner)" />
+          <ellipse cx={VB_W / 2} cy={VB_H / 2} rx={VB_W / 2 - 20} ry={VB_H / 2 - 12} fill="url(#rugPinkInner)" />
           
           {/* Cute little pattern dots */}
-          <circle cx={VB_W / 2 - 30} cy={VB_H / 2 - 15} r="3" fill="rgba(255,255,255,0.4)" />
-          <circle cx={VB_W / 2 + 30} cy={VB_H / 2 - 15} r="3" fill="rgba(255,255,255,0.4)" />
-          <circle cx={VB_W / 2} cy={VB_H / 2 + 20} r="3" fill="rgba(255,255,255,0.4)" />
-          <circle cx={VB_W / 2 - 15} cy={VB_H / 2 + 5} r="2" fill="rgba(255,255,255,0.3)" />
-          <circle cx={VB_W / 2 + 15} cy={VB_H / 2 + 5} r="2" fill="rgba(255,255,255,0.3)" />
+          <circle cx={VB_W / 2 - 30} cy={VB_H / 2 - 8} r="3" fill="rgba(255,255,255,0.4)" />
+          <circle cx={VB_W / 2 + 30} cy={VB_H / 2 - 8} r="3" fill="rgba(255,255,255,0.4)" />
+          <circle cx={VB_W / 2} cy={VB_H / 2 + 12} r="3" fill="rgba(255,255,255,0.4)" />
+          <circle cx={VB_W / 2 - 15} cy={VB_H / 2 + 3} r="2" fill="rgba(255,255,255,0.3)" />
+          <circle cx={VB_W / 2 + 15} cy={VB_H / 2 + 3} r="2" fill="rgba(255,255,255,0.3)" />
         </g>
       </svg>
 

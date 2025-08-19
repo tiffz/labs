@@ -267,11 +267,10 @@ export class CatPositionServiceNew {
   /**
    * Update viewport for responsive layout
    */
-  updateViewport(sidePanelWidth?: number): void {
-    if (sidePanelWidth !== undefined) {
-      catCoordinateSystem.setSidePanelWidth(sidePanelWidth);
-    }
-    catCoordinateSystem.updateViewport();
+  updateViewport(): void {
+    // Don't update coordinate system here - let World2D handle it
+    // Don't cache screen positions - always calculate fresh like furniture components
+    // This ensures consistency with the current coordinate system state
   }
   
   /**

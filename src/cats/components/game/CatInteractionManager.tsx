@@ -741,7 +741,8 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
             // Compute shadow from ground projection (y locked at 0) or use override from ECS
             const groundScreen = catCoordinateSystem.catToScreen({ x: catWorldCoords.x, y: 0, z: catWorldCoords.z });
             const baselineY = shadowCenterOverride ?? groundScreen.y;
-            const shadowLayout = computeShadowLayout({ x: catScreenPosition.x, y: baselineY, scale: groundScreen.scale });
+            // const floorRatio = catCoordinateSystem.getFloorRatio(); // Removed unused variable
+            const shadowLayout = computeShadowLayout({ x: catScreenPosition.x, y: baselineY, scale: groundScreen.scale }, 0);
             
 
             const roundedCatLeft = Math.round(catScreenPosition.x);

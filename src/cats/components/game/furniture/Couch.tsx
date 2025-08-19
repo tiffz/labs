@@ -1,5 +1,6 @@
 import React from 'react';
 import { catCoordinateSystem } from '../../../services/CatCoordinateSystem';
+import { useCoordinateSystem } from '../../../hooks/useCoordinateSystem';
 import { layerForZ } from '../../rendering/zLayer';
 import { isOverlayEnabled } from '../../debug/overlay';
 import { BaselineOverlay, MassBoxOverlay } from '../../debug/overlay.tsx';
@@ -16,6 +17,9 @@ const VB_W = 459; // 270 * 1.7
 const VB_H = 204; // 120 * 1.7
 
 const Couch: React.FC<CouchProps> = ({ x, z }) => {
+  // Subscribe to coordinate system changes to ensure consistent positioning
+  useCoordinateSystem(); // Triggers re-render when coordinate system updates
+  
   const ground = catCoordinateSystem.catToScreen({ x, y: 0, z });
   const w = Math.round(VB_W * 1.15 * ground.scale);
   const h = Math.round(VB_H * 1.15 * ground.scale);
