@@ -68,8 +68,102 @@
   color: #9ca3af;
 }
 
+/* Development section styles */
+.development-section {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.section-subtitle {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin-bottom: 1.5rem;
+}
+
+.app-card.development {
+  background: rgba(255, 248, 220, 0.8);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.app-card.development:hover {
+  background: rgba(255, 248, 220, 0.9);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.dev-badge {
+  display: inline-block;
+  background: #f59e0b;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  margin-left: 0.5rem;
+  vertical-align: middle;
+}
+
+/* Toggle button styles */
+.toggle-section {
+  margin-top: 2rem;
+  text-align: center;
+}
+
+.toggle-btn {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+.toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.toggle-icon {
+  font-size: 0.8rem;
+}
+
+/* Animation for development section */
+.development-section {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: all 0.3s ease;
+}
+
+.development-section.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 @media (max-width: 480px) {
   .app-card {
     padding: 1rem;
+  }
+
+  .dev-badge {
+    font-size: 0.6rem;
+    padding: 0.15rem 0.4rem;
+  }
+
+  .toggle-btn {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.85rem;
   }
 }

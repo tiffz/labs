@@ -29,30 +29,43 @@
       <h1>Tiff Zhang Labs</h1>
       <p class="subtitle">A collection of experimental apps and tools</p>
       
-      <div class="apps-grid">
-        <a href="/cats/" class="app-card">
-          <div class="app-icon cats"></div>
-          <div class="app-info">
-            <h3 class="app-title">Cat Clicker</h3>
-            <p class="app-description">Click a cat for the greater good</p>
-          </div>
-        </a>
-        
-        <a href="/zines/" class="app-card">
+      <div class="apps-grid" id="stable-apps">
+        <a href="/zines/" class="app-card" data-stage="stable">
           <div class="app-icon zines"></div>
           <div class="app-info">
             <h3 class="app-title">Minizine Maker</h3>
             <p class="app-description">Layout your zine pages into the standard 8-page minizine format</p>
           </div>
         </a>
-
-        <a href="/corp/" class="app-card">
-          <div class="app-icon corp"></div>
-          <div class="app-info">
-            <h3 class="app-title">Corporate Ladder</h3>
-            <p class="app-description">Crawl through the dungeons of corporate life</p>
-          </div>
-        </a>
+      </div>
+      
+      <div class="development-section" id="development-section" style="display: none;">
+        <h2 class="section-title">Apps in Development</h2>
+        <p class="section-subtitle">Early prototypes and experimental features</p>
+        <div class="apps-grid" id="development-apps">
+          <a href="/cats/" class="app-card development" data-stage="development">
+            <div class="app-icon cats"></div>
+            <div class="app-info">
+              <h3 class="app-title">Cat Clicker <span class="dev-badge">PROTOTYPE</span></h3>
+              <p class="app-description">Click a cat for the greater good</p>
+            </div>
+          </a>
+          
+          <a href="/corp/" class="app-card development" data-stage="development">
+            <div class="app-icon corp"></div>
+            <div class="app-info">
+              <h3 class="app-title">Corporate Ladder <span class="dev-badge">PROTOTYPE</span></h3>
+              <p class="app-description">Crawl through the dungeons of corporate life</p>
+            </div>
+          </a>
+        </div>
+      </div>
+      
+      <div class="toggle-section">
+        <button id="toggle-development" class="toggle-btn">
+          <span class="toggle-text">Show apps in development</span>
+          <span class="toggle-icon">▼</span>
+        </button>
       </div>
       
     </div>

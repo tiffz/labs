@@ -13,6 +13,36 @@ setTimeout(function() {
 document.addEventListener('DOMContentLoaded', function() {
   const bubbles = document.querySelectorAll('.bubble');
   
+  // Development apps toggle functionality
+  const toggleBtn = document.getElementById('toggle-development');
+  const developmentSection = document.getElementById('development-section');
+  
+  if (toggleBtn && developmentSection) {
+    toggleBtn.addEventListener('click', function() {
+      const isVisible = developmentSection.style.display !== 'none';
+      
+      if (isVisible) {
+        // Hide development section
+        developmentSection.classList.remove('visible');
+        setTimeout(() => {
+          developmentSection.style.display = 'none';
+        }, 300);
+        toggleBtn.classList.remove('expanded');
+        toggleBtn.querySelector('.toggle-text').textContent = 'Show apps in development';
+        toggleBtn.querySelector('.toggle-icon').textContent = '▼';
+      } else {
+        // Show development section
+        developmentSection.style.display = 'block';
+        setTimeout(() => {
+          developmentSection.classList.add('visible');
+        }, 10);
+        toggleBtn.classList.add('expanded');
+        toggleBtn.querySelector('.toggle-text').textContent = 'Hide apps in development';
+        toggleBtn.querySelector('.toggle-icon').textContent = '▲';
+      }
+    });
+  }
+  
   // Simple hover glow effect
   bubbles.forEach(bubble => {
     bubble.addEventListener('mouseenter', function() {
