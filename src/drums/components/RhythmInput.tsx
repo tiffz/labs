@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { TimeSignature } from '../types';
 import RhythmPresets from './RhythmPresets';
 
@@ -15,6 +15,8 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
   timeSignature,
   onTimeSignatureChange,
 }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+
   const handleNumeratorChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     onTimeSignatureChange({
       ...timeSignature,
@@ -32,10 +34,85 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
   return (
     <div className="input-section">
       <div className="input-header">
-        <label className="input-label" htmlFor="rhythm-notation-input">
-          Enter Rhythm Notation
-        </label>
-        <RhythmPresets onSelectPreset={onNotationChange} />
+        <div className="input-label-group">
+          <label className="input-label" htmlFor="rhythm-notation-input">
+            Rhythm Notation
+          </label>
+          <button
+            className="help-button"
+            onMouseEnter={() => setShowTooltip(true)}
+            onMouseLeave={() => setShowTooltip(false)}
+            onClick={() => setShowTooltip(!showTooltip)}
+            type="button"
+            aria-label="Show notation help"
+          >
+            ?
+          </button>
+          {showTooltip && (
+            <div 
+              className="tooltip"
+              onMouseEnter={() => setShowTooltip(true)}
+              onMouseLeave={() => setShowTooltip(false)}
+            >
+              <div className="tooltip-title">Notation Guide</div>
+              <div className="tooltip-section">
+                <strong>Basic Sounds:</strong>
+                <div className="tooltip-row"><code>D</code> = Dum (bass)</div>
+                <div className="tooltip-row"><code>T</code> = Tak (high)</div>
+                <div className="tooltip-row"><code>K</code> = Ka (high)</div>
+                <div className="tooltip-row"><code>.</code> = Rest (silence)</div>
+              </div>
+              <div className="tooltip-section">
+                <strong>Duration:</strong>
+                <div className="tooltip-row">Add dashes (<code>-</code>) to extend duration</div>
+                <div className="tooltip-row">Each character = 16th note</div>
+              </div>
+              <div className="tooltip-section">
+                <strong>Dotted Notes:</strong>
+                <div className="tooltip-row"><code>D--</code> = dotted 8th (3 sixteenths)</div>
+                <div className="tooltip-row"><code>D-----</code> = dotted quarter (6 sixteenths)</div>
+              </div>
+              <div className="tooltip-attribution">
+                Based on <a href="https://en.wikipedia.org/wiki/Dumbek_rhythms#Notation" target="_blank" rel="noopener noreferrer">Dumbek rhythms notation</a>
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="controls-group">
+          <RhythmPresets
+            onSelectPreset={(notation, ts) => {
+              onNotationChange(notation);
+              onTimeSignatureChange(ts);
+            }}
+          />
+          <div className="time-signature-inline">
+            <select
+              className="time-signature-select"
+              value={timeSignature.numerator}
+              onChange={handleNumeratorChange}
+              aria-label="Time signature numerator"
+            >
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="9">9</option>
+              <option value="12">12</option>
+            </select>
+            <span className="time-sig-slash">/</span>
+            <select
+              className="time-signature-select"
+              value={timeSignature.denominator}
+              onChange={handleDenominatorChange}
+              aria-label="Time signature denominator"
+            >
+              <option value="4">4</option>
+              <option value="8">8</option>
+            </select>
+          </div>
+        </div>
       </div>
       <input
         id="rhythm-notation-input"
@@ -46,45 +123,6 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
         placeholder="D---T-K-D-D-T---"
         spellCheck={false}
       />
-      <div className="input-help">
-        Use <code>D</code> for Dum, <code>T</code> for Tak, <code>K</code> for Ka, <code>.</code> for rest.
-        Add dashes (<code>-</code>) after a note to extend its duration.
-        Each character represents a 16th note.
-        <br />
-        <strong>Dotted notes:</strong> Use specific lengths for dotted rhythms:
-        <code>D--</code> (dotted 8th = 3 sixteenths),
-        <code>D-----</code> (dotted quarter = 6 sixteenths),
-        <code>D-----------</code> (dotted half = 12 sixteenths).
-      </div>
-      
-      <div className="time-signature-controls">
-        <div className="time-signature-group">
-          <label>Time Signature:</label>
-          <select
-            className="time-signature-select"
-            value={timeSignature.numerator}
-            onChange={handleNumeratorChange}
-          >
-            <option value="2">2</option>
-            <option value="3">3</option>
-            <option value="4">4</option>
-            <option value="5">5</option>
-            <option value="6">6</option>
-            <option value="7">7</option>
-            <option value="9">9</option>
-            <option value="12">12</option>
-          </select>
-          <span>/</span>
-          <select
-            className="time-signature-select"
-            value={timeSignature.denominator}
-            onChange={handleDenominatorChange}
-          >
-            <option value="4">4</option>
-            <option value="8">8</option>
-          </select>
-        </div>
-      </div>
     </div>
   );
 };

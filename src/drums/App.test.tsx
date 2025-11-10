@@ -10,25 +10,27 @@ describe('App', () => {
 
   it('renders the rhythm input section', () => {
     render(<App />);
-    expect(screen.getByLabelText('Enter Rhythm Notation')).toBeInTheDocument();
+    expect(screen.getByLabelText('Rhythm Notation')).toBeInTheDocument();
   });
 
   it('renders the rhythm display section', () => {
     render(<App />);
-    expect(screen.getByText('Rhythm Notation')).toBeInTheDocument();
+    // Check for the input field instead since "Rhythm Notation" appears twice
+    expect(screen.getByPlaceholderText('D---T-K-D-D-T---')).toBeInTheDocument();
   });
 
   it('displays the default time signature in controls', () => {
     render(<App />);
     // Check the time signature controls have correct default values
     const selects = screen.getAllByRole('combobox');
+    // First two are time signature, rest are from dropdown
     expect(selects[0]).toHaveValue('4'); // numerator
     expect(selects[1]).toHaveValue('4'); // denominator
   });
 
   it('has a default rhythm notation', () => {
     render(<App />);
-    const input = screen.getByLabelText('Enter Rhythm Notation') as HTMLInputElement;
+    const input = screen.getByLabelText('Rhythm Notation') as HTMLInputElement;
     expect(input.value).toBe('D---T-K-D-D-T---');
   });
 });

@@ -38,7 +38,7 @@ const drawSymbolAboveNote = (
   sound: DrumSound
 ): void => {
   const symbolGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-  symbolGroup.setAttribute('transform', `translate(${x}, ${y - 35})`);
+  symbolGroup.setAttribute('transform', `translate(${x}, ${y - 25})`);
 
   let path: SVGPathElement;
 
@@ -122,9 +122,6 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({ rhythm }) => {
         }
 
         stave.setContext(context).draw();
-        
-        // Hide the staff line by making it transparent (we'll do this via CSS instead)
-        // The line is needed for VexFlow to position notes correctly
 
         // Convert measure notes to VexFlow StaveNotes
         const staveNotes = measure.notes.map((note: Note) => {
@@ -199,7 +196,9 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({ rhythm }) => {
               const note = measure.notes[noteIndex];
               if (note && note.sound !== 'rest') {
                 // Get the note's x position
-                const noteX = staveNote.getAbsoluteX();
+                // VexFlow's note head width is approximately 10-12 pixels for quarter notes
+                // We'll use a fixed offset to center the symbol over the note head
+                const noteX = staveNote.getAbsoluteX() + 10; // Add offset to center over note head
                 const noteY = stave.getYForLine(0); // Get Y position of the single staff line
                 
                 // Draw custom symbol
@@ -234,4 +233,3 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({ rhythm }) => {
 };
 
 export default VexFlowRenderer;
-
