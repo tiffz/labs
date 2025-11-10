@@ -16,9 +16,9 @@ test.describe('Darbuka Rhythm Trainer - Initialization', () => {
     await page.goto('/drums/');
     
     // Check that the input field exists and has a default value
-    const input = page.getByPlaceholder('D---T-K-D-D-T---');
+    const input = page.getByPlaceholder('D-T-..K-D---T---');
     await expect(input).toBeVisible();
-    await expect(input).toHaveValue('D---T-K-D-D-T---');
+    await expect(input).toHaveValue('D-T-..K-D---T---');
   });
 
   test('should display time signature controls', async ({ page }) => {

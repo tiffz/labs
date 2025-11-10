@@ -7,9 +7,9 @@ The Darbuka Rhythm Trainer is a web application designed to help students learn 
 ## Features
 
 - **Rhythm presets**: "Load Rhythm" button with dropdown for quick access to standard Middle Eastern rhythms
-  - Maqsum (4/4): `D-T-.-K-D---T---`
-  - Saeidi (4/4): `D-T-.-D-D---T---`
-  - Baladi (4/4): `D-D-.-T-D---T---`
+  - Maqsum (4/4): `D-T-..K-D---T---`
+  - Saeidi (4/4): `D-T-..D-D---T---`
+  - Baladi (4/4): `D-D-..T-D---T---`
   - Ayoub (2/4): `D--KD-T-`
   - Automatically sets the correct time signature when loading a preset
 - **Text-based rhythm input**: Enter rhythms using a simple notation system (D for Dum, T for Tak, K for Ka, . for rest)
@@ -56,7 +56,7 @@ Each character in the notation represents a 16th note worth of time:
 ### Complete Rhythm Example
 
 ```
-D---T-K-D-D-T---
+D-T-..K-D---T---
 ```
 
 This translates to:

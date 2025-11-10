@@ -27,16 +27,16 @@ describe('rhythmParser', () => {
       });
     });
 
-    it('should parse the example notation D---T-K-D-D-T---', () => {
-      const notes = parseNotation('D---T-K-D-D-T---');
+    it('should parse the example notation D-T-..K-D---T---', () => {
+      const notes = parseNotation('D-T-..K-D---T---');
       
       expect(notes).toHaveLength(6);
       
-      // D--- (quarter note = 4 sixteenths)
+      // D- (eighth note = 2 sixteenths)
       expect(notes[0]).toEqual({
         sound: 'dum',
-        duration: 'quarter',
-        durationInSixteenths: 4,
+        duration: 'eighth',
+        durationInSixteenths: 2,
         isDotted: false,
       });
       
@@ -48,27 +48,27 @@ describe('rhythmParser', () => {
         isDotted: false,
       });
       
-      // K- (eighth note = 2 sixteenths)
+      // .. (eighth rest = 2 sixteenths, consolidated)
       expect(notes[2]).toEqual({
+        sound: 'rest',
+        duration: 'eighth',
+        durationInSixteenths: 2,
+        isDotted: false,
+      });
+      
+      // K- (eighth note = 2 sixteenths)
+      expect(notes[3]).toEqual({
         sound: 'ka',
         duration: 'eighth',
         durationInSixteenths: 2,
         isDotted: false,
       });
       
-      // D- (eighth note = 2 sixteenths)
-      expect(notes[3]).toEqual({
-        sound: 'dum',
-        duration: 'eighth',
-        durationInSixteenths: 2,
-        isDotted: false,
-      });
-      
-      // D- (eighth note = 2 sixteenths)
+      // D--- (quarter note = 4 sixteenths)
       expect(notes[4]).toEqual({
         sound: 'dum',
-        duration: 'eighth',
-        durationInSixteenths: 2,
+        duration: 'quarter',
+        durationInSixteenths: 4,
         isDotted: false,
       });
       
@@ -119,7 +119,7 @@ describe('rhythmParser', () => {
     });
 
     it('should parse rests', () => {
-      const notes = parseNotation('D-.-T-');
+      const notes = parseNotation('D-..T-');
       
       expect(notes).toHaveLength(3);
       expect(notes[0].sound).toBe('dum');
@@ -158,7 +158,7 @@ describe('rhythmParser', () => {
 
   describe('parseRhythm', () => {
     it('should split notes into measures for 4/4 time', () => {
-      const rhythm = parseRhythm('D---T-K-D-D-T---', { numerator: 4, denominator: 4 });
+      const rhythm = parseRhythm('D-T-..K-D---T---', { numerator: 4, denominator: 4 });
       
       expect(rhythm.measures).toHaveLength(1);
       expect(rhythm.measures[0].notes).toHaveLength(6);
@@ -167,7 +167,7 @@ describe('rhythmParser', () => {
     });
 
     it('should split notes into multiple measures', () => {
-      const rhythm = parseRhythm('D---T-K-D-D-T---D---T-K-D-D-T---', { numerator: 4, denominator: 4 });
+      const rhythm = parseRhythm('D-T-..K-D---T---D-T-..K-D---T---', { numerator: 4, denominator: 4 });
       
       expect(rhythm.measures).toHaveLength(2);
       expect(rhythm.measures[0].totalDuration).toBe(16);

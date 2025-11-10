@@ -4,7 +4,7 @@ test.describe('Darbuka Rhythm Trainer - User Interactions', () => {
   test('should update rhythm display when input changes', async ({ page }) => {
     await page.goto('/drums/');
     
-    const input = page.getByPlaceholder('D---T-K-D-D-T---');
+    const input = page.getByPlaceholder('D-T-..K-D---T---');
     
     // Clear and enter a simple rhythm
     await input.clear();
@@ -44,7 +44,7 @@ test.describe('Darbuka Rhythm Trainer - User Interactions', () => {
   test('should handle empty input', async ({ page }) => {
     await page.goto('/drums/');
     
-    const input = page.getByPlaceholder('D---T-K-D-D-T---');
+    const input = page.getByPlaceholder('D-T-..K-D---T---');
     
     // Clear the input
     await input.clear();
@@ -61,7 +61,7 @@ test.describe('Darbuka Rhythm Trainer - User Interactions', () => {
   test('should handle invalid rhythms gracefully', async ({ page }) => {
     await page.goto('/drums/');
     
-    const input = page.getByPlaceholder('D---T-K-D-D-T---');
+    const input = page.getByPlaceholder('D-T-..K-D---T---');
     
     // Enter a rhythm that's too long for one measure
     await input.clear();
@@ -79,7 +79,7 @@ test.describe('Darbuka Rhythm Trainer - User Interactions', () => {
   test('should handle mixed case notation', async ({ page }) => {
     await page.goto('/drums/');
     
-    const input = page.getByPlaceholder('D---T-K-D-D-T---');
+    const input = page.getByPlaceholder('D-T-..K-D---T---');
     
     // Enter mixed case notation
     await input.clear();

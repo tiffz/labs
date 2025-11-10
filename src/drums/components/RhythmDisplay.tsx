@@ -15,7 +15,7 @@ const RhythmDisplay: React.FC<RhythmDisplayProps> = ({ rhythm }) => {
         <div className="empty-state">
           <div className="empty-state-icon">🥁</div>
           <div className="empty-state-text">
-            Enter a rhythm notation above to see it displayed here
+            Create a rhythm using the note palette or the rhythm notation input above.
           </div>
         </div>
       </div>

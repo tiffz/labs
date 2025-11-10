@@ -33,27 +33,67 @@
 
 /* Component styles */
 @layer components {
-  .container {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 1rem;
+  /* App layout: Full-height sidebar + main content */
+  .app-layout {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
   }
 
-  .header {
-    text-align: center;
+  /* Main content area */
+  .main-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem;
+    min-width: 0; /* Prevent overflow */
+  }
+
+  /* Inline header in main content */
+  .header-inline {
+    margin-bottom: 1.5rem;
+  }
+
+  .header-inline h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-purple);
+    margin: 0;
+  }
+
+  /* Main workspace layout */
+  .main-workspace {
+    display: block;
     margin-bottom: 1rem;
   }
 
-  .header h1 {
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--primary-purple);
-    margin-bottom: 0.25rem;
+  /* Full-height sidebar (hamburger menu style) */
+  .palette-sidebar {
+    width: 320px;
+    height: 100vh;
+    overflow-y: auto;
+    background-color: white;
+    border-left: 1px solid var(--border-color);
+    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.05);
+    flex-shrink: 0;
   }
 
-  .header p {
-    font-size: 1rem;
-    color: #6b7280;
+  @media (max-width: 900px) {
+    .app-layout {
+      flex-direction: column;
+      height: auto;
+    }
+
+    .palette-sidebar {
+      width: 100%;
+      height: auto;
+      border-left: none;
+      border-top: 1px solid var(--border-color);
+      box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .main-content {
+      overflow-y: visible;
+    }
   }
 
   /* Input section */
@@ -270,34 +310,53 @@
 
   /* Staff notation */
   .staff-container {
-    margin-top: 2rem;
-    overflow-x: auto;
-    padding: 1rem 0;
+    margin-top: 0.25rem;
+    overflow-x: visible; /* Allow content to wrap instead of scroll */
+    padding: 0.25rem 0;
     background-color: #fafafa;
     border-radius: 0.5rem;
   }
 
   .vexflow-container {
-    min-height: 150px;
+    min-height: 100px;
+    width: 100%; /* Use full available width */
+    line-height: 1; /* Reduce line height for tighter spacing */
   }
 
   /* Keep the staff line visible - it's needed to show notes exist in a space */
-  .vexflow-container svg g[class*='vf-stave'] path,
-  .vexflow-container svg g[class*='vf-stave'] line {
-    stroke: #333 !important;
+  /* Use light grey for less distraction - but ONLY for staff lines, not stems */
+  .vexflow-container svg g[class*='vf-stave'] > path,
+  .vexflow-container svg g[class*='vf-stave'] > line {
+    stroke: #d1d5db !important;
     stroke-width: 1 !important;
   }
 
-  /* Make bar lines slightly bolder */
+  /* Make bar lines slightly bolder and darker */
   .vexflow-container svg g[class*='vf-stave'] path[class*='barline'],
   .vexflow-container svg g[class*='vf-stave'] line[class*='barline'] {
     stroke: #333 !important;
     stroke-width: 1.5 !important;
   }
 
-  /* Ensure note stems are always visible */
+  /* Ensure note stems and beams are always black - MOST SPECIFIC RULE */
+  /* This must override any grey coloring from staff lines */
+  .vexflow-container svg path[class*='stem'],
+  .vexflow-container svg line[class*='stem'],
   .vexflow-container svg path[class*='vf-stem'],
-  .vexflow-container svg line[class*='vf-stem'] {
+  .vexflow-container svg line[class*='vf-stem'],
+  .vexflow-container svg g[class*='vf-stem'] path,
+  .vexflow-container svg g[class*='vf-stem'] line,
+  .vexflow-container svg g path[class*='stem'],
+  .vexflow-container svg g line[class*='stem'],
+  .vexflow-container svg path[class*='beam'],
+  .vexflow-container svg line[class*='beam'],
+  .vexflow-container svg g[class*='beam'] path,
+  .vexflow-container svg g[class*='beam'] line,
+  .vexflow-container
+    svg
+    g:not([class*='vf-stave'])
+    path:not([class*='notehead']),
+  .vexflow-container svg g:not([class*='vf-stave']) line {
     stroke: #000 !important;
     stroke-width: 1.5 !important;
   }
@@ -324,7 +383,7 @@
 
   /* Notation legend */
   .notation-legend {
-    margin-top: 1rem;
+    margin-top: 0.5rem;
     padding: 0.5rem 0;
     display: flex;
     align-items: center;
@@ -369,6 +428,244 @@
 
   .legend-attribution a:hover {
     text-decoration: underline;
+  }
+
+  /* Note Palette */
+  .note-palette {
+    background-color: white;
+    border-radius: 0; /* No rounded corners for full-height sidebar */
+    border: none;
+    padding: 1rem;
+    height: 100%; /* Fill entire sidebar height */
+    display: flex;
+    flex-direction: column;
+  }
+
+  .palette-header {
+    margin-bottom: 0.75rem;
+  }
+
+  .palette-header h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin: 0 0 0.15rem 0;
+  }
+
+  .palette-subtitle {
+    font-size: 0.8rem;
+    color: #6b7280;
+    margin: 0;
+  }
+
+  .palette-section {
+    margin-bottom: 0.75rem;
+  }
+
+  .palette-section:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Note table layout */
+  .note-table {
+    overflow-x: auto;
+  }
+
+  .note-table table {
+    width: auto;
+    border-collapse: separate;
+    border-spacing: 0.25rem;
+  }
+
+  .note-table th,
+  .note-table td {
+    text-align: center;
+    vertical-align: middle;
+  }
+
+  .note-table th {
+    padding: 0.5rem;
+    font-weight: 600;
+    color: var(--text-color);
+    font-size: 0.875rem;
+  }
+
+  .note-table th.symbol-header {
+    padding: 0.75rem 0.5rem;
+    vertical-align: middle;
+  }
+
+  .note-table th.symbol-header svg {
+    display: block;
+    margin: 0 auto;
+  }
+
+  .note-table td.row-label {
+    font-weight: 600;
+    color: var(--text-color);
+    font-size: 1rem;
+    padding: 0.5rem;
+    min-width: 2.5rem;
+  }
+
+  .note-table td:not(.row-label) {
+    padding: 0;
+  }
+
+  .note-table .palette-button {
+    width: 100%;
+    min-height: 70px;
+  }
+
+  /* Simplified single note buttons with just note symbols */
+  .palette-button-simple {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.35rem 0.5rem;
+    background-color: white;
+    border: 2px solid var(--border-color);
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: inherit;
+    min-height: 40px;
+    width: 100%;
+  }
+
+  .palette-button-simple:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background-color: #f3f4f6;
+  }
+
+  .palette-button-simple:disabled:hover {
+    background-color: #f3f4f6;
+    border-color: var(--border-color);
+    transform: none;
+    box-shadow: none;
+  }
+
+  .palette-button-simple:hover:not(:disabled) {
+    background-color: #faf5ff;
+    border-color: var(--primary-purple);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(147, 51, 234, 0.15);
+  }
+
+  .palette-button-simple:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 1px 4px rgba(147, 51, 234, 0.2);
+  }
+
+  .note-symbol {
+    font-family: 'Noto Music', serif;
+    font-size: 1.5rem;
+    line-height: 1;
+    user-select: none;
+  }
+
+  .palette-section-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin: 0 0 0.5rem 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .palette-grid {
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .palette-grid.single-notes {
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+  }
+
+  .palette-grid.common-patterns {
+    grid-template-columns: repeat(2, 1fr); /* Always 2 columns */
+    max-width: 100%;
+  }
+
+  .palette-button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+    overflow: visible;
+    background-color: white;
+    border: 2px solid var(--border-color);
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: inherit;
+    min-height: 80px;
+  }
+
+  .palette-button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background-color: #f3f4f6;
+  }
+
+  .palette-button:disabled:hover {
+    background-color: #f3f4f6;
+    border-color: var(--border-color);
+    transform: none;
+    box-shadow: none;
+  }
+
+  .palette-button:hover {
+    background-color: #faf5ff;
+    border-color: var(--primary-purple);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.1);
+  }
+
+  .palette-button:active {
+    transform: translateY(0);
+  }
+
+  .palette-button.notation-button {
+    padding: 0.25rem;
+  }
+
+  /* VexFlow note rendering in palette buttons */
+  /* Rendered at 2x size, scaled down to 60% (0.6) for better readability */
+  .palette-button svg {
+    transform: scale(0.6);
+    transform-origin: top left;
+    margin-top: -24px;
+    margin-bottom: 0px;
+    margin-left: -10px;
+  }
+
+  /* Light grey staff lines in palette - direct children only */
+  .palette-button svg g[class*='vf-stave'] > path,
+  .palette-button svg g[class*='vf-stave'] > line {
+    stroke: #d1d5db !important;
+    stroke-width: 1 !important;
+  }
+
+  /* Keep stems and beams black in palette - MOST SPECIFIC */
+  .palette-button svg path[class*='stem'],
+  .palette-button svg line[class*='stem'],
+  .palette-button svg path[class*='vf-stem'],
+  .palette-button svg line[class*='vf-stem'],
+  .palette-button svg g[class*='vf-stem'] path,
+  .palette-button svg g[class*='vf-stem'] line,
+  .palette-button svg g path[class*='stem'],
+  .palette-button svg g line[class*='stem'],
+  .palette-button svg path[class*='beam'],
+  .palette-button svg line[class*='beam'],
+  .palette-button svg g[class*='beam'] path,
+  .palette-button svg g[class*='beam'] line,
+  .palette-button svg g:not([class*='vf-stave']) path:not([class*='notehead']),
+  .palette-button svg g:not([class*='vf-stave']) line {
+    stroke: #000 !important;
+    stroke-width: 1.5 !important;
   }
 
   /* Rhythm presets dropdown */

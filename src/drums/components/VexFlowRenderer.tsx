@@ -1,20 +1,21 @@
 import React, { useEffect, useRef } from 'react';
 import { Renderer, Stave, StaveNote, Voice, Formatter, Beam, Dot } from 'vexflow';
 import type { ParsedRhythm, Note, DrumSound } from '../types';
+import { drawDrumSymbol } from '../assets/drumSymbols';
 
 interface VexFlowRendererProps {
   rhythm: ParsedRhythm;
 }
 
 /**
- * Maps Darbuka sounds to F line position (F/4)
- * All notes on the F line for standard percussion notation placement
+ * Maps Darbuka sounds to staff positions
+ * Notes on F/4 line, rests centered on B/4 (middle line)
  */
 const SOUND_TO_PITCH: Record<DrumSound, string> = {
   dum: 'f/4',
   tak: 'f/4',
   ka: 'f/4',
-  rest: 'f/4',
+  rest: 'b/4', // Center rests on middle line
 };
 
 /**
@@ -26,66 +27,6 @@ const DURATION_MAP: Record<string, string> = {
   quarter: 'q',
   half: 'h',
   whole: 'w',
-};
-
-/**
- * Draw custom SVG symbol above a note
- */
-const drawSymbolAboveNote = (
-  svg: SVGSVGElement,
-  x: number,
-  y: number,
-  sound: DrumSound
-): void => {
-  const symbolGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-  symbolGroup.setAttribute('transform', `translate(${x}, ${y - 25})`);
-
-  let path: SVGPathElement;
-
-  switch (sound) {
-    case 'dum':
-      // Backwards question mark shape - C with integrated vertical line
-      // Centered at x=0, matching tak and ka alignment
-      path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      // Draw a smooth curve that flows from the C into a vertical line
-      path.setAttribute('d', 'M 6 -7 Q -2 -7, -2 0 Q -2 7, 6 7 L 6 13');
-      path.setAttribute('stroke', 'black');
-      path.setAttribute('stroke-width', '2.5');
-      path.setAttribute('fill', 'none');
-      path.setAttribute('stroke-linecap', 'round');
-      path.setAttribute('stroke-linejoin', 'round');
-      symbolGroup.appendChild(path);
-      break;
-
-    case 'tak':
-      // Upward caret ^ - sharp angle, centered above note
-      path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      path.setAttribute('d', 'M -6 6 L 0 -6 L 6 6');
-      path.setAttribute('stroke', 'black');
-      path.setAttribute('stroke-width', '2.5');
-      path.setAttribute('fill', 'none');
-      path.setAttribute('stroke-linecap', 'round');
-      path.setAttribute('stroke-linejoin', 'miter');
-      symbolGroup.appendChild(path);
-      break;
-
-    case 'ka':
-      // Downward V - sharp angle, centered above note
-      path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      path.setAttribute('d', 'M -6 -6 L 0 6 L 6 -6');
-      path.setAttribute('stroke', 'black');
-      path.setAttribute('stroke-width', '2.5');
-      path.setAttribute('fill', 'none');
-      path.setAttribute('stroke-linecap', 'round');
-      path.setAttribute('stroke-linejoin', 'miter');
-      symbolGroup.appendChild(path);
-      break;
-
-    default:
-      return;
-  }
-
-  svg.appendChild(symbolGroup);
 };
 
 const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({ rhythm }) => {
@@ -101,20 +42,26 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({ rhythm }) => {
 
     try {
       const containerWidth = containerRef.current.clientWidth || 800;
-      const measureWidth = Math.max(300, Math.min(400, containerWidth / rhythm.measures.length));
-      const totalWidth = measureWidth * rhythm.measures.length + 100;
-      const height = 200;
+      const measureWidth = 350; // Fixed width per measure for consistency
+      const measuresPerLine = Math.max(2, Math.floor((containerWidth - 20) / measureWidth)); // Minimum 2 measures per line
+      const numLines = Math.ceil(rhythm.measures.length / measuresPerLine);
+      const lineHeight = 140; // Reduced from 200 for tighter vertical spacing
+      const totalHeight = numLines * lineHeight + 40;
+      const totalWidth = Math.min(containerWidth, measureWidth * measuresPerLine + 20);
 
       // Create SVG renderer
       const renderer = new Renderer(containerRef.current, Renderer.Backends.SVG);
-      renderer.resize(totalWidth, height);
+      renderer.resize(totalWidth, totalHeight);
       const context = renderer.getContext();
 
-      let xPosition = 10;
-
       rhythm.measures.forEach((measure, measureIndex) => {
-        // Create a stave for each measure with only 1 line
-        const stave = new Stave(xPosition, 40, measureWidth, { num_lines: 1 });
+        const lineIndex = Math.floor(measureIndex / measuresPerLine);
+        const positionInLine = measureIndex % measuresPerLine;
+        const xPosition = 10 + positionInLine * measureWidth;
+        const yPosition = 40 + lineIndex * lineHeight;
+        
+        // Create a stave for each measure with 5 lines (standard staff)
+        const stave = new Stave(xPosition, yPosition, measureWidth, { numLines: 5 });
 
         // Add time signature to first measure only (no clef needed for single line)
         if (measureIndex === 0) {
@@ -148,8 +95,9 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({ rhythm }) => {
           });
 
           // Ensure stems are visible for all notes (except whole notes and rests)
+          // Use stems down so staff line appears at bottom
           if (!isRest && duration !== 'w' && duration !== 'wd') {
-            staveNote.setStemDirection(1); // 1 = up, -1 = down
+            staveNote.setStemDirection(-1); // -1 = down (staff line appears at bottom)
           }
 
           // Explicitly add dot modifier for dotted notes to ensure it's visible
@@ -166,17 +114,17 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({ rhythm }) => {
           const beatValue = rhythm.timeSignature.denominator;
           
           const voice = new Voice({
-            num_beats: beatsPerMeasure,
-            beat_value: beatValue,
+            numBeats: beatsPerMeasure,
+            beatValue: beatValue,
           });
           
           voice.setStrict(false); // Allow incomplete measures
           voice.addTickables(staveNotes);
 
-          // Auto-beam eighth notes and sixteenth notes
+          // Auto-beam eighth notes and sixteenth notes BEFORE formatting
           const beams = Beam.generateBeams(staveNotes, {
-            beam_rests: false,
-            beam_middle_only: true,
+            beamRests: false,
+            beamMiddleOnly: false, // Beam all beamable notes
           });
 
           // Format and draw
@@ -186,7 +134,7 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({ rhythm }) => {
 
           voice.draw(context, stave);
           
-          // Draw beams
+          // Draw beams after voice
           beams.forEach(beam => beam.setContext(context).draw());
 
           // Draw custom symbols above notes
@@ -199,16 +147,14 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({ rhythm }) => {
                 // VexFlow's note head width is approximately 10-12 pixels for quarter notes
                 // We'll use a fixed offset to center the symbol over the note head
                 const noteX = staveNote.getAbsoluteX() + 10; // Add offset to center over note head
-                const noteY = stave.getYForLine(0); // Get Y position of the single staff line
+                const noteY = stave.getYForLine(2); // Get Y position of the middle (3rd) staff line
                 
-                // Draw custom symbol
-                drawSymbolAboveNote(svgElement, noteX, noteY, note.sound);
+                // Draw custom drum symbol using shared utility
+                drawDrumSymbol(svgElement, noteX, noteY, note.sound);
               }
             });
           }
         }
-
-        xPosition += measureWidth;
       });
     } catch (error) {
       console.error('Error rendering VexFlow notation:', error);

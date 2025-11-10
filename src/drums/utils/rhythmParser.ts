@@ -40,7 +40,7 @@ function getDurationType(sixteenths: number): { duration: NoteDuration; isDotted
 }
 
 /**
- * Parses a rhythm notation string (e.g., "D---T-K-D-D-T---")
+ * Parses a rhythm notation string (e.g., "D-T-..K-D---T---")
  * into an array of notes with their durations
  */
 export function parseNotation(notation: string): Note[] {
@@ -61,11 +61,20 @@ export function parseNotation(notation: string): Note[] {
       const sound = NOTATION_MAP[char];
       let duration = 1; // Start with 1 sixteenth note
       
-      // Count consecutive dashes to determine duration
+      // For rests (.), count consecutive dots; for others, count dashes
       let j = i + 1;
-      while (j < notation.length && notation[j] === '-') {
-        duration++;
-        j++;
+      if (char === '.') {
+        // Consolidate consecutive rests
+        while (j < notation.length && notation[j] === '.') {
+          duration++;
+          j++;
+        }
+      } else {
+        // Count consecutive dashes for non-rest notes
+        while (j < notation.length && notation[j] === '-') {
+          duration++;
+          j++;
+        }
       }
       
       const { duration: durationType, isDotted } = getDurationType(duration);
@@ -109,22 +118,65 @@ function splitIntoMeasures(notes: Note[], timeSignature: TimeSignature): Measure
   let currentDuration = 0;
   
   for (const note of notes) {
-    // Check if adding this note would exceed the measure
-    if (currentDuration + note.durationInSixteenths > sixteenthsPerMeasure) {
-      // If we have notes in the current measure, save it
-      if (currentMeasure.length > 0) {
-        measures.push({
-          notes: currentMeasure,
-          totalDuration: currentDuration,
-        });
-      }
+    let remainingDuration = note.durationInSixteenths;
+    let noteToAdd = note;
+    
+    // Split notes that span multiple measures
+    while (remainingDuration > 0) {
+      const spaceInMeasure = sixteenthsPerMeasure - currentDuration;
       
-      // Start a new measure
-      currentMeasure = [note];
-      currentDuration = note.durationInSixteenths;
-    } else {
-      currentMeasure.push(note);
-      currentDuration += note.durationInSixteenths;
+      if (remainingDuration <= spaceInMeasure) {
+        // Note fits in current measure
+        if (remainingDuration < note.durationInSixteenths) {
+          // This is a partial note, create a new note with adjusted duration
+          const { duration: durationType, isDotted } = getDurationType(remainingDuration);
+          noteToAdd = {
+            ...note,
+            duration: durationType,
+            durationInSixteenths: remainingDuration,
+            isDotted,
+          };
+        }
+        currentMeasure.push(noteToAdd);
+        currentDuration += remainingDuration;
+        remainingDuration = 0;
+        
+        // Check if measure is complete
+        if (currentDuration === sixteenthsPerMeasure) {
+          measures.push({
+            notes: currentMeasure,
+            totalDuration: currentDuration,
+          });
+          currentMeasure = [];
+          currentDuration = 0;
+        }
+      } else {
+        // Note doesn't fit, split it
+        if (spaceInMeasure > 0) {
+          const { duration: durationType, isDotted } = getDurationType(spaceInMeasure);
+          const partialNote: Note = {
+            ...note,
+            duration: durationType,
+            durationInSixteenths: spaceInMeasure,
+            isDotted,
+          };
+          currentMeasure.push(partialNote);
+          currentDuration += spaceInMeasure;
+          remainingDuration -= spaceInMeasure;
+        }
+        
+        // Finish current measure
+        if (currentMeasure.length > 0) {
+          measures.push({
+            notes: currentMeasure,
+            totalDuration: currentDuration,
+          });
+        }
+        
+        // Start new measure
+        currentMeasure = [];
+        currentDuration = 0;
+      }
     }
   }
   

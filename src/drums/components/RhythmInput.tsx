@@ -120,7 +120,7 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
         className="input-field"
         value={notation}
         onChange={(e) => onNotationChange(e.target.value)}
-        placeholder="D---T-K-D-D-T---"
+        placeholder="D-T-..K-D---T---"
         spellCheck={false}
       />
     </div>
