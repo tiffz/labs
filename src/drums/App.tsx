@@ -1,8 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import RhythmInput from './components/RhythmInput';
 import RhythmDisplay from './components/RhythmDisplay';
 import NotePalette from './components/NotePalette';
+import PlaybackControls from './components/PlaybackControls';
 import { parseRhythm } from './utils/rhythmParser';
+import { rhythmPlayer } from './utils/rhythmPlayer';
 import type { TimeSignature } from './types';
 
 const App: React.FC = () => {
@@ -11,6 +13,24 @@ const App: React.FC = () => {
     numerator: 4,
     denominator: 4,
   });
+  const [bpm, setBpm] = useState<number>(120);
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [currentNote, setCurrentNote] = useState<{ measureIndex: number; noteIndex: number } | null>(null);
+  const [history, setHistory] = useState<string[]>([]);
+  const [redoStack, setRedoStack] = useState<string[]>([]);
+  
+  // Helper to add to history
+  const addToHistory = (currentNotation: string) => {
+    setHistory(prev => [...prev, currentNotation]);
+    // Clear redo stack when new action is taken
+    setRedoStack([]);
+  };
+  
+  // Wrapper for setNotation that adds to history
+  const updateNotation = (newNotation: string) => {
+    addToHistory(notation);
+    setNotation(newNotation);
+  };
 
   const parsedRhythm = useMemo(() => {
     return parseRhythm(notation, timeSignature);
@@ -39,8 +59,171 @@ const App: React.FC = () => {
 
   const handleInsertPattern = (pattern: string) => {
     // Append the pattern to the end of the current notation
+    addToHistory(notation);
     setNotation(prevNotation => prevNotation + pattern);
   };
+
+  const handlePlay = useCallback(() => {
+    if (!parsedRhythm.isValid || parsedRhythm.measures.length === 0) {
+      return;
+    }
+
+    setIsPlaying(true);
+    setCurrentNote(null);
+
+    rhythmPlayer.play(
+      parsedRhythm,
+      bpm,
+      (measureIndex, noteIndex) => {
+        setCurrentNote({ measureIndex, noteIndex });
+      },
+      () => {
+        setIsPlaying(false);
+        setCurrentNote(null);
+      }
+    );
+  }, [parsedRhythm, bpm]);
+
+  const handleStop = useCallback(() => {
+    rhythmPlayer.stop();
+    setIsPlaying(false);
+    setCurrentNote(null);
+  }, []);
+
+  const handleClear = () => {
+    updateNotation('');
+    if (isPlaying) {
+      handleStop();
+    }
+  };
+
+  const handleDeleteLast = () => {
+    if (notation.length === 0) return;
+    
+    // Delete the entire last note, not just the last character
+    // Find the last note by working backwards
+    let i = notation.length - 1;
+    
+    // Skip trailing spaces
+    while (i >= 0 && notation[i] === ' ') {
+      i--;
+    }
+    
+    if (i < 0) {
+      updateNotation('');
+      return;
+    }
+    
+    // If we're on a dash, skip all dashes to find the note
+    if (notation[i] === '-') {
+      while (i >= 0 && notation[i] === '-') {
+        i--;
+      }
+    }
+    
+    // Now we should be on the actual note character (D, T, K, or .)
+    // Delete this character and all its dashes
+    if (i >= 0) {
+      const newNotation = notation.slice(0, i);
+      updateNotation(newNotation);
+    }
+    
+    if (isPlaying) {
+      handleStop();
+    }
+  };
+  
+  const handleUndo = () => {
+    if (history.length === 0) return;
+    
+    const previousNotation = history[history.length - 1];
+    setHistory(prev => prev.slice(0, -1));
+    setRedoStack(prev => [...prev, notation]); // Add current to redo stack
+    setNotation(previousNotation);
+    
+    if (isPlaying) {
+      handleStop();
+    }
+  };
+
+  const handleRedo = () => {
+    if (redoStack.length === 0) return;
+    
+    const nextNotation = redoStack[redoStack.length - 1];
+    setRedoStack(prev => prev.slice(0, -1));
+    setHistory(prev => [...prev, notation]); // Add current to history
+    setNotation(nextNotation);
+    
+    if (isPlaying) {
+      handleStop();
+    }
+  };
+
+  const handleRandomize = () => {
+    // Generate a random rhythm for one measure
+    const sixteenthsPerMeasure = timeSignature.denominator === 8
+      ? timeSignature.numerator * 2
+      : timeSignature.numerator * 4;
+    
+    const sounds = ['D', 'T', 'K', '.'];
+    const durations = [1, 2, 3, 4]; // 16th, 8th, dotted 8th, quarter
+    
+    let newNotation = '';
+    let currentDuration = 0;
+    
+    while (currentDuration < sixteenthsPerMeasure) {
+      const remainingDuration = sixteenthsPerMeasure - currentDuration;
+      
+      // Pick a random duration that fits
+      const validDurations = durations.filter(d => d <= remainingDuration);
+      const duration = validDurations[Math.floor(Math.random() * validDurations.length)];
+      
+      // Pick a random sound
+      const sound = sounds[Math.floor(Math.random() * sounds.length)];
+      
+      // Add the note
+      if (sound === '.') {
+        // For rests, use dots
+        newNotation += '.'.repeat(duration);
+      } else {
+        // For notes, use the sound + dashes
+        newNotation += sound;
+        if (duration > 1) {
+          newNotation += '-'.repeat(duration - 1);
+        }
+      }
+      
+      currentDuration += duration;
+    }
+    
+    updateNotation(newNotation);
+    
+    if (isPlaying) {
+      handleStop();
+    }
+  };
+
+  // Spacebar keyboard shortcut for play/stop
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only trigger if not typing in an input field
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      if (e.code === 'Space') {
+        e.preventDefault(); // Prevent page scroll
+        if (isPlaying) {
+          handleStop();
+        } else {
+          handlePlay();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isPlaying, parsedRhythm, bpm, handlePlay, handleStop]);
 
   return (
     <div className="app-layout">
@@ -50,17 +233,40 @@ const App: React.FC = () => {
           <h1>Darbuka Rhythm Trainer</h1>
         </header>
 
+        {/* Playback Controls Bar */}
+        <PlaybackControls
+          bpm={bpm}
+          onBpmChange={setBpm}
+          timeSignature={timeSignature}
+          onTimeSignatureChange={setTimeSignature}
+          isPlaying={isPlaying}
+          onPlay={handlePlay}
+          onStop={handleStop}
+        />
+
         <div className="main-workspace">
           <RhythmInput
             notation={notation}
-            onNotationChange={setNotation}
+            onNotationChange={(newNotation) => {
+              addToHistory(notation);
+              setNotation(newNotation);
+            }}
             timeSignature={timeSignature}
             onTimeSignatureChange={setTimeSignature}
+            onClear={handleClear}
+            onDeleteLast={handleDeleteLast}
+            onUndo={handleUndo}
+            onRedo={handleRedo}
+            onRandomize={handleRandomize}
+            canUndo={history.length > 0}
+            canRedo={redoStack.length > 0}
           />
 
-          <RhythmDisplay rhythm={parsedRhythm} />
+          <RhythmDisplay 
+            rhythm={parsedRhythm} 
+            currentNote={currentNote}
+          />
         </div>
-
       </div>
 
       {/* Right sidebar: Note Palette (full height) */}

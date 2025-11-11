@@ -5,6 +5,7 @@ import { drawDrumSymbol } from '../assets/drumSymbols';
 
 interface VexFlowRendererProps {
   rhythm: ParsedRhythm;
+  currentNote?: { measureIndex: number; noteIndex: number } | null;
 }
 
 /**
@@ -29,7 +30,7 @@ const DURATION_MAP: Record<string, string> = {
   whole: 'w',
 };
 
-const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({ rhythm }) => {
+const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({ rhythm, currentNote }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -41,13 +42,14 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({ rhythm }) => {
     containerRef.current.innerHTML = '';
 
     try {
-      const containerWidth = containerRef.current.clientWidth || 800;
-      const measureWidth = 350; // Fixed width per measure for consistency
-      const measuresPerLine = Math.max(2, Math.floor((containerWidth - 20) / measureWidth)); // Minimum 2 measures per line
+      // Fixed sizing - always 2 measures per line
+      const measureWidth = 400;
+      const measuresPerLine = 2;
+      
       const numLines = Math.ceil(rhythm.measures.length / measuresPerLine);
-      const lineHeight = 140; // Reduced from 200 for tighter vertical spacing
+      const lineHeight = 100;
       const totalHeight = numLines * lineHeight + 40;
-      const totalWidth = Math.min(containerWidth, measureWidth * measuresPerLine + 20);
+      const totalWidth = measureWidth * measuresPerLine + 20; // Fixed width for 2 measures
 
       // Create SVG renderer
       const renderer = new Renderer(containerRef.current, Renderer.Backends.SVG);
@@ -127,21 +129,42 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({ rhythm }) => {
             beamMiddleOnly: false, // Beam all beamable notes
           });
 
-          // Format and draw
-          new Formatter()
-            .joinVoices([voice])
-            .format([voice], measureWidth - 20);
+            // Format and draw with more padding to prevent cutoff
+            new Formatter()
+              .joinVoices([voice])
+              .format([voice], measureWidth - 60);
 
           voice.draw(context, stave);
           
           // Draw beams after voice
           beams.forEach(beam => beam.setContext(context).draw());
 
-          // Draw custom symbols above notes
+          // Draw custom symbols above notes and highlight current note
           const svgElement = containerRef.current?.querySelector('svg');
           if (svgElement) {
             staveNotes.forEach((staveNote, noteIndex) => {
               const note = measure.notes[noteIndex];
+              
+              // Highlight current note with red
+              const isCurrentNote = currentNote && 
+                currentNote.measureIndex === measureIndex && 
+                currentNote.noteIndex === noteIndex;
+              
+              if (isCurrentNote) {
+                // Highlight the notehead in red
+                const noteheadElements = staveNote.getSVGElement()?.querySelectorAll('.vf-notehead, path[class*="notehead"], ellipse[class*="notehead"]');
+                noteheadElements?.forEach((el) => {
+                  (el as SVGElement).style.fill = '#ef4444';
+                  (el as SVGElement).style.stroke = '#ef4444';
+                });
+                
+                // Highlight the stem in red
+                const stemElements = staveNote.getSVGElement()?.querySelectorAll('.vf-stem, path[class*="stem"], line[class*="stem"]');
+                stemElements?.forEach((el) => {
+                  (el as SVGElement).style.stroke = '#ef4444';
+                });
+              }
+              
               if (note && note.sound !== 'rest') {
                 // Get the note's x position
                 // VexFlow's note head width is approximately 10-12 pixels for quarter notes
@@ -159,7 +182,7 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({ rhythm }) => {
     } catch (error) {
       console.error('Error rendering VexFlow notation:', error);
     }
-  }, [rhythm]);
+  }, [rhythm, currentNote]);
 
   if (rhythm.measures.length === 0) {
     return null;

@@ -19,12 +19,14 @@ describe('NotePalette', () => {
   it('renders single note section', () => {
     render(<NotePalette {...defaultProps} />);
     
+    // Section title should be visible
     expect(screen.getByText('Single Notes')).toBeInTheDocument();
   });
 
   it('renders common patterns section', () => {
     render(<NotePalette {...defaultProps} />);
     
+    // Section title should be visible
     expect(screen.getByText('Common Patterns')).toBeInTheDocument();
   });
 
@@ -33,9 +35,12 @@ describe('NotePalette', () => {
     render(<NotePalette {...defaultProps} onInsertPattern={onInsertPattern} />);
     
     // Find all buttons that are not disabled
-    const buttons = screen.getAllByRole('button').filter(btn => !btn.hasAttribute('disabled'));
+    const buttons = screen.getAllByRole('button').filter(btn => 
+      !btn.hasAttribute('disabled') && 
+      !btn.querySelector('input[type="checkbox"]') // Exclude sound preview checkbox
+    );
     
-    // Click the first enabled button
+    // Click the first enabled pattern button
     expect(buttons.length).toBeGreaterThan(0);
     fireEvent.click(buttons[0]);
     
@@ -47,7 +52,7 @@ describe('NotePalette', () => {
   it('renders multiple note pattern buttons', () => {
     render(<NotePalette {...defaultProps} />);
     
-    // 5 rows x 4 columns (table) + 9 common patterns = 29 total buttons
+    // 5 rows x 4 columns (table) + 9 common patterns = 29 total buttons (no tabs)
     const buttons = screen.getAllByRole('button');
     expect(buttons.length).toBe(29);
   });

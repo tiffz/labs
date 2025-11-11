@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import SimpleVexFlowNote from './SimpleVexFlowNote';
 import { parsePatternToNotes } from '../utils/notationHelpers';
+import { audioPlayer } from '../utils/audioPlayer';
 import type { TimeSignature } from '../types';
 
 interface NotePaletteProps {
@@ -57,6 +58,8 @@ const COMMON_PATTERNS: PaletteItem[] = [
 ];
 
 const NotePalette: React.FC<NotePaletteProps> = ({ onInsertPattern, remainingBeats }) => {
+  const [soundPreviewEnabled, setSoundPreviewEnabled] = useState(true);
+
   // Helper to create pattern string
   const createPattern = (sound: string, duration: number): string => {
     if (duration === 1) return sound;
@@ -72,14 +75,45 @@ const NotePalette: React.FC<NotePaletteProps> = ({ onInsertPattern, remainingBea
     return patternDuration <= remainingBeats;
   };
 
+  // Play preview of pattern sounds
+  const playPatternPreview = (pattern: string) => {
+    if (!soundPreviewEnabled) return;
+
+    const notes = parsePatternToNotes(pattern);
+    let delay = 0;
+    const msPerSixteenth = 150; // Fast preview tempo
+
+    notes.forEach(note => {
+      setTimeout(() => {
+        audioPlayer.play(note.sound);
+      }, delay);
+      delay += note.duration * msPerSixteenth;
+    });
+  };
+
+  const handleInsertPattern = (pattern: string) => {
+    playPatternPreview(pattern);
+    onInsertPattern(pattern);
+  };
+
   return (
     <div className="note-palette">
       <div className="palette-header">
-        <h3>Note Palette</h3>
-        <p className="palette-subtitle">Click to insert patterns</p>
+        <div className="palette-title-group">
+          <h3>Note Palette</h3>
+          <p className="palette-subtitle">Click to insert patterns</p>
+        </div>
+        <label className="sound-preview-toggle">
+          <input
+            type="checkbox"
+            checked={soundPreviewEnabled}
+            onChange={(e) => setSoundPreviewEnabled(e.target.checked)}
+          />
+          <span>Sound preview</span>
+        </label>
       </div>
 
-      <div className="palette-section">
+      <div className="palette-section single-notes-section">
         <h4 className="palette-section-title">Single Notes</h4>
         <div className="note-table">
         <table>
@@ -140,12 +174,12 @@ const NotePalette: React.FC<NotePaletteProps> = ({ onInsertPattern, remainingBea
                   
                   return (
                     <td key={colIdx}>
-                      <button
-                        className="palette-button-simple notation-button"
-                        onClick={() => onInsertPattern(pattern)}
-                        disabled={isDisabled}
-                        title={isDisabled ? 'Would exceed measure length' : `Insert ${displaySymbol} ${col.label}`}
-                      >
+                        <button
+                          className="palette-button-simple notation-button"
+                          onClick={() => handleInsertPattern(pattern)}
+                          disabled={isDisabled}
+                          title={isDisabled ? 'Would exceed measure length' : `Insert ${displaySymbol} ${col.label}`}
+                        >
                         <span className="note-symbol">{displaySymbol}</span>
                       </button>
                     </td>
@@ -158,7 +192,7 @@ const NotePalette: React.FC<NotePaletteProps> = ({ onInsertPattern, remainingBea
         </div>
       </div>
 
-      <div className="palette-section">
+      <div className="palette-section common-patterns-section">
         <h4 className="palette-section-title">Common Patterns</h4>
       <div className="palette-grid common-patterns">
         {COMMON_PATTERNS.map((item, index) => {
@@ -168,7 +202,7 @@ const NotePalette: React.FC<NotePaletteProps> = ({ onInsertPattern, remainingBea
             <button
               key={index}
               className="palette-button notation-button"
-              onClick={() => onInsertPattern(item.pattern)}
+              onClick={() => handleInsertPattern(item.pattern)}
               disabled={isDisabled}
               title={isDisabled ? 'Would exceed measure length' : `Insert ${item.label}`}
             >

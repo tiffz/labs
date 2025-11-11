@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import type { TimeSignature } from '../types';
 import RhythmPresets from './RhythmPresets';
 
@@ -7,6 +7,13 @@ interface RhythmInputProps {
   onNotationChange: (notation: string) => void;
   timeSignature: TimeSignature;
   onTimeSignatureChange: (timeSignature: TimeSignature) => void;
+  onClear: () => void;
+  onDeleteLast: () => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  onRandomize: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
 }
 
 const RhythmInput: React.FC<RhythmInputProps> = ({
@@ -14,21 +21,121 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
   onNotationChange,
   timeSignature,
   onTimeSignatureChange,
+  onClear,
+  onDeleteLast,
+  onUndo,
+  onRedo,
+  onRandomize,
+  canUndo,
+  canRedo,
 }) => {
   const [showTooltip, setShowTooltip] = useState(false);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  const handleNumeratorChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    onTimeSignatureChange({
-      ...timeSignature,
-      numerator: parseInt(e.target.value, 10),
-    });
+  // Validate and filter input to only allow valid notation characters
+  const handleNotationChange = (value: string) => {
+    // Only allow: D, d, T, t, K, k, . (rest), - (extend), space, and newline
+    const validChars = /^[DdTtKk.\-\s\n]*$/;
+    if (validChars.test(value)) {
+      onNotationChange(value);
+    }
+    // If invalid characters are present, ignore the change
   };
 
-  const handleDenominatorChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    onTimeSignatureChange({
-      ...timeSignature,
-      denominator: parseInt(e.target.value, 10),
-    });
+  // Auto-format notation to put 2 measures per line (matching VexFlow display)
+  const handleBlur = () => {
+    if (!notation) return;
+
+    const sixteenthsPerMeasure = timeSignature.denominator === 8
+      ? timeSignature.numerator * 2
+      : timeSignature.numerator * 4;
+
+    let formatted = '';
+    let positionInMeasure = 0;
+    let measureCount = 0;
+    let i = 0;
+
+    // Remove all existing spaces and newlines first
+    const cleanedNotation = notation.replace(/[\s\n]/g, '');
+
+    while (i < cleanedNotation.length) {
+      const char = cleanedNotation[i];
+
+      // Check if it's a note character (D, T, K, .)
+      if (char === 'D' || char === 'd' || char === 'T' || char === 't' || 
+          char === 'K' || char === 'k' || char === '.') {
+        
+        // Calculate duration of this note
+        let duration = 1;
+        let j = i + 1;
+        
+        if (char === '.') {
+          // Count consecutive dots for rests
+          while (j < cleanedNotation.length && cleanedNotation[j] === '.') {
+            duration++;
+            j++;
+          }
+        } else {
+          // Count consecutive dashes for notes
+          while (j < cleanedNotation.length && cleanedNotation[j] === '-') {
+            duration++;
+            j++;
+          }
+        }
+
+        // Check if adding this note would exceed the measure
+        if (positionInMeasure + duration > sixteenthsPerMeasure) {
+          // Complete current measure with space
+          if (formatted.length > 0 && !formatted.endsWith(' ') && !formatted.endsWith('\n')) {
+            formatted += ' ';
+          }
+          measureCount++;
+          
+          // Add newline after every 2 measures
+          if (measureCount % 2 === 0) {
+            formatted = formatted.trimEnd() + '\n';
+          }
+          
+          positionInMeasure = 0;
+        }
+
+        // Add this note and its dashes
+        for (let k = i; k < j; k++) {
+          formatted += cleanedNotation[k];
+        }
+
+        positionInMeasure += duration;
+
+        // Add space after completing a measure (but newline every 2 measures)
+        if (positionInMeasure === sixteenthsPerMeasure) {
+          measureCount++;
+          
+          if (measureCount % 2 === 0) {
+            // After 2nd, 4th, 6th measure, etc: add newline
+            formatted += '\n';
+          } else {
+            // After 1st, 3rd, 5th measure, etc: add space
+            formatted += ' ';
+          }
+          
+          positionInMeasure = 0;
+        }
+
+        i = j;
+      } else {
+        // Unknown character (shouldn't happen with validation)
+        formatted += char;
+        i++;
+      }
+    }
+
+    // Trim trailing whitespace
+    formatted = formatted.replace(/[\s\n]+$/, '');
+
+    // Only update if formatting changed something
+    if (formatted !== notation) {
+      onNotationChange(formatted);
+    }
   };
 
   return (
@@ -55,13 +162,55 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
               onMouseLeave={() => setShowTooltip(false)}
             >
               <div className="tooltip-title">Notation Guide</div>
+              
               <div className="tooltip-section">
-                <strong>Basic Sounds:</strong>
-                <div className="tooltip-row"><code>D</code> = Dum (bass)</div>
-                <div className="tooltip-row"><code>T</code> = Tak (high)</div>
-                <div className="tooltip-row"><code>K</code> = Ka (high)</div>
-                <div className="tooltip-row"><code>.</code> = Rest (silence)</div>
+                <strong>Drum Sounds:</strong>
+                <div className="tooltip-symbols">
+                  <div className="tooltip-symbol-item">
+                    <svg width="20" height="26" viewBox="-2 -10 16 30">
+                      <path 
+                        d="M 6 -7 Q -2 -7, -2 0 Q -2 7, 6 7 L 6 13" 
+                        stroke="black" 
+                        strokeWidth="2" 
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                    <span><code>D</code> = Dum (bass)</span>
+                  </div>
+                  <div className="tooltip-symbol-item">
+                    <svg width="16" height="16" viewBox="-8 -8 16 16">
+                      <path 
+                        d="M -6 6 L 0 -6 L 6 6" 
+                        stroke="black" 
+                        strokeWidth="2" 
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeLinejoin="miter"
+                      />
+                    </svg>
+                    <span><code>T</code> = Tak (high)</span>
+                  </div>
+                  <div className="tooltip-symbol-item">
+                    <svg width="16" height="16" viewBox="-8 -8 16 16">
+                      <path 
+                        d="M -6 -6 L 0 6 L 6 -6" 
+                        stroke="black" 
+                        strokeWidth="2" 
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeLinejoin="miter"
+                      />
+                    </svg>
+                    <span><code>K</code> = Ka (high)</span>
+                  </div>
+                  <div className="tooltip-symbol-item">
+                    <span><code>.</code> = Rest (silence)</span>
+                  </div>
+                </div>
               </div>
+              
               <div className="tooltip-section">
                 <strong>Duration:</strong>
                 <div className="tooltip-row">Add dashes (<code>-</code>) to extend duration</div>
@@ -73,59 +222,92 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
                 <div className="tooltip-row"><code>D-----</code> = dotted quarter (6 sixteenths)</div>
               </div>
               <div className="tooltip-attribution">
-                Based on <a href="https://en.wikipedia.org/wiki/Dumbek_rhythms#Notation" target="_blank" rel="noopener noreferrer">Dumbek rhythms notation</a>
+                Notation from <a href="https://www.amirschoolofmusic.com/store/p/pdf-mastering-darbuka-1" target="_blank" rel="noopener noreferrer">Mastering Darbuka</a> and <a href="https://en.wikipedia.org/wiki/Dumbek_rhythms#Notation" target="_blank" rel="noopener noreferrer">Dumbek rhythms</a>
               </div>
             </div>
           )}
         </div>
-        <div className="controls-group">
+        
+        {/* Edit Controls */}
+        <div className="rhythm-edit-controls">
           <RhythmPresets
             onSelectPreset={(notation, ts) => {
               onNotationChange(notation);
               onTimeSignatureChange(ts);
             }}
           />
-          <div className="time-signature-inline">
-            <select
-              className="time-signature-select"
-              value={timeSignature.numerator}
-              onChange={handleNumeratorChange}
-              aria-label="Time signature numerator"
+          <div className="icon-button-group">
+            <button
+              className="icon-button"
+              onClick={onRandomize}
+              type="button"
+              aria-label="Randomize rhythm"
+              data-tooltip="Randomize"
             >
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
-              <option value="5">5</option>
-              <option value="6">6</option>
-              <option value="7">7</option>
-              <option value="9">9</option>
-              <option value="12">12</option>
-            </select>
-            <span className="time-sig-slash">/</span>
-            <select
-              className="time-signature-select"
-              value={timeSignature.denominator}
-              onChange={handleDenominatorChange}
-              aria-label="Time signature denominator"
+              <span className="material-symbols-outlined">shuffle</span>
+            </button>
+            <button
+              className="icon-button"
+              onClick={onUndo}
+              type="button"
+              disabled={!canUndo}
+              aria-label="Undo"
+              data-tooltip="Undo"
             >
-              <option value="4">4</option>
-              <option value="8">8</option>
-            </select>
+              <span className="material-symbols-outlined">undo</span>
+            </button>
+            <button
+              className="icon-button"
+              onClick={onRedo}
+              type="button"
+              disabled={!canRedo}
+              aria-label="Redo"
+              data-tooltip="Redo"
+            >
+              <span className="material-symbols-outlined">redo</span>
+            </button>
+            <button
+              className="icon-button"
+              onClick={onDeleteLast}
+              type="button"
+              disabled={notation.length === 0}
+              aria-label="Delete last note"
+              data-tooltip="Delete Last Note"
+            >
+              <span className="material-symbols-outlined">backspace</span>
+            </button>
+            <button
+              className="icon-button icon-button-danger"
+              onClick={onClear}
+              type="button"
+              disabled={notation.length === 0}
+              aria-label="Clear rhythm"
+              data-tooltip="Clear"
+            >
+              <span className="material-symbols-outlined">delete</span>
+            </button>
           </div>
         </div>
       </div>
-      <input
-        id="rhythm-notation-input"
-        type="text"
-        className="input-field"
-        value={notation}
-        onChange={(e) => onNotationChange(e.target.value)}
-        placeholder="D-T-..K-D---T---"
-        spellCheck={false}
-      />
+      
+          {/* Input field */}
+          <div className="rhythm-input-container">
+            <textarea
+              ref={inputRef}
+              id="rhythm-notation-input"
+              className="input-field"
+              value={notation}
+              onChange={(e) => handleNotationChange(e.target.value)}
+              onBlur={handleBlur}
+              placeholder="D-T-..K-D---T---"
+              spellCheck={false}
+              rows={3}
+            />
+          </div>
     </div>
   );
 };
 
 export default RhythmInput;
+
 
