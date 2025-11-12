@@ -9,11 +9,17 @@ export interface StoryDNA {
   genre: string;
   theme: string;
   hero: string;
+  heroName: string; // Just the name part (e.g., "Kimberly Brown")
   flaw: string;
   initialSetting: string;
   act2Setting: string;
   bStoryCharacter: string;
+  bStoryCharacterName: string; // Name for the B Story character
   nemesis: string;
+  nemesisName: string; // Name for the nemesis
+  minorCharacterName: string; // Name for the minor character in Theme Stated
+  // Storage for all generated content to prevent unwanted regeneration
+  generatedContent: { [key: string]: string };
 }
 
 export interface GenreElements {

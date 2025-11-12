@@ -38,14 +38,14 @@ const config: KnipConfig = {
     'src/corp/index.html',
     // Parked legacy bootstrap kept for reference
     'src/corp/main.ts',
+    // Kimberly System: Content generation library with many unused exports (intentional API)
+    'src/story/kimberly/**/*.ts',
   ],
   ignoreDependencies: [
     // Dependencies used in HTML files or other non-TS contexts
   ],
   // Ignore exported types that are part of the public API or used in data structures
-  ignoreExportsUsedInFile: {
-    type: true, // Allow types to be exported even if only used in the same file
-  },
+  ignoreExportsUsedInFile: true,
   rules: {
     types: 'off', // Disable unused type checking as they're often part of public APIs
     exports: 'warn', // Allow some unused exports (e.g., tuning constants) without failing CI

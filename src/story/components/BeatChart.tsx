@@ -3,7 +3,7 @@ import type { StoryDNA } from '../types';
 import { beats } from '../data/beats';
 import { GeneratedChip } from './GeneratedChip';
 import { Tooltip } from './Tooltip';
-import { getNewSuggestion } from '../data/storyGenerator';
+import { getContent } from '../data/storyGenerator';
 
 interface BeatChartProps {
   dna: StoryDNA;
@@ -42,7 +42,7 @@ export const BeatChart: React.FC<BeatChartProps> = ({ dna, onReroll }) => {
               <div className="space-y-2">
                 {beat.sub.map((subElementName) => {
                   const rerollId = `beat_${beat.name.split('. ')[1].replace(/\s+/g, '')}_${subElementName.replace(/[^a-zA-Z0-9]/g, '')}`;
-                  const initialContent = getNewSuggestion(rerollId, dna);
+                  const content = getContent(rerollId, dna);
 
                   return (
                     <div key={subElementName} className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2">
@@ -52,7 +52,7 @@ export const BeatChart: React.FC<BeatChartProps> = ({ dna, onReroll }) => {
                       <div className="flex-1">
                         <GeneratedChip
                           rerollId={rerollId}
-                          content={initialContent}
+                          content={content}
                           onReroll={onReroll}
                         />
                       </div>

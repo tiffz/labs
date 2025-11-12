@@ -23,17 +23,42 @@ const App: React.FC = () => {
 
     const newContent = getNewSuggestion(rerollId, storyDNA);
 
-    // Update core DNA if needed
-    if (['hero', 'flaw', 'nemesis'].includes(rerollId)) {
-      setStoryDNA({
-        ...storyDNA,
-        [rerollId]: newContent,
-      });
+    // Create new DNA with updated content
+    const updatedDNA = { ...storyDNA };
+    
+    // Update core DNA and extract character names if needed
+    if (rerollId === 'hero') {
+      updatedDNA.hero = newContent;
+      // Extract just the name part for heroName (before the comma)
+      const namePart = newContent.split(',')[0];
+      updatedDNA.heroName = namePart;
+      
+      // Clear all generated content that uses the hero name
+      // This forces regeneration with the new name
+      updatedDNA.generatedContent = {};
+    } else if (rerollId === 'flaw') {
+      updatedDNA.flaw = newContent;
+    } else if (rerollId === 'nemesis') {
+      updatedDNA.nemesis = newContent;
+      // Extract just the name part for nemesisName
+      const namePart = newContent.split(',')[0];
+      updatedDNA.nemesisName = namePart;
+      
+      // Clear generated content that uses the nemesis name
+      updatedDNA.generatedContent = Object.fromEntries(
+        Object.entries(updatedDNA.generatedContent).filter(
+          ([key]) => !key.includes('Nemesis') && !key.includes('BadGuysCloseIn') && !key.includes('Finale')
+        )
+      );
     } else {
-      // For non-core elements, we just need to trigger a re-render
-      // The component will call getNewSuggestion again
-      setStoryDNA({ ...storyDNA });
+      // Store the new content in the generatedContent cache
+      updatedDNA.generatedContent = {
+        ...updatedDNA.generatedContent,
+        [rerollId]: newContent,
+      };
     }
+    
+    setStoryDNA(updatedDNA);
   };
 
   return (

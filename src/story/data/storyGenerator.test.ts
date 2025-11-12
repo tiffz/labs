@@ -47,12 +47,17 @@ describe('Story Generator', () => {
     const mockDNA = {
       genre: 'Whydunit',
       theme: 'Forgiveness',
-      hero: 'Cynical Detective',
+      hero: 'John Smith, a Cynical Detective',
+      heroName: 'John Smith',
       flaw: 'Grudge-holding',
-      nemesis: 'Megalomaniac CEO',
+      nemesis: 'Victor Kane, a Megalomaniac CEO',
+      nemesisName: 'Victor Kane',
       initialSetting: 'Rainy Metropolis',
       act2Setting: 'A neon-lit city',
-      bStoryCharacter: 'Sarcastic Informant',
+      bStoryCharacter: 'Maria Garcia, a Sarcastic Informant',
+      bStoryCharacterName: 'Maria Garcia',
+      minorCharacterName: 'Robert Lee',
+      generatedContent: {},
     };
 
     it('generates a new hero suggestion', () => {
@@ -101,7 +106,7 @@ describe('Story Generator', () => {
       expect(flawShown).toContain(mockDNA.flaw);
 
       const bStory = getNewSuggestion('beat_BStory_NewCharacter', mockDNA);
-      expect(bStory).toContain(mockDNA.bStoryCharacter);
+      expect(bStory).toContain(mockDNA.bStoryCharacterName);
 
       const themeEmbodied = getNewSuggestion('beat_BStory_ThemeEmbodied', mockDNA);
       expect(themeEmbodied).toContain(mockDNA.theme);
