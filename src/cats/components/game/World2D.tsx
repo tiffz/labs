@@ -80,6 +80,7 @@ const World2D: React.FC<World2DProps> = ({
   
   // Track when manual centering is happening to prevent camera following override
   const isManualCenteringRef = useRef(false);
+  const centerTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Calculate camera limits dynamically based on current viewport and world scaling
   const getMaxCameraX = () => {
@@ -127,8 +128,13 @@ const World2D: React.FC<World2DProps> = ({
     setCameraX(clampedCameraX);
     
     // Re-enable camera following after a short delay
-    setTimeout(() => {
+    // Clear any existing timeout to prevent multiple timers
+    if (centerTimeoutRef.current) {
+      clearTimeout(centerTimeoutRef.current);
+    }
+    centerTimeoutRef.current = setTimeout(() => {
       isManualCenteringRef.current = false;
+      centerTimeoutRef.current = null;
     }, 500);
   }, [catWorldPosition.x, catWorldPosition.y, catWorldPosition.z, viewportWidth, maxCameraX]);
   
@@ -258,6 +264,18 @@ const World2D: React.FC<World2DProps> = ({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [maxCameraX, catWorldPosition.x, viewportWidth, playerControlMode, centerCatOnScreen]);
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      if (centerTimeoutRef.current) {
+        clearTimeout(centerTimeoutRef.current);
+      }
+      if (resizeDebounceRef.current) {
+        clearTimeout(resizeDebounceRef.current);
+      }
+    };
+  }, []);
 
   // Initialize coordinate system viewport and sync camera position
   // Note: updateViewport() is only called in useEffect when dimensions actually change
