@@ -11,7 +11,7 @@ export type NoteHighlightCallback = (measureIndex: number, noteIndex: number) =>
  * Rhythm player that schedules and plays notes based on BPM
  * Uses absolute timestamps to prevent timing drift during loops
  */
-export class RhythmPlayer {
+class RhythmPlayer {
   private timeoutIds: number[] = [];
   private isPlaying = false;
   private isLooping = false;

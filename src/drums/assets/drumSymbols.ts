@@ -2,9 +2,9 @@ import type { DrumSound } from '../types';
 
 /**
  * Shared SVG path data for drum symbols
- * Used consistently across all renderers
+ * Used internally by drawDrumSymbol
  */
-export const DRUM_SYMBOL_PATHS = {
+const DRUM_SYMBOL_PATHS = {
   dum: 'M 6 -7 Q -2 -7, -2 0 Q -2 7, 6 7 L 6 13',
   tak: 'M -6 6 L 0 -6 L 6 6',
   ka: 'M -6 -6 L 0 6 L 6 -6',

@@ -1,9 +1,9 @@
 import type { DrumSound } from '../types';
 
 /**
- * Shared notation mapping used across the app
+ * Notation mapping used internally by parsePatternToNotes
  */
-export const NOTATION_MAP: Record<string, DrumSound> = {
+const NOTATION_MAP: Record<string, DrumSound> = {
   'D': 'dum',
   'd': 'dum',
   'T': 'tak',
