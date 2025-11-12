@@ -63,7 +63,7 @@ export const RadioOption: React.FC<RadioOptionProps> = ({
       <label
         ref={labelRef}
         htmlFor={inputId}
-        className="cursor-pointer rounded-full border border-orange-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-all duration-150 hover:border-orange-400 hover:bg-orange-50 peer-checked:border-orange-500 peer-checked:bg-orange-500 peer-checked:text-white"
+        className="cursor-pointer rounded-full border border-orange-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-all duration-150 hover:border-orange-300 hover:bg-gradient-to-br hover:from-orange-50/50 hover:to-pink-50/30 peer-checked:border-orange-400 peer-checked:bg-gradient-to-br peer-checked:from-orange-500 peer-checked:via-orange-500 peer-checked:to-pink-500/70 peer-checked:text-white shadow-sm hover:shadow"
         onMouseEnter={() => tooltip && setShowTooltip(true)}
         onMouseLeave={() => setShowTooltip(false)}
       >

@@ -23,7 +23,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ selectedGenre, onGenreChange, 
     setTipIndex((prev) => (prev + 1) % tips.length);
   };
   return (
-    <aside className="w-80 bg-orange-50 border-r border-orange-200 h-screen overflow-y-auto fixed left-0 top-0 shadow-sm">
+    <aside className="w-80 bg-gradient-to-b from-orange-50/80 via-pink-50/40 to-orange-50/80 border-r border-orange-200 h-screen overflow-y-auto fixed left-0 top-0 shadow-sm backdrop-blur-sm">
       <div className="p-6 space-y-4">
         {/* Logo and Title */}
         <div className="text-center pb-3 border-b border-orange-200">
@@ -81,7 +81,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ selectedGenre, onGenreChange, 
         {/* Generate Button */}
         <button
           onClick={onGenerate}
-          className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-2.5 px-6 rounded-lg text-base transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2"
+          className="w-full bg-gradient-to-br from-orange-500 via-orange-500 to-pink-500/80 hover:from-orange-600 hover:via-orange-600 hover:to-pink-600/80 text-white font-bold py-2.5 px-6 rounded-lg text-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2 shadow-sm hover:shadow-md"
         >
           Generate Story
         </button>

@@ -76,7 +76,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-orange-50">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50/60 via-pink-50/30 to-purple-50/40">
       {/* Sidebar */}
       <Sidebar 
         selectedGenre={selectedGenre}
