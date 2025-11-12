@@ -10,17 +10,17 @@ interface RhythmPreset {
 const RHYTHM_PRESETS: RhythmPreset[] = [
   {
     name: 'Maqsum (4/4)',
-    notation: 'D-T-..K-D---T---',
+    notation: 'D-T-__K-D---T---',
     timeSignature: { numerator: 4, denominator: 4 },
   },
   {
     name: 'Saeidi (4/4)',
-    notation: 'D-T-..D-D---T---',
+    notation: 'D-T-__D-D---T---',
     timeSignature: { numerator: 4, denominator: 4 },
   },
   {
     name: 'Baladi (4/4)',
-    notation: 'D-D-..T-D---T---',
+    notation: 'D-D-__T-D---T---',
     timeSignature: { numerator: 4, denominator: 4 },
   },
   {

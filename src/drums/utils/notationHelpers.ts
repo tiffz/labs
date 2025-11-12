@@ -10,7 +10,7 @@ export const NOTATION_MAP: Record<string, DrumSound> = {
   't': 'tak',
   'K': 'ka',
   'k': 'ka',
-  '.': 'rest',
+  '_': 'rest',
 };
 
 /**
@@ -61,11 +61,11 @@ export function parsePatternToNotes(pattern: string): Array<{ sound: DrumSound; 
       const sound = NOTATION_MAP[char];
       let duration = 1; // Start with 1 sixteenth note
       
-      // For rests (.), count consecutive dots; for others, count dashes
+      // For rests (_), count consecutive underscores; for others, count dashes
       let j = i + 1;
-      if (char === '.') {
+      if (char === '_') {
         // Consolidate consecutive rests
-        while (j < pattern.length && pattern[j] === '.') {
+        while (j < pattern.length && pattern[j] === '_') {
           duration++;
           j++;
         }

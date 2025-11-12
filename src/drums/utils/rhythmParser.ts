@@ -10,7 +10,7 @@ const NOTATION_MAP: Record<string, DrumSound> = {
   't': 'tak',
   'K': 'ka',
   'k': 'ka',
-  '.': 'rest',
+  '_': 'rest',
 };
 
 /**
@@ -40,7 +40,7 @@ function getDurationType(sixteenths: number): { duration: NoteDuration; isDotted
 }
 
 /**
- * Parses a rhythm notation string (e.g., "D-T-..K-D---T---")
+ * Parses a rhythm notation string (e.g., "D-T-__K-D---T---")
  * into an array of notes with their durations
  */
 export function parseNotation(notation: string): Note[] {
@@ -61,11 +61,11 @@ export function parseNotation(notation: string): Note[] {
       const sound = NOTATION_MAP[char];
       let duration = 1; // Start with 1 sixteenth note
       
-      // For rests (.), count consecutive dots; for others, count dashes
+      // For rests (_), count consecutive underscores; for others, count dashes
       let j = i + 1;
-      if (char === '.') {
+      if (char === '_') {
         // Consolidate consecutive rests
-        while (j < notation.length && notation[j] === '.') {
+        while (j < notation.length && notation[j] === '_') {
           duration++;
           j++;
         }

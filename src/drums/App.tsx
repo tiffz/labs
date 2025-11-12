@@ -8,7 +8,7 @@ import { rhythmPlayer } from './utils/rhythmPlayer';
 import type { TimeSignature } from './types';
 
 const App: React.FC = () => {
-  const [notation, setNotation] = useState<string>('D-T-..K-D---T---');
+  const [notation, setNotation] = useState<string>('D-T-__K-D---T---');
   const [timeSignature, setTimeSignature] = useState<TimeSignature>({
     numerator: 4,
     denominator: 4,
@@ -165,7 +165,7 @@ const App: React.FC = () => {
       ? timeSignature.numerator * 2
       : timeSignature.numerator * 4;
     
-    const sounds = ['D', 'T', 'K', '.'];
+    const sounds = ['D', 'T', 'K', '_'];
     const durations = [1, 2, 3, 4]; // 16th, 8th, dotted 8th, quarter
     
     let newNotation = '';
@@ -182,9 +182,9 @@ const App: React.FC = () => {
       const sound = sounds[Math.floor(Math.random() * sounds.length)];
       
       // Add the note
-      if (sound === '.') {
-        // For rests, use dots
-        newNotation += '.'.repeat(duration);
+      if (sound === '_') {
+        // For rests, use underscores
+        newNotation += '_'.repeat(duration);
       } else {
         // For notes, use the sound + dashes
         newNotation += sound;

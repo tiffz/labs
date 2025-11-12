@@ -16,7 +16,7 @@ describe('App', () => {
   it('renders the rhythm display section', () => {
     render(<App />);
     // Check for the input field instead since "Rhythm Notation" appears twice
-    expect(screen.getByPlaceholderText('D-T-..K-D---T---')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('D-T-__K-D---T---')).toBeInTheDocument();
   });
 
   it('displays the default time signature in controls', () => {
@@ -31,7 +31,7 @@ describe('App', () => {
   it('has a default rhythm notation', () => {
     render(<App />);
     const input = screen.getByLabelText('Rhythm Notation') as HTMLInputElement;
-    expect(input.value).toBe('D-T-..K-D---T---');
+    expect(input.value).toBe('D-T-__K-D---T---');
   });
 });
 

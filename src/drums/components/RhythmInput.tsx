@@ -34,8 +34,8 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
 
   // Validate and filter input to only allow valid notation characters
   const handleNotationChange = (value: string) => {
-    // Only allow: D, d, T, t, K, k, . (rest), - (extend), space, and newline
-    const validChars = /^[DdTtKk.\-\s\n]*$/;
+    // Only allow: D, d, T, t, K, k, _ (rest), - (extend), space, and newline
+    const validChars = /^[DdTtKk_\-\s\n]*$/;
     if (validChars.test(value)) {
       onNotationChange(value);
     }
@@ -61,17 +61,17 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
     while (i < cleanedNotation.length) {
       const char = cleanedNotation[i];
 
-      // Check if it's a note character (D, T, K, .)
+      // Check if it's a note character (D, T, K, _)
       if (char === 'D' || char === 'd' || char === 'T' || char === 't' || 
-          char === 'K' || char === 'k' || char === '.') {
+          char === 'K' || char === 'k' || char === '_') {
         
         // Calculate duration of this note
         let duration = 1;
         let j = i + 1;
         
-        if (char === '.') {
-          // Count consecutive dots for rests
-          while (j < cleanedNotation.length && cleanedNotation[j] === '.') {
+        if (char === '_') {
+          // Count consecutive underscores for rests
+          while (j < cleanedNotation.length && cleanedNotation[j] === '_') {
             duration++;
             j++;
           }
@@ -206,7 +206,7 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
                     <span><code>K</code> = Ka (high)</span>
                   </div>
                   <div className="tooltip-symbol-item">
-                    <span><code>.</code> = Rest (silence)</span>
+                    <span><code>_</code> = Rest (silence)</span>
                   </div>
                 </div>
               </div>
@@ -222,7 +222,7 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
                 <div className="tooltip-row"><code>D-----</code> = dotted quarter (6 sixteenths)</div>
               </div>
               <div className="tooltip-attribution">
-                Notation from <a href="https://www.amirschoolofmusic.com/store/p/pdf-mastering-darbuka-1" target="_blank" rel="noopener noreferrer">Mastering Darbuka</a> and <a href="https://en.wikipedia.org/wiki/Dumbek_rhythms#Notation" target="_blank" rel="noopener noreferrer">Dumbek rhythms</a>
+                Notation from <a href="http://www.khafif.com/rhy/" target="_blank" rel="noopener noreferrer">Khafif Middle Eastern Rhythms</a>, <a href="https://www.amirschoolofmusic.com/store/p/pdf-mastering-darbuka-1" target="_blank" rel="noopener noreferrer">Mastering Darbuka</a>, and <a href="https://en.wikipedia.org/wiki/Dumbek_rhythms#Notation" target="_blank" rel="noopener noreferrer">Dumbek rhythms</a>
               </div>
             </div>
           )}
@@ -299,7 +299,7 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
               value={notation}
               onChange={(e) => handleNotationChange(e.target.value)}
               onBlur={handleBlur}
-              placeholder="D-T-..K-D---T---"
+              placeholder="D-T-__K-D---T---"
               spellCheck={false}
               rows={3}
             />

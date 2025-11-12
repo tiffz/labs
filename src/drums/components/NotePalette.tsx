@@ -40,7 +40,7 @@ const SINGLE_NOTE_TABLE = {
     { sound: 'D', label: 'Dum', isRest: false },
     { sound: 'T', label: 'Tak', isRest: false },
     { sound: 'K', label: 'Ka', isRest: false },
-    { sound: '.', label: 'Rest', isRest: true },
+    { sound: '_', label: 'Rest', isRest: true },
   ],
 };
 
@@ -51,9 +51,9 @@ const COMMON_PATTERNS: PaletteItem[] = [
   { pattern: 'D-K-', label: 'D-K-', category: 'common' },
   { pattern: 'T-K-', label: 'T-K-', category: 'common' },
   { pattern: 'D-TK', label: 'D-TK', category: 'common' },
-  { pattern: '.-D-', label: '.-D-', category: 'common' },
-  { pattern: '.-K-', label: '.-K-', category: 'common' },
-  { pattern: '.-T-', label: '.-T-', category: 'common' },
+  { pattern: '_-D-', label: '_-D-', category: 'common' },
+  { pattern: '_-K-', label: '_-K-', category: 'common' },
+  { pattern: '_-T-', label: '_-T-', category: 'common' },
   { pattern: 'T-TK', label: 'T-TK', category: 'common' },
 ];
 

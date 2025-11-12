@@ -9,6 +9,7 @@ export type NoteHighlightCallback = (measureIndex: number, noteIndex: number) =>
 
 /**
  * Rhythm player that schedules and plays notes based on BPM
+ * Uses absolute timestamps to prevent timing drift during loops
  */
 export class RhythmPlayer {
   private timeoutIds: number[] = [];
@@ -18,6 +19,8 @@ export class RhythmPlayer {
   private currentBpm = 120;
   private onNotePlay: NoteHighlightCallback | null = null;
   private onPlaybackEnd: (() => void) | null = null;
+  private startTime = 0; // Absolute start time for drift-free looping
+  private loopCount = 0; // Track number of loops
 
   /**
    * Play a rhythm at the specified BPM (loops continuously)
@@ -40,6 +43,8 @@ export class RhythmPlayer {
     this.currentBpm = bpm;
     this.onNotePlay = onNotePlay || null;
     this.onPlaybackEnd = onPlaybackEnd || null;
+    this.startTime = performance.now(); // Use high-precision timestamp
+    this.loopCount = 0;
 
     this.scheduleRhythm();
   }
@@ -47,6 +52,7 @@ export class RhythmPlayer {
   /**
    * Schedule a single iteration of the rhythm
    * Will automatically loop if isLooping is true
+   * Uses absolute timestamps to prevent drift
    */
   private scheduleRhythm(): void {
     if (!this.currentRhythm || !this.isPlaying) return;
@@ -60,10 +66,25 @@ export class RhythmPlayer {
     // So: sixteenth note duration = (60,000 ms / BPM) / 4
     const msPerSixteenth = (60000 / bpm) / 4;
 
+    // Calculate total duration of one loop
+    let totalLoopDuration = 0;
+    rhythm.measures.forEach(measure => {
+      measure.notes.forEach(note => {
+        totalLoopDuration += note.durationInSixteenths * msPerSixteenth;
+      });
+    });
+
+    // Calculate absolute time offset for this loop
+    const loopStartOffset = this.loopCount * totalLoopDuration;
     let currentTime = 0;
 
     rhythm.measures.forEach((measure, measureIndex) => {
       measure.notes.forEach((note, noteIndex) => {
+        // Calculate absolute time for this note
+        const absoluteTime = loopStartOffset + currentTime;
+        const now = performance.now();
+        const delay = Math.max(0, this.startTime + absoluteTime - now);
+
         // Schedule the note to play
         const timeoutId = window.setTimeout(() => {
           if (!this.isPlaying) return;
@@ -75,7 +96,7 @@ export class RhythmPlayer {
           if (this.onNotePlay) {
             this.onNotePlay(measureIndex, noteIndex);
           }
-        }, currentTime);
+        }, delay);
 
         this.timeoutIds.push(timeoutId);
 
@@ -85,11 +106,16 @@ export class RhythmPlayer {
     });
 
     // Schedule next loop or end callback
+    const absoluteEndTime = loopStartOffset + totalLoopDuration;
+    const now = performance.now();
+    const endDelay = Math.max(0, this.startTime + absoluteEndTime - now);
+
     const endTimeoutId = window.setTimeout(() => {
       if (!this.isPlaying) return;
 
       if (this.isLooping) {
         // Loop: schedule the rhythm again
+        this.loopCount++;
         this.scheduleRhythm();
       } else {
         // Not looping: end playback
@@ -98,7 +124,7 @@ export class RhythmPlayer {
           this.onPlaybackEnd();
         }
       }
-    }, currentTime);
+    }, endDelay);
     this.timeoutIds.push(endTimeoutId);
   }
 
@@ -120,6 +146,8 @@ export class RhythmPlayer {
     this.currentRhythm = null;
     this.onNotePlay = null;
     this.onPlaybackEnd = null;
+    this.startTime = 0;
+    this.loopCount = 0;
   }
 
   /**
