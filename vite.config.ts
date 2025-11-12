@@ -198,6 +198,7 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
         navigateFallback: undefined,
         navigateFallbackDenylist: [/^\/404\.html/],
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3 MB to accommodate story generator bundle
       },
       devOptions: {
         enabled: false,
