@@ -26,6 +26,7 @@ export default defineConfig({
           zines: resolve(__dirname, 'src/zines/index.html'),
           corp: resolve(__dirname, 'src/corp/index.html'),
           drums: resolve(__dirname, 'src/drums/index.html'),
+          story: resolve(__dirname, 'src/story/index.html'),
       },
       output: {
         manualChunks: {
@@ -177,7 +178,7 @@ export default defineConfig({
     })] : []),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'favicon-cats.svg', 'favicon-zines.svg', 'favicon-corp.svg', 'lightbulb-noto.png'],
+      includeAssets: ['favicon.svg', 'favicon-cats.svg', 'favicon-zines.svg', 'favicon-corp.svg', 'cat-android.png', 'lightbulb-noto.png'],
       manifest: {
         name: 'Tiff Zhang Labs',
         short_name: 'Labs',

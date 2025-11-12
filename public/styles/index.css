@@ -60,6 +60,12 @@
   content: '🥁';
 }
 
+.app-icon.story {
+  background-image: url('/icons/cat-android.png');
+  background-size: 80% 80%;
+  background-position: center;
+}
+
 .app-info {
   text-align: left;
 }
