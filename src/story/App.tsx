@@ -1,25 +1,39 @@
 import React, { useState } from 'react';
 import type { StoryDNA } from './types';
 import { generateStoryDNA, getNewSuggestion } from './data/storyGenerator';
-import { GenreThemeSelector } from './components/GenreThemeSelector';
-import { StoryHeader } from './components/StoryHeader';
-import { CoreElements } from './components/CoreElements';
-import { GenreElements } from './components/GenreElements';
+import { Sidebar } from './components/Sidebar';
+import { FixedStoryHeader } from './components/FixedStoryHeader';
 import { BeatChart } from './components/BeatChart';
 import './styles/story.css';
 
 const App: React.FC = () => {
-  const [selectedGenre, setSelectedGenre] = useState('Random');
-  const [selectedTheme, setSelectedTheme] = useState('Random');
   const [storyDNA, setStoryDNA] = useState<StoryDNA | null>(null);
+  const [selectedGenre, setSelectedGenre] = useState('Random');
 
-  const handleGenerate = () => {
-    const newDNA = generateStoryDNA(selectedGenre, selectedTheme);
+  const handleGenerate = (genre: string = selectedGenre) => {
+    const newDNA = generateStoryDNA(genre, 'Random');
     setStoryDNA(newDNA);
   };
 
   const handleReroll = (rerollId: string) => {
     if (!storyDNA) return;
+
+    // Handle genre reroll - regenerate entire story
+    if (rerollId === 'genre') {
+      // Generate a completely new story
+      const newDNA = generateStoryDNA('Random', 'Random');
+      setStoryDNA(newDNA);
+      return;
+    }
+    
+    // Handle theme reroll - just change the theme
+    if (rerollId === 'theme') {
+      const newDNA = { ...storyDNA };
+      const newTheme = getNewSuggestion('theme', storyDNA);
+      newDNA.theme = newTheme;
+      setStoryDNA(newDNA);
+      return;
+    }
 
     const newContent = getNewSuggestion(rerollId, storyDNA);
 
@@ -62,43 +76,45 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="container mx-auto px-4 py-6 md:py-8 max-w-5xl">
-        <header className="text-center mb-6">
-          <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-1">
-            Save the Cat!
-          </h1>
-          <p className="text-base md:text-lg text-slate-600">Random Story Generator</p>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Generate story plots using the Save the Cat! beat structure
-          </p>
-        </header>
+    <div className="min-h-screen bg-orange-50">
+      {/* Sidebar */}
+      <Sidebar 
+        selectedGenre={selectedGenre}
+        onGenreChange={setSelectedGenre}
+        onGenerate={() => handleGenerate()}
+      />
 
-        <main className="space-y-4">
-          <GenreThemeSelector
-            selectedGenre={selectedGenre}
-            selectedTheme={selectedTheme}
-            onGenreChange={setSelectedGenre}
-            onThemeChange={setSelectedTheme}
-            onGenerate={handleGenerate}
-          />
+      {/* Main Content Area */}
+      <div className="ml-80">
+        {storyDNA ? (
+          <>
+            {/* Fixed Header with Story Summary */}
+            <FixedStoryHeader dna={storyDNA} onReroll={handleReroll} />
 
-          {storyDNA && (
-            <div className="space-y-4 animate-in">
-              <StoryHeader dna={storyDNA} />
-              <CoreElements dna={storyDNA} onReroll={handleReroll} />
-              <GenreElements dna={storyDNA} onReroll={handleReroll} />
+            {/* Beat Chart */}
+            <main className="px-6 py-6">
               <BeatChart dna={storyDNA} onReroll={handleReroll} />
+            </main>
+          </>
+        ) : (
+          /* Welcome Screen */
+          <div className="flex items-center justify-center h-screen">
+            <div className="text-center max-w-md px-6">
+              <img 
+                src="/icons/cat-android.png" 
+                alt="Save the Cat" 
+                className="w-32 h-32 mx-auto mb-6"
+              />
+              <h2 className="text-3xl font-bold text-slate-800 mb-4">
+                Welcome to Save the Cat!
+              </h2>
+              <p className="text-lg text-slate-600 mb-6">
+                Select a genre from the sidebar, then click &ldquo;Generate Story&rdquo; to create a
+                random plot using the 15-beat Save the Cat! structure.
+              </p>
             </div>
-          )}
-        </main>
-
-        <footer className="text-center mt-8 text-slate-500 text-xs pb-6">
-          <p>
-            Based on the story structures from &ldquo;Save the Cat! Writes a Novel&rdquo; by
-            Jessica Brody.
-          </p>
-        </footer>
+          </div>
+        )}
       </div>
     </div>
   );

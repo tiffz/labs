@@ -6,55 +6,49 @@ describe('Story Generator App', () => {
   it('renders the main heading', () => {
     render(<App />);
     expect(screen.getByText('Save the Cat!')).toBeInTheDocument();
-    expect(screen.getByText('Random Story Generator')).toBeInTheDocument();
+    expect(screen.getByText('Story Generator')).toBeInTheDocument();
   });
 
-  it('renders genre and theme selectors', () => {
+  it('renders the about section in sidebar', () => {
     render(<App />);
-    expect(screen.getByText('Select a Genre:')).toBeInTheDocument();
-    expect(screen.getByText('Select a Theme:')).toBeInTheDocument();
+    expect(screen.getByText(/Generates random story plots/i)).toBeInTheDocument();
   });
 
   it('renders the generate button', () => {
     render(<App />);
-    const generateButton = screen.getByRole('button', { name: /generate story plot/i });
+    const generateButton = screen.getByRole('button', { name: /generate story/i });
     expect(generateButton).toBeInTheDocument();
   });
 
   it('generates a story when button is clicked', () => {
     render(<App />);
-    const generateButton = screen.getByRole('button', { name: /generate story plot/i });
+    const generateButton = screen.getByRole('button', { name: /generate story/i });
 
     fireEvent.click(generateButton);
 
-    // Check that story elements appear
-    expect(screen.getByText('Core Story Elements')).toBeInTheDocument();
-    expect(screen.getByText('Key Genre Elements')).toBeInTheDocument();
+    // Check that story elements appear - now in the fixed header
+    expect(screen.getByText(/Core Story Elements/i)).toBeInTheDocument();
+    expect(screen.getByText(/Key Genre Elements/i)).toBeInTheDocument();
   });
 
-  it('displays the footer', () => {
+  it('displays the footer in sidebar', () => {
     render(<App />);
-    expect(screen.getByText(/Based on the story structures from/i)).toBeInTheDocument();
+    expect(screen.getByText(/Based on Jessica Brody/i)).toBeInTheDocument();
   });
 
-  it('allows selecting different genres', () => {
+  it('allows rerolling genre and theme', () => {
     render(<App />);
+    const generateButton = screen.getByRole('button', { name: /generate story/i });
 
-    // Find and click a genre option
-    const whydunitOption = screen.getByLabelText('Whydunit');
-    fireEvent.click(whydunitOption);
+    // First generate a story
+    fireEvent.click(generateButton);
 
-    expect(whydunitOption).toBeChecked();
-  });
+    // Check that the fixed header appears with core elements
+    expect(screen.getByText(/Core Story Elements/i)).toBeInTheDocument();
 
-  it('allows selecting different themes', () => {
-    render(<App />);
-
-    // Find and click a theme option
-    const forgivenessOption = screen.getByLabelText('Forgiveness');
-    fireEvent.click(forgivenessOption);
-
-    expect(forgivenessOption).toBeChecked();
+    // Find reroll buttons (there should be multiple)
+    const rerollButtons = screen.getAllByRole('button', { name: /reroll/i });
+    expect(rerollButtons.length).toBeGreaterThan(0);
   });
 });
 

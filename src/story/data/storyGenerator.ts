@@ -8,8 +8,7 @@
  */
 
 import type { StoryDNA } from '../types';
-import { genres } from './genres';
-import { themes } from './genres';
+import { genres, themes } from './genres';
 import { k } from '../kimberly';
 
 /**
@@ -93,6 +92,11 @@ function generateNemesisParts(): { adjective: string; noun: string } {
  * Returns an object with the new content and any updated character names
  */
 export function getNewSuggestion(rerollId: string, dna: StoryDNA): string {
+  // Theme
+  if (rerollId === 'theme') {
+    return k.pick(themes);
+  }
+  
   // Core DNA elements
   if (rerollId === 'hero') {
     const heroName = k.fullName();
@@ -177,7 +181,7 @@ function generateBeatContent(beatId: string, dna: StoryDNA): string {
       return `${dna.heroName} is ${k.stasisIsDeath()}.`;
     
     case 'beat_Setup_StatedGoalWant':
-      return k.capitalize(k.statedGoal()) + '.';
+      return `${dna.heroName} wants to ${k.statedGoal()}.`;
 
     // Catalyst
     case 'beat_Catalyst_IncitingIncident':
@@ -185,7 +189,7 @@ function generateBeatContent(beatId: string, dna: StoryDNA): string {
 
     // Debate
     case 'beat_Debate_CoreQuestion':
-      return k.capitalize(k.debateQuestion()) + '.';
+      return `${dna.heroName} ${k.debateQuestion()}`;
 
     // Break Into 2
     case 'beat_BreakInto2_NewWorld':
@@ -231,21 +235,21 @@ function generateBeatContent(beatId: string, dna: StoryDNA): string {
 
     // Dark Night of the Soul
     case 'beat_DarkNightoftheSoul_MomentofReflection':
-      return k.capitalize(k.reflection()) + '.';
+      return `${dna.heroName} ${k.reflection()}.`;
     
     case 'beat_DarkNightoftheSoul_TheEpiphany':
-      return k.epiphany() + '.';
+      return `${dna.heroName} ${k.epiphany()}.`;
 
     // Break Into 3
     case 'beat_BreakInto3_RightDecision':
-      return k.capitalize(k.breakInto3()) + '.';
+      return `${dna.heroName} ${k.breakInto3()}.`;
 
     // Finale
     case 'beat_Finale_FinalBattle':
       return `${dna.heroName} confronts ${dna.nemesisName}.`;
     
     case 'beat_Finale_DigDeepDown':
-      return `They must overcome their ${dna.flaw} to win.`;
+      return `${dna.heroName} must overcome their ${dna.flaw} to win.`;
     
     case 'beat_Finale_HighStakes':
       return k.capitalize(k.finaleStake()) + '.';

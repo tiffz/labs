@@ -100,28 +100,28 @@ const rockBottomOptions = [
 
 // Dark Night of the Soul
 const reflectionOptions = [
-  'alone, hero confronts their failure', 'quiet moment in the wreckage',
-  '"ghost" from the past appears', 'hero finally breaks down',
-  'B-Story character gives a pep talk', 'hero re-reads the "Theme Stated" note',
-  'hero remembers "the old life"', 'moment of total silence', 'staring into the abyss',
-  'questioning everything', 'epiphany in darkness'
+  'confronts their failure alone', 'sits in quiet moment in the wreckage',
+  'is visited by a "ghost" from the past', 'finally breaks down',
+  'receives a pep talk from B-Story character', 're-reads the "Theme Stated" note',
+  'remembers "the old life"', 'experiences a moment of total silence', 'stares into the abyss',
+  'questions everything', 'has an epiphany in darkness'
 ];
 
 const epiphanies = [
-  '"the power was in me all along"', '"I\'ve been the real monster"',
-  '"to win, I have to let go"', '"my flaw is their greatest weapon"',
-  '"I don\'t need to do this alone"', '"I was wrong about them"',
-  '"this was never about the prize"', '"the answer was obvious"',
-  '"I have to accept who I am"', '"fear was the only enemy"'
+  'realizes: "the power was in me all along"', 'realizes: "I\'ve been the real monster"',
+  'realizes: "to win, I have to let go"', 'realizes: "my flaw is their greatest weapon"',
+  'realizes: "I don\'t need to do this alone"', 'realizes: "I was wrong about them"',
+  'realizes: "this was never about the prize"', 'realizes: "the answer was obvious"',
+  'realizes: "I have to accept who I am"', 'realizes: "fear was the only enemy"'
 ];
 
 // Break Into 3
 const breakInto3Options = [
-  'hero formulates new plan based on theme', 'last-ditch effort',
-  'quiet, determined choice to act', 'gathers the team for one last try',
-  '"Eureka!" moment', 'hero decides to sacrifice themselves',
-  'plan is simple, and crazy', 'hero finally embraces their "need"',
-  'accepts help from unlikely source', 'uses flaw as strength'
+  'formulates a new plan based on the theme', 'makes a last-ditch effort',
+  'makes a quiet, determined choice to act', 'gathers the team for one last try',
+  'has a "Eureka!" moment', 'decides to sacrifice themselves',
+  'creates a plan that is simple, and crazy', 'finally embraces their "need"',
+  'accepts help from an unlikely source', 'uses their flaw as strength'
 ];
 
 // Finale
