@@ -140,6 +140,21 @@ export function redemptionFlaw(): string {
 /**
  * Gets a flaw appropriate for the given theme
  */
+/**
+ * Opinion adjectives to describe flaws (quality/severity)
+ * Following Cambridge adjective order: opinion comes first
+ */
+const flawOpinionAdjectives = [
+  // Severity/intensity
+  'deep-seated', 'crippling', 'extreme', 'pathological', 'chronic',
+  'debilitating', 'overwhelming', 'consuming', 'paralyzing', 'severe',
+  'profound', 'intense', 'destructive', 'dangerous',
+  // Quality/nature
+  'toxic', 'unhealthy', 'obsessive', 'compulsive', 'irrational',
+  'uncontrollable', 'persistent', 'pervasive', 'ingrained', 'troubling',
+  'problematic', 'damaging', 'harmful', 'corrosive', 'insidious'
+];
+
 export function themeBasedFlaw(theme: string): string {
   const themeMap: Record<string, () => string> = {
     'Forgiveness': forgivenessFlaw,
@@ -155,6 +170,14 @@ export function themeBasedFlaw(theme: string): string {
   };
 
   const generator = themeMap[theme];
-  return generator ? generator() : pick([...Object.values(themeMap)].map(fn => fn()));
+  const baseFlaw = generator ? generator() : pick([...Object.values(themeMap)].map(fn => fn()));
+  
+  // 70% chance to add an opinion adjective for variety
+  // Following Cambridge order: opinion adjective comes before the noun
+  if (Math.random() < 0.7) {
+    return `${pick(flawOpinionAdjectives)} ${baseFlaw}`;
+  }
+  
+  return baseFlaw;
 }
 

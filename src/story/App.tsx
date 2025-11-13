@@ -26,11 +26,13 @@ const App: React.FC = () => {
       return;
     }
     
-    // Handle theme reroll - just change the theme
+    // Handle theme reroll - change theme and flaw (flaw is theme-dependent)
     if (rerollId === 'theme') {
       const newDNA = { ...storyDNA };
       const newTheme = getNewSuggestion('theme', storyDNA);
       newDNA.theme = newTheme;
+      // Also reroll the flaw since it's theme-based
+      newDNA.flaw = getNewSuggestion('flaw', { ...newDNA, theme: newTheme });
       setStoryDNA(newDNA);
       return;
     }

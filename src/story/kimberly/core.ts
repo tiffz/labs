@@ -79,11 +79,40 @@ export function capitalize(str: string): string {
 
 /**
  * Returns "a" or "an" based on the next word
+ * Handles special cases like "hour", "honest", "university", etc.
  */
 export function article(word: string): string {
+  if (!word) return 'a';
+  
+  const lower = word.toLowerCase();
+  
+  // Special cases: words starting with silent 'h'
+  const silentH = ['hour', 'honest', 'honor', 'heir'];
+  if (silentH.some(h => lower.startsWith(h))) {
+    return 'an';
+  }
+  
+  // Special cases: words starting with vowel sound despite consonant
+  // (like "university" which sounds like "you-niversity")
+  const consonantSound = ['university', 'european', 'one', 'once', 'unique', 'uniform', 'union', 'united', 'usual'];
+  if (consonantSound.some(c => lower.startsWith(c))) {
+    return 'a';
+  }
+  
+  // Standard vowel check
   const vowels = ['a', 'e', 'i', 'o', 'u'];
-  const firstLetter = word.charAt(0).toLowerCase();
+  const firstLetter = lower.charAt(0);
   return vowels.includes(firstLetter) ? 'an' : 'a';
+}
+
+/**
+ * Returns "a" or "an" followed by the word
+ * Example: a("ambitious coder") => "an ambitious coder"
+ * Example: a("ruthless CEO") => "a ruthless CEO"
+ */
+export function a(phrase: string): string {
+  if (!phrase) return '';
+  return `${article(phrase)} ${phrase}`;
 }
 
 /**

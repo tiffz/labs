@@ -24,26 +24,47 @@ export function generateStoryDNA(selectedGenre: string, selectedTheme: string): 
   const initialSetting = k.act1Setting();
   const act2Setting = k.differentAct2Setting(initialSetting);
 
-  // Generate the hero name and full description
-  const heroName = k.fullName();
-  const heroAdjective = k.pick([
+  // Clear character names from previous story
+  k.clearCharacterNames();
+  
+  // Generate the hero using Kimberly system (full name on first mention)
+  const heroName = k.KimberlySmith('hero'); // Full name: "Kimberly Smith"
+  
+  // Opinion adjectives (personality/character traits) - come first in adjective order
+  const heroOpinionAdjective = k.pick([
+    // Negative traits
     'cynical', 'naive', 'disgraced', 'cautious', 'washed-up',
-    'ambitious', 'lonely', 'burnt-out', 'idealistic', 'ruthless',
-    'clumsy', 'charismatic', 'grumpy', 'optimistic'
+    'burnt-out', 'clumsy', 'grumpy', 'arrogant', 'bitter',
+    'paranoid', 'stubborn', 'reckless', 'selfish', 'cowardly',
+    'pessimistic', 'impulsive', 'insecure', 'jealous', 'vengeful',
+    'manipulative', 'entitled', 'defensive', 'withdrawn', 'jaded',
+    'controlling', 'passive-aggressive', 'narcissistic', 'timid', 'volatile',
+    // Positive traits
+    'ambitious', 'idealistic', 'charismatic', 'optimistic', 'determined',
+    'compassionate', 'brilliant', 'resourceful', 'courageous', 'loyal',
+    'creative', 'dedicated', 'empathetic', 'resilient', 'visionary',
+    'principled', 'adventurous', 'passionate', 'wise', 'humble',
+    // Neutral/complex traits
+    'lonely', 'mysterious', 'eccentric', 'unconventional', 'reserved',
+    'pragmatic', 'analytical', 'spontaneous', 'methodical', 'skeptical',
+    'independent', 'sensitive', 'intense', 'quiet', 'outspoken',
+    'meticulous', 'carefree', 'serious', 'playful', 'stoic'
   ]);
-  const heroOccupation = k.worker();
-  const hero = `${heroName}, a ${heroAdjective} ${heroOccupation}`;
+  
+  const heroIdentity = k.heroIdentity(); // Uses weighted system (jobs, kids, animals, etc.)
+  const hero = `${heroName}, ${k.a(`${heroOpinionAdjective} ${heroIdentity}`)}`;
 
   // Generate names for all other characters
-  const bStoryCharacterName = k.fullName();
+  const bStoryCharacterName = k.KimberlySmith('bStory');
   const bStoryCharacterType = k.bStoryCharacter();
-  const bStoryCharacter = `${bStoryCharacterName}, a ${bStoryCharacterType}`;
+  const bStoryCharacter = `${bStoryCharacterName}, ${k.a(bStoryCharacterType)}`;
 
-  const nemesisName = k.fullName();
-  const { adjective: nemesisAdjective, noun: nemesisNoun } = generateNemesisParts();
-  const nemesis = `${nemesisName}, a ${nemesisAdjective} ${nemesisNoun}`;
+  // Generate nemesis using the new system (person or entity)
+  const nemesis = k.nemesis();
+  // Extract name if it's a person (contains a comma)
+  const nemesisName = nemesis.includes(',') ? nemesis.split(',')[0] : '';
 
-  const minorCharacterName = k.fullName();
+  const minorCharacterName = k.KimberlySmith('minor');
 
   // Initialize DNA with empty generated content storage
   return {
@@ -62,29 +83,6 @@ export function generateStoryDNA(selectedGenre: string, selectedTheme: string): 
     generatedContent: {}, // Will be populated as content is generated
   };
 }
-
-/**
- * Generates nemesis adjective and noun parts (without name)
- */
-function generateNemesisParts(): { adjective: string; noun: string } {
-  const nemesisAdjectives = [
-    'megalomaniac', 'shadowy', 'twisted', 'unseen', 'ancient',
-    'charismatic', 'deceitful', 'brilliant', 'obsessed', 'ruthless',
-    'fanatical', 'corrupt', 'vain', 'petty'
-  ];
-  
-  const nemesisNouns = [
-    'CEO', 'government agent', 'cult leader', 'psychological force',
-    'cosmic horror', 'rival scientist', 'family matriarch', 'AI',
-    'corporation', 'former mentor', 'conspiracy', 'political opponent'
-  ];
-  
-  return {
-    adjective: k.pick(nemesisAdjectives),
-    noun: k.pick(nemesisNouns)
-  };
-}
-
 
 /**
  * Gets a new suggestion for a reroll ID
@@ -106,7 +104,7 @@ export function getNewSuggestion(rerollId: string, dna: StoryDNA): string {
       'clumsy', 'charismatic', 'grumpy', 'optimistic'
     ]);
     const heroOccupation = k.worker();
-    return `${heroName}, a ${heroAdjective} ${heroOccupation}`;
+    return `${heroName}, ${k.a(`${heroAdjective} ${heroOccupation}`)}`;
   }
   
   if (rerollId === 'flaw') {
@@ -114,9 +112,7 @@ export function getNewSuggestion(rerollId: string, dna: StoryDNA): string {
   }
   
   if (rerollId === 'nemesis') {
-    const nemesisName = k.fullName();
-    const { adjective, noun } = generateNemesisParts();
-    return `${nemesisName}, a ${adjective} ${noun}`;
+    return k.nemesis(); // Returns either a person or entity nemesis
   }
 
   // Genre Elements - use the genreElementMap
@@ -164,24 +160,24 @@ function generateBeatContent(beatId: string, dna: StoryDNA): string {
   switch (beatId) {
     // Opening Image
     case 'beat_OpeningImage_VisualSnapshot':
-      return `${k.capitalize(k.openingAction())} in ${dna.initialSetting}.`;
+      return `${k.KimberlySmith('hero')} ${k.openingAction()} in ${k.scenicLocation()}.`;
     
     case 'beat_OpeningImage_FlawShown':
       return `Their ${dna.flaw} is on full display.`;
 
     // Theme Stated
     case 'beat_ThemeStated_MinorCharacter':
-      return `${dna.minorCharacterName}, a ${k.minorCharacter()}...`;
+      return `${k.KimberlySmith('minor')}, ${k.a(k.minorCharacter())}...`;
     
     case 'beat_ThemeStated_DismissedAdvice':
-      return `Says something wise about ${dna.theme} that ${dna.heroName} ignores.`;
+      return `Says something wise about ${dna.theme} that ${k.Kimberly('hero')} ignores.`;
 
     // Setup
     case 'beat_Setup_StasisDeath':
-      return `${dna.heroName} is ${k.stasisIsDeath()}.`;
+      return `${k.Kimberly('hero')} is ${k.stasisIsDeath()}.`;
     
     case 'beat_Setup_StatedGoalWant':
-      return `${dna.heroName} wants to ${k.statedGoal()}.`;
+      return `${k.Kimberly('hero')} wants to ${k.statedGoal()}.`;
 
     // Catalyst
     case 'beat_Catalyst_IncitingIncident':
@@ -189,21 +185,21 @@ function generateBeatContent(beatId: string, dna: StoryDNA): string {
 
     // Debate
     case 'beat_Debate_CoreQuestion':
-      return `${dna.heroName} ${k.debateQuestion()}`;
+      return `${k.Kimberly('hero')} ${k.debateQuestion()}`;
 
     // Break Into 2
     case 'beat_BreakInto2_NewWorld':
-      return `${dna.heroName} enters the ${dna.act2Setting}.`;
+      return `${k.Kimberly('hero')} enters the ${dna.act2Setting}.`;
     
     case 'beat_BreakInto2_WrongDecision':
       return `Actively chooses this new path based on 'Want', not 'Need'.`;
 
     // B Story
     case 'beat_BStory_NewCharacter':
-      return `${dna.bStoryCharacterName} is introduced.`;
+      return `${k.KimberlySmith('bStory')} is introduced.`;
     
     case 'beat_BStory_ThemeEmbodied':
-      return `${dna.bStoryCharacterName} represents the lesson of ${dna.theme}.`;
+      return `${k.Kimberly('bStory')} represents the lesson of ${dna.theme}.`;
 
     // Fun and Games
     case 'beat_FunandGames_PromiseofPremise':
@@ -224,7 +220,7 @@ function generateBeatContent(beatId: string, dna: StoryDNA): string {
       return `${dna.nemesisName} applies direct force.`;
     
     case 'beat_BadGuysCloseIn_InternalPressure':
-      return `${dna.heroName}'s ${dna.flaw} makes things worse.`;
+      return `${k.Kimberly('hero')}'s ${dna.flaw} makes things worse.`;
 
     // All Is Lost
     case 'beat_AllIsLost_WhiffofDeath':
@@ -235,21 +231,21 @@ function generateBeatContent(beatId: string, dna: StoryDNA): string {
 
     // Dark Night of the Soul
     case 'beat_DarkNightoftheSoul_MomentofReflection':
-      return `${dna.heroName} ${k.reflection()}.`;
+      return `${k.Kimberly('hero')} ${k.reflection()}.`;
     
     case 'beat_DarkNightoftheSoul_TheEpiphany':
-      return `${dna.heroName} ${k.epiphany()}.`;
+      return `${k.Kimberly('hero')} ${k.epiphany()}.`;
 
     // Break Into 3
     case 'beat_BreakInto3_RightDecision':
-      return `${dna.heroName} ${k.breakInto3()}.`;
+      return `${k.Kimberly('hero')} ${k.breakInto3()}.`;
 
     // Finale
     case 'beat_Finale_FinalBattle':
-      return `${dna.heroName} confronts ${dna.nemesisName}.`;
+      return `${k.Kimberly('hero')} confronts ${dna.nemesisName}.`;
     
     case 'beat_Finale_DigDeepDown':
-      return `${dna.heroName} must overcome their ${dna.flaw} to win.`;
+      return `${k.Kimberly('hero')} must overcome their ${dna.flaw} to win.`;
     
     case 'beat_Finale_HighStakes':
       return k.capitalize(k.finaleStake()) + '.';
@@ -259,7 +255,7 @@ function generateBeatContent(beatId: string, dna: StoryDNA): string {
       return k.capitalize(k.finalImage()) + '.';
     
     case 'beat_FinalImage_Transformation':
-      return `${dna.heroName} now acts with an understanding of ${dna.theme}.`;
+      return `${k.Kimberly('hero')} now acts with an understanding of ${dna.theme}.`;
 
     default:
       // Generic fallback for any unmapped beats

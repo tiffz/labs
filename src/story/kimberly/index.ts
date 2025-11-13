@@ -32,7 +32,7 @@ export {
 } from './core';
 
 // Import pick and other core utilities for use in the k namespace
-import { pick, pickGenerator, capitalize, article } from './core';
+import { pick, pickGenerator, capitalize, article, a } from './core';
 
 // Export all name generators
 export * from './names';
@@ -51,6 +51,12 @@ export * from './locations';
 
 // Export all story element generators
 export * from './story-elements';
+
+// Export nemesis generators
+export * from './nemesis';
+
+// Export identity generators
+export * from './identities';
 
 // Export theme-based flaw generators
 export * from './themes';
@@ -92,6 +98,8 @@ import * as themes from './themes';
 import * as settings from './settings';
 import * as genreElements from './genre-elements';
 import * as beats from './beats';
+import * as nemesisGenerators from './nemesis';
+import * as identities from './identities';
 import { k as templateTag } from './core';
 import { 
   Character,
@@ -110,6 +118,7 @@ export const k = {
   pickGenerator,
   capitalize,
   article,
+  a,
   
   // Template tag for composing generators
   template: templateTag,
@@ -141,6 +150,12 @@ export const k = {
   
   // Beat elements
   ...beats,
+  
+  // Nemesis generators
+  ...nemesisGenerators,
+  
+  // Identity generators
+  ...identities,
   
   // Character creation
   Character,

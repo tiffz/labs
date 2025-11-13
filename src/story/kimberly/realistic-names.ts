@@ -47,3 +47,47 @@ export function anyFullName(): string {
   return fullName();
 }
 
+/**
+ * Character name storage for consistent first/last name usage
+ * The Kimberly System convention: use full name on first mention, first name after
+ */
+const characterNames = new Map<string, { first: string; last: string; full: string }>();
+
+/**
+ * Generates or retrieves a character's full name (First Last)
+ * Use this for the first mention of a character
+ * Example: "Kimberly Brown"
+ */
+export function KimberlySmith(characterId: string = 'default'): string {
+  if (!characterNames.has(characterId)) {
+    const firstName = generate(false, true, 'any');
+    const lastName = generate(false, false, 'any');
+    characterNames.set(characterId, {
+      first: firstName,
+      last: lastName,
+      full: `${firstName} ${lastName}`
+    });
+  }
+  return characterNames.get(characterId)!.full;
+}
+
+/**
+ * Gets a character's first name only
+ * Use this for subsequent mentions after KimberlySmith()
+ * Example: "Kimberly"
+ */
+export function Kimberly(characterId: string = 'default'): string {
+  if (!characterNames.has(characterId)) {
+    // If not initialized, create the full name first
+    KimberlySmith(characterId);
+  }
+  return characterNames.get(characterId)!.first;
+}
+
+/**
+ * Clears all stored character names (useful for generating new stories)
+ */
+export function clearCharacterNames(): void {
+  characterNames.clear();
+}
+

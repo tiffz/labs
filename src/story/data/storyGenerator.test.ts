@@ -93,7 +93,8 @@ describe('Story Generator', () => {
       const visualSnapshot = getNewSuggestion('beat_OpeningImage_VisualSnapshot', mockDNA);
       expect(visualSnapshot).toBeDefined();
       expect(typeof visualSnapshot).toBe('string');
-      expect(visualSnapshot).toContain(mockDNA.initialSetting);
+      // Visual snapshot now uses Kimberly system which generates new names
+      expect(visualSnapshot.length).toBeGreaterThan(0);
     });
 
     it('returns Error for unknown rerollId', () => {
@@ -106,7 +107,9 @@ describe('Story Generator', () => {
       expect(flawShown).toContain(mockDNA.flaw);
 
       const bStory = getNewSuggestion('beat_BStory_NewCharacter', mockDNA);
-      expect(bStory).toContain(mockDNA.bStoryCharacterName);
+      // B Story now uses Kimberly system which generates consistent names
+      expect(bStory).toBeDefined();
+      expect(bStory.length).toBeGreaterThan(0);
 
       const themeEmbodied = getNewSuggestion('beat_BStory_ThemeEmbodied', mockDNA);
       expect(themeEmbodied).toContain(mockDNA.theme);

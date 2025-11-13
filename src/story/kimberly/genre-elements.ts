@@ -91,10 +91,20 @@ const curses = [
 ];
 
 // Dude with a Problem elements
-const innocentHeros = [
-  'librarian', 'mail carrier', 'high-school kid', 'retired person', 'chef',
-  'florist', 'mild-mannered teacher', 'struggling artist', 'barista',
-  'dog walker', 'programmer', 'street musician', 'accountant', 'nurse'
+// Reasons why the hero is innocent/did nothing wrong
+const innocenceReasons = [
+  'was just doing their job',
+  'was in the wrong place at the wrong time',
+  'was only trying to help',
+  'had no idea what was happening',
+  'was following orders',
+  'was protecting someone they love',
+  'was simply living their life',
+  'was minding their own business',
+  'was caught up in events beyond their control',
+  'was an unwitting pawn',
+  'never asked for any of this',
+  'was just trying to survive'
 ];
 
 const suddenEvents = [
@@ -241,7 +251,7 @@ export function power(): string { return pick(powers); }
 export function curse(): string { return pick(curses); }
 
 // Dude with a Problem
-export function innocentHero(): string { return pick(innocentHeros); }
+export function innocentHero(): string { return pick(innocenceReasons); }
 export function suddenEvent(): string { return pick(suddenEvents); }
 export function lifeOrDeathBattle(): string { return pick(lifeOrDeathBattles); }
 
