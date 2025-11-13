@@ -48,22 +48,13 @@ export function outOfTheBottleLogline(
 ): string {
   const heroObject = him('hero');
   const heroSubject = he('hero');
-  const heroPossessive = his('hero');
-  const heroReflexive = himself('hero');
   
   // Handle wishes that start with "to" vs those that don't
-  // Remove "to" from wishes that start with it, then add "to wish to"
   const wishText = elements.wish.startsWith('to ') ? elements.wish.substring(3) : elements.wish;
   const wishPrefix = elements.wish.startsWith('to ') ? 'to wish to ' : 'to wish for ';
 
-  // Replace pronouns in consequence
-  const consequence = elements.consequence
-    .replace(/{possessive}/g, heroPossessive)
-    .replace(/{subject}/g, heroSubject)
-    .replace(/{object}/g, heroObject)
-    .replace(/{reflexive}/g, heroReflexive);
-
-  return `When ${heroName}'s desire leads ${heroObject} ${wishPrefix}${wishText}, ${heroSubject} must ${elements.undoMethod} before ${consequence}.`;
+  // No replacement needed - elements already have correct pronouns!
+  return `When ${heroName}'s desire leads ${heroObject} ${wishPrefix}${wishText}, ${heroSubject} must ${elements.undoMethod} before ${elements.consequence}.`;
 }
 
 /**
@@ -76,14 +67,9 @@ export function dudeWithAProblemLogline(
   elements: LoglineElements.DudeWithAProblemElements
 ): string {
   const heroSubject = he('hero');
-  const heroPossessive = his('hero');
 
-  // Replace pronouns in stakes
-  const stakes = elements.stakes
-    .replace(/{possessive}/g, heroPossessive)
-    .replace(/{subject}/g, heroSubject);
-
-  return `When ${heroName} is caught in ${elements.suddenEvent}, ${heroSubject} must ${elements.action} ${stakes} ${elements.escalation}.`;
+  // No replacement needed - elements already have correct pronouns!
+  return `When ${heroName} is caught in ${elements.suddenEvent}, ${heroSubject} must ${elements.action} ${elements.stakes} ${elements.escalation}.`;
 }
 
 /**
@@ -99,7 +85,7 @@ export function ritesOfPassageLogline(
   const heroPossessive = his('hero');
   const heroReflexive = himself('hero');
   const heroSubject = he('hero');
-  const themeLower = theme.toLowerCase();
+  const themeLower = theme ? theme.toLowerCase() : 'the truth';
   const mustVerb = heroSubject === 'they' ? 'must' : 'must';
   return `Facing ${elements.lifeCrisis}, ${heroName} spirals into ${elements.wrongWay}, and ${mustVerb} discover ${themeLower} to overcome ${heroPossessive} worst enemy: ${heroReflexive}.`;
 }
@@ -109,17 +95,6 @@ export function ritesOfPassageLogline(
  * An inadequate hero must rise above an extremely difficult situation to be 
  * with a uniquely unlikely partner who is the only one capable of bringing him peace.
  */
-/**
- * Helper to replace pronouns in completion text
- */
-function replacePronouns(text: string, characterId: string = 'hero'): string {
-  const possessive = his(characterId);
-  const object = him(characterId);
-  return text
-    .replace(/{object}/g, object)
-    .replace(/{possessive}/g, possessive);
-}
-
 export function buddyLoveLogline(
   heroName: string, 
   bStoryName: string,
@@ -127,10 +102,10 @@ export function buddyLoveLogline(
 ): string {
   const heroPossessive = his('hero');
   const heroSubject = he('hero');
-  const completion = replacePronouns(elements.completion, 'hero');
   const contractionAre = heroSubject === 'they' ? "they're" : heroSubject === 'he' ? "he's" : "she's";
   
-  return `Despite ${heroPossessive} ${elements.incompleteness}, ${heroName} must overcome ${elements.situation} to be with ${bStoryName}, the only person who ${completion}—even though ${contractionAre} ${elements.complication}.`;
+  // No replacement needed - elements already have correct pronouns!
+  return `Despite ${heroPossessive} ${elements.incompleteness}, ${heroName} must overcome ${elements.situation} to be with ${bStoryName}, the only person who ${elements.completion}—even though ${contractionAre} ${elements.complication}.`;
 }
 
 /**
@@ -143,22 +118,9 @@ export function whydunitLogline(
   elements: LoglineElements.WhydunitElements
 ): string {
   const heroPossessive = his('hero');
-  const heroSubject = he('hero');
-  const heroObject = him('hero');
   
-  // Handle verb conjugations for contractions
-  const isVerb = heroSubject === 'they' ? 'are' : 'is';
-  const hasVerb = heroSubject === 'they' ? 'have' : 'has';
-  
-  // Replace pronouns in darkTurn
-  const darkTurn = elements.darkTurn
-    .replace(/{possessive}/g, heroPossessive)
-    .replace(/{subject}/g, heroSubject)
-    .replace(/{object}/g, heroObject)
-    .replace(/{is}/g, isVerb)
-    .replace(/{has}/g, hasVerb);
-  
-  return `Obsessed by ${heroPossessive} need for truth, ${heroName} must solve ${elements.mystery} before ${darkTurn}.`;
+  // No replacement needed - elements already have correct pronouns!
+  return `Obsessed by ${heroPossessive} need for truth, ${heroName} must solve ${elements.mystery} before ${elements.darkTurn}.`;
 }
 
 /**
@@ -201,19 +163,12 @@ export function superheroLogline(
   elements: LoglineElements.SuperheroElements
 ): string {
   const heroPossessive = his('hero');
-  const heroSubject = he('hero');
-  const heroObject = him('hero');
-  
-  // Replace pronouns in curse
-  const curse = elements.curse
-    .replace(/{possessive}/g, heroPossessive)
-    .replace(/{subject}/g, heroSubject)
-    .replace(/{object}/g, heroObject);
   
   // Handle powers that start with "the" - remove it when using possessive
   const power = elements.power.startsWith('the ') ? elements.power.substring(4) : elements.power;
   
-  return `Burdened by ${heroPossessive} gift, ${heroName} must use ${heroPossessive} ${power} to stop ${elements.villain}, even though these same powers risk ${curse}.`;
+  // No replacement needed - elements already have correct pronouns!
+  return `Burdened by ${heroPossessive} gift, ${heroName} must use ${heroPossessive} ${power} to stop ${elements.villain}, even though these same powers risk ${elements.curse}.`;
 }
 
 /**
@@ -295,13 +250,13 @@ export function generateLoglineWithElements(
     }
     
     case 'Out of the Bottle': {
-      const elements = LoglineElements.generateOutOfTheBottleElements();
+      const elements = LoglineElements.generateOutOfTheBottleElements('hero');
       const logline = outOfTheBottleLogline(heroName, elements);
       return { logline, elements };
     }
     
     case 'Dude with a Problem': {
-      const elements = LoglineElements.generateDudeWithAProblemElements(nemesis);
+      const elements = LoglineElements.generateDudeWithAProblemElements(nemesis, 'hero');
       const logline = dudeWithAProblemLogline(heroName, elements);
       return { logline, elements };
     }
@@ -319,7 +274,7 @@ export function generateLoglineWithElements(
     }
     
     case 'Whydunit': {
-      const elements = LoglineElements.generateWhydunitElements();
+      const elements = LoglineElements.generateWhydunitElements('hero');
       const logline = whydunitLogline(heroName, elements);
       return { logline, elements };
     }
@@ -337,7 +292,7 @@ export function generateLoglineWithElements(
     }
     
     case 'Superhero': {
-      const elements = LoglineElements.generateSuperheroElements(nemesis);
+      const elements = LoglineElements.generateSuperheroElements(nemesis, 'hero');
       const logline = superheroLogline(heroName, elements);
       return { logline, elements };
     }

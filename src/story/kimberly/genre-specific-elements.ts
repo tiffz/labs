@@ -9,6 +9,14 @@
  */
 
 import { pick } from './core';
+import { him, his } from './realistic-names';
+import { 
+  deadlyCreature, 
+  specificVillain, 
+  wishConsequence,
+  naturalDisaster,
+  supernaturalThreat
+} from './specific-details';
 
 // ============================================================================
 // MONSTER IN THE HOUSE
@@ -191,23 +199,27 @@ export interface IncompletenessAndCompletion {
   completion: string;
 }
 
-export function incompletenessAndCompletion(): IncompletenessAndCompletion {
+export function incompletenessAndCompletion(characterId: string = 'hero'): IncompletenessAndCompletion {
+  // Get pronouns for this character
+  const heroObject = him(characterId);
+  const heroPossessive = his(characterId);
+  
   const pairs: IncompletenessAndCompletion[] = [
-    { incompleteness: 'emotional numbness', completion: 'teaches {object} to feel again' },
-    { incompleteness: 'rigid perfectionism', completion: 'shows {object} joy and spontaneity' },
-    { incompleteness: 'reckless impulsivity', completion: 'grounds {object} with wisdom' },
-    { incompleteness: 'blind ambition', completion: 'reminds {object} what truly matters' },
-    { incompleteness: 'haunted guilt', completion: 'helps {object} embrace the future' },
+    { incompleteness: 'emotional numbness', completion: `teaches ${heroObject} to feel again` },
+    { incompleteness: 'rigid perfectionism', completion: `shows ${heroObject} joy and spontaneity` },
+    { incompleteness: 'reckless impulsivity', completion: `grounds ${heroObject} with wisdom` },
+    { incompleteness: 'blind ambition', completion: `reminds ${heroObject} what truly matters` },
+    { incompleteness: 'haunted guilt', completion: `helps ${heroObject} embrace the future` },
     { incompleteness: 'deep mistrust', completion: 'proves trust is possible' },
-    { incompleteness: 'bitter cynicism', completion: 'restores {possessive} faith in humanity' },
-    { incompleteness: 'prideful isolation', completion: 'shows {object} the value of vulnerability' },
-    { incompleteness: 'suffocating duty', completion: 'teaches {object} to follow {possessive} heart' },
-    { incompleteness: 'paralyzing fear', completion: 'gives {object} courage to live' },
-    { incompleteness: 'emotional detachment', completion: 'makes {object} feel alive again' },
-    { incompleteness: 'workaholic obsession', completion: 'shows {object} life beyond achievement' },
-    { incompleteness: 'self-destructive anger', completion: 'teaches {object} peace and forgiveness' },
-    { incompleteness: 'crippling insecurity', completion: 'helps {object} see {possessive} own worth' },
-    { incompleteness: 'lonely independence', completion: 'shows {object} the strength in connection' }
+    { incompleteness: 'bitter cynicism', completion: `restores ${heroPossessive} faith in humanity` },
+    { incompleteness: 'prideful isolation', completion: `shows ${heroObject} the value of vulnerability` },
+    { incompleteness: 'suffocating duty', completion: `teaches ${heroObject} to follow ${heroPossessive} heart` },
+    { incompleteness: 'paralyzing fear', completion: `gives ${heroObject} courage to live` },
+    { incompleteness: 'emotional detachment', completion: `makes ${heroObject} feel alive again` },
+    { incompleteness: 'workaholic obsession', completion: `shows ${heroObject} life beyond achievement` },
+    { incompleteness: 'self-destructive anger', completion: `teaches ${heroObject} peace and forgiveness` },
+    { incompleteness: 'crippling insecurity', completion: `helps ${heroObject} see ${heroPossessive} own worth` },
+    { incompleteness: 'lonely independence', completion: `shows ${heroObject} the strength in connection` }
   ];
   
   return pick(pairs);
@@ -368,49 +380,62 @@ export function genreSpecificHeroAdjective(genre: string): string {
 export function genreSpecificNemesis(genre: string): string {
   switch (genre) {
     case 'Monster in the House':
-      // The monster itself
+      // The monster itself - use deadlyCreature() 40% of the time
+      if (Math.random() < 0.4) return deadlyCreature();
       return pick([
-        'a deadly creature', 'a supernatural entity', 'a virus outbreak',
-        'a killer AI', 'a parasitic organism', 'a possessed object',
-        'a swarm of creatures', 'a malevolent spirit', 'a mutated beast',
-        'an alien predator', 'a demonic force', 'a sentient disease'
+        'a virus outbreak spreading fast', 'a rogue killer AI', 'a parasitic organism',
+        'a possessed object', 'a malevolent spirit haunting them', 'an alien predator',
+        'a demonic force', 'a sentient disease', 'a reality-warping entity',
+        'a time-displaced creature', 'a biological weapon', 'a nano-swarm'
       ]);
     
     case 'Golden Fleece':
-      // The obstacles on the road
+      // The obstacles on the road - use specificVillain() 30% of the time
+      if (Math.random() < 0.3) return specificVillain();
+      if (Math.random() < 0.2) return naturalDisaster();
       return pick([
-        'a ruthless rival', 'a dangerous warlord', 'a corrupt official',
-        'a treacherous landscape', 'a deadly organization', 'a vengeful enemy',
-        'a powerful crime lord', 'a hostile territory', 'a competing team',
-        'a relentless pursuer', 'a natural disaster', 'a ticking clock'
+        'a ruthless rival hunting them', 'a treacherous landscape', 
+        'a deadly mercenary organization', 'a vengeful enemy from their past',
+        'a hostile territory with no allies', 'a competing team willing to kill',
+        'a relentless bounty hunter', 'a ticking clock counting down',
+        'a betrayer within their ranks', 'a cursed path', 'a guardian beast',
+        'a rival expedition', 'a government black ops team'
       ]);
     
     case 'Out of the Bottle':
-      // The consequences of the wish/spell
+      // The consequences of the wish/spell - use wishConsequence() 30% of the time
+      if (Math.random() < 0.3) return wishConsequence();
       return pick([
-        'the unintended consequences', 'the price of the wish',
+        'the unintended consequences spiraling out of control', 'the price of the wish',
         'the dark side of their desire', 'the curse of getting what they wanted',
-        'the chaos they unleashed', 'their own greed', 'the magic gone wrong',
-        'the reality they created', 'the trap of their fantasy',
-        'the cost of their ambition', 'the monster they became'
+        'the chaos they unleashed', 'their own greed consuming them', 
+        'the magic gone wrong', 'the reality they created', 'the trap of their fantasy',
+        'the cost of their ambition', 'the monster they became',
+        'the devil\'s bargain', 'the monkey\'s paw', 'the Faustian deal'
       ]);
     
     case 'Dude with a Problem':
-      // The sudden threat
+      // The sudden threat - use naturalDisaster() 20% of the time
+      if (Math.random() < 0.2) return naturalDisaster();
       return pick([
-        'a terrorist organization', 'a natural disaster', 'a deadly conspiracy',
-        'a home invader', 'a kidnapper', 'a corrupt system', 'a zombie horde',
-        'a plane hijacker', 'a serial killer', 'a corporate cover-up',
-        'a military coup', 'a pandemic', 'a technological catastrophe'
+        'a terrorist organization', 'a deadly conspiracy reaching the top',
+        'a home invader', 'a kidnapper', 'a corrupt system hunting them', 
+        'a zombie horde', 'a plane hijacker', 'a serial killer targeting them',
+        'a corporate cover-up', 'a military coup', 'a pandemic outbreak',
+        'a technological catastrophe', 'a nuclear meltdown', 'a biological weapon',
+        'a cyber attack', 'an EMP strike', 'a rogue AI'
       ]);
     
     case 'Rites of Passage':
-      // Internal struggle or life circumstance
+      // Internal struggle or life circumstance (more specific)
       return pick([
-        'their own demons', 'a devastating loss', 'a life crisis',
-        'their past mistakes', 'a broken relationship', 'addiction',
-        'a family tragedy', 'their own fear', 'a career collapse',
-        'an identity crisis', 'their own weakness', 'the passage of time'
+        'their own demons whispering lies', 'a devastating loss that broke them', 
+        'a midlife crisis', 'their past mistakes haunting them', 
+        'a broken relationship they can\'t fix', 'addiction destroying their life',
+        'a family tragedy tearing them apart', 'their own fear paralyzing them', 
+        'a career collapse', 'an identity crisis', 'their own weakness',
+        'the passage of time they can\'t stop', 'grief consuming them',
+        'shame from their past', 'regret eating them alive', 'self-hatred'
       ]);
     
     case 'Buddy Love':
@@ -418,30 +443,51 @@ export function genreSpecificNemesis(genre: string): string {
       return extremelyDifficultSituation();
     
     case 'Whydunit':
-      // The mystery/criminal
+      // The mystery/criminal - use specificVillain() 20% of the time
+      if (Math.random() < 0.2) return specificVillain();
       return pick([
-        'a brilliant serial killer', 'a master manipulator', 'a corrupt official',
-        'a hidden conspiracy', 'a ghost from the past', 'a cunning adversary',
+        'a brilliant serial killer', 'a master manipulator pulling strings', 
+        'a hidden conspiracy', 'a ghost from their past', 'a cunning adversary',
         'a web of lies', 'a dangerous cult', 'a criminal mastermind',
-        'a buried secret', 'a powerful organization', 'the truth itself'
+        'a buried secret', 'a powerful organization', 'the truth itself',
+        'a copycat killer', 'a vigilante', 'a corrupt detective',
+        'a killer hiding in plain sight', 'someone they trust'
       ]);
     
     case 'Fool Triumphant':
-      // The establishment/elite
-      return establishment();
+      // The establishment/elite (more specific)
+      return pick([
+        'the elite upper class', 'a corrupt corporation', 'a rigid institution',
+        'the popular crowd', 'a powerful dynasty', 'the establishment',
+        'a prestigious university', 'a closed society', 'the aristocracy',
+        'the old guard', 'the ruling elite', 'the privileged few',
+        'high society', 'the country club set', 'the Ivy League',
+        'the corporate ladder', 'the political machine'
+      ]);
     
     case 'Institutionalized':
-      // The oppressive group/system
-      return oppressiveGroup();
+      // The oppressive group/system (more specific)
+      return pick([
+        'a powerful corporation', 'a military organization', 'a religious cult',
+        'a family dynasty', 'a political machine', 'a criminal empire',
+        'a totalitarian regime', 'a secret society', 'a strict hierarchy',
+        'an authoritarian system', 'a conformist culture', 'the mob',
+        'a fascist government', 'a fundamentalist group', 'the system itself',
+        'a corrupt police force', 'an oppressive tradition'
+      ]);
     
     case 'Superhero':
-      // The supervillain or external threat (concrete entities only)
+      // The supervillain or external threat - use specificVillain() 20% of the time
+      if (Math.random() < 0.2) return specificVillain();
+      if (Math.random() < 0.1) return supernaturalThreat();
       return pick([
         'a powerful supervillain', 'a dark mirror of themselves',
-        'a government agency', 'a rival hero', 'a mad scientist',
+        'a government agency hunting them', 'a rival hero', 'a mad scientist',
         'an alien invasion', 'a corrupt organization', 'a nemesis from their past',
         'a world that fears them', 'a secret society', 'a rogue AI',
-        'an ancient evil', 'a terrorist organization', 'a criminal mastermind'
+        'an ancient evil awakening', 'a terrorist organization', 
+        'a criminal mastermind', 'a reality-warping villain',
+        'a time-traveling threat', 'a cosmic entity'
       ]);
     
     default:

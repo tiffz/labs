@@ -128,6 +128,16 @@ The suggestion engine contains extensive pools of randomized elements:
 
 ## Design Principles
 
+### The Kimberly System
+
+The generator uses the **Kimberly System** - a composable random content generation system using semantically-named functions. Key principles:
+
+- **Specificity through naming**: Functions named after canonical examples (e.g., `Kimberly()` for character names)
+- **Composable generators**: Functions call other functions for recursive specificity
+- **Stateful character generation**: `Character` class maintains consistent names and pronouns across generation
+- **No placeholder strings**: All content generated with actual values, never `{placeholder}` syntax that needs replacement
+- **Weighted randomness**: Use `pick()` and weighted generators for controlled variety
+
 ### Visual Design
 
 - **Light, clean card-based layout** with subtle borders

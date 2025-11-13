@@ -5,7 +5,13 @@
 
 import { pick } from './core';
 import { incompletenessAndCompletion, genreSpecificNemesis } from './genre-specific-elements';
-import { generateComplication } from './logline-elements';
+import { 
+  generateComplication,
+  generateOutOfTheBottleElements,
+  generateDudeWithAProblemElements,
+  generateWhydunitElements,
+  generateSuperheroElements
+} from './logline-elements';
 
 export interface ElementMapping {
   loglineProperty: string; // The property name in loglineElements
@@ -20,19 +26,19 @@ export const genreElementMappings: Record<string, Record<string, ElementMapping>
     'The Incomplete Hero': {
       loglineProperty: 'incompleteness',
       regenerator: () => {
-        return incompletenessAndCompletion();
+        return incompletenessAndCompletion('hero').incompleteness;
       }
     },
     'The Counterpart': {
       loglineProperty: 'completion',
       regenerator: () => {
-        return incompletenessAndCompletion();
+        return incompletenessAndCompletion('hero').completion;
       }
     },
     'The Complication': {
       loglineProperty: 'complication',
       regenerator: () => {
-        return { complication: generateComplication() };
+        return generateComplication();
       }
     }
   },
@@ -41,7 +47,7 @@ export const genreElementMappings: Record<string, Record<string, ElementMapping>
     'The Monster': {
       loglineProperty: 'monster',
       regenerator: () => {
-        return { monster: genreSpecificNemesis('Monster in the House') };
+        return genreSpecificNemesis('Monster in the House');
       }
     },
     'The House': {
@@ -52,7 +58,7 @@ export const genreElementMappings: Record<string, Record<string, ElementMapping>
           'a space station', 'an underground bunker', 'a cruise ship',
           'a college campus', 'a family home', 'a military base', 'a remote island'
         ];
-        return { house: pick(houses) };
+        return pick(houses);
       }
     },
     'The Sin': {
@@ -63,7 +69,7 @@ export const genreElementMappings: Record<string, Record<string, ElementMapping>
           'hubris', 'desire for power', 'forbidden experiments', 'playing god',
           'breaking sacred rules'
         ];
-        return { sin: pick(sins) };
+        return pick(sins);
       }
     }
   },
@@ -78,7 +84,7 @@ export const genreElementMappings: Record<string, Record<string, ElementMapping>
           'across the country', 'through a post-apocalyptic wasteland',
           'into the depths of space', 'through time itself'
         ];
-        return { journey: pick(journeys) };
+        return pick(journeys);
       }
     },
     'The Team': {
@@ -89,7 +95,7 @@ export const genreElementMappings: Record<string, Record<string, ElementMapping>
           'a band of outcasts', 'a desperate crew', 'a motley crew',
           'a team of specialists', 'a group of strangers'
         ];
-        return { team: pick(teams) };
+        return pick(teams);
       }
     },
     'The Prize': {
@@ -101,7 +107,7 @@ export const genreElementMappings: Record<string, Record<string, ElementMapping>
           'a powerful weapon', 'the truth about their past', 'a priceless treasure',
           'a way home', 'redemption', 'a second chance'
         ];
-        return { prize: pick(prizes) };
+        return pick(prizes);
       }
     }
   },
@@ -116,19 +122,13 @@ export const genreElementMappings: Record<string, Record<string, ElementMapping>
           'to be loved by everyone', 'to never feel pain again', 'eternal youth',
           'to be the best at everything'
         ];
-        return { wish: pick(wishes) };
+        return pick(wishes);
       }
     },
     'The Spell': {
       loglineProperty: 'consequence',
       regenerator: () => {
-        const consequences = [
-          'losing {possessive} humanity', 'destroying everything {subject} loves', 'becoming the villain',
-          'losing {possessive} identity', 'trapping {reflexive} forever', 'hurting innocent people',
-          'creating a worse reality', 'becoming what {subject} feared most',
-          'losing what matters most', 'corrupting {possessive} soul'
-        ];
-        return { consequence: pick(consequences) };
+        return generateOutOfTheBottleElements('hero').consequence;
       }
     },
     'The Lesson': {
@@ -140,7 +140,7 @@ export const genreElementMappings: Record<string, Record<string, ElementMapping>
           'there are no shortcuts', 'you must earn what you want',
           'the price is too high', 'some things can\'t be undone'
         ];
-        return { lesson: pick(lessons) };
+        return pick(lessons);
       }
     }
   },
@@ -149,18 +149,13 @@ export const genreElementMappings: Record<string, Record<string, ElementMapping>
     'The Sudden Event': {
       loglineProperty: 'suddenEvent',
       regenerator: () => {
-        return { suddenEvent: genreSpecificNemesis('Dude with a Problem') };
+        return genreSpecificNemesis('Dude with a Problem');
       }
     },
     'The Life or Death Battle': {
       loglineProperty: 'stakes',
       regenerator: () => {
-        const stakes = [
-          '{possessive} family', 'innocent lives', '{possessive} city', '{possessive} country',
-          'the world', '{possessive} loved ones', 'everything {subject} hold dear',
-          '{possessive} own life', '{possessive} home', '{possessive} future'
-        ];
-        return { stakes: pick(stakes) };
+        return generateDudeWithAProblemElements(genreSpecificNemesis('Dude with a Problem'), 'hero').stakes;
       }
     }
   },
@@ -175,7 +170,7 @@ export const genreElementMappings: Record<string, Record<string, ElementMapping>
           'coming of age', 'a betrayal', 'a personal failure', 'an identity crisis',
           'addiction', 'a crisis of faith'
         ];
-        return { lifeCrisis: pick(lifeCrises) };
+        return pick(lifeCrises);
       }
     },
     'The Wrong Way': {
@@ -186,7 +181,7 @@ export const genreElementMappings: Record<string, Record<string, ElementMapping>
           'numbing the pain', 'blaming everyone else', 'giving up',
           'refusing to change', 'clinging to the past', 'spiraling into darkness'
         ];
-        return { wrongWay: pick(wrongWays) };
+        return pick(wrongWays);
       }
     }
   },
@@ -202,19 +197,13 @@ export const genreElementMappings: Record<string, Record<string, ElementMapping>
           'a web of lies and corruption', 'a puzzle that defies logic',
           'a crime that shouldn\'t exist'
         ];
-        return { mystery: pick(mysteries) };
+        return pick(mysteries);
       }
     },
     'The Dark Turn': {
       loglineProperty: 'darkTurn',
       regenerator: () => {
-        const darkTurns = [
-          'it mirrors {possessive} own past', 'it involves someone {subject} love',
-          'it threatens to expose {possessive} secrets', 'it forces {object} to confront {possessive} demons',
-          'it reveals {subject} {is} connected to the crime', 'it puts {object} in the killer\'s crosshairs',
-          'it uncovers a conspiracy {subject} {is} part of', 'it shows {subject} {has} been wrong all along'
-        ];
-        return { darkTurn: pick(darkTurns) };
+        return generateWhydunitElements('hero').darkTurn;
       }
     }
   },
@@ -223,7 +212,7 @@ export const genreElementMappings: Record<string, Record<string, ElementMapping>
     'The Establishment': {
       loglineProperty: 'establishment',
       regenerator: () => {
-        return { establishment: genreSpecificNemesis('Fool Triumphant') };
+        return genreSpecificNemesis('Fool Triumphant');
       }
     },
     'The Transmutation': {
@@ -234,7 +223,7 @@ export const genreElementMappings: Record<string, Record<string, ElementMapping>
           'simple honesty', 'unconventional methods', 'genuine kindness',
           'pure heart', 'outsider status', 'unpolished manner'
         ];
-        return { underestimation: pick(underestimations) };
+        return pick(underestimations);
       }
     }
   },
@@ -243,7 +232,7 @@ export const genreElementMappings: Record<string, Record<string, ElementMapping>
     'The Group': {
       loglineProperty: 'group',
       regenerator: () => {
-        return { group: genreSpecificNemesis('Institutionalized') };
+        return genreSpecificNemesis('Institutionalized');
       }
     },
     'The Choice': {
@@ -254,7 +243,7 @@ export const genreElementMappings: Record<string, Record<string, ElementMapping>
           'obedience or exile', 'safety or truth', 'acceptance or authenticity',
           'power or principles', 'belonging or independence'
         ];
-        return { choice: pick(choices) };
+        return pick(choices);
       }
     }
   },
@@ -268,26 +257,19 @@ export const genreElementMappings: Record<string, Record<string, ElementMapping>
           'telepathy', 'super speed', 'invulnerability', 'shape-shifting',
           'time manipulation', 'energy projection', 'healing powers'
         ];
-        return { power: pick(powers) };
+        return pick(powers);
       }
     },
     'The Nemesis': {
       loglineProperty: 'villain',
       regenerator: () => {
-        return { villain: genreSpecificNemesis('Superhero') };
+        return genreSpecificNemesis('Superhero');
       }
     },
     'The Curse': {
       loglineProperty: 'curse',
       regenerator: () => {
-        const curses = [
-          'isolating {object} from humanity', 'making {object} feared by those {subject} protect',
-          'destroying {possessive} normal life', 'turning {object} into a weapon',
-          'costing {object} {possessive} relationships', 'making {object} a target',
-          'forcing impossible choices', 'consuming {possessive} identity',
-          'separating {object} from loved ones', 'burdening {object} with responsibility'
-        ];
-        return { curse: pick(curses) };
+        return generateSuperheroElements(genreSpecificNemesis('Superhero'), 'hero').curse;
       }
     }
   }

@@ -155,7 +155,7 @@ let currentIncompleteness: IncompletenessAndCompletion | null = null;
  */
 function getIncompletenessAndCompletion(): IncompletenessAndCompletion {
   if (!currentIncompleteness) {
-    currentIncompleteness = incompletenessAndCompletion();
+    currentIncompleteness = incompletenessAndCompletion('hero');
   }
   return currentIncompleteness;
 }

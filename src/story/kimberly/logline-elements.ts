@@ -10,6 +10,14 @@
 
 import { pick } from './core';
 import { incompletenessAndCompletion } from './genre-specific-elements';
+import { he, him, his, himself } from './realistic-names';
+import { 
+  naturalDisaster,
+  supernaturalThreat,
+  politicalConflict,
+  redemptionQuest,
+  lifechangingJourney
+} from './specific-details';
 
 export type { IncompletenessAndCompletion } from './genre-specific-elements';
 
@@ -27,8 +35,8 @@ export interface BuddyLoveElements {
 /**
  * Generate just the incompleteness/completion pair
  */
-export function generateIncompletenessCompletion(): { incompleteness: string; completion: string } {
-  const pair = incompletenessAndCompletion();
+export function generateIncompletenessCompletion(characterId: string = 'hero'): { incompleteness: string; completion: string } {
+  const pair = incompletenessAndCompletion(characterId);
   return {
     incompleteness: pair.incompleteness,
     completion: pair.completion
@@ -39,20 +47,33 @@ export function generateIncompletenessCompletion(): { incompleteness: string; co
  * Generate just the situation
  */
 export function generateSituation(): string {
+  // Use a weighted approach to sometimes call specific generators
+  const useSpecific = Math.random();
+  
+  if (useSpecific < 0.15) return supernaturalThreat();
+  if (useSpecific < 0.30) return politicalConflict();
+  if (useSpecific < 0.40) return naturalDisaster();
+  if (useSpecific < 0.50) return lifechangingJourney();
+  if (useSpecific < 0.60) return redemptionQuest();
+  
+  // Otherwise pick from static situations
   const situations = [
-    // Conflict & danger
-    'a deadly mission', 'a war', 'a dangerous conspiracy', 'a criminal empire',
-    'a supernatural threat', 'a terrorist plot', 'a deadly competition',
-    'a hostage situation', 'a military operation', 'a covert mission',
-    // Rivalry & opposition
-    'a family feud', 'a corporate rivalry', 'a political conflict', 'a bitter rivalry',
-    'a class divide', 'a cultural clash', 'a professional competition',
-    // Time & stakes
-    'a race against time', 'a ticking clock', 'a countdown to disaster',
-    'a terminal diagnosis', 'an impending catastrophe',
-    // Journey & transformation
-    'a life-changing journey', 'a dangerous expedition', 'a quest for redemption',
-    'a cross-country escape', 'a perilous voyage'
+    // Conflict & danger (specific)
+    'a deadly mission behind enemy lines', 'a war they didn\'t start', 
+    'a dangerous conspiracy reaching the highest levels', 'a criminal empire threatening their city',
+    'a terrorist plot targeting innocents', 'a deadly competition with their life on the line',
+    'a hostage situation with no good options', 'a black ops mission gone wrong', 
+    'a covert mission to stop an assassination',
+    // Rivalry & opposition (specific)
+    'a blood feud spanning generations', 'a corporate rivalry destroying lives', 
+    'a bitter rivalry turned deadly', 'a class divide threatening revolution', 
+    'a cultural clash tearing families apart', 'a professional competition with everything at stake',
+    // Time & stakes (specific)
+    'a race against time to stop a bomb', 'a ticking clock counting down to war', 
+    'a countdown to the end of the world', 'a terminal diagnosis with months to live',
+    // Journey & transformation (specific)
+    'a dangerous expedition into the unknown', 'a cross-country escape from killers', 
+    'a perilous voyage across enemy waters'
   ];
   return pick(situations);
 }
@@ -219,7 +240,13 @@ export interface OutOfTheBottleElements {
   undoMethod: string; // How they must undo it (adds variety and tension)
 }
 
-export function generateOutOfTheBottleElements(): OutOfTheBottleElements {
+export function generateOutOfTheBottleElements(characterId: string = 'hero'): OutOfTheBottleElements {
+  // Get pronouns for this character
+  const heroPossessive = his(characterId);
+  const heroSubject = he(characterId);
+  const heroObject = him(characterId);
+  const heroReflexive = himself(characterId);
+  
   const wishes = [
     // Power & control
     'unlimited power', 'the ability to control time', 'to control minds',
@@ -239,12 +266,17 @@ export function generateOutOfTheBottleElements(): OutOfTheBottleElements {
   ];
   
   const consequences = [
-    'losing {possessive} humanity', 'destroying everything {subject} loves', 'becoming the villain',
-    'losing {possessive} identity', 'trapping {reflexive} forever', 'hurting innocent people',
-    'creating a worse reality', 'becoming what {subject} feared most',
-    'losing what matters most', 'corrupting {possessive} soul', 'erasing {possessive} memories',
-    'turning everyone against {object}', 'destroying the world', 'becoming a monster',
-    'losing {possessive} free will', 'repeating the same day forever'
+    // Use specific wishConsequence function for more evocative results
+    `losing ${heroPossessive} humanity`, `destroying everything ${heroSubject} loves`, 'becoming the villain',
+    `losing ${heroPossessive} identity`, `trapping ${heroReflexive} forever`, 'hurting innocent people',
+    'creating a worse reality', `becoming what ${heroSubject} feared most`,
+    'losing what matters most', `corrupting ${heroPossessive} soul`, `erasing ${heroPossessive} memories`,
+    `turning everyone against ${heroObject}`, 'destroying the world', 'becoming a monster',
+    `losing ${heroPossessive} free will`, 'repeating the same day forever',
+    // Add more specific consequences
+    `watching ${heroPossessive} loved ones die`, 'becoming immortal and alone',
+    `trapped in a nightmare of ${heroPossessive} own making`, 'losing the ability to feel',
+    'becoming a puppet with no will', `erasing everyone who knew ${heroObject}`
   ];
   
   const lessons = [
@@ -295,35 +327,48 @@ export interface DudeWithAProblemElements {
   escalation: string; // How the threat escalates (adds tension)
 }
 
-export function generateDudeWithAProblemElements(nemesis: string): DudeWithAProblemElements {
+export function generateDudeWithAProblemElements(nemesis: string, characterId: string = 'hero'): DudeWithAProblemElements {
+  // Get pronouns for this character
+  const heroPossessive = his(characterId);
+  const heroSubject = he(characterId);
+  
   const stakes = [
-    '{possessive} family', 'innocent lives', '{possessive} city', '{possessive} country',
-    'the world', '{possessive} loved ones', 'everything {subject} hold dear',
-    '{possessive} own life', '{possessive} home', '{possessive} future'
+    `${heroPossessive} family`, 'innocent lives', `${heroPossessive} city`, `${heroPossessive} country`,
+    'the world', `${heroPossessive} loved ones`, `everything ${heroSubject} hold dear`,
+    `${heroPossessive} own life`, `${heroPossessive} home`, `${heroPossessive} future`
   ];
   
   const actions = [
-    // Aggressive action
-    'fight to save', 'battle to defend', 'fight back to protect',
-    'stand against impossible odds to save', 'wage war to protect',
-    // Desperate action
-    'race to protect', 'struggle to rescue', 'scramble to save',
-    'claw their way to save', 'push beyond their limits to save',
-    // Sacrificial action
-    'risk everything to save', 'sacrifice to protect', 'give everything to save',
+    // Aggressive action (specific)
+    'fight to save', 'battle to defend', 'fight back against all odds to protect',
+    'stand their ground to save', 'wage a one-person war to protect',
+    // Desperate action (specific)
+    'race against the clock to protect', 'struggle against fate to rescue', 'scramble through hell to save',
+    'claw through fire and blood to save', 'push beyond human limits to save',
+    // Sacrificial action (specific)
+    'risk everything to save', 'sacrifice to protect', 'give their last breath to save',
     'lay down their life to protect', 'abandon all hope to save',
-    // Determined action
+    `abandon ${heroPossessive} family to save`, `give up ${heroPossessive} dreams to protect`,
+    `say goodbye to ${heroPossessive} daughter to save`, `betray everything ${heroSubject} believe in to protect`,
+    // Determined action (specific)
     'do whatever it takes to save', 'stop at nothing to protect',
-    'overcome impossible odds to save', 'defy fate to save',
-    'refuse to give up on', 'move heaven and earth to save'
+    'overcome the impossible to save', 'defy death itself to save',
+    'refuse to let them die', 'move heaven and earth to save'
   ];
   
   const escalations = [
-    'before time runs out', 'as the threat grows worse',
-    'while the danger escalates', 'before it\'s too late',
-    'as the situation spirals out of control', 'before all is lost',
-    'while fighting an enemy they can\'t see', 'with no way out',
-    'against overwhelming odds', 'in a nightmare they never saw coming'
+    // Time pressure (specific)
+    'before the bomb detonates', 'as the countdown reaches zero',
+    'while the clock ticks down', 'before dawn breaks',
+    'with only hours left', 'before it\'s too late',
+    // Worsening situation (specific)
+    'as the body count rises', 'while the threat multiplies',
+    'as the situation spirals into chaos', 'before all is lost',
+    // Specific threats
+    'in an unexpected terrorist attack', 'in a devastating tsunami',
+    'in a magnitude 9.5 earthquake', 'against overwhelming odds',
+    'with no backup coming', 'with nowhere left to run',
+    'in a nightmare they never saw coming', 'as reality collapses around them'
   ];
   
   return {
@@ -372,7 +417,14 @@ export interface WhydunitElements {
   darkTurn: string; // The personal connection
 }
 
-export function generateWhydunitElements(): WhydunitElements {
+export function generateWhydunitElements(characterId: string = 'hero'): WhydunitElements {
+  // Get pronouns for this character
+  const heroPossessive = his(characterId);
+  const heroSubject = he(characterId);
+  const heroObject = him(characterId);
+  const isVerb = heroSubject === 'they' ? 'are' : 'is';
+  const hasVerb = heroSubject === 'they' ? 'have' : 'has';
+  
   const mysteries = [
     // Murder mysteries
     'a series of impossible murders', 'a pattern of deaths', 'a locked-room murder',
@@ -394,20 +446,20 @@ export function generateWhydunitElements(): WhydunitElements {
   
   const darkTurns = [
     // Personal connection
-    'it mirrors {possessive} own past', 'it involves someone {subject} love',
-    'it reveals {subject} {is} connected to the crime', 'it implicates {possessive} family',
-    'it ties back to {possessive} childhood', 'it involves {possessive} mentor',
+    `it mirrors ${heroPossessive} own past`, `it involves someone ${heroSubject} love`,
+    `it reveals ${heroSubject} ${isVerb} connected to the crime`, `it implicates ${heroPossessive} family`,
+    `it ties back to ${heroPossessive} childhood`, `it involves ${heroPossessive} mentor`,
     // Danger & threat
-    'it puts {object} in the killer\'s crosshairs', 'it makes {object} the next target',
-    'it threatens {possessive} loved ones', 'it puts everyone {subject} trust in danger',
+    `it puts ${heroObject} in the killer's crosshairs`, `it makes ${heroObject} the next target`,
+    `it threatens ${heroPossessive} loved ones`, `it puts everyone ${heroSubject} trust in danger`,
     // Revelation & truth
-    'it threatens to expose {possessive} secrets', 'it forces {object} to confront {possessive} demons',
-    'it uncovers a conspiracy {subject} {is} part of', 'it shows {subject} {has} been wrong all along',
-    'it reveals {subject} {is} the villain', 'it proves {possessive} innocence was a lie',
+    `it threatens to expose ${heroPossessive} secrets`, `it forces ${heroObject} to confront ${heroPossessive} demons`,
+    `it uncovers a conspiracy ${heroSubject} ${isVerb} part of`, `it shows ${heroSubject} ${hasVerb} been wrong all along`,
+    `it reveals ${heroSubject} ${isVerb} the villain`, `it proves ${heroPossessive} innocence was a lie`,
     // Moral complexity
-    'it forces {object} to choose between justice and loyalty',
-    'it makes {object} question everything {subject} believe',
-    'it reveals the victim deserved it', 'it shows there {is} no good answer'
+    `it forces ${heroObject} to choose between justice and loyalty`,
+    `it makes ${heroObject} question everything ${heroSubject} believe`,
+    `it reveals the victim deserved it`, `it shows there ${isVerb} no good answer`
   ];
   
   return {
@@ -489,7 +541,12 @@ export interface SuperheroElements {
   villain: string; // The threat (from genreSpecificNemesis)
 }
 
-export function generateSuperheroElements(villain: string): SuperheroElements {
+export function generateSuperheroElements(villain: string, characterId: string = 'hero'): SuperheroElements {
+  // Get pronouns for this character
+  const heroPossessive = his(characterId);
+  const heroSubject = he(characterId);
+  const heroObject = him(characterId);
+  
   const powers = [
     // Physical powers
     'superhuman strength', 'super speed', 'invulnerability',
@@ -517,11 +574,11 @@ export function generateSuperheroElements(villain: string): SuperheroElements {
   ];
   
   const curses = [
-    'isolating {object} from humanity', 'making {object} feared by those {subject} protect',
-    'destroying {possessive} normal life', 'turning {object} into a weapon',
-    'costing {object} {possessive} relationships', 'making {object} a target',
-    'forcing impossible choices', 'consuming {possessive} identity',
-    'separating {object} from loved ones', 'burdening {object} with responsibility'
+    `isolating ${heroObject} from humanity`, `making ${heroObject} feared by those ${heroSubject} protect`,
+    `destroying ${heroPossessive} normal life`, `turning ${heroObject} into a weapon`,
+    `costing ${heroObject} ${heroPossessive} relationships`, `making ${heroObject} a target`,
+    'forcing impossible choices', `consuming ${heroPossessive} identity`,
+    `separating ${heroObject} from loved ones`, `burdening ${heroObject} with responsibility`
   ];
   
   return {

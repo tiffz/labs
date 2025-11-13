@@ -76,6 +76,9 @@ export * from './themes';
 // Export settings generators
 export * from './settings';
 
+// Export specific detail generators
+export * from './specific-details';
+
 // Export genre-specific element generators
 export * from './genre-elements';
 
@@ -108,6 +111,7 @@ import * as locations from './locations';
 import * as storyElements from './story-elements';
 import * as themes from './themes';
 import * as settings from './settings';
+import * as specificDetails from './specific-details';
 import * as genreElements from './genre-elements';
 import * as beats from './beats';
 import * as nemesisGenerators from './nemesis';
@@ -158,6 +162,9 @@ export const k = {
   
   // Settings
   ...settings,
+  
+  // Specific details
+  ...specificDetails,
   
   // Genre elements
   ...genreElements,
