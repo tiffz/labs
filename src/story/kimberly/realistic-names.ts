@@ -48,24 +48,87 @@ export function anyFullName(): string {
 }
 
 /**
+ * Pronoun sets for characters
+ */
+export interface Pronouns {
+  subject: string;   // he/she/they
+  object: string;    // him/her/them
+  possessive: string; // his/her/their
+  possessiveAdjective: string; // his/her/their (before noun)
+  reflexive: string; // himself/herself/themselves
+}
+
+const PRONOUNS_HE: Pronouns = {
+  subject: 'he',
+  object: 'him',
+  possessive: 'his',
+  possessiveAdjective: 'his',
+  reflexive: 'himself'
+};
+
+const PRONOUNS_SHE: Pronouns = {
+  subject: 'she',
+  object: 'her',
+  possessive: 'hers',
+  possessiveAdjective: 'her',
+  reflexive: 'herself'
+};
+
+const PRONOUNS_THEY: Pronouns = {
+  subject: 'they',
+  object: 'them',
+  possessive: 'theirs',
+  possessiveAdjective: 'their',
+  reflexive: 'themselves'
+};
+
+/**
+ * Generates pronouns for a character
+ * 90% chance of he/she (50/50 split), 10% chance of they
+ * Returns both pronouns and the gender to use for name generation
+ */
+function generatePronounsAndGender(): { pronouns: Pronouns; gender: 'male' | 'female' | 'any' } {
+  const rand = Math.random();
+  if (rand < 0.45) {
+    return { pronouns: PRONOUNS_HE, gender: 'male' };
+  } else if (rand < 0.90) {
+    return { pronouns: PRONOUNS_SHE, gender: 'female' };
+  } else {
+    return { pronouns: PRONOUNS_THEY, gender: 'any' };
+  }
+}
+
+/**
  * Character name storage for consistent first/last name usage
  * The Kimberly System convention: use full name on first mention, first name after
  */
-const characterNames = new Map<string, { first: string; last: string; full: string }>();
+const characterNames = new Map<string, { 
+  first: string; 
+  last: string; 
+  full: string;
+  pronouns: Pronouns;
+}>();
 
 /**
  * Generates or retrieves a character's full name (First Last)
  * Use this for the first mention of a character
  * Example: "Kimberly Brown"
+ * 
+ * Names are generated to match the character's pronouns:
+ * - he/him -> male names
+ * - she/her -> female names  
+ * - they/them -> any gender names
  */
 export function KimberlySmith(characterId: string = 'default'): string {
   if (!characterNames.has(characterId)) {
-    const firstName = generate(false, true, 'any');
+    const { pronouns, gender } = generatePronounsAndGender();
+    const firstName = generate(false, true, gender);
     const lastName = generate(false, false, 'any');
     characterNames.set(characterId, {
       first: firstName,
       last: lastName,
-      full: `${firstName} ${lastName}`
+      full: `${firstName} ${lastName}`,
+      pronouns
     });
   }
   return characterNames.get(characterId)!.full;
@@ -82,6 +145,35 @@ export function Kimberly(characterId: string = 'default'): string {
     KimberlySmith(characterId);
   }
   return characterNames.get(characterId)!.first;
+}
+
+/**
+ * Gets a character's pronouns
+ */
+export function getPronouns(characterId: string = 'default'): Pronouns {
+  if (!characterNames.has(characterId)) {
+    KimberlySmith(characterId);
+  }
+  return characterNames.get(characterId)!.pronouns;
+}
+
+/**
+ * Pronoun helper functions for easy access in templates
+ */
+export function he(characterId: string = 'default'): string {
+  return getPronouns(characterId).subject;
+}
+
+export function him(characterId: string = 'default'): string {
+  return getPronouns(characterId).object;
+}
+
+export function his(characterId: string = 'default'): string {
+  return getPronouns(characterId).possessiveAdjective;
+}
+
+export function himself(characterId: string = 'default'): string {
+  return getPronouns(characterId).reflexive;
 }
 
 /**

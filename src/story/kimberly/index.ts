@@ -34,11 +34,14 @@ export {
 // Import pick and other core utilities for use in the k namespace
 import { pick, pickGenerator, capitalize, article, a } from './core';
 
-// Export all name generators
-export * from './names';
-
-// Export realistic name generators
+// Export realistic name generators (primary system)
 export * from './realistic-names';
+
+// Export specific name generators from old system (excluding conflicts)
+export { 
+  Liam, Margaret, Arthur, Zara, Orion, Aria, Cassius, Alex,
+  femaleName, maleName, anyName
+} from './names';
 
 // Export all adjective generators
 export * from './adjectives';
@@ -57,6 +60,15 @@ export * from './nemesis';
 
 // Export identity generators
 export * from './identities';
+
+// Export logline generators
+export * from './loglines';
+
+// Export logline elements
+export * from './logline-elements';
+
+// Export genre-specific elements
+export * from './genre-specific-elements';
 
 // Export theme-based flaw generators
 export * from './themes';
@@ -100,6 +112,8 @@ import * as genreElements from './genre-elements';
 import * as beats from './beats';
 import * as nemesisGenerators from './nemesis';
 import * as identities from './identities';
+import * as loglines from './loglines';
+import * as genreSpecific from './genre-specific-elements';
 import { k as templateTag } from './core';
 import { 
   Character,
@@ -156,6 +170,12 @@ export const k = {
   
   // Identity generators
   ...identities,
+  
+  // Logline generators
+  ...loglines,
+  
+  // Genre-specific elements
+  ...genreSpecific,
   
   // Character creation
   Character,

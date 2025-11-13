@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import type { StoryDNA } from './types';
 import { generateStoryDNA, getNewSuggestion } from './data/storyGenerator';
+import { regenerateElement, getLoglineProperty } from './kimberly/logline-element-mapping';
+import { regenerateLoglineFromElements } from './kimberly/loglines';
 import { Sidebar } from './components/Sidebar';
 import { FixedStoryHeader } from './components/FixedStoryHeader';
 import { BeatChart } from './components/BeatChart';
@@ -20,45 +22,153 @@ const App: React.FC = () => {
 
     // Handle genre reroll - regenerate entire story
     if (rerollId === 'genre') {
-      // Generate a completely new story
       const newDNA = generateStoryDNA('Random', 'Random');
       setStoryDNA(newDNA);
       return;
     }
     
-    // Handle theme reroll - change theme and flaw (flaw is theme-dependent)
+    // Handle theme reroll - regenerate entire story with new theme
     if (rerollId === 'theme') {
-      const newDNA = { ...storyDNA };
-      const newTheme = getNewSuggestion('theme', storyDNA);
-      newDNA.theme = newTheme;
-      // Also reroll the flaw since it's theme-based
-      newDNA.flaw = getNewSuggestion('flaw', { ...newDNA, theme: newTheme });
+      const newDNA = generateStoryDNA(storyDNA.genre, 'Random');
       setStoryDNA(newDNA);
       return;
     }
 
-    const newContent = getNewSuggestion(rerollId, storyDNA);
+    // Check if this is a genre element that maps to logline elements
+    const loglineProperty = getLoglineProperty(storyDNA.genre, rerollId);
+    
+    if (loglineProperty && storyDNA.loglineElements) {
+      // This is a genre element - regenerate it and update the logline
+      const updatedDNA = { ...storyDNA };
+      const regeneratedData = regenerateElement(storyDNA.genre, rerollId);
+      
+      if (regeneratedData) {
+        // Update loglineElements with the regenerated data
+        updatedDNA.loglineElements = {
+          ...updatedDNA.loglineElements,
+          [loglineProperty]: regeneratedData
+        };
+        
+        // Regenerate the logline using the UPDATED elements (not generating new ones)
+        updatedDNA.logline = regenerateLoglineFromElements(
+          updatedDNA.genre,
+          updatedDNA.heroName,
+          updatedDNA.bStoryCharacterName,
+          updatedDNA.hero.split(', ')[1] || '', // hero identity
+          updatedDNA.theme,
+          updatedDNA.loglineElements // Use the updated elements
+        );
+        
+        // Clear the cached content for this element (create new object to trigger React update)
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { [rerollId]: _, ...remainingContent } = updatedDNA.generatedContent;
+        updatedDNA.generatedContent = remainingContent;
+        
+        // Also update any core DNA fields that map to this logline element
+        if (loglineProperty === 'incompleteness' || loglineProperty === 'sin' || 
+            loglineProperty === 'obsession' || loglineProperty === 'desire' ||
+            loglineProperty === 'wrongWay' || loglineProperty === 'rebelliousNature' ||
+            loglineProperty === 'gift' || loglineProperty === 'underestimation') {
+          updatedDNA.flaw = updatedDNA.loglineElements[loglineProperty];
+        }
+        if (loglineProperty === 'situation' || loglineProperty === 'monster' ||
+            loglineProperty === 'journey' || loglineProperty === 'consequence' ||
+            loglineProperty === 'suddenEvent' || loglineProperty === 'group' ||
+            loglineProperty === 'establishment' || loglineProperty === 'mystery') {
+          updatedDNA.nemesis = updatedDNA.loglineElements[loglineProperty];
+        }
+      }
+      
+      setStoryDNA(updatedDNA);
+      return;
+    }
 
-    // Create new DNA with updated content
+    // Handle core element rerolls (hero, flaw, nemesis, etc.)
+    const newContent = getNewSuggestion(rerollId, storyDNA);
     const updatedDNA = { ...storyDNA };
     
-    // Update core DNA and extract character names if needed
     if (rerollId === 'hero') {
       updatedDNA.hero = newContent;
-      // Extract just the name part for heroName (before the comma)
       const namePart = newContent.split(',')[0];
       updatedDNA.heroName = namePart;
       
+      // Regenerate logline using existing elements, just with new hero name
+      updatedDNA.logline = regenerateLoglineFromElements(
+        updatedDNA.genre,
+        namePart,
+        updatedDNA.bStoryCharacterName,
+        newContent.split(', ')[1] || '',
+        updatedDNA.theme,
+        updatedDNA.loglineElements
+      );
+      
       // Clear all generated content that uses the hero name
-      // This forces regeneration with the new name
       updatedDNA.generatedContent = {};
     } else if (rerollId === 'flaw') {
       updatedDNA.flaw = newContent;
+      
+      // For flaw, we need to check if it's a logline element property
+      // and update the loglineElements accordingly
+      let flawProperty = null;
+      if (updatedDNA.genre === 'Buddy Love') flawProperty = 'incompleteness';
+      else if (updatedDNA.genre === 'Monster in the House') flawProperty = 'sin';
+      else if (updatedDNA.genre === 'Golden Fleece') flawProperty = 'obsession';
+      else if (updatedDNA.genre === 'Out of the Bottle') flawProperty = 'desire';
+      else if (updatedDNA.genre === 'Rites of Passage') flawProperty = 'wrongWay';
+      else if (updatedDNA.genre === 'Whydunit') flawProperty = 'obsession';
+      else if (updatedDNA.genre === 'Fool Triumphant') flawProperty = 'underestimation';
+      else if (updatedDNA.genre === 'Institutionalized') flawProperty = 'rebelliousNature';
+      else if (updatedDNA.genre === 'Superhero') flawProperty = 'gift';
+      
+      if (flawProperty && updatedDNA.loglineElements) {
+        updatedDNA.loglineElements = {
+          ...updatedDNA.loglineElements,
+          [flawProperty]: newContent
+        };
+      }
+      
+      // Regenerate logline using updated elements
+      updatedDNA.logline = regenerateLoglineFromElements(
+        updatedDNA.genre,
+        updatedDNA.heroName,
+        updatedDNA.bStoryCharacterName,
+        updatedDNA.hero.split(', ')[1] || '',
+        updatedDNA.theme,
+        updatedDNA.loglineElements
+      );
     } else if (rerollId === 'nemesis') {
       updatedDNA.nemesis = newContent;
-      // Extract just the name part for nemesisName
       const namePart = newContent.split(',')[0];
       updatedDNA.nemesisName = namePart;
+      
+      // For nemesis, check if it's a logline element property
+      let nemesisProperty = null;
+      if (updatedDNA.genre === 'Monster in the House') nemesisProperty = 'monster';
+      else if (updatedDNA.genre === 'Buddy Love') nemesisProperty = 'situation';
+      else if (updatedDNA.genre === 'Golden Fleece') nemesisProperty = 'journey';
+      else if (updatedDNA.genre === 'Out of the Bottle') nemesisProperty = 'consequence';
+      else if (updatedDNA.genre === 'Dude with a Problem') nemesisProperty = 'suddenEvent';
+      else if (updatedDNA.genre === 'Whydunit') nemesisProperty = 'mystery';
+      else if (updatedDNA.genre === 'Fool Triumphant') nemesisProperty = 'establishment';
+      else if (updatedDNA.genre === 'Institutionalized') nemesisProperty = 'group';
+      else if (updatedDNA.genre === 'Superhero') nemesisProperty = 'villain';
+      
+      if (nemesisProperty && updatedDNA.loglineElements) {
+        updatedDNA.loglineElements = {
+          ...updatedDNA.loglineElements,
+          [nemesisProperty]: newContent
+        };
+      }
+      
+      // Regenerate logline using updated elements
+      updatedDNA.logline = regenerateLoglineFromElements(
+        updatedDNA.genre,
+        updatedDNA.heroName,
+        updatedDNA.bStoryCharacterName,
+        updatedDNA.hero.split(', ')[1] || '',
+        updatedDNA.theme,
+        updatedDNA.loglineElements
+      );
       
       // Clear generated content that uses the nemesis name
       updatedDNA.generatedContent = Object.fromEntries(

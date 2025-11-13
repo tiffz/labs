@@ -144,12 +144,30 @@ const transmutations = [
 ];
 
 // Buddy Love elements
-const incompleteHeros = [
-  "cynic who can't love", 'workaholic with no friends', 'coward seeking courage',
-  'grump who needs joy', 'arrogant person needing humility', 'slob who needs discipline',
-  'rebel who needs a cause', 'follower who needs to lead', 'drifter who needs a home',
-  'perfectionist who needs to let go', 'loner who needs connection'
-];
+// Import the incompleteness/completion system from genre-specific-elements
+import { incompletenessAndCompletion, type IncompletenessAndCompletion } from './genre-specific-elements';
+
+// Cache for the current story's incompleteness/completion pair
+let currentIncompleteness: IncompletenessAndCompletion | null = null;
+
+/**
+ * Get or generate the incompleteness/completion pair for the current story
+ */
+function getIncompletenessAndCompletion(): IncompletenessAndCompletion {
+  if (!currentIncompleteness) {
+    currentIncompleteness = incompletenessAndCompletion();
+  }
+  return currentIncompleteness;
+}
+
+/**
+ * Reset the cached incompleteness/completion (call when generating a new story)
+ */
+export function resetBuddyLoveCache(): void {
+  currentIncompleteness = null;
+}
+
+// Removed incompleteHeros list - now using incompletenessAndCompletion() directly
 
 const counterparts = [
   'new partner', 'rescue animal', 'long-lost sibling', 'wise-cracking child',
@@ -237,7 +255,7 @@ export function secret(): string { return pick(secrets); }
 export function darkTurn(): string { return pick(darkTurns); }
 
 // Rites of Passage
-export function lifeProblem(): string { return pick(lifeProblems); }
+export function ritesLifeProblem(): string { return pick(lifeProblems); }
 export function wrongWay(): string { return pick(wrongWays); }
 export function acceptance(): string { return pick(acceptances); }
 
@@ -252,17 +270,29 @@ export function curse(): string { return pick(curses); }
 
 // Dude with a Problem
 export function innocentHero(): string { return pick(innocenceReasons); }
-export function suddenEvent(): string { return pick(suddenEvents); }
+export function dudeSuddenEvent(): string { return pick(suddenEvents); }
 export function lifeOrDeathBattle(): string { return pick(lifeOrDeathBattles); }
 
 // Fool Triumphant
 export function fool(): string { return pick(fools); }
-export function establishment(): string { return pick(establishments); }
+export function foolEstablishment(): string { return pick(establishments); }
 export function transmutation(): string { return pick(transmutations); }
 
 // Buddy Love
-export function incompleteHero(): string { return pick(incompleteHeros); }
-export function counterpart(): string { return pick(counterparts); }
+// NOTE: These functions are now primarily used for display.
+// The actual values should come from loglineElements in the DNA.
+export function incompleteHero(): string {
+  // Just return the incompleteness description
+  const pair = getIncompletenessAndCompletion();
+  return pair.incompleteness;
+}
+
+export function counterpart(): string {
+  // Include how they complete the hero
+  const pair = getIncompletenessAndCompletion();
+  return `${pick(counterparts)} who ${pair.completion}`;
+}
+
 export function complication(): string { return pick(complications); }
 
 // Out of the Bottle
@@ -287,7 +317,7 @@ export const genreElementMap: Record<string, () => string> = {
   'The Detective': detective,
   'The Secret': secret,
   'The Dark Turn': darkTurn,
-  'The Life Problem': lifeProblem,
+  'The Life Problem': ritesLifeProblem,
   'The Wrong Way': wrongWay,
   'The Acceptance': acceptance,
   'The Group': group,
@@ -297,10 +327,10 @@ export const genreElementMap: Record<string, () => string> = {
   'The Nemesis': () => `${adjectives.evil()} ${occupations.worker()}`,
   'The Curse': curse,
   'The Innocent Hero': innocentHero,
-  'The Sudden Event': suddenEvent,
+  'The Sudden Event': dudeSuddenEvent,
   'The Life or Death Battle': lifeOrDeathBattle,
   'The Fool': fool,
-  'The Establishment': establishment,
+  'The Establishment': foolEstablishment,
   'The Transmutation': transmutation,
   'The Incomplete Hero': incompleteHero,
   'The Counterpart': counterpart,

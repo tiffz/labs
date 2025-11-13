@@ -14,11 +14,12 @@ export function kid(): string {
     'young', 'preteen', 'teenage', 'elementary school', 'middle school',
     'high school', '10-year-old', '12-year-old', '15-year-old', '17-year-old'
   ];
+  // Note: Removed 'gifted', 'special', 'blessed', 'chosen' to avoid duplicates with genre-specific adjectives
   const descriptors = [
     'curious', 'rebellious', 'shy', 'adventurous', 'bookish', 'athletic',
     'precocious', 'imaginative', 'mischievous', 'studious', 'creative',
     'outgoing', 'introverted', 'fearless', 'anxious', 'confident',
-    'nerdy', 'popular', 'misunderstood', 'gifted', 'troubled'
+    'nerdy', 'popular', 'misunderstood', 'troubled', 'energetic', 'quiet'
   ];
   
   return `${pick(descriptors)} ${pick(ages)} kid`;

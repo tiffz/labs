@@ -18,6 +18,10 @@ export interface StoryDNA {
   nemesis: string;
   nemesisName: string; // Name for the nemesis
   minorCharacterName: string; // Name for the minor character in Theme Stated
+  logline: string; // Generated logline based on genre template
+  // Logline elements - the specific elements from the logline that should be reused
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  loglineElements: any; // Genre-specific logline elements (BuddyLoveElements, MonsterInTheHouseElements, etc.)
   // Storage for all generated content to prevent unwanted regeneration
   generatedContent: { [key: string]: string };
 }

@@ -17,7 +17,7 @@ export const FixedStoryHeader: React.FC<FixedStoryHeaderProps> = ({ dna, onRerol
     <div className="bg-gradient-to-r from-white via-orange-50/20 to-pink-50/20 border-b border-orange-200/80 shadow-sm sticky top-0 z-10 backdrop-blur-sm">
       <div className="px-6 py-3">
         {/* Genre and Theme Row */}
-        <div className="flex items-center gap-4 mb-3 pb-2 border-b border-orange-100">
+        <div className="flex items-center gap-4 mb-2 pb-2 border-b border-orange-100">
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-semibold text-slate-700 flex items-center gap-1">
               Genre:
@@ -31,6 +31,19 @@ export const FixedStoryHeader: React.FC<FixedStoryHeaderProps> = ({ dna, onRerol
               <Tooltip content="One of the 10 universal themes from Save the Cat! Writes a Novel." />
             </span>
             <GeneratedChip rerollId="theme" content={dna.theme} onReroll={onReroll} compact inline />
+          </div>
+        </div>
+
+        {/* Logline */}
+        <div className="mb-3 pb-3 border-b border-orange-100">
+          <div className="flex items-start gap-2">
+            <span className="text-xs font-semibold text-slate-700 whitespace-nowrap flex items-center gap-1 pt-0.5">
+              Logline:
+              <Tooltip content="A one-sentence summary of your story based on the Save the Cat! genre template." />
+            </span>
+            <p className="text-xs text-slate-700 leading-relaxed italic flex-1">
+              {dna.logline}
+            </p>
           </div>
         </div>
 

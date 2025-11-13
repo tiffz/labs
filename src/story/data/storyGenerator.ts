@@ -27,52 +27,104 @@ export function generateStoryDNA(selectedGenre: string, selectedTheme: string): 
   // Clear character names from previous story
   k.clearCharacterNames();
   
+  // Reset Buddy Love cache for new story
+  k.resetBuddyLoveCache();
+  
   // Generate the hero using Kimberly system (full name on first mention)
   const heroName = k.KimberlySmith('hero'); // Full name: "Kimberly Smith"
   
-  // Opinion adjectives (personality/character traits) - come first in adjective order
-  const heroOpinionAdjective = k.pick([
-    // Negative traits
-    'cynical', 'naive', 'disgraced', 'cautious', 'washed-up',
-    'burnt-out', 'clumsy', 'grumpy', 'arrogant', 'bitter',
-    'paranoid', 'stubborn', 'reckless', 'selfish', 'cowardly',
-    'pessimistic', 'impulsive', 'insecure', 'jealous', 'vengeful',
-    'manipulative', 'entitled', 'defensive', 'withdrawn', 'jaded',
-    'controlling', 'passive-aggressive', 'narcissistic', 'timid', 'volatile',
-    // Positive traits
-    'ambitious', 'idealistic', 'charismatic', 'optimistic', 'determined',
-    'compassionate', 'brilliant', 'resourceful', 'courageous', 'loyal',
-    'creative', 'dedicated', 'empathetic', 'resilient', 'visionary',
-    'principled', 'adventurous', 'passionate', 'wise', 'humble',
-    // Neutral/complex traits
-    'lonely', 'mysterious', 'eccentric', 'unconventional', 'reserved',
-    'pragmatic', 'analytical', 'spontaneous', 'methodical', 'skeptical',
-    'independent', 'sensitive', 'intense', 'quiet', 'outspoken',
-    'meticulous', 'carefree', 'serious', 'playful', 'stoic'
-  ]);
+  // Get genre-specific adjective (e.g., "inadequate" for Buddy Love, "culpable" for Monster in the House)
+  const genreSpecificAdjective = k.genreSpecificHeroAdjective(genre);
   
-  const heroIdentity = k.heroIdentity(); // Uses weighted system (jobs, kids, animals, etc.)
-  const hero = `${heroName}, ${k.a(`${heroOpinionAdjective} ${heroIdentity}`)}`;
+  // Optional: Add a second opinion adjective for more depth (30% chance, max 2 adjectives total)
+  const additionalAdjectives: string[] = [];
+  if (Math.random() < 0.3) {
+    const secondaryAdjectives = [
+      'cynical', 'naive', 'cautious', 'burnt-out', 'grumpy', 'bitter',
+      'stubborn', 'selfish', 'pessimistic', 'impulsive', 'insecure',
+      'defensive', 'withdrawn', 'jaded', 'timid', 'charismatic',
+      'compassionate', 'resourceful', 'courageous', 'creative',
+      'empathetic', 'resilient', 'principled', 'passionate', 'humble',
+      'mysterious', 'eccentric', 'pragmatic', 'analytical', 'spontaneous',
+      'independent', 'sensitive', 'intense', 'quiet', 'meticulous', 'serious'
+    ];
+    additionalAdjectives.push(k.pick(secondaryAdjectives));
+  }
+  
+  const heroIdentityRaw = k.heroIdentity(); // Uses weighted system (jobs, kids, animals, etc.)
+  
+  // Combine adjectives following proper order: genre-specific (opinion) + additional (opinion) + identity
+  const allAdjectives = [genreSpecificAdjective, ...additionalAdjectives].join(' ');
+  const hero = `${heroName}, ${k.a(`${allAdjectives} ${heroIdentityRaw}`)}`;
 
   // Generate names for all other characters
   const bStoryCharacterName = k.KimberlySmith('bStory');
-  const bStoryCharacterType = k.bStoryCharacter();
+  
+  // For Buddy Love, use genre-specific "uniquely unlikely partner" concept
+  const bStoryCharacterType = genre === 'Buddy Love' 
+    ? k.uniquelyUnlikelyPartner()
+    : k.bStoryCharacter();
   const bStoryCharacter = `${bStoryCharacterName}, ${k.a(bStoryCharacterType)}`;
 
-  // Generate nemesis using the new system (person or entity)
-  const nemesis = k.nemesis();
+  // Generate nemesis using genre-specific logic
+  const nemesis = k.genreSpecificNemesis(genre);
   // Extract name if it's a person (contains a comma)
   const nemesisName = nemesis.includes(',') ? nemesis.split(',')[0] : '';
 
   const minorCharacterName = k.KimberlySmith('minor');
 
-  // Initialize DNA with empty generated content storage
+  // Generate logline WITH elements - this is the source of truth for ALL genres
+  const heroIdentity = `${allAdjectives} ${heroIdentityRaw}`;
+  const flaw = k.themeBasedFlaw(theme);
+  
+  // Generate logline with elements for ALL genres
+  const loglineResult = k.generateLoglineWithElements(
+    genre,
+    heroName,
+    bStoryCharacterName,
+    nemesis,
+    heroIdentity,
+    theme
+  );
+  
+  const logline = loglineResult.logline;
+  const loglineElements = loglineResult.elements;
+  
+  // For Buddy Love, override some fields based on logline elements
+  if (genre === 'Buddy Love') {
+    const heroPossessive = k.his('hero');
+    const heroObject = k.him('hero');
+    const completion = loglineElements.completion
+      .replace(/{object}/g, heroObject)
+      .replace(/{possessive}/g, heroPossessive);
+    const bStoryCharacterFromLogline = `${bStoryCharacterName}, who ${completion}`;
+    
+    return {
+      genre,
+      theme,
+      hero,
+      heroName,
+      flaw: loglineElements.incompleteness, // Use incompleteness as flaw
+      initialSetting,
+      act2Setting,
+      bStoryCharacter: bStoryCharacterFromLogline,
+      bStoryCharacterName,
+      nemesis: loglineElements.situation, // Use situation as nemesis
+      nemesisName: '',
+      minorCharacterName,
+      logline,
+      loglineElements,
+      generatedContent: {},
+    };
+  }
+  
+  // For all other genres, use standard fields
   return {
     genre,
     theme,
     hero,
     heroName,
-    flaw: k.themeBasedFlaw(theme),
+    flaw,
     initialSetting,
     act2Setting,
     bStoryCharacter,
@@ -80,7 +132,9 @@ export function generateStoryDNA(selectedGenre: string, selectedTheme: string): 
     nemesis,
     nemesisName,
     minorCharacterName,
-    generatedContent: {}, // Will be populated as content is generated
+    logline,
+    loglineElements,
+    generatedContent: {},
   };
 }
 
@@ -97,14 +151,31 @@ export function getNewSuggestion(rerollId: string, dna: StoryDNA): string {
   
   // Core DNA elements
   if (rerollId === 'hero') {
-    const heroName = k.fullName();
-    const heroAdjective = k.pick([
-      'cynical', 'naive', 'disgraced', 'cautious', 'washed-up',
-      'ambitious', 'lonely', 'burnt-out', 'idealistic', 'ruthless',
-      'clumsy', 'charismatic', 'grumpy', 'optimistic'
-    ]);
-    const heroOccupation = k.worker();
-    return `${heroName}, ${k.a(`${heroAdjective} ${heroOccupation}`)}`;
+    // Clear and regenerate hero name
+    k.clearCharacterNames();
+    const heroName = k.KimberlySmith('hero');
+    
+    // Use genre-specific adjective
+    const genreSpecificAdjective = k.genreSpecificHeroAdjective(dna.genre);
+    
+    // Optional: Add a second opinion adjective for more depth (30% chance, max 2 adjectives total)
+    const additionalAdjectives: string[] = [];
+    if (Math.random() < 0.3) {
+      const secondaryAdjectives = [
+        'cynical', 'naive', 'cautious', 'burnt-out', 'grumpy', 'bitter',
+        'stubborn', 'selfish', 'pessimistic', 'impulsive', 'insecure',
+        'defensive', 'withdrawn', 'jaded', 'timid', 'charismatic',
+        'compassionate', 'resourceful', 'courageous', 'creative',
+        'empathetic', 'resilient', 'principled', 'passionate', 'humble',
+        'mysterious', 'eccentric', 'pragmatic', 'analytical', 'spontaneous',
+        'independent', 'sensitive', 'intense', 'quiet', 'meticulous', 'serious'
+      ];
+      additionalAdjectives.push(k.pick(secondaryAdjectives));
+    }
+    
+    const heroIdentityRaw = k.heroIdentity();
+    const allAdjectives = [genreSpecificAdjective, ...additionalAdjectives].join(' ');
+    return `${heroName}, ${k.a(`${allAdjectives} ${heroIdentityRaw}`)}`;
   }
   
   if (rerollId === 'flaw') {
@@ -112,10 +183,90 @@ export function getNewSuggestion(rerollId: string, dna: StoryDNA): string {
   }
   
   if (rerollId === 'nemesis') {
-    return k.nemesis(); // Returns either a person or entity nemesis
+    // Use genre-specific nemesis
+    return k.genreSpecificNemesis(dna.genre);
   }
 
-  // Genre Elements - use the genreElementMap
+  // Genre Elements - use loglineElements if available for ALL genres
+  if (dna.loglineElements && Object.keys(dna.loglineElements).length > 0) {
+    // Helper to replace ALL pronouns and verb forms
+    const replacePronouns = (text: string) => {
+      const heroSubject = k.he('hero');
+      const heroObject = k.him('hero');
+      const heroPossessive = k.his('hero');
+      const heroReflexive = k.himself('hero');
+      const isVerb = heroSubject === 'they' ? 'are' : 'is';
+      const hasVerb = heroSubject === 'they' ? 'have' : 'has';
+      
+      return text
+        .replace(/{subject}/g, heroSubject)
+        .replace(/{object}/g, heroObject)
+        .replace(/{possessive}/g, heroPossessive)
+        .replace(/{reflexive}/g, heroReflexive)
+        .replace(/{is}/g, isVerb)
+        .replace(/{has}/g, hasVerb);
+    };
+    
+    // Map genre element IDs to loglineElements properties
+    switch (dna.genre) {
+      case 'Buddy Love':
+        if (rerollId === 'The Incomplete Hero') return dna.loglineElements.incompleteness;
+        if (rerollId === 'The Counterpart') return `${dna.bStoryCharacterName}, who ${replacePronouns(dna.loglineElements.completion)}`;
+        if (rerollId === 'The Complication') return dna.loglineElements.complication;
+        break;
+      
+      case 'Monster in the House':
+        if (rerollId === 'The Monster') return dna.loglineElements.monster;
+        if (rerollId === 'The House') return dna.loglineElements.house;
+        if (rerollId === 'The Sin') return dna.loglineElements.sin;
+        break;
+      
+      case 'Golden Fleece':
+        if (rerollId === 'The Road') return dna.loglineElements.journey;
+        if (rerollId === 'The Team') return dna.loglineElements.team;
+        if (rerollId === 'The Prize') return dna.loglineElements.prize;
+        break;
+      
+      case 'Out of the Bottle':
+        if (rerollId === 'The Wish') return dna.loglineElements.wish;
+        if (rerollId === 'The Spell') return replacePronouns(dna.loglineElements.consequence);
+        if (rerollId === 'The Lesson') return dna.loglineElements.lesson;
+        break;
+      
+      case 'Dude with a Problem':
+        if (rerollId === 'The Sudden Event') return dna.loglineElements.suddenEvent;
+        if (rerollId === 'The Life or Death Battle') return `save ${replacePronouns(dna.loglineElements.stakes)}`;
+        break;
+      
+      case 'Rites of Passage':
+        if (rerollId === 'The Life Problem') return dna.loglineElements.lifeCrisis;
+        if (rerollId === 'The Wrong Way') return dna.loglineElements.wrongWay;
+        break;
+      
+      case 'Whydunit':
+        if (rerollId === 'The Secret') return dna.loglineElements.mystery;
+        if (rerollId === 'The Dark Turn') return replacePronouns(dna.loglineElements.darkTurn);
+        break;
+      
+      case 'Fool Triumphant':
+        if (rerollId === 'The Establishment') return dna.loglineElements.establishment;
+        if (rerollId === 'The Transmutation') return dna.loglineElements.underestimation;
+        break;
+      
+      case 'Institutionalized':
+        if (rerollId === 'The Group') return dna.loglineElements.group;
+        if (rerollId === 'The Choice') return dna.loglineElements.choice;
+        break;
+      
+      case 'Superhero':
+        if (rerollId === 'The Power') return dna.loglineElements.power;
+        if (rerollId === 'The Nemesis') return dna.loglineElements.villain;
+        if (rerollId === 'The Curse') return replacePronouns(dna.loglineElements.curse);
+        break;
+    }
+  }
+  
+  // Fallback to genreElementMap if loglineElements not available
   if (k.genreElementMap[rerollId]) {
     return k.genreElementMap[rerollId]();
   }
