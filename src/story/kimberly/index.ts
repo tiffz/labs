@@ -85,6 +85,10 @@ export * from './genre-elements';
 // Export beat-specific generators
 export * from './beats';
 
+// Export theme-aware and genre-aware generators
+export * from './theme-aware';
+export * from './genre-aware';
+
 // Export Character class and factory functions
 export {
   Character,
@@ -118,6 +122,8 @@ import * as nemesisGenerators from './nemesis';
 import * as identities from './identities';
 import * as loglines from './loglines';
 import * as genreSpecific from './genre-specific-elements';
+import * as themeAware from './theme-aware';
+import * as genreAware from './genre-aware';
 import { k as templateTag } from './core';
 import { 
   Character,
@@ -183,6 +189,12 @@ export const k = {
   
   // Genre-specific elements
   ...genreSpecific,
+  
+  // Theme-aware generators
+  ...themeAware,
+  
+  // Genre-aware generators
+  ...genreAware,
   
   // Character creation
   Character,

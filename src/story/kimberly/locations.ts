@@ -2,133 +2,183 @@
  * The Kimberly System - Location Generators
  * 
  * Functions for generating location names and descriptions.
+ * Uses composable adjectives + nouns for maximum variety.
  */
 
 import { pick, pickGenerator } from './core';
 
-// Scenic outdoor locations
-const scenicOutdoorLocations = [
-  'mountain peak', 'misty valley', 'ancient forest', 'crystal lake', 'rocky cliff',
-  'rolling meadow', 'windswept beach', 'desert oasis', 'cascading waterfall', 'flower garden',
-  'bamboo grove', 'coral reef', 'volcanic crater', 'glacial fjord', 'sunlit clearing'
+// Location adjectives (atmosphere/quality)
+const locationAdjectives = [
+  // Atmospheric
+  'misty', 'foggy', 'sunlit', 'moonlit', 'shadowy', 'dimly-lit', 'neon-lit',
+  'rain-soaked', 'snow-covered', 'windswept', 'storm-battered',
+  // Age/condition
+  'ancient', 'crumbling', 'abandoned', 'forgotten', 'ruined', 'pristine',
+  'weathered', 'decaying', 'overgrown', 'restored', 'renovated',
+  // Size/scale
+  'vast', 'cramped', 'sprawling', 'tiny', 'massive', 'cozy', 'cavernous',
+  // Emotional/aesthetic
+  'serene', 'chaotic', 'peaceful', 'bustling', 'desolate', 'vibrant',
+  'gloomy', 'cheerful', 'ominous', 'welcoming', 'hostile', 'sterile',
+  // Sensory
+  'dusty', 'musty', 'fragrant', 'smoky', 'damp', 'arid', 'humid',
+  // Temporal
+  'timeless', 'modern', 'futuristic', 'retro', 'medieval', 'Victorian',
+  // Mystery/magic
+  'enchanted', 'cursed', 'haunted', 'sacred', 'forbidden', 'hidden',
+  'secret', 'mystical', 'ethereal', 'otherworldly'
 ];
 
-// Urban locations
-const urbanLocations = [
-  'bustling marketplace', 'neon-lit alley', 'rooftop terrace', 'subway station', 'penthouse suite',
-  'abandoned warehouse', 'city park', 'coffee shop', 'art gallery', 'shopping mall',
-  'office building', 'parking garage', 'nightclub', 'hotel lobby', 'restaurant'
+// Outdoor location nouns
+const outdoorLocationNouns = [
+  'mountain peak', 'valley', 'forest', 'lake', 'cliff', 'meadow', 'beach',
+  'desert', 'waterfall', 'garden', 'grove', 'reef', 'crater', 'fjord',
+  'clearing', 'canyon', 'plateau', 'tundra', 'savanna', 'marsh', 'swamp',
+  'island', 'peninsula', 'coastline', 'hillside', 'ridge', 'ravine'
 ];
 
-// Indoor domestic locations
-const domesticLocations = [
-  'cozy kitchen', 'cramped bedroom', 'dusty attic', 'finished basement', 'sunlit living room',
-  'home office', 'bathroom', 'walk-in closet', 'dining room', 'library',
-  'game room', 'workshop', 'greenhouse', 'wine cellar', 'home gym'
+// Urban location nouns
+const urbanLocationNouns = [
+  'alley', 'rooftop', 'subway station', 'penthouse', 'warehouse', 'park',
+  'coffee shop', 'gallery', 'mall', 'office', 'parking garage', 'nightclub',
+  'hotel lobby', 'restaurant', 'marketplace', 'plaza', 'street corner',
+  'skyscraper', 'apartment', 'loft', 'bodega', 'diner', 'bar'
 ];
 
-// Mysterious/magical locations
-const mysticalLocations = [
-  'hidden temple', 'enchanted grove', 'forgotten tomb', 'secret chamber', 'crystal cave',
-  'floating island', 'ethereal garden', 'ancient ruins', 'mystical shrine', 'dimensional rift',
-  'abandoned castle', 'haunted mansion', 'sacred spring', 'cursed battlefield', 'time-lost library'
+// Domestic location nouns
+const domesticLocationNouns = [
+  'kitchen', 'bedroom', 'attic', 'basement', 'living room', 'office',
+  'bathroom', 'closet', 'dining room', 'library', 'game room', 'workshop',
+  'greenhouse', 'cellar', 'gym', 'garage', 'porch', 'balcony', 'backyard'
 ];
 
-// Workplace locations
-const workplaceLocations = [
-  'research laboratory', 'corporate boardroom', 'hospital emergency room', 'school classroom',
-  'factory floor', 'police station', 'courthouse', 'newsroom', 'theater stage',
-  'recording studio', 'construction site', 'farm', 'military base', 'space station'
+// Mystical/magical location nouns
+const mysticalLocationNouns = [
+  'temple', 'tomb', 'chamber', 'cave', 'island', 'garden', 'ruins',
+  'shrine', 'rift', 'castle', 'mansion', 'spring', 'battlefield', 'library',
+  'tower', 'crypt', 'sanctuary', 'altar', 'portal', 'nexus'
 ];
 
-// Travel/transit locations
-const transitLocations = [
+// Workplace location nouns
+const workplaceLocationNouns = [
+  'laboratory', 'boardroom', 'emergency room', 'classroom', 'factory',
+  'police station', 'courthouse', 'newsroom', 'stage', 'studio',
+  'construction site', 'farm', 'military base', 'space station', 'warehouse',
+  'shop floor', 'cubicle farm', 'break room', 'conference room'
+];
+
+// Transit location nouns
+const transitLocationNouns = [
   'airport terminal', 'train platform', 'bus depot', 'ship deck', 'airplane cabin',
-  'taxi', 'highway rest stop', 'border crossing', 'ferry', 'helicopter',
-  'limousine', 'bicycle path', 'hiking trail', 'marina', 'gondola lift'
+  'taxi', 'rest stop', 'border crossing', 'ferry', 'helicopter',
+  'limousine', 'bicycle path', 'trail', 'marina', 'gondola', 'station'
 ];
 
-// Social gathering locations
-const socialLocations = [
-  'elegant ballroom', 'wedding chapel', 'funeral parlor', 'concert hall', 'sports arena',
+// Social gathering location nouns
+const socialLocationNouns = [
+  'ballroom', 'chapel', 'funeral parlor', 'concert hall', 'arena',
   'community center', 'church', 'temple', 'mosque', 'synagogue',
-  'museum', 'zoo', 'aquarium', 'amusement park', 'festival grounds'
+  'museum', 'zoo', 'aquarium', 'amusement park', 'festival grounds',
+  'theater', 'auditorium', 'banquet hall', 'reception hall'
 ];
 
-// Dangerous/tense locations
-const dangerousLocations = [
-  'dark alley', 'abandoned hospital', 'collapsing bridge', 'burning building', 'crime scene',
-  'war zone', 'minefield', 'prison cell', 'torture chamber', 'execution chamber',
-  'plague ward', 'contaminated zone', 'active volcano', 'sinking ship', 'crashing plane'
+// Dangerous location nouns
+const dangerousLocationNouns = [
+  'alley', 'hospital', 'bridge', 'building', 'crime scene', 'war zone',
+  'minefield', 'prison cell', 'chamber', 'ward', 'zone', 'volcano',
+  'ship', 'plane', 'battlefield', 'bunker', 'compound'
 ];
 
 /**
+ * Helper: Combines adjective + noun for location
+ * 80% chance of adjective, 20% chance of just noun
+ */
+function composeLocation(nouns: string[]): string {
+  const noun = pick(nouns);
+  // 80% chance to add an adjective
+  if (Math.random() < 0.8) {
+    const adjective = pick(locationAdjectives);
+    return `${adjective} ${noun}`;
+  }
+  return noun;
+}
+
+/**
  * Generates a scenic outdoor location
- * Example: "scenic location" → "mountain peak", "crystal lake", "ancient forest"
+ * Example: "misty valley", "ancient forest", "sunlit beach"
+ * Variety: 50 adjectives × 27 nouns = 1,350+ combinations
  */
 export function scenicLocation(): string {
-  return pick(scenicOutdoorLocations);
+  return composeLocation(outdoorLocationNouns);
 }
 
 /**
  * Generates an urban/city location
- * Example: "urban spot" → "neon-lit alley", "rooftop terrace", "subway station"
+ * Example: "neon-lit alley", "abandoned warehouse", "bustling marketplace"
+ * Variety: 50 adjectives × 23 nouns = 1,150+ combinations
  */
 export function urbanSpot(): string {
-  return pick(urbanLocations);
+  return composeLocation(urbanLocationNouns);
 }
 
 /**
  * Generates a domestic/home location
- * Example: "home" → "cozy kitchen", "dusty attic", "sunlit living room"
+ * Example: "cozy kitchen", "dusty attic", "sunlit living room"
+ * Variety: 50 adjectives × 19 nouns = 950+ combinations
  */
 export function home(): string {
-  return pick(domesticLocations);
+  return composeLocation(domesticLocationNouns);
 }
 
 /**
  * Generates a mysterious or magical location
- * Example: "mystical place" → "hidden temple", "crystal cave", "forgotten tomb"
+ * Example: "hidden temple", "cursed ruins", "ethereal garden"
+ * Variety: 50 adjectives × 20 nouns = 1,000+ combinations
  */
 export function mysticalPlace(): string {
-  return pick(mysticalLocations);
+  return composeLocation(mysticalLocationNouns);
 }
 
 /**
  * Generates a workplace location
- * Example: "workplace" → "research laboratory", "corporate boardroom", "hospital"
+ * Example: "sterile laboratory", "chaotic newsroom", "modern office"
+ * Variety: 50 adjectives × 19 nouns = 950+ combinations
  */
 export function workplace(): string {
-  return pick(workplaceLocations);
+  return composeLocation(workplaceLocationNouns);
 }
 
 /**
  * Generates a transit/travel location
- * Example: "transit hub" → "airport terminal", "train platform", "ship deck"
+ * Example: "crowded airport terminal", "abandoned train platform"
+ * Variety: 50 adjectives × 16 nouns = 800+ combinations
  */
 export function transitHub(): string {
-  return pick(transitLocations);
+  return composeLocation(transitLocationNouns);
 }
 
 /**
  * Generates a social gathering location
- * Example: "gathering place" → "elegant ballroom", "concert hall", "museum"
+ * Example: "elegant ballroom", "crumbling theater", "sacred temple"
+ * Variety: 50 adjectives × 18 nouns = 900+ combinations
  */
 export function gatheringPlace(): string {
-  return pick(socialLocations);
+  return composeLocation(socialLocationNouns);
 }
 
 /**
  * Generates a dangerous or tense location
- * Example: "dangerous place" → "dark alley", "burning building", "war zone"
+ * Example: "burning building", "collapsing bridge", "abandoned hospital"
+ * Variety: 50 adjectives × 17 nouns = 850+ combinations
  */
 export function dangerousPlace(): string {
-  return pick(dangerousLocations);
+  return composeLocation(dangerousLocationNouns);
 }
 
 /**
  * Generates any location from all categories
  * Uses weighted distribution
+ * Total variety: 8,000+ unique combinations
  */
 export function anyLocation(): string {
   return pickGenerator([

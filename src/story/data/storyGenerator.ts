@@ -311,17 +311,17 @@ function generateBeatContent(beatId: string, dna: StoryDNA): string {
   switch (beatId) {
     // Opening Image
     case 'beat_OpeningImage_VisualSnapshot':
-      return `${k.KimberlySmith('hero')} ${k.openingAction()} in ${k.scenicLocation()}.`;
+      return `${k.KimberlySmith('hero')} ${k.openingAction()} in ${k.a(k.scenicLocation())}.`;
     
     case 'beat_OpeningImage_FlawShown':
-      return `Their ${dna.flaw} is on full display.`;
+      return `Their ${dna.flaw} ${k.flawShown()}.`;
 
     // Theme Stated
     case 'beat_ThemeStated_MinorCharacter':
       return `${k.KimberlySmith('minor')}, ${k.a(k.minorCharacter())}...`;
     
     case 'beat_ThemeStated_DismissedAdvice':
-      return `Says something wise about ${dna.theme} that ${k.Kimberly('hero')} ignores.`;
+      return `Says ${k.themeSpecificAdvice(dna.theme)} ${k.dismissedAdvice().replace('{hero}', k.Kimberly('hero'))}.`;
 
     // Setup
     case 'beat_Setup_StasisDeath':
@@ -332,7 +332,7 @@ function generateBeatContent(beatId: string, dna: StoryDNA): string {
 
     // Catalyst
     case 'beat_Catalyst_IncitingIncident':
-      return k.capitalize(k.catalystEvent()) + '.';
+      return k.capitalize(k.genreSpecificCatalyst(dna.genre)) + '.';
 
     // Debate
     case 'beat_Debate_CoreQuestion':
@@ -343,14 +343,14 @@ function generateBeatContent(beatId: string, dna: StoryDNA): string {
       return `${k.Kimberly('hero')} enters the ${dna.act2Setting}.`;
     
     case 'beat_BreakInto2_WrongDecision':
-      return `Actively chooses this new path based on 'Want', not 'Need'.`;
+      return `${k.Kimberly('hero')} ${k.wrongDecision()}.`;
 
     // B Story
     case 'beat_BStory_NewCharacter':
       return `${k.KimberlySmith('bStory')} is introduced.`;
     
     case 'beat_BStory_ThemeEmbodied':
-      return `${k.Kimberly('bStory')} represents the lesson of ${dna.theme}.`;
+      return `${k.Kimberly('bStory')} ${k.themeEmbodied().replace('{theme}', dna.theme).replace('{hero}', k.Kimberly('hero'))}.`;
 
     // Fun and Games
     case 'beat_FunandGames_PromiseofPremise':
@@ -361,7 +361,7 @@ function generateBeatContent(beatId: string, dna: StoryDNA): string {
 
     // Midpoint
     case 'beat_Midpoint_TurningPoint':
-      return k.capitalize(k.midpointEvent()) + '.';
+      return k.capitalize(k.genreSpecificMidpoint(dna.genre)) + '.';
     
     case 'beat_Midpoint_StakesRaised':
       return k.capitalize(k.stakesRaised()) + '.';
@@ -385,7 +385,7 @@ function generateBeatContent(beatId: string, dna: StoryDNA): string {
       return `${k.Kimberly('hero')} ${k.reflection()}.`;
     
     case 'beat_DarkNightoftheSoul_TheEpiphany':
-      return `${k.Kimberly('hero')} ${k.epiphany()}.`;
+      return k.capitalize(k.themeSpecificEpiphany(dna.theme)) + '.';
 
     // Break Into 3
     case 'beat_BreakInto3_RightDecision':
