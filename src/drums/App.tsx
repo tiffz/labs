@@ -7,15 +7,18 @@ import RhythmInfoCard from './components/RhythmInfoCard';
 import { parseRhythm } from './utils/rhythmParser';
 import { rhythmPlayer } from './utils/rhythmPlayer';
 import { recognizeRhythm } from './utils/rhythmRecognition';
+import { useUrlState } from './hooks/useUrlState';
 import type { TimeSignature } from './types';
 
 const App: React.FC = () => {
-  const [notation, setNotation] = useState<string>('D-T-__T-D---T---');
-  const [timeSignature, setTimeSignature] = useState<TimeSignature>({
-    numerator: 4,
-    denominator: 4,
-  });
-  const [bpm, setBpm] = useState<number>(120);
+  const { getInitialState, syncToUrl, setupPopStateListener } = useUrlState();
+  
+  // Initialize state from URL
+  const initialState = useMemo(() => getInitialState(), [getInitialState]);
+  
+  const [notation, setNotation] = useState<string>(initialState.notation);
+  const [timeSignature, setTimeSignature] = useState<TimeSignature>(initialState.timeSignature);
+  const [bpm, setBpm] = useState<number>(initialState.bpm);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentNote, setCurrentNote] = useState<{ measureIndex: number; noteIndex: number } | null>(null);
   const [history, setHistory] = useState<string[]>([]);
@@ -106,6 +109,20 @@ const App: React.FC = () => {
     // Only watch notation changes, not isPlaying
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [notation]);
+
+  // Sync state to URL whenever notation, timeSignature, or bpm changes
+  useEffect(() => {
+    syncToUrl({ notation, timeSignature, bpm });
+  }, [notation, timeSignature, bpm, syncToUrl]);
+
+  // Handle browser back/forward navigation
+  useEffect(() => {
+    return setupPopStateListener((newState) => {
+      setNotation(newState.notation);
+      setTimeSignature(newState.timeSignature);
+      setBpm(newState.bpm);
+    });
+  }, [setupPopStateListener]);
 
   const handleClear = () => {
     updateNotation('');
