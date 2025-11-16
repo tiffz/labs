@@ -3,12 +3,14 @@ import RhythmInput from './components/RhythmInput';
 import RhythmDisplay from './components/RhythmDisplay';
 import NotePalette from './components/NotePalette';
 import PlaybackControls from './components/PlaybackControls';
+import RhythmInfoCard from './components/RhythmInfoCard';
 import { parseRhythm } from './utils/rhythmParser';
 import { rhythmPlayer } from './utils/rhythmPlayer';
+import { recognizeRhythm } from './utils/rhythmRecognition';
 import type { TimeSignature } from './types';
 
 const App: React.FC = () => {
-  const [notation, setNotation] = useState<string>('D-T-__K-D---T---');
+  const [notation, setNotation] = useState<string>('D-T-__T-D---T---');
   const [timeSignature, setTimeSignature] = useState<TimeSignature>({
     numerator: 4,
     denominator: 4,
@@ -35,6 +37,11 @@ const App: React.FC = () => {
   const parsedRhythm = useMemo(() => {
     return parseRhythm(notation, timeSignature);
   }, [notation, timeSignature]);
+
+  // Recognize rhythm pattern
+  const recognizedRhythm = useMemo(() => {
+    return recognizeRhythm(notation);
+  }, [notation]);
 
   // Calculate remaining beats in current measure (in sixteenths)
   const remainingBeats = useMemo(() => {
@@ -266,6 +273,19 @@ const App: React.FC = () => {
             rhythm={parsedRhythm} 
             currentNote={currentNote}
           />
+
+          {/* Show rhythm info card if a rhythm is recognized */}
+          {recognizedRhythm && (
+            <RhythmInfoCard
+              rhythm={recognizedRhythm.rhythm}
+              currentNotation={notation}
+              onSelectVariation={(newNotation, newTimeSignature) => {
+                addToHistory(notation);
+                setNotation(newNotation);
+                setTimeSignature(newTimeSignature);
+              }}
+            />
+          )}
         </div>
       </div>
 

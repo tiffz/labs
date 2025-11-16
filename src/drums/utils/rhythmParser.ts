@@ -40,7 +40,7 @@ function getDurationType(sixteenths: number): { duration: NoteDuration; isDotted
 }
 
 /**
- * Parses a rhythm notation string (e.g., "D-T-__K-D---T---")
+ * Parses a rhythm notation string (e.g., "D-T-__T-D---T---")
  * into an array of notes with their durations
  */
 export function parseNotation(notation: string): Note[] {

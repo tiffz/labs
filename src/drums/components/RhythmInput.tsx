@@ -299,7 +299,7 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
               value={notation}
               onChange={(e) => handleNotationChange(e.target.value)}
               onBlur={handleBlur}
-              placeholder="D-T-__K-D---T---"
+              placeholder="D-T-__T-D---T---"
               spellCheck={false}
               rows={3}
             />

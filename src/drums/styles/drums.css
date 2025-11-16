@@ -1346,4 +1346,128 @@
     font-weight: 600;
     margin-bottom: 0.25rem;
   }
+
+  /* Rhythm Info Card */
+  .rhythm-info-card {
+    background-color: white;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-top: 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    border: 2px solid #f3f4f6;
+  }
+
+  .rhythm-info-header {
+    margin-bottom: 0.75rem;
+  }
+
+  .rhythm-info-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin: 0;
+  }
+
+  .rhythm-info-description {
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: #6b7280;
+    margin: 0 0 1rem 0;
+  }
+
+  /* Learn More Section */
+  .rhythm-info-learn-more {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    background-color: #f9fafb;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+  }
+
+  .rhythm-info-learn-more strong {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+    font-weight: 600;
+  }
+
+  .rhythm-info-links {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+
+  .rhythm-info-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: var(--primary-purple);
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s ease;
+  }
+
+  .rhythm-info-link:hover {
+    color: var(--primary-purple-dark);
+    text-decoration: underline;
+  }
+
+  .rhythm-info-link .material-symbols-outlined {
+    font-size: 0.875rem;
+  }
+
+  /* Variations Section */
+  .rhythm-info-variations {
+    margin-top: 1rem;
+  }
+
+  .rhythm-info-variations-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin: 0 0 0.75rem 0;
+  }
+
+  .rhythm-variations-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 0.75rem;
+  }
+
+  /* Current variation styling - uses same base as palette-button */
+  .rhythm-variation-current {
+    background-color: #faf5ff;
+    border-color: var(--primary-purple);
+    border-width: 3px;
+    cursor: default;
+  }
+
+  .rhythm-variation-current:disabled {
+    opacity: 1;
+  }
+
+  .rhythm-variation-note {
+    font-size: 0.75rem;
+    color: #6b7280;
+    font-style: italic;
+    margin-top: 0.25rem;
+  }
+
+  @media (max-width: 640px) {
+    .rhythm-info-card {
+      padding: 0.875rem;
+    }
+
+    .rhythm-info-title {
+      font-size: 1rem;
+    }
+
+    .rhythm-info-description {
+      font-size: 0.8125rem;
+    }
+
+    .rhythm-variations-grid {
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    }
+  }
 }

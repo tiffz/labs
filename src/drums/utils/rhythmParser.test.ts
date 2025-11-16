@@ -27,8 +27,8 @@ describe('rhythmParser', () => {
       });
     });
 
-    it('should parse the example notation D-T-__K-D---T---', () => {
-      const notes = parseNotation('D-T-__K-D---T---');
+    it('should parse the example notation D-T-__T-D---T---', () => {
+      const notes = parseNotation('D-T-__T-D---T---');
       
       expect(notes).toHaveLength(6);
       
@@ -56,9 +56,9 @@ describe('rhythmParser', () => {
         isDotted: false,
       });
       
-      // K- (eighth note = 2 sixteenths)
+      // T- (eighth note = 2 sixteenths)
       expect(notes[3]).toEqual({
-        sound: 'ka',
+        sound: 'tak',
         duration: 'eighth',
         durationInSixteenths: 2,
         isDotted: false,
@@ -158,7 +158,7 @@ describe('rhythmParser', () => {
 
   describe('parseRhythm', () => {
     it('should split notes into measures for 4/4 time', () => {
-      const rhythm = parseRhythm('D-T-__K-D---T---', { numerator: 4, denominator: 4 });
+      const rhythm = parseRhythm('D-T-__T-D---T---', { numerator: 4, denominator: 4 });
       
       expect(rhythm.measures).toHaveLength(1);
       expect(rhythm.measures[0].notes).toHaveLength(6);
@@ -167,7 +167,7 @@ describe('rhythmParser', () => {
     });
 
     it('should split notes into multiple measures', () => {
-      const rhythm = parseRhythm('D-T-__K-D---T---D-T-__K-D---T---', { numerator: 4, denominator: 4 });
+      const rhythm = parseRhythm('D-T-__T-D---T---D-T-__T-D---T---', { numerator: 4, denominator: 4 });
       
       expect(rhythm.measures).toHaveLength(2);
       expect(rhythm.measures[0].totalDuration).toBe(16);
