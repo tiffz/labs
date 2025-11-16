@@ -1,34 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import type { TimeSignature } from '../types';
-
-interface RhythmPreset {
-  name: string;
-  notation: string;
-  timeSignature: TimeSignature;
-}
-
-const RHYTHM_PRESETS: RhythmPreset[] = [
-  {
-    name: 'Maqsum (4/4)',
-    notation: 'D-T-__T-D---T---',
-    timeSignature: { numerator: 4, denominator: 4 },
-  },
-  {
-    name: 'Saeidi (4/4)',
-    notation: 'D-T-__D-D---T---',
-    timeSignature: { numerator: 4, denominator: 4 },
-  },
-  {
-    name: 'Baladi (4/4)',
-    notation: 'D-D-__T-D---T---',
-    timeSignature: { numerator: 4, denominator: 4 },
-  },
-  {
-    name: 'Ayoub (2/4)',
-    notation: 'D--KD-T-',
-    timeSignature: { numerator: 2, denominator: 4 },
-  },
-];
+import { RHYTHM_DATABASE } from '../data/rhythmDatabase';
 
 interface RhythmPresetsProps {
   onSelectPreset: (notation: string, timeSignature: TimeSignature) => void;
@@ -50,8 +22,8 @@ const RhythmPresets: React.FC<RhythmPresetsProps> = ({ onSelectPreset }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleSelectPreset = (preset: RhythmPreset) => {
-    onSelectPreset(preset.notation, preset.timeSignature);
+  const handleSelectPreset = (notation: string, timeSignature: TimeSignature) => {
+    onSelectPreset(notation, timeSignature);
     setIsOpen(false);
   };
 
@@ -67,14 +39,14 @@ const RhythmPresets: React.FC<RhythmPresetsProps> = ({ onSelectPreset }) => {
       
       {isOpen && (
         <div className="dropdown-menu">
-          {RHYTHM_PRESETS.map((preset) => (
+          {Object.values(RHYTHM_DATABASE).map((rhythm) => (
             <button
-              key={preset.name}
+              key={rhythm.name}
               className="dropdown-item"
-              onClick={() => handleSelectPreset(preset)}
+              onClick={() => handleSelectPreset(rhythm.basePattern, rhythm.timeSignature)}
               type="button"
             >
-              {preset.name}
+              {rhythm.name} ({rhythm.timeSignature.numerator}/{rhythm.timeSignature.denominator})
             </button>
           ))}
         </div>

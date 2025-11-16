@@ -2,18 +2,13 @@ import React, { useState } from 'react';
 import SimpleVexFlowNote from './SimpleVexFlowNote';
 import { parsePatternToNotes } from '../utils/notationHelpers';
 import { audioPlayer } from '../utils/audioPlayer';
+import { COMMON_PATTERNS } from '../data/commonPatterns';
 import type { TimeSignature } from '../types';
 
 interface NotePaletteProps {
   onInsertPattern: (pattern: string) => void;
   remainingBeats: number;
   timeSignature: TimeSignature;
-}
-
-interface PaletteItem {
-  pattern: string;
-  label: string;
-  category: 'single' | 'common';
 }
 
 // Calculate duration of a pattern in sixteenths
@@ -44,18 +39,7 @@ const SINGLE_NOTE_TABLE = {
   ],
 };
 
-// Common drum patterns
-const COMMON_PATTERNS: PaletteItem[] = [
-  { pattern: 'DKTK', label: 'DKTK', category: 'common' },
-  { pattern: 'TKTK', label: 'TKTK', category: 'common' },
-  { pattern: 'D-K-', label: 'D-K-', category: 'common' },
-  { pattern: 'T-K-', label: 'T-K-', category: 'common' },
-  { pattern: 'D-TK', label: 'D-TK', category: 'common' },
-  { pattern: '_-D-', label: '_-D-', category: 'common' },
-  { pattern: '_-K-', label: '_-K-', category: 'common' },
-  { pattern: '_-T-', label: '_-T-', category: 'common' },
-  { pattern: 'T-TK', label: 'T-TK', category: 'common' },
-];
+// Common drum patterns are now imported from data/commonPatterns.ts
 
 const NotePalette: React.FC<NotePaletteProps> = ({ onInsertPattern, remainingBeats }) => {
   const [soundPreviewEnabled, setSoundPreviewEnabled] = useState(true);
@@ -195,18 +179,18 @@ const NotePalette: React.FC<NotePaletteProps> = ({ onInsertPattern, remainingBea
       <div className="palette-section common-patterns-section">
         <h4 className="palette-section-title">Common Patterns</h4>
       <div className="palette-grid common-patterns">
-        {COMMON_PATTERNS.map((item, index) => {
-          const duration = getPatternDuration(item.pattern);
+        {COMMON_PATTERNS.map((pattern, index) => {
+          const duration = getPatternDuration(pattern);
           const isDisabled = !canAddPattern(duration);
           return (
             <button
               key={index}
               className="palette-button notation-button"
-              onClick={() => handleInsertPattern(item.pattern)}
+              onClick={() => handleInsertPattern(pattern)}
               disabled={isDisabled}
-              title={isDisabled ? 'Would exceed measure length' : `Insert ${item.label}`}
+              title={isDisabled ? 'Would exceed measure length' : `Insert ${pattern}`}
             >
-              <SimpleVexFlowNote pattern={item.pattern} width={85} height={60} />
+              <SimpleVexFlowNote pattern={pattern} width={85} height={60} />
             </button>
           );
         })}

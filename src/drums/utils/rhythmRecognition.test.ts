@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { recognizeRhythm, RHYTHM_DATABASE } from './rhythmRecognition';
+import { recognizeRhythm } from './rhythmRecognition';
+import { RHYTHM_DATABASE } from '../data/rhythmDatabase';
 
 describe('rhythmRecognition', () => {
   describe('recognizeRhythm', () => {
