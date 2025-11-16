@@ -69,7 +69,8 @@ const NotePalette: React.FC<NotePaletteProps> = ({ onInsertPattern, remainingBea
 
     notes.forEach(note => {
       setTimeout(() => {
-        audioPlayer.play(note.sound);
+        // Play with default volume (1.0) for preview
+        audioPlayer.play(note.sound, 1.0);
       }, delay);
       delay += note.duration * msPerSixteenth;
     });

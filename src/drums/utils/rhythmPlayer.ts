@@ -82,17 +82,42 @@ class RhythmPlayer {
     let currentTime = 0;
 
     rhythm.measures.forEach((measure, measureIndex) => {
+      let positionInMeasure = 0; // Track position in sixteenths within the measure
+      
       measure.notes.forEach((note, noteIndex) => {
         // Calculate absolute time for this note
         const absoluteTime = loopStartOffset + currentTime;
         const delay = Math.max(0, this.startTime + absoluteTime - now);
 
+        // Calculate volume based on position
+        // - First note of measure: 100% (1.0)
+        // - First note of beat (every 4 sixteenths): 80% (0.8)
+        // - Other notes: 60% (0.6)
+        let volume = 0.6; // Default for non-beat notes
+        
+        if (positionInMeasure === 0) {
+          // First note of the measure
+          volume = 1.0;
+        } else if (positionInMeasure % 4 === 0) {
+          // First note of a beat (quarter note = 4 sixteenths)
+          volume = 0.8;
+        }
+
+        // Calculate duration for fade-out on very short notes
+        // Only pass duration for notes shorter than 150ms to prevent overlap
+        const noteDurationMs = note.durationInSixteenths * msPerSixteenth;
+        const noteDurationSeconds = noteDurationMs / 1000;
+        
+        // Only apply fade-out to very short notes (< 150ms)
+        // Longer notes play naturally without clipping
+        const fadeDuration = noteDurationSeconds < 0.15 ? noteDurationSeconds : undefined;
+
         // Schedule the note to play
         const timeoutId = window.setTimeout(() => {
           if (!this.isPlaying) return;
 
-          // Play the sound
-          audioPlayer.play(note.sound);
+          // Play the sound with dynamic volume and optional fade-out
+          audioPlayer.play(note.sound, volume, fadeDuration);
 
           // Notify listeners for visual highlighting
           if (this.onNotePlay) {
@@ -104,6 +129,7 @@ class RhythmPlayer {
 
         // Advance time by the note's duration
         currentTime += note.durationInSixteenths * msPerSixteenth;
+        positionInMeasure += note.durationInSixteenths;
       });
     });
 
