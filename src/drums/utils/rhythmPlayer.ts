@@ -76,13 +76,15 @@ class RhythmPlayer {
 
     // Calculate absolute time offset for this loop
     const loopStartOffset = this.loopCount * totalLoopDuration;
+    
+    // Capture current time ONCE at the start of scheduling to prevent drift
+    const now = performance.now();
     let currentTime = 0;
 
     rhythm.measures.forEach((measure, measureIndex) => {
       measure.notes.forEach((note, noteIndex) => {
         // Calculate absolute time for this note
         const absoluteTime = loopStartOffset + currentTime;
-        const now = performance.now();
         const delay = Math.max(0, this.startTime + absoluteTime - now);
 
         // Schedule the note to play
@@ -107,7 +109,6 @@ class RhythmPlayer {
 
     // Schedule next loop or end callback
     const absoluteEndTime = loopStartOffset + totalLoopDuration;
-    const now = performance.now();
     const endDelay = Math.max(0, this.startTime + absoluteEndTime - now);
 
     const endTimeoutId = window.setTimeout(() => {

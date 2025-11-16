@@ -97,11 +97,18 @@ const App: React.FC = () => {
     setCurrentNote(null);
   }, []);
 
-  const handleClear = () => {
-    updateNotation('');
+  // Centralized logic: Stop playback whenever notation changes
+  // This handles all cases: note palette, loading rhythms, variations, manual edits, etc.
+  useEffect(() => {
     if (isPlaying) {
       handleStop();
     }
+    // Only watch notation changes, not isPlaying
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notation]);
+
+  const handleClear = () => {
+    updateNotation('');
   };
 
   const handleDeleteLast = () => {
@@ -134,10 +141,6 @@ const App: React.FC = () => {
       const newNotation = notation.slice(0, i);
       updateNotation(newNotation);
     }
-    
-    if (isPlaying) {
-      handleStop();
-    }
   };
   
   const handleUndo = () => {
@@ -147,10 +150,6 @@ const App: React.FC = () => {
     setHistory(prev => prev.slice(0, -1));
     setRedoStack(prev => [...prev, notation]); // Add current to redo stack
     setNotation(previousNotation);
-    
-    if (isPlaying) {
-      handleStop();
-    }
   };
 
   const handleRedo = () => {
@@ -160,10 +159,6 @@ const App: React.FC = () => {
     setRedoStack(prev => prev.slice(0, -1));
     setHistory(prev => [...prev, notation]); // Add current to history
     setNotation(nextNotation);
-    
-    if (isPlaying) {
-      handleStop();
-    }
   };
 
   const handleRandomize = () => {
@@ -204,10 +199,6 @@ const App: React.FC = () => {
     }
     
     updateNotation(newNotation);
-    
-    if (isPlaying) {
-      handleStop();
-    }
   };
 
   // Spacebar keyboard shortcut for play/stop
