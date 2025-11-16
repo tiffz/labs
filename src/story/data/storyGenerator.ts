@@ -68,8 +68,21 @@ export function generateStoryDNA(selectedGenre: string, selectedTheme: string): 
 
   // Generate nemesis using genre-specific logic
   const nemesis = k.genreSpecificNemesis(genre);
-  // Extract name if it's a person (contains a comma)
-  const nemesisName = nemesis.includes(',') ? nemesis.split(',')[0] : '';
+  // Extract or generate nemesis name
+  let nemesisName = '';
+  if (nemesis.includes(',')) {
+    // Format: "Name, description" - extract the name
+    nemesisName = nemesis.split(',')[0];
+  } else if (nemesis.includes('villain') || nemesis.includes('enemy') || nemesis.includes('rival') || 
+             nemesis.includes('hunter') || nemesis.includes('mercenary') || nemesis.includes('killer') ||
+             nemesis.includes('mastermind') || nemesis.includes('adversary')) {
+    // It's a person-type nemesis, give them a name
+    nemesisName = k.KimberlySmith('nemesis');
+  } else {
+    // It's an abstract/non-person nemesis (like "the virus", "their greed", "a deadly war")
+    // Use the nemesis description itself
+    nemesisName = nemesis;
+  }
 
   const minorCharacterName = k.KimberlySmith('minor');
 
@@ -99,6 +112,19 @@ export function generateStoryDNA(selectedGenre: string, selectedTheme: string): 
       .replace(/{possessive}/g, heroPossessive);
     const bStoryCharacterFromLogline = `${bStoryCharacterName}, who ${completion}`;
     
+    // Extract nemesis name from situation (same logic as above)
+    const buddyLoveNemesis = loglineElements.situation;
+    let buddyLoveNemesisName = '';
+    if (buddyLoveNemesis.includes(',')) {
+      buddyLoveNemesisName = buddyLoveNemesis.split(',')[0];
+    } else if (buddyLoveNemesis.includes('villain') || buddyLoveNemesis.includes('enemy') || buddyLoveNemesis.includes('rival') || 
+               buddyLoveNemesis.includes('hunter') || buddyLoveNemesis.includes('mercenary') || buddyLoveNemesis.includes('killer') ||
+               buddyLoveNemesis.includes('mastermind') || buddyLoveNemesis.includes('adversary')) {
+      buddyLoveNemesisName = k.KimberlySmith('nemesis');
+    } else {
+      buddyLoveNemesisName = buddyLoveNemesis;
+    }
+    
     return {
       genre,
       theme,
@@ -109,8 +135,8 @@ export function generateStoryDNA(selectedGenre: string, selectedTheme: string): 
       act2Setting,
       bStoryCharacter: bStoryCharacterFromLogline,
       bStoryCharacterName,
-      nemesis: loglineElements.situation, // Use situation as nemesis
-      nemesisName: '',
+      nemesis: buddyLoveNemesis, // Use situation as nemesis
+      nemesisName: buddyLoveNemesisName,
       minorCharacterName,
       logline,
       loglineElements,

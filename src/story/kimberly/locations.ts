@@ -8,9 +8,10 @@
 import { pick, pickGenerator } from './core';
 
 // Location adjectives (atmosphere/quality)
-const locationAdjectives = [
+// Universal adjectives - work with any location
+const universalAdjectives = [
   // Atmospheric
-  'misty', 'foggy', 'sunlit', 'moonlit', 'shadowy', 'dimly-lit', 'neon-lit',
+  'misty', 'foggy', 'sunlit', 'moonlit', 'shadowy', 'dimly-lit',
   'rain-soaked', 'snow-covered', 'windswept', 'storm-battered',
   // Age/condition
   'ancient', 'crumbling', 'abandoned', 'forgotten', 'ruined', 'pristine',
@@ -18,7 +19,7 @@ const locationAdjectives = [
   // Size/scale
   'vast', 'cramped', 'sprawling', 'tiny', 'massive', 'cozy', 'cavernous',
   // Emotional/aesthetic
-  'serene', 'chaotic', 'peaceful', 'bustling', 'desolate', 'vibrant',
+  'serene', 'chaotic', 'peaceful', 'desolate', 'vibrant',
   'gloomy', 'cheerful', 'ominous', 'welcoming', 'hostile', 'sterile',
   // Sensory
   'dusty', 'musty', 'fragrant', 'smoky', 'damp', 'arid', 'humid',
@@ -27,6 +28,12 @@ const locationAdjectives = [
   // Mystery/magic
   'enchanted', 'cursed', 'haunted', 'sacred', 'forbidden', 'hidden',
   'secret', 'mystical', 'ethereal', 'otherworldly'
+];
+
+// Urban-specific adjectives (only make sense with urban locations)
+const urbanAdjectives = [
+  'bustling', 'neon-lit', 'crowded', 'empty', 'upscale', 'rundown',
+  'gentrified', 'industrial', 'residential', 'commercial'
 ];
 
 // Outdoor location nouns
@@ -93,11 +100,15 @@ const dangerousLocationNouns = [
  * Helper: Combines adjective + noun for location
  * 80% chance of adjective, 20% chance of just noun
  */
-function composeLocation(nouns: string[]): string {
+function composeLocation(nouns: string[], allowUrban: boolean = false): string {
   const noun = pick(nouns);
   // 80% chance to add an adjective
   if (Math.random() < 0.8) {
-    const adjective = pick(locationAdjectives);
+    // Choose from appropriate adjectives
+    const adjectives = allowUrban 
+      ? [...universalAdjectives, ...urbanAdjectives]
+      : universalAdjectives;
+    const adjective = pick(adjectives);
     return `${adjective} ${noun}`;
   }
   return noun;
@@ -118,7 +129,7 @@ export function scenicLocation(): string {
  * Variety: 50 adjectives × 23 nouns = 1,150+ combinations
  */
 export function urbanSpot(): string {
-  return composeLocation(urbanLocationNouns);
+  return composeLocation(urbanLocationNouns, true); // Allow urban-specific adjectives
 }
 
 /**

@@ -5,6 +5,30 @@
  */
 
 import { pick } from './core';
+import { he, him, his, himself } from './realistic-names';
+
+/**
+ * Helper: Replace generic pronouns with character-specific pronouns
+ * Handles contractions and possessives
+ */
+function withPronouns(text: string, characterId: string = 'hero'): string {
+  const subject = he(characterId);      // he/she/they
+  const object = him(characterId);      // him/her/them
+  const possessive = his(characterId);  // his/her/their
+  const reflexive = himself(characterId); // himself/herself/themselves
+  
+  return text
+    // Contractions with subject pronoun
+    .replace(/\bthey're\b/gi, `${subject}'re`)
+    .replace(/\bthey've\b/gi, `${subject}'ve`)
+    .replace(/\bthey'll\b/gi, `${subject}'ll`)
+    .replace(/\bthey'd\b/gi, `${subject}'d`)
+    // Base pronouns
+    .replace(/\bthey\b/gi, subject)
+    .replace(/\bthem\b/gi, object)
+    .replace(/\btheir\b/gi, possessive)
+    .replace(/\bthemselves\b/gi, reflexive);
+}
 
 // Opening Image - Specific, visual "before" snapshots showing the hero's flawed world
 const openingActions = [
@@ -146,7 +170,7 @@ const debateQuestions = [
   'asks a stranger on the street what they should do', 'prays for a sign',
   // Avoidance
   'cleans their entire apartment to avoid deciding', 'binge-watches TV to numb the anxiety',
-  'goes for a run at midnight to clear their head', 'drinks to build courage',
+  'goes for a run at midnight to clear their head.', 'drinks to build courage',
   'calls in sick to buy more time', 'pretends the problem will solve itself',
   // Fear responses
   'has a full panic attack in the bathroom', 'imagines every worst-case scenario',
@@ -560,28 +584,64 @@ const themeEmbodiedOptions = [
 
 // Exports
 
-export function openingAction(): string { return pick(openingActions); }
+export function openingAction(characterId: string = 'hero'): string { 
+  return withPronouns(pick(openingActions), characterId); 
+}
 export function minorCharacter(): string { return pick(minorCharacters); }
-export function stasisIsDeath(): string { return pick(stasisIsDeathOptions); }
-export function statedGoal(): string { return pick(statedGoalOptions); }
-export function catalystEvent(): string { return pick(catalystEvents); }
-export function debateQuestion(): string { return pick(debateQuestions); }
-export function promiseOfPremise(): string { return pick(promiseOfPremiseOptions); }
-export function successFailure(): string { return pick(successFailureOptions); }
-export function midpointEvent(): string { return pick(midpointEvents); }
-export function stakesRaised(): string { return pick(stakesRaisedOptions); }
-export function whiffOfDeath(): string { return pick(whiffsOfDeath); }
-export function rockBottom(): string { return pick(rockBottomOptions); }
-export function reflection(): string { return pick(reflectionOptions); }
-export function epiphany(): string { return pick(epiphanies); }
-export function breakInto3(): string { return pick(breakInto3Options); }
-export function finaleStake(): string { return pick(finaleStakes); }
-export function finalImage(): string { return pick(finalImageOptions); }
+export function stasisIsDeath(characterId: string = 'hero'): string { 
+  return withPronouns(pick(stasisIsDeathOptions), characterId); 
+}
+export function statedGoal(characterId: string = 'hero'): string { 
+  return withPronouns(pick(statedGoalOptions), characterId); 
+}
+export function catalystEvent(characterId: string = 'hero'): string { 
+  return withPronouns(pick(catalystEvents), characterId); 
+}
+export function debateQuestion(characterId: string = 'hero'): string { 
+  return withPronouns(pick(debateQuestions), characterId); 
+}
+export function promiseOfPremise(characterId: string = 'hero'): string { 
+  return withPronouns(pick(promiseOfPremiseOptions), characterId); 
+}
+export function successFailure(characterId: string = 'hero'): string { 
+  return withPronouns(pick(successFailureOptions), characterId); 
+}
+export function midpointEvent(characterId: string = 'hero'): string { 
+  return withPronouns(pick(midpointEvents), characterId); 
+}
+export function stakesRaised(characterId: string = 'hero'): string { 
+  return withPronouns(pick(stakesRaisedOptions), characterId); 
+}
+export function whiffOfDeath(characterId: string = 'hero'): string { 
+  return withPronouns(pick(whiffsOfDeath), characterId); 
+}
+export function rockBottom(characterId: string = 'hero'): string { 
+  return withPronouns(pick(rockBottomOptions), characterId); 
+}
+export function reflection(characterId: string = 'hero'): string { 
+  return withPronouns(pick(reflectionOptions), characterId); 
+}
+export function epiphany(characterId: string = 'hero'): string { 
+  return withPronouns(pick(epiphanies), characterId); 
+}
+export function breakInto3(characterId: string = 'hero'): string { 
+  return withPronouns(pick(breakInto3Options), characterId); 
+}
+export function finaleStake(characterId: string = 'hero'): string { 
+  return withPronouns(pick(finaleStakes), characterId); 
+}
+export function finalImage(characterId: string = 'hero'): string { 
+  return withPronouns(pick(finalImageOptions), characterId); 
+}
 export function bStoryCharacter(): string { return pick(bStoryCharacters); }
 
 // New generators for previously static beats
-export function flawShown(): string { return pick(flawShownOptions); }
+export function flawShown(characterId: string = 'hero'): string { 
+  return withPronouns(pick(flawShownOptions), characterId); 
+}
 export function dismissedAdvice(): string { return pick(dismissedAdviceOptions); }
-export function wrongDecision(): string { return pick(wrongDecisionOptions); }
+export function wrongDecision(characterId: string = 'hero'): string { 
+  return withPronouns(pick(wrongDecisionOptions), characterId); 
+}
 export function themeEmbodied(): string { return pick(themeEmbodiedOptions); }
 
