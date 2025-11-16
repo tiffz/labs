@@ -42,13 +42,13 @@ const SINGLE_NOTE_TABLE = {
 // Common drum patterns are now imported from data/commonPatterns.ts
 
 const NotePalette: React.FC<NotePaletteProps> = ({ onInsertPattern, remainingBeats }) => {
-  const [soundPreviewEnabled, setSoundPreviewEnabled] = useState(true);
+  const [soundPreviewEnabled, setSoundPreviewEnabled] = useState(false);
 
   // Helper to create pattern string
   const createPattern = (sound: string, duration: number): string => {
     if (duration === 1) return sound;
-    if (sound === '.') {
-      return '.'.repeat(duration);
+    if (sound === '_') {
+      return '_'.repeat(duration);
     }
     return sound + '-'.repeat(duration - 1);
   };

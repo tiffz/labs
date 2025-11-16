@@ -182,6 +182,19 @@ function splitIntoMeasures(notes: Note[], timeSignature: TimeSignature): Measure
   
   // Add the last measure if it has notes
   if (currentMeasure.length > 0) {
+    // Fill incomplete last measure with rests
+    if (currentDuration < sixteenthsPerMeasure) {
+      const remainingSixteenths = sixteenthsPerMeasure - currentDuration;
+      const { duration: durationType, isDotted } = getDurationType(remainingSixteenths);
+      currentMeasure.push({
+        sound: 'rest',
+        duration: durationType,
+        durationInSixteenths: remainingSixteenths,
+        isDotted,
+      });
+      currentDuration = sixteenthsPerMeasure;
+    }
+    
     measures.push({
       notes: currentMeasure,
       totalDuration: currentDuration,

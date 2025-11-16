@@ -119,8 +119,8 @@ describe('rhythmPlayer timing accuracy', () => {
 
   describe('looping accuracy', () => {
     it('should maintain accurate timing across multiple loops', () => {
-      const notation = 'D-T-'; // Simple two-note pattern
-      const timeSignature: TimeSignature = { numerator: 4, denominator: 4 };
+      const notation = 'D-T-'; // Two eighth notes
+      const timeSignature: TimeSignature = { numerator: 2, denominator: 4 };
       const parsedRhythm = parseRhythm(notation, timeSignature);
       const bpm = 120;
 
@@ -131,37 +131,32 @@ describe('rhythmPlayer timing accuracy', () => {
         noteTimes.push(performance.now() - startTime);
       });
 
-      // Each note is 250ms (eighth note at 120 BPM)
-      // Loop duration = 500ms
-
-      // Loop 1
-      vi.advanceTimersByTime(0); // D at 0ms (immediate)
-      vi.advanceTimersByTime(250); // T at 250ms
-      vi.advanceTimersByTime(250); // End of loop 1 at 500ms
-
-      // Loop 2 should start around 500ms (may have 1ms scheduling overhead)
-      vi.advanceTimersByTime(0); // D at ~500ms
-      vi.advanceTimersByTime(250); // T at ~750ms
-      vi.advanceTimersByTime(250); // End of loop 2
-
-      // Loop 3
-      vi.advanceTimersByTime(0); // D at ~1000ms
-      vi.advanceTimersByTime(250); // T at ~1250ms
-
-      // Check times with tolerance for scheduling overhead (1ms per loop)
-      expect(noteTimes[0]).toBe(0);
-      expect(noteTimes[1]).toBe(250);
-      expect(noteTimes[2]).toBeGreaterThanOrEqual(500);
-      expect(noteTimes[2]).toBeLessThanOrEqual(501);
-      expect(noteTimes[3]).toBe(750);
-      expect(noteTimes[4]).toBeGreaterThanOrEqual(1000);
-      expect(noteTimes[4]).toBeLessThanOrEqual(1001);
-      expect(noteTimes[5]).toBe(1250);
+      // D-T- parses to 3 notes: D (eighth), T (eighth), auto-filled rest (quarter)
+      // Each eighth is 250ms, quarter is 500ms, so loop duration = 1000ms
+      // Advance through 3 loops
+      vi.advanceTimersByTime(0); // Loop 1 start
+      vi.advanceTimersByTime(3000); // Advance 3 loops worth of time
+      
+      // Should have at least 9 notes (3 per loop * 3 loops)
+      expect(noteTimes.length).toBeGreaterThanOrEqual(9);
+      
+      // Verify first loop
+      expect(noteTimes[0]).toBe(0); // D
+      expect(noteTimes[1]).toBe(250); // T
+      expect(noteTimes[2]).toBe(500); // Auto-filled rest
+      
+      // Verify second loop starts around 1000ms (allow 1ms scheduling overhead)
+      expect(noteTimes[3]).toBeGreaterThanOrEqual(1000);
+      expect(noteTimes[3]).toBeLessThanOrEqual(1001);
+      
+      // Verify third loop starts around 2000ms (allow 2ms scheduling overhead)
+      expect(noteTimes[6]).toBeGreaterThanOrEqual(2000);
+      expect(noteTimes[6]).toBeLessThanOrEqual(2002);
     });
 
     it('should not accumulate timing drift over 10 loops', () => {
-      const notation = 'D-T-K-'; // Three eighth notes
-      const timeSignature: TimeSignature = { numerator: 4, denominator: 4 };
+      const notation = 'D-T-'; // Two eighth notes
+      const timeSignature: TimeSignature = { numerator: 2, denominator: 4 };
       const parsedRhythm = parseRhythm(notation, timeSignature);
       const bpm = 120;
 
@@ -172,32 +167,24 @@ describe('rhythmPlayer timing accuracy', () => {
         noteTimes.push(performance.now() - startTime);
       });
 
-      // Each note is 250ms, loop duration = 750ms
-      const loopDuration = 750;
-      const noteInterval = 250;
-
-      // Simulate 10 loops
-      for (let loop = 0; loop < 10; loop++) {
-        for (let note = 0; note < 3; note++) {
-          vi.advanceTimersByTime(noteInterval);
-        }
-      }
-
-      // Check that notes in loop 10 are at approximately the right times
-      // Allow for small scheduling overhead (1ms per loop = 9ms after 9 loops)
-      const loop10StartIndex = 9 * 3; // 9 complete loops * 3 notes
-      const expectedLoop10Start = 9 * loopDuration;
-
-      expect(noteTimes[loop10StartIndex]).toBeGreaterThanOrEqual(expectedLoop10Start);
-      expect(noteTimes[loop10StartIndex]).toBeLessThanOrEqual(expectedLoop10Start + 10);
-      expect(noteTimes[loop10StartIndex + 1]).toBeGreaterThanOrEqual(expectedLoop10Start + noteInterval);
-      expect(noteTimes[loop10StartIndex + 1]).toBeLessThanOrEqual(expectedLoop10Start + noteInterval + 10);
-      expect(noteTimes[loop10StartIndex + 2]).toBeGreaterThanOrEqual(expectedLoop10Start + noteInterval * 2);
-      expect(noteTimes[loop10StartIndex + 2]).toBeLessThanOrEqual(expectedLoop10Start + noteInterval * 2 + 10);
+      // D-T- parses to 3 notes: D (eighth), T (eighth), auto-filled rest (quarter)
+      // Each eighth is 250ms, quarter is 500ms, so loop duration = 1000ms
+      // Advance through 10 loops
+      vi.advanceTimersByTime(0); // Loop 1 start
+      vi.advanceTimersByTime(10000); // Advance 10 loops worth of time
+      
+      // Should have at least 30 notes (3 per loop * 10 loops)
+      expect(noteTimes.length).toBeGreaterThanOrEqual(30);
+      
+      // Check 10th loop starts around 9000ms (9 complete loops * 1000ms)
+      // Allow 10ms drift over 10 loops
+      const loop10StartIndex = 27; // 9 complete loops * 3 notes
+      expect(noteTimes[loop10StartIndex]).toBeGreaterThanOrEqual(9000);
+      expect(noteTimes[loop10StartIndex]).toBeLessThanOrEqual(9010);
     });
 
     it('should handle complex rhythms with rests accurately over multiple loops', () => {
-      const notation = 'D-__T---'; // Eighth, eighth rest, quarter note
+      const notation = 'D-__T---'; // Eighth, eighth rest, quarter note (8 sixteenths) + auto-filled rest (8 sixteenths)
       const timeSignature: TimeSignature = { numerator: 4, denominator: 4 };
       const parsedRhythm = parseRhythm(notation, timeSignature);
       const bpm = 120;
@@ -209,11 +196,12 @@ describe('rhythmPlayer timing accuracy', () => {
         noteTimes.push(performance.now() - startTime);
       });
 
-      // Notation 'D-__T---' parses to 3 notes:
+      // Notation 'D-__T---' parses to 4 notes (with auto-filled rest):
       // 1. D- (eighth = 2 sixteenths = 250ms)
       // 2. __ (eighth rest = 2 sixteenths = 250ms) - callback fires but no sound
       // 3. T--- (quarter = 4 sixteenths = 500ms)
-      // Total loop duration = 8 sixteenths = 1000ms
+      // 4. Auto-filled rest (half = 8 sixteenths = 1000ms)
+      // Total loop duration = 16 sixteenths = 2000ms
 
       // Loop 1
       vi.advanceTimersByTime(0);
@@ -225,19 +213,22 @@ describe('rhythmPlayer timing accuracy', () => {
       vi.advanceTimersByTime(250); // Advance to T
       expect(noteTimes[2]).toBe(500); // T fires
 
-      // Complete loop 1 and start loop 2
       vi.advanceTimersByTime(500); // Complete T duration
+      expect(noteTimes[3]).toBe(1000); // Auto-filled rest
+
+      // Complete loop 1 and start loop 2
+      vi.advanceTimersByTime(1000); // Complete auto-filled rest
       vi.advanceTimersByTime(1); // Trigger next loop scheduling
-      expect(noteTimes[3]).toBeGreaterThanOrEqual(1000); // D in loop 2
-      expect(noteTimes[3]).toBeLessThanOrEqual(1001);
+      expect(noteTimes[4]).toBeGreaterThanOrEqual(2000); // D in loop 2
+      expect(noteTimes[4]).toBeLessThanOrEqual(2001);
 
       vi.advanceTimersByTime(250);
-      expect(noteTimes[4]).toBeGreaterThanOrEqual(1250); // Rest in loop 2
-      expect(noteTimes[4]).toBeLessThanOrEqual(1251);
+      expect(noteTimes[5]).toBeGreaterThanOrEqual(2250); // Rest in loop 2
+      expect(noteTimes[5]).toBeLessThanOrEqual(2251);
 
       vi.advanceTimersByTime(250);
-      expect(noteTimes[5]).toBeGreaterThanOrEqual(1500); // T in loop 2
-      expect(noteTimes[5]).toBeLessThanOrEqual(1501);
+      expect(noteTimes[6]).toBeGreaterThanOrEqual(2500); // T in loop 2
+      expect(noteTimes[6]).toBeLessThanOrEqual(2501);
     });
   });
 

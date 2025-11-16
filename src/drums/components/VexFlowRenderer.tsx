@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Renderer, Stave, StaveNote, Voice, Formatter, Beam, Dot } from 'vexflow';
+import { Renderer, Stave, StaveNote, Voice, Formatter, Beam, Dot, BarlineType } from 'vexflow';
 import type { ParsedRhythm, Note, DrumSound } from '../types';
 import { drawDrumSymbol } from '../assets/drumSymbols';
 
@@ -68,6 +68,11 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({ rhythm, currentNote }
         // Add time signature to first measure only (no clef needed for single line)
         if (measureIndex === 0) {
           stave.addTimeSignature(`${rhythm.timeSignature.numerator}/${rhythm.timeSignature.denominator}`);
+        }
+
+        // Add repeat barline at the end of the last measure
+        if (measureIndex === rhythm.measures.length - 1) {
+          stave.setEndBarType(BarlineType.REPEAT_END);
         }
 
         stave.setContext(context).draw();

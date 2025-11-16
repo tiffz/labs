@@ -198,22 +198,24 @@ describe('rhythmParser', () => {
       expect(rhythm.isValid).toBe(true);
     });
 
-    it('should allow incomplete last measure', () => {
+    it('should auto-fill incomplete last measure', () => {
       const rhythm = parseRhythm('D---T-', { numerator: 4, denominator: 4 });
       
       expect(rhythm.measures).toHaveLength(1);
-      expect(rhythm.measures[0].totalDuration).toBe(6); // 4+2 = 6 sixteenths (incomplete measure)
+      // D--- (4 sixteenths) + T- (2 sixteenths) + auto-filled rest (10 sixteenths) = 16 sixteenths
+      expect(rhythm.measures[0].totalDuration).toBe(16);
       expect(rhythm.isValid).toBe(true);
     });
 
-    it('should split long notes across measures', () => {
+    it('should split long notes across measures and auto-fill', () => {
       // D--------------- is 16 sixteenths (one full measure)
-      // T- is 2 sixteenths (starts a new measure)
+      // T- is 2 sixteenths (starts a new measure, then auto-filled to 16)
       const rhythm = parseRhythm('D---------------T-', { numerator: 4, denominator: 4 });
       
       expect(rhythm.measures).toHaveLength(2);
       expect(rhythm.measures[0].totalDuration).toBe(16);
-      expect(rhythm.measures[1].totalDuration).toBe(2);
+      // T- (2 sixteenths) + auto-filled rest (14 sixteenths) = 16 sixteenths
+      expect(rhythm.measures[1].totalDuration).toBe(16);
       expect(rhythm.isValid).toBe(true);
     });
   });
