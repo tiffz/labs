@@ -13,12 +13,112 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     
-    <!-- Optimized font loading with font-display: swap -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Music&display=swap">
+    <!-- Optimized font loading with display strategies to minimize FOUC and layout shift -->
+    <!-- Roboto: Use optional to prevent layout shift (only use if cached) -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=optional">
+    
+    <!-- Icon fonts: Use block to prevent FOUC (text fallback would be jarring) -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Music&display=block">
+    
+    <!-- Fallback font with adjusted metrics to match Roboto -->
+    <style>
+        /* Create fallback fonts that match Roboto's metrics and weight */
+        /* Use system fonts that are closer to Roboto's weight */
+        @font-face {
+            font-family: 'Roboto Fallback';
+            src: local('Segoe UI'), local('Helvetica Neue'), local('Arial');
+            size-adjust: 100.06%;
+            ascent-override: 92.77%;
+            descent-override: 24.41%;
+            line-gap-override: 0%;
+        }
+        
+        /* Apply fallback with Roboto in font stack */
+        body {
+            font-family: 'Roboto', 'Roboto Fallback', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            font-weight: 400;
+        }
+        
+        /* Add subtle text rendering to increase perceived weight without layout shift */
+        body, button, input, select, textarea {
+            /* Slightly bolder rendering on fallback fonts */
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+        }
+        
+        /* Ensure headings have proper weight */
+        h1, h2, h3, h4, h5, h6 {
+            font-weight: 700;
+            /* Extra boldness for headings */
+            letter-spacing: -0.01em;
+        }
+        
+        /* Strong and bold elements */
+        strong, b {
+            font-weight: 600;
+        }
+        
+        /* Buttons and labels need medium-bold weight */
+        button, label {
+            font-weight: 500;
+        }
+        
+        /* Specific weight for important UI elements */
+        .palette-section-title,
+        .input-label,
+        .note-table th,
+        .rhythm-info-title {
+            font-weight: 600;
+        }
+    </style>
     
     <link rel="stylesheet" href="./styles/drums.css">
+    
+    <!-- Font loading detection to prevent FOUC -->
+    <script>
+        // Detect when icon fonts are loaded to prevent FOUC
+        if ('fonts' in document) {
+            // Track which fonts have loaded
+            let materialIconsLoaded = false;
+            let notoMusicLoaded = false;
+            
+            function checkAllFontsLoaded() {
+                if (materialIconsLoaded && notoMusicLoaded) {
+                    document.documentElement.classList.add('fonts-loaded');
+                }
+            }
+            
+            // Load Material Symbols
+            document.fonts.load('24px "Material Symbols Outlined"').then(() => {
+                materialIconsLoaded = true;
+                checkAllFontsLoaded();
+            }).catch(() => {
+                materialIconsLoaded = true;
+                checkAllFontsLoaded();
+            });
+            
+            // Load Noto Music
+            document.fonts.load('24px "Noto Music"').then(() => {
+                notoMusicLoaded = true;
+                checkAllFontsLoaded();
+            }).catch(() => {
+                notoMusicLoaded = true;
+                checkAllFontsLoaded();
+            });
+            
+            // Fallback: show icons after timeout even if fonts fail to load
+            setTimeout(() => {
+                document.documentElement.classList.add('fonts-loaded');
+            }, 3000);
+        } else {
+            // Fallback for browsers without Font Loading API
+            window.addEventListener('load', () => {
+                document.documentElement.classList.add('fonts-loaded');
+            });
+        }
+    </script>
     
     <!-- Analytics - Only load in production -->
     <script>
