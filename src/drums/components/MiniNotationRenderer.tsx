@@ -130,7 +130,6 @@ const MiniNotationRenderer: React.FC<MiniNotationRendererProps> = ({
     try {
       const notes = parsePattern(pattern);
       if (notes.length === 0) {
-        console.log('MiniNotationRenderer: No notes parsed from pattern:', pattern);
         return;
       }
 
@@ -206,8 +205,6 @@ const MiniNotationRenderer: React.FC<MiniNotationRendererProps> = ({
           }
         });
       }
-
-      console.log('MiniNotationRenderer: Successfully rendered pattern:', pattern);
     } catch (error) {
       console.error('Error rendering mini notation for pattern:', pattern, error);
     }

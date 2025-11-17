@@ -22,6 +22,8 @@ const App: React.FC = () => {
   const [bpm, setBpm] = useState<number>(initialState.bpm);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentNote, setCurrentNote] = useState<{ measureIndex: number; noteIndex: number } | null>(null);
+  const [metronomeEnabled, setMetronomeEnabled] = useState<boolean>(false);
+  const [currentMetronomeBeat, setCurrentMetronomeBeat] = useState<{ measureIndex: number; noteIndex: number; isDownbeat: boolean } | null>(null);
   const [history, setHistory] = useState<string[]>([]);
   const [redoStack, setRedoStack] = useState<string[]>([]);
   
@@ -91,14 +93,26 @@ const App: React.FC = () => {
       () => {
         setIsPlaying(false);
         setCurrentNote(null);
+        setCurrentMetronomeBeat(null);
+      },
+      metronomeEnabled,
+      (measureIndex, positionInSixteenths, isDownbeat) => {
+        setCurrentMetronomeBeat({ measureIndex, positionInSixteenths, isDownbeat });
       }
     );
-  }, [parsedRhythm, bpm]);
+  }, [parsedRhythm, bpm, metronomeEnabled]);
 
   const handleStop = useCallback(() => {
     rhythmPlayer.stop();
     setIsPlaying(false);
     setCurrentNote(null);
+    setCurrentMetronomeBeat(null);
+  }, []);
+
+  const handleMetronomeToggle = useCallback((enabled: boolean) => {
+    setMetronomeEnabled(enabled);
+    // Update the player's metronome state if currently playing
+    rhythmPlayer.setMetronomeEnabled(enabled);
   }, []);
 
   // Centralized logic: Stop playback whenever notation changes
@@ -309,6 +323,8 @@ const App: React.FC = () => {
           isPlaying={isPlaying}
           onPlay={handlePlay}
           onStop={handleStop}
+          metronomeEnabled={metronomeEnabled}
+          onMetronomeToggle={handleMetronomeToggle}
         />
 
         <div className="main-workspace">
@@ -332,6 +348,8 @@ const App: React.FC = () => {
           <RhythmDisplay 
             rhythm={parsedRhythm} 
             currentNote={currentNote}
+            metronomeEnabled={metronomeEnabled}
+            currentMetronomeBeat={currentMetronomeBeat}
           />
 
           {/* Show rhythm info card if a rhythm is recognized */}

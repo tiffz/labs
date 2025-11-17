@@ -4,6 +4,7 @@ import type { DrumSound } from '../types';
 import dumSound from '../assets/sounds/dum.wav';
 import takSound from '../assets/sounds/tak.wav';
 import kaSound from '../assets/sounds/ka.wav';
+import clickSound from '../assets/sounds/click.mp3';
 
 /**
  * Audio player for drum sounds using Web Audio API for precise timing and volume control
@@ -12,6 +13,7 @@ import kaSound from '../assets/sounds/ka.wav';
 class AudioPlayer {
   private audioContext: AudioContext | null = null;
   private buffers: Map<DrumSound, AudioBuffer> = new Map();
+  private clickBuffer: AudioBuffer | null = null;
   private isInitialized = false;
 
   constructor() {
@@ -37,14 +39,21 @@ class AudioPlayer {
         ka: kaSound,
       };
 
-      await Promise.all(
-        Object.entries(soundFiles).map(async ([sound, src]) => {
-          const response = await fetch(src);
-          const arrayBuffer = await response.arrayBuffer();
-          const audioBuffer = await this.audioContext!.decodeAudioData(arrayBuffer);
-          this.buffers.set(sound as DrumSound, audioBuffer);
-        })
-      );
+      const loadPromises = Object.entries(soundFiles).map(async ([sound, src]) => {
+        const response = await fetch(src);
+        const arrayBuffer = await response.arrayBuffer();
+        const audioBuffer = await this.audioContext!.decodeAudioData(arrayBuffer);
+        this.buffers.set(sound as DrumSound, audioBuffer);
+      });
+
+      // Also load the click sound for metronome
+      const clickPromise = (async () => {
+        const response = await fetch(clickSound);
+        const arrayBuffer = await response.arrayBuffer();
+        this.clickBuffer = await this.audioContext!.decodeAudioData(arrayBuffer);
+      })();
+
+      await Promise.all([...loadPromises, clickPromise]);
 
       this.isInitialized = true;
     } catch (err) {
@@ -108,6 +117,38 @@ class AudioPlayer {
       }
     } catch (err) {
       console.error(`Error playing ${sound} sound:`, err);
+    }
+  }
+
+  /**
+   * Play a metronome click sound
+   * @param volume - Volume level (0.0 to 1.0), defaults to 1.0
+   */
+  async playClick(volume: number = 1.0): Promise<void> {
+    // Initialize on first play
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
+
+    if (!this.audioContext || !this.isInitialized || !this.clickBuffer) return;
+
+    try {
+      // Create source node
+      const source = this.audioContext.createBufferSource();
+      source.buffer = this.clickBuffer;
+
+      // Create gain node for volume control
+      const gainNode = this.audioContext.createGain();
+      gainNode.gain.setValueAtTime(Math.max(0, Math.min(1, volume)), this.audioContext.currentTime);
+
+      // Connect: source -> gain -> destination
+      source.connect(gainNode);
+      gainNode.connect(this.audioContext.destination);
+
+      // Start immediately
+      source.start(this.audioContext.currentTime);
+    } catch (err) {
+      console.error('Error playing click sound:', err);
     }
   }
 

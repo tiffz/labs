@@ -817,6 +817,63 @@
     transform: translateY(0);
   }
 
+  .metronome-button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem 0.5rem 3.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: 0.5rem;
+    border: 2px solid var(--border-color);
+    background-color: white;
+    color: var(--text-color);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    height: 2.5rem;
+  }
+
+  .metronome-button::before {
+    content: '';
+    position: absolute;
+    left: 0.75rem;
+    width: 2.5rem;
+    height: 1.25rem;
+    background-color: #e5e7eb;
+    border-radius: 0.625rem;
+    transition: all 0.2s ease;
+  }
+
+  .metronome-button::after {
+    content: '';
+    position: absolute;
+    left: 0.875rem;
+    width: 1rem;
+    height: 1rem;
+    background-color: white;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+
+  .metronome-button:hover {
+    border-color: #d1d5db;
+    background-color: #fafafa;
+  }
+
+  .metronome-button.active::before {
+    background-color: var(--primary-purple);
+  }
+
+  .metronome-button.active::after {
+    left: 2.125rem;
+  }
+
+  .metronome-label {
+    user-select: none;
+  }
+
   .play-button .material-symbols-outlined,
   .stop-button .material-symbols-outlined {
     font-size: 1.25rem;
@@ -1066,8 +1123,8 @@
     r: 3 !important;
   }
 
-  /* Ensure note dots are visible */
-  .vexflow-container svg circle[class*='dot'] {
+  /* Ensure VexFlow note dots are visible (but not metronome dots) */
+  .vexflow-container svg circle.vf-dot {
     fill: #000 !important;
     stroke: #000 !important;
   }

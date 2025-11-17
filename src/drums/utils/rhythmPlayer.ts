@@ -9,6 +9,12 @@ import { getDefaultBeatGrouping, getBeatGroupInfo } from './timeSignatureUtils';
 export type NoteHighlightCallback = (measureIndex: number, noteIndex: number) => void;
 
 /**
+ * Callback for when a metronome beat occurs
+ * Parameters: measureIndex, noteIndex, isDownbeat (true for first beat of measure)
+ */
+export type MetronomeCallback = (measureIndex: number, positionInSixteenths: number, isDownbeat: boolean) => void;
+
+/**
  * Rhythm player that schedules and plays notes based on BPM
  * Uses absolute timestamps to prevent timing drift during loops
  */
@@ -20,6 +26,8 @@ class RhythmPlayer {
   private currentBpm = 120;
   private onNotePlay: NoteHighlightCallback | null = null;
   private onPlaybackEnd: (() => void) | null = null;
+  private onMetronomeBeat: MetronomeCallback | null = null;
+  private metronomeEnabled = false;
   private startTime = 0; // Absolute start time for drift-free looping
   private loopCount = 0; // Track number of loops
 
@@ -29,12 +37,16 @@ class RhythmPlayer {
    * @param bpm - Beats per minute (quarter notes per minute)
    * @param onNotePlay - Callback when each note starts playing
    * @param onPlaybackEnd - Callback when playback completes (not called when looping)
+   * @param metronomeEnabled - Whether to play metronome clicks
+   * @param onMetronomeBeat - Callback when metronome beat occurs
    */
   play(
     rhythm: ParsedRhythm,
     bpm: number,
     onNotePlay?: NoteHighlightCallback,
-    onPlaybackEnd?: () => void
+    onPlaybackEnd?: () => void,
+    metronomeEnabled?: boolean,
+    onMetronomeBeat?: MetronomeCallback
   ): void {
     this.stop(); // Stop any existing playback
     
@@ -44,6 +56,8 @@ class RhythmPlayer {
     this.currentBpm = bpm;
     this.onNotePlay = onNotePlay || null;
     this.onPlaybackEnd = onPlaybackEnd || null;
+    this.metronomeEnabled = metronomeEnabled || false;
+    this.onMetronomeBeat = onMetronomeBeat || null;
     this.startTime = performance.now(); // Use high-precision timestamp
     this.loopCount = 0;
 
@@ -91,6 +105,69 @@ class RhythmPlayer {
     const beatGroupingInSixteenths = rhythm.timeSignature.denominator === 8
       ? beatGrouping.map(g => g * 2)  // Convert eighth notes to sixteenths
       : beatGrouping;  // Already in sixteenths
+
+    // Schedule metronome clicks for all beat groups
+    // Always schedule them, but check metronomeEnabled at execution time
+    const metronomeBeatPositions: Array<{ measureIndex: number; positionInMeasure: number; isDownbeat: boolean; time: number }> = [];
+    
+    let measureStartTime = 0;
+    
+    rhythm.measures.forEach((measure, measureIndex) => {
+      // Add downbeat (start of measure)
+      metronomeBeatPositions.push({
+        measureIndex,
+        positionInMeasure: 0,
+        isDownbeat: true,
+        time: measureStartTime,
+      });
+      
+      // Add beat group starts
+      let cumulativePosition = 0;
+      beatGroupingInSixteenths.forEach((groupSize) => {
+        cumulativePosition += groupSize;
+        if (cumulativePosition < rhythm.timeSignature.numerator * (rhythm.timeSignature.denominator === 8 ? 2 : 4)) {
+          const beatTime = measureStartTime + (cumulativePosition * msPerSixteenth);
+          metronomeBeatPositions.push({
+            measureIndex,
+            positionInMeasure: cumulativePosition,
+            isDownbeat: false,
+            time: beatTime,
+          });
+        }
+      });
+      
+      // Calculate measure duration
+      let measureDuration = 0;
+      measure.notes.forEach(note => {
+        measureDuration += note.durationInSixteenths * msPerSixteenth;
+      });
+      measureStartTime += measureDuration;
+    });
+    
+    // Schedule all metronome clicks (always schedule, check enabled state at execution)
+    metronomeBeatPositions.forEach(({ measureIndex, positionInMeasure, isDownbeat, time }) => {
+      const absoluteTime = loopStartOffset + time;
+      const delay = Math.max(0, this.startTime + absoluteTime - now);
+      
+      const metronomeTimeoutId = window.setTimeout(() => {
+        if (!this.isPlaying) return;
+        
+        // Check metronomeEnabled at execution time to allow toggling during playback
+        if (!this.metronomeEnabled) return;
+
+        // Play click with louder volume for downbeat
+        const clickVolume = isDownbeat ? 0.8 : 0.5;
+        audioPlayer.playClick(clickVolume);
+
+        // Notify listeners for visual highlighting
+        if (this.onMetronomeBeat) {
+          // Pass the actual position in sixteenths, not the note index
+          this.onMetronomeBeat(measureIndex, positionInMeasure, isDownbeat);
+        }
+      }, delay);
+
+      this.timeoutIds.push(metronomeTimeoutId);
+    });
 
     rhythm.measures.forEach((measure, measureIndex) => {
       let positionInMeasure = 0; // Track position in sixteenths within the measure
@@ -196,6 +273,14 @@ class RhythmPlayer {
    */
   getIsPlaying(): boolean {
     return this.isPlaying;
+  }
+
+  /**
+   * Update metronome enabled state during playback
+   * This allows toggling the metronome on/off while playing
+   */
+  setMetronomeEnabled(enabled: boolean): void {
+    this.metronomeEnabled = enabled;
   }
 }
 

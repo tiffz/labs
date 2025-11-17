@@ -18,6 +18,8 @@ interface PlaybackControlsProps {
   isPlaying: boolean;
   onPlay: () => void;
   onStop: () => void;
+  metronomeEnabled: boolean;
+  onMetronomeToggle: (enabled: boolean) => void;
 }
 
 const PlaybackControls: React.FC<PlaybackControlsProps> = ({
@@ -28,6 +30,8 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
   isPlaying,
   onPlay,
   onStop,
+  metronomeEnabled,
+  onMetronomeToggle,
 }) => {
   const [beatGroupingInput, setBeatGroupingInput] = useState<string>('');
   const [beatGroupingError, setBeatGroupingError] = useState<string>('');
@@ -236,6 +240,17 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
               </>
             )}
           </div>
+          
+          {/* Metronome Toggle */}
+          <button
+            className={`metronome-button ${metronomeEnabled ? 'active' : ''}`}
+            onClick={() => onMetronomeToggle(!metronomeEnabled)}
+            type="button"
+            aria-label="Toggle metronome"
+            title={metronomeEnabled ? 'Metronome: On' : 'Metronome: Off'}
+          >
+            <span className="metronome-label">Metronome</span>
+          </button>
         </div>
       </div>
     </div>

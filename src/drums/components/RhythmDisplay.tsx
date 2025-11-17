@@ -5,9 +5,16 @@ import VexFlowRenderer from './VexFlowRenderer';
 interface RhythmDisplayProps {
   rhythm: ParsedRhythm;
   currentNote?: { measureIndex: number; noteIndex: number } | null;
+  metronomeEnabled?: boolean;
+  currentMetronomeBeat?: { measureIndex: number; positionInSixteenths: number; isDownbeat: boolean } | null;
 }
 
-const RhythmDisplay: React.FC<RhythmDisplayProps> = ({ rhythm, currentNote }) => {
+const RhythmDisplay: React.FC<RhythmDisplayProps> = ({ 
+  rhythm, 
+  currentNote, 
+  metronomeEnabled = false,
+  currentMetronomeBeat = null 
+}) => {
   const { measures, isValid, error } = rhythm;
 
   if (measures.length === 0) {
@@ -33,7 +40,12 @@ const RhythmDisplay: React.FC<RhythmDisplayProps> = ({ rhythm, currentNote }) =>
       )}
 
       <div className="staff-container">
-        <VexFlowRenderer rhythm={rhythm} currentNote={currentNote} />
+        <VexFlowRenderer 
+          rhythm={rhythm} 
+          currentNote={currentNote}
+          metronomeEnabled={metronomeEnabled}
+          currentMetronomeBeat={currentMetronomeBeat}
+        />
       </div>
     </div>
   );
