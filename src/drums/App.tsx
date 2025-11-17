@@ -8,6 +8,7 @@ import { parseRhythm } from './utils/rhythmParser';
 import { rhythmPlayer } from './utils/rhythmPlayer';
 import { recognizeRhythm } from './utils/rhythmRecognition';
 import { useUrlState } from './hooks/useUrlState';
+import { getDefaultBeatGrouping } from './utils/timeSignatureUtils';
 import type { TimeSignature } from './types';
 
 const App: React.FC = () => {
@@ -179,40 +180,91 @@ const App: React.FC = () => {
   };
 
   const handleRandomize = () => {
-    // Generate a random rhythm for one measure
+    // Generate a random rhythm that respects beat groupings for musical coherence
     const sixteenthsPerMeasure = timeSignature.denominator === 8
       ? timeSignature.numerator * 2
       : timeSignature.numerator * 4;
     
-    const sounds = ['D', 'T', 'K', '_'];
+    // Get beat grouping for this time signature
+    const beatGrouping = getDefaultBeatGrouping(timeSignature);
+    
+    // Convert beat grouping to sixteenths
+    const beatGroupingInSixteenths = timeSignature.denominator === 8
+      ? beatGrouping.map(g => g * 2)  // Convert eighth notes to sixteenths
+      : beatGrouping;  // Already in sixteenths
+    
     const durations = [1, 2, 3, 4]; // 16th, 8th, dotted 8th, quarter
     
     let newNotation = '';
-    let currentDuration = 0;
+    let totalDuration = 0; // Track total duration to prevent overfilling
     
-    while (currentDuration < sixteenthsPerMeasure) {
-      const remainingDuration = sixteenthsPerMeasure - currentDuration;
+    // Generate patterns for each beat group
+    for (const groupSize of beatGroupingInSixteenths) {
+      // Stop if we've already filled the measure
+      if (totalDuration >= sixteenthsPerMeasure) break;
       
-      // Pick a random duration that fits
-      const validDurations = durations.filter(d => d <= remainingDuration);
-      const duration = validDurations[Math.floor(Math.random() * validDurations.length)];
+      let currentDuration = 0;
       
-      // Pick a random sound
-      const sound = sounds[Math.floor(Math.random() * sounds.length)];
+      // 80% chance to keep pattern within this beat group (musically coherent)
+      // 20% chance to allow pattern to cross beat boundaries
+      const respectBoundary = Math.random() < 0.8;
       
-      // Add the note
-      if (sound === '_') {
-        // For rests, use underscores
-        newNotation += '_'.repeat(duration);
-      } else {
-        // For notes, use the sound + dashes
-        newNotation += sound;
-        if (duration > 1) {
-          newNotation += '-'.repeat(duration - 1);
+      while (currentDuration < groupSize && totalDuration < sixteenthsPerMeasure) {
+        const remainingInGroup = groupSize - currentDuration;
+        const remainingInMeasure = sixteenthsPerMeasure - totalDuration;
+        
+        // Always respect measure boundaries, optionally respect group boundaries
+        const maxDuration = respectBoundary 
+          ? Math.min(remainingInGroup, remainingInMeasure)
+          : remainingInMeasure;
+        
+        // Pick a random duration that fits
+        const validDurations = durations.filter(d => d <= maxDuration);
+        if (validDurations.length === 0) break;
+        
+        const duration = validDurations[Math.floor(Math.random() * validDurations.length)];
+        
+        // Pick a random sound
+        // Bias towards actual drum sounds (70% D/T/K, 30% rest)
+        const soundWeights = [
+          { sound: 'D', weight: 0.25 },
+          { sound: 'T', weight: 0.25 },
+          { sound: 'K', weight: 0.20 },
+          { sound: '_', weight: 0.30 }
+        ];
+        
+        const rand = Math.random();
+        let cumulative = 0;
+        let sound = 'D';
+        
+        for (const { sound: s, weight } of soundWeights) {
+          cumulative += weight;
+          if (rand < cumulative) {
+            sound = s;
+            break;
+          }
+        }
+        
+        // Add the note
+        if (sound === '_') {
+          // For rests, use underscores
+          newNotation += '_'.repeat(duration);
+        } else {
+          // For notes, use the sound + dashes
+          newNotation += sound;
+          if (duration > 1) {
+            newNotation += '-'.repeat(duration - 1);
+          }
+        }
+        
+        currentDuration += duration;
+        totalDuration += duration;
+        
+        // If we've filled this group and we're respecting boundaries, move to next group
+        if (respectBoundary && currentDuration >= groupSize) {
+          break;
         }
       }
-      
-      currentDuration += duration;
     }
     
     updateNotation(newNotation);
