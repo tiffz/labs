@@ -17,6 +17,7 @@ export interface Measure {
 export interface TimeSignature {
   numerator: number;
   denominator: number;
+  beatGrouping?: number[]; // For asymmetric time signatures (e.g., [3, 3, 2] for 8/8)
 }
 
 export interface ParsedRhythm {

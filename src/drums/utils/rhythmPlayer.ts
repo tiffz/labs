@@ -1,5 +1,6 @@
 import type { ParsedRhythm } from '../types';
 import { audioPlayer } from './audioPlayer';
+import { getDefaultBeatGrouping, getBeatGroupInfo } from './timeSignatureUtils';
 
 /**
  * Callback for when a note starts playing
@@ -81,6 +82,16 @@ class RhythmPlayer {
     const now = performance.now();
     let currentTime = 0;
 
+    // Get beat grouping for this time signature
+    const beatGrouping = getDefaultBeatGrouping(rhythm.timeSignature);
+    
+    // Convert beat grouping to sixteenths
+    // For /8 time: each beat group value is in eighth notes, so multiply by 2 to get sixteenths
+    // For /4 time: each beat group value is already in sixteenths (from getDefaultBeatGrouping)
+    const beatGroupingInSixteenths = rhythm.timeSignature.denominator === 8
+      ? beatGrouping.map(g => g * 2)  // Convert eighth notes to sixteenths
+      : beatGrouping;  // Already in sixteenths
+
     rhythm.measures.forEach((measure, measureIndex) => {
       let positionInMeasure = 0; // Track position in sixteenths within the measure
       
@@ -89,18 +100,21 @@ class RhythmPlayer {
         const absoluteTime = loopStartOffset + currentTime;
         const delay = Math.max(0, this.startTime + absoluteTime - now);
 
-        // Calculate volume based on position
+        // Calculate volume based on beat group position (more dramatic dynamics)
         // - First note of measure: 100% (1.0)
-        // - First note of beat (every 4 sixteenths): 80% (0.8)
-        // - Other notes: 60% (0.6)
-        let volume = 0.6; // Default for non-beat notes
+        // - First note of beat group: 75% (0.75)
+        // - Other notes: 40% (0.4) - more contrast
+        let volume = 0.4; // Default for non-beat notes (reduced from 0.6 for more contrast)
         
         if (positionInMeasure === 0) {
           // First note of the measure
           volume = 1.0;
-        } else if (positionInMeasure % 4 === 0) {
-          // First note of a beat (quarter note = 4 sixteenths)
-          volume = 0.8;
+        } else {
+          // Check if this is the first note of a beat group
+          const groupInfo = getBeatGroupInfo(positionInMeasure, beatGroupingInSixteenths);
+          if (groupInfo.isFirstOfGroup) {
+            volume = 0.75; // Slightly reduced from 0.8 for more contrast
+          }
         }
 
         // Calculate duration for fade-out on very short notes

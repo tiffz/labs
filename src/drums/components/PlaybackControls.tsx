@@ -1,5 +1,14 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import type { TimeSignature } from '../types';
+import HelpTooltip from './HelpTooltip';
+import {
+  isAsymmetricTimeSignature,
+  isCompoundTimeSignature,
+  getDefaultBeatGrouping,
+  parseBeatGrouping,
+  formatBeatGrouping,
+  validateBeatGrouping,
+} from '../utils/timeSignatureUtils';
 
 interface PlaybackControlsProps {
   bpm: number;
@@ -20,22 +29,92 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
   onPlay,
   onStop,
 }) => {
+  const [beatGroupingInput, setBeatGroupingInput] = useState<string>('');
+  const [beatGroupingError, setBeatGroupingError] = useState<string>('');
+
+  // Update beat grouping input when time signature changes
+  useEffect(() => {
+    const defaultGrouping = getDefaultBeatGrouping(timeSignature);
+    setBeatGroupingInput(formatBeatGrouping(defaultGrouping));
+    setBeatGroupingError('');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeSignature.numerator, timeSignature.denominator]);
+
   const handleNumeratorChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newNumerator = parseInt(e.target.value, 10);
     onTimeSignatureChange({
       ...timeSignature,
-      numerator: parseInt(e.target.value, 10),
+      numerator: newNumerator,
+      beatGrouping: undefined, // Reset to default
     });
   };
 
   const handleDenominatorChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newDenominator = parseInt(e.target.value, 10);
     onTimeSignatureChange({
       ...timeSignature,
-      denominator: parseInt(e.target.value, 10),
+      denominator: newDenominator,
+      beatGrouping: undefined, // Reset to default
+    });
+  };
+
+  const handleBeatGroupingChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setBeatGroupingInput(value);
+    // Clear error while typing
+    setBeatGroupingError('');
+  };
+
+  const handleBeatGroupingBlur = () => {
+    // Only validate on blur to avoid distracting the user while typing
+    const parsed = parseBeatGrouping(beatGroupingInput);
+    if (!parsed) {
+      setBeatGroupingError('Invalid format. Use numbers separated by + (e.g., 3+3+2)');
+      return;
+    }
+
+    if (!validateBeatGrouping(parsed, timeSignature)) {
+      setBeatGroupingError(`Must add up to ${timeSignature.numerator}`);
+      return;
+    }
+
+    // Valid grouping
+    setBeatGroupingError('');
+    onTimeSignatureChange({
+      ...timeSignature,
+      beatGrouping: parsed,
     });
   };
 
   return (
     <div className="playback-controls-bar">
+      {/* Playback Controls - moved to front */}
+      <div className="playback-buttons">
+        {!isPlaying ? (
+          <button
+            className="play-button"
+            onClick={onPlay}
+            type="button"
+            aria-label="Play rhythm (Spacebar)"
+            title="Play (Spacebar)"
+          >
+            <span className="material-symbols-outlined">play_arrow</span>
+            Play
+          </button>
+        ) : (
+          <button
+            className="stop-button"
+            onClick={onStop}
+            type="button"
+            aria-label="Stop playback (Spacebar)"
+            title="Stop (Spacebar)"
+          >
+            <span className="material-symbols-outlined">stop</span>
+            Stop
+          </button>
+        )}
+      </div>
+
       {/* Timing Controls */}
       <div className="timing-controls">
         <div className="timing-inputs">
@@ -103,34 +182,61 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
             />
             <span className="input-suffix">BPM</span>
           </div>
+          
+          {/* Beat Grouping Input for Compound and Asymmetric Time Signatures */}
+          <div className="beat-grouping-control">
+            {(isCompoundTimeSignature(timeSignature) || isAsymmetricTimeSignature(timeSignature)) && (
+              <>
+                <div className="beat-grouping-header">
+                  <label htmlFor="beat-grouping-input" className="beat-grouping-label">
+                    Beat Grouping
+                  </label>
+                  <HelpTooltip
+                    ariaLabel="Help for beat grouping"
+                    content={
+                      <>
+                        <div className="tooltip-title">Beat Grouping</div>
+                        <div className="tooltip-content">
+                          <p>
+                            <strong>Compound rhythms</strong> (ie: 6/8, 9/8, 12/8) are grouped into sets of 3 eighth notes by default. 
+                            For example, 12/8 defaults to 3+3+3+3.
+                          </p>
+                          <p>
+                            <strong>Asymmetric rhythms</strong> (ie: 5/8, 7/8, 11/8) can have different groupings. 
+                            For example, 11/8 can be 3+3+3+2 or 2+3+3+3.
+                          </p>
+                          <p>
+                            You can adjust the grouping for any /8 time signature to create custom patterns.
+                          </p>
+                        </div>
+                        <a 
+                          href="https://en.wikipedia.org/wiki/Additive_rhythm_and_divisive_rhythm#Additive_rhythm" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="tooltip-link"
+                        >
+                          Learn more about additive rhythm →
+                        </a>
+                      </>
+                    }
+                  />
+                </div>
+                <input
+                  id="beat-grouping-input"
+                  type="text"
+                  className={`beat-grouping-input ${beatGroupingError ? 'input-error' : ''}`}
+                  value={beatGroupingInput}
+                  onChange={handleBeatGroupingChange}
+                  onBlur={handleBeatGroupingBlur}
+                  disabled={isPlaying}
+                  placeholder="e.g., 3+3+2"
+                  title="Enter beat grouping (e.g., 3+3+2)"
+                />
+                <div className="input-error-message">{beatGroupingError || '\u00A0'}</div>
+              </>
+            )}
+          </div>
         </div>
-      </div>
-
-      {/* Playback Controls */}
-      <div className="playback-buttons">
-        {!isPlaying ? (
-          <button
-            className="play-button"
-            onClick={onPlay}
-            type="button"
-            aria-label="Play rhythm (Spacebar)"
-            title="Play (Spacebar)"
-          >
-            <span className="material-symbols-outlined">play_arrow</span>
-            Play
-          </button>
-        ) : (
-          <button
-            className="stop-button"
-            onClick={onStop}
-            type="button"
-            aria-label="Stop playback (Spacebar)"
-            title="Stop (Spacebar)"
-          >
-            <span className="material-symbols-outlined">stop</span>
-            Stop
-          </button>
-        )}
       </div>
     </div>
   );

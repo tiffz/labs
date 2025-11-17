@@ -12,11 +12,12 @@ Notes are played at different volumes depending on their position in the measure
 
 - **First note of measure**: 100% volume (1.0)
   - This provides a strong downbeat that anchors the rhythm
-- **First note of each beat**: 80% volume (0.8)
-  - Every 4 sixteenths (quarter note position) gets emphasis
+- **First note of each beat group**: 75% volume (0.75)
+  - Emphasizes the start of each beat group (respects compound and asymmetric groupings)
   - This creates clear beat structure within the measure
-- **All other notes**: 60% volume (0.6)
-  - Subdivision notes are quieter, making the rhythm easier to follow
+- **All other notes**: 40% volume (0.4)
+  - Subdivision notes are significantly quieter for dramatic contrast
+  - Makes the beat structure very clear and easy to follow
 
 This volume hierarchy makes complex patterns like `DKTKDKTKDKTKDKTK` sound structured and musical instead of jarring.
 
