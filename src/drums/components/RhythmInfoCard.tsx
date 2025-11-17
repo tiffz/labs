@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import type { RhythmDefinition } from '../utils/rhythmRecognition';
 import type { TimeSignature } from '../types';
 import SimpleVexFlowNote from './SimpleVexFlowNote';
@@ -7,6 +7,25 @@ interface RhythmInfoCardProps {
   rhythm: RhythmDefinition;
   currentNotation: string;
   onSelectVariation: (notation: string, timeSignature: TimeSignature) => void;
+}
+
+/**
+ * Hook to detect if we're on mobile
+ */
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 640);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+  
+  return isMobile;
 }
 
 /**
@@ -81,15 +100,42 @@ const RhythmInfoCard: React.FC<RhythmInfoCardProps> = ({
   currentNotation,
   onSelectVariation,
 }) => {
+  const isMobile = useIsMobile();
+  const [isExpanded, setIsExpanded] = useState(!isMobile);
+  
+  // Reset expanded state when mobile state changes
+  useEffect(() => {
+    setIsExpanded(!isMobile);
+  }, [isMobile]);
+  
   return (
     <div className="rhythm-info-card">
-      {/* Header */}
-      <div className="rhythm-info-header">
+      {/* Header - clickable on mobile */}
+      <div 
+        className={`rhythm-info-header ${isMobile ? 'rhythm-info-header-clickable' : ''}`}
+        onClick={() => isMobile && setIsExpanded(!isExpanded)}
+        role={isMobile ? 'button' : undefined}
+        tabIndex={isMobile ? 0 : undefined}
+        onKeyDown={(e) => {
+          if (isMobile && (e.key === 'Enter' || e.key === ' ')) {
+            e.preventDefault();
+            setIsExpanded(!isExpanded);
+          }
+        }}
+      >
         <h3 className="rhythm-info-title">{rhythm.name}</h3>
+        {isMobile && (
+          <span className="material-symbols-outlined rhythm-info-toggle">
+            {isExpanded ? 'expand_less' : 'expand_more'}
+          </span>
+        )}
       </div>
       
-      {/* Description */}
-      <p className="rhythm-info-description">{rhythm.description}</p>
+      {/* Collapsible content */}
+      {isExpanded && (
+        <>
+          {/* Description */}
+          <p className="rhythm-info-description">{rhythm.description}</p>
       
       {/* Variations */}
       {rhythm.variations.length > 1 && (
@@ -140,6 +186,8 @@ const RhythmInfoCard: React.FC<RhythmInfoCardProps> = ({
             ))}
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );

@@ -5,12 +5,16 @@ interface UrlState {
   notation: string;
   timeSignature: TimeSignature;
   bpm: number;
+  beatGrouping?: number[];
+  metronomeEnabled?: boolean;
 }
 
 const DEFAULT_STATE: UrlState = {
   notation: 'D-T-__T-D---T---', // Maqsum
   timeSignature: { numerator: 4, denominator: 4 },
   bpm: 120,
+  beatGrouping: undefined,
+  metronomeEnabled: false,
 };
 
 /**
@@ -37,33 +41,59 @@ function parseUrlParams(): UrlState {
     }
   }
   
-  return { notation, timeSignature, bpm };
+  // Parse beat grouping (format: "3+3+2")
+  const groupsParam = params.get('groups');
+  let beatGrouping: number[] | undefined = undefined;
+  
+  if (groupsParam) {
+    const parts = groupsParam.split('+').map(s => parseInt(s.trim(), 10));
+    if (parts.every(n => !isNaN(n) && n > 0)) {
+      beatGrouping = parts;
+    }
+  }
+  
+  // Parse metronome enabled (format: "true" or "1")
+  const metronomeParam = params.get('metronome');
+  const metronomeEnabled = metronomeParam === 'true' || metronomeParam === '1';
+  
+  return { notation, timeSignature, bpm, beatGrouping, metronomeEnabled };
 }
 
 /**
  * Update URL parameters without triggering a page reload
  */
 function updateUrlParams(state: UrlState): void {
-  const params = new URLSearchParams();
+  const params: string[] = [];
   
   // Only add params if they differ from defaults
   if (state.notation !== DEFAULT_STATE.notation) {
-    params.set('rhythm', state.notation);
+    params.push(`rhythm=${encodeURIComponent(state.notation)}`);
   }
   
   if (state.bpm !== DEFAULT_STATE.bpm) {
-    params.set('bpm', state.bpm.toString());
+    params.push(`bpm=${state.bpm}`);
   }
   
   const timeSigString = `${state.timeSignature.numerator}/${state.timeSignature.denominator}`;
   const defaultTimeSigString = `${DEFAULT_STATE.timeSignature.numerator}/${DEFAULT_STATE.timeSignature.denominator}`;
   if (timeSigString !== defaultTimeSigString) {
-    params.set('time', timeSigString);
+    params.push(`time=${encodeURIComponent(timeSigString)}`);
+  }
+  
+  // Add beat grouping if present - manually encode to preserve + signs
+  if (state.beatGrouping && state.beatGrouping.length > 0) {
+    const groupsString = state.beatGrouping.join('+');
+    params.push(`groups=${encodeURIComponent(groupsString)}`);
+  }
+  
+  // Add metronome state if enabled (only add if true to keep URL clean)
+  if (state.metronomeEnabled) {
+    params.push('metronome=true');
   }
   
   // Update URL without reloading
-  const newUrl = params.toString() 
-    ? `${window.location.pathname}?${params.toString()}`
+  const newUrl = params.length > 0
+    ? `${window.location.pathname}?${params.join('&')}`
     : window.location.pathname;
   
   window.history.replaceState({}, '', newUrl);

@@ -17,6 +17,8 @@ describe('useUrlState', () => {
         notation: 'D-T-__T-D---T---',
         timeSignature: { numerator: 4, denominator: 4 },
         bpm: 120,
+        beatGrouping: undefined,
+        metronomeEnabled: false,
       });
     });
 
@@ -57,6 +59,8 @@ describe('useUrlState', () => {
         notation: 'D-D-K-T-',
         timeSignature: { numerator: 2, denominator: 4 },
         bpm: 160,
+        beatGrouping: undefined,
+        metronomeEnabled: false,
       });
     });
 
@@ -76,6 +80,39 @@ describe('useUrlState', () => {
       const state = result.current.getInitialState();
       
       expect(state.timeSignature).toEqual({ numerator: 4, denominator: 4 }); // Falls back to default
+    });
+
+    it('should parse beat grouping from URL', () => {
+      window.history.replaceState({}, '', '/drums?groups=' + encodeURIComponent('3+3+2'));
+      
+      const { result } = renderHook(() => useUrlState());
+      const state = result.current.getInitialState();
+      
+      expect(state.beatGrouping).toEqual([3, 3, 2]);
+    });
+
+    it('should parse metronome enabled from URL', () => {
+      window.history.replaceState({}, '', '/drums?metronome=true');
+      
+      const { result } = renderHook(() => useUrlState());
+      const state = result.current.getInitialState();
+      
+      expect(state.metronomeEnabled).toBe(true);
+    });
+
+    it('should parse all params including new ones from URL', () => {
+      window.history.replaceState({}, '', '/drums?rhythm=D-T-K-&time=11%2F8&bpm=140&groups=' + encodeURIComponent('3+3+3+2') + '&metronome=true');
+      
+      const { result } = renderHook(() => useUrlState());
+      const state = result.current.getInitialState();
+      
+      expect(state).toEqual({
+        notation: 'D-T-K-',
+        timeSignature: { numerator: 11, denominator: 8 },
+        bpm: 140,
+        beatGrouping: [3, 3, 3, 2],
+        metronomeEnabled: true,
+      });
     });
   });
 
@@ -146,6 +183,8 @@ describe('useUrlState', () => {
         notation: 'D-K-T-',
         timeSignature: { numerator: 4, denominator: 4 },
         bpm: 150,
+        beatGrouping: undefined,
+        metronomeEnabled: false,
       });
     });
 

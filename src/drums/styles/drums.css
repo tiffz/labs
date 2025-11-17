@@ -6,6 +6,7 @@
 /* CSS Custom Properties and base styles */
 @layer base {
   :root {
+    /* Color Palette */
     --primary-purple: #7c3aed;
     --primary-purple-dark: #6d28d9;
     --primary-purple-light: #a78bfa;
@@ -15,6 +16,18 @@
     --measure-line-color: #9ca3af;
     --accent-gold: #f59e0b;
     --accent-gold-light: #fbbf24;
+
+    /* Unified Shadow System */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
+    --shadow-purple: 0 8px 16px rgba(124, 58, 237, 0.15);
+    --shadow-hover-purple: 0 4px 12px rgba(124, 58, 237, 0.3);
+    --shadow-hover-red: 0 4px 12px rgba(239, 68, 68, 0.3);
+
+    /* Transitions */
+    --transition-fast: all 0.15s ease;
+    --transition-base: all 0.2s ease;
   }
 
   body {
@@ -87,6 +100,8 @@
     margin-bottom: 1rem;
   }
 
+  /* ===== LAYOUT ===== */
+
   /* Full-height sidebar (hamburger menu style) */
   .palette-sidebar {
     width: 320px;
@@ -95,8 +110,29 @@
     overflow-y: auto;
     background-color: white;
     border-left: 1px solid var(--border-color);
-    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.05);
+    box-shadow: var(--shadow-md);
     flex-shrink: 0;
+  }
+
+  /* Large screens - metronome button right-aligned */
+  @media (min-width: 1101px) {
+    .metronome-button {
+      margin-left: auto; /* Push to the right on large screens */
+    }
+  }
+
+  /* Intermediate breakpoint - prevent metronome button overflow */
+  @media (max-width: 1100px) {
+    .metronome-button {
+      width: 100%;
+      margin-left: 0;
+      margin-top: 0.5rem;
+      justify-content: center;
+    }
+
+    .timing-controls {
+      flex-wrap: wrap;
+    }
   }
 
   @media (max-width: 900px) {
@@ -119,7 +155,7 @@
       background-color: white;
       border: 2px solid var(--border-color);
       border-radius: 0.375rem;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      box-shadow: var(--shadow-sm);
     }
 
     /* Two columns for common patterns on tablet */
@@ -143,11 +179,13 @@
 
     .timing-controls {
       width: 100%;
+      flex-wrap: wrap;
     }
 
     .timing-inputs {
       flex: 1;
       justify-content: space-between;
+      min-width: 0;
     }
 
     .playback-buttons {
@@ -157,6 +195,12 @@
     .play-button,
     .stop-button {
       flex: 1;
+    }
+
+    /* Beat grouping control takes full width on tablet */
+    .beat-grouping-control {
+      width: 100%;
+      max-width: 100%;
     }
 
     .input-header {
@@ -201,6 +245,7 @@
 
     .timing-inputs {
       gap: 0.375rem;
+      flex-wrap: wrap;
     }
 
     .time-signature-control,
@@ -211,6 +256,15 @@
 
     .control-input {
       width: 100%;
+    }
+
+    /* Metronome button on mobile - full width below other controls */
+    .metronome-button {
+      width: 100%;
+      margin-left: 0;
+      justify-content: center;
+      gap: 0.375rem; /* Tighter spacing on mobile */
+      padding: 0.5rem 0.75rem 0.5rem 3rem; /* Reduce left padding slightly */
     }
 
     .input-field {
@@ -256,12 +310,13 @@
     }
   }
 
-  /* Input section */
+  /* ===== INPUT SECTION ===== */
+
   .input-section {
     background-color: white;
     border-radius: 0.5rem 0.5rem 0 0;
     padding: 1rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    box-shadow: var(--shadow-md);
     border-bottom: 2px solid #f3f4f6;
   }
 
@@ -307,7 +362,7 @@
     background-color: white;
     color: var(--text-color);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
   }
 
   .icon-button:hover:not(:disabled) {
@@ -406,13 +461,15 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
   }
 
   .help-button:hover {
     background-color: var(--primary-purple-dark);
     transform: scale(1.1);
   }
+
+  /* ===== TOOLTIPS & HELP ===== */
 
   .tooltip {
     position: absolute;
@@ -423,7 +480,7 @@
     border: 2px solid var(--primary-purple);
     border-radius: 0.5rem;
     padding: 1.25rem;
-    box-shadow: 0 8px 16px rgba(124, 58, 237, 0.15);
+    box-shadow: var(--shadow-purple);
     z-index: 1000;
     min-width: 350px;
     font-size: 0.875rem;
@@ -542,17 +599,23 @@
     border-width: 0;
   }
 
-  /* Timing Controls (Time Signature + BPM) */
+  /* Timing Controls (Time Signature + BPM + Metronome) */
   .timing-controls {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.75rem;
+    flex: 1;
+    min-width: 0; /* Allow flex items to shrink below content size */
+    flex-wrap: wrap; /* Allow wrapping to multiple lines */
   }
 
   .timing-inputs {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    flex: 1 1 auto; /* Allow growing and shrinking */
+    min-width: 0; /* Allow flex items to shrink below content size */
+    flex-wrap: wrap; /* Allow wrapping to multiple lines */
   }
 
   .time-signature-control {
@@ -561,8 +624,15 @@
     gap: 0.25rem;
     padding: 0.5rem 0.75rem;
     background-color: white;
-    border: 1px solid #d1d5db;
+    border: 2px solid var(--border-color);
     border-radius: 0.375rem;
+    flex-shrink: 0; /* Prevent from shrinking too much */
+    transition: var(--transition-base);
+  }
+
+  .time-signature-control:focus-within {
+    border-color: var(--primary-purple);
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1); /* Focus ring */
   }
 
   .control-select {
@@ -595,14 +665,15 @@
     gap: 0.5rem;
     padding: 0.5rem 0.75rem;
     background-color: white;
-    border: 1px solid #d1d5db;
+    border: 2px solid var(--border-color);
     border-radius: 0.375rem;
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
+    flex-shrink: 0; /* Prevent from shrinking too much */
   }
 
   .bpm-control-inline:focus-within {
     border-color: var(--primary-purple);
-    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1); /* Focus ring */
   }
 
   .control-input {
@@ -639,6 +710,7 @@
     min-width: 150px;
     max-width: 150px; /* Fixed width to prevent layout shift */
     position: relative;
+    flex-shrink: 0; /* Prevent from shrinking */
   }
 
   .beat-grouping-header {
@@ -693,9 +765,7 @@
     font-size: 0.875rem;
     line-height: 1.5;
     color: #374151;
-    box-shadow:
-      0 4px 6px -1px rgba(0, 0, 0, 0.1),
-      0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    box-shadow: var(--shadow-lg);
     z-index: 1000;
     min-width: 250px;
     max-width: 350px;
@@ -767,12 +837,14 @@
     color: var(--primary-purple-dark);
   }
 
-  /* Playback Controls */
+  /* ===== PLAYBACK CONTROLS ===== */
+
   .playback-controls {
     display: flex;
     gap: 0.5rem;
   }
 
+  /* Shared button styles */
   .play-button,
   .stop-button {
     display: flex;
@@ -784,7 +856,7 @@
     border-radius: 0.5rem;
     border: none;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
   }
 
   .play-button {
@@ -795,7 +867,7 @@
   .play-button:hover {
     background-color: var(--primary-purple-dark);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+    box-shadow: var(--shadow-hover-purple);
   }
 
   .play-button:active {
@@ -810,7 +882,7 @@
   .stop-button:hover {
     background-color: #dc2626;
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    box-shadow: var(--shadow-hover-red);
   }
 
   .stop-button:active {
@@ -829,9 +901,11 @@
     background-color: white;
     color: var(--text-color);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
     position: relative;
     height: 2.5rem;
+    flex-shrink: 0; /* Don't shrink - wrap instead */
+    white-space: nowrap; /* Keep text on one line */
   }
 
   .metronome-button::before {
@@ -1000,7 +1074,7 @@
   .input-field:focus {
     outline: none;
     border-color: var(--primary-purple);
-    box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.1);
+    box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.1); /* Focus ring */
   }
 
   .input-field::placeholder {
@@ -1040,12 +1114,13 @@
     border-color: var(--primary-purple);
   }
 
-  /* Rhythm display */
+  /* ===== RHYTHM DISPLAY ===== */
+
   .rhythm-display {
     background-color: white;
     border-radius: 0 0 0.5rem 0.5rem;
     padding: 1rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-md);
     min-height: 200px;
   }
 
@@ -1322,6 +1397,8 @@
     min-height: 70px;
   }
 
+  /* ===== NOTE PALETTE BUTTONS ===== */
+
   /* Simplified single note buttons with just note symbols */
   .palette-button-simple {
     display: flex;
@@ -1332,7 +1409,7 @@
     border: 2px solid var(--border-color);
     border-radius: 0.5rem;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: var(--transition-fast);
     font-family: inherit;
     /* Fixed dimensions to prevent layout shift when font loads */
     min-height: 40px;
@@ -1422,7 +1499,7 @@
     border: 2px solid var(--border-color);
     border-radius: 0.5rem;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: var(--transition-fast);
     font-family: inherit;
     min-height: 80px;
   }
@@ -1506,21 +1583,21 @@
     font-size: 0.875rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 2px 4px rgba(124, 58, 237, 0.2);
+    transition: var(--transition-base);
+    box-shadow: var(--shadow-md);
     white-space: nowrap;
   }
 
   .load-rhythm-button:hover {
     background-color: var(--primary-purple-dark);
     border-color: var(--primary-purple-dark);
-    box-shadow: 0 4px 8px rgba(124, 58, 237, 0.3);
+    box-shadow: var(--shadow-hover-purple);
     transform: translateY(-1px);
   }
 
   .load-rhythm-button:active {
     transform: translateY(0);
-    box-shadow: 0 1px 2px rgba(124, 58, 237, 0.2);
+    box-shadow: var(--shadow-sm);
   }
 
   .dropdown-menu {
@@ -1531,9 +1608,7 @@
     background-color: white;
     border: 1px solid var(--border-color);
     border-radius: 0.5rem;
-    box-shadow:
-      0 4px 6px rgba(0, 0, 0, 0.1),
-      0 2px 4px rgba(0, 0, 0, 0.06);
+    box-shadow: var(--shadow-lg);
     z-index: 1000;
     overflow: hidden;
   }
@@ -1598,18 +1673,44 @@
     margin-bottom: 0.25rem;
   }
 
-  /* Rhythm Info Card */
+  /* ===== RHYTHM INFO CARD ===== */
+
   .rhythm-info-card {
     background-color: white;
     border-radius: 0.5rem;
     padding: 1rem;
     margin-top: 1rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    border: 2px solid #f3f4f6;
+    box-shadow: var(--shadow-md);
   }
 
   .rhythm-info-header {
     margin-bottom: 0.75rem;
+  }
+
+  .rhythm-info-header-clickable {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    transition: var(--transition-base);
+    padding: 0.25rem;
+    margin: -0.25rem -0.25rem 0.75rem -0.25rem;
+    border-radius: 0.375rem;
+  }
+
+  .rhythm-info-header-clickable:hover {
+    background-color: #f9fafb;
+  }
+
+  .rhythm-info-header-clickable:focus {
+    outline: 2px solid var(--primary-purple);
+    outline-offset: 2px;
+  }
+
+  .rhythm-info-toggle {
+    font-size: 1.5rem;
+    color: var(--primary-purple);
   }
 
   .rhythm-info-title {

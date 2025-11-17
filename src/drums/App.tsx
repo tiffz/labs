@@ -18,11 +18,17 @@ const App: React.FC = () => {
   const initialState = useMemo(() => getInitialState(), [getInitialState]);
   
   const [notation, setNotation] = useState<string>(initialState.notation);
-  const [timeSignature, setTimeSignature] = useState<TimeSignature>(initialState.timeSignature);
+  const [timeSignature, setTimeSignature] = useState<TimeSignature>(() => {
+    // If beat grouping is in URL, use it; otherwise use initial time signature
+    if (initialState.beatGrouping) {
+      return { ...initialState.timeSignature, beatGrouping: initialState.beatGrouping };
+    }
+    return initialState.timeSignature;
+  });
   const [bpm, setBpm] = useState<number>(initialState.bpm);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentNote, setCurrentNote] = useState<{ measureIndex: number; noteIndex: number } | null>(null);
-  const [metronomeEnabled, setMetronomeEnabled] = useState<boolean>(false);
+  const [metronomeEnabled, setMetronomeEnabled] = useState<boolean>(initialState.metronomeEnabled || false);
   const [currentMetronomeBeat, setCurrentMetronomeBeat] = useState<{ measureIndex: number; noteIndex: number; isDownbeat: boolean } | null>(null);
   const [history, setHistory] = useState<string[]>([]);
   const [redoStack, setRedoStack] = useState<string[]>([]);
@@ -125,17 +131,27 @@ const App: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [notation]);
 
-  // Sync state to URL whenever notation, timeSignature, or bpm changes
+  // Sync state to URL whenever notation, timeSignature, bpm, or metronome changes
   useEffect(() => {
-    syncToUrl({ notation, timeSignature, bpm });
-  }, [notation, timeSignature, bpm, syncToUrl]);
+    syncToUrl({ 
+      notation, 
+      timeSignature, 
+      bpm,
+      beatGrouping: timeSignature.beatGrouping,
+      metronomeEnabled,
+    });
+  }, [notation, timeSignature, bpm, metronomeEnabled, syncToUrl]);
 
   // Handle browser back/forward navigation
   useEffect(() => {
     return setupPopStateListener((newState) => {
       setNotation(newState.notation);
-      setTimeSignature(newState.timeSignature);
+      setTimeSignature(newState.beatGrouping 
+        ? { ...newState.timeSignature, beatGrouping: newState.beatGrouping }
+        : newState.timeSignature
+      );
       setBpm(newState.bpm);
+      setMetronomeEnabled(newState.metronomeEnabled || false);
     });
   }, [setupPopStateListener]);
 
