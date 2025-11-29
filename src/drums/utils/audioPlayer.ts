@@ -15,6 +15,7 @@ class AudioPlayer {
   private buffers: Map<DrumSound, AudioBuffer> = new Map();
   private clickBuffer: AudioBuffer | null = null;
   private isInitialized = false;
+  private activeSources: Set<AudioBufferSourceNode> = new Set(); // Track active sound sources
 
   constructor() {
     // AudioContext is created lazily on first user interaction
@@ -108,6 +109,14 @@ class AudioPlayer {
       source.connect(gainNode);
       gainNode.connect(this.audioContext.destination);
 
+      // Track this source
+      this.activeSources.add(source);
+      
+      // Clean up when source finishes playing
+      source.onended = () => {
+        this.activeSources.delete(source);
+      };
+
       // Start immediately and let it play naturally
       source.start(now);
       
@@ -153,14 +162,26 @@ class AudioPlayer {
   }
 
   /**
-   * Stop all currently playing sounds
-   * Note: With Web Audio API, individual sources can't be stopped once started,
-   * but they'll naturally end. This method is kept for API compatibility.
+   * Stop all currently playing drum sounds (but not metronome clicks)
+   * This is called when a new note starts to clip the previous sound
+   */
+  stopAllDrumSounds(): void {
+    // Stop all active drum sound sources
+    this.activeSources.forEach((source) => {
+      try {
+        source.stop();
+      } catch {
+        // Source may have already ended, ignore error
+      }
+    });
+    this.activeSources.clear();
+  }
+
+  /**
+   * Stop all currently playing sounds (including metronome)
    */
   stopAll(): void {
-    // With Web Audio API, sources are one-shot and can't be stopped individually
-    // They'll naturally end when their buffer finishes or when stop() is called
-    // This is fine for our use case as we want crisp, non-overlapping sounds
+    this.stopAllDrumSounds();
   }
 }
 

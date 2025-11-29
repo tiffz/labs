@@ -17,6 +17,8 @@ import {
 } from './utils/dragAndDrop';
 import { parsePatternToNotes } from './utils/notationHelpers';
 import type { TimeSignature } from './types';
+import type { PlaybackSettings } from './types/settings';
+import { DEFAULT_SETTINGS } from './types/settings';
 
 const App: React.FC = () => {
   const { getInitialState, syncToUrl, setupPopStateListener } = useUrlState();
@@ -41,6 +43,8 @@ const App: React.FC = () => {
   const [redoStack, setRedoStack] = useState<string[]>([]);
   const [dragDropMode, setDragDropMode] = useState<'replace' | 'insert'>('replace');
   const [showKeyboardHelp, setShowKeyboardHelp] = useState<boolean>(false);
+  const [showSettings, setShowSettings] = useState<boolean>(false);
+  const [playbackSettings, setPlaybackSettings] = useState<PlaybackSettings>(DEFAULT_SETTINGS);
   
   // Helper to add to history
   const addToHistory = useCallback((currentNotation: string) => {
@@ -159,9 +163,10 @@ const App: React.FC = () => {
       metronomeEnabled,
       (measureIndex, positionInSixteenths, isDownbeat) => {
         setCurrentMetronomeBeat({ measureIndex, positionInSixteenths, isDownbeat });
-      }
+      },
+      playbackSettings
     );
-  }, [parsedRhythm, bpm, metronomeEnabled]);
+  }, [parsedRhythm, bpm, metronomeEnabled, playbackSettings]);
 
   const handleStop = useCallback(() => {
     rhythmPlayer.stop();
@@ -175,6 +180,13 @@ const App: React.FC = () => {
     // Update the player's metronome state if currently playing
     rhythmPlayer.setMetronomeEnabled(enabled);
   }, []);
+
+  // Update playback settings in real-time during playback
+  useEffect(() => {
+    if (isPlaying) {
+      rhythmPlayer.setSettings(playbackSettings);
+    }
+  }, [isPlaying, playbackSettings]);
 
   // Centralized logic: Stop playback whenever notation changes
   // This handles all cases: note palette, loading rhythms, variations, manual edits, etc.
@@ -436,6 +448,11 @@ const App: React.FC = () => {
           onStop={handleStop}
           metronomeEnabled={metronomeEnabled}
           onMetronomeToggle={handleMetronomeToggle}
+          onSettingsClick={() => setShowSettings(true)}
+          showSettings={showSettings}
+          playbackSettings={playbackSettings}
+          onSettingsChange={setPlaybackSettings}
+          onSettingsClose={() => setShowSettings(false)}
         />
 
         <div className="main-workspace">

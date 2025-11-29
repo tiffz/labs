@@ -8,6 +8,7 @@ vi.mock('./audioPlayer', () => ({
   audioPlayer: {
     play: vi.fn(),
     stopAll: vi.fn(),
+    stopAllDrumSounds: vi.fn(),
   },
 }));
 

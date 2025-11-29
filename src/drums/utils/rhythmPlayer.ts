@@ -1,4 +1,5 @@
 import type { ParsedRhythm } from '../types';
+import type { PlaybackSettings } from '../types/settings';
 import { audioPlayer } from './audioPlayer';
 import { getDefaultBeatGrouping, getBeatGroupInfo } from './timeSignatureUtils';
 
@@ -30,6 +31,7 @@ class RhythmPlayer {
   private metronomeEnabled = false;
   private startTime = 0; // Absolute start time for drift-free looping
   private loopCount = 0; // Track number of loops
+  private settings: PlaybackSettings | null = null;
 
   /**
    * Play a rhythm at the specified BPM (loops continuously)
@@ -39,6 +41,7 @@ class RhythmPlayer {
    * @param onPlaybackEnd - Callback when playback completes (not called when looping)
    * @param metronomeEnabled - Whether to play metronome clicks
    * @param onMetronomeBeat - Callback when metronome beat occurs
+   * @param settings - Playback settings for accents and emphasis
    */
   play(
     rhythm: ParsedRhythm,
@@ -46,7 +49,8 @@ class RhythmPlayer {
     onNotePlay?: NoteHighlightCallback,
     onPlaybackEnd?: () => void,
     metronomeEnabled?: boolean,
-    onMetronomeBeat?: MetronomeCallback
+    onMetronomeBeat?: MetronomeCallback,
+    settings?: PlaybackSettings
   ): void {
     this.stop(); // Stop any existing playback
     
@@ -58,6 +62,7 @@ class RhythmPlayer {
     this.onPlaybackEnd = onPlaybackEnd || null;
     this.metronomeEnabled = metronomeEnabled || false;
     this.onMetronomeBeat = onMetronomeBeat || null;
+    this.settings = settings || null;
     this.startTime = performance.now(); // Use high-precision timestamp
     this.loopCount = 0;
 
@@ -177,20 +182,32 @@ class RhythmPlayer {
         const absoluteTime = loopStartOffset + currentTime;
         const delay = Math.max(0, this.startTime + absoluteTime - now);
 
-        // Calculate volume based on beat group position (more dramatic dynamics)
-        // - First note of measure: 100% (1.0)
-        // - First note of beat group: 75% (0.75)
-        // - Other notes: 40% (0.4) - more contrast
-        let volume = 0.4; // Default for non-beat notes (reduced from 0.6 for more contrast)
+        // Get settings with defaults
+        const settings = this.settings || {
+          measureAccentVolume: 100,
+          beatGroupAccentVolume: 75,
+          nonAccentVolume: 40,
+          emphasizeSimpleRhythms: false,
+        };
+        
+        // Check if this is a simple rhythm (/4)
+        const isSimpleRhythm = rhythm.timeSignature.denominator === 4;
+
+        // Calculate volume based on beat group position and settings
+        // Default volume for non-accented notes
+        let volume = settings.nonAccentVolume / 100;
         
         if (positionInMeasure === 0) {
-          // First note of the measure
-          volume = 1.0;
+          // First note of the measure - use measure accent volume
+          volume = settings.measureAccentVolume / 100;
         } else {
           // Check if this is the first note of a beat group
           const groupInfo = getBeatGroupInfo(positionInMeasure, beatGroupingInSixteenths);
           if (groupInfo.isFirstOfGroup) {
-            volume = 0.75; // Slightly reduced from 0.8 for more contrast
+            // For simple rhythms (/4), only accent beat groups if emphasizeSimpleRhythms is enabled
+            if (!isSimpleRhythm || settings.emphasizeSimpleRhythms) {
+              volume = settings.beatGroupAccentVolume / 100;
+            }
           }
         }
 
@@ -206,6 +223,12 @@ class RhythmPlayer {
         // Schedule the note to play
         const timeoutId = window.setTimeout(() => {
           if (!this.isPlaying) return;
+
+          // If this is a real note (not a rest), stop previous sounds
+          // Rests don't clip previous sounds - they let them ring through
+          if (note.sound !== 'rest') {
+            audioPlayer.stopAllDrumSounds();
+          }
 
           // Play the sound with dynamic volume and optional fade-out
           audioPlayer.play(note.sound, volume, fadeDuration);
@@ -281,6 +304,15 @@ class RhythmPlayer {
    */
   setMetronomeEnabled(enabled: boolean): void {
     this.metronomeEnabled = enabled;
+  }
+
+  /**
+   * Update playback settings during playback
+   * This allows adjusting volume and accent settings in real-time
+   * Settings will apply to newly scheduled notes in the next loop iteration
+   */
+  setSettings(settings: PlaybackSettings): void {
+    this.settings = settings;
   }
 }
 

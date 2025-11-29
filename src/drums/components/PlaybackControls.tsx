@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { TimeSignature } from '../types';
 import HelpTooltip from './HelpTooltip';
+import SettingsMenu from './SettingsMenu';
 import {
   isAsymmetricTimeSignature,
   isCompoundTimeSignature,
@@ -20,6 +21,11 @@ interface PlaybackControlsProps {
   onStop: () => void;
   metronomeEnabled: boolean;
   onMetronomeToggle: (enabled: boolean) => void;
+  onSettingsClick: () => void;
+  showSettings?: boolean;
+  playbackSettings?: { measureAccentVolume: number; beatGroupAccentVolume: number; nonAccentVolume: number; emphasizeSimpleRhythms: boolean };
+  onSettingsChange?: (settings: { measureAccentVolume: number; beatGroupAccentVolume: number; nonAccentVolume: number; emphasizeSimpleRhythms: boolean }) => void;
+  onSettingsClose?: () => void;
 }
 
 const PlaybackControls: React.FC<PlaybackControlsProps> = ({
@@ -32,9 +38,15 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
   onStop,
   metronomeEnabled,
   onMetronomeToggle,
+  onSettingsClick,
+  showSettings = false,
+  playbackSettings,
+  onSettingsChange,
+  onSettingsClose,
 }) => {
   const [beatGroupingInput, setBeatGroupingInput] = useState<string>('');
   const [beatGroupingError, setBeatGroupingError] = useState<string>('');
+  const settingsButtonRef = useRef<HTMLButtonElement>(null);
 
   // Update beat grouping input when time signature changes
   useEffect(() => {
@@ -267,6 +279,29 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
           >
             <span className="metronome-label">Metronome</span>
           </button>
+
+          {/* Settings Button */}
+          <div className="settings-button-container">
+            <button
+              ref={settingsButtonRef}
+              className="settings-button"
+              onClick={onSettingsClick}
+              type="button"
+              aria-label="Open settings"
+              title="Playback settings"
+            >
+              <span className="material-symbols-outlined">settings</span>
+            </button>
+            {showSettings && playbackSettings && onSettingsChange && onSettingsClose && (
+              <SettingsMenu
+                isOpen={showSettings}
+                onClose={onSettingsClose}
+                settings={playbackSettings}
+                onSettingsChange={onSettingsChange}
+                buttonRef={settingsButtonRef}
+              />
+            )}
+          </div>
         </div>
       </div>
     </div>
