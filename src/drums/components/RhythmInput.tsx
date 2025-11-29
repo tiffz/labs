@@ -138,6 +138,7 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
     }
   };
 
+
   return (
     <div className="input-section">
       <div className="input-header">
@@ -303,6 +304,7 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
               spellCheck={false}
               rows={3}
             />
+            {/* Visual feedback is handled by the canvas preview - no separate UI here */}
           </div>
     </div>
   );

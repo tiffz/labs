@@ -3,19 +3,45 @@ import SimpleVexFlowNote from './SimpleVexFlowNote';
 import { parsePatternToNotes } from '../utils/notationHelpers';
 import { audioPlayer } from '../utils/audioPlayer';
 import { COMMON_PATTERNS } from '../data/commonPatterns';
+import { getPatternDuration } from '../utils/dragAndDrop';
 import type { TimeSignature } from '../types';
 
 interface NotePaletteProps {
   onInsertPattern: (pattern: string) => void;
   remainingBeats: number;
   timeSignature: TimeSignature;
+  dragDropMode?: 'replace' | 'insert';
+  onDragDropModeChange?: (mode: 'replace' | 'insert') => void;
 }
 
-// Calculate duration of a pattern in sixteenths
-function getPatternDuration(pattern: string): number {
-  const notes = parsePatternToNotes(pattern);
-  return notes.reduce((sum, note) => sum + note.duration, 0);
-}
+// Global variable to store currently dragged pattern (accessible during dragover)
+let currentDraggedPattern: string | null = null;
+
+// Handle drag start for pattern buttons
+const handleDragStart = (e: React.DragEvent, pattern: string) => {
+  e.dataTransfer.effectAllowed = 'copy';
+  e.dataTransfer.setData('text/plain', pattern);
+  e.dataTransfer.setData('application/darbuka-pattern', pattern);
+  // Store pattern globally so it can be accessed during dragover
+  currentDraggedPattern = pattern;
+  // Add visual feedback
+  if (e.currentTarget instanceof HTMLElement) {
+    e.currentTarget.style.opacity = '0.5';
+  }
+};
+
+const handleDragEnd = (e: React.DragEvent) => {
+  // Clear global pattern
+  currentDraggedPattern = null;
+  // Restore opacity
+  if (e.currentTarget instanceof HTMLElement) {
+    e.currentTarget.style.opacity = '1';
+  }
+};
+
+// Export function to get current dragged pattern
+// eslint-disable-next-line react-refresh/only-export-components
+export const getCurrentDraggedPattern = (): string | null => currentDraggedPattern;
 
 // Single note patterns organized by duration (rows) and sound (columns)
 // Using Noto Music font for proper rendering of music symbols
@@ -41,7 +67,12 @@ const SINGLE_NOTE_TABLE = {
 
 // Common drum patterns are now imported from data/commonPatterns.ts
 
-const NotePalette: React.FC<NotePaletteProps> = ({ onInsertPattern, remainingBeats }) => {
+const NotePalette: React.FC<NotePaletteProps> = ({ 
+  onInsertPattern, 
+  remainingBeats,
+  dragDropMode = 'replace',
+  onDragDropModeChange,
+}) => {
   const [soundPreviewEnabled, setSoundPreviewEnabled] = useState(false);
 
   // Helper to create pattern string
@@ -86,16 +117,33 @@ const NotePalette: React.FC<NotePaletteProps> = ({ onInsertPattern, remainingBea
       <div className="palette-header">
         <div className="palette-title-group">
           <h3>Note Palette</h3>
-          <p className="palette-subtitle">Click to insert patterns</p>
+          <p className="palette-subtitle">Click or drag and drop to insert patterns</p>
         </div>
-        <label className="sound-preview-toggle">
-          <input
-            type="checkbox"
-            checked={soundPreviewEnabled}
-            onChange={(e) => setSoundPreviewEnabled(e.target.checked)}
-          />
-          <span>Sound preview</span>
-        </label>
+        <div className="palette-controls">
+          <div className="palette-controls-group">
+            <label className="sound-preview-toggle">
+              <input
+                type="checkbox"
+                checked={soundPreviewEnabled}
+                onChange={(e) => setSoundPreviewEnabled(e.target.checked)}
+              />
+              <span>Sound preview</span>
+            </label>
+            {onDragDropModeChange && (
+              <button
+                type="button"
+                className="drag-drop-mode-toggle"
+                onClick={() => onDragDropModeChange(dragDropMode === 'replace' ? 'insert' : 'replace')}
+                data-tooltip={dragDropMode === 'replace' ? 'Replace mode' : 'Insert mode'}
+                aria-label={`${dragDropMode === 'replace' ? 'Replace' : 'Insert'} mode - Click to toggle`}
+              >
+                <span className="material-symbols-outlined">
+                  {dragDropMode === 'replace' ? 'swap_horiz' : 'add_circle'}
+                </span>
+              </button>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="palette-section single-notes-section">
@@ -161,9 +209,16 @@ const NotePalette: React.FC<NotePaletteProps> = ({ onInsertPattern, remainingBea
                     <td key={colIdx}>
                         <button
                           className="palette-button-simple notation-button"
-                          onClick={() => handleInsertPattern(pattern)}
+                          onClick={() => !isDisabled && handleInsertPattern(pattern)}
+                          onDragStart={(e) => {
+                            // Always allow drag and drop, even if clicking is disabled
+                            // Drag and drop can replace notes or insert in the middle, not just at the end
+                            handleDragStart(e, pattern);
+                          }}
+                          onDragEnd={handleDragEnd}
+                          draggable={true}
                           disabled={isDisabled}
-                          title={isDisabled ? 'Would exceed measure length' : `Insert ${displaySymbol} ${col.label}`}
+                          title={isDisabled ? 'Click disabled (would exceed measure length), but drag and drop still works' : `Insert ${displaySymbol} ${col.label}`}
                         >
                         <span className="note-symbol">{displaySymbol}</span>
                       </button>
@@ -187,9 +242,16 @@ const NotePalette: React.FC<NotePaletteProps> = ({ onInsertPattern, remainingBea
             <button
               key={index}
               className="palette-button notation-button"
-              onClick={() => handleInsertPattern(pattern)}
+              onClick={() => !isDisabled && handleInsertPattern(pattern)}
+              onDragStart={(e) => {
+                // Always allow drag and drop, even if clicking is disabled
+                // Drag and drop can replace notes or insert in the middle, not just at the end
+                handleDragStart(e, pattern);
+              }}
+              onDragEnd={handleDragEnd}
+              draggable={true}
               disabled={isDisabled}
-              title={isDisabled ? 'Would exceed measure length' : `Insert ${pattern}`}
+              title={isDisabled ? 'Click disabled (would exceed measure length), but drag and drop still works' : `Insert ${pattern}`}
             >
               <SimpleVexFlowNote pattern={pattern} width={85} height={60} />
             </button>

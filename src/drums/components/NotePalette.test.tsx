@@ -13,7 +13,7 @@ describe('NotePalette', () => {
     render(<NotePalette {...defaultProps} />);
     
     expect(screen.getByText('Note Palette')).toBeInTheDocument();
-    expect(screen.getByText('Click to insert patterns')).toBeInTheDocument();
+    expect(screen.getByText('Click or drag and drop to insert patterns')).toBeInTheDocument();
   });
 
   it('renders single note section', () => {
@@ -52,7 +52,8 @@ describe('NotePalette', () => {
   it('renders multiple note pattern buttons', () => {
     render(<NotePalette {...defaultProps} />);
     
-    // 5 rows x 4 columns (table) + 9 common patterns = 29 total buttons (no tabs)
+    // 5 rows x 4 columns (table) + 9 common patterns = 29 pattern buttons
+    // The checkbox is not counted as a button role
     const buttons = screen.getAllByRole('button');
     expect(buttons.length).toBe(29);
   });
@@ -81,7 +82,7 @@ describe('NotePalette', () => {
     );
     
     const notationButtons = container.querySelectorAll('.notation-button');
-    // 5 rows x 4 columns (table) + 9 common patterns = 29 buttons
+    // 5 rows x 4 columns (table) + 9 common patterns = 29 pattern buttons
     expect(notationButtons.length).toBe(29);
   });
 });

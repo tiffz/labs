@@ -1,5 +1,5 @@
 import React from 'react';
-import type { ParsedRhythm } from '../types';
+import type { ParsedRhythm, TimeSignature } from '../types';
 import VexFlowRenderer from './VexFlowRenderer';
 
 interface RhythmDisplayProps {
@@ -7,13 +7,21 @@ interface RhythmDisplayProps {
   currentNote?: { measureIndex: number; noteIndex: number } | null;
   metronomeEnabled?: boolean;
   currentMetronomeBeat?: { measureIndex: number; positionInSixteenths: number; isDownbeat: boolean } | null;
+  onDropPattern?: (pattern: string, charPosition: number) => void;
+  dragDropMode?: 'replace' | 'insert';
+  notation?: string;
+  timeSignature?: TimeSignature;
 }
 
 const RhythmDisplay: React.FC<RhythmDisplayProps> = ({ 
   rhythm, 
   currentNote, 
   metronomeEnabled = false,
-  currentMetronomeBeat = null 
+  currentMetronomeBeat = null,
+  onDropPattern,
+  dragDropMode = 'replace',
+  notation = '',
+  timeSignature,
 }) => {
   const { measures, isValid, error } = rhythm;
 
@@ -45,6 +53,10 @@ const RhythmDisplay: React.FC<RhythmDisplayProps> = ({
           currentNote={currentNote}
           metronomeEnabled={metronomeEnabled}
           currentMetronomeBeat={currentMetronomeBeat}
+          onDropPattern={onDropPattern}
+          dragDropMode={dragDropMode}
+          notation={notation}
+          timeSignature={timeSignature}
         />
       </div>
     </div>

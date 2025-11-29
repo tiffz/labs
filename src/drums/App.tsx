@@ -9,6 +9,12 @@ import { rhythmPlayer } from './utils/rhythmPlayer';
 import { recognizeRhythm } from './utils/rhythmRecognition';
 import { useUrlState } from './hooks/useUrlState';
 import { getDefaultBeatGrouping } from './utils/timeSignatureUtils';
+import {
+  getPatternDuration,
+  replacePatternAtPosition,
+  insertPatternAtPosition,
+} from './utils/dragAndDrop';
+import { parsePatternToNotes } from './utils/notationHelpers';
 import type { TimeSignature } from './types';
 
 const App: React.FC = () => {
@@ -29,16 +35,17 @@ const App: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentNote, setCurrentNote] = useState<{ measureIndex: number; noteIndex: number } | null>(null);
   const [metronomeEnabled, setMetronomeEnabled] = useState<boolean>(initialState.metronomeEnabled || false);
-  const [currentMetronomeBeat, setCurrentMetronomeBeat] = useState<{ measureIndex: number; noteIndex: number; isDownbeat: boolean } | null>(null);
+  const [currentMetronomeBeat, setCurrentMetronomeBeat] = useState<{ measureIndex: number; positionInSixteenths: number; isDownbeat: boolean } | null>(null);
   const [history, setHistory] = useState<string[]>([]);
   const [redoStack, setRedoStack] = useState<string[]>([]);
+  const [dragDropMode, setDragDropMode] = useState<'replace' | 'insert'>('replace');
   
   // Helper to add to history
-  const addToHistory = (currentNotation: string) => {
+  const addToHistory = useCallback((currentNotation: string) => {
     setHistory(prev => [...prev, currentNotation]);
     // Clear redo stack when new action is taken
     setRedoStack([]);
-  };
+  }, []);
   
   // Wrapper for setNotation that adds to history
   const updateNotation = (newNotation: string) => {
@@ -56,31 +63,77 @@ const App: React.FC = () => {
   }, [notation]);
 
   // Calculate remaining beats in current measure (in sixteenths)
+  // IMPORTANT: Calculate from raw notation, not parsed rhythm, because parseRhythm
+  // auto-fills incomplete measures with rests, which would make remainingBeats always return
+  // full measure. We need to know the ACTUAL remaining space before auto-fill.
   const remainingBeats = useMemo(() => {
     // Calculate sixteenths per measure
-    // For 4/4: 4 beats * (16 sixteenths / 4 quarter notes) = 16 sixteenths
-    // For 3/4: 3 beats * (16 sixteenths / 4 quarter notes) = 12 sixteenths
-    // For 6/8: 6 beats * (16 sixteenths / 8 eighth notes) = 12 sixteenths
     const beatsPerMeasure = timeSignature.denominator === 8
       ? timeSignature.numerator * 2  // eighth notes -> sixteenths
       : timeSignature.numerator * 4; // quarter notes -> sixteenths
     
-    if (parsedRhythm.measures.length === 0) {
+    if (!notation || notation.trim().length === 0) {
       return beatsPerMeasure; // Empty, so full measure available
     }
     
-    const lastMeasure = parsedRhythm.measures[parsedRhythm.measures.length - 1];
-    const remaining = beatsPerMeasure - lastMeasure.totalDuration;
+    // Parse notation to get actual note durations (without auto-fill)
+    const cleanNotation = notation.replace(/[\s\n]/g, '');
+    if (cleanNotation.length === 0) {
+      return beatsPerMeasure;
+    }
     
-    // If measure is complete (0 remaining), return full measure for next measure
-    return remaining === 0 ? beatsPerMeasure : remaining;
-  }, [parsedRhythm, timeSignature]);
+    // Calculate total duration in sixteenths from raw notation
+    const notes = parsePatternToNotes(cleanNotation);
+    const totalDuration = notes.reduce((sum, note) => sum + note.duration, 0);
+    
+    // Calculate which measure we're in and how much space remains
+    const positionInMeasure = totalDuration % beatsPerMeasure;
+    const remaining = beatsPerMeasure - positionInMeasure;
+    
+    // If we're exactly at a measure boundary, return full measure for next measure
+    return remaining === beatsPerMeasure ? beatsPerMeasure : remaining;
+  }, [notation, timeSignature]);
 
   const handleInsertPattern = (pattern: string) => {
     // Append the pattern to the end of the current notation
     addToHistory(notation);
     setNotation(prevNotation => prevNotation + pattern);
   };
+
+  // Handle drop from canvas or text input
+  const handleDropPattern = useCallback((pattern: string, charPosition: number) => {
+    const cleanNotation = notation.replace(/[\s\n]/g, '');
+    const patternDuration = getPatternDuration(pattern);
+    
+    addToHistory(notation);
+    
+    if (dragDropMode === 'replace') {
+      // Always try replacement - replacePatternAtPosition handles edge cases and measure boundaries
+      // If replacement fails (replacedLength === 0), fall back to insert
+      const result = replacePatternAtPosition(
+        cleanNotation,
+        charPosition,
+        pattern,
+        patternDuration,
+        timeSignature
+      );
+      
+      // If replacement succeeded (replacedLength > 0), use the new notation
+      // Note: Even if newNotation === cleanNotation (same pattern), we still call setNotation
+      // to ensure React processes the update (though it may not re-render if identical)
+      if (result.replacedLength > 0) {
+        setNotation(result.newNotation);
+      } else {
+        // Replacement failed - fall back to insert
+        const newNotation = insertPatternAtPosition(cleanNotation, charPosition, pattern);
+        setNotation(newNotation);
+      }
+    } else {
+      // Insert pattern at position
+      const newNotation = insertPatternAtPosition(cleanNotation, charPosition, pattern);
+      setNotation(newNotation);
+    }
+  }, [notation, dragDropMode, addToHistory, timeSignature]);
 
   const handlePlay = useCallback(() => {
     if (!parsedRhythm.isValid || parsedRhythm.measures.length === 0) {
@@ -366,6 +419,10 @@ const App: React.FC = () => {
             currentNote={currentNote}
             metronomeEnabled={metronomeEnabled}
             currentMetronomeBeat={currentMetronomeBeat}
+            onDropPattern={handleDropPattern}
+            dragDropMode={dragDropMode}
+            notation={notation}
+            timeSignature={timeSignature}
           />
 
           {/* Show rhythm info card if a rhythm is recognized */}
@@ -389,6 +446,8 @@ const App: React.FC = () => {
           onInsertPattern={handleInsertPattern} 
           remainingBeats={remainingBeats}
           timeSignature={timeSignature}
+          dragDropMode={dragDropMode}
+          onDragDropModeChange={setDragDropMode}
         />
       </aside>
     </div>
