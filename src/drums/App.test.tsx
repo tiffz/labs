@@ -22,10 +22,12 @@ describe('App', () => {
   it('displays the default time signature in controls', () => {
     render(<App />);
     // Check the time signature controls have correct default values
-    const selects = screen.getAllByRole('combobox');
-    // First two are time signature, rest are from dropdown
-    expect(selects[0]).toHaveValue('4'); // numerator
-    expect(selects[1]).toHaveValue('4'); // denominator
+    const numeratorInput = screen.getByLabelText('Time signature numerator') as HTMLInputElement;
+    const denominatorSelect = screen.getAllByRole('combobox').find(
+      select => (select as HTMLElement).getAttribute('aria-label') === 'Time signature denominator'
+    ) as HTMLSelectElement;
+    expect(numeratorInput).toHaveValue(4); // numerator
+    expect(denominatorSelect).toHaveValue('4'); // denominator
   });
 
   it('has a default rhythm notation', () => {

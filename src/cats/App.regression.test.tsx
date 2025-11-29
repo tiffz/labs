@@ -19,6 +19,7 @@ describe('App Regression Tests', () => {
       setTimeout(cb, 16);
       return 1;
     });
+    global.cancelAnimationFrame = vi.fn();
     
     // Set up DOM container for portals  
     const portalContainer = document.createElement('div');

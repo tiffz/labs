@@ -198,10 +198,18 @@ const CatView: React.FC<CatViewProps> = ({ catWorldCoords, shadowCenterOverride,
       } catch {
         // no-op
       }
-      raf = requestAnimationFrame(step);
+      if (typeof requestAnimationFrame !== 'undefined') {
+        raf = requestAnimationFrame(step);
+      }
     };
-    raf = requestAnimationFrame(step);
-    return () => { if (raf) cancelAnimationFrame(raf); };
+    if (typeof requestAnimationFrame !== 'undefined') {
+      raf = requestAnimationFrame(step);
+    }
+    return () => { 
+      if (raf && typeof cancelAnimationFrame !== 'undefined') {
+        cancelAnimationFrame(raf);
+      }
+    };
   }, [world, walking]);
 
   return (

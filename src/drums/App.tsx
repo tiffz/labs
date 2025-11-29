@@ -4,6 +4,7 @@ import RhythmDisplay from './components/RhythmDisplay';
 import NotePalette from './components/NotePalette';
 import PlaybackControls from './components/PlaybackControls';
 import RhythmInfoCard from './components/RhythmInfoCard';
+import KeyboardShortcutsHelp from './components/KeyboardShortcutsHelp';
 import { parseRhythm } from './utils/rhythmParser';
 import { rhythmPlayer } from './utils/rhythmPlayer';
 import { recognizeRhythm } from './utils/rhythmRecognition';
@@ -39,6 +40,7 @@ const App: React.FC = () => {
   const [history, setHistory] = useState<string[]>([]);
   const [redoStack, setRedoStack] = useState<string[]>([]);
   const [dragDropMode, setDragDropMode] = useState<'replace' | 'insert'>('replace');
+  const [showKeyboardHelp, setShowKeyboardHelp] = useState<boolean>(false);
   
   // Helper to add to history
   const addToHistory = useCallback((currentNotation: string) => {
@@ -48,10 +50,10 @@ const App: React.FC = () => {
   }, []);
   
   // Wrapper for setNotation that adds to history
-  const updateNotation = (newNotation: string) => {
+  const updateNotation = useCallback((newNotation: string) => {
     addToHistory(notation);
     setNotation(newNotation);
-  };
+  }, [notation, addToHistory]);
 
   const parsedRhythm = useMemo(() => {
     return parseRhythm(notation, timeSignature);
@@ -244,25 +246,25 @@ const App: React.FC = () => {
     }
   };
   
-  const handleUndo = () => {
+  const handleUndo = useCallback(() => {
     if (history.length === 0) return;
     
     const previousNotation = history[history.length - 1];
     setHistory(prev => prev.slice(0, -1));
     setRedoStack(prev => [...prev, notation]); // Add current to redo stack
     setNotation(previousNotation);
-  };
+  }, [history, notation]);
 
-  const handleRedo = () => {
+  const handleRedo = useCallback(() => {
     if (redoStack.length === 0) return;
     
     const nextNotation = redoStack[redoStack.length - 1];
     setRedoStack(prev => prev.slice(0, -1));
     setHistory(prev => [...prev, notation]); // Add current to history
     setNotation(nextNotation);
-  };
+  }, [redoStack, notation]);
 
-  const handleRandomize = () => {
+  const handleRandomize = useCallback(() => {
     // Generate a random rhythm that respects beat groupings for musical coherence
     const sixteenthsPerMeasure = timeSignature.denominator === 8
       ? timeSignature.numerator * 2
@@ -351,18 +353,58 @@ const App: React.FC = () => {
     }
     
     updateNotation(newNotation);
-  };
+  }, [timeSignature, updateNotation]);
 
-  // Spacebar keyboard shortcut for play/stop
+  // Keyboard shortcuts handler
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Only trigger if not typing in an input field
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+      // Detect platform for modifier keys
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+      const modKeyPressed = isMac ? e.metaKey : e.ctrlKey;
+
+      // Help menu - always available (check for Shift+/ which produces ?, or direct ? key)
+      // Check this BEFORE checking if user is typing so it works even in input fields
+      if (e.key === '?' || (e.shiftKey && e.key === '/')) {
+        e.preventDefault();
+        setShowKeyboardHelp(prev => !prev);
         return;
       }
 
+      // Check if user is typing in an input field
+      const isTyping = e.target instanceof HTMLInputElement || 
+                       e.target instanceof HTMLTextAreaElement ||
+                       (e.target instanceof HTMLElement && e.target.isContentEditable);
+
+      // Don't trigger shortcuts when typing in inputs (except help, which is handled above)
+      if (isTyping) {
+        return;
+      }
+
+      // Undo: Ctrl+Z (Mac: Cmd+Z)
+      if (modKeyPressed && (e.key === 'z' || e.key === 'Z') && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+        return;
+      }
+
+      // Redo: Ctrl+Y (Windows/Linux) or Cmd+Shift+Z (Mac)
+      if ((!isMac && modKeyPressed && (e.key === 'y' || e.key === 'Y')) ||
+          (isMac && modKeyPressed && e.shiftKey && (e.key === 'z' || e.key === 'Z'))) {
+        e.preventDefault();
+        handleRedo();
+        return;
+      }
+
+      // Randomize: R
+      if (e.key === 'r' || e.key === 'R') {
+        e.preventDefault();
+        handleRandomize();
+        return;
+      }
+
+      // Play/Stop: Spacebar
       if (e.code === 'Space') {
-        e.preventDefault(); // Prevent page scroll
+        e.preventDefault();
         if (isPlaying) {
           handleStop();
         } else {
@@ -373,7 +415,7 @@ const App: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isPlaying, parsedRhythm, bpm, handlePlay, handleStop]);
+  }, [isPlaying, parsedRhythm, bpm, handlePlay, handleStop, handleUndo, handleRedo, handleRandomize]);
 
   return (
     <div className="app-layout">
@@ -450,6 +492,10 @@ const App: React.FC = () => {
           onDragDropModeChange={setDragDropMode}
         />
       </aside>
+      <KeyboardShortcutsHelp 
+        isOpen={showKeyboardHelp} 
+        onClose={() => setShowKeyboardHelp(false)} 
+      />
     </div>
   );
 };

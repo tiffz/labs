@@ -44,13 +44,35 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeSignature.numerator, timeSignature.denominator]);
 
-  const handleNumeratorChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newNumerator = parseInt(e.target.value, 10);
-    onTimeSignatureChange({
-      ...timeSignature,
-      numerator: newNumerator,
-      beatGrouping: undefined, // Reset to default
-    });
+  const handleNumeratorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value === '') {
+      // Allow empty input while typing
+      return;
+    }
+    const newNumerator = parseInt(value, 10);
+    if (!isNaN(newNumerator) && newNumerator > 0 && newNumerator <= 32) {
+      onTimeSignatureChange({
+        ...timeSignature,
+        numerator: newNumerator,
+        beatGrouping: undefined, // Reset to default
+      });
+    }
+  };
+
+  const handleNumeratorBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const num = parseInt(e.target.value, 10);
+    if (isNaN(num) || num < 1) {
+      // Reset to current value if invalid
+      e.target.value = timeSignature.numerator.toString();
+    } else if (num > 32) {
+      // Cap at 32
+      onTimeSignatureChange({
+        ...timeSignature,
+        numerator: 32,
+        beatGrouping: undefined,
+      });
+    }
   };
 
   const handleDenominatorChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -124,24 +146,18 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
         <div className="timing-inputs">
           <div className="time-signature-control">
             <label htmlFor="time-sig-numerator" className="sr-only">Time signature numerator</label>
-            <select
+            <input
               id="time-sig-numerator"
-              className="control-select"
+              type="number"
+              className="control-input time-sig-numerator-input"
               value={timeSignature.numerator}
               onChange={handleNumeratorChange}
+              onBlur={handleNumeratorBlur}
+              min="1"
+              max="32"
+              disabled={isPlaying}
               aria-label="Time signature numerator"
-            >
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
-              <option value="5">5</option>
-              <option value="6">6</option>
-              <option value="7">7</option>
-              <option value="8">8</option>
-              <option value="9">9</option>
-              <option value="11">11</option>
-              <option value="12">12</option>
-            </select>
+            />
             <span className="time-sig-slash">/</span>
             <select
               className="control-select"
