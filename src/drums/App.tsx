@@ -407,8 +407,8 @@ const App: React.FC = () => {
         return;
       }
 
-      // Randomize: R
-      if (e.key === 'r' || e.key === 'R') {
+      // Randomize: R (but not Shift+R to allow browser refresh shortcuts)
+      if ((e.key === 'r' || e.key === 'R') && !e.shiftKey) {
         e.preventDefault();
         handleRandomize();
         return;
