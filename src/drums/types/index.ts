@@ -1,4 +1,4 @@
-export type DrumSound = 'dum' | 'tak' | 'ka' | 'rest';
+export type DrumSound = 'dum' | 'tak' | 'ka' | 'slap' | 'rest';
 
 export type NoteDuration = 'sixteenth' | 'eighth' | 'quarter' | 'half' | 'whole';
 

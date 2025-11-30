@@ -29,15 +29,26 @@ export function drawDrumSymbol(
   // Scale down by 0.85 and position higher to avoid collision with staff
   symbolGroup.setAttribute('transform', `translate(${x}, ${y - 40}) scale(0.85)`);
 
-  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  path.setAttribute('d', DRUM_SYMBOL_PATHS[sound]);
-  path.setAttribute('stroke', 'black');
-  path.setAttribute('stroke-width', '2.2'); // Slightly thinner for smaller size
-  path.setAttribute('fill', 'none');
-  path.setAttribute('stroke-linecap', 'round');
-  path.setAttribute('stroke-linejoin', sound === 'dum' ? 'round' : 'miter');
+  if (sound === 'slap') {
+    // Slap is a filled circle - slightly wider (radius 7.5)
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('cx', '0');
+    circle.setAttribute('cy', '0');
+    circle.setAttribute('r', '7.5');
+    circle.setAttribute('fill', 'black');
+    circle.setAttribute('stroke', 'none');
+    symbolGroup.appendChild(circle);
+  } else {
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', DRUM_SYMBOL_PATHS[sound]);
+    path.setAttribute('stroke', 'black');
+    path.setAttribute('stroke-width', '2.2'); // Slightly thinner for smaller size
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('stroke-linejoin', sound === 'dum' ? 'round' : 'miter');
+    symbolGroup.appendChild(path);
+  }
 
-  symbolGroup.appendChild(path);
   svg.appendChild(symbolGroup);
 }
 

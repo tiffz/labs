@@ -26,6 +26,7 @@ const SOUND_TO_PITCH: Record<DrumSound, string> = {
   dum: 'f/4',
   tak: 'f/4',
   ka: 'f/4',
+  slap: 'f/4',
   rest: 'b/4', // Center rests on middle line
 };
 

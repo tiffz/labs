@@ -34,8 +34,8 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
 
   // Validate and filter input to only allow valid notation characters
   const handleNotationChange = (value: string) => {
-    // Only allow: D, d, T, t, K, k, _ (rest), - (extend), space, and newline
-    const validChars = /^[DdTtKk_\-\s\n]*$/;
+    // Only allow: D, d, T, t, K, k, S, s (slap), _ (rest), - (extend), space, and newline
+    const validChars = /^[DdTtKkSs_\-\s\n]*$/;
     if (validChars.test(value)) {
       onNotationChange(value);
     }
@@ -61,9 +61,9 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
     while (i < cleanedNotation.length) {
       const char = cleanedNotation[i];
 
-      // Check if it's a note character (D, T, K, _)
+      // Check if it's a note character (D, T, K, S, _)
       if (char === 'D' || char === 'd' || char === 'T' || char === 't' || 
-          char === 'K' || char === 'k' || char === '_') {
+          char === 'K' || char === 'k' || char === 'S' || char === 's' || char === '_') {
         
         // Calculate duration of this note
         let duration = 1;
@@ -205,6 +205,18 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
                       />
                     </svg>
                     <span><code>K</code> = Ka (high)</span>
+                  </div>
+                  <div className="tooltip-symbol-item">
+                    <svg width="16" height="16" viewBox="-8 -8 16 16">
+                      <circle 
+                        cx="0" 
+                        cy="0" 
+                        r="7" 
+                        fill="black" 
+                        stroke="none"
+                      />
+                    </svg>
+                    <span><code>S</code> = Slap (accented)</span>
                   </div>
                   <div className="tooltip-symbol-item">
                     <span><code>_</code> = Rest (silence)</span>

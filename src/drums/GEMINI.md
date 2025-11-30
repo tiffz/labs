@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Darbuka Rhythm Trainer is a web application designed to help students learn and practice Darbuka drum rhythms. It provides a visual representation of rhythms using a notation system that maps to the three primary Darbuka sounds: Dum, Tak, and Ka.
+The Darbuka Rhythm Trainer is a web application designed to help students learn and practice Darbuka drum rhythms. It provides a visual representation of rhythms using a notation system that maps to the four primary Darbuka sounds: Dum, Tak, Ka, and Slap.
 
 ## Features
 
@@ -12,7 +12,7 @@ The Darbuka Rhythm Trainer is a web application designed to help students learn 
   - Baladi (4/4): `D-D-..T-D---T---`
   - Ayoub (2/4): `D--KD-T-`
   - Automatically sets the correct time signature when loading a preset
-- **Text-based rhythm input**: Enter rhythms using a simple notation system (D for Dum, T for Tak, K for Ka, . for rest)
+- **Text-based rhythm input**: Enter rhythms using a simple notation system (D for Dum, T for Tak, K for Ka, S for Slap, \_ for rest)
 - **Duration notation**: Use dashes (-) to extend note durations
 - **Professional music notation**: Rhythms are displayed using standard music notation via VexFlow
 - **Single-line staff**: Clean, minimal display with one staff line for spatial reference
@@ -20,9 +20,10 @@ The Darbuka Rhythm Trainer is a web application designed to help students learn 
   - Dum: Backwards question mark (C with vertical line) - bass sound
   - Tak: Sharp upward caret (^) - high sound
   - Ka: Sharp downward V - high sound
+  - Slap: Filled circle - accented sound
 - **Centered symbols**: All symbols are properly centered above their corresponding notes
 - **Dotted notes**: Automatic detection and rendering of dotted rhythms (dotted eighth, quarter, half notes)
-- **Rests**: Full support for rests using the . notation
+- **Rests**: Full support for rests using the `_` notation
 - **Time signature support**: Choose from various time signatures (4/4, 3/4, 6/8, etc.)
 - **Measure separation**: Rhythms are automatically split into measures based on the time signature
 - **Automatic beaming**: Eighth and sixteenth notes are automatically beamed together
@@ -37,7 +38,8 @@ Each character in the notation represents a 16th note worth of time:
 - `D` or `d` = Dum (bass sound)
 - `T` or `t` = Tak (high sound)
 - `K` or `k` = Ka (high sound)
-- `.` = Rest (silence)
+- `S` or `s` = Slap (accented sound)
+- `_` = Rest (silence)
 - `-` = Continue the previous note
 
 ### Examples
@@ -49,9 +51,9 @@ Each character in the notation represents a 16th note worth of time:
 - `D-----` = Dum (dotted quarter note - 6 sixteenths)
 - `D-------` = Dum (half note)
 - `D-----------` = Dum (dotted half note - 12 sixteenths)
-- `.` = Rest (16th rest)
-- `.-` = Rest (8th rest)
-- `.---` = Rest (quarter rest)
+- `_` = Rest (16th rest)
+- `__` = Rest (8th rest)
+- `____` = Rest (quarter rest)
 
 ### Complete Rhythm Example
 
@@ -130,6 +132,7 @@ The app uses VexFlow to render professional music notation with:
   - Dum (bass): C-shaped curve opening to the right with vertical line extending down
   - Tak (high): Upward caret/wedge (^) with sharp angles
   - Ka (high): Downward V with sharp angles
+  - Slap (accented): Filled circle
 - **Visible note stems**: All notes (except whole notes) display stems for clear rhythm indication
 - **Standard note durations**: Quarter notes, eighth notes, sixteenth notes, etc.
 - **Dotted notes**: Full support with visible dots rendered next to note heads

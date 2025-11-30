@@ -15,6 +15,7 @@ const SOUND_TO_PITCH: Record<DrumSound, string> = {
   dum: 'f/4',
   tak: 'f/4',
   ka: 'f/4',
+  slap: 'f/4',
   rest: 'f/4',
 };
 
@@ -66,6 +67,18 @@ const drawSymbolAboveNote = (
       symbolGroup.appendChild(path);
       break;
 
+    case 'slap': {
+      // Slap is a filled circle - slightly wider (radius 7.5)
+      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      circle.setAttribute('cx', '0');
+      circle.setAttribute('cy', '0');
+      circle.setAttribute('r', '7.5');
+      circle.setAttribute('fill', 'black');
+      circle.setAttribute('stroke', 'none');
+      symbolGroup.appendChild(circle);
+      break;
+    }
+
     default:
       return;
   }
@@ -84,6 +97,7 @@ const parsePattern = (pattern: string): Array<{ sound: DrumSound; duration: numb
     'D': 'dum', 'd': 'dum',
     'T': 'tak', 't': 'tak',
     'K': 'ka', 'k': 'ka',
+    'S': 'slap', 's': 'slap',
     '.': 'rest',
   };
   

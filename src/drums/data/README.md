@@ -76,6 +76,7 @@ All rhythms use the following notation:
 - `D` = Dum (bass sound)
 - `T` = Tak (high sound)
 - `K` = Ka (high sound)
+- `S` = Slap (accented sound)
 - `_` = Rest (silence)
 - `-` = Continuation of previous note
 

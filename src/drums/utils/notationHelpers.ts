@@ -10,6 +10,8 @@ const NOTATION_MAP: Record<string, DrumSound> = {
   't': 'tak',
   'K': 'ka',
   'k': 'ka',
+  'S': 'slap',
+  's': 'slap',
   '_': 'rest',
 };
 

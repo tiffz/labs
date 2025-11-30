@@ -4,6 +4,7 @@ import type { DrumSound } from '../types';
 import dumSound from '../assets/sounds/dum.wav';
 import takSound from '../assets/sounds/tak.wav';
 import kaSound from '../assets/sounds/ka.wav';
+import slapSound from '../assets/sounds/slap2.wav';
 import clickSound from '../assets/sounds/click.mp3';
 
 /**
@@ -38,6 +39,7 @@ class AudioPlayer {
         dum: dumSound,
         tak: takSound,
         ka: kaSound,
+        slap: slapSound,
       };
 
       const loadPromises = Object.entries(soundFiles).map(async ([sound, src]) => {

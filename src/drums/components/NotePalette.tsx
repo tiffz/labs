@@ -61,6 +61,7 @@ const SINGLE_NOTE_TABLE = {
     { sound: 'D', label: 'Dum', isRest: false },
     { sound: 'T', label: 'Tak', isRest: false },
     { sound: 'K', label: 'Ka', isRest: false },
+    { sound: 'S', label: 'Slap', isRest: false },
     { sound: '_', label: 'Rest', isRest: true },
   ],
 };
@@ -187,6 +188,17 @@ const NotePalette: React.FC<NotePaletteProps> = ({
                         fill="none"
                         strokeLinecap="round"
                         strokeLinejoin="miter"
+                      />
+                    </svg>
+                  )}
+                  {col.sound === 'S' && (
+                    <svg width="16" height="16" viewBox="-8 -8 16 16">
+                      <circle 
+                        cx="0" 
+                        cy="0" 
+                        r="7" 
+                        fill="black" 
+                        stroke="none"
                       />
                     </svg>
                   )}

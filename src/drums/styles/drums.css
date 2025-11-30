@@ -1851,8 +1851,8 @@
     font-weight: 600;
     color: var(--text-color);
     font-size: 0.875rem;
-    /* Fixed width for header cells */
-    width: 60px;
+    /* Fixed width for header cells - reduced to fit 5 columns */
+    width: 50px;
   }
 
   .note-table th.symbol-header {
@@ -1875,8 +1875,8 @@
 
   .note-table td:not(.row-label) {
     padding: 0;
-    /* Fixed width for button cells */
-    width: 60px;
+    /* Fixed width for button cells - reduced to fit 5 columns */
+    width: 50px;
   }
 
   .note-table .palette-button {
