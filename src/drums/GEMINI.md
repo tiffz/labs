@@ -141,18 +141,40 @@ The app uses VexFlow to render professional music notation with:
 - **Time signatures**: Displayed at the beginning of the first measure
 - **Measure bars**: Clear vertical lines separating measures
 
+## Technical Implementation Details
+
+### Audio System
+
+The app uses Web Audio API for precise timing and dynamic volume control:
+
+- **Dynamic Volume Based on Beat Position**: Notes on strong beats (beat 1) play louder, weak beats quieter, creating natural musical emphasis
+- **Smart Fade-Out for Fast Notes**: Notes shorter than 100ms automatically fade out to prevent clicks and pops
+- **Precise Timing**: Web Audio API ensures accurate rhythm playback even at high BPM
+
+### Font Loading & FOUC Prevention
+
+The app implements comprehensive font loading strategies to prevent Flash of Unstyled Content (FOUC) and layout shift:
+
+- **Icon Fonts (Material Symbols + Noto Music)**: Hidden via CSS until fonts load, then revealed via JavaScript font detection
+- **Text Font (Roboto)**: Uses `display=optional` to only load if cached, preventing layout shift
+- **Layout Stability**: All fonts use matched metrics to prevent cumulative layout shift (CLS)
+
+### Beaming System
+
+Automatic beaming follows standard music notation rules:
+
+- **Simple Time Signatures (4/4, 2/4, 3/4)**: Eighth and sixteenth notes beamed within beats
+- **Compound Time Signatures (6/8, 9/8, 12/8)**: Notes beamed within beat groups (typically groups of 3)
+- **Asymmetric Time Signatures (5/8, 7/8, 11/8)**: Notes beamed according to custom beat groupings
+- **Beat Group Awareness**: Beaming logic correctly handles different time signature denominators (/4 vs /8)
+
 ## Future Enhancements
 
 Potential features for future development:
 
-- Audio playback of rhythms
-- Metronome integration
-- Pre-loaded rhythm library (common Darbuka patterns)
-- Visual beat indicators
-- Practice mode with loop playback
-- Export rhythms as images or PDFs
 - Triplets and other tuplets
 - Multiple voices/parts
+- Export rhythms as images or PDFs
 
 ## Development
 

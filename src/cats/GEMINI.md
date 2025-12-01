@@ -272,19 +272,29 @@ const resetInactivityTimer = () => {
 
 ## Design Principles
 
+### Currency Display Standards
+
+**Whole Numbers Only**: All treats and love values are displayed as whole numbers using `Math.floor()` to maintain a simple, casual gaming experience. This applies to currency displays, tooltips, dev panel statistics, job earnings, and upgrade costs. Internal calculations can use decimals for precision but must be floored before display.
+
+### UI/UX Design Standards
+
+- **Consistent Cost Display**: All costs use shared `CostDisplay` component with support for inline (jobs) and block (upgrades) display modes. Red background indicates unaffordable costs.
+- **Material Design Icons Over Emojis**: Use SVG icons consistently (e.g., `HeartIcon`, `FishIcon`) instead of emojis for cohesive visual experience.
+- **Tooltip System**: Exclusive tooltips (only one visible at a time) using `TooltipManager` with proper z-index (`z-index: 10000+`), stable hover behavior, and information hierarchy (totals first, then breakdowns).
+
+### Game Progression Standards
+
+- **Infinite Upgrade Systems**: All upgrade paths continue indefinitely. Define initial levels with custom data, then use `infiniteScaling` parameters for levels beyond predefined data with exponential cost scaling and logarithmic effect scaling.
+- **Economic Balance**: Treat-to-love conversion system forms the core economic engine. Treats earned from jobs (time-based income) convert to love (primary progression currency) used for both job promotions and upgrades.
+
 ### User Experience
 
 - **High Information Density**: Compact layouts that maximize content while maintaining readability
 - **Material Design 3**: Consistent iconography and modern styling throughout
 - **Progressive Disclosure**: Secret achievements and hidden mechanics encourage exploration
 - **Immediate Feedback**: Real-time visual responses to all player actions
-
-### Game Balance
-
-- **Proportional Scaling**: Love-per-interaction scales with player progression to maintain engagement
-- **Merit Economy**: Achievement rewards create meaningful upgrade progression
-- **Training Investment**: Experience-based job progression requires strategic love spending
-- **Discovery Rewards**: Special interactions provide unique achievement unlocks
+- **Love-Per-Interaction Scaling**: Base love earned is always 1% of current love held (minimum 1), encouraging players to maintain reserves
+- **Cat Personality**: Tooltips and interactions include cute flavor text that reflects the cat's mood
 
 ### Technical Architecture
 

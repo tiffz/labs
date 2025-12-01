@@ -546,3 +546,65 @@ if (window.location.hostname !== 'localhost') {
 - ✅ **Solution**: Comprehensive mocking strategies in test setup
 
 This standardization ensures consistency across all micro-apps while incorporating lessons learned from production deployments and refactoring experiences.
+
+## 7. Documentation Standards
+
+### Documentation Structure
+
+Each micro-app should maintain a clear, organized documentation structure:
+
+- **README.md**: Human-readable documentation describing what the app does, how to use it, and key features. This is the primary entry point for developers and users.
+- **GEMINI.md**: AI-focused documentation describing architecture, implementation details, technical decisions, and current state. This helps AI assistants understand and contribute to the codebase.
+- **DEVELOPMENT.md**: Architecture Decision Records (ADRs) documenting major technical decisions, design patterns, and development guidelines specific to that micro-app.
+
+### Documentation Principles
+
+**1. Current State Focus**
+
+- Documentation should describe the **current state** of the application, not historical changes or migration processes.
+- Avoid ephemeral documentation that describes one-off fixes or temporary states.
+- Remove outdated information and consolidate duplicate content.
+
+**2. Single Source of Truth**
+
+- Each piece of information should exist in **one canonical location**.
+- Avoid duplicating information across multiple files.
+- When consolidating, choose the most appropriate location based on audience (README for users, GEMINI.md for AI, DEVELOPMENT.md for decisions).
+
+**3. Appropriate Granularity**
+
+- **Detailed feature docs**: Only create separate documentation files when a specific feature or subsystem is complex enough to warrant its own dedicated document (e.g., drag-and-drop architecture, time signature system).
+- **Consolidate simple fixes**: One-off fixes, migration summaries, and changelogs should be removed or consolidated into main documentation.
+- **Test results**: Never commit test result files or audit summaries - these are ephemeral.
+
+**4. Maintenance**
+
+- Regularly review and remove outdated documentation.
+- Consolidate related information into appropriate canonical locations.
+- Keep documentation synchronized with code changes.
+
+### What to Remove
+
+The following types of documentation should be removed or consolidated:
+
+- **Migration docs**: Once migration is complete, relevant information should be in GEMINI.md or DEVELOPMENT.md
+- **Changelogs**: Historical change logs are ephemeral and should not be maintained
+- **Fix summaries**: One-off fix documentation (e.g., "BEAMING_FIX.md", "FOUC_FIX.md") should be consolidated into GEMINI.md
+- **Audit summaries**: Historical audit and analysis documents should be removed
+- **Test results**: Generated test result files should never be committed
+
+### What to Keep
+
+The following types of documentation are valuable and should be maintained:
+
+- **Architecture docs**: Detailed technical architecture for complex systems (e.g., drag-and-drop, rendering systems)
+- **Feature documentation**: Comprehensive guides for major features (e.g., time signatures, URL sharing)
+- **Data structure docs**: README files explaining data formats and structures
+- **Module-specific docs**: README files for complex modules or subsystems
+
+### Documentation Location Guidelines
+
+- **Root level**: Project-wide concerns (GEMINI.md, README.md, DEVELOPMENT.md)
+- **Micro-app level**: App-specific concerns (e.g., `src/cats/GEMINI.md`, `src/drums/README.md`)
+- **Subsystem level**: Only for complex subsystems that warrant dedicated documentation
+- **Never**: Root-level ephemeral docs, test results, or migration summaries
