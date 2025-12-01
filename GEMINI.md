@@ -318,6 +318,15 @@ VitePWA({
 - **Production**: Clean build to `dist/` with automatic 404.html inclusion
 - **Asset Loading**: Organized public directory structure maintained in both environments
 
+**Cache Busting Strategy:**
+
+Cache busting ensures users always get the latest updates without hard refresh:
+
+- **HTML Files**: Never cached - all HTML files include cache-control meta tags and use `NetworkFirst` service worker strategy with `maxAgeSeconds: 0`
+- **Static Assets**: Hash-based filenames - JS/CSS files use content-based hashes (e.g., `cats-YRfyi5bN.js`). When content changes, filename changes, so old cached versions are ignored
+- **Service Worker**: Auto-updates via `registerType: 'autoUpdate'` - HTML uses `NetworkFirst` (no cache), static assets use `StaleWhileRevalidate` (30-day cache for hashed files)
+- **Deployment Headers**: `public/_headers` file provides cache control for platforms that support it (Netlify, Cloudflare Pages). GitHub Pages relies on meta tags and service worker configuration
+
 ### Migration Benefits
 
 This architectural evolution provides several key improvements:

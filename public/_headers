@@ -1,0 +1,31 @@
+# Cache control headers for all micro apps
+# Note: GitHub Pages doesn't support _headers files, but this is useful for other platforms
+# For GitHub Pages, cache busting is handled via:
+# 1. Hash-based filenames in Vite build (already configured)
+# 2. Service worker NetworkFirst strategy for HTML (configured in vite.config.ts)
+# 3. Cache-control meta tags in HTML files
+
+# Don't cache HTML files - always fetch fresh
+/*.html
+  Cache-Control: no-cache, no-store, must-revalidate
+  Pragma: no-cache
+  Expires: 0
+
+# Cache hashed assets for 1 year (they have hash in filename, so safe to cache)
+/js/*-*.js
+  Cache-Control: public, max-age=31536000, immutable
+
+/css/*-*.css
+  Cache-Control: public, max-age=31536000, immutable
+
+# Cache static assets
+/icons/*
+  Cache-Control: public, max-age=86400
+
+# Don't cache service worker
+/sw.js
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/registerSW.js
+  Cache-Control: no-cache, no-store, must-revalidate
+

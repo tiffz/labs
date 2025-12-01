@@ -160,7 +160,8 @@ export default defineConfig({
       targets: [
         { src: '../src/404.html', dest: '.' },
         { src: '../CNAME', dest: '.' },
-        { src: '../public/robots.txt', dest: '.' }
+        { src: '../public/robots.txt', dest: '.' },
+        { src: '../public/_headers', dest: '.' }
       ]
     }),
     compression({
@@ -195,10 +196,39 @@ export default defineConfig({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        globPatterns: ['**/*.{js,css,ico,png,svg}'], // Exclude HTML from service worker cache
         navigateFallback: undefined,
         navigateFallbackDenylist: [/^\/404\.html/],
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3 MB to accommodate story generator bundle
+        // Use NetworkFirst strategy for HTML files to ensure fresh content
+        runtimeCaching: [
+          {
+            urlPattern: /\.html$/,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'html-cache',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 0, // Don't cache HTML files
+              },
+              cacheableResponse: {
+                statuses: [200],
+              },
+            },
+          },
+          // Cache static assets with StaleWhileRevalidate for better performance
+          {
+            urlPattern: /\.(js|css|woff2?|png|jpg|jpeg|svg|gif|webp|ico)$/,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'static-assets',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days for hashed assets
+              },
+            },
+          },
+        ],
       },
       devOptions: {
         enabled: false,
