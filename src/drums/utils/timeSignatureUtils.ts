@@ -156,3 +156,28 @@ export function getBeatGroupInfo(
   };
 }
 
+/**
+ * Calculate the number of sixteenth notes per measure for a given time signature
+ * @param timeSignature - The time signature to calculate for
+ * @returns Number of sixteenth notes in one measure
+ */
+export function getSixteenthsPerMeasure(timeSignature: TimeSignature): number {
+  return timeSignature.denominator === 8
+    ? timeSignature.numerator * 2  // eighth notes -> sixteenths
+    : timeSignature.numerator * 4;   // quarter notes -> sixteenths
+}
+
+/**
+ * Calculate beat grouping in sixteenths for a given time signature
+ * @param beatGrouping - Array of beat group sizes (in beats)
+ * @param timeSignature - The time signature
+ * @returns Array of beat group sizes in sixteenths
+ */
+export function getBeatGroupingInSixteenths(
+  beatGrouping: number[],
+  timeSignature: TimeSignature
+): number[] {
+  const sixteenthsPerBeat = timeSignature.denominator === 8 ? 2 : 4;
+  return beatGrouping.map(group => group * sixteenthsPerBeat);
+}
+

@@ -6,16 +6,17 @@ import PlaybackControls from './components/PlaybackControls';
 import RhythmInfoCard from './components/RhythmInfoCard';
 import KeyboardShortcutsHelp from './components/KeyboardShortcutsHelp';
 import { parseRhythm } from './utils/rhythmParser';
-import { rhythmPlayer } from './utils/rhythmPlayer';
 import { recognizeRhythm } from './utils/rhythmRecognition';
 import { useUrlState } from './hooks/useUrlState';
-import { getDefaultBeatGrouping } from './utils/timeSignatureUtils';
+import { useNotationHistory } from './hooks/useNotationHistory';
+import { usePlayback } from './hooks/usePlayback';
+import { getDefaultBeatGrouping, getSixteenthsPerMeasure, getBeatGroupingInSixteenths } from './utils/timeSignatureUtils';
+import { calculateRemainingBeats } from './utils/notationUtils';
 import {
   getPatternDuration,
   replacePatternAtPosition,
   insertPatternAtPosition,
 } from './utils/dragAndDrop';
-import { parsePatternToNotes } from './utils/notationHelpers';
 import type { TimeSignature } from './types';
 import type { PlaybackSettings } from './types/settings';
 import { DEFAULT_SETTINGS } from './types/settings';
@@ -26,40 +27,34 @@ const App: React.FC = () => {
   // Initialize state from URL
   const initialState = useMemo(() => getInitialState(), [getInitialState]);
   
-  const [notation, setNotation] = useState<string>(initialState.notation);
+  // Initialize time signature with beat grouping from URL if present
   const [timeSignature, setTimeSignature] = useState<TimeSignature>(() => {
-    // If beat grouping is in URL, use it; otherwise use initial time signature
     if (initialState.beatGrouping) {
       return { ...initialState.timeSignature, beatGrouping: initialState.beatGrouping };
     }
     return initialState.timeSignature;
   });
+  
   const [bpm, setBpm] = useState<number>(initialState.bpm);
   const [debouncedBpm, setDebouncedBpm] = useState<number>(initialState.bpm);
   const debounceTimeoutRef = useRef<number | null>(null);
-  const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [currentNote, setCurrentNote] = useState<{ measureIndex: number; noteIndex: number } | null>(null);
   const [metronomeEnabled, setMetronomeEnabled] = useState<boolean>(initialState.metronomeEnabled || false);
-  const [currentMetronomeBeat, setCurrentMetronomeBeat] = useState<{ measureIndex: number; positionInSixteenths: number; isDownbeat: boolean } | null>(null);
-  const [history, setHistory] = useState<string[]>([]);
-  const [redoStack, setRedoStack] = useState<string[]>([]);
   const [dragDropMode, setDragDropMode] = useState<'replace' | 'insert'>('replace');
   const [showKeyboardHelp, setShowKeyboardHelp] = useState<boolean>(false);
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [playbackSettings, setPlaybackSettings] = useState<PlaybackSettings>(DEFAULT_SETTINGS);
   
-  // Helper to add to history
-  const addToHistory = useCallback((currentNotation: string) => {
-    setHistory(prev => [...prev, currentNotation]);
-    // Clear redo stack when new action is taken
-    setRedoStack([]);
-  }, []);
-  
-  // Wrapper for setNotation that adds to history
-  const updateNotation = useCallback((newNotation: string) => {
-    addToHistory(notation);
-    setNotation(newNotation);
-  }, [notation, addToHistory]);
+  // Use notation history hook for consistent history management
+  const {
+    notation,
+    setNotation,
+    setNotationWithoutHistory,
+    addToHistory,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+  } = useNotationHistory(initialState.notation);
 
   const parsedRhythm = useMemo(() => {
     return parseRhythm(notation, timeSignature);
@@ -70,43 +65,32 @@ const App: React.FC = () => {
     return recognizeRhythm(notation);
   }, [notation]);
 
-  // Calculate remaining beats in current measure (in sixteenths)
-  // IMPORTANT: Calculate from raw notation, not parsed rhythm, because parseRhythm
-  // auto-fills incomplete measures with rests, which would make remainingBeats always return
-  // full measure. We need to know the ACTUAL remaining space before auto-fill.
+  // Calculate remaining beats using utility function
   const remainingBeats = useMemo(() => {
-    // Calculate sixteenths per measure
-    const beatsPerMeasure = timeSignature.denominator === 8
-      ? timeSignature.numerator * 2  // eighth notes -> sixteenths
-      : timeSignature.numerator * 4; // quarter notes -> sixteenths
-    
-    if (!notation || notation.trim().length === 0) {
-      return beatsPerMeasure; // Empty, so full measure available
-    }
-    
-    // Parse notation to get actual note durations (without auto-fill)
-    const cleanNotation = notation.replace(/[\s\n]/g, '');
-    if (cleanNotation.length === 0) {
-      return beatsPerMeasure;
-    }
-    
-    // Calculate total duration in sixteenths from raw notation
-    const notes = parsePatternToNotes(cleanNotation);
-    const totalDuration = notes.reduce((sum, note) => sum + note.duration, 0);
-    
-    // Calculate which measure we're in and how much space remains
-    const positionInMeasure = totalDuration % beatsPerMeasure;
-    const remaining = beatsPerMeasure - positionInMeasure;
-    
-    // If we're exactly at a measure boundary, return full measure for next measure
-    return remaining === beatsPerMeasure ? beatsPerMeasure : remaining;
+    return calculateRemainingBeats(notation, timeSignature);
   }, [notation, timeSignature]);
 
-  const handleInsertPattern = (pattern: string) => {
+  // Use playback hook for consistent playback state management
+  const {
+    isPlaying,
+    currentNote,
+    currentMetronomeBeat,
+    handlePlay,
+    handleStop,
+    handleMetronomeToggle,
+  } = usePlayback({
+    parsedRhythm,
+    bpm,
+    debouncedBpm,
+    metronomeEnabled,
+    playbackSettings,
+  });
+
+  const handleInsertPattern = useCallback((pattern: string) => {
     // Append the pattern to the end of the current notation
     addToHistory(notation);
-    setNotation(prevNotation => prevNotation + pattern);
-  };
+    setNotationWithoutHistory(prevNotation => prevNotation + pattern);
+  }, [notation, addToHistory, setNotationWithoutHistory]);
 
   // Handle drop from canvas or text input
   const handleDropPattern = useCallback((pattern: string, charPosition: number) => {
@@ -127,68 +111,19 @@ const App: React.FC = () => {
       );
       
       // If replacement succeeded (replacedLength > 0), use the new notation
-      // Note: Even if newNotation === cleanNotation (same pattern), we still call setNotation
-      // to ensure React processes the update (though it may not re-render if identical)
       if (result.replacedLength > 0) {
-        setNotation(result.newNotation);
+        setNotationWithoutHistory(result.newNotation);
       } else {
         // Replacement failed - fall back to insert
         const newNotation = insertPatternAtPosition(cleanNotation, charPosition, pattern);
-        setNotation(newNotation);
+        setNotationWithoutHistory(newNotation);
       }
     } else {
       // Insert pattern at position
       const newNotation = insertPatternAtPosition(cleanNotation, charPosition, pattern);
-      setNotation(newNotation);
+      setNotationWithoutHistory(newNotation);
     }
-  }, [notation, dragDropMode, addToHistory, timeSignature]);
-
-  const handlePlay = useCallback(() => {
-    if (!parsedRhythm.isValid || parsedRhythm.measures.length === 0) {
-      return;
-    }
-
-    setIsPlaying(true);
-    setCurrentNote(null);
-
-    rhythmPlayer.play(
-      parsedRhythm,
-      bpm,
-      (measureIndex, noteIndex) => {
-        setCurrentNote({ measureIndex, noteIndex });
-      },
-      () => {
-        setIsPlaying(false);
-        setCurrentNote(null);
-        setCurrentMetronomeBeat(null);
-      },
-      metronomeEnabled,
-      (measureIndex, positionInSixteenths, isDownbeat) => {
-        setCurrentMetronomeBeat({ measureIndex, positionInSixteenths, isDownbeat });
-      },
-      playbackSettings
-    );
-  }, [parsedRhythm, bpm, metronomeEnabled, playbackSettings]);
-
-  const handleStop = useCallback(() => {
-    rhythmPlayer.stop();
-    setIsPlaying(false);
-    setCurrentNote(null);
-    setCurrentMetronomeBeat(null);
-  }, []);
-
-  const handleMetronomeToggle = useCallback((enabled: boolean) => {
-    setMetronomeEnabled(enabled);
-    // Update the player's metronome state if currently playing
-    rhythmPlayer.setMetronomeEnabled(enabled);
-  }, []);
-
-  // Update playback settings in real-time during playback
-  useEffect(() => {
-    if (isPlaying) {
-      rhythmPlayer.setSettings(playbackSettings);
-    }
-  }, [isPlaying, playbackSettings]);
+  }, [notation, dragDropMode, addToHistory, timeSignature, setNotationWithoutHistory]);
 
   // Debounce BPM changes - only apply after user stops typing for 500ms
   useEffect(() => {
@@ -206,13 +141,6 @@ const App: React.FC = () => {
       }
     };
   }, [bpm]);
-
-  // Update BPM at measure boundaries during playback
-  useEffect(() => {
-    if (isPlaying) {
-      rhythmPlayer.setBpmAtMeasureBoundary(debouncedBpm);
-    }
-  }, [isPlaying, debouncedBpm]);
 
   // Centralized logic: Stop playback whenever notation changes
   // This handles all cases: note palette, loading rhythms, variations, manual edits, etc.
@@ -238,7 +166,7 @@ const App: React.FC = () => {
   // Handle browser back/forward navigation
   useEffect(() => {
     return setupPopStateListener((newState) => {
-      setNotation(newState.notation);
+      setNotationWithoutHistory(newState.notation);
       setTimeSignature(newState.beatGrouping 
         ? { ...newState.timeSignature, beatGrouping: newState.beatGrouping }
         : newState.timeSignature
@@ -246,13 +174,13 @@ const App: React.FC = () => {
       setBpm(newState.bpm);
       setMetronomeEnabled(newState.metronomeEnabled || false);
     });
-  }, [setupPopStateListener]);
+  }, [setupPopStateListener, setNotationWithoutHistory]);
 
-  const handleClear = () => {
-    updateNotation('');
-  };
+  const handleClear = useCallback(() => {
+    setNotation('');
+  }, [setNotation]);
 
-  const handleDeleteLast = () => {
+  const handleDeleteLast = useCallback(() => {
     if (notation.length === 0) return;
     
     // Delete the entire last note, not just the last character
@@ -265,7 +193,7 @@ const App: React.FC = () => {
     }
     
     if (i < 0) {
-      updateNotation('');
+      setNotation('');
       return;
     }
     
@@ -280,41 +208,19 @@ const App: React.FC = () => {
     // Delete this character and all its dashes
     if (i >= 0) {
       const newNotation = notation.slice(0, i);
-      updateNotation(newNotation);
+      setNotation(newNotation);
     }
-  };
-  
-  const handleUndo = useCallback(() => {
-    if (history.length === 0) return;
-    
-    const previousNotation = history[history.length - 1];
-    setHistory(prev => prev.slice(0, -1));
-    setRedoStack(prev => [...prev, notation]); // Add current to redo stack
-    setNotation(previousNotation);
-  }, [history, notation]);
-
-  const handleRedo = useCallback(() => {
-    if (redoStack.length === 0) return;
-    
-    const nextNotation = redoStack[redoStack.length - 1];
-    setRedoStack(prev => prev.slice(0, -1));
-    setHistory(prev => [...prev, notation]); // Add current to history
-    setNotation(nextNotation);
-  }, [redoStack, notation]);
+  }, [notation, setNotation]);
 
   const handleRandomize = useCallback(() => {
     // Generate a random rhythm that respects beat groupings for musical coherence
-    const sixteenthsPerMeasure = timeSignature.denominator === 8
-      ? timeSignature.numerator * 2
-      : timeSignature.numerator * 4;
+    const sixteenthsPerMeasure = getSixteenthsPerMeasure(timeSignature);
     
     // Get beat grouping for this time signature
     const beatGrouping = getDefaultBeatGrouping(timeSignature);
     
     // Convert beat grouping to sixteenths
-    const beatGroupingInSixteenths = timeSignature.denominator === 8
-      ? beatGrouping.map(g => g * 2)  // Convert eighth notes to sixteenths
-      : beatGrouping;  // Already in sixteenths
+    const beatGroupingInSixteenths = getBeatGroupingInSixteenths(beatGrouping, timeSignature);
     
     const durations = [1, 2, 3, 4]; // 16th, 8th, dotted 8th, quarter
     
@@ -390,8 +296,8 @@ const App: React.FC = () => {
       }
     }
     
-    updateNotation(newNotation);
-  }, [timeSignature, updateNotation]);
+    setNotation(newNotation);
+  }, [timeSignature, setNotation]);
 
   // Keyboard shortcuts handler
   useEffect(() => {
@@ -421,7 +327,7 @@ const App: React.FC = () => {
       // Undo: Ctrl+Z (Mac: Cmd+Z)
       if (modKeyPressed && (e.key === 'z' || e.key === 'Z') && !e.shiftKey) {
         e.preventDefault();
-        handleUndo();
+        undo();
         return;
       }
 
@@ -429,7 +335,7 @@ const App: React.FC = () => {
       if ((!isMac && modKeyPressed && (e.key === 'y' || e.key === 'Y')) ||
           (isMac && modKeyPressed && e.shiftKey && (e.key === 'z' || e.key === 'Z'))) {
         e.preventDefault();
-        handleRedo();
+        redo();
         return;
       }
 
@@ -453,7 +359,7 @@ const App: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isPlaying, parsedRhythm, bpm, handlePlay, handleStop, handleUndo, handleRedo, handleRandomize]);
+  }, [isPlaying, handlePlay, handleStop, undo, redo, handleRandomize, setShowKeyboardHelp]);
 
   return (
     <div className="app-layout">
@@ -473,7 +379,10 @@ const App: React.FC = () => {
           onPlay={handlePlay}
           onStop={handleStop}
           metronomeEnabled={metronomeEnabled}
-          onMetronomeToggle={handleMetronomeToggle}
+          onMetronomeToggle={(enabled) => {
+            setMetronomeEnabled(enabled);
+            handleMetronomeToggle(enabled);
+          }}
           onSettingsClick={() => setShowSettings(prev => !prev)}
           showSettings={showSettings}
           playbackSettings={playbackSettings}
@@ -486,17 +395,17 @@ const App: React.FC = () => {
             notation={notation}
             onNotationChange={(newNotation) => {
               addToHistory(notation);
-              setNotation(newNotation);
+              setNotationWithoutHistory(newNotation);
             }}
             timeSignature={timeSignature}
             onTimeSignatureChange={setTimeSignature}
             onClear={handleClear}
             onDeleteLast={handleDeleteLast}
-            onUndo={handleUndo}
-            onRedo={handleRedo}
+            onUndo={undo}
+            onRedo={redo}
             onRandomize={handleRandomize}
-            canUndo={history.length > 0}
-            canRedo={redoStack.length > 0}
+            canUndo={canUndo}
+            canRedo={canRedo}
           />
 
           <RhythmDisplay 
@@ -517,7 +426,7 @@ const App: React.FC = () => {
               currentNotation={notation}
               onSelectVariation={(newNotation, newTimeSignature) => {
                 addToHistory(notation);
-                setNotation(newNotation);
+                setNotationWithoutHistory(newNotation);
                 setTimeSignature(newTimeSignature);
               }}
             />

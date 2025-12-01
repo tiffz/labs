@@ -1,7 +1,7 @@
 import type { ParsedRhythm } from '../types';
 import type { PlaybackSettings } from '../types/settings';
 import { audioPlayer } from './audioPlayer';
-import { getDefaultBeatGrouping, getBeatGroupInfo } from './timeSignatureUtils';
+import { getDefaultBeatGrouping, getBeatGroupInfo, getSixteenthsPerMeasure, getBeatGroupingInSixteenths } from './timeSignatureUtils';
 
 /**
  * Callback for when a note starts playing
@@ -132,11 +132,7 @@ class RhythmPlayer {
     const beatGrouping = getDefaultBeatGrouping(rhythm.timeSignature);
     
     // Convert beat grouping to sixteenths
-    // For /8 time: each beat group value is in eighth notes, so multiply by 2 to get sixteenths
-    // For /4 time: each beat group value is already in sixteenths (from getDefaultBeatGrouping)
-    const beatGroupingInSixteenths = rhythm.timeSignature.denominator === 8
-      ? beatGrouping.map(g => g * 2)  // Convert eighth notes to sixteenths
-      : beatGrouping;  // Already in sixteenths
+    const beatGroupingInSixteenths = getBeatGroupingInSixteenths(beatGrouping, rhythm.timeSignature);
 
     // Schedule metronome clicks for all beat groups
     // Always schedule them, but check metronomeEnabled at execution time
@@ -157,7 +153,8 @@ class RhythmPlayer {
       let cumulativePosition = 0;
       beatGroupingInSixteenths.forEach((groupSize) => {
         cumulativePosition += groupSize;
-        if (cumulativePosition < rhythm.timeSignature.numerator * (rhythm.timeSignature.denominator === 8 ? 2 : 4)) {
+        const sixteenthsPerMeasure = getSixteenthsPerMeasure(rhythm.timeSignature);
+        if (cumulativePosition < sixteenthsPerMeasure) {
           const beatTime = measureStartTime + (cumulativePosition * msPerSixteenth);
           metronomeBeatPositions.push({
             measureIndex,

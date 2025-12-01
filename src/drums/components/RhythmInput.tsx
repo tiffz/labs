@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import type { TimeSignature } from '../types';
+import { getSixteenthsPerMeasure } from '../utils/timeSignatureUtils';
 import RhythmPresets from './RhythmPresets';
 
 interface RhythmInputProps {
@@ -46,9 +47,7 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
   const handleBlur = () => {
     if (!notation) return;
 
-    const sixteenthsPerMeasure = timeSignature.denominator === 8
-      ? timeSignature.numerator * 2
-      : timeSignature.numerator * 4;
+    const sixteenthsPerMeasure = getSixteenthsPerMeasure(timeSignature);
 
     let formatted = '';
     let positionInMeasure = 0;

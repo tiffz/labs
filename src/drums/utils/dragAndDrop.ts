@@ -1,4 +1,5 @@
 import { parsePatternToNotes } from './notationHelpers';
+import { getSixteenthsPerMeasure } from './timeSignatureUtils';
 import type { TimeSignature } from '../types';
 
 /**
@@ -14,9 +15,7 @@ export function findMeasureBoundaries(
   const notes = parsePatternToNotes(cleanNotation);
   
   // Calculate sixteenths per measure
-  const sixteenthsPerMeasure = timeSignature.denominator === 8
-    ? timeSignature.numerator * 2
-    : timeSignature.numerator * 4;
+  const sixteenthsPerMeasure = getSixteenthsPerMeasure(timeSignature);
   
   let charIdx = 0;
   let accumulatedSixteenths = 0;

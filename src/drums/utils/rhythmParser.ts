@@ -1,4 +1,5 @@
 import type { Note, Measure, TimeSignature, ParsedRhythm, DrumSound, NoteDuration } from '../types';
+import { getSixteenthsPerMeasure } from './timeSignatureUtils';
 
 /**
  * Maps notation characters to drum sounds
@@ -112,9 +113,7 @@ function splitIntoMeasures(notes: Note[], timeSignature: TimeSignature): Measure
   // For 4/4: (4 beats) * (4 sixteenths per quarter note) = 16 sixteenths
   // For 3/4: (3 beats) * (4 sixteenths per quarter note) = 12 sixteenths
   // For 6/8: (6 eighth notes) * (2 sixteenths per eighth) = 12 sixteenths
-  const sixteenthsPerMeasure = timeSignature.denominator === 8
-    ? timeSignature.numerator * 2
-    : timeSignature.numerator * 4;
+  const sixteenthsPerMeasure = getSixteenthsPerMeasure(timeSignature);
   
   let currentMeasure: Note[] = [];
   let currentDuration = 0;
@@ -214,9 +213,7 @@ function validateMeasures(measures: Measure[], timeSignature: TimeSignature): { 
     return { isValid: true };
   }
   
-  const sixteenthsPerMeasure = timeSignature.denominator === 8
-    ? timeSignature.numerator * 2
-    : timeSignature.numerator * 4;
+  const sixteenthsPerMeasure = getSixteenthsPerMeasure(timeSignature);
   
   // Check all measures except the last one (which might be incomplete)
   for (let i = 0; i < measures.length - 1; i++) {

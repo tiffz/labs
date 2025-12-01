@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Renderer, Stave, StaveNote, Voice, Formatter, Beam, Dot, BarlineType } from 'vexflow';
 import type { ParsedRhythm, Note, DrumSound, TimeSignature } from '../types';
 import { drawDrumSymbol } from '../assets/drumSymbols';
-import { getDefaultBeatGrouping, isCompoundTimeSignature, isAsymmetricTimeSignature } from '../utils/timeSignatureUtils';
+import { getDefaultBeatGrouping, isCompoundTimeSignature, isAsymmetricTimeSignature, getBeatGroupingInSixteenths, getSixteenthsPerMeasure } from '../utils/timeSignatureUtils';
 import type { NotePosition } from '../utils/dropTargetFinder';
 import { computeDropPreview } from '../utils/dropPreview';
 import { getCurrentDraggedPattern } from './NotePalette';
@@ -57,11 +57,7 @@ function createBeamsFromBeatGroups(
   const beatGrouping = getDefaultBeatGrouping(timeSignature);
   
   // Convert beat grouping to sixteenths
-  // For /8 time: each beat group value is in eighth notes, so multiply by 2 to get sixteenths
-  // For /4 time: each beat group value is already in sixteenths (from getDefaultBeatGrouping)
-  const beatGroupingInSixteenths = timeSignature.denominator === 8
-    ? beatGrouping.map(g => g * 2)  // Convert eighth notes to sixteenths
-    : beatGrouping;  // Already in sixteenths
+  const beatGroupingInSixteenths = getBeatGroupingInSixteenths(beatGrouping, timeSignature);
   
   // Track position in measure (in sixteenths)
   let currentPosition = 0;
@@ -555,9 +551,7 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
         const beatGrouping = getDefaultBeatGrouping(rhythm.timeSignature);
         
         // Convert beat grouping to sixteenths
-        const beatGroupingInSixteenths = rhythm.timeSignature.denominator === 8
-          ? beatGrouping.map(g => g * 2)
-          : beatGrouping;
+        const beatGroupingInSixteenths = getBeatGroupingInSixteenths(beatGrouping, rhythm.timeSignature);
         
         // Draw dots for ALL beat group positions, not just where notes exist
         rhythm.measures.forEach((_measure, measureIndex) => {
@@ -570,9 +564,9 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
           // Calculate all beat group positions for this measure (in sixteenths)
           const beatPositions = [0]; // Start with downbeat
           let cumulativePosition = 0;
+          const sixteenthsPerMeasure = getSixteenthsPerMeasure(rhythm.timeSignature);
           beatGroupingInSixteenths.forEach((groupSize) => {
             cumulativePosition += groupSize;
-            const sixteenthsPerMeasure = rhythm.timeSignature.numerator * (rhythm.timeSignature.denominator === 8 ? 2 : 4);
             if (cumulativePosition < sixteenthsPerMeasure) {
               beatPositions.push(cumulativePosition);
             }
