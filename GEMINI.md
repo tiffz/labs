@@ -547,7 +547,35 @@ if (window.location.hostname !== 'localhost') {
 
 This standardization ensures consistency across all micro-apps while incorporating lessons learned from production deployments and refactoring experiences.
 
-## 7. Documentation Standards
+## 7. Code Style Standards
+
+### Google TypeScript Style Guide
+
+This project follows the [Google TypeScript Style Guide](https://google.github.io/styleguide/tsguide.html) for consistent code formatting and patterns across all micro-apps.
+
+**Key Style Guide Principles:**
+
+- **Named Exports**: Use named exports instead of default exports for better maintainability and consistent import patterns
+- **Import Patterns**: Prefer named imports for frequently used symbols; use namespace imports when importing many symbols from large APIs
+- **Relative Imports**: Use relative imports (`./foo`) for files within the same project rather than absolute imports
+- **File Structure**: Files should follow this order: copyright (if present), `@fileoverview` JSDoc (if present), imports, implementation
+- **JSDoc Comments**: Comments should add information, not just restate parameter names and types
+- **Consistency**: When style questions aren't settled by the guide, be consistent with existing code in the same file
+
+**Migration Status:**
+
+- ✅ **Documentation**: Style guide adherence documented
+- 🔄 **Default Exports**: Many components currently use default exports; gradual migration to named exports is recommended
+- ✅ **Import Patterns**: Most imports follow style guide recommendations
+- ✅ **Relative Imports**: Codebase primarily uses relative imports
+
+**Future Work:**
+
+- Gradually migrate default exports to named exports for better consistency
+- Ensure all new code follows Google TypeScript style guide principles
+- Add ESLint rules to enforce style guide compliance where possible
+
+## 8. Documentation Standards
 
 ### Documentation Structure
 

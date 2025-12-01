@@ -1,5 +1,9 @@
 # Development Guide
 
+## Code Style
+
+This project follows the [Google TypeScript Style Guide](https://google.github.io/styleguide/tsguide.html) for consistent code formatting and patterns.
+
 ## Quality Assurance
 
 This project uses automated quality checks to ensure code quality and prevent regressions.

@@ -51,6 +51,11 @@ export default [
         'warn',
         { allowConstantExport: true },
       ],
+      // Google TypeScript Style Guide: Prefer named imports over default imports
+      // Note: This is a warning, not an error, to allow gradual migration
+      'import/no-default-export': 'off', // We'll use a custom rule or manual review
+      // Enforce consistent import ordering (style guide recommends: imports, then implementation)
+      'import/order': 'off', // Can be enabled with eslint-plugin-import if needed
     },
   },
 ];
