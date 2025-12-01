@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { TimeSignature } from '../types';
+import type { PlaybackSettings } from '../types/settings';
 import HelpTooltip from './HelpTooltip';
 import SettingsMenu from './SettingsMenu';
 import {
@@ -23,8 +24,8 @@ interface PlaybackControlsProps {
   onMetronomeToggle: (enabled: boolean) => void;
   onSettingsClick: () => void;
   showSettings?: boolean;
-  playbackSettings?: { measureAccentVolume: number; beatGroupAccentVolume: number; nonAccentVolume: number; emphasizeSimpleRhythms: boolean };
-  onSettingsChange?: (settings: { measureAccentVolume: number; beatGroupAccentVolume: number; nonAccentVolume: number; emphasizeSimpleRhythms: boolean }) => void;
+  playbackSettings?: PlaybackSettings;
+  onSettingsChange?: (settings: PlaybackSettings) => void;
   onSettingsClose?: () => void;
 }
 
@@ -209,7 +210,6 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
               }}
               min="20"
               max="300"
-              disabled={isPlaying}
               placeholder="BPM"
             />
             <span className="input-suffix">BPM</span>
@@ -269,38 +269,41 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
             )}
           </div>
           
-          {/* Metronome Toggle */}
-          <button
-            className={`metronome-button ${metronomeEnabled ? 'active' : ''}`}
-            onClick={() => onMetronomeToggle(!metronomeEnabled)}
-            type="button"
-            aria-label="Toggle metronome"
-            title={metronomeEnabled ? 'Metronome: On' : 'Metronome: Off'}
-          >
-            <span className="metronome-label">Metronome</span>
-          </button>
-
-          {/* Settings Button */}
-          <div className="settings-button-container">
+          {/* Right-aligned controls group: Metronome + Settings */}
+          <div className="right-controls-group">
+            {/* Metronome Toggle */}
             <button
-              ref={settingsButtonRef}
-              className="settings-button"
-              onClick={onSettingsClick}
+              className={`metronome-button ${metronomeEnabled ? 'active' : ''}`}
+              onClick={() => onMetronomeToggle(!metronomeEnabled)}
               type="button"
-              aria-label="Open settings"
-              title="Playback settings"
+              aria-label="Toggle metronome"
+              title={metronomeEnabled ? 'Metronome: On' : 'Metronome: Off'}
             >
-              <span className="material-symbols-outlined">settings</span>
+              <span className="metronome-label">Metronome</span>
             </button>
-            {showSettings && playbackSettings && onSettingsChange && onSettingsClose && (
-              <SettingsMenu
-                isOpen={showSettings}
-                onClose={onSettingsClose}
-                settings={playbackSettings}
-                onSettingsChange={onSettingsChange}
-                buttonRef={settingsButtonRef}
-              />
-            )}
+
+            {/* Settings Button */}
+            <div className="settings-button-container">
+              <button
+                ref={settingsButtonRef}
+                className="settings-button"
+                onClick={onSettingsClick}
+                type="button"
+                aria-label="Open settings"
+                title="Playback settings"
+              >
+                <span className="material-symbols-outlined">settings</span>
+              </button>
+              {showSettings && playbackSettings && onSettingsChange && onSettingsClose && (
+                <SettingsMenu
+                  isOpen={showSettings}
+                  onClose={onSettingsClose}
+                  settings={playbackSettings}
+                  onSettingsChange={onSettingsChange}
+                  buttonRef={settingsButtonRef}
+                />
+              )}
+            </div>
           </div>
         </div>
       </div>

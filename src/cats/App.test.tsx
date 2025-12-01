@@ -1,4 +1,4 @@
-import { render, screen, act, fireEvent } from '@testing-library/react';
+import { render, screen, act, fireEvent, cleanup as rtlCleanup } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import App from './App';
 import React from 'react';
@@ -126,12 +126,20 @@ describe('App Component - Wand Toy Mode', () => {
   });
 
   afterEach(() => {
+    // Clean up React components first
+    rtlCleanup();
+    
     // Clean up the heart-container element
     if (heartContainer && heartContainer.parentNode) {
       heartContainer.parentNode.removeChild(heartContainer);
     }
     
+    // Clean up DOM
+    document.body.innerHTML = '';
+    
+    // Restore mocks and timers
     vi.restoreAllMocks();
+    vi.clearAllTimers();
     vi.useRealTimers();
   });
 

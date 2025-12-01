@@ -75,6 +75,8 @@ export function computeDropPreview(
   }
 
   // Convert cursor position to SVG coordinates
+  // Use getBoundingClientRect() for cross-platform compatibility
+  // This works consistently across browsers and platforms
   const svgRect = svg.getBoundingClientRect();
   const svgX = cursorX - svgRect.left;
   const svgY = cursorY - svgRect.top;

@@ -211,7 +211,31 @@ export default defineConfig({
     setupFiles: './shared/test/setupTests.ts',
     include: ['**/*.test.{js,ts,jsx,tsx}'],
     exclude: ['src/**/e2e/**', 'e2e/**', 'node_modules/**', 'dist/**'],
-    testTimeout: 30000, // 30 seconds max per test
-    hookTimeout: 30000, // 30 seconds max for setup/teardown
+    testTimeout: 10000, // 10 seconds max per test (reduced from 30s)
+    hookTimeout: 5000, // 5 seconds max for setup/teardown (reduced from 30s)
+    pool: 'threads', // Use threads for better isolation
+    poolOptions: {
+      threads: {
+        singleThread: false, // Allow parallel execution
+        isolate: true, // Isolate each test file
+        minThreads: 1, // Minimum threads
+        maxThreads: 4, // Limit max threads to reduce memory usage (was unlimited)
+      },
+    },
+    // Limit memory usage per worker
+    isolate: true, // Isolate each test file to prevent memory leaks
+    // Reduce memory footprint
+    maxConcurrency: 4, // Limit concurrent tests
+    // Suppress console errors from VexFlow canvas warnings
+    onConsoleLog: (log, type) => {
+      // Suppress VexFlow canvas errors (they're expected in JSDOM)
+      if (type === 'error' && log.includes('HTMLCanvasElement.prototype.getContext')) {
+        return false; // Don't print
+      }
+      if (type === 'error' && log.includes('No context for txtCanvas')) {
+        return false; // Don't print
+      }
+      return true; // Print other logs
+    },
   },
 });

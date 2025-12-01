@@ -32,6 +32,8 @@ class RhythmPlayer {
   private startTime = 0; // Absolute start time for drift-free looping
   private loopCount = 0; // Track number of loops
   private settings: PlaybackSettings | null = null;
+  private pendingBpm: number | null = null; // BPM to apply at next measure boundary
+  private lastLoopEndTime = 0; // Track when the last loop ended for smooth BPM transitions
 
   /**
    * Play a rhythm at the specified BPM (loops continuously)
@@ -65,6 +67,7 @@ class RhythmPlayer {
     this.settings = settings || null;
     this.startTime = performance.now(); // Use high-precision timestamp
     this.loopCount = 0;
+    this.lastLoopEndTime = 0; // Reset loop end time tracking
 
     this.scheduleRhythm();
   }
@@ -95,10 +98,28 @@ class RhythmPlayer {
     });
 
     // Calculate absolute time offset for this loop
-    const loopStartOffset = this.loopCount * totalLoopDuration;
-    
-    // Capture current time ONCE at the start of scheduling to prevent drift
+    // If we have a lastLoopEndTime (from a BPM change), use it to maintain continuity
+    // Otherwise, calculate normally based on loopCount
+    let loopStartOffset: number;
     const now = performance.now();
+    
+    if (this.lastLoopEndTime > 0 && this.loopCount > 0) {
+      // We're continuing from a previous loop after a BPM change
+      // The next loop should start exactly when the previous loop ended
+      // Adjust startTime to maintain absolute timing continuity
+      const timeSinceLastLoopEnd = now - this.lastLoopEndTime;
+      if (timeSinceLastLoopEnd > 0) {
+        // We're slightly past the end time - adjust startTime to compensate
+        this.startTime = this.lastLoopEndTime;
+      }
+      loopStartOffset = this.lastLoopEndTime - this.startTime;
+      // Reset lastLoopEndTime so normal calculation resumes for subsequent loops
+      this.lastLoopEndTime = 0;
+    } else {
+      // Normal case: calculate based on loop count
+      loopStartOffset = this.loopCount * totalLoopDuration;
+    }
+    
     let currentTime = 0;
 
     // Get beat grouping for this time signature
@@ -160,8 +181,18 @@ class RhythmPlayer {
         // Check metronomeEnabled at execution time to allow toggling during playback
         if (!this.metronomeEnabled) return;
 
-        // Play click with louder volume for downbeat
-        const clickVolume = isDownbeat ? 0.8 : 0.5;
+        // Get settings with defaults
+        const settings = this.settings || {
+          measureAccentVolume: 90,
+          beatGroupAccentVolume: 70,
+          nonAccentVolume: 40,
+          emphasizeSimpleRhythms: false,
+          metronomeVolume: 50,
+        };
+
+        // Play click with louder volume for downbeat, scaled by metronome volume setting
+        const baseVolume = isDownbeat ? 0.8 : 0.5;
+        const clickVolume = baseVolume * (settings.metronomeVolume / 100);
         audioPlayer.playClick(clickVolume);
 
         // Notify listeners for visual highlighting
@@ -184,10 +215,11 @@ class RhythmPlayer {
 
         // Get settings with defaults
         const settings = this.settings || {
-          measureAccentVolume: 100,
-          beatGroupAccentVolume: 75,
+          measureAccentVolume: 90,
+          beatGroupAccentVolume: 70,
           nonAccentVolume: 40,
           emphasizeSimpleRhythms: false,
+          metronomeVolume: 50,
         };
         
         // Check if this is a simple rhythm (/4)
@@ -250,12 +282,36 @@ class RhythmPlayer {
     // Schedule next loop or end callback
     const absoluteEndTime = loopStartOffset + totalLoopDuration;
     const endDelay = Math.max(0, this.startTime + absoluteEndTime - now);
+    
+    // Store when this loop will end for smooth BPM transitions
+    const loopEndTime = this.startTime + absoluteEndTime;
 
     const endTimeoutId = window.setTimeout(() => {
       if (!this.isPlaying) return;
 
+      // Check if there's a pending BPM change to apply at measure boundary (end of loop)
+      // Check the current state at the time the timeout fires, not when it was scheduled
+      if (this.pendingBpm !== null && this.pendingBpm !== this.currentBpm) {
+        const newBpm = this.pendingBpm;
+        this.pendingBpm = null;
+        this.currentBpm = newBpm;
+        
+        // Maintain timing continuity: the next loop should start exactly when this one ends
+        // Store the absolute end time and use it for the next loop's scheduling
+        this.lastLoopEndTime = loopEndTime;
+        this.loopCount++;
+        
+        // Schedule next loop immediately - it will use the new BPM and maintain timing
+        if (this.isPlaying) {
+          this.scheduleRhythm();
+        }
+        return;
+      }
+
       if (this.isLooping) {
         // Loop: schedule the rhythm again
+        // Store the end time for potential future BPM changes
+        this.lastLoopEndTime = loopEndTime;
         this.loopCount++;
         this.scheduleRhythm();
       } else {
@@ -275,6 +331,8 @@ class RhythmPlayer {
   stop(): void {
     this.isPlaying = false;
     this.isLooping = false;
+    this.pendingBpm = null; // Clear any pending BPM changes
+    this.lastLoopEndTime = 0; // Reset loop end time tracking
     
     // Clear all scheduled timeouts
     this.timeoutIds.forEach(id => window.clearTimeout(id));
@@ -314,6 +372,26 @@ class RhythmPlayer {
   setSettings(settings: PlaybackSettings): void {
     this.settings = settings;
   }
+
+  /**
+   * Update BPM during playback - applies at the next measure boundary
+   * This ensures smooth transitions without interrupting the current measure
+   */
+  setBpmAtMeasureBoundary(bpm: number): void {
+    if (!this.isPlaying || !this.currentRhythm) {
+      // Not playing - update immediately
+      this.currentBpm = bpm;
+      this.pendingBpm = null;
+      return;
+    }
+    
+    // Always update pendingBpm if it's different from the current pending value
+    // This ensures rapid BPM changes are captured correctly
+    if (bpm !== this.pendingBpm) {
+      this.pendingBpm = bpm;
+    }
+  }
+  
 }
 
 // Singleton instance

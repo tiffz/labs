@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import RhythmInput from './components/RhythmInput';
 import RhythmDisplay from './components/RhythmDisplay';
 import NotePalette from './components/NotePalette';
@@ -35,6 +35,8 @@ const App: React.FC = () => {
     return initialState.timeSignature;
   });
   const [bpm, setBpm] = useState<number>(initialState.bpm);
+  const [debouncedBpm, setDebouncedBpm] = useState<number>(initialState.bpm);
+  const debounceTimeoutRef = useRef<number | null>(null);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentNote, setCurrentNote] = useState<{ measureIndex: number; noteIndex: number } | null>(null);
   const [metronomeEnabled, setMetronomeEnabled] = useState<boolean>(initialState.metronomeEnabled || false);
@@ -187,6 +189,30 @@ const App: React.FC = () => {
       rhythmPlayer.setSettings(playbackSettings);
     }
   }, [isPlaying, playbackSettings]);
+
+  // Debounce BPM changes - only apply after user stops typing for 500ms
+  useEffect(() => {
+    if (debounceTimeoutRef.current !== null) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+    
+    debounceTimeoutRef.current = window.setTimeout(() => {
+      setDebouncedBpm(bpm);
+    }, 500);
+    
+    return () => {
+      if (debounceTimeoutRef.current !== null) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
+  }, [bpm]);
+
+  // Update BPM at measure boundaries during playback
+  useEffect(() => {
+    if (isPlaying) {
+      rhythmPlayer.setBpmAtMeasureBoundary(debouncedBpm);
+    }
+  }, [isPlaying, debouncedBpm]);
 
   // Centralized logic: Stop playback whenever notation changes
   // This handles all cases: note palette, loading rhythms, variations, manual edits, etc.
@@ -448,7 +474,7 @@ const App: React.FC = () => {
           onStop={handleStop}
           metronomeEnabled={metronomeEnabled}
           onMetronomeToggle={handleMetronomeToggle}
-          onSettingsClick={() => setShowSettings(true)}
+          onSettingsClick={() => setShowSettings(prev => !prev)}
           showSettings={showSettings}
           playbackSettings={playbackSettings}
           onSettingsChange={setPlaybackSettings}

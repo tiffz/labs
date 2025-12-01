@@ -117,20 +117,30 @@ describe('HeartSpawningService', () => {
       };
 
       const pouncingConfig: HeartConfig = {
-        position: { x: 100, y: 100 },
+        position: { x: 200, y: 200 }, // Different position to ensure separate spawn
         loveAmount: 3,
         interactionType: 'pouncing'
       };
 
+      // Spawn petting hearts
       heartSpawningService.spawnHearts(pettingConfig);
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await testTimeout(20); // Wait for first heart to spawn (delay 0)
+      expect(mockOnHeartSpawned).toHaveBeenCalled();
       const pettingHeart = mockOnHeartSpawned.mock.calls[0][0];
+      
+      // Verify petting heart has correct duration
+      expect(pettingHeart.animationDuration).toBe(1.2);
 
+      // Clear and spawn pouncing hearts
       mockOnHeartSpawned.mockClear();
 
       heartSpawningService.spawnHearts(pouncingConfig);
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await testTimeout(20); // Wait for first heart to spawn (delay 0)
+      expect(mockOnHeartSpawned).toHaveBeenCalled();
       const pouncingHeart = mockOnHeartSpawned.mock.calls[0][0];
+      
+      // Verify pouncing heart has correct duration
+      expect(pouncingHeart.animationDuration).toBe(0.8);
 
       // Petting should be slower (1.2s) than pouncing (0.8s)
       expect(pettingHeart.animationDuration).toBeGreaterThan(pouncingHeart.animationDuration);

@@ -56,12 +56,31 @@ if (!global.performance.now) {
   global.performance.now = () => Date.now();
 }
 
-// Global test cleanup to prevent animation frame leaks
+// Global test cleanup to prevent animation frame leaks and memory issues
 afterEach(() => {
   // Cancel all pending animation frames after each test
   const globalWithHelper = global as typeof global & { __cancelAllAnimationFrames?: () => void };
   if (globalWithHelper.__cancelAllAnimationFrames) {
     globalWithHelper.__cancelAllAnimationFrames();
+  }
+  
+  // Clean up any remaining timers from the animation frame mock
+  // This prevents setTimeout leaks from requestAnimationFrame mocks
+  try {
+    // Get the highest timeout ID to know the range
+    const testTimeoutId = setTimeout(() => {}, 0);
+    // Clear a reasonable range of timeout IDs (up to 1000 should cover most test scenarios)
+    // This is safer than clearing all IDs which could interfere with vitest internals
+    for (let i = 0; i < Math.min(testTimeoutId, 1000); i++) {
+      try {
+        clearTimeout(i);
+      } catch {
+        // Ignore errors for invalid IDs
+      }
+    }
+    clearTimeout(testTimeoutId);
+  } catch {
+    // Ignore errors during cleanup
   }
 });
 
@@ -97,3 +116,64 @@ Object.defineProperty(window, 'gtag', {
   writable: true,
   value: () => undefined,
 });
+
+// Mock HTMLCanvasElement.getContext to suppress VexFlow errors in tests
+// VexFlow tries to use canvas for text measurement, but JSDOM doesn't support it
+const originalGetContext = HTMLCanvasElement.prototype.getContext;
+HTMLCanvasElement.prototype.getContext = function(
+  contextId: string | RenderingContextType,
+  ...args: unknown[]
+): RenderingContext | null {
+  if (contextId === '2d' || contextId === 'webgl' || contextId === 'webgl2') {
+    // Return a minimal mock context for VexFlow and other canvas users
+    const mockContext = {
+      canvas: this,
+      fillStyle: '',
+      strokeStyle: '',
+      lineWidth: 1,
+      font: '10px sans-serif',
+      textAlign: 'start' as CanvasTextAlign,
+      textBaseline: 'alphabetic' as CanvasTextBaseline,
+      fillRect: () => {},
+      strokeRect: () => {},
+      clearRect: () => {},
+      fillText: () => {},
+      strokeText: () => {},
+      measureText: () => ({
+        width: 0,
+        actualBoundingBoxLeft: 0,
+        actualBoundingBoxRight: 0,
+        actualBoundingBoxAscent: 0,
+        actualBoundingBoxDescent: 0,
+        emHeightAscent: 0,
+        emHeightDescent: 0,
+        hangingBaseline: 0,
+        alphabeticBaseline: 0,
+        ideographicBaseline: 0,
+      }),
+      save: () => {},
+      restore: () => {},
+      translate: () => {},
+      rotate: () => {},
+      scale: () => {},
+      beginPath: () => {},
+      closePath: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      arc: () => {},
+      fill: () => {},
+      stroke: () => {},
+      clip: () => {},
+      getImageData: () => new ImageData(1, 1),
+      putImageData: () => {},
+      createImageData: () => new ImageData(1, 1),
+      drawImage: () => {},
+      getTransform: () => new DOMMatrix(),
+      setTransform: () => {},
+      resetTransform: () => {},
+    } as unknown as CanvasRenderingContext2D;
+    return mockContext;
+  }
+  // Fall back to original for other context types
+  return originalGetContext.call(this, contextId as RenderingContextType, ...args);
+};

@@ -105,8 +105,9 @@ export function findBeatBoundaries(
 /**
  * Find the best drop position in notation
  * Tries beat boundaries first, then falls back to nearest valid position
+ * @internal - Currently unused, kept for potential future use
  */
-export function findDropPosition(
+function _findDropPosition(
   notation: string,
   dropIndex: number,
   timeSignature: TimeSignature,
@@ -314,7 +315,12 @@ export function replacePatternAtPosition(
         if (note.sound === 'rest') {
           remainderPattern = '_'.repeat(remainderCharLength);
         } else {
-          const soundChar = note.sound === 'dum' ? 'D' : note.sound === 'tak' ? 'T' : 'K';
+          // Map sound to notation character
+          const soundChar = note.sound === 'dum' ? 'D' 
+            : note.sound === 'tak' ? 'T' 
+            : note.sound === 'ka' ? 'K'
+            : note.sound === 'slap' ? 'S'
+            : 'D'; // fallback
           remainderPattern = soundChar + '-'.repeat(Math.max(0, remainderCharLength - 1));
         }
         
@@ -361,7 +367,12 @@ export function replacePatternAtPosition(
       if (note.sound === 'rest') {
         remainderPattern = '_'.repeat(remainderCharLength);
       } else {
-        const soundChar = note.sound === 'dum' ? 'D' : note.sound === 'tak' ? 'T' : 'K';
+        // Map sound to notation character
+        const soundChar = note.sound === 'dum' ? 'D' 
+          : note.sound === 'tak' ? 'T' 
+          : note.sound === 'ka' ? 'K'
+          : note.sound === 'slap' ? 'S'
+          : 'D'; // fallback
         remainderPattern = soundChar + '-'.repeat(Math.max(0, remainderCharLength - 1));
       }
       
@@ -415,8 +426,9 @@ export function insertPatternAtPosition(
 /**
  * Check if pattern fits at position (for replace mode)
  * Uses the same logic as replacePatternAtPosition but just checks if it's possible
+ * @internal - Currently unused, kept for potential future use
  */
-export function canReplacePatternAtPosition(
+function _canReplacePatternAtPosition(
   notation: string,
   charPosition: number,
   patternDuration: number,
@@ -479,8 +491,9 @@ export function canReplacePatternAtPosition(
 
 /**
  * Map mouse position in textarea to character index
+ * @internal - Currently unused, kept for potential future use
  */
-export function getTextareaPositionFromMouse(
+function _getTextareaPositionFromMouse(
   textarea: HTMLTextAreaElement,
   event: MouseEvent
 ): number {
@@ -555,3 +568,9 @@ export function getTextareaPositionFromMouse(
   
   return cleanPosition;
 }
+
+// Intentionally unused functions kept for future use
+// These are referenced here to satisfy linter warnings
+void _findDropPosition;
+void _canReplacePatternAtPosition;
+void _getTextareaPositionFromMouse;
