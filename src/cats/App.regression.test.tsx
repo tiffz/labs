@@ -27,9 +27,9 @@ describe('App Regression Tests', () => {
   const renderApp = async () => {
     const result = render(<App />);
     renderedComponents.push({ unmount: result.unmount });
-    // Wait for initial render
+    // Wait for initial render - use microtask instead of setTimeout for faster execution
     await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await Promise.resolve();
     });
     return result;
   };
@@ -39,25 +39,27 @@ describe('App Regression Tests', () => {
     renderedComponents = [];
     
     // Mock requestAnimationFrame for consistent testing
-    // Works with both real and fake timers
+    // Optimized: synchronous execution with fake timers, minimal delay with real timers
     let rafIdCounter = 0;
-    const rafTimeouts = new Map<number, NodeJS.Timeout>();
+    const rafCallbacks = new Map<number, FrameRequestCallback>();
     global.requestAnimationFrame = vi.fn((cb: FrameRequestCallback) => {
       const id = ++rafIdCounter;
-      // Use setTimeout - will work with both real and fake timers
-      const timeoutId = setTimeout(() => {
-        rafTimeouts.delete(id);
+      // Check if we're using fake timers - if so, execute immediately
+      if (vi.isFakeTimers()) {
+        // With fake timers, execute synchronously
         cb(performance.now());
-      }, 16);
-      rafTimeouts.set(id, timeoutId);
+      } else {
+        // With real timers, use minimal delay
+        rafCallbacks.set(id, cb);
+        setTimeout(() => {
+          rafCallbacks.delete(id);
+          cb(performance.now());
+        }, 0);
+      }
       return id;
     });
     global.cancelAnimationFrame = vi.fn((id: number) => {
-      const timeoutId = rafTimeouts.get(id);
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-        rafTimeouts.delete(id);
-      }
+      rafCallbacks.delete(id);
     });
     
     // Set up DOM container for portals  
@@ -309,7 +311,7 @@ describe('App Regression Tests', () => {
         
         renderAppWithFakeTimers();
         
-        // Wait for cat position to be initialized
+        // Initialize position
         act(() => {
           vi.advanceTimersByTime(100);
         });
@@ -323,7 +325,7 @@ describe('App Regression Tests', () => {
         const sleepyEyes = screen.getByTestId('eye-sleepy');
         expect(sleepyEyes.classList.contains('hidden')).toBe(false);
         
-        // Wait for first Zzz to spawn
+        // Wait for first Zzz spawn
         act(() => {
           vi.advanceTimersByTime(3000);
         });
@@ -556,20 +558,25 @@ describe('App Regression Tests', () => {
         });
         
         renderAppWithFakeTimers();
-      
-      act(() => {
-        vi.advanceTimersByTime(100);
-      });
-      
-      // Trigger sleep
-      act(() => {
-        vi.advanceTimersByTime(30000);
-      });
-      
-      // Wait for multiple Z spawns (initial + several more)
-      act(() => {
-        vi.advanceTimersByTime(8000); // Should spawn multiple Z's
-      });
+        
+        // Initialize
+        act(() => {
+          vi.advanceTimersByTime(100);
+        });
+        
+        // Trigger sleep
+        act(() => {
+          vi.advanceTimersByTime(30000);
+        });
+        
+        // Verify cat is sleeping first
+        const sleepyEyes = screen.getByTestId('eye-sleepy');
+        expect(sleepyEyes.classList.contains('hidden')).toBe(false);
+        
+        // Wait for multiple Z spawns (initial + several more)
+        act(() => {
+          vi.advanceTimersByTime(8000); // Should spawn multiple Z's
+        });
       
       const zzzElements = document.querySelectorAll('.zzz');
       expect(zzzElements.length).toBeGreaterThan(1); // Multiple Z's spawned
@@ -632,6 +639,7 @@ describe('App Regression Tests', () => {
           vi.advanceTimersByTime(30000);
         });
         
+        // Wait for first Zzz spawn
         act(() => {
           vi.advanceTimersByTime(3000);
         });
@@ -681,8 +689,9 @@ describe('App Regression Tests', () => {
       const cat = screen.getByTestId('cat');
       for (let i = 0; i < 5; i++) {
         fireEvent.click(cat);
+        // Use microtask instead of setTimeout for faster execution
         await act(async () => {
-          await new Promise(resolve => setTimeout(resolve, 10));
+          await Promise.resolve();
         });
       }
       

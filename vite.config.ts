@@ -248,14 +248,14 @@ export default defineConfig({
       threads: {
         singleThread: false, // Allow parallel execution
         isolate: true, // Isolate each test file
-        minThreads: 1, // Minimum threads
-        maxThreads: 4, // Limit max threads to reduce memory usage (was unlimited)
+        minThreads: 2, // Start with 2 threads for faster execution
+        maxThreads: 6, // Increased from 4 for better parallelism (memory is stable)
       },
     },
     // Limit memory usage per worker
     isolate: true, // Isolate each test file to prevent memory leaks
     // Reduce memory footprint
-    maxConcurrency: 4, // Limit concurrent tests
+    maxConcurrency: 6, // Increased from 4 for better parallelism
     // Suppress console errors from VexFlow canvas warnings
     onConsoleLog: (log, type) => {
       // Suppress VexFlow canvas errors (they're expected in JSDOM)
