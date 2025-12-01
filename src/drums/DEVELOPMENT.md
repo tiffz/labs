@@ -1,6 +1,6 @@
 # Darbuka Rhythm Trainer - Architecture Decision Records
 
-This document records major architectural decisions, design patterns, and development guidelines for the Darbuka Rhythm Trainer micro-app.
+This document records major architectural decisions for the Darbuka Rhythm Trainer micro-app.
 
 ## Audio System Architecture
 
@@ -8,72 +8,47 @@ This document records major architectural decisions, design patterns, and develo
 
 **Decision**: Implement volume hierarchy where notes on strong beats play louder than weak beats.
 
-**Rationale**: Creates natural musical emphasis that matches how Darbuka rhythms are played in practice.
+**Rationale**: Creates natural musical emphasis matching how Darbuka rhythms are played in practice.
 
-**Implementation**:
+**Implementation**: Beat 1 (strongest) uses full volume; other beats reduced based on position. Volume calculation considers time signature type.
 
-- Beat 1 (strongest): Full volume
-- Other beats in beat group: Reduced volume based on position
-- Volume calculation considers time signature type (simple, compound, asymmetric)
-
-**Benefits**:
-
-- More musical and natural-sounding playback
-- Helps students understand beat emphasis
-- Works automatically with all time signatures
-
-### Smart Fade-Out for Fast Notes
-
-**Decision**: Automatically fade out notes shorter than 100ms to prevent audio clicks and pops.
-
-**Rationale**: Very fast notes (e.g., rapid sixteenth notes) can cause audio artifacts without proper fade-out.
-
-**Implementation**: Notes with duration < 100ms use exponential fade-out curve.
-
-**Benefits**:
-
-- Clean audio playback at any tempo
-- No manual fade-out configuration needed
-- Works seamlessly with dynamic volume system
+**Benefits**: More musical playback, helps students understand beat emphasis, works automatically with all time signatures.
 
 ### Web Audio API for Precise Timing
 
 **Decision**: Use Web Audio API instead of HTML5 Audio for rhythm playback.
 
-**Rationale**: Web Audio API provides precise timing control needed for accurate rhythm playback, especially at high BPM.
+**Rationale**: Provides precise timing control needed for accurate rhythm playback, especially at high BPM.
 
-**Benefits**:
+**Benefits**: Accurate timing even at 200+ BPM, better performance for rapid note sequences.
 
-- Accurate timing even at 200+ BPM
-- Better performance for rapid note sequences
-- More control over audio processing
+### Reverb Effect Implementation
+
+**Decision**: Add reverb effect using Web Audio API ConvolverNode with adjustable strength.
+
+**Rationale**: Adds spatial depth and realism to drum sounds.
+
+**Implementation**: Loads impulse response from `domestic-living-room.mp4` (OpenAir Library) with fallback to generated IR. Dry/wet gain nodes for adjustable strength (default 20%).
+
+**Benefits**: More realistic playback, adjustable intensity, graceful fallback.
 
 ## Font Loading & FOUC Prevention
 
-### Problem
+### Decision
 
-Material Icons and Noto Music fonts loaded from Google Fonts caused Flash of Unstyled Content (FOUC) - icon text would appear as regular text before fonts loaded, creating jarring visual flash.
+Implement multi-layered font loading strategy to prevent Flash of Unstyled Content.
 
-### Solution: Multi-Layered Font Loading Strategy
+### Rationale
 
-**1. Icon Fonts (Material Symbols + Noto Music)**:
+Material Icons and Noto Music fonts caused icon text to flash as regular text before fonts loaded.
 
-- Hidden via CSS (`visibility: hidden`) until fonts load
-- JavaScript font detection reveals icons once fonts are ready
-- Prevents icon text from flashing as regular text
+### Implementation
 
-**2. Text Font (Roboto)**:
+- Icon fonts hidden via CSS until fonts load, then revealed via JavaScript
+- Text font uses `display=optional` to prevent layout shift
+- All fonts use matched metrics to prevent cumulative layout shift
 
-- Uses `display=optional` to only load if already cached
-- Prevents layout shift on first visit
-- Uses fallback font with matched metrics
-
-**3. Layout Stability**:
-
-- All fonts use matched metrics to prevent cumulative layout shift (CLS)
-- Critical for Core Web Vitals and user experience
-
-**Benefits**:
+### Benefits
 
 - No visual flashing during font load
 - Stable layout without shifts
@@ -81,61 +56,87 @@ Material Icons and Noto Music fonts loaded from Google Fonts caused Flash of Uns
 
 ## Beaming System
 
-### Problem
+### Decision
 
-Beaming logic incorrectly handled different time signature denominators, causing incorrect beaming for compound and asymmetric time signatures.
+Fix beaming logic to correctly handle different time signature denominators.
 
-### Root Cause
+### Rationale
 
-The `getDefaultBeatGrouping` function returns beat groupings in different units:
+Beaming logic incorrectly handled `/8` vs `/4` time signatures, causing incorrect beaming for compound and asymmetric time signatures.
 
-- **For /8 time**: Returns values in **eighth notes** (e.g., `[3, 3, 3, 3]` for 12/8)
-- **For /4 time**: Returns values in **sixteenths** (e.g., `[4, 4]` for 2/4)
+### Implementation
 
-The beaming logic was incorrectly multiplying **both** by `notesPerBeatUnit`, causing double conversion for /8 time signatures.
+- `/8` time: Beat groupings in eighth notes, convert to sixteenths by multiplying by 2
+- `/4` time: Beat groupings already in sixteenths, use directly
 
-### Solution
+### Benefits
 
-Fixed beaming logic to correctly handle unit conversion:
-
-- For /8 time signatures: Beat groupings are already in eighth notes, convert to sixteenths by multiplying by 2
-- For /4 time signatures: Beat groupings are already in sixteenths, use directly
-
-### Beaming Rules
-
-**Simple Time Signatures (4/4, 2/4, 3/4)**:
-
-- Eighth and sixteenth notes beamed within beats
-- Beams break at beat boundaries
-
-**Compound Time Signatures (6/8, 9/8, 12/8)**:
-
-- Notes beamed within beat groups (typically groups of 3 eighth notes)
-- Beams break at beat group boundaries
-
-**Asymmetric Time Signatures (5/8, 7/8, 11/8)**:
-
-- Notes beamed according to custom beat groupings
-- Supports custom groupings like `[2, 3]` or `[3, 2, 2]`
+- Correct beaming for all time signature types
+- Supports simple, compound, and asymmetric time signatures
 
 ## URL Sharing Feature
 
 ### Decision
 
-Implement URL-based state sharing so users can share rhythms with students or save favorites.
+Implement URL-based state sharing for rhythms, BPM, and time signature.
+
+### Rationale
+
+Enables easy sharing with students, bookmarkable favorites, and collaboration.
 
 ### Implementation
 
 - Rhythm, BPM, and time signature encoded in URL parameters
 - URL updates automatically as user changes rhythm
 - Browser navigation (back/forward) works correctly
-- URL optimization removes default values to keep URLs clean
+- URL optimization removes default values
 
 ### Benefits
 
 - Easy sharing with students
 - Bookmarkable favorites
 - Collaboration support
-- Social media sharing
 
-See `src/drums/docs/URL_SHARING.md` for detailed implementation guide.
+## Custom Hooks Architecture
+
+### Decision
+
+Extract complex stateful logic into custom hooks (`useNotationHistory`, `usePlayback`).
+
+### Rationale
+
+`App.tsx` was becoming too large (~600 lines), mixing multiple concerns (notation, history, playback, URL syncing).
+
+### Implementation
+
+- `useNotationHistory`: Manages notation state, history stack, undo/redo
+- `usePlayback`: Manages playback state and rhythmPlayer interactions
+
+### Benefits
+
+- Reduced `App.tsx` complexity (~300 lines)
+- Better separation of concerns
+- Easier to test hooks independently
+- Reusable logic
+
+## Notation System Architecture
+
+### Decision
+
+Use text-based notation system with utility functions for time signature calculations.
+
+### Rationale
+
+Eliminates duplicate calculations across codebase and provides single source of truth for time signature logic.
+
+### Implementation
+
+- Text notation: `D`=Dum, `T`=Tak, `K`=Ka, `S`=Slap, `_`=rest, `-`=duration
+- `timeSignatureUtils.ts`: `getSixteenthsPerMeasure()`, `getBeatGroupingInSixteenths()`
+- `notationUtils.ts`: `calculateRemainingBeats()`
+
+### Benefits
+
+- Single source of truth for time signature logic
+- Eliminates duplicate calculations
+- Consistent behavior across all components

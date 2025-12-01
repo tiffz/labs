@@ -1,43 +1,34 @@
-# Corporate Ladder (Corp) – Architecture & Principles
+# Corporate Ladder
 
-## Overview
+A lightweight roguelite about climbing the corporate dungeon with emoji-first design.
 
-Corporate Ladder is a lightweight, emoji-first roguelite about climbing the corporate dungeon. This app follows the labs monorepo standards for React + Vite + TypeScript micro-apps.
+## What It Does
 
-## Tech
+- **Roguelite Gameplay**: Turn-based movement through procedurally generated office floors
+- **Resource Management**: Productivity, happiness, and reputation stats
+- **Field of View**: Fog-of-war system revealing map as player explores
+- **Entity System**: Enemies, items, and interactive objects on each floor
 
-- React 18 functional components
-- TypeScript types for game entities and state
-- Vite multi-page build; route at `/corp/`
-- Unit tests (Vitest) for generation and FOV
-- E2E tests (Playwright) co-located in `src/corp/e2e/`
+## Tech Stack
 
-## Structure
+- React 18 + TypeScript
+- Procedural map generation
+- Field-of-view calculation
+- E2E tests with Playwright
 
-- `src/corp/index.html`: HTML entry and assets
-- `src/corp/main.tsx`: App entry; hooks for state and input
-- `src/corp/components/MapView.tsx`: Map/tiles/entities/fog rendering
-- `src/corp/components/UIPanel.tsx`: Stats, skills, inventory, memos, overlay
-- `src/corp/game/`:
-  - `constants.ts`: Map sizes and tuning parameters
-  - `types.ts`: `GameState`, `Tile`, entity types
-  - `generation.ts`: Map generation + entity seeding
-  - `fov.ts`: Field-of-view calculation
-- `src/corp/styles/corp.css`: Styling
-- `src/corp/e2e/`: Playwright tests for stability and movement
+## Key Files
 
-## Design Principles
+- `App.tsx` - Main application component
+- `components/MapView.tsx` - Map/tiles/entities rendering
+- `components/UIPanel.tsx` - Stats, inventory, overlay
+- `game/generation.ts` - Map generation and entity seeding
+- `game/fov.ts` - Field-of-view calculation
 
-- Decouple rendering from logic: React renders; game logic lives in hooks/utilities
-- Predictable updates: state lives in a single `GameState` ref; React re-renders via a version tick
-- Performance: render only visible window; fog uses simple CSS overlays; avoid expensive effects
-- Stability: guard against null/undefined; cap messages; small per-turn work
-- Testability: unit tests verify generation/FOV; E2E covers load/movement/regressions
+## Development
 
-## Game Over
+```bash
+npm run dev          # Start dev server
+npm test src/corp   # Run tests
+```
 
-Triggered when any of: productivity ≤ 0, happiness ≤ 0, reputation ≤ 0, or promotion beyond CEO floor. Overlay shows status and restart control.
-
-## E2E Location
-
-Per repo standards, E2E tests are co-located: `src/corp/e2e/*.spec.ts`. See root `GEMINI.md` for the policy.
+For detailed architecture, see `DEVELOPMENT.md`.

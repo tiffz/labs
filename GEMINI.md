@@ -1,638 +1,71 @@
-# Gemini's Guide to the Labs Monorepo
+# Labs Monorepo - AI Assistant Guide
 
-This document outlines the high-level architecture and organizational principles for the `labs` project. It serves as a central reference for understanding the multi-app structure and development conventions.
+This monorepo contains multiple independent micro-apps sharing a unified build system. Each app is self-contained in `src/<app>/` with its own entry point, but all share dependencies and deployment.
 
-## 1. Project Vision
-
-This project is a **monorepo** designed to house multiple, independent "micro-apps" under a single, unified development environment. Each app in the `src` directory is a self-contained experiment or project, but they all share the same build process, dependencies, and deployment pipeline.
-
-## 2. Core Architectural Principles
-
-### `src`-Based Structure
-
-The entire project follows a `src`-based convention.
-
-- **Single Entry Point:** The primary `index.html` for the entire monorepo is located at `src/index.html`. This file serves as the main landing page and provides navigation to the various micro-apps.
-- **Centralized Source:** All source code, including HTML, TypeScript, CSS, and assets for every micro-app, must reside within the `src` directory. The project root is reserved for configuration files (`vite.config.ts`, `package.json`, etc.), documentation, and other project-wide concerns.
-
-### Micro-App Architecture
-
-Each subdirectory within `src` (e.g., `src/cats`, `src/zines`) represents a distinct micro-app.
-
-- **Self-Contained:** Each micro-app has its own `index.html` file, which serves as its specific entry point.
-- **Independent Logic:** The code within each micro-app should be self-contained and not rely on imports from other micro-apps. Shared logic should be placed in the `src/shared/` directory.
-
-### Configuration
-
-- **Vite for Multi-Page:** The project uses Vite's `rollupOptions` to configure a multi-page application. The `vite.config.ts` file in the root is the single source of truth for the build process, and it must contain an entry for each micro-app's `index.html`.
-- **Single TypeScript Config:** `tsconfig.json` provides type checking for all code.
-- **Documentation:** Each micro-app is encouraged to have its own `GEMINI.md` file that details its specific architecture, features, and conventions, like the one found in `src/cats/GEMINI.md`.
-
-### Favicon Structure
-
-Each micro-app maintains its own distinct favicon to reinforce visual identity:
-
-- **Root Favicon:** `public/icons/favicon.svg` contains the lab beaker icon used for the main landing page
-- **App-Specific Favicons:** Each micro-app references a unique favicon file in the icons directory (e.g., `favicon-cats.svg`, `favicon-zines.svg`)
-- **Unique References:** Micro-app HTML files use `/icons/favicon-[appname].svg` to reference their specific favicon
-- **Consistent Design:** All favicons follow a squircle background pattern with app-specific iconography
-- **Organized Structure:** All favicon files are centralized in the `public/icons/` directory for easy management
-
-## 3. Quality Assurance & Testing
-
-### Comprehensive Test Coverage
-
-The project maintains high-quality standards through extensive testing:
-
-- **Comprehensive test coverage** across all major components and functionality
-- **Co-located test files** alongside source code for easy maintenance
-- **Behavior-driven testing** focusing on user-visible functionality rather than implementation details
-- **Advanced mocking strategies** for animations, DOM APIs, and complex interactions
-
-### Automated Quality Gates
-
-- **Pre-commit Hooks:** Tests and linting must pass before commits are allowed
-- **Continuous Integration:** GitHub Actions runs full test suite on every push and pull request
-- **Deployment Protection:** Failed tests block deployment to production
-- **Code Quality:** ESLint and TypeScript ensure consistent code style and type safety
-
-### Testing Philosophy
-
-Each micro-app should maintain comprehensive test coverage that:
-
-- Prevents regressions in complex features
-- Tests actual user interactions and behavior
-- Uses sophisticated mocking for animation and DOM APIs
-- Provides fast feedback during development
-
-## 4. Continuous Integration & Deployment (CI/CD)
-
-### Architecture Overview
-
-The project employs a **fully automated CI/CD pipeline** using GitHub Actions, designed for reliability, speed, and developer productivity.
-
-**Pipeline Structure:**
+## Project Structure
 
 ```
-Push/PR → GitHub Actions → Test & Build → Deploy (main only)
-    ↓
-Local Dev ← Pre-commit Hooks ← Quality Gates
+src/
+  index.html          # Landing page
+  shared/            # Shared utilities and test setup
+  <app>/            # Each micro-app (cats, drums, zines, story, corp)
+    index.html       # App entry point
+    main.tsx         # React entry
+    App.tsx          # Main component
+    GEMINI.md        # App-specific AI guide
+    DEVELOPMENT.md   # Architecture Decision Records
+    README.md        # Human-readable overview
 ```
 
-### 🚀 **Automated Workflow Process**
+## Technology Stack
 
-Every code change triggers a comprehensive validation pipeline:
+- **React 18** with TypeScript (strict mode)
+- **Vite** for build tooling (multi-page configuration)
+- **Vitest + React Testing Library** for testing
+- **Tailwind CSS v3** (not v4 - use stable v3.4.x)
+- **GitHub Actions** for CI/CD
 
-1. **Environment Setup**
-   - Clean Node.js 20 environment
-   - Optimized dependency installation with Rollup binary fix
-   - Secure credential management for GitHub Pages
+## Development Commands
 
-2. **Quality Validation**
-   - ESLint code style and quality checks
-   - TypeScript compilation validation
-   - Comprehensive test suite (48 tests) execution
-
-3. **Build & Deployment**
-   - Production build generation and validation
-   - Automatic deployment to GitHub Pages (main branch only)
-   - Artifact management and cleanup
-
-### 🛡️ **Quality Gates & Security**
-
-**Multi-Layer Protection:**
-
-- **Pre-commit Hooks:** Local validation before code reaches repository
-- **CI Validation:** Server-side validation in clean environment
-- **Test-First Deployment:** Zero-tolerance policy for failing tests
-- **Branch Protection:** Pull request validation with required checks
-
-**Security Measures:**
-
-- **Least-Privilege Access:** GitHub Actions use minimal required permissions
-- **Secure Deployment:** GitHub Pages integration with proper authentication
-- **Environment Isolation:** Clean build environment for each run
-- **Credential Protection:** Secure handling of deployment credentials
-
-### 📊 **Reliability & Performance**
-
-**Battle-Tested Configuration:**
-
-- ✅ **Environment Variable Management** - Resolved conflicts that caused initial failures
-- ✅ **Dependency Stability** - Fixed npm/Rollup binary compatibility issues in CI
-- ✅ **GitHub Pages Integration** - Seamless deployment with proper permissions
-- ✅ **Performance Optimization** - Parallel job execution and efficient caching
-
-**Monitoring & Observability:**
-
-- **Build Status Visibility** - Clear feedback on all validation steps
-- **Error Reporting** - Detailed logs for debugging failed builds
-- **Performance Metrics** - Build time and deployment tracking
-- **Health Monitoring** - Automated alerts for pipeline failures
-
-### 🔧 **Technical Implementation Details**
-
-**GitHub Actions Workflow** (`.github/workflows/ci.yml`):
-
-```yaml
-# Key Features:
-- Node.js 20 environment
-- Parallel test and build jobs where possible
-- Rollup binary compatibility fixes
-- GitHub Pages deployment with proper permissions
-- Environment-specific configurations
+```bash
+npm run dev          # Start dev server (http://localhost:5173)
+npm test             # Run all tests
+npm run lint         # Check code quality
+npm run build        # Production build
 ```
 
-**Critical Technical Decisions:**
+## Adding a New Micro-App
 
-1. **Environment Variable Strategy** - Simplified configuration to avoid CI conflicts
-2. **Dependency Management** - Robust npm/Rollup handling for Linux CI environment
-3. **Deployment Method** - GitHub Pages native actions for better security and reliability
-4. **Error Handling** - Comprehensive timeout and retry logic
+1. Create `src/<app>/` directory
+2. Add `index.html`, `main.tsx`, `App.tsx`
+3. Update `vite.config.ts` `rollupOptions.input` to include new app
+4. Add link in `src/index.html` landing page
 
-### 🏗️ **Development Workflow Integration**
+## Documentation Structure
 
-**For Developers:**
+- **README.md**: Human-readable overview (root and per-app)
+- **GEMINI.md**: AI-focused guide (this file and per-app)
+- **DEVELOPMENT.md**: Architecture Decision Records (root and per-app)
 
-- **Local Development** - Pre-commit hooks ensure quality before push
-- **Pull Requests** - Automatic validation and status checks
-- **Main Branch** - Automatic deployment after successful validation
-- **Debugging** - Clear error messages and build logs for troubleshooting
+For detailed architecture, CI/CD, and development patterns, see:
 
-**For Maintainers:**
+- `DEVELOPMENT.md` - Major development patterns and ADRs
+- `src/<app>/DEVELOPMENT.md` - App-specific architecture decisions
+- `src/<app>/README.md` - App overview and features
 
-- **Pipeline Monitoring** - GitHub Actions dashboard for build oversight
-- **Configuration Management** - Centralized CI/CD configuration in `.github/workflows/`
-- **Debugging Tools** - Comprehensive logging and artifact collection
-- **Performance Tuning** - Optimized build times and resource usage
+## Code Quality
 
-### 🔄 **Continuous Improvement**
+- **Linting**: ESLint enforces code quality (run `npm run lint`)
+- **Testing**: Comprehensive test coverage required (run `npm test`)
+- **Type Safety**: TypeScript strict mode enabled
+- **Style**: Follow Google TypeScript Style Guide (see `DEVELOPMENT.md`)
 
-The CI/CD system has been refined through extensive debugging and optimization:
+Use deterministic tools (linters, formatters) rather than asking AI to enforce style.
 
-- **Learned from Failures** - Initial environment variable conflicts resolved
-- **Performance Optimized** - Build times minimized through parallel execution
-- **Security Hardened** - Proper permission management and credential handling
-- **Reliability Enhanced** - Robust error handling and recovery mechanisms
+## Cache Busting
 
-This architecture ensures that every code change is validated, tested, and deployed safely, maintaining high quality while enabling rapid development and deployment.
+HTML files use `NetworkFirst` strategy and cache-control headers to ensure fresh content. Static assets use content-based hashes. See `DEVELOPMENT.md` for details.
 
-## 5. Recent Architectural Improvements (2024)
+## E2E Tests
 
-### Custom 404 Page Implementation
-
-The project now includes a sophisticated custom 404 page that enhances user experience for invalid URLs:
-
-**Key Features:**
-
-- **Beautiful Design**: Hot purplish pink gradient styling (`#e879f9` → `#c026d3`) matching the site's aesthetic
-- **Interactive Elements**: Shared bubble animations and hover effects for visual consistency
-- **Helpful Navigation**: Clear back-to-home button and suggestions for valid app routes
-- **URL Display**: JavaScript-powered current URL display to help users understand what went wrong
-- **Responsive Design**: Mobile-friendly layout with consistent typography
-
-**Implementation Details:**
-
-```html
-<!-- 404 page structure -->
-src/404.html # Direct HTML file (no template complexity) public/styles/404.css #
-Page-specific styling public/styles/shared.css # Common elements (bubbles,
-layout) public/scripts/shared.js # Interactive bubble effects
-```
-
-**Development & Production:**
-
-- **Development**: Accessible at `http://localhost:5173/404.html`
-- **Production**: Automatically copied during build process (`npm run build`)
-- **Multi-root Architecture**: Configured for proper PWA service worker handling
-
-### Organized Asset Architecture
-
-The project has been restructured with a clean, organized approach to static assets:
-
-**Directory Structure:**
-
-```
-public/
-├── styles/              # Centralized CSS management
-│   ├── shared.css       # Common styles (bubbles, typography, layout)
-│   ├── index.css        # Home page specific styles (app grid, cards)
-│   └── 404.css          # 404 page specific styles (error code, navigation)
-├── scripts/             # JavaScript organization
-│   ├── shared.js        # Common functionality (bubble interactions)
-│   └── analytics.js     # Analytics tracking
-└── icons/               # Favicon management
-    ├── favicon.svg      # Main labs icon
-    ├── favicon-cats.svg # Cat app icon
-    └── favicon-zines.svg # Zines app icon
-```
-
-**Shared Resource Strategy:**
-
-- **CSS Modularity**: Common styles (bubble animations, typography) extracted into `shared.css`
-- **JavaScript Reusability**: Interactive elements (hover effects, click animations) in `shared.js`
-- **Icon Organization**: App-specific favicons grouped in dedicated directory
-- **Performance Benefits**: Cached shared resources reduce redundant downloads
-
-### Simplified Build Process
-
-Moved away from complex template generation to straightforward, maintainable HTML files:
-
-**Previous Approach (Removed):**
-
-- ❌ Complex template system with `scripts/build-pages.js`
-- ❌ Template files requiring placeholder replacement
-- ❌ Build-time HTML generation adding complexity
-
-**Current Approach (Simplified):**
-
-- ✅ Direct HTML files (`src/index.html`, `src/404.html`)
-- ✅ Shared resources via standard HTML links and script tags
-- ✅ Simple build process: `vite build && cp src/404.html dist/404.html`
-- ✅ Easy to edit and maintain without template syntax
-
-**Benefits of Simplification:**
-
-- **Developer Experience**: Direct editing of HTML without template abstraction
-- **Maintainability**: Easier debugging and modification
-- **Performance**: Faster build times without template processing
-- **Reliability**: Fewer moving parts, less likely to break
-
-### Multi-Root Application Architecture
-
-Enhanced Vite configuration to properly handle multiple entry points:
-
-**Configuration Updates:**
-
-```typescript
-// vite.config.ts - Multi-page setup
-rollupOptions: {
-  input: {
-    main: resolve(__dirname, 'src/index.html'),    // Landing page
-    cats: resolve(__dirname, 'src/cats/index.html'), // Cat app
-    zines: resolve(__dirname, 'src/zines/index.html'), // Zines app
-    corp: resolve(__dirname, 'src/corp/index.html'), // Corporate Ladder game
-    // 404.html copied separately for production compatibility
-  },
-}
-```
-
-### E2E Test Organization (Playwright)
-
-E2E tests are co-located with each micro-app for clarity and maintenance:
-
-- Place E2E specs under `src/<app>/e2e/` (e.g., `src/cats/e2e/`, `src/zines/e2e/`, `src/corp/e2e/`).
-- The Playwright config is set to discover tests in those folders and still supports legacy `e2e/` at the repo root.
-- Example stability test for the Corp app lives at `src/corp/e2e/corp-init.spec.ts`.
-
-Playwright config snippet:
-
-```ts
-// playwright.config.ts
-export default defineConfig({
-  testDir: '.',
-  testMatch: ['src/**/e2e/**/*.spec.ts', 'e2e/**/*.spec.ts'],
-  webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:5173',
-    reuseExistingServer: true,
-  },
-});
-```
-
-This layout keeps tests near their app context while preserving the existing root E2E folder during migration.
-
-**PWA Service Worker Configuration:**
-
-```typescript
-// Optimized for multi-root architecture
-VitePWA({
-  navigateFallback: undefined, // No global fallback (not SPA)
-  navigateFallbackDenylist: [/^\/404\.html/], // Let 404s be handled naturally
-});
-```
-
-**Development vs Production:**
-
-- **Development**: Vite serves from `src/` directory with hot reload
-- **Production**: Clean build to `dist/` with automatic 404.html inclusion
-- **Asset Loading**: Organized public directory structure maintained in both environments
-
-**Cache Busting Strategy:**
-
-Cache busting ensures users always get the latest updates without hard refresh:
-
-- **HTML Files**: Never cached - all HTML files include cache-control meta tags and use `NetworkFirst` service worker strategy with `maxAgeSeconds: 0`
-- **Static Assets**: Hash-based filenames - JS/CSS files use content-based hashes (e.g., `cats-YRfyi5bN.js`). When content changes, filename changes, so old cached versions are ignored
-- **Service Worker**: Auto-updates via `registerType: 'autoUpdate'` - HTML uses `NetworkFirst` (no cache), static assets use `StaleWhileRevalidate` (30-day cache for hashed files)
-- **Deployment Headers**: `public/_headers` file provides cache control for platforms that support it (Netlify, Cloudflare Pages). GitHub Pages relies on meta tags and service worker configuration
-
-### Migration Benefits
-
-This architectural evolution provides several key improvements:
-
-1. **Reduced Complexity**: Eliminated unnecessary build scripts and template systems
-2. **Better Developer Experience**: Direct HTML editing with immediate feedback
-3. **Improved Performance**: Shared resources and optimized asset organization
-4. **Enhanced UX**: Beautiful 404 page with helpful navigation
-5. **Maintainability**: Cleaner codebase with logical file organization
-6. **Scalability**: Easy to add new pages following established patterns
-
-### Best Practices Established
-
-**For Asset Organization:**
-
-- Place shared resources in `public/styles/shared.css` and `public/scripts/shared.js`
-- Use page-specific CSS files for unique styling needs
-- Organize icons in dedicated `public/icons/` directory
-
-**For Page Development:**
-
-- Create direct HTML files in `src/` directory
-- Reference shared and specific assets via standard HTML tags
-- Maintain consistent design patterns (bubbles, typography, colors)
-
-**For Build Process:**
-
-- Keep build commands simple and transparent
-- Use post-build scripts only when necessary (like 404.html copying)
-- Maintain clear separation between development and production workflows
-
-This foundation provides a robust, maintainable architecture for continued development of the labs monorepo.
-
-## 6. Micro-App Development Guidelines
-
-### Technology Stack Standards
-
-**Core Technologies:**
-
-- **React 18**: Functional components with modern hooks pattern
-- **TypeScript**: Strict mode enabled for all new micro-apps
-- **Vite**: Build tool for fast development and optimized production builds
-- **Vitest + React Testing Library**: Testing framework for comprehensive coverage
-
-**CSS Framework Standards:**
-
-- **Tailwind CSS v3.4.x**: Use stable v3 branch only (v4 has breaking changes)
-- **PostCSS Integration**: Always use `tailwindcss` plugin, not `@tailwindcss/postcss`
-- **Configuration**: Use `module.exports` syntax in `tailwind.config.js` for Node.js compatibility
-
-### Dependency Management Best Practices
-
-**Version Compatibility Guidelines:**
-
-```json
-// package.json - Recommended ranges
-{
-  "tailwindcss": "^3.4.0", // ✅ Stable v3
-  "postcss": "^8.4.0", // ✅ Latest stable
-  "autoprefixer": "^10.4.0", // ✅ Current major
-  "vitest": "^3.0.0", // ✅ Latest stable
-  "typescript": "^5.0.0" // ✅ Current stable
-}
-```
-
-**Critical Version Notes:**
-
-- **Tailwind CSS v4**: Experimental with breaking changes. Use v3.4.x for production
-- **React 18**: Required for modern hooks and concurrent features
-- **Node.js 20**: CI/CD environment standard
-
-### Configuration Patterns
-
-**ESLint Configuration:**
-
-```javascript
-// eslint.config.js - Node.js files pattern
-{
-  files: ['*.config.js', 'tailwind.config.js', 'postcss.config.js'],
-  languageOptions: {
-    globals: { ...globals.node }
-  }
-}
-```
-
-**PostCSS Setup:**
-
-```javascript
-// postcss.config.js - Standard pattern
-export default {
-  plugins: {
-    tailwindcss: {}, // ✅ Correct for v3
-    autoprefixer: {},
-  },
-};
-```
-
-**Tailwind Config Pattern:**
-
-```javascript
-// tailwind.config.js - Use CommonJS for Node.js compatibility
-module.exports = {
-  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
-  theme: { extend: {} },
-  plugins: [],
-};
-```
-
-### Testing Standards
-
-**Test Organization:**
-
-```
-src/app-name/
-├── App.test.tsx           # Main component tests
-├── components/
-│   ├── Component.tsx
-│   └── Component.test.tsx # Co-located component tests
-└── test/
-    └── setupTests.ts      # Shared test utilities
-```
-
-**Required Test Coverage:**
-
-- **Component Rendering**: All major components must render without errors
-- **User Interactions**: Click handlers, form inputs, navigation
-- **State Management**: State changes and side effects
-- **External Dependencies**: Proper mocking of third-party libraries
-
-**Mock Patterns:**
-
-```typescript
-// External library mocking
-global.window.ExternalLib = {
-  method: vi.fn().mockImplementation(() => ({
-    /* mock */
-  })),
-};
-
-// Canvas API mocking for image processing
-Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
-  value: () => ({
-    /* canvas methods */
-  }),
-});
-```
-
-### Performance Optimization Patterns
-
-**Font Loading (FOUC Prevention):**
-
-```html
-<!-- Standard pattern for all micro-apps -->
-<style>
-  @import url('fonts-url');
-  body {
-    visibility: hidden;
-  }
-  body.fonts-loaded {
-    visibility: visible;
-  }
-</style>
-<script>
-  document.fonts.ready.then(() => {
-    document.body.classList.add('fonts-loaded');
-  });
-</script>
-```
-
-**Analytics Integration:**
-
-```javascript
-// Environment-aware analytics loading
-if (window.location.hostname !== 'localhost') {
-  const script = document.createElement('script');
-  script.src = '/analytics.js';
-  document.head.appendChild(script);
-}
-```
-
-### Architecture Guidelines
-
-**Component Structure:**
-
-- **Modular Components**: Extract reusable components into separate files
-- **Type Safety**: Define interfaces in `types/index.ts`
-- **Constants**: Centralize configuration in `constants/index.ts`
-- **Styles**: External CSS files with Tailwind integration
-
-**State Management:**
-
-- **Local State**: Use `useState` for component-specific state
-- **Shared State**: Prop drilling or context for cross-component state
-- **Side Effects**: Proper cleanup in `useEffect` hooks
-- **Performance**: `useCallback` and `useMemo` for expensive operations
-
-### Common Pitfalls & Solutions
-
-**Tailwind CSS Version Issues:**
-
-- ❌ **Problem**: Installing Tailwind v4 breaks existing configurations
-- ✅ **Solution**: Always specify v3.x range in package.json
-
-**React 18 API Changes:**
-
-- ❌ **Problem**: Using deprecated `ReactDOM.render()`
-- ✅ **Solution**: Use `createRoot()` for all React 18 applications
-
-**ESLint Configuration:**
-
-- ❌ **Problem**: `module` not defined in config files
-- ✅ **Solution**: Add config files to Node.js globals in ESLint config
-
-**Testing External Libraries:**
-
-- ❌ **Problem**: Third-party libraries break in test environment
-- ✅ **Solution**: Comprehensive mocking strategies in test setup
-
-This standardization ensures consistency across all micro-apps while incorporating lessons learned from production deployments and refactoring experiences.
-
-## 7. Code Style Standards
-
-### Google TypeScript Style Guide
-
-This project follows the [Google TypeScript Style Guide](https://google.github.io/styleguide/tsguide.html) for consistent code formatting and patterns across all micro-apps.
-
-**Key Style Guide Principles:**
-
-- **Named Exports**: Use named exports instead of default exports for better maintainability and consistent import patterns
-- **Import Patterns**: Prefer named imports for frequently used symbols; use namespace imports when importing many symbols from large APIs
-- **Relative Imports**: Use relative imports (`./foo`) for files within the same project rather than absolute imports
-- **File Structure**: Files should follow this order: copyright (if present), `@fileoverview` JSDoc (if present), imports, implementation
-- **JSDoc Comments**: Comments should add information, not just restate parameter names and types
-- **Consistency**: When style questions aren't settled by the guide, be consistent with existing code in the same file
-
-**Migration Status:**
-
-- ✅ **Documentation**: Style guide adherence documented
-- 🔄 **Default Exports**: Many components currently use default exports; gradual migration to named exports is recommended
-- ✅ **Import Patterns**: Most imports follow style guide recommendations
-- ✅ **Relative Imports**: Codebase primarily uses relative imports
-
-**Future Work:**
-
-- Gradually migrate default exports to named exports for better consistency
-- Ensure all new code follows Google TypeScript style guide principles
-- Add ESLint rules to enforce style guide compliance where possible
-
-## 8. Documentation Standards
-
-### Documentation Structure
-
-Each micro-app should maintain a clear, organized documentation structure:
-
-- **README.md**: Human-readable documentation describing what the app does, how to use it, and key features. This is the primary entry point for developers and users.
-- **GEMINI.md**: AI-focused documentation describing architecture, implementation details, technical decisions, and current state. This helps AI assistants understand and contribute to the codebase.
-- **DEVELOPMENT.md**: Architecture Decision Records (ADRs) documenting major technical decisions, design patterns, and development guidelines specific to that micro-app.
-
-### Documentation Principles
-
-**1. Current State Focus**
-
-- Documentation should describe the **current state** of the application, not historical changes or migration processes.
-- Avoid ephemeral documentation that describes one-off fixes or temporary states.
-- Remove outdated information and consolidate duplicate content.
-
-**2. Single Source of Truth**
-
-- Each piece of information should exist in **one canonical location**.
-- Avoid duplicating information across multiple files.
-- When consolidating, choose the most appropriate location based on audience (README for users, GEMINI.md for AI, DEVELOPMENT.md for decisions).
-
-**3. Appropriate Granularity**
-
-- **Detailed feature docs**: Only create separate documentation files when a specific feature or subsystem is complex enough to warrant its own dedicated document (e.g., drag-and-drop architecture, time signature system).
-- **Consolidate simple fixes**: One-off fixes, migration summaries, and changelogs should be removed or consolidated into main documentation.
-- **Test results**: Never commit test result files or audit summaries - these are ephemeral.
-
-**4. Maintenance**
-
-- Regularly review and remove outdated documentation.
-- Consolidate related information into appropriate canonical locations.
-- Keep documentation synchronized with code changes.
-
-### What to Remove
-
-The following types of documentation should be removed or consolidated:
-
-- **Migration docs**: Once migration is complete, relevant information should be in GEMINI.md or DEVELOPMENT.md
-- **Changelogs**: Historical change logs are ephemeral and should not be maintained
-- **Fix summaries**: One-off fix documentation (e.g., "BEAMING_FIX.md", "FOUC_FIX.md") should be consolidated into GEMINI.md
-- **Audit summaries**: Historical audit and analysis documents should be removed
-- **Test results**: Generated test result files should never be committed
-
-### What to Keep
-
-The following types of documentation are valuable and should be maintained:
-
-- **Architecture docs**: Detailed technical architecture for complex systems (e.g., drag-and-drop, rendering systems)
-- **Feature documentation**: Comprehensive guides for major features (e.g., time signatures, URL sharing)
-- **Data structure docs**: README files explaining data formats and structures
-- **Module-specific docs**: README files for complex modules or subsystems
-
-### Documentation Location Guidelines
-
-- **Root level**: Project-wide concerns (GEMINI.md, README.md, DEVELOPMENT.md)
-- **Micro-app level**: App-specific concerns (e.g., `src/cats/GEMINI.md`, `src/drums/README.md`)
-- **Subsystem level**: Only for complex subsystems that warrant dedicated documentation
-- **Never**: Root-level ephemeral docs, test results, or migration summaries
+E2E tests are co-located with each micro-app: `src/<app>/e2e/*.spec.ts`

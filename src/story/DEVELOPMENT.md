@@ -1,6 +1,6 @@
 # Save the Cat! Story Generator - Architecture Decision Records
 
-This document records major architectural decisions, design patterns, and development guidelines for the Save the Cat! Story Generator micro-app.
+This document records major architectural decisions for the Save the Cat! Story Generator micro-app.
 
 ## Kimberly System Migration
 
@@ -16,7 +16,6 @@ Migrated from flat array-based suggestion engine to the Kimberly System - a comp
 - Flat arrays with no structure
 - Hard to maintain and extend
 - No type safety
-- Difficult to reason about relationships between elements
 
 **Kimberly System Benefits**:
 
@@ -28,24 +27,18 @@ Migrated from flat array-based suggestion engine to the Kimberly System - a comp
 
 ### Implementation
 
-**Core Concept**: Functions are named after canonical examples (e.g., `Kimberly()` generates names like "Emma", "Olivia") rather than abstract terms, making templates self-documenting.
+**Core Concept**: Functions are named after canonical examples (e.g., `Kimberly()` generates names like "Emma", "Olivia") rather than abstract terms.
 
-**File Structure**:
+**File Structure**: `kimberly/core.ts`, `kimberly/genre-elements.ts`, `kimberly/beats.ts`, `kimberly/themes.ts`, `kimberly/settings.ts`
 
-- `kimberly/core.ts`: Core generation engine
-- `kimberly/genre-elements.ts`: Genre-specific element generators (26 functions)
-- `kimberly/beats.ts`: Story beat element generators (18 functions)
-- `kimberly/themes.ts`: Theme-based flaw generators
-- `kimberly/settings.ts`: Act 1 and Act 2 setting generators
+**Migration Results**: Replaced 812-line monolithic file with modular system, all content preserved and extended.
 
-**Migration Results**:
+### Benefits
 
-- Replaced 812-line monolithic file with modular system
-- All content from old system preserved and extended
-- 58 story tests + 612 total tests passing
 - Improved maintainability and extensibility
-
-See `src/story/kimberly/README.md` for detailed Kimberly System documentation.
+- Type-safe generation
+- Self-documenting code
+- Better testability
 
 ## Content Generation Architecture
 
@@ -53,25 +46,21 @@ See `src/story/kimberly/README.md` for detailed Kimberly System documentation.
 
 **Decision**: Generate story elements that are aware of selected genre and theme.
 
-**Implementation**: Genre-specific generators create elements that match the story type (e.g., "The Detective" for Whydunit, "The Monster" for Monster in the House).
+**Rationale**: Creates more coherent story generation with genre-appropriate elements.
 
-**Benefits**:
+**Implementation**: Genre-specific generators create elements that match the story type (e.g., "The Detective" for Whydunit).
 
-- More coherent story generation
-- Genre-appropriate elements
-- Better story quality
+**Benefits**: More coherent stories, genre-appropriate elements, better story quality.
 
 ### Theme-Aware Generation
 
 **Decision**: Generate flaws and character traits that align with selected theme.
 
-**Implementation**: Theme-based generators create elements that support the story's thematic message (e.g., Forgiveness, Love, Acceptance).
+**Rationale**: Creates thematically consistent stories with deeper character development.
 
-**Benefits**:
+**Implementation**: Theme-based generators create elements that support the story's thematic message.
 
-- Thematically consistent stories
-- Deeper character development
-- Better alignment with Save the Cat! methodology
+**Benefits**: Thematically consistent stories, deeper character development, better alignment with Save the Cat! methodology.
 
 ## Component Architecture
 
@@ -79,22 +68,18 @@ See `src/story/kimberly/README.md` for detailed Kimberly System documentation.
 
 **Decision**: Allow users to reroll individual story elements without regenerating entire story.
 
+**Rationale**: Provides better user control and faster iteration.
+
 **Implementation**: Each `GeneratedChip` component maintains its own state and can trigger regeneration of that specific element.
 
-**Benefits**:
-
-- Better user control
-- Faster iteration
-- More engaging user experience
+**Benefits**: Better user control, faster iteration, more engaging user experience.
 
 ### Beat Chart Display
 
 **Decision**: Display all 15 Save the Cat! beats in a visual chart format.
 
+**Rationale**: Helps writers understand story structure and beat progression.
+
 **Implementation**: `BeatChart` component renders beats with proper grouping (Act 1, Act 2, Act 3) and visual hierarchy.
 
-**Benefits**:
-
-- Clear story structure visualization
-- Easy to understand beat progression
-- Helps writers understand story structure
+**Benefits**: Clear story structure visualization, easy to understand beat progression.
