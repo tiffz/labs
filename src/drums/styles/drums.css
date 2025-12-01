@@ -555,6 +555,28 @@
     transform: scale(1.1);
   }
 
+  .help-button-outlined {
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: 50%;
+    background-color: transparent;
+    color: var(--primary-purple);
+    border: none;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition-base);
+    flex-shrink: 0;
+  }
+
+  .help-button-outlined:hover {
+    background-color: rgba(139, 92, 246, 0.1);
+    transform: scale(1.1);
+  }
+
   /* ===== TOOLTIPS & HELP ===== */
 
   .tooltip {
@@ -1667,7 +1689,7 @@
     max-width: 400px;
     max-height: 80vh;
     overflow-y: auto;
-    overflow-x: hidden;
+    overflow-x: visible; /* Allow tooltips to overflow horizontally */
     animation: slideUp 0.2s ease;
     /* Ensure content doesn't overflow */
     box-sizing: border-box;
@@ -1715,6 +1737,7 @@
 
   .settings-group {
     margin-bottom: 1rem;
+    position: relative;
   }
 
   .settings-group:last-child {
@@ -1729,6 +1752,18 @@
     font-weight: 600;
     color: var(--text-color);
     margin-bottom: 0.5rem;
+  }
+
+  .settings-help-tooltip-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    position: relative;
+  }
+
+  .settings-tooltip {
+    position: absolute;
+    z-index: 1001;
   }
 
   .settings-value {

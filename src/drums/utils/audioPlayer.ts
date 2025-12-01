@@ -1,4 +1,5 @@
 import type { DrumSound } from '../types';
+import { createReverb, updateReverbLevel } from './reverb';
 
 // Import audio files
 import dumSound from '../assets/sounds/dum.wav';
@@ -17,6 +18,13 @@ class AudioPlayer {
   private clickBuffer: AudioBuffer | null = null;
   private isInitialized = false;
   private activeSources: Set<AudioBufferSourceNode> = new Set(); // Track active sound sources
+  private reverbNodes: {
+    dryGain: GainNode;
+    wetGain: GainNode;
+    convolver: ConvolverNode;
+    cleanup: () => void;
+  } | null = null;
+  private reverbStrength: number = 0; // 0-100
 
   constructor() {
     // AudioContext is created lazily on first user interaction
@@ -58,9 +66,30 @@ class AudioPlayer {
 
       await Promise.all([...loadPromises, clickPromise]);
 
+      // Initialize reverb nodes (will be connected when reverb is enabled)
+      // createReverb is now async, so we await it
+      this.reverbNodes = await createReverb(this.audioContext, 0);
+      // Connect reverb nodes to destination (always connected, but gain controls dry/wet mix)
+      this.reverbNodes.wetGain.connect(this.audioContext.destination);
+      this.reverbNodes.dryGain.connect(this.audioContext.destination);
+
       this.isInitialized = true;
     } catch (err) {
       console.error('Error initializing audio:', err);
+    }
+  }
+
+  /**
+   * Set reverb strength (0-100)
+   * @param strength - Reverb strength from 0 (no reverb) to 100 (full reverb)
+   */
+  setReverbStrength(strength: number): void {
+    this.reverbStrength = Math.max(0, Math.min(100, strength));
+    
+    if (this.reverbNodes) {
+      // Convert 0-100 to 0.0-1.0 wet level
+      const wetLevel = this.reverbStrength / 100;
+      updateReverbLevel(this.reverbNodes.wetGain, this.reverbNodes.dryGain, wetLevel);
     }
   }
 
@@ -107,9 +136,18 @@ class AudioPlayer {
         gainNode.gain.exponentialRampToValueAtTime(0.01, fadeEndTime);
       }
 
-      // Connect: source -> gain -> destination
-      source.connect(gainNode);
-      gainNode.connect(this.audioContext.destination);
+      // Connect audio chain with reverb support
+      // If reverb is enabled, split signal to dry and wet paths
+      if (this.reverbNodes && this.reverbStrength > 0) {
+        // Split signal: source -> gain -> (dryGain + convolver -> wetGain) -> destination
+        source.connect(gainNode);
+        gainNode.connect(this.reverbNodes.dryGain);
+        gainNode.connect(this.reverbNodes.convolver);
+      } else {
+        // No reverb: source -> gain -> destination
+        source.connect(gainNode);
+        gainNode.connect(this.audioContext.destination);
+      }
 
       // Track this source
       this.activeSources.add(source);

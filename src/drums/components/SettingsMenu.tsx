@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import type { PlaybackSettings } from '../types/settings';
 import { DEFAULT_SETTINGS } from '../types/settings';
+import SettingsHelpTooltip from './SettingsHelpTooltip';
 
 interface SettingsMenuProps {
   isOpen: boolean;
@@ -170,6 +171,13 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({
     });
   };
 
+  const handleReverbStrengthChange = (value: number) => {
+    onSettingsChange({
+      ...settings,
+      reverbStrength: Math.max(0, Math.min(100, value)),
+    });
+  };
+
   const handleResetToDefault = () => {
     onSettingsChange(DEFAULT_SETTINGS);
   };
@@ -195,7 +203,16 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({
         <div className="settings-content">
           <div className="settings-group">
             <label htmlFor="measure-accent-volume" className="settings-label">
-              Measure Accent Volume
+              <SettingsHelpTooltip
+                ariaLabel="Help for measure accent volume"
+                content={
+                  <div className="tooltip-content">
+                    <p>Volume for the first note of each measure (downbeat)</p>
+                  </div>
+                }
+              >
+                <span>Measure Accent Volume</span>
+              </SettingsHelpTooltip>
               <span className="settings-value">{settings.measureAccentVolume}%</span>
             </label>
             <div className="settings-slider-wrapper">
@@ -212,14 +229,20 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({
                 } as React.CSSProperties}
               />
             </div>
-            <p className="settings-description">
-              Volume for the first note of each measure (downbeat)
-            </p>
           </div>
 
           <div className="settings-group">
             <label htmlFor="beat-group-accent-volume" className="settings-label">
-              Beat Group Accent Volume
+              <SettingsHelpTooltip
+                ariaLabel="Help for beat group accent volume"
+                content={
+                  <div className="tooltip-content">
+                    <p>Volume for the first note of each beat group (for compound and asymmetric rhythms)</p>
+                  </div>
+                }
+              >
+                <span>Beat Group Accent Volume</span>
+              </SettingsHelpTooltip>
               <span className="settings-value">{settings.beatGroupAccentVolume}%</span>
             </label>
             <div className="settings-slider-wrapper">
@@ -244,14 +267,20 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({
                 } as React.CSSProperties}
               />
             </div>
-            <p className="settings-description">
-              Volume for the first note of each beat group (for compound and asymmetric rhythms)
-            </p>
           </div>
 
           <div className="settings-group">
             <label htmlFor="non-accent-volume" className="settings-label">
-              Non-Accent Volume
+              <SettingsHelpTooltip
+                ariaLabel="Help for non-accent volume"
+                content={
+                  <div className="tooltip-content">
+                    <p>Volume for non-accented notes (cannot exceed accent volumes)</p>
+                  </div>
+                }
+              >
+                <span>Non-Accent Volume</span>
+              </SettingsHelpTooltip>
               <span className="settings-value">{settings.nonAccentVolume}%</span>
             </label>
             <div className="settings-slider-wrapper">
@@ -276,9 +305,6 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({
                 } as React.CSSProperties}
               />
             </div>
-            <p className="settings-description">
-              Volume for non-accented notes (cannot exceed accent volumes)
-            </p>
           </div>
 
           <div className="settings-group">
@@ -309,6 +335,27 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({
           </div>
 
           <div className="settings-group">
+            <label htmlFor="reverb-strength" className="settings-label">
+              <span>Reverb Strength</span>
+              <span className="settings-value">{settings.reverbStrength}%</span>
+            </label>
+            <div className="settings-slider-wrapper">
+              <input
+                id="reverb-strength"
+                type="range"
+                min="0"
+                max="100"
+                value={settings.reverbStrength}
+                onChange={(e) => handleReverbStrengthChange(parseInt(e.target.value, 10))}
+                className="settings-slider"
+                style={{
+                  '--disabled-start': '100%',
+                } as React.CSSProperties}
+              />
+            </div>
+          </div>
+
+          <div className="settings-group">
             <label className="settings-checkbox-label">
               <input
                 type="checkbox"
@@ -316,11 +363,17 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({
                 onChange={(e) => handleEmphasizeSimpleRhythmsChange(e.target.checked)}
                 className="settings-checkbox"
               />
-              <span>Emphasize beats in simple rhythms</span>
+              <SettingsHelpTooltip
+                ariaLabel="Help for emphasize simple rhythms"
+                content={
+                  <div className="tooltip-content">
+                    <p>When enabled, accents beat groups in /4 rhythms.</p>
+                  </div>
+                }
+              >
+                <span>Emphasize beats in simple rhythms</span>
+              </SettingsHelpTooltip>
             </label>
-            <p className="settings-description">
-              When enabled, accents beat groups in /4 rhythms. 
-            </p>
           </div>
         </div>
       </div>

@@ -65,6 +65,12 @@ class RhythmPlayer {
     this.metronomeEnabled = metronomeEnabled || false;
     this.onMetronomeBeat = onMetronomeBeat || null;
     this.settings = settings || null;
+    
+    // Update reverb strength when starting playback
+    if (settings) {
+      audioPlayer.setReverbStrength(settings.reverbStrength);
+    }
+    
     this.startTime = performance.now(); // Use high-precision timestamp
     this.loopCount = 0;
     this.lastLoopEndTime = 0; // Reset loop end time tracking
@@ -371,6 +377,8 @@ class RhythmPlayer {
    */
   setSettings(settings: PlaybackSettings): void {
     this.settings = settings;
+    // Update reverb strength when settings change
+    audioPlayer.setReverbStrength(settings.reverbStrength);
   }
 
   /**
