@@ -31,7 +31,7 @@ async function loadImpulseResponse(
 function generateFallbackImpulseResponse(
   audioContext: AudioContext,
   duration: number = 0.5,
-  decay: number = 1.8,
+  decay: number = 2.5,
   sampleRate: number = audioContext.sampleRate
 ): AudioBuffer {
   const length = sampleRate * duration;
