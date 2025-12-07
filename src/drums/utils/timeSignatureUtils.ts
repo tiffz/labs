@@ -169,7 +169,9 @@ export function getSixteenthsPerMeasure(timeSignature: TimeSignature): number {
 
 /**
  * Calculate beat grouping in sixteenths for a given time signature
- * @param beatGrouping - Array of beat group sizes (in beats)
+ * @param beatGrouping - Array of beat group sizes
+ *   - For /4 time signatures: values are already in sixteenths (from getDefaultBeatGrouping)
+ *   - For /8 time signatures: values are in eighth notes (from getDefaultBeatGrouping)
  * @param timeSignature - The time signature
  * @returns Array of beat group sizes in sixteenths
  */
@@ -177,7 +179,12 @@ export function getBeatGroupingInSixteenths(
   beatGrouping: number[],
   timeSignature: TimeSignature
 ): number[] {
-  const sixteenthsPerBeat = timeSignature.denominator === 8 ? 2 : 4;
-  return beatGrouping.map(group => group * sixteenthsPerBeat);
+  if (timeSignature.denominator === 8) {
+    // For /8 time: beatGrouping is in eighth notes, convert to sixteenths (multiply by 2)
+    return beatGrouping.map(group => group * 2);
+  } else {
+    // For /4 time: beatGrouping is already in sixteenths, return as-is
+    return beatGrouping;
+  }
 }
 

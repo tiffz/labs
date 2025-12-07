@@ -95,6 +95,93 @@ describe('App', () => {
     });
   });
 
+  describe('Keyboard shortcuts', () => {
+    it('should not trigger randomize on Command+R (Mac) or Ctrl+R (Windows)', () => {
+      render(<App />);
+      
+      const input = screen.getByLabelText('Rhythm Notation') as HTMLInputElement;
+      const initialNotation = input.value;
+      const undoButton = screen.getByLabelText('Undo');
+      
+      // Initially undo should be disabled
+      expect(undoButton).toBeDisabled();
+      
+      // Simulate Command+R (Mac) - metaKey pressed
+      // Use native KeyboardEvent to ensure metaKey property is set correctly
+      const macEvent = new KeyboardEvent('keydown', {
+        key: 'r',
+        code: 'KeyR',
+        metaKey: true, // Command key on Mac
+        bubbles: true,
+        cancelable: true,
+      });
+      window.dispatchEvent(macEvent);
+      
+      // Notation should not change and undo should still be disabled
+      expect(input.value).toBe(initialNotation);
+      expect(undoButton).toBeDisabled();
+      
+      // Simulate Ctrl+R (Windows/Linux) - ctrlKey pressed
+      const windowsEvent = new KeyboardEvent('keydown', {
+        key: 'r',
+        code: 'KeyR',
+        ctrlKey: true, // Ctrl key on Windows/Linux
+        bubbles: true,
+        cancelable: true,
+      });
+      window.dispatchEvent(windowsEvent);
+      
+      // Notation should still not change and undo should still be disabled
+      expect(input.value).toBe(initialNotation);
+      expect(undoButton).toBeDisabled();
+    });
+
+    it('should trigger randomize on R key without modifier keys', async () => {
+      render(<App />);
+      
+      const input = screen.getByLabelText('Rhythm Notation') as HTMLInputElement;
+      
+      // Ensure input is not focused (keyboard shortcuts don't work when typing)
+      input.blur();
+      
+      // Simulate R key without modifiers
+      fireEvent.keyDown(window, { 
+        key: 'r', 
+        code: 'KeyR',
+        shiftKey: false,
+        metaKey: false,
+        ctrlKey: false,
+      });
+      
+      // Wait for state update - randomize adds to history, so undo should be enabled
+      await waitFor(() => {
+        const undoButton = screen.getByLabelText('Undo');
+        // If randomize was called, undo should be enabled (notation was added to history)
+        expect(undoButton).not.toBeDisabled();
+      }, { timeout: 1000 });
+    });
+
+    it('should not trigger randomize when typing in input fields', () => {
+      render(<App />);
+      
+      const input = screen.getByLabelText('Rhythm Notation') as HTMLInputElement;
+      const initialNotation = input.value;
+      
+      // Focus the input
+      input.focus();
+      
+      // Simulate R key while typing
+      fireEvent.keyDown(input, { 
+        key: 'r', 
+        code: 'KeyR',
+        target: input,
+      });
+      
+      // Notation should not change (R should be typed into input, not trigger randomize)
+      expect(input.value).toBe(initialNotation);
+    });
+  });
+
   describe('Notation history', () => {
     it('should support undo/redo', () => {
       render(<App />);

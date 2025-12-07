@@ -339,8 +339,9 @@ const App: React.FC = () => {
         return;
       }
 
-      // Randomize: R (but not Shift+R to allow browser refresh shortcuts)
-      if ((e.key === 'r' || e.key === 'R') && !e.shiftKey) {
+      // Randomize: R (but not when modifier keys are pressed to allow browser shortcuts)
+      // Don't trigger on Cmd+R (Mac) or Ctrl+R (Windows/Linux) for browser refresh
+      if ((e.key === 'r' || e.key === 'R') && !e.shiftKey && !modKeyPressed) {
         e.preventDefault();
         handleRandomize();
         return;

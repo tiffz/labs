@@ -9,6 +9,8 @@ vi.mock('./audioPlayer', () => ({
     play: vi.fn(),
     stopAll: vi.fn(),
     stopAllDrumSounds: vi.fn(),
+    playClick: vi.fn(),
+    setReverbStrength: vi.fn(),
   },
 }));
 
@@ -379,6 +381,145 @@ describe('rhythmPlayer timing accuracy', () => {
       expect(noteTimes[0]).toBe(0);
       expect(noteTimes[1]).toBe(250);
       expect(noteTimes[2]).toBe(500);
+    });
+  });
+
+  describe('metronome beats', () => {
+
+    it('should schedule metronome clicks for all beats in 4/4 time', () => {
+      const notation = 'D---T---K---S---'; // Four quarter notes (one per beat)
+      const timeSignature: TimeSignature = { numerator: 4, denominator: 4 };
+      const parsedRhythm = parseRhythm(notation, timeSignature);
+      const bpm = 120;
+
+      const metronomeBeats: Array<{ measureIndex: number; positionInSixteenths: number; isDownbeat: boolean }> = [];
+
+      rhythmPlayer.play(
+        parsedRhythm,
+        bpm,
+        undefined,
+        undefined,
+        true, // metronomeEnabled
+        (measureIndex, positionInSixteenths, isDownbeat) => {
+          metronomeBeats.push({ measureIndex, positionInSixteenths, isDownbeat });
+        }
+      );
+
+      // At 120 BPM, quarter note = 500ms, sixteenth = 125ms
+      // For 4/4 time, beat groups are [4, 4, 4, 4] sixteenths
+      // Metronome should click at positions: 0 (downbeat), 4, 8, 12
+      // Times: 0ms, 500ms, 1000ms, 1500ms
+
+      // Advance through all beats - advance enough time to trigger all scheduled beats
+      vi.advanceTimersByTime(0); // Trigger immediate beats (downbeat at 0ms)
+      expect(metronomeBeats.length).toBeGreaterThanOrEqual(1);
+      expect(metronomeBeats[0]).toEqual({ measureIndex: 0, positionInSixteenths: 0, isDownbeat: true });
+
+      vi.advanceTimersByTime(500); // Advance to first beat (500ms) - position 4
+      expect(metronomeBeats.length).toBeGreaterThanOrEqual(2);
+      if (metronomeBeats.length >= 2) {
+        expect(metronomeBeats[1]).toEqual({ measureIndex: 0, positionInSixteenths: 4, isDownbeat: false });
+      }
+
+      vi.advanceTimersByTime(500); // Advance to second beat (1000ms) - position 8
+      expect(metronomeBeats.length).toBeGreaterThanOrEqual(3);
+      if (metronomeBeats.length >= 3) {
+        expect(metronomeBeats[2]).toEqual({ measureIndex: 0, positionInSixteenths: 8, isDownbeat: false });
+      }
+
+      vi.advanceTimersByTime(500); // Advance to third beat (1500ms) - position 12
+      // Should have exactly 4 beats for 4/4 time
+      expect(metronomeBeats.length).toBe(4);
+      expect(metronomeBeats[3]).toEqual({ measureIndex: 0, positionInSixteenths: 12, isDownbeat: false });
+    });
+
+    it('should schedule metronome clicks for all beats in 3/4 time', () => {
+      const notation = 'D---T---K---'; // Three quarter notes
+      const timeSignature: TimeSignature = { numerator: 3, denominator: 4 };
+      const parsedRhythm = parseRhythm(notation, timeSignature);
+      const bpm = 120;
+
+      const metronomeBeats: Array<{ measureIndex: number; positionInSixteenths: number; isDownbeat: boolean }> = [];
+
+      rhythmPlayer.play(
+        parsedRhythm,
+        bpm,
+        undefined,
+        undefined,
+        true, // metronomeEnabled
+        (measureIndex, positionInSixteenths, isDownbeat) => {
+          metronomeBeats.push({ measureIndex, positionInSixteenths, isDownbeat });
+        }
+      );
+
+      // For 3/4 time, beat groups are [4, 4, 4] sixteenths
+      // Metronome should click at positions: 0 (downbeat), 4, 8
+      // At 120 BPM, sixteenth = 125ms, so beats are at 0ms, 500ms, 1000ms
+
+      // Advance through all beats
+      vi.advanceTimersByTime(0); // Downbeat at position 0
+      vi.advanceTimersByTime(500); // First beat at position 4
+      vi.advanceTimersByTime(500); // Second beat at position 8
+
+      expect(metronomeBeats.length).toBe(3);
+      expect(metronomeBeats[0]).toEqual({ measureIndex: 0, positionInSixteenths: 0, isDownbeat: true });
+      expect(metronomeBeats[1]).toEqual({ measureIndex: 0, positionInSixteenths: 4, isDownbeat: false });
+      expect(metronomeBeats[2]).toEqual({ measureIndex: 0, positionInSixteenths: 8, isDownbeat: false });
+    });
+
+    it('should schedule metronome clicks for all beats in 6/8 time', () => {
+      const notation = 'D---T---K---S---__--'; // Six eighth notes
+      const timeSignature: TimeSignature = { numerator: 6, denominator: 8 };
+      const parsedRhythm = parseRhythm(notation, timeSignature);
+      const bpm = 120;
+
+      const metronomeBeats: Array<{ measureIndex: number; positionInSixteenths: number; isDownbeat: boolean }> = [];
+
+      rhythmPlayer.play(
+        parsedRhythm,
+        bpm,
+        undefined,
+        undefined,
+        true, // metronomeEnabled
+        (measureIndex, positionInSixteenths, isDownbeat) => {
+          metronomeBeats.push({ measureIndex, positionInSixteenths, isDownbeat });
+        }
+      );
+
+      // For 6/8 time, beat groups are [6, 6] sixteenths (two groups of 3 eighth notes)
+      // Metronome should click at positions: 0 (downbeat), 6
+
+      vi.advanceTimersByTime(0); // Downbeat
+      vi.advanceTimersByTime(750); // First beat group (6 * 125ms = 750ms)
+
+      expect(metronomeBeats.length).toBe(2);
+      expect(metronomeBeats[0]).toEqual({ measureIndex: 0, positionInSixteenths: 0, isDownbeat: true });
+      expect(metronomeBeats[1]).toEqual({ measureIndex: 0, positionInSixteenths: 6, isDownbeat: false });
+    });
+
+    it('should not play metronome clicks when metronome is disabled', () => {
+      const notation = 'D---T---';
+      const timeSignature: TimeSignature = { numerator: 4, denominator: 4 };
+      const parsedRhythm = parseRhythm(notation, timeSignature);
+      const bpm = 120;
+
+      const metronomeBeats: Array<{ measureIndex: number; positionInSixteenths: number; isDownbeat: boolean }> = [];
+
+      rhythmPlayer.play(
+        parsedRhythm,
+        bpm,
+        undefined,
+        undefined,
+        false, // metronomeEnabled = false
+        (measureIndex, positionInSixteenths, isDownbeat) => {
+          metronomeBeats.push({ measureIndex, positionInSixteenths, isDownbeat });
+        }
+      );
+
+      vi.advanceTimersByTime(2000); // Advance through multiple beats
+
+      // No metronome beats should be recorded when disabled
+      expect(metronomeBeats.length).toBe(0);
     });
   });
 });

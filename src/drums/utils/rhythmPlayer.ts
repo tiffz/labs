@@ -149,11 +149,16 @@ class RhythmPlayer {
         time: measureStartTime,
       });
       
-      // Add beat group starts
+      // Add beat group starts (one click per beat group)
+      // For 4/4: beat groups are [4, 4, 4, 4] sixteenths, so clicks at positions 0, 4, 8, 12
+      // For 6/8: beat groups are [6, 6] sixteenths, so clicks at positions 0, 6
       let cumulativePosition = 0;
       beatGroupingInSixteenths.forEach((groupSize) => {
         cumulativePosition += groupSize;
         const sixteenthsPerMeasure = getSixteenthsPerMeasure(rhythm.timeSignature);
+        // Add beat at the start of each beat group (cumulativePosition is the END of the group)
+        // Only add if we haven't reached or exceeded the measure boundary
+        // Use < not <= because cumulativePosition = sixteenthsPerMeasure means we're at the start of the next measure
         if (cumulativePosition < sixteenthsPerMeasure) {
           const beatTime = measureStartTime + (cumulativePosition * msPerSixteenth);
           metronomeBeatPositions.push({
