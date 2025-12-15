@@ -1,5 +1,5 @@
 import type { DrumSound } from '../types';
-import { createReverb, updateReverbLevel } from './reverb';
+import { createReverb, updateReverbLevel, convertReverbStrengthToWetLevel } from './reverb';
 
 // Import audio files
 import dumSound from '../assets/sounds/dum.wav';
@@ -22,6 +22,8 @@ class AudioPlayer {
     dryGain: GainNode;
     wetGain: GainNode;
     convolver: ConvolverNode;
+    delayNode: DelayNode;
+    filterNode: BiquadFilterNode;
     cleanup: () => void;
   } | null = null;
   private reverbStrength: number = 0; // 0-100
@@ -87,8 +89,9 @@ class AudioPlayer {
     this.reverbStrength = Math.max(0, Math.min(100, strength));
     
     if (this.reverbNodes) {
-      // Convert 0-100 to 0.0-1.0 wet level
-      const wetLevel = this.reverbStrength / 100;
+      // Convert 0-100 to 0.0-1.0 wet level using non-linear curve
+      // This preserves more dry signal at lower settings for better balance
+      const wetLevel = convertReverbStrengthToWetLevel(this.reverbStrength);
       updateReverbLevel(this.reverbNodes.wetGain, this.reverbNodes.dryGain, wetLevel);
     }
   }
