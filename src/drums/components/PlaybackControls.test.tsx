@@ -137,5 +137,49 @@ describe('PlaybackControls', () => {
     
     expect(onBpmChange).toHaveBeenCalledWith(140);
   });
+
+  it('should show time signature dropdown when numerator input is focused', () => {
+    render(<PlaybackControls {...defaultProps} />);
+    
+    const numeratorInput = screen.getByLabelText('Time signature numerator');
+    fireEvent.focus(numeratorInput);
+    
+    // Check if dropdown appears with common time signatures
+    expect(screen.getByText('2/4')).toBeInTheDocument();
+    expect(screen.getByText('3/4')).toBeInTheDocument();
+    expect(screen.getByText('4/4')).toBeInTheDocument();
+  });
+
+  it('should update time signature when selecting from dropdown', () => {
+    const onTimeSignatureChange = vi.fn();
+    render(<PlaybackControls {...defaultProps} onTimeSignatureChange={onTimeSignatureChange} />);
+    
+    const numeratorInput = screen.getByLabelText('Time signature numerator');
+    fireEvent.focus(numeratorInput);
+    
+    const option = screen.getByText('3/4');
+    fireEvent.click(option);
+    
+    expect(onTimeSignatureChange).toHaveBeenCalledWith({
+      numerator: 3,
+      denominator: 4,
+      beatGrouping: undefined,
+    });
+  });
+
+  it('should close dropdown when clicking outside', () => {
+    render(<PlaybackControls {...defaultProps} />);
+    
+    const numeratorInput = screen.getByLabelText('Time signature numerator');
+    fireEvent.focus(numeratorInput);
+    
+    expect(screen.getByText('2/4')).toBeInTheDocument();
+    
+    // Click outside
+    fireEvent.mouseDown(document.body);
+    
+    // Dropdown should be closed (elements not in document)
+    expect(screen.queryByText('2/4')).not.toBeInTheDocument();
+  });
 });
 

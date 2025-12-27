@@ -47,7 +47,42 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
 }) => {
   const [beatGroupingInput, setBeatGroupingInput] = useState<string>('');
   const [beatGroupingError, setBeatGroupingError] = useState<string>('');
+  const [showTimeSigDropdown, setShowTimeSigDropdown] = useState<boolean>(false);
   const settingsButtonRef = useRef<HTMLButtonElement>(null);
+  const timeSigInputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Common time signatures
+  const commonTimeSignatures: TimeSignature[] = [
+    { numerator: 2, denominator: 4 },
+    { numerator: 3, denominator: 4 },
+    { numerator: 4, denominator: 4 },
+    { numerator: 5, denominator: 4 },
+    { numerator: 6, denominator: 8 },
+    { numerator: 7, denominator: 8 },
+    { numerator: 9, denominator: 8 },
+    { numerator: 11, denominator: 8 },
+    { numerator: 12, denominator: 8 },
+  ];
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node) &&
+        timeSigInputRef.current &&
+        !timeSigInputRef.current.contains(event.target as Node)
+      ) {
+        setShowTimeSigDropdown(false);
+      }
+    };
+
+    if (showTimeSigDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showTimeSigDropdown]);
 
   // Update beat grouping input when time signature changes
   useEffect(() => {
@@ -157,15 +192,17 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
       {/* Timing Controls */}
       <div className="timing-controls">
         <div className="timing-inputs">
-          <div className="time-signature-control">
+          <div className="time-signature-control" style={{ position: 'relative' }}>
             <label htmlFor="time-sig-numerator" className="sr-only">Time signature numerator</label>
             <input
+              ref={timeSigInputRef}
               id="time-sig-numerator"
               type="number"
               className="control-input time-sig-numerator-input"
               value={timeSignature.numerator}
               onChange={handleNumeratorChange}
               onBlur={handleNumeratorBlur}
+              onFocus={() => setShowTimeSigDropdown(true)}
               min="1"
               max="32"
               disabled={isPlaying}
@@ -181,6 +218,61 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
               <option value="4">4</option>
               <option value="8">8</option>
             </select>
+            {showTimeSigDropdown && (
+              <div
+                ref={dropdownRef}
+                className="time-sig-dropdown"
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  marginTop: '0.25rem',
+                  backgroundColor: 'white',
+                  border: '2px solid var(--border-color)',
+                  borderRadius: '0.375rem',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                  zIndex: 1000,
+                  minWidth: '100%',
+                  maxHeight: '200px',
+                  overflowY: 'auto',
+                }}
+              >
+                {commonTimeSignatures.map((ts) => (
+                  <button
+                    key={`${ts.numerator}/${ts.denominator}`}
+                    type="button"
+                    className="time-sig-dropdown-item"
+                    onClick={() => {
+                      onTimeSignatureChange({
+                        ...ts,
+                        beatGrouping: undefined, // Reset to default
+                      });
+                      setShowTimeSigDropdown(false);
+                      timeSigInputRef.current?.blur();
+                    }}
+                    style={{
+                      display: 'block',
+                      width: '100%',
+                      padding: '0.5rem 0.75rem',
+                      textAlign: 'left',
+                      border: 'none',
+                      background: 'none',
+                      cursor: 'pointer',
+                      fontSize: '1rem',
+                      color: 'var(--text-color)',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#f3f4f6';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }}
+                  >
+                    {ts.numerator}/{ts.denominator}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <div className="bpm-control-inline">
             <label htmlFor="bpm-input" className="sr-only">BPM</label>

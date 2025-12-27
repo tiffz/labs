@@ -1146,6 +1146,30 @@
     line-height: 1;
   }
 
+  /* Share feedback toast animation */
+  @keyframes fadeInOut {
+    0% {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    10% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    90% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+  }
+
+  .share-feedback-toast {
+    animation: fadeInOut 2s ease-in-out;
+  }
+
   /* Edit Controls */
   .edit-controls {
     display: flex;

@@ -42,7 +42,11 @@ const App: React.FC = () => {
   const [dragDropMode, setDragDropMode] = useState<'replace' | 'insert'>('replace');
   const [showKeyboardHelp, setShowKeyboardHelp] = useState<boolean>(false);
   const [showSettings, setShowSettings] = useState<boolean>(false);
+  const [showShareFeedback, setShowShareFeedback] = useState<boolean>(false);
+  const [shareFeedbackPosition, setShareFeedbackPosition] = useState<{ top: number; left: number } | null>(null);
   const [playbackSettings, setPlaybackSettings] = useState<PlaybackSettings>(DEFAULT_SETTINGS);
+  const [downloadFormat, setDownloadFormat] = useState<'wav' | 'mp3'>('wav');
+  const [downloadLoops, setDownloadLoops] = useState<number>(1);
   
   // Use notation history hook for consistent history management
   const {
@@ -211,6 +215,66 @@ const App: React.FC = () => {
       setNotation(newNotation);
     }
   }, [notation, setNotation]);
+
+  const handleShare = useCallback(async (event?: React.MouseEvent<HTMLButtonElement>) => {
+    // Get button position if event is provided
+    let position: { top: number; left: number } | null = null;
+    if (event?.currentTarget) {
+      const rect = event.currentTarget.getBoundingClientRect();
+      const toastHeight = 60; // Approximate height of toast
+      const spacing = 10; // Space between button and toast
+      
+      // Position toast below the button, centered horizontally
+      let top = rect.bottom + spacing;
+      
+      // If not enough space below (too close to bottom of viewport), position above button instead
+      if (top + toastHeight > window.innerHeight - 10) {
+        top = rect.top - toastHeight - spacing;
+      }
+      
+      position = {
+        top,
+        left: rect.left + rect.width / 2, // Center horizontally on button
+      };
+    }
+
+    try {
+      // Copy current URL to clipboard
+      await navigator.clipboard.writeText(window.location.href);
+      // Show feedback at button position
+      if (position) {
+        setShareFeedbackPosition(position);
+      }
+      setShowShareFeedback(true);
+      setTimeout(() => {
+        setShowShareFeedback(false);
+        setShareFeedbackPosition(null);
+      }, 2000);
+    } catch {
+      // Fallback for browsers that don't support clipboard API
+      const textArea = document.createElement('textarea');
+      textArea.value = window.location.href;
+      textArea.style.position = 'fixed';
+      textArea.style.opacity = '0';
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        // Show feedback on success
+        if (position) {
+          setShareFeedbackPosition(position);
+        }
+        setShowShareFeedback(true);
+        setTimeout(() => {
+          setShowShareFeedback(false);
+          setShareFeedbackPosition(null);
+        }, 2000);
+      } catch (fallbackErr) {
+        console.error('Failed to copy URL:', fallbackErr);
+      }
+      document.body.removeChild(textArea);
+    }
+  }, []);
 
   const handleRandomize = useCallback(() => {
     // Generate a random rhythm that respects beat groupings for musical coherence
@@ -400,13 +464,22 @@ const App: React.FC = () => {
             }}
             timeSignature={timeSignature}
             onTimeSignatureChange={setTimeSignature}
+            parsedRhythm={parsedRhythm}
+            bpm={bpm}
+            playbackSettings={playbackSettings}
+            metronomeEnabled={metronomeEnabled}
             onClear={handleClear}
             onDeleteLast={handleDeleteLast}
             onUndo={undo}
             onRedo={redo}
             onRandomize={handleRandomize}
+            onShare={handleShare}
             canUndo={canUndo}
             canRedo={canRedo}
+            downloadFormat={downloadFormat}
+            downloadLoops={downloadLoops}
+            onDownloadFormatChange={setDownloadFormat}
+            onDownloadLoopsChange={setDownloadLoops}
           />
 
           <RhythmDisplay 
@@ -449,6 +522,33 @@ const App: React.FC = () => {
         isOpen={showKeyboardHelp} 
         onClose={() => setShowKeyboardHelp(false)} 
       />
+      
+      {/* Share feedback toast */}
+      {showShareFeedback && shareFeedbackPosition && (
+        <div
+          className="share-feedback-toast"
+          style={{
+            position: 'fixed',
+            top: `${shareFeedbackPosition.top}px`,
+            left: `${shareFeedbackPosition.left}px`,
+            transform: 'translateX(-50%)',
+            backgroundColor: 'var(--primary-purple)',
+            color: 'white',
+            padding: '0.75rem 1.25rem',
+            borderRadius: '0.5rem',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+            zIndex: 10000,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            animation: 'fadeInOut 2s ease-in-out',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>check_circle</span>
+          <span style={{ fontWeight: 500 }}>URL copied to clipboard!</span>
+        </div>
+      )}
     </div>
   );
 };

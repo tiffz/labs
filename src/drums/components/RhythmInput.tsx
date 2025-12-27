@@ -1,20 +1,31 @@
 import React, { useState, useRef } from 'react';
-import type { TimeSignature } from '../types';
+import type { TimeSignature, ParsedRhythm } from '../types';
+import type { PlaybackSettings } from '../types/settings';
 import { getSixteenthsPerMeasure } from '../utils/timeSignatureUtils';
 import RhythmPresets from './RhythmPresets';
+import DownloadDropdown from './DownloadDropdown';
 
 interface RhythmInputProps {
   notation: string;
   onNotationChange: (notation: string) => void;
   timeSignature: TimeSignature;
   onTimeSignatureChange: (timeSignature: TimeSignature) => void;
+  parsedRhythm: ParsedRhythm;
+  bpm: number;
+  playbackSettings: PlaybackSettings;
+  metronomeEnabled: boolean;
   onClear: () => void;
   onDeleteLast: () => void;
   onUndo: () => void;
   onRedo: () => void;
   onRandomize: () => void;
+  onShare: (event?: React.MouseEvent<HTMLButtonElement>) => void;
   canUndo: boolean;
   canRedo: boolean;
+  downloadFormat: 'wav' | 'mp3';
+  downloadLoops: number;
+  onDownloadFormatChange: (format: 'wav' | 'mp3') => void;
+  onDownloadLoopsChange: (loops: number) => void;
 }
 
 const RhythmInput: React.FC<RhythmInputProps> = ({
@@ -22,16 +33,27 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
   onNotationChange,
   timeSignature,
   onTimeSignatureChange,
+  parsedRhythm,
+  bpm,
+  playbackSettings,
+  metronomeEnabled,
   onClear,
   onDeleteLast,
   onUndo,
   onRedo,
   onRandomize,
+  onShare,
   canUndo,
   canRedo,
+  downloadFormat,
+  downloadLoops,
+  onDownloadFormatChange,
+  onDownloadLoopsChange,
 }) => {
   const [showTooltip, setShowTooltip] = useState(false);
+  const [showDownloadDropdown, setShowDownloadDropdown] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const downloadButtonRef = useRef<HTMLButtonElement>(null);
 
   // Validate and filter input to only allow valid notation characters
   const handleNotationChange = (value: string) => {
@@ -249,6 +271,43 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
             }}
           />
           <div className="icon-button-group">
+            <button
+              className="icon-button"
+              onClick={(e) => onShare(e)}
+              type="button"
+              aria-label="Share rhythm"
+              data-tooltip="Share"
+            >
+              <span className="material-symbols-outlined">share</span>
+            </button>
+            <div style={{ position: 'relative' }}>
+              <button
+                ref={downloadButtonRef}
+                className="icon-button"
+                onClick={() => setShowDownloadDropdown(!showDownloadDropdown)}
+                type="button"
+                aria-label="Download rhythm"
+                data-tooltip="Download"
+              >
+                <span className="material-symbols-outlined">download</span>
+              </button>
+              {showDownloadDropdown && (
+                <DownloadDropdown
+                  rhythm={parsedRhythm}
+                  notation={notation}
+                  bpm={bpm}
+                  playbackSettings={playbackSettings}
+                  metronomeEnabled={metronomeEnabled}
+                  isOpen={showDownloadDropdown}
+                  onClose={() => setShowDownloadDropdown(false)}
+                  buttonRef={downloadButtonRef}
+                  format={downloadFormat}
+                  loops={downloadLoops}
+                  onFormatChange={onDownloadFormatChange}
+                  onLoopsChange={onDownloadLoopsChange}
+                />
+              )}
+            </div>
             <button
               className="icon-button"
               onClick={onRandomize}

@@ -19,6 +19,13 @@ describe('App', () => {
     vi.clearAllMocks();
     // Reset URL
     window.history.replaceState({}, '', '/drums');
+    
+    // Mock clipboard API
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: vi.fn().mockResolvedValue(undefined),
+      },
+    });
   });
 
   afterEach(() => {
@@ -262,6 +269,56 @@ describe('App', () => {
       
       await waitFor(() => {
         expect(rhythmPlayer.stop).toHaveBeenCalled();
+      });
+    });
+  });
+
+  describe('Share functionality', () => {
+    it('should copy URL to clipboard when share button is clicked', async () => {
+      render(<App />);
+      
+      // Find share button
+      const shareButton = screen.getByLabelText('Share rhythm');
+      expect(shareButton).toBeInTheDocument();
+      
+      // Click share button
+      fireEvent.click(shareButton);
+      
+      // Wait for clipboard API to be called
+      await waitFor(() => {
+        expect(navigator.clipboard.writeText).toHaveBeenCalled();
+      });
+      
+      // Verify it was called with the current URL
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(window.location.href);
+      
+      // Verify feedback toast appears
+      await waitFor(() => {
+        expect(screen.getByText('URL copied to clipboard!')).toBeInTheDocument();
+      });
+    });
+
+    it('should handle clipboard API failure gracefully', async () => {
+      // Mock clipboard API to fail
+      const mockWriteText = vi.fn().mockRejectedValue(new Error('Clipboard failed'));
+      Object.assign(navigator, {
+        clipboard: {
+          writeText: mockWriteText,
+        },
+      });
+      
+      // Mock document.execCommand as fallback
+      const mockExecCommand = vi.fn().mockReturnValue(true);
+      document.execCommand = mockExecCommand;
+      
+      render(<App />);
+      
+      const shareButton = screen.getByLabelText('Share rhythm');
+      fireEvent.click(shareButton);
+      
+      // Should attempt fallback
+      await waitFor(() => {
+        expect(mockExecCommand).toHaveBeenCalledWith('copy');
       });
     });
   });

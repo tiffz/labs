@@ -30,6 +30,7 @@
   "dependencies": {
     "@likemybread/name-generator": "^1.0.1",
     "html2canvas": "^1.4.1",
+    "lamejsfixbug121": "^1.0.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "vexflow": "^5.0.0"
