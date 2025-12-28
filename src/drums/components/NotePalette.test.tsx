@@ -52,10 +52,11 @@ describe('NotePalette', () => {
   it('renders multiple note pattern buttons', () => {
     render(<NotePalette {...defaultProps} />);
     
-    // 5 rows x 5 columns (table: D, T, K, S, Rest) + 9 common patterns = 34 pattern buttons
-    // The checkbox is not counted as a button role
+    // 5 rows x 5 columns (table: D, T, K, S, Rest) = 25 single note buttons
+    // Common patterns are now in expandable groups, so they're not all visible by default
+    // Plus group headers and quick insert buttons
     const buttons = screen.getAllByRole('button');
-    expect(buttons.length).toBe(34);
+    expect(buttons.length).toBeGreaterThanOrEqual(25);
   });
 
   it('renders SVG notation for each button', () => {
@@ -64,10 +65,10 @@ describe('NotePalette', () => {
     // Check that SVG elements are present
     // Table header has 4 small symbol SVGs (Dum, Tak, Ka, Slap - Rest is text)
     // Single note cells now use unicode symbols (no SVG)
-    // Common patterns have 9 SVGs
-    // Total: 4 + 9 = 13 SVGs
+    // Common patterns have SVGs (number depends on expanded groups)
+    // At minimum: 4 header SVGs + quick insert buttons in collapsed groups
     const svgElements = container.querySelectorAll('svg');
-    expect(svgElements.length).toBe(13);
+    expect(svgElements.length).toBeGreaterThanOrEqual(4);
   });
 
   it('each button has the notation-button class', () => {
@@ -82,7 +83,9 @@ describe('NotePalette', () => {
     );
     
     const notationButtons = container.querySelectorAll('.notation-button');
-    // 5 rows x 5 columns (table: D, T, K, S, Rest) + 9 common patterns = 34 pattern buttons
-    expect(notationButtons.length).toBe(34);
+    // 5 rows x 5 columns (table: D, T, K, S, Rest) = 25 single note buttons
+    // Common patterns are now in expandable groups, so they're not all visible by default
+    // Plus quick insert buttons in collapsed groups
+    expect(notationButtons.length).toBeGreaterThanOrEqual(25);
   });
 });

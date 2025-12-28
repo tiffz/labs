@@ -17,8 +17,17 @@ import generate from '@likemybread/name-generator';
  * Example: "Kimberly Brown", "Michael Chen", "Sarah O'Connor"
  */
 export function fullName(): string {
-  const firstName = generate(false, true, 'any');  // realistic, first name, any gender
-  const lastName = generate(false, false, 'any');  // realistic, last name, any gender
+  let firstName = generate(false, true, 'any');  // realistic, first name, any gender
+  let lastName = generate(false, false, 'any');  // realistic, last name, any gender
+  
+  // Handle cases where generate returns undefined (fallback to defaults)
+  if (!firstName || typeof firstName !== 'string') {
+    firstName = 'Alex';
+  }
+  if (!lastName || typeof lastName !== 'string') {
+    lastName = 'Smith';
+  }
+  
   return `${firstName} ${lastName}`;
 }
 
@@ -26,8 +35,17 @@ export function fullName(): string {
  * Generates a realistic female full name
  */
 export function femaleFullName(): string {
-  const firstName = generate(false, true, 'female');
-  const lastName = generate(false, false, 'any');
+  let firstName = generate(false, true, 'female');
+  let lastName = generate(false, false, 'any');
+  
+  // Handle cases where generate returns undefined (fallback to defaults)
+  if (!firstName || typeof firstName !== 'string') {
+    firstName = 'Sarah';
+  }
+  if (!lastName || typeof lastName !== 'string') {
+    lastName = 'Smith';
+  }
+  
   return `${firstName} ${lastName}`;
 }
 
@@ -35,8 +53,17 @@ export function femaleFullName(): string {
  * Generates a realistic male full name
  */
 export function maleFullName(): string {
-  const firstName = generate(false, true, 'male');
-  const lastName = generate(false, false, 'any');
+  let firstName = generate(false, true, 'male');
+  let lastName = generate(false, false, 'any');
+  
+  // Handle cases where generate returns undefined (fallback to defaults)
+  if (!firstName || typeof firstName !== 'string') {
+    firstName = 'Michael';
+  }
+  if (!lastName || typeof lastName !== 'string') {
+    lastName = 'Smith';
+  }
+  
   return `${firstName} ${lastName}`;
 }
 
@@ -122,8 +149,17 @@ const characterNames = new Map<string, {
 export function KimberlySmith(characterId: string = 'default'): string {
   if (!characterNames.has(characterId)) {
     const { pronouns, gender } = generatePronounsAndGender();
-    const firstName = generate(false, true, gender);
-    const lastName = generate(false, false, 'any');
+    let firstName = generate(false, true, gender);
+    let lastName = generate(false, false, 'any');
+    
+    // Handle cases where generate returns undefined (fallback to defaults)
+    if (!firstName || typeof firstName !== 'string') {
+      firstName = gender === 'male' ? 'Michael' : gender === 'female' ? 'Sarah' : 'Alex';
+    }
+    if (!lastName || typeof lastName !== 'string') {
+      lastName = 'Smith';
+    }
+    
     characterNames.set(characterId, {
       first: firstName,
       last: lastName,
