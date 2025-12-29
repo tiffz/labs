@@ -313,6 +313,25 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
         }
 
         stave.setContext(context).draw();
+        
+        // Add measure number above the stave using SVG text element (left-aligned)
+        // Only show measure numbers if there are more than 3 measures
+        // Position it lower, closer to the bottom measure to avoid confusion
+        if (rhythm.measures.length > 3) {
+          const svgElement = containerRef.current?.querySelector('svg');
+          if (svgElement) {
+            const textElement = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            textElement.setAttribute('x', String(xPosition));
+            textElement.setAttribute('y', String(yPosition + 15));
+            textElement.setAttribute('font-family', 'Arial');
+            textElement.setAttribute('font-size', '10');
+            textElement.setAttribute('fill', '#666');
+            textElement.setAttribute('text-anchor', 'start');
+            textElement.setAttribute('dominant-baseline', 'baseline');
+            textElement.textContent = `${measureIndex + 1}`;
+            svgElement.appendChild(textElement);
+          }
+        }
 
         // Convert measure notes to VexFlow StaveNotes
           const staveNotes = measure.notes.map((note: Note, noteIndex: number) => {
@@ -336,12 +355,24 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
             keys: [pitch],
             duration: duration,
             clef: 'percussion',
+            autoStem: false, // Disable auto-stemming so we have full control
           });
 
           // Ensure stems are visible for all notes (except whole notes and rests)
-            // Use stems up for standard notation
-          if (!isRest && duration !== 'w' && duration !== 'wd') {
-              staveNote.setStemDirection(1); // 1 = up (standard direction)
+          // Use stems up for standard notation
+          // Whole notes should never have stems - check both duration string and actual duration
+          const isWholeNote = note.duration === 'whole' || duration === 'w' || duration === 'wr';
+          if (isRest || isWholeNote) {
+            // Explicitly disable stem for whole notes and rests
+            staveNote.setStemDirection(0); // 0 = no stem
+            // Also try to hide the stem element if it exists
+            try {
+              staveNote.setStemStyle({ visible: false });
+            } catch {
+              // Ignore if method doesn't exist
+            }
+          } else {
+            staveNote.setStemDirection(1); // 1 = up (standard direction)
           }
 
           // Explicitly add dot modifier for dotted notes to ensure it's visible
@@ -390,8 +421,36 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
             // Draw voice
             voice.draw(context, stave);
             
+            // Remove stems from whole notes and rests after drawing
+            staveNotes.forEach((note, noteIndex) => {
+              const originalNote = measure.notes[noteIndex];
+              const isRest = originalNote.sound === 'rest';
+              const noteDuration = note.getDuration();
+              const isWholeNote = originalNote.duration === 'whole' || noteDuration === 'w' || noteDuration === 'wr';
+              
+              if (isRest || isWholeNote) {
+                const svgEl = note.getSVGElement();
+                if (svgEl) {
+                  // Remove all stem elements
+                  const stemEls = svgEl.querySelectorAll('.vf-stem, path[class*="stem"], line[class*="stem"], .stem, [class*="stem"]');
+                  stemEls.forEach((el) => el.remove());
+                }
+              }
+            });
+            
             // Workaround for VexFlow bug: manually draw stems that weren't rendered
-            staveNotes.forEach((note) => {
+            staveNotes.forEach((note, noteIndex) => {
+              const originalNote = measure.notes[noteIndex];
+              const isRest = originalNote.sound === 'rest';
+              const noteDuration = note.getDuration();
+              const isWholeNote = originalNote.duration === 'whole' || noteDuration === 'w' || noteDuration === 'wr';
+              
+              // Skip whole notes and rests
+              if (isRest || isWholeNote) {
+                return;
+              }
+              
+              // For other notes, check if stem needs to be drawn
               const stem = note.getStem();
               if (stem) {
                 const svgEl = note.getSVGElement();
@@ -504,7 +563,7 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
                 charPosition += ref.note.durationInSixteenths;
               }
             } catch (error) {
-              console.log('Error getting bounds for note after rendering:', ref.measureIndex, ref.noteIndex, error);
+              console.error('Error getting bounds for note after rendering:', ref.measureIndex, ref.noteIndex, error);
             }
           });
         });

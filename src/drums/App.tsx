@@ -5,6 +5,8 @@ import NotePalette from './components/NotePalette';
 import PlaybackControls from './components/PlaybackControls';
 import RhythmInfoCard from './components/RhythmInfoCard';
 import KeyboardShortcutsHelp from './components/KeyboardShortcutsHelp';
+import RhythmSequencer from './components/RhythmSequencer';
+import CollapsibleSection from './components/CollapsibleSection';
 import { parseRhythm } from './utils/rhythmParser';
 import { recognizeRhythm } from './utils/rhythmRecognition';
 import { useUrlState } from './hooks/useUrlState';
@@ -492,6 +494,20 @@ const App: React.FC = () => {
             notation={notation}
             timeSignature={timeSignature}
           />
+
+          {/* Sequencer section */}
+          <CollapsibleSection title="Sequencer" defaultExpanded={false}>
+            <RhythmSequencer
+              notation={notation}
+              onNotationChange={(newNotation) => {
+                addToHistory(notation);
+                setNotationWithoutHistory(newNotation);
+              }}
+              timeSignature={timeSignature}
+              parsedRhythm={parsedRhythm}
+              currentNote={currentNote}
+            />
+          </CollapsibleSection>
 
           {/* Show rhythm info card if a rhythm is recognized */}
           {recognizedRhythm && (

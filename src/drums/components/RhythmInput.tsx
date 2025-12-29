@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import type { TimeSignature, ParsedRhythm } from '../types';
 import type { PlaybackSettings } from '../types/settings';
 import { getSixteenthsPerMeasure } from '../utils/timeSignatureUtils';
@@ -64,6 +64,22 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
     }
     // If invalid characters are present, ignore the change
   };
+
+  // Auto-resize textarea on mount and when notation changes
+  useEffect(() => {
+    if (inputRef.current && document.activeElement === inputRef.current) {
+      // Only resize if focused
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (inputRef.current && document.activeElement === inputRef.current) {
+            inputRef.current.style.height = 'auto';
+            const scrollHeight = inputRef.current.scrollHeight;
+            inputRef.current.style.height = `${Math.max(scrollHeight, 2.5 * 16)}px`;
+          }
+        });
+      });
+    }
+  }, [notation]);
 
   // Auto-format notation to put 2 measures per line (matching VexFlow display)
   const handleBlur = () => {
@@ -162,11 +178,12 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
 
   return (
     <div className="input-section">
-      <div className="input-header">
-        <div className="input-label-group">
-          <label className="input-label" htmlFor="rhythm-notation-input">
-            Rhythm Notation
-          </label>
+      <div className="input-section-content">
+        <div className="input-header">
+          <div className="input-label-group">
+            <label className="input-label" htmlFor="rhythm-notation-input">
+              Rhythm Notation
+            </label>
           <button
             className="help-button"
             onMouseEnter={() => setShowTooltip(true)}
@@ -361,21 +378,46 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
         </div>
       </div>
       
-          {/* Input field */}
-          <div className="rhythm-input-container">
-            <textarea
-              ref={inputRef}
-              id="rhythm-notation-input"
-              className="input-field"
-              value={notation}
-              onChange={(e) => handleNotationChange(e.target.value)}
-              onBlur={handleBlur}
-              placeholder="D-T-__T-D---T---"
-              spellCheck={false}
-              rows={3}
-            />
-            {/* Visual feedback is handled by the canvas preview - no separate UI here */}
-          </div>
+      {/* Input field */}
+      <div className="rhythm-input-container">
+        <textarea
+          ref={inputRef}
+          id="rhythm-notation-input"
+          className="input-field input-field-expandable"
+          value={notation}
+          onChange={(e) => {
+            handleNotationChange(e.target.value);
+            // Auto-resize textarea if focused
+            if (inputRef.current && document.activeElement === inputRef.current) {
+              requestAnimationFrame(() => {
+                if (inputRef.current && document.activeElement === inputRef.current) {
+                  inputRef.current.style.height = 'auto';
+                  const scrollHeight = inputRef.current.scrollHeight;
+                  inputRef.current.style.height = `${Math.max(scrollHeight, 2.5 * 16)}px`;
+                }
+              });
+            }
+          }}
+          onBlur={() => {
+            handleBlur();
+            // Collapse to single line on blur
+            if (inputRef.current) {
+              inputRef.current.style.height = '2.5rem';
+            }
+          }}
+          onFocus={() => {
+            // Expand on focus to 4 lines tall
+            if (inputRef.current) {
+              inputRef.current.style.height = '6rem'; // ~4 lines (1.5rem per line)
+            }
+          }}
+          placeholder="D-T-__T-D---T---"
+          spellCheck={false}
+          rows={1}
+        />
+        {/* Visual feedback is handled by the canvas preview - no separate UI here */}
+      </div>
+      </div>
     </div>
   );
 };

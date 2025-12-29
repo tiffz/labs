@@ -1,6 +1,7 @@
 import React from 'react';
 import type { ParsedRhythm, TimeSignature } from '../types';
 import VexFlowRenderer from './VexFlowRenderer';
+import CollapsibleSection from './CollapsibleSection';
 
 interface RhythmDisplayProps {
   rhythm: ParsedRhythm;
@@ -27,19 +28,19 @@ const RhythmDisplay: React.FC<RhythmDisplayProps> = ({
 
   if (measures.length === 0) {
     return (
-      <div className="rhythm-display">
+      <CollapsibleSection title="Note Display" defaultExpanded={true}>
         <div className="empty-state">
           <div className="empty-state-icon">🥁</div>
           <div className="empty-state-text">
             Create a rhythm using the note palette or the rhythm notation input above.
           </div>
         </div>
-      </div>
+      </CollapsibleSection>
     );
   }
 
   return (
-    <div className="rhythm-display">
+    <CollapsibleSection title="Note Display" defaultExpanded={true}>
       {!isValid && error && (
         <div className="error-message">
           <div className="error-message-title">Invalid Rhythm</div>
@@ -59,7 +60,7 @@ const RhythmDisplay: React.FC<RhythmDisplayProps> = ({
           timeSignature={timeSignature}
         />
       </div>
-    </div>
+    </CollapsibleSection>
   );
 };
 
