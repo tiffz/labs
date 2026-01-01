@@ -43,6 +43,10 @@
   background-image: url('/icons/favicon-zines.svg');
 }
 
+.app-icon.comic-pdf {
+  background-image: url('/icons/favicon-comic-pdf.svg');
+}
+
 .app-icon.corp {
   background-image: url('/icons/lightbulb-noto.png');
   background-size: 80% 80%;

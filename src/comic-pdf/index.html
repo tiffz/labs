@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>Mixam Comic PDF Converter</title>
+    <link rel="icon" type="image/svg+xml" href="/icons/favicon-comic-pdf.svg" />
+    <link rel="apple-touch-icon" href="/icons/favicon-comic-pdf.svg" />
+    <meta name="theme-color" content="#9333ea" />
+    <meta name="description" content="Convert comic page images into Mixam-compatible PDFs with automatic spread detection" />
+    
+    <!-- Analytics - Only load in production -->
+    <script>
+        // Only load analytics when not on localhost
+        if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+            const script = document.createElement('script');
+            script.async = true;
+            script.src = '/scripts/analytics.js';
+            document.head.appendChild(script);
+        }
+    </script>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="module" src="./main.tsx"></script>
+</body>
+</html>
+

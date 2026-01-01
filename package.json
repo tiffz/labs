@@ -29,8 +29,10 @@
   },
   "dependencies": {
     "@likemybread/name-generator": "^1.0.1",
+    "file-saver": "^2.0.5",
     "html2canvas": "^1.4.1",
     "lamejsfixbug121": "^1.0.0",
+    "pdf-lib": "^1.17.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "vexflow": "^5.0.0"
