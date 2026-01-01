@@ -8,6 +8,7 @@ const config: KnipConfig = {
     'src/corp/index.html',
     'src/drums/index.html',
     'src/story/index.html',
+    'src/chords/index.html',
     'src/404.html',
     // Include TS entry points explicitly so transitive deps are tracked
     'src/cats/main.tsx',
@@ -15,6 +16,7 @@ const config: KnipConfig = {
     'src/corp/main.tsx',
     'src/drums/main.tsx',
     'src/story/main.tsx',
+    'src/chords/main.tsx',
     'src/corp/App.tsx',
     'src/**/*.test.{ts,tsx}',
   ],
