@@ -9,6 +9,7 @@ import ChordScoreRenderer from './components/ChordScoreRenderer';
 import ManualControls from './components/ManualControls';
 import { SOUND_OPTIONS } from './types/soundOptions';
 import { useUrlState } from './hooks/useUrlState';
+import { CHORD_STYLING_STRATEGIES } from './data/chordStylingStrategies';
 
 const App: React.FC = () => {
   const { getInitialState, syncToUrl, setupPopStateListener } = useUrlState();
@@ -20,19 +21,20 @@ const App: React.FC = () => {
     if (urlState) {
       // Use URL state, fill in defaults for missing values
       const timeSignature = urlState.timeSignature || randomTimeSignature();
-      return {
-        progression: urlState.progression || randomChordProgression(),
-        key: urlState.key || randomKey(),
-        tempo: urlState.tempo || randomTempo(),
-        timeSignature,
-        stylingStrategy: urlState.stylingStrategy || randomStylingStrategy(timeSignature),
-        voicingOptions: {
-          useInversions: false,
-          useOpenVoicings: false,
-          randomizeOctaves: false,
-        },
-        soundType: 'piano',
-      };
+                return {
+                  progression: urlState.progression || randomChordProgression(),
+                  key: urlState.key || randomKey(),
+                  tempo: urlState.tempo || randomTempo(),
+                  timeSignature,
+                  stylingStrategy: urlState.stylingStrategy || randomStylingStrategy(timeSignature),
+                  voicingOptions: {
+                    useInversions: false,
+                    useOpenVoicings: false,
+                    randomizeOctaves: false,
+                  },
+                  soundType: 'piano',
+                  measuresPerChord: urlState.measuresPerChord || 1,
+                };
     }
     
     // No URL state, use random defaults
@@ -49,6 +51,7 @@ const App: React.FC = () => {
         randomizeOctaves: false,
       },
       soundType: 'piano',
+      measuresPerChord: 1,
     };
   });
 
@@ -79,7 +82,17 @@ const App: React.FC = () => {
       updates.tempo = randomTempo();
     }
     if (!lockedOptions.timeSignature) {
-      updates.timeSignature = randomTimeSignature();
+      // If styling is locked, only randomize compatible time signatures
+      if (lockedOptions.stylingStrategy) {
+        const strategyConfig = CHORD_STYLING_STRATEGIES[state.stylingStrategy];
+        const compatibleTimeSigs = strategyConfig.compatibleTimeSignatures;
+        if (compatibleTimeSigs.length > 0) {
+          const randomCompatibleTs = compatibleTimeSigs[Math.floor(Math.random() * compatibleTimeSigs.length)];
+          updates.timeSignature = randomCompatibleTs;
+        }
+      } else {
+        updates.timeSignature = randomTimeSignature();
+      }
     }
     if (!lockedOptions.stylingStrategy) {
       const newTimeSig = updates.timeSignature || state.timeSignature;
@@ -100,15 +113,21 @@ const App: React.FC = () => {
       const newState = {
         ...prevState,
         ...updates,
-        voicingOptions: prevState.voicingOptions,
-        soundType: prevState.soundType,
+        voicingOptions: updates.voicingOptions !== undefined ? updates.voicingOptions : prevState.voicingOptions,
+        soundType: updates.soundType !== undefined ? updates.soundType : prevState.soundType,
       };
       
       // If playback is active and settings that affect playback have changed,
-      // update playback gracefully (will finish current measure first)
+      // handle updates dynamically based on the type of change
       if (isPlaying) {
+        // Tempo changes should apply immediately
+        if (updates.tempo !== undefined && updates.tempo !== prevState.tempo) {
+          chordPlayer.updateTempo(newState.tempo);
+        }
+        
+        // Other playback-affecting changes should wait for measure end
         const playbackAffectingKeys: (keyof ChordProgressionState)[] = [
-          'progression', 'key', 'tempo', 'timeSignature', 'stylingStrategy', 'voicingOptions'
+          'progression', 'key', 'timeSignature', 'stylingStrategy', 'voicingOptions'
         ];
         const hasPlaybackChanges = playbackAffectingKeys.some(key => 
           updates[key] !== undefined && updates[key] !== prevState[key]
@@ -120,13 +139,22 @@ const App: React.FC = () => {
           const trebleVoicings = chords.map(chord => generateVoicing(chord, newState.voicingOptions, 'treble'));
           const bassVoicings = chords.map(chord => generateVoicing(chord, newState.voicingOptions, 'bass'));
           
-          const styledChords = chords.map((chord, index) => 
-            generateStyledChordNotes(chord, trebleVoicings[index], bassVoicings[index], newState.stylingStrategy, newState.timeSignature)
-          );
-          
-          // Update playback gracefully (will finish current measure, then switch)
-          chordPlayer.updatePlayback(
-            styledChords,
+                    const styledChords = chords.map((chord, index) => 
+                      generateStyledChordNotes(chord, trebleVoicings[index], bassVoicings[index], newState.stylingStrategy, newState.timeSignature)
+                    );
+                    
+                    // Expand chords across multiple measures based on measuresPerChord
+                    const measuresPerChord = newState.measuresPerChord || 1;
+                    const expandedStyledChords: typeof styledChords = [];
+                    styledChords.forEach((styledChord) => {
+                      for (let i = 0; i < measuresPerChord; i++) {
+                        expandedStyledChords.push(styledChord);
+                      }
+                    });
+                    
+                    // Update playback gracefully (will finish current measure, then switch)
+                    chordPlayer.updatePlayback(
+                      expandedStyledChords,
             newState.tempo,
             newState.timeSignature,
             newState.soundType
@@ -179,6 +207,15 @@ const App: React.FC = () => {
     const styledChords = chords.map((chord, index) => 
       generateStyledChordNotes(chord, trebleVoicings[index], bassVoicings[index], state.stylingStrategy, state.timeSignature)
     );
+    
+    // Expand chords across multiple measures based on measuresPerChord
+    const measuresPerChord = state.measuresPerChord || 1;
+    const expandedStyledChords: typeof styledChords = [];
+    styledChords.forEach((styledChord) => {
+      for (let i = 0; i < measuresPerChord; i++) {
+        expandedStyledChords.push(styledChord);
+      }
+    });
 
     setIsPlaying(true);
     setCurrentChordIndex(null);
@@ -188,7 +225,7 @@ const App: React.FC = () => {
     currentLoopIdRef.current = 0; // Reset loop ID when starting playback
 
     chordPlayer.play(
-      styledChords,
+      expandedStyledChords,
       state.tempo,
       state.timeSignature,
       (activeGroup) => {
@@ -203,14 +240,17 @@ const App: React.FC = () => {
         return;
       }
       
-      // Filter out highlights from previous loops - CRITICAL!
+      // CRITICAL: Filter out ALL callbacks from previous loops (both adds and removals)
+      // This prevents old removal callbacks from removing highlights from the current loop
       const activeLoopId = activeGroup.loopId ?? currentLoopIdRef.current;
       if (activeLoopId < currentLoopIdRef.current) {
-        // This highlight is from a previous loop, ignore it completely
+        // This callback is from a previous loop, ignore it completely
+        // This includes both add and remove operations from old loops
         return;
       }
       
-      // Update current loop ID if this is a newer loop - clear all old highlights immediately
+      // If this is a newer loop, update the loop ID and clear state
+      // This should only happen if the clear signal was missed somehow
       if (activeLoopId > currentLoopIdRef.current) {
         currentLoopIdRef.current = activeLoopId;
         activeNoteGroupsRef.current = new Set<string>();
@@ -219,10 +259,11 @@ const App: React.FC = () => {
       }
       
       // Now update the set - use functional setState to work with latest state
+      // Always start from the ref's current state to ensure consistency
       setActiveNoteGroups(prev => {
-        // Start fresh if we detected a new loop, otherwise use previous state
-        const baseSet = activeLoopId > currentLoopIdRef.current ? new Set<string>() : prev;
-        const next = new Set(baseSet);
+        // Use prev (which React guarantees is the latest committed state) instead of ref
+        // This ensures we're working with the actual React state, not a potentially stale ref
+        const next = new Set(prev);
         
         // Handle treble group
         if (activeGroup.trebleGroupIndex !== null) {
@@ -231,8 +272,12 @@ const App: React.FC = () => {
             next.add(`${activeGroup.measureIndex}:treble:${activeGroup.trebleGroupIndex}`);
           } else {
             // Negative index means remove (convert back: -(index + 1))
+            // If trebleGroupIndex is -1, that means remove group 0
+            // If trebleGroupIndex is -2, that means remove group 1
             const groupIndex = -(activeGroup.trebleGroupIndex + 1);
-            next.delete(`${activeGroup.measureIndex}:treble:${groupIndex}`);
+            const key = `${activeGroup.measureIndex}:treble:${groupIndex}`;
+            // Always try to delete, even if key doesn't exist (handles edge cases)
+            next.delete(key);
           }
         }
         
@@ -243,12 +288,16 @@ const App: React.FC = () => {
             next.add(`${activeGroup.measureIndex}:bass:${activeGroup.bassGroupIndex}`);
           } else {
             // Negative index means remove (convert back: -(index + 1))
+            // If bassGroupIndex is -1, that means remove group 0
+            // If bassGroupIndex is -2, that means remove group 1
             const groupIndex = -(activeGroup.bassGroupIndex + 1);
-            next.delete(`${activeGroup.measureIndex}:bass:${groupIndex}`);
+            const key = `${activeGroup.measureIndex}:bass:${groupIndex}`;
+            // Always try to delete, even if key doesn't exist (handles edge cases)
+            next.delete(key);
           }
         }
         
-        // Update ref to match state
+        // Update ref to match state for consistency
         activeNoteGroupsRef.current = next;
         return next;
       });
@@ -298,7 +347,11 @@ const App: React.FC = () => {
                 onChange={(e) => {
                   const newSoundType = e.target.value as ChordProgressionState['soundType'];
                   handleStateChange({ soundType: newSoundType });
-                  chordPlayer.setSoundType(newSoundType);
+                  // handleStateChange will call chordPlayer.setSoundType if playback is active
+                  // But we also need to update it if playback is not active
+                  if (!isPlaying) {
+                    chordPlayer.setSoundType(newSoundType);
+                  }
                 }}
                 className="sound-select"
               >

@@ -19,12 +19,15 @@ const TIME_SIGNATURES: Array<{ timeSignature: TimeSignature; weight: number }> =
   { timeSignature: { numerator: 12, denominator: 8 }, weight: 7 },
 ];
 
-// Tempo ranges (BPM) for different musical styles
-const TEMPO_RANGES = {
-  slow: { min: 60, max: 80 },
-  moderate: { min: 80, max: 120 },
-  fast: { min: 120, max: 160 },
-};
+// Tempo ranges (BPM) with weights - weighted against extremes
+const TEMPO_RANGES = [
+  { min: 20, max: 50, weight: 2 },   // Very slow - low weight
+  { min: 50, max: 80, weight: 15 },  // Slow - moderate weight
+  { min: 80, max: 120, weight: 40 }, // Moderate - high weight (most common)
+  { min: 120, max: 160, weight: 30 }, // Fast - high weight
+  { min: 160, max: 200, weight: 10 }, // Very fast - moderate weight
+  { min: 200, max: 300, weight: 3 },  // Extremely fast - low weight
+];
 
 /**
  * Randomly selects a weighted item from an array
@@ -70,12 +73,14 @@ export function randomTimeSignature(): TimeSignature {
 }
 
 /**
- * Randomly selects a tempo (BPM) within reasonable bounds
+ * Randomly selects a tempo (BPM) within reasonable bounds (20-300)
+ * Weighted against extremes for more musical results
  */
 export function randomTempo(): number {
-  // Randomly choose a tempo range
-  const ranges = Object.values(TEMPO_RANGES);
-  const range = ranges[Math.floor(Math.random() * ranges.length)];
+  // Weighted random selection of tempo range
+  const range = weightedRandom(
+    TEMPO_RANGES.map(r => ({ item: r, weight: r.weight }))
+  );
   
   // Random tempo within that range
   return Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
@@ -99,5 +104,23 @@ export function randomStylingStrategy(timeSignature: TimeSignature): ChordStylin
   
   const index = Math.floor(Math.random() * compatibleStrategies.length);
   return compatibleStrategies[index];
+}
+
+// Measures per chord weights - higher values are less likely
+const MEASURES_PER_CHORD_WEIGHTS = [
+  { value: 1, weight: 60 }, // Most common - 1 measure per chord
+  { value: 2, weight: 25 },  // Less common
+  { value: 3, weight: 10 },  // Rare
+  { value: 4, weight: 5 },   // Very rare
+];
+
+/**
+ * Randomly selects measures per chord (1-4) with weighted selection
+ * Higher values are less likely
+ */
+export function randomMeasuresPerChord(): number {
+  return weightedRandom(
+    MEASURES_PER_CHORD_WEIGHTS.map(({ value, weight }) => ({ item: value, weight }))
+  );
 }
 

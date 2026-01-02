@@ -8,7 +8,6 @@ import { Renderer, Stave, StaveNote, Voice, Formatter, StaveConnector, BarlineTy
 import type { ChordProgressionState } from '../types';
 import { progressionToChords } from '../utils/chordTheory';
 import { generateVoicing } from '../utils/chordVoicing';
-import { formatChordName } from '../utils/chordNaming';
 import { generateStyledChordNotes } from '../utils/chordStyling';
 import { getKeySignature } from '../utils/keySignature';
 
@@ -109,6 +108,48 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({ state, currentC
         generateStyledChordNotes(chord, trebleVoicings[index], bassVoicings[index], state.stylingStrategy, state.timeSignature)
       );
       
+      // Expand chords across multiple measures based on measuresPerChord
+      // Each chord repeats for measuresPerChord measures
+      const measuresPerChord = state.measuresPerChord || 1;
+      const expandedStyledChords: typeof styledChords = [];
+      const expandedChords: typeof chords = [];
+      const expandedChordNames: string[] = [];
+      
+      chords.forEach((chord, chordIndex) => {
+        const styledChord = styledChords[chordIndex];
+        const chordName = progressionToChords(state.progression.progression, state.key)[chordIndex];
+        const chordNameString = `${chordName.root}${chordName.quality === 'minor' ? 'm' : chordName.quality === 'diminished' ? '°' : chordName.quality === 'augmented' ? '+' : chordName.quality === 'dominant7' ? '7' : chordName.quality === 'major7' ? 'maj7' : chordName.quality === 'minor7' ? 'm7' : chordName.quality === 'sus2' ? 'sus2' : chordName.quality === 'sus4' ? 'sus4' : ''}`;
+        
+        // Repeat this chord for measuresPerChord measures
+        for (let i = 0; i < measuresPerChord; i++) {
+          expandedStyledChords.push(styledChord);
+          expandedChords.push(chord);
+          // Only show chord name on first measure of each chord
+          expandedChordNames.push(i === 0 ? chordNameString : '');
+        }
+      });
+      
+      const totalMeasures = expandedStyledChords.length;
+      
+      // Calculate complexity score to determine rendering scale
+      // Factors: number of measures, notes per measure, measures per chord
+      const maxNotesPerMeasure = Math.max(...styledChords.map(sc => 
+        sc.trebleNotes.length + sc.bassNotes.length
+      ));
+      
+      // Complexity score: higher = more complex
+      // Base complexity from number of measures and notes
+      const complexityScore = totalMeasures * 0.5 + maxNotesPerMeasure * 2 + measuresPerChord * 2;
+      
+      // Calculate scale factor: reduce size as complexity increases
+      // For simple music (score ~10): scale = 1.0
+      // For complex music (score ~30+): scale = 0.75
+      const baseComplexity = 10;
+      const maxComplexity = 40;
+      const minScale = 0.75;
+      const maxScale = 1.0;
+      const complexityScale = Math.max(minScale, maxScale - ((complexityScore - baseComplexity) / (maxComplexity - baseComplexity)) * (maxScale - minScale));
+      
       // Calculate measures per line (wrap to multiple lines)
       // Default to 4 measures per line for better organization
       const containerWidth = containerRef.current.clientWidth || 1200;
@@ -117,9 +158,6 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({ state, currentC
       
       // Calculate dynamic measure width based on note count in styled chords
       // More notes need more space to prevent escaping
-      const maxNotesPerMeasure = Math.max(...styledChords.map(sc => 
-        sc.trebleNotes.length + sc.bassNotes.length
-      ));
       const measureWidth = baseMeasureWidth + Math.max(0, (maxNotesPerMeasure - 4) * 15);
       
       // Calculate how many measures fit, but prefer 4 if possible
@@ -127,12 +165,16 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({ state, currentC
       const measuresPerLine = maxMeasuresByWidth >= defaultMeasuresPerLine 
         ? defaultMeasuresPerLine 
         : Math.max(1, maxMeasuresByWidth);
-      const numLines = Math.ceil(chords.length / measuresPerLine);
+      const numLines = Math.ceil(totalMeasures / measuresPerLine);
       
       // Create renderer - grand staff needs more height per line
-      // Reduced height for denser display
-      const lineHeight = 240; // Reduced height for grand staff per line
-      const lineSpacing = 40; // Reduced space between lines
+      // Scale down height and spacing based on complexity
+      const baseLineHeight = 240;
+      const baseLineSpacing = 40;
+      const baseStaffSpacing = 100; // Space between treble and bass staves
+      const lineHeight = baseLineHeight * complexityScale;
+      const lineSpacing = baseLineSpacing * complexityScale;
+      const staffSpacing = baseStaffSpacing * complexityScale;
       const totalHeight = (lineHeight * numLines) + (lineSpacing * (numLines - 1)) + 40;
       
       const renderer = new Renderer(containerRef.current, Renderer.Backends.SVG);
@@ -149,7 +191,7 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({ state, currentC
         const endMeasure = Math.min(startMeasure + measuresPerLine, chords.length);
         
         const trebleY = 30 + (lineIndex * (lineHeight + lineSpacing));
-        const bassY = trebleY + 100; // Reduced spacing for denser display
+        const bassY = trebleY + staffSpacing;
         
         // Create separate staves for each measure to ensure proper formatting
         const trebleStaves: Stave[] = [];
@@ -158,7 +200,7 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({ state, currentC
         for (let measureIndex = startMeasure; measureIndex < endMeasure; measureIndex++) {
           const localMeasureIndex = measureIndex - startMeasure;
           const xPosition = 20 + (localMeasureIndex * measureWidth);
-          const isLastMeasure = measureIndex === chords.length - 1;
+          const isLastMeasure = measureIndex === totalMeasures - 1;
           
           // Create treble stave for this measure (keep same width for alignment)
           const trebleStave = new Stave(xPosition, trebleY, measureWidth);
@@ -233,7 +275,7 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({ state, currentC
           const localMeasureIndex = measureIndex - startMeasure;
           const trebleStave = trebleStaves[localMeasureIndex];
           const bassStave = bassStaves[localMeasureIndex];
-          const styledChord = styledChords[measureIndex];
+          const styledChord = expandedStyledChords[measureIndex];
           
           // Create treble and bass notes for this measure
           // VexFlow will automatically align notes that start at the same tick position when voices are joined
@@ -383,8 +425,10 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({ state, currentC
         const svgElement = containerRef.current?.querySelector('svg');
         if (svgElement) {
           for (let measureIndex = startMeasure; measureIndex < endMeasure; measureIndex++) {
-            const chord = chords[measureIndex];
-            const chordName = formatChordName(chord);
+            const chordName = expandedChordNames[measureIndex];
+            // Only render chord name if it's not empty (only first measure of each chord)
+            if (!chordName) continue;
+            
             const localMeasureIndex = measureIndex - startMeasure;
             const trebleStave = trebleStaves[localMeasureIndex];
             
@@ -397,18 +441,18 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({ state, currentC
                 const bounds = noteRef.note.getBoundingBox();
                 if (bounds) {
                   xPosition = bounds.getX();
-              } else {
+                } else {
+                  // Fallback: use stave position
+                  xPosition = trebleStave.getX() + (localMeasureIndex === 0 ? 60 + (keySig.count * 4) : 40);
+                }
+              } catch {
                 // Fallback: use stave position
-                xPosition = trebleStave.getX() + (localMeasureIndex === 0 ? 60 + (keySig.count * 4) : 40);
+                xPosition = trebleStave.getX() + (localMeasureIndex === 0 ? 100 + (keySig.count * 7) : 25);
               }
-            } catch {
+            } else {
               // Fallback: use stave position
               xPosition = trebleStave.getX() + (localMeasureIndex === 0 ? 100 + (keySig.count * 7) : 25);
             }
-          } else {
-            // Fallback: use stave position
-            xPosition = trebleStave.getX() + (localMeasureIndex === 0 ? 100 + (keySig.count * 7) : 25);
-          }
             
             // Position chord name above the first note (beat 1)
             const yPosition = trebleY + 5; // Lower, closer to staff lines
@@ -417,7 +461,9 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({ state, currentC
             textElement.setAttribute('x', String(xPosition));
             textElement.setAttribute('y', String(yPosition));
             textElement.setAttribute('font-family', 'Arial, sans-serif');
-            textElement.setAttribute('font-size', '13');
+            // Scale font size based on complexity
+            const chordNameFontSize = Math.max(10, Math.round(13 * complexityScale));
+            textElement.setAttribute('font-size', String(chordNameFontSize));
             textElement.setAttribute('font-weight', 'bold');
             textElement.setAttribute('fill', '#1e293b');
             textElement.setAttribute('text-anchor', 'start');

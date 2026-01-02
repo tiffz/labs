@@ -7,7 +7,7 @@ import React, { useMemo, useEffect } from 'react';
 import type { ChordProgressionState, Key, TimeSignature, LockedOptions } from '../types';
 import { COMMON_CHORD_PROGRESSIONS } from '../data/chordProgressions';
 import { CHORD_STYLING_STRATEGIES } from '../data/chordStylingStrategies';
-import { ALL_KEYS, randomChordProgression, randomKey, randomTempo } from '../utils/randomization';
+import { ALL_KEYS, randomChordProgression, randomKey, randomTempo, randomMeasuresPerChord } from '../utils/randomization';
 import { getCompatibleStylingStrategies } from '../utils/stylingCompatibility';
 import { transposeKeyUp, transposeKeyDown } from '../utils/keyTransposition';
 import OptionChip from './OptionChip';
@@ -62,6 +62,10 @@ const ManualControls: React.FC<ManualControlsProps> = ({
 
   const handleRandomizeTempo = () => {
     onStateChange({ tempo: randomTempo() });
+  };
+
+  const handleRandomizeMeasuresPerChord = () => {
+    onStateChange({ measuresPerChord: randomMeasuresPerChord() });
   };
 
   // Get available time signatures
@@ -130,11 +134,8 @@ const ManualControls: React.FC<ManualControlsProps> = ({
               <button
                 className="key-transpose-button"
                 onClick={() => {
-                  if (!lockedOptions.key) {
-                    onStateChange({ key: transposeKeyDown(state.key) });
-                  }
+                  onStateChange({ key: transposeKeyDown(state.key) });
                 }}
-                disabled={lockedOptions.key}
                 title="Transpose down one semitone"
                 aria-label="Transpose down"
               >
@@ -143,11 +144,8 @@ const ManualControls: React.FC<ManualControlsProps> = ({
               <button
                 className="key-transpose-button"
                 onClick={() => {
-                  if (!lockedOptions.key) {
-                    onStateChange({ key: transposeKeyUp(state.key) });
-                  }
+                  onStateChange({ key: transposeKeyUp(state.key) });
                 }}
-                disabled={lockedOptions.key}
                 title="Transpose up one semitone"
                 aria-label="Transpose up"
               >
@@ -164,11 +162,11 @@ const ManualControls: React.FC<ManualControlsProps> = ({
           tooltip="Beats per minute (BPM)"
           inlineEdit={true}
           inlineType="number"
-          inlineMin={60}
-          inlineMax={200}
+          inlineMin={20}
+          inlineMax={300}
           onInlineChange={(newValue) => {
             const tempo = parseInt(newValue, 10);
-            if (!isNaN(tempo) && tempo >= 60 && tempo <= 200) {
+            if (!isNaN(tempo) && tempo >= 20 && tempo <= 300) {
               onStateChange({ tempo });
             }
           }}
@@ -176,19 +174,82 @@ const ManualControls: React.FC<ManualControlsProps> = ({
           onRandomize={handleRandomizeTempo}
         />
 
+        <OptionChip
+          label="Measures per chord"
+          value={`${state.measuresPerChord || 1}`}
+          isLocked={lockedOptions.measuresPerChord || false}
+          tooltip="Number of measures each chord spans (1-4)"
+          inlineEdit={true}
+          inlineType="number"
+          inlineMin={1}
+          inlineMax={4}
+          onInlineChange={(newValue) => {
+            const measuresPerChord = parseInt(newValue, 10);
+            if (!isNaN(measuresPerChord) && measuresPerChord >= 1 && measuresPerChord <= 4) {
+              onStateChange({ measuresPerChord });
+            }
+          }}
+          onLockToggle={() => onLockChange('measuresPerChord', !lockedOptions.measuresPerChord)}
+          onRandomize={handleRandomizeMeasuresPerChord}
+        />
+
         {/* Time Signature Tabs */}
         <div className="control-section">
           <div className="control-section-header">
             <label className="control-section-label">Time Signature</label>
-            <button
-              className={`control-section-lock ${lockedOptions.timeSignature ? 'locked' : ''}`}
-              onClick={() => onLockChange('timeSignature', !lockedOptions.timeSignature)}
-              title={lockedOptions.timeSignature ? 'Unlock' : 'Lock'}
-            >
-              <span className="material-symbols-outlined">
-                {lockedOptions.timeSignature ? 'lock' : 'lock_open'}
-              </span>
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+              <button
+                className="control-section-randomize"
+                onClick={() => {
+                  if (!lockedOptions.timeSignature) {
+                    // If styling is locked, only randomize compatible time signatures
+                    let availableTimeSigs = availableTimeSignatures;
+                    if (lockedOptions.stylingStrategy) {
+                      // Get time signatures compatible with the locked styling strategy
+                      const strategyConfig = CHORD_STYLING_STRATEGIES[state.stylingStrategy];
+                      const compatibleTimeSigs = strategyConfig.compatibleTimeSignatures;
+                      availableTimeSigs = availableTimeSignatures.filter(ts =>
+                        compatibleTimeSigs.some(compatTs =>
+                          compatTs.numerator === ts.numerator && compatTs.denominator === ts.denominator
+                        )
+                      );
+                    }
+                    if (availableTimeSigs.length > 0) {
+                      const randomTs = availableTimeSigs[Math.floor(Math.random() * availableTimeSigs.length)];
+                      const compatibleStyles = getCompatibleStylingStrategies(randomTs);
+                      onStateChange({
+                        timeSignature: randomTs,
+                        stylingStrategy: lockedOptions.stylingStrategy
+                          ? state.stylingStrategy
+                          : (compatibleStyles.length > 0 ? compatibleStyles[0] : state.stylingStrategy),
+                      });
+                    }
+                  }
+                }}
+                disabled={lockedOptions.timeSignature}
+                title="Randomize time signature"
+                aria-label="Randomize time signature"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  height="14"
+                  viewBox="0 -960 960 960"
+                  width="14"
+                  fill="currentColor"
+                >
+                  <path d="M220-160q-24 0-42-18t-18-42v-520q0-24 18-42t42-18h520q24 0 42 18t18 42v520q0 24-18 42t-42 18H220Zm0-60h520v-520H220v520Zm170-110q21 0 35.5-14.5T440-380q0-21-14.5-35.5T390-430q-21 0-35.5 14.5T340-380q0 21 14.5 35.5T390-330Zm180 0q21 0 35.5-14.5T620-380q0-21-14.5-35.5T570-430q-21 0-35.5 14.5T520-380q0 21 14.5 35.5T570-330ZM390-510q21 0 35.5-14.5T440-560q0-21-14.5-35.5T390-610q-21 0-35.5 14.5T340-560q0 21 14.5 35.5T390-510Zm180 0q21 0 35.5-14.5T620-560q0-21-14.5-35.5T570-610q-21 0-35.5 14.5T520-560q0 21 14.5 35.5T570-510ZM220-740v520-520Z" />
+                </svg>
+              </button>
+              <button
+                className={`control-section-lock ${lockedOptions.timeSignature ? 'locked' : ''}`}
+                onClick={() => onLockChange('timeSignature', !lockedOptions.timeSignature)}
+                title={lockedOptions.timeSignature ? 'Unlock' : 'Lock'}
+              >
+                <span className="material-symbols-outlined">
+                  {lockedOptions.timeSignature ? 'lock' : 'lock_open'}
+                </span>
+              </button>
+            </div>
           </div>
           <div className="time-signature-tabs">
             {availableTimeSignatures.map(ts => {
@@ -221,15 +282,39 @@ const ManualControls: React.FC<ManualControlsProps> = ({
         <div className="control-section">
           <div className="control-section-header">
             <label className="control-section-label">Styling</label>
-            <button
-              className={`control-section-lock ${lockedOptions.stylingStrategy ? 'locked' : ''}`}
-              onClick={() => onLockChange('stylingStrategy', !lockedOptions.stylingStrategy)}
-              title={lockedOptions.stylingStrategy ? 'Unlock' : 'Lock'}
-            >
-              <span className="material-symbols-outlined">
-                {lockedOptions.stylingStrategy ? 'lock' : 'lock_open'}
-              </span>
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+              <button
+                className="control-section-randomize"
+                onClick={() => {
+                  if (!lockedOptions.stylingStrategy && compatibleStyles.length > 0) {
+                    const randomStyle = compatibleStyles[Math.floor(Math.random() * compatibleStyles.length)];
+                    onStateChange({ stylingStrategy: randomStyle });
+                  }
+                }}
+                disabled={lockedOptions.stylingStrategy}
+                title="Randomize styling"
+                aria-label="Randomize styling"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  height="14"
+                  viewBox="0 -960 960 960"
+                  width="14"
+                  fill="currentColor"
+                >
+                  <path d="M220-160q-24 0-42-18t-18-42v-520q0-24 18-42t42-18h520q24 0 42 18t18 42v520q0 24-18 42t-42 18H220Zm0-60h520v-520H220v520Zm170-110q21 0 35.5-14.5T440-380q0-21-14.5-35.5T390-430q-21 0-35.5 14.5T340-380q0 21 14.5 35.5T390-330Zm180 0q21 0 35.5-14.5T620-380q0-21-14.5-35.5T570-430q-21 0-35.5 14.5T520-380q0 21 14.5 35.5T570-330ZM390-510q21 0 35.5-14.5T440-560q0-21-14.5-35.5T390-610q-21 0-35.5 14.5T340-560q0 21 14.5 35.5T390-510Zm180 0q21 0 35.5-14.5T620-560q0-21-14.5-35.5T570-610q-21 0-35.5 14.5T520-560q0 21 14.5 35.5T570-510ZM220-740v520-520Z" />
+                </svg>
+              </button>
+              <button
+                className={`control-section-lock ${lockedOptions.stylingStrategy ? 'locked' : ''}`}
+                onClick={() => onLockChange('stylingStrategy', !lockedOptions.stylingStrategy)}
+                title={lockedOptions.stylingStrategy ? 'Unlock' : 'Lock'}
+              >
+                <span className="material-symbols-outlined">
+                  {lockedOptions.stylingStrategy ? 'lock' : 'lock_open'}
+                </span>
+              </button>
+            </div>
           </div>
           <div className="style-preview-grid">
             {compatibleStyles.map(strategy => {

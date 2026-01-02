@@ -79,7 +79,7 @@ class ChordPlayer {
     }
 
     // Not playing, start fresh
-    this.stop();
+      this.stop();
 
     this.currentStyledChords = styledChords;
     this.currentBpm = bpm;
@@ -126,11 +126,73 @@ class ChordPlayer {
   }
 
   /**
+   * Update tempo immediately during playback (for responsive tempo changes)
+   * Reschedules all remaining notes with the new tempo
+   */
+  updateTempo(bpm: number): void {
+    if (!this.isPlaying) {
+      this.currentBpm = bpm;
+      return;
+    }
+
+    // Store the old tempo to calculate how much time has elapsed
+    const oldBpm = this.currentBpm;
+    this.currentBpm = bpm;
+    
+    // Update pendingUpdate if it exists
+    if (this.pendingUpdate) {
+      this.pendingUpdate.bpm = bpm;
+    }
+    
+    // Reschedule all remaining notes with the new tempo
+    // Cancel all existing timeouts
+    this.timeoutIds.forEach(id => window.clearTimeout(id));
+    this.timeoutIds = [];
+    
+    // Clear all highlights when tempo changes to prevent stale highlights
+    if (this.onChordPlay) {
+      this.onChordPlay({
+        measureIndex: -1, // Special value to indicate "clear all"
+        trebleGroupIndex: null,
+        bassGroupIndex: null,
+        loopId: this.loopCount,
+      });
+    }
+    
+    // Calculate how much time has elapsed since playback started
+    const elapsedTime = performance.now() - this.startTime;
+    
+    // Calculate how many beats have elapsed with the OLD tempo
+    const msPerQuarterNoteOld = (60 / oldBpm) * 1000;
+    const beatValue = this.currentTimeSignature.denominator;
+    const msPerBeatOld = msPerQuarterNoteOld * (4 / beatValue);
+    const totalBeatsPerLoop = this.currentStyledChords.length * this.currentTimeSignature.numerator;
+    const totalMsPerLoopOld = totalBeatsPerLoop * msPerBeatOld;
+    
+    // Calculate which loop we're in and how many beats into that loop
+    const loopsCompleted = Math.floor(elapsedTime / totalMsPerLoopOld);
+    const timeIntoCurrentLoop = elapsedTime - (loopsCompleted * totalMsPerLoopOld);
+    const beatsIntoCurrentLoop = timeIntoCurrentLoop / msPerBeatOld;
+    
+    // Calculate new msPerBeat with new tempo
+    const msPerQuarterNoteNew = (60 / bpm) * 1000;
+    const msPerBeatNew = msPerQuarterNoteNew * (4 / beatValue);
+    
+    // Update loop count and start time to reflect the new tempo
+    // Adjust startTime so that when we reschedule, the current beat position aligns correctly
+    this.loopCount = loopsCompleted;
+    this.startTime = performance.now() - (beatsIntoCurrentLoop * msPerBeatNew);
+    
+    // Reschedule all remaining notes with the new tempo
+    this.scheduleChords();
+  }
+
+  /**
    * Schedule all chords beat-by-beat based on their durations
    */
   private scheduleChords(): void {
     if (!this.isPlaying) return;
-    
+
     const loopId = this.loopCount;
     
     // Clear highlights at the start of each loop (including the first one)
@@ -190,16 +252,19 @@ class ChordPlayer {
 
       // Schedule notes at each beat position
       // Use AudioContext time for precise scheduling to ensure bass/treble alignment
+      // AudioContext.currentTime continues even when tab is backgrounded, preventing slowdown
       const audioContext = this.getAudioContext();
       const now = performance.now();
       const audioContextNow = audioContext.currentTime;
-      const audioContextOffset = (startTime - now) / 1000; // Offset in seconds
 
       sortedBeatPositions.forEach((beatPosition) => {
+        // Use AudioContext time for scheduling to avoid slowdown when tab is inactive
+        // AudioContext.currentTime continues even when tab is backgrounded
+        const beatTimeInSeconds = ((measureStartBeat + beatPosition) * msPerBeat) / 1000;
+        const audioPlayTime = audioContextNow + beatTimeInSeconds;
+        // Calculate delay for setTimeout (fallback, but AudioContext timing is primary)
         const playTime = startTime + ((measureStartBeat + beatPosition) * msPerBeat);
         const delay = Math.max(0, playTime - now);
-        // Calculate precise AudioContext time: current AudioContext time + offset + beat position in seconds
-        const audioPlayTime = audioContextNow + audioContextOffset + ((measureStartBeat + beatPosition) * msPerBeat) / 1000;
 
         // Find treble and bass groups that start at this beat position
         const trebleGroupsAtBeat = trebleBeatPositions.filter(t => Math.abs(t.beat - beatPosition) < 0.001);
@@ -208,74 +273,82 @@ class ChordPlayer {
         // Check if this is beat 1 of the measure
         const isBeat1 = beatPosition === 0;
 
-        const timeoutId = window.setTimeout(() => {
+      const timeoutId = window.setTimeout(() => {
           if (!this.isPlaying || this.loopCount !== loopId) return;
 
-          // Notify for highlighting - call for each note group individually
-          // This matches the darbuka app pattern: call callback when each note starts
-          trebleGroupsAtBeat.forEach(({ groupIndex }) => {
-            if (this.onChordPlay) {
-              this.onChordPlay({
-                measureIndex,
-                trebleGroupIndex: groupIndex,
-                bassGroupIndex: null,
-                loopId, // Include loop ID so App can filter out old highlights
-              });
+          const onChordPlay = this.onChordPlay;
+          if (!onChordPlay) return;
+
+          // Capture current time when the timeout fires (not when it was scheduled)
+          // This ensures accurate timing for removal callbacks
+          const currentTime = performance.now();
+
+          // SMART HIGHLIGHTING: Track note durations and clear treble/bass separately
+          // Add highlights for notes that start at THIS beat
+          trebleGroupsAtBeat.forEach(({ groupIndex, group }) => {
+            onChordPlay({
+              measureIndex,
+              trebleGroupIndex: groupIndex,
+              bassGroupIndex: null,
+              loopId,
+            });
+            
+            // Schedule removal when this note's duration ends
+            // Cap visual highlighting at 1 beat to prevent "sticky" feeling for longer notes
+            // This ensures notes highlight for exactly one beat, regardless of their actual duration
+            const durationBeats = durationToBeats(group.duration, beatValue);
+            const visualHighlightBeats = Math.min(durationBeats, 1.0); // Cap at 1 beat
+            const endTime = playTime + (visualHighlightBeats * msPerBeat);
+            // Use currentTime (when timeout fired) instead of now (when timeout was scheduled)
+            const endDelay = Math.max(1, endTime - currentTime);
+            
+            if (endDelay < 1000000) {
+              const endTimeoutId = window.setTimeout(() => {
+                if (!this.isPlaying || this.loopCount !== loopId) return;
+                if (this.onChordPlay) {
+                  this.onChordPlay({
+                    measureIndex,
+                    trebleGroupIndex: -(groupIndex + 1), // Negative indicates removal
+                    bassGroupIndex: null,
+                    loopId,
+                  });
+                }
+              }, endDelay);
+              this.timeoutIds.push(endTimeoutId);
             }
           });
 
-          bassGroupsAtBeat.forEach(({ groupIndex }) => {
-            if (this.onChordPlay) {
-              this.onChordPlay({
-                measureIndex,
-                trebleGroupIndex: null,
-                bassGroupIndex: groupIndex,
-                loopId, // Include loop ID so App can filter out old highlights
-              });
+          bassGroupsAtBeat.forEach(({ groupIndex, group }) => {
+            onChordPlay({
+              measureIndex,
+              trebleGroupIndex: null,
+              bassGroupIndex: groupIndex,
+              loopId,
+            });
+            
+            // Schedule removal when this note's duration ends
+            // Cap visual highlighting at 1 beat to prevent "sticky" feeling for longer notes
+            // This ensures notes highlight for exactly one beat, regardless of their actual duration
+            const durationBeats = durationToBeats(group.duration, beatValue);
+            const visualHighlightBeats = Math.min(durationBeats, 1.0); // Cap at 1 beat
+            const endTime = playTime + (visualHighlightBeats * msPerBeat);
+            // Use currentTime (when timeout fired) instead of now (when timeout was scheduled)
+            const endDelay = Math.max(1, endTime - currentTime);
+            
+            if (endDelay < 1000000) {
+              const endTimeoutId = window.setTimeout(() => {
+                if (!this.isPlaying || this.loopCount !== loopId) return;
+                if (this.onChordPlay) {
+                  this.onChordPlay({
+                    measureIndex,
+                    trebleGroupIndex: null,
+                    bassGroupIndex: -(groupIndex + 1), // Negative indicates removal
+                    loopId,
+                  });
+                }
+              }, endDelay);
+              this.timeoutIds.push(endTimeoutId);
             }
-          });
-
-          // Schedule removal of note groups when their duration ends
-          trebleGroupsAtBeat.forEach(({ groupIndex, group: trebleGroup }) => {
-            const durationBeats = durationToBeats(trebleGroup.duration, beatValue);
-            const endTime = playTime + (durationBeats * msPerBeat);
-            const endDelay = Math.max(0, endTime - now);
-            
-            const endTimeoutId = window.setTimeout(() => {
-              if (!this.isPlaying || this.loopCount !== loopId) return;
-              // Notify that this specific treble note group has ended
-              // Use negative index to indicate removal
-              if (this.onChordPlay) {
-                this.onChordPlay({
-                  measureIndex,
-                  trebleGroupIndex: -(groupIndex + 1), // Negative indicates removal
-                  bassGroupIndex: null,
-                  loopId, // Include loop ID for consistency
-                });
-              }
-            }, endDelay);
-            this.timeoutIds.push(endTimeoutId);
-          });
-
-          bassGroupsAtBeat.forEach(({ groupIndex, group: bassGroup }) => {
-            const durationBeats = durationToBeats(bassGroup.duration, beatValue);
-            const endTime = playTime + (durationBeats * msPerBeat);
-            const endDelay = Math.max(0, endTime - now);
-            
-            const endTimeoutId = window.setTimeout(() => {
-              if (!this.isPlaying || this.loopCount !== loopId) return;
-              // Notify that this specific bass note group has ended
-              // Use negative index to indicate removal
-              if (this.onChordPlay) {
-                this.onChordPlay({
-                  measureIndex,
-                  trebleGroupIndex: null,
-                  bassGroupIndex: -(groupIndex + 1), // Negative indicates removal
-                  loopId, // Include loop ID for consistency
-                });
-              }
-            }, endDelay);
-            this.timeoutIds.push(endTimeoutId);
           });
 
           // Play treble notes at this beat position (using AudioContext time for precise timing)
@@ -283,12 +356,12 @@ class ChordPlayer {
             if (trebleGroup.notes.length > 0) { // Only play if not a rest
               const durationBeats = durationToBeats(trebleGroup.duration, beatValue);
               trebleGroup.notes.forEach(midiNote => {
-                const frequency = 440 * Math.pow(2, (midiNote - 69) / 12);
+          const frequency = 440 * Math.pow(2, (midiNote - 69) / 12);
                 const durationSeconds = (durationBeats * msPerBeat) / 1000;
                 this.playToneAtTime(frequency, durationSeconds, audioPlayTime, isBeat1);
               });
             }
-          });
+        });
 
           // Play bass notes at this beat position (synchronized with treble using same AudioContext time)
           bassGroupsAtBeat.forEach(({ group: bassGroup }) => {
@@ -301,9 +374,9 @@ class ChordPlayer {
               });
             }
           });
-        }, delay);
+      }, delay);
 
-        this.timeoutIds.push(timeoutId);
+      this.timeoutIds.push(timeoutId);
       });
 
       // Update currentBeat to the end of this measure
@@ -342,7 +415,7 @@ class ChordPlayer {
               });
             }
           } else {
-            this.loopCount++;
+          this.loopCount++;
           }
           // Don't update startTime - keep the original start time and calculate based on loop count
           // This ensures seamless looping without timing drift
@@ -370,7 +443,7 @@ class ChordPlayer {
    */
   private getAudioContext(): AudioContext {
     if (!this.audioContext || this.audioContext.state === 'closed') {
-      const AudioContextClass = window.AudioContext || (window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const AudioContextClass = window.AudioContext || (window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       this.audioContext = new AudioContextClass();
     }
     // Resume if suspended (browsers require user interaction to start audio)
@@ -447,15 +520,16 @@ class ChordPlayer {
     masterGain.connect(audioContext.destination);
 
     // ADSR envelope for piano: quick attack, medium decay, sustain, release
-    // Improved fade-out: longer release for smoother sound, especially for shorter notes
+    // Shorter release times for cleaner visual/audio alignment
+    // Visual highlighting ends at 95% of duration, so audio should fade out quickly too
     const attackTime = 0.02;   // 20ms attack
-    const decayTime = 0.1;     // 100ms decay (reduced for faster transition to sustain)
-    const sustainLevel = 0.35; // 35% sustain (slightly reduced)
-    // For shorter notes, use a longer release relative to duration for smoother fade-out
-    // For longer notes, cap the release time to prevent them from being too strong for too long
+    const decayTime = 0.1;     // 100ms decay
+    const sustainLevel = 0.35; // 35% sustain
+    // Shorter release times to match visual highlighting end
+    // Visual ends at 95% of duration, so audio should fade out by then
     const releaseTime = duration < 0.5 
-      ? Math.min(duration * 0.7, 0.3)  // Shorter notes: 70% of duration, max 300ms
-      : Math.min(duration * 0.4, 0.4); // Longer notes: 40% of duration, max 400ms
+      ? Math.min(duration * 0.4, 0.2)  // Shorter notes: 40% of duration, max 200ms
+      : Math.min(duration * 0.25, 0.3); // Longer notes: 25% of duration, max 300ms
 
     const sustainTime = Math.max(0, duration - attackTime - decayTime - releaseTime);
 

@@ -37,7 +37,7 @@ function parseUrlParams(): Partial<ChordProgressionState> | null {
   const tempoParam = params.get('tempo');
   if (tempoParam) {
     const tempo = parseInt(tempoParam, 10);
-    if (!isNaN(tempo) && tempo >= 60 && tempo <= 200) {
+    if (!isNaN(tempo) && tempo >= 20 && tempo <= 300) {
       result.tempo = tempo;
     }
   }
@@ -59,6 +59,15 @@ function parseUrlParams(): Partial<ChordProgressionState> | null {
   const stylingParam = params.get('styling');
   if (stylingParam && stylingParam in CHORD_STYLING_STRATEGIES) {
     result.stylingStrategy = stylingParam as ChordStylingStrategy;
+  }
+  
+  // Parse measures per chord
+  const measuresPerChordParam = params.get('measuresPerChord');
+  if (measuresPerChordParam) {
+    const measuresPerChord = parseInt(measuresPerChordParam, 10);
+    if (!isNaN(measuresPerChord) && measuresPerChord >= 1 && measuresPerChord <= 4) {
+      result.measuresPerChord = measuresPerChord;
+    }
   }
   
   return Object.keys(result).length > 0 ? result : null;
@@ -94,6 +103,11 @@ function updateUrlParams(state: ChordProgressionState): void {
   // Add styling strategy
   if (state.stylingStrategy) {
     params.push(`styling=${encodeURIComponent(state.stylingStrategy)}`);
+  }
+  
+  // Add measures per chord (only if not default value of 1)
+  if (state.measuresPerChord && state.measuresPerChord !== 1) {
+    params.push(`measuresPerChord=${state.measuresPerChord}`);
   }
   
   // Update URL without reloading

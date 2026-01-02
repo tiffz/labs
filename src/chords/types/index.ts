@@ -51,6 +51,7 @@ export interface ChordProgressionState {
   stylingStrategy: ChordStylingStrategy;
   voicingOptions: VoicingOptions;
   soundType: 'sine' | 'square' | 'sawtooth' | 'triangle' | 'piano';
+  measuresPerChord: number; // Number of measures each chord spans (1-4, default 1)
 }
 
 export interface LockedOptions {
@@ -59,5 +60,6 @@ export interface LockedOptions {
   tempo?: boolean;
   timeSignature?: boolean;
   stylingStrategy?: boolean;
+  measuresPerChord?: boolean;
 }
 

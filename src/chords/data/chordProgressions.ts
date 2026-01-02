@@ -24,7 +24,7 @@ export const COMMON_CHORD_PROGRESSIONS: ChordProgressionConfig[] = [
   },
   {
     name: 'I–V–vi–iii–IV–I–IV–V',
-    description: 'Extended pop progression',
+    description: "Pachelbel's Canon",
     progression: ['I', 'V', 'vi', 'III', 'IV', 'I', 'IV', 'V'],
   },
   {
