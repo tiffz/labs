@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect, useRef } from 'react';
-import { Renderer, Stave, StaveNote, Voice, Formatter, StaveConnector, BarlineType } from 'vexflow';
+import { Renderer, Stave, StaveNote, Voice, Formatter, StaveConnector, BarlineType, Dot, Beam } from 'vexflow';
 import type { ChordProgressionState } from '../types';
 import { progressionToChords } from '../utils/chordTheory';
 import { generateVoicing } from '../utils/chordVoicing';
@@ -15,6 +15,7 @@ import { getKeySignature } from '../utils/keySignature';
 interface ChordScoreRendererProps {
   state: ChordProgressionState;
   currentChordIndex?: number | null;
+  activeNoteGroups?: Set<string>; // Set of "measureIndex:clef:groupIndex" strings
 }
 
 /**
@@ -53,9 +54,11 @@ function notesToStaveNote(notes: number[], duration: string, clef: 'bass' | 'tre
     // Use middle line (B) for all rests - consistent positioning
     // Treble clef: B/4 is middle line, Bass clef: B/3 is middle line
     const restPitch = clef === 'bass' ? 'b/3' : 'b/4';
+    // VexFlow requires 'r' suffix in duration string to indicate rest
+    const restDuration = duration.includes('r') ? duration : duration + 'r';
     const staveNote = new StaveNote({
       keys: [restPitch],
-      duration: duration,
+      duration: restDuration,
       clef: clef,
     });
     return staveNote;
@@ -63,17 +66,25 @@ function notesToStaveNote(notes: number[], duration: string, clef: 'bass' | 'tre
   
   const pitches = notes.map(midiToPitch);
   
+  // Check if this is a dotted note (duration contains 'd' but not 'r' for rest)
+  const isDotted = duration.includes('d') && !duration.includes('r');
+  
   const staveNote = new StaveNote({
     keys: pitches,
     duration: duration,
     clef: clef,
   });
   
+  // Add dot for dotted notes
+  if (isDotted) {
+    Dot.buildAndAttach([staveNote], { all: true });
+  }
+  
   return staveNote;
 }
 
 
-const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({ state, currentChordIndex }) => {
+const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({ state, currentChordIndex, activeNoteGroups = new Set() }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -101,8 +112,16 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({ state, currentC
       // Calculate measures per line (wrap to multiple lines)
       // Default to 4 measures per line for better organization
       const containerWidth = containerRef.current.clientWidth || 1200;
-      const measureWidth = 280; // Increased width per measure to prevent note overflow
+      const baseMeasureWidth = 320; // Base width per measure
       const defaultMeasuresPerLine = 4; // Default to 4 measures per line
+      
+      // Calculate dynamic measure width based on note count in styled chords
+      // More notes need more space to prevent escaping
+      const maxNotesPerMeasure = Math.max(...styledChords.map(sc => 
+        sc.trebleNotes.length + sc.bassNotes.length
+      ));
+      const measureWidth = baseMeasureWidth + Math.max(0, (maxNotesPerMeasure - 4) * 15);
+      
       // Calculate how many measures fit, but prefer 4 if possible
       const maxMeasuresByWidth = Math.floor((containerWidth - 120) / measureWidth);
       const measuresPerLine = maxMeasuresByWidth >= defaultMeasuresPerLine 
@@ -111,8 +130,9 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({ state, currentC
       const numLines = Math.ceil(chords.length / measuresPerLine);
       
       // Create renderer - grand staff needs more height per line
-      const lineHeight = 300; // Height for grand staff per line
-      const lineSpacing = 50; // Space between lines
+      // Reduced height for denser display
+      const lineHeight = 240; // Reduced height for grand staff per line
+      const lineSpacing = 40; // Reduced space between lines
       const totalHeight = (lineHeight * numLines) + (lineSpacing * (numLines - 1)) + 40;
       
       const renderer = new Renderer(containerRef.current, Renderer.Backends.SVG);
@@ -128,8 +148,8 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({ state, currentC
         const startMeasure = lineIndex * measuresPerLine;
         const endMeasure = Math.min(startMeasure + measuresPerLine, chords.length);
         
-        const trebleY = 40 + (lineIndex * (lineHeight + lineSpacing));
-        const bassY = trebleY + 120;
+        const trebleY = 30 + (lineIndex * (lineHeight + lineSpacing));
+        const bassY = trebleY + 100; // Reduced spacing for denser display
         
         // Create separate staves for each measure to ensure proper formatting
         const trebleStaves: Stave[] = [];
@@ -140,7 +160,7 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({ state, currentC
           const xPosition = 20 + (localMeasureIndex * measureWidth);
           const isLastMeasure = measureIndex === chords.length - 1;
           
-          // Create treble stave for this measure
+          // Create treble stave for this measure (keep same width for alignment)
           const trebleStave = new Stave(xPosition, trebleY, measureWidth);
           // Add clef, key signature, and time signature to first measure of each line
           if (localMeasureIndex === 0) {
@@ -182,6 +202,7 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({ state, currentC
         }
         
         // Draw all staves (with barlines already set)
+        // Let VexFlow automatically calculate note start X based on clef/key/time signature
         trebleStaves.forEach(stave => stave.setContext(context).draw());
         bassStaves.forEach(stave => stave.setContext(context).draw());
         
@@ -204,6 +225,9 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({ state, currentC
           connector.setContext(context).draw();
         }
         
+        // Store first note references for chord name placement
+        const firstNoteRefs: Map<number, { note: StaveNote; stave: Stave }> = new Map();
+        
         // Render notes measure by measure
         for (let measureIndex = startMeasure; measureIndex < endMeasure; measureIndex++) {
           const localMeasureIndex = measureIndex - startMeasure;
@@ -211,64 +235,151 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({ state, currentC
           const bassStave = bassStaves[localMeasureIndex];
           const styledChord = styledChords[measureIndex];
           
-          // Create treble notes for this measure
+          // Create treble and bass notes for this measure
+          // VexFlow will automatically align notes that start at the same tick position when voices are joined
+          // To ensure proper alignment, we ensure that bass and treble note groups are synchronized
           const trebleNotes: StaveNote[] = [];
-          styledChord.trebleNotes.forEach((trebleGroup) => {
+          const bassNotes: StaveNote[] = [];
+          
+          // Create treble and bass notes
+          // VexFlow's joinVoices aligns notes at the same tick position (beat position)
+          // Notes are added sequentially - VexFlow calculates tick positions based on cumulative duration
+          // So notes starting at the same cumulative duration will align when joinVoices is used
+          styledChord.trebleNotes.forEach((trebleGroup, groupIndex) => {
             const trebleNote = notesToStaveNote(trebleGroup.notes, trebleGroup.duration, 'treble');
-            if (currentChordIndex === measureIndex) {
+            // Highlight if this note group is currently active
+            if (activeNoteGroups.has(`${measureIndex}:treble:${groupIndex}`)) {
               trebleNote.setStyle({ fillStyle: '#ef4444', strokeStyle: '#ef4444' });
             }
             trebleNotes.push(trebleNote);
           });
           
-          // Create bass notes for this measure
-          const bassNotes: StaveNote[] = [];
-          styledChord.bassNotes.forEach((bassGroup) => {
+          styledChord.bassNotes.forEach((bassGroup, groupIndex) => {
             const bassNote = notesToStaveNote(bassGroup.notes, bassGroup.duration, 'bass');
-            if (currentChordIndex === measureIndex) {
+            // Highlight if this note group is currently active
+            if (activeNoteGroups.has(`${measureIndex}:bass:${groupIndex}`)) {
               bassNote.setStyle({ fillStyle: '#ef4444', strokeStyle: '#ef4444' });
             }
             bassNotes.push(bassNote);
           });
           
           // Create voices for this measure
-          // Use strict mode to ensure notes fit exactly within measure boundaries
+          // Use strict mode like ChordStylePreview - this ensures proper alignment with joinVoices
+          // Strict mode ensures notes fit exactly within measure boundaries
           const trebleVoice = new Voice({ 
             numBeats: state.timeSignature.numerator, 
             beatValue: state.timeSignature.denominator 
           });
-          trebleVoice.setStrict(true); // Strict mode ensures exact measure boundaries
+          trebleVoice.setStrict(true); // Strict mode for proper alignment
           trebleVoice.addTickables(trebleNotes);
           
           const bassVoice = new Voice({ 
             numBeats: state.timeSignature.numerator, 
             beatValue: state.timeSignature.denominator 
           });
-          bassVoice.setStrict(true); // Strict mode ensures exact measure boundaries
+          bassVoice.setStrict(true); // Strict mode for proper alignment
           bassVoice.addTickables(bassNotes);
           
-          // Calculate format width - account for clef/key/time signature on first measure
-          // First measure needs more space (approximately 100px for clef/key/time signature)
-          // Subsequent measures need less space (approximately 25px for barline)
-          const leftPadding = localMeasureIndex === 0 ? 100 : 25;
-          const rightPadding = 25; // Space for barline and safety margin
-          const formatWidth = measureWidth - leftPadding - rightPadding;
+          // Calculate format width properly - VexFlow expects width available for notes
+          // VexFlow automatically calculates note start X based on clef/key/time signature
+          // Be EXTREMELY conservative to prevent notes from escaping
+          const noteCount = trebleNotes.length + bassNotes.length;
+          const hasManyNotes = noteCount > 6;
+          const hasVeryManyNotes = noteCount > 10;
+          const isComplexKey = keySig.count >= 5;
+          
+          // Very aggressive reduction to prevent escaping
+          // Similar to drums app: measureWidth - 60, but more conservative for first measure
+          let formatReduction: number;
+          if (localMeasureIndex === 0) {
+            // First measure: account for clef/key/time signature + be extremely conservative
+            // Base reduction: 150px for clef/key/time signature
+            // Additional: 12px per key signature accidental
+            // Additional: 25px if many notes, 50px if very many notes
+            // Additional: 20px if complex key
+            formatReduction = 150 + (keySig.count * 12) + (hasVeryManyNotes ? 50 : hasManyNotes ? 25 : 0) + (isComplexKey ? 20 : 0);
+          } else {
+            // Other measures: still be very conservative, especially with many notes
+            // Base reduction: 80px for barline and spacing
+            // Additional: 30px if many notes, 60px if very many notes
+            formatReduction = 80 + (hasVeryManyNotes ? 60 : hasManyNotes ? 30 : 0);
+          }
+          
+          // Format width is the available width for notes within the stave
+          // VexFlow will automatically start notes after clef/key/time signature
+          // Use very conservative minimum to prevent escaping - never go below 30px
+          const formatWidth = Math.max(30, measureWidth - formatReduction);
+          
+          // Add beams for eighth notes based on time signature
+          // In compound time (6/8, 12/8), beam eighth notes in groups of 3
+          // In simple time (3/4, 4/4), beam eighth notes in groups of 2
+          const addBeams = (notes: StaveNote[]) => {
+            const beams: Beam[] = [];
+            let currentBeamGroup: StaveNote[] = [];
+            
+            const isCompoundTime = state.timeSignature.denominator === 8;
+            const beamGroupSize = isCompoundTime ? 3 : 2; // Group of 3 for compound, 2 for simple
+            
+            notes.forEach((note, index) => {
+              // Only beam eighth notes (duration '8')
+              const duration = note.getDuration();
+              if (duration === '8' && note.getKeys().length > 0 && !note.isRest()) {
+                currentBeamGroup.push(note);
+                
+                // Create beam when group is complete or at end of measure
+                if (currentBeamGroup.length === beamGroupSize || index === notes.length - 1) {
+                  if (currentBeamGroup.length >= 2) {
+                    // Only create beam if we have at least 2 notes
+                    const beam = new Beam(currentBeamGroup);
+                    beams.push(beam);
+                  }
+                  currentBeamGroup = [];
+                }
+              } else {
+                // Non-beamable note or rest - finish current beam group if any
+                if (currentBeamGroup.length >= 2) {
+                  const beam = new Beam(currentBeamGroup);
+                  beams.push(beam);
+                }
+                currentBeamGroup = [];
+              }
+            });
+            
+            return beams;
+          };
+          
+          const trebleBeams = addBeams(trebleNotes);
+          const bassBeams = addBeams(bassNotes);
           
           // Format and draw voices for this measure
-          // Format both voices together so they align properly
+          // joinVoices aligns notes at the same tick position (beat position) across voices
+          // This ensures that treble and bass notes starting at the same beat align horizontally
           const formatter = new Formatter();
+          
+          // Join voices together - this tells VexFlow to align notes at same tick positions
           formatter.joinVoices([trebleVoice, bassVoice]);
-          // Format with the calculated width - VexFlow will ensure notes fit within this width
-          // Use a more conservative width to ensure notes don't escape measures
-          // Reduce by 20px to account for note spacing and ledger lines
-          formatter.format([trebleVoice, bassVoice], formatWidth - 20);
+          
+          // Format both voices together - VexFlow will align notes at same tick positions
+          // Notes starting at tick 0 in both voices will be horizontally aligned
+          formatter.format([trebleVoice, bassVoice], formatWidth);
           
           // Draw voices - VexFlow will position notes within the stave boundaries
           trebleVoice.draw(context, trebleStave);
           bassVoice.draw(context, bassStave);
+          
+          // Draw beams after notes are drawn
+          trebleBeams.forEach(beam => beam.setContext(context).draw());
+          bassBeams.forEach(beam => beam.setContext(context).draw());
+          
+          // Store reference to the first note for later position lookup
+          // Prefer treble note, fallback to bass note
+          const firstNote = trebleNotes.length > 0 ? trebleNotes[0] : (bassNotes.length > 0 ? bassNotes[0] : null);
+          if (firstNote) {
+            firstNoteRefs.set(measureIndex, { note: firstNote, stave: trebleStave });
+          }
         }
         
-        // Add chord names
+        // Add chord names positioned above beat 1 of each measure
         const svgElement = containerRef.current?.querySelector('svg');
         if (svgElement) {
           for (let measureIndex = startMeasure; measureIndex < endMeasure; measureIndex++) {
@@ -277,17 +388,29 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({ state, currentC
             const localMeasureIndex = measureIndex - startMeasure;
             const trebleStave = trebleStaves[localMeasureIndex];
             
-            // Calculate x position - account for time signature on first measure of each line
-            let xPosition = trebleStave.getX();
-            if (localMeasureIndex === 0) {
-              // First measure of line: position after time signature (approximately 70px from start)
-              xPosition = trebleStave.getX() + 70;
-            } else {
-              // Other measures: position at measure start + small offset
-              xPosition = trebleStave.getX() + 5;
+            // Get the X position of the first note (beat 1) from stored reference
+            let xPosition: number;
+            const noteRef = firstNoteRefs.get(measureIndex);
+            if (noteRef) {
+              try {
+                // Get bounding box of the first note after drawing
+                const bounds = noteRef.note.getBoundingBox();
+                if (bounds) {
+                  xPosition = bounds.getX();
+              } else {
+                // Fallback: use stave position
+                xPosition = trebleStave.getX() + (localMeasureIndex === 0 ? 60 + (keySig.count * 4) : 40);
+              }
+            } catch {
+              // Fallback: use stave position
+              xPosition = trebleStave.getX() + (localMeasureIndex === 0 ? 100 + (keySig.count * 7) : 25);
             }
+          } else {
+            // Fallback: use stave position
+            xPosition = trebleStave.getX() + (localMeasureIndex === 0 ? 100 + (keySig.count * 7) : 25);
+          }
             
-            // Position chord name lower, closer to staff (typical sheet music position)
+            // Position chord name above the first note (beat 1)
             const yPosition = trebleY + 5; // Lower, closer to staff lines
             
             const textElement = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -322,7 +445,7 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({ state, currentC
         containerRef.current.innerHTML = `<p style="color: red; padding: 2rem;">Error rendering chord score: ${error instanceof Error ? error.message : String(error)}. Please try again.</p>`;
       }
     }
-  }, [state, currentChordIndex]);
+  }, [state, currentChordIndex, activeNoteGroups]);
 
   return (
     <div className="chord-score-container" ref={containerRef} />

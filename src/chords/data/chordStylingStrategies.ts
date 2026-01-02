@@ -1,11 +1,15 @@
 /**
  * Chord styling strategies based on Piano for Singers course
  * 
+ * This file now just provides metadata. The actual patterns are defined in
+ * chordStylingPatterns.ts using human-readable notation.
+ * 
  * Credit: These chord styling strategies are inspired by the Piano for Singers course
  * by Brenda Earle Stokes. Learn more at: https://pianoandvoicewithbrenda.com/piano-for-singers-the-complete-guide/
  */
 
 import type { ChordStylingStrategy, TimeSignature } from '../types';
+import { CHORD_STYLING_PATTERNS, keyToTimeSignature } from './chordStylingPatterns';
 
 export interface ChordStylingStrategyConfig {
   name: string;
@@ -14,83 +18,62 @@ export interface ChordStylingStrategyConfig {
   attribution?: string;
 }
 
+/**
+ * Generate compatible time signatures from patterns
+ */
+function getCompatibleTimeSignatures(strategy: ChordStylingStrategy): TimeSignature[] {
+  const patternConfig = CHORD_STYLING_PATTERNS[strategy];
+  if (!patternConfig) return [];
+  
+  return Object.keys(patternConfig.patterns).map(keyToTimeSignature);
+}
+
 export const CHORD_STYLING_STRATEGIES: Record<ChordStylingStrategy, ChordStylingStrategyConfig> = {
   simple: {
-    name: 'Simple',
-    description: 'One chord per measure',
-    compatibleTimeSignatures: [
-      { numerator: 4, denominator: 4 },
-      { numerator: 3, denominator: 4 },
-      { numerator: 2, denominator: 4 },
-      { numerator: 6, denominator: 8 },
-      { numerator: 12, denominator: 8 },
-    ],
+    name: CHORD_STYLING_PATTERNS.simple.name,
+    description: CHORD_STYLING_PATTERNS.simple.description,
+    compatibleTimeSignatures: getCompatibleTimeSignatures('simple'),
   },
   'one-per-beat': {
-    name: 'One Per Beat',
-    description: 'One chord per beat (or beat group for compound time)',
-    compatibleTimeSignatures: [
-      { numerator: 4, denominator: 4 },
-      { numerator: 3, denominator: 4 },
-      { numerator: 2, denominator: 4 },
-      { numerator: 6, denominator: 8 },
-      { numerator: 12, denominator: 8 },
-    ],
+    name: CHORD_STYLING_PATTERNS['one-per-beat'].name,
+    description: CHORD_STYLING_PATTERNS['one-per-beat'].description,
+    compatibleTimeSignatures: getCompatibleTimeSignatures('one-per-beat'),
   },
   'oom-pahs': {
-    name: 'Oom-Pahs',
-    description: 'Alternating root/chord pattern (LH/RH). Works well for Music Theater, Jazz Ballads, or any song in 4/4 time.',
-    compatibleTimeSignatures: [
-      { numerator: 4, denominator: 4 },
-      { numerator: 2, denominator: 4 }, // Variant: simpler oom-pah for 2/4
-    ],
-    attribution: 'Strategy from Piano for Singers course by Brenda Earle Stokes',
+    name: CHORD_STYLING_PATTERNS['oom-pahs'].name,
+    description: CHORD_STYLING_PATTERNS['oom-pahs'].description,
+    compatibleTimeSignatures: getCompatibleTimeSignatures('oom-pahs'),
+    attribution: CHORD_STYLING_PATTERNS['oom-pahs'].attribution,
   },
   waltz: {
-    name: 'Waltz',
-    description: '3/4 time pattern with root or root/5th in left hand',
-    compatibleTimeSignatures: [
-      { numerator: 3, denominator: 4 },
-      { numerator: 6, denominator: 8 }, // Variant: waltz feel in 6/8
-    ],
-    attribution: 'Strategy from Piano for Singers course by Brenda Earle Stokes',
+    name: CHORD_STYLING_PATTERNS.waltz.name,
+    description: CHORD_STYLING_PATTERNS.waltz.description,
+    compatibleTimeSignatures: getCompatibleTimeSignatures('waltz'),
+    attribution: CHORD_STYLING_PATTERNS.waltz.attribution,
   },
   'pop-rock-ballad': {
-    name: 'Pop-Rock Ballad',
-    description: 'Dotted quarter note pattern in left hand with chords in right hand',
-    compatibleTimeSignatures: [
-      { numerator: 4, denominator: 4 },
-      { numerator: 6, denominator: 8 }, // Variant: dotted quarter feel in 6/8
-      { numerator: 12, denominator: 8 }, // Variant: dotted quarter feel in 12/8
-    ],
-    attribution: 'Strategy from Piano for Singers course by Brenda Earle Stokes',
+    name: CHORD_STYLING_PATTERNS['pop-rock-ballad'].name,
+    description: CHORD_STYLING_PATTERNS['pop-rock-ballad'].description,
+    compatibleTimeSignatures: getCompatibleTimeSignatures('pop-rock-ballad'),
+    attribution: CHORD_STYLING_PATTERNS['pop-rock-ballad'].attribution,
   },
   'pop-rock-uptempo': {
-    name: 'Pop-Rock Up Tempo',
-    description: 'Driving rhythm with syncopated bass pattern',
-    compatibleTimeSignatures: [
-      { numerator: 4, denominator: 4 },
-      { numerator: 2, denominator: 4 }, // Variant: simplified for 2/4
-    ],
-    attribution: 'Strategy from Piano for Singers course by Brenda Earle Stokes',
+    name: CHORD_STYLING_PATTERNS['pop-rock-uptempo'].name,
+    description: CHORD_STYLING_PATTERNS['pop-rock-uptempo'].description,
+    compatibleTimeSignatures: getCompatibleTimeSignatures('pop-rock-uptempo'),
+    attribution: CHORD_STYLING_PATTERNS['pop-rock-uptempo'].attribution,
   },
   jazzy: {
-    name: 'Jazzy',
-    description: 'Walking bass line (1-3-5-3) with rhythm chords in right hand. Play with a swing feel.',
-    compatibleTimeSignatures: [
-      { numerator: 4, denominator: 4 },
-      { numerator: 12, denominator: 8 }, // Variant: swing feel in 12/8
-    ],
-    attribution: 'Strategy from Piano for Singers course by Brenda Earle Stokes',
+    name: CHORD_STYLING_PATTERNS.jazzy.name,
+    description: CHORD_STYLING_PATTERNS.jazzy.description,
+    compatibleTimeSignatures: getCompatibleTimeSignatures('jazzy'),
+    attribution: CHORD_STYLING_PATTERNS.jazzy.attribution,
   },
   tresillo: {
-    name: 'The Tresillo',
-    description: 'The pattern 3+3+2 (1 2 3 - 1 2 3 - 1 2). One of the most widely played grooves across many styles.',
-    compatibleTimeSignatures: [
-      { numerator: 4, denominator: 4 },
-      { numerator: 12, denominator: 8 }, // Variant: tresillo feel in 12/8
-    ],
-    attribution: 'Strategy from Piano for Singers course by Brenda Earle Stokes',
+    name: CHORD_STYLING_PATTERNS.tresillo.name,
+    description: CHORD_STYLING_PATTERNS.tresillo.description,
+    compatibleTimeSignatures: getCompatibleTimeSignatures('tresillo'),
+    attribution: CHORD_STYLING_PATTERNS.tresillo.attribution,
   },
 };
 

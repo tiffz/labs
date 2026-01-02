@@ -249,6 +249,7 @@
   border-right: 1px solid var(--border-color);
   padding: 1rem;
   overflow-y: auto;
+  overflow-x: hidden; /* Prevent horizontal scrollbar */
   flex-shrink: 0;
   min-width: 0;
   box-sizing: border-box;
@@ -277,8 +278,9 @@
 }
 
 .chord-score-container {
+  overflow-x: hidden; /* Prevent horizontal overflow from escaping notes */
+  overflow-y: visible; /* Allow vertical scrolling if needed */
   width: 100%;
-  overflow-x: auto;
   max-width: 100%;
 }
 
@@ -342,6 +344,49 @@
   gap: 0.75rem;
 }
 
+.key-transpose-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  opacity: 0.7;
+  min-width: 1.5rem;
+  height: 1.5rem;
+}
+
+.key-transpose-button:hover:not(:disabled) {
+  background-color: var(--border-color);
+  opacity: 1;
+  color: var(--primary);
+}
+
+.key-transpose-button:active:not(:disabled) {
+  background-color: var(--primary-light);
+  color: white;
+}
+
+.key-transpose-button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.key-transpose-button .material-symbols-outlined {
+  font-size: 1rem;
+  line-height: 1;
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
+}
+
 .option-chip-label {
   font-weight: 500;
   color: var(--text-color);
@@ -391,6 +436,29 @@
   font-weight: 500;
   flex: 1;
   text-align: left;
+}
+
+.option-chip-inline-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--text-color);
+  padding: 0;
+  margin: 0;
+  outline: none;
+  text-align: left;
+  font-family: inherit;
+  min-width: 0;
+  width: 100%;
+}
+
+.option-chip-inline-input:focus {
+  background-color: rgba(99, 102, 241, 0.05);
+  border-radius: 0.25rem;
+  padding: 0.125rem 0.25rem;
+  margin: -0.125rem -0.25rem;
 }
 
 .option-chip-actions {
@@ -645,15 +713,37 @@
 }
 
 .randomize-section {
-  margin-top: 0;
+  margin-top: -1rem; /* Negative margin to account for sidebar padding */
+  margin-left: -1rem; /* Negative margin to extend to sidebar edges */
+  margin-right: -1rem; /* Negative margin to extend to sidebar edges */
   margin-bottom: 1rem;
+  padding-top: 1rem; /* Add top padding to ensure background covers scrolling content */
+  padding-left: 1rem; /* Match sidebar padding */
+  padding-right: 1rem; /* Match sidebar padding */
   padding-bottom: 1rem;
   border-bottom: 1px solid var(--border-color);
   position: sticky;
   top: 0;
   background-color: var(--bg-sidebar);
+  background: var(--bg-sidebar); /* Ensure background is set */
   z-index: 10;
   flex-shrink: 0;
+  /* Ensure background extends fully when sticky */
+  box-shadow: 0 1px 0 0 var(--border-color); /* Subtle shadow to separate from scrolling content */
+  /* Create a solid background layer that extends to cover negative margins */
+  isolation: isolate; /* Create new stacking context */
+}
+
+.randomize-section::before {
+  content: '';
+  position: absolute;
+  top: -1rem; /* Extend above to cover scrolling content */
+  left: -1rem;
+  right: -1rem;
+  bottom: 0;
+  background-color: var(--bg-sidebar);
+  z-index: -1; /* Behind content */
+  pointer-events: none;
 }
 
 .randomize-button-large {
@@ -747,7 +837,7 @@
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
-  min-height: 120px;
+  min-height: 130px; /* Increased to accommodate taller preview */
 }
 
 .style-preview-item:hover {
@@ -769,12 +859,13 @@
 
 .style-preview-visual {
   width: 100%;
-  min-height: 75px;
+  min-height: 80px;
   display: flex;
-  align-items: center;
+  align-items: flex-start; /* Align to top to reduce whitespace */
   justify-content: center;
   background-color: var(--bg-sidebar);
   border-radius: 0.25rem;
-  overflow: hidden;
-  padding: 0.75rem;
+  overflow: hidden; /* Hide overflow to prevent sidebar scrollbar */
+  padding: 0.25rem 0.25rem; /* Minimal padding */
+  box-sizing: border-box;
 }

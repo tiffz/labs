@@ -47,9 +47,10 @@ export function durationToBeats(duration: string, beatValue: number): number {
   }
   
   // Convert to the beat value (e.g., if beatValue is 8, we need to convert quarter beats to eighth beats)
-  // For 4/4: beatValue = 4, so beats stay as-is
-  // For 6/8: beatValue = 8, so we need to convert quarter beats to eighth beats (multiply by 2)
-  const conversionFactor = 4 / beatValue; // Convert from quarter-note beats to beat-value beats
+  // For 4/4: beatValue = 4, so beats stay as-is (4/4 = 1)
+  // For 6/8: beatValue = 8, so we need to convert quarter beats to eighth beats (8/4 = 2)
+  // For 12/8: beatValue = 8, so we need to convert quarter beats to eighth beats (8/4 = 2)
+  const conversionFactor = beatValue / 4; // Convert from quarter-note beats to beat-value beats
   return beats * conversionFactor;
 }
 

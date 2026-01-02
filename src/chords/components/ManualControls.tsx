@@ -3,12 +3,13 @@
  * Chip-based inline editing interface
  */
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import type { ChordProgressionState, Key, TimeSignature, LockedOptions } from '../types';
 import { COMMON_CHORD_PROGRESSIONS } from '../data/chordProgressions';
 import { CHORD_STYLING_STRATEGIES } from '../data/chordStylingStrategies';
 import { ALL_KEYS, randomChordProgression, randomKey, randomTempo } from '../utils/randomization';
 import { getCompatibleStylingStrategies } from '../utils/stylingCompatibility';
+import { transposeKeyUp, transposeKeyDown } from '../utils/keyTransposition';
 import OptionChip from './OptionChip';
 import ChordStylePreview from './ChordStylePreview';
 
@@ -47,7 +48,6 @@ const ManualControls: React.FC<ManualControlsProps> = ({
   onLockChange,
   onRandomize,
 }) => {
-  const [editingOption, setEditingOption] = useState<string | null>(null);
 
   const currentProgressionIndex = COMMON_CHORD_PROGRESSIONS.findIndex(p => p.name === state.progression.name);
   const currentProgression = COMMON_CHORD_PROGRESSIONS[currentProgressionIndex >= 0 ? currentProgressionIndex : 0];
@@ -110,23 +110,68 @@ const ManualControls: React.FC<ManualControlsProps> = ({
           onRandomize={handleRandomizeProgression}
         />
 
-        <OptionChip
-          label="Key"
-          value={state.key}
-          isLocked={lockedOptions.key || false}
-          tooltip="The key signature for the chord progression"
-          options={ALL_KEYS.map(key => ({ value: key, label: key }))}
-          onSelect={(value) => onStateChange({ key: value as Key })}
-          onLockToggle={() => onLockChange('key', !lockedOptions.key)}
-          onRandomize={handleRandomizeKey}
-        />
+        <div className="option-chip-row">
+          <span className="option-chip-label">Key:</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1 }}>
+            <div style={{ flex: 1 }}>
+              <OptionChip
+                label="Key"
+                value={state.key}
+                isLocked={lockedOptions.key || false}
+                tooltip="The key signature for the chord progression"
+                options={ALL_KEYS.map(key => ({ value: key, label: key }))}
+                onSelect={(value) => onStateChange({ key: value as Key })}
+                onLockToggle={() => onLockChange('key', !lockedOptions.key)}
+                onRandomize={handleRandomizeKey}
+                hideLabel={true}
+              />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.125rem', flexShrink: 0 }}>
+              <button
+                className="key-transpose-button"
+                onClick={() => {
+                  if (!lockedOptions.key) {
+                    onStateChange({ key: transposeKeyDown(state.key) });
+                  }
+                }}
+                disabled={lockedOptions.key}
+                title="Transpose down one semitone"
+                aria-label="Transpose down"
+              >
+                <span className="material-symbols-outlined">remove</span>
+              </button>
+              <button
+                className="key-transpose-button"
+                onClick={() => {
+                  if (!lockedOptions.key) {
+                    onStateChange({ key: transposeKeyUp(state.key) });
+                  }
+                }}
+                disabled={lockedOptions.key}
+                title="Transpose up one semitone"
+                aria-label="Transpose up"
+              >
+                <span className="material-symbols-outlined">add</span>
+              </button>
+            </div>
+          </div>
+        </div>
 
         <OptionChip
           label="Tempo"
           value={`${state.tempo}`}
           isLocked={lockedOptions.tempo || false}
           tooltip="Beats per minute (BPM)"
-          onEdit={() => setEditingOption('tempo')}
+          inlineEdit={true}
+          inlineType="number"
+          inlineMin={60}
+          inlineMax={200}
+          onInlineChange={(newValue) => {
+            const tempo = parseInt(newValue, 10);
+            if (!isNaN(tempo) && tempo >= 60 && tempo <= 200) {
+              onStateChange({ tempo });
+            }
+          }}
           onLockToggle={() => onLockChange('tempo', !lockedOptions.tempo)}
           onRandomize={handleRandomizeTempo}
         />
@@ -205,8 +250,8 @@ const ManualControls: React.FC<ManualControlsProps> = ({
                     <ChordStylePreview
                       strategy={strategy}
                       timeSignature={state.timeSignature}
-                      width={120}
-                      height={75}
+                      width={140}
+                      height={80}
                     />
                   </div>
                   <div className="style-preview-label">{config.name}</div>
@@ -217,40 +262,6 @@ const ManualControls: React.FC<ManualControlsProps> = ({
         </div>
       </div>
 
-      {/* Tempo Modal - only one that needs a modal for number input */}
-      {editingOption === 'tempo' && (
-        <div className="option-modal-overlay" onClick={() => setEditingOption(null)}>
-          <div className="option-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="option-modal-header">
-              <h3>Set Tempo</h3>
-              <button className="option-modal-close" onClick={() => setEditingOption(null)}>
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
-            <div className="option-modal-content">
-              <input
-                type="number"
-                min="60"
-                max="200"
-                value={state.tempo}
-                onChange={(e) => {
-                  const tempo = parseInt(e.target.value);
-                  if (!isNaN(tempo) && tempo >= 60 && tempo <= 200) {
-                    onStateChange({ tempo });
-                  }
-                }}
-                className="option-modal-input"
-                autoFocus
-              />
-              <div className="option-modal-actions">
-                <button onClick={() => setEditingOption(null)} className="option-modal-button">
-                  Done
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
     </>
   );

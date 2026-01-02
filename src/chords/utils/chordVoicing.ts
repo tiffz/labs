@@ -59,8 +59,10 @@ function getChordNotes(chord: Chord, clef: 'bass' | 'treble' = 'treble'): number
   
   // Constrain notes to reasonable ranges to minimize ledger lines
   // Use tighter ranges for better readability
-  const minNote = clef === 'bass' ? 36 : 60; // C2 for bass, C4 for treble
-  const maxNote = clef === 'bass' ? 60 : 79; // C4 for bass, G5 for treble (tighter upper bound)
+  // Bass clef: Stay within staff lines (E2 to D4) to minimize ledger lines
+  // Treble clef: C4 to G5 (comfortable range)
+  const minNote = clef === 'bass' ? 40 : 60; // E2 for bass (40), C4 for treble (60)
+  const maxNote = clef === 'bass' ? 62 : 79; // D4 for bass (62), G5 for treble (79)
   
   // Find the range of notes
   const lowestNote = Math.min(...notes);
@@ -126,8 +128,9 @@ function toOpenVoicing(notes: number[]): number[] {
  * Constrains notes to prevent excessive ledger lines
  */
 function randomizeOctaves(notes: number[], clef: 'bass' | 'treble' = 'treble'): number[] {
-  const minNote = clef === 'bass' ? 36 : 60; // C2 for bass, C4 for treble
-  const maxNote = clef === 'bass' ? 60 : 84; // C4 for bass, C6 for treble
+  // Use same tighter ranges as main function
+  const minNote = clef === 'bass' ? 40 : 60; // E2 for bass (40), C4 for treble (60)
+  const maxNote = clef === 'bass' ? 62 : 79; // D4 for bass (62), G5 for treble (79)
   
   return notes.map((note) => {
     // Randomize each note's octave independently, but constrain to range
@@ -155,8 +158,16 @@ export function generateVoicing(chord: Chord, options: VoicingOptions, clef: 'ba
   let notes = getChordNotes(chord, clef);
   
   // For bass clef, we typically just want the root note
+  // Ensure it's within the constrained range
   if (clef === 'bass') {
-    return [notes[0]]; // Just return the root note
+    const bassNote = notes[0];
+    const minBass = 40; // E2
+    const maxBass = 62; // D4
+    // Clamp bass note to range
+    let clampedNote = bassNote;
+    while (clampedNote < minBass) clampedNote += 12;
+    while (clampedNote > maxBass) clampedNote -= 12;
+    return [clampedNote];
   }
   
   // Apply inversion if enabled (treble only)
@@ -177,8 +188,10 @@ export function generateVoicing(chord: Chord, options: VoicingOptions, clef: 'ba
   // Final constraint check - ensure all notes are within reasonable range
   // This is critical to prevent excessive ledger lines
   // Use tighter ranges for better readability
-  const minNote = clef === 'bass' ? 36 : 60; // C2 for bass, C4 for treble
-  const maxNote = clef === 'bass' ? 60 : 79; // C4 for bass, G5 for treble (tighter upper bound)
+  // Bass clef: Stay within staff lines (E2 to D4) to minimize ledger lines
+  // Treble clef: C4 to G5 (comfortable range)
+  const minNote = clef === 'bass' ? 40 : 60; // E2 for bass (40), C4 for treble (60)
+  const maxNote = clef === 'bass' ? 62 : 79; // D4 for bass (62), G5 for treble (79)
   
   // Find the range of notes after all transformations
   const lowestNote = Math.min(...notes);

@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect, useRef } from 'react';
-import { Renderer, Stave, StaveNote, Voice, Formatter } from 'vexflow';
+import { Renderer, Stave, StaveNote, Voice, Formatter, Dot, Beam } from 'vexflow';
 import type { ChordStylingStrategy, TimeSignature } from '../types';
 import { generateStyledChordNotes } from '../utils/chordStyling';
 import { generateVoicing } from '../utils/chordVoicing';
@@ -33,26 +33,39 @@ function midiToPitch(midiNote: number): string {
 function notesToStaveNote(notes: number[], duration: string, clef: 'bass' | 'treble'): StaveNote {
   if (notes.length === 0) {
     const restPitch = clef === 'bass' ? 'b/3' : 'b/4';
+    // VexFlow requires 'r' suffix in duration string to indicate rest
+    const restDuration = duration.includes('r') ? duration : duration + 'r';
     return new StaveNote({
       keys: [restPitch],
-      duration: duration,
+      duration: restDuration,
       clef: clef,
     });
   }
   
   const pitches = notes.map(midiToPitch);
-  return new StaveNote({
+  
+  // Check if this is a dotted note (duration contains 'd' but not 'r' for rest)
+  const isDotted = duration.includes('d') && !duration.includes('r');
+  
+  const staveNote = new StaveNote({
     keys: pitches,
     duration: duration,
     clef: clef,
   });
+  
+  // Add dot for dotted notes
+  if (isDotted) {
+    Dot.buildAndAttach([staveNote], { all: true });
+  }
+  
+  return staveNote;
 }
 
 const ChordStylePreview: React.FC<ChordStylePreviewProps> = ({
   strategy,
   timeSignature,
-  width = 120,
-  height = 75,
+  width = 140, // Balanced width to fit in sidebar without overflow
+  height = 80,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -88,39 +101,38 @@ const ChordStylePreview: React.FC<ChordStylePreviewProps> = ({
         timeSignature
       );
 
-      // Create renderer - use larger size for better readability
+      // Create renderer - smaller scale for denser preview
       const renderer = new Renderer(containerRef.current, Renderer.Backends.SVG);
       renderer.resize(width, height);
       const context = renderer.getContext();
       
-      // Use a more readable scale - larger for better visibility
-      const scale = 0.7;
+      // Use smaller scale for denser, more compact preview
+      // Adjust scale based on number of notes to ensure everything fits
+      const totalNotes = styledChord.trebleNotes.length + styledChord.bassNotes.length;
+      const scale = totalNotes > 6 ? 0.45 : 0.5; // Even smaller scale for complex patterns
       context.scale(scale, scale);
 
       // Create grand staff (scaled coordinates)
-      // Add proper spacing between staves to prevent overlap
-      const trebleY = 10;
-      const bassY = trebleY + 60; // Increased spacing for grand staff
+      // Minimal top spacing, but more space between treble and bass staves for readability
+      const trebleY = -2; // Negative Y to minimize top whitespace
+      const bassY = trebleY + 65; // Spacing between staves
       const scaledWidth = width / scale;
-      const scaledHeight = height / scale;
 
-      const trebleStave = new Stave(0, trebleY, scaledWidth);
+      // Calculate stave width - make it wider to accommodate all notes
+      const barlineWidth = 10;
+      const staveWidth = scaledWidth; // Use full scaled width
+
+      const trebleStave = new Stave(0, trebleY, staveWidth);
       trebleStave.addClef('treble');
       trebleStave.addTimeSignature(`${timeSignature.numerator}/${timeSignature.denominator}`);
       trebleStave.setContext(context).draw();
 
-      const bassStave = new Stave(0, bassY, scaledWidth);
+      const bassStave = new Stave(0, bassY, staveWidth);
       bassStave.addClef('bass');
       bassStave.addTimeSignature(`${timeSignature.numerator}/${timeSignature.denominator}`);
       bassStave.setContext(context).draw();
-      
-      // Ensure we don't exceed the scaled height
-      if (bassY + 20 > scaledHeight) {
-        // If bass stave would overflow, adjust
-        console.warn('Preview height may be too small for grand staff');
-      }
 
-      // Create notes
+      // Create notes for entire measure
       const trebleNotes = styledChord.trebleNotes.map(group =>
         notesToStaveNote(group.notes, group.duration, 'treble')
       );
@@ -128,7 +140,7 @@ const ChordStylePreview: React.FC<ChordStylePreviewProps> = ({
         notesToStaveNote(group.notes, group.duration, 'bass')
       );
 
-      // Create voices
+      // Create voices for entire measure
       const trebleVoice = new Voice({
         numBeats: timeSignature.numerator,
         beatValue: timeSignature.denominator,
@@ -144,15 +156,66 @@ const ChordStylePreview: React.FC<ChordStylePreviewProps> = ({
       bassVoice.addTickables(bassNotes);
 
       // Format and draw (scaled width)
-      // Use proper formatting width to ensure notes fit within measure
+      // Format both voices together to ensure proper alignment
       const formatter = new Formatter();
       formatter.joinVoices([trebleVoice, bassVoice]);
-      // Use a conservative format width to ensure notes don't overflow
-      const formatWidth = scaledWidth - 50; // More conservative padding for readability
-      formatter.format([trebleVoice, bassVoice], formatWidth);
+      
+      // Calculate format width more aggressively to fit all notes
+      // Use VexFlow's getNoteStartX() to get the actual start position after clef/time sig
+      const noteStartX = trebleStave.getNoteStartX();
+      const staveEndX = staveWidth;
+      const formatWidth = staveEndX - noteStartX - barlineWidth - 3; // Minimal right padding
+      
+      // Ensure format width is reasonable (at least 40px)
+      const finalFormatWidth = Math.max(formatWidth, 40);
+      formatter.format([trebleVoice, bassVoice], finalFormatWidth);
 
+      // Add beams for eighth notes based on time signature
+      const addBeams = (notes: StaveNote[]) => {
+        const beams: Beam[] = [];
+        let currentBeamGroup: StaveNote[] = [];
+        
+        const isCompoundTime = timeSignature.denominator === 8;
+        const beamGroupSize = isCompoundTime ? 3 : 2; // Group of 3 for compound, 2 for simple
+        
+        notes.forEach((note, index) => {
+          // Only beam eighth notes (duration '8')
+          const duration = note.getDuration();
+          if (duration === '8' && note.getKeys().length > 0 && !note.isRest()) {
+            currentBeamGroup.push(note);
+            
+            // Create beam when group is complete or at end of measure
+            if (currentBeamGroup.length === beamGroupSize || index === notes.length - 1) {
+              if (currentBeamGroup.length >= 2) {
+                // Only create beam if we have at least 2 notes
+                const beam = new Beam(currentBeamGroup);
+                beams.push(beam);
+              }
+              currentBeamGroup = [];
+            }
+          } else {
+            // Non-beamable note or rest - finish current beam group if any
+            if (currentBeamGroup.length >= 2) {
+              const beam = new Beam(currentBeamGroup);
+              beams.push(beam);
+            }
+            currentBeamGroup = [];
+          }
+        });
+        
+        return beams;
+      };
+      
+      const trebleBeams = addBeams(trebleNotes);
+      const bassBeams = addBeams(bassNotes);
+      
+      // Draw both voices to show complete measure
       trebleVoice.draw(context, trebleStave);
       bassVoice.draw(context, bassStave);
+      
+      // Draw beams after notes are drawn
+      trebleBeams.forEach(beam => beam.setContext(context).draw());
+      bassBeams.forEach(beam => beam.setContext(context).draw());
     } catch (error) {
       console.error('Error rendering chord style preview:', error);
       if (containerRef.current) {
@@ -168,6 +231,7 @@ const ChordStylePreview: React.FC<ChordStylePreviewProps> = ({
         width: `${width}px`,
         height: `${height}px`,
         overflow: 'hidden',
+        marginTop: '-6px', // More negative margin to reduce top whitespace
       }}
     />
   );
