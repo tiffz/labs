@@ -70,6 +70,10 @@
   background-position: center;
 }
 
+.app-icon.forms {
+  background-image: url('/icons/favicon-forms.svg');
+}
+
 .app-info {
   text-align: left;
 }

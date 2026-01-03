@@ -29,6 +29,7 @@ export default defineConfig({
           drums: resolve(__dirname, 'src/drums/index.html'),
           story: resolve(__dirname, 'src/story/index.html'),
           chords: resolve(__dirname, 'src/chords/index.html'),
+          forms: resolve(__dirname, 'src/forms/index.html'),
       },
       output: {
         manualChunks: {

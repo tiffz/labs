@@ -51,6 +51,25 @@ export default [
         'warn',
         { allowConstantExport: true },
       ],
+      // Allow react-three-fiber JSX properties (position, rotation, geometry, material, etc.)
+      'react/no-unknown-property': [
+        'error',
+        {
+          ignore: [
+            'position',
+            'rotation',
+            'scale',
+            'geometry',
+            'material',
+            'intensity',
+            'object',
+            'args',
+            'attach',
+            'castShadow',
+            'receiveShadow',
+          ],
+        },
+      ],
       // Google TypeScript Style Guide: Prefer named imports over default imports
       // Note: This is a warning, not an error, to allow gradual migration
       'import/no-default-export': 'off', // We'll use a custom rule or manual review
