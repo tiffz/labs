@@ -1,10 +1,10 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import type { ChordProgressionState, LockedOptions } from './types';
 import { randomChordProgression, randomKey, randomTimeSignature, randomTempo, randomStylingStrategy } from './utils/randomization';
 import { progressionToChords } from './utils/chordTheory';
 import { generateVoicing } from './utils/chordVoicing';
-import { generateStyledChordNotes } from './utils/chordStyling';
-import { chordPlayer } from './utils/chordPlayer';
+import { generateStyledChordNotes, type StyledChordNotes } from './utils/chordStyling';
+import { getPlaybackEngine, disposePlaybackEngine, type ActiveNotes } from './utils/playback';
 import ChordScoreRenderer from './components/ChordScoreRenderer';
 import ManualControls from './components/ManualControls';
 import { SOUND_OPTIONS } from './types/soundOptions';
@@ -57,16 +57,72 @@ const App: React.FC = () => {
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentChordIndex, setCurrentChordIndex] = useState<number | null>(null);
-  const [activeNoteGroups, setActiveNoteGroups] = useState<Set<string>>(new Set()); // Store as "measureIndex:trebleIndex" or "measureIndex:bassIndex"
+  const [activeNoteGroups, setActiveNoteGroups] = useState<Set<string>>(new Set());
   const [lockedOptions, setLockedOptions] = useState<LockedOptions>({});
-  const currentLoopIdRef = React.useRef<number>(0); // Track current loop ID to filter out old highlights
-  const activeNoteGroupsRef = React.useRef<Set<string>>(new Set()); // Keep a ref in sync for immediate updates
+  const currentLoopIdRef = useRef<number>(0);
+
+  // Helper function to generate styled chords
+  const generateExpandedStyledChords = useCallback((currentState: ChordProgressionState): StyledChordNotes[] => {
+    const chords = progressionToChords(currentState.progression.progression, currentState.key);
+    const trebleVoicings = chords.map(chord => generateVoicing(chord, currentState.voicingOptions, 'treble'));
+    const bassVoicings = chords.map(chord => generateVoicing(chord, currentState.voicingOptions, 'bass'));
+    
+    const styledChords = chords.map((chord, index) => 
+      generateStyledChordNotes(chord, trebleVoicings[index], bassVoicings[index], currentState.stylingStrategy, currentState.timeSignature)
+    );
+    
+    // Expand chords across multiple measures based on measuresPerChord
+    const measuresPerChord = currentState.measuresPerChord || 1;
+    const expandedStyledChords: StyledChordNotes[] = [];
+    styledChords.forEach((styledChord) => {
+      for (let i = 0; i < measuresPerChord; i++) {
+        expandedStyledChords.push(styledChord);
+      }
+    });
+    
+    return expandedStyledChords;
+  }, []);
+
+  // Create playback update callback
+  const createPlaybackCallback = useCallback((timeSignature: { numerator: number }) => {
+    return (positionInBeats: number, activeNotes: Map<number, ActiveNotes>, playing: boolean) => {
+      if (!playing) {
+        setIsPlaying(false);
+        setCurrentChordIndex(null);
+        setActiveNoteGroups(new Set());
+        return;
+      }
+      
+      // Convert activeNotes map to Set<string> format expected by renderer
+      const noteGroups = new Set<string>();
+      
+      activeNotes.forEach((notes, measureIndex) => {
+        notes.treble.forEach(groupIndex => {
+          noteGroups.add(`${measureIndex}:treble:${groupIndex}`);
+        });
+        notes.bass.forEach(groupIndex => {
+          noteGroups.add(`${measureIndex}:bass:${groupIndex}`);
+        });
+      });
+      
+      // Calculate current chord index from current beat
+      const beatsPerMeasure = timeSignature.numerator;
+      const currentChordIdx = Math.floor(positionInBeats / beatsPerMeasure);
+      setCurrentChordIndex(currentChordIdx);
+      setActiveNoteGroups(noteGroups);
+    };
+  }, []);
 
   const handleRandomize = () => {
+    const wasPlaying = isPlaying;
+    const progressionChanged = !lockedOptions.progression;
+    const playbackEngine = getPlaybackEngine();
+    
     if (isPlaying) {
-      chordPlayer.stop();
+      playbackEngine.stop();
       setIsPlaying(false);
       setCurrentChordIndex(null);
+      setActiveNoteGroups(new Set());
     }
     
     const updates: Partial<ChordProgressionState> = {};
@@ -100,15 +156,45 @@ const App: React.FC = () => {
     }
     
     // Always keep voicing options and sound type
-    setState({
+    const newState = {
       ...state,
       ...updates,
       voicingOptions: state.voicingOptions,
       soundType: state.soundType,
-    });
+    };
+    
+    setState(newState);
+    // Sync to URL when randomizing
+    syncToUrl(newState);
+    
+    // If playback was active and progression changed, restart immediately
+    if (wasPlaying && progressionChanged) {
+      // Use setTimeout with a small delay to ensure stop() fully completes
+      // This prevents layered sounds from previous playback
+      setTimeout(() => {
+        const expandedStyledChords = generateExpandedStyledChords(newState);
+
+        setIsPlaying(true);
+        setCurrentChordIndex(null);
+        setActiveNoteGroups(new Set());
+        currentLoopIdRef.current = 0;
+
+        playbackEngine.start(
+          {
+            styledChords: expandedStyledChords,
+            tempo: newState.tempo,
+            timeSignature: newState.timeSignature,
+            soundType: newState.soundType,
+          },
+          createPlaybackCallback(newState.timeSignature)
+        );
+      }, 50);
+    }
   };
 
   const handleStateChange = useCallback((updates: Partial<ChordProgressionState>) => {
+    const playbackEngine = getPlaybackEngine();
+    
     setState(prevState => {
       const newState = {
         ...prevState,
@@ -122,46 +208,33 @@ const App: React.FC = () => {
       if (isPlaying) {
         // Tempo changes should apply immediately
         if (updates.tempo !== undefined && updates.tempo !== prevState.tempo) {
-          chordPlayer.updateTempo(newState.tempo);
+          playbackEngine.setTempo(newState.tempo);
+        }
+        
+        // Sound type changes apply immediately with crossfade
+        if (updates.soundType !== undefined && updates.soundType !== prevState.soundType) {
+          playbackEngine.setSoundType(updates.soundType);
         }
         
         // Other playback-affecting changes should wait for measure end
         const playbackAffectingKeys: (keyof ChordProgressionState)[] = [
-          'progression', 'key', 'timeSignature', 'stylingStrategy', 'voicingOptions'
+          'progression', 'key', 'timeSignature', 'stylingStrategy', 'voicingOptions', 'measuresPerChord'
         ];
         const hasPlaybackChanges = playbackAffectingKeys.some(key => 
           updates[key] !== undefined && updates[key] !== prevState[key]
         );
         
         if (hasPlaybackChanges) {
-          // Regenerate chords with new settings
-          const chords = progressionToChords(newState.progression.progression, newState.key);
-          const trebleVoicings = chords.map(chord => generateVoicing(chord, newState.voicingOptions, 'treble'));
-          const bassVoicings = chords.map(chord => generateVoicing(chord, newState.voicingOptions, 'bass'));
+          // Regenerate chords with new settings and update content (queued for measure boundary)
+          const expandedStyledChords = generateExpandedStyledChords(newState);
+          playbackEngine.updateContent(expandedStyledChords);
           
-                    const styledChords = chords.map((chord, index) => 
-                      generateStyledChordNotes(chord, trebleVoicings[index], bassVoicings[index], newState.stylingStrategy, newState.timeSignature)
-                    );
-                    
-                    // Expand chords across multiple measures based on measuresPerChord
-                    const measuresPerChord = newState.measuresPerChord || 1;
-                    const expandedStyledChords: typeof styledChords = [];
-                    styledChords.forEach((styledChord) => {
-                      for (let i = 0; i < measuresPerChord; i++) {
-                        expandedStyledChords.push(styledChord);
-                      }
-                    });
-                    
-                    // Update playback gracefully (will finish current measure, then switch)
-                    chordPlayer.updatePlayback(
-                      expandedStyledChords,
-            newState.tempo,
-            newState.timeSignature,
-            newState.soundType
-          );
-        } else if (updates.soundType !== undefined && updates.soundType !== prevState.soundType) {
-          // Sound type change doesn't affect timing, update immediately
-          chordPlayer.setSoundType(updates.soundType);
+          // Handle time signature changes separately
+          if (updates.timeSignature !== undefined && 
+              (updates.timeSignature.numerator !== prevState.timeSignature.numerator ||
+               updates.timeSignature.denominator !== prevState.timeSignature.denominator)) {
+            playbackEngine.setTimeSignature(updates.timeSignature);
+          }
         }
       }
       
@@ -169,7 +242,7 @@ const App: React.FC = () => {
       syncToUrl(newState);
       return newState;
     });
-  }, [syncToUrl, isPlaying]);
+  }, [syncToUrl, isPlaying, generateExpandedStyledChords]);
   
   // Set up browser navigation listener
   useEffect(() => {
@@ -188,129 +261,42 @@ const App: React.FC = () => {
   };
 
   const handlePlay = useCallback(() => {
+    const playbackEngine = getPlaybackEngine();
+    
     if (isPlaying) {
-      chordPlayer.stop();
+      playbackEngine.stop();
       setIsPlaying(false);
       setCurrentChordIndex(null);
-      const emptySet = new Set<string>();
-      setActiveNoteGroups(emptySet);
-      activeNoteGroupsRef.current = emptySet;
+      setActiveNoteGroups(new Set());
       return;
     }
 
-    // Convert progression to chords and generate voicings
-    const chords = progressionToChords(state.progression.progression, state.key);
-    const trebleVoicings = chords.map(chord => generateVoicing(chord, state.voicingOptions, 'treble'));
-    const bassVoicings = chords.map(chord => generateVoicing(chord, state.voicingOptions, 'bass'));
-    
-    // Generate styled chord notes (split into bass and treble)
-    const styledChords = chords.map((chord, index) => 
-      generateStyledChordNotes(chord, trebleVoicings[index], bassVoicings[index], state.stylingStrategy, state.timeSignature)
-    );
-    
-    // Expand chords across multiple measures based on measuresPerChord
-    const measuresPerChord = state.measuresPerChord || 1;
-    const expandedStyledChords: typeof styledChords = [];
-    styledChords.forEach((styledChord) => {
-      for (let i = 0; i < measuresPerChord; i++) {
-        expandedStyledChords.push(styledChord);
-      }
-    });
+    // Generate styled chords
+    const expandedStyledChords = generateExpandedStyledChords(state);
 
     setIsPlaying(true);
     setCurrentChordIndex(null);
-    const emptySet = new Set<string>();
-    setActiveNoteGroups(emptySet);
-    activeNoteGroupsRef.current = emptySet;
-    currentLoopIdRef.current = 0; // Reset loop ID when starting playback
+    setActiveNoteGroups(new Set());
+    currentLoopIdRef.current = 0;
 
-    chordPlayer.play(
-      expandedStyledChords,
-      state.tempo,
-      state.timeSignature,
-      (activeGroup) => {
-      // Special case: measureIndex -1 means clear all highlights (start of new loop)
-      if (activeGroup.measureIndex === -1) {
-        const newLoopId = activeGroup.loopId ?? currentLoopIdRef.current;
-        currentLoopIdRef.current = newLoopId;
-        const emptySet = new Set<string>();
-        activeNoteGroupsRef.current = emptySet;
-        // Use functional setState to ensure we clear the latest state
-        setActiveNoteGroups(() => emptySet);
-        return;
-      }
-      
-      // CRITICAL: Filter out ALL callbacks from previous loops (both adds and removals)
-      // This prevents old removal callbacks from removing highlights from the current loop
-      const activeLoopId = activeGroup.loopId ?? currentLoopIdRef.current;
-      if (activeLoopId < currentLoopIdRef.current) {
-        // This callback is from a previous loop, ignore it completely
-        // This includes both add and remove operations from old loops
-        return;
-      }
-      
-      // If this is a newer loop, update the loop ID and clear state
-      // This should only happen if the clear signal was missed somehow
-      if (activeLoopId > currentLoopIdRef.current) {
-        currentLoopIdRef.current = activeLoopId;
-        activeNoteGroupsRef.current = new Set<string>();
-        // Clear state immediately when detecting a new loop
-        setActiveNoteGroups(() => new Set<string>());
-      }
-      
-      // Now update the set - use functional setState to work with latest state
-      // Always start from the ref's current state to ensure consistency
-      setActiveNoteGroups(prev => {
-        // Use prev (which React guarantees is the latest committed state) instead of ref
-        // This ensures we're working with the actual React state, not a potentially stale ref
-        const next = new Set(prev);
-        
-        // Handle treble group
-        if (activeGroup.trebleGroupIndex !== null) {
-          if (activeGroup.trebleGroupIndex >= 0) {
-            // Positive index means add
-            next.add(`${activeGroup.measureIndex}:treble:${activeGroup.trebleGroupIndex}`);
-          } else {
-            // Negative index means remove (convert back: -(index + 1))
-            // If trebleGroupIndex is -1, that means remove group 0
-            // If trebleGroupIndex is -2, that means remove group 1
-            const groupIndex = -(activeGroup.trebleGroupIndex + 1);
-            const key = `${activeGroup.measureIndex}:treble:${groupIndex}`;
-            // Always try to delete, even if key doesn't exist (handles edge cases)
-            next.delete(key);
-          }
-        }
-        
-        // Handle bass group
-        if (activeGroup.bassGroupIndex !== null) {
-          if (activeGroup.bassGroupIndex >= 0) {
-            // Positive index means add
-            next.add(`${activeGroup.measureIndex}:bass:${activeGroup.bassGroupIndex}`);
-          } else {
-            // Negative index means remove (convert back: -(index + 1))
-            // If bassGroupIndex is -1, that means remove group 0
-            // If bassGroupIndex is -2, that means remove group 1
-            const groupIndex = -(activeGroup.bassGroupIndex + 1);
-            const key = `${activeGroup.measureIndex}:bass:${groupIndex}`;
-            // Always try to delete, even if key doesn't exist (handles edge cases)
-            next.delete(key);
-          }
-        }
-        
-        // Update ref to match state for consistency
-        activeNoteGroupsRef.current = next;
-        return next;
-      });
+    // Start playback with new engine
+    playbackEngine.start(
+      {
+        styledChords: expandedStyledChords,
+        tempo: state.tempo,
+        timeSignature: state.timeSignature,
+        soundType: state.soundType,
       },
-      () => {
-        setIsPlaying(false);
-        setCurrentChordIndex(null);
-        setActiveNoteGroups(new Set());
-      },
-      true, // Loop
-      state.soundType
+      createPlaybackCallback(state.timeSignature)
     );
-  }, [state, isPlaying]);
+  }, [state, isPlaying, generateExpandedStyledChords, createPlaybackCallback]);
+  
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      disposePlaybackEngine();
+    };
+  }, []);
 
   return (
     <div className="chords-app">
@@ -347,11 +333,6 @@ const App: React.FC = () => {
                 onChange={(e) => {
                   const newSoundType = e.target.value as ChordProgressionState['soundType'];
                   handleStateChange({ soundType: newSoundType });
-                  // handleStateChange will call chordPlayer.setSoundType if playback is active
-                  // But we also need to update it if playback is not active
-                  if (!isPlaying) {
-                    chordPlayer.setSoundType(newSoundType);
-                  }
                 }}
                 className="sound-select"
               >

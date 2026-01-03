@@ -36,16 +36,22 @@ Sidebar UI for controlling generation parameters:
 - Lock/unlock functionality for randomization control
 - Dice icons for section-specific randomization
 
-#### `chordPlayer.ts`
+#### `utils/playback/` - Audio Playback System
 
-Audio playback engine:
+A modular, stable playback system with clear separation of concerns:
 
-- Uses Web Audio API with a singleton `AudioContext` for consistent timing
-- Schedules notes beat-by-beat based on styled chord notes
+- **`transport.ts`**: Time management with position always derived from `AudioContext.currentTime` (no drift)
+- **`track.ts`**: Track class encapsulating events + instrument + gain for multi-track support
+- **`instruments/`**: Pluggable instrument architecture (PianoSynthesizer, SimpleSynthesizer)
+- **`playbackEngine.ts`**: Orchestrates all components with scheduler loop, UI loop, and live editing
+
+Key features:
+
+- Sample-accurate timing using Web Audio API scheduling
 - Supports multiple sound types (piano, sine, square, sawtooth, triangle)
 - Piano synthesis uses multiple oscillators with harmonics and ADSR envelopes
-- Implements loop ID tracking to prevent stale highlighting callbacks
-- Handles graceful mid-playback updates (tempo changes immediately, others wait for measure end)
+- Live parameter editing (tempo changes immediately, content changes at measure boundary)
+- Multi-track ready architecture for future instruments (drums, melody, etc.)
 
 ### Key Design Decisions
 
@@ -68,7 +74,7 @@ Note highlighting uses a `Set<string>` approach where each active note group is 
 - Simple add/remove operations
 - Easy filtering by loop ID to prevent stale highlights
 
-The `chordPlayer` sends individual start/end events for each note group, and the `App` component manages the set of active highlights.
+The playback engine sends position updates to the UI via a callback, and the `App` component manages the set of active highlights.
 
 #### 3. Playback Update Strategy
 
@@ -132,7 +138,7 @@ src/chords/
 │   ├── index.ts               # TypeScript type definitions
 │   └── soundOptions.ts        # Sound type definitions
 ├── utils/
-│   ├── chordPlayer.ts         # Audio playback engine
+│   ├── playback/              # Audio playback system (transport, tracks, instruments)
 │   ├── chordStyling.ts        # Pattern parsing and styled note generation
 │   ├── chordTheory.ts         # Roman numeral to chord conversion
 │   ├── chordVoicing.ts        # Chord voicing generation with octave constraints
@@ -149,7 +155,6 @@ src/chords/
 
 Unit tests are located in `src/chords/utils/*.test.ts`:
 
-- `chordPlayer.test.ts`: Tests playback scheduling and highlighting callbacks
 - `chordStyling.test.ts`: Tests pattern parsing and styled note generation
 - `chordTheory.test.ts`: Tests Roman numeral to chord conversion
 

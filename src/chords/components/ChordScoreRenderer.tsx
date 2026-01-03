@@ -28,6 +28,25 @@ function midiToPitch(midiNote: number): string {
 }
 
 /**
+ * Formats chord name for display
+ */
+function formatChordName(chord: ReturnType<typeof progressionToChords>[number]): string {
+  let name = chord.root;
+  const qualityMap: Record<string, string> = {
+    'minor': 'm',
+    'diminished': '°',
+    'augmented': '+',
+    'sus2': 'sus2',
+    'sus4': 'sus4',
+    'dominant7': '7',
+    'major7': 'maj7',
+    'minor7': 'm7',
+  };
+  name += qualityMap[chord.quality] || '';
+  return name;
+}
+
+/**
  * Converts VexFlow key to proper format for addKeySignature
  * VexFlow expects keys like "C", "G", "F", "Bb", "Eb", etc.
  * For enharmonic keys, convert to standard form
@@ -85,10 +104,73 @@ function notesToStaveNote(notes: number[], duration: string, clef: 'bass' | 'tre
 
 const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({ state, currentChordIndex, activeNoteGroups = new Set() }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const stateRef = useRef<string>('');
+  const scrollContainerRef = useRef<HTMLElement | null>(null);
+  const noteElementMapRef = useRef<Map<string, SVGElement[]>>(new Map()); // Map note keys to SVG elements
 
   useEffect(() => {
     if (!containerRef.current) return;
+    
+    // Find the scrollable container (could be the container itself or a parent)
+    if (!scrollContainerRef.current) {
+      let element: HTMLElement | null = containerRef.current;
+      while (element && element !== document.body) {
+        const style = window.getComputedStyle(element);
+        if (style.overflowY === 'auto' || style.overflowY === 'scroll' || 
+            style.overflow === 'auto' || style.overflow === 'scroll') {
+          scrollContainerRef.current = element;
+          break;
+        }
+        element = element.parentElement;
+      }
+      // Fallback to window if no scrollable container found
+      if (!scrollContainerRef.current) {
+        scrollContainerRef.current = document.documentElement;
+      }
+    }
+    
+    // Check if state changed (not just activeNoteGroups)
+    const currentStateKey = JSON.stringify({
+      progression: state.progression.name,
+      key: state.key,
+      tempo: state.tempo,
+      timeSignature: state.timeSignature,
+      stylingStrategy: state.stylingStrategy,
+      measuresPerChord: state.measuresPerChord,
+      voicingOptions: state.voicingOptions,
+    });
+    
+    const stateChanged = stateRef.current !== currentStateKey;
+    
+    // Always preserve scroll position during playback (when activeNoteGroups changes)
+    // This allows users to scroll while playback is active
+    // Only reset scroll position when the actual music state changes
+    let scrollTop = 0;
+    let scrollLeft = 0;
+    let shouldPreserveScroll = false;
+    
+    if (scrollContainerRef.current) {
+      if (scrollContainerRef.current === document.documentElement) {
+        scrollTop = window.scrollY;
+        scrollLeft = window.scrollX;
+      } else {
+        scrollTop = scrollContainerRef.current.scrollTop;
+        scrollLeft = scrollContainerRef.current.scrollLeft;
+      }
+      
+      // Preserve scroll if:
+      // 1. State hasn't changed (only activeNoteGroups changed - highlighting update)
+      // 2. OR if we have a non-zero scroll position (user has scrolled, preserve it)
+      shouldPreserveScroll = !stateChanged || (scrollTop > 0 || scrollLeft > 0);
+    }
+    
+    if (stateChanged) {
+      stateRef.current = currentStateKey;
+    }
+    
+    // Always render to update highlighting, but preserve scroll position when appropriate
     containerRef.current.innerHTML = '';
+    noteElementMapRef.current.clear(); // Clear note element map on re-render
 
     try {
       // Convert progression to actual chords
@@ -117,8 +199,8 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({ state, currentC
       
       chords.forEach((chord, chordIndex) => {
         const styledChord = styledChords[chordIndex];
-        const chordName = progressionToChords(state.progression.progression, state.key)[chordIndex];
-        const chordNameString = `${chordName.root}${chordName.quality === 'minor' ? 'm' : chordName.quality === 'diminished' ? '°' : chordName.quality === 'augmented' ? '+' : chordName.quality === 'dominant7' ? '7' : chordName.quality === 'major7' ? 'maj7' : chordName.quality === 'minor7' ? 'm7' : chordName.quality === 'sus2' ? 'sus2' : chordName.quality === 'sus4' ? 'sus4' : ''}`;
+        // Use formatChordName helper function for consistent formatting
+        const chordNameString = formatChordName(chord);
         
         // Repeat this chord for measuresPerChord measures
         for (let i = 0; i < measuresPerChord; i++) {
@@ -150,6 +232,10 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({ state, currentC
       const maxScale = 1.0;
       const complexityScale = Math.max(minScale, maxScale - ((complexityScore - baseComplexity) / (maxComplexity - baseComplexity)) * (maxScale - minScale));
       
+      // Apply overall density reduction: 50% smaller (85% of original size)
+      const densityScale = 0.85;
+      const finalScale = complexityScale * densityScale;
+      
       // Calculate measures per line (wrap to multiple lines)
       // Default to 4 measures per line for better organization
       const containerWidth = containerRef.current.clientWidth || 1200;
@@ -158,7 +244,8 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({ state, currentC
       
       // Calculate dynamic measure width based on note count in styled chords
       // More notes need more space to prevent escaping
-      const measureWidth = baseMeasureWidth + Math.max(0, (maxNotesPerMeasure - 4) * 15);
+      // Apply density scale to measure width as well
+      const measureWidth = (baseMeasureWidth + Math.max(0, (maxNotesPerMeasure - 4) * 15)) * finalScale;
       
       // Calculate how many measures fit, but prefer 4 if possible
       const maxMeasuresByWidth = Math.floor((containerWidth - 120) / measureWidth);
@@ -172,26 +259,39 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({ state, currentC
       const baseLineHeight = 240;
       const baseLineSpacing = 40;
       const baseStaffSpacing = 100; // Space between treble and bass staves
-      const lineHeight = baseLineHeight * complexityScale;
-      const lineSpacing = baseLineSpacing * complexityScale;
-      const staffSpacing = baseStaffSpacing * complexityScale;
+      const lineHeight = baseLineHeight * finalScale;
+      const lineSpacing = baseLineSpacing * finalScale;
+      const staffSpacing = baseStaffSpacing * finalScale;
       const totalHeight = (lineHeight * numLines) + (lineSpacing * (numLines - 1)) + 40;
       
       const renderer = new Renderer(containerRef.current, Renderer.Backends.SVG);
       renderer.resize(containerWidth, totalHeight);
       const context = renderer.getContext();
       
+      // Apply scale transform to reduce the actual size of staff and notes
+      // This makes the musical notation itself smaller, not just spacing
+      context.scale(finalScale, finalScale);
+      
+      // Adjust coordinates to account for scaling
+      // After scaling, we need to divide positions by scale to get correct placement
+      const scaleFactor = 1 / finalScale;
+      
       // Normalize key for VexFlow
       const normalizedKey = normalizeKeyForVexFlow(state.key);
       const keySig = getKeySignature(state.key);
       
+      // Track the last staves across all lines for repeat connector
+      let lastTrebleStaveGlobal: Stave | null = null;
+      let lastBassStaveGlobal: Stave | null = null;
+      
       // Render each line
       for (let lineIndex = 0; lineIndex < numLines; lineIndex++) {
         const startMeasure = lineIndex * measuresPerLine;
-        const endMeasure = Math.min(startMeasure + measuresPerLine, chords.length);
+        const endMeasure = Math.min(startMeasure + measuresPerLine, totalMeasures);
         
-        const trebleY = 30 + (lineIndex * (lineHeight + lineSpacing));
-        const bassY = trebleY + staffSpacing;
+        // After scaling context, coordinates need to be adjusted by scaleFactor
+        const trebleY = (30 * scaleFactor) + (lineIndex * ((lineHeight + lineSpacing) * scaleFactor));
+        const bassY = trebleY + (staffSpacing * scaleFactor);
         
         // Create separate staves for each measure to ensure proper formatting
         const trebleStaves: Stave[] = [];
@@ -199,11 +299,13 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({ state, currentC
         
         for (let measureIndex = startMeasure; measureIndex < endMeasure; measureIndex++) {
           const localMeasureIndex = measureIndex - startMeasure;
-          const xPosition = 20 + (localMeasureIndex * measureWidth);
+          // After scaling, x positions need to be adjusted
+          const xPosition = (20 * scaleFactor) + (localMeasureIndex * (measureWidth * scaleFactor));
           const isLastMeasure = measureIndex === totalMeasures - 1;
           
           // Create treble stave for this measure (keep same width for alignment)
-          const trebleStave = new Stave(xPosition, trebleY, measureWidth);
+          // After scaling, stave width needs to be adjusted by scaleFactor
+          const trebleStave = new Stave(xPosition, trebleY, measureWidth * scaleFactor);
           // Add clef, key signature, and time signature to first measure of each line
           if (localMeasureIndex === 0) {
             trebleStave.addClef('treble');
@@ -216,14 +318,18 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({ state, currentC
             }
             trebleStave.addTimeSignature(`${state.timeSignature.numerator}/${state.timeSignature.denominator}`);
           }
-          // Set barline type before drawing (except for last measure)
-          if (!isLastMeasure) {
+          // Set barline type before drawing
+          if (isLastMeasure) {
+            // Add repeat barline at the end to indicate looping
+            trebleStave.setEndBarType(BarlineType.REPEAT_END);
+          } else {
             trebleStave.setEndBarType(BarlineType.SINGLE);
           }
           trebleStaves.push(trebleStave);
           
           // Create bass stave for this measure
-          const bassStave = new Stave(xPosition, bassY, measureWidth);
+          // After scaling, stave width needs to be adjusted by scaleFactor
+          const bassStave = new Stave(xPosition, bassY, measureWidth * scaleFactor);
           // Add clef, key signature, and time signature to first measure of each line
           if (localMeasureIndex === 0) {
             bassStave.addClef('bass');
@@ -236,8 +342,11 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({ state, currentC
             }
             bassStave.addTimeSignature(`${state.timeSignature.numerator}/${state.timeSignature.denominator}`);
           }
-          // Set barline type before drawing (except for last measure)
-          if (!isLastMeasure) {
+          // Set barline type before drawing
+          if (isLastMeasure) {
+            // Add repeat barline at the end to indicate looping
+            bassStave.setEndBarType(BarlineType.REPEAT_END);
+          } else {
             bassStave.setEndBarType(BarlineType.SINGLE);
           }
           bassStaves.push(bassStave);
@@ -267,6 +376,12 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({ state, currentC
           connector.setContext(context).draw();
         }
         
+        // Track the last staves for repeat connector (only if this is the last line)
+                if (endMeasure === totalMeasures) {
+                  lastTrebleStaveGlobal = trebleStaves[trebleStaves.length - 1];
+                  lastBassStaveGlobal = bassStaves[bassStaves.length - 1];
+                }
+        
         // Store first note references for chord name placement
         const firstNoteRefs: Map<number, { note: StaveNote; stave: Stave }> = new Map();
         
@@ -289,8 +404,12 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({ state, currentC
           // So notes starting at the same cumulative duration will align when joinVoices is used
           styledChord.trebleNotes.forEach((trebleGroup, groupIndex) => {
             const trebleNote = notesToStaveNote(trebleGroup.notes, trebleGroup.duration, 'treble');
-            // Highlight if this note group is currently active
-            if (activeNoteGroups.has(`${measureIndex}:treble:${groupIndex}`)) {
+            // Store note group identifier for later highlight updates
+            const noteKey = `${measureIndex}:treble:${groupIndex}`;
+            // Set data attribute on the note for later reference (VexFlow will preserve this in SVG)
+            // Note: VexFlow doesn't directly support data attributes, so we'll use a different approach
+            // For now, we'll still set style during render, but avoid full re-render when only highlighting changes
+            if (activeNoteGroups.has(noteKey)) {
               trebleNote.setStyle({ fillStyle: '#ef4444', strokeStyle: '#ef4444' });
             }
             trebleNotes.push(trebleNote);
@@ -298,8 +417,8 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({ state, currentC
           
           styledChord.bassNotes.forEach((bassGroup, groupIndex) => {
             const bassNote = notesToStaveNote(bassGroup.notes, bassGroup.duration, 'bass');
-            // Highlight if this note group is currently active
-            if (activeNoteGroups.has(`${measureIndex}:bass:${groupIndex}`)) {
+            const noteKey = `${measureIndex}:bass:${groupIndex}`;
+            if (activeNoteGroups.has(noteKey)) {
               bassNote.setStyle({ fillStyle: '#ef4444', strokeStyle: '#ef4444' });
             }
             bassNotes.push(bassNote);
@@ -322,35 +441,23 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({ state, currentC
           bassVoice.setStrict(true); // Strict mode for proper alignment
           bassVoice.addTickables(bassNotes);
           
-          // Calculate format width properly - VexFlow expects width available for notes
-          // VexFlow automatically calculates note start X based on clef/key/time signature
-          // Be EXTREMELY conservative to prevent notes from escaping
-          const noteCount = trebleNotes.length + bassNotes.length;
-          const hasManyNotes = noteCount > 6;
-          const hasVeryManyNotes = noteCount > 10;
-          const isComplexKey = keySig.count >= 5;
+          // Calculate format width for even note distribution across the measure
+          // Use VexFlow's getNoteStartX() to get the actual start position after clef/key/time signature
+          const noteStartX = trebleStave.getNoteStartX();
+          // Use the stave's actual width (already scaled) instead of recalculating
+          const staveWidth = trebleStave.getWidth();
+          const staveX = trebleStave.getX();
+          const staveEndX = staveX + staveWidth;
           
-          // Very aggressive reduction to prevent escaping
-          // Similar to drums app: measureWidth - 60, but more conservative for first measure
-          let formatReduction: number;
-          if (localMeasureIndex === 0) {
-            // First measure: account for clef/key/time signature + be extremely conservative
-            // Base reduction: 150px for clef/key/time signature
-            // Additional: 12px per key signature accidental
-            // Additional: 25px if many notes, 50px if very many notes
-            // Additional: 20px if complex key
-            formatReduction = 150 + (keySig.count * 12) + (hasVeryManyNotes ? 50 : hasManyNotes ? 25 : 0) + (isComplexKey ? 20 : 0);
-          } else {
-            // Other measures: still be very conservative, especially with many notes
-            // Base reduction: 80px for barline and spacing
-            // Additional: 30px if many notes, 60px if very many notes
-            formatReduction = 80 + (hasVeryManyNotes ? 60 : hasManyNotes ? 30 : 0);
-          }
-          
-          // Format width is the available width for notes within the stave
-          // VexFlow will automatically start notes after clef/key/time signature
-          // Use very conservative minimum to prevent escaping - never go below 30px
-          const formatWidth = Math.max(30, measureWidth - formatReduction);
+          // Calculate format width: from note start to stave end, with minimal right padding
+          // This ensures notes are distributed evenly across the measure width and stay within boundaries
+          const barlineWidth = 10 * scaleFactor; // Account for barline
+          const rightPadding = 15 * scaleFactor; // Minimal right padding for breathing room
+          // Ensure formatWidth doesn't exceed the available space
+          const formatWidth = Math.max(30 * scaleFactor, Math.min(
+            staveEndX - noteStartX - barlineWidth - rightPadding,
+            staveWidth - (noteStartX - staveX) - barlineWidth - rightPadding
+          ));
           
           // Add beams for eighth notes based on time signature
           // In compound time (6/8, 12/8), beam eighth notes in groups of 3
@@ -443,11 +550,13 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({ state, currentC
                   xPosition = bounds.getX();
                 } else {
                   // Fallback: use stave position
-                  xPosition = trebleStave.getX() + (localMeasureIndex === 0 ? 60 + (keySig.count * 4) : 40);
+                  // Chord name x position needs to account for scaling
+                  xPosition = trebleStave.getX() + (localMeasureIndex === 0 ? (60 + (keySig.count * 4)) * scaleFactor : 40 * scaleFactor);
                 }
               } catch {
                 // Fallback: use stave position
-                xPosition = trebleStave.getX() + (localMeasureIndex === 0 ? 100 + (keySig.count * 7) : 25);
+                // Chord name x position needs to account for scaling
+                xPosition = trebleStave.getX() + (localMeasureIndex === 0 ? (100 + (keySig.count * 7)) * scaleFactor : 25 * scaleFactor);
               }
             } else {
               // Fallback: use stave position
@@ -455,14 +564,17 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({ state, currentC
             }
             
             // Position chord name above the first note (beat 1)
-            const yPosition = trebleY + 5; // Lower, closer to staff lines
+            // Chord names are rendered in scaled coordinates
+            const yPosition = trebleY + (5 * scaleFactor); // Lower, closer to staff lines
             
             const textElement = document.createElementNS('http://www.w3.org/2000/svg', 'text');
             textElement.setAttribute('x', String(xPosition));
             textElement.setAttribute('y', String(yPosition));
             textElement.setAttribute('font-family', 'Arial, sans-serif');
-            // Scale font size based on complexity
-            const chordNameFontSize = Math.max(10, Math.round(13 * complexityScale));
+            // Keep chord name font size readable - don't scale it down
+            // Since we're rendering in a scaled context, we need to compensate for the scale
+            // to keep the font size readable (divide by finalScale to counteract context scaling)
+            const chordNameFontSize = 14 / finalScale; // Compensate for context scaling to keep readable size
             textElement.setAttribute('font-size', String(chordNameFontSize));
             textElement.setAttribute('font-weight', 'bold');
             textElement.setAttribute('fill', '#1e293b');
@@ -472,6 +584,55 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({ state, currentC
             svgElement.appendChild(textElement);
           }
         }
+      }
+      
+      // Restore scroll position if we preserved it
+      // Only restore if the user had scrolled (non-zero position) to avoid interfering with default scroll
+      if (shouldPreserveScroll && scrollContainerRef.current && (scrollTop > 0 || scrollLeft > 0)) {
+        // Use requestAnimationFrame to ensure DOM is updated before scrolling
+        // Use double requestAnimationFrame to ensure rendering is complete
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            if (scrollContainerRef.current) {
+              // Check if user has scrolled since we captured the position
+              // If so, don't override their scroll
+              let currentScrollTop = 0;
+              let currentScrollLeft = 0;
+              if (scrollContainerRef.current === document.documentElement) {
+                currentScrollTop = window.scrollY;
+                currentScrollLeft = window.scrollX;
+              } else {
+                currentScrollTop = scrollContainerRef.current.scrollTop;
+                currentScrollLeft = scrollContainerRef.current.scrollLeft;
+              }
+              
+              // Only restore if scroll hasn't changed significantly (user isn't actively scrolling)
+              // Allow small differences for smooth scrolling
+              const scrollDiff = Math.abs(currentScrollTop - scrollTop) + Math.abs(currentScrollLeft - scrollLeft);
+              if (scrollDiff < 50) { // User hasn't scrolled more than 50px
+                if (scrollContainerRef.current === document.documentElement) {
+                  window.scrollTo(scrollLeft, scrollTop);
+                } else {
+                  scrollContainerRef.current.scrollTop = scrollTop;
+                  scrollContainerRef.current.scrollLeft = scrollLeft;
+                }
+              }
+            }
+          });
+        });
+      }
+      
+      // Add connector at the very end to make repeat barline span both staves
+      // Use VexFlow's StaveConnector instead of manually drawing a line
+      // This ensures proper alignment and connection using VexFlow's built-in logic
+      if (lastTrebleStaveGlobal && lastBassStaveGlobal) {
+        // Use StaveConnector with SINGLE_RIGHT type to connect the staves at the right side (barline)
+        // SINGLE_RIGHT is specifically designed for connecting staves at the right edge
+        // This will automatically handle the proper connection between treble and bass staves
+        // and align with the repeat barline that's already drawn on each stave
+        const barlineConnector = new StaveConnector(lastTrebleStaveGlobal, lastBassStaveGlobal);
+        barlineConnector.setType(StaveConnector.type.SINGLE_RIGHT);
+        barlineConnector.setContext(context).draw();
       }
       
     } catch (error) {
