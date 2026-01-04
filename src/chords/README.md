@@ -38,20 +38,71 @@ Sidebar UI for controlling generation parameters:
 
 #### `utils/playback/` - Audio Playback System
 
-A modular, stable playback system with clear separation of concerns:
+A modular, stable playback system designed from the ground up to eliminate timing drift, audio glitches, and playback failures. The architecture separates concerns into distinct layers, each with a single responsibility.
 
-- **`transport.ts`**: Time management with position always derived from `AudioContext.currentTime` (no drift)
-- **`track.ts`**: Track class encapsulating events + instrument + gain for multi-track support
-- **`instruments/`**: Pluggable instrument architecture (PianoSynthesizer, SimpleSynthesizer)
-- **`playbackEngine.ts`**: Orchestrates all components with scheduler loop, UI loop, and live editing
+##### System Architecture
 
-Key features:
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    PlaybackEngine                          │
+│  (Orchestrates all components, handles live editing)       │
+└─────────────────────────┬───────────────────────────────────┘
+                          │
+          ┌───────────────┼───────────────┐
+          │               │               │
+          ▼               ▼               ▼
+    ┌──────────┐   ┌──────────┐   ┌──────────────────┐
+    │Transport │   │  Track   │   │    Scheduler     │
+    │  (Time)  │   │ (Events) │   │   (Lookahead)    │
+    └────┬─────┘   └────┬─────┘   └──────────────────┘
+         │              │
+         │              ▼
+         │        ┌──────────┐
+         │        │Instrument│
+         │        │ (Sound)  │
+         │        └────┬─────┘
+         │             │
+         ▼             ▼
+    ┌───────────────────────────────────────┐
+    │          AudioContext                 │
+    │   (Single source of truth for time)   │
+    └───────────────────────────────────────┘
+```
 
-- Sample-accurate timing using Web Audio API scheduling
-- Supports multiple sound types (piano, sine, square, sawtooth, triangle)
-- Piano synthesis uses multiple oscillators with harmonics and ADSR envelopes
-- Live parameter editing (tempo changes immediately, content changes at measure boundary)
-- Multi-track ready architecture for future instruments (drums, melody, etc.)
+##### Core Components
+
+- **`transport.ts`**: Time management layer
+  - Position is **always derived** from `AudioContext.currentTime` (never stored as state)
+  - Handles tempo changes by recalculating `startTime` to maintain beat position
+  - Loop detection via direct calculation: `Math.floor(totalBeatsElapsed / loopDuration)`
+  - Converts beat positions to absolute AudioContext times for scheduling
+
+- **`track.ts`**: Track layer encapsulating events + instrument + gain
+  - Each track maintains its own note events, instrument instance, and gain control
+  - Tracks share the same Transport (synchronized to the same clock)
+  - Handles scheduling state per-loop to prevent double-scheduling
+  - Supports hot-swapping instruments during playback
+
+- **`instruments/`**: Pluggable instrument architecture
+  - `Instrument` interface decouples scheduling from sound generation
+  - `BaseInstrument` provides common functionality (gain control, graceful stopping)
+  - `PianoSynthesizer`: Multi-oscillator synthesis with harmonics and ADSR envelopes
+  - `SimpleSynthesizer`: Basic waveforms (sine, square, sawtooth, triangle)
+  - Future-ready for sampled instruments, FM synthesis, drum machines
+
+- **`playbackEngine.ts`**: Central orchestrator
+  - Manages Transport, Tracks, and audio chain (master gain → compressor → destination)
+  - Runs two separate loops: **scheduler** (setInterval) and **UI** (requestAnimationFrame)
+  - Implements live editing strategies for different parameter types
+  - Handles pending changes queue for measure-boundary updates
+
+##### Key Stability Guarantees
+
+1. **No Timing Drift**: All timing derived from `AudioContext.currentTime`, never accumulated state
+2. **Sample-Accurate Scheduling**: Notes scheduled via Web Audio API, not JavaScript timers
+3. **Graceful Degradation**: AudioContext suspension handled (tab backgrounding)
+4. **Clean Audio Stops**: Fade-outs via `linearRampToValueAtTime`, gain restored via Web Audio scheduling
+5. **Loop Boundary Safety**: Per-loop scheduling state prevents double-scheduling or missed notes
 
 ### Key Design Decisions
 
@@ -110,13 +161,69 @@ Locking prevents randomization but allows manual changes:
 - Transpose buttons remain enabled even when key is locked (locking is for randomization, not manual control)
 - Locking a styling strategy prevents rolling incompatible time signatures
 
-#### 7. Audio Timing
+#### 7. Playback System Architecture (Deep Dive)
 
-Uses `AudioContext.currentTime` for scheduling to prevent slowdown when the browser tab is inactive:
+The playback system was designed to eliminate common audio bugs. Here's why each decision was made:
 
-- `AudioContext.currentTime` continues even when tab is backgrounded
-- Provides consistent timing regardless of browser throttling
-- Falls back to `setTimeout` for highlighting callbacks (less critical timing)
+##### Problem: Timing Drift After Long Playback
+
+**Root cause**: Storing beat position as state and incrementing it each tick. Small floating-point errors accumulate over time, causing the playback to fall out of sync after many loops.
+
+**Solution**: Never store beat position. Always derive it:
+
+```typescript
+getPositionInBeats(): number {
+  const elapsed = audioContext.currentTime - this.startTime;
+  return (elapsed * (tempo / 60)) % loopDurationBeats;
+}
+```
+
+Loop count is similarly derived: `Math.floor(totalBeatsElapsed / loopDurationBeats)`
+
+##### Problem: Notes Going Silent During Playback
+
+**Root cause**: Early cleanup of scheduled audio nodes, or gain being stuck at 0 after a fade-out.
+
+**Solution**:
+
+1. Schedule gain restoration using Web Audio API timing (not setTimeout):
+
+```typescript
+gain.linearRampToValueAtTime(0, now + fadeTime);
+gain.setValueAtTime(1, now + fadeTime + 0.001); // Restore precisely
+```
+
+2. Don't `stopAll()` on tempo changes—let notes finish naturally
+3. Per-loop scheduling state (`lastLoopScheduled`) prevents double-scheduling
+
+##### Problem: "Crashing" Sounds When Changing Parameters
+
+**Root cause**: Stopping all audio abruptly, or scheduling notes at wrong times during parameter transitions.
+
+**Solution**: Different strategies for different parameter types:
+
+- **Tempo**: Update immediately, recalculate `startTime` to maintain position, reset scheduling
+- **Sound type**: Fade out (50ms), swap instruments, reset scheduling
+- **Content changes**: Queue for next measure boundary to avoid mid-measure transitions
+
+##### Problem: Audio Glitches When Tab Loses Focus
+
+**Root cause**: Browser throttles `setInterval` when tab is backgrounded, causing scheduling gaps.
+
+**Solution**:
+
+- Use lookahead scheduling (150ms ahead) so notes are pre-scheduled before throttling kicks in
+- Schedule using absolute `AudioContext.currentTime` (continues regardless of tab state)
+- Handle `AudioContext.state === 'suspended'` by calling `ctx.resume()`
+
+##### Multi-Track Architecture
+
+Designed for future expansion (drums, melody, etc.):
+
+- Each `Track` has its own instrument, events, and gain control
+- All tracks share the same `Transport` (single source of truth for time)
+- Instruments implement a common interface, allowing hot-swapping
+- Audio chain: `Instrument → Track Gain → Master Gain → Compressor → Destination`
 
 ### File Structure
 
@@ -138,7 +245,16 @@ src/chords/
 │   ├── index.ts               # TypeScript type definitions
 │   └── soundOptions.ts        # Sound type definitions
 ├── utils/
-│   ├── playback/              # Audio playback system (transport, tracks, instruments)
+│   ├── playback/              # Audio playback system
+│   │   ├── playbackEngine.ts  # Central orchestrator (scheduler, UI loops)
+│   │   ├── transport.ts       # Time management (drift-free timing)
+│   │   ├── track.ts           # Track layer (events, instrument, gain)
+│   │   ├── types.ts           # Shared type definitions
+│   │   └── instruments/       # Sound generation
+│   │       ├── instrument.ts  # Instrument interface + BaseInstrument
+│   │       ├── pianoSynth.ts  # Multi-oscillator piano synthesis
+│   │       ├── simpleSynth.ts # Basic waveform synthesis
+│   │       └── index.ts       # Re-exports
 │   ├── chordStyling.ts        # Pattern parsing and styled note generation
 │   ├── chordTheory.ts         # Roman numeral to chord conversion
 │   ├── chordVoicing.ts        # Chord voicing generation with octave constraints
