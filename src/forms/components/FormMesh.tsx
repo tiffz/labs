@@ -106,22 +106,24 @@ function FormMesh({ form, viewSettings }: FormMeshProps) {
     return createFormLines(form.type);
   }, [form.type, isCurvedForm]);
   
-  // Subtle fill
+  // Form fill - writes to depth buffer for proper occlusion
   const solidMaterial = useMemo(() => {
     if (viewSettings.formOpacity <= 0) return null;
     return new MeshBasicMaterial({
       color: '#f8fafc',
       transparent: true,
       opacity: viewSettings.formOpacity,
-      depthWrite: false,
+      depthWrite: true, // Write depth so intersection lines behind get properly occluded
     });
   }, [viewSettings.formOpacity]);
   
-  // Line material
+  // Line material - visible but not dominant so intersections stand out
   const lineMaterial = useMemo(() => {
     return new LineBasicMaterial({
       color: viewSettings.formEdgeColor,
       linewidth: 1,
+      transparent: true,
+      opacity: 0.75, // Mostly visible but not too bold
     });
   }, [viewSettings.formEdgeColor]);
   
@@ -131,9 +133,9 @@ function FormMesh({ form, viewSettings }: FormMeshProps) {
       rotation={form.rotation}
       scale={form.scale}
     >
-      {/* Optional fill */}
+      {/* Form fill - render FIRST to establish depth buffer for proper line occlusion */}
       {solidMaterial && (
-        <mesh geometry={form.geometry} material={solidMaterial} />
+        <mesh geometry={form.geometry} material={solidMaterial} renderOrder={1} />
       )}
       
       {/* Edges for angular forms */}

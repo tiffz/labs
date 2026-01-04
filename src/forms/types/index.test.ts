@@ -64,8 +64,8 @@ describe('forms types', () => {
       expect(DEFAULT_VIEW_SETTINGS.formEdgeColor).toMatch(/^#[0-9a-fA-F]{6}$/);
     });
 
-    test('default opacity is 40%', () => {
-      expect(DEFAULT_VIEW_SETTINGS.formOpacity).toBe(0.4);
+    test('default opacity is 60%', () => {
+      expect(DEFAULT_VIEW_SETTINGS.formOpacity).toBe(0.6);
     });
 
     test('intersections are shown by default', () => {

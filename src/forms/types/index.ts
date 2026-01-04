@@ -40,8 +40,8 @@ export const DEFAULT_PLACEMENT_CONFIG: PlacementConfig = {
 };
 
 export const DEFAULT_VIEW_SETTINGS: ViewSettings = {
-  formOpacity: 0.4, // 40% opacity by default for better form visibility
+  formOpacity: 0.6, // 60% opacity by default for better form visibility
   showIntersections: true, // Show intersection curves for study
-  intersectionColor: '#1e40af', // Bold blue for intersection lines - stands out
-  formEdgeColor: '#64748b', // Medium gray for form edges
+  intersectionColor: '#1e40af', // Bold blue for intersection lines - like thick pen strokes
+  formEdgeColor: '#607d8b', // Darker gray for form edges - clearly visible but not dominant
 };

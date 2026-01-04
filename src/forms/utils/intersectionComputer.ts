@@ -1,13 +1,15 @@
 import {
-  LineSegments,
-  LineBasicMaterial,
   Group,
   EdgesGeometry,
   BoxGeometry,
   SphereGeometry,
   CylinderGeometry,
   ConeGeometry,
+  Color,
 } from 'three';
+import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js';
+import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js';
+import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
 import { Brush, Evaluator, INTERSECTION } from 'three-bvh-csg';
 import type { FormConfig } from '../types';
 
@@ -23,21 +25,21 @@ function getEvaluator(): Evaluator {
 
 /**
  * Creates a unit-size geometry for CSG intersection computation
- * Uses higher polygon counts for smooth intersection curves on rounded forms
+ * Very high polygon counts for smooth intersection curves
  */
 function createUnitGeometry(type: string): BoxGeometry | SphereGeometry | CylinderGeometry | ConeGeometry {
   switch (type) {
     case 'box':
       return new BoxGeometry(1, 1, 1);
     case 'sphere':
-      // High segment count for smooth intersection curves
-      return new SphereGeometry(0.5, 48, 32);
+      // Very high segments for smooth curved intersection lines
+      return new SphereGeometry(0.5, 96, 72);
     case 'cylinder':
-      // High radial segments for smooth curves
-      return new CylinderGeometry(0.4, 0.4, 1, 48, 1);
+      // Very high radial segments for smooth curves
+      return new CylinderGeometry(0.4, 0.4, 1, 96, 1);
     case 'cone':
-      // High radial segments for smooth curves
-      return new ConeGeometry(0.5, 1, 48, 1);
+      // Very high radial segments for smooth curves
+      return new ConeGeometry(0.5, 1, 96, 1);
     case 'pyramid':
       // Pyramid keeps 4 sides (it's meant to be angular)
       return new ConeGeometry(0.7, 1, 4, 1);
@@ -67,12 +69,15 @@ function createBrushFromForm(form: FormConfig): Brush {
 
 /**
  * Computes intersection curves between two forms
+ * Returns a Group with two sets of lines:
+ * - Subtle internal edges (portions of one form's surface inside the other)
+ * - Prominent boundary edges (the actual intersection curve where surfaces meet)
  */
 export function computeIntersectionEdges(
   formA: FormConfig,
   formB: FormConfig,
   color: string
-): LineSegments | null {
+): Group | null {
   try {
     const eval_ = getEvaluator();
     
@@ -88,9 +93,9 @@ export function computeIntersectionEdges(
       return null;
     }
     
-    // Extract edges - use moderate threshold (60 degrees) to get the 
-    // intersection curves while filtering some internal noise
-    const edgesGeometry = new EdgesGeometry(result.geometry, 60);
+    // Use EdgesGeometry with very low threshold (10°) 
+    // Captures nearly all intersection curves including shallow cone/pyramid angles
+    const edgesGeometry = new EdgesGeometry(result.geometry, 10);
     
     if (edgesGeometry.attributes.position.count === 0) {
       brushA.geometry.dispose();
@@ -100,19 +105,48 @@ export function computeIntersectionEdges(
       return null;
     }
     
-    const material = new LineBasicMaterial({
-      color,
-      linewidth: 2,
-    });
+    // With 85° threshold, just use all edges - they should all be boundaries
+    const positions = edgesGeometry.attributes.position.array as Float32Array;
+    const boundaryPositions = Array.from(positions);
     
-    const lines = new LineSegments(edgesGeometry, material);
+    const group = new Group();
+    
+    // Render boundary edges prominently (true intersection curve)
+    // Like drawing with a sharpie on the surface where forms intersect
+    // Forms in front should still occlude these lines
+    if (boundaryPositions.length > 0) {
+      // Use LineSegments2 with LineMaterial for actual thick lines
+      const lineGeometry = new LineSegmentsGeometry();
+      lineGeometry.setPositions(boundaryPositions);
+      
+      const lineMaterial = new LineMaterial({
+        color: new Color(color).getHex(),
+        linewidth: 1.5, // Thinner lines for cleaner look
+        depthTest: true, // Forms in front CAN occlude these lines
+        depthWrite: false, // Don't write to depth buffer
+        transparent: true,
+        opacity: 0.85, // Slight transparency for softer appearance
+        worldUnits: false, // Use screen-space pixels for line width
+        polygonOffset: true,
+        polygonOffsetFactor: -4, // Render slightly in front of surface to avoid z-fighting
+        polygonOffsetUnits: -4,
+      });
+      // LineMaterial requires resolution to be set
+      lineMaterial.resolution.set(window.innerWidth, window.innerHeight);
+      
+      const boundaryLines = new LineSegments2(lineGeometry, lineMaterial);
+      boundaryLines.renderOrder = 10; // Render AFTER forms so depth test works correctly
+      boundaryLines.computeLineDistances();
+      group.add(boundaryLines);
+    }
     
     // Clean up
     brushA.geometry.dispose();
     brushB.geometry.dispose();
     result.geometry.dispose();
+    edgesGeometry.dispose();
     
-    return lines;
+    return group.children.length > 0 ? group : null;
   } catch (error) {
     console.warn('Failed to compute intersection:', error);
     return null;
@@ -134,9 +168,12 @@ export function computeAllIntersections(
         continue;
       }
       
-      const lines = computeIntersectionEdges(forms[i], forms[j], color);
-      if (lines) {
-        group.add(lines);
+      const intersectionGroup = computeIntersectionEdges(forms[i], forms[j], color);
+      if (intersectionGroup) {
+        // Add all children from the intersection group
+        while (intersectionGroup.children.length > 0) {
+          group.add(intersectionGroup.children[0]);
+        }
       }
     }
   }

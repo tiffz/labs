@@ -67,6 +67,7 @@ export default [
             'attach',
             'castShadow',
             'receiveShadow',
+            'renderOrder',
           ],
         },
       ],
