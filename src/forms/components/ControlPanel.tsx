@@ -7,6 +7,8 @@ interface ControlPanelProps {
   onConfigChange: (config: Partial<PlacementConfig>) => void;
   onViewChange: (settings: Partial<ViewSettings>) => void;
   onRegenerate: () => void;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
 function CheckIcon() {
@@ -23,6 +25,8 @@ function ControlPanel({
   onConfigChange,
   onViewChange,
   onRegenerate,
+  isOpen = false,
+  onClose,
 }: ControlPanelProps) {
   const handleFormTypeToggle = (type: FormType) => {
     const enabledTypes = config.enabledFormTypes.includes(type)
@@ -36,10 +40,21 @@ function ControlPanel({
   };
 
   return (
-    <aside className="forms-sidebar">
+    <aside className={`forms-sidebar ${isOpen ? 'open' : ''}`}>
       <header className="forms-sidebar-header">
-        <h1>Form Intersections</h1>
-        <p>Drawabox Practice Tool</p>
+        <div>
+          <h1>Form Intersections</h1>
+          <p>Drawabox Practice Tool</p>
+        </div>
+        {onClose && (
+          <button 
+            className="mobile-close-btn" 
+            onClick={onClose}
+            aria-label="Close menu"
+          >
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        )}
       </header>
       
       <div className="forms-sidebar-content">
