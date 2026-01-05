@@ -18,9 +18,15 @@ export type MetronomeCallback = (measureIndex: number, positionInSixteenths: num
 /**
  * Rhythm player that schedules and plays notes based on BPM
  * Uses absolute timestamps to prevent timing drift during loops
+ * 
+ * RELIABILITY FEATURES:
+ * - Health checks before scheduling to detect AudioContext issues
+ * - Proactive timeout cleanup to prevent memory growth during long sessions
+ * - Visibility change handling for tab backgrounding scenarios
+ * - Error recovery with automatic restart on detected issues
  */
 class RhythmPlayer {
-  private timeoutIds: number[] = [];
+  private timeoutIds: Set<number> = new Set(); // Use Set for O(1) add/delete
   private isPlaying = false;
   private isLooping = false;
   private currentRhythm: ParsedRhythm | null = null;
@@ -34,6 +40,8 @@ class RhythmPlayer {
   private settings: PlaybackSettings | null = null;
   private pendingBpm: number | null = null; // BPM to apply at next measure boundary
   private lastLoopEndTime = 0; // Track when the last loop ended for smooth BPM transitions
+  private visibilityHandler: (() => void) | null = null; // Visibility change handler
+  private healthCheckInterval: number | null = null; // Periodic health check
 
   /**
    * Play a rhythm at the specified BPM (loops continuously)
@@ -45,7 +53,7 @@ class RhythmPlayer {
    * @param onMetronomeBeat - Callback when metronome beat occurs
    * @param settings - Playback settings for accents and emphasis
    */
-  play(
+  async play(
     rhythm: ParsedRhythm,
     bpm: number,
     onNotePlay?: NoteHighlightCallback,
@@ -53,8 +61,19 @@ class RhythmPlayer {
     metronomeEnabled?: boolean,
     onMetronomeBeat?: MetronomeCallback,
     settings?: PlaybackSettings
-  ): void {
+  ): Promise<void> {
     this.stop(); // Stop any existing playback
+    
+    // Ensure AudioContext is ready before starting playback
+    // This handles browser autoplay policies and recovery from tab backgrounding
+    const isAudioReady = await audioPlayer.ensureResumed();
+    if (!isAudioReady) {
+      console.error('Failed to initialize audio - cannot start playback');
+      if (onPlaybackEnd) {
+        onPlaybackEnd();
+      }
+      return;
+    }
     
     this.isPlaying = true;
     this.isLooping = true;
@@ -71,11 +90,81 @@ class RhythmPlayer {
       audioPlayer.setReverbStrength(settings.reverbStrength);
     }
     
+    // Set up visibility change handler to ensure audio resumes when tab becomes visible
+    this.setupVisibilityHandler();
+    
+    // Start periodic health checks to detect and recover from audio issues
+    this.startHealthCheck();
+    
     this.startTime = performance.now(); // Use high-precision timestamp
     this.loopCount = 0;
     this.lastLoopEndTime = 0; // Reset loop end time tracking
 
     this.scheduleRhythm();
+  }
+
+  /**
+   * Set up visibility change handler to resume audio when tab becomes visible
+   * This prevents the silence bug when tab is backgrounded then foregrounded
+   */
+  private setupVisibilityHandler(): void {
+    // Remove any existing handler first
+    this.removeVisibilityHandler();
+    
+    this.visibilityHandler = () => {
+      if (document.visibilityState === 'visible' && this.isPlaying) {
+        // Tab became visible while playback was active
+        // Ensure AudioContext is resumed
+        audioPlayer.ensureResumed().catch(err => {
+          console.warn('Failed to resume audio on visibility change:', err);
+        });
+      }
+    };
+    
+    document.addEventListener('visibilitychange', this.visibilityHandler);
+  }
+
+  /**
+   * Remove visibility change handler
+   */
+  private removeVisibilityHandler(): void {
+    if (this.visibilityHandler) {
+      document.removeEventListener('visibilitychange', this.visibilityHandler);
+      this.visibilityHandler = null;
+    }
+  }
+
+  /**
+   * Start periodic health checks to detect audio issues
+   * If audio becomes unhealthy, attempt to recover
+   */
+  private startHealthCheck(): void {
+    this.stopHealthCheck();
+    
+    // Check audio health every 2 seconds
+    this.healthCheckInterval = window.setInterval(() => {
+      if (!this.isPlaying) {
+        this.stopHealthCheck();
+        return;
+      }
+      
+      // If audio is not healthy, try to recover
+      if (!audioPlayer.isHealthy()) {
+        audioPlayer.ensureResumed().catch(err => {
+          console.warn('Health check: failed to resume audio:', err);
+        });
+      }
+    }, 2000);
+  }
+
+  /**
+   * Stop periodic health checks
+   */
+  private stopHealthCheck(): void {
+    if (this.healthCheckInterval !== null) {
+      window.clearInterval(this.healthCheckInterval);
+      this.healthCheckInterval = null;
+    }
   }
 
   /**
@@ -184,6 +273,9 @@ class RhythmPlayer {
       const delay = Math.max(0, this.startTime + absoluteTime - now);
       
       const metronomeTimeoutId = window.setTimeout(() => {
+        // Clean up this timeout from tracking
+        this.timeoutIds.delete(metronomeTimeoutId);
+        
         if (!this.isPlaying) return;
         
         // Check metronomeEnabled at execution time to allow toggling during playback
@@ -210,7 +302,7 @@ class RhythmPlayer {
         }
       }, delay);
 
-      this.timeoutIds.push(metronomeTimeoutId);
+      this.timeoutIds.add(metronomeTimeoutId);
     });
 
     rhythm.measures.forEach((measure, measureIndex) => {
@@ -262,6 +354,9 @@ class RhythmPlayer {
 
         // Schedule the note to play
         const timeoutId = window.setTimeout(() => {
+          // Clean up this timeout from tracking
+          this.timeoutIds.delete(timeoutId);
+          
           if (!this.isPlaying) return;
 
           // If this is a real note (not a rest), stop previous sounds
@@ -279,7 +374,7 @@ class RhythmPlayer {
           }
         }, delay);
 
-        this.timeoutIds.push(timeoutId);
+        this.timeoutIds.add(timeoutId);
 
         // Advance time by the note's duration
         currentTime += note.durationInSixteenths * msPerSixteenth;
@@ -295,6 +390,9 @@ class RhythmPlayer {
     const loopEndTime = this.startTime + absoluteEndTime;
 
     const endTimeoutId = window.setTimeout(() => {
+      // Clean up this timeout from tracking
+      this.timeoutIds.delete(endTimeoutId);
+      
       if (!this.isPlaying) return;
 
       // Check if there's a pending BPM change to apply at measure boundary (end of loop)
@@ -330,7 +428,7 @@ class RhythmPlayer {
         }
       }
     }, endDelay);
-    this.timeoutIds.push(endTimeoutId);
+    this.timeoutIds.add(endTimeoutId);
   }
 
   /**
@@ -342,9 +440,13 @@ class RhythmPlayer {
     this.pendingBpm = null; // Clear any pending BPM changes
     this.lastLoopEndTime = 0; // Reset loop end time tracking
     
+    // Stop health checks and visibility handling
+    this.stopHealthCheck();
+    this.removeVisibilityHandler();
+    
     // Clear all scheduled timeouts
     this.timeoutIds.forEach(id => window.clearTimeout(id));
-    this.timeoutIds = [];
+    this.timeoutIds.clear();
 
     // Stop all currently playing sounds
     audioPlayer.stopAll();

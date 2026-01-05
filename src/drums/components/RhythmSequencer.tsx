@@ -12,12 +12,14 @@ interface RhythmSequencerProps {
   currentNote?: { measureIndex: number; noteIndex: number } | null;
 }
 
+// SOUNDS array ordered from highest pitch to lowest pitch (top to bottom)
+// This matches standard musical notation where higher pitches are at the top
 const SOUNDS: Array<{ sound: 'dum' | 'tak' | 'ka' | 'slap' | 'rest'; label: string; char: string }> = [
-  { sound: 'dum', label: 'Dum', char: 'D' },
-  { sound: 'tak', label: 'Tak', char: 'T' },
-  { sound: 'ka', label: 'Ka', char: 'K' },
-  { sound: 'slap', label: 'Slap', char: 'S' },
-  { sound: 'rest', label: 'Rest', char: '_' },
+  { sound: 'ka', label: 'Ka', char: 'K' },      // Highest pitch - rim sound
+  { sound: 'tak', label: 'Tak', char: 'T' },    // High pitch - edge sound
+  { sound: 'slap', label: 'Slap', char: 'S' },  // Mid pitch - slap sound
+  { sound: 'dum', label: 'Dum', char: 'D' },    // Low pitch - bass sound
+  { sound: 'rest', label: 'Rest', char: '_' },  // Rest (no sound)
 ];
 
 const RhythmSequencer: React.FC<RhythmSequencerProps> = ({

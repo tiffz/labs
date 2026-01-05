@@ -11,22 +11,27 @@ vi.mock('./audioPlayer', () => ({
     stopAllDrumSounds: vi.fn(),
     playClick: vi.fn(),
     setReverbStrength: vi.fn(),
+    // New methods for audio health management
+    ensureResumed: vi.fn().mockResolvedValue(true),
+    isHealthy: vi.fn().mockReturnValue(true),
+    getState: vi.fn().mockReturnValue('running'),
   },
 }));
 
 describe('rhythmPlayer timing accuracy', () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    // Reset mock implementations between tests (clearAllMocks doesn't remove implementations)
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
     rhythmPlayer.stop();
-    vi.restoreAllMocks();
     vi.useRealTimers();
   });
 
   describe('BPM timing calculations', () => {
-    it('should play notes at correct intervals for 120 BPM', () => {
+    it('should play notes at correct intervals for 120 BPM', async () => {
       const notation = 'D-T-D-T-'; // Four eighth notes
       const timeSignature: TimeSignature = { numerator: 4, denominator: 4 };
       const parsedRhythm = parseRhythm(notation, timeSignature);
@@ -35,7 +40,7 @@ describe('rhythmPlayer timing accuracy', () => {
       const noteTimes: number[] = [];
       const startTime = performance.now();
 
-      rhythmPlayer.play(parsedRhythm, bpm, () => {
+      await rhythmPlayer.play(parsedRhythm, bpm, () => {
         noteTimes.push(performance.now() - startTime);
       });
 
@@ -62,7 +67,7 @@ describe('rhythmPlayer timing accuracy', () => {
       expect(noteTimes[3]).toBe(750);
     });
 
-    it('should play notes at correct intervals for 90 BPM', () => {
+    it('should play notes at correct intervals for 90 BPM', async () => {
       const notation = 'D---T---'; // Two quarter notes
       const timeSignature: TimeSignature = { numerator: 4, denominator: 4 };
       const parsedRhythm = parseRhythm(notation, timeSignature);
@@ -71,7 +76,7 @@ describe('rhythmPlayer timing accuracy', () => {
       const noteTimes: number[] = [];
       const startTime = performance.now();
 
-      rhythmPlayer.play(parsedRhythm, bpm, () => {
+      await rhythmPlayer.play(parsedRhythm, bpm, () => {
         noteTimes.push(performance.now() - startTime);
       });
 
@@ -91,7 +96,7 @@ describe('rhythmPlayer timing accuracy', () => {
       expect(noteTimes[1]).toBeLessThanOrEqual(667);
     });
 
-    it('should handle different note durations correctly', () => {
+    it('should handle different note durations correctly', async () => {
       const notation = 'D-T---K'; // Eighth, quarter, sixteenth
       const timeSignature: TimeSignature = { numerator: 4, denominator: 4 };
       const parsedRhythm = parseRhythm(notation, timeSignature);
@@ -100,7 +105,7 @@ describe('rhythmPlayer timing accuracy', () => {
       const noteTimes: number[] = [];
       const startTime = performance.now();
 
-      rhythmPlayer.play(parsedRhythm, bpm, () => {
+      await rhythmPlayer.play(parsedRhythm, bpm, () => {
         noteTimes.push(performance.now() - startTime);
       });
 
@@ -121,7 +126,7 @@ describe('rhythmPlayer timing accuracy', () => {
   });
 
   describe('looping accuracy', () => {
-    it('should maintain accurate timing across multiple loops', () => {
+    it('should maintain accurate timing across multiple loops', async () => {
       const notation = 'D-T-'; // Two eighth notes
       const timeSignature: TimeSignature = { numerator: 2, denominator: 4 };
       const parsedRhythm = parseRhythm(notation, timeSignature);
@@ -130,7 +135,7 @@ describe('rhythmPlayer timing accuracy', () => {
       const noteTimes: number[] = [];
       const startTime = performance.now();
 
-      rhythmPlayer.play(parsedRhythm, bpm, () => {
+      await rhythmPlayer.play(parsedRhythm, bpm, () => {
         noteTimes.push(performance.now() - startTime);
       });
 
@@ -157,7 +162,7 @@ describe('rhythmPlayer timing accuracy', () => {
       expect(noteTimes[6]).toBeLessThanOrEqual(2002);
     });
 
-    it('should not accumulate timing drift over 10 loops', () => {
+    it('should not accumulate timing drift over 10 loops', async () => {
       const notation = 'D-T-'; // Two eighth notes
       const timeSignature: TimeSignature = { numerator: 2, denominator: 4 };
       const parsedRhythm = parseRhythm(notation, timeSignature);
@@ -166,7 +171,7 @@ describe('rhythmPlayer timing accuracy', () => {
       const noteTimes: number[] = [];
       const startTime = performance.now();
 
-      rhythmPlayer.play(parsedRhythm, bpm, () => {
+      await rhythmPlayer.play(parsedRhythm, bpm, () => {
         noteTimes.push(performance.now() - startTime);
       });
 
@@ -186,7 +191,7 @@ describe('rhythmPlayer timing accuracy', () => {
       expect(noteTimes[loop10StartIndex]).toBeLessThanOrEqual(9010);
     });
 
-    it('should handle complex rhythms with rests accurately over multiple loops', () => {
+    it('should handle complex rhythms with rests accurately over multiple loops', async () => {
       const notation = 'D-__T---'; // Eighth, eighth rest, quarter note (8 sixteenths) + auto-filled rest (8 sixteenths)
       const timeSignature: TimeSignature = { numerator: 4, denominator: 4 };
       const parsedRhythm = parseRhythm(notation, timeSignature);
@@ -195,7 +200,7 @@ describe('rhythmPlayer timing accuracy', () => {
       const noteTimes: number[] = [];
       const startTime = performance.now();
 
-      rhythmPlayer.play(parsedRhythm, bpm, () => {
+      await rhythmPlayer.play(parsedRhythm, bpm, () => {
         noteTimes.push(performance.now() - startTime);
       });
 
@@ -236,13 +241,13 @@ describe('rhythmPlayer timing accuracy', () => {
   });
 
   describe('stop functionality', () => {
-    it('should clear all scheduled timeouts when stopped', () => {
+    it('should clear all scheduled timeouts when stopped', async () => {
       const notation = 'D-T-K-';
       const timeSignature: TimeSignature = { numerator: 4, denominator: 4 };
       const parsedRhythm = parseRhythm(notation, timeSignature);
 
       const noteTimes: number[] = [];
-      rhythmPlayer.play(parsedRhythm, 120, () => {
+      await rhythmPlayer.play(parsedRhythm, 120, () => {
         noteTimes.push(performance.now());
       });
 
@@ -258,13 +263,13 @@ describe('rhythmPlayer timing accuracy', () => {
       expect(noteTimes).toHaveLength(1); // Still only 1 note
     });
 
-    it('should allow restarting after stop', () => {
+    it('should allow restarting after stop', async () => {
       const notation = 'D-T-';
       const timeSignature: TimeSignature = { numerator: 4, denominator: 4 };
       const parsedRhythm = parseRhythm(notation, timeSignature);
 
       let noteCount = 0;
-      rhythmPlayer.play(parsedRhythm, 120, () => {
+      await rhythmPlayer.play(parsedRhythm, 120, () => {
         noteCount++;
       });
 
@@ -277,7 +282,7 @@ describe('rhythmPlayer timing accuracy', () => {
 
       // Restart
       noteCount = 0;
-      rhythmPlayer.play(parsedRhythm, 120, () => {
+      await rhythmPlayer.play(parsedRhythm, 120, () => {
         noteCount++;
       });
 
@@ -287,7 +292,7 @@ describe('rhythmPlayer timing accuracy', () => {
   });
 
   describe('edge cases', () => {
-    it('should handle very fast BPM (240 BPM)', () => {
+    it('should handle very fast BPM (240 BPM)', async () => {
       const notation = 'D-T-';
       const timeSignature: TimeSignature = { numerator: 4, denominator: 4 };
       const parsedRhythm = parseRhythm(notation, timeSignature);
@@ -296,7 +301,7 @@ describe('rhythmPlayer timing accuracy', () => {
       const noteTimes: number[] = [];
       const startTime = performance.now();
 
-      rhythmPlayer.play(parsedRhythm, bpm, () => {
+      await rhythmPlayer.play(parsedRhythm, bpm, () => {
         noteTimes.push(performance.now() - startTime);
       });
 
@@ -309,7 +314,7 @@ describe('rhythmPlayer timing accuracy', () => {
       expect(noteTimes[1]).toBe(125);
     });
 
-    it('should handle very slow BPM (40 BPM)', () => {
+    it('should handle very slow BPM (40 BPM)', async () => {
       const notation = 'D-T-';
       const timeSignature: TimeSignature = { numerator: 4, denominator: 4 };
       const parsedRhythm = parseRhythm(notation, timeSignature);
@@ -318,7 +323,7 @@ describe('rhythmPlayer timing accuracy', () => {
       const noteTimes: number[] = [];
       const startTime = performance.now();
 
-      rhythmPlayer.play(parsedRhythm, bpm, () => {
+      await rhythmPlayer.play(parsedRhythm, bpm, () => {
         noteTimes.push(performance.now() - startTime);
       });
 
@@ -331,7 +336,7 @@ describe('rhythmPlayer timing accuracy', () => {
       expect(noteTimes[1]).toBe(750);
     });
 
-    it('should handle single note rhythm', () => {
+    it('should handle single note rhythm', async () => {
       const notation = 'D---';
       const timeSignature: TimeSignature = { numerator: 4, denominator: 4 };
       const parsedRhythm = parseRhythm(notation, timeSignature);
@@ -339,7 +344,7 @@ describe('rhythmPlayer timing accuracy', () => {
       const noteTimes: number[] = [];
       const startTime = performance.now();
 
-      rhythmPlayer.play(parsedRhythm, 120, () => {
+      await rhythmPlayer.play(parsedRhythm, 120, () => {
         noteTimes.push(performance.now() - startTime);
       });
 
@@ -358,7 +363,7 @@ describe('rhythmPlayer timing accuracy', () => {
   });
 
   describe('performance.now() consistency', () => {
-    it('should use the same performance.now() value for all notes in a loop', () => {
+    it('should use the same performance.now() value for all notes in a loop', async () => {
       const notation = 'D-T-K-__'; // Multiple notes
       const timeSignature: TimeSignature = { numerator: 4, denominator: 4 };
       const parsedRhythm = parseRhythm(notation, timeSignature);
@@ -366,7 +371,7 @@ describe('rhythmPlayer timing accuracy', () => {
       const noteTimes: number[] = [];
       const startTime = performance.now();
 
-      rhythmPlayer.play(parsedRhythm, 120, () => {
+      await rhythmPlayer.play(parsedRhythm, 120, () => {
         noteTimes.push(performance.now() - startTime);
       });
 
@@ -386,7 +391,7 @@ describe('rhythmPlayer timing accuracy', () => {
 
   describe('metronome beats', () => {
 
-    it('should schedule metronome clicks for all beats in 4/4 time', () => {
+    it('should schedule metronome clicks for all beats in 4/4 time', async () => {
       const notation = 'D---T---K---S---'; // Four quarter notes (one per beat)
       const timeSignature: TimeSignature = { numerator: 4, denominator: 4 };
       const parsedRhythm = parseRhythm(notation, timeSignature);
@@ -394,7 +399,7 @@ describe('rhythmPlayer timing accuracy', () => {
 
       const metronomeBeats: Array<{ measureIndex: number; positionInSixteenths: number; isDownbeat: boolean }> = [];
 
-      rhythmPlayer.play(
+      await rhythmPlayer.play(
         parsedRhythm,
         bpm,
         undefined,
@@ -433,7 +438,7 @@ describe('rhythmPlayer timing accuracy', () => {
       expect(metronomeBeats[3]).toEqual({ measureIndex: 0, positionInSixteenths: 12, isDownbeat: false });
     });
 
-    it('should schedule metronome clicks for all beats in 3/4 time', () => {
+    it('should schedule metronome clicks for all beats in 3/4 time', async () => {
       const notation = 'D---T---K---'; // Three quarter notes
       const timeSignature: TimeSignature = { numerator: 3, denominator: 4 };
       const parsedRhythm = parseRhythm(notation, timeSignature);
@@ -441,7 +446,7 @@ describe('rhythmPlayer timing accuracy', () => {
 
       const metronomeBeats: Array<{ measureIndex: number; positionInSixteenths: number; isDownbeat: boolean }> = [];
 
-      rhythmPlayer.play(
+      await rhythmPlayer.play(
         parsedRhythm,
         bpm,
         undefined,
@@ -467,7 +472,7 @@ describe('rhythmPlayer timing accuracy', () => {
       expect(metronomeBeats[2]).toEqual({ measureIndex: 0, positionInSixteenths: 8, isDownbeat: false });
     });
 
-    it('should schedule metronome clicks for all beats in 6/8 time', () => {
+    it('should schedule metronome clicks for all beats in 6/8 time', async () => {
       const notation = 'D---T---K---S---__--'; // Six eighth notes
       const timeSignature: TimeSignature = { numerator: 6, denominator: 8 };
       const parsedRhythm = parseRhythm(notation, timeSignature);
@@ -475,7 +480,7 @@ describe('rhythmPlayer timing accuracy', () => {
 
       const metronomeBeats: Array<{ measureIndex: number; positionInSixteenths: number; isDownbeat: boolean }> = [];
 
-      rhythmPlayer.play(
+      await rhythmPlayer.play(
         parsedRhythm,
         bpm,
         undefined,
@@ -497,7 +502,7 @@ describe('rhythmPlayer timing accuracy', () => {
       expect(metronomeBeats[1]).toEqual({ measureIndex: 0, positionInSixteenths: 6, isDownbeat: false });
     });
 
-    it('should not play metronome clicks when metronome is disabled', () => {
+    it('should not play metronome clicks when metronome is disabled', async () => {
       const notation = 'D---T---';
       const timeSignature: TimeSignature = { numerator: 4, denominator: 4 };
       const parsedRhythm = parseRhythm(notation, timeSignature);
@@ -505,7 +510,7 @@ describe('rhythmPlayer timing accuracy', () => {
 
       const metronomeBeats: Array<{ measureIndex: number; positionInSixteenths: number; isDownbeat: boolean }> = [];
 
-      rhythmPlayer.play(
+      await rhythmPlayer.play(
         parsedRhythm,
         bpm,
         undefined,

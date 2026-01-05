@@ -81,14 +81,38 @@ export function computeDropPreview(
   const svgX = cursorX - svgRect.left;
   const svgY = cursorY - svgRect.top;
 
+  const cleanNotation = notation.replace(/[\s\n]/g, '');
+  
+  // Handle empty notation case - always allow insertion at start
+  if (notePositions.length === 0 || cleanNotation.length === 0) {
+    return {
+      isValid: true,
+      previewType: 'insert',
+      dropPosition: 0,
+      replacementHighlights: [],
+      insertionLine: null, // No line to show, but drop is valid
+    };
+  }
+
   // Find drop target note
   const dropTarget = findDropTarget(svgX, svgY, notePositions);
   if (!dropTarget) {
-    return defaultResult;
+    // If no drop target found but we have notes, try inserting at the end of actual notation
+    return {
+      isValid: true,
+      previewType: 'insert',
+      dropPosition: cleanNotation.length,
+      replacementHighlights: [],
+      insertionLine: null,
+    };
   }
 
   const { charPosition } = dropTarget;
-  const cleanNotation = notation.replace(/[\s\n]/g, '');
+  
+  // Check if this is an "implicit rest" - a note that exists in rendered form
+  // but not in the actual notation string (auto-filled to complete a measure)
+  // This happens when charPosition >= cleanNotation.length
+  const isImplicitRest = charPosition >= cleanNotation.length;
 
   // Compute preview based on mode
   if (dragDropMode === 'insert') {
@@ -101,10 +125,13 @@ export function computeDropPreview(
       // Use cursor Y position directly for insertion line positioning
       const insertionLine = calculateInsertionLineFromGap(insertionTarget.gap, insertionTarget.cursorY);
       
+      // Clamp insertion position to actual notation length for implicit rests
+      const clampedPosition = Math.min(insertionTarget.insertionCharPosition, cleanNotation.length);
+      
       return {
         isValid: true,
         previewType: 'insert',
-        dropPosition: insertionTarget.insertionCharPosition,
+        dropPosition: clampedPosition,
         replacementHighlights: [],
         insertionLine,
       };
@@ -112,10 +139,26 @@ export function computeDropPreview(
       return defaultResult;
     }
   } else {
-    // Replace mode: use exact note position
+    // Replace mode: handle implicit rests specially
+    // Implicit rests are auto-filled rests that don't exist in the notation string
+    // They should be treated as append targets
+    if (isImplicitRest) {
+      // Calculate highlight bounds for the implicit rest (visual feedback)
+      const implicitRestHighlight = calculateNoteHighlightBounds(dropTarget.notePos);
+      
+      return {
+        isValid: true,
+        previewType: 'replace', // Show as replace (red highlight) for consistency
+        dropPosition: cleanNotation.length, // Append at end of actual notation
+        replacementHighlights: [implicitRestHighlight],
+        insertionLine: null,
+      };
+    }
+    
+    // Normal replace mode: use exact note position
     const dropPosition = charPosition;
     
-    // Replace mode: ONLY show replacement previews, never fall back to insert
+    // Try replacement first
     const patternDuration = getPatternDuration(pattern);
     const replacementResult = replacePatternAtPosition(
       cleanNotation,
@@ -125,7 +168,7 @@ export function computeDropPreview(
       timeSignature
     );
 
-    // CRITICAL: Only show as valid if replacement actually succeeded AND we have highlights
+    // If replacement succeeded, show replacement preview
     if (replacementResult.replacedLength > 0) {
       // Replacement is possible - compute highlights
       const highlights = calculateReplacementHighlights(
@@ -150,8 +193,7 @@ export function computeDropPreview(
         }
       }
 
-      // CRITICAL: Only return valid if we have highlights to show
-      // In replace mode, we NEVER show insert previews - if replacement fails, return invalid
+      // Only return valid if we have highlights to show
       if (finalHighlights.length > 0) {
         return {
           isValid: true,
@@ -163,8 +205,39 @@ export function computeDropPreview(
       }
     }
     
-    // Replacement not possible or no highlights found - return invalid
-    // In replace mode, we don't fall back to insert previews
+    // Replacement failed - check if we should fall back to insert at end
+    // This allows appending at the end of the sequence in replace mode
+    if (notePositions.length > 0) {
+      // Find the last note
+      const lastNote = notePositions.reduce((max, np) => 
+        (np.charPosition + np.durationInSixteenths > max.charPosition + max.durationInSixteenths) ? np : max,
+        notePositions[0]
+      );
+      const lastNoteEnd = lastNote.charPosition + lastNote.durationInSixteenths;
+      
+      // Check if the drop target is at or near the end of the notation
+      // Allow insertion if we're targeting the last note or position is at/past the end
+      const isAtEnd = dropPosition >= lastNoteEnd - 1 || charPosition === lastNote.charPosition;
+      
+      if (isAtEnd) {
+        // Use insertion target finder for proper end-of-sequence handling
+        const insertionTarget = findInsertionTarget(svgX, svgY, notePositions, notation, timeSignature);
+        
+        if (insertionTarget) {
+          const insertionLine = calculateInsertionLineFromGap(insertionTarget.gap, insertionTarget.cursorY);
+          
+          return {
+            isValid: true,
+            previewType: 'insert',
+            dropPosition: insertionTarget.insertionCharPosition,
+            replacementHighlights: [],
+            insertionLine,
+          };
+        }
+      }
+    }
+    
+    // Replacement not possible and not at end - return invalid
     return defaultResult;
   }
 }

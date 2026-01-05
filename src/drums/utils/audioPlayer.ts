@@ -11,6 +11,11 @@ import clickSound from '../assets/sounds/click.mp3';
 /**
  * Audio player for drum sounds using Web Audio API for precise timing and volume control
  * Preloads all sounds and provides a simple play interface with dynamic volume
+ * 
+ * RELIABILITY FEATURES:
+ * - Automatically resumes suspended AudioContext (browser autoplay policy compliance)
+ * - Handles visibility changes to prevent audio issues when tab is backgrounded
+ * - Provides health check API for playback system to verify audio is working
  */
 class AudioPlayer {
   private audioContext: AudioContext | null = null;
@@ -27,6 +32,8 @@ class AudioPlayer {
     cleanup: () => void;
   } | null = null;
   private reverbStrength: number = 0; // 0-100
+  private visibilityChangeHandler: (() => void) | null = null;
+  private stateChangeHandler: (() => void) | null = null;
 
   constructor() {
     // AudioContext is created lazily on first user interaction
@@ -43,6 +50,29 @@ class AudioPlayer {
       // Create AudioContext
       const AudioContextClass = window.AudioContext || (window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       this.audioContext = new AudioContextClass();
+      
+      // Set up visibility change handler to resume audio when tab becomes visible
+      // This prevents silence after tab has been backgrounded
+      this.visibilityChangeHandler = () => {
+        if (document.visibilityState === 'visible' && this.audioContext?.state === 'suspended') {
+          this.audioContext.resume().catch(err => {
+            console.warn('Failed to resume AudioContext on visibility change:', err);
+          });
+        }
+      };
+      document.addEventListener('visibilitychange', this.visibilityChangeHandler);
+
+      // Set up state change handler to detect when AudioContext becomes suspended
+      this.stateChangeHandler = () => {
+        if (this.audioContext?.state === 'suspended') {
+          // AudioContext was suspended (possibly by browser policy or backgrounding)
+          // Attempt to resume it - this may require user interaction
+          this.audioContext.resume().catch(err => {
+            console.warn('Failed to resume suspended AudioContext:', err);
+          });
+        }
+      };
+      this.audioContext.addEventListener('statechange', this.stateChangeHandler);
       
       // Load all sounds
       const soundFiles: Record<Exclude<DrumSound, 'rest'>, string> = {
@@ -82,6 +112,62 @@ class AudioPlayer {
   }
 
   /**
+   * Ensure the AudioContext is running (not suspended)
+   * This MUST be called before any playback to handle browser autoplay policies
+   * and recovery from tab backgrounding
+   * 
+   * @returns Promise that resolves to true if audio is ready, false otherwise
+   */
+  async ensureResumed(): Promise<boolean> {
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
+    
+    if (!this.audioContext) {
+      return false;
+    }
+    
+    // If context is suspended, try to resume it
+    if (this.audioContext.state === 'suspended') {
+      try {
+        await this.audioContext.resume();
+      } catch (err) {
+        console.error('Failed to resume AudioContext:', err);
+        return false;
+      }
+    }
+    
+    // If context is closed, we can't recover - would need to reinitialize
+    if (this.audioContext.state === 'closed') {
+      console.error('AudioContext is closed and cannot be resumed');
+      return false;
+    }
+    
+    return this.audioContext.state === 'running';
+  }
+
+  /**
+   * Check if audio is currently healthy and ready for playback
+   * @returns true if AudioContext exists and is in 'running' state
+   */
+  isHealthy(): boolean {
+    return this.isInitialized && 
+           this.audioContext !== null && 
+           this.audioContext.state === 'running';
+  }
+
+  /**
+   * Get current AudioContext state for debugging/monitoring
+   * @returns The current state or 'uninitialized' if not yet created
+   */
+  getState(): AudioContextState | 'uninitialized' {
+    if (!this.audioContext) {
+      return 'uninitialized';
+    }
+    return this.audioContext.state;
+  }
+
+  /**
    * Set reverb strength (0-100)
    * @param strength - Reverb strength from 0 (no reverb) to 100 (full reverb)
    */
@@ -105,12 +191,10 @@ class AudioPlayer {
   async play(sound: DrumSound, volume: number = 1.0, duration?: number): Promise<void> {
     if (sound === 'rest') return;
 
-    // Initialize on first play
-    if (!this.isInitialized) {
-      await this.initialize();
-    }
-
-    if (!this.audioContext || !this.isInitialized) return;
+    // Ensure audio context is initialized AND running (not suspended)
+    // This handles browser autoplay policies and recovery from tab backgrounding
+    const isReady = await this.ensureResumed();
+    if (!isReady || !this.audioContext) return;
 
     const buffer = this.buffers.get(sound);
     if (!buffer) return;
@@ -177,12 +261,9 @@ class AudioPlayer {
    * @param volume - Volume level (0.0 to 1.0), defaults to 1.0
    */
   async playClick(volume: number = 1.0): Promise<void> {
-    // Initialize on first play
-    if (!this.isInitialized) {
-      await this.initialize();
-    }
-
-    if (!this.audioContext || !this.isInitialized || !this.clickBuffer) return;
+    // Ensure audio context is initialized AND running (not suspended)
+    const isReady = await this.ensureResumed();
+    if (!isReady || !this.audioContext || !this.clickBuffer) return;
 
     try {
       // Create source node
@@ -225,6 +306,45 @@ class AudioPlayer {
    */
   stopAll(): void {
     this.stopAllDrumSounds();
+  }
+
+  /**
+   * Clean up resources when audio player is no longer needed
+   * Removes event listeners and closes AudioContext
+   */
+  destroy(): void {
+    // Remove event listeners
+    if (this.visibilityChangeHandler) {
+      document.removeEventListener('visibilitychange', this.visibilityChangeHandler);
+      this.visibilityChangeHandler = null;
+    }
+    
+    if (this.stateChangeHandler && this.audioContext) {
+      this.audioContext.removeEventListener('statechange', this.stateChangeHandler);
+      this.stateChangeHandler = null;
+    }
+    
+    // Stop all sounds
+    this.stopAll();
+    
+    // Clean up reverb nodes
+    if (this.reverbNodes) {
+      this.reverbNodes.cleanup();
+      this.reverbNodes = null;
+    }
+    
+    // Close AudioContext
+    if (this.audioContext) {
+      this.audioContext.close().catch(err => {
+        console.warn('Error closing AudioContext:', err);
+      });
+      this.audioContext = null;
+    }
+    
+    // Clear buffers
+    this.buffers.clear();
+    this.clickBuffer = null;
+    this.isInitialized = false;
   }
 }
 

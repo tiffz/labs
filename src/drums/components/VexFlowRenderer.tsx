@@ -220,11 +220,18 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
     try {
       // Dynamic measure width based on note count
       // Calculate width for each measure based on its note count
+      // For long time signatures, allow measures to expand as needed
+      const sixteenthsPerMeasure = getSixteenthsPerMeasure(rhythm.timeSignature);
+      const isLongMeasure = sixteenthsPerMeasure > 32; // More than 8/4 equivalent
+      
       const calculateMeasureWidth = (measure: typeof rhythm.measures[0]): number => {
         const baseWidth = 120; // Base width for time signature, barlines, etc.
-        const widthPerNote = 25; // Width allocated per note (reduced from 35)
+        // Use smaller width per note for long measures to keep them readable
+        const widthPerNote = isLongMeasure ? 20 : 25;
         const minWidth = 200;
-        const maxWidth = 850; // Reduced max to prevent horizontal scroll
+        // For long time signatures, don't cap the width - let it expand
+        // This ensures notes don't escape or overlap
+        const maxWidth = isLongMeasure ? Infinity : 850;
         
         const calculatedWidth = baseWidth + (measure.notes.length * widthPerNote);
         return Math.max(minWidth, Math.min(maxWidth, calculatedWidth));
@@ -236,7 +243,8 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
       // Use viewport width minus padding for responsive layout
       const containerPadding = 40; // Account for margins and padding
       const sidebarWidth = 280; // Approximate sidebar width
-      const maxLineWidth = Math.max(600, Math.min(1200, windowWidth - sidebarWidth - containerPadding));
+      // For long measures, use a wider base line width
+      const baseMaxLineWidth = Math.max(600, Math.min(1200, windowWidth - sidebarWidth - containerPadding));
       const lineHeight = 100;
       const leftMargin = 10;
       const rightMargin = 10;
@@ -249,8 +257,17 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
       rhythm.measures.forEach((_measure, measureIndex) => {
         const measureWidth = measureWidths[measureIndex];
         
-        // Check if adding this measure would exceed the line width
-        if (currentLine.length > 0 && currentLineWidth + measureWidth + rightMargin > maxLineWidth) {
+        // For long measures, each one gets its own line
+        if (isLongMeasure && measureWidth > baseMaxLineWidth) {
+          // If current line has measures, push it first
+          if (currentLine.length > 0) {
+            lines.push(currentLine);
+            currentLine = [];
+            currentLineWidth = leftMargin;
+          }
+          // Put this long measure on its own line
+          lines.push([measureIndex]);
+        } else if (currentLine.length > 0 && currentLineWidth + measureWidth + rightMargin > baseMaxLineWidth) {
           // Start a new line
           lines.push(currentLine);
           currentLine = [measureIndex];
@@ -267,10 +284,17 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
         lines.push(currentLine);
       }
       
+      // Calculate actual max line width based on content
+      // This ensures the SVG is wide enough for long measures
+      const maxActualLineWidth = lines.reduce((maxWidth, lineIndices) => {
+        const lineWidth = leftMargin + lineIndices.reduce((sum, idx) => sum + measureWidths[idx], 0) + rightMargin;
+        return Math.max(maxWidth, lineWidth);
+      }, baseMaxLineWidth);
+      
       const numLines = lines.length;
       // Add extra space at bottom for metronome dots (15px)
       const totalHeight = numLines * lineHeight + 40 + (metronomeEnabled ? 15 : 0);
-      const totalWidth = maxLineWidth + 20;
+      const totalWidth = Math.max(baseMaxLineWidth, maxActualLineWidth) + 20;
 
       // Create SVG renderer
       const renderer = new Renderer(containerRef.current, Renderer.Backends.SVG);
@@ -618,58 +642,66 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
           const measureRefs = allStaveNoteRefs.filter(ref => ref.measureIndex === measureIndex);
           if (measureRefs.length === 0) return;
           
+          // Sort by noteIndex to ensure correct order
+          measureRefs.sort((a, b) => a.noteIndex - b.noteIndex);
+          
           const stave = measureRefs[0].stave;
           
           // Calculate all beat group positions for this measure (in sixteenths)
           const beatPositions = [0]; // Start with downbeat
           let cumulativePosition = 0;
-          const sixteenthsPerMeasure = getSixteenthsPerMeasure(rhythm.timeSignature);
+          const localSixteenthsPerMeasure = getSixteenthsPerMeasure(rhythm.timeSignature);
           beatGroupingInSixteenths.forEach((groupSize) => {
             cumulativePosition += groupSize;
-            if (cumulativePosition < sixteenthsPerMeasure) {
+            if (cumulativePosition < localSixteenthsPerMeasure) {
               beatPositions.push(cumulativePosition);
             }
           });
           
-          // Get stave dimensions
-          const staveX = stave.getX();
-          const staveWidth = stave.getWidth();
-          
-          // For each beat position, find the exact X coordinate
+          // For each beat position, calculate X coordinate using note-based positioning
+          // This ensures dots align with actual rendered notes regardless of measure length
           beatPositions.forEach((beatPosition) => {
-            // Find the note at or immediately after this beat position
-            let cumulativeNotePosition = 0;
-            let dotX = staveX + 30; // Default to start of measure
+            let dotX: number;
             
-            // Find the note that contains or follows this beat position
+            // Find the note that contains this beat position
+            let cumulativeNotePosition = 0;
+            let found = false;
+            
             for (let i = 0; i < measureRefs.length; i++) {
               const ref = measureRefs[i];
+              const noteStartPosition = cumulativeNotePosition;
+              const noteEndPosition = cumulativeNotePosition + ref.note.durationInSixteenths;
               
-              // If we've reached or passed the beat position, use this note's X position
-              if (cumulativeNotePosition >= beatPosition) {
-                dotX = ref.staveNote.getAbsoluteX();
-                break;
-              }
-              
-              cumulativeNotePosition += ref.note.durationInSixteenths;
-              
-              // If the beat position falls within this note's duration, interpolate
-              if (cumulativeNotePosition > beatPosition) {
-                const prevPosition = cumulativeNotePosition - ref.note.durationInSixteenths;
-                const progress = (beatPosition - prevPosition) / ref.note.durationInSixteenths;
+              // Check if this beat position falls within this note
+              if (beatPosition >= noteStartPosition && beatPosition < noteEndPosition) {
+                // Beat is within this note - calculate proportional X position
+                const progressWithinNote = (beatPosition - noteStartPosition) / ref.note.durationInSixteenths;
                 const noteX = ref.staveNote.getAbsoluteX();
-                const nextX = i < measureRefs.length - 1 
-                  ? measureRefs[i + 1].staveNote.getAbsoluteX()
-                  : staveX + staveWidth - 30;
-                dotX = noteX + (nextX - noteX) * progress;
+                
+                if (progressWithinNote === 0) {
+                  // Beat is at the start of this note
+                  dotX = noteX;
+                } else {
+                  // Beat is partway through this note - interpolate to next note
+                  const nextX = i < measureRefs.length - 1 
+                    ? measureRefs[i + 1].staveNote.getAbsoluteX()
+                    : noteX + 40; // Estimate if no next note
+                  dotX = noteX + (nextX - noteX) * progressWithinNote;
+                }
+                found = true;
                 break;
               }
+              
+              cumulativeNotePosition = noteEndPosition;
+            }
+            
+            // If beat position wasn't found within any note (shouldn't happen normally),
+            // use the first note's X position as fallback
+            if (!found) {
+              dotX = measureRefs[0].staveNote.getAbsoluteX();
             }
             
             const dotY = stave.getYForLine(5) + 8; // Closer to the bottom of the staff
-            
-            // Adjust X position slightly to the right to align with visual beat start
-            dotX += 5;
             
             // Create unique ID for this dot based on measure and position
             const dotId = `metronome-dot-${measureIndex}-${beatPosition}`;
@@ -880,38 +912,60 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
       };
     };
     
-    // Wait for SVG to be rendered and positions to be tracked
-    // Re-attach handlers whenever the SVG is re-rendered (e.g., on resize)
+    // Robust handler attachment: try immediately, use RAF for timing, and retry
     const attachHandlers = () => {
       const svg = containerRef.current?.querySelector('svg');
       if (!svg) {
-        return;
+        return false; // SVG not ready
       }
       
-      // If positions aren't tracked yet, wait a bit more
-      if (notePositionsRef.current.length === 0) {
-        setTimeout(attachHandlers, 100);
-        return;
-      }
-      
+      // Attach handlers even if notePositions is empty - handlers will handle this case
+      // This prevents the situation where handlers are never attached due to empty positions
       attachSvgHandlers(svg);
+      return true;
     };
     
-    // Initial attachment
-    const timeoutId = setTimeout(attachHandlers, 100);
+    // Try to attach immediately
+    let attached = attachHandlers();
     
-    // Also re-attach after a delay to catch resize cases
-    const retryTimeoutId = setTimeout(attachHandlers, 500);
+    // If not attached, use requestAnimationFrame for better timing with rendering
+    let rafId: number | null = null;
+    let retryCount = 0;
+    const maxRetries = 10;
     
-    // Capture ref value for cleanup
+    const retryAttach = () => {
+      if (!attached && retryCount < maxRetries) {
+        attached = attachHandlers();
+        retryCount++;
+        if (!attached) {
+          rafId = requestAnimationFrame(retryAttach);
+        }
+      }
+    };
+    
+    if (!attached) {
+      rafId = requestAnimationFrame(retryAttach);
+    }
+    
+    // Also retry after a delay to catch async rendering scenarios
+    const timeoutId = setTimeout(() => {
+      if (!attached) {
+        attached = attachHandlers();
+      }
+    }, 200);
+    
+    // Capture container ref for cleanup
     const container = containerRef.current;
-    const handlers = svgHandlersRef.current;
     
     return () => {
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
       clearTimeout(timeoutId);
-      clearTimeout(retryTimeoutId);
-      // Clean up handlers if they were attached
+      
+      // Clean up handlers using ref directly
       const svg = container?.querySelector('svg');
+      const handlers = svgHandlersRef.current;
       if (svg && handlers) {
         svg.removeEventListener('dragover', handlers.handleDragOver);
         svg.removeEventListener('dragleave', handlers.handleDragLeave);
