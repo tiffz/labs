@@ -155,8 +155,9 @@ export function computeDropPreview(
       };
     }
     
-    // Normal replace mode: use exact note position
-    const dropPosition = charPosition;
+    // Normal replace mode: use exact position within the note
+    // This allows breaking tied notes when dropping in the middle
+    const dropPosition = dropTarget.exactCharPosition;
     
     // Try replacement first
     const patternDuration = getPatternDuration(pattern);

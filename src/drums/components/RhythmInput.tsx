@@ -5,6 +5,13 @@ import { getSixteenthsPerMeasure } from '../utils/timeSignatureUtils';
 import RhythmPresets from './RhythmPresets';
 import DownloadDropdown from './DownloadDropdown';
 
+/** Selection state for syncing with display */
+interface SelectionState {
+  startCharPosition: number | null;
+  endCharPosition: number | null;
+  isSelecting: boolean;
+}
+
 interface RhythmInputProps {
   notation: string;
   onNotationChange: (notation: string) => void;
@@ -26,6 +33,8 @@ interface RhythmInputProps {
   downloadLoops: number;
   onDownloadFormatChange: (format: 'wav' | 'mp3') => void;
   onDownloadLoopsChange: (loops: number) => void;
+  /** Current selection state from display */
+  selection?: SelectionState | null;
 }
 
 const RhythmInput: React.FC<RhythmInputProps> = ({
@@ -49,11 +58,52 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
   downloadLoops,
   onDownloadFormatChange,
   onDownloadLoopsChange,
+  selection,
 }) => {
   const [showTooltip, setShowTooltip] = useState(false);
   const [showDownloadDropdown, setShowDownloadDropdown] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const downloadButtonRef = useRef<HTMLButtonElement>(null);
+  
+  // Sync selection from display to textarea
+  useEffect(() => {
+    if (!inputRef.current) return;
+    
+    // Handle clearing selection
+    if (!selection || selection.startCharPosition === null || selection.endCharPosition === null) {
+      // Don't clear textarea selection - let user manage their own textarea selection
+      return;
+    }
+    
+    // Map clean notation position to textarea position (accounting for whitespace)
+    const cleanToTextareaPosition = (cleanPos: number): number => {
+      let cleanIndex = 0;
+      let textareaIndex = 0;
+      
+      while (cleanIndex < cleanPos && textareaIndex < notation.length) {
+        const char = notation[textareaIndex];
+        if (char !== ' ' && char !== '\n') {
+          cleanIndex++;
+        }
+        textareaIndex++;
+      }
+      
+      return textareaIndex;
+    };
+    
+    const textareaStart = cleanToTextareaPosition(selection.startCharPosition);
+    const textareaEnd = cleanToTextareaPosition(selection.endCharPosition);
+    
+    // Focus the textarea before setting selection range so it's visible
+    // But only if we're not currently selecting (to avoid stealing focus during drag)
+    if (!selection.isSelecting && document.activeElement !== inputRef.current) {
+      // Don't focus - just update the selection if it has focus already
+      // This avoids jarring focus changes
+    }
+    
+    // Always update the selection range (the browser will show it when focused)
+    inputRef.current.setSelectionRange(textareaStart, textareaEnd);
+  }, [selection, notation]);
 
   // Validate and filter input to only allow valid notation characters
   const handleNotationChange = (value: string) => {

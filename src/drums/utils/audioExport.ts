@@ -164,8 +164,10 @@ export async function renderRhythmAudio(
           }
         }
         
-        // Schedule the note if it's not a rest
-        if (note.sound !== 'rest') {
+        // Schedule the note if it's not a rest and not a tied continuation
+        // Tied notes (isTiedFrom) represent the continuation of a previous note's duration,
+        // not a new sound attack. Only the first note in a tie chain should play.
+        if (note.sound !== 'rest' && !note.isTiedFrom) {
           const buffer = buffers.get(note.sound);
           if (buffer) {
             const source = offlineContext.createBufferSource();

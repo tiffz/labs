@@ -7,6 +7,9 @@ export interface Note {
   duration: NoteDuration;
   durationInSixteenths: number;
   isDotted: boolean; // Dotted notes are 1.5x their normal duration
+  isTiedFrom?: boolean;  // This note is tied from previous measure
+  isTiedTo?: boolean;    // This note ties to next measure
+  tiedDuration?: number; // Original full duration before splitting (in sixteenths)
 }
 
 export interface Measure {

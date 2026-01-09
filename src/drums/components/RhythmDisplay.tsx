@@ -1,6 +1,6 @@
-import React from 'react';
+import { forwardRef } from 'react';
 import type { ParsedRhythm, TimeSignature } from '../types';
-import VexFlowRenderer from './VexFlowRenderer';
+import VexFlowRenderer, { type NoteSelectionState } from './VexFlowRenderer';
 import CollapsibleSection from './CollapsibleSection';
 
 interface RhythmDisplayProps {
@@ -12,9 +12,15 @@ interface RhythmDisplayProps {
   dragDropMode?: 'replace' | 'insert';
   notation?: string;
   timeSignature?: TimeSignature;
+  /** Current selection state */
+  selection?: NoteSelectionState | null;
+  /** Callback when selection changes */
+  onSelectionChange?: (start: number | null, end: number | null, duration: number) => void;
+  /** Callback when selection is dragged to a new position */
+  onMoveSelection?: (fromStart: number, fromEnd: number, toPosition: number) => void;
 }
 
-const RhythmDisplay: React.FC<RhythmDisplayProps> = ({ 
+const RhythmDisplay = forwardRef<HTMLDivElement, RhythmDisplayProps>(({ 
   rhythm, 
   currentNote, 
   metronomeEnabled = false,
@@ -23,32 +29,38 @@ const RhythmDisplay: React.FC<RhythmDisplayProps> = ({
   dragDropMode = 'replace',
   notation = '',
   timeSignature,
-}) => {
+  selection = null,
+  onSelectionChange,
+  onMoveSelection,
+}, ref) => {
   const { measures, isValid, error } = rhythm;
 
   if (measures.length === 0) {
     return (
-      <CollapsibleSection title="Note Display" defaultExpanded={true}>
-        <div className="empty-state">
-          <div className="empty-state-icon">🥁</div>
-          <div className="empty-state-text">
-            Create a rhythm using the note palette or the rhythm notation input above.
+      <div ref={ref} style={{ marginBottom: '1rem' }}>
+        <CollapsibleSection title="Note Display" defaultExpanded={true}>
+          <div className="empty-state">
+            <div className="empty-state-icon">🥁</div>
+            <div className="empty-state-text">
+              Create a rhythm using the note palette or the rhythm notation input above.
+            </div>
           </div>
-        </div>
-      </CollapsibleSection>
+        </CollapsibleSection>
+      </div>
     );
   }
 
   return (
-    <CollapsibleSection title="Note Display" defaultExpanded={true}>
-      {!isValid && error && (
-        <div className="error-message">
-          <div className="error-message-title">Invalid Rhythm</div>
-          <div>{error}</div>
-        </div>
-      )}
+    <div ref={ref} style={{ marginBottom: '1rem' }}>
+      <CollapsibleSection title="Note Display" defaultExpanded={true}>
+        {!isValid && error && (
+          <div className="error-message">
+            <div className="error-message-title">Invalid Rhythm</div>
+            <div>{error}</div>
+          </div>
+        )}
 
-      <div className="staff-container">
+        <div className="staff-container">
         <VexFlowRenderer 
           rhythm={rhythm} 
           currentNote={currentNote}
@@ -58,11 +70,17 @@ const RhythmDisplay: React.FC<RhythmDisplayProps> = ({
           dragDropMode={dragDropMode}
           notation={notation}
           timeSignature={timeSignature}
+          selection={selection}
+          onSelectionChange={onSelectionChange}
+          onMoveSelection={onMoveSelection}
         />
-      </div>
-    </CollapsibleSection>
+        </div>
+      </CollapsibleSection>
+    </div>
   );
-};
+});
+
+RhythmDisplay.displayName = 'RhythmDisplay';
 
 export default RhythmDisplay;
 

@@ -150,18 +150,42 @@ function _findDropPosition(
 }
 
 /**
+ * Helper to convert a sound to its notation character
+ */
+function soundToChar(sound: string): string {
+  return sound === 'dum' ? 'D' 
+    : sound === 'tak' ? 'T' 
+    : sound === 'ka' ? 'K'
+    : sound === 'slap' ? 'S'
+    : sound === 'rest' ? '_'
+    : 'D';
+}
+
+/**
+ * Helper to create notation for a given sound and duration
+ */
+function createNoteNotation(sound: string, duration: number): string {
+  if (duration <= 0) return '';
+  if (sound === 'rest') {
+    return '_'.repeat(duration);
+  }
+  const char = soundToChar(sound);
+  return char + '-'.repeat(Math.max(0, duration - 1));
+}
+
+/**
  * Replace pattern at a specific position in notation
  * 
- * STRICT MEASURE BOUNDARY RULES:
- * 1. Replacement must start and end within the same measure
- * 2. If pattern doesn't fit entirely in the measure, replacement fails
- * 3. No partial replacements that span measure boundaries
+ * When inserting into the middle of a note, the note is split into:
+ * - prefix: the portion before the insertion point (continues original sound)
+ * - pattern: the new pattern being inserted
+ * - suffix: the remaining portion of the original note (continues original sound)
  * 
  * @param notation - Current rhythm notation
  * @param charPosition - Character position where replacement should start
  * @param pattern - Pattern to replace with
  * @param patternDuration - Duration of pattern in sixteenths
- * @param timeSignature - Current time signature
+ * @param _timeSignature - Current time signature (kept for API compatibility)
  * @returns Replacement result with new notation and replaced range
  */
 export function replacePatternAtPosition(
@@ -169,249 +193,143 @@ export function replacePatternAtPosition(
   charPosition: number,
   pattern: string,
   patternDuration: number,
-  timeSignature: TimeSignature
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _timeSignature: TimeSignature
 ): { newNotation: string; replacedLength: number; replacedStart: number; replacedEnd: number } {
   const cleanNotation = notation.replace(/[\s\n]/g, '');
   
   // Edge cases
-  if (charPosition < 0 || charPosition >= cleanNotation.length) {
-    return { newNotation: notation, replacedLength: 0, replacedStart: 0, replacedEnd: 0 };
+  if (cleanNotation.length === 0) {
+    return { newNotation: pattern, replacedLength: 0, replacedStart: 0, replacedEnd: 0 };
   }
+  if (charPosition >= cleanNotation.length) {
+    return { 
+      newNotation: cleanNotation + pattern, 
+      replacedLength: 0, 
+      replacedStart: cleanNotation.length, 
+      replacedEnd: cleanNotation.length 
+    };
+  }
+  if (charPosition < 0) charPosition = 0;
   
-  // Parse notation to notes
+  // Parse notation to find note boundaries
   const notes = parsePatternToNotes(cleanNotation);
   if (notes.length === 0) {
-    return { newNotation: notation, replacedLength: 0, replacedStart: 0, replacedEnd: 0 };
+    return { newNotation: pattern, replacedLength: 0, replacedStart: 0, replacedEnd: 0 };
   }
   
-  // Find measure boundaries
-  const measureBoundaries = findMeasureBoundaries(cleanNotation, timeSignature);
-  
-  // Find which measure contains charPosition
-  let measureStart = 0;
-  let measureEnd = cleanNotation.length;
-  
-  for (let i = measureBoundaries.length - 1; i >= 0; i--) {
-    if (charPosition >= measureBoundaries[i]) {
-      measureStart = measureBoundaries[i];
-      measureEnd = i < measureBoundaries.length - 1 ? measureBoundaries[i + 1] : cleanNotation.length;
-      break;
-    }
-  }
-  
-  // Find the note that contains charPosition (within the correct measure)
-  let startCharIndex = measureStart;
-  let startNoteIndex = 0;
+  // Find which note contains charPosition
   let charIdx = 0;
-  let foundNote = false;
+  let noteContainingPosition: { sound: string; duration: number; start: number; index: number } | null = null;
+  let offsetWithinNote = 0;
   
   for (let i = 0; i < notes.length; i++) {
     const note = notes[i];
-    const noteCharLength = note.duration;
     const noteStart = charIdx;
-    const noteEnd = charIdx + noteCharLength;
+    const noteEnd = charIdx + note.duration;
     
-    // Check if this note contains charPosition
     if (noteStart <= charPosition && charPosition < noteEnd) {
-      // Found the note containing charPosition
-      // Ensure it's within the correct measure (not from previous measure)
-      if (noteStart >= measureStart) {
-        // Note is in the correct measure - start from this note
-        startCharIndex = noteStart;
-        startNoteIndex = i;
-        foundNote = true;
-        break;
-      } else {
-        // Note starts before measureStart but contains charPosition
-        // This means charPosition is in a note that crosses measure boundary
-        // Start from the first note of the measure instead
-        foundNote = true;
-        break; // Will find first note of measure below
-      }
+      noteContainingPosition = { sound: note.sound, duration: note.duration, start: noteStart, index: i };
+      offsetWithinNote = charPosition - noteStart;
+      break;
     }
-    
-    charIdx += noteCharLength;
+    charIdx += note.duration;
   }
   
-  // If we didn't find a note containing charPosition, or found one that's before measureStart,
-  // find the first note of the measure
-  if (!foundNote || startCharIndex < measureStart) {
-    charIdx = 0;
-    for (let i = 0; i < notes.length; i++) {
-      const note = notes[i];
-      const noteCharLength = note.duration;
-      const noteStart = charIdx;
-      
-      if (noteStart >= measureStart) {
-        startCharIndex = noteStart;
-        startNoteIndex = i;
-        break;
-      }
-      
-      charIdx += noteCharLength;
-    }
-  }
-  
-  // Accumulate notes starting from startNoteIndex until we have patternDuration sixteenths
-  // We'll check measure boundaries as we go, not upfront, to handle edge cases correctly
-  let accumulatedSixteenths = 0;
-  let endCharIndex = startCharIndex;
-  charIdx = startCharIndex;
-  
-  for (let i = startNoteIndex; i < notes.length; i++) {
-    const note = notes[i];
-    const noteCharLength = note.duration;
-    const noteStart = charIdx;
-    const noteEnd = charIdx + noteCharLength;
-    
-    // STRICT RULE: If note crosses or is beyond measure boundary, handle it
-    // Check if note ends before or at measure boundary first
-    if (noteEnd <= measureEnd) {
-      // Note is entirely within the measure - can use it fully
-      // Continue to accumulation logic below
-    } else if (noteStart >= measureEnd) {
-      // Note starts at or after measure boundary - it's in the next measure
-      // Check if we have enough accumulated
-      if (accumulatedSixteenths >= patternDuration) {
-        break; // We have enough, replacement is valid
-      } else {
-        // Not enough accumulated - replacement fails
-        return { newNotation: notation, replacedLength: 0, replacedStart: startCharIndex, replacedEnd: startCharIndex };
-      }
-    } else {
-      // Note starts before measureEnd but ends after it - crosses boundary
-      // Calculate how much we can use from this note
-      const availableInMeasure = measureEnd - noteStart;
-      if (availableInMeasure <= 0) {
-        // No space left in measure
-        if (accumulatedSixteenths >= patternDuration) {
-          break; // We have enough, replacement is valid
-        } else {
-          return { newNotation: notation, replacedLength: 0, replacedStart: startCharIndex, replacedEnd: startCharIndex };
-        }
-      }
-      
-      // Calculate how many sixteenths we can use from this note
-      const proportion = availableInMeasure / noteCharLength;
-      const availableSixteenths = note.duration * proportion;
-      
-      // Check if we can complete the pattern with this partial note
-      if (accumulatedSixteenths + availableSixteenths >= patternDuration) {
-        // Can fit pattern with partial note
-        const remainingSixteenths = patternDuration - accumulatedSixteenths;
-        const cutProportion = remainingSixteenths / note.duration;
-        const cutCharLength = Math.max(1, Math.floor(noteCharLength * cutProportion));
-        endCharIndex = noteStart + cutCharLength;
-        
-        // Ensure we don't exceed measure boundary
-        if (endCharIndex > measureEnd) {
-          endCharIndex = measureEnd;
-        }
-        
-        // Create remainder
-        const remainderCharLength = noteCharLength - cutCharLength;
-        let remainderPattern = '';
-        if (note.sound === 'rest') {
-          remainderPattern = '_'.repeat(remainderCharLength);
-        } else {
-          // Map sound to notation character
-          const soundChar = note.sound === 'dum' ? 'D' 
-            : note.sound === 'tak' ? 'T' 
-            : note.sound === 'ka' ? 'K'
-            : note.sound === 'slap' ? 'S'
-            : 'D'; // fallback
-          remainderPattern = soundChar + '-'.repeat(Math.max(0, remainderCharLength - 1));
-        }
-        
-        const newCleanNotation = 
-          cleanNotation.slice(0, startCharIndex) + 
-          pattern + 
-          remainderPattern +
-          cleanNotation.slice(noteEnd);
-        
-        return {
-          newNotation: newCleanNotation,
-          replacedLength: endCharIndex - startCharIndex,
-          replacedStart: startCharIndex,
-          replacedEnd: endCharIndex
-        };
-      } else {
-        // Can't fit - hit measure boundary
-        return { newNotation: notation, replacedLength: 0, replacedStart: startCharIndex, replacedEnd: startCharIndex };
-      }
-    }
-    
-    // Note is entirely within the measure - check if adding it would exceed pattern duration
-    if (accumulatedSixteenths + note.duration <= patternDuration) {
-      // Note fits - add it
-      accumulatedSixteenths += note.duration;
-      endCharIndex = noteEnd;
-      charIdx = noteEnd;
-      
-      if (accumulatedSixteenths >= patternDuration) {
-        // We have exactly enough - done
-        break;
-      }
-    } else {
-      // Note is too long - need to cut it
-      const remainingSixteenths = patternDuration - accumulatedSixteenths;
-      const cutProportion = remainingSixteenths / note.duration;
-      const cutCharLength = Math.max(1, Math.floor(noteCharLength * cutProportion));
-      
-      endCharIndex = noteStart + cutCharLength;
-      
-      // Create remainder
-      const remainderCharLength = noteCharLength - cutCharLength;
-      let remainderPattern = '';
-      if (note.sound === 'rest') {
-        remainderPattern = '_'.repeat(remainderCharLength);
-      } else {
-        // Map sound to notation character
-        const soundChar = note.sound === 'dum' ? 'D' 
-          : note.sound === 'tak' ? 'T' 
-          : note.sound === 'ka' ? 'K'
-          : note.sound === 'slap' ? 'S'
-          : 'D'; // fallback
-        remainderPattern = soundChar + '-'.repeat(Math.max(0, remainderCharLength - 1));
-      }
-      
-      const newCleanNotation = 
-        cleanNotation.slice(0, startCharIndex) + 
-        pattern + 
-        remainderPattern +
-        cleanNotation.slice(noteEnd);
-      
-      return {
-        newNotation: newCleanNotation,
-        replacedLength: endCharIndex - startCharIndex,
-        replacedStart: startCharIndex,
-        replacedEnd: endCharIndex
-      };
-    }
-  }
-  
-  // Check if we accumulated enough
-  if (accumulatedSixteenths >= patternDuration) {
-    // We have enough - replace
-    const newCleanNotation = 
-      cleanNotation.slice(0, startCharIndex) + 
-      pattern + 
-      cleanNotation.slice(endCharIndex);
-    
+  // If no note found at position, append at end
+  if (!noteContainingPosition) {
     return {
-      newNotation: newCleanNotation,
-      replacedLength: endCharIndex - startCharIndex,
-      replacedStart: startCharIndex,
-      replacedEnd: endCharIndex
+      newNotation: cleanNotation + pattern,
+      replacedLength: 0,
+      replacedStart: cleanNotation.length,
+      replacedEnd: cleanNotation.length + pattern.length
     };
   }
   
-  // Didn't accumulate enough - can't replace
-  return { newNotation: notation, replacedLength: 0, replacedStart: startCharIndex, replacedEnd: startCharIndex };
+  const { sound, duration: noteDuration, start: noteStart, index: noteIndex } = noteContainingPosition;
+  
+  // Calculate prefix: portion of note BEFORE the insertion point
+  const prefixDuration = offsetWithinNote;
+  const prefix = prefixDuration > 0 ? createNoteNotation(sound, prefixDuration) : '';
+  
+  // Calculate how much duration needs to be replaced starting from charPosition
+  // This may span multiple notes
+  let durationToReplace = patternDuration;
+  let endCharIdx = charPosition;
+  let lastNoteEndCharIdx = noteStart + noteDuration;
+  
+  // First, consume the remainder of the current note
+  const remainingInFirstNote = noteDuration - offsetWithinNote;
+  
+  if (durationToReplace <= remainingInFirstNote) {
+    // Replacement fits within the first note
+    endCharIdx = charPosition + durationToReplace;
+    // Suffix is the remainder of this note
+    const suffixDuration = remainingInFirstNote - durationToReplace;
+    const suffix = suffixDuration > 0 ? createNoteNotation(sound, suffixDuration) : '';
+    
+    const beforeNote = cleanNotation.slice(0, noteStart);
+    const afterNote = cleanNotation.slice(noteStart + noteDuration);
+    const newNotation = beforeNote + prefix + pattern + suffix + afterNote;
+    
+    return {
+      newNotation,
+      replacedLength: patternDuration,
+      replacedStart: charPosition,
+      replacedEnd: charPosition + pattern.length
+    };
+  }
+  
+  // Replacement spans multiple notes
+  durationToReplace -= remainingInFirstNote;
+  endCharIdx = noteStart + noteDuration;
+  
+  // Continue consuming notes until we've replaced enough duration
+  for (let i = noteIndex + 1; i < notes.length && durationToReplace > 0; i++) {
+    const note = notes[i];
+    lastNoteEndCharIdx = endCharIdx + note.duration;
+    
+    if (durationToReplace <= note.duration) {
+      // This note contains the end of our replacement
+      endCharIdx += durationToReplace;
+      // Suffix is the remainder of this note
+      const suffixDuration = note.duration - durationToReplace;
+      const suffix = suffixDuration > 0 ? createNoteNotation(note.sound, suffixDuration) : '';
+      
+      const beforeReplacement = cleanNotation.slice(0, noteStart);
+      const afterReplacement = cleanNotation.slice(lastNoteEndCharIdx);
+      const newNotation = beforeReplacement + prefix + pattern + suffix + afterReplacement;
+      
+      return {
+        newNotation,
+        replacedLength: patternDuration,
+        replacedStart: charPosition,
+        replacedEnd: charPosition + pattern.length
+      };
+    }
+    
+    // Consume this entire note
+    durationToReplace -= note.duration;
+    endCharIdx += note.duration;
+  }
+  
+  // We've consumed all notes - no suffix needed
+  const beforeReplacement = cleanNotation.slice(0, noteStart);
+  const newNotation = beforeReplacement + prefix + pattern;
+  
+  return {
+    newNotation,
+    replacedLength: patternDuration,
+    replacedStart: charPosition,
+    replacedEnd: charPosition + pattern.length
+  };
 }
 
 /**
  * Insert pattern at a specific position in notation
+ * 
+ * If the position is in the middle of a note (not at a note boundary),
+ * the note will be broken into two parts with the pattern inserted between them.
  */
 export function insertPatternAtPosition(
   notation: string,
@@ -419,157 +337,53 @@ export function insertPatternAtPosition(
   pattern: string
 ): string {
   const cleanNotation = notation.replace(/[\s\n]/g, '');
+  
+  // If position is at the start or end, no need to break any notes
+  if (position <= 0 || position >= cleanNotation.length) {
+    return cleanNotation.slice(0, Math.max(0, position)) + pattern + cleanNotation.slice(Math.max(0, position));
+  }
+  
+  // Parse the notation to find if we're in the middle of a note
+  const notes = parsePatternToNotes(cleanNotation);
+  let charIdx = 0;
+  
+  for (const note of notes) {
+    const noteStart = charIdx;
+    const noteEnd = charIdx + note.duration;
+    
+    // Check if position is in the middle of this note (not at boundaries)
+    if (position > noteStart && position < noteEnd) {
+      // Need to break this note
+      const keepLength = position - noteStart;
+      const remainderLength = noteEnd - position;
+      
+      let prefixPattern: string;
+      let suffixPattern: string;
+      
+      if (note.sound === 'rest') {
+        prefixPattern = '_'.repeat(keepLength);
+        suffixPattern = '_'.repeat(remainderLength);
+      } else {
+        // Map sound to notation character
+        const soundChar = note.sound === 'dum' ? 'D' 
+          : note.sound === 'tak' ? 'T' 
+          : note.sound === 'ka' ? 'K'
+          : note.sound === 'slap' ? 'S'
+          : 'D'; // fallback
+        prefixPattern = soundChar + '-'.repeat(Math.max(0, keepLength - 1));
+        suffixPattern = soundChar + '-'.repeat(Math.max(0, remainderLength - 1));
+      }
+      
+      // Construct: everything before note + prefix + pattern + suffix + everything after note
+      return cleanNotation.slice(0, noteStart) + prefixPattern + pattern + suffixPattern + cleanNotation.slice(noteEnd);
+    }
+    
+    charIdx += note.duration;
+  }
+  
+  // Position is at a note boundary, simple insert
   return cleanNotation.slice(0, position) + pattern + cleanNotation.slice(position);
 }
 
-/**
- * Check if pattern fits at position (for replace mode)
- * Uses the same logic as replacePatternAtPosition but just checks if it's possible
- * @internal - Currently unused, kept for potential future use
- */
-function _canReplacePatternAtPosition(
-  notation: string,
-  charPosition: number,
-  patternDuration: number,
-  timeSignature: TimeSignature
-): boolean {
-  const cleanNotation = notation.replace(/[\s\n]/g, '');
-  
-  if (charPosition < 0 || charPosition >= cleanNotation.length) {
-    return false;
-  }
-  
-  // Parse notation to notes
-  const notes = parsePatternToNotes(cleanNotation);
-  if (notes.length === 0) {
-    return false;
-  }
-  
-  // Find measure boundaries
-  const measureBoundaries = findMeasureBoundaries(cleanNotation, timeSignature);
-  
-  // Find which note contains charPosition
-  let startCharIndex = 0;
-  let charIdx = 0;
-  
-  for (let i = 0; i < notes.length; i++) {
-    const note = notes[i];
-    const noteCharLength = note.duration;
-    
-    if (charIdx <= charPosition && charPosition < charIdx + noteCharLength) {
-      startCharIndex = charIdx;
-      break;
-    }
-    
-    charIdx += noteCharLength;
-  }
-  
-  // Find which measure contains startCharIndex
-  let measureStart = 0;
-  let measureEnd = cleanNotation.length;
-  
-  for (let i = measureBoundaries.length - 1; i >= 0; i--) {
-    if (startCharIndex >= measureBoundaries[i]) {
-      measureStart = measureBoundaries[i];
-      measureEnd = i < measureBoundaries.length - 1 ? measureBoundaries[i + 1] : cleanNotation.length;
-      break;
-    }
-  }
-  
-  // Ensure startCharIndex is within the measure
-  if (startCharIndex < measureStart) {
-    startCharIndex = measureStart;
-  }
-  
-  // Calculate available space in the measure
-  const availableInMeasure = measureEnd - startCharIndex;
-  
-  // STRICT RULE: Pattern must fit entirely within the measure
-  return patternDuration <= availableInMeasure;
-}
-
-/**
- * Map mouse position in textarea to character index
- * @internal - Currently unused, kept for potential future use
- */
-function _getTextareaPositionFromMouse(
-  textarea: HTMLTextAreaElement,
-  event: MouseEvent
-): number {
-  const rect = textarea.getBoundingClientRect();
-  const x = event.clientX - rect.left;
-  const y = event.clientY - rect.top;
-  
-  // Use a more accurate method: create a range and measure
-  const style = getComputedStyle(textarea);
-  const paddingTop = parseInt(style.paddingTop) || 0;
-  const paddingLeft = parseInt(style.paddingLeft) || 0;
-  const borderTop = parseInt(style.borderTopWidth) || 0;
-  const borderLeft = parseInt(style.borderLeftWidth) || 0;
-  
-  // Adjust for padding and border
-  const adjustedX = x - paddingLeft - borderLeft;
-  const adjustedY = y - paddingTop - borderTop;
-  
-  // Get textarea properties
-  const lineHeight = parseInt(style.lineHeight) || 20;
-  const fontSize = parseInt(style.fontSize) || 16;
-  const fontFamily = style.fontFamily;
-  
-  // Create a temporary span to measure character width
-  const measureSpan = document.createElement('span');
-  measureSpan.style.position = 'absolute';
-  measureSpan.style.visibility = 'hidden';
-  measureSpan.style.whiteSpace = 'pre';
-  measureSpan.style.font = `${fontSize}px ${fontFamily}`;
-  measureSpan.style.fontFamily = fontFamily;
-  measureSpan.style.fontSize = `${fontSize}px`;
-  document.body.appendChild(measureSpan);
-  
-  // Estimate character width (monospace font assumption for notation)
-  measureSpan.textContent = 'D';
-  const charWidth = measureSpan.offsetWidth || 8;
-  document.body.removeChild(measureSpan);
-  
-  // Calculate which line
-  const lineIndex = Math.max(0, Math.floor(adjustedY / lineHeight));
-  const lines = textarea.value.split('\n');
-  
-  // Ensure lineIndex is within bounds
-  const safeLineIndex = Math.min(lineIndex, lines.length - 1);
-  
-  // Calculate character index up to the target line in the textarea value
-  let textareaCharIndex = 0;
-  for (let i = 0; i < safeLineIndex && i < lines.length; i++) {
-    textareaCharIndex += lines[i].length + 1; // +1 for newline
-  }
-  
-  // Calculate position within the line
-  const line = lines[safeLineIndex] || '';
-  const charInLine = Math.max(0, Math.min(Math.floor(adjustedX / charWidth), line.length));
-  
-  const textareaPosition = textareaCharIndex + charInLine;
-  const finalTextareaIndex = Math.min(textareaPosition, textarea.value.length);
-  
-  // Now map this textarea position to clean notation position
-  // The textarea has newlines/spaces, but clean notation doesn't
-  // We need to count characters up to this position, skipping newlines/spaces
-  let cleanPosition = 0;
-  let textareaPos = 0;
-  
-  for (let i = 0; i < textarea.value.length && textareaPos < finalTextareaIndex; i++) {
-    const char = textarea.value[i];
-    if (char !== '\n' && char !== ' ') {
-      cleanPosition++;
-    }
-    textareaPos++;
-  }
-  
-  return cleanPosition;
-}
-
-// Intentionally unused functions kept for future use
-// These are referenced here to satisfy linter warnings
+// Intentionally unused function kept for future use
 void _findDropPosition;
-void _canReplacePatternAtPosition;
-void _getTextareaPositionFromMouse;

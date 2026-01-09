@@ -50,6 +50,16 @@ const App: React.FC = () => {
   const [downloadFormat, setDownloadFormat] = useState<'wav' | 'mp3'>('wav');
   const [downloadLoops, setDownloadLoops] = useState<number>(1);
   
+  // Selection state for note selection in the display
+  // anchorPosition tracks the original click position during drag-to-select
+  const [selection, setSelectionState] = useState<{
+    startCharPosition: number | null;
+    endCharPosition: number | null;
+    isSelecting: boolean;
+    anchorPosition: number | null; // Original click position for drag-to-select
+  }>({ startCharPosition: null, endCharPosition: null, isSelecting: false, anchorPosition: null });
+  const [selectionDuration, setSelectionDuration] = useState<number>(0);
+  
   // Use notation history hook for consistent history management
   const {
     notation,
@@ -96,6 +106,196 @@ const App: React.FC = () => {
     // Append the pattern to the end of the current notation
     addToHistory(notation);
     setNotationWithoutHistory(prevNotation => prevNotation + pattern);
+  }, [notation, addToHistory, setNotationWithoutHistory]);
+  
+  // Handle selection change from VexFlowRenderer (final selection, not during drag)
+  const handleSelectionChange = useCallback((
+    start: number | null, 
+    end: number | null, 
+    duration: number
+  ) => {
+    setSelectionState({
+      startCharPosition: start,
+      endCharPosition: end,
+      isSelecting: false,
+      anchorPosition: null, // Clear anchor when selection is finalized
+    });
+    setSelectionDuration(duration);
+  }, []);
+  
+  
+  // Ref for note display container (for click-outside detection)
+  const noteDisplayRef = useRef<HTMLDivElement>(null);
+  
+  // Clear selection
+  const clearSelection = useCallback(() => {
+    setSelectionState({
+      startCharPosition: null,
+      endCharPosition: null,
+      isSelecting: false,
+      anchorPosition: null,
+    });
+    setSelectionDuration(0);
+  }, []);
+  
+  // Global click handler to clear selection when clicking outside note display
+  useEffect(() => {
+    const handleGlobalClick = (e: MouseEvent) => {
+      // Only process if there's an active selection
+      if (selection.startCharPosition === null) return;
+      
+      // Check if click is inside the note display container
+      if (noteDisplayRef.current && noteDisplayRef.current.contains(e.target as Node)) {
+        return; // Click is inside note display, don't clear
+      }
+      
+      // Click is outside note display, clear the selection
+      clearSelection();
+    };
+    
+    // Use mousedown to catch clicks before they're processed by other handlers
+    document.addEventListener('mousedown', handleGlobalClick);
+    return () => document.removeEventListener('mousedown', handleGlobalClick);
+  }, [selection.startCharPosition, clearSelection]);
+  
+  // Handle replacing selected notes with a pattern
+  const handleReplaceSelection = useCallback((pattern: string) => {
+    if (selection.startCharPosition === null || selection.endCharPosition === null) {
+      return;
+    }
+    
+    const cleanNotation = notation.replace(/[\s\n]/g, '');
+    const patternDuration = getPatternDuration(pattern);
+    
+    addToHistory(notation);
+    
+    // Use replacePatternAtPosition with the selection start position
+    const result = replacePatternAtPosition(
+      cleanNotation,
+      selection.startCharPosition,
+      pattern,
+      patternDuration,
+      timeSignature
+    );
+    
+    setNotationWithoutHistory(result.newNotation);
+    
+    // Clear selection after replacement
+    clearSelection();
+  }, [notation, selection, timeSignature, addToHistory, setNotationWithoutHistory, clearSelection]);
+  
+  // Handle deleting selected notes
+  const handleDeleteSelection = useCallback(() => {
+    if (selection.startCharPosition === null || selection.endCharPosition === null) {
+      return;
+    }
+    
+    const cleanNotation = notation.replace(/[\s\n]/g, '');
+    
+    addToHistory(notation);
+    
+    // Remove the selected portion
+    const newNotation = 
+      cleanNotation.slice(0, selection.startCharPosition) + 
+      cleanNotation.slice(selection.endCharPosition);
+    
+    setNotationWithoutHistory(newNotation);
+    
+    // Clear selection after deletion
+    clearSelection();
+  }, [notation, selection, addToHistory, setNotationWithoutHistory, clearSelection]);
+  
+  // Handle moving selected notes to a new position
+  const handleMoveSelection = useCallback((fromStart: number, fromEnd: number, toPosition: number) => {
+    const cleanNotation = notation.replace(/[\s\n]/g, '');
+    const selectionLength = fromEnd - fromStart;
+    
+    // Extract the selected pattern
+    const selectedPattern = cleanNotation.slice(fromStart, fromEnd);
+    
+    addToHistory(notation);
+    
+    // Helper: "heal" orphaned dashes after removal
+    // When we remove the start of a tied note (e.g., "T" from "T---"), 
+    // the remaining dashes need to be converted to a proper note.
+    const healOrphanedDashes = (notationAfterRemoval: string): string => {
+      // The removal was at fromStart in the original notation
+      // In notationAfterRemoval, position fromStart might now have orphaned dashes
+      // Check if there are orphaned dashes at the removal point
+      if (fromStart < notationAfterRemoval.length && notationAfterRemoval[fromStart] === '-') {
+        // Find what sound was at the start of the removed selection
+        // This tells us what sound the orphaned dashes belong to
+        const removedStartChar = cleanNotation[fromStart];
+        const soundCharMap: Record<string, string> = {
+          'D': 'D', 'd': 'D', 'T': 'T', 't': 'T', 'K': 'K', 'k': 'K', 'S': 'S', 's': 'S'
+        };
+        const soundChar = soundCharMap[removedStartChar];
+        
+        if (soundChar) {
+          // Replace the first orphaned dash with the sound character
+          return notationAfterRemoval.slice(0, fromStart) + soundChar + notationAfterRemoval.slice(fromStart + 1);
+        }
+      }
+      return notationAfterRemoval;
+    };
+    
+    // Strategy: Remove the selection first, then use insertPatternAtPosition
+    // which has proper note-breaking logic for inserting in the middle of tied notes.
+    
+    let newNotation: string;
+    let finalInsertPosition: number;
+    
+    if (toPosition <= fromStart) {
+      // Moving BACKWARD: insert at toPosition, then the content between, then after
+      // First remove the selection
+      let notationWithoutSelection = cleanNotation.slice(0, fromStart) + cleanNotation.slice(fromEnd);
+      
+      // Heal orphaned dashes if we cut in the middle of a tied note
+      notationWithoutSelection = healOrphanedDashes(notationWithoutSelection);
+      
+      // Insert at the target position using proper note-breaking logic
+      newNotation = insertPatternAtPosition(notationWithoutSelection, toPosition, selectedPattern);
+      finalInsertPosition = toPosition;
+    } else {
+      // Moving FORWARD: target is after selection start
+      // First, remove the selection
+      let notationWithoutSelection = cleanNotation.slice(0, fromStart) + cleanNotation.slice(fromEnd);
+      
+      // Heal orphaned dashes if we cut in the middle of a tied note
+      notationWithoutSelection = healOrphanedDashes(notationWithoutSelection);
+      
+      // The user clicked at toPosition in the ORIGINAL notation.
+      // After removing the selection, positions >= fromEnd have shifted backward.
+      // We need to adjust toPosition to account for this shift.
+      //
+      // If toPosition >= fromEnd: the target was after the selection,
+      //   so subtract selectionLength to get the correct position in the intermediate notation.
+      // If toPosition is between fromStart and fromEnd: this shouldn't happen (checked earlier),
+      //   but if it does, use fromStart as the target.
+      if (toPosition >= fromEnd) {
+        finalInsertPosition = toPosition - selectionLength;
+      } else {
+        // toPosition is between fromStart and fromEnd - shouldn't happen
+        finalInsertPosition = fromStart;
+      }
+      
+      // Cap to valid range
+      finalInsertPosition = Math.max(0, Math.min(finalInsertPosition, notationWithoutSelection.length));
+      
+      // Use insertPatternAtPosition for proper note-breaking logic
+      // This will break any tied note at the insertion point
+      newNotation = insertPatternAtPosition(notationWithoutSelection, finalInsertPosition, selectedPattern);
+    }
+    
+    setNotationWithoutHistory(newNotation);
+    
+    // Update selection to reflect new position
+    setSelectionState({
+      startCharPosition: finalInsertPosition,
+      endCharPosition: finalInsertPosition + selectionLength,
+      isSelecting: false,
+      anchorPosition: null,
+    });
   }, [notation, addToHistory, setNotationWithoutHistory]);
 
   // Handle drop from canvas or text input
@@ -389,6 +589,23 @@ const App: React.FC = () => {
       if (isTyping) {
         return;
       }
+      
+      // Delete selection: Delete or Backspace (when not typing)
+      // Check for active selection first
+      if ((e.key === 'Delete' || e.key === 'Backspace') && 
+          selection.startCharPosition !== null && 
+          selection.endCharPosition !== null) {
+        e.preventDefault();
+        handleDeleteSelection();
+        return;
+      }
+      
+      // Escape: Clear selection
+      if (e.key === 'Escape' && selection.startCharPosition !== null) {
+        e.preventDefault();
+        clearSelection();
+        return;
+      }
 
       // Undo: Ctrl+Z (Mac: Cmd+Z)
       if (modKeyPressed && (e.key === 'z' || e.key === 'Z') && !e.shiftKey) {
@@ -426,7 +643,7 @@ const App: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isPlaying, handlePlay, handleStop, undo, redo, handleRandomize, setShowKeyboardHelp]);
+  }, [isPlaying, handlePlay, handleStop, undo, redo, handleRandomize, setShowKeyboardHelp, selection, handleDeleteSelection, clearSelection]);
 
   return (
     <div className="app-layout">
@@ -482,9 +699,11 @@ const App: React.FC = () => {
             downloadLoops={downloadLoops}
             onDownloadFormatChange={setDownloadFormat}
             onDownloadLoopsChange={setDownloadLoops}
+            selection={selection}
           />
 
           <RhythmDisplay 
+            ref={noteDisplayRef}
             rhythm={parsedRhythm} 
             currentNote={currentNote}
             metronomeEnabled={metronomeEnabled}
@@ -493,6 +712,9 @@ const App: React.FC = () => {
             dragDropMode={dragDropMode}
             notation={notation}
             timeSignature={timeSignature}
+            selection={selection}
+            onSelectionChange={handleSelectionChange}
+            onMoveSelection={handleMoveSelection}
           />
 
           {/* Sequencer section */}
@@ -532,6 +754,9 @@ const App: React.FC = () => {
           timeSignature={timeSignature}
           dragDropMode={dragDropMode}
           onDragDropModeChange={setDragDropMode}
+          selection={selection}
+          selectionDuration={selectionDuration}
+          onReplaceSelection={handleReplaceSelection}
         />
       </aside>
       <KeyboardShortcutsHelp 

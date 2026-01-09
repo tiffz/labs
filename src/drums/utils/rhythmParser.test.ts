@@ -128,6 +128,37 @@ describe('rhythmParser', () => {
       expect(notes[2].sound).toBe('tak');
     });
 
+    it('should correctly parse notation with broken tied note (D-------KD------)', () => {
+      // This pattern results from breaking a whole note at position 8 and inserting K
+      const notes = parseNotation('D-------KD------');
+      
+      expect(notes).toHaveLength(3);
+      // First D with 7 dashes = 8 sixteenths (half note)
+      expect(notes[0].sound).toBe('dum');
+      expect(notes[0].durationInSixteenths).toBe(8);
+      expect(notes[0].duration).toBe('half');
+      
+      // K with no extensions = 1 sixteenth
+      expect(notes[1].sound).toBe('ka');
+      expect(notes[1].durationInSixteenths).toBe(1);
+      expect(notes[1].duration).toBe('sixteenth');
+      
+      // Second D with 6 dashes = 7 sixteenths
+      expect(notes[2].sound).toBe('dum');
+      expect(notes[2].durationInSixteenths).toBe(7);
+    });
+
+    it('should correctly parse adjacent notes of different sounds', () => {
+      // Ensure that adjacent different sounds are parsed as separate notes
+      const notes = parseNotation('KT---');
+      
+      expect(notes).toHaveLength(2);
+      expect(notes[0].sound).toBe('ka');
+      expect(notes[0].durationInSixteenths).toBe(1);
+      expect(notes[1].sound).toBe('tak');
+      expect(notes[1].durationInSixteenths).toBe(4);
+    });
+
     it('should parse dotted notes', () => {
       const notes = parseNotation('D-- D----- D-----------');
       

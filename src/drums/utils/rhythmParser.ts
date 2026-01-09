@@ -104,7 +104,11 @@ export function parseNotation(notation: string): Note[] {
 }
 
 /**
- * Splits notes into measures based on the time signature
+ * Splits notes into measures based on the time signature.
+ * When a note spans across measure boundaries, it is split into tied notes:
+ * - The first part is marked with isTiedTo: true
+ * - The continuation is marked with isTiedFrom: true
+ * - Both parts store the original tiedDuration for reference
  */
 function splitIntoMeasures(notes: Note[], timeSignature: TimeSignature): Measure[] {
   const measures: Measure[] = [];
@@ -120,24 +124,29 @@ function splitIntoMeasures(notes: Note[], timeSignature: TimeSignature): Measure
   
   for (const note of notes) {
     let remainingDuration = note.durationInSixteenths;
-    let noteToAdd = note;
+    const originalDuration = note.durationInSixteenths;
+    let isFirstPart = true;
     
     // Split notes that span multiple measures
     while (remainingDuration > 0) {
       const spaceInMeasure = sixteenthsPerMeasure - currentDuration;
       
       if (remainingDuration <= spaceInMeasure) {
-        // Note fits in current measure
-        if (remainingDuration < note.durationInSixteenths) {
-          // This is a partial note, create a new note with adjusted duration
-          const { duration: durationType, isDotted } = getDurationType(remainingDuration);
-          noteToAdd = {
-            ...note,
-            duration: durationType,
-            durationInSixteenths: remainingDuration,
-            isDotted,
-          };
+        // Note fits in current measure (or is a continuation that fits)
+        const { duration: durationType, isDotted } = getDurationType(remainingDuration);
+        const noteToAdd: Note = {
+          ...note,
+          duration: durationType,
+          durationInSixteenths: remainingDuration,
+          isDotted,
+        };
+        
+        // If this is a continuation from a previous measure, mark it as tied from previous
+        if (!isFirstPart) {
+          noteToAdd.isTiedFrom = true;
+          noteToAdd.tiedDuration = originalDuration;
         }
+        
         currentMeasure.push(noteToAdd);
         currentDuration += remainingDuration;
         remainingDuration = 0;
@@ -152,7 +161,7 @@ function splitIntoMeasures(notes: Note[], timeSignature: TimeSignature): Measure
           currentDuration = 0;
         }
       } else {
-        // Note doesn't fit, split it
+        // Note doesn't fit, split it with ties
         if (spaceInMeasure > 0) {
           const { duration: durationType, isDotted } = getDurationType(spaceInMeasure);
           const partialNote: Note = {
@@ -160,10 +169,19 @@ function splitIntoMeasures(notes: Note[], timeSignature: TimeSignature): Measure
             duration: durationType,
             durationInSixteenths: spaceInMeasure,
             isDotted,
+            isTiedTo: true, // This part ties to the next measure
+            tiedDuration: originalDuration,
           };
+          
+          // If this is a continuation from a previous split, also mark as tied from
+          if (!isFirstPart) {
+            partialNote.isTiedFrom = true;
+          }
+          
           currentMeasure.push(partialNote);
           currentDuration += spaceInMeasure;
           remainingDuration -= spaceInMeasure;
+          isFirstPart = false; // Any subsequent parts are continuations
         }
         
         // Finish current measure
@@ -183,7 +201,7 @@ function splitIntoMeasures(notes: Note[], timeSignature: TimeSignature): Measure
   
   // Add the last measure if it has notes
   if (currentMeasure.length > 0) {
-    // Fill incomplete last measure with rests
+    // Fill incomplete last measure with rests (auto-fill rests are NOT tied)
     if (currentDuration < sixteenthsPerMeasure) {
       const remainingSixteenths = sixteenthsPerMeasure - currentDuration;
       const { duration: durationType, isDotted } = getDurationType(remainingSixteenths);
@@ -192,6 +210,7 @@ function splitIntoMeasures(notes: Note[], timeSignature: TimeSignature): Measure
         duration: durationType,
         durationInSixteenths: remainingSixteenths,
         isDotted,
+        // Note: auto-fill rests don't have tie properties - they're implicit
       });
       currentDuration = sixteenthsPerMeasure;
     }

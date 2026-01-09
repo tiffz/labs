@@ -6,12 +6,25 @@ import { COMMON_PATTERNS } from '../data/commonPatterns';
 import { getPatternDuration } from '../utils/dragAndDrop';
 import type { TimeSignature } from '../types';
 
+/** Selection state for notes */
+interface SelectionState {
+  startCharPosition: number | null;
+  endCharPosition: number | null;
+  isSelecting: boolean;
+}
+
 interface NotePaletteProps {
   onInsertPattern: (pattern: string) => void;
   remainingBeats: number;
   timeSignature: TimeSignature;
   dragDropMode?: 'replace' | 'insert';
   onDragDropModeChange?: (mode: 'replace' | 'insert') => void;
+  /** Current selection state */
+  selection?: SelectionState | null;
+  /** Duration of current selection in sixteenths */
+  selectionDuration?: number;
+  /** Callback to replace selection with a pattern */
+  onReplaceSelection?: (pattern: string) => void;
 }
 
 // Global variable to store currently dragged pattern (accessible during dragover)
@@ -73,8 +86,17 @@ const NotePalette: React.FC<NotePaletteProps> = ({
   remainingBeats,
   dragDropMode = 'replace',
   onDragDropModeChange,
+  selection,
+  selectionDuration = 0,
+  onReplaceSelection,
 }) => {
   const [soundPreviewEnabled, setSoundPreviewEnabled] = useState(false);
+  
+  // Check if there's an active selection
+  const hasSelection = selection && 
+    selection.startCharPosition !== null && 
+    selection.endCharPosition !== null &&
+    selection.startCharPosition !== selection.endCharPosition;
 
   // Helper to create pattern string
   const createPattern = (sound: string, duration: number): string => {
@@ -85,10 +107,19 @@ const NotePalette: React.FC<NotePaletteProps> = ({
     return sound + '-'.repeat(duration - 1);
   };
 
-  // Check if pattern can be added
+  // Check if pattern can be added (either to end, or fits in selection)
   const canAddPattern = (patternDuration: number): boolean => {
-    // Check if pattern fits in remaining beats
+    if (hasSelection) {
+      // With selection: pattern must fit within the selection duration
+      return patternDuration <= selectionDuration;
+    }
+    // Without selection: check if pattern fits in remaining beats
     return patternDuration <= remainingBeats;
+  };
+  
+  // Check if pattern is an exact match for selection duration
+  const isExactFit = (patternDuration: number): boolean => {
+    return hasSelection && patternDuration === selectionDuration;
   };
 
   // Play preview of pattern sounds
@@ -110,15 +141,26 @@ const NotePalette: React.FC<NotePaletteProps> = ({
 
   const handleInsertPattern = (pattern: string) => {
     playPatternPreview(pattern);
-    onInsertPattern(pattern);
+    
+    // If there's a selection and a replace handler, use replace mode
+    if (hasSelection && onReplaceSelection) {
+      onReplaceSelection(pattern);
+    } else {
+      // Otherwise, insert at end
+      onInsertPattern(pattern);
+    }
   };
 
   return (
-    <div className="note-palette">
+    <div className={`note-palette ${hasSelection ? 'has-selection' : ''}`}>
       <div className="palette-header">
         <div className="palette-title-group">
           <h3>Note Palette</h3>
-          <p className="palette-subtitle">Click or drag and drop to insert patterns</p>
+          <p className="palette-subtitle">
+            {hasSelection 
+              ? `Click to replace selection (${selectionDuration} sixteenths)`
+              : 'Click or drag and drop to insert patterns'}
+          </p>
         </div>
         <div className="palette-controls">
           <div className="palette-controls-group">
@@ -217,10 +259,21 @@ const NotePalette: React.FC<NotePaletteProps> = ({
                   // Use rest symbol for rest column, note symbol for others
                   const displaySymbol = col.isRest ? row.restSymbol : row.noteSymbol;
                   
+                  const exactFit = isExactFit(row.duration);
+                  const titleText = hasSelection 
+                    ? (isDisabled 
+                        ? 'Pattern too long for selection' 
+                        : exactFit 
+                          ? `Replace selection with ${col.label}` 
+                          : `Replace part of selection with ${col.label}`)
+                    : (isDisabled 
+                        ? 'Click disabled (would exceed measure length), but drag and drop still works' 
+                        : `Insert ${displaySymbol} ${col.label}`);
+                  
                   return (
                     <td key={colIdx}>
                         <button
-                          className="palette-button-simple notation-button"
+                          className={`palette-button-simple notation-button ${hasSelection ? 'selection-mode' : ''} ${exactFit ? 'exact-fit' : ''}`}
                           onClick={() => !isDisabled && handleInsertPattern(pattern)}
                           onDragStart={(e) => {
                             // Always allow drag and drop, even if clicking is disabled
@@ -230,7 +283,7 @@ const NotePalette: React.FC<NotePaletteProps> = ({
                           onDragEnd={handleDragEnd}
                           draggable={true}
                           disabled={isDisabled}
-                          title={isDisabled ? 'Click disabled (would exceed measure length), but drag and drop still works' : `Insert ${displaySymbol} ${col.label}`}
+                          title={titleText}
                         >
                         <span className="note-symbol">{displaySymbol}</span>
                       </button>
@@ -250,10 +303,21 @@ const NotePalette: React.FC<NotePaletteProps> = ({
         {COMMON_PATTERNS.map((pattern, index) => {
           const duration = getPatternDuration(pattern);
           const isDisabled = !canAddPattern(duration);
+          const exactFit = isExactFit(duration);
+          const titleText = hasSelection
+            ? (isDisabled
+                ? 'Pattern too long for selection'
+                : exactFit
+                  ? `Replace selection with ${pattern}`
+                  : `Replace part of selection with ${pattern}`)
+            : (isDisabled
+                ? 'Click disabled (would exceed measure length), but drag and drop still works'
+                : `Insert ${pattern}`);
+          
           return (
             <button
               key={index}
-              className="palette-button notation-button"
+              className={`palette-button notation-button ${hasSelection ? 'selection-mode' : ''} ${exactFit ? 'exact-fit' : ''}`}
               onClick={() => !isDisabled && handleInsertPattern(pattern)}
               onDragStart={(e) => {
                 // Always allow drag and drop, even if clicking is disabled
@@ -263,7 +327,7 @@ const NotePalette: React.FC<NotePaletteProps> = ({
               onDragEnd={handleDragEnd}
               draggable={true}
               disabled={isDisabled}
-              title={isDisabled ? 'Click disabled (would exceed measure length), but drag and drop still works' : `Insert ${pattern}`}
+              title={titleText}
             >
               <SimpleVexFlowNote pattern={pattern} width={85} height={60} />
             </button>

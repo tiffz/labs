@@ -15,13 +15,51 @@ export interface NotePosition {
   height: number;
   durationInSixteenths: number;
   staveY?: number; // Optional: absolute Y position of the stave (for accurate highlight calculation)
+  isTiedFrom?: boolean; // This note is tied from a previous note
+  isTiedTo?: boolean; // This note ties to the next note
+  tiedGroupStart?: number; // Character position of the start of this tied note group
+  tiedGroupEnd?: number; // Character position of the end of this tied note group (exclusive)
 }
 
 export interface DropTarget {
   measureIndex: number;
   noteIndex: number;
   charPosition: number;
+  /** Exact character position based on cursor X within the note (for breaking tied notes) */
+  exactCharPosition: number;
   notePos: NotePosition;
+}
+
+/**
+ * Calculate the exact character position within a note based on cursor X position.
+ * 
+ * For tied notes (notes that cross measure boundaries), we ONLY allow dropping at
+ * meaningful boundaries - the start or end of each visual note segment.
+ * This prevents confusing mid-tied-note splits.
+ * 
+ * For regular notes, we allow dropping at the start or end of the note.
+ * 
+ * @param cursorX - Cursor X position
+ * @param notePos - The note position info
+ * @returns The exact character position, snapped to meaningful boundaries
+ */
+export function calculateExactCharPosition(cursorX: number, notePos: NotePosition): number {
+  const noteStartX = notePos.x;
+  const noteEndX = notePos.x + notePos.width;
+  const noteMidX = noteStartX + (noteEndX - noteStartX) / 2;
+  
+  // For ALL notes (tied or regular), snap to meaningful boundaries:
+  // - If cursor is in the first half of the note, snap to the START
+  // - If cursor is in the second half, snap to the END
+  // This creates a predictable, intuitive dropping experience
+  
+  if (cursorX <= noteMidX) {
+    // Snap to the start of this note
+    return notePos.charPosition;
+  } else {
+    // Snap to the end of this note (start of next position)
+    return notePos.charPosition + notePos.durationInSixteenths;
+  }
 }
 
 /**
@@ -74,27 +112,31 @@ export function findDropTarget(
   }
   
   // If we found notes on the same line, pick the closest by X distance
-  // Prefer notes where cursor is to the right of note start (more natural for dragging)
+  // When cursor is in a gap between notes, prefer the note to the RIGHT (next note)
+  // This ensures clicking at the start of a measure selects that measure's first note
   if (sameLineNotes.length > 0) {
     let closestNote = sameLineNotes[0];
     let minDistance = Infinity;
     
     for (const notePos of sameLineNotes) {
-      const noteCenterX = notePos.x + notePos.width / 2;
       const noteStartX = notePos.x;
       const noteEndX = notePos.x + notePos.width;
       
-      // Calculate distance - prefer notes where cursor is within or to the right
+      // Calculate distance - prefer notes where cursor is within bounds
+      // When at a boundary, prefer the NEXT note (more intuitive for insertion)
       let dx: number;
-      if (cursorX >= noteStartX && cursorX <= noteEndX) {
-        // Cursor is within note bounds - strongly prefer (very low distance)
-        dx = Math.abs(cursorX - noteCenterX) * 0.05;
-      } else if (cursorX > noteEndX) {
-        // Cursor is to the right of note - prefer this over notes to the left
-        dx = (cursorX - noteEndX) * 0.5;
+      if (cursorX >= noteStartX && cursorX < noteEndX) {
+        // Cursor is within note bounds (exclusive end) - strongly prefer
+        // Use distance from NOTE START rather than center, so boundary clicks prefer next note
+        dx = (cursorX - noteStartX) * 0.01;
+      } else if (cursorX <= noteStartX) {
+        // Cursor is at or to the LEFT of note start - this is the NEXT note
+        // When cursor is exactly at noteStartX, dx=0 (perfect match for insertion)
+        dx = (noteStartX - cursorX) * 0.5;
       } else {
-        // Cursor is to the left of note - less preferred
-        dx = (noteStartX - cursorX) * 1.5;
+        // Cursor is to the RIGHT of note end - this is a PREVIOUS note
+        // Use high penalty so we never prefer past notes over upcoming ones
+        dx = 1000 + (cursorX - noteEndX) * 1.5;
       }
       
       if (dx < minDistance) {
@@ -103,10 +145,13 @@ export function findDropTarget(
       }
     }
     
+    const exactPos = calculateExactCharPosition(cursorX, closestNote);
+    
     return {
       measureIndex: closestNote.measureIndex,
       noteIndex: closestNote.noteIndex,
       charPosition: closestNote.charPosition,
+      exactCharPosition: exactPos,
       notePos: closestNote,
     };
   }
@@ -148,6 +193,7 @@ export function findDropTarget(
     measureIndex: closestNote.measureIndex,
     noteIndex: closestNote.noteIndex,
     charPosition: closestNote.charPosition,
+    exactCharPosition: calculateExactCharPosition(cursorX, closestNote),
     notePos: closestNote,
   };
 }

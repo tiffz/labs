@@ -131,16 +131,15 @@ const RhythmSequencer: React.FC<RhythmSequencerProps> = ({
     
     // Calculate actual length (up to last sound + its duration)
     // Count consecutive nulls after the last sound to determine note duration
+    // Allow notes to span measure boundaries - this creates tied notes when rendered
     let actualLength = 0;
     if (lastSoundIndex >= 0) {
       // Find where the last note ends by counting consecutive nulls
-      // But don't extend beyond measure boundaries - cap at the end of the measure containing the last sound
+      // Allow spanning measure boundaries to support tied notes
       let endPos = lastSoundIndex;
-      const measureOfLastSound = Math.floor(lastSoundIndex / sixteenthsPerMeasure);
-      const measureEnd = (measureOfLastSound + 1) * sixteenthsPerMeasure;
       
-      // Count nulls up to the end of the measure, but don't go beyond
-      while (endPos < cells.length - 1 && endPos < measureEnd - 1 && cells[endPos + 1] === null) {
+      // Count nulls until we hit another sound
+      while (endPos < cells.length - 1 && cells[endPos + 1] === null) {
         endPos++;
       }
       actualLength = endPos + 1;

@@ -359,16 +359,21 @@ class RhythmPlayer {
           
           if (!this.isPlaying) return;
 
-          // If this is a real note (not a rest), stop previous sounds
-          // Rests don't clip previous sounds - they let them ring through
-          if (note.sound !== 'rest') {
-            audioPlayer.stopAllDrumSounds();
+          // Tied notes (continuations from previous measure) should NOT play a new sound.
+          // They represent the continuation of the previous note's duration, not a new attack.
+          // Only the first note in a tie chain should trigger the sound.
+          if (!note.isTiedFrom) {
+            // If this is a real note (not a rest), stop previous sounds
+            // Rests don't clip previous sounds - they let them ring through
+            if (note.sound !== 'rest') {
+              audioPlayer.stopAllDrumSounds();
+            }
+
+            // Play the sound with dynamic volume and optional fade-out
+            audioPlayer.play(note.sound, volume, fadeDuration);
           }
 
-          // Play the sound with dynamic volume and optional fade-out
-          audioPlayer.play(note.sound, volume, fadeDuration);
-
-          // Notify listeners for visual highlighting
+          // Notify listeners for visual highlighting (even for tied notes)
           if (this.onNotePlay) {
             this.onNotePlay(measureIndex, noteIndex);
           }

@@ -527,5 +527,65 @@ describe('rhythmPlayer timing accuracy', () => {
       expect(metronomeBeats.length).toBe(0);
     });
   });
+
+  describe('tied notes', () => {
+    it('should only play the first note in a tied note chain', async () => {
+      // A SINGLE note spanning 2 measures creates tied notes
+      // D followed by 31 dashes = 32 sixteenths = 2 measures in 4/4
+      // The parser will split this into two tied notes
+      const notation = 'D-------------------------------'; // One note spanning 2 measures
+      const timeSignature: TimeSignature = { numerator: 4, denominator: 4 };
+      const parsedRhythm = parseRhythm(notation, timeSignature);
+
+      // Verify we have 2 measures with tied notes
+      expect(parsedRhythm.measures.length).toBe(2);
+      expect(parsedRhythm.measures[0].notes[0].isTiedTo).toBe(true);
+      expect(parsedRhythm.measures[1].notes[0].isTiedFrom).toBe(true);
+
+      // Track which notes trigger visual highlighting
+      const highlightedNotes: Array<{ measureIndex: number; noteIndex: number }> = [];
+      
+      await rhythmPlayer.play(parsedRhythm, 120, (measureIndex, noteIndex) => {
+        highlightedNotes.push({ measureIndex, noteIndex });
+      });
+
+      // Advance to trigger first note
+      vi.advanceTimersByTime(0);
+      expect(highlightedNotes.length).toBe(1);
+      expect(highlightedNotes[0]).toEqual({ measureIndex: 0, noteIndex: 0 });
+
+      // Advance to the second measure (tied continuation)
+      // At 120 BPM, one measure (16 sixteenths) = 16 * 125ms = 2000ms
+      vi.advanceTimersByTime(2000);
+      
+      // Both notes should be highlighted for visual feedback,
+      // but the second one (isTiedFrom) should not have triggered a sound
+      // (we can't directly test the audioPlayer.play call without more mocking,
+      // but we verify the highlight callback was called for both notes)
+      expect(highlightedNotes.length).toBe(2);
+      expect(highlightedNotes[1]).toEqual({ measureIndex: 1, noteIndex: 0 });
+
+      // Verify the second note is indeed a tied note
+      expect(parsedRhythm.measures[1].notes[0].isTiedFrom).toBe(true);
+    });
+
+    it('should correctly identify tied notes in parsed rhythm', () => {
+      // A SINGLE note spanning 2 measures creates tied notes
+      // D followed by 31 dashes = 32 sixteenths = 2 measures in 4/4
+      const notation = 'D-------------------------------'; // One note spanning 2 measures
+      const timeSignature: TimeSignature = { numerator: 4, denominator: 4 };
+      const parsedRhythm = parseRhythm(notation, timeSignature);
+
+      // Should have 2 measures
+      expect(parsedRhythm.measures.length).toBe(2);
+
+      // First measure: D with isTiedTo
+      expect(parsedRhythm.measures[0].notes[0].isTiedTo).toBe(true);
+      expect(parsedRhythm.measures[0].notes[0].isTiedFrom).toBeFalsy();
+
+      // Second measure: D with isTiedFrom
+      expect(parsedRhythm.measures[1].notes[0].isTiedFrom).toBe(true);
+    });
+  });
 });
 

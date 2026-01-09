@@ -1,11 +1,26 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Renderer, Stave, StaveNote, Voice, Formatter, Beam, Dot, BarlineType } from 'vexflow';
 import type { ParsedRhythm, Note, DrumSound, TimeSignature } from '../types';
 import { drawDrumSymbol } from '../assets/drumSymbols';
 import { getDefaultBeatGrouping, isCompoundTimeSignature, isAsymmetricTimeSignature, getBeatGroupingInSixteenths, getSixteenthsPerMeasure } from '../utils/timeSignatureUtils';
-import type { NotePosition } from '../utils/dropTargetFinder';
+import { findDropTarget, type NotePosition } from '../utils/dropTargetFinder';
 import { computeDropPreview } from '../utils/dropPreview';
 import { getCurrentDraggedPattern } from './NotePalette';
+
+/** Selection rectangle state for visual feedback */
+interface SelectionRect {
+  startX: number;
+  startY: number;
+  currentX: number;
+  currentY: number;
+}
+
+/** Selection state for notes */
+export interface NoteSelectionState {
+  startCharPosition: number | null;
+  endCharPosition: number | null;
+  isSelecting: boolean;
+}
 
 interface VexFlowRendererProps {
   rhythm: ParsedRhythm;
@@ -16,6 +31,12 @@ interface VexFlowRendererProps {
   dragDropMode?: 'replace' | 'insert';
   notation?: string;
   timeSignature?: TimeSignature;
+  /** Current selection state */
+  selection?: NoteSelectionState | null;
+  /** Callback when selection changes */
+  onSelectionChange?: (start: number | null, end: number | null, duration: number) => void;
+  /** Callback when selection is dragged to a new position */
+  onMoveSelection?: (fromStart: number, fromEnd: number, toPosition: number) => void;
 }
 
 /**
@@ -181,6 +202,9 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
   dragDropMode = 'replace',
   notation = '',
   timeSignature,
+  selection = null,
+  onSelectionChange,
+  onMoveSelection,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const metronomeDotsRef = useRef<Map<string, SVGCircleElement>>(new Map());
@@ -195,9 +219,44 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
   // Canvas drags render preview directly in drag handlers for immediate feedback
   // All preview rendering uses unified computeDropPreview system
   const svgHandlersRef = useRef<{ handleDragOver: (e: DragEvent) => void; handleDragLeave: () => void; handleDrop: (e: DragEvent) => void } | null>(null);
+  
+  // Rectangle selection state - using a single ref object for all drag state
+  // This prevents issues with stale closures in event handlers
+  const dragStateRef = useRef({
+    isDrawing: false,
+    isDraggingSelection: false,
+    startX: 0,
+    startY: 0,
+    startSvgX: 0,
+    startSvgY: 0,
+    hasDragged: false,
+  });
 
   // Re-render on window resize to recalculate responsive layout
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  
+  // Selection rectangle ref for direct DOM manipulation (avoids re-render conflicts with VexFlow)
+  const selectionRectRef = useRef<HTMLDivElement | null>(null);
+  
+  // Helper to update selection rectangle position (direct DOM manipulation)
+  const updateSelectionRect = useCallback((rect: SelectionRect | null) => {
+    if (!selectionRectRef.current) return;
+    
+    if (rect) {
+      const left = Math.min(rect.startX, rect.currentX);
+      const top = Math.min(rect.startY, rect.currentY);
+      const width = Math.abs(rect.currentX - rect.startX);
+      const height = Math.abs(rect.currentY - rect.startY);
+      
+      selectionRectRef.current.style.display = width > 2 && height > 2 ? 'block' : 'none';
+      selectionRectRef.current.style.left = `${left}px`;
+      selectionRectRef.current.style.top = `${top}px`;
+      selectionRectRef.current.style.width = `${width}px`;
+      selectionRectRef.current.style.height = `${height}px`;
+    } else {
+      selectionRectRef.current.style.display = 'none';
+    }
+  }, []);
   
   useEffect(() => {
     const handleResize = () => {
@@ -551,39 +610,74 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
         
         let charPosition = 0;
         
+        // First pass: collect all note positions
+        const tempPositions: Array<{
+          measureIndex: number;
+          noteIndex: number;
+          x: number;
+          y: number;
+          width: number;
+          height: number;
+          charPosition: number;
+          durationInSixteenths: number;
+          staveY: number;
+          isTiedFrom?: boolean;
+          isTiedTo?: boolean;
+        }> = [];
+        
         rhythm.measures.forEach((_measure, measureIndex) => {
           const measureRefs = allStaveNoteRefsRef.current
             .filter(ref => ref.measureIndex === measureIndex)
             .sort((a, b) => a.noteIndex - b.noteIndex); // Ensure correct order
           
-          measureRefs.forEach((ref) => {
+          measureRefs.forEach((ref, refIndex) => {
             try {
               const bounds = ref.staveNote.getBoundingBox();
               if (bounds) {
                 const noteX = bounds.getX();
                 const noteYRelativeToStave = bounds.getY();
-                const noteWidth = bounds.getW();
                 const noteHeight = bounds.getH();
+                
+                // Calculate time-proportional width instead of using visual bounding box width
+                // This is critical for allowing drops in the middle of long notes (whole notes, tied notes)
+                // The visual bounding box width is just the notehead, but we need the time extent
+                let timeProportionalWidth: number;
+                
+                if (refIndex < measureRefs.length - 1) {
+                  // Use distance to next note as the width
+                  const nextBounds = measureRefs[refIndex + 1].staveNote.getBoundingBox();
+                  if (nextBounds) {
+                    timeProportionalWidth = nextBounds.getX() - noteX;
+                  } else {
+                    // Fallback to visual width
+                    timeProportionalWidth = bounds.getW();
+                  }
+                } else {
+                  // Last note in measure - use distance to end of stave
+                  const staveWidth = ref.stave.getWidth();
+                  const staveX = ref.stave.getX();
+                  const measureEndX = staveX + staveWidth - 20; // Account for barline padding
+                  timeProportionalWidth = Math.max(bounds.getW(), measureEndX - noteX);
+                }
                 
                 // Get absolute Y position: note Y relative to stave + stave Y position
                 const staveY = ref.stave.getY();
                 const noteY = noteYRelativeToStave + staveY;
                 
-                // Calculate character length: duration in sixteenths = number of characters
-                // For example: D--- = 4 chars (duration 4), ____ = 4 chars (duration 4)
-                notePositionsRef.current.push({
+                tempPositions.push({
                   measureIndex: ref.measureIndex,
                   noteIndex: ref.noteIndex,
                   x: noteX,
-                  y: noteY, // Absolute Y position relative to SVG
-                  width: noteWidth,
+                  y: noteY,
+                  width: timeProportionalWidth, // Use time-proportional width, not visual width
                   height: noteHeight,
                   charPosition: charPosition,
                   durationInSixteenths: ref.note.durationInSixteenths,
-                  staveY: staveY, // Store stave Y position for accurate highlight calculation
+                  staveY: staveY,
+                  isTiedFrom: ref.note.isTiedFrom,
+                  isTiedTo: ref.note.isTiedTo,
                 });
                 
-                // Move to next note's position - durationInSixteenths equals character length
                 charPosition += ref.note.durationInSixteenths;
               }
             } catch (error) {
@@ -591,6 +685,38 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
             }
           });
         });
+        
+        // Second pass: calculate tied group bounds for each note
+        // A tied group is a sequence of consecutive notes connected by ties
+        for (let i = 0; i < tempPositions.length; i++) {
+          const pos = tempPositions[i];
+          let groupStart = pos.charPosition;
+          let groupEnd = pos.charPosition + pos.durationInSixteenths;
+          
+          // Walk backwards to find the start of the tied group
+          if (pos.isTiedFrom) {
+            for (let j = i - 1; j >= 0; j--) {
+              const prevPos = tempPositions[j];
+              groupStart = prevPos.charPosition;
+              if (!prevPos.isTiedFrom) break; // Found the start
+            }
+          }
+          
+          // Walk forwards to find the end of the tied group
+          if (pos.isTiedTo) {
+            for (let j = i + 1; j < tempPositions.length; j++) {
+              const nextPos = tempPositions[j];
+              groupEnd = nextPos.charPosition + nextPos.durationInSixteenths;
+              if (!nextPos.isTiedTo) break; // Found the end
+            }
+          }
+          
+          notePositionsRef.current.push({
+            ...pos,
+            tiedGroupStart: (pos.isTiedFrom || pos.isTiedTo) ? groupStart : undefined,
+            tiedGroupEnd: (pos.isTiedFrom || pos.isTiedTo) ? groupEnd : undefined,
+          });
+        }
       }
       
       // Draw custom symbols and highlighting using stored StaveNote references
@@ -627,6 +753,163 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
               }
             });
           }
+      
+      // Draw ties for notes that span measure boundaries
+      // Use clean SVG paths for proper tie rendering
+      for (let i = 0; i < allStaveNoteRefs.length - 1; i++) {
+        const currentRef = allStaveNoteRefs[i];
+        const nextRef = allStaveNoteRefs[i + 1];
+        
+        // Check if current note is tied to the next
+        if (currentRef.note.isTiedTo && nextRef.note.isTiedFrom) {
+          const isConsecutive = 
+            (nextRef.measureIndex === currentRef.measureIndex && nextRef.noteIndex === currentRef.noteIndex + 1) ||
+            (nextRef.measureIndex === currentRef.measureIndex + 1 && nextRef.noteIndex === 0 && 
+             currentRef.noteIndex === rhythm.measures[currentRef.measureIndex].notes.length - 1);
+          
+          if (isConsecutive) {
+            try {
+              const sameStaveLine = currentRef.stave.getY() === nextRef.stave.getY();
+              const firstX = currentRef.staveNote.getAbsoluteX() + 12;
+              const noteY = currentRef.stave.getYForLine(4) + 5; // Below staff area
+              
+              if (sameStaveLine) {
+                // Same line: draw a clean bezier tie curve
+                const secondX = nextRef.staveNote.getAbsoluteX() - 2;
+                const distance = secondX - firstX;
+                const curveHeight = Math.min(18, Math.max(12, distance * 0.15));
+                const controlX1 = firstX + distance * 0.3;
+                const controlX2 = firstX + distance * 0.7;
+                
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                // Use cubic bezier for smoother curve
+                path.setAttribute('d', `M ${firstX} ${noteY} C ${controlX1} ${noteY + curveHeight}, ${controlX2} ${noteY + curveHeight}, ${secondX} ${noteY}`);
+                path.setAttribute('stroke', '#000');
+                path.setAttribute('stroke-width', '2');
+                path.setAttribute('fill', 'none');
+                path.setAttribute('stroke-linecap', 'round');
+                path.setAttribute('class', 'tie-curve');
+                svgElement.appendChild(path);
+              } else {
+                // Cross-line tie: draw simple curved strokes like standard music notation
+                // Both curves should curve DOWNWARD (same direction as normal ties)
+                // The continuation "head" should be very short and positioned slightly offset
+                // to minimize visual conflict with same-line ties
+                
+                // First note: tie extending from note toward the right edge
+                const staveWidth = currentRef.stave.getWidth();
+                const staveX = currentRef.stave.getX();
+                const tailEndX = Math.min(firstX + 35, staveX + staveWidth - 15);
+                const tailCurveHeight = 10;
+                
+                const tailPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                const tailMidX = (firstX + tailEndX) / 2;
+                tailPath.setAttribute('d', 
+                  `M ${firstX} ${noteY} Q ${tailMidX} ${noteY + tailCurveHeight}, ${tailEndX} ${noteY + 2}`
+                );
+                tailPath.setAttribute('stroke', '#000');
+                tailPath.setAttribute('stroke-width', '2');
+                tailPath.setAttribute('fill', 'none');
+                tailPath.setAttribute('stroke-linecap', 'round');
+                tailPath.setAttribute('class', 'tie-curve cross-line-tie-tail');
+                svgElement.appendChild(tailPath);
+                
+                // Second note: short tie coming into the note from the left
+                // Curves DOWNWARD like normal ties, but very short (15px)
+                // Positioned slightly higher than same-line ties to reduce overlap
+                const secondX = nextRef.staveNote.getAbsoluteX() - 2;
+                const headStartX = secondX - 15; // Very short - only 15px
+                const nextNoteY = nextRef.stave.getYForLine(4) + 3; // Slightly higher
+                const headCurveHeight = 6; // Small curve
+                
+                const headPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                // Curve DOWNWARD like normal ties
+                headPath.setAttribute('d', 
+                  `M ${headStartX} ${nextNoteY + 1} Q ${(headStartX + secondX) / 2} ${nextNoteY + headCurveHeight}, ${secondX} ${nextNoteY}`
+                );
+                headPath.setAttribute('stroke', '#000');
+                headPath.setAttribute('stroke-width', '2');
+                headPath.setAttribute('fill', 'none');
+                headPath.setAttribute('stroke-linecap', 'round');
+                headPath.setAttribute('class', 'tie-curve cross-line-tie-head');
+                svgElement.appendChild(headPath);
+              }
+            } catch (error) {
+              console.error('Error drawing tie:', error);
+            }
+          }
+        }
+      }
+      
+      // Draw selection highlighting as continuous boxes per stave line
+      if (selection && selection.startCharPosition !== null && selection.endCharPosition !== null && svgElement) {
+        const { startCharPosition, endCharPosition } = selection;
+        
+        // Group selected notes by stave line (Y position)
+        const selectedNotesByLine: Map<number, { minX: number; maxX: number; staveY: number }> = new Map();
+        
+        allStaveNoteRefs.forEach(({ staveNote, stave, note }) => {
+          // Calculate the note's character range
+          let noteCharPosition = 0;
+          for (let i = 0; i < allStaveNoteRefs.length; i++) {
+            if (allStaveNoteRefs[i].staveNote === staveNote) break;
+            noteCharPosition += allStaveNoteRefs[i].note.durationInSixteenths;
+          }
+          const noteEndPosition = noteCharPosition + note.durationInSixteenths;
+          
+          // Check if note overlaps with selection
+          if (noteCharPosition < endCharPosition && noteEndPosition > startCharPosition) {
+            try {
+              const bounds = staveNote.getBoundingBox();
+              if (bounds) {
+                const staveY = stave.getY();
+                const existing = selectedNotesByLine.get(staveY);
+                if (existing) {
+                  existing.minX = Math.min(existing.minX, bounds.getX());
+                  existing.maxX = Math.max(existing.maxX, bounds.getX() + bounds.getW());
+                } else {
+                  selectedNotesByLine.set(staveY, {
+                    minX: bounds.getX(),
+                    maxX: bounds.getX() + bounds.getW(),
+                    staveY,
+                  });
+                }
+              }
+            } catch {
+              // Skip notes that can't be measured
+            }
+          }
+        });
+        
+        // Draw continuous highlight boxes for each stave line with high visibility
+        selectedNotesByLine.forEach(({ minX, maxX, staveY }) => {
+          const highlightRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+          
+          // Use smaller padding to avoid bleeding into adjacent notes
+          // Scale padding based on selection width - narrower selections get tighter padding
+          const selectionWidth = maxX - minX;
+          const padding = Math.min(4, selectionWidth * 0.1); // Max 4px, or 10% of width
+          
+          highlightRect.setAttribute('x', String(minX - padding));
+          highlightRect.setAttribute('y', String(staveY + 15)); // Slightly lower to better frame notes
+          highlightRect.setAttribute('width', String(selectionWidth + padding * 2));
+          highlightRect.setAttribute('height', String(75)); // Slightly shorter
+          highlightRect.setAttribute('fill', 'rgba(147, 51, 234, 0.15)'); // Slightly more subtle fill
+          highlightRect.setAttribute('stroke', '#9333ea'); // Solid purple border
+          highlightRect.setAttribute('stroke-width', '2');
+          highlightRect.setAttribute('rx', '4');
+          highlightRect.setAttribute('ry', '4');
+          highlightRect.setAttribute('class', 'selection-highlight');
+          highlightRect.setAttribute('pointer-events', 'none');
+          
+          // Insert at the beginning so it appears behind notes
+          if (svgElement.firstChild) {
+            svgElement.insertBefore(highlightRect, svgElement.firstChild);
+          } else {
+            svgElement.appendChild(highlightRect);
+          }
+        });
+      }
       
       // Draw metronome dots if enabled
       if (metronomeEnabled) {
@@ -733,7 +1016,7 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
             // Preview rendering is handled in a separate useEffect below
     // Note: notation, timeSignature, and onDropPattern are used for drag/drop but don't need to trigger re-renders
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rhythm, currentNote, metronomeEnabled, windowWidth]);
+  }, [rhythm, currentNote, metronomeEnabled, windowWidth, selection]);
   
   // Old preview rendering functions removed - now using unified computeDropPreview system
   // All preview rendering happens directly in handleSvgDragOver using computeDropPreview
@@ -1002,6 +1285,277 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
     }
   }, [currentMetronomeBeat, metronomeEnabled, rhythm.measures]);
 
+  // Click-to-select functionality (desktop-style rectangle selection)
+  // Using React event handlers on the container for reliability
+  const handleContainerMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return; // Left click only
+    
+    const container = containerRef.current;
+    const svg = container?.querySelector('svg');
+    if (!container || !svg) return;
+    
+    e.preventDefault();
+    
+    const state = dragStateRef.current;
+    
+    const clientToContainer = (clientX: number, clientY: number) => {
+      const rect = container.getBoundingClientRect();
+      return {
+        x: clientX - rect.left + container.scrollLeft,
+        y: clientY - rect.top + container.scrollTop,
+      };
+    };
+    
+    const clientToSvg = (clientX: number, clientY: number) => {
+      const rect = svg.getBoundingClientRect();
+      return {
+        x: clientX - rect.left,
+        y: clientY - rect.top,
+      };
+    };
+    
+    const containerCoords = clientToContainer(e.clientX, e.clientY);
+    const svgCoords = clientToSvg(e.clientX, e.clientY);
+    
+    // Find clicked note
+    let clickedNote: NotePosition | null = null;
+    for (const notePos of notePositionsRef.current) {
+      const padding = 10;
+      if (svgCoords.x >= notePos.x - padding && svgCoords.x <= notePos.x + notePos.width + padding &&
+          svgCoords.y >= (notePos.staveY || notePos.y) - padding && 
+          svgCoords.y <= (notePos.staveY || notePos.y) + 80 + padding) {
+        clickedNote = notePos;
+        break;
+      }
+    }
+    
+    // Check if clicking within existing selection (for drag-to-move)
+    // Use tied group bounds if available
+    const noteStart = clickedNote?.tiedGroupStart ?? clickedNote?.charPosition ?? 0;
+    const noteEnd = clickedNote?.tiedGroupEnd ?? (clickedNote ? clickedNote.charPosition + clickedNote.durationInSixteenths : 0);
+    
+    if (clickedNote && selection && selection.startCharPosition !== null && selection.endCharPosition !== null &&
+        noteStart >= selection.startCharPosition && 
+        noteEnd <= selection.endCharPosition && onMoveSelection) {
+      state.isDraggingSelection = true;
+      state.startX = e.clientX;
+      state.startY = e.clientY;
+      state.hasDragged = false;
+      return;
+    }
+    
+    // Shift-click extends selection (expand to include tied groups)
+    if (clickedNote && e.shiftKey && selection && selection.startCharPosition !== null) {
+      const newStart = Math.min(selection.startCharPosition, noteStart);
+      const newEnd = Math.max(selection.endCharPosition || selection.startCharPosition, noteEnd);
+      if (onSelectionChange) {
+        onSelectionChange(newStart, newEnd, newEnd - newStart);
+      }
+      return;
+    }
+    
+    // Start rectangle selection
+    state.isDrawing = true;
+    state.startX = containerCoords.x;
+    state.startY = containerCoords.y;
+    state.startSvgX = svgCoords.x;
+    state.startSvgY = svgCoords.y;
+    state.hasDragged = false;
+    
+    // Clear previous selection
+    if (onSelectionChange) {
+      onSelectionChange(null, null, 0);
+    }
+  }, [selection, onSelectionChange, onMoveSelection]);
+
+  // Global mouse move handler for rectangle drawing
+  useEffect(() => {
+    const state = dragStateRef.current;
+    
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      if (!state.isDrawing && !state.isDraggingSelection) return;
+      
+      const container = containerRef.current;
+      const svg = container?.querySelector('svg');
+      if (!container || !svg) return;
+      
+      const clientToContainer = (clientX: number, clientY: number) => ({
+        x: clientX - container.getBoundingClientRect().left + container.scrollLeft,
+        y: clientY - container.getBoundingClientRect().top + container.scrollTop,
+      });
+      
+      const clientToSvg = (clientX: number, clientY: number) => ({
+        x: clientX - svg.getBoundingClientRect().left,
+        y: clientY - svg.getBoundingClientRect().top,
+      });
+      
+      // Handle selection move
+      if (state.isDraggingSelection && !state.hasDragged) {
+        const dx = e.clientX - state.startX;
+        const dy = e.clientY - state.startY;
+        if (Math.sqrt(dx * dx + dy * dy) > 5) {
+          state.hasDragged = true;
+          container.style.cursor = 'grabbing';
+        }
+      }
+      
+      if (state.isDraggingSelection && state.hasDragged) {
+        // Show insertion preview using findDropTarget for consistent positioning
+        const svgCoords = clientToSvg(e.clientX, e.clientY);
+        svg.querySelectorAll('.drag-preview').forEach(el => el.remove());
+        
+        const dropTarget = findDropTarget(svgCoords.x, svgCoords.y, notePositionsRef.current);
+        
+        if (dropTarget && selection && selection.startCharPosition !== null && selection.endCharPosition !== null) {
+          const exactPos = dropTarget.exactCharPosition;
+          
+          // Only show preview if target is outside the current selection
+          if (exactPos < selection.startCharPosition || exactPos >= selection.endCharPosition) {
+            const notePos = dropTarget.notePos;
+            const staveY = notePos.staveY || notePos.y;
+            
+            // Calculate insertion line X based on exact position within the note
+            const offsetWithinNote = exactPos - notePos.charPosition;
+            const proportionWithinNote = offsetWithinNote / notePos.durationInSixteenths;
+            const insertionX = notePos.x + (proportionWithinNote * notePos.width);
+            
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', String(insertionX));
+            line.setAttribute('y1', String(staveY + 15));
+            line.setAttribute('x2', String(insertionX));
+            line.setAttribute('y2', String(staveY + 95));
+            line.setAttribute('stroke', '#9333ea');
+            line.setAttribute('stroke-width', '2');
+            line.setAttribute('stroke-dasharray', '6,4');
+            line.setAttribute('class', 'drag-preview');
+            line.setAttribute('pointer-events', 'none');
+            svg.appendChild(line);
+          }
+        }
+        return;
+      }
+      
+      // Handle rectangle drawing
+      if (state.isDrawing) {
+        state.hasDragged = true;
+        
+        const containerCoords = clientToContainer(e.clientX, e.clientY);
+        const svgCoords = clientToSvg(e.clientX, e.clientY);
+        
+        // Update visual rectangle (direct DOM manipulation to avoid re-render conflicts)
+        updateSelectionRect({
+          startX: state.startX,
+          startY: state.startY,
+          currentX: containerCoords.x,
+          currentY: containerCoords.y,
+        });
+        
+        // Find notes in rectangle and update selection
+        const minX = Math.min(state.startSvgX, svgCoords.x);
+        const maxX = Math.max(state.startSvgX, svgCoords.x);
+        const minY = Math.min(state.startSvgY, svgCoords.y);
+        const maxY = Math.max(state.startSvgY, svgCoords.y);
+        
+        let startChar = Infinity;
+        let endChar = -Infinity;
+        
+        notePositionsRef.current.forEach((notePos) => {
+          const noteLeft = notePos.x;
+          const noteRight = notePos.x + notePos.width;
+          const noteTop = notePos.staveY || notePos.y;
+          const noteBottom = noteTop + 80;
+          
+          if (noteRight >= minX && noteLeft <= maxX && noteBottom >= minY && noteTop <= maxY) {
+            // If note is part of a tied group, expand to include the whole group
+            if (notePos.tiedGroupStart !== undefined && notePos.tiedGroupEnd !== undefined) {
+              startChar = Math.min(startChar, notePos.tiedGroupStart);
+              endChar = Math.max(endChar, notePos.tiedGroupEnd);
+            } else {
+              startChar = Math.min(startChar, notePos.charPosition);
+              endChar = Math.max(endChar, notePos.charPosition + notePos.durationInSixteenths);
+            }
+          }
+        });
+        
+        if (startChar !== Infinity && endChar !== -Infinity && onSelectionChange) {
+          onSelectionChange(startChar, endChar, endChar - startChar);
+        }
+      }
+    };
+    
+    const handleGlobalMouseUp = (e: MouseEvent) => {
+      const state = dragStateRef.current;
+      const container = containerRef.current;
+      const svg = container?.querySelector('svg');
+      
+      // Handle move completion
+      if (state.isDraggingSelection && state.hasDragged && onMoveSelection && selection &&
+          selection.startCharPosition !== null && selection.endCharPosition !== null && svg) {
+        const svgRect = svg.getBoundingClientRect();
+        const svgX = e.clientX - svgRect.left;
+        const svgY = e.clientY - svgRect.top;
+        
+        // Use findDropTarget to get the exact position (same logic as regular drag-drop)
+        const dropTarget = findDropTarget(svgX, svgY, notePositionsRef.current);
+        
+        if (dropTarget) {
+          const targetPosition = dropTarget.exactCharPosition;
+          
+          // Only move if target is outside the current selection
+          if (targetPosition < selection.startCharPosition || targetPosition >= selection.endCharPosition) {
+            onMoveSelection(selection.startCharPosition, selection.endCharPosition, targetPosition);
+          }
+        }
+        
+        svg.querySelectorAll('.drag-preview').forEach(el => el.remove());
+        if (container) container.style.cursor = '';
+      }
+      
+      // Handle rectangle selection completion
+      if (state.isDrawing) {
+        updateSelectionRect(null); // Hide rectangle
+        
+        if (!state.hasDragged && svg) {
+          // Single click - select note or clear
+          const svgRect = svg.getBoundingClientRect();
+          const svgX = e.clientX - svgRect.left;
+          const svgY = e.clientY - svgRect.top;
+          
+          let clickedNote: NotePosition | null = null;
+          for (const notePos of notePositionsRef.current) {
+            if (svgX >= notePos.x - 10 && svgX <= notePos.x + notePos.width + 10 &&
+                svgY >= (notePos.staveY || notePos.y) - 10 && svgY <= (notePos.staveY || notePos.y) + 90) {
+              clickedNote = notePos;
+              break;
+            }
+          }
+          
+          if (clickedNote && onSelectionChange) {
+            // If clicking on a tied note, select the entire tied group
+            const start = clickedNote.tiedGroupStart ?? clickedNote.charPosition;
+            const end = clickedNote.tiedGroupEnd ?? (clickedNote.charPosition + clickedNote.durationInSixteenths);
+            onSelectionChange(start, end, end - start);
+          } else if (onSelectionChange) {
+            onSelectionChange(null, null, 0);
+          }
+        }
+      }
+      
+      // Reset state
+      state.isDrawing = false;
+      state.isDraggingSelection = false;
+      state.hasDragged = false;
+    };
+    
+    document.addEventListener('mousemove', handleGlobalMouseMove);
+    document.addEventListener('mouseup', handleGlobalMouseUp);
+    
+    return () => {
+      document.removeEventListener('mousemove', handleGlobalMouseMove);
+      document.removeEventListener('mouseup', handleGlobalMouseUp);
+    };
+  }, [selection, onSelectionChange, onMoveSelection, updateSelectionRect]);
+
   // Removed old React drag handlers - drag and drop is now handled by SVG event handlers
   // (handleSvgDragOver, handleSvgDrop, etc.) which use the unified preview system
 
@@ -1017,12 +1571,30 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
     <div 
       ref={containerRef} 
       className="vexflow-container"
+      onMouseDown={handleContainerMouseDown}
       style={{ 
         width: '100%', 
         overflowX: 'auto',
         padding: '20px 0',
+        position: 'relative', // Enable absolute positioning for selection overlay
+        cursor: 'crosshair',
       }}
-    />
+    >
+      {/* Selection rectangle overlay - always rendered, visibility controlled via ref */}
+      <div
+        ref={selectionRectRef}
+        className="selection-rectangle-overlay"
+        style={{
+          display: 'none', // Initially hidden, controlled by updateSelectionRect
+          position: 'absolute',
+          backgroundColor: 'rgba(59, 130, 246, 0.15)',
+          border: '1.5px solid rgba(59, 130, 246, 0.8)',
+          borderRadius: '2px',
+          pointerEvents: 'none',
+          zIndex: 10,
+        }}
+      />
+    </div>
   );
 };
 

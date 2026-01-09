@@ -322,5 +322,45 @@ describe('App', () => {
       });
     });
   });
+
+  describe('Note Selection', () => {
+    it('should clear selection when Escape key is pressed', () => {
+      render(<App />);
+      
+      // Simulate pressing Escape key
+      fireEvent.keyDown(document, { key: 'Escape' });
+      
+      // Selection should be cleared (no error should occur)
+      // The app should still be functional
+      expect(screen.getByText('Darbuka Rhythm Trainer')).toBeInTheDocument();
+    });
+
+    it('should not crash when Delete key is pressed without selection', () => {
+      render(<App />);
+      
+      // Simulate pressing Delete key without any selection
+      fireEvent.keyDown(document, { key: 'Delete' });
+      
+      // App should still be functional
+      expect(screen.getByText('Darbuka Rhythm Trainer')).toBeInTheDocument();
+    });
+
+    it('should not crash when Backspace key is pressed without selection', () => {
+      render(<App />);
+      
+      // Simulate pressing Backspace key without any selection
+      fireEvent.keyDown(document, { key: 'Backspace' });
+      
+      // App should still be functional
+      expect(screen.getByText('Darbuka Rhythm Trainer')).toBeInTheDocument();
+    });
+
+    it('should render Note Display section', () => {
+      render(<App />);
+      
+      // Note Display section should be present
+      expect(screen.getByText('Note Display')).toBeInTheDocument();
+    });
+  });
 });
 

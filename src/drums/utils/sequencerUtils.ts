@@ -56,6 +56,15 @@ export function notationToGrid(notation: string, timeSignature: TimeSignature): 
 
 /**
  * Convert sequencer grid state to notation string
+ * 
+ * NOTE: This function allows notes to span across measure boundaries.
+ * The rhythm parser will automatically split these into tied notes when rendering.
+ * This allows users to draw long notes in the sequencer that create tied notes.
+ * 
+ * Important invariants:
+ * - A null cell AFTER a sound means the note extends (note duration)
+ * - A null cell BEFORE any sound (leading nulls) becomes a rest
+ * - A null cell between two sounds (not extending the previous sound) becomes a rest
  */
 export function gridToNotation(grid: SequencerGrid): string {
   const notation: string[] = [];
@@ -79,13 +88,35 @@ export function gridToNotation(grid: SequencerGrid): string {
     return '';
   }
   
-  // Process cells up to endIndex (which includes the full duration of the last note)
-  while (i < endIndex) {
+  // Calculate the effective end (where we need to process to)
+  // This includes the last sound and its extension
+  let effectiveEnd = lastSoundIndex + 1;
+  // Extend to include nulls after the last sound (up to endIndex)
+  while (effectiveEnd < endIndex && grid.cells[effectiveEnd] === null) {
+    effectiveEnd++;
+  }
+  
+  // Process cells up to effectiveEnd
+  while (i < effectiveEnd) {
     const sound = grid.cells[i];
     
-    if (!sound || sound === null) {
-      // Skip empty cells between notes
-      i++;
+    if (sound === null) {
+      // This null is NOT after a sound (we're either at the start or just finished processing
+      // a complete note). These nulls should become rests.
+      // Count consecutive nulls to determine rest duration
+      let restDuration = 0;
+      let j = i;
+      
+      while (j < effectiveEnd && grid.cells[j] === null) {
+        restDuration++;
+        j++;
+      }
+      
+      if (restDuration > 0) {
+        notation.push('_'.repeat(restDuration));
+      }
+      
+      i = j;
       continue;
     }
     
@@ -93,12 +124,9 @@ export function gridToNotation(grid: SequencerGrid): string {
     let duration = 1;
     let j = i + 1;
     
-    // Count consecutive nulls (the note extends), but stop at endIndex
-    // Also respect measure boundaries - don't extend a note beyond its measure
-    const measureOfNote = Math.floor(i / grid.sixteenthsPerMeasure);
-    const measureEnd = (measureOfNote + 1) * grid.sixteenthsPerMeasure;
-    
-    while (j < endIndex && j < measureEnd && grid.cells[j] === null) {
+    // Count consecutive nulls (the note extends), but stop at effectiveEnd
+    // Allow notes to span measure boundaries - this creates tied notes when rendered
+    while (j < effectiveEnd && grid.cells[j] === null) {
       duration++;
       j++;
     }
