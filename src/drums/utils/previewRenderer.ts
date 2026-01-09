@@ -23,18 +23,20 @@ export interface InsertionLineBounds {
 
 /**
  * Calculate highlight bounds for notes that would be replaced.
+ * Merges overlapping highlights on the same stave line into a single continuous box.
  * 
  * @param notePositions - Array of all note positions
  * @param replacedStart - Character position where replacement starts
  * @param replacedEnd - Character position where replacement ends
- * @returns Array of highlight bounds for each note that overlaps the replacement range
+ * @returns Array of highlight bounds - one merged box per stave line
  */
 export function calculateReplacementHighlights(
   notePositions: NotePosition[],
   replacedStart: number,
   replacedEnd: number
 ): HighlightBounds[] {
-  const highlights: HighlightBounds[] = [];
+  // First, collect all individual highlights
+  const individualHighlights: Array<{ bounds: HighlightBounds; staveY: number }> = [];
 
   for (const notePos of notePositions) {
     const noteStart = notePos.charPosition;
@@ -46,21 +48,73 @@ export function calculateReplacementHighlights(
 
     if (overlaps) {
       const bounds = calculateNoteHighlightBounds(notePos);
-      highlights.push(bounds);
+      // Use staveY if available, otherwise estimate from bounds.y
+      const staveY = notePos.staveY ?? Math.round((bounds.y - 40) / 100) * 100 + 40;
+      individualHighlights.push({ bounds, staveY });
     }
   }
 
-  return highlights;
+  // If 0 or 1 highlights, no merging needed
+  if (individualHighlights.length <= 1) {
+    return individualHighlights.map(h => h.bounds);
+  }
+
+  // Group highlights by stave line (Y position)
+  const highlightsByLine = new Map<number, HighlightBounds[]>();
+  
+  for (const { bounds, staveY } of individualHighlights) {
+    const existing = highlightsByLine.get(staveY);
+    if (existing) {
+      existing.push(bounds);
+    } else {
+      highlightsByLine.set(staveY, [bounds]);
+    }
+  }
+
+  // Merge highlights on each line into a single bounding box
+  const mergedHighlights: HighlightBounds[] = [];
+  
+  highlightsByLine.forEach((lineHighlights) => {
+    if (lineHighlights.length === 1) {
+      mergedHighlights.push(lineHighlights[0]);
+    } else {
+      // Compute bounding box that encompasses all highlights on this line
+      let minX = Infinity;
+      let minY = Infinity;
+      let maxX = -Infinity;
+      let maxY = -Infinity;
+      
+      for (const bounds of lineHighlights) {
+        minX = Math.min(minX, bounds.x);
+        minY = Math.min(minY, bounds.y);
+        maxX = Math.max(maxX, bounds.x + bounds.width);
+        maxY = Math.max(maxY, bounds.y + bounds.height);
+      }
+      
+      mergedHighlights.push({
+        x: minX,
+        y: minY,
+        width: maxX - minX,
+        height: maxY - minY,
+      });
+    }
+  });
+
+  return mergedHighlights;
 }
 
 /**
  * Calculate highlight bounds for a single note, including drum symbols.
  * 
+ * Note: notePos.width is the "time-proportional width" (distance to next note),
+ * which is great for drop targeting but too wide for visual highlighting.
+ * We use a more conservative visual width based on note duration.
+ * 
  * @param notePos - Note position information
  * @returns Highlight bounds
  */
 export function calculateNoteHighlightBounds(notePos: NotePosition): HighlightBounds {
-  const padding = 3;
+  const padding = 2; // Reduced padding to prevent overlap
   const symbolOffset = 40; // Symbols are 40px above the stave middle line
   const symbolPadding = 3; // Extra padding around symbols
   const staveHeight = 100;
@@ -78,23 +132,29 @@ export function calculateNoteHighlightBounds(notePos: NotePosition): HighlightBo
     staveMiddleLineY = staveTop + (staveHeight / 5) * 2; // Line 2 of 5-line staff
   } else {
     // Fallback: estimate stave position from note Y position
-    // notePos.y is the top of the note's bounding box (absolute Y relative to SVG)
-    // The notehead is positioned on the stave middle line (line 2 of 5)
-    // The bounding box top is typically around 20-30px below the stave middle line
-    const estimatedStaveMiddleY = notePos.y + 25; // Approximate offset from bounding box top to middle line
+    const estimatedStaveMiddleY = notePos.y + 25;
     const lineIndex = Math.max(0, Math.round((estimatedStaveMiddleY - lineStartY - 40) / staveHeight));
     staveTop = lineStartY + lineIndex * staveHeight;
     staveBottom = staveTop + staveHeight;
-    staveMiddleLineY = staveTop + (staveHeight / 5) * 2; // Line 2 of 5-line staff
+    staveMiddleLineY = staveTop + (staveHeight / 5) * 2;
   }
   
   // Symbols are drawn 40px above the stave middle line
   const symbolTopY = staveMiddleLineY - symbolOffset - symbolPadding;
   
+  // Use a visual width based on note duration, not the time-proportional width
+  // The time-proportional width extends to the next note which causes overlap
+  // Base visual width on duration: 16th = ~15px, 8th = ~20px, quarter = ~25px, etc.
+  const baseNoteheadWidth = 15;
+  const visualWidth = Math.min(
+    notePos.width * 0.7, // Use at most 70% of the time-proportional width
+    baseNoteheadWidth + (notePos.durationInSixteenths - 1) * 3 // Scale with duration
+  );
+  
   // Highlight should start from symbol top and extend to note bottom
   const x = notePos.x - padding;
   const y = Math.max(staveTop, symbolTopY); // Start from symbol top, but not above stave
-  const width = notePos.width + (padding * 2);
+  const width = visualWidth + (padding * 2);
   
   // Note bottom is the bottom of the note bounding box
   const noteBottomY = notePos.y + notePos.height + padding;

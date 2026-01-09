@@ -38,7 +38,7 @@ describe('previewRenderer', () => {
       expect(highlights).toEqual([]);
     });
 
-    it('should highlight notes that overlap replacement range', () => {
+    it('should highlight notes that overlap replacement range as a single merged box', () => {
       const notes: NotePosition[] = [
         createNotePosition(0, 0, 0, 100, 100, 20, 30, 4),
         createNotePosition(0, 1, 4, 200, 100, 20, 30, 4),
@@ -48,10 +48,12 @@ describe('previewRenderer', () => {
       // Replace from position 2 to 10 (overlaps notes at 0-4, 4-8, and 8-12)
       const highlights = calculateReplacementHighlights(notes, 2, 10);
       
-      expect(highlights.length).toBe(3); // All three notes overlap
-      expect(highlights[0].x).toBe(97); // note.x - padding
-      expect(highlights[1].x).toBe(197); // second note.x - padding
-      expect(highlights[2].x).toBe(297); // third note.x - padding
+      // All three notes are on the same line, so they get merged into one box
+      expect(highlights.length).toBe(1);
+      // Merged box spans from first note to last note
+      expect(highlights[0].x).toBe(98); // first note.x - padding (2)
+      // Width is based on visual width calculation, not time-proportional width
+      expect(highlights[0].width).toBeGreaterThan(0);
     });
 
     it('should highlight partial notes that overlap range', () => {
@@ -63,7 +65,7 @@ describe('previewRenderer', () => {
       const highlights = calculateReplacementHighlights(notes, 1, 3);
       
       expect(highlights.length).toBe(1);
-      expect(highlights[0].x).toBe(97);
+      expect(highlights[0].x).toBe(98); // note.x - padding (2)
     });
 
     it('should clamp highlight height to stave bounds', () => {
@@ -78,6 +80,47 @@ describe('previewRenderer', () => {
       const highlight = highlights[0];
       expect(highlight.y).toBeGreaterThanOrEqual(40); // Should not go above stave top
       expect(highlight.y + highlight.height).toBeLessThanOrEqual(140); // Should not go below stave bottom
+    });
+
+    it('should create separate boxes for notes on different stave lines', () => {
+      const notes: NotePosition[] = [
+        // Note on first line (staveY = 40)
+        { ...createNotePosition(0, 0, 0, 100, 60, 20, 30, 4), staveY: 40 },
+        // Note on second line (staveY = 140)
+        { ...createNotePosition(1, 0, 4, 100, 160, 20, 30, 4), staveY: 140 },
+      ];
+      
+      // Replace from position 0 to 8 (overlaps both notes)
+      const highlights = calculateReplacementHighlights(notes, 0, 8);
+      
+      // Notes on different lines should NOT be merged
+      expect(highlights.length).toBe(2);
+    });
+
+    it('should use visual width not time-proportional width', () => {
+      // Create a note with large time-proportional width (100px)
+      // but the visual width should be capped based on duration
+      const notes: NotePosition[] = [
+        createNotePosition(0, 0, 0, 100, 100, 100, 30, 4), // 4 sixteenths = quarter note
+      ];
+      
+      const highlights = calculateReplacementHighlights(notes, 0, 4);
+      
+      expect(highlights.length).toBe(1);
+      // Width should be less than the full time-proportional width (100 + padding*2)
+      // Visual width formula: min(100 * 0.7, 15 + (4-1) * 3) = min(70, 24) = 24
+      // Plus padding*2 = 24 + 4 = 28
+      expect(highlights[0].width).toBeLessThan(100);
+    });
+
+    it('should return single highlight for single note', () => {
+      const notes: NotePosition[] = [
+        createNotePosition(0, 0, 0, 100, 100, 20, 30, 4),
+      ];
+      
+      const highlights = calculateReplacementHighlights(notes, 0, 4);
+      
+      expect(highlights.length).toBe(1);
     });
   });
 

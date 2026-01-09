@@ -216,9 +216,6 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
     noteIndex: number;
     note: Note;
   }>>([]);
-  // Canvas drags render preview directly in drag handlers for immediate feedback
-  // All preview rendering uses unified computeDropPreview system
-  const svgHandlersRef = useRef<{ handleDragOver: (e: DragEvent) => void; handleDragLeave: () => void; handleDrop: (e: DragEvent) => void } | null>(null);
   
   // Rectangle selection state - using a single ref object for all drag state
   // This prevents issues with stale closures in event handlers
@@ -1018,246 +1015,6 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rhythm, currentNote, metronomeEnabled, windowWidth, selection]);
   
-  // Old preview rendering functions removed - now using unified computeDropPreview system
-  // All preview rendering happens directly in handleSvgDragOver using computeDropPreview
-
-  // Add drop handlers to SVG element to ensure drops work even when dragging over SVG
-  useEffect(() => {
-    if (!containerRef.current || !onDropPattern) {
-      return;
-    }
-    
-    const attachSvgHandlers = (svg: SVGElement) => {
-        // Remove old handlers if they exist
-        if (svgHandlersRef.current) {
-          svg.removeEventListener('dragover', svgHandlersRef.current.handleDragOver);
-          svg.removeEventListener('dragleave', svgHandlersRef.current.handleDragLeave);
-          svg.removeEventListener('drop', svgHandlersRef.current.handleDrop);
-        }
-    
-      const handleSvgDragOver = (e: DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        // Get current values from refs/state to avoid stale closures
-        const currentNotation = notation;
-        const currentTimeSignature = timeSignature;
-        const currentDragDropMode = dragDropMode;
-        
-        if (!currentTimeSignature || !currentNotation || !containerRef.current) {
-          return;
-        }
-        
-        const svg = containerRef.current.querySelector('svg');
-        if (!svg) return;
-        
-        // Clear any existing preview immediately
-        const existingPreview = svg.querySelectorAll('.preview-note');
-        existingPreview.forEach(el => el.remove());
-        
-        const pattern = getCurrentDraggedPattern();
-        
-        // CRITICAL: Use SINGLE unified function to compute drop preview state
-        // This ensures perfect consistency between dropEffect and visual preview
-        const previewResult = computeDropPreview(
-          e.clientX,
-          e.clientY,
-          pattern,
-          currentNotation,
-          currentTimeSignature,
-          currentDragDropMode,
-          notePositionsRef.current,
-          containerRef
-        );
-        
-        // Set dropEffect based on unified computation
-        // This is the ONLY place where dropEffect is set
-        if (e.dataTransfer) {
-          e.dataTransfer.dropEffect = previewResult.isValid ? 'copy' : 'none';
-        }
-        
-        // Render preview based on unified computation
-        // This is the ONLY place where preview is rendered
-        if (previewResult.isValid) {
-          if (previewResult.previewType === 'replace') {
-            // Render replacement highlights
-            if (previewResult.replacementHighlights.length > 0) {
-              previewResult.replacementHighlights.forEach((bounds) => {
-                const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                rect.setAttribute('x', String(bounds.x));
-                rect.setAttribute('y', String(bounds.y));
-                rect.setAttribute('width', String(bounds.width));
-                rect.setAttribute('height', String(bounds.height));
-                rect.setAttribute('fill', 'rgba(239, 68, 68, 0.3)'); // Red fill
-                rect.setAttribute('stroke', 'rgba(239, 68, 68, 0.8)'); // Red stroke
-                rect.setAttribute('stroke-width', '2');
-                rect.setAttribute('stroke-dasharray', '4,4');
-                rect.setAttribute('class', 'preview-note');
-                rect.setAttribute('pointer-events', 'none');
-                svg.appendChild(rect);
-              });
-            }
-          } else if (previewResult.previewType === 'insert' && previewResult.insertionLine) {
-            // Render insertion line - sleek modern dashed line
-            const { x, top, bottom } = previewResult.insertionLine;
-            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            line.setAttribute('x1', String(x));
-            line.setAttribute('y1', String(top));
-            line.setAttribute('x2', String(x));
-            line.setAttribute('y2', String(bottom));
-            line.setAttribute('stroke', '#9333ea'); // Purple
-            line.setAttribute('stroke-width', '2');
-            line.setAttribute('stroke-dasharray', '6,4'); // Modern dashed pattern with bigger gaps
-            line.setAttribute('stroke-linecap', 'round');
-            line.setAttribute('class', 'preview-note');
-            line.setAttribute('pointer-events', 'none');
-            
-            svg.appendChild(line);
-          }
-        }
-      };
-      
-      const handleSvgDragLeave = () => {
-        // Clear preview immediately
-        if (containerRef.current) {
-          const svg = containerRef.current.querySelector('svg');
-          if (svg) {
-            const existingPreview = svg.querySelectorAll('.preview-note');
-            existingPreview.forEach(el => el.remove());
-          }
-        }
-      };
-    
-      const handleSvgDrop = (e: DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        // Get current values from refs/state to avoid stale closures
-        const currentNotation = notation;
-        const currentTimeSignature = timeSignature;
-        
-        // Try to get pattern from dataTransfer first, then global variable
-        let pattern: string | null = null;
-        if (e.dataTransfer) {
-          pattern = e.dataTransfer.getData('application/darbuka-pattern') || 
-                    e.dataTransfer.getData('text/plain');
-        }
-        
-        // Fallback to global variable
-        if (!pattern) {
-          pattern = getCurrentDraggedPattern();
-        }
-        
-        if (!pattern || !currentTimeSignature) {
-          return;
-        }
-        
-        // CRITICAL: Use the SAME unified function as preview
-        // This ensures drop position matches preview exactly
-        const previewResult = computeDropPreview(
-          e.clientX,
-          e.clientY,
-          pattern,
-          currentNotation,
-          currentTimeSignature,
-          dragDropMode,
-          notePositionsRef.current,
-          containerRef
-        );
-        
-        if (!previewResult.isValid) {
-          return; // Can't drop if preview says it's invalid
-        }
-        
-        // Clear preview before dropping
-        if (containerRef.current) {
-          const svg = containerRef.current.querySelector('svg');
-          if (svg) {
-            const existingPreview = svg.querySelectorAll('.preview-note');
-            existingPreview.forEach(el => el.remove());
-          }
-        }
-        
-        // Use dropPosition from unified computation
-        // This ensures perfect consistency with preview
-        onDropPattern(pattern, previewResult.dropPosition);
-      };
-      
-      svg.addEventListener('dragover', handleSvgDragOver);
-      svg.addEventListener('dragleave', handleSvgDragLeave);
-      svg.addEventListener('drop', handleSvgDrop);
-      
-      // Store handlers in ref for cleanup
-      svgHandlersRef.current = { 
-        handleDragOver: handleSvgDragOver, 
-        handleDrop: handleSvgDrop,
-        handleDragLeave: handleSvgDragLeave,
-      };
-    };
-    
-    // Robust handler attachment: try immediately, use RAF for timing, and retry
-    const attachHandlers = () => {
-      const svg = containerRef.current?.querySelector('svg');
-      if (!svg) {
-        return false; // SVG not ready
-      }
-      
-      // Attach handlers even if notePositions is empty - handlers will handle this case
-      // This prevents the situation where handlers are never attached due to empty positions
-      attachSvgHandlers(svg);
-      return true;
-    };
-    
-    // Try to attach immediately
-    let attached = attachHandlers();
-    
-    // If not attached, use requestAnimationFrame for better timing with rendering
-    let rafId: number | null = null;
-    let retryCount = 0;
-    const maxRetries = 10;
-    
-    const retryAttach = () => {
-      if (!attached && retryCount < maxRetries) {
-        attached = attachHandlers();
-        retryCount++;
-        if (!attached) {
-          rafId = requestAnimationFrame(retryAttach);
-        }
-      }
-    };
-    
-    if (!attached) {
-      rafId = requestAnimationFrame(retryAttach);
-    }
-    
-    // Also retry after a delay to catch async rendering scenarios
-    const timeoutId = setTimeout(() => {
-      if (!attached) {
-        attached = attachHandlers();
-      }
-    }, 200);
-    
-    // Capture container ref for cleanup
-    const container = containerRef.current;
-    
-    return () => {
-      if (rafId !== null) {
-        cancelAnimationFrame(rafId);
-      }
-      clearTimeout(timeoutId);
-      
-      // Clean up handlers using ref directly
-      const svg = container?.querySelector('svg');
-      const handlers = svgHandlersRef.current;
-      if (svg && handlers) {
-        svg.removeEventListener('dragover', handlers.handleDragOver);
-        svg.removeEventListener('dragleave', handlers.handleDragLeave);
-        svg.removeEventListener('drop', handlers.handleDrop);
-        svgHandlersRef.current = null;
-      }
-    };
-  }, [onDropPattern, notation, timeSignature, dragDropMode, rhythm, windowWidth, metronomeEnabled]);
-
   // Separate effect to update metronome dot highlighting
   useEffect(() => {
     if (!metronomeEnabled || metronomeDotsRef.current.size === 0) return;
@@ -1556,12 +1313,142 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
     };
   }, [selection, onSelectionChange, onMoveSelection, updateSelectionRect]);
 
-  // Removed old React drag handlers - drag and drop is now handled by SVG event handlers
-  // (handleSvgDragOver, handleSvgDrop, etc.) which use the unified preview system
-
-  // Visual feedback effect - highlight notes that would be replaced
-  // Removed old drag-over highlight system - now using unified preview system
-  // The preview is rendered in the main useEffect above using renderInsertionLine() and renderPreviewNotes()
+  // React-style drag handlers - more reliable than manual SVG event listeners
+  // These are always attached and handle events that bubble up from SVG elements
+  const handleContainerDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!timeSignature || !notation || !containerRef.current || !onDropPattern) {
+      return;
+    }
+    
+    const svg = containerRef.current.querySelector('svg');
+    if (!svg) return;
+    
+    // Clear any existing preview
+    const existingPreview = svg.querySelectorAll('.preview-note');
+    existingPreview.forEach(el => el.remove());
+    
+    const pattern = getCurrentDraggedPattern();
+    const cleanNotation = notation.replace(/[\s\n]/g, '');
+    
+    // Compute drop preview
+    const previewResult = computeDropPreview(
+      e.clientX,
+      e.clientY,
+      pattern,
+      cleanNotation,
+      timeSignature,
+      dragDropMode,
+      notePositionsRef.current,
+      containerRef
+    );
+    
+    // Set dropEffect
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = previewResult.isValid ? 'copy' : 'none';
+    }
+    
+    // Render preview
+    if (previewResult.isValid) {
+      if (previewResult.previewType === 'replace' && previewResult.replacementHighlights.length > 0) {
+        previewResult.replacementHighlights.forEach((bounds) => {
+          const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+          rect.setAttribute('x', String(bounds.x));
+          rect.setAttribute('y', String(bounds.y));
+          rect.setAttribute('width', String(bounds.width));
+          rect.setAttribute('height', String(bounds.height));
+          rect.setAttribute('fill', 'rgba(239, 68, 68, 0.3)');
+          rect.setAttribute('stroke', 'rgba(239, 68, 68, 0.8)');
+          rect.setAttribute('stroke-width', '2');
+          rect.setAttribute('stroke-dasharray', '4,4');
+          rect.setAttribute('class', 'preview-note');
+          rect.setAttribute('pointer-events', 'none');
+          svg.appendChild(rect);
+        });
+      } else if (previewResult.previewType === 'insert' && previewResult.insertionLine) {
+        const { x, top, bottom } = previewResult.insertionLine;
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', String(x));
+        line.setAttribute('y1', String(top));
+        line.setAttribute('x2', String(x));
+        line.setAttribute('y2', String(bottom));
+        line.setAttribute('stroke', '#9333ea');
+        line.setAttribute('stroke-width', '2');
+        line.setAttribute('stroke-dasharray', '6,4');
+        line.setAttribute('stroke-linecap', 'round');
+        line.setAttribute('class', 'preview-note');
+        line.setAttribute('pointer-events', 'none');
+        svg.appendChild(line);
+      }
+    }
+  }, [notation, timeSignature, dragDropMode, onDropPattern]);
+  
+  const handleContainerDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    // Only clear preview if leaving the container entirely (not entering a child)
+    const relatedTarget = e.relatedTarget as Node | null;
+    if (relatedTarget && containerRef.current?.contains(relatedTarget)) {
+      return; // Still within container, don't clear preview
+    }
+    
+    if (containerRef.current) {
+      const svg = containerRef.current.querySelector('svg');
+      if (svg) {
+        const existingPreview = svg.querySelectorAll('.preview-note');
+        existingPreview.forEach(el => el.remove());
+      }
+    }
+  }, []);
+  
+  const handleContainerDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Clear preview
+    if (containerRef.current) {
+      const svg = containerRef.current.querySelector('svg');
+      if (svg) {
+        svg.querySelectorAll('.preview-note').forEach(el => el.remove());
+      }
+    }
+    
+    if (!timeSignature || !notation || !onDropPattern) {
+      return;
+    }
+    
+    // Get pattern from dataTransfer or global variable
+    let pattern: string | null = null;
+    if (e.dataTransfer) {
+      pattern = e.dataTransfer.getData('application/darbuka-pattern') || 
+                e.dataTransfer.getData('text/plain');
+    }
+    if (!pattern) {
+      pattern = getCurrentDraggedPattern();
+    }
+    
+    if (!pattern) {
+      return;
+    }
+    
+    const cleanNotation = notation.replace(/[\s\n]/g, '');
+    
+    // Compute drop position using the same logic as preview
+    const previewResult = computeDropPreview(
+      e.clientX,
+      e.clientY,
+      pattern,
+      cleanNotation,
+      timeSignature,
+      dragDropMode,
+      notePositionsRef.current,
+      containerRef
+    );
+    
+    if (previewResult.isValid) {
+      onDropPattern(pattern, previewResult.dropPosition);
+    }
+  }, [notation, timeSignature, dragDropMode, onDropPattern]);
 
   if (rhythm.measures.length === 0) {
     return null;
@@ -1572,6 +1459,9 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
       ref={containerRef} 
       className="vexflow-container"
       onMouseDown={handleContainerMouseDown}
+      onDragOver={handleContainerDragOver}
+      onDragLeave={handleContainerDragLeave}
+      onDrop={handleContainerDrop}
       style={{ 
         width: '100%', 
         overflowX: 'auto',
