@@ -162,9 +162,14 @@ export function organizeIntoSpreads(
     : null;
   
   // First, handle inner front cover + page 1 spread
+  // Only create this auto-paired spread if:
+  // 1. There's an inner front cover page
+  // 2. There's a page 1 available
+  // 3. Page 1 isn't already in an explicit spread
+  // 4. Inner front isn't already in an explicit spread (to avoid duplicates)
   if (innerFrontCover && regularPages.some(p => p.parsedFile.pageNumber === 1)) {
     const page1 = regularPages.find(p => p.parsedFile.pageNumber === 1);
-    if (page1 && !pagesInSpreads.has(1)) {
+    if (page1 && !pagesInSpreads.has(1) && !pagesInSpreadsSpecial.has(-0.5)) {
       result.push({
         type: 'auto-paired-spread',
         leftPage: innerFrontCover,  // Even (logical page 0)
@@ -202,6 +207,7 @@ export function organizeIntoSpreads(
         pageNumbers: [currentPageNum, -1],
         displayLabel: `Page ${currentPageNum} + Inner Back Cover`,
       });
+      pagesInSpreadsSpecial.add(-1); // Mark inner back as used to prevent duplicate
       i++;
       continue;
     }

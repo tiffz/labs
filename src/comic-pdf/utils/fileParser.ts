@@ -91,9 +91,12 @@ export function detectSpread(filename: string): { isSpread: boolean; pages?: [nu
     }
   }
   
-  // Pattern 1c: Number hyphenated with keyword (e.g., "page12-innercover", "12-inner")
-  // Check compound keywords first (more specific)
-  const numberKeywordMatch = nameWithoutExt.match(/(?:page[_-]?)?(\d+)[_-](innercover|innerback|innerfront|inner|back|front|cover)/);
+  // Pattern 1c: Number hyphenated with keyword (e.g., "page12-innercover", "12-inner", "page_12-inner_back")
+  // Normalize underscores in keywords to handle variants like "inner_back"
+  const normalizedForNumberKeyword = nameWithoutExt.replace(/inner[_-]?front/gi, 'innerfront')
+                                                    .replace(/inner[_-]?back/gi, 'innerback')
+                                                    .replace(/inner[_-]?cover/gi, 'innercover');
+  const numberKeywordMatch = normalizedForNumberKeyword.match(/(?:page[_-]?)?(\d+)[_-](innercover|innerback|innerfront|inner|back|front|cover)/);
   if (numberKeywordMatch) {
     const pageNum = parseInt(numberKeywordMatch[1], 10);
     const keyword = numberKeywordMatch[2];
@@ -114,8 +117,12 @@ export function detectSpread(filename: string): { isSpread: boolean; pages?: [nu
     }
   }
   
-  // Pattern 1d: Keyword hyphenated with number (e.g., "innercover-12")
-  const keywordNumberMatch = nameWithoutExt.match(/(innercover|innerback|innerfront|inner|back|front|cover)[_-](?:page[_-]?)?(\d+)/);
+  // Pattern 1d: Keyword hyphenated with number (e.g., "innercover-12", "inner_front-1")
+  // Normalize underscores in keywords to handle variants like "inner_front"
+  const normalizedForKeyword = nameWithoutExt.replace(/inner[_-]?front/gi, 'innerfront')
+                                              .replace(/inner[_-]?back/gi, 'innerback')
+                                              .replace(/inner[_-]?cover/gi, 'innercover');
+  const keywordNumberMatch = normalizedForKeyword.match(/(innercover|innerback|innerfront|inner|back|front|cover)[_-](?:page[_-]?)?(\d+)/);
   if (keywordNumberMatch) {
     const keyword = keywordNumberMatch[1];
     const pageNum = parseInt(keywordNumberMatch[2], 10);

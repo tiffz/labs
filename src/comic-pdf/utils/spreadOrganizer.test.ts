@@ -144,6 +144,169 @@ describe('spreadOrganizer', () => {
       );
       expect(innerFrontSpreads.length).toBe(1);
     });
+
+    it('should not create duplicate inner front spread when explicit spread exists', () => {
+      // User has both a standalone inner front file AND an explicit spread
+      const pages = [
+        createPageInfo('Inner_Front.png'),
+        createPageInfo('page1.png'),
+        createPageInfo('page2.png'),
+      ];
+      const spreads = [
+        createSpreadInfo('InnerFront-1.png', [-0.5, 1]),
+      ];
+
+      const result = organizeIntoSpreads(pages, spreads);
+
+      // Should only have ONE spread containing inner front
+      const innerFrontSpreads = result.filter(s => 
+        s.pageNumbers.includes(-0.5) || s.displayLabel.toLowerCase().includes('inner front')
+      );
+      expect(innerFrontSpreads.length).toBe(1);
+      expect(innerFrontSpreads[0].type).toBe('explicit-spread');
+    });
+
+    it('should not add inner front as single when it is in an explicit spread', () => {
+      const pages = [
+        createPageInfo('Inner_Front.png'),
+        createPageInfo('page1.png'),
+      ];
+      const spreads = [
+        createSpreadInfo('InnerFront-1.png', [-0.5, 1]),
+      ];
+
+      const result = organizeIntoSpreads(pages, spreads);
+
+      // Should not have inner front as a single page
+      const singleInnerFront = result.find(s => 
+        s.type === 'single-page' && s.pageNumbers.includes(-0.5)
+      );
+      expect(singleInnerFront).toBeUndefined();
+    });
+
+    it('should not create duplicate inner back spread when explicit spread exists', () => {
+      // User has both a standalone inner back file AND an explicit spread
+      const pages = [
+        createPageInfo('Inner_Back.png'),
+        createPageInfo('page10.png'),
+        createPageInfo('page11.png'),
+        createPageInfo('page12.png'),
+      ];
+      const spreads = [
+        createSpreadInfo('Page12-InnerBack.png', [12, -1]),
+      ];
+
+      const result = organizeIntoSpreads(pages, spreads);
+
+      // Should only have ONE spread containing inner back
+      const innerBackSpreads = result.filter(s => 
+        s.pageNumbers.includes(-1) || s.displayLabel.toLowerCase().includes('inner back')
+      );
+      expect(innerBackSpreads.length).toBe(1);
+      expect(innerBackSpreads[0].type).toBe('explicit-spread');
+    });
+
+    it('should not add inner back as single when it is in an explicit spread', () => {
+      const pages = [
+        createPageInfo('Inner_Back.png'),
+        createPageInfo('page12.png'),
+      ];
+      const spreads = [
+        createSpreadInfo('Page12-InnerBack.png', [12, -1]),
+      ];
+
+      const result = organizeIntoSpreads(pages, spreads);
+
+      // Should not have inner back as a single page
+      const singleInnerBack = result.find(s => 
+        s.type === 'single-page' && s.pageNumbers.includes(-1)
+      );
+      expect(singleInnerBack).toBeUndefined();
+    });
+
+    it('should not create duplicate when explicit spread has underscore naming', () => {
+      // User has explicit spread with underscore naming like "Page_12-Inner_Back.png"
+      const pages = [
+        createPageInfo('Inner_Back.png'),
+        createPageInfo('page12.png'),
+      ];
+      const spreads = [
+        createSpreadInfo('Page_12-Inner_Back.png', [12, -1]),
+      ];
+
+      const result = organizeIntoSpreads(pages, spreads);
+
+      // Should only have ONE spread containing inner back
+      const innerBackSpreads = result.filter(s => 
+        s.pageNumbers.includes(-1)
+      );
+      expect(innerBackSpreads.length).toBe(1);
+    });
+
+    it('should not duplicate inner back when auto-paired with last page', () => {
+      // This is the key scenario: standalone inner back file gets auto-paired with last page
+      // Should NOT also appear as a single page
+      const pages = [
+        createPageInfo('outer back.png'),
+        createPageInfo('outer front.png'),
+        createPageInfo('inner front.png'),
+        createPageInfo('1.png'),
+        createPageInfo('2.png'),
+        createPageInfo('3.png'),
+        createPageInfo('4.png'),
+        createPageInfo('5.png'),
+        createPageInfo('6.png'),
+        createPageInfo('7.png'),
+        createPageInfo('8.png'),
+        createPageInfo('inner back.png'),
+      ];
+      const spreads: SpreadInfo[] = [];
+
+      const result = organizeIntoSpreads(pages, spreads);
+
+      // Inner back should appear exactly once (paired with page 8)
+      const innerBackSpreads = result.filter(s => 
+        s.pageNumbers.includes(-1) || s.displayLabel.toLowerCase().includes('inner back')
+      );
+      expect(innerBackSpreads.length).toBe(1);
+      expect(innerBackSpreads[0].type).toBe('auto-paired-spread');
+      expect(innerBackSpreads[0].displayLabel).toBe('Page 8 + Inner Back Cover');
+
+      // Should NOT have inner back as a single page
+      const singleInnerBack = result.find(s => 
+        s.type === 'single-page' && s.pageNumbers.includes(-1)
+      );
+      expect(singleInnerBack).toBeUndefined();
+    });
+
+    it('should not duplicate inner front when auto-paired with page 1', () => {
+      // Similar scenario for inner front
+      const pages = [
+        createPageInfo('outer back.png'),
+        createPageInfo('outer front.png'),
+        createPageInfo('inner front.png'),
+        createPageInfo('1.png'),
+        createPageInfo('2.png'),
+        createPageInfo('3.png'),
+      ];
+      const spreads: SpreadInfo[] = [];
+
+      const result = organizeIntoSpreads(pages, spreads);
+
+      // Inner front should appear exactly once (paired with page 1)
+      const innerFrontSpreads = result.filter(s => 
+        s.pageNumbers.includes(-0.5) || s.displayLabel.toLowerCase().includes('inner front')
+      );
+      expect(innerFrontSpreads.length).toBe(1);
+      expect(innerFrontSpreads[0].type).toBe('auto-paired-spread');
+      expect(innerFrontSpreads[0].displayLabel).toBe('Inner Front Cover + Page 1');
+
+      // Should NOT have inner front as a single page
+      const singleInnerFront = result.find(s => 
+        s.type === 'single-page' && s.pageNumbers.includes(-0.5)
+      );
+      expect(singleInnerFront).toBeUndefined();
+    });
   });
 
   describe('estimateDPI', () => {

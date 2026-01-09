@@ -93,6 +93,34 @@ describe('fileParser', () => {
       expect(result1.pages).toEqual([12, -1]);
     });
 
+    it('should detect keyword-number spreads with underscores in keywords', () => {
+      const result1 = detectSpread('Inner_Front-1.png');
+      expect(result1.isSpread).toBe(true);
+      expect(result1.pages).toEqual([-0.5, 1]);
+
+      const result2 = detectSpread('inner_back-12.png');
+      expect(result2.isSpread).toBe(true);
+      expect(result2.pages).toEqual([12, -1]);
+
+      const result3 = detectSpread('Inner_Cover-10.png');
+      expect(result3.isSpread).toBe(true);
+      expect(result3.pages).toEqual([10, -1]);
+    });
+
+    it('should detect number-keyword spreads with underscores in keywords', () => {
+      const result1 = detectSpread('Page_12-Inner_Back.png');
+      expect(result1.isSpread).toBe(true);
+      expect(result1.pages).toEqual([12, -1]);
+
+      const result2 = detectSpread('page12-inner_cover.png');
+      expect(result2.isSpread).toBe(true);
+      expect(result2.pages).toEqual([12, -1]);
+
+      const result3 = detectSpread('1-inner_front.png');
+      expect(result3.isSpread).toBe(true);
+      expect(result3.pages).toEqual([-0.5, 1]);
+    });
+
     it('should detect keyword-keyword spreads', () => {
       const result1 = detectSpread('outer_back-outer_front.png');
       expect(result1.isSpread).toBe(true);

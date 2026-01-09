@@ -1,10 +1,16 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { FileUploader } from './components/FileUploader';
 import { PagePreview } from './components/PagePreview';
 import { parseAndSortFiles } from './utils/fileParser';
 import { processFiles, validateImageDimensions } from './utils/imageProcessor';
-import { downloadPDF } from './utils/pdfGenerator';
-import type { ParsedFile, PageInfo, SpreadInfo, PDFGenerationOptions, ValidationResult } from './types';
+import { 
+  createPDF, 
+  downloadBlob, 
+  formatFileSize, 
+  estimateUncompressedSize, 
+  estimateCompressedSize,
+} from './utils/pdfGenerator';
+import type { ParsedFile, PageInfo, SpreadInfo, PDFGenerationOptions, ValidationResult, PDFResult } from './types';
 
 const App: React.FC = () => {
   const [parsedFiles, setParsedFiles] = useState<ParsedFile[]>([]);
@@ -18,8 +24,16 @@ const App: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [pdfProgress, setPdfProgress] = useState(0);
+  const [generationError, setGenerationError] = useState<string | null>(null);
+  const [pdfResult, setPdfResult] = useState<PDFResult | null>(null);
+  const [fileName, setFileName] = useState('mixam-comic.pdf');
   const [options, setOptions] = useState<PDFGenerationOptions>({
     convertToCMYK: false,
+    compressionPreset: 'custom',
+    convertToJpeg: false,
+    jpegQuality: 1,
+    reduceResolution: false,
+    resolutionScale: 1,
   });
 
   const handleFilesSelected = useCallback(async (files: File[]) => {
@@ -97,32 +111,61 @@ const App: React.FC = () => {
     input.click();
   }, [parsedFiles]);
 
+  // Calculate estimated file sizes
+  const fileSizeEstimates = useMemo(() => {
+    if (pages.length === 0 && spreads.length === 0) return null;
+    
+    const uncompressed = estimateUncompressedSize(pages, spreads);
+    const compressed = estimateCompressedSize(uncompressed, options);
+    
+    return {
+      uncompressed,
+      compressed,
+      savings: uncompressed - compressed,
+      savingsPercent: Math.round((1 - compressed / uncompressed) * 100),
+    };
+  }, [pages, spreads, options]);
+
   const handleGeneratePDF = useCallback(async () => {
     if (!validation.isValid) {
-      alert('Please fix validation errors before generating PDF.');
+      setGenerationError('Please fix validation errors before generating PDF.');
       return;
     }
 
     setIsGenerating(true);
     setPdfProgress(0);
+    setGenerationError(null);
+    setPdfResult(null);
+    
     try {
-      await downloadPDF(
+      const result = await createPDF(
         pages, 
         spreads, 
         options, 
-        'mixam-comic.pdf',
+        fileName,
         (progress) => {
           setPdfProgress(progress);
         }
       );
+      
+      setPdfResult(result);
+      // Auto-download the PDF
+      downloadBlob(result.blob, result.fileName);
     } catch (error) {
       console.error('Error generating PDF:', error);
-      alert(`Error generating PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      setGenerationError(`Error generating PDF: ${errorMessage}`);
     } finally {
       setIsGenerating(false);
       setPdfProgress(0);
     }
-  }, [pages, spreads, options, validation.isValid]);
+  }, [pages, spreads, options, validation.isValid, fileName]);
+
+  const handleRedownload = useCallback(() => {
+    if (pdfResult) {
+      downloadBlob(pdfResult.blob, fileName);
+    }
+  }, [pdfResult, fileName]);
 
   return (
     <div className="container mx-auto p-4 md:p-6 max-w-6xl">
@@ -165,7 +208,90 @@ const App: React.FC = () => {
         {(pages.length > 0 || spreads.length > 0) && (
           <section>
             <h2 className="text-2xl font-semibold text-gray-800 mb-4">Options</h2>
-            <div className="bg-gray-50 rounded-lg p-4">
+            <div className="bg-gray-50 rounded-lg p-4 space-y-5">
+              {/* File Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Output File Name
+                </label>
+                <input
+                  type="text"
+                  value={fileName}
+                  onChange={(e) => setFileName(e.target.value || 'mixam-comic.pdf')}
+                  className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  placeholder="mixam-comic.pdf"
+                />
+              </div>
+
+              {/* Compression Options */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">File Size Reduction</label>
+
+                {/* JPEG Compression Slider */}
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-gray-600 w-24 flex-shrink-0">JPEG Quality</span>
+                  <input
+                    type="range"
+                    min="0.5"
+                    max="1"
+                    step="0.05"
+                    value={options.jpegQuality}
+                    onChange={(e) => {
+                      const quality = parseFloat(e.target.value);
+                      setOptions({ 
+                        ...options, 
+                        jpegQuality: quality,
+                        convertToJpeg: quality < 1,
+                      });
+                    }}
+                    className="w-40 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
+                  />
+                  <span className="text-sm text-gray-500 w-12">
+                    {options.jpegQuality >= 1 ? 'Off' : `${Math.round(options.jpegQuality * 100)}%`}
+                  </span>
+                </div>
+
+                {/* Resolution Reduction Slider */}
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-gray-600 w-24 flex-shrink-0">Resolution</span>
+                  <input
+                    type="range"
+                    min="0.25"
+                    max="1"
+                    step="0.05"
+                    value={options.resolutionScale}
+                    onChange={(e) => {
+                      const scale = parseFloat(e.target.value);
+                      setOptions({ 
+                        ...options, 
+                        resolutionScale: scale,
+                        reduceResolution: scale < 1,
+                      });
+                    }}
+                    className="w-40 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
+                  />
+                  <span className="text-sm text-gray-500 w-12">
+                    {Math.round(options.resolutionScale * 100)}%
+                  </span>
+                </div>
+
+                {/* Estimated Size - inline with sliders */}
+                {fileSizeEstimates && (
+                  <div className="flex items-center gap-3 pt-1">
+                    <span className="text-sm text-gray-600 w-24 flex-shrink-0">Est. Size</span>
+                    <span className="text-sm font-semibold text-gray-800">
+                      {formatFileSize(fileSizeEstimates.compressed)}
+                    </span>
+                    {fileSizeEstimates.savingsPercent > 0 && (
+                      <span className="text-xs text-green-600">
+                        ({fileSizeEstimates.savingsPercent}% smaller)
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* CMYK Option */}
               <label className="flex items-center space-x-2 cursor-pointer">
                 <input
                   type="checkbox"
@@ -187,7 +313,20 @@ const App: React.FC = () => {
         {(pages.length > 0 || spreads.length > 0) && (
           <section>
             <div className="space-y-4">
-              <div className="flex justify-center">
+              {/* Error Display */}
+              {generationError && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+                  <p className="text-red-700">{generationError}</p>
+                  <button
+                    onClick={() => setGenerationError(null)}
+                    className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              )}
+
+              <div className="flex justify-center gap-4">
                 <button
                   onClick={handleGeneratePDF}
                   disabled={!validation.isValid || isGenerating}
@@ -197,9 +336,10 @@ const App: React.FC = () => {
                       : 'bg-gray-400 cursor-not-allowed'
                   }`}
                 >
-                  {isGenerating ? 'Generating PDF...' : 'Generate Mixam PDF'}
+                  {isGenerating ? 'Generating PDF...' : pdfResult ? 'Regenerate PDF' : 'Generate Mixam PDF'}
                 </button>
               </div>
+
               {isGenerating && (
                 <div className="max-w-md mx-auto">
                   <div className="bg-gray-200 rounded-full h-4 overflow-hidden">
@@ -211,6 +351,44 @@ const App: React.FC = () => {
                   <p className="text-center text-sm text-gray-600 mt-2">
                     {Math.round(pdfProgress * 100)}% complete
                   </p>
+                </div>
+              )}
+
+              {/* PDF Result Display */}
+              {pdfResult && !isGenerating && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between flex-wrap gap-4">
+                    <div>
+                      <h3 className="font-semibold text-green-800">PDF Generated Successfully!</h3>
+                      <div className="text-sm text-green-700 mt-1 space-y-1">
+                        <p>
+                          <span className="font-medium">File:</span> {fileName}
+                        </p>
+                        <p>
+                          <span className="font-medium">Size:</span> {formatFileSize(pdfResult.fileSize)}
+                        </p>
+                        <p>
+                          <span className="font-medium">Spreads:</span> {pdfResult.spreadCount}
+                        </p>
+                        {pdfResult.estimatedUncompressedSize && (
+                          <p>
+                            <span className="font-medium">Size reduction:</span>{' '}
+                            {Math.round((1 - pdfResult.fileSize / pdfResult.estimatedUncompressedSize) * 100)}%
+                            (from ~{formatFileSize(pdfResult.estimatedUncompressedSize)})
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleRedownload}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      Download Again
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
