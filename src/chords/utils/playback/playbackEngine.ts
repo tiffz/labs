@@ -86,9 +86,14 @@ export class PlaybackEngine {
   // Pending changes for measure boundary application
   private pendingChanges: PendingChanges | null = null;
   
+  // Recovery state for handling AudioContext suspension and rebuilds
+  private needsRecoveryScheduling: boolean = false;
+  private wasSuspended: boolean = false;
+  
   // Constants
-  private readonly LOOKAHEAD_MS = 150;      // Schedule 150ms ahead
+  private readonly LOOKAHEAD_MS = 200;      // Schedule 200ms ahead (increased for stability)
   private readonly SCHEDULE_INTERVAL_MS = 50;  // Check every 50ms
+  private readonly RECOVERY_LOOKBACK_BEATS = 0.5;  // Look back half a beat during recovery
   
   /**
    * Get or create AudioContext
@@ -355,9 +360,20 @@ export class PlaybackEngine {
     const ctx = this.getAudioContext();
     
     // Handle AudioContext suspension (common when tab loses focus)
+    // Don't return early - mark for recovery and try to resume
     if (ctx.state === 'suspended') {
+      this.wasSuspended = true;
       ctx.resume().catch(err => console.warn('Failed to resume AudioContext:', err));
-      return;
+      // Continue anyway - we'll schedule notes that will play once resumed
+    }
+    
+    // Check if we just recovered from suspension
+    if (this.wasSuspended && ctx.state === 'running') {
+      this.wasSuspended = false;
+      this.needsRecoveryScheduling = true;
+      // Reset track scheduling to allow immediate rescheduling
+      this.trebleTrack?.resetScheduling();
+      this.bassTrack?.resetScheduling();
     }
     
     const currentBeat = this.transport.getPositionInBeats();
@@ -369,9 +385,16 @@ export class PlaybackEngine {
     this.applyPendingChangesIfReady(currentBeat);
     
     // Calculate scheduling range
-    const fromBeat = currentBeat;
+    // During recovery, look back slightly to catch any notes we might have missed
+    const lookback = this.needsRecoveryScheduling ? this.RECOVERY_LOOKBACK_BEATS : 0;
+    const fromBeat = Math.max(0, currentBeat - lookback);
     const toBeat = currentBeat + lookaheadBeats;
     const totalBeats = this.transport.loopDurationBeats;
+    
+    // Clear recovery flag after using it
+    if (this.needsRecoveryScheduling) {
+      this.needsRecoveryScheduling = false;
+    }
     
     // Schedule notes for each track
     if (this.trebleTrack) {
@@ -461,6 +484,27 @@ export class PlaybackEngine {
     
     this.trebleTrack.setEvents(trebleEvents);
     this.bassTrack.setEvents(bassEvents);
+    
+    // Force immediate rescheduling to avoid gaps
+    this.forceReschedule();
+  }
+  
+  /**
+   * Force immediate rescheduling of notes
+   * Called after configuration changes to ensure seamless playback
+   */
+  private forceReschedule(): void {
+    if (!this.transport?.isPlaying()) return;
+    
+    // Enable recovery mode for extended scheduling window
+    this.needsRecoveryScheduling = true;
+    
+    // Reset track scheduling state
+    this.trebleTrack?.resetScheduling();
+    this.bassTrack?.resetScheduling();
+    
+    // Immediately trigger a scheduler tick to schedule notes
+    this.schedulerTick();
   }
   
   /**
@@ -575,8 +619,10 @@ export class PlaybackEngine {
     this.trebleTrack?.stopAll(50);
     this.bassTrack?.stopAll(50);
     
-    // Clear pending changes
+    // Clear pending changes and recovery state
     this.pendingChanges = null;
+    this.needsRecoveryScheduling = false;
+    this.wasSuspended = false;
     
     // Final UI update to clear highlights
     if (this.onUpdate) {
@@ -602,9 +648,8 @@ export class PlaybackEngine {
     // The new tempo will apply to newly scheduled notes
     this.transport.setTempo(newTempo);
     
-    // Reset scheduling to reschedule with new tempo
-    this.trebleTrack?.resetScheduling();
-    this.bassTrack?.resetScheduling();
+    // Force immediate rescheduling with new tempo
+    this.forceReschedule();
   }
   
   /**
@@ -665,9 +710,8 @@ export class PlaybackEngine {
       this.bassTrack.setInstrument(newInstrument);
     }
     
-    // Reset scheduling to reschedule with new instruments
-    this.trebleTrack?.resetScheduling();
-    this.bassTrack?.resetScheduling();
+    // Force immediate rescheduling with recovery mode
+    this.forceReschedule();
   }
   
   /**
