@@ -2,6 +2,8 @@
  * Types for the Chord Progression Generator app
  */
 
+import type { SoundType } from './soundOptions';
+
 export type Key = 
   | 'C' | 'C#' | 'Db' | 'D' | 'D#' | 'Eb' | 'E' | 'F' | 'F#' | 'Gb' | 'G' | 'G#' | 'Ab' | 'A' | 'A#' | 'Bb' | 'B';
 
@@ -50,7 +52,7 @@ export interface ChordProgressionState {
   timeSignature: TimeSignature;
   stylingStrategy: ChordStylingStrategy;
   voicingOptions: VoicingOptions;
-  soundType: 'sine' | 'square' | 'sawtooth' | 'triangle' | 'piano';
+  soundType: SoundType;
   measuresPerChord: number; // Number of measures each chord spans (1-4, default 1)
 }
 

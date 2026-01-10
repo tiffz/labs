@@ -6,6 +6,7 @@
  * - Multi-track support for layered instruments
  * - Live editing capabilities
  * - Pluggable instrument architecture
+ * - Sampled piano with real piano sounds
  */
 
 // Main engine
@@ -13,7 +14,8 @@ export {
   PlaybackEngine, 
   getPlaybackEngine, 
   disposePlaybackEngine,
-  type PlaybackUpdateCallback 
+  type PlaybackUpdateCallback,
+  type SampleLoadingCallback,
 } from './playbackEngine';
 
 // Transport
@@ -29,7 +31,9 @@ export {
   BaseInstrument,
   PianoSynthesizer,
   SimpleSynthesizer,
-  type WaveformType 
+  SampledPiano,
+  type WaveformType,
+  type SampleLoadingState,
 } from './instruments';
 
 // Types

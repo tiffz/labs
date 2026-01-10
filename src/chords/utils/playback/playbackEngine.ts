@@ -7,6 +7,7 @@
  * - Scheduler loop for audio scheduling
  * - UI loop for note highlighting
  * - Live editing for parameter changes
+ * - Reverb for spatial depth and realism
  */
 
 import type { TimeSignature } from '../../types';
@@ -15,8 +16,15 @@ import type { StyledChordNotes } from '../chordStyling';
 import { durationToBeats } from '../durationValidation';
 import { Transport } from './transport';
 import { Track } from './track';
-import { PianoSynthesizer, SimpleSynthesizer, type WaveformType } from './instruments';
+import { 
+  PianoSynthesizer, 
+  SimpleSynthesizer, 
+  SampledPiano,
+  type WaveformType,
+  type Instrument,
+} from './instruments';
 import type { NoteEvent, NoteParams, ActiveNotes, PendingChanges, PlaybackConfig } from './types';
+import { createReverb, type ReverbNodes } from '../../../shared/audio/reverb';
 
 /**
  * Convert MIDI note number to frequency
@@ -41,6 +49,11 @@ export type PlaybackUpdateCallback = (
   isPlaying: boolean
 ) => void;
 
+/**
+ * Callback for sample loading progress
+ */
+export type SampleLoadingCallback = (loaded: number, total: number) => void;
+
 export class PlaybackEngine {
   private audioContext: AudioContext | null = null;
   private transport: Transport | null = null;
@@ -50,6 +63,13 @@ export class PlaybackEngine {
   // Audio chain
   private masterGain: GainNode | null = null;
   private compressor: DynamicsCompressorNode | null = null;
+  private reverbNodes: ReverbNodes | null = null;
+  private reverbInitialized: boolean = false;
+  
+  // Sampled piano instances (shared across tracks)
+  private sampledPiano: SampledPiano | null = null;
+  private samplesLoading: boolean = false;
+  private onSampleLoadingProgress: SampleLoadingCallback | null = null;
   
   // Scheduler state
   private schedulerInterval: number | null = null;
@@ -83,9 +103,9 @@ export class PlaybackEngine {
   }
   
   /**
-   * Initialize audio chain (master gain -> compressor -> destination)
+   * Initialize audio chain (master gain -> reverb dry/wet -> compressor -> destination)
    */
-  private initAudioChain(): void {
+  private async initAudioChain(): Promise<void> {
     const ctx = this.getAudioContext();
     
     // Master gain for overall volume control
@@ -100,21 +120,134 @@ export class PlaybackEngine {
     this.compressor.attack.value = 0.003;
     this.compressor.release.value = 0.1;
     
-    // Chain: masterGain -> compressor -> destination
-    this.masterGain.connect(this.compressor);
+    // Initialize reverb with subtle wet level for piano (0.15 = 15% wet)
+    // This adds warmth and space without muddiness
+    if (!this.reverbInitialized) {
+      try {
+        this.reverbNodes = await createReverb(ctx, undefined, 0.15);
+        this.reverbInitialized = true;
+      } catch (error) {
+        console.warn('Failed to initialize reverb, continuing without:', error);
+        // Fallback: direct connection without reverb
+        this.masterGain.connect(this.compressor);
+        this.compressor.connect(ctx.destination);
+        return;
+      }
+    }
+    
+    // Chain with reverb using a proper dry/wet split
+    // Create a splitter gain to avoid double-signal issues
+    const reverbInput = ctx.createGain();
+    reverbInput.gain.value = 1.0;
+    
+    // masterGain -> reverbInput -> (split to dry and wet)
+    this.masterGain.connect(reverbInput);
+    
+    // Dry path: reverbInput -> dryGain -> compressor
+    reverbInput.connect(this.reverbNodes!.dryGain);
+    this.reverbNodes!.dryGain.connect(this.compressor);
+    
+    // Wet path: reverbInput -> convolver -> (delay, filter already connected) -> wetGain -> compressor
+    reverbInput.connect(this.reverbNodes!.convolver);
+    this.reverbNodes!.wetGain.connect(this.compressor);
+    
+    // Final output
     this.compressor.connect(ctx.destination);
   }
   
   /**
    * Create instrument based on sound type
    */
-  private createInstrument(soundType: SoundType): PianoSynthesizer | SimpleSynthesizer {
+  private createInstrument(soundType: SoundType): Instrument {
     const ctx = this.getAudioContext();
     
-    if (soundType === 'piano') {
+    if (soundType === 'piano-sampled') {
+      // Use shared sampled piano instance if available and loaded
+      if (this.sampledPiano && this.sampledPiano.isReady()) {
+        return this.sampledPiano;
+      }
+      // Fall back to synth if samples aren't loaded
+      console.warn('Sampled piano not ready, falling back to synthesized piano');
+      return new PianoSynthesizer(ctx);
+    } else if (soundType === 'piano') {
       return new PianoSynthesizer(ctx);
     } else {
       return new SimpleSynthesizer(ctx, soundType as WaveformType);
+    }
+  }
+  
+  /**
+   * Set callback for sample loading progress
+   */
+  setSampleLoadingCallback(callback: SampleLoadingCallback | null): void {
+    this.onSampleLoadingProgress = callback;
+  }
+  
+  /**
+   * Check if samples are loaded and ready
+   */
+  areSamplesLoaded(): boolean {
+    return this.sampledPiano?.isReady() ?? false;
+  }
+  
+  /**
+   * Check if samples are currently loading
+   */
+  areSamplesLoading(): boolean {
+    return this.samplesLoading;
+  }
+  
+  /**
+   * Pre-load piano samples
+   * Call this before starting playback with sampled piano for best experience
+   */
+  async loadSamples(): Promise<boolean> {
+    if (this.sampledPiano?.isReady()) {
+      return true;
+    }
+    
+    if (this.samplesLoading) {
+      // Wait for existing load to complete
+      while (this.samplesLoading) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      return this.sampledPiano?.isReady() ?? false;
+    }
+    
+    this.samplesLoading = true;
+    
+    try {
+      const ctx = this.getAudioContext();
+      
+      // Resume AudioContext if suspended
+      if (ctx.state === 'suspended') {
+        await ctx.resume();
+      }
+      
+      // Create sampled piano if needed
+      if (!this.sampledPiano) {
+        this.sampledPiano = new SampledPiano(ctx);
+      }
+      
+      // Set up progress callback
+      this.sampledPiano.setLoadingProgressCallback((loaded, total) => {
+        this.onSampleLoadingProgress?.(loaded, total);
+      });
+      
+      // Load samples
+      const success = await this.sampledPiano.loadSamples();
+      
+      // Connect to audio chain if we have one
+      if (success && this.masterGain) {
+        this.sampledPiano.connect(this.masterGain);
+      }
+      
+      return success;
+    } catch (error) {
+      console.error('Failed to load piano samples:', error);
+      return false;
+    } finally {
+      this.samplesLoading = false;
     }
   }
   
@@ -310,13 +443,19 @@ export class PlaybackEngine {
     const trebleEvents = this.buildNoteEvents(this.styledChords, 'treble', this.timeSignature);
     const bassEvents = this.buildNoteEvents(this.styledChords, 'bass', this.timeSignature);
     
+    // For sampled piano, use the shared instance for both tracks
+    // This is more efficient and ensures samples are shared
+    const useSampledPiano = this.soundType === 'piano-sampled' && this.sampledPiano?.isReady();
+    
     // Update track events (or create tracks if needed)
     if (!this.trebleTrack) {
-      const instrument = this.createInstrument(this.soundType);
+      const instrument = useSampledPiano ? this.sampledPiano! : this.createInstrument(this.soundType);
       this.trebleTrack = new Track('treble', instrument, ctx, this.masterGain);
     }
     if (!this.bassTrack) {
-      const instrument = this.createInstrument(this.soundType);
+      // For sampled piano, share the same instrument instance
+      // For synth instruments, create separate instances to avoid interference
+      const instrument = useSampledPiano ? this.sampledPiano! : this.createInstrument(this.soundType);
       this.bassTrack = new Track('bass', instrument, ctx, this.masterGain);
     }
     
@@ -355,7 +494,7 @@ export class PlaybackEngine {
   /**
    * Start playback
    */
-  start(config: PlaybackConfig, onUpdate: PlaybackUpdateCallback): void {
+  async start(config: PlaybackConfig, onUpdate: PlaybackUpdateCallback): Promise<void> {
     // Store callback
     this.onUpdate = onUpdate;
     
@@ -372,9 +511,18 @@ export class PlaybackEngine {
       ctx.resume().catch(err => console.warn('Failed to resume AudioContext:', err));
     }
     
-    // Initialize audio chain
+    // Initialize audio chain (includes reverb setup)
     if (!this.masterGain) {
-      this.initAudioChain();
+      await this.initAudioChain();
+    }
+    
+    // If using sampled piano, ensure samples are loaded
+    if (config.soundType === 'piano-sampled' && !this.areSamplesLoaded()) {
+      const loaded = await this.loadSamples();
+      if (!loaded) {
+        console.warn('Failed to load piano samples, falling back to synth');
+        this.soundType = 'piano'; // Fall back to synth
+      }
     }
     
     // Create transport
@@ -558,6 +706,23 @@ export class PlaybackEngine {
   }
   
   /**
+   * Set reverb wet level (0-1)
+   * 0 = completely dry, 1 = completely wet
+   * Recommended range for piano: 0.1-0.3
+   */
+  setReverbLevel(wetLevel: number): void {
+    if (!this.reverbNodes) return;
+    
+    const ctx = this.getAudioContext();
+    const now = ctx.currentTime;
+    const normalizedWet = Math.max(0, Math.min(1, wetLevel));
+    
+    // Smoothly transition to new levels
+    this.reverbNodes.wetGain.gain.setTargetAtTime(normalizedWet, now, 0.02);
+    this.reverbNodes.dryGain.gain.setTargetAtTime(1 - normalizedWet, now, 0.02);
+  }
+  
+  /**
    * Clean up all resources
    */
   dispose(): void {
@@ -569,11 +734,24 @@ export class PlaybackEngine {
     this.trebleTrack = null;
     this.bassTrack = null;
     
+    // Dispose sampled piano
+    this.sampledPiano?.dispose();
+    this.sampledPiano = null;
+    this.samplesLoading = false;
+    this.onSampleLoadingProgress = null;
+    
     // Disconnect audio chain
     this.masterGain?.disconnect();
     this.compressor?.disconnect();
     this.masterGain = null;
     this.compressor = null;
+    
+    // Clean up reverb nodes
+    if (this.reverbNodes) {
+      this.reverbNodes.cleanup();
+      this.reverbNodes = null;
+    }
+    this.reverbInitialized = false;
     
     // Close audio context
     if (this.audioContext && this.audioContext.state !== 'closed') {

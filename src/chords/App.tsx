@@ -11,6 +11,13 @@ import { SOUND_OPTIONS } from './types/soundOptions';
 import { useUrlState } from './hooks/useUrlState';
 import { CHORD_STYLING_STRATEGIES } from './data/chordStylingStrategies';
 
+// Loading state for piano samples
+interface LoadingState {
+  isLoading: boolean;
+  progress: number;  // 0-100
+  total: number;
+}
+
 const App: React.FC = () => {
   const { getInitialState, syncToUrl, setupPopStateListener } = useUrlState();
   
@@ -59,6 +66,7 @@ const App: React.FC = () => {
   const [currentChordIndex, setCurrentChordIndex] = useState<number | null>(null);
   const [activeNoteGroups, setActiveNoteGroups] = useState<Set<string>>(new Set());
   const [lockedOptions, setLockedOptions] = useState<LockedOptions>({});
+  const [loadingState, setLoadingState] = useState<LoadingState>({ isLoading: false, progress: 0, total: 0 });
   const currentLoopIdRef = useRef<number>(0);
 
   // Helper function to generate styled chords
@@ -260,7 +268,7 @@ const App: React.FC = () => {
     setLockedOptions({ ...lockedOptions, [option]: locked });
   };
 
-  const handlePlay = useCallback(() => {
+  const handlePlay = useCallback(async () => {
     const playbackEngine = getPlaybackEngine();
     
     if (isPlaying) {
@@ -269,6 +277,28 @@ const App: React.FC = () => {
       setCurrentChordIndex(null);
       setActiveNoteGroups(new Set());
       return;
+    }
+
+    // If using sampled piano, show loading state while samples load
+    if (state.soundType === 'piano-sampled' && !playbackEngine.areSamplesLoaded()) {
+      setLoadingState({ isLoading: true, progress: 0, total: 0 });
+      
+      // Set up progress callback
+      playbackEngine.setSampleLoadingCallback((loaded, total) => {
+        setLoadingState({ isLoading: true, progress: loaded, total });
+      });
+      
+      // Load samples
+      const loaded = await playbackEngine.loadSamples();
+      
+      // Clear loading callback
+      playbackEngine.setSampleLoadingCallback(null);
+      setLoadingState({ isLoading: false, progress: 0, total: 0 });
+      
+      if (!loaded) {
+        console.warn('Failed to load piano samples');
+        // Continue anyway - it will fall back to synth
+      }
     }
 
     // Generate styled chords
@@ -280,7 +310,7 @@ const App: React.FC = () => {
     currentLoopIdRef.current = 0;
 
     // Start playback with new engine
-    playbackEngine.start(
+    await playbackEngine.start(
       {
         styledChords: expandedStyledChords,
         tempo: state.tempo,
@@ -297,6 +327,11 @@ const App: React.FC = () => {
       disposePlaybackEngine();
     };
   }, []);
+
+  // Calculate loading progress percentage
+  const loadingPercent = loadingState.total > 0 
+    ? Math.round((loadingState.progress / loadingState.total) * 100) 
+    : 0;
 
   return (
     <div className="chords-app">
@@ -319,11 +354,17 @@ const App: React.FC = () => {
 
         <div className="chords-main-content">
           <div className="chords-playback-controls">
-            <button onClick={handlePlay} className="play-button">
+            <button 
+              onClick={handlePlay} 
+              className="play-button"
+              disabled={loadingState.isLoading}
+            >
               <span className="material-symbols-outlined">
-                {isPlaying ? 'stop' : 'play_arrow'}
+                {loadingState.isLoading ? 'hourglass_empty' : isPlaying ? 'stop' : 'play_arrow'}
               </span>
-              {isPlaying ? 'Stop' : 'Play'}
+              {loadingState.isLoading 
+                ? `Loading ${loadingPercent}%` 
+                : isPlaying ? 'Stop' : 'Play'}
             </button>
             <div className="sound-control">
               <label htmlFor="sound-type">Sound:</label>
@@ -335,6 +376,7 @@ const App: React.FC = () => {
                   handleStateChange({ soundType: newSoundType });
                 }}
                 className="sound-select"
+                disabled={loadingState.isLoading}
               >
                 {SOUND_OPTIONS.map(option => (
                   <option key={option.value} value={option.value}>
@@ -347,6 +389,19 @@ const App: React.FC = () => {
           <div className="chords-score">
             <ChordScoreRenderer state={state} currentChordIndex={currentChordIndex} activeNoteGroups={activeNoteGroups} />
           </div>
+          
+          <footer className="chords-footer">
+            <span className="footer-attribution">
+              Piano samples: &ldquo;Salamander Grand Piano&rdquo; by Alexander Holm, licensed under{' '}
+              <a 
+                href="https://creativecommons.org/licenses/by/3.0/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+              >
+                CC BY 3.0
+              </a>
+            </span>
+          </footer>
         </div>
       </main>
     </div>
