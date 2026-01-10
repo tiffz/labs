@@ -350,26 +350,25 @@ const App: React.FC = () => {
 
               {/* Drum Pattern */}
               <div className="drum-section-inline">
-                <div className="drum-header-row">
-                  <span className="drum-label">Drum Pattern</span>
-                  <button
-                    className={`toggle-btn mini ${drumEnabled ? 'active' : ''}`}
-                    onClick={() => setDrumEnabled(!drumEnabled)}
-                    title="Toggle drum playback"
-                  >
-                    {drumEnabled ? 'On' : 'Off'}
-                  </button>
-                </div>
-                <DrumAccompaniment
-                  bpm={analysisResult.bpm}
-                  timeSignature={timeSignature}
-                  isPlaying={isPlaying && drumEnabled && isInSyncRegion}
-                  currentBeatTime={currentTime - effectiveSyncStart}
-                  currentBeat={currentBeat}
-                  enabled={drumEnabled}
-                  metronomeEnabled={metronomeEnabled}
-                  volume={drumVolume}
-                />
+                <label className="drum-checkbox-row">
+                  <input
+                    type="checkbox"
+                    checked={drumEnabled}
+                    onChange={(e) => setDrumEnabled(e.target.checked)}
+                  />
+                  <span className="drum-checkbox-label">Add drums</span>
+                </label>
+                {drumEnabled && (
+                  <DrumAccompaniment
+                    bpm={analysisResult.bpm}
+                    timeSignature={timeSignature}
+                    isPlaying={isPlaying && isInSyncRegion}
+                    currentBeatTime={currentTime - effectiveSyncStart}
+                    currentBeat={currentBeat}
+                    metronomeEnabled={metronomeEnabled}
+                    volume={drumVolume}
+                  />
+                )}
               </div>
             </div>
           </div>

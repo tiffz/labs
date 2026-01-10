@@ -103,8 +103,12 @@ const RhythmSequencer: React.FC<RhythmSequencerProps> = ({
 
   // Update notation when grid changes, removing empty trailing measures
   const updateNotation = useCallback((newGrid: typeof localGrid) => {
+    // Remember the original content boundary (before ghost measure padding)
+    // This is crucial: we should NOT extend notes into ghost measure padding
+    const originalActualLength = newGrid.actualLength || 0;
+    
     // First, ensure we have enough cells for display (one ghost measure)
-    const currentActualMeasures = Math.max(1, Math.ceil((newGrid.actualLength || 0) / sixteenthsPerMeasure));
+    const currentActualMeasures = Math.max(1, Math.ceil(originalActualLength / sixteenthsPerMeasure));
     const displayMeasures = currentActualMeasures + 1;
     const requiredCells = displayMeasures * sixteenthsPerMeasure;
     
@@ -131,15 +135,28 @@ const RhythmSequencer: React.FC<RhythmSequencerProps> = ({
     
     // Calculate actual length (up to last sound + its duration)
     // Count consecutive nulls after the last sound to determine note duration
-    // Allow notes to span measure boundaries - this creates tied notes when rendered
+    // IMPORTANT: Don't count ghost measure padding as note extensions!
     let actualLength = 0;
     if (lastSoundIndex >= 0) {
       // Find where the last note ends by counting consecutive nulls
-      // Allow spanning measure boundaries to support tied notes
       let endPos = lastSoundIndex;
       
-      // Count nulls until we hit another sound
-      while (endPos < cells.length - 1 && cells[endPos + 1] === null) {
+      // Determine the boundary for counting nulls:
+      // - If the last sound is within the original content, only count nulls up to the original boundary
+      // - If the last sound is beyond the original content (user clicked in ghost measure), 
+      //   only count that single note (don't extend into further padding)
+      let countBoundary: number;
+      if (lastSoundIndex < originalActualLength) {
+        // Sound is within original content - don't extend into ghost measure
+        countBoundary = originalActualLength;
+      } else {
+        // Sound is in ghost measure region - single sixteenth note, no automatic extension
+        // The user can drag to extend if they want longer notes
+        countBoundary = lastSoundIndex + 1;
+      }
+      
+      // Count nulls until we hit another sound or reach the boundary
+      while (endPos < countBoundary - 1 && endPos < cells.length - 1 && cells[endPos + 1] === null) {
         endPos++;
       }
       actualLength = endPos + 1;

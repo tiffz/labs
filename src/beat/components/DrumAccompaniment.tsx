@@ -16,7 +16,6 @@ interface DrumAccompanimentProps {
   isPlaying: boolean;
   currentBeatTime: number;
   currentBeat: number;
-  enabled?: boolean;
   metronomeEnabled?: boolean;
   volume?: number;
 }
@@ -49,7 +48,6 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
   isPlaying,
   currentBeatTime,
   currentBeat,
-  enabled = true,
   metronomeEnabled = false,
   volume = 70,
 }) => {
@@ -247,15 +245,7 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
   }, [notation, timeSignature, bpm]);
 
   return (
-    <div className={`drum-accompaniment ${!enabled ? 'disabled' : ''}`}>
-      {/* Disabled overlay */}
-      {!enabled && (
-        <div className="drum-disabled-overlay">
-          <span className="material-symbols-outlined">music_off</span>
-          <span>Drum pattern muted</span>
-        </div>
-      )}
-      
+    <div className="drum-accompaniment">
       {/* Preset selector */}
       <div className="drum-presets">
         {PRESET_RHYTHMS.map((preset, index) => (

@@ -860,10 +860,60 @@ body {
 /* Drum Section - Inline in sidebar */
 .drum-section-inline {
   border-top: 1px solid var(--border-subtle);
-  padding-top: 0.5rem;
+  padding-top: 0.75rem;
   margin-top: 0.5rem;
 }
 
+/* Checkbox row for Add drums */
+.drum-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.375rem 0;
+  user-select: none;
+}
+
+.drum-checkbox-row input[type='checkbox'] {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--accent-primary);
+  cursor: pointer;
+  margin: 0;
+}
+
+.drum-checkbox-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.drum-checkbox-row:hover .drum-checkbox-label {
+  color: var(--text-primary);
+}
+
+.drum-checkbox-row input[type='checkbox']:checked + .drum-checkbox-label {
+  color: var(--accent-primary);
+}
+
+/* Expand animation for drum content */
+.drum-section-inline .drum-accompaniment {
+  margin-top: 0.5rem;
+  animation: expandDrums 0.2s ease-out;
+}
+
+@keyframes expandDrums {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Legacy styles - keeping for compatibility */
 .drum-header-row {
   display: flex;
   align-items: center;
@@ -884,45 +934,6 @@ body {
 
 .drum-accompaniment {
   padding: 0;
-  position: relative;
-}
-
-.drum-accompaniment.disabled {
-  opacity: 0.5;
-  pointer-events: none;
-}
-
-.drum-accompaniment.disabled .vexflow-mini-container,
-.drum-accompaniment.disabled .drum-presets,
-.drum-accompaniment.disabled .drum-pattern-input {
-  filter: grayscale(0.5);
-}
-
-/* Disabled overlay */
-.drum-disabled-overlay {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 10;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.5rem 1rem;
-  background: rgba(22, 22, 30, 0.9);
-  border-radius: 0.5rem;
-  border: 1px solid var(--border-subtle);
-}
-
-.drum-disabled-overlay .material-symbols-outlined {
-  font-size: 1.25rem;
-  color: var(--text-muted);
-}
-
-.drum-disabled-overlay span:last-child {
-  font-size: 0.65rem;
-  color: var(--text-muted);
 }
 
 .drum-presets {

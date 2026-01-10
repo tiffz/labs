@@ -15,50 +15,138 @@ interface UseAudioAnalysisReturn {
 /**
  * Extract audio from a video file using a hidden video element
  * This approach works better for large video files and complex codecs
+ * Note: This method has limited browser support, especially in Safari
  */
 async function extractAudioFromVideo(
   videoUrl: string,
-  audioContext: AudioContext
+  audioContext: AudioContext,
+  timeoutMs: number = 60000
 ): Promise<AudioBuffer> {
   return new Promise((resolve, reject) => {
+    let resolved = false;
+    
+    // Set up timeout to prevent indefinite hanging
+    const timeoutId = setTimeout(() => {
+      if (!resolved) {
+        resolved = true;
+        video.pause();
+        video.src = '';
+        reject(new Error(
+          'Video audio extraction timed out. This feature has limited browser support. ' +
+          'Try using an audio file instead, or convert your video to MP3.'
+        ));
+      }
+    }, timeoutMs);
+    
     const video = document.createElement('video');
     video.crossOrigin = 'anonymous';
     video.preload = 'auto';
     video.muted = true;
 
     video.onloadedmetadata = async () => {
+      if (resolved) return;
+      
       try {
         const duration = video.duration;
         if (!isFinite(duration) || duration <= 0) {
-          reject(new Error('Could not determine video duration'));
-          return;
+          throw new Error('Could not determine video duration');
         }
 
-        // Create an offline context for rendering
+        // Check if OfflineAudioContext.createMediaElementSource is supported
+        // (it's not well-supported in Safari)
         const sampleRate = audioContext.sampleRate;
         const offlineContext = new OfflineAudioContext(2, sampleRate * duration, sampleRate);
 
-        // Create a media element source
-        const source = offlineContext.createMediaElementSource(video);
-        source.connect(offlineContext.destination);
+        // Create a media element source - this may throw in Safari
+        try {
+          const source = offlineContext.createMediaElementSource(video);
+          source.connect(offlineContext.destination);
+        } catch {
+          throw new Error(
+            'Your browser does not support extracting audio from video. ' +
+            'Try using Chrome, or extract the audio track separately.'
+          );
+        }
 
         // Play video (muted) to capture audio
-        video.play();
+        await video.play();
 
         // Render the audio
         const renderedBuffer = await offlineContext.startRendering();
-        video.pause();
-        resolve(renderedBuffer);
+        
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timeoutId);
+          video.pause();
+          resolve(renderedBuffer);
+        }
       } catch (err) {
-        reject(err);
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timeoutId);
+          video.pause();
+          reject(err);
+        }
       }
     };
 
     video.onerror = () => {
-      reject(new Error('Failed to load video file'));
+      if (!resolved) {
+        resolved = true;
+        clearTimeout(timeoutId);
+        reject(new Error('Failed to load video file'));
+      }
     };
 
     video.src = videoUrl;
+  });
+}
+
+/**
+ * Decode audio with a timeout to prevent Safari from hanging indefinitely.
+ * Safari's decodeAudioData can hang on certain file formats without
+ * resolving or rejecting the promise.
+ */
+function decodeAudioDataWithTimeout(
+  audioContext: AudioContext,
+  arrayBuffer: ArrayBuffer,
+  timeoutMs: number = 30000
+): Promise<AudioBuffer> {
+  return new Promise((resolve, reject) => {
+    let resolved = false;
+    
+    // Set up timeout to prevent indefinite hanging (common Safari issue)
+    const timeoutId = setTimeout(() => {
+      if (!resolved) {
+        resolved = true;
+        reject(new Error(
+          'Audio decoding timed out. This can happen in Safari with certain file formats. ' +
+          'Try using Chrome, or convert your file to MP3 format.'
+        ));
+      }
+    }, timeoutMs);
+
+    // Safari may need the callback-based API instead of the promise-based one
+    // for better compatibility
+    audioContext.decodeAudioData(
+      arrayBuffer,
+      (buffer) => {
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timeoutId);
+          resolve(buffer);
+        }
+      },
+      (error) => {
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timeoutId);
+          // Safari sometimes passes null as the error
+          const message = error?.message || 'Unknown decoding error';
+          reject(new Error(`Audio decoding failed: ${message}`));
+        }
+      }
+    );
   });
 }
 
@@ -73,12 +161,23 @@ async function decodeMediaAsAudio(
   const arrayBuffer = await file.arrayBuffer();
 
   try {
-    // Try direct decoding first (works for audio files and many video formats)
-    return await audioContext.decodeAudioData(arrayBuffer);
-  } catch {
-    // If direct decoding fails, the format might not be supported
+    // Use the timeout-wrapped version to prevent Safari from hanging
+    return await decodeAudioDataWithTimeout(audioContext, arrayBuffer);
+  } catch (error) {
+    // If direct decoding fails, provide helpful error message
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
+    // Check for Safari-specific issues
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    if (isSafari) {
+      throw new Error(
+        `Could not decode audio in Safari: ${errorMessage}. ` +
+        'Safari has limited codec support. Try using Chrome, or convert your file to MP3 format.'
+      );
+    }
+    
     throw new Error(
-      'Could not decode audio from file. The format may not be supported by your browser.'
+      `Could not decode audio: ${errorMessage}. The format may not be supported by your browser.`
     );
   }
 }
