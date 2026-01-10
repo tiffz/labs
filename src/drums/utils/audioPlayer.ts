@@ -1,5 +1,5 @@
 import type { DrumSound } from '../types';
-import { createReverb, updateReverbLevel, convertReverbStrengthToWetLevel } from './reverb';
+import { AudioPlayer } from '../../shared/audio/audioPlayer';
 
 // Import audio files
 import dumSound from '../assets/sounds/dum.wav';
@@ -7,347 +7,112 @@ import takSound from '../assets/sounds/tak.wav';
 import kaSound from '../assets/sounds/ka.wav';
 import slapSound from '../assets/sounds/slap2.wav';
 import clickSound from '../assets/sounds/click.mp3';
+import domesticLivingRoomIR from '../assets/sounds/domestic-living-room.mp4';
 
 /**
- * Audio player for drum sounds using Web Audio API for precise timing and volume control
- * Preloads all sounds and provides a simple play interface with dynamic volume
- * 
- * RELIABILITY FEATURES:
- * - Automatically resumes suspended AudioContext (browser autoplay policy compliance)
- * - Handles visibility changes to prevent audio issues when tab is backgrounded
- * - Provides health check API for playback system to verify audio is working
+ * Drum-specific audio player that wraps the shared AudioPlayer
+ * with pre-configured drum sounds and reverb settings
  */
-class AudioPlayer {
-  private audioContext: AudioContext | null = null;
-  private buffers: Map<DrumSound, AudioBuffer> = new Map();
-  private clickBuffer: AudioBuffer | null = null;
+class DrumAudioPlayer {
+  private player: AudioPlayer;
   private isInitialized = false;
-  private activeSources: Set<AudioBufferSourceNode> = new Set(); // Track active sound sources
-  private reverbNodes: {
-    dryGain: GainNode;
-    wetGain: GainNode;
-    convolver: ConvolverNode;
-    delayNode: DelayNode;
-    filterNode: BiquadFilterNode;
-    cleanup: () => void;
-  } | null = null;
-  private reverbStrength: number = 0; // 0-100
-  private visibilityChangeHandler: (() => void) | null = null;
-  private stateChangeHandler: (() => void) | null = null;
 
   constructor() {
-    // AudioContext is created lazily on first user interaction
+    this.player = new AudioPlayer({
+      clickUrl: clickSound,
+      reverbImpulseUrl: domesticLivingRoomIR,
+      enableReverb: true,
+    });
   }
 
   /**
-   * Initialize the audio context and load all sounds
-   * Must be called after user interaction (e.g., button click)
+   * Initialize the audio context and load all drum sounds
    */
   private async initialize(): Promise<void> {
     if (this.isInitialized) return;
 
-    try {
-      // Create AudioContext
-      const AudioContextClass = window.AudioContext || (window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      this.audioContext = new AudioContextClass();
-      
-      // Set up visibility change handler to resume audio when tab becomes visible
-      // This prevents silence after tab has been backgrounded
-      this.visibilityChangeHandler = () => {
-        if (document.visibilityState === 'visible' && this.audioContext?.state === 'suspended') {
-          this.audioContext.resume().catch(err => {
-            console.warn('Failed to resume AudioContext on visibility change:', err);
-          });
-        }
-      };
-      document.addEventListener('visibilitychange', this.visibilityChangeHandler);
+    await this.player.initialize();
 
-      // Set up state change handler to detect when AudioContext becomes suspended
-      this.stateChangeHandler = () => {
-        if (this.audioContext?.state === 'suspended') {
-          // AudioContext was suspended (possibly by browser policy or backgrounding)
-          // Attempt to resume it - this may require user interaction
-          this.audioContext.resume().catch(err => {
-            console.warn('Failed to resume suspended AudioContext:', err);
-          });
-        }
-      };
-      this.audioContext.addEventListener('statechange', this.stateChangeHandler);
-      
-      // Load all sounds
-      const soundFiles: Record<Exclude<DrumSound, 'rest'>, string> = {
-        dum: dumSound,
-        tak: takSound,
-        ka: kaSound,
-        slap: slapSound,
-      };
+    // Load drum sounds
+    const soundUrls: Record<string, string> = {
+      dum: dumSound,
+      tak: takSound,
+      ka: kaSound,
+      slap: slapSound,
+    };
 
-      const loadPromises = Object.entries(soundFiles).map(async ([sound, src]) => {
-        const response = await fetch(src);
-        const arrayBuffer = await response.arrayBuffer();
-        const audioBuffer = await this.audioContext!.decodeAudioData(arrayBuffer);
-        this.buffers.set(sound as DrumSound, audioBuffer);
-      });
-
-      // Also load the click sound for metronome
-      const clickPromise = (async () => {
-        const response = await fetch(clickSound);
-        const arrayBuffer = await response.arrayBuffer();
-        this.clickBuffer = await this.audioContext!.decodeAudioData(arrayBuffer);
-      })();
-
-      await Promise.all([...loadPromises, clickPromise]);
-
-      // Initialize reverb nodes (will be connected when reverb is enabled)
-      // createReverb is now async, so we await it
-      this.reverbNodes = await createReverb(this.audioContext, 0);
-      // Connect reverb nodes to destination (always connected, but gain controls dry/wet mix)
-      this.reverbNodes.wetGain.connect(this.audioContext.destination);
-      this.reverbNodes.dryGain.connect(this.audioContext.destination);
-
-      this.isInitialized = true;
-    } catch (err) {
-      console.error('Error initializing audio:', err);
-    }
+    await this.player.loadAdditionalSounds(soundUrls);
+    this.isInitialized = true;
   }
 
   /**
-   * Ensure the AudioContext is running (not suspended)
-   * This MUST be called before any playback to handle browser autoplay policies
-   * and recovery from tab backgrounding
-   * 
-   * @returns Promise that resolves to true if audio is ready, false otherwise
+   * Ensure the AudioContext is running
    */
   async ensureResumed(): Promise<boolean> {
     if (!this.isInitialized) {
       await this.initialize();
     }
-    
-    if (!this.audioContext) {
-      return false;
-    }
-    
-    // If context is suspended, try to resume it
-    if (this.audioContext.state === 'suspended') {
-      try {
-        await this.audioContext.resume();
-      } catch (err) {
-        console.error('Failed to resume AudioContext:', err);
-        return false;
-      }
-    }
-    
-    // If context is closed, we can't recover - would need to reinitialize
-    if (this.audioContext.state === 'closed') {
-      console.error('AudioContext is closed and cannot be resumed');
-      return false;
-    }
-    
-    return this.audioContext.state === 'running';
+    return this.player.ensureResumed();
   }
 
   /**
-   * Check if audio is currently healthy and ready for playback
-   * @returns true if AudioContext exists and is in 'running' state
+   * Check if audio is healthy
    */
   isHealthy(): boolean {
-    return this.isInitialized && 
-           this.audioContext !== null && 
-           this.audioContext.state === 'running';
+    return this.player.isHealthy();
   }
 
   /**
-   * Get current AudioContext state for debugging/monitoring
-   * @returns The current state or 'uninitialized' if not yet created
+   * Get current AudioContext state
    */
   getState(): AudioContextState | 'uninitialized' {
-    if (!this.audioContext) {
-      return 'uninitialized';
-    }
-    return this.audioContext.state;
+    return this.player.getState();
   }
 
   /**
    * Set reverb strength (0-100)
-   * @param strength - Reverb strength from 0 (no reverb) to 100 (full reverb)
    */
   setReverbStrength(strength: number): void {
-    this.reverbStrength = Math.max(0, Math.min(100, strength));
-    
-    if (this.reverbNodes) {
-      // Convert 0-100 to 0.0-1.0 wet level using non-linear curve
-      // This preserves more dry signal at lower settings for better balance
-      const wetLevel = convertReverbStrengthToWetLevel(this.reverbStrength);
-      updateReverbLevel(this.reverbNodes.wetGain, this.reverbNodes.dryGain, wetLevel);
-    }
+    this.player.setReverbStrength(strength);
   }
 
   /**
-   * Play a drum sound with optional volume control
-   * @param sound - The drum sound to play
-   * @param volume - Volume level (0.0 to 1.0), defaults to 1.0
-   * @param duration - Optional duration in seconds for the note (used for fade-out on very short notes)
+   * Play a drum sound
    */
   async play(sound: DrumSound, volume: number = 1.0, duration?: number): Promise<void> {
     if (sound === 'rest') return;
-
-    // Ensure audio context is initialized AND running (not suspended)
-    // This handles browser autoplay policies and recovery from tab backgrounding
-    const isReady = await this.ensureResumed();
-    if (!isReady || !this.audioContext) return;
-
-    const buffer = this.buffers.get(sound);
-    if (!buffer) return;
-
-    try {
-      // Create source node
-      const source = this.audioContext.createBufferSource();
-      source.buffer = buffer;
-
-      // Create gain node for volume control
-      const gainNode = this.audioContext.createGain();
-      const now = this.audioContext.currentTime;
-      
-      // Set initial volume
-      gainNode.gain.setValueAtTime(Math.max(0, Math.min(1, volume)), now);
-
-      // Only apply fade-out for very short notes (< 0.15 seconds / 150ms)
-      // This prevents overlap on fast 16th notes without affecting longer notes
-      if (duration !== undefined && duration > 0 && duration < 0.15) {
-        // Start fade-out at 80% of the note duration
-        const fadeStartTime = now + (duration * 0.8);
-        const fadeEndTime = now + duration;
-        
-        // Exponential ramp down to near-zero (can't use 0 with exponentialRampToValueAtTime)
-        gainNode.gain.setValueAtTime(volume, fadeStartTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, fadeEndTime);
-      }
-
-      // Connect audio chain with reverb support
-      // If reverb is enabled, split signal to dry and wet paths
-      if (this.reverbNodes && this.reverbStrength > 0) {
-        // Split signal: source -> gain -> (dryGain + convolver -> wetGain) -> destination
-        source.connect(gainNode);
-        gainNode.connect(this.reverbNodes.dryGain);
-        gainNode.connect(this.reverbNodes.convolver);
-      } else {
-        // No reverb: source -> gain -> destination
-        source.connect(gainNode);
-        gainNode.connect(this.audioContext.destination);
-      }
-
-      // Track this source
-      this.activeSources.add(source);
-      
-      // Clean up when source finishes playing
-      source.onended = () => {
-        this.activeSources.delete(source);
-      };
-
-      // Start immediately and let it play naturally
-      source.start(now);
-      
-      // Only stop if we applied a fade-out
-      if (duration !== undefined && duration > 0 && duration < 0.15) {
-        source.stop(now + duration + 0.01); // Small buffer after fade
-      }
-    } catch (err) {
-      console.error(`Error playing ${sound} sound:`, err);
-    }
+    await this.player.play(sound, volume, duration);
   }
 
   /**
-   * Play a metronome click sound
-   * @param volume - Volume level (0.0 to 1.0), defaults to 1.0
+   * Play metronome click
    */
   async playClick(volume: number = 1.0): Promise<void> {
-    // Ensure audio context is initialized AND running (not suspended)
-    const isReady = await this.ensureResumed();
-    if (!isReady || !this.audioContext || !this.clickBuffer) return;
-
-    try {
-      // Create source node
-      const source = this.audioContext.createBufferSource();
-      source.buffer = this.clickBuffer;
-
-      // Create gain node for volume control
-      const gainNode = this.audioContext.createGain();
-      gainNode.gain.setValueAtTime(Math.max(0, Math.min(1, volume)), this.audioContext.currentTime);
-
-      // Connect: source -> gain -> destination
-      source.connect(gainNode);
-      gainNode.connect(this.audioContext.destination);
-
-      // Start immediately
-      source.start(this.audioContext.currentTime);
-    } catch (err) {
-      console.error('Error playing click sound:', err);
-    }
+    await this.player.playClick(volume);
   }
 
   /**
-   * Stop all currently playing drum sounds (but not metronome clicks)
-   * This is called when a new note starts to clip the previous sound
+   * Stop all drum sounds (but not metronome)
    */
   stopAllDrumSounds(): void {
-    // Stop all active drum sound sources
-    this.activeSources.forEach((source) => {
-      try {
-        source.stop();
-      } catch {
-        // Source may have already ended, ignore error
-      }
-    });
-    this.activeSources.clear();
+    this.player.stopAllSounds();
   }
 
   /**
-   * Stop all currently playing sounds (including metronome)
+   * Stop all sounds
    */
   stopAll(): void {
-    this.stopAllDrumSounds();
+    this.player.stopAll();
   }
 
   /**
-   * Clean up resources when audio player is no longer needed
-   * Removes event listeners and closes AudioContext
+   * Clean up resources
    */
   destroy(): void {
-    // Remove event listeners
-    if (this.visibilityChangeHandler) {
-      document.removeEventListener('visibilitychange', this.visibilityChangeHandler);
-      this.visibilityChangeHandler = null;
-    }
-    
-    if (this.stateChangeHandler && this.audioContext) {
-      this.audioContext.removeEventListener('statechange', this.stateChangeHandler);
-      this.stateChangeHandler = null;
-    }
-    
-    // Stop all sounds
-    this.stopAll();
-    
-    // Clean up reverb nodes
-    if (this.reverbNodes) {
-      this.reverbNodes.cleanup();
-      this.reverbNodes = null;
-    }
-    
-    // Close AudioContext
-    if (this.audioContext) {
-      this.audioContext.close().catch(err => {
-        console.warn('Error closing AudioContext:', err);
-      });
-      this.audioContext = null;
-    }
-    
-    // Clear buffers
-    this.buffers.clear();
-    this.clickBuffer = null;
+    this.player.destroy();
     this.isInitialized = false;
   }
 }
 
-// Singleton instance
-export const audioPlayer = new AudioPlayer();
-
+// Singleton instance for backward compatibility
+export const audioPlayer = new DrumAudioPlayer();

@@ -11,6 +11,7 @@ const config: KnipConfig = {
     'src/story/index.html',
     'src/chords/index.html',
     'src/forms/index.html',
+    'src/beat/index.html',
     'src/404.html',
     // Include TS entry points explicitly so transitive deps are tracked
     'src/cats/main.tsx',
@@ -22,6 +23,7 @@ const config: KnipConfig = {
     'src/story/main.tsx',
     'src/chords/main.tsx',
     'src/forms/main.tsx',
+    'src/beat/main.tsx',
     'src/corp/App.tsx',
     'src/**/*.test.{ts,tsx}',
   ],
@@ -35,6 +37,15 @@ const config: KnipConfig = {
     'public/scripts/shared.js',
     // Test setup files
     'src/shared/test/setupTests.ts',
+    // Shared module barrel exports (may have unused exports that are part of public API)
+    'src/shared/audio/index.ts',
+    'src/shared/rhythm/index.ts',
+    // Shared audio utilities (standalone metronome player for future use)
+    'src/shared/audio/metronomePlayer.ts',
+    'src/shared/audio/audioPlayer.ts',
+    // Shared notation components
+    'src/shared/notation/index.ts',
+    'src/shared/notation/drumSymbols.ts',
     // Deprecated/parked UI & systems (kept for future work but not referenced)
     'src/cats/components/ui/CatFact.tsx',
     'src/cats/components/ui/NotificationQueue.tsx',

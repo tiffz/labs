@@ -7,6 +7,32 @@ import { findDropTarget, type NotePosition } from '../utils/dropTargetFinder';
 import { computeDropPreview } from '../utils/dropPreview';
 import { getCurrentDraggedPattern } from './NotePalette';
 
+/**
+ * ARCHITECTURE DECISION: VexFlowRenderer vs DrumNotationMini
+ *
+ * This component and `src/shared/notation/DrumNotationMini.tsx` both render drum
+ * notation using VexFlow, but they intentionally DO NOT share rendering code.
+ *
+ * Why separate implementations?
+ * - VexFlowRenderer: Full-featured editor with multi-measure layout, drag-drop,
+ *   rectangle selection, metronome dots, cross-measure ties, and responsive sizing
+ * - DrumNotationMini: Simple read-only display for single measure with theming
+ *
+ * These serve fundamentally different purposes. Merging them would create:
+ * - Parameter explosion (isEditable, showMetronome, enableDragDrop, etc.)
+ * - Conditional rendering paths that make the code hard to reason about
+ * - Tight coupling that would make both harder to evolve independently
+ *
+ * Per Sandi Metz's "The Wrong Abstraction": prefer duplication over the wrong
+ * abstraction. The duplicated beaming logic and constants are acceptable - they're
+ * cheaper to maintain than a condition-laden shared component.
+ *
+ * Shared utilities (types, drumSymbols, timeSignatureUtils) ARE appropriate to share
+ * because they're pure functions/data without consumer-specific behavior.
+ *
+ * @see https://sandimetz.com/blog/2016/1/20/the-wrong-abstraction
+ */
+
 /** Selection rectangle state for visual feedback */
 interface SelectionRect {
   startX: number;

@@ -74,6 +74,10 @@
   background-image: url('/icons/favicon-forms.svg');
 }
 
+.app-icon.beat {
+  background-image: url('/icons/favicon-beat.svg');
+}
+
 .app-info {
   text-align: left;
 }

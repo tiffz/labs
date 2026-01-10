@@ -30,6 +30,7 @@ export default defineConfig({
           story: resolve(__dirname, 'src/story/index.html'),
           chords: resolve(__dirname, 'src/chords/index.html'),
           forms: resolve(__dirname, 'src/forms/index.html'),
+          beat: resolve(__dirname, 'src/beat/index.html'),
       },
       output: {
         manualChunks: {
@@ -45,6 +46,9 @@ export default defineConfig({
           }
           if (assetInfo.name?.match(/\.(png|jpe?g|svg|gif|webp|avif)$/)) {
             return 'images/[name]-[hash][extname]';
+          }
+          if (assetInfo.name?.endsWith('.wasm')) {
+            return 'wasm/[name]-[hash][extname]';
           }
           return 'assets/[name]-[hash][extname]';
         },
@@ -221,7 +225,7 @@ export default defineConfig({
           },
           // Cache static assets with StaleWhileRevalidate for better performance
           {
-            urlPattern: /\.(js|css|woff2?|png|jpg|jpeg|svg|gif|webp|ico)$/,
+            urlPattern: /\.(js|css|woff2?|png|jpg|jpeg|svg|gif|webp|ico|wasm)$/,
             handler: 'StaleWhileRevalidate',
             options: {
               cacheName: 'static-assets',
