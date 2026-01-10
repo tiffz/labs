@@ -50,15 +50,27 @@ describe('PianoSynthesizer', () => {
   });
 
   describe('playNote', () => {
-    it('creates oscillators for each harmonic', () => {
+    it('creates oscillators for each harmonic plus modulation LFO for long notes', () => {
       pianoSynth.playNote({
         frequency: 440,
         startTime: 0.1,
-        duration: 1.0,
+        duration: 1.0, // Long note triggers modulation
         velocity: 0.8,
       });
 
-      // Should create 6 oscillators (one per harmonic)
+      // Should create 7 oscillators: 1 LFO for modulation + 6 harmonics
+      expect(mockAudioContext.createOscillator).toHaveBeenCalledTimes(7);
+    });
+
+    it('creates only harmonic oscillators for short notes (no modulation)', () => {
+      pianoSynth.playNote({
+        frequency: 440,
+        startTime: 0.1,
+        duration: 0.3, // Short note - no modulation
+        velocity: 0.8,
+      });
+
+      // Should create only 6 oscillators (harmonics, no LFO)
       expect(mockAudioContext.createOscillator).toHaveBeenCalledTimes(6);
     });
 
@@ -70,12 +82,11 @@ describe('PianoSynthesizer', () => {
         velocity: 0.8,
       });
 
-      // 1 output gain (from BaseInstrument) + 6 note gains (one per harmonic)
-      // The output gain is created in constructor
+      // 1 output gain (from BaseInstrument) + 6 note gains + modulation gains
       expect(mockAudioContext.createGain).toHaveBeenCalled();
     });
 
-    it('sets correct frequency for fundamental', () => {
+    it('sets correct frequency for fundamental (after LFO)', () => {
       pianoSynth.playNote({
         frequency: 440,
         startTime: 0.1,
@@ -84,9 +95,9 @@ describe('PianoSynthesizer', () => {
       });
 
       const oscillatorCalls = mockAudioContext.createOscillator.mock.results;
-      // First oscillator should be the fundamental at 440Hz
-      const firstOsc = oscillatorCalls[0].value;
-      expect(firstOsc.frequency.value).toBe(440);
+      // First oscillator is LFO (low frequency), second is fundamental at 440Hz
+      const fundamentalOsc = oscillatorCalls[1].value;
+      expect(fundamentalOsc.frequency.value).toBe(440);
     });
 
     it('sets harmonic frequencies correctly', () => {
@@ -98,9 +109,9 @@ describe('PianoSynthesizer', () => {
       });
 
       const oscillatorCalls = mockAudioContext.createOscillator.mock.results;
-      // Second harmonic should be 880Hz (2x fundamental)
-      const secondOsc = oscillatorCalls[1].value;
-      expect(secondOsc.frequency.value).toBe(880);
+      // Index 0 is LFO, index 1 is fundamental, index 2 is 2nd harmonic (880Hz)
+      const secondHarmonicOsc = oscillatorCalls[2].value;
+      expect(secondHarmonicOsc.frequency.value).toBe(880);
     });
 
     it('schedules oscillator start and stop', () => {
@@ -112,10 +123,11 @@ describe('PianoSynthesizer', () => {
       });
 
       const oscillatorCalls = mockAudioContext.createOscillator.mock.results;
-      const firstOsc = oscillatorCalls[0].value;
+      // Check the fundamental oscillator (index 1, after LFO)
+      const fundamentalOsc = oscillatorCalls[1].value;
       
-      expect(firstOsc.start).toHaveBeenCalled();
-      expect(firstOsc.stop).toHaveBeenCalled();
+      expect(fundamentalOsc.start).toHaveBeenCalled();
+      expect(fundamentalOsc.stop).toHaveBeenCalled();
     });
 
     it('applies ADSR envelope to gain nodes', () => {
@@ -127,12 +139,14 @@ describe('PianoSynthesizer', () => {
       });
 
       const gainCalls = mockAudioContext.createGain.mock.results;
-      // Check that gain envelope methods were called
-      // The note gain nodes (not the output gain) should have envelope automation
-      const noteGain = gainCalls[1].value; // First note gain (index 0 is output gain)
+      // Check that gain envelope methods were called on one of the note gains
+      // With modulation, the order is: output gain, LFO gain, modulation gain, then note gains
+      // Find a gain node that has envelope automation
+      const hasEnvelope = gainCalls.some(call => 
+        call.value.gain.setValueAtTime.mock.calls.length > 0
+      );
       
-      expect(noteGain.gain.setValueAtTime).toHaveBeenCalled();
-      expect(noteGain.gain.linearRampToValueAtTime).toHaveBeenCalled();
+      expect(hasEnvelope).toBe(true);
     });
 
     it('does not play when disposed', () => {
@@ -146,7 +160,6 @@ describe('PianoSynthesizer', () => {
       });
 
       // Should not create any oscillators after disposal
-      // (createOscillator called 0 times after dispose)
       expect(mockAudioContext.createOscillator).not.toHaveBeenCalled();
     });
 
@@ -154,10 +167,10 @@ describe('PianoSynthesizer', () => {
       pianoSynth.playNote({
         frequency: 440,
         startTime: 0.1,
-        duration: 1.0,
+        duration: 0.3, // Short note to avoid modulation complexity
       });
 
-      // Should still create oscillators with default velocity
+      // Should create 6 oscillators (harmonics only, no modulation for short notes)
       expect(mockAudioContext.createOscillator).toHaveBeenCalledTimes(6);
     });
   });

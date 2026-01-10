@@ -82,8 +82,12 @@ export type SampleLoadingState = 'idle' | 'loading' | 'loaded' | 'error';
 /**
  * Sampled Piano Synthesizer
  * 
- * Plays real piano samples with velocity-based sample selection
- * and pitch shifting for notes between sample points.
+ * Plays real piano samples with:
+ * - Velocity-based sample selection
+ * - Pitch shifting for notes between sample points
+ * - Natural decay (lets samples ring naturally)
+ * - Subtle modulation for long notes (adds life/movement)
+ * - Smooth release when notes end
  */
 export class SampledPiano extends BaseInstrument {
   private samples: LoadedSample[] = [];
@@ -92,10 +96,14 @@ export class SampledPiano extends BaseInstrument {
   private onLoadingProgress: LoadingProgressCallback | null = null;
   private onLoadingComplete: ((success: boolean) => void) | null = null;
   
-  // ADSR settings for sample playback
-  private readonly attackTime = 0.005;  // Very fast attack for samples
-  private readonly releaseTime = 0.3;   // Smooth release
-  private readonly baseGain = 0.9;      // Samples are already normalized
+  // Playback settings optimized for natural piano sound
+  private readonly attackTime = 0.005;  // Fast attack (samples have their own attack)
+  private readonly releaseTime = 0.35;  // Smooth release when note ends
+  private readonly baseGain = 0.8;      // Slightly reduced to leave headroom
+  
+  // Subtle modulation settings (adds "life" to long notes)
+  private readonly modulationRate = 4.0;     // Hz - slow vibrato rate
+  private readonly modulationDepth = 0.004;  // Very subtle amplitude variation (0.4%)
   
   constructor(audioContext: AudioContext) {
     super(audioContext);
@@ -184,6 +192,47 @@ export class SampledPiano extends BaseInstrument {
     return Math.pow(2, semitones / 12);
   }
   
+  /**
+   * Create subtle amplitude modulation (tremolo) for long notes
+   * This adds "life" to sustained notes, making them sound less static
+   */
+  private createModulation(
+    audioContext: AudioContext, 
+    startTime: number, 
+    duration: number
+  ): { modulationGain: GainNode; lfo: OscillatorNode } | null {
+    // Only apply modulation to notes longer than 0.5 seconds
+    if (duration < 0.5) return null;
+    
+    // Create LFO (Low Frequency Oscillator) for subtle tremolo
+    const lfo = audioContext.createOscillator();
+    lfo.type = 'sine';
+    lfo.frequency.value = this.modulationRate;
+    
+    // Create gain node to scale the LFO output
+    const lfoGain = audioContext.createGain();
+    lfoGain.gain.value = this.modulationDepth;
+    
+    // Create the modulation gain node (this will be multiplied with the signal)
+    const modulationGain = audioContext.createGain();
+    modulationGain.gain.value = 1.0; // Base gain
+    
+    // Connect LFO -> lfoGain -> modulationGain.gain (modulates the gain parameter)
+    lfo.connect(lfoGain);
+    lfoGain.connect(modulationGain.gain);
+    
+    // Start and stop the LFO
+    lfo.start(startTime);
+    lfo.stop(startTime + duration + 0.1);
+    
+    // Cleanup
+    lfo.onended = () => {
+      lfoGain.disconnect();
+    };
+    
+    return { modulationGain, lfo };
+  }
+  
   playNote({ frequency, startTime, duration, velocity = 0.8 }: PlayNoteParams): void {
     if (this.disposed) return;
     
@@ -224,41 +273,62 @@ export class SampledPiano extends BaseInstrument {
     // Create gain node for envelope
     const gainNode = audioContext.createGain();
     
-    // Calculate gain based on velocity (samples already have velocity baked in,
-    // but we still want some dynamic range)
-    const velocityGain = 0.5 + (velocity * 0.5); // Range: 0.5 to 1.0
+    // Calculate gain based on velocity
+    // Use a more natural velocity curve (not linear)
+    const velocityCurve = Math.pow(velocity, 0.7); // Softer curve for more natural dynamics
+    const velocityGain = 0.4 + (velocityCurve * 0.6); // Range: 0.4 to 1.0
     const peakGain = this.baseGain * velocityGain;
     
-    // Envelope: fast attack, hold, then release
+    // Simple, clean envelope using only linear ramps (no discontinuities):
+    // - Fast attack to peak
+    // - Hold at peak (sample's natural decay is in the audio itself)
+    // - Smooth linear fade at the end
+    
+    // Attack: quick ramp to peak
     gainNode.gain.setValueAtTime(0, clampedStartTime);
     gainNode.gain.linearRampToValueAtTime(peakGain, clampedStartTime + this.attackTime);
     
-    // Calculate when to start release
-    const releaseStartTime = clampedStartTime + duration - this.releaseTime;
+    // Hold at peak gain - the sample's recorded decay provides natural sound
+    // We calculate when to start the release fade
+    const releaseStartTime = Math.max(
+      clampedStartTime + this.attackTime + 0.05,
+      clampedStartTime + duration - this.releaseTime
+    );
     
-    if (releaseStartTime > clampedStartTime + this.attackTime) {
-      // Hold until release
-      gainNode.gain.setValueAtTime(peakGain, releaseStartTime);
-    }
+    // Hold until release (continuous linear ramp at same value = hold)
+    gainNode.gain.linearRampToValueAtTime(peakGain, releaseStartTime);
     
-    // Release
+    // Release: smooth linear fade to zero
     gainNode.gain.linearRampToValueAtTime(0, clampedStartTime + duration);
     
-    // Connect: source -> gain -> output
-    source.connect(gainNode);
-    gainNode.connect(this.output);
+    // Create subtle modulation for long notes
+    const modulation = this.createModulation(audioContext, clampedStartTime, duration);
+    
+    // Build the audio chain
+    if (modulation) {
+      // source -> gainNode -> modulationGain -> output
+      source.connect(gainNode);
+      gainNode.connect(modulation.modulationGain);
+      modulation.modulationGain.connect(this.output);
+    } else {
+      // source -> gainNode -> output
+      source.connect(gainNode);
+      gainNode.connect(this.output);
+    }
     
     // Start playback
     source.start(clampedStartTime);
     
-    // Stop the source after the note duration (plus a small buffer)
-    // Account for playback rate changes in duration
+    // Stop the source after the note duration (plus buffer for release tail)
     const adjustedDuration = duration / (source.playbackRate.value || 1);
-    source.stop(clampedStartTime + adjustedDuration + 0.1);
+    source.stop(clampedStartTime + adjustedDuration + 0.15);
     
     // Cleanup
     source.onended = () => {
       gainNode.disconnect();
+      if (modulation) {
+        modulation.modulationGain.disconnect();
+      }
     };
   }
   

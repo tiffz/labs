@@ -120,11 +120,11 @@ export class PlaybackEngine {
     this.compressor.attack.value = 0.003;
     this.compressor.release.value = 0.1;
     
-    // Initialize reverb with subtle wet level for piano (0.15 = 15% wet)
-    // This adds warmth and space without muddiness
+    // Initialize reverb with moderate wet level for piano (0.25 = 25% wet)
+    // This adds warmth, space, and helps samples sound more natural/musical
     if (!this.reverbInitialized) {
       try {
-        this.reverbNodes = await createReverb(ctx, undefined, 0.15);
+        this.reverbNodes = await createReverb(ctx, undefined, 0.25);
         this.reverbInitialized = true;
       } catch (error) {
         console.warn('Failed to initialize reverb, continuing without:', error);
