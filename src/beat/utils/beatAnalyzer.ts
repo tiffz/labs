@@ -29,7 +29,7 @@ let essentiaInitPromise: Promise<typeof Essentia> | null = null;
 /**
  * Initialize Essentia.js WASM module (cached singleton)
  */
-async function getEssentia(): Promise<typeof Essentia> {
+export async function getEssentia(): Promise<typeof Essentia> {
   if (essentiaInstance) {
     return essentiaInstance;
   }

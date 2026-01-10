@@ -12,10 +12,10 @@
   --accent-secondary: #c9a0b8;
   --accent-tertiary: #7eb5c4;
 
-  /* Text hierarchy */
-  --text-primary: #e8e6f0;
-  --text-secondary: #a8a4b8;
-  --text-muted: #68647a;
+  /* Text hierarchy - WCAG AA compliant contrast ratios */
+  --text-primary: #e8e6f0; /* ~11.5:1 contrast on bg-deep */
+  --text-secondary: #b8b4c8; /* ~7.5:1 contrast - improved for AA */
+  --text-muted: #8a8698; /* ~4.6:1 contrast - improved for AA */
 
   /* Status colors */
   --success: #8ec7a8;
@@ -45,7 +45,7 @@ body {
 /* Layout */
 .beat-app {
   min-height: 100vh;
-  max-width: 1000px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 1.5rem 1.25rem;
 }
@@ -80,6 +80,28 @@ body {
   border: 1px solid var(--border-subtle);
   border-radius: 1rem;
   padding: 2rem;
+}
+
+/* Landing page info */
+.landing-info {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.landing-description {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin-bottom: 0.75rem;
+}
+
+.landing-note {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-style: italic;
 }
 
 .upload-area {
@@ -252,6 +274,249 @@ body {
   transition: width 0.05s linear;
 }
 
+/* Playback Bar Wrapper - contains sections + bar + loop controls */
+.playback-bar-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  position: relative;
+}
+
+/* Container for bar + sections below */
+.playback-bar-sections {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Section labels row - BELOW the bar */
+.section-labels-row {
+  position: relative;
+  height: 1.75rem;
+  margin-top: 0.25rem;
+}
+
+.section-label-btn {
+  position: absolute;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.section-label-btn:hover {
+  color: var(--text-primary);
+  background: rgba(157, 142, 199, 0.15);
+}
+
+/* Playing state - subtle indicator */
+.section-label-btn.playing {
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Selected state - prominent highlight using accent color */
+.section-label-btn.selected {
+  color: var(--text-primary);
+  background: rgba(157, 142, 199, 0.3);
+  font-weight: 600;
+}
+
+.section-label-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Section divider lines - thin vertical lines at section boundaries */
+.section-divider {
+  position: absolute;
+  top: 0;
+  height: calc(100% + 2.5rem); /* Extend through track and into labels */
+  width: 1px;
+  background: var(--text-muted);
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 20;
+}
+
+/* Section detecting indicator */
+.section-detecting {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.25rem;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+/* Section hover card */
+.section-hover-card {
+  position: fixed;
+  transform: translate(-50%, -100%);
+  padding: 0.6rem 0.85rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.section-hover-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.35rem;
+}
+
+.section-hover-times {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  font-family: 'SF Mono', Monaco, monospace;
+  color: var(--text-secondary);
+}
+
+.section-hover-arrow {
+  color: var(--text-muted);
+}
+
+.section-hover-duration {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 0.3rem;
+}
+
+.section-hover-hint {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  margin-top: 0.4rem;
+  padding-top: 0.3rem;
+  border-top: 1px solid var(--border-subtle);
+  opacity: 0.8;
+}
+
+/* Loop options - inline in transport row */
+.loop-options {
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+  background: var(--bg-elevated);
+  border-radius: 0.5rem;
+  padding: 0.125rem;
+  margin-left: 0.5rem;
+}
+
+.loop-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  color: var(--text-muted);
+  background: transparent;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.loop-option input[type='radio'] {
+  display: none;
+}
+
+.loop-option .material-symbols-outlined {
+  font-size: 1.1rem;
+}
+
+.loop-option:hover {
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.loop-option.active {
+  background: var(--bg-input);
+  color: var(--text-primary);
+}
+
+.loop-option.active .material-symbols-outlined {
+  color: var(--accent-primary);
+}
+
+/* Section controls row - below playback bar, reserves space to prevent layout shift */
+.section-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2rem;
+  padding: 0.25rem 0;
+}
+
+/* Empty state placeholder when no selection - maintains height */
+.section-controls-row:empty::before {
+  content: '';
+  height: 1.5rem;
+}
+
+/* Section action buttons */
+.section-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.section-actions-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.section-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.7rem;
+  background: transparent;
+  border: none;
+  border-radius: 0.375rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.section-action-btn:hover:not(:disabled) {
+  color: var(--text-primary);
+  background: rgba(157, 142, 199, 0.15);
+}
+
+.section-action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.section-action-btn .material-symbols-outlined {
+  font-size: 0.9rem;
+}
+
+.section-action-btn.deselect:hover {
+  border-color: var(--text-secondary);
+  color: var(--text-primary);
+}
+
 /* Playback Bar */
 .playback-bar-container {
   display: flex;
@@ -273,7 +538,7 @@ body {
 
 .playback-bar {
   flex: 1;
-  height: 24px;
+  height: 32px;
   display: flex;
   align-items: center;
   cursor: pointer;
@@ -282,9 +547,10 @@ body {
 .playback-track {
   position: relative;
   width: 100%;
-  height: 4px;
+  height: 8px;
   background: var(--bg-elevated);
-  border-radius: 2px;
+  border-radius: 4px;
+  overflow: visible;
 }
 
 .playback-progress {
@@ -293,21 +559,22 @@ body {
   top: 0;
   height: 100%;
   background: var(--accent-primary);
-  border-radius: 2px;
+  border-radius: 4px;
   pointer-events: none;
+  z-index: 2;
 }
 
 .playhead {
   position: absolute;
   top: 50%;
-  width: 10px;
-  height: 10px;
+  width: 14px;
+  height: 14px;
   background: var(--text-primary);
   border-radius: 50%;
   transform: translate(-50%, -50%);
   pointer-events: none;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
-  z-index: 5;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  z-index: 15;
 }
 
 /* Pre-sync region (dimmed area before beat sync starts) */
@@ -697,7 +964,132 @@ body {
   color: var(--text-muted);
 }
 
-/* Warnings */
+/* Compact status indicators */
+.status-indicators {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0;
+}
+
+.status-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  cursor: help;
+  transition: all 0.15s ease;
+}
+
+.status-icon .material-symbols-outlined {
+  font-size: 0.9rem;
+}
+
+/* Confidence levels */
+.status-icon.confidence.high {
+  background: rgba(142, 199, 168, 0.15);
+  color: var(--success);
+}
+
+.status-icon.confidence.medium {
+  background: rgba(199, 184, 142, 0.15);
+  color: var(--warning);
+}
+
+.status-icon.confidence.low {
+  background: rgba(199, 142, 142, 0.15);
+  color: var(--error);
+}
+
+/* Warning icons */
+.status-icon.warning {
+  background: rgba(199, 184, 142, 0.15);
+  color: var(--warning);
+}
+
+.status-icon:hover {
+  transform: scale(1.1);
+}
+
+/* CSS Tooltips */
+.has-tooltip {
+  position: relative;
+}
+
+.has-tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.4rem 0.6rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.375rem;
+  font-size: 0.7rem;
+  font-style: normal;
+  color: var(--text-primary);
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.15s ease,
+    visibility 0.15s ease;
+  z-index: 1000;
+  pointer-events: none;
+  margin-bottom: 0.35rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.has-tooltip:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Tooltip positioning variants */
+.has-tooltip.tooltip-right::after {
+  left: 100%;
+  bottom: 50%;
+  transform: translateY(50%);
+  margin-bottom: 0;
+  margin-left: 0.35rem;
+}
+
+.has-tooltip.tooltip-left::after {
+  left: auto;
+  right: 100%;
+  bottom: 50%;
+  transform: translateY(50%);
+  margin-bottom: 0;
+  margin-right: 0.35rem;
+}
+
+.has-tooltip.tooltip-bottom::after {
+  bottom: auto;
+  top: 100%;
+  margin-bottom: 0;
+  margin-top: 0.35rem;
+}
+
+/* Mixer row tooltip - position above */
+.mixer-row.has-tooltip::after {
+  left: 50%;
+  bottom: 100%;
+  transform: translateX(-50%);
+  margin-bottom: 0.35rem;
+}
+
+/* Loop option tooltip - position above */
+.loop-option.has-tooltip::after {
+  left: 50%;
+  bottom: 100%;
+  transform: translateX(-50%);
+  margin-bottom: 0.5rem;
+}
+
+/* Legacy warnings (keep for fallback) */
 .warnings {
   font-size: 0.7rem;
   color: var(--text-muted);
@@ -1245,4 +1637,414 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
+}
+
+/* Section Panel - matches "Add drums" pattern */
+.section-panel {
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+/* Checkbox row - like drum-checkbox-row */
+.section-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.375rem 0;
+  user-select: none;
+}
+
+.section-checkbox-row input[type='checkbox'] {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--accent-primary);
+  cursor: pointer;
+  margin: 0;
+}
+
+.section-checkbox-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  flex: 1;
+}
+
+.section-checkbox-row:hover .section-checkbox-label {
+  color: var(--text-primary);
+}
+
+.section-checkbox-row input[type='checkbox']:checked + .section-checkbox-label {
+  color: var(--accent-primary);
+}
+
+.section-loop-badge {
+  font-size: 0.85rem;
+  color: var(--success);
+}
+
+/* Panel header for non-expandable states */
+.section-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.section-icon {
+  font-size: 1rem;
+  opacity: 0.7;
+}
+
+.section-panel-label {
+  flex: 1;
+}
+
+/* Expandable content */
+.section-panel-content {
+  margin-top: 0.5rem;
+  animation: expandSections 0.2s ease-out;
+}
+
+@keyframes expandSections {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.section-loop-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.section-loop-toggle input[type='checkbox'] {
+  display: none;
+}
+
+.section-loop-toggle .material-symbols-outlined {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.section-loop-toggle:has(input:checked) {
+  color: var(--success);
+}
+
+.section-loop-toggle:has(input:checked) .material-symbols-outlined {
+  color: var(--success);
+}
+
+.section-loop-toggle:has(input:disabled) {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.section-clear-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.125rem;
+  display: flex;
+  border-radius: 0.25rem;
+  transition: all 0.15s ease;
+}
+
+.section-clear-btn:hover {
+  background: rgba(199, 142, 142, 0.15);
+  color: var(--error);
+}
+
+.section-clear-btn .material-symbols-outlined {
+  font-size: 0.85rem;
+}
+
+/* Section items list */
+.section-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.section-item-row {
+  position: relative;
+}
+
+.section-item {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.5rem;
+  background: var(--bg-elevated);
+  border: 1px solid transparent;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+  width: 100%;
+  font-size: 0.75rem;
+}
+
+.section-item:hover {
+  background: var(--bg-input);
+  border-color: var(--border-subtle);
+}
+
+.section-item.selected {
+  background: rgba(157, 142, 199, 0.15);
+  border-color: var(--accent-primary);
+}
+
+.section-item.current {
+  background: rgba(142, 199, 168, 0.08);
+}
+
+.section-item.current.selected {
+  background: rgba(157, 142, 199, 0.2);
+}
+
+.section-color-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.section-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.0625rem;
+  min-width: 0;
+}
+
+.section-name {
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.section-duration {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  font-family: 'SF Mono', Monaco, monospace;
+}
+
+.section-item-loop,
+.section-item-playing {
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.section-item-loop {
+  color: var(--success);
+}
+
+.section-item-playing {
+  color: var(--accent-primary);
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Section label editing */
+.section-label-input {
+  width: 100%;
+  padding: 0.125rem 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: var(--bg-input);
+  border: 1px solid var(--accent-primary);
+  border-radius: 0.25rem;
+  color: var(--text-primary);
+  outline: none;
+}
+
+/* Merge hint on hover */
+.section-merge-hint {
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  transform: translateX(-50%);
+  width: 18px;
+  height: 14px;
+  padding: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.25rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  opacity: 0;
+  transition: all 0.15s ease;
+}
+
+.section-item-row:hover .section-merge-hint {
+  opacity: 1;
+}
+
+.section-merge-hint:hover {
+  background: var(--bg-elevated);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+.section-merge-hint .material-symbols-outlined {
+  font-size: 0.7rem;
+}
+
+/* Split button */
+.section-split-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.65rem;
+  font-weight: 500;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.375rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.section-split-btn:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+.section-split-btn .material-symbols-outlined {
+  font-size: 0.8rem;
+}
+
+/* Section hint (shift+click info) */
+.section-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.4rem;
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+.section-hint .material-symbols-outlined {
+  font-size: 0.7rem;
+}
+
+/* Combine selected sections button */
+.section-combine-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.65rem;
+  font-weight: 500;
+  background: rgba(157, 142, 199, 0.1);
+  border: 1px solid var(--accent-primary);
+  border-radius: 0.375rem;
+  color: var(--accent-primary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.section-combine-btn:hover {
+  background: rgba(157, 142, 199, 0.2);
+}
+
+.section-combine-btn .material-symbols-outlined {
+  font-size: 0.8rem;
+}
+
+/* Small spinner variant */
+.analyzing-spinner.small {
+  width: 0.9rem;
+  height: 0.9rem;
+  border-width: 1.5px;
+}
+
+/* Playback bar section markers */
+.section-markers {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.section-marker {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  border-radius: 4px;
+  transition: opacity 0.15s ease;
+}
+
+/* Selected section marker - uses accent color */
+.section-marker.selected {
+  background: rgba(157, 142, 199, 0.4);
+}
+
+/* Loop region overlay on playback bar */
+.loop-region-overlay {
+  position: absolute;
+  top: -4px;
+  height: calc(100% + 8px);
+  background: rgba(142, 199, 168, 0.2);
+  border: 1px solid var(--success);
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.loop-region-overlay::before,
+.loop-region-overlay::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  width: 3px;
+  height: 100%;
+  background: var(--success);
+  border-radius: 2px;
+}
+
+.loop-region-overlay::before {
+  left: -1px;
+}
+
+.loop-region-overlay::after {
+  right: -1px;
 }

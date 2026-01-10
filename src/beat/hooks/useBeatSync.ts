@@ -5,6 +5,11 @@ import { BeatGrid } from '../utils/beatGrid';
 // Import click sound
 import clickSound from '../../drums/assets/sounds/click.mp3';
 
+export interface LoopRegion {
+  startTime: number;
+  endTime: number;
+}
+
 interface UseBeatSyncOptions {
   audioBuffer: AudioBuffer | null;
   bpm: number;
@@ -31,6 +36,10 @@ interface UseBeatSyncReturn {
   metronomeVolume: number;
   /** Whether current playback position is within the sync region */
   isInSyncRegion: boolean;
+  /** Loop region for section practice */
+  loopRegion: LoopRegion | null;
+  /** Whether looping is enabled */
+  loopEnabled: boolean;
   play: () => void;
   pause: () => void;
   stop: () => void;
@@ -41,6 +50,12 @@ interface UseBeatSyncReturn {
   skipToStart: () => void;
   skipToEnd: () => void;
   seekByMeasures: (delta: number) => void;
+  /** Set the loop region (or null to clear) */
+  setLoopRegion: (region: LoopRegion | null) => void;
+  /** Toggle loop enabled state */
+  setLoopEnabled: (enabled: boolean) => void;
+  /** Jump to start of loop region */
+  jumpToLoopStart: () => void;
 }
 
 export function useBeatSync({
@@ -59,6 +74,10 @@ export function useBeatSync({
   const [playbackRate, setPlaybackRate] = useState<PlaybackSpeed>(1.0);
   const [audioVolume, setAudioVolume] = useState(80);
   const [metronomeVolume, setMetronomeVolume] = useState(50);
+  
+  // Loop region state
+  const [loopRegion, setLoopRegion] = useState<LoopRegion | null>(null);
+  const [loopEnabled, setLoopEnabled] = useState(false);
   
   // Effective sync start (defaults to musicStartTime)
   const effectiveSyncStart = syncStartTime ?? musicStartTime;
@@ -80,6 +99,9 @@ export function useBeatSync({
   const audioVolumeRef = useRef(80);
   const metronomeVolumeRef = useRef(50);
   const syncStartRef = useRef(effectiveSyncStart);
+  const loopRegionRef = useRef<LoopRegion | null>(null);
+  const loopEnabledRef = useRef(false);
+  const isLoopingRef = useRef(false); // Flag to prevent recursive loop triggers
 
   // Keep refs in sync
   useEffect(() => {
@@ -109,6 +131,15 @@ export function useBeatSync({
   useEffect(() => {
     metronomeVolumeRef.current = metronomeVolume;
   }, [metronomeVolume]);
+
+  // Keep loop refs in sync
+  useEffect(() => {
+    loopRegionRef.current = loopRegion;
+  }, [loopRegion]);
+
+  useEffect(() => {
+    loopEnabledRef.current = loopEnabled;
+  }, [loopEnabled]);
 
   // Update beat grid when parameters change - use sync start time for beat alignment
   useEffect(() => {
@@ -167,44 +198,88 @@ export function useBeatSync({
     []
   );
 
-  // Animation loop to update beat position
+  // Ref for pending loop seek to avoid closure issues
+  const pendingLoopSeekRef = useRef<number | null>(null);
+
+  // Calculate current elapsed time - shared between visual and audio timing
+  const getElapsedTime = useCallback(() => {
+    if (!audioContextRef.current) return pauseTimeRef.current;
+    const realTimeElapsed = audioContextRef.current.currentTime - startTimeRef.current;
+    return realTimeElapsed * playbackRateRef.current + pauseTimeRef.current;
+  }, []);
+
+  // Core timing update - handles beat detection, metronome, loops
+  // This is called by both requestAnimationFrame (visual) and setInterval (audio in background)
+  const updateTiming = useCallback((elapsed: number, triggerMetronome: boolean) => {
+    if (!beatGridRef.current) return;
+
+    const position = beatGridRef.current.getPosition(elapsed);
+    
+    // Play metronome click on beat change (only after sync start)
+    if (triggerMetronome) {
+      const inSyncRegion = elapsed >= syncStartRef.current;
+      const beatKey = position.measure * 100 + position.beat;
+      if (metronomeEnabledRef.current && inSyncRegion && beatKey !== lastBeatRef.current) {
+        lastBeatRef.current = beatKey;
+        playClick(position.beat === 0);
+      } else if (!inSyncRegion) {
+        lastBeatRef.current = -1;
+      }
+    }
+
+    // Check for loop end
+    const loop = loopRegionRef.current;
+    if (loopEnabledRef.current && loop && !isLoopingRef.current) {
+      const loopBuffer = 0.05;
+      if (elapsed >= loop.endTime - loopBuffer) {
+        pendingLoopSeekRef.current = loop.startTime;
+      }
+    }
+
+    return position;
+  }, [playClick]);
+
+  // Animation loop for visual updates (smooth when tab is visible)
   const updatePosition = useCallback(() => {
     if (!audioContextRef.current || !beatGridRef.current || !isPlaying) {
       return;
     }
 
-    // Calculate elapsed time accounting for playback rate
-    // Real time elapsed * playbackRate = position in audio
-    const realTimeElapsed = audioContextRef.current.currentTime - startTimeRef.current;
-    const elapsed = realTimeElapsed * playbackRateRef.current + pauseTimeRef.current;
+    const elapsed = getElapsedTime();
     setCurrentTime(elapsed);
 
-    const position = beatGridRef.current.getPosition(elapsed);
-    setCurrentBeat(position.beat);
-    setCurrentMeasure(position.measure);
-    setProgress(position.progress);
-
-    // Play metronome click on beat change (only after sync start)
-    const inSyncRegion = elapsed >= syncStartRef.current;
-    const beatKey = position.measure * 100 + position.beat;
-    if (metronomeEnabledRef.current && inSyncRegion && beatKey !== lastBeatRef.current) {
-      lastBeatRef.current = beatKey;
-      playClick(position.beat === 0);
-    } else if (!inSyncRegion) {
-      // Reset last beat when before sync region so we catch the first beat when entering
-      lastBeatRef.current = -1;
+    const position = updateTiming(elapsed, true);
+    if (position) {
+      setCurrentBeat(position.beat);
+      setCurrentMeasure(position.measure);
+      setProgress(position.progress);
     }
 
-    // Check if we've reached the end
-    if (audioBuffer && elapsed >= audioBuffer.duration) {
-      stop();
+    // Check if we've reached the end (only if not looping)
+    if (audioBuffer && elapsed >= audioBuffer.duration && !loopEnabledRef.current) {
+      if (sourceNodeRef.current) {
+        try {
+          sourceNodeRef.current.onended = null;
+          sourceNodeRef.current.stop();
+        } catch {
+          // Already stopped
+        }
+        sourceNodeRef.current = null;
+      }
+      pauseTimeRef.current = 0;
+      lastBeatRef.current = -1;
+      setIsPlaying(false);
+      setCurrentBeat(0);
+      setCurrentMeasure(0);
+      setProgress(0);
+      setCurrentTime(0);
       return;
     }
 
     animationFrameRef.current = requestAnimationFrame(updatePosition);
-  }, [isPlaying, audioBuffer, playClick]);
+  }, [isPlaying, audioBuffer, getElapsedTime, updateTiming]);
 
-  // Start animation loop when playing
+  // Start animation loop when playing (for visual updates)
   useEffect(() => {
     if (isPlaying) {
       animationFrameRef.current = requestAnimationFrame(updatePosition);
@@ -216,6 +291,178 @@ export function useBeatSync({
       }
     };
   }, [isPlaying, updatePosition]);
+
+  // Background interval for audio timing (metronome/drums continue when tab is hidden)
+  // setInterval is less throttled than requestAnimationFrame in background tabs
+  useEffect(() => {
+    if (!isPlaying) return;
+
+    // Run at ~30ms intervals to catch beats accurately even at high BPMs
+    // At 200 BPM, a beat is 300ms, so 30ms gives us ~10 checks per beat
+    const intervalId = setInterval(() => {
+      if (!audioContextRef.current || !beatGridRef.current) return;
+      
+      const elapsed = getElapsedTime();
+      
+      // Update timing (this triggers metronome clicks)
+      updateTiming(elapsed, true);
+      
+      // Also update currentTime state so drums (in DrumAccompaniment) continue playing
+      // This is important because DrumAccompaniment uses currentTime from this hook
+      setCurrentTime(elapsed);
+    }, 30);
+
+    return () => clearInterval(intervalId);
+  }, [isPlaying, getElapsedTime, updateTiming]);
+
+  // Handle pending loop seek (separated from animation frame for safety)
+  useEffect(() => {
+    if (!isPlaying || !audioBuffer) return;
+
+    const checkForPendingLoop = () => {
+      const pendingSeek = pendingLoopSeekRef.current;
+      if (pendingSeek !== null && !isLoopingRef.current) {
+        isLoopingRef.current = true;
+        pendingLoopSeekRef.current = null;
+
+        // Stop current source
+        if (sourceNodeRef.current) {
+          try {
+            sourceNodeRef.current.onended = null;
+            sourceNodeRef.current.stop();
+          } catch {
+            // Already stopped
+          }
+          sourceNodeRef.current = null;
+        }
+
+        // Update pause time and restart
+        pauseTimeRef.current = pendingSeek;
+        lastBeatRef.current = -1;
+
+        // Restart playback from loop start
+        const audioContext = audioContextRef.current;
+        if (audioContext) {
+          // Resume context if suspended (can happen on tab switch)
+          if (audioContext.state === 'suspended') {
+            audioContext.resume();
+          }
+
+          const gainNode = audioContext.createGain();
+          gainNode.gain.value = audioVolumeRef.current / 100;
+          gainNode.connect(audioContext.destination);
+          audioGainNodeRef.current = gainNode;
+
+          const source = audioContext.createBufferSource();
+          source.buffer = audioBuffer;
+          source.playbackRate.value = playbackRateRef.current;
+          source.connect(gainNode);
+          
+          // Add onended handler to detect unexpected stops
+          source.onended = () => {
+            // Only handle if this is still the active source and we're supposed to be playing
+            if (sourceNodeRef.current === source && !isLoopingRef.current) {
+              // Check if we should still be looping
+              const loop = loopRegionRef.current;
+              if (loopEnabledRef.current && loop) {
+                // Re-trigger loop
+                pendingLoopSeekRef.current = loop.startTime;
+              }
+            }
+          };
+          
+          source.start(0, pendingSeek);
+          sourceNodeRef.current = source;
+          startTimeRef.current = audioContext.currentTime;
+        }
+
+        isLoopingRef.current = false;
+      }
+    };
+
+    const intervalId = setInterval(checkForPendingLoop, 50);
+    return () => clearInterval(intervalId);
+  }, [isPlaying, audioBuffer]);
+  
+  // Monitor AudioContext state and audio playback health
+  useEffect(() => {
+    if (!isPlaying || !audioBuffer) return;
+    
+    const checkPlaybackHealth = () => {
+      const audioContext = audioContextRef.current;
+      
+      // Check if AudioContext is suspended and resume it
+      if (audioContext && audioContext.state === 'suspended') {
+        console.log('AudioContext suspended, resuming...');
+        audioContext.resume().catch(err => {
+          console.warn('Failed to resume AudioContext:', err);
+        });
+      }
+      
+      // Recovery: if we should be playing but have no source and no pending loop,
+      // restart playback from current position
+      if (audioContext && !sourceNodeRef.current && pendingLoopSeekRef.current === null && !isLoopingRef.current) {
+        console.log('Audio source lost unexpectedly, recovering...');
+        
+        // Resume context first if needed
+        if (audioContext.state === 'suspended') {
+          audioContext.resume();
+        }
+        
+        // Create new gain node
+        const gainNode = audioContext.createGain();
+        gainNode.gain.value = audioVolumeRef.current / 100;
+        gainNode.connect(audioContext.destination);
+        audioGainNodeRef.current = gainNode;
+
+        // Create new source and restart from current position
+        const source = audioContext.createBufferSource();
+        source.buffer = audioBuffer;
+        source.playbackRate.value = playbackRateRef.current;
+        source.connect(gainNode);
+        
+        // Add onended handler
+        source.onended = () => {
+          if (sourceNodeRef.current !== source) return;
+          const loop = loopRegionRef.current;
+          if (loopEnabledRef.current && loop && !isLoopingRef.current) {
+            pendingLoopSeekRef.current = loop.startTime;
+            return;
+          }
+          setIsPlaying(prev => {
+            if (prev) {
+              setCurrentBeat(0);
+              setCurrentMeasure(0);
+              setProgress(0);
+              pauseTimeRef.current = 0;
+            }
+            return false;
+          });
+        };
+        
+        source.start(0, pauseTimeRef.current);
+        sourceNodeRef.current = source;
+        startTimeRef.current = audioContext.currentTime;
+      }
+    };
+    
+    // Check every 500ms
+    const intervalId = setInterval(checkPlaybackHealth, 500);
+    
+    // Also check on visibility change (tab regaining focus)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Small delay to let browser settle
+        setTimeout(checkPlaybackHealth, 100);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isPlaying, audioBuffer]);
 
   const play = useCallback(() => {
     if (!audioBuffer) return;
@@ -242,8 +489,19 @@ export function useBeatSync({
     source.playbackRate.value = playbackRateRef.current;
     source.connect(gainNode);
 
-    // Handle playback end - use a ref to avoid dependency on isPlaying
+    // Handle playback end - use refs to avoid dependency issues
     source.onended = () => {
+      // Only handle if this source is still the active one and we're not looping
+      if (sourceNodeRef.current !== source) return;
+      
+      // If looping is enabled and we have a loop region, re-trigger loop
+      const loop = loopRegionRef.current;
+      if (loopEnabledRef.current && loop && !isLoopingRef.current) {
+        pendingLoopSeekRef.current = loop.startTime;
+        return;
+      }
+      
+      // Otherwise, stop playback normally
       setIsPlaying(prev => {
         if (prev) {
           setCurrentBeat(0);
@@ -313,6 +571,8 @@ export function useBeatSync({
       lastBeatRef.current = -1;
 
       if (isPlaying) {
+        // Clear any pending loop seek since we're explicitly seeking
+        pendingLoopSeekRef.current = null;
         // Restart from new position
         pause();
         play();
@@ -355,6 +615,13 @@ export function useBeatSync({
     },
     [timeSignature, bpm, currentTime, seek]
   );
+
+  // Jump to start of loop region
+  const jumpToLoopStart = useCallback(() => {
+    if (loopRegion) {
+      seek(loopRegion.startTime);
+    }
+  }, [loopRegion, seek]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -403,6 +670,8 @@ export function useBeatSync({
     audioVolume,
     metronomeVolume,
     isInSyncRegion,
+    loopRegion,
+    loopEnabled,
     play,
     pause,
     stop,
@@ -413,5 +682,8 @@ export function useBeatSync({
     skipToStart,
     skipToEnd,
     seekByMeasures,
+    setLoopRegion,
+    setLoopEnabled,
+    jumpToLoopStart,
   };
 }

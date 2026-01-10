@@ -1,10 +1,13 @@
 # Find the Beat
 
-A web application for detecting BPM (beats per minute) in audio and video files, with synchronized drum pattern accompaniment.
+A web application for detecting BPM (beats per minute) in audio and video files, with synchronized drum pattern accompaniment and automatic section detection for practice.
 
 ## Features
 
 - **BPM Detection**: Automatically analyzes audio/video files to detect tempo
+- **Section Detection**: Automatically segments songs into musical sections (verse, chorus, etc.) for looped practice
+- **Section Looping**: Select and loop individual sections or ranges of sections
+- **Section Editing**: Combine or split detected sections at measure boundaries
 - **Confidence Scoring**: Reports detection confidence with detailed warnings
 - **Playback Speed Control**: Slow down playback to 50%, 75%, 90%, or 95% speed
 - **Volume Mixer**: Independent volume controls for audio, drums, and metronome click
@@ -75,23 +78,25 @@ This generates helpful warnings like:
 
 ```
 src/beat/
-├── App.tsx                 # Main application component
+├── App.tsx                     # Main application component
 ├── components/
-│   ├── BeatVisualizer.tsx  # Visual beat indicator (circles)
-│   ├── BpmDisplay.tsx      # BPM display with +/- adjustment
-│   ├── DrumAccompaniment.tsx # Drum pattern player & editor
-│   ├── MediaUploader.tsx   # File upload with drag-drop
-│   ├── PlaybackBar.tsx     # Seek bar with time display
-│   ├── TapTempo.tsx        # Manual tap-to-tempo (disabled)
-│   └── VideoPlayer.tsx     # Synced video playback
+│   ├── BeatVisualizer.tsx      # Visual beat indicator (circles)
+│   ├── BpmDisplay.tsx          # BPM display with +/- adjustment
+│   ├── DrumAccompaniment.tsx   # Drum pattern player & editor
+│   ├── MediaUploader.tsx       # File upload with drag-drop
+│   ├── PlaybackBar.tsx         # Seek bar with sections & time display
+│   ├── TapTempo.tsx            # Manual tap-to-tempo (disabled)
+│   └── VideoPlayer.tsx         # Synced video playback
 ├── hooks/
-│   ├── useAudioAnalysis.ts # Audio decoding & BPM analysis
-│   └── useBeatSync.ts      # Playback state & beat tracking
+│   ├── useAudioAnalysis.ts     # Audio decoding & BPM analysis
+│   ├── useBeatSync.ts          # Playback state & beat tracking
+│   └── useSectionDetection.ts  # Section detection state management
 ├── utils/
-│   ├── beatAnalyzer.ts     # Essentia.js BPM detection
-│   └── beatGrid.ts         # Beat position calculations
+│   ├── beatAnalyzer.ts         # Essentia.js BPM detection
+│   ├── beatGrid.ts             # Beat position calculations
+│   └── sectionDetector.ts      # Music structure segmentation
 └── styles/
-    └── beat.css            # Component styles
+    └── beat.css                # Component styles
 ```
 
 ### Key Hooks
@@ -148,6 +153,63 @@ const time = grid.getTime({ measure: 4, beat: 0, sixteenth: 0, progress: 0 });
 // 8.0 (seconds)
 ```
 
+### Section Detection
+
+The app automatically detects musical section boundaries using spectral analysis:
+
+```
+┌─────────────────────────────────────┐
+│     Audio Signal (mono, 44.1kHz)    │
+└─────────────────┬───────────────────┘
+                  ▼
+┌─────────────────────────────────────┐
+│    Spectral Feature Extraction      │
+│  (energy, centroid, spread, etc.)   │
+└─────────────────┬───────────────────┘
+                  ▼
+┌─────────────────────────────────────┐
+│    Self-Similarity Matrix (SSM)     │
+│  (compares frames to find patterns) │
+└─────────────────┬───────────────────┘
+                  ▼
+┌─────────────────────────────────────┐
+│    Novelty Detection                │
+│  (checkerboard kernel convolution)  │
+└─────────────────┬───────────────────┘
+                  ▼
+┌─────────────────────────────────────┐
+│    Boundary Refinement              │
+│  (snap to measure boundaries)       │
+└─────────────────┬───────────────────┘
+                  ▼
+┌─────────────────────────────────────┐
+│  Output: Section[], Confidence      │
+│  (labeled by measure range, e.g.    │
+│   "M1-8", "M9-24", "M25-32")       │
+└─────────────────────────────────────┘
+```
+
+#### Section Features
+
+- **Measure-aligned boundaries**: Sections always start and end on measure boundaries
+- **Loop extension**: When looping, section boundaries extend to the nearest full measure for smoother transitions
+- **Multi-selection**: Select multiple adjacent sections with Shift+click
+- **Combine/Split**: Merge selected sections or split at the current playhead position
+
+#### `useSectionDetection` Hook
+
+```typescript
+const {
+  sections, // Detected Section[] array
+  isDetecting, // Loading state
+  confidence, // Detection confidence (0-1)
+  warnings, // Detection warnings
+  detectSectionsFromBuffer, // Run detection on AudioBuffer
+  merge, // Merge two adjacent sections
+  split, // Split section at time
+} = useSectionDetection();
+```
+
 ## Shared Dependencies
 
 This app uses shared utilities from `src/shared/`:
@@ -196,8 +258,11 @@ Most modern browsers (Chrome, Firefox, Safari, Edge) are supported.
 
 ## Future Improvements
 
+- [x] ~~Section detection for looped practice~~ ✓ Implemented
 - [ ] Tap tempo for manual BPM input (temporarily disabled for polish)
 - [ ] Beat phase adjustment (shift grid left/right)
 - [ ] Time signature detection
 - [ ] Waveform visualization
 - [ ] Export synchronized drum track
+- [ ] Save/load section edits
+- [ ] Section labels (custom naming beyond measure numbers)

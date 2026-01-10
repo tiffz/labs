@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import MediaUploader, { type MediaFile } from './components/MediaUploader';
 import BpmDisplay from './components/BpmDisplay';
 import BeatVisualizer from './components/BeatVisualizer';
@@ -7,7 +7,9 @@ import PlaybackBar from './components/PlaybackBar';
 import DrumAccompaniment from './components/DrumAccompaniment';
 import { useAudioAnalysis } from './hooks/useAudioAnalysis';
 import { useBeatSync, PLAYBACK_SPEEDS, type PlaybackSpeed } from './hooks/useBeatSync';
+import { useSectionDetection } from './hooks/useSectionDetection';
 import type { TimeSignature } from '../shared/rhythm/types';
+import { type Section, extendToMeasureBoundary } from './utils/sectionDetector';
 
 const App: React.FC = () => {
   const [mediaFile, setMediaFile] = useState<MediaFile | null>(null);
@@ -31,6 +33,19 @@ const App: React.FC = () => {
     reset: resetAnalysis,
   } = useAudioAnalysis();
 
+  // Section detection
+  const {
+    sections,
+    isDetecting: isDetectingSections,
+    detectSectionsFromBuffer,
+    clearSections,
+    merge: mergeSections,
+    split: splitSection,
+  } = useSectionDetection();
+
+  // Selected section(s) for looping - supports multiple adjacent sections
+  const [selectedSectionIds, setSelectedSectionIds] = useState<string[]>([]);
+
   const [drumVolume, setDrumVolume] = useState(70);
 
   // Calculate effective sync start (user-adjusted or auto-detected)
@@ -47,6 +62,8 @@ const App: React.FC = () => {
     audioVolume,
     metronomeVolume,
     isInSyncRegion,
+    loopRegion,
+    loopEnabled,
     play,
     pause,
     stop,
@@ -57,6 +74,8 @@ const App: React.FC = () => {
     skipToStart,
     skipToEnd,
     seekByMeasures,
+    setLoopRegion,
+    setLoopEnabled,
   } = useBeatSync({
     audioBuffer,
     bpm: analysisResult?.bpm ?? 120,
@@ -65,6 +84,19 @@ const App: React.FC = () => {
     metronomeEnabled,
     syncStartTime: effectiveSyncStart,
   });
+
+  // Run section detection after BPM analysis completes
+  useEffect(() => {
+    if (audioBuffer && analysisResult && !isDetectingSections && sections.length === 0) {
+      detectSectionsFromBuffer(audioBuffer, analysisResult.beats, {
+        minSectionDuration: 8,
+        sensitivity: 0.5,
+        musicStartTime: analysisResult.musicStartTime,
+        bpm: analysisResult.bpm,
+        beatsPerMeasure: timeSignature.numerator,
+      });
+    }
+  }, [audioBuffer, analysisResult, isDetectingSections, sections.length, detectSectionsFromBuffer, timeSignature.numerator]);
 
   const handleFileSelect = useCallback(
     async (media: MediaFile) => {
@@ -84,7 +116,122 @@ const App: React.FC = () => {
     setMediaFile(null);
     setSyncStartTime(null);
     resetAnalysis();
-  }, [stop, mediaFile, resetAnalysis]);
+    clearSections();
+    setSelectedSectionIds([]);
+    setLoopRegion(null);
+    setLoopEnabled(false);
+  }, [stop, mediaFile, resetAnalysis, clearSections, setLoopRegion, setLoopEnabled]);
+
+  // Handle section selection (supports multi-select with shift key)
+  // Loop regions are extended to nearest measure boundaries for smoother musical transitions
+  const handleSelectSection = useCallback(
+    (section: Section, extendSelection: boolean = false) => {
+      const bpm = analysisResult?.bpm ?? 120;
+      const musicStart = analysisResult?.musicStartTime ?? 0;
+      const beatsPerMeasure = timeSignature.numerator;
+      
+      if (extendSelection && selectedSectionIds.length > 0) {
+        // Extend selection to include range from first selected to clicked section
+        const clickedIndex = sections.findIndex(s => s.id === section.id);
+        const selectedIndices = selectedSectionIds.map(id => sections.findIndex(s => s.id === id));
+        const minSelected = Math.min(...selectedIndices);
+        const maxSelected = Math.max(...selectedIndices);
+        
+        // Determine the new range
+        let newStart: number, newEnd: number;
+        if (clickedIndex < minSelected) {
+          newStart = clickedIndex;
+          newEnd = maxSelected;
+        } else if (clickedIndex > maxSelected) {
+          newStart = minSelected;
+          newEnd = clickedIndex;
+        } else {
+          // Clicked within range, keep existing selection
+          newStart = minSelected;
+          newEnd = maxSelected;
+        }
+        
+        // Select all sections in range
+        const newIds = sections.slice(newStart, newEnd + 1).map(s => s.id);
+        setSelectedSectionIds(newIds);
+        
+        // Update loop region to span all selected sections, extended to measure boundaries
+        const firstSection = sections[newStart];
+        const lastSection = sections[newEnd];
+        const loopStart = extendToMeasureBoundary(firstSection.startTime, 'start', bpm, musicStart, beatsPerMeasure);
+        const loopEnd = extendToMeasureBoundary(lastSection.endTime, 'end', bpm, musicStart, beatsPerMeasure, duration);
+        setLoopRegion({
+          startTime: loopStart,
+          endTime: loopEnd,
+        });
+        seek(loopStart);
+      } else {
+        // Single selection - extend to measure boundaries for smoother loops
+        setSelectedSectionIds([section.id]);
+        const loopStart = extendToMeasureBoundary(section.startTime, 'start', bpm, musicStart, beatsPerMeasure);
+        const loopEnd = extendToMeasureBoundary(section.endTime, 'end', bpm, musicStart, beatsPerMeasure, duration);
+        setLoopRegion({
+          startTime: loopStart,
+          endTime: loopEnd,
+        });
+        seek(loopStart);
+      }
+    },
+    [sections, selectedSectionIds, seek, setLoopRegion, analysisResult, timeSignature.numerator, duration]
+  );
+
+  // Handle clearing section selection
+  const handleClearSelection = useCallback(() => {
+    setSelectedSectionIds([]);
+    setLoopRegion(null);
+    setLoopEnabled(false);
+  }, [setLoopRegion, setLoopEnabled]);
+
+  // Handle looping entire track
+  const handleLoopEntireTrack = useCallback(() => {
+    setSelectedSectionIds([]);
+    const musicStart = analysisResult?.musicStartTime ?? 0;
+    setLoopRegion({
+      startTime: musicStart,
+      endTime: duration,
+    });
+    setLoopEnabled(true);
+  }, [analysisResult?.musicStartTime, duration, setLoopRegion, setLoopEnabled]);
+
+  // Handle combining selected sections
+  const handleCombineSections = useCallback(() => {
+    if (selectedSectionIds.length < 2) return;
+    
+    // Find indices of selected sections and sort them
+    const indices = selectedSectionIds
+      .map(id => sections.findIndex(s => s.id === id))
+      .filter(i => i >= 0)
+      .sort((a, b) => a - b);
+    
+    if (indices.length < 2) return;
+    
+    // Merge from the end to avoid index shifting issues
+    for (let i = indices.length - 1; i > 0; i--) {
+      mergeSections(indices[i - 1], indices[i]);
+    }
+    
+    // Select the merged section (first index)
+    const newSection = sections[indices[0]];
+    if (newSection) {
+      setSelectedSectionIds([newSection.id]);
+    }
+  }, [selectedSectionIds, sections, mergeSections]);
+
+  // Handle splitting a section at current time
+  const handleSplitSection = useCallback((sectionId: string, splitTime: number) => {
+    const sectionIndex = sections.findIndex(s => s.id === sectionId);
+    if (sectionIndex < 0) return;
+    
+    splitSection(sectionIndex, splitTime);
+    
+    // Clear selection after split
+    setSelectedSectionIds([]);
+  }, [sections, splitSection]);
   
   // Handler for dragging sync start marker
   const handleSyncStartChange = useCallback((time: number) => {
@@ -130,7 +277,17 @@ const App: React.FC = () => {
                 <p>Analyzing...</p>
               </div>
             ) : (
-              <MediaUploader onFileSelect={handleFileSelect} />
+              <>
+                <div className="landing-info">
+                  <p className="landing-description">
+                    Upload a song to detect its tempo and practice with a metronome / drums.
+                  </p>
+                  <p className="landing-note">
+                    Works best with songs that have a steady, consistent rhythm.
+                  </p>
+                </div>
+                <MediaUploader onFileSelect={handleFileSelect} />
+              </>
             )}
             {analysisError && (
               <p className="error-text">{analysisError}</p>
@@ -163,7 +320,7 @@ const App: React.FC = () => {
                 </div>
               )}
 
-              {/* Playback Bar */}
+              {/* Playback Bar with integrated sections */}
               <PlaybackBar
                 currentTime={currentTime}
                 duration={duration}
@@ -172,6 +329,15 @@ const App: React.FC = () => {
                 onSeek={seek}
                 onSyncStartChange={handleSyncStartChange}
                 isInSyncRegion={isInSyncRegion}
+                sections={sections}
+                loopRegion={loopRegion}
+                loopEnabled={loopEnabled}
+                selectedSectionIds={selectedSectionIds}
+                onSelectSection={handleSelectSection}
+                onClearSelection={handleClearSelection}
+                isDetectingSections={isDetectingSections}
+                onCombineSections={handleCombineSections}
+                onSplitSection={handleSplitSection}
               />
 
               {/* Transport Controls - under video */}
@@ -228,11 +394,62 @@ const App: React.FC = () => {
                       ))}
                     </select>
                   </div>
+
+                  {/* Loop mode controls */}
+                  <div className="loop-options">
+                    <label 
+                      className={`loop-option has-tooltip ${!loopEnabled ? 'active' : ''}`} 
+                      data-tooltip="Play through"
+                    >
+                      <input
+                        type="radio"
+                        name="loopMode"
+                        checked={!loopEnabled}
+                        onChange={() => setLoopEnabled(false)}
+                      />
+                      <span className="material-symbols-outlined">arrow_forward</span>
+                    </label>
+                    <label 
+                      className={`loop-option has-tooltip ${loopEnabled && selectedSectionIds.length === 0 ? 'active' : ''}`} 
+                      data-tooltip="Loop track"
+                    >
+                      <input
+                        type="radio"
+                        name="loopMode"
+                        checked={loopEnabled && selectedSectionIds.length === 0}
+                        onChange={handleLoopEntireTrack}
+                      />
+                      <span className="material-symbols-outlined">repeat</span>
+                    </label>
+                    <label 
+                      className={`loop-option has-tooltip ${loopEnabled && selectedSectionIds.length > 0 ? 'active' : ''}`} 
+                      data-tooltip="Loop section"
+                    >
+                      <input
+                        type="radio"
+                        name="loopMode"
+                        checked={loopEnabled && selectedSectionIds.length > 0}
+                        onChange={() => {
+                          // If no section selected, select current section first
+                          if (selectedSectionIds.length === 0) {
+                            const currentSection = sections.find(
+                              s => currentTime >= s.startTime && currentTime < s.endTime
+                            );
+                            if (currentSection) {
+                              handleSelectSection(currentSection, false);
+                            }
+                          }
+                          setLoopEnabled(true);
+                        }}
+                      />
+                      <span className="material-symbols-outlined">repeat_one</span>
+                    </label>
+                  </div>
                 </div>
 
                 {/* Volume Mixer - under transport */}
                 <div className="volume-mixer horizontal">
-                  <div className="mixer-row">
+                  <div className="mixer-row has-tooltip" data-tooltip="Track volume">
                     <span className="mixer-label">
                       <span className="material-symbols-outlined">music_note</span>
                     </span>
@@ -243,10 +460,10 @@ const App: React.FC = () => {
                       value={audioVolume}
                       onChange={e => setAudioVolume(Number(e.target.value))}
                       className="mixer-slider"
-                      title={`Audio: ${audioVolume}%`}
                     />
+                    <span className="mixer-value">{audioVolume}%</span>
                   </div>
-                  <div className="mixer-row">
+                  <div className="mixer-row has-tooltip" data-tooltip="Drum volume">
                     <span className="mixer-label">
                       <span className="material-symbols-outlined">music_cast</span>
                     </span>
@@ -257,10 +474,10 @@ const App: React.FC = () => {
                       value={drumVolume}
                       onChange={e => setDrumVolume(Number(e.target.value))}
                       className="mixer-slider"
-                      title={`Drums: ${drumVolume}%`}
                     />
+                    <span className="mixer-value">{drumVolume}%</span>
                   </div>
-                  <div className="mixer-row">
+                  <div className="mixer-row has-tooltip" data-tooltip="Metronome volume">
                     <span className="mixer-label">
                       <span className="material-symbols-outlined">timer</span>
                     </span>
@@ -272,8 +489,8 @@ const App: React.FC = () => {
                       onChange={e => setMetronomeVolume(Number(e.target.value))}
                       className="mixer-slider"
                       disabled={!metronomeEnabled}
-                      title={`Click: ${metronomeVolume}%`}
                     />
+                    <span className="mixer-value">{metronomeVolume}%</span>
                   </div>
                 </div>
               </div>
@@ -293,7 +510,7 @@ const App: React.FC = () => {
 
             {/* Right: BPM + Drum Pattern */}
             <div className="controls-section">
-              {/* BPM Display */}
+              {/* BPM Display with inline confidence indicator */}
               <div className="bpm-section">
                 <BpmDisplay
                   bpm={analysisResult.bpm}
@@ -304,26 +521,41 @@ const App: React.FC = () => {
                   <span>{timeSignature.numerator}</span>
                   <span>{timeSignature.denominator}</span>
                 </div>
+                {/* Confidence indicator - inline with BPM */}
+                {(() => {
+                  // Build tooltip message
+                  const messages: string[] = [];
+                  
+                  if (confidenceLevel === 'high') {
+                    messages.push('High confidence in BPM detection');
+                  } else if (confidenceLevel === 'medium') {
+                    messages.push('Medium confidence - BPM may need adjustment');
+                  } else {
+                    messages.push('Low confidence - adjust BPM manually');
+                  }
+                  
+                  // Add other warnings (filter out confidence-related and music start ones)
+                  const otherWarnings = warnings.filter((w: string) => 
+                    !w.toLowerCase().includes('confidence') &&
+                    !w.toLowerCase().includes('music starts')
+                  );
+                  if (otherWarnings.length > 0) {
+                    messages.push(...otherWarnings);
+                  }
+                  
+                  const icon = confidenceLevel === 'high' ? 'verified' : 
+                               confidenceLevel === 'medium' ? 'help' : 'warning';
+                  
+                  return (
+                    <span 
+                      className={`status-icon confidence ${confidenceLevel} has-tooltip`}
+                      data-tooltip={messages.join(' · ')}
+                    >
+                      <span className="material-symbols-outlined">{icon}</span>
+                    </span>
+                  );
+                })()}
               </div>
-
-              {/* Confidence indicator */}
-              <div className={`confidence-indicator ${confidenceLevel}`}>
-                <span className="confidence-dot" />
-                <span className="confidence-text">
-                  {confidenceLevel === 'high' && 'High confidence'}
-                  {confidenceLevel === 'medium' && 'Medium confidence'}
-                  {confidenceLevel === 'low' && 'Low confidence - adjust BPM manually'}
-                </span>
-              </div>
-
-              {/* Warnings */}
-              {warnings.length > 0 && (
-                <div className="warnings">
-                  {warnings.slice(0, 1).map((w, i) => (
-                    <span key={i} className="warning-text">{w}</span>
-                  ))}
-                </div>
-              )}
 
               {/* Metronome toggle */}
               <button
@@ -370,6 +602,7 @@ const App: React.FC = () => {
                   />
                 )}
               </div>
+
             </div>
           </div>
         )}
