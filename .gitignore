@@ -32,3 +32,6 @@ tsconfig.tsbuildinfo
 # Playwright artifacts
 test-results/
 playwright-report/
+
+# Custom folder name for hidden files 
+.hidden
