@@ -168,7 +168,9 @@ export default defineConfig({
         { src: '../src/404.html', dest: '.' },
         { src: '../CNAME', dest: '.' },
         { src: '../public/robots.txt', dest: '.' },
-        { src: '../public/_headers', dest: '.' }
+        { src: '../public/_headers', dest: '.' },
+        // Basic Pitch model for ML-based chord detection
+        { src: '../node_modules/@spotify/basic-pitch/model/*', dest: 'assets' },
       ]
     }),
     compression({
@@ -206,7 +208,7 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,ico,png,svg}'], // Exclude HTML from service worker cache
         navigateFallback: undefined,
         navigateFallbackDenylist: [/^\/404\.html/],
-        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3 MB to accommodate story generator bundle
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB to accommodate TensorFlow.js for Basic Pitch
         // Use NetworkFirst strategy for HTML files to ensure fresh content
         runtimeCaching: [
           {

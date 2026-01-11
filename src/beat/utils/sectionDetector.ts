@@ -3,12 +3,13 @@
  *
  * Detects song sections (verse, chorus, etc.) by:
  * 1. Extracting MFCC features per frame using Essentia.js
- * 2. Building a self-similarity matrix
+ * 2. Building a self-similarity matrix (spectral and/or chord-based)
  * 3. Detecting novelty peaks using a checkerboard kernel
- * 4. Snapping boundaries to beat positions
+ * 4. Snapping boundaries to beat/measure/chord positions
  */
 
 import { getEssentia } from './beatAnalyzer';
+import type { ChordEvent } from './chordAnalyzer';
 
 export interface Section {
   id: string;
@@ -30,18 +31,6 @@ const SECTION_COLOR = '#9d8ec7'; // accent-primary
 const SECTION_COLORS = [SECTION_COLOR]; // Keep as array for compatibility
 
 /**
- * Apply Hann window to a frame
- */
-function applyHannWindow(frame: Float32Array): Float32Array {
-  const windowed = new Float32Array(frame.length);
-  for (let i = 0; i < frame.length; i++) {
-    const multiplier = 0.5 * (1 - Math.cos((2 * Math.PI * i) / (frame.length - 1)));
-    windowed[i] = frame[i] * multiplier;
-  }
-  return windowed;
-}
-
-/**
  * Extract simple spectral features per frame from audio
  * Uses energy, spectral centroid, and spectral spread as features
  */
@@ -58,14 +47,28 @@ async function extractMFCCFeatures(
   const frameTimestamps: number[] = [];
   let failureCount = 0;
 
+  // Test: try arrayToVector with the same channelData that works for BPM
+  try {
+    const testVector = essentia.arrayToVector(channelData);
+    testVector.delete();
+  } catch (testErr) {
+    console.error('[Section Detection] Test arrayToVector with channelData: FAILED', testErr);
+  }
+
   // Process audio in frames
   for (let i = 0; i + frameSize <= channelData.length; i += hopSize) {
-    const frame = channelData.slice(i, i + frameSize);
-    
     try {
-      // Apply Hann window manually
-      const windowedFrame = applyHannWindow(frame);
-      const frameVector = essentia.arrayToVector(windowedFrame);
+      // Create windowed frame - try using slice from channelData directly
+      const frameSlice = channelData.slice(i, i + frameSize);
+      
+      // Apply Hann window in place
+      const denominator = frameSize > 1 ? frameSize - 1 : 1;
+      for (let j = 0; j < frameSize; j++) {
+        const multiplier = 0.5 * (1 - Math.cos((2 * Math.PI * j) / denominator));
+        frameSlice[j] = frameSlice[j] * multiplier;
+      }
+      
+      const frameVector = essentia.arrayToVector(frameSlice);
 
       // Compute spectrum
       const spectrum = essentia.Spectrum(frameVector);
@@ -110,14 +113,14 @@ async function extractMFCCFeatures(
         }
       }
 
-      // 5. Zero crossing rate (computed from time domain)
+      // 5. Zero crossing rate (computed from time domain using windowed frame)
       let zcr = 0;
-      for (let j = 1; j < frame.length; j++) {
-        if ((frame[j] >= 0) !== (frame[j - 1] >= 0)) {
+      for (let j = 1; j < frameSlice.length; j++) {
+        if ((frameSlice[j] >= 0) !== (frameSlice[j - 1] >= 0)) {
           zcr++;
         }
       }
-      zcr = zcr / frame.length;
+      zcr = zcr / frameSlice.length;
 
       // 6. Spectral flux (we'll compute this relative to a baseline)
       let flux = 0;
@@ -148,10 +151,6 @@ async function extractMFCCFeatures(
         console.warn('Frame processing failed:', err);
       }
     }
-  }
-
-  if (failureCount > 0) {
-    console.log(`Feature extraction: ${features.length} successful, ${failureCount} failed frames`);
   }
 
   return { features, frameTimestamps };
@@ -189,6 +188,121 @@ function buildSelfSimilarityMatrix(features: Float32Array[]): Float32Array {
   }
 
   return ssm;
+}
+
+/**
+ * Build chord-based self-similarity matrix
+ * Compares chord sequences to find repeating progressions
+ */
+function buildChordSimilarityMatrix(
+  chords: ChordEvent[],
+  frameTimestamps: number[]
+): Float32Array {
+  const n = frameTimestamps.length;
+  const ssm = new Float32Array(n * n);
+
+  // Map frame timestamps to chord indices
+  const frameChords: string[] = [];
+  for (const timestamp of frameTimestamps) {
+    // Find the chord active at this timestamp
+    let activeChord = 'N';
+    for (let i = chords.length - 1; i >= 0; i--) {
+      if (chords[i].time <= timestamp) {
+        activeChord = chords[i].chord;
+        break;
+      }
+    }
+    frameChords.push(activeChord);
+  }
+
+  // Build SSM based on chord matching
+  // Use a window-based approach to capture chord progressions
+  const windowSize = 4; // Compare sequences of 4 chords
+
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n; j++) {
+      // Simple chord matching (1 if same, 0 if different)
+      // But also consider surrounding context for progression matching
+      let similarity = frameChords[i] === frameChords[j] ? 1 : 0;
+
+      // Add context-based similarity (chord progression matching)
+      if (i >= windowSize && j >= windowSize) {
+        let matchCount = 0;
+        for (let k = 0; k < windowSize; k++) {
+          if (frameChords[i - k] === frameChords[j - k]) {
+            matchCount++;
+          }
+        }
+        // Blend direct match with progression match
+        similarity = similarity * 0.5 + (matchCount / windowSize) * 0.5;
+      }
+
+      ssm[i * n + j] = similarity;
+    }
+  }
+
+  return ssm;
+}
+
+/**
+ * Fuse multiple self-similarity matrices with weighted combination
+ */
+function fuseSSMs(
+  spectralSSM: Float32Array,
+  chordSSM: Float32Array,
+  n: number,
+  spectralWeight: number = 0.6,
+  chordWeight: number = 0.4
+): Float32Array {
+  const fused = new Float32Array(n * n);
+  const totalWeight = spectralWeight + chordWeight;
+
+  for (let i = 0; i < n * n; i++) {
+    fused[i] = (spectralSSM[i] * spectralWeight + chordSSM[i] * chordWeight) / totalWeight;
+  }
+
+  return fused;
+}
+
+/**
+ * Snap a time to the nearest chord change if one is close enough
+ * Falls back to measure boundary if no chord change is nearby
+ */
+function snapToNearestChordChange(
+  time: number,
+  chordChanges: number[],
+  bpm: number,
+  musicStartTime: number,
+  beatsPerMeasure: number,
+  maxDistance: number = 2.0 // Maximum distance in seconds to snap to chord change
+): number {
+  // First, find nearest chord change
+  let nearestChordChange = -1;
+  let minDistance = Infinity;
+
+  for (const changeTime of chordChanges) {
+    const distance = Math.abs(changeTime - time);
+    if (distance < minDistance && distance < maxDistance) {
+      minDistance = distance;
+      nearestChordChange = changeTime;
+    }
+  }
+
+  // If we found a nearby chord change, check if it's reasonably close to a measure boundary
+  if (nearestChordChange >= 0) {
+    // Verify the chord change is on or near a strong beat
+    const measureBoundary = snapToMeasureStart(nearestChordChange, bpm, musicStartTime, beatsPerMeasure);
+    const distanceToMeasure = Math.abs(nearestChordChange - measureBoundary);
+    const secondsPerBeat = 60 / bpm;
+
+    // If chord change is within half a beat of measure boundary, use it
+    if (distanceToMeasure < secondsPerBeat * 0.5) {
+      return nearestChordChange;
+    }
+  }
+
+  // Fall back to measure boundary
+  return snapToMeasureStart(time, bpm, musicStartTime, beatsPerMeasure);
 }
 
 /**
@@ -399,6 +513,12 @@ function generateMeasureLabel(startTime: number, endTime: number, bpm: number, m
 /**
  * Detect sections in an audio buffer
  */
+export interface KeyChangeInfo {
+  time: number;
+  key: string;
+  scale: string;
+}
+
 export async function detectSections(
   audioBuffer: AudioBuffer,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -410,9 +530,22 @@ export async function detectSections(
     musicStartTime?: number; // Time when music actually starts (skip silence)
     bpm?: number; // BPM for measure-based labeling
     beatsPerMeasure?: number; // Time signature numerator
+    chordEvents?: ChordEvent[]; // Optional chord events for harmonic-aware section detection
+    chordChangeTimes?: number[]; // Optional chord change times for boundary snapping
+    keyChanges?: KeyChangeInfo[]; // Optional key changes - these mark definite section boundaries
   } = {}
 ): Promise<SectionDetectionResult> {
-  const { minSectionDuration = 8, maxSections = 20, sensitivity = 0.5, musicStartTime = 0, bpm = 120, beatsPerMeasure = 4 } = options;
+  const {
+    minSectionDuration = 8,
+    maxSections = 20,
+    sensitivity = 0.5,
+    musicStartTime = 0,
+    bpm = 120,
+    beatsPerMeasure = 4,
+    chordEvents = [],
+    chordChangeTimes = [],
+    keyChanges = []
+  } = options;
 
   const warnings: string[] = [];
   const duration = audioBuffer.duration;
@@ -437,9 +570,7 @@ export async function detectSections(
 
   try {
     // Extract MFCC features
-    console.log('Starting section detection for', duration, 'second track');
     const { features, frameTimestamps } = await extractMFCCFeatures(audioBuffer);
-    console.log('Extracted', features.length, 'MFCC frames');
 
     if (features.length < 50) {
       warnings.push('Not enough audio frames for reliable section detection');
@@ -460,12 +591,19 @@ export async function detectSections(
     }
 
     // Build self-similarity matrix
-    const ssm = buildSelfSimilarityMatrix(features);
+    const spectralSSM = buildSelfSimilarityMatrix(features);
     const n = features.length;
+
+    // Build chord-based SSM if chord data is available
+    let ssm = spectralSSM;
+    if (chordEvents.length > 0) {
+      const chordSSM = buildChordSimilarityMatrix(chordEvents, frameTimestamps);
+      // Fuse spectral and chord SSMs (60% spectral, 40% chord)
+      ssm = fuseSSMs(spectralSSM, chordSSM, n, 0.6, 0.4);
+    }
 
     // Detect novelty - use smaller kernel for shorter songs
     const kernelSize = Math.max(8, Math.min(64, Math.floor(n / 8)));
-    console.log('Using kernel size:', kernelSize, 'for', n, 'frames');
     const rawNovelty = detectNovelty(ssm, n, kernelSize);
 
     // Smooth novelty curve
@@ -477,9 +615,7 @@ export async function detectSections(
 
     // Find peaks with sensitivity-adjusted threshold - use lower threshold for more sections
     const threshold = 0.2 - sensitivity * 0.15; // 0.05 to 0.2 (was 0.1 to 0.3)
-    console.log('Peak detection threshold:', threshold, 'minPeakDistance:', minPeakDistance);
     const { indices: peakIndices, strengths } = findPeaks(novelty, minPeakDistance, threshold);
-    console.log('Found', peakIndices.length, 'peaks');
 
     // Limit number of sections
     let selectedPeaks = peakIndices;
@@ -500,17 +636,43 @@ export async function detectSections(
       .map((idx) => frameTimestamps[idx])
       .filter((t) => t > musicStartTime + minSectionDuration * 0.5); // Only keep peaks after music start
 
+    // Key changes are strong indicators of section boundaries - add them as additional boundary candidates
+    // We snap key change times to measure boundaries for cleaner section boundaries
+    const keyChangeTimes = keyChanges
+      .map(kc => {
+        // Snap key change to nearest measure boundary
+        const snapped = snapToMeasureStart(kc.time, bpm, musicStartTime, beatsPerMeasure);
+        return { original: kc.time, snapped, key: `${kc.key}${kc.scale === 'minor' ? 'm' : ''}` };
+      })
+      .filter(kc => kc.snapped > musicStartTime + minSectionDuration * 0.5); // Only keep after music start
+    
+    // Key change times will be used as priority boundary candidates
+
+    // Combine peak times and key change times
+    // Key change times take priority - if a peak is within 3 seconds of a key change, use the key change time instead
+    const keyChangeSnappedTimes = keyChangeTimes.map(kc => kc.snapped);
+    const filteredPeakTimes = peakTimes.filter(pt => {
+      // Keep peak if it's not too close to any key change
+      return !keyChangeSnappedTimes.some(kct => Math.abs(pt - kct) < 3);
+    });
+    
+    const allBoundaryTimes = [...new Set([...filteredPeakTimes, ...keyChangeSnappedTimes])].sort((a, b) => a - b);
+
     // Use musicStartTime as the first boundary (not 0)
     const firstBoundary = Math.max(0, musicStartTime);
-    const boundaries = [firstBoundary, ...peakTimes, duration];
+    const boundaries = [firstBoundary, ...allBoundaryTimes, duration];
 
-    // Snap to measure boundaries for musically proper section alignment
+    // Snap to measure boundaries (or chord changes if available) for musically proper section alignment
     const snappedBoundaries = boundaries.map((t, i) => {
       // First boundary should stay at music start
       if (i === 0) return firstBoundary;
       // Last boundary should stay at duration
       if (i === boundaries.length - 1) return duration;
-      // All other boundaries snap to nearest measure start
+      // If we have chord change data, prefer snapping to chord changes near measure boundaries
+      if (chordChangeTimes.length > 0) {
+        return snapToNearestChordChange(t, chordChangeTimes, bpm, musicStartTime, beatsPerMeasure);
+      }
+      // Otherwise snap to nearest measure start
       return snapToMeasureStart(t, bpm, musicStartTime, beatsPerMeasure);
     });
     
@@ -562,7 +724,6 @@ export async function detectSections(
       warnings.push('Few sections detected - song may have uniform structure');
     }
 
-    console.log('Section detection complete:', sections.length, 'sections');
     return {
       sections,
       confidence: avgConfidence,

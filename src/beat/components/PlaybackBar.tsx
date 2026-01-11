@@ -1,6 +1,7 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useRef, useState, useMemo } from 'react';
 import type { Section } from '../utils/sectionDetector';
 import type { LoopRegion } from '../hooks/useBeatSync';
+import type { ChordEvent, KeyChange } from '../utils/chordAnalyzer';
 
 interface PlaybackBarProps {
   currentTime: number;
@@ -28,6 +29,12 @@ interface PlaybackBarProps {
   onCombineSections?: () => void;
   /** Called to split section at current time */
   onSplitSection?: (sectionId: string, splitTime: number) => void;
+  /** Called to extend/reduce section selection by measures */
+  onExtendSelection?: (direction: 'start' | 'end', delta: number) => void;
+  /** Chord changes for displaying in section hovers */
+  chordChanges?: ChordEvent[];
+  /** Key changes for displaying in section hovers */
+  keyChanges?: KeyChange[];
 }
 
 function formatTime(seconds: number): string {
@@ -53,6 +60,9 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
   isDetectingSections = false,
   onCombineSections,
   onSplitSection,
+  onExtendSelection,
+  chordChanges = [],
+  keyChanges = [],
 }) => {
   const barRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState<boolean>(false);
@@ -75,17 +85,18 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
       const clampedTime = Math.max(0, Math.min(duration, newTime));
       onSeek(clampedTime);
       
-      // Auto-select the section at this timestamp if not already selected
+      // Auto-select the section at this timestamp (extend when shift is held)
+      // Skip if section is already selected (unless shift is held for range selection)
       if (sections.length > 0 && onSelectSection) {
         const sectionAtTime = sections.find(
           (s) => clampedTime >= s.startTime && clampedTime < s.endTime
         );
-        if (sectionAtTime && !selectedSectionIds.includes(sectionAtTime.id)) {
-          onSelectSection(sectionAtTime, false);
+        if (sectionAtTime && (!selectedSectionIds.includes(sectionAtTime.id) || e.shiftKey)) {
+          onSelectSection(sectionAtTime, e.shiftKey);
         }
       }
     },
-    [duration, onSeek, getTimeFromEvent, dragging, sections, selectedSectionIds, onSelectSection]
+    [duration, onSeek, getTimeFromEvent, dragging, sections, onSelectSection, selectedSectionIds]
   );
 
   const handleBarDrag = useCallback(
@@ -189,12 +200,54 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
     const lastSection = selectedSections[selectedSections.length - 1];
     const lastMatch = lastSection.label.match(/M\d+-(\d+)/);
     const lastMeasure = lastMatch ? lastMatch[1] : firstMeasure;
+
+    // Duration of selection
+    const selectionStart = selectedSections[0].startTime;
+    const selectionEnd = selectedSections[selectedSections.length - 1].endTime;
+    const selectionSeconds = Math.max(0, selectionEnd - selectionStart);
     
     if (firstMeasure === lastMeasure) {
-      return `M${firstMeasure}`;
+      return `M${firstMeasure} · ${selectionSeconds.toFixed(1)}s`;
     }
-    return `M${firstMeasure}–${lastMeasure}`;
+    return `M${firstMeasure}–${lastMeasure} · ${selectionSeconds.toFixed(1)}s`;
   };
+
+  // Get chords within a section (simplified - only unique chords)
+  const getChordsForSection = useMemo(() => {
+    return (section: Section): string[] => {
+      if (chordChanges.length === 0) return [];
+      
+      const sectionChords = chordChanges.filter(
+        c => c.time >= section.startTime && c.time < section.endTime && c.chord !== 'N'
+      );
+      
+      // Get unique chords in order they appear, limiting to most prominent
+      const seen = new Set<string>();
+      const uniqueChords: string[] = [];
+      for (const c of sectionChords) {
+        if (!seen.has(c.chord)) {
+          seen.add(c.chord);
+          uniqueChords.push(c.chord);
+        }
+      }
+      
+      return uniqueChords.slice(0, 6); // Limit to 6 chords for display
+    };
+  }, [chordChanges]);
+
+  // Get key change within a section (if any)
+  const getKeyChangeForSection = useMemo(() => {
+    return (section: Section): KeyChange | null => {
+      if (keyChanges.length === 0) return null;
+
+      // Find key change that starts within this section
+      // Be lenient: if a key change is within 2 seconds of section start, consider it part of this section
+      // This handles cases where key change and section boundary were snapped to slightly different times
+      return keyChanges.find(
+        k => k.time >= section.startTime - 2 && k.time < section.endTime
+      ) ?? null;
+    };
+  }, [keyChanges]);
 
   // Hovered section for tooltip
   const [hoveredSection, setHoveredSection] = useState<Section | null>(null);
@@ -352,7 +405,7 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
         <div 
           className="section-hover-card"
           style={{ 
-            left: `${Math.min(Math.max(hoverPosition.x, 120), window.innerWidth - 120)}px`,
+            left: `${Math.min(Math.max(hoverPosition.x, 150), window.innerWidth - 150)}px`,
             top: `${hoverPosition.y - 10}px`,
           }}
         >
@@ -365,6 +418,31 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
           <div className="section-hover-duration">
             Duration: {Math.round(hoveredSection.endTime - hoveredSection.startTime)}s
           </div>
+          
+          {/* Chord progression for this section */}
+          {getChordsForSection(hoveredSection).length > 0 && (
+            <div className="section-hover-chords">
+              <span className="section-hover-label">Chords (estimated):</span>
+              <span className="section-chord-list">
+                {getChordsForSection(hoveredSection).join(' → ')}
+              </span>
+            </div>
+          )}
+          
+          {/* Key change in this section */}
+          {(() => {
+            const keyChange = getKeyChangeForSection(hoveredSection);
+            if (keyChange) {
+              return (
+                <div className="section-hover-key-change">
+                  <span className="material-symbols-outlined key-change-icon">change_circle</span>
+                  <span>Detected key change to <strong>{keyChange.key} {keyChange.scale}</strong></span>
+                </div>
+              );
+            }
+            return null;
+          })()}
+          
           <div className="section-hover-hint">
             Click to select · Shift+click to extend
           </div>
@@ -407,6 +485,40 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
                 <span className="material-symbols-outlined">vertical_split</span>
                 <span>Split here</span>
               </button>
+            )}
+            {onExtendSelection && (
+              <div className="section-nudge-controls">
+                <span className="nudge-label">Nudge selection:</span>
+                <button 
+                  className="nudge-btn has-tooltip"
+                  onClick={() => onExtendSelection('start', -1)}
+                  data-tooltip="Extend start 1 measure earlier"
+                >
+                  <span className="material-symbols-outlined">first_page</span>
+                </button>
+                <button 
+                  className="nudge-btn has-tooltip"
+                  onClick={() => onExtendSelection('start', 1)}
+                  data-tooltip="Shrink start 1 measure later"
+                >
+                  <span className="material-symbols-outlined">chevron_right</span>
+                </button>
+                <span className="nudge-divider">|</span>
+                <button 
+                  className="nudge-btn has-tooltip"
+                  onClick={() => onExtendSelection('end', -1)}
+                  data-tooltip="Shrink end 1 measure earlier"
+                >
+                  <span className="material-symbols-outlined">chevron_left</span>
+                </button>
+                <button 
+                  className="nudge-btn has-tooltip"
+                  onClick={() => onExtendSelection('end', 1)}
+                  data-tooltip="Extend end 1 measure later"
+                >
+                  <span className="material-symbols-outlined">last_page</span>
+                </button>
+              </div>
             )}
             <button 
               className="section-action-btn deselect"

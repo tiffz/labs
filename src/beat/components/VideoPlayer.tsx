@@ -6,6 +6,8 @@ interface VideoPlayerProps {
   currentTime: number;
   playbackRate?: number;
   onTimeUpdate?: (time: number) => void;
+  /** Called when user clicks the video to toggle play/pause */
+  onPlayPauseToggle?: () => void;
 }
 
 /**
@@ -18,6 +20,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   currentTime,
   playbackRate = 1.0,
   onTimeUpdate,
+  onPlayPauseToggle,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const lastSyncTime = useRef(0);
@@ -131,8 +134,15 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     // Audio is source of truth, so we don't report video time updates
   }, []);
 
+  // Handle click on video to toggle play/pause
+  const handleClick = useCallback(() => {
+    if (onPlayPauseToggle) {
+      onPlayPauseToggle();
+    }
+  }, [onPlayPauseToggle]);
+
   return (
-    <div className="video-player">
+    <div className="video-player" onClick={handleClick} style={{ cursor: 'pointer' }}>
       <video
         ref={videoRef}
         src={videoUrl}
@@ -143,6 +153,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         onSeeked={handleSeeked}
         onTimeUpdate={handleTimeUpdate}
       />
+      {/* Play/pause overlay indicator */}
+      {!isPlaying && (
+        <div className="video-play-overlay">
+          <span className="material-symbols-outlined">play_arrow</span>
+        </div>
+      )}
     </div>
   );
 };

@@ -6,7 +6,24 @@ import {
   updateSectionBoundary,
   type Section,
   type SectionDetectionResult,
+  type KeyChangeInfo,
 } from '../utils/sectionDetector';
+import type { ChordEvent } from '../utils/chordAnalyzer';
+
+/** Options for section detection */
+interface SectionDetectionOptions {
+  minSectionDuration?: number;
+  sensitivity?: number;
+  musicStartTime?: number;
+  bpm?: number;
+  beatsPerMeasure?: number;
+  /** Chord events for harmonic-aware section detection */
+  chordEvents?: ChordEvent[];
+  /** Chord change times for boundary snapping */
+  chordChangeTimes?: number[];
+  /** Key changes - these mark definite section boundaries */
+  keyChanges?: KeyChangeInfo[];
+}
 
 interface UseSectionDetectionReturn {
   /** Detected sections */
@@ -21,7 +38,7 @@ interface UseSectionDetectionReturn {
   detectSectionsFromBuffer: (
     audioBuffer: AudioBuffer,
     beats?: number[],
-    options?: { minSectionDuration?: number; sensitivity?: number; musicStartTime?: number; bpm?: number; beatsPerMeasure?: number }
+    options?: SectionDetectionOptions
   ) => Promise<void>;
   /** Clear all sections */
   clearSections: () => void;
@@ -45,7 +62,7 @@ export function useSectionDetection(): UseSectionDetectionReturn {
     async (
       audioBuffer: AudioBuffer,
       beats: number[] = [],
-      options: { minSectionDuration?: number; sensitivity?: number; musicStartTime?: number; bpm?: number; beatsPerMeasure?: number } = {}
+      options: SectionDetectionOptions = {}
     ) => {
       setIsDetecting(true);
       setWarnings([]);
@@ -56,10 +73,19 @@ export function useSectionDetection(): UseSectionDetectionReturn {
         setConfidence(result.confidence);
         setWarnings(result.warnings);
       } catch (error) {
-        console.error('Section detection failed:', error);
-        setWarnings(['Section detection failed - please try again']);
-        setSections([]);
-        setConfidence(0);
+        console.error('[useSectionDetection] Section detection failed:', error);
+        // Create a default "Full Track" section so the user can still use the app
+        const musicStart = options.musicStartTime ?? 0;
+        setSections([{
+          id: 'section-0',
+          startTime: musicStart,
+          endTime: audioBuffer.duration,
+          label: 'Full Track',
+          color: '#9d8ec7',
+          confidence: 0.5,
+        }]);
+        setConfidence(0.5);
+        setWarnings(['Section detection failed - using full track as single section']);
       } finally {
         setIsDetecting(false);
       }

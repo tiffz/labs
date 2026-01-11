@@ -137,6 +137,77 @@ body {
   margin-top: 0.25rem;
 }
 
+/* URL input section */
+.url-separator {
+  display: flex;
+  align-items: center;
+  margin: 1rem 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.url-separator::before,
+.url-separator::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-subtle);
+}
+
+.url-separator span {
+  padding: 0 0.75rem;
+}
+
+.url-input-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.url-input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.5rem;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.url-input:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+.url-input::placeholder {
+  color: var(--text-muted);
+}
+
+.url-load-btn {
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: var(--accent-primary);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+}
+
+.url-load-btn:hover:not(:disabled) {
+  background: var(--accent-secondary);
+}
+
+.url-load-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.url-load-btn .material-symbols-outlined {
+  font-size: 1.25rem;
+}
+
 .error-text {
   color: var(--error);
   font-size: 0.8rem;
@@ -198,12 +269,47 @@ body {
   background: #000;
 }
 
+.video-player {
+  position: relative;
+  cursor: pointer;
+}
+
 .video-element {
   width: 100%;
   display: block;
 }
 
+/* Play overlay shown when video is paused */
+.video-play-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 4rem;
+  height: 4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 50%;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.video-play-overlay .material-symbols-outlined {
+  font-size: 2.5rem;
+  color: white;
+  margin-left: 0.2rem; /* Slight offset to center play icon visually */
+}
+
+.video-player:hover .video-play-overlay {
+  background: rgba(0, 0, 0, 0.75);
+}
+
 .beat-viz-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   padding: 1rem 0.5rem;
 }
 
@@ -401,6 +507,45 @@ body {
   margin-top: 0.3rem;
 }
 
+.section-hover-chords {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-top: 0.4rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--surface-300);
+}
+
+.section-hover-label {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.section-chord-list {
+  font-size: 0.8rem;
+  color: var(--primary);
+  font-weight: 600;
+  font-family: var(--font-mono, monospace);
+}
+
+.section-hover-key-change {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.4rem;
+  padding: 0.3rem 0.4rem;
+  background: rgba(255, 193, 7, 0.1);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: #ffc107;
+}
+
+.key-change-icon {
+  font-size: 1rem;
+}
+
 .section-hover-hint {
   font-size: 0.65rem;
   color: var(--text-muted);
@@ -515,6 +660,53 @@ body {
 .section-action-btn.deselect:hover {
   border-color: var(--text-secondary);
   color: var(--text-primary);
+}
+
+/* Section nudge controls - for adjusting selection by 1 measure */
+.section-nudge-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: 0.5rem;
+  padding-left: 0.5rem;
+  border-left: 1px solid var(--border-subtle);
+}
+
+.section-nudge-controls .nudge-label {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  margin-right: 0.25rem;
+}
+
+.section-nudge-controls .nudge-divider {
+  font-size: 0.65rem;
+  color: var(--border-subtle);
+  margin: 0 0.15rem;
+}
+
+.section-nudge-controls .nudge-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.25rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.section-nudge-controls .nudge-btn:hover {
+  background: rgba(157, 142, 199, 0.15);
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
+}
+
+.section-nudge-controls .nudge-btn .material-symbols-outlined {
+  font-size: 1rem;
 }
 
 /* Playback Bar */
@@ -724,6 +916,22 @@ body {
   gap: 0.5rem;
   padding-bottom: 0.5rem;
   border-bottom: 1px solid var(--border-subtle);
+}
+
+/* Effective BPM indicator when playback speed is adjusted */
+.effective-bpm {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent-tertiary);
+  cursor: default;
+}
+
+/* Effective key indicator when transpose is active */
+.effective-key {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent-tertiary);
+  cursor: default;
 }
 
 /* Controls Section - Sidebar */
@@ -1247,6 +1455,12 @@ body {
   font-size: 0.7rem;
   font-weight: 600;
   color: var(--text-muted);
+}
+
+.measure-num.large {
+  font-size: 1.25rem;
+  margin-top: 0.75rem;
+  color: var(--text-secondary);
 }
 
 /* Drum Section - Inline in sidebar */
@@ -2047,4 +2261,1054 @@ body {
 
 .loop-region-overlay::after {
   right: -1px;
+}
+
+/* ========================================
+   Chord Display Styles
+   ======================================== */
+
+.chord-display {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  margin-top: 0.5rem;
+}
+
+.chord-display-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.chord-display-empty {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.chord-display-empty .material-symbols-outlined {
+  font-size: 1rem;
+  opacity: 0.6;
+}
+
+/* Key and Current Chord Row */
+.chord-info-row {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+/* Key Display */
+.key-display {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.key-label,
+.chord-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.key-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--accent-primary);
+}
+
+.low-confidence-indicator {
+  font-size: 0.75rem;
+  color: var(--warning);
+  margin-left: 0.25rem;
+}
+
+/* Current Chord Display */
+.current-chord-display {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.chord-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-family: 'Menlo', 'Monaco', 'Consolas', monospace;
+  min-width: 3rem;
+}
+
+.chord-value.no-chord {
+  color: var(--text-muted);
+}
+
+/* Chord Overlay Controls */
+.chord-overlay-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.chord-overlay-btn {
+  padding: 0.4rem 0.75rem !important;
+  font-size: 0.75rem !important;
+}
+
+/* Instrument Selector */
+.instrument-selector {
+  display: flex;
+  background: var(--bg-input);
+  border-radius: 0.375rem;
+  padding: 0.125rem;
+}
+
+.instrument-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 1.75rem;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.instrument-btn:hover {
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.instrument-btn.active {
+  background: var(--accent-primary);
+  color: var(--bg-deep);
+}
+
+.instrument-btn .material-symbols-outlined {
+  font-size: 1rem;
+}
+
+/* Chord Volume Control */
+.chord-volume-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-muted);
+}
+
+.chord-volume-control .material-symbols-outlined {
+  font-size: 1rem;
+}
+
+.chord-volume-slider {
+  width: 60px;
+  height: 4px;
+  -webkit-appearance: none;
+  background: var(--bg-input);
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.chord-volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  background: var(--accent-primary);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.chord-volume-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: var(--accent-primary);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.chord-volume-value {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  min-width: 2.5rem;
+}
+
+/* Chord Progression Preview */
+.chord-progression-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border-subtle);
+  overflow-x: auto;
+}
+
+.progression-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.progression-chords {
+  display: flex;
+  gap: 0.375rem;
+  flex-wrap: nowrap;
+}
+
+.progression-chord {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  font-family: 'Menlo', 'Monaco', 'Consolas', monospace;
+  background: var(--bg-input);
+  border-radius: 0.25rem;
+  color: var(--text-secondary);
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.progression-chord.active {
+  background: var(--accent-primary);
+  color: var(--bg-deep);
+}
+
+.progression-more {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-style: italic;
+  white-space: nowrap;
+}
+
+/* Chord Warnings */
+.chord-warnings {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.chord-warning {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.7rem;
+  color: var(--warning);
+}
+
+.chord-warning .material-symbols-outlined {
+  font-size: 0.9rem;
+}
+
+/* ============================================
+   Lead Sheet Component
+   ============================================ */
+
+.lead-sheet {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  margin-top: 0.75rem;
+}
+
+.lead-sheet-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 2rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.lead-sheet-empty .material-symbols-outlined {
+  font-size: 1.25rem;
+  opacity: 0.5;
+}
+
+/* Header */
+.lead-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.lead-sheet-key {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.key-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.5rem;
+  padding: 0.25rem 0.625rem;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: 'Menlo', 'Monaco', 'Consolas', monospace;
+  background: var(--accent-primary);
+  color: var(--bg-deep);
+  border-radius: 0.375rem;
+}
+
+.lead-sheet-key .key-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.lead-sheet-chords-used {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.chords-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.chords-list {
+  font-size: 0.8rem;
+  font-family: 'Menlo', 'Monaco', 'Consolas', monospace;
+  color: var(--text-secondary);
+}
+
+/* Measure Grid */
+.lead-sheet-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .lead-sheet-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .lead-sheet-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.lead-sheet-measure {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.5rem;
+  background: var(--bg-elevated);
+  border-radius: 0.5rem;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.lead-sheet-measure.current {
+  border-color: var(--accent-primary);
+  background: rgba(157, 142, 199, 0.1);
+}
+
+.measure-number {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 0.125rem;
+}
+
+.measure-chords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  min-height: 1.75rem;
+  align-items: center;
+}
+
+.measure-rest {
+  color: var(--text-muted);
+  font-size: 1rem;
+  opacity: 0.5;
+}
+
+.measure-chord {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.375rem;
+  font-family: 'Menlo', 'Monaco', 'Consolas', monospace;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.measure-chord:hover {
+  background: var(--bg-card);
+  border-color: var(--accent-primary);
+}
+
+.measure-chord.active {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+}
+
+.measure-chord.active .chord-name {
+  color: var(--bg-deep);
+}
+
+.measure-chord.active .chord-detail {
+  color: rgba(22, 22, 30, 0.7);
+}
+
+.chord-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.chord-detail {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  margin-top: -0.125rem;
+}
+
+/* Pattern Display */
+.lead-sheet-pattern {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.pattern-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.pattern-numerals {
+  font-size: 0.85rem;
+  font-family: 'Menlo', 'Monaco', 'Consolas', monospace;
+  color: var(--accent-secondary);
+}
+
+/* ========================================
+   Chord Confidence Banner
+   ======================================== */
+
+.chord-confidence-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.chord-confidence-banner.high {
+  background: rgba(142, 199, 168, 0.15);
+  color: var(--success);
+}
+
+.chord-confidence-banner.medium {
+  background: rgba(199, 184, 142, 0.15);
+  color: var(--warning);
+}
+
+.chord-confidence-banner.low {
+  background: rgba(199, 142, 142, 0.15);
+  color: var(--error);
+}
+
+.chord-confidence-banner .material-symbols-outlined {
+  font-size: 1rem;
+}
+
+.confidence-text {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.confidence-hint {
+  opacity: 0.8;
+}
+
+.chord-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+/* ========================================
+   Chord Chart Styles
+   ======================================== */
+
+.chord-chart {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  margin-top: 0.5rem;
+}
+
+.chord-chart-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 2rem;
+  color: var(--text-muted);
+}
+
+.chord-chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.chord-chart-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.chord-chart-title .material-symbols-outlined {
+  font-size: 1.25rem;
+  color: var(--accent-primary);
+}
+
+.chord-chart-subtitle {
+  font-size: 0.75rem;
+  font-weight: normal;
+  color: var(--text-muted);
+  margin-left: 0.5rem;
+}
+
+.chord-chart-key {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.chord-chart-key .key-badge {
+  background: var(--accent-primary);
+  color: var(--bg-deep);
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.chord-chart-key .key-confidence {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+/* Chord chart grid */
+.chord-chart-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+.chord-chart-row {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 2px;
+}
+
+/* Individual measure box */
+.chord-chart-measure {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.25rem;
+  padding: 0.25rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-height: 40px;
+}
+
+.chord-chart-measure:hover {
+  border-color: var(--accent-primary);
+  background: rgba(157, 142, 199, 0.1);
+}
+
+.chord-chart-measure.current {
+  border-color: var(--accent-primary);
+  background: rgba(157, 142, 199, 0.15);
+  box-shadow: 0 0 12px rgba(157, 142, 199, 0.3);
+}
+
+.chord-chart-measure.empty {
+  background: transparent;
+  border-color: transparent;
+  cursor: default;
+}
+
+.measure-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.15rem;
+}
+
+.measure-number {
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.chord-chart-measure.current .measure-number {
+  color: var(--accent-primary);
+}
+
+.beat-indicator {
+  font-size: 0.6rem;
+  color: var(--accent-secondary);
+  background: rgba(201, 160, 184, 0.2);
+  padding: 0.1rem 0.3rem;
+  border-radius: 0.2rem;
+}
+
+.measure-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+/* Beat grid */
+.beat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  height: 3px;
+}
+
+.beat-slot {
+  background: var(--border-subtle);
+  border-radius: 1px;
+  transition: background 0.1s;
+}
+
+.beat-slot.active {
+  background: var(--accent-primary);
+}
+
+/* Chords in measure */
+.measure-chords {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.15rem;
+  min-height: 18px;
+  align-items: center;
+}
+
+.measure-chords .chord-name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: center;
+  transition: color 0.15s;
+}
+
+.measure-chords .chord-name.active {
+  color: var(--accent-secondary);
+}
+
+.measure-chords .no-chord {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+/* Chord chart disclaimer - now at TOP of chart */
+.chord-chart-disclaimer {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(199, 184, 142, 0.1);
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--warning);
+}
+
+.chord-chart-disclaimer .material-symbols-outlined {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+/* Experimental badge */
+.chord-chart-experimental {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+  padding: 0.35rem 0.6rem;
+  background: rgba(126, 181, 196, 0.15);
+  border: 1px solid rgba(126, 181, 196, 0.3);
+  border-radius: 0.375rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--accent-tertiary);
+  width: fit-content;
+}
+
+.chord-chart-experimental .material-symbols-outlined {
+  font-size: 0.9rem;
+}
+
+/* Chord chart section container */
+.chord-chart-section {
+  margin-top: 1rem;
+}
+
+/* Chord chart toggle button */
+.chord-chart-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.5rem;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.chord-chart-toggle:hover {
+  background: var(--bg-elevated);
+  border-color: var(--accent-primary);
+}
+
+.chord-chart-toggle.active {
+  background: var(--bg-elevated);
+  border-color: var(--accent-primary);
+}
+
+.chord-chart-toggle .material-symbols-outlined {
+  font-size: 1.25rem;
+  color: var(--accent-primary);
+}
+
+.chord-chart-toggle .toggle-label {
+  flex: 1;
+  text-align: left;
+}
+
+.chord-chart-toggle .toggle-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: normal;
+}
+
+/* Confidence badge (for BPM and Key) */
+.confidence-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.15rem 0.35rem;
+  border-radius: 0.25rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  cursor: help;
+}
+
+.confidence-badge .material-symbols-outlined {
+  font-size: 0.8rem;
+}
+
+.confidence-badge .confidence-label {
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.confidence-badge.high {
+  background: rgba(76, 175, 80, 0.2);
+  color: #4caf50;
+}
+
+.confidence-badge.medium {
+  background: rgba(255, 193, 7, 0.2);
+  color: #ffc107;
+}
+
+.confidence-badge.low {
+  background: rgba(244, 67, 54, 0.2);
+  color: #f44336;
+}
+
+.confidence-badge.small {
+  padding: 0.1rem 0.25rem;
+  font-size: 0.55rem;
+}
+
+.confidence-badge.small .material-symbols-outlined {
+  font-size: 0.7rem;
+}
+
+.confidence-badge.small .confidence-label {
+  display: none;
+}
+
+/* Key Section */
+.key-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.key-display-group {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.key-section .key-label {
+  color: var(--text-muted);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.key-section .key-value {
+  color: var(--accent-primary);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+/* Transpose controls */
+.transpose-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.transpose-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.25rem;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.transpose-btn:hover:not(:disabled) {
+  background: var(--bg-card);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+.transpose-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.transpose-btn .material-symbols-outlined {
+  font-size: 0.9rem;
+}
+
+.transpose-value {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  min-width: 1.5rem;
+  text-align: center;
+  cursor: default;
+}
+
+.transpose-value.active {
+  color: var(--accent-primary);
+  font-weight: 600;
+}
+
+/* Section label in measure */
+.measure-section-label {
+  position: absolute;
+  top: -0.5rem;
+  left: 0.5rem;
+  background: var(--accent-secondary);
+  color: var(--bg-deep);
+  font-size: 0.6rem;
+  font-weight: 600;
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.25rem;
+  text-transform: uppercase;
+}
+
+.chord-chart-measure {
+  position: relative;
+}
+
+/* Section highlighting - alternating colors for different sections */
+.chord-chart-measure.in-section {
+  background: rgba(157, 142, 199, 0.08);
+  border-color: rgba(157, 142, 199, 0.2);
+}
+
+.chord-chart-measure.in-section.section-color-0 {
+  background: rgba(157, 142, 199, 0.1);
+  border-color: rgba(157, 142, 199, 0.25);
+}
+
+.chord-chart-measure.in-section.section-color-1 {
+  background: rgba(126, 181, 196, 0.1);
+  border-color: rgba(126, 181, 196, 0.25);
+}
+
+.chord-chart-measure.in-section.section-color-2 {
+  background: rgba(201, 160, 184, 0.1);
+  border-color: rgba(201, 160, 184, 0.25);
+}
+
+.chord-chart-measure.in-section.section-color-3 {
+  background: rgba(142, 199, 168, 0.1);
+  border-color: rgba(142, 199, 168, 0.25);
+}
+
+.chord-chart-measure.in-section.section-color-4 {
+  background: rgba(199, 184, 142, 0.1);
+  border-color: rgba(199, 184, 142, 0.25);
+}
+
+/* Section start marker - small indicator */
+.chord-chart-measure.section-start::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  right: -1px;
+  height: 3px;
+  background: var(--accent-secondary);
+  border-radius: 0.25rem 0.25rem 0 0;
+}
+
+.chord-chart-measure.section-start.section-color-0::before {
+  background: var(--accent-primary);
+}
+
+.chord-chart-measure.section-start.section-color-1::before {
+  background: var(--accent-tertiary);
+}
+
+.chord-chart-measure.section-start.section-color-2::before {
+  background: var(--accent-secondary);
+}
+
+.chord-chart-measure.section-start.section-color-3::before {
+  background: var(--success);
+}
+
+.chord-chart-measure.section-start.section-color-4::before {
+  background: var(--warning);
+}
+
+/* Key change indicator in measure */
+.measure-key-change {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.65rem;
+  color: var(--warning);
+  margin-bottom: 0.25rem;
+}
+
+.measure-key-change .material-symbols-outlined {
+  font-size: 0.8rem;
+}
+
+/* Compact chord display */
+.chord-display-compact {
+  padding: 0.5rem;
+  background: var(--bg-elevated);
+  border-radius: 0.5rem;
+}
+
+.chord-display-compact .current-chord-display {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.chord-display-compact .chord-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.chord-display-compact .chord-value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--accent-primary);
+}
+
+.chord-display-compact .chord-value.no-chord {
+  color: var(--text-muted);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .chord-chart-row {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .chord-chart-grid {
+    max-height: 300px;
+  }
 }

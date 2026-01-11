@@ -12,6 +12,9 @@ import Essentia from 'essentia.js/dist/essentia.js-core.es.js';
 // @ts-ignore - WASM module import
 import { EssentiaWASM } from 'essentia.js/dist/essentia-wasm.es.js';
 
+import { detectTempoEnsemble } from './tempoEnsemble';
+import { mergeBeatGrids, snapBeatsToOnsets } from './beatRefinement';
+
 export interface BeatAnalysisResult {
   bpm: number;
   confidence: number; // 0-1 confidence level
@@ -42,7 +45,6 @@ export async function getEssentia(): Promise<typeof Essentia> {
     try {
       const essentia = new Essentia(EssentiaWASM);
       essentiaInstance = essentia;
-      console.log('Essentia.js initialized successfully');
       return essentia;
     } catch (error) {
       console.error('Failed to initialize Essentia.js:', error);
@@ -234,7 +236,7 @@ function calculateConfidenceLevel(
 
 /**
  * Analyze audio buffer for BPM and beat information
- * Uses Essentia.js RhythmExtractor2013 for accurate detection
+ * Uses ensemble of Essentia.js algorithms for improved accuracy
  */
 export async function analyzeBeat(audioBuffer: AudioBuffer): Promise<BeatAnalysisResult> {
   // Analyze audio characteristics first
@@ -247,40 +249,79 @@ export async function analyzeBeat(audioBuffer: AudioBuffer): Promise<BeatAnalysi
     warnings.push(`Music starts ${musicStartTime.toFixed(1)}s into the track`);
   }
 
-  // Run Essentia detection
-  const essentiaResult = await detectBpmWithEssentia(audioBuffer);
-
   let finalBpm: number;
   let confidence: number;
   let confidenceLevel: 'high' | 'medium' | 'low';
   let beats: number[];
   let offset: number;
 
-  if (essentiaResult) {
-    finalBpm = Math.round(essentiaResult.bpm);
-    beats = essentiaResult.beats;
+  // Use ensemble detection for better accuracy
+  const ensembleResult = await detectTempoEnsemble(audioBuffer);
+  warnings.push(...ensembleResult.warnings);
+
+  if (ensembleResult.consensusBpm > 0 && ensembleResult.confidence > 0) {
+    finalBpm = ensembleResult.consensusBpm;
+
+    // Merge beat grids from multiple algorithms
+    beats = mergeBeatGrids(ensembleResult.estimates, finalBpm, audioBuffer.duration);
+
+    // Snap to onsets if agreement is moderate or strong
+    if (ensembleResult.agreement !== 'weak' && beats.length > 0) {
+      beats = await snapBeatsToOnsets(beats, audioBuffer);
+    }
+
     offset = beats.length > 0 ? beats[0] : 0;
 
-    // Calculate confidence
-    const confidenceResult = calculateConfidenceLevel(
-      essentiaResult.confidence,
-      audioCharacteristics
-    );
-    confidence = confidenceResult.confidence;
-    confidenceLevel = confidenceResult.level;
+    // Calculate confidence level
+    confidence = ensembleResult.confidence;
+    if (audioCharacteristics.isDifficultAudio) {
+      confidence = Math.min(confidence, 0.6);
+    }
 
-    // Add warning for low confidence
+    if (confidence >= 0.7 && ensembleResult.agreement === 'strong') {
+      confidenceLevel = 'high';
+    } else if (confidence >= 0.4 || ensembleResult.agreement === 'moderate') {
+      confidenceLevel = 'medium';
+    } else {
+      confidenceLevel = 'low';
+    }
+
+    // Add warnings based on agreement
+    if (ensembleResult.agreement === 'weak') {
+      warnings.push('Tempo algorithms disagree - verify manually');
+    }
     if (confidenceLevel === 'low') {
       warnings.push('Low detection confidence - manually verify tempo');
     }
+
   } else {
-    // Fallback if Essentia fails
-    finalBpm = 120;
-    offset = 0;
-    beats = generateBeats(finalBpm, audioBuffer.duration, offset);
-    confidence = 0.1;
-    confidenceLevel = 'low';
-    warnings.push('Detection failed - using default 120 BPM');
+    // Fallback to single algorithm if ensemble fails
+    const essentiaResult = await detectBpmWithEssentia(audioBuffer);
+
+    if (essentiaResult) {
+      finalBpm = Math.round(essentiaResult.bpm);
+      beats = essentiaResult.beats;
+      offset = beats.length > 0 ? beats[0] : 0;
+
+      const confidenceResult = calculateConfidenceLevel(
+        essentiaResult.confidence,
+        audioCharacteristics
+      );
+      confidence = confidenceResult.confidence;
+      confidenceLevel = confidenceResult.level;
+
+      if (confidenceLevel === 'low') {
+        warnings.push('Low detection confidence - manually verify tempo');
+      }
+    } else {
+      // Final fallback
+      finalBpm = 120;
+      offset = 0;
+      beats = generateBeats(finalBpm, audioBuffer.duration, offset);
+      confidence = 0.1;
+      confidenceLevel = 'low';
+      warnings.push('Detection failed - using default 120 BPM');
+    }
   }
 
   return {

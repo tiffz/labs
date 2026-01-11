@@ -5,9 +5,17 @@ import BeatVisualizer from './components/BeatVisualizer';
 import VideoPlayer from './components/VideoPlayer';
 import PlaybackBar from './components/PlaybackBar';
 import DrumAccompaniment from './components/DrumAccompaniment';
+import ChordChart from './components/ChordChart';
 import { useAudioAnalysis } from './hooks/useAudioAnalysis';
+
+// Experimental features - only available in development
+const IS_DEV = import.meta.env.DEV;
+const EXPERIMENTAL_CHORD_CHART = IS_DEV;
+
+import { transposeKey } from './utils/musicTheory';
 import { useBeatSync, PLAYBACK_SPEEDS, type PlaybackSpeed } from './hooks/useBeatSync';
 import { useSectionDetection } from './hooks/useSectionDetection';
+import { useChordAnalysis } from './hooks/useChordAnalysis';
 import type { TimeSignature } from '../shared/rhythm/types';
 import { type Section, extendToMeasureBoundary } from './utils/sectionDetector';
 
@@ -43,10 +51,25 @@ const App: React.FC = () => {
     split: splitSection,
   } = useSectionDetection();
 
+  // Chord analysis
+  const {
+    isAnalyzing: isAnalyzingChords,
+    chordResult,
+    analyzeChords: runChordAnalysis,
+    validateWithBeats,
+    reset: resetChordAnalysis,
+  } = useChordAnalysis();
+
+  // Chord chart visibility state (experimental feature)
+  const [showChordChart, setShowChordChart] = useState(false);
+
   // Selected section(s) for looping - supports multiple adjacent sections
   const [selectedSectionIds, setSelectedSectionIds] = useState<string[]>([]);
 
   const [drumVolume, setDrumVolume] = useState(70);
+  
+  // Transpose in semitones (-12 to +12)
+  const [transposeSemitones, setTransposeSemitones] = useState(0);
 
   // Calculate effective sync start (user-adjusted or auto-detected)
   const effectiveSyncStart = syncStartTime ?? analysisResult?.musicStartTime ?? 0;
@@ -83,20 +106,40 @@ const App: React.FC = () => {
     musicStartTime: analysisResult?.musicStartTime ?? 0,
     metronomeEnabled,
     syncStartTime: effectiveSyncStart,
+    mediaUrl: mediaFile?.url,
+    transposeSemitones,
   });
 
-  // Run section detection after BPM analysis completes
+  // Run chord analysis after BPM analysis completes
   useEffect(() => {
-    if (audioBuffer && analysisResult && !isDetectingSections && sections.length === 0) {
+    if (audioBuffer && analysisResult && !isAnalyzingChords && !chordResult) {
+      runChordAnalysis(audioBuffer, analysisResult.beats);
+    }
+  }, [audioBuffer, analysisResult, isAnalyzingChords, chordResult, runChordAnalysis]);
+
+  // Validate beat/chord alignment when both are available
+  useEffect(() => {
+    if (analysisResult && chordResult) {
+      validateWithBeats(analysisResult.beats, analysisResult.bpm);
+    }
+  }, [analysisResult, chordResult, validateWithBeats]);
+
+  // Run section detection after chord analysis completes
+  // We wait for chord data because key changes are strong indicators of section boundaries
+  useEffect(() => {
+    if (audioBuffer && analysisResult && chordResult && !isDetectingSections && sections.length === 0) {
       detectSectionsFromBuffer(audioBuffer, analysisResult.beats, {
         minSectionDuration: 8,
         sensitivity: 0.5,
         musicStartTime: analysisResult.musicStartTime,
         bpm: analysisResult.bpm,
         beatsPerMeasure: timeSignature.numerator,
+        keyChanges: chordResult.keyChanges,
+      }).catch((err) => {
+        console.error('[Section Detection] Detection failed:', err);
       });
     }
-  }, [audioBuffer, analysisResult, isDetectingSections, sections.length, detectSectionsFromBuffer, timeSignature.numerator]);
+  }, [audioBuffer, analysisResult, chordResult, isDetectingSections, sections.length, detectSectionsFromBuffer, timeSignature.numerator]);
 
   const handleFileSelect = useCallback(
     async (media: MediaFile) => {
@@ -117,10 +160,12 @@ const App: React.FC = () => {
     setSyncStartTime(null);
     resetAnalysis();
     clearSections();
+    resetChordAnalysis();
+    setShowChordChart(false);
     setSelectedSectionIds([]);
     setLoopRegion(null);
     setLoopEnabled(false);
-  }, [stop, mediaFile, resetAnalysis, clearSections, setLoopRegion, setLoopEnabled]);
+  }, [stop, mediaFile, resetAnalysis, clearSections, resetChordAnalysis, setLoopRegion, setLoopEnabled]);
 
   // Handle section selection (supports multi-select with shift key)
   // Loop regions are extended to nearest measure boundaries for smoother musical transitions
@@ -232,6 +277,34 @@ const App: React.FC = () => {
     // Clear selection after split
     setSelectedSectionIds([]);
   }, [sections, splitSection]);
+
+  // Handle extending/reducing selection by measures
+  const handleExtendSelection = useCallback((direction: 'start' | 'end', delta: number) => {
+    if (!loopRegion || !analysisResult) return;
+    
+    const bpm = analysisResult.bpm;
+    const musicStart = analysisResult.musicStartTime ?? 0;
+    const beatsPerMeasure = timeSignature.numerator;
+    const measureDuration = (60 / bpm) * beatsPerMeasure;
+    
+    let newStart = loopRegion.startTime;
+    let newEnd = loopRegion.endTime;
+    
+    if (direction === 'start') {
+      // delta > 0 means move start later (shrink from start)
+      // delta < 0 means move start earlier (extend from start)
+      newStart = Math.max(musicStart, loopRegion.startTime + delta * measureDuration);
+    } else {
+      // delta > 0 means move end later (extend from end)
+      // delta < 0 means move end earlier (shrink from end)
+      newEnd = Math.min(duration, loopRegion.endTime + delta * measureDuration);
+    }
+    
+    // Ensure minimum 1 measure length
+    if (newEnd - newStart < measureDuration) return;
+    
+    setLoopRegion({ startTime: newStart, endTime: newEnd });
+  }, [loopRegion, analysisResult, timeSignature.numerator, duration, setLoopRegion]);
   
   // Handler for dragging sync start marker
   const handleSyncStartChange = useCallback((time: number) => {
@@ -308,6 +381,7 @@ const App: React.FC = () => {
                     isPlaying={isPlaying}
                     currentTime={currentTime}
                     playbackRate={playbackRate}
+                    onPlayPauseToggle={handlePlayPause}
                   />
                 </div>
               ) : (
@@ -317,6 +391,7 @@ const App: React.FC = () => {
                     currentBeat={currentBeat}
                     progress={progress}
                   />
+                  <span className="measure-num large">Measure {currentMeasure + 1}</span>
                 </div>
               )}
 
@@ -338,6 +413,9 @@ const App: React.FC = () => {
                 isDetectingSections={isDetectingSections}
                 onCombineSections={handleCombineSections}
                 onSplitSection={handleSplitSection}
+                onExtendSelection={handleExtendSelection}
+                chordChanges={chordResult?.chordChanges}
+                keyChanges={chordResult?.keyChanges}
               />
 
               {/* Transport Controls - under video */}
@@ -387,7 +465,7 @@ const App: React.FC = () => {
                       className="speed-select"
                       title="Playback speed"
                     >
-                      {PLAYBACK_SPEEDS.map(speed => (
+                      {PLAYBACK_SPEEDS.map((speed: PlaybackSpeed) => (
                         <option key={speed} value={speed}>
                           {speed === 1 ? '1×' : `${speed}×`}
                         </option>
@@ -506,26 +584,68 @@ const App: React.FC = () => {
                   Change
                 </button>
               </div>
+
+              {/* Chord Chart Section - EXPERIMENTAL (dev only) */}
+              {EXPERIMENTAL_CHORD_CHART && chordResult && chordResult.chordChanges.length > 0 && (
+                <div className="chord-chart-section">
+                  {/* Toggle above the chart */}
+                  <button
+                    className={`chord-chart-toggle ${showChordChart ? 'active' : ''}`}
+                    onClick={() => setShowChordChart(!showChordChart)}
+                    title={showChordChart ? 'Hide chord chart' : 'Show chord chart'}
+                  >
+                    <span className="material-symbols-outlined">
+                      {showChordChart ? 'expand_less' : 'expand_more'}
+                    </span>
+                    <span className="toggle-label">Chord Chart</span>
+                    <span className="toggle-hint">(experimental)</span>
+                  </button>
+                  
+                  {/* Chart when enabled */}
+                  {showChordChart && (
+                    <ChordChart
+                      chordResult={chordResult}
+                      bpm={analysisResult?.bpm ?? 120}
+                      beatsPerMeasure={timeSignature.numerator}
+                      currentTime={currentTime}
+                      duration={duration}
+                      onSeek={seek}
+                      isPlaying={isPlaying}
+                      sections={sections}
+                      musicStartTime={effectiveSyncStart}
+                    />
+                  )}
+                </div>
+              )}
             </div>
 
-            {/* Right: BPM + Drum Pattern */}
+            {/* Right: BPM + Key + Drum Pattern */}
             <div className="controls-section">
-              {/* BPM Display with inline confidence indicator */}
+              {/* BPM Display with confidence */}
               <div className="bpm-section">
                 <BpmDisplay
                   bpm={analysisResult.bpm}
                   confidence={analysisResult.confidence}
                   onBpmChange={handleBpmChange}
                 />
-                <div className="time-sig">
-                  <span>{timeSignature.numerator}</span>
-                  <span>{timeSignature.denominator}</span>
-                </div>
-                {/* Confidence indicator - inline with BPM */}
+                {/* Effective BPM when playback speed is adjusted */}
+                {playbackRate !== 1.0 && (
+                  <span 
+                    className="effective-bpm has-tooltip"
+                    data-tooltip={`Playing at ${playbackRate}× speed`}
+                  >
+                    → {Math.round(analysisResult.bpm * playbackRate)}
+                  </span>
+                )}
+                {/* BPM Confidence indicator - right after BPM */}
                 {(() => {
+                  const icon = confidenceLevel === 'high' ? 'verified' : 
+                               confidenceLevel === 'medium' ? 'help' : 'warning';
+                  const label = confidenceLevel === 'high' ? 'High' :
+                                confidenceLevel === 'medium' ? 'Med' : 'Low';
+                  
                   // Build tooltip message
                   const messages: string[] = [];
-                  
                   if (confidenceLevel === 'high') {
                     messages.push('High confidence in BPM detection');
                   } else if (confidenceLevel === 'medium') {
@@ -534,7 +654,7 @@ const App: React.FC = () => {
                     messages.push('Low confidence - adjust BPM manually');
                   }
                   
-                  // Add other warnings (filter out confidence-related and music start ones)
+                  // Add other warnings
                   const otherWarnings = warnings.filter((w: string) => 
                     !w.toLowerCase().includes('confidence') &&
                     !w.toLowerCase().includes('music starts')
@@ -543,19 +663,83 @@ const App: React.FC = () => {
                     messages.push(...otherWarnings);
                   }
                   
-                  const icon = confidenceLevel === 'high' ? 'verified' : 
-                               confidenceLevel === 'medium' ? 'help' : 'warning';
-                  
                   return (
                     <span 
-                      className={`status-icon confidence ${confidenceLevel} has-tooltip`}
+                      className={`confidence-badge ${confidenceLevel} has-tooltip`}
                       data-tooltip={messages.join(' · ')}
                     >
                       <span className="material-symbols-outlined">{icon}</span>
+                      <span className="confidence-label">{label}</span>
                     </span>
                   );
                 })()}
+                <div className="time-sig">
+                  <span>{timeSignature.numerator}</span>
+                  <span>{timeSignature.denominator}</span>
+                </div>
               </div>
+              
+              {/* Detected Key Display */}
+              {chordResult && chordResult.key && chordResult.key !== 'Unknown' && (
+                <div className="key-section">
+                  <div className="key-display-group">
+                    <span className="key-label">Detected Key</span>
+                    <span className="key-value">
+                      {chordResult.key}{chordResult.scale === 'minor' ? 'm' : ''}
+                    </span>
+                    {/* Transposed key when transpose is active */}
+                    {transposeSemitones !== 0 && (
+                      <span
+                        className="effective-key has-tooltip"
+                        data-tooltip={`Transposed ${transposeSemitones > 0 ? '+' : ''}${transposeSemitones} semitones`}
+                      >
+                        → {transposeKey(chordResult.key, transposeSemitones)}{chordResult.scale === 'minor' ? 'm' : ''}
+                      </span>
+                    )}
+                    {/* Key confidence badge */}
+                    {(() => {
+                      const keyConf = chordResult.keyConfidence;
+                      const level = keyConf >= 0.7 ? 'high' : keyConf >= 0.4 ? 'medium' : 'low';
+                      const label = level === 'high' ? 'High' : level === 'medium' ? 'Med' : 'Low';
+                      const icon = level === 'high' ? 'verified' : level === 'medium' ? 'help' : 'warning';
+                      
+                      return (
+                        <span 
+                          className={`confidence-badge small ${level} has-tooltip`}
+                          data-tooltip={`${label} confidence in key detection`}
+                        >
+                          <span className="material-symbols-outlined">{icon}</span>
+                        </span>
+                      );
+                    })()}
+                  </div>
+                  {/* Transpose controls */}
+                  <div className="transpose-controls">
+                    <button
+                      className="transpose-btn has-tooltip"
+                      data-tooltip="Transpose down 1 semitone"
+                      disabled={transposeSemitones <= -12}
+                      onClick={() => setTransposeSemitones(t => Math.max(-12, t - 1))}
+                    >
+                      <span className="material-symbols-outlined">remove</span>
+                    </button>
+                    <span
+                      className={`transpose-value ${transposeSemitones !== 0 ? 'active' : ''}`}
+                      title={transposeSemitones === 0 ? 'Original pitch' : `${transposeSemitones > 0 ? '+' : ''}${transposeSemitones} semitones`}
+                    >
+                      {transposeSemitones === 0 ? '0' : (transposeSemitones > 0 ? `+${transposeSemitones}` : transposeSemitones)}
+                    </span>
+                    <button
+                      className="transpose-btn has-tooltip"
+                      data-tooltip="Transpose up 1 semitone"
+                      disabled={transposeSemitones >= 12}
+                      onClick={() => setTransposeSemitones(t => Math.min(12, t + 1))}
+                    >
+                      <span className="material-symbols-outlined">add</span>
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Metronome toggle */}
               <button
@@ -602,6 +786,7 @@ const App: React.FC = () => {
                   />
                 )}
               </div>
+
 
             </div>
           </div>

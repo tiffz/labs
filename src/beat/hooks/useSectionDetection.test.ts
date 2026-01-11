@@ -108,9 +108,12 @@ describe('useSectionDetection', () => {
       await result.current.detectSectionsFromBuffer(mockAudioBuffer);
     });
 
-    expect(result.current.sections).toEqual([]);
-    expect(result.current.confidence).toBe(0);
-    expect(result.current.warnings).toContain('Section detection failed - please try again');
+    // When detection fails, a fallback "Full Track" section is created
+    // so the user can still use the app
+    expect(result.current.sections).toHaveLength(1);
+    expect(result.current.sections[0].label).toBe('Full Track');
+    expect(result.current.confidence).toBe(0.5);
+    expect(result.current.warnings).toContain('Section detection failed - using full track as single section');
   });
 
   it('should clear sections', async () => {

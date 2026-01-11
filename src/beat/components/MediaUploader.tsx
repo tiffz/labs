@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useRef } from 'react';
+import React, { useCallback, useState, useRef, useEffect } from 'react';
 
 export type MediaType = 'audio' | 'video';
 
@@ -10,6 +10,23 @@ export interface MediaFile {
 
 interface MediaUploaderProps {
   onFileSelect: (media: MediaFile) => void;
+}
+
+/**
+ * Get media type from URL based on extension
+ */
+function getMediaTypeFromUrl(url: string): MediaType | null {
+  const urlLower = url.toLowerCase();
+  if (urlLower.includes('.mp3') || urlLower.includes('.wav') || urlLower.includes('.ogg') || 
+      urlLower.includes('.flac') || urlLower.includes('.aac') || urlLower.includes('.m4a')) {
+    return 'audio';
+  }
+  if (urlLower.includes('.mp4') || urlLower.includes('.webm') || urlLower.includes('.mov') || 
+      urlLower.includes('.m4v') || urlLower.includes('.ogv')) {
+    return 'video';
+  }
+  // Default to video for unknown URLs (many video hosts don't have extensions in URL)
+  return 'video';
 }
 
 const ACCEPTED_AUDIO_TYPES = [
@@ -61,7 +78,60 @@ function getMediaType(file: File): MediaType | null {
 const MediaUploader: React.FC<MediaUploaderProps> = ({ onFileSelect }) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [urlInput, setUrlInput] = useState('');
+  const [isLoadingUrl, setIsLoadingUrl] = useState(false);
+  const [hasAutoLoaded, setHasAutoLoaded] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const isValidHttpUrl = (value: string) => {
+    try {
+      const u = new URL(value);
+      return u.protocol === 'http:' || u.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  };
+
+  // Handle loading media from URL
+  const handleUrlLoad = useCallback(async (overrideUrl?: string) => {
+    const urlToLoad = (overrideUrl ?? urlInput).trim();
+    if (!urlToLoad) {
+      setError('Please enter a URL');
+      return;
+    }
+    if (!isValidHttpUrl(urlToLoad)) {
+      setError('Please enter a valid http/https URL');
+      return;
+    }
+
+    setError(null);
+    setIsLoadingUrl(true);
+
+    try {
+      const response = await fetch(urlToLoad);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch: ${response.status} ${response.statusText}`);
+      }
+
+      const blob = await response.blob();
+      const mediaType = getMediaTypeFromUrl(urlToLoad) || 'video';
+      
+      // Create a File from the blob
+      const fileName = urlToLoad.split('/').pop() || `media.${mediaType === 'video' ? 'mp4' : 'mp3'}`;
+      const file = new File([blob], fileName, { type: blob.type || (mediaType === 'video' ? 'video/mp4' : 'audio/mpeg') });
+      
+      // Create object URL
+      const url = URL.createObjectURL(blob);
+      
+      
+      onFileSelect({ file, type: mediaType, url });
+    } catch (err) {
+      console.error('[MediaUploader] URL load failed:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load media from URL');
+    } finally {
+      setIsLoadingUrl(false);
+    }
+  }, [urlInput, onFileSelect]);
 
   const handleFile = useCallback(
     (file: File) => {
@@ -130,8 +200,33 @@ const MediaUploader: React.FC<MediaUploaderProps> = ({ onFileSelect }) => {
     [handleFile]
   );
 
+  // Allow automation: ?autoUrl=<http/https URL> in querystring
+  useEffect(() => {
+    if (hasAutoLoaded) return;
+    const params = new URLSearchParams(window.location.search);
+    const autoUrl = params.get('autoUrl');
+    if (autoUrl && isValidHttpUrl(autoUrl)) {
+      setHasAutoLoaded(true);
+      setUrlInput(autoUrl);
+      handleUrlLoad(autoUrl);
+    }
+  }, [handleUrlLoad, hasAutoLoaded]);
+
+  // Allow automation: window.dispatchEvent(new CustomEvent('load-media-url', { detail: { url } }))
+  useEffect(() => {
+    const listener = (event: Event) => {
+      const custom = event as CustomEvent<{ url?: string }>;
+      const incomingUrl = custom.detail?.url;
+      if (!incomingUrl || !isValidHttpUrl(incomingUrl)) return;
+      setUrlInput(incomingUrl);
+      handleUrlLoad(incomingUrl);
+    };
+    window.addEventListener('load-media-url', listener as EventListener);
+    return () => window.removeEventListener('load-media-url', listener as EventListener);
+  }, [handleUrlLoad]);
+
   return (
-    <div>
+    <div className="media-uploader">
       <div
         className={`upload-area ${isDragOver ? 'drag-over' : ''}`}
         onDragOver={handleDragOver}
@@ -151,6 +246,37 @@ const MediaUploader: React.FC<MediaUploaderProps> = ({ onFileSelect }) => {
         <p className="file-types">
           Audio: MP3, WAV, OGG, FLAC • Video: MP4, WebM, MOV
         </p>
+      </div>
+
+      <div className="url-separator">
+        <span>or load from URL</span>
+      </div>
+
+      <div className="url-input-row">
+        <input
+          type="text"
+          className="url-input"
+          placeholder="https://example.com/video.webm"
+          value={urlInput}
+          onChange={e => setUrlInput(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              handleUrlLoad();
+            }
+          }}
+          disabled={isLoadingUrl}
+        />
+        <button
+          className="url-load-btn"
+          onClick={handleUrlLoad}
+          disabled={isLoadingUrl || !urlInput.trim()}
+        >
+          {isLoadingUrl ? (
+            <span className="analyzing-spinner small" />
+          ) : (
+            <span className="material-symbols-outlined">download</span>
+          )}
+        </button>
       </div>
 
       <input

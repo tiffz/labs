@@ -18,10 +18,14 @@ interface UseBeatSyncOptions {
   metronomeEnabled?: boolean;
   /** Start of the sync region (where steady beat begins) */
   syncStartTime?: number;
+  /** URL for the media file (used for pitch-preserved playback) */
+  mediaUrl?: string;
+  /** Transpose in semitones (-12 to +12) */
+  transposeSemitones?: number;
 }
 
 /** Available playback speed presets */
-export const PLAYBACK_SPEEDS = [0.5, 0.75, 0.9, 0.95, 1.0] as const;
+export const PLAYBACK_SPEEDS = [0.5, 0.75, 0.9, 0.95, 1.0, 1.1, 1.25, 1.5, 2.0] as const;
 export type PlaybackSpeed = (typeof PLAYBACK_SPEEDS)[number];
 
 interface UseBeatSyncReturn {
@@ -65,6 +69,8 @@ export function useBeatSync({
   musicStartTime = 0,
   metronomeEnabled = false,
   syncStartTime,
+  mediaUrl,
+  transposeSemitones = 0,
 }: UseBeatSyncOptions): UseBeatSyncReturn {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentBeat, setCurrentBeat] = useState(0);
@@ -102,6 +108,13 @@ export function useBeatSync({
   const loopRegionRef = useRef<LoopRegion | null>(null);
   const loopEnabledRef = useRef(false);
   const isLoopingRef = useRef(false); // Flag to prevent recursive loop triggers
+  const transposeSemitonesRef = useRef(transposeSemitones);
+  
+  // HTML Audio element for pitch-preserved playback (only when not transposing)
+  const audioElementRef = useRef<HTMLAudioElement | null>(null);
+  // Use AudioBufferSourceNode (with detune support) when transposing
+  // Use HTMLAudioElement (with pitch preservation) when not transposing and we have a media URL
+  const useAudioElement = !!mediaUrl && transposeSemitones === 0;
 
   // Keep refs in sync
   useEffect(() => {
@@ -141,6 +154,18 @@ export function useBeatSync({
     loopEnabledRef.current = loopEnabled;
   }, [loopEnabled]);
 
+  // Track previous useAudioElement mode to detect mode switches
+  const prevUseAudioElementRef = useRef(useAudioElement);
+
+  // Keep transpose ref in sync and apply detune to source node
+  useEffect(() => {
+    transposeSemitonesRef.current = transposeSemitones;
+    // Apply detune to AudioBufferSourceNode (100 cents = 1 semitone)
+    if (sourceNodeRef.current) {
+      sourceNodeRef.current.detune.value = transposeSemitones * 100;
+    }
+  }, [transposeSemitones]);
+
   // Update beat grid when parameters change - use sync start time for beat alignment
   useEffect(() => {
     beatGridRef.current = new BeatGrid(bpm, timeSignature, effectiveSyncStart);
@@ -156,6 +181,71 @@ export function useBeatSync({
     return audioContextRef.current;
   }, []);
 
+  // Handle switching between audio element and source node when transpose changes
+  useEffect(() => {
+    const wasUsingAudioElement = prevUseAudioElementRef.current;
+    const nowUsingAudioElement = useAudioElement;
+    prevUseAudioElementRef.current = nowUsingAudioElement;
+
+    // Only handle switch if mode actually changed while playing
+    if (wasUsingAudioElement !== nowUsingAudioElement && isPlaying && audioBuffer) {
+      // Get current position before switching
+      let currentPosition: number;
+      if (wasUsingAudioElement && audioElementRef.current) {
+        currentPosition = audioElementRef.current.currentTime;
+        // Stop audio element
+        audioElementRef.current.pause();
+      } else {
+        // Get position from source node
+        if (audioContextRef.current) {
+          const realTimeElapsed = audioContextRef.current.currentTime - startTimeRef.current;
+          currentPosition = pauseTimeRef.current + realTimeElapsed * playbackRateRef.current;
+        } else {
+          currentPosition = pauseTimeRef.current;
+        }
+        // Stop source node
+        if (sourceNodeRef.current) {
+          try {
+            sourceNodeRef.current.onended = null;
+            sourceNodeRef.current.stop();
+          } catch {
+            // Already stopped
+          }
+          sourceNodeRef.current = null;
+        }
+      }
+
+      // Update pause time for new playback mode
+      pauseTimeRef.current = currentPosition;
+
+      // Start playback with new mode
+      if (nowUsingAudioElement && audioElementRef.current) {
+        // Switch to audio element
+        const audio = audioElementRef.current;
+        audio.currentTime = currentPosition;
+        audio.playbackRate = playbackRateRef.current;
+        audio.volume = audioVolumeRef.current / 100;
+        audio.play().catch(() => {});
+      } else {
+        // Switch to source node (with transpose support)
+        const audioContext = getAudioContext();
+        const gainNode = audioContext.createGain();
+        gainNode.gain.value = audioVolumeRef.current / 100;
+        gainNode.connect(audioContext.destination);
+        audioGainNodeRef.current = gainNode;
+
+        const source = audioContext.createBufferSource();
+        source.buffer = audioBuffer;
+        source.playbackRate.value = playbackRateRef.current;
+        source.detune.value = transposeSemitonesRef.current * 100;
+        source.connect(gainNode);
+        source.start(0, currentPosition);
+        sourceNodeRef.current = source;
+        startTimeRef.current = audioContext.currentTime;
+      }
+    }
+  }, [useAudioElement, isPlaying, audioBuffer, getAudioContext]);
+
   // Load click sound
   useEffect(() => {
     const loadClick = async () => {
@@ -170,6 +260,48 @@ export function useBeatSync({
     };
     loadClick();
   }, [getAudioContext]);
+
+  // Create and configure HTML Audio element for pitch-preserved playback
+  useEffect(() => {
+    if (!mediaUrl) {
+      // Clean up if no media URL
+      if (audioElementRef.current) {
+        audioElementRef.current.pause();
+        audioElementRef.current.src = '';
+        audioElementRef.current = null;
+      }
+      return;
+    }
+
+    const audio = new Audio(mediaUrl);
+    audio.preload = 'auto';
+    
+    // Enable pitch preservation (works in most modern browsers)
+    audio.preservesPitch = true;
+    // Webkit prefix for older Safari versions
+    (audio as HTMLAudioElement & { webkitPreservesPitch?: boolean }).webkitPreservesPitch = true;
+    
+    audioElementRef.current = audio;
+
+    return () => {
+      audio.pause();
+      audio.src = '';
+    };
+  }, [mediaUrl]);
+
+  // Sync audio element volume
+  useEffect(() => {
+    if (audioElementRef.current) {
+      audioElementRef.current.volume = audioVolume / 100;
+    }
+  }, [audioVolume]);
+
+  // Sync audio element playback rate
+  useEffect(() => {
+    if (audioElementRef.current) {
+      audioElementRef.current.playbackRate = playbackRate;
+    }
+  }, [playbackRate]);
 
   // Play metronome click with distinct beat 1
   const playClick = useCallback(
@@ -198,15 +330,82 @@ export function useBeatSync({
     []
   );
 
+  // Handle audio element events (timeupdate, ended, loop detection)
+  useEffect(() => {
+    if (!useAudioElement || !audioElementRef.current) return;
+
+    const audio = audioElementRef.current;
+
+    const handleTimeUpdate = () => {
+      const elapsed = audio.currentTime;
+      setCurrentTime(elapsed);
+
+      // Update beat position
+      if (beatGridRef.current) {
+        const position = beatGridRef.current.getPosition(elapsed);
+        setCurrentBeat(position.beat);
+        setCurrentMeasure(position.measure);
+        setProgress(position.progress);
+
+        // Play metronome click on beat change (only during playback and after sync start)
+        const inSyncRegion = elapsed >= syncStartRef.current;
+        const beatKey = position.measure * 100 + position.beat;
+        // Only play click if actually playing (not just seeking)
+        if (metronomeEnabledRef.current && inSyncRegion && beatKey !== lastBeatRef.current && !audio.paused) {
+          lastBeatRef.current = beatKey;
+          playClick(position.beat === 0);
+        } else if (!inSyncRegion) {
+          lastBeatRef.current = -1;
+        }
+      }
+
+      // Check for loop end
+      const loop = loopRegionRef.current;
+      if (loopEnabledRef.current && loop && elapsed >= loop.endTime - 0.05) {
+        audio.currentTime = loop.startTime;
+      }
+    };
+
+    const handleEnded = () => {
+      // Check if we should loop
+      const loop = loopRegionRef.current;
+      if (loopEnabledRef.current && loop) {
+        audio.currentTime = loop.startTime;
+        audio.play().catch(() => {});
+        return;
+      }
+      
+      // Otherwise stop normally
+      setIsPlaying(false);
+      setCurrentBeat(0);
+      setCurrentMeasure(0);
+      setProgress(0);
+      pauseTimeRef.current = 0;
+      setCurrentTime(0);
+    };
+
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.addEventListener('ended', handleEnded);
+
+    return () => {
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.removeEventListener('ended', handleEnded);
+    };
+  }, [useAudioElement, playClick]);
+
   // Ref for pending loop seek to avoid closure issues
   const pendingLoopSeekRef = useRef<number | null>(null);
 
   // Calculate current elapsed time - shared between visual and audio timing
   const getElapsedTime = useCallback(() => {
+    // Use HTML Audio element if available (more accurate)
+    if (useAudioElement && audioElementRef.current && !audioElementRef.current.paused) {
+      return audioElementRef.current.currentTime;
+    }
     if (!audioContextRef.current) return pauseTimeRef.current;
     const realTimeElapsed = audioContextRef.current.currentTime - startTimeRef.current;
     return realTimeElapsed * playbackRateRef.current + pauseTimeRef.current;
-  }, []);
+  }, [useAudioElement]);
 
   // Core timing update - handles beat detection, metronome, loops
   // This is called by both requestAnimationFrame (visual) and setInterval (audio in background)
@@ -240,23 +439,30 @@ export function useBeatSync({
   }, [playClick]);
 
   // Animation loop for visual updates (smooth when tab is visible)
+  // When using audio element, this only supplements updates between timeupdate events
   const updatePosition = useCallback(() => {
     if (!audioContextRef.current || !beatGridRef.current || !isPlaying) {
+      return;
+    }
+
+    // When using audio element, skip updates if it's paused (audio element handles its own state)
+    if (useAudioElement && audioElementRef.current?.paused) {
       return;
     }
 
     const elapsed = getElapsedTime();
     setCurrentTime(elapsed);
 
-    const position = updateTiming(elapsed, true);
+    const position = updateTiming(elapsed, !useAudioElement); // Only trigger metronome for non-audio-element
     if (position) {
       setCurrentBeat(position.beat);
       setCurrentMeasure(position.measure);
       setProgress(position.progress);
     }
 
-    // Check if we've reached the end (only if not looping)
-    if (audioBuffer && elapsed >= audioBuffer.duration && !loopEnabledRef.current) {
+    // Check if we've reached the end (only for AudioBufferSourceNode, not audio element)
+    // Audio element handles its own 'ended' event
+    if (!useAudioElement && audioBuffer && elapsed >= audioBuffer.duration && !loopEnabledRef.current) {
       if (sourceNodeRef.current) {
         try {
           sourceNodeRef.current.onended = null;
@@ -277,7 +483,7 @@ export function useBeatSync({
     }
 
     animationFrameRef.current = requestAnimationFrame(updatePosition);
-  }, [isPlaying, audioBuffer, getElapsedTime, updateTiming]);
+  }, [isPlaying, audioBuffer, getElapsedTime, updateTiming, useAudioElement]);
 
   // Start animation loop when playing (for visual updates)
   useEffect(() => {
@@ -294,8 +500,21 @@ export function useBeatSync({
 
   // Background interval for audio timing (metronome/drums continue when tab is hidden)
   // setInterval is less throttled than requestAnimationFrame in background tabs
+  // When using audio element, this is less critical since timeupdate handles most updates
   useEffect(() => {
     if (!isPlaying) return;
+    
+    // When using audio element, we rely on its timeupdate event for most updates
+    // But we still need this interval for metronome timing in background tabs
+    if (useAudioElement) {
+      // For audio element, just ensure metronome keeps ticking in background
+      const intervalId = setInterval(() => {
+        if (!beatGridRef.current || !audioElementRef.current) return;
+        const elapsed = audioElementRef.current.currentTime;
+        updateTiming(elapsed, true);
+      }, 30);
+      return () => clearInterval(intervalId);
+    }
 
     // Run at ~30ms intervals to catch beats accurately even at high BPMs
     // At 200 BPM, a beat is 300ms, so 30ms gives us ~10 checks per beat
@@ -313,11 +532,13 @@ export function useBeatSync({
     }, 30);
 
     return () => clearInterval(intervalId);
-  }, [isPlaying, getElapsedTime, updateTiming]);
+  }, [isPlaying, getElapsedTime, updateTiming, useAudioElement]);
 
   // Handle pending loop seek (separated from animation frame for safety)
+  // Only applies to AudioBufferSourceNode playback (not HTMLAudioElement)
   useEffect(() => {
-    if (!isPlaying || !audioBuffer) return;
+    // Skip if using audio element - loops are handled in its own effect
+    if (useAudioElement || !isPlaying || !audioBuffer) return;
 
     const checkForPendingLoop = () => {
       const pendingSeek = pendingLoopSeekRef.current;
@@ -382,18 +603,19 @@ export function useBeatSync({
 
     const intervalId = setInterval(checkForPendingLoop, 50);
     return () => clearInterval(intervalId);
-  }, [isPlaying, audioBuffer]);
+  }, [isPlaying, audioBuffer, useAudioElement]);
   
   // Monitor AudioContext state and audio playback health
+  // Only applies to AudioBufferSourceNode playback (not HTMLAudioElement)
   useEffect(() => {
-    if (!isPlaying || !audioBuffer) return;
+    // Skip if using audio element - it handles its own playback
+    if (useAudioElement || !isPlaying || !audioBuffer) return;
     
     const checkPlaybackHealth = () => {
       const audioContext = audioContextRef.current;
       
       // Check if AudioContext is suspended and resume it
       if (audioContext && audioContext.state === 'suspended') {
-        console.log('AudioContext suspended, resuming...');
         audioContext.resume().catch(err => {
           console.warn('Failed to resume AudioContext:', err);
         });
@@ -402,7 +624,6 @@ export function useBeatSync({
       // Recovery: if we should be playing but have no source and no pending loop,
       // restart playback from current position
       if (audioContext && !sourceNodeRef.current && pendingLoopSeekRef.current === null && !isLoopingRef.current) {
-        console.log('Audio source lost unexpectedly, recovering...');
         
         // Resume context first if needed
         if (audioContext.state === 'suspended') {
@@ -462,7 +683,7 @@ export function useBeatSync({
       clearInterval(intervalId);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [isPlaying, audioBuffer]);
+  }, [isPlaying, audioBuffer, useAudioElement]);
 
   const play = useCallback(() => {
     if (!audioBuffer) return;
@@ -477,6 +698,21 @@ export function useBeatSync({
     // Reset beat tracking
     lastBeatRef.current = -1;
 
+    // Use HTML Audio element if available (for pitch preservation)
+    if (useAudioElement && audioElementRef.current) {
+      const audio = audioElementRef.current;
+      audio.currentTime = pauseTimeRef.current;
+      audio.playbackRate = playbackRateRef.current;
+      audio.volume = audioVolumeRef.current / 100;
+      audio.play().catch(err => {
+        console.warn('Failed to play audio:', err);
+      });
+      startTimeRef.current = audioContext.currentTime;
+      setIsPlaying(true);
+      return;
+    }
+
+    // Fallback to AudioBufferSourceNode (no pitch preservation)
     // Create gain node for volume control
     const gainNode = audioContext.createGain();
     gainNode.gain.value = audioVolumeRef.current / 100;
@@ -487,6 +723,8 @@ export function useBeatSync({
     const source = audioContext.createBufferSource();
     source.buffer = audioBuffer;
     source.playbackRate.value = playbackRateRef.current;
+    // Apply transpose (100 cents = 1 semitone)
+    source.detune.value = transposeSemitonesRef.current * 100;
     source.connect(gainNode);
 
     // Handle playback end - use refs to avoid dependency issues
@@ -520,9 +758,18 @@ export function useBeatSync({
     startTimeRef.current = audioContext.currentTime;
 
     setIsPlaying(true);
-  }, [audioBuffer, getAudioContext]);
+  }, [audioBuffer, getAudioContext, useAudioElement]);
 
   const pause = useCallback(() => {
+    // Use HTML Audio element if available
+    if (useAudioElement && audioElementRef.current) {
+      const audio = audioElementRef.current;
+      pauseTimeRef.current = audio.currentTime;
+      audio.pause();
+      setIsPlaying(false);
+      return;
+    }
+
     if (!audioContextRef.current) return;
 
     // Calculate actual elapsed time in the audio accounting for playback rate
@@ -544,9 +791,16 @@ export function useBeatSync({
     }
 
     setIsPlaying(false);
-  }, []);
+  }, [useAudioElement]);
 
   const stop = useCallback(() => {
+    // Stop HTML Audio element if available
+    if (useAudioElement && audioElementRef.current) {
+      const audio = audioElementRef.current;
+      audio.pause();
+      audio.currentTime = 0;
+    }
+
     if (sourceNodeRef.current) {
       try {
         sourceNodeRef.current.stop();
@@ -563,12 +817,29 @@ export function useBeatSync({
     setCurrentMeasure(0);
     setProgress(0);
     setCurrentTime(0);
-  }, []);
+  }, [useAudioElement]);
 
   const seek = useCallback(
     (time: number) => {
-      pauseTimeRef.current = Math.max(0, Math.min(time, audioBuffer?.duration ?? 0));
+      const clampedTime = Math.max(0, Math.min(time, audioBuffer?.duration ?? 0));
+      pauseTimeRef.current = clampedTime;
       lastBeatRef.current = -1;
+
+      // If using audio element, update its currentTime directly
+      if (useAudioElement && audioElementRef.current) {
+        audioElementRef.current.currentTime = clampedTime;
+        if (!isPlaying) {
+          // Update display when paused
+          if (beatGridRef.current) {
+            const position = beatGridRef.current.getPosition(clampedTime);
+            setCurrentBeat(position.beat);
+            setCurrentMeasure(position.measure);
+            setProgress(position.progress);
+            setCurrentTime(clampedTime);
+          }
+        }
+        return;
+      }
 
       if (isPlaying) {
         // Clear any pending loop seek since we're explicitly seeking
@@ -587,19 +858,24 @@ export function useBeatSync({
         }
       }
     },
-    [audioBuffer, isPlaying, pause, play]
+    [audioBuffer, isPlaying, pause, play, useAudioElement]
   );
 
   // Skip to beginning of song
   const skipToStart = useCallback(() => {
-    seek(0);
+    const loop = loopRegionRef.current;
+    const target = loopEnabledRef.current && loop ? loop.startTime : 0;
+    seek(target);
   }, [seek]);
 
   // Skip to end of song (or near end for context)
   const skipToEnd = useCallback(() => {
     const duration = audioBuffer?.duration ?? 0;
-    // Go to 2 seconds before end, or 0 if song is shorter
-    seek(Math.max(0, duration - 2));
+    const loop = loopRegionRef.current;
+    // If loop is active, go to loop end (minus small padding); else to track end padding.
+    const endTarget = loopEnabledRef.current && loop ? loop.endTime : duration;
+    const safeEnd = Math.max(0, endTarget - 0.25); // small pad for context
+    seek(safeEnd);
   }, [seek, audioBuffer]);
 
   // Seek forward or backward by a number of measures
