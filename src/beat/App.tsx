@@ -16,8 +16,8 @@ import { transposeKey } from './utils/musicTheory';
 import { useBeatSync, PLAYBACK_SPEEDS, type PlaybackSpeed } from './hooks/useBeatSync';
 import { useSectionDetection } from './hooks/useSectionDetection';
 import { useChordAnalysis } from './hooks/useChordAnalysis';
+import { useSectionSelection } from './hooks/useSectionSelection';
 import type { TimeSignature } from '../shared/rhythm/types';
-import { type Section, extendToMeasureBoundary } from './utils/sectionDetector';
 
 const App: React.FC = () => {
   const [mediaFile, setMediaFile] = useState<MediaFile | null>(null);
@@ -63,9 +63,6 @@ const App: React.FC = () => {
   // Chord chart visibility state (experimental feature)
   const [showChordChart, setShowChordChart] = useState(false);
 
-  // Selected section(s) for looping - supports multiple adjacent sections
-  const [selectedSectionIds, setSelectedSectionIds] = useState<string[]>([]);
-
   const [drumVolume, setDrumVolume] = useState(70);
   
   // Transpose in semitones (-12 to +12)
@@ -108,6 +105,30 @@ const App: React.FC = () => {
     syncStartTime: effectiveSyncStart,
     mediaUrl: mediaFile?.url,
     transposeSemitones,
+  });
+
+  // Section selection and loop management
+  const {
+    selectedSectionIds,
+    selectSection,
+    clearSelection,
+    loopEntireTrack,
+    combineSelected,
+    splitAtTime,
+    extendSelection,
+    resetSelection,
+  } = useSectionSelection({
+    sections,
+    bpm: analysisResult?.bpm ?? 120,
+    musicStartTime: analysisResult?.musicStartTime ?? 0,
+    beatsPerMeasure: timeSignature.numerator,
+    duration,
+    mergeSections,
+    splitSection,
+    setLoopRegion,
+    setLoopEnabled,
+    seek,
+    loopRegion,
   });
 
   // Run chord analysis after BPM analysis completes
@@ -162,150 +183,11 @@ const App: React.FC = () => {
     clearSections();
     resetChordAnalysis();
     setShowChordChart(false);
-    setSelectedSectionIds([]);
+    resetSelection();
     setLoopRegion(null);
     setLoopEnabled(false);
-  }, [stop, mediaFile, resetAnalysis, clearSections, resetChordAnalysis, setLoopRegion, setLoopEnabled]);
+  }, [stop, mediaFile, resetAnalysis, clearSections, resetChordAnalysis, resetSelection, setLoopRegion, setLoopEnabled]);
 
-  // Handle section selection (supports multi-select with shift key)
-  // Loop regions are extended to nearest measure boundaries for smoother musical transitions
-  const handleSelectSection = useCallback(
-    (section: Section, extendSelection: boolean = false) => {
-      const bpm = analysisResult?.bpm ?? 120;
-      const musicStart = analysisResult?.musicStartTime ?? 0;
-      const beatsPerMeasure = timeSignature.numerator;
-      
-      if (extendSelection && selectedSectionIds.length > 0) {
-        // Extend selection to include range from first selected to clicked section
-        const clickedIndex = sections.findIndex(s => s.id === section.id);
-        const selectedIndices = selectedSectionIds.map(id => sections.findIndex(s => s.id === id));
-        const minSelected = Math.min(...selectedIndices);
-        const maxSelected = Math.max(...selectedIndices);
-        
-        // Determine the new range
-        let newStart: number, newEnd: number;
-        if (clickedIndex < minSelected) {
-          newStart = clickedIndex;
-          newEnd = maxSelected;
-        } else if (clickedIndex > maxSelected) {
-          newStart = minSelected;
-          newEnd = clickedIndex;
-        } else {
-          // Clicked within range, keep existing selection
-          newStart = minSelected;
-          newEnd = maxSelected;
-        }
-        
-        // Select all sections in range
-        const newIds = sections.slice(newStart, newEnd + 1).map(s => s.id);
-        setSelectedSectionIds(newIds);
-        
-        // Update loop region to span all selected sections, extended to measure boundaries
-        const firstSection = sections[newStart];
-        const lastSection = sections[newEnd];
-        const loopStart = extendToMeasureBoundary(firstSection.startTime, 'start', bpm, musicStart, beatsPerMeasure);
-        const loopEnd = extendToMeasureBoundary(lastSection.endTime, 'end', bpm, musicStart, beatsPerMeasure, duration);
-        setLoopRegion({
-          startTime: loopStart,
-          endTime: loopEnd,
-        });
-        seek(loopStart);
-      } else {
-        // Single selection - extend to measure boundaries for smoother loops
-        setSelectedSectionIds([section.id]);
-        const loopStart = extendToMeasureBoundary(section.startTime, 'start', bpm, musicStart, beatsPerMeasure);
-        const loopEnd = extendToMeasureBoundary(section.endTime, 'end', bpm, musicStart, beatsPerMeasure, duration);
-        setLoopRegion({
-          startTime: loopStart,
-          endTime: loopEnd,
-        });
-        seek(loopStart);
-      }
-    },
-    [sections, selectedSectionIds, seek, setLoopRegion, analysisResult, timeSignature.numerator, duration]
-  );
-
-  // Handle clearing section selection
-  const handleClearSelection = useCallback(() => {
-    setSelectedSectionIds([]);
-    setLoopRegion(null);
-    setLoopEnabled(false);
-  }, [setLoopRegion, setLoopEnabled]);
-
-  // Handle looping entire track
-  const handleLoopEntireTrack = useCallback(() => {
-    setSelectedSectionIds([]);
-    const musicStart = analysisResult?.musicStartTime ?? 0;
-    setLoopRegion({
-      startTime: musicStart,
-      endTime: duration,
-    });
-    setLoopEnabled(true);
-  }, [analysisResult?.musicStartTime, duration, setLoopRegion, setLoopEnabled]);
-
-  // Handle combining selected sections
-  const handleCombineSections = useCallback(() => {
-    if (selectedSectionIds.length < 2) return;
-    
-    // Find indices of selected sections and sort them
-    const indices = selectedSectionIds
-      .map(id => sections.findIndex(s => s.id === id))
-      .filter(i => i >= 0)
-      .sort((a, b) => a - b);
-    
-    if (indices.length < 2) return;
-    
-    // Merge from the end to avoid index shifting issues
-    for (let i = indices.length - 1; i > 0; i--) {
-      mergeSections(indices[i - 1], indices[i]);
-    }
-    
-    // Select the merged section (first index)
-    const newSection = sections[indices[0]];
-    if (newSection) {
-      setSelectedSectionIds([newSection.id]);
-    }
-  }, [selectedSectionIds, sections, mergeSections]);
-
-  // Handle splitting a section at current time
-  const handleSplitSection = useCallback((sectionId: string, splitTime: number) => {
-    const sectionIndex = sections.findIndex(s => s.id === sectionId);
-    if (sectionIndex < 0) return;
-    
-    splitSection(sectionIndex, splitTime);
-    
-    // Clear selection after split
-    setSelectedSectionIds([]);
-  }, [sections, splitSection]);
-
-  // Handle extending/reducing selection by measures
-  const handleExtendSelection = useCallback((direction: 'start' | 'end', delta: number) => {
-    if (!loopRegion || !analysisResult) return;
-    
-    const bpm = analysisResult.bpm;
-    const musicStart = analysisResult.musicStartTime ?? 0;
-    const beatsPerMeasure = timeSignature.numerator;
-    const measureDuration = (60 / bpm) * beatsPerMeasure;
-    
-    let newStart = loopRegion.startTime;
-    let newEnd = loopRegion.endTime;
-    
-    if (direction === 'start') {
-      // delta > 0 means move start later (shrink from start)
-      // delta < 0 means move start earlier (extend from start)
-      newStart = Math.max(musicStart, loopRegion.startTime + delta * measureDuration);
-    } else {
-      // delta > 0 means move end later (extend from end)
-      // delta < 0 means move end earlier (shrink from end)
-      newEnd = Math.min(duration, loopRegion.endTime + delta * measureDuration);
-    }
-    
-    // Ensure minimum 1 measure length
-    if (newEnd - newStart < measureDuration) return;
-    
-    setLoopRegion({ startTime: newStart, endTime: newEnd });
-  }, [loopRegion, analysisResult, timeSignature.numerator, duration, setLoopRegion]);
-  
   // Handler for dragging sync start marker
   const handleSyncStartChange = useCallback((time: number) => {
     setSyncStartTime(Math.max(0, Math.min(time, duration - 1)));
@@ -397,25 +279,33 @@ const App: React.FC = () => {
 
               {/* Playback Bar with integrated sections */}
               <PlaybackBar
-                currentTime={currentTime}
-                duration={duration}
-                musicStartTime={analysisResult.musicStartTime}
-                syncStartTime={effectiveSyncStart}
+                playback={{
+                  currentTime,
+                  duration,
+                  musicStartTime: analysisResult.musicStartTime,
+                  syncStartTime: effectiveSyncStart,
+                  isInSyncRegion,
+                }}
+                loop={{
+                  region: loopRegion,
+                  enabled: loopEnabled,
+                }}
+                sectionControls={{
+                  sections,
+                  selectedIds: selectedSectionIds,
+                  isDetecting: isDetectingSections,
+                  onSelect: selectSection,
+                  onClear: clearSelection,
+                  onCombine: combineSelected,
+                  onSplit: splitAtTime,
+                  onExtend: extendSelection,
+                }}
+                chordData={chordResult ? {
+                  chordChanges: chordResult.chordChanges,
+                  keyChanges: chordResult.keyChanges,
+                } : undefined}
                 onSeek={seek}
                 onSyncStartChange={handleSyncStartChange}
-                isInSyncRegion={isInSyncRegion}
-                sections={sections}
-                loopRegion={loopRegion}
-                loopEnabled={loopEnabled}
-                selectedSectionIds={selectedSectionIds}
-                onSelectSection={handleSelectSection}
-                onClearSelection={handleClearSelection}
-                isDetectingSections={isDetectingSections}
-                onCombineSections={handleCombineSections}
-                onSplitSection={handleSplitSection}
-                onExtendSelection={handleExtendSelection}
-                chordChanges={chordResult?.chordChanges}
-                keyChanges={chordResult?.keyChanges}
               />
 
               {/* Transport Controls - under video */}
@@ -495,7 +385,7 @@ const App: React.FC = () => {
                         type="radio"
                         name="loopMode"
                         checked={loopEnabled && selectedSectionIds.length === 0}
-                        onChange={handleLoopEntireTrack}
+                        onChange={loopEntireTrack}
                       />
                       <span className="material-symbols-outlined">repeat</span>
                     </label>
@@ -514,7 +404,7 @@ const App: React.FC = () => {
                               s => currentTime >= s.startTime && currentTime < s.endTime
                             );
                             if (currentSection) {
-                              handleSelectSection(currentSection, false);
+                              selectSection(currentSection, false);
                             }
                           }
                           setLoopEnabled(true);

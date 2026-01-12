@@ -2,16 +2,20 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import PlaybackBar from './PlaybackBar';
 import type { Section } from '../utils/sectionDetector';
+import type { PlaybackState, LoopState, SectionControls } from './PlaybackBar';
 
 describe('PlaybackBar', () => {
-  const defaultProps = {
+  const defaultPlayback: PlaybackState = {
     currentTime: 30,
     duration: 180,
     musicStartTime: 0,
     syncStartTime: 0,
-    onSeek: vi.fn(),
-    onSyncStartChange: vi.fn(),
     isInSyncRegion: true,
+  };
+
+  const defaultLoop: LoopState = {
+    region: null,
+    enabled: false,
   };
 
   const mockSections: Section[] = [
@@ -19,6 +23,20 @@ describe('PlaybackBar', () => {
     { id: 'section-1', startTime: 30, endTime: 60, label: 'M15-30', color: '#9d8ec7', confidence: 1 },
     { id: 'section-2', startTime: 60, endTime: 90, label: 'M30-45', color: '#9d8ec7', confidence: 1 },
   ];
+
+  const defaultSectionControls: SectionControls = {
+    sections: [],
+    selectedIds: [],
+    isDetecting: false,
+  };
+
+  const defaultProps = {
+    playback: defaultPlayback,
+    loop: defaultLoop,
+    sectionControls: defaultSectionControls,
+    onSeek: vi.fn(),
+    onSyncStartChange: vi.fn(),
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -41,52 +59,54 @@ describe('PlaybackBar', () => {
   });
 
   it('should render section labels when sections are provided', () => {
-    render(<PlaybackBar {...defaultProps} sections={mockSections} />);
+    render(
+      <PlaybackBar
+        {...defaultProps}
+        sectionControls={{ ...defaultSectionControls, sections: mockSections }}
+      />
+    );
 
     expect(screen.getByText('M1')).toBeInTheDocument();
     expect(screen.getByText('M15')).toBeInTheDocument();
     expect(screen.getByText('M30')).toBeInTheDocument();
   });
 
-  it('should call onSelectSection when clicking a section label', () => {
-    const onSelectSection = vi.fn();
+  it('should call onSelect when clicking a section label', () => {
+    const onSelect = vi.fn();
     render(
       <PlaybackBar
         {...defaultProps}
-        sections={mockSections}
-        onSelectSection={onSelectSection}
+        sectionControls={{ ...defaultSectionControls, sections: mockSections, onSelect }}
       />
     );
 
     const sectionBtn = screen.getByText('M15');
     fireEvent.click(sectionBtn);
 
-    expect(onSelectSection).toHaveBeenCalledTimes(1);
-    expect(onSelectSection).toHaveBeenCalledWith(mockSections[1], false);
+    expect(onSelect).toHaveBeenCalledTimes(1);
+    expect(onSelect).toHaveBeenCalledWith(mockSections[1], false);
   });
 
-  it('should call onSelectSection with extendSelection=true when shift-clicking', () => {
-    const onSelectSection = vi.fn();
+  it('should call onSelect with extendSelection=true when shift-clicking', () => {
+    const onSelect = vi.fn();
     render(
       <PlaybackBar
         {...defaultProps}
-        sections={mockSections}
-        onSelectSection={onSelectSection}
+        sectionControls={{ ...defaultSectionControls, sections: mockSections, onSelect }}
       />
     );
 
     const sectionBtn = screen.getByText('M15');
     fireEvent.click(sectionBtn, { shiftKey: true });
 
-    expect(onSelectSection).toHaveBeenCalledWith(mockSections[1], true);
+    expect(onSelect).toHaveBeenCalledWith(mockSections[1], true);
   });
 
   it('should highlight selected sections', () => {
     render(
       <PlaybackBar
         {...defaultProps}
-        sections={mockSections}
-        selectedSectionIds={['section-1']}
+        sectionControls={{ ...defaultSectionControls, sections: mockSections, selectedIds: ['section-1'] }}
       />
     );
 
@@ -102,60 +122,72 @@ describe('PlaybackBar', () => {
     render(
       <PlaybackBar
         {...defaultProps}
-        sections={mockSections}
-        selectedSectionIds={['section-1']}
-        onClearSelection={vi.fn()}
+        sectionControls={{
+          ...defaultSectionControls,
+          sections: mockSections,
+          selectedIds: ['section-1'],
+          onClear: vi.fn(),
+        }}
       />
     );
 
     expect(screen.getByText('Deselect')).toBeInTheDocument();
   });
 
-  it('should call onClearSelection when Deselect button is clicked', () => {
-    const onClearSelection = vi.fn();
+  it('should call onClear when Deselect button is clicked', () => {
+    const onClear = vi.fn();
     render(
       <PlaybackBar
         {...defaultProps}
-        sections={mockSections}
-        selectedSectionIds={['section-1']}
-        onClearSelection={onClearSelection}
+        sectionControls={{
+          ...defaultSectionControls,
+          sections: mockSections,
+          selectedIds: ['section-1'],
+          onClear,
+        }}
       />
     );
 
     const deselectBtn = screen.getByText('Deselect');
     fireEvent.click(deselectBtn);
 
-    expect(onClearSelection).toHaveBeenCalledTimes(1);
+    expect(onClear).toHaveBeenCalledTimes(1);
   });
 
   it('should deselect section when clicking on a selected section', () => {
-    const onClearSelection = vi.fn();
+    const onClear = vi.fn();
     render(
       <PlaybackBar
         {...defaultProps}
-        sections={mockSections}
-        selectedSectionIds={['section-1']}
-        onClearSelection={onClearSelection}
+        sectionControls={{
+          ...defaultSectionControls,
+          sections: mockSections,
+          selectedIds: ['section-1'],
+          onClear,
+        }}
       />
     );
 
     const sectionBtn = screen.getByText('M15');
     fireEvent.click(sectionBtn);
 
-    expect(onClearSelection).toHaveBeenCalledTimes(1);
+    expect(onClear).toHaveBeenCalledTimes(1);
   });
 
   it('should auto-select section when clicking on playback bar to seek', () => {
     const onSeek = vi.fn();
-    const onSelectSection = vi.fn();
+    const onSelect = vi.fn();
     render(
       <PlaybackBar
         {...defaultProps}
-        duration={180}
+        playback={{ ...defaultPlayback, duration: 180 }}
+        sectionControls={{
+          ...defaultSectionControls,
+          sections: mockSections,
+          selectedIds: [],
+          onSelect,
+        }}
         onSeek={onSeek}
-        sections={mockSections}
-        selectedSectionIds={[]}
-        onSelectSection={onSelectSection}
       />
     );
 
@@ -171,20 +203,23 @@ describe('PlaybackBar', () => {
 
     expect(onSeek).toHaveBeenCalled();
     // Should auto-select section-1 (the section at 45s, which spans 30-60)
-    expect(onSelectSection).toHaveBeenCalledWith(mockSections[1], false);
+    expect(onSelect).toHaveBeenCalledWith(mockSections[1], false);
   });
 
   it('should not re-select section when clicking in already-selected section', () => {
     const onSeek = vi.fn();
-    const onSelectSection = vi.fn();
+    const onSelect = vi.fn();
     render(
       <PlaybackBar
         {...defaultProps}
-        duration={180}
+        playback={{ ...defaultPlayback, duration: 180 }}
+        sectionControls={{
+          ...defaultSectionControls,
+          sections: mockSections,
+          selectedIds: ['section-1'], // Already selected
+          onSelect,
+        }}
         onSeek={onSeek}
-        sections={mockSections}
-        selectedSectionIds={['section-1']} // Already selected
-        onSelectSection={onSelectSection}
       />
     );
 
@@ -196,80 +231,95 @@ describe('PlaybackBar', () => {
     fireEvent.click(slider, { clientX: 50 });
 
     expect(onSeek).toHaveBeenCalled();
-    // Should NOT call onSelectSection since section-1 is already selected
-    expect(onSelectSection).not.toHaveBeenCalled();
+    // Should NOT call onSelect since section-1 is already selected
+    expect(onSelect).not.toHaveBeenCalled();
   });
 
   it('should show Combine button when multiple sections are selected', () => {
     render(
       <PlaybackBar
         {...defaultProps}
-        sections={mockSections}
-        selectedSectionIds={['section-0', 'section-1']}
-        onCombineSections={vi.fn()}
+        sectionControls={{
+          ...defaultSectionControls,
+          sections: mockSections,
+          selectedIds: ['section-0', 'section-1'],
+          onCombine: vi.fn(),
+        }}
       />
     );
 
     expect(screen.getByText('Combine')).toBeInTheDocument();
   });
 
-  it('should call onCombineSections when Combine button is clicked', () => {
-    const onCombineSections = vi.fn();
+  it('should call onCombine when Combine button is clicked', () => {
+    const onCombine = vi.fn();
     render(
       <PlaybackBar
         {...defaultProps}
-        sections={mockSections}
-        selectedSectionIds={['section-0', 'section-1']}
-        onCombineSections={onCombineSections}
+        sectionControls={{
+          ...defaultSectionControls,
+          sections: mockSections,
+          selectedIds: ['section-0', 'section-1'],
+          onCombine,
+        }}
       />
     );
 
     const combineBtn = screen.getByText('Combine');
     fireEvent.click(combineBtn);
 
-    expect(onCombineSections).toHaveBeenCalledTimes(1);
+    expect(onCombine).toHaveBeenCalledTimes(1);
   });
 
   it('should show Split button when one section is selected and playhead is within it', () => {
     render(
       <PlaybackBar
         {...defaultProps}
-        currentTime={45} // Within section-1 (30-60)
-        sections={mockSections}
-        selectedSectionIds={['section-1']}
-        onSplitSection={vi.fn()}
+        playback={{ ...defaultPlayback, currentTime: 45 }} // Within section-1 (30-60)
+        sectionControls={{
+          ...defaultSectionControls,
+          sections: mockSections,
+          selectedIds: ['section-1'],
+          onSplit: vi.fn(),
+        }}
       />
     );
 
     expect(screen.getByText('Split here')).toBeInTheDocument();
   });
 
-  it('should call onSplitSection when Split button is clicked', () => {
-    const onSplitSection = vi.fn();
+  it('should call onSplit when Split button is clicked', () => {
+    const onSplit = vi.fn();
     render(
       <PlaybackBar
         {...defaultProps}
-        currentTime={45}
-        sections={mockSections}
-        selectedSectionIds={['section-1']}
-        onSplitSection={onSplitSection}
+        playback={{ ...defaultPlayback, currentTime: 45 }}
+        sectionControls={{
+          ...defaultSectionControls,
+          sections: mockSections,
+          selectedIds: ['section-1'],
+          onSplit,
+        }}
       />
     );
 
     const splitBtn = screen.getByText('Split here');
     fireEvent.click(splitBtn);
 
-    expect(onSplitSection).toHaveBeenCalledWith('section-1', 45);
+    expect(onSplit).toHaveBeenCalledWith('section-1', 45);
   });
 
   it('should disable Split button when playhead is outside selected section', () => {
     render(
       <PlaybackBar
         {...defaultProps}
-        currentTime={10} // Outside section-1 (30-60)
-        sections={mockSections}
-        selectedSectionIds={['section-1']}
-        onSplitSection={vi.fn()}
+        playback={{ ...defaultPlayback, currentTime: 10 }} // Outside section-1 (30-60)
+        sectionControls={{
+          ...defaultSectionControls,
+          sections: mockSections,
+          selectedIds: ['section-1'],
+          onSplit: vi.fn(),
+        }}
       />
     );
 
@@ -280,22 +330,22 @@ describe('PlaybackBar', () => {
   // Note: Loop control tests have been removed as those controls
   // are now in App.tsx, not PlaybackBar
 
-  it('should show detecting indicator when isDetectingSections is true', () => {
+  it('should show detecting indicator when isDetecting is true', () => {
     render(
       <PlaybackBar
         {...defaultProps}
-        isDetectingSections={true}
+        sectionControls={{ ...defaultSectionControls, isDetecting: true }}
       />
     );
 
     expect(screen.getByText('Detecting sections...')).toBeInTheDocument();
   });
 
-  it('should not show detecting indicator when isDetectingSections is false', () => {
+  it('should not show detecting indicator when isDetecting is false', () => {
     render(
       <PlaybackBar
         {...defaultProps}
-        isDetectingSections={false}
+        sectionControls={{ ...defaultSectionControls, isDetecting: false }}
       />
     );
 
@@ -307,9 +357,12 @@ describe('PlaybackBar', () => {
       render(
         <PlaybackBar
           {...defaultProps}
-          sections={mockSections}
-          selectedSectionIds={['section-1']}
-          onClearSelection={vi.fn()}
+          sectionControls={{
+            ...defaultSectionControls,
+            sections: mockSections,
+            selectedIds: ['section-1'],
+            onClear: vi.fn(),
+          }}
         />
       );
 
@@ -321,10 +374,13 @@ describe('PlaybackBar', () => {
       render(
         <PlaybackBar
           {...defaultProps}
-          sections={mockSections}
-          selectedSectionIds={['section-0', 'section-1']}
-          onClearSelection={vi.fn()}
-          onCombineSections={vi.fn()}
+          sectionControls={{
+            ...defaultSectionControls,
+            sections: mockSections,
+            selectedIds: ['section-0', 'section-1'],
+            onClear: vi.fn(),
+            onCombine: vi.fn(),
+          }}
         />
       );
 
@@ -338,7 +394,7 @@ describe('PlaybackBar', () => {
       const { container } = render(
         <PlaybackBar
           {...defaultProps}
-          sections={mockSections}
+          sectionControls={{ ...defaultSectionControls, sections: mockSections }}
         />
       );
 
@@ -353,7 +409,7 @@ describe('PlaybackBar', () => {
       const { container } = render(
         <PlaybackBar
           {...defaultProps}
-          sections={mockSections}
+          sectionControls={{ ...defaultSectionControls, sections: mockSections }}
         />
       );
 
@@ -371,7 +427,7 @@ describe('PlaybackBar', () => {
       const { container } = render(
         <PlaybackBar
           {...defaultProps}
-          sections={mockSections}
+          sectionControls={{ ...defaultSectionControls, sections: mockSections }}
         />
       );
 

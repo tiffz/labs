@@ -1,9 +1,31 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import type { TimeSignature } from '../../shared/rhythm/types';
 import { BeatGrid } from '../utils/beatGrid';
+import { getMeasureDuration } from '../utils/measureUtils';
+import { useMetronome } from './useMetronome';
 
-// Import click sound
-import clickSound from '../../drums/assets/sounds/click.mp3';
+/**
+ * Calculate the detune value in cents that compensates for playback rate pitch shift.
+ *
+ * AudioBufferSourceNode's playbackRate affects both speed AND pitch.
+ * To achieve pitch-corrected transposition, we need to:
+ * 1. Calculate how many cents the playbackRate shifts the pitch
+ * 2. Subtract that from our desired transpose to cancel it out
+ * 3. Add the desired transposition
+ *
+ * Formula: detune = (transposeSemitones * 100) - (1200 * log2(playbackRate))
+ *
+ * Example at playbackRate=1.25, transpose=+1 semitone:
+ * - playbackRate pitch shift = 1200 * log2(1.25) ≈ 386 cents
+ * - desired transpose = 100 cents
+ * - compensated detune = 100 - 386 = -286 cents
+ * - Net effect: -286 + 386 = 100 cents = 1 semitone up ✓
+ */
+function getCompensatedDetune(transposeSemitones: number, playbackRate: number): number {
+  const desiredCents = transposeSemitones * 100;
+  const playbackRatePitchShift = 1200 * Math.log2(playbackRate);
+  return desiredCents - playbackRatePitchShift;
+}
 
 export interface LoopRegion {
   startTime: number;
@@ -99,11 +121,9 @@ export function useBeatSync({
   const animationFrameRef = useRef<number | null>(null);
   const beatGridRef = useRef<BeatGrid | null>(null);
   const lastBeatRef = useRef(-1);
-  const clickBufferRef = useRef<AudioBuffer | null>(null);
   const metronomeEnabledRef = useRef(metronomeEnabled);
   const playbackRateRef = useRef<PlaybackSpeed>(1.0);
   const audioVolumeRef = useRef(80);
-  const metronomeVolumeRef = useRef(50);
   const syncStartRef = useRef(effectiveSyncStart);
   const loopRegionRef = useRef<LoopRegion | null>(null);
   const loopEnabledRef = useRef(false);
@@ -141,10 +161,6 @@ export function useBeatSync({
     }
   }, [audioVolume]);
 
-  useEffect(() => {
-    metronomeVolumeRef.current = metronomeVolume;
-  }, [metronomeVolume]);
-
   // Keep loop refs in sync
   useEffect(() => {
     loopRegionRef.current = loopRegion;
@@ -157,20 +173,29 @@ export function useBeatSync({
   // Track previous useAudioElement mode to detect mode switches
   const prevUseAudioElementRef = useRef(useAudioElement);
 
-  // Keep transpose ref in sync and apply detune to source node
+  // Keep transpose ref in sync and apply compensated detune to source node
+  // We recalculate when either transposeSemitones or playbackRate changes
   useEffect(() => {
     transposeSemitonesRef.current = transposeSemitones;
-    // Apply detune to AudioBufferSourceNode (100 cents = 1 semitone)
     if (sourceNodeRef.current) {
-      sourceNodeRef.current.detune.value = transposeSemitones * 100;
+      // Apply pitch-corrected detune that compensates for playbackRate pitch shift
+      sourceNodeRef.current.detune.value = getCompensatedDetune(transposeSemitones, playbackRateRef.current);
     }
   }, [transposeSemitones]);
+
+  // Also update detune when playback rate changes (to maintain correct pitch)
+  useEffect(() => {
+    if (sourceNodeRef.current && transposeSemitonesRef.current !== 0) {
+      sourceNodeRef.current.detune.value = getCompensatedDetune(transposeSemitonesRef.current, playbackRate);
+    }
+  }, [playbackRate]);
 
   // Update beat grid when parameters change - use sync start time for beat alignment
   useEffect(() => {
     beatGridRef.current = new BeatGrid(bpm, timeSignature, effectiveSyncStart);
   }, [bpm, timeSignature, effectiveSyncStart]);
 
+  // Get or create AudioContext
   const getAudioContext = useCallback(() => {
     if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
       const AudioContextClass =
@@ -180,6 +205,13 @@ export function useBeatSync({
     }
     return audioContextRef.current;
   }, []);
+
+  // Metronome click sound - uses the shared useMetronome hook
+  // Pass getter function so it can access AudioContext lazily (after user interaction)
+  const { playClick } = useMetronome({
+    getAudioContext,
+    volume: metronomeVolume,
+  });
 
   // Handle switching between audio element and source node when transpose changes
   useEffect(() => {
@@ -237,7 +269,8 @@ export function useBeatSync({
         const source = audioContext.createBufferSource();
         source.buffer = audioBuffer;
         source.playbackRate.value = playbackRateRef.current;
-        source.detune.value = transposeSemitonesRef.current * 100;
+        // Apply pitch-corrected detune that compensates for playbackRate pitch shift
+        source.detune.value = getCompensatedDetune(transposeSemitonesRef.current, playbackRateRef.current);
         source.connect(gainNode);
         source.start(0, currentPosition);
         sourceNodeRef.current = source;
@@ -245,21 +278,6 @@ export function useBeatSync({
       }
     }
   }, [useAudioElement, isPlaying, audioBuffer, getAudioContext]);
-
-  // Load click sound
-  useEffect(() => {
-    const loadClick = async () => {
-      try {
-        const audioContext = getAudioContext();
-        const response = await fetch(clickSound);
-        const arrayBuffer = await response.arrayBuffer();
-        clickBufferRef.current = await audioContext.decodeAudioData(arrayBuffer);
-      } catch (err) {
-        console.warn('Failed to load click sound:', err);
-      }
-    };
-    loadClick();
-  }, [getAudioContext]);
 
   // Create and configure HTML Audio element for pitch-preserved playback
   useEffect(() => {
@@ -302,33 +320,6 @@ export function useBeatSync({
       audioElementRef.current.playbackRate = playbackRate;
     }
   }, [playbackRate]);
-
-  // Play metronome click with distinct beat 1
-  const playClick = useCallback(
-    (isDownbeat: boolean) => {
-      if (!audioContextRef.current || !clickBufferRef.current) return;
-
-      try {
-        const source = audioContextRef.current.createBufferSource();
-        source.buffer = clickBufferRef.current;
-
-        // Apply metronome volume with beat 1 accent
-        const gainNode = audioContextRef.current.createGain();
-        const baseVolume = metronomeVolumeRef.current / 100;
-        gainNode.gain.value = isDownbeat ? baseVolume : baseVolume * 0.4;
-
-        // Pitch shift for beat 1 (higher = more distinct)
-        source.playbackRate.value = isDownbeat ? 1.3 : 1.0;
-
-        source.connect(gainNode);
-        gainNode.connect(audioContextRef.current.destination);
-        source.start();
-      } catch {
-        // Ignore click errors
-      }
-    },
-    []
-  );
 
   // Handle audio element events (timeupdate, ended, loop detection)
   useEffect(() => {
@@ -577,6 +568,8 @@ export function useBeatSync({
           const source = audioContext.createBufferSource();
           source.buffer = audioBuffer;
           source.playbackRate.value = playbackRateRef.current;
+          // Apply pitch-corrected detune that compensates for playbackRate pitch shift
+          source.detune.value = getCompensatedDetune(transposeSemitonesRef.current, playbackRateRef.current);
           source.connect(gainNode);
           
           // Add onended handler to detect unexpected stops
@@ -640,6 +633,8 @@ export function useBeatSync({
         const source = audioContext.createBufferSource();
         source.buffer = audioBuffer;
         source.playbackRate.value = playbackRateRef.current;
+        // Apply pitch-corrected detune that compensates for playbackRate pitch shift
+        source.detune.value = getCompensatedDetune(transposeSemitonesRef.current, playbackRateRef.current);
         source.connect(gainNode);
         
         // Add onended handler
@@ -723,8 +718,8 @@ export function useBeatSync({
     const source = audioContext.createBufferSource();
     source.buffer = audioBuffer;
     source.playbackRate.value = playbackRateRef.current;
-    // Apply transpose (100 cents = 1 semitone)
-    source.detune.value = transposeSemitonesRef.current * 100;
+    // Apply pitch-corrected detune that compensates for playbackRate pitch shift
+    source.detune.value = getCompensatedDetune(transposeSemitonesRef.current, playbackRateRef.current);
     source.connect(gainNode);
 
     // Handle playback end - use refs to avoid dependency issues
@@ -881,15 +876,11 @@ export function useBeatSync({
   // Seek forward or backward by a number of measures
   const seekByMeasures = useCallback(
     (delta: number) => {
-      // Calculate measure duration: (beats per measure) * (seconds per beat)
-      const beatsPerMeasure = timeSignature.numerator;
-      const secondsPerBeat = 60 / bpm;
-      const measureDuration = beatsPerMeasure * secondsPerBeat;
-
+      const measureDuration = getMeasureDuration(bpm, timeSignature.numerator);
       const newTime = currentTime + delta * measureDuration;
       seek(newTime);
     },
-    [timeSignature, bpm, currentTime, seek]
+    [timeSignature.numerator, bpm, currentTime, seek]
   );
 
   // Jump to start of loop region

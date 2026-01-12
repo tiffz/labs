@@ -3,38 +3,52 @@ import type { Section } from '../utils/sectionDetector';
 import type { LoopRegion } from '../hooks/useBeatSync';
 import type { ChordEvent, KeyChange } from '../utils/chordAnalyzer';
 
-interface PlaybackBarProps {
+/** Playback position and timing state */
+export interface PlaybackState {
   currentTime: number;
   duration: number;
   musicStartTime: number;
   syncStartTime: number;
-  onSeek: (time: number) => void;
-  onSyncStartChange: (time: number) => void;
   isInSyncRegion: boolean;
-  /** Detected sections to display as colored markers */
-  sections?: Section[];
-  /** Current loop region (if any) */
-  loopRegion?: LoopRegion | null;
-  /** Whether looping is enabled */
-  loopEnabled?: boolean;
-  /** Currently selected section IDs (for highlighting) */
-  selectedSectionIds?: string[];
-  /** Called when user clicks a section */
-  onSelectSection?: (section: Section, extendSelection: boolean) => void;
-  /** Called to clear section selection */
-  onClearSelection?: () => void;
-  /** Whether section detection is running */
-  isDetectingSections?: boolean;
-  /** Called to combine selected sections */
-  onCombineSections?: () => void;
-  /** Called to split section at current time */
-  onSplitSection?: (sectionId: string, splitTime: number) => void;
-  /** Called to extend/reduce section selection by measures */
-  onExtendSelection?: (direction: 'start' | 'end', delta: number) => void;
-  /** Chord changes for displaying in section hovers */
-  chordChanges?: ChordEvent[];
-  /** Key changes for displaying in section hovers */
-  keyChanges?: KeyChange[];
+}
+
+/** Loop region configuration */
+export interface LoopState {
+  region: LoopRegion | null;
+  enabled: boolean;
+}
+
+/** Section selection and editing controls */
+export interface SectionControls {
+  sections: Section[];
+  selectedIds: string[];
+  isDetecting: boolean;
+  onSelect?: (section: Section, extendSelection: boolean) => void;
+  onClear?: () => void;
+  onCombine?: () => void;
+  onSplit?: (sectionId: string, splitTime: number) => void;
+  onExtend?: (direction: 'start' | 'end', delta: number) => void;
+}
+
+/** Chord/key data for section hover display */
+export interface ChordDisplayData {
+  chordChanges: ChordEvent[];
+  keyChanges: KeyChange[];
+}
+
+interface PlaybackBarProps {
+  /** Playback position state */
+  playback: PlaybackState;
+  /** Loop region state */
+  loop: LoopState;
+  /** Section selection controls */
+  sectionControls: SectionControls;
+  /** Chord data for hover display (optional) */
+  chordData?: ChordDisplayData;
+  /** Seek to a specific time */
+  onSeek: (time: number) => void;
+  /** Change the sync start time */
+  onSyncStartChange: (time: number) => void;
 }
 
 function formatTime(seconds: number): string {
@@ -44,26 +58,28 @@ function formatTime(seconds: number): string {
 }
 
 const PlaybackBar: React.FC<PlaybackBarProps> = ({
-  currentTime,
-  duration,
-  musicStartTime,
-  syncStartTime,
+  playback,
+  loop,
+  sectionControls,
+  chordData,
   onSeek,
   onSyncStartChange,
-  isInSyncRegion,
-  sections = [],
-  loopRegion = null,
-  loopEnabled = false,
-  selectedSectionIds = [],
-  onSelectSection,
-  onClearSelection,
-  isDetectingSections = false,
-  onCombineSections,
-  onSplitSection,
-  onExtendSelection,
-  chordChanges = [],
-  keyChanges = [],
 }) => {
+  // Destructure grouped props for easier access
+  const { currentTime, duration, musicStartTime, syncStartTime, isInSyncRegion } = playback;
+  const { region: loopRegion, enabled: loopEnabled } = loop;
+  const {
+    sections,
+    selectedIds: selectedSectionIds,
+    isDetecting: isDetectingSections,
+    onSelect: onSelectSection,
+    onClear: onClearSelection,
+    onCombine: onCombineSections,
+    onSplit: onSplitSection,
+    onExtend: onExtendSelection,
+  } = sectionControls;
+  const chordChanges = chordData?.chordChanges ?? [];
+  const keyChanges = chordData?.keyChanges ?? [];
   const barRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState<boolean>(false);
 

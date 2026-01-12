@@ -26,6 +26,13 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const lastSyncTime = useRef(0);
   const lastCurrentTime = useRef(0);
   const isSeeking = useRef(false);
+  // Keep currentTime in a ref to avoid stale closures in animation frames
+  const currentTimeRef = useRef(currentTime);
+
+  // Keep currentTimeRef in sync with prop (avoids stale closures)
+  useEffect(() => {
+    currentTimeRef.current = currentTime;
+  }, [currentTime]);
 
   // Sync video playback rate
   useEffect(() => {
@@ -73,6 +80,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   }, [currentTime]);
 
   // Continuous sync: keep video aligned with audio
+  // This effect runs on every currentTime update for immediate drift correction
   useEffect(() => {
     const video = videoRef.current;
     if (!video || isSeeking.current || !isPlaying) return;
@@ -92,6 +100,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   }, [currentTime, isPlaying]);
 
   // Periodic sync check using animation frame for smoother sync
+  // Uses ref to always have the latest currentTime (avoids stale closure)
   useEffect(() => {
     if (!isPlaying) return;
 
@@ -99,12 +108,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     const checkSync = () => {
       const video = videoRef.current;
       if (video && !isSeeking.current) {
-        const drift = Math.abs(video.currentTime - currentTime);
+        // Use ref to get latest currentTime (not stale closure value)
+        const audioTime = currentTimeRef.current;
+        const drift = Math.abs(video.currentTime - audioTime);
         // If drift exceeds threshold, do a soft correction
         if (drift > 0.1) {
           const now = performance.now();
           if (now - lastSyncTime.current > 100) {
-            video.currentTime = currentTime;
+            video.currentTime = audioTime;
             lastSyncTime.current = now;
           }
         }
@@ -114,7 +125,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
     animationId = requestAnimationFrame(checkSync);
     return () => cancelAnimationFrame(animationId);
-  }, [isPlaying, currentTime]);
+  }, [isPlaying]); // Removed currentTime from deps - we use the ref instead
 
   // Handle video seeking by user
   const handleSeeking = useCallback(() => {

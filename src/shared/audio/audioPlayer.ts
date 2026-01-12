@@ -268,8 +268,11 @@ export class AudioPlayer {
 
       this.activeSources.add(source);
 
+      // Clean up nodes after playback to prevent memory leak
       source.onended = () => {
         this.activeSources.delete(source);
+        source.disconnect();
+        gainNode.disconnect();
       };
 
       source.start(now);
@@ -299,6 +302,13 @@ export class AudioPlayer {
 
       source.connect(gainNode);
       gainNode.connect(this.audioContext.destination);
+
+      // Clean up nodes after playback to prevent memory leak
+      // Without this, GainNodes accumulate and cause audio crackling over time
+      source.onended = () => {
+        source.disconnect();
+        gainNode.disconnect();
+      };
 
       source.start(this.audioContext.currentTime);
     } catch (err) {
