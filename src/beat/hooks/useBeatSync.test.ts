@@ -21,7 +21,11 @@ vi.mock('./useMetronome', () => ({
 // Create mock AudioContext and related classes
 const createMockAudioContext = () => {
   const mockGainNode = {
-    gain: { value: 1 },
+    gain: {
+      value: 1,
+      setValueAtTime: vi.fn(),
+      linearRampToValueAtTime: vi.fn(),
+    },
     connect: vi.fn(),
     disconnect: vi.fn(),
   };

@@ -26,6 +26,10 @@ const config: KnipConfig = {
     'src/beat/main.tsx',
     'src/corp/App.tsx',
     'src/**/*.test.{ts,tsx}',
+    // CLI tools for beat finder analysis (run via npx tsx, not imported by app)
+    'src/beat/tests/tempoAnalysisRunner.ts',
+    'src/beat/utils/nodeAudio.ts',
+    'scripts/analyze-tempo.ts',
   ],
   project: [
     'src/**/*.{ts,tsx}',
@@ -58,6 +62,12 @@ const config: KnipConfig = {
     'src/corp/main.ts',
     // Kimberly System: Content generation library with many unused exports (intentional API)
     'src/story/kimberly/**/*.ts',
+    // Beat finder: deprecated exports kept for API compatibility
+    'src/beat/utils/experimental/fermataDetector.ts',
+    'src/beat/utils/experimental/tempoChangeDetector.ts',
+    'src/beat/utils/audioBuffer.ts',
+    'src/beat/utils/bpmAccuracyTest.ts',
+    'src/beat/utils/tempoDetectorCore.ts',
   ],
   ignoreDependencies: [
     // Dependencies used in HTML files or other non-TS contexts

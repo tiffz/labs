@@ -33,6 +33,7 @@ const App: React.FC = () => {
 
   const {
     isAnalyzing,
+    analysisProgress,
     analysisResult,
     audioBuffer,
     error: analysisError,
@@ -84,6 +85,8 @@ const App: React.FC = () => {
     isInSyncRegion,
     loopRegion,
     loopEnabled,
+    isInFermata,
+    // currentTempoRegion is available but not used yet - will be used for UI visualization
     play,
     pause,
     stop,
@@ -105,6 +108,10 @@ const App: React.FC = () => {
     syncStartTime: effectiveSyncStart,
     mediaUrl: mediaFile?.url,
     transposeSemitones,
+    tempoRegions: analysisResult?.tempoRegions,
+    // Adaptive resync disabled for now - needs more tuning
+    // detectedOnsets: analysisResult?.beats,
+    // adaptiveResync: true,
   });
 
   // Section selection and loop management
@@ -147,15 +154,24 @@ const App: React.FC = () => {
 
   // Run section detection after chord analysis completes
   // We wait for chord data because key changes are strong indicators of section boundaries
+  // Fermata end times are also used as section boundary hints
   useEffect(() => {
     if (audioBuffer && analysisResult && chordResult && !isDetectingSections && sections.length === 0) {
+      // Extract fermata end times from tempo regions
+      const fermataEndTimes = analysisResult.tempoRegions
+        ?.filter(region => region.type === 'fermata')
+        .map(region => region.endTime) ?? [];
+
       detectSectionsFromBuffer(audioBuffer, analysisResult.beats, {
         minSectionDuration: 8,
         sensitivity: 0.5,
         musicStartTime: analysisResult.musicStartTime,
         bpm: analysisResult.bpm,
         beatsPerMeasure: timeSignature.numerator,
+        chordEvents: chordResult.chordChanges,
+        chordChangeTimes: chordResult.chordChanges.map(c => c.time),
         keyChanges: chordResult.keyChanges,
+        fermataEndTimes,
       }).catch((err) => {
         console.error('[Section Detection] Detection failed:', err);
       });
@@ -211,6 +227,26 @@ const App: React.FC = () => {
   const hasAudio = audioBuffer !== null;
   const hasVideo = mediaFile?.type === 'video';
 
+  // Comprehensive loading state - true if any processing is happening
+  const isProcessing = isAnalyzing || isAnalyzingChords || isDetectingSections;
+  
+  // Determine the current loading stage message
+  const getLoadingMessage = () => {
+    if (isAnalyzing) {
+      return analysisProgress?.stage || 'Analyzing...';
+    }
+    if (isAnalyzingChords) {
+      return 'Detecting chords...';
+    }
+    if (isDetectingSections) {
+      return 'Detecting sections...';
+    }
+    return 'Processing...';
+  };
+
+  // Ready to show the full player UI
+  const isReady = hasAudio && analysisResult !== null;
+
   // Get confidence display
   const confidenceLevel = analysisResult?.confidenceLevel ?? 'medium';
   const warnings = analysisResult?.warnings ?? [];
@@ -223,13 +259,25 @@ const App: React.FC = () => {
       </header>
 
       <main className="beat-main">
-        {/* Upload State */}
-        {!hasAudio && (
+        {/* Upload/Loading State - show when not ready */}
+        {!isReady && (
           <div className="upload-section">
-            {isAnalyzing ? (
+            {isProcessing ? (
               <div className="analyzing">
                 <div className="analyzing-spinner" />
-                <p>Analyzing...</p>
+                <p>{getLoadingMessage()}</p>
+                <div className="analysis-progress">
+                  <div 
+                    className={`analysis-progress-bar ${
+                      !analysisProgress || analysisProgress.progress < 5 ? 'indeterminate' : ''
+                    }`}
+                    style={
+                      analysisProgress && analysisProgress.progress >= 5 
+                        ? { width: `${analysisProgress.progress}%` } 
+                        : undefined
+                    }
+                  />
+                </div>
               </div>
             ) : (
               <>
@@ -251,7 +299,7 @@ const App: React.FC = () => {
         )}
 
         {/* Main Player UI - Compact single-screen layout */}
-        {hasAudio && analysisResult && (
+        {isReady && (
           <div className="player-layout">
             {/* Left: Visualization + Playback Controls */}
             <div className="viz-section">
@@ -283,8 +331,11 @@ const App: React.FC = () => {
                   currentTime,
                   duration,
                   musicStartTime: analysisResult.musicStartTime,
+                  musicEndTime: analysisResult.musicEndTime,
                   syncStartTime: effectiveSyncStart,
                   isInSyncRegion,
+                  isInFermata,
+                  tempoRegions: analysisResult.tempoRegions,
                 }}
                 loop={{
                   region: loopRegion,
@@ -534,7 +585,7 @@ const App: React.FC = () => {
                   const label = confidenceLevel === 'high' ? 'High' :
                                 confidenceLevel === 'medium' ? 'Med' : 'Low';
                   
-                  // Build tooltip message
+                  // Build tooltip message with line breaks for readability
                   const messages: string[] = [];
                   if (confidenceLevel === 'high') {
                     messages.push('High confidence in BPM detection');
@@ -544,10 +595,13 @@ const App: React.FC = () => {
                     messages.push('Low confidence - adjust BPM manually');
                   }
                   
-                  // Add other warnings
+                  // Add other warnings (filter out verbose ones)
                   const otherWarnings = warnings.filter((w: string) => 
                     !w.toLowerCase().includes('confidence') &&
-                    !w.toLowerCase().includes('music starts')
+                    !w.toLowerCase().includes('music starts') &&
+                    !w.toLowerCase().includes('resynced beat grid') && // Filter verbose resync message
+                    !w.toLowerCase().includes('found') && // Filter "Found X gap(s)" messages
+                    !w.toLowerCase().includes('validated') // Filter validation counts
                   );
                   if (otherWarnings.length > 0) {
                     messages.push(...otherWarnings);
@@ -555,8 +609,8 @@ const App: React.FC = () => {
                   
                   return (
                     <span 
-                      className={`confidence-badge ${confidenceLevel} has-tooltip`}
-                      data-tooltip={messages.join(' · ')}
+                      className={`confidence-badge ${confidenceLevel} has-tooltip tooltip-multiline`}
+                      data-tooltip={messages.join('\n')}
                     >
                       <span className="material-symbols-outlined">{icon}</span>
                       <span className="confidence-label">{label}</span>
@@ -668,7 +722,7 @@ const App: React.FC = () => {
                   <DrumAccompaniment
                     bpm={analysisResult.bpm}
                     timeSignature={timeSignature}
-                    isPlaying={isPlaying && isInSyncRegion}
+                    isPlaying={isPlaying && isInSyncRegion && !isInFermata}
                     currentBeatTime={currentTime - effectiveSyncStart}
                     currentBeat={currentBeat}
                     metronomeEnabled={metronomeEnabled}

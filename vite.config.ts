@@ -249,7 +249,14 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: './shared/test/setupTests.ts',
     include: ['**/*.test.{js,ts,jsx,tsx}'],
-    exclude: ['src/**/e2e/**', 'e2e/**', 'node_modules/**', 'dist/**'],
+    exclude: [
+      'src/**/e2e/**', 
+      'e2e/**', 
+      'node_modules/**', 
+      'dist/**',
+      // Expensive benchmark test - only run when beat files change (via INCLUDE_BEAT_BENCHMARK env)
+      ...(process.env.INCLUDE_BEAT_BENCHMARK !== 'true' ? ['**/bpmDetectionBenchmark.test.ts'] : []),
+    ],
     testTimeout: 10000, // 10 seconds max per test (reduced from 30s)
     hookTimeout: 5000, // 5 seconds max for setup/teardown (reduced from 30s)
     pool: 'threads', // Use threads for better isolation

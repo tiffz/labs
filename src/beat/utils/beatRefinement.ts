@@ -5,8 +5,8 @@
  * for more accurate beat positions.
  */
 
-import { getEssentia } from './beatAnalyzer';
 import type { TempoEstimate } from './tempoEnsemble';
+import { detectOnsets } from './analysis/onsets';
 
 /**
  * Merge beat grids from multiple algorithms
@@ -139,25 +139,12 @@ export async function snapBeatsToOnsets(
   if (beats.length === 0) return beats;
 
   try {
-    const essentia = await getEssentia();
-    const channelData = audioBuffer.getChannelData(0);
-    const signal = essentia.arrayToVector(channelData);
-    const sampleRate = audioBuffer.sampleRate;
+    // Use energy-based onset detection (simple and reliable)
+    const onsetTimes = detectOnsets(audioBuffer, { preset: 'snapping' });
 
-    // Use SuperFluxNovelty for onset detection (good for percussive onsets)
-    // Parameters: signal, frameSize, hopSize
-    const frameSize = 2048;
-    const hopSize = 256;
-
-    // Calculate novelty function
-    const novelty = essentia.SuperFluxNovelty(signal, frameSize, hopSize);
-    const noveltyArray = essentia.vectorToArray(novelty.novelty);
-
-    // Find onset times from novelty peaks
-    const onsetTimes = findNoveltyPeaks(noveltyArray, hopSize, sampleRate);
-
-    signal.delete();
-    novelty.novelty.delete();
+    if (onsetTimes.length === 0) {
+      return beats;
+    }
 
     // Snap each beat to nearest onset
     const snappedBeats = beats.map((beat) => {
@@ -165,54 +152,11 @@ export async function snapBeatsToOnsets(
       return nearestOnset !== null ? nearestOnset : beat;
     });
 
-
     return snappedBeats;
   } catch (err) {
     console.warn('[BeatRefinement] Onset snapping failed:', err);
     return beats;
   }
-}
-
-/**
- * Find peaks in novelty function (onset candidates)
- */
-function findNoveltyPeaks(
-  novelty: Float32Array,
-  hopSize: number,
-  sampleRate: number,
-  threshold: number = 0.1
-): number[] {
-  const peaks: number[] = [];
-  const windowSize = 3; // Compare with neighbors
-
-  // Normalize novelty
-  const maxNovelty = Math.max(...novelty);
-  if (maxNovelty === 0) return [];
-
-  const normalizedNovelty = Array.from(novelty).map((v) => v / maxNovelty);
-
-  // Find local maxima above threshold
-  for (let i = windowSize; i < normalizedNovelty.length - windowSize; i++) {
-    const current = normalizedNovelty[i];
-
-    if (current < threshold) continue;
-
-    // Check if local maximum
-    let isMax = true;
-    for (let j = 1; j <= windowSize; j++) {
-      if (normalizedNovelty[i - j] >= current || normalizedNovelty[i + j] >= current) {
-        isMax = false;
-        break;
-      }
-    }
-
-    if (isMax) {
-      const timeInSeconds = (i * hopSize) / sampleRate;
-      peaks.push(timeInSeconds);
-    }
-  }
-
-  return peaks;
 }
 
 /**

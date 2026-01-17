@@ -218,3 +218,70 @@ describe('Chord Analysis Utilities', () => {
     });
   });
 });
+
+// ============================================================================
+// Key Detection Tests - bVI Relationship
+// ============================================================================
+
+describe('Key Detection - bVI Relationship', () => {
+  /**
+   * The bVI chord is the major chord built on the lowered 6th scale degree.
+   * In minor keys, bVI is extremely common and often more prominent than the tonic.
+   * 
+   * Examples:
+   * - F minor: bVI = Db major (very common in "Let It Go")
+   * - A minor: bVI = F major
+   * - D minor: bVI = Bb major
+   * 
+   * The key detection should recognize when a detected major key might actually
+   * be the bVI of a minor key.
+   */
+
+  /**
+   * Calculate the bVI relationship: bVI is 8 semitones above (or 4 below) the minor tonic
+   * Or equivalently: the minor key is 4 semitones above the bVI
+   */
+  function getMinorKeyFromBVI(majorKey: string): string {
+    const noteToSemitone: Record<string, number> = {
+      'C': 0, 'C#': 1, 'Db': 1, 'D': 2, 'D#': 3, 'Eb': 3,
+      'E': 4, 'F': 5, 'F#': 6, 'Gb': 6, 'G': 7, 'G#': 8, 'Ab': 8,
+      'A': 9, 'A#': 10, 'Bb': 10, 'B': 11,
+    };
+    const semitoneToNote = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+    
+    const majorSemitone = noteToSemitone[majorKey];
+    if (majorSemitone === undefined) return '';
+    
+    // Minor key is 4 semitones above bVI
+    const minorSemitone = (majorSemitone + 4) % 12;
+    return semitoneToNote[minorSemitone];
+  }
+
+  it('should correctly identify bVI to minor key relationships', () => {
+    // Db major is bVI of F minor
+    expect(getMinorKeyFromBVI('Db')).toBe('F');
+    
+    // F major is bVI of A minor
+    expect(getMinorKeyFromBVI('F')).toBe('A');
+    
+    // Bb major is bVI of D minor
+    expect(getMinorKeyFromBVI('Bb')).toBe('D');
+    
+    // Ab major is bVI of C minor
+    expect(getMinorKeyFromBVI('Ab')).toBe('C');
+    
+    // Eb major is bVI of G minor
+    expect(getMinorKeyFromBVI('Eb')).toBe('G');
+  });
+
+  it('should understand Let It Go key relationships', () => {
+    // Let It Go is in F minor
+    // The bVI chord (Db) is very prominent in the song
+    // Key detection might initially detect Db major but should prefer F minor
+    
+    const detectedMajor = 'Db';
+    const expectedMinor = 'F';
+    
+    expect(getMinorKeyFromBVI(detectedMajor)).toBe(expectedMinor);
+  });
+});

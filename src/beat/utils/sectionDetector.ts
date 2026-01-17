@@ -443,6 +443,7 @@ export async function detectSections(
     chordEvents?: ChordEvent[]; // Optional chord events for harmonic-aware section detection
     chordChangeTimes?: number[]; // Optional chord change times for boundary snapping
     keyChanges?: KeyChangeInfo[]; // Optional key changes - these mark definite section boundaries
+    fermataEndTimes?: number[]; // Optional fermata end times - these are strong section boundary hints
   } = {}
 ): Promise<SectionDetectionResult> {
   const {
@@ -454,7 +455,8 @@ export async function detectSections(
     beatsPerMeasure = 4,
     chordEvents = [],
     chordChangeTimes = [],
-    keyChanges = []
+    keyChanges = [],
+    fermataEndTimes = []
   } = options;
 
   const warnings: string[] = [];
@@ -556,17 +558,26 @@ export async function detectSections(
       })
       .filter(kc => kc.snapped > musicStartTime + minSectionDuration * 0.5); // Only keep after music start
     
-    // Key change times will be used as priority boundary candidates
+    // Fermata end times are strong indicators of section boundaries
+    // Music resuming after a fermata often marks a new phrase or section
+    const fermataSnappedTimes = fermataEndTimes
+      .map(t => snapToMeasureStart(t, bpm, musicStartTime, beatsPerMeasure))
+      .filter(t => t > musicStartTime + minSectionDuration * 0.5); // Only keep after music start
 
-    // Combine peak times and key change times
-    // Key change times take priority - if a peak is within 3 seconds of a key change, use the key change time instead
-    const keyChangeSnappedTimes = keyChangeTimes.map(kc => kc.snapped);
+    // Priority boundary candidates (key changes > fermatas > novelty peaks)
+    const priorityBoundaryTimes = [...new Set([
+      ...keyChangeTimes.map(kc => kc.snapped),
+      ...fermataSnappedTimes
+    ])];
+
+    // Combine peak times with priority boundary times
+    // Priority times take precedence - if a peak is within 3 seconds of a priority boundary, use the priority time
     const filteredPeakTimes = peakTimes.filter(pt => {
-      // Keep peak if it's not too close to any key change
-      return !keyChangeSnappedTimes.some(kct => Math.abs(pt - kct) < 3);
+      // Keep peak if it's not too close to any priority boundary
+      return !priorityBoundaryTimes.some(pbt => Math.abs(pt - pbt) < 3);
     });
     
-    const allBoundaryTimes = [...new Set([...filteredPeakTimes, ...keyChangeSnappedTimes])].sort((a, b) => a - b);
+    const allBoundaryTimes = [...new Set([...filteredPeakTimes, ...priorityBoundaryTimes])].sort((a, b) => a - b);
 
     // Use musicStartTime as the first boundary (not 0)
     const firstBoundary = Math.max(0, musicStartTime);

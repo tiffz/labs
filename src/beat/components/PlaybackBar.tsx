@@ -2,14 +2,21 @@ import React, { useCallback, useRef, useState, useMemo } from 'react';
 import type { Section } from '../utils/sectionDetector';
 import type { LoopRegion } from '../hooks/useBeatSync';
 import type { ChordEvent, KeyChange } from '../utils/chordAnalyzer';
+import type { TempoRegion } from '../utils/tempoRegions';
 
 /** Playback position and timing state */
 export interface PlaybackState {
   currentTime: number;
   duration: number;
   musicStartTime: number;
+  /** When music actually ends (may be before track ends due to trailing silence) */
+  musicEndTime?: number;
   syncStartTime: number;
   isInSyncRegion: boolean;
+  /** Whether currently in a fermata/rubato region */
+  isInFermata?: boolean;
+  /** Tempo regions (fermatas, tempo changes, etc.) */
+  tempoRegions?: TempoRegion[];
 }
 
 /** Loop region configuration */
@@ -66,7 +73,8 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
   onSyncStartChange,
 }) => {
   // Destructure grouped props for easier access
-  const { currentTime, duration, musicStartTime, syncStartTime, isInSyncRegion } = playback;
+  const { currentTime, duration, musicStartTime, musicEndTime, syncStartTime, isInSyncRegion, tempoRegions } = playback;
+  // isInFermata is available in playback but not currently used for UI indication
   const { region: loopRegion, enabled: loopEnabled } = loop;
   const {
     sections,
@@ -160,6 +168,11 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
 
   // Only show sync start handle if there's an intro to skip
   const showSyncStartHandle = syncStartTime > 0.5 || musicStartTime > 0.5;
+  
+  // Show music end marker if music ends significantly before track ends (more than 2 seconds of trailing silence)
+  const effectiveMusicEndTime = musicEndTime ?? duration;
+  const showMusicEndMarker = effectiveMusicEndTime < duration - 2;
+  const musicEndPercent = duration > 0 ? (effectiveMusicEndTime / duration) * 100 : 100;
 
   // Calculate loop region position
   const loopStartPercent = loopRegion && duration > 0 ? (loopRegion.startTime / duration) * 100 : 0;
@@ -172,6 +185,9 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
   );
   const currentSectionId = currentSection?.id;
 
+  // Check if "Loop track" mode is active (loop enabled but no section selected)
+  const isLoopTrackMode = loopEnabled && selectedSectionIds.length === 0;
+  
   // Handle section click - toggle if already selected
   const handleSectionClick = useCallback(
     (e: React.MouseEvent, section: Section) => {
@@ -181,11 +197,14 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
       if (isSelected && !e.shiftKey) {
         // Clicking a selected section deselects it (unless shift is held for range selection)
         onClearSelection?.();
+      } else if (isLoopTrackMode) {
+        // In "Loop track" mode, clicking a section just seeks to it without changing loop mode
+        onSeek(section.startTime);
       } else if (onSelectSection) {
         onSelectSection(section, e.shiftKey);
       }
     },
-    [onSelectSection, onClearSelection, selectedSectionIds]
+    [onSelectSection, onClearSelection, selectedSectionIds, isLoopTrackMode, onSeek]
   );
 
   const hasSelection = selectedSectionIds.length > 0;
@@ -264,6 +283,61 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
       ) ?? null;
     };
   }, [keyChanges]);
+
+  // Get tempo info for a section
+  const getTempoInfoForSection = useMemo(() => {
+    return (section: Section): { bpm: number | null; hasFermata: boolean; description: string | null } => {
+      if (!tempoRegions || tempoRegions.length === 0) {
+        return { bpm: null, hasFermata: false, description: null };
+      }
+
+      // Find tempo regions that overlap with this section
+      const overlappingRegions = tempoRegions.filter(
+        r => r.startTime < section.endTime && r.endTime > section.startTime
+      );
+
+      if (overlappingRegions.length === 0) {
+        return { bpm: null, hasFermata: false, description: null };
+      }
+
+      // Check for fermatas
+      const hasFermata = overlappingRegions.some(r => r.type === 'fermata');
+
+      // Find the primary BPM (from steady regions)
+      const steadyRegions = overlappingRegions.filter(r => r.type === 'steady' && r.bpm !== null);
+      const primaryBpm = steadyRegions.length > 0 ? steadyRegions[0].bpm : null;
+
+      // Build description with specific details for each tempo event
+      let description: string | null = null;
+      const tempoTypes = overlappingRegions.filter(r => r.type !== 'steady');
+      if (tempoTypes.length > 0) {
+        const typeDescriptions = tempoTypes.map(r => {
+          // Use the region's own description if available (includes timestamps)
+          if (r.description) return r.description;
+          
+          // Fallback: generate description with timestamp
+          const timeStr = formatTime(r.startTime);
+          const durationStr = `${(r.endTime - r.startTime).toFixed(1)}s`;
+          if (r.type === 'fermata') return `Fermata at ${timeStr} (${durationStr})`;
+          if (r.type === 'rubato') return `Free tempo at ${timeStr}`;
+          if (r.type === 'accelerando') return `Speeds up at ${timeStr}`;
+          if (r.type === 'ritardando') return `Slows down at ${timeStr}`;
+          return r.type;
+        });
+        description = typeDescriptions.join(' · ');
+      }
+
+      // Check for tempo change within section
+      const uniqueBpms = [...new Set(steadyRegions.map(r => r.bpm))];
+      if (uniqueBpms.length > 1) {
+        description = description 
+          ? `${description} · tempo changes`
+          : `tempo changes (${uniqueBpms.join(' → ')} BPM)`;
+      }
+
+      return { bpm: primaryBpm, hasFermata, description };
+    };
+  }, [tempoRegions]);
 
   // Hovered section for tooltip
   const [hoveredSection, setHoveredSection] = useState<Section | null>(null);
@@ -348,6 +422,29 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
                 />
               )}
 
+              {/* Tempo region markers (fermatas, rubato, tempo changes) */}
+              {tempoRegions && tempoRegions.length > 0 && (
+                <div className="tempo-region-markers">
+                  {tempoRegions.map((region) => {
+                    // Only render non-steady regions
+                    if (region.type === 'steady') return null;
+                    const startPercent = (region.startTime / duration) * 100;
+                    const widthPercent = ((region.endTime - region.startTime) / duration) * 100;
+                    return (
+                      <div
+                        key={region.id}
+                        className={`tempo-region-marker tempo-${region.type}`}
+                        style={{
+                          left: `${startPercent}%`,
+                          width: `${widthPercent}%`,
+                        }}
+                        title={region.description || `${region.type}`}
+                      />
+                    );
+                  })}
+                </div>
+              )}
+
               {/* Progress fill */}
               <div
                 className={`playback-progress ${isInSyncRegion ? '' : 'dimmed'}`}
@@ -374,6 +471,15 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
                   style={{ left: `${syncStartPercent}%` }}
                   onMouseDown={handleSyncDragStart}
                   title={`Beat sync starts at ${formatTime(syncStartTime)} — drag to adjust`}
+                />
+              )}
+
+              {/* Music end marker - shows where music ends (before any trailing silence) */}
+              {showMusicEndMarker && (
+                <div
+                  className="music-end-marker"
+                  style={{ left: `${musicEndPercent}%` }}
+                  title={`Music ends at ${formatTime(effectiveMusicEndTime)} (track continues to ${formatTime(duration)})`}
                 />
               )}
 
@@ -458,7 +564,25 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
             }
             return null;
           })()}
-          
+
+          {/* Tempo info for this section */}
+          {(() => {
+            const tempoInfo = getTempoInfoForSection(hoveredSection);
+            if (tempoInfo.bpm || tempoInfo.description) {
+              return (
+                <div className="section-hover-tempo">
+                  <span className="material-symbols-outlined tempo-icon">timer</span>
+                  <span>
+                    {tempoInfo.bpm && <strong>{tempoInfo.bpm} BPM</strong>}
+                    {tempoInfo.bpm && tempoInfo.description && ' · '}
+                    {tempoInfo.description && <em>{tempoInfo.description}</em>}
+                  </span>
+                </div>
+              );
+            }
+            return null;
+          })()}
+
           <div className="section-hover-hint">
             Click to select · Shift+click to extend
           </div>

@@ -6,14 +6,19 @@ interface BpmDisplayProps {
   onBpmChange: (bpm: number) => void;
 }
 
+// Format BPM for display (show 1 decimal if fractional, integer otherwise)
+const formatBpm = (value: number): string => {
+  return Number.isInteger(value) ? String(value) : value.toFixed(1);
+};
+
 const BpmDisplay: React.FC<BpmDisplayProps> = ({ bpm, confidence, onBpmChange }) => {
-  const [inputValue, setInputValue] = useState(String(Math.round(bpm)));
+  const [inputValue, setInputValue] = useState(formatBpm(bpm));
   const [isEditing, setIsEditing] = useState(false);
 
   // Update input when external bpm changes (and not editing)
   useEffect(() => {
     if (!isEditing) {
-      setInputValue(String(Math.round(bpm)));
+      setInputValue(formatBpm(bpm));
     }
   }, [bpm, isEditing]);
 
@@ -27,12 +32,13 @@ const BpmDisplay: React.FC<BpmDisplayProps> = ({ bpm, confidence, onBpmChange })
 
   const handleInputBlur = useCallback(() => {
     setIsEditing(false);
-    const newBpm = parseInt(inputValue, 10);
+    const newBpm = parseFloat(inputValue);
     if (!isNaN(newBpm) && newBpm >= 20 && newBpm <= 300) {
-      onBpmChange(newBpm);
+      // Round to 2 decimal places to avoid floating point issues
+      onBpmChange(Math.round(newBpm * 100) / 100);
     } else {
       // Reset to current value if invalid
-      setInputValue(String(Math.round(bpm)));
+      setInputValue(formatBpm(bpm));
     }
   }, [inputValue, bpm, onBpmChange]);
 
@@ -41,7 +47,7 @@ const BpmDisplay: React.FC<BpmDisplayProps> = ({ bpm, confidence, onBpmChange })
       if (e.key === 'Enter') {
         (e.target as HTMLInputElement).blur();
       } else if (e.key === 'Escape') {
-        setInputValue(String(Math.round(bpm)));
+        setInputValue(formatBpm(bpm));
         setIsEditing(false);
       }
     },
@@ -50,8 +56,10 @@ const BpmDisplay: React.FC<BpmDisplayProps> = ({ bpm, confidence, onBpmChange })
 
   const adjustBpm = useCallback(
     (delta: number) => {
-      const newBpm = Math.max(20, Math.min(300, Math.round(bpm) + delta));
-      onBpmChange(newBpm);
+      // Use 0.1 step for fine adjustments when holding shift, 1 otherwise
+      const newBpm = Math.max(20, Math.min(300, bpm + delta));
+      // Round to 2 decimal places
+      onBpmChange(Math.round(newBpm * 100) / 100);
     },
     [bpm, onBpmChange]
   );
@@ -71,8 +79,8 @@ const BpmDisplay: React.FC<BpmDisplayProps> = ({ bpm, confidence, onBpmChange })
       <div className="bpm-controls">
         <button
           className="transport-btn secondary"
-          onClick={() => adjustBpm(-1)}
-          title="Decrease BPM"
+          onClick={(e) => adjustBpm(e.shiftKey ? -1 : -0.1)}
+          title="Decrease BPM (hold Shift for ±1)"
           style={{ padding: '0.25rem 0.5rem' }}
         >
           <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>
@@ -90,14 +98,15 @@ const BpmDisplay: React.FC<BpmDisplayProps> = ({ bpm, confidence, onBpmChange })
           onKeyDown={handleKeyDown}
           min={20}
           max={300}
+          step={0.1}
           aria-label="BPM"
           style={confidenceColor ? { borderColor: confidenceColor } : undefined}
         />
 
         <button
           className="transport-btn secondary"
-          onClick={() => adjustBpm(1)}
-          title="Increase BPM"
+          onClick={(e) => adjustBpm(e.shiftKey ? 1 : 0.1)}
+          title="Increase BPM (hold Shift for ±1)"
           style={{ padding: '0.25rem 0.5rem' }}
         >
           <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>

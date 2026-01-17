@@ -397,23 +397,28 @@ const DrumNotationMini: React.FC<DrumNotationMiniProps> = ({
                   if (tagName === 'g' || tagName === 'defs' || tagName === 'title' || tagName === 'desc') return;
                   
                   const currentFill = svgEl.getAttribute('fill');
-                  const currentStroke = svgEl.getAttribute('stroke');
                   
-                  // Only set fill if element has a visible fill (not "none")
-                  if (currentFill && currentFill !== 'none') {
+                  // Paths need both fill AND stroke for flags (filled) and stems (stroked)
+                  if (tagName === 'path' || tagName === 'polygon' || tagName === 'polyline') {
+                    // Always set fill for paths - flags are filled paths
                     svgEl.setAttribute('fill', resolvedStyle.highlightColor);
                     svgEl.style.setProperty('fill', resolvedStyle.highlightColor, 'important');
-                  }
-                  
-                  // Always set stroke for lines/paths (stems, flags)
-                  if (tagName === 'path' || tagName === 'line' || tagName === 'polyline' || 
-                      (currentStroke && currentStroke !== 'none')) {
+                    // Set stroke for stems
                     svgEl.setAttribute('stroke', resolvedStyle.highlightColor);
                     svgEl.style.setProperty('stroke', resolvedStyle.highlightColor, 'important');
                   }
-                  
+                  // Lines (used for ledger lines, ties)
+                  else if (tagName === 'line') {
+                    svgEl.setAttribute('stroke', resolvedStyle.highlightColor);
+                    svgEl.style.setProperty('stroke', resolvedStyle.highlightColor, 'important');
+                  }
                   // Noteheads are typically ellipses - force fill
-                  if (tagName === 'ellipse' || tagName === 'circle') {
+                  else if (tagName === 'ellipse' || tagName === 'circle') {
+                    svgEl.setAttribute('fill', resolvedStyle.highlightColor);
+                    svgEl.style.setProperty('fill', resolvedStyle.highlightColor, 'important');
+                  }
+                  // Rectangles (dots, barlines) - only if visible
+                  else if (tagName === 'rect' && currentFill && currentFill !== 'none') {
                     svgEl.setAttribute('fill', resolvedStyle.highlightColor);
                     svgEl.style.setProperty('fill', resolvedStyle.highlightColor, 'important');
                   }

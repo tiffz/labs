@@ -74,6 +74,67 @@ This generates helpful warnings like:
 - "Very quiet audio - detection may be less accurate"
 - "Low dynamic range - may be ambient or heavily compressed"
 
+### Analysis Pipeline (Current)
+
+The current analysis flow combines an Essentia-powered tempo ensemble with
+shared, energy-based onset detection for diagnostics and refinements:
+
+```
+Audio decode
+  ├─ analyze characteristics (RMS + dynamic range)
+  ├─ detect music boundaries (start/end of actual musical content)
+  ├─ tempo ensemble (Essentia RhythmExtractor2013 + Percival + Loop)
+  ├─ integer BPM snapping (prefer whole numbers for studio recordings)
+  ├─ beat grid merge + onset snapping
+  ├─ gap-based resync + fermata detection (excludes end-of-track silence)
+  ├─ tempo regions (steady + fermata/rubato)
+  └─ diagnostics (sectional tempo + accuracy checks in dev)
+```
+
+#### Music Boundary Detection
+
+The analyzer detects when music actually starts and ends within a track:
+
+- **Music Start**: Skips initial silence/noise before music begins
+- **Music End**: Identifies where music ends (before trailing silence)
+- Gaps after music ends are not treated as fermatas
+
+#### Integer BPM Snapping
+
+Most studio recordings use integer BPMs (click tracks default to whole numbers).
+The detector compares alignment scores between fractional and integer BPMs,
+only keeping fractional values when they align significantly better (>12%).
+
+### Shared Analysis Utilities
+
+We centralize onset detection and tempo helpers so diagnostics, benchmarks, and
+refinements stay consistent:
+
+- `src/beat/utils/analysis/onsets.ts` — preset-based onset detection
+- `src/beat/utils/analysis/tempoUtils.ts` — shared tempo normalization helpers
+- `src/beat/utils/analysis/sectionalTempo.ts` — shared sectional tempo windows
+
+### Chord & Key Detection
+
+The app uses HPCP (Harmonic Pitch Class Profile) analysis with Essentia.js for
+chord and key detection:
+
+- **Chord Detection**: Template matching against major/minor/7th chord profiles
+- **Key Detection**: Combines chord-based analysis with Essentia KeyExtractor
+- **bVI Relationship**: Recognizes when a major chord functions as bVI in a minor key
+  (e.g., detects F minor instead of Db major for "Let It Go")
+- **Key Changes**: Detects modulations using chord-based sectional analysis
+
+### Experimental Detectors (Deprecated)
+
+Older or exploratory detectors are kept under `src/beat/utils/experimental/`:
+
+- `experimental/fermataDetector.ts` (Essentia SuperFlux-based) - **deprecated**, use `gapFermataDetector.ts` instead
+- `experimental/tempoChangeDetector.ts` (windowed BPM changes) - **deprecated**
+
+These are exported for API compatibility but are not part of the main analysis path.
+The gap-based fermata detector (`gapFermataDetector.ts`) provides better results.
+
 ### File Structure
 
 ```
@@ -255,6 +316,50 @@ Most modern browsers (Chrome, Firefox, Safari, Edge) are supported.
 2. **First analysis** may be slightly slower as the WASM module loads (~1.5MB)
 3. **Very long files** (>10 minutes) may take several seconds to analyze
 4. **Polyrhythmic or variable tempo** music may show lower confidence
+
+## Benchmarking & Quality Checks
+
+The Beat Finder analysis pipeline has comprehensive BPM detection benchmarks (~2.5 minutes).
+These are **excluded by default** from `npm test` but **automatically included** when beat
+finder files change.
+
+### Automatic Behavior
+
+- **Pre-commit hook**: Detects if any `src/beat/` files are staged
+  - Beat files changed → sets `INCLUDE_BEAT_BENCHMARK=true`, benchmark runs
+  - No beat files → benchmark excluded (saves ~2.5 min)
+- **CI workflow**: Same logic based on changed files in PR/push
+
+### Manual Override
+
+Force benchmarks to run regardless of file changes:
+
+```bash
+INCLUDE_BEAT_BENCHMARK=true npm test
+```
+
+### Running Benchmarks Directly
+
+Run the synthetic BPM detection benchmark (primary quality gate):
+
+```bash
+npm test -- --run src/beat/utils/bpmDetectionBenchmark.test.ts
+```
+
+Run the benchmark against specific algorithms if you touched detector logic:
+
+```bash
+TEMPO_ALGORITHM=essentia npm test -- --run src/beat/utils/bpmDetectionBenchmark.test.ts
+TEMPO_ALGORITHM=autocorrelation npm test -- --run src/beat/utils/bpmDetectionBenchmark.test.ts
+TEMPO_ALGORITHM=ioi-histogram npm test -- --run src/beat/utils/bpmDetectionBenchmark.test.ts
+```
+
+Optional supporting checks:
+
+```
+npm test -- --run src/beat/utils/tempoEnsemble.test.ts
+npm test -- --run src/beat/utils/onsetAlignmentScorer.test.ts
+```
 
 ## Future Improvements
 

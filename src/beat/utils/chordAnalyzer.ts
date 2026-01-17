@@ -521,10 +521,20 @@ function detectKeyFromChords(chordChanges: ChordEvent[]): { key: string; scale: 
   const minorChordRoots = new Array(12).fill(0); // Track which roots appear as minor chords
   const majorChordRoots = new Array(12).fill(0); // Track which roots appear as major chords
   
+  // Track first chord separately - it's a very strong indicator of the key
+  let firstChordRoot = -1;
+  let firstChordIsMinor = false;
+  
   for (let i = 0; i < chordChanges.length; i++) {
     const chord = chordChanges[i];
     const root = parseChordRoot(chord.chord);
     if (root === -1) continue;
+    
+    // Track first non-N chord
+    if (firstChordRoot === -1 && chord.chord !== 'N') {
+      firstChordRoot = root;
+      firstChordIsMinor = isMinorChord(chord.chord);
+    }
     
     // Calculate duration until next chord
     const nextTime = chordChanges[i + 1]?.time ?? chord.time + 2; // Default 2 sec if last chord
@@ -532,7 +542,8 @@ function detectKeyFromChords(chordChanges: ChordEvent[]): { key: string; scale: 
     const weight = duration * chord.strength;
     
     // First and last chords are extra important for key
-    const positionBonus = (i === 0 || i === chordChanges.length - 1) ? 2 : 1;
+    // INCREASED: First chord bonus from 2 to 3 - starting chord is critical for key
+    const positionBonus = (i === 0) ? 3 : (i === chordChanges.length - 1) ? 2 : 1;
     
     rootCounts[root] += weight * positionBonus;
     
@@ -593,6 +604,16 @@ function detectKeyFromChords(chordChanges: ChordEvent[]): { key: string; scale: 
     // Big bonus for i chord being prominent and minor
     minorScore += minorChordRoots[keyRoot] * 2.0;
     
+    // EXTRA bonus if the FIRST chord matches this key
+    // This is a very strong indicator - songs usually start on the tonic
+    if (firstChordRoot === keyRoot) {
+      if (firstChordIsMinor) {
+        minorScore *= 1.5; // First chord is this minor key's tonic - strong signal
+      } else {
+        majorScore *= 1.3; // First chord is this major key's tonic
+      }
+    }
+    
     keyScores.push({ key: keyRoot, scale: 'major', score: majorScore });
     keyScores.push({ key: keyRoot, scale: 'minor', score: minorScore });
   }
@@ -603,13 +624,47 @@ function detectKeyFromChords(chordChanges: ChordEvent[]): { key: string; scale: 
   const best = keyScores[0];
   const secondBest = keyScores[1];
   
+  // Check for bVI relationship BEFORE finalizing
+  // If best is a major key, check if there's a minor key 4 semitones above
+  // that could be the real tonic (e.g., Db major -> F minor)
+  // This is important because songs in minor keys very often emphasize the bVI chord
+  let finalBest = best;
+  if (best.scale === 'major') {
+    const potentialMinorRoot = (best.key + 4) % 12;
+    const potentialMinor = keyScores.find(k => k.key === potentialMinorRoot && k.scale === 'minor');
+    
+    if (potentialMinor) {
+      // If the minor key (where detected major is bVI) has at least 80% of the major's score,
+      // prefer the minor key
+      const ratio = potentialMinor.score / best.score;
+      if (ratio >= 0.8) {
+        finalBest = potentialMinor;
+      }
+    }
+  }
+  
+  // Also check if major key could be III of a minor key (3 semitones below)
+  // e.g., Ab major might actually be F minor (Ab = III of F minor, the relative major)
+  if (finalBest.scale === 'major') {
+    const potentialMinorRoot = (finalBest.key + 9) % 12; // -3 semitones = +9
+    const potentialMinor = keyScores.find(k => k.key === potentialMinorRoot && k.scale === 'minor');
+    
+    if (potentialMinor) {
+      const ratio = potentialMinor.score / finalBest.score;
+      // Be more conservative here - III is less definitive than bVI
+      if (ratio >= 0.9) {
+        finalBest = potentialMinor;
+      }
+    }
+  }
+  
   // Confidence based on margin between best and second best
   // If best is much better than second, confidence is high
   // If they're close, confidence is lower
   let confidence = 0;
-  if (best.score > 0) {
+  if (finalBest.score > 0) {
     // How much better is the best compared to second best (as a ratio)
-    const margin = secondBest.score > 0 ? best.score / secondBest.score : 2;
+    const margin = secondBest.score > 0 ? finalBest.score / secondBest.score : 2;
     // Convert ratio to 0-1 confidence: ratio of 1 = 0.5 conf, ratio of 2 = 0.75 conf, etc.
     confidence = Math.min(1.0, 0.5 + (margin - 1) * 0.25);
     
@@ -620,9 +675,9 @@ function detectKeyFromChords(chordChanges: ChordEvent[]): { key: string; scale: 
   
   // Convert semitone back to note name
   const semitoneToNote = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
-  const keyName = semitoneToNote[best.key];
+  const keyName = semitoneToNote[finalBest.key];
   
-  return { key: keyName, scale: best.scale, confidence: Math.min(confidence * 2, 1) };
+  return { key: keyName, scale: finalBest.scale, confidence: Math.min(confidence * 2, 1) };
 }
 
 /**
@@ -799,6 +854,26 @@ async function detectKey(
         // If minor is within 30% of major, prefer minor
         if (minorScore > majorScore * 0.7) {
           finalKey = relMinor;
+          finalScale = 'minor';
+        }
+      }
+      
+      // IMPORTANT: Also check for bVI relationship
+      // If detected key is Db major but Fm appears prominently, the real key is likely F minor
+      // (Db is the bVI chord in F minor, not the tonic)
+      // bVI is 4 semitones above the detected major key's root (or 8 semitones below)
+      const potentialMinorIdx = (majorIdx + 4) % 12; // 4 semitones up = minor key where detected is bVI
+      const potentialMinor = normalizedNotes[potentialMinorIdx];
+      const potentialMinorKey = `${potentialMinor} minor`;
+      
+      if (votes[potentialMinorKey]) {
+        const majorScore = votes[bestKeyScale].weightedScore;
+        const minorScore = votes[potentialMinorKey].weightedScore;
+        
+        // If the minor key (where detected major would be bVI) has reasonable support,
+        // prefer the minor key - bVI is extremely common in minor key songs
+        if (minorScore > majorScore * 0.5) {
+          finalKey = potentialMinor;
           finalScale = 'minor';
         }
       }

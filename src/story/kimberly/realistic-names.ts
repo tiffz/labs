@@ -149,10 +149,25 @@ const characterNames = new Map<string, {
 export function KimberlySmith(characterId: string = 'default'): string {
   if (!characterNames.has(characterId)) {
     const { pronouns, gender } = generatePronounsAndGender();
-    let firstName = generate(false, true, gender);
-    let lastName = generate(false, false, 'any');
     
-    // Handle cases where generate returns undefined (fallback to defaults)
+    // The @likemybread/name-generator library can throw errors or return undefined
+    // in edge cases, so we wrap in try-catch with fallbacks
+    let firstName: string;
+    let lastName: string;
+    
+    try {
+      firstName = generate(false, true, gender);
+    } catch {
+      firstName = '';
+    }
+    
+    try {
+      lastName = generate(false, false, 'any');
+    } catch {
+      lastName = '';
+    }
+    
+    // Handle cases where generate returns undefined/empty (fallback to defaults)
     if (!firstName || typeof firstName !== 'string') {
       firstName = gender === 'male' ? 'Michael' : gender === 'female' ? 'Sarah' : 'Alex';
     }

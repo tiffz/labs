@@ -1,9 +1,23 @@
 import { useState, useCallback, useRef } from 'react';
-import { analyzeBeat, regenerateBeats, type BeatAnalysisResult } from '../utils/beatAnalyzer';
+import { analyzeBeat, regenerateBeats, adjustBeatsForGaps, type BeatAnalysisResult } from '../utils/beatAnalyzer';
 import type { MediaFile } from '../components/MediaUploader';
+
+/** Analysis progress state */
+export interface AnalysisProgress {
+  stage: string;
+  progress: number; // 0-100
+}
+
+/**
+ * Yield to the main thread to allow React to render updates
+ */
+function yieldToMainThread(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
 
 interface UseAudioAnalysisReturn {
   isAnalyzing: boolean;
+  analysisProgress: AnalysisProgress | null;
   analysisResult: BeatAnalysisResult | null;
   audioBuffer: AudioBuffer | null;
   error: string | null;
@@ -158,7 +172,11 @@ async function decodeMediaAsAudio(
   file: File,
   audioContext: AudioContext
 ): Promise<AudioBuffer> {
+  // Read file in chunks to avoid blocking the main thread for large files
   const arrayBuffer = await file.arrayBuffer();
+  
+  // Yield after reading file to allow UI updates
+  await yieldToMainThread();
 
   try {
     // Use the timeout-wrapped version to prevent Safari from hanging
@@ -184,6 +202,7 @@ async function decodeMediaAsAudio(
 
 export function useAudioAnalysis(): UseAudioAnalysisReturn {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisProgress, setAnalysisProgress] = useState<AnalysisProgress | null>(null);
   const [analysisResult, setAnalysisResult] = useState<BeatAnalysisResult | null>(null);
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -205,6 +224,10 @@ export function useAudioAnalysis(): UseAudioAnalysisReturn {
     async (media: MediaFile) => {
       setIsAnalyzing(true);
       setError(null);
+      setAnalysisProgress({ stage: 'Loading audio', progress: 0 });
+      
+      // Yield to allow React to render the initial progress state
+      await yieldToMainThread();
 
       try {
         const audioContext = getAudioContext();
@@ -219,12 +242,19 @@ export function useAudioAnalysis(): UseAudioAnalysisReturn {
         // For video files, try to extract audio
         // For audio files, decode directly
         if (media.type === 'video') {
+          setAnalysisProgress({ stage: 'Extracting audio from video...', progress: 2 });
+          // Yield before blocking decode operation
+          await yieldToMainThread();
+          
           try {
             // First try direct decoding (works for mp4/webm with standard codecs)
             buffer = await decodeMediaAsAudio(media.file, audioContext);
           } catch {
             // If that fails, try the MediaElement approach
             // Note: This method has limitations in some browsers
+            setAnalysisProgress({ stage: 'Trying alternate extraction method...', progress: 3 });
+            await yieldToMainThread();
+            
             try {
               buffer = await extractAudioFromVideo(media.url, audioContext);
             } catch {
@@ -235,14 +265,21 @@ export function useAudioAnalysis(): UseAudioAnalysisReturn {
           }
         } else {
           // Audio file - decode directly
+          setAnalysisProgress({ stage: 'Decoding audio...', progress: 2 });
+          // Yield before blocking decode operation
+          await yieldToMainThread();
+          
           buffer = await decodeMediaAsAudio(media.file, audioContext);
         }
 
         setAudioBuffer(buffer);
 
-        // Analyze for BPM
-        const result = await analyzeBeat(buffer);
+        // Analyze for BPM with progress updates
+        const result = await analyzeBeat(buffer, (stage, progress) => {
+          setAnalysisProgress({ stage, progress });
+        });
         setAnalysisResult(result);
+        setAnalysisProgress(null);
       } catch (err) {
         console.error('Error analyzing media:', err);
         setError(
@@ -252,6 +289,7 @@ export function useAudioAnalysis(): UseAudioAnalysisReturn {
         );
         setAudioBuffer(null);
         setAnalysisResult(null);
+        setAnalysisProgress(null);
       } finally {
         setIsAnalyzing(false);
       }
@@ -264,13 +302,33 @@ export function useAudioAnalysis(): UseAudioAnalysisReturn {
       if (!analysisResult || !audioBuffer) return;
 
       // Regenerate beats with new BPM
-      const newBeats = regenerateBeats(newBpm, audioBuffer.duration, analysisResult.offset);
+      let newBeats = regenerateBeats(newBpm, audioBuffer.duration, analysisResult.offset);
+      
+      // Re-apply gap adjustments if we have detected gaps
+      // This ensures the beat grid stays aligned after fermatas even when BPM changes
+      if (analysisResult.detectedGaps && analysisResult.detectedGaps.length > 0) {
+        console.log(`[setBpm] Re-applying ${analysisResult.detectedGaps.length} gap adjustment(s) for new BPM ${newBpm}`);
+        newBeats = adjustBeatsForGaps(newBeats, analysisResult.detectedGaps);
+      }
+
+      // Update tempo regions with new BPM
+      // IMPORTANT: Preserve fermata/rubato regions - only update steady region BPMs
+      // Fermatas are based on gap detection, not BPM, so they remain valid
+      const updatedTempoRegions = analysisResult.tempoRegions?.map(region => ({
+        ...region,
+        // Update BPM for steady regions to match the new manual BPM
+        // Keep fermata/rubato regions unchanged (they don't have a meaningful BPM)
+        bpm: region.type === 'steady' ? newBpm : region.bpm,
+      }));
 
       setAnalysisResult({
         ...analysisResult,
         bpm: newBpm,
         beats: newBeats,
         confidence: 1.0, // Manual adjustment = full confidence
+        tempoRegions: updatedTempoRegions,
+        // Keep hasTempoVariance if we have fermatas - it's needed for the VariableBeatGrid
+        hasTempoVariance: updatedTempoRegions?.some(r => r.type === 'fermata' || r.type === 'rubato') ?? false,
       });
     },
     [analysisResult, audioBuffer]
@@ -278,6 +336,7 @@ export function useAudioAnalysis(): UseAudioAnalysisReturn {
 
   const reset = useCallback(() => {
     setIsAnalyzing(false);
+    setAnalysisProgress(null);
     setAnalysisResult(null);
     setAudioBuffer(null);
     setError(null);
@@ -285,6 +344,7 @@ export function useAudioAnalysis(): UseAudioAnalysisReturn {
 
   return {
     isAnalyzing,
+    analysisProgress,
     analysisResult,
     audioBuffer,
     error,
