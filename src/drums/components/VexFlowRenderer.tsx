@@ -8,6 +8,74 @@ import { computeDropPreview } from '../utils/dropPreview';
 import { getCurrentDraggedPattern } from './NotePalette';
 
 /**
+ * Find the note at a click position using visual notehead bounds.
+ * 
+ * This algorithm prioritizes clicks on the visual notehead (the actual drawn note)
+ * rather than the abstract "time region" that extends to the next note. This is
+ * more intuitive because users expect to click ON the visual element.
+ * 
+ * Strategy:
+ * 1. Filter to notes on the same line (Y proximity)
+ * 2. Check if click is directly on any notehead's visual bounds - if so, select it
+ * 3. If not on any notehead, find the closest notehead by distance to center
+ */
+function findClickedNote(
+  svgX: number,
+  svgY: number,
+  notePositions: NotePosition[]
+): NotePosition | null {
+  if (notePositions.length === 0) return null;
+
+  const yPadding = 10;
+  const staveYRange = 80; // Vertical range to consider a note "on the same line"
+  
+  // Visual notehead width - the actual clickable area around the notehead
+  // This is wider than the drawn notehead to provide a comfortable click target
+  const visualNoteheadWidth = 28;
+  const noteheadPadding = visualNoteheadWidth / 2;
+
+  // First, filter to notes on the same line (Y proximity)
+  const sameLineNotes: NotePosition[] = [];
+  for (const notePos of notePositions) {
+    const noteStaveY = notePos.staveY ?? notePos.y;
+    if (svgY >= noteStaveY - yPadding && svgY <= noteStaveY + staveYRange + yPadding) {
+      sameLineNotes.push(notePos);
+    }
+  }
+
+  if (sameLineNotes.length === 0) return null;
+
+  // PASS 1: Check if click is directly on any notehead's visual bounds
+  // This takes priority - if you click ON a note, you get that note
+  for (const notePos of sameLineNotes) {
+    const noteheadCenter = notePos.x + noteheadPadding / 2; // Notehead is near the start
+    const noteheadLeft = noteheadCenter - noteheadPadding;
+    const noteheadRight = noteheadCenter + noteheadPadding;
+    
+    if (svgX >= noteheadLeft && svgX <= noteheadRight) {
+      return notePos;
+    }
+  }
+
+  // PASS 2: Click is not directly on any notehead - find the closest one
+  // Use distance to notehead center for intuitive "closest note" behavior
+  let closestNote: NotePosition | null = null;
+  let minDistance = Infinity;
+
+  for (const notePos of sameLineNotes) {
+    const noteheadCenter = notePos.x + noteheadPadding / 2;
+    const distance = Math.abs(svgX - noteheadCenter);
+    
+    if (distance < minDistance) {
+      minDistance = distance;
+      closestNote = notePos;
+    }
+  }
+
+  return closestNote;
+}
+
+/**
  * ARCHITECTURE DECISION: VexFlowRenderer vs DrumNotationMini
  *
  * This component and `src/shared/notation/DrumNotationMini.tsx` both render drum
@@ -63,6 +131,10 @@ interface VexFlowRendererProps {
   onSelectionChange?: (start: number | null, end: number | null, duration: number) => void;
   /** Callback when selection is dragged to a new position */
   onMoveSelection?: (fromStart: number, fromEnd: number, toPosition: number) => void;
+  /** Callback when delete key is pressed on selection */
+  onDeleteSelection?: () => void;
+  /** Callback to request focus on the note palette (for Tab navigation) */
+  onRequestPaletteFocus?: () => void;
 }
 
 /**
@@ -231,10 +303,15 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
   selection = null,
   onSelectionChange,
   onMoveSelection,
+  onDeleteSelection,
+  onRequestPaletteFocus,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const metronomeDotsRef = useRef<Map<string, SVGCircleElement>>(new Map());
   const notePositionsRef = useRef<NotePosition[]>([]);
+  
+  // ARIA live region ref for screen reader announcements
+  const liveRegionRef = useRef<HTMLDivElement>(null);
   const allStaveNoteRefsRef = useRef<Array<{
     staveNote: StaveNote;
     stave: Stave;
@@ -1077,6 +1154,10 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
     const svg = container?.querySelector('svg');
     if (!container || !svg) return;
     
+    // Focus the container for keyboard navigation
+    // This ensures keyboard controls work immediately after clicking a note
+    container.focus();
+    
     e.preventDefault();
     
     const state = dragStateRef.current;
@@ -1100,17 +1181,8 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
     const containerCoords = clientToContainer(e.clientX, e.clientY);
     const svgCoords = clientToSvg(e.clientX, e.clientY);
     
-    // Find clicked note
-    let clickedNote: NotePosition | null = null;
-    for (const notePos of notePositionsRef.current) {
-      const padding = 10;
-      if (svgCoords.x >= notePos.x - padding && svgCoords.x <= notePos.x + notePos.width + padding &&
-          svgCoords.y >= (notePos.staveY || notePos.y) - padding && 
-          svgCoords.y <= (notePos.staveY || notePos.y) + 80 + padding) {
-        clickedNote = notePos;
-        break;
-      }
-    }
+    // Find clicked note using distance-based selection
+    const clickedNote = findClickedNote(svgCoords.x, svgCoords.y, notePositionsRef.current);
     
     // Check if clicking within existing selection (for drag-to-move)
     // Use tied group bounds if available
@@ -1299,19 +1371,12 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
         updateSelectionRect(null); // Hide rectangle
         
         if (!state.hasDragged && svg) {
-          // Single click - select note or clear
+          // Single click - select note or clear using distance-based selection
           const svgRect = svg.getBoundingClientRect();
           const svgX = e.clientX - svgRect.left;
           const svgY = e.clientY - svgRect.top;
           
-          let clickedNote: NotePosition | null = null;
-          for (const notePos of notePositionsRef.current) {
-            if (svgX >= notePos.x - 10 && svgX <= notePos.x + notePos.width + 10 &&
-                svgY >= (notePos.staveY || notePos.y) - 10 && svgY <= (notePos.staveY || notePos.y) + 90) {
-              clickedNote = notePos;
-              break;
-            }
-          }
+          const clickedNote = findClickedNote(svgX, svgY, notePositionsRef.current);
           
           if (clickedNote && onSelectionChange) {
             // If clicking on a tied note, select the entire tied group
@@ -1476,15 +1541,190 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
     }
   }, [notation, timeSignature, dragDropMode, onDropPattern]);
 
+  // Helper to announce to screen readers via the live region
+  const announce = useCallback((message: string) => {
+    if (liveRegionRef.current) {
+      liveRegionRef.current.textContent = message;
+    }
+  }, []);
+
+  // Helper to find the next/previous note position based on current selection
+  const findAdjacentNote = useCallback((direction: 'next' | 'prev' | 'first' | 'last'): NotePosition | null => {
+    const positions = notePositionsRef.current;
+    if (positions.length === 0) return null;
+    
+    // Sort by charPosition for consistent navigation
+    const sorted = [...positions].sort((a, b) => a.charPosition - b.charPosition);
+    
+    if (direction === 'first') return sorted[0];
+    if (direction === 'last') return sorted[sorted.length - 1];
+    
+    // If no current selection, return first or last based on direction
+    if (!selection || selection.startCharPosition === null) {
+      return direction === 'next' ? sorted[0] : sorted[sorted.length - 1];
+    }
+    
+    // Find current note index
+    const currentIndex = sorted.findIndex(n => n.charPosition === selection.startCharPosition);
+    if (currentIndex === -1) {
+      return direction === 'next' ? sorted[0] : sorted[sorted.length - 1];
+    }
+    
+    if (direction === 'next') {
+      // Wrap to first if at end
+      return sorted[(currentIndex + 1) % sorted.length];
+    } else {
+      // Wrap to last if at beginning
+      return sorted[(currentIndex - 1 + sorted.length) % sorted.length];
+    }
+  }, [selection]);
+
+  // Keyboard handler for navigation and actions
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    const { key, shiftKey } = e;
+    
+    // Tab navigation - when there's a selection, move focus to palette
+    // for pattern replacement. Otherwise, Tab navigates between notes.
+    if (key === 'Tab' && !shiftKey) {
+      if (selection && selection.startCharPosition !== null && onRequestPaletteFocus) {
+        // Selection exists - programmatically focus the palette
+        e.preventDefault();
+        onRequestPaletteFocus();
+        return;
+      }
+      // No selection - use Tab to navigate between notes
+      e.preventDefault();
+      const targetNote = findAdjacentNote('next');
+      if (targetNote && onSelectionChange) {
+        const start = targetNote.tiedGroupStart ?? targetNote.charPosition;
+        const end = targetNote.tiedGroupEnd ?? (targetNote.charPosition + targetNote.durationInSixteenths);
+        onSelectionChange(start, end, end - start);
+        announce(`Note ${targetNote.noteIndex + 1} of measure ${targetNote.measureIndex + 1}`);
+      }
+      return;
+    }
+    
+    // Shift+Tab navigates backward between notes
+    if (key === 'Tab' && shiftKey) {
+      e.preventDefault();
+      const targetNote = findAdjacentNote('prev');
+      if (targetNote && onSelectionChange) {
+        const start = targetNote.tiedGroupStart ?? targetNote.charPosition;
+        const end = targetNote.tiedGroupEnd ?? (targetNote.charPosition + targetNote.durationInSixteenths);
+        onSelectionChange(start, end, end - start);
+        announce(`Note ${targetNote.noteIndex + 1} of measure ${targetNote.measureIndex + 1}`);
+      }
+      return;
+    }
+    
+    // Arrow key navigation
+    if (key === 'ArrowRight' || key === 'ArrowLeft') {
+      e.preventDefault();
+      const targetNote = findAdjacentNote(key === 'ArrowRight' ? 'next' : 'prev');
+      if (targetNote && onSelectionChange) {
+        const start = targetNote.tiedGroupStart ?? targetNote.charPosition;
+        const end = targetNote.tiedGroupEnd ?? (targetNote.charPosition + targetNote.durationInSixteenths);
+        onSelectionChange(start, end, end - start);
+        announce(`Note ${targetNote.noteIndex + 1} of measure ${targetNote.measureIndex + 1}`);
+      }
+      return;
+    }
+    
+    // Home/End for first/last note
+    if (key === 'Home') {
+      e.preventDefault();
+      const targetNote = findAdjacentNote('first');
+      if (targetNote && onSelectionChange) {
+        const start = targetNote.tiedGroupStart ?? targetNote.charPosition;
+        const end = targetNote.tiedGroupEnd ?? (targetNote.charPosition + targetNote.durationInSixteenths);
+        onSelectionChange(start, end, end - start);
+        announce('First note selected');
+      }
+      return;
+    }
+    
+    if (key === 'End') {
+      e.preventDefault();
+      const targetNote = findAdjacentNote('last');
+      if (targetNote && onSelectionChange) {
+        const start = targetNote.tiedGroupStart ?? targetNote.charPosition;
+        const end = targetNote.tiedGroupEnd ?? (targetNote.charPosition + targetNote.durationInSixteenths);
+        onSelectionChange(start, end, end - start);
+        announce('Last note selected');
+      }
+      return;
+    }
+    
+    // Delete/Backspace to delete selection
+    if ((key === 'Delete' || key === 'Backspace') && selection && selection.startCharPosition !== null) {
+      e.preventDefault();
+      if (onDeleteSelection) {
+        onDeleteSelection();
+        announce('Note deleted');
+      }
+      return;
+    }
+    
+    // Escape to clear selection and blur
+    if (key === 'Escape') {
+      e.preventDefault();
+      if (selection && selection.startCharPosition !== null && onSelectionChange) {
+        onSelectionChange(null, null, 0);
+        announce('Selection cleared');
+      }
+      // Blur the container
+      containerRef.current?.blur();
+      return;
+    }
+    
+    // Select all with Cmd/Ctrl+A
+    if (key === 'a' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      const positions = notePositionsRef.current;
+      if (positions.length > 0 && onSelectionChange) {
+        const sorted = [...positions].sort((a, b) => a.charPosition - b.charPosition);
+        const first = sorted[0];
+        const last = sorted[sorted.length - 1];
+        const start = first.charPosition;
+        const end = last.charPosition + last.durationInSixteenths;
+        onSelectionChange(start, end, end - start);
+        announce(`All ${sorted.length} notes selected`);
+      }
+      return;
+    }
+  }, [selection, onSelectionChange, onDeleteSelection, onRequestPaletteFocus, findAdjacentNote, announce]);
+
   if (rhythm.measures.length === 0) {
     return null;
   }
+
+  // Generate selection description for screen readers
+  const getSelectionDescription = (): string => {
+    if (!selection || selection.startCharPosition === null) {
+      return 'No notes selected';
+    }
+    const noteCount = notePositionsRef.current.filter(
+      n => n.charPosition >= selection.startCharPosition! && 
+           n.charPosition < selection.endCharPosition!
+    ).length;
+    if (noteCount === 1) {
+      return 'One note selected';
+    }
+    return `${noteCount} notes selected`;
+  };
 
   return (
     <div 
       ref={containerRef} 
       className="vexflow-container"
+      // Accessibility: Make focusable and add ARIA attributes
+      tabIndex={0}
+      role="application"
+      aria-label="Rhythm notation editor. Use arrow keys to navigate notes, Delete to remove, Escape to clear selection."
+      aria-roledescription="notation editor"
+      aria-describedby="notation-live-region"
       onMouseDown={handleContainerMouseDown}
+      onKeyDown={handleKeyDown}
       onDragOver={handleContainerDragOver}
       onDragLeave={handleContainerDragLeave}
       onDrop={handleContainerDrop}
@@ -1494,8 +1734,31 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
         padding: '20px 0',
         position: 'relative', // Enable absolute positioning for selection overlay
         cursor: 'crosshair',
+        outline: 'none', // We'll use custom focus styling
       }}
     >
+      {/* ARIA live region for screen reader announcements */}
+      <div
+        ref={liveRegionRef}
+        id="notation-live-region"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        style={{
+          position: 'absolute',
+          width: '1px',
+          height: '1px',
+          padding: 0,
+          margin: '-1px',
+          overflow: 'hidden',
+          clip: 'rect(0, 0, 0, 0)',
+          whiteSpace: 'nowrap',
+          border: 0,
+        }}
+      >
+        {getSelectionDescription()}
+      </div>
+      
       {/* Selection rectangle overlay - always rendered, visibility controlled via ref */}
       <div
         ref={selectionRectRef}

@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import RhythmInput from './components/RhythmInput';
 import RhythmDisplay from './components/RhythmDisplay';
-import NotePalette from './components/NotePalette';
+import NotePalette, { type NotePaletteHandle } from './components/NotePalette';
 import PlaybackControls from './components/PlaybackControls';
 import RhythmInfoCard from './components/RhythmInfoCard';
 import KeyboardShortcutsHelp from './components/KeyboardShortcutsHelp';
@@ -127,6 +127,9 @@ const App: React.FC = () => {
   // Ref for note display container (for click-outside detection)
   const noteDisplayRef = useRef<HTMLDivElement>(null);
   
+  // Ref for note palette (for programmatic focus from notation area)
+  const notePaletteRef = useRef<NotePaletteHandle>(null);
+  
   // Clear selection
   const clearSelection = useCallback(() => {
     setSelectionState({
@@ -138,7 +141,7 @@ const App: React.FC = () => {
     setSelectionDuration(0);
   }, []);
   
-  // Global click handler to clear selection when clicking outside note display
+  // Global click handler to clear selection when clicking outside interactive areas
   useEffect(() => {
     const handleGlobalClick = (e: MouseEvent) => {
       // Only process if there's an active selection
@@ -149,7 +152,19 @@ const App: React.FC = () => {
         return; // Click is inside note display, don't clear
       }
       
-      // Click is outside note display, clear the selection
+      // Check if click is inside the palette sidebar (allow palette interactions)
+      const paletteSidebar = document.querySelector('.palette-sidebar');
+      if (paletteSidebar && paletteSidebar.contains(e.target as Node)) {
+        return; // Click is inside palette, don't clear
+      }
+      
+      // Check if click is inside the rhythm notation input section
+      const inputSection = document.querySelector('.input-section');
+      if (inputSection && inputSection.contains(e.target as Node)) {
+        return; // Click is inside input section, don't clear
+      }
+      
+      // Click is outside all interactive areas, clear the selection
       clearSelection();
     };
     
@@ -180,9 +195,17 @@ const App: React.FC = () => {
     
     setNotationWithoutHistory(result.newNotation);
     
-    // Clear selection after replacement
-    clearSelection();
-  }, [notation, selection, timeSignature, addToHistory, setNotationWithoutHistory, clearSelection]);
+    // Update selection to the newly inserted pattern (instead of clearing)
+    const newStart = selection.startCharPosition;
+    const newEnd = newStart + patternDuration;
+    setSelectionState({
+      startCharPosition: newStart,
+      endCharPosition: newEnd,
+      isSelecting: false,
+      anchorPosition: null,
+    });
+    setSelectionDuration(patternDuration);
+  }, [notation, selection, timeSignature, addToHistory, setNotationWithoutHistory]);
   
   // Handle deleting selected notes
   const handleDeleteSelection = useCallback(() => {
@@ -204,6 +227,20 @@ const App: React.FC = () => {
     // Clear selection after deletion
     clearSelection();
   }, [notation, selection, addToHistory, setNotationWithoutHistory, clearSelection]);
+  
+  // Handle request to focus the note palette (from Tab in notation area)
+  const handleRequestPaletteFocus = useCallback(() => {
+    notePaletteRef.current?.focusFirstButton();
+  }, []);
+  
+  // Handle request to focus the notation area (from Escape in palette)
+  const handleRequestNotationFocus = useCallback(() => {
+    // Find and focus the vexflow container within the note display
+    const container = noteDisplayRef.current?.querySelector('.vexflow-container') as HTMLElement;
+    if (container) {
+      container.focus();
+    }
+  }, []);
   
   // Handle moving selected notes to a new position
   const handleMoveSelection = useCallback((fromStart: number, fromEnd: number, toPosition: number) => {
@@ -715,6 +752,8 @@ const App: React.FC = () => {
             selection={selection}
             onSelectionChange={handleSelectionChange}
             onMoveSelection={handleMoveSelection}
+            onDeleteSelection={handleDeleteSelection}
+            onRequestPaletteFocus={handleRequestPaletteFocus}
           />
 
           {/* Sequencer section */}
@@ -749,6 +788,7 @@ const App: React.FC = () => {
       {/* Right sidebar: Note Palette (full height) */}
       <aside className="palette-sidebar">
         <NotePalette 
+          ref={notePaletteRef}
           onInsertPattern={handleInsertPattern} 
           remainingBeats={remainingBeats}
           timeSignature={timeSignature}
@@ -757,6 +797,7 @@ const App: React.FC = () => {
           selection={selection}
           selectionDuration={selectionDuration}
           onReplaceSelection={handleReplaceSelection}
+          onRequestNotationFocus={handleRequestNotationFocus}
         />
       </aside>
       <KeyboardShortcutsHelp 

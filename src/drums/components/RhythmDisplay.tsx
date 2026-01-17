@@ -18,6 +18,10 @@ interface RhythmDisplayProps {
   onSelectionChange?: (start: number | null, end: number | null, duration: number) => void;
   /** Callback when selection is dragged to a new position */
   onMoveSelection?: (fromStart: number, fromEnd: number, toPosition: number) => void;
+  /** Callback when delete key is pressed on selection */
+  onDeleteSelection?: () => void;
+  /** Callback to request focus on the note palette */
+  onRequestPaletteFocus?: () => void;
 }
 
 const RhythmDisplay = forwardRef<HTMLDivElement, RhythmDisplayProps>(({ 
@@ -32,6 +36,8 @@ const RhythmDisplay = forwardRef<HTMLDivElement, RhythmDisplayProps>(({
   selection = null,
   onSelectionChange,
   onMoveSelection,
+  onDeleteSelection,
+  onRequestPaletteFocus,
 }, ref) => {
   const { measures, isValid, error } = rhythm;
 
@@ -73,6 +79,8 @@ const RhythmDisplay = forwardRef<HTMLDivElement, RhythmDisplayProps>(({
           selection={selection}
           onSelectionChange={onSelectionChange}
           onMoveSelection={onMoveSelection}
+          onDeleteSelection={onDeleteSelection}
+          onRequestPaletteFocus={onRequestPaletteFocus}
         />
         </div>
       </CollapsibleSection>

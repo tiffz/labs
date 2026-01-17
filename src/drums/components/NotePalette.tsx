@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import SimpleVexFlowNote from './SimpleVexFlowNote';
 import { parsePatternToNotes } from '../utils/notationHelpers';
 import { audioPlayer } from '../utils/audioPlayer';
@@ -25,7 +25,23 @@ interface NotePaletteProps {
   selectionDuration?: number;
   /** Callback to replace selection with a pattern */
   onReplaceSelection?: (pattern: string) => void;
+  /** Callback to return focus to the notation area (for Escape key) */
+  onRequestNotationFocus?: () => void;
 }
+
+/** Handle exposed by NotePalette for imperative focus */
+export interface NotePaletteHandle {
+  focusFirstButton: () => void;
+}
+
+// Duration labels for screen readers
+const DURATION_LABELS: Record<number, string> = {
+  1: 'sixteenth',
+  2: 'eighth',
+  3: 'dotted eighth',
+  4: 'quarter',
+  6: 'dotted quarter',
+};
 
 // Global variable to store currently dragged pattern (accessible during dragover)
 let currentDraggedPattern: string | null = null;
@@ -81,7 +97,7 @@ const SINGLE_NOTE_TABLE = {
 
 // Common drum patterns are now imported from data/commonPatterns.ts
 
-const NotePalette: React.FC<NotePaletteProps> = ({ 
+const NotePalette = forwardRef<NotePaletteHandle, NotePaletteProps>(({ 
   onInsertPattern, 
   remainingBeats,
   dragDropMode = 'replace',
@@ -89,14 +105,72 @@ const NotePalette: React.FC<NotePaletteProps> = ({
   selection,
   selectionDuration = 0,
   onReplaceSelection,
-}) => {
+  onRequestNotationFocus,
+}, ref) => {
   const [soundPreviewEnabled, setSoundPreviewEnabled] = useState(false);
+  
+  // Keyboard navigation state for single notes grid (row, col)
+  const [gridFocus, setGridFocus] = useState<{ row: number; col: number }>({ row: 0, col: 0 });
+  // Keyboard navigation state for common patterns
+  const [patternFocus, setPatternFocus] = useState<number>(0);
+  // Which section is currently focused: 'grid' | 'patterns' | null
+  const [activeSection, setActiveSection] = useState<'grid' | 'patterns' | null>(null);
+  
+  // Refs for buttons
+  const gridButtonRefs = useRef<(HTMLButtonElement | null)[][]>([]);
+  const patternButtonRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const liveRegionRef = useRef<HTMLDivElement>(null);
+  const gridContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Initialize grid refs
+  if (gridButtonRefs.current.length === 0) {
+    gridButtonRefs.current = SINGLE_NOTE_TABLE.rows.map(() => 
+      new Array(SINGLE_NOTE_TABLE.columns.length).fill(null)
+    );
+  }
+  
+  // Expose focus method via ref
+  useImperativeHandle(ref, () => ({
+    focusFirstButton: () => {
+      // Find the first non-disabled button in the grid
+      for (let rowIdx = 0; rowIdx < gridButtonRefs.current.length; rowIdx++) {
+        const row = gridButtonRefs.current[rowIdx];
+        if (!row) continue;
+        for (let colIdx = 0; colIdx < row.length; colIdx++) {
+          const button = row[colIdx];
+          if (button && !button.disabled) {
+            setActiveSection('grid');
+            setGridFocus({ row: rowIdx, col: colIdx });
+            button.focus();
+            return;
+          }
+        }
+      }
+      
+      // Fallback: query for first non-disabled button in grid container
+      if (gridContainerRef.current) {
+        const button = gridContainerRef.current.querySelector('button:not([disabled])') as HTMLButtonElement;
+        if (button) {
+          setActiveSection('grid');
+          setGridFocus({ row: 0, col: 0 });
+          button.focus();
+        }
+      }
+    }
+  }), []);
   
   // Check if there's an active selection
   const hasSelection = selection && 
     selection.startCharPosition !== null && 
     selection.endCharPosition !== null &&
     selection.startCharPosition !== selection.endCharPosition;
+  
+  // Announce to screen readers
+  const announce = useCallback((message: string) => {
+    if (liveRegionRef.current) {
+      liveRegionRef.current.textContent = message;
+    }
+  }, []);
 
   // Helper to create pattern string
   const createPattern = (sound: string, duration: number): string => {
@@ -145,14 +219,215 @@ const NotePalette: React.FC<NotePaletteProps> = ({
     // If there's a selection and a replace handler, use replace mode
     if (hasSelection && onReplaceSelection) {
       onReplaceSelection(pattern);
+      // Return focus to notation after replacement
+      if (onRequestNotationFocus) {
+        onRequestNotationFocus();
+      }
     } else {
       // Otherwise, insert at end
       onInsertPattern(pattern);
     }
   };
 
+  // Get description of a pattern for screen readers
+  const getPatternDescription = useCallback((pattern: string, duration: number): string => {
+    const durationLabel = DURATION_LABELS[duration] || `${duration} sixteenths`;
+    const isDisabled = !canAddPattern(duration);
+    const action = hasSelection ? 'replace selection' : 'insert';
+    
+    if (isDisabled) {
+      return `${pattern}, ${durationLabel}, disabled - pattern too long`;
+    }
+    return `${pattern}, ${durationLabel}. Press Enter to ${action}.`;
+  }, [hasSelection, canAddPattern]);
+
+  // Keyboard handler for the single notes grid
+  const handleGridKeyDown = useCallback((e: React.KeyboardEvent) => {
+    const { key } = e;
+    
+    const numRows = SINGLE_NOTE_TABLE.rows.length;
+    const numCols = SINGLE_NOTE_TABLE.columns.length;
+    
+    let newRow = gridFocus.row;
+    let newCol = gridFocus.col;
+    
+    switch (key) {
+      case 'ArrowUp':
+        e.preventDefault();
+        newRow = (gridFocus.row - 1 + numRows) % numRows;
+        break;
+      case 'ArrowDown':
+        e.preventDefault();
+        newRow = (gridFocus.row + 1) % numRows;
+        break;
+      case 'ArrowLeft':
+        e.preventDefault();
+        newCol = (gridFocus.col - 1 + numCols) % numCols;
+        break;
+      case 'ArrowRight':
+        e.preventDefault();
+        newCol = (gridFocus.col + 1) % numCols;
+        break;
+      case 'Enter':
+      case ' ': {
+        e.preventDefault();
+        const btn = gridButtonRefs.current[gridFocus.row]?.[gridFocus.col];
+        if (btn && !btn.disabled) {
+          btn.click();
+        }
+        return;
+      }
+      case 'Tab':
+        if (!e.shiftKey) {
+          // Tab to patterns section - focus first pattern button (even if disabled)
+          e.preventDefault();
+          setActiveSection('patterns');
+          setPatternFocus(0);
+          patternButtonRefs.current[0]?.focus();
+        }
+        return;
+      case 'Escape':
+        e.preventDefault();
+        // Return focus to notation area
+        setActiveSection(null);
+        if (onRequestNotationFocus) {
+          onRequestNotationFocus();
+        } else {
+          (e.currentTarget as HTMLElement).blur();
+        }
+        return;
+      default:
+        return;
+    }
+    
+    if (newRow !== gridFocus.row || newCol !== gridFocus.col) {
+      setGridFocus({ row: newRow, col: newCol });
+      gridButtonRefs.current[newRow]?.[newCol]?.focus();
+      
+      // Announce the new position
+      const row = SINGLE_NOTE_TABLE.rows[newRow];
+      const col = SINGLE_NOTE_TABLE.columns[newCol];
+      const pattern = createPattern(col.sound, row.duration);
+      announce(getPatternDescription(pattern, row.duration));
+    }
+  }, [gridFocus, announce, getPatternDescription, createPattern, onRequestNotationFocus]);
+
+  // Keyboard handler for the common patterns section
+  const handlePatternsKeyDown = useCallback((e: React.KeyboardEvent) => {
+    const { key } = e;
+    const numPatterns = COMMON_PATTERNS.length;
+    
+    let newIndex = patternFocus;
+    
+    switch (key) {
+      case 'ArrowLeft':
+      case 'ArrowUp':
+        e.preventDefault();
+        newIndex = (patternFocus - 1 + numPatterns) % numPatterns;
+        break;
+      case 'ArrowRight':
+      case 'ArrowDown':
+        e.preventDefault();
+        newIndex = (patternFocus + 1) % numPatterns;
+        break;
+      case 'Enter':
+      case ' ': {
+        e.preventDefault();
+        const btn = patternButtonRefs.current[patternFocus];
+        if (btn && !btn.disabled) {
+          btn.click();
+        }
+        return;
+      }
+      case 'Tab':
+        if (e.shiftKey) {
+          // Shift+Tab back to grid section - find a non-disabled button
+          e.preventDefault();
+          setActiveSection('grid');
+          // Try to focus the last focused grid position, or find first non-disabled
+          const currentBtn = gridButtonRefs.current[gridFocus.row]?.[gridFocus.col];
+          if (currentBtn && !currentBtn.disabled) {
+            currentBtn.focus();
+          } else {
+            // Find first non-disabled button in grid
+            for (let r = 0; r < gridButtonRefs.current.length; r++) {
+              const row = gridButtonRefs.current[r];
+              if (!row) continue;
+              for (let c = 0; c < row.length; c++) {
+                const innerBtn = row[c];
+                if (innerBtn && !innerBtn.disabled) {
+                  setGridFocus({ row: r, col: c });
+                  innerBtn.focus();
+                  return;
+                }
+              }
+            }
+          }
+        }
+        return;
+      case 'Escape':
+        e.preventDefault();
+        // Return focus to notation area
+        setActiveSection(null);
+        if (onRequestNotationFocus) {
+          onRequestNotationFocus();
+        } else {
+          (e.currentTarget as HTMLElement).blur();
+        }
+        return;
+      default:
+        return;
+    }
+    
+    if (newIndex !== patternFocus) {
+      setPatternFocus(newIndex);
+      patternButtonRefs.current[newIndex]?.focus();
+      
+      // Announce the new pattern
+      const pattern = COMMON_PATTERNS[newIndex];
+      const duration = getPatternDuration(pattern);
+      announce(getPatternDescription(pattern, duration));
+    }
+  }, [patternFocus, gridFocus, announce, getPatternDescription, onRequestNotationFocus]);
+
+  // Handle focus entering the grid section
+  const handleGridFocus = useCallback(() => {
+    setActiveSection('grid');
+    if (hasSelection) {
+      announce(`Single notes grid. Selection is ${selectionDuration} sixteenths. Use arrow keys to navigate, Enter to replace.`);
+    }
+  }, [hasSelection, selectionDuration, announce]);
+
+  // Handle focus entering the patterns section
+  const handlePatternsFocus = useCallback(() => {
+    setActiveSection('patterns');
+    if (hasSelection) {
+      announce(`Common patterns. Selection is ${selectionDuration} sixteenths. Use arrow keys to navigate, Enter to replace.`);
+    }
+  }, [hasSelection, selectionDuration, announce]);
+
   return (
     <div className={`note-palette ${hasSelection ? 'has-selection' : ''}`}>
+      {/* ARIA live region for screen reader announcements */}
+      <div
+        ref={liveRegionRef}
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+        style={{
+          position: 'absolute',
+          width: '1px',
+          height: '1px',
+          padding: 0,
+          margin: '-1px',
+          overflow: 'hidden',
+          clip: 'rect(0, 0, 0, 0)',
+          whiteSpace: 'nowrap',
+          border: 0,
+        }}
+      />
+      
       <div className="palette-header">
         <div className="palette-title-group">
           <h3>Note Palette</h3>
@@ -190,9 +465,15 @@ const NotePalette: React.FC<NotePaletteProps> = ({
       </div>
 
       <div className="palette-section single-notes-section">
-        <h4 className="palette-section-title">Single Notes</h4>
-        <div className="note-table">
-        <table>
+        <h4 className="palette-section-title" id="single-notes-label">Single Notes</h4>
+        <div 
+          ref={gridContainerRef}
+          className="note-table"
+          role="grid"
+          aria-labelledby="single-notes-label"
+          onFocus={handleGridFocus}
+        >
+        <table role="presentation">
           <thead>
             <tr>
               {SINGLE_NOTE_TABLE.columns.map((col, idx) => (
@@ -270,11 +551,22 @@ const NotePalette: React.FC<NotePaletteProps> = ({
                         ? 'Click disabled (would exceed measure length), but drag and drop still works' 
                         : `Insert ${displaySymbol} ${col.label}`);
                   
+                  const isFocused = activeSection === 'grid' && gridFocus.row === rowIdx && gridFocus.col === colIdx;
+                  const durationLabel = DURATION_LABELS[row.duration] || `${row.duration} sixteenths`;
+                  const ariaLabel = `${col.label} ${durationLabel}${isDisabled ? ', disabled' : ''}`;
+                  
                   return (
-                    <td key={colIdx}>
+                    <td key={colIdx} role="gridcell">
                         <button
+                          ref={(el) => {
+                            if (!gridButtonRefs.current[rowIdx]) {
+                              gridButtonRefs.current[rowIdx] = [];
+                            }
+                            gridButtonRefs.current[rowIdx][colIdx] = el;
+                          }}
                           className={`palette-button-simple notation-button ${hasSelection ? 'selection-mode' : ''} ${exactFit ? 'exact-fit' : ''}`}
                           onClick={() => !isDisabled && handleInsertPattern(pattern)}
+                          onKeyDown={handleGridKeyDown}
                           onDragStart={(e) => {
                             // Always allow drag and drop, even if clicking is disabled
                             // Drag and drop can replace notes or insert in the middle, not just at the end
@@ -284,6 +576,8 @@ const NotePalette: React.FC<NotePaletteProps> = ({
                           draggable={true}
                           disabled={isDisabled}
                           title={titleText}
+                          tabIndex={isFocused ? 0 : -1}
+                          aria-label={ariaLabel}
                         >
                         <span className="note-symbol">{displaySymbol}</span>
                       </button>
@@ -298,12 +592,19 @@ const NotePalette: React.FC<NotePaletteProps> = ({
       </div>
 
       <div className="palette-section common-patterns-section">
-        <h4 className="palette-section-title">Common Patterns</h4>
-      <div className="palette-grid common-patterns">
+        <h4 className="palette-section-title" id="common-patterns-label">Common Patterns</h4>
+      <div 
+        className="palette-grid common-patterns"
+        role="toolbar"
+        aria-labelledby="common-patterns-label"
+        onFocus={handlePatternsFocus}
+      >
         {COMMON_PATTERNS.map((pattern, index) => {
           const duration = getPatternDuration(pattern);
           const isDisabled = !canAddPattern(duration);
           const exactFit = isExactFit(duration);
+          const isFocused = activeSection === 'patterns' && patternFocus === index;
+          const durationLabel = DURATION_LABELS[duration] || `${duration} sixteenths`;
           const titleText = hasSelection
             ? (isDisabled
                 ? 'Pattern too long for selection'
@@ -317,8 +618,10 @@ const NotePalette: React.FC<NotePaletteProps> = ({
           return (
             <button
               key={index}
+              ref={(el) => { patternButtonRefs.current[index] = el; }}
               className={`palette-button notation-button ${hasSelection ? 'selection-mode' : ''} ${exactFit ? 'exact-fit' : ''}`}
               onClick={() => !isDisabled && handleInsertPattern(pattern)}
+              onKeyDown={handlePatternsKeyDown}
               onDragStart={(e) => {
                 // Always allow drag and drop, even if clicking is disabled
                 // Drag and drop can replace notes or insert in the middle, not just at the end
@@ -328,6 +631,8 @@ const NotePalette: React.FC<NotePaletteProps> = ({
               draggable={true}
               disabled={isDisabled}
               title={titleText}
+              tabIndex={isFocused ? 0 : -1}
+              aria-label={`Pattern ${pattern}, ${durationLabel}${isDisabled ? ', disabled' : ''}`}
             >
               <SimpleVexFlowNote pattern={pattern} width={85} height={60} />
             </button>
@@ -337,7 +642,9 @@ const NotePalette: React.FC<NotePaletteProps> = ({
       </div>
     </div>
   );
-};
+});
+
+NotePalette.displayName = 'NotePalette';
 
 export default NotePalette;
 

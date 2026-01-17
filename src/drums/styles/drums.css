@@ -1519,6 +1519,19 @@
     line-height: 1; /* Reduce line height for tighter spacing */
   }
 
+  /* Focus styling for keyboard navigation accessibility */
+  /* Subtle inset outline only - no background change */
+  .vexflow-container:focus {
+    outline: none;
+  }
+
+  /* Focus-visible for keyboard-only focus */
+  .vexflow-container:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 1px rgba(147, 51, 234, 0.25);
+    border-radius: 8px;
+  }
+
   .vexflow-container svg {
     display: block; /* Remove inline spacing */
     height: auto;
@@ -2053,6 +2066,13 @@
   /* Note table layout */
   .note-table {
     overflow-x: auto;
+    border-radius: 8px;
+    transition: box-shadow 0.15s ease;
+  }
+
+  /* Subtle focus indicator when navigating the grid with keyboard */
+  .note-table:focus-within {
+    box-shadow: inset 0 0 0 1px rgba(147, 51, 234, 0.3);
   }
 
   .note-table table {
@@ -2169,6 +2189,16 @@
     box-shadow: 0 1px 4px rgba(147, 51, 234, 0.2);
   }
 
+  /* Focus styling for keyboard navigation */
+  .palette-button-simple:focus {
+    outline: none;
+  }
+
+  .palette-button-simple:focus-visible {
+    outline: 2px solid var(--primary-purple);
+    outline-offset: 1px;
+  }
+
   .note-symbol {
     font-family: 'Noto Music', serif;
     font-size: 1.5rem;
@@ -2203,6 +2233,13 @@
   .palette-grid {
     display: grid;
     gap: 0.5rem;
+    border-radius: 8px;
+    transition: box-shadow 0.15s ease;
+  }
+
+  /* Subtle focus indicator when navigating with keyboard */
+  .palette-grid:focus-within {
+    box-shadow: inset 0 0 0 1px rgba(147, 51, 234, 0.3);
   }
 
   .palette-grid.single-notes {
@@ -2267,6 +2304,16 @@
 
   .palette-button:active {
     transform: translateY(0);
+  }
+
+  /* Focus styling for keyboard navigation */
+  .palette-button:focus {
+    outline: none;
+  }
+
+  .palette-button:focus-visible {
+    outline: 2px solid var(--primary-purple);
+    outline-offset: 1px;
   }
 
   .palette-button.notation-button {
@@ -2995,22 +3042,22 @@
     font-weight: 500;
   }
 
+  /* Selection mode: subtle indication that palette is in selection context */
+  /* The context is shown via the subtitle text - individual buttons don't need extra styling */
   .palette-button-simple.selection-mode,
   .palette-button.selection-mode {
-    border-color: var(--primary-purple);
+    /* Keep default styling - context shown via exact-fit highlighting */
   }
 
+  /* Exact-fit styling removed - disabled/enabled state is sufficient indication */
   .palette-button-simple.exact-fit,
   .palette-button.exact-fit {
-    background: #faf5ff;
-    border-color: var(--primary-purple);
-    border-width: 2px;
+    /* No special styling - users can see which buttons are enabled */
   }
 
   .palette-button-simple.exact-fit:hover:not(:disabled),
   .palette-button.exact-fit:hover:not(:disabled) {
-    background: #f3e8ff;
-    transform: scale(1.05);
+    /* Use default hover styling */
   }
 
   /* Selection highlight animation */
