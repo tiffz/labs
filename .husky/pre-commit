@@ -4,8 +4,16 @@
 if git diff --cached --name-only --quiet -- '*.ts' '*.tsx' '*.js' '*.jsx' '*.json' 'package*.json' 'vite.config.*' 'vitest.config.*' 'tsconfig*.json' 'eslint.config.*'; then
   echo "No TypeScript/JavaScript files changed, skipping tests..."
 else
-  echo "TypeScript/JavaScript files detected, running tests..."
-  npm test
+  # Check if beat-related files are staged (for conditional benchmark)
+  BEAT_FILES_CHANGED=$(git diff --cached --name-only | grep -E '^src/beat/' | head -1)
+
+  if [ -n "$BEAT_FILES_CHANGED" ]; then
+    echo "Beat finder files changed, running full tests including benchmarks..."
+    INCLUDE_BEAT_BENCHMARK=true npm test
+  else
+    echo "No beat finder changes, skipping benchmark tests..."
+    npm test
+  fi
 fi
 
 # Run lint-staged for changed files (this is already optimized to only run on changed files)

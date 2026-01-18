@@ -44,6 +44,8 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Need history to detect file changes
       
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -56,6 +58,24 @@ jobs:
       run: |
         node --version
         npm --version
+
+    - name: Check for beat file changes
+      id: beat-changes
+      run: |
+        # For PRs, compare against base branch; for pushes, compare against previous commit
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          BASE_REF="origin/${{ github.base_ref }}"
+        else
+          BASE_REF="${{ github.event.before }}"
+        fi
+        
+        if git diff --name-only "$BASE_REF" HEAD 2>/dev/null | grep -q '^src/beat/'; then
+          echo "beat_changed=true" >> $GITHUB_OUTPUT
+          echo "Beat files changed - will run full benchmarks"
+        else
+          echo "beat_changed=false" >> $GITHUB_OUTPUT
+          echo "No beat file changes - will skip benchmarks"
+        fi
         
     - name: Install dependencies
       run: |
@@ -71,6 +91,8 @@ jobs:
       run: npm run knip
       
     - name: Run tests
+      env:
+        INCLUDE_BEAT_BENCHMARK: ${{ steps.beat-changes.outputs.beat_changed }}
       run: npm test
       
     - name: Build project

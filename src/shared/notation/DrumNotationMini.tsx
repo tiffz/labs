@@ -182,55 +182,81 @@ function createBeamsFromBeatGroups(
 
 /**
  * Apply colors to all SVG elements - force all colors regardless of current value
- * Uses both attributes and inline styles with important flags
+ * For elements inside notes/beams, we use lower priority styling so highlighting can override.
  */
 function applyColorsToSvg(svg: SVGSVGElement, style: NotationStyle): void {
-  // Helper to force color on an element
-  const forceColors = (el: SVGElement, stroke: string | null, fill: string | null) => {
-    if (stroke) {
-      el.setAttribute('stroke', stroke);
-      el.style.setProperty('stroke', stroke, 'important');
-    }
-    if (fill) {
-      el.setAttribute('fill', fill);
-      el.style.setProperty('fill', fill, 'important');
-    }
-  };
-
   // Process ALL elements in the SVG
   svg.querySelectorAll('*').forEach(el => {
     const svgEl = el as SVGElement;
     const tagName = svgEl.tagName.toLowerCase();
     const currentFill = svgEl.getAttribute('fill');
     
+    // Check if this element is inside a note or beam group
+    // These elements need lower-priority styling so highlighting can override
+    const isInsideNote = svgEl.closest('.vf-stavenote') !== null;
+    const isInsideBeam = svgEl.closest('.vf-beam') !== null;
+    const needsLowPriority = isInsideNote || isInsideBeam;
+    
     switch (tagName) {
       case 'path':
       case 'polygon':
       case 'polyline':
-        // Paths: stroke + fill (if not none)
-        forceColors(svgEl, style.staffColor, currentFill !== 'none' ? style.noteColor : null);
+        // For note/beam elements: only set style (not attribute) without !important
+        // This allows setStyle/setKeyStyle to override
+        if (needsLowPriority) {
+          svgEl.style.stroke = style.staffColor;
+          if (currentFill !== 'none') {
+            svgEl.style.fill = style.noteColor;
+          }
+        } else {
+          svgEl.setAttribute('stroke', style.staffColor);
+          svgEl.style.setProperty('stroke', style.staffColor, 'important');
+          if (currentFill !== 'none') {
+            svgEl.setAttribute('fill', style.noteColor);
+            svgEl.style.setProperty('fill', style.noteColor, 'important');
+          }
+        }
         break;
         
       case 'line':
-        // Lines: stroke only
-        forceColors(svgEl, style.staffColor, null);
+        // Lines: stroke only - same low priority for note/beam elements
+        if (needsLowPriority) {
+          svgEl.style.stroke = style.staffColor;
+        } else {
+          svgEl.setAttribute('stroke', style.staffColor);
+          svgEl.style.setProperty('stroke', style.staffColor, 'important');
+        }
         break;
         
       case 'rect':
-        // Rectangles: stroke + fill (if not none) - includes barlines
-        forceColors(svgEl, style.staffColor, currentFill !== 'none' ? style.noteColor : null);
+        // Rectangles: stroke + fill (if not none)
+        if (needsLowPriority) {
+          svgEl.style.stroke = style.staffColor;
+          if (currentFill !== 'none') {
+            svgEl.style.fill = style.noteColor;
+          }
+        } else {
+          svgEl.setAttribute('stroke', style.staffColor);
+          svgEl.style.setProperty('stroke', style.staffColor, 'important');
+          if (currentFill !== 'none') {
+            svgEl.setAttribute('fill', style.noteColor);
+            svgEl.style.setProperty('fill', style.noteColor, 'important');
+          }
+        }
         break;
         
       case 'ellipse':
       case 'circle':
-        // Noteheads
-        forceColors(svgEl, style.staffColor, style.noteColor);
+        // Noteheads - always low priority
+        svgEl.style.stroke = style.staffColor;
+        svgEl.style.fill = style.noteColor;
         break;
         
       case 'text':
       case 'tspan':
-        // Text elements
-        forceColors(svgEl, null, style.textColor);
+        // Text elements - high priority
+        svgEl.setAttribute('fill', style.textColor);
+        svgEl.style.setProperty('fill', style.textColor, 'important');
         break;
         
       case 'g':
@@ -332,6 +358,28 @@ const DrumNotationMini: React.FC<DrumNotationMiniProps> = ({
           Dot.buildAndAttach([staveNote], { all: true });
         }
 
+        // Apply highlight style BEFORE drawing (VexFlow's built-in styling)
+        const isActive = currentNoteIndex === noteIndex;
+        if (isActive) {
+          // setStyle affects stems and flags
+          staveNote.setStyle({
+            fillStyle: resolvedStyle.highlightColor,
+            strokeStyle: resolvedStyle.highlightColor,
+          });
+          // setKeyStyle affects noteheads - apply to all keys (usually just one for drums)
+          try {
+            const keys = staveNote.getKeys();
+            keys.forEach((_, keyIndex) => {
+              staveNote.setKeyStyle(keyIndex, {
+                fillStyle: resolvedStyle.highlightColor,
+                strokeStyle: resolvedStyle.highlightColor,
+              });
+            });
+          } catch {
+            // setKeyStyle might fail in some edge cases
+          }
+        }
+
         staveNoteRefs.push({ staveNote, note, index: noteIndex });
         return staveNote;
       });
@@ -358,7 +406,8 @@ const DrumNotationMini: React.FC<DrumNotationMiniProps> = ({
         beams.forEach(beam => {
           try {
             beam.setContext(context).draw();
-            (beam.getNotes() as StaveNote[]).forEach(n => beamedNotes.add(n));
+            const beamNotes = beam.getNotes() as StaveNote[];
+            beamNotes.forEach(n => beamedNotes.add(n));
           } catch { /* ignore */ }
         });
 
@@ -376,51 +425,123 @@ const DrumNotationMini: React.FC<DrumNotationMiniProps> = ({
             }
           });
 
-          // Post-process notes: highlighting and drum symbols
+          // Post-process notes: draw drum symbols and add highlighting
+          const highlightColor = resolvedStyle.highlightColor;
+          
           staveNoteRefs.forEach(({ staveNote, note, index }) => {
             const isActive = currentNoteIndex === index;
+            const isBeamed = beamedNotes.has(staveNote);
 
-            // Apply highlight to active note (entire note including stem, head, flags)
+            // Apply highlight to active note
             if (isActive) {
+              const noteX = staveNote.getAbsoluteX();
               const noteEl = staveNote.getSVGElement();
+              
               if (noteEl) {
-                // Mark element for debugging
                 noteEl.setAttribute('data-highlighted', 'true');
                 
-                // Force highlight color on ALL descendant SVG elements
-                // VexFlow uses: path (stems, flags), ellipse (noteheads), rect (dots)
+                // Highlight ALL elements inside the note's SVG group
+                // This includes noteheads (paths in VexFlow 5.x), stems (for unbeamed notes), flags
                 noteEl.querySelectorAll('*').forEach(el => {
                   const svgEl = el as SVGElement;
                   const tagName = svgEl.tagName.toLowerCase();
+                  if (tagName === 'g' || tagName === 'defs') return;
                   
-                  // Skip container and non-renderable elements
-                  if (tagName === 'g' || tagName === 'defs' || tagName === 'title' || tagName === 'desc') return;
-                  
+                  // Set fill for filled elements, stroke for stroked elements
                   const currentFill = svgEl.getAttribute('fill');
+                  if (currentFill && currentFill !== 'none') {
+                    svgEl.style.setProperty('fill', highlightColor, 'important');
+                  }
+                  svgEl.style.setProperty('stroke', highlightColor, 'important');
+                });
+              }
+              
+              // Additional: Find noteheads by searching for filled paths near the note's X position
+              // VexFlow 5.x renders noteheads as path glyphs from SMuFL font
+              const staveY = stave.getYForLine(4); // Bottom staff line - where noteheads are
+              svg.querySelectorAll('path').forEach(pathEl => {
+                const bbox = (pathEl as SVGGraphicsElement).getBBox?.();
+                if (bbox && bbox.width > 0 && bbox.height > 0) {
+                  const pathX = bbox.x + bbox.width / 2;
+                  const pathY = bbox.y + bbox.height / 2;
                   
-                  // Paths need both fill AND stroke for flags (filled) and stems (stroked)
-                  if (tagName === 'path' || tagName === 'polygon' || tagName === 'polyline') {
-                    // Always set fill for paths - flags are filled paths
-                    svgEl.setAttribute('fill', resolvedStyle.highlightColor);
-                    svgEl.style.setProperty('fill', resolvedStyle.highlightColor, 'important');
-                    // Set stroke for stems
-                    svgEl.setAttribute('stroke', resolvedStyle.highlightColor);
-                    svgEl.style.setProperty('stroke', resolvedStyle.highlightColor, 'important');
+                  // Check if this path is near our note's X position and near the staff
+                  // Noteheads are typically small filled paths near the bottom of the staff
+                  const fill = pathEl.getAttribute('fill');
+                  if (fill && fill !== 'none' && 
+                      Math.abs(pathX - noteX) < 12 && 
+                      Math.abs(pathY - staveY) < 25 &&
+                      bbox.width < 20 && bbox.height < 20) {
+                    pathEl.style.setProperty('fill', highlightColor, 'important');
                   }
-                  // Lines (used for ledger lines, ties)
-                  else if (tagName === 'line') {
-                    svgEl.setAttribute('stroke', resolvedStyle.highlightColor);
-                    svgEl.style.setProperty('stroke', resolvedStyle.highlightColor, 'important');
+                }
+              });
+              
+              // For beamed notes, highlight the stem
+              // Method 1: Try to get stem directly from VexFlow's StaveNote API
+              try {
+                const stem = (staveNote as unknown as { getStem?: () => { getSVGElement?: () => SVGElement } }).getStem?.();
+                if (stem) {
+                  const stemEl = stem.getSVGElement?.();
+                  if (stemEl) {
+                    stemEl.querySelectorAll('*').forEach(el => {
+                      (el as SVGElement).style.setProperty('stroke', highlightColor, 'important');
+                      (el as SVGElement).style.setProperty('fill', highlightColor, 'important');
+                    });
+                    stemEl.style.setProperty('stroke', highlightColor, 'important');
                   }
-                  // Noteheads are typically ellipses - force fill
-                  else if (tagName === 'ellipse' || tagName === 'circle') {
-                    svgEl.setAttribute('fill', resolvedStyle.highlightColor);
-                    svgEl.style.setProperty('fill', resolvedStyle.highlightColor, 'important');
+                }
+              } catch { /* getStem might not exist */ }
+              
+              // Method 2: Search for VexFlow stem class elements near this note
+              svg.querySelectorAll('.vf-stem, [class*="stem"]').forEach(el => {
+                const bbox = (el as SVGGraphicsElement).getBBox?.();
+                if (bbox) {
+                  const elX = bbox.x + bbox.width / 2;
+                  if (Math.abs(elX - noteX) < 12) {
+                    (el as SVGElement).style.setProperty('stroke', highlightColor, 'important');
+                    (el as SVGElement).style.setProperty('fill', highlightColor, 'important');
+                    // Also highlight children
+                    el.querySelectorAll('*').forEach(child => {
+                      (child as SVGElement).style.setProperty('stroke', highlightColor, 'important');
+                      (child as SVGElement).style.setProperty('fill', highlightColor, 'important');
+                    });
                   }
-                  // Rectangles (dots, barlines) - only if visible
-                  else if (tagName === 'rect' && currentFill && currentFill !== 'none') {
-                    svgEl.setAttribute('fill', resolvedStyle.highlightColor);
-                    svgEl.style.setProperty('fill', resolvedStyle.highlightColor, 'important');
+                }
+              });
+              
+              // Method 3: For beamed notes, search entire SVG for vertical line/rect elements
+              if (isBeamed) {
+                svg.querySelectorAll('line, rect').forEach(el => {
+                  const tagName = el.tagName.toLowerCase();
+                  
+                  if (tagName === 'line') {
+                    const line = el as SVGLineElement;
+                    const x1 = parseFloat(line.getAttribute('x1') || '0');
+                    const x2 = parseFloat(line.getAttribute('x2') || '0');
+                    const y1 = parseFloat(line.getAttribute('y1') || '0');
+                    const y2 = parseFloat(line.getAttribute('y2') || '0');
+                    
+                    // Check if this is a vertical line at the note's X position
+                    const isVertical = Math.abs(x2 - x1) < 2;
+                    const lineHeight = Math.abs(y2 - y1);
+                    const lineX = (x1 + x2) / 2;
+                    
+                    // Stems are vertical lines, 20-60px tall, at the note's X position
+                    if (isVertical && lineHeight > 15 && lineHeight < 80 && Math.abs(lineX - noteX) < 10) {
+                      line.style.setProperty('stroke', highlightColor, 'important');
+                    }
+                  } else if (tagName === 'rect') {
+                    const rect = el as SVGRectElement;
+                    const bbox = rect.getBBox?.();
+                    if (bbox) {
+                      const rectX = bbox.x + bbox.width / 2;
+                      // Stems as rects are very thin (width < 3) and tall
+                      if (bbox.width < 4 && bbox.height > 15 && Math.abs(rectX - noteX) < 10) {
+                        rect.style.setProperty('fill', highlightColor, 'important');
+                        rect.style.setProperty('stroke', highlightColor, 'important');
+                      }
+                    }
                   }
                 });
               }
