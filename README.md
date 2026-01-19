@@ -82,8 +82,11 @@ labs/
 - **Run tests:**
 
   ```sh
-  npm test              # Run all tests
+  npm test              # Run all tests (standard mode)
+  npm run test:fast     # Fast mode - excludes slow regression tests (~17s vs ~25s)
+  npm run test:full     # Full mode - includes all tests + benchmarks
   npm run test:watch    # Run tests in watch mode for development
+  npm run test:watch:fast  # Watch mode with fast tests only
   npm run test:changed  # Only test if TypeScript/JS files changed since last commit
   ```
 

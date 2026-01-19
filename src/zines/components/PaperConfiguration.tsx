@@ -100,7 +100,7 @@ const PaperConfiguration: React.FC<ExtendedPaperConfigurationProps> = memo(({
         quietArea: bleedConfig.quietArea || (preset.unit === 'mm' ? 6.35 : 0.25), // Preserve or use default
       });
     }
-  }, [onBleedChange]);
+  }, [onBleedChange, bleedConfig]);
 
   const handleBleedValueChange = useCallback((value: number) => {
     if (onBleedChange && bleedConfig) {

@@ -86,8 +86,8 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
     onSplit: onSplitSection,
     onExtend: onExtendSelection,
   } = sectionControls;
-  const chordChanges = chordData?.chordChanges ?? [];
-  const keyChanges = chordData?.keyChanges ?? [];
+  const chordChanges = useMemo(() => chordData?.chordChanges ?? [], [chordData]);
+  const keyChanges = useMemo(() => chordData?.keyChanges ?? [], [chordData]);
   const barRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState<boolean>(false);
 

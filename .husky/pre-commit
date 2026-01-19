@@ -4,20 +4,24 @@
 if git diff --cached --name-only --quiet -- '*.ts' '*.tsx' '*.js' '*.jsx' '*.json' 'package*.json' 'vite.config.*' 'vitest.config.*' 'tsconfig*.json' 'eslint.config.*'; then
   echo "No TypeScript/JavaScript files changed, skipping tests..."
 else
-  # Check if beat-related files are staged (for conditional benchmark)
+  # Check if regression test files or cat app files are staged
+  REGRESSION_FILES_CHANGED=$(git diff --cached --name-only | grep -E '\.regression\.test\.(ts|tsx)$|^src/cats/' | head -1)
   BEAT_FILES_CHANGED=$(git diff --cached --name-only | grep -E '^src/beat/' | head -1)
 
   if [ -n "$BEAT_FILES_CHANGED" ]; then
     echo "Beat finder files changed, running full tests including benchmarks..."
     INCLUDE_BEAT_BENCHMARK=true npm test
-  else
-    echo "No beat finder changes, skipping benchmark tests..."
+  elif [ -n "$REGRESSION_FILES_CHANGED" ]; then
+    echo "Cat/regression files changed, running full tests..."
     npm test
+  else
+    echo "Running fast tests (excluding slow regression tests)..."
+    npm run test:fast
   fi
 fi
 
 # Run lint-staged for changed files (this is already optimized to only run on changed files)
 npx lint-staged
 
-# Run knip strictly to block dead code from entering the repo
-npm run knip
+# Run knip to warn about dead code (non-blocking - CI handles strict enforcement)
+npm run knip -- --no-exit-code

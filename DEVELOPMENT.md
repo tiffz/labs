@@ -73,12 +73,55 @@ GitHub Actions runs full test suite and builds on code changes. Documentation/as
 - Co-located test files alongside source code
 - Comprehensive coverage required
 - E2E tests in `src/<app>/e2e/` per app
+- Regression tests in `src/<app>/regression/` for complex integration testing
+
+### Test Modes
+
+The test suite is optimized for different development scenarios:
+
+| Mode       | Command                   | Duration | Use Case              |
+| ---------- | ------------------------- | -------- | --------------------- |
+| Standard   | `npm test`                | ~25s     | CI, full validation   |
+| Fast       | `npm run test:fast`       | ~17s     | Development iteration |
+| Full       | `npm run test:full`       | ~3min    | Includes benchmarks   |
+| Watch      | `npm run test:watch`      | -        | TDD workflow          |
+| Watch Fast | `npm run test:watch:fast` | -        | Fast TDD workflow     |
+
+**Fast mode** excludes:
+
+- `*.regression.test.{ts,tsx}` - Slow integration tests
+- `HeartSpawningService.test.ts` - Complex animation tests
+
+**Full mode** includes:
+
+- All standard tests
+- BPM detection benchmarks (~2.5 min)
+
+### Pre-commit Hook Behavior
+
+The pre-commit hook intelligently selects test mode:
+
+- **Beat files changed** → Full tests with benchmarks
+- **Cat/regression files changed** → Standard tests
+- **Other files** → Fast tests only
+
+### Regression Test Architecture
+
+Complex regression tests are split into focused files for parallel execution:
+
+- `src/cats/regression/sleep.regression.test.tsx` - Sleep state transitions
+- `src/cats/regression/zzz-positioning.regression.test.tsx` - Z element positioning
+- `src/cats/regression/state-sync.regression.test.tsx` - State synchronization
+
+Shared test utilities: `src/cats/test/regressionTestUtils.tsx`
 
 ## Development Commands
 
 ```bash
 npm run dev          # Start dev server
-npm test             # Run all tests
+npm test             # Run all tests (standard mode)
+npm run test:fast    # Fast tests for development
+npm run test:full    # Full tests including benchmarks
 npm run lint         # Check code quality
 npm run build        # Production build
 ```

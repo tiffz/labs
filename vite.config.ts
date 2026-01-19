@@ -255,6 +255,11 @@ export default defineConfig({
       'dist/**',
       // Expensive benchmark test - only run when beat files change (via INCLUDE_BEAT_BENCHMARK env)
       ...(process.env.INCLUDE_BEAT_BENCHMARK !== 'true' ? ['**/bpmDetectionBenchmark.test.ts'] : []),
+      // Fast mode: exclude slow regression tests for rapid development iteration
+      ...(process.env.FAST_TESTS === 'true' ? [
+        '**/*.regression.test.{ts,tsx}',
+        '**/HeartSpawningService.test.ts',
+      ] : []),
     ],
     testTimeout: 10000, // 10 seconds max per test (reduced from 30s)
     hookTimeout: 5000, // 5 seconds max for setup/teardown (reduced from 30s)

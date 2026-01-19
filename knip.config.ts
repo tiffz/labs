@@ -36,8 +36,9 @@ const config: KnipConfig = {
     // Public scripts loaded by HTML files
     'public/scripts/analytics.js',
     'public/scripts/shared.js',
-    // Test setup files
+    // Test setup files and utilities
     'src/shared/test/setupTests.ts',
+    'src/cats/test/regressionTestUtils.tsx',
     // Shared module barrel exports (may have unused exports that are part of public API)
     'src/shared/audio/index.ts',
     'src/shared/rhythm/index.ts',
@@ -67,7 +68,8 @@ const config: KnipConfig = {
     'src/beat/utils/tempoDetectorCore.ts',
   ],
   ignoreDependencies: [
-    // Dependencies used in HTML files or other non-TS contexts
+    // lint-staged is used by husky pre-commit hook (not imported in TS)
+    'lint-staged',
   ],
   // Ignore exported types that are part of the public API or used in data structures
   ignoreExportsUsedInFile: true,

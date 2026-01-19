@@ -173,23 +173,23 @@ const NotePalette = forwardRef<NotePaletteHandle, NotePaletteProps>(({
   }, []);
 
   // Helper to create pattern string
-  const createPattern = (sound: string, duration: number): string => {
+  const createPattern = useCallback((sound: string, duration: number): string => {
     if (duration === 1) return sound;
     if (sound === '_') {
       return '_'.repeat(duration);
     }
     return sound + '-'.repeat(duration - 1);
-  };
+  }, []);
 
   // Check if pattern can be added (either to end, or fits in selection)
-  const canAddPattern = (patternDuration: number): boolean => {
+  const canAddPattern = useCallback((patternDuration: number): boolean => {
     if (hasSelection) {
       // With selection: pattern must fit within the selection duration
       return patternDuration <= selectionDuration;
     }
     // Without selection: check if pattern fits in remaining beats
     return patternDuration <= remainingBeats;
-  };
+  }, [hasSelection, selectionDuration, remainingBeats]);
   
   // Check if pattern is an exact match for selection duration
   const isExactFit = (patternDuration: number): boolean => {

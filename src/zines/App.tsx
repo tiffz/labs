@@ -418,74 +418,8 @@ const App: React.FC = () => {
   // =============================================
   // FILE UPLOAD HANDLERS
   // =============================================
-  const processUploadedFiles = useCallback(async (files: File[], assignToMinizine = true) => {
-    if (!files.length) return;
-    setIsProcessingFiles(true);
-    
-    try {
-      const newImages: UploadedImage[] = [];
-      
-      // Process files in parallel batches for better performance
-      const batchSize = 4;
-      const fileArray = Array.from(files);
-      
-      for (let i = 0; i < fileArray.length; i += batchSize) {
-        const batch = fileArray.slice(i, i + batchSize);
-        
-        const batchResults = await Promise.all(
-          batch.map(async (file) => {
-            // Skip if file with same name already exists
-            if (sharedImages.some(img => img.file?.name === file.name)) return null;
-            
-            try {
-              const loaded = await loadImage(file);
-              
-              // Downscale if image is too large to improve memory usage
-              const { dataUrl, width, height } = await downscaleIfNeeded(
-                loaded.dataUrl, 
-                loaded.width, 
-                loaded.height
-              );
-              
-              // Generate thumbnail for UI display
-              const thumbnailUrl = await generateThumbnail(dataUrl, 120);
-              
-              return {
-                file,
-                name: file.name,
-                dataUrl,
-                thumbnailUrl,
-                width,
-                height,
-                id: `${file.name}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-              };
-            } catch (error) {
-              console.error(`Failed to load image: ${file.name}`, error);
-              return null;
-            }
-          })
-        );
-        
-        const validResults = batchResults.filter((img): img is NonNullable<typeof img> => img !== null);
-        newImages.push(...validResults);
-        
-        // Yield to main thread between batches
-        await new Promise(resolve => setTimeout(resolve, 0));
-      }
-      
-      if (newImages.length === 0) return;
-      
-      setSharedImages(prev => [...prev, ...newImages]);
-      
-      // Auto-assign to minizine slots
-      if (assignToMinizine) {
-        autoAssignToMinizineSlots(newImages);
-      }
-    } finally {
-      setIsProcessingFiles(false);
-    }
-  }, [sharedImages]);
   
+  // Auto-assign uploaded images to minizine slots based on filename patterns
   const autoAssignToMinizineSlots = useCallback((newImages: UploadedImage[]) => {
     const smartPlaced: Record<string, string> = {};
     const unplacedImages: UploadedImage[] = [];
@@ -621,6 +555,75 @@ const App: React.FC = () => {
       return updated;
     });
   }, []);
+  
+  // Process uploaded files and optionally auto-assign to minizine slots
+  const processUploadedFiles = useCallback(async (files: File[], assignToMinizine = true) => {
+    if (!files.length) return;
+    setIsProcessingFiles(true);
+    
+    try {
+      const newImages: UploadedImage[] = [];
+      
+      // Process files in parallel batches for better performance
+      const batchSize = 4;
+      const fileArray = Array.from(files);
+      
+      for (let i = 0; i < fileArray.length; i += batchSize) {
+        const batch = fileArray.slice(i, i + batchSize);
+        
+        const batchResults = await Promise.all(
+          batch.map(async (file) => {
+            // Skip if file with same name already exists
+            if (sharedImages.some(img => img.file?.name === file.name)) return null;
+            
+            try {
+              const loaded = await loadImage(file);
+              
+              // Downscale if image is too large to improve memory usage
+              const { dataUrl, width, height } = await downscaleIfNeeded(
+                loaded.dataUrl, 
+                loaded.width, 
+                loaded.height
+              );
+              
+              // Generate thumbnail for UI display
+              const thumbnailUrl = await generateThumbnail(dataUrl, 120);
+              
+              return {
+                file,
+                name: file.name,
+                dataUrl,
+                thumbnailUrl,
+                width,
+                height,
+                id: `${file.name}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              };
+            } catch (error) {
+              console.error(`Failed to load image: ${file.name}`, error);
+              return null;
+            }
+          })
+        );
+        
+        const validResults = batchResults.filter((img): img is NonNullable<typeof img> => img !== null);
+        newImages.push(...validResults);
+        
+        // Yield to main thread between batches
+        await new Promise(resolve => setTimeout(resolve, 0));
+      }
+      
+      if (newImages.length === 0) return;
+      
+      setSharedImages(prev => [...prev, ...newImages]);
+      
+      // Auto-assign to minizine slots
+      if (assignToMinizine) {
+        autoAssignToMinizineSlots(newImages);
+      }
+    } finally {
+      setIsProcessingFiles(false);
+    }
+  }, [sharedImages, autoAssignToMinizineSlots]);
   
   const handleFilesSelected = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
