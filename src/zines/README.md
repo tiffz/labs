@@ -1,28 +1,64 @@
-# Minizine Magic Maker
+# Zine Studio
 
-A web application for creating 8-page folded zines. Upload images, arrange them in the correct print layout, and download a high-resolution print-ready sheet.
+A web application for creating print-ready zines and booklets. Supports two modes: **Minizine** (8-page folded zine) and **Booklet** (multi-page saddle-stitched booklet).
 
 ## Features
 
-- **Drag-and-Drop Image Upload**: Easily upload and arrange images in the edit grid
-- **Print Sheet Preview**: High-fidelity canvas preview of the final print layout with exact DPI control
-- **Book Preview**: Realistic page-flipping booklet view to preview your final zine
-- **Paper Configuration**: Set paper size and DPI for precise print control
-- **Smart Image Placement**: Automatic file placement based on naming conventions
+### Minizine Mode
+
+- **8-Page Folded Zine**: Classic one-sheet folded zine format
+- **Drag-and-Drop Upload**: Easy image placement
+- **Print Sheet Preview**: High-fidelity canvas preview with exact DPI control
 - **High-Resolution Export**: Download print-ready PNG files
+
+### Booklet Mode
+
+- **Multi-Page Booklets**: Create booklets of any page count (auto-padded to multiples of 4)
+- **Smart File Naming**: Automatic page detection from filenames (e.g., `front.png`, `page1.png`, `innerback.png`)
+- **Spread Management**: Link/unlink pages as double-page spreads
+- **Blank Page Colors**: Customize fill color for blank/padding pages
+- **Book Preview**: Realistic page-flipping preview
+- **Multiple Export Formats**:
+  - **Mixam Print Ready**: Spreads for professional printing
+  - **Home Duplex**: Booklet-imposed for double-sided home printing
+  - **Digital Distribution**: Sequential pages for digital reading
 
 ## How to Use
 
-1. **Configure Paper**: Set your paper size and DPI settings
-2. **Upload Images**: Drag and drop images into the edit grid (up to 8 images)
-3. **Arrange Pages**: Drag images to reorder them in your zine
-4. **Preview**: Use the book preview to see how your zine will look when folded
-5. **Download**: Export your print sheet as a high-resolution PNG
+### Minizine Mode
 
-## Print Layout
+1. Select "Minizine" mode
+2. Configure paper size and DPI
+3. Upload up to 8 images
+4. Preview and download print sheet
 
-The app automatically arranges images in the correct print imposition layout for an 8-page folded zine. When printed double-sided and folded, pages will appear in the correct order.
+### Booklet Mode
+
+1. Select "Booklet" mode
+2. Configure page size (Mixam presets available)
+3. Upload page images (named for automatic placement)
+4. Use Spreads view to manage page pairings
+5. Use Preview view to see the book
+6. Export in your preferred format
+
+## Page Naming Convention
+
+For automatic page placement, name your files:
+
+- `front.png` or `cover.png` - Front cover
+- `innerfront.png` - Inside front cover
+- `page1.png`, `page2.png`, etc. - Content pages
+- `innerback.png` - Inside back cover
+- `back.png` - Back cover
+- `page2-page3.png` - Double-page spread
+
+## Architecture
+
+See `GEMINI.md` for technical architecture and `DEVELOPMENT.md` for architecture decision records.
 
 ## Development
 
-See `GEMINI.md` for technical architecture details.
+```bash
+npm run dev          # Start dev server
+npm test src/zines   # Run tests (123+ tests)
+```

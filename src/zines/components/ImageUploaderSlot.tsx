@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import type { ImageUploadProps } from '../types';
 import ZinePageDisplay from './ZinePageDisplay';
+import IconButton from './IconButton';
 
 const ImageUploaderSlot: React.FC<ImageUploadProps> = ({
   slot,
@@ -165,12 +166,8 @@ const ImageUploaderSlot: React.FC<ImageUploadProps> = ({
           {!isPreviewMode && (
             <div className="slot-controls">
               <div className="top-right-controls">
-                <button onClick={handleReplace} className="icon-button replace-button" title="Replace Image">
-                  <span>🔁</span>
-                </button>
-                <button onClick={handleRemove} className="icon-button remove-button" title="Remove image">
-                  <span>🗑️</span>
-                </button>
+                <IconButton onClick={handleReplace} icon="replace" title="Replace Image" />
+                <IconButton onClick={handleRemove} icon="remove" title="Remove image" variant="danger" />
               </div>
               <div className="image-fit-controls z-20">
                 <button

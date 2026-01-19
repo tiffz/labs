@@ -1,7 +1,7 @@
 import type { ParsedFile } from '../types';
 
 /**
- * Extracts page number from filename using Mixam naming conventions.
+ * Extracts page number from filename using naming conventions.
  * Handles flexible naming patterns:
  * - "page1.png", "page_1.png", "1.png" for single pages
  * - "file1.pdf", "page2.pdf" for numbered pages
@@ -205,7 +205,7 @@ export function detectSpread(filename: string): { isSpread: boolean; pages?: [nu
 }
 
 /**
- * Parses a file and extracts page information according to Mixam conventions
+ * Parses a file and extracts page information according to naming conventions
  */
 export function parseFile(file: File): ParsedFile {
   const pageNumber = extractPageNumber(file.name);
@@ -222,7 +222,7 @@ export function parseFile(file: File): ParsedFile {
 }
 
 /**
- * Sorts parsed files into correct page order for Mixam
+ * Sorts parsed files into correct page order
  * Special keywords are handled: front comes first, then numbered pages, then back/inner/rear/last
  */
 export function sortFilesByPageOrder(files: ParsedFile[]): ParsedFile[] {
@@ -253,4 +253,3 @@ export function parseAndSortFiles(files: File[]): ParsedFile[] {
   const parsed = files.map(parseFile);
   return sortFilesByPageOrder(parsed);
 }
-

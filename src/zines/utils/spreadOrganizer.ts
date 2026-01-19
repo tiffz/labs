@@ -1,9 +1,9 @@
-import type { PageInfo, SpreadInfo } from '../types';
+import type { BookletPageInfo, SpreadInfo } from '../types';
 
 export interface PreviewSpread {
   type: 'explicit-spread' | 'auto-paired-spread' | 'single-page';
-  leftPage?: PageInfo;
-  rightPage?: PageInfo;
+  leftPage?: BookletPageInfo;
+  rightPage?: BookletPageInfo;
   explicitSpread?: SpreadInfo;
   pageNumbers: [number, number] | [number];
   displayLabel: string;
@@ -15,14 +15,14 @@ export interface PreviewSpread {
  * Inner Front Cover = logical page 0 (even, left), Page 1 = odd (right), etc.
  */
 export function organizeIntoSpreads(
-  pages: PageInfo[],
+  pages: BookletPageInfo[],
   spreads: SpreadInfo[]
 ): PreviewSpread[] {
   const result: PreviewSpread[] = [];
   
   // Separate pages by type
-  const regularPages: PageInfo[] = [];
-  const specialPages: PageInfo[] = [];
+  const regularPages: BookletPageInfo[] = [];
+  const specialPages: BookletPageInfo[] = [];
   
   for (const page of pages) {
     const pageNum = page.parsedFile.pageNumber ?? 9999;
@@ -49,7 +49,7 @@ export function organizeIntoSpreads(
   });
   
   // Create a map of page numbers to pages for quick lookup
-  const pageMap = new Map<number, PageInfo>();
+  const pageMap = new Map<number, BookletPageInfo>();
   for (const page of regularPages) {
     const pageNum = page.parsedFile.pageNumber;
     if (pageNum !== null) {
@@ -180,6 +180,25 @@ export function organizeIntoSpreads(
       pagesInSpreads.add(1);
       pagesInSpreadsSpecial.add(-0.5); // Mark inner front as used
     }
+  }
+  
+  // Handle Page 1 without Inner Front Cover
+  // If there's no inner front cover, Page 1 should be shown on the right side alone
+  // or paired with Page 2 depending on the layout
+  const hasPage1 = regularPages.some(p => p.parsedFile.pageNumber === 1);
+  
+  if (hasPage1 && !innerFrontCover && !pagesInSpreads.has(1)) {
+    const page1 = regularPages.find(p => p.parsedFile.pageNumber === 1)!;
+    
+    // Page 1 goes on the right side alone (no left page)
+    // This is the standard book layout where Page 1 is on the right
+    result.push({
+      type: 'single-page',
+      rightPage: page1,
+      pageNumbers: [1],
+      displayLabel: 'Page 1',
+    });
+    pagesInSpreads.add(1);
   }
   
   // Process remaining regular pages in pairs
@@ -319,7 +338,7 @@ export function organizeIntoSpreads(
 
 /**
  * Calculates estimated DPI from image dimensions and trim size
- * Mixam uses 3mm bleed on all sides (0.118" per side = 0.236" total per dimension)
+ * Default bleed: 3mm on all sides (0.118" per side = 0.236" total per dimension)
  */
 export function estimateDPI(width: number, height: number): number {
   // Common comic book trim sizes (in inches) - these are the FINAL print sizes
@@ -330,7 +349,7 @@ export function estimateDPI(width: number, height: number): number {
     { width: 8.5, height: 11 },      // Letter size
   ];
   
-  // Mixam bleed: 3mm = 0.118 inches per side
+  // Default bleed: 3mm = 0.118 inches per side
   const bleedPerSide = 0.118;
   const totalBleed = bleedPerSide * 2; // Top + bottom or left + right
   
@@ -370,15 +389,20 @@ export function getPageDimensionsInches(width: number, height: number, dpi: numb
 
 /**
  * Calculates trim size (final print size) from art size
- * Mixam uses 3mm bleed on all sides
+ * Uses configurable bleed (default 3mm on all sides)
  */
-export function calculateTrimSize(artWidth: number, artHeight: number, dpi: number): { width: number; height: number } {
+export function calculateTrimSize(
+  artWidth: number, 
+  artHeight: number, 
+  dpi: number,
+  bleedMM: number = 3
+): { width: number; height: number } {
   const artWidthInches = artWidth / dpi;
   const artHeightInches = artHeight / dpi;
   
-  // Mixam bleed: 3mm = 0.118 inches per side
-  const bleedPerSide = 0.118;
-  const totalBleed = bleedPerSide * 2;
+  // Convert bleed from mm to inches (1 inch = 25.4mm)
+  const bleedPerSideInches = bleedMM / 25.4;
+  const totalBleed = bleedPerSideInches * 2;
   
   const trimWidth = Math.max(0, artWidthInches - totalBleed);
   const trimHeight = Math.max(0, artHeightInches - totalBleed);
@@ -388,4 +412,3 @@ export function calculateTrimSize(artWidth: number, artHeight: number, dpi: numb
     height: Math.round(trimHeight * 100) / 100,
   };
 }
-

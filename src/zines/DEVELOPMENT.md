@@ -1,6 +1,6 @@
-# Minizine Maker - Architecture Decision Records
+# Zine Studio - Architecture Decision Records
 
-This document records major architectural decisions for the Minizine Maker micro-app.
+This document records major architectural decisions for the Zine Studio micro-app.
 
 ## Migration from Monolith to React
 
@@ -120,3 +120,76 @@ Provides engaging preview mode that helps users understand final zine layout.
 - Realistic page-turning experience
 - Better user understanding of final zine layout
 - Engaging preview mode
+
+## Booklet Mode Architecture
+
+### Decision
+
+Added multi-page booklet mode alongside the original 8-page minizine mode.
+
+### Rationale
+
+Users need to create booklets of varying page counts for professional printing (e.g., Mixam) and home printing.
+
+### Implementation
+
+- **Spread Pairing System**: `spreadPairing.ts` handles page organization
+- **Multiple Export Formats**: Mixam spreads, home duplex, digital distribution
+- **pdf-lib Integration**: Client-side PDF generation
+
+### Key Design Principles
+
+1. **Multiple-of-4 Page Count**: Booklets auto-pad to multiples of 4 for proper folding
+2. **Blank Pages as First-Class Citizens**: Padding pages treated identically to missing uploads
+3. **Centralized Logic**: `calculateRequiredContentPages()` used consistently across UI and PDF generation
+
+### Benefits
+
+- Professional-quality output for various printing services
+- Consistent page count handling prevents user confusion
+- Flexible export options for different use cases
+
+## Spread Linking/Unlinking
+
+### Decision
+
+Allow users to combine two adjacent pages into a single spread image, or split a spread back into individual pages.
+
+### Rationale
+
+Some artwork spans two pages (e.g., outer cover wrap). Users need flexibility to manage these.
+
+### Implementation
+
+- Canvas-based image manipulation in `imageManipulation.ts`
+- Parser-friendly filenames generated for combined/split images
+- Visual feedback via processing state (disables navigation during operations)
+
+### Benefits
+
+- Supports double-page spread artwork
+- Non-destructive (can split and recombine)
+- Works with both uploaded spreads and dynamically combined pages
+
+## Blank Page Color Support
+
+### Decision
+
+Allow users to set a fill color for blank/padding pages.
+
+### Rationale
+
+Some booklet designs require colored pages (e.g., salmon/pink for aesthetic consistency).
+
+### Implementation
+
+- Global `blankPageColor` state applied to all blank pages
+- Color picker in SpreadPreview with "Apply to all" action
+- Color applied in BookReader preview and PDF generation
+- CSS `!important` required to override PageFlip library styles
+
+### Benefits
+
+- Design flexibility for users
+- Consistent appearance across preview and export
+- Simple UX (one color applies to all blank pages)

@@ -1,4 +1,4 @@
-import type { ParsedFile, PageInfo, SpreadInfo, ValidationResult } from '../types';
+import type { ParsedFile, BookletPageInfo, SpreadInfo, ValidationResult } from '../types';
 
 /**
  * Loads an image file and returns its data URL and dimensions
@@ -28,17 +28,18 @@ export async function loadImage(file: File): Promise<{ dataUrl: string; width: n
  * Validates that all images have consistent dimensions (except spreads)
  */
 export function validateImageDimensions(
-  pages: PageInfo[],
+  pages: BookletPageInfo[],
   spreads: SpreadInfo[]
 ): ValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
   
+  // Having at least one page or spread is valid for export
   if (pages.length === 0 && spreads.length === 0) {
     return {
       isValid: false,
-      errors: ['No pages found'],
-      warnings: [],
+      errors: [],
+      warnings: ['No pages uploaded yet'],
     };
   }
   
@@ -65,32 +66,30 @@ export function validateImageDimensions(
     }
   }
   
+  // Dimension mismatches are warnings, not errors - images will be scaled to fit
   if (pages.length > 0 && standardWidth !== null) {
     // Check all regular pages have same dimensions
     for (const page of pages) {
       if (page.width !== standardWidth || page.height !== standardHeight) {
-        errors.push(
-          `Page "${page.parsedFile.displayName}" has dimensions ${page.width}×${page.height}, ` +
-          `expected ${standardWidth}×${standardHeight}`
+        warnings.push(
+          `Page "${page.parsedFile.displayName}" has different dimensions (${page.width}×${page.height}) - will be scaled to fit`
         );
       }
     }
   }
   
-  // Validate spreads are exactly 2x width
+  // Validate spreads - warn about dimension mismatches
   if (spreads.length > 0 && standardWidth !== null) {
     const expectedSpreadWidth = standardWidth * 2;
     for (const spread of spreads) {
       if (spread.width !== expectedSpreadWidth) {
-        errors.push(
-          `Spread "${spread.parsedFile.displayName}" has width ${spread.width}, ` +
-          `expected ${expectedSpreadWidth} (2× regular page width)`
+        warnings.push(
+          `Spread "${spread.parsedFile.displayName}" width (${spread.width}) differs from expected (${expectedSpreadWidth}) - will be scaled`
         );
       }
       if (spread.height !== standardHeight) {
-        errors.push(
-          `Spread "${spread.parsedFile.displayName}" has height ${spread.height}, ` +
-          `expected ${standardHeight} (should match regular page height)`
+        warnings.push(
+          `Spread "${spread.parsedFile.displayName}" height (${spread.height}) differs from expected (${standardHeight}) - will be scaled`
         );
       }
     }
@@ -100,12 +99,11 @@ export function validateImageDimensions(
     standardWidth = firstSpread.width / 2;
     standardHeight = firstSpread.height;
     
-    // Validate all spreads are consistent
+    // Warn about inconsistent spread dimensions
     for (const spread of spreads) {
       if (spread.width !== firstSpread.width || spread.height !== firstSpread.height) {
-        errors.push(
-          `Spread "${spread.parsedFile.displayName}" has dimensions ${spread.width}×${spread.height}, ` +
-          `expected ${firstSpread.width}×${firstSpread.height}`
+        warnings.push(
+          `Spread "${spread.parsedFile.displayName}" has different dimensions (${spread.width}×${spread.height}) - will be scaled`
         );
       }
     }
@@ -132,8 +130,8 @@ export function validateImageDimensions(
  */
 export async function processFiles(
   parsedFiles: ParsedFile[]
-): Promise<{ pages: PageInfo[]; spreads: SpreadInfo[] }> {
-  const pages: PageInfo[] = [];
+): Promise<{ pages: BookletPageInfo[]; spreads: SpreadInfo[] }> {
+  const pages: BookletPageInfo[] = [];
   const spreads: SpreadInfo[] = [];
   
   for (const parsedFile of parsedFiles) {
@@ -163,11 +161,10 @@ export async function processFiles(
 /**
  * Converts RGB image to CMYK (simplified - actual CMYK conversion requires color profiles)
  * Note: This is a basic approximation. For true CMYK conversion, you'd need a color profile library.
- * For now, we'll preserve RGB and let Mixam handle conversion, or use a library if needed.
+ * For now, we'll preserve RGB and let the printer handle conversion.
  */
 export async function convertToCMYK(dataUrl: string): Promise<string> {
   // TODO: Implement proper CMYK conversion if needed
-  // For now, return original - Mixam can handle RGB to CMYK conversion
+  // For now, return original - printers can handle RGB to CMYK conversion
   return dataUrl;
 }
-

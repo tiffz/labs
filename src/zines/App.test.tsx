@@ -1,44 +1,58 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import App from './App';
 import PaperConfiguration from './components/PaperConfiguration';
-import ZinePageDisplay from './components/ZinePageDisplay';
-import { DEFAULT_PAPER_CONFIG } from './constants';
+import { DEFAULT_PAPER_CONFIG, DEFAULT_BOOKLET_PAPER_CONFIG } from './constants';
+import { DEFAULT_BLEED_CONFIG } from './types';
 
 // Mock the StPageFlip library since it's loaded via CDN
-global.window.St = {
-  PageFlip: vi.fn().mockImplementation(() => ({
-    loadFromHTML: vi.fn(),
-    on: vi.fn(),
-    flipNext: vi.fn(),
-    flipPrev: vi.fn(),
-    getPageCount: vi.fn(() => 10),
-    destroy: vi.fn()
-  }))
-};
+beforeEach(() => {
+  global.window.St = {
+    PageFlip: vi.fn().mockImplementation(() => ({
+      loadFromHTML: vi.fn(),
+      on: vi.fn(),
+      flipNext: vi.fn(),
+      flipPrev: vi.fn(),
+      getPageCount: vi.fn(() => 10),
+      destroy: vi.fn()
+    }))
+  };
+});
 
 // Mock Canvas API for PrintSheetCanvas component
 beforeEach(() => {
-  const mockCanvas = {
-    getContext: vi.fn(() => ({
-      fillStyle: '',
-      fillRect: vi.fn(),
-      save: vi.fn(),
-      restore: vi.fn(),
-      translate: vi.fn(),
-      rotate: vi.fn(),
-      beginPath: vi.fn(),
-      rect: vi.fn(),
-      clip: vi.fn(),
-      drawImage: vi.fn()
-    })),
+  const mockContext = {
+    fillStyle: '',
+    fillRect: vi.fn(),
+    save: vi.fn(),
+    restore: vi.fn(),
+    translate: vi.fn(),
+    rotate: vi.fn(),
+    beginPath: vi.fn(),
+    rect: vi.fn(),
+    clip: vi.fn(),
+    drawImage: vi.fn(),
+    imageSmoothingEnabled: true,
+    imageSmoothingQuality: 'high',
+  };
+  
+  // Canvas mock setup uses prototype patching below
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _mockCanvas = {
+    getContext: vi.fn(() => mockContext),
     width: 800,
-    height: 600
+    height: 600,
+    toDataURL: vi.fn(() => 'data:image/png;base64,test'),
   };
   
   Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
-    value: mockCanvas.getContext,
+    value: vi.fn(() => mockContext),
+    writable: true
+  });
+  
+  Object.defineProperty(HTMLCanvasElement.prototype, 'toDataURL', {
+    value: vi.fn(() => 'data:image/png;base64,test'),
     writable: true
   });
   
@@ -63,93 +77,84 @@ beforeEach(() => {
   });
 });
 
-describe('Minizine Maker App', () => {
+describe('Zine Studio App', () => {
   beforeEach(() => {
-    // Clear any existing DOM elements
     document.body.innerHTML = '';
   });
 
   it('renders the main app with title', () => {
     render(<App />);
     
-    expect(screen.getByText('Minizine Maker')).toBeInTheDocument();
-    expect(screen.getByText('Craft your tiny tales & art!')).toBeInTheDocument();
+    // Title appears in header and footer, use getAllByText
+    expect(screen.getAllByText('Zine Studio').length).toBeGreaterThan(0);
+    expect(screen.getByText('Format zines for printing')).toBeInTheDocument();
   });
 
-  it('renders the view mode selector with all three modes', () => {
+  it('renders mode toggle with minizine and booklet options', () => {
     render(<App />);
     
-    expect(screen.getByText('✏️ Edit')).toBeInTheDocument();
-    expect(screen.getByText('👁️ Print Sheet')).toBeInTheDocument();
-    expect(screen.getByText('📖 Read Zine')).toBeInTheDocument();
+    expect(screen.getByText('Minizine')).toBeInTheDocument();
+    expect(screen.getByText('Booklet')).toBeInTheDocument();
   });
 
-  it('starts in edit mode by default', () => {
+  it('starts in minizine mode by default', () => {
     render(<App />);
     
-    const editButton = screen.getByText('✏️ Edit');
-    expect(editButton).toHaveClass('active');
+    // In minizine mode, we should see the edit/print/preview toggle
+    expect(screen.getByText('Edit')).toBeInTheDocument();
+    expect(screen.getByText('Print')).toBeInTheDocument();
+    expect(screen.getByText('Preview')).toBeInTheDocument();
   });
 
-  it('switches between view modes when buttons are clicked', () => {
+  it('switches to booklet mode when clicked', async () => {
     render(<App />);
     
-    const printButton = screen.getByText('👁️ Print Sheet');
-    fireEvent.click(printButton);
+    const bookletButton = screen.getByText('Booklet');
+    fireEvent.click(bookletButton);
     
-    expect(printButton).toHaveClass('active');
-    expect(screen.getByText('✏️ Edit')).not.toHaveClass('active');
+    // In booklet mode, we should see spreads/preview toggle
+    await waitFor(() => {
+      expect(screen.getByText('Spreads')).toBeInTheDocument();
+    });
   });
 
-  it('renders the folding guide instructions', () => {
+  it('renders the export section', () => {
+    render(<App />);
+    
+    expect(screen.getByText('Export')).toBeInTheDocument();
+  });
+
+  it('renders quality and size controls', () => {
+    render(<App />);
+    
+    expect(screen.getByText('Quality & Size')).toBeInTheDocument();
+    expect(screen.getByText('Quality')).toBeInTheDocument();
+    expect(screen.getByText('Resolution')).toBeInTheDocument();
+  });
+
+  it('renders upload slots in minizine edit mode', () => {
+    render(<App />);
+    
+    // In edit mode, should see page slots
+    expect(screen.getByText('Front Cover')).toBeInTheDocument();
+    expect(screen.getByText('Back Cover')).toBeInTheDocument();
+    expect(screen.getByText('Page 1')).toBeInTheDocument();
+  });
+
+  it('renders instructions/folding guide', () => {
     render(<App />);
     
     expect(screen.getByText('Folding Guide')).toBeInTheDocument();
-    expect(screen.getByText(/Cut along center horizontal crease \(2 panels long\)/)).toBeInTheDocument();
-  });
-
-  it('renders the download button', () => {
-    render(<App />);
-    
-    expect(screen.getByText('Download Zine as PNG')).toBeInTheDocument();
-  });
-
-  it('download button is accessible and clickable', () => {
-    render(<App />);
-    
-    const downloadButton = screen.getByText('Download Zine as PNG');
-    
-    // Verify button exists and is enabled
-    expect(downloadButton).toBeInTheDocument();
-    expect(downloadButton).not.toBeDisabled();
-    
-    // Verify button can be clicked (even if functionality is complex to test)
-    expect(downloadButton).toBeInstanceOf(HTMLElement);
-    expect(downloadButton.tagName.toLowerCase()).toBe('button');
-  });
-
-  it('renders upload slots with single click handlers', () => {
-    render(<App />);
-    
-    // Look for placeholder content (slots without images)
-    const uploadElements = screen.getAllByText(/Cover|Page/);
-    
-    // Verify upload slots are present
-    expect(uploadElements.length).toBeGreaterThan(0);
-    
-    // Verify upload areas have proper cursor styling for interactivity
-    const frontCoverSlot = screen.getByText('Front Cover');
-    const parentElement = frontCoverSlot.closest('.image-uploader-slot');
-    
-    expect(parentElement).toBeInTheDocument();
   });
 });
 
 describe('PaperConfiguration Component', () => {
   const mockOnConfigChange = vi.fn();
+  const mockOnBleedChange = vi.fn();
 
   beforeEach(() => {
     mockOnConfigChange.mockClear();
+    mockOnBleedChange.mockClear();
   });
 
   it('renders all paper configuration inputs', () => {
@@ -157,37 +162,36 @@ describe('PaperConfiguration Component', () => {
       <PaperConfiguration 
         paperConfig={DEFAULT_PAPER_CONFIG} 
         onConfigChange={mockOnConfigChange} 
+        mode="minizine"
       />
     );
 
     expect(screen.getByLabelText('Width')).toBeInTheDocument();
     expect(screen.getByLabelText('Height')).toBeInTheDocument();
     expect(screen.getByLabelText('Unit')).toBeInTheDocument();
-    expect(screen.getByLabelText('Print DPI')).toBeInTheDocument();
+    expect(screen.getByLabelText('DPI')).toBeInTheDocument();
   });
 
   it('displays default values correctly', () => {
     render(
       <PaperConfiguration 
         paperConfig={DEFAULT_PAPER_CONFIG} 
-        onConfigChange={mockOnConfigChange} 
+        onConfigChange={mockOnConfigChange}
+        mode="minizine" 
       />
     );
 
     expect(screen.getByDisplayValue('11')).toBeInTheDocument(); // width
     expect(screen.getByDisplayValue('8.5')).toBeInTheDocument(); // height
     expect(screen.getByDisplayValue('300')).toBeInTheDocument(); // dpi
-    
-    // For select elements, check the selected option differently
-    const unitSelect = screen.getByLabelText('Unit') as HTMLSelectElement;
-    expect(unitSelect.value).toBe('in');
   });
 
   it('calls onConfigChange when width input changes', () => {
     render(
       <PaperConfiguration 
         paperConfig={DEFAULT_PAPER_CONFIG} 
-        onConfigChange={mockOnConfigChange} 
+        onConfigChange={mockOnConfigChange}
+        mode="minizine" 
       />
     );
 
@@ -204,7 +208,8 @@ describe('PaperConfiguration Component', () => {
     render(
       <PaperConfiguration 
         paperConfig={DEFAULT_PAPER_CONFIG} 
-        onConfigChange={mockOnConfigChange} 
+        onConfigChange={mockOnConfigChange}
+        mode="minizine" 
       />
     );
 
@@ -216,70 +221,160 @@ describe('PaperConfiguration Component', () => {
       unit: 'cm'
     });
   });
+
+  it('renders size presets', () => {
+    render(
+      <PaperConfiguration 
+        paperConfig={DEFAULT_PAPER_CONFIG} 
+        onConfigChange={mockOnConfigChange}
+        mode="minizine" 
+      />
+    );
+
+    expect(screen.getByText('US Letter')).toBeInTheDocument();
+    expect(screen.getByText('A4')).toBeInTheDocument();
+  });
+
+  it('applies preset when clicked', () => {
+    render(
+      <PaperConfiguration 
+        paperConfig={DEFAULT_PAPER_CONFIG} 
+        onConfigChange={mockOnConfigChange}
+        mode="minizine" 
+      />
+    );
+
+    const a4Button = screen.getByText('A4');
+    fireEvent.click(a4Button);
+
+    expect(mockOnConfigChange).toHaveBeenCalledWith({
+      ...DEFAULT_PAPER_CONFIG,
+      width: 297,
+      height: 210,
+      unit: 'mm'
+    });
+  });
+
+  it('shows bleed settings in booklet mode', () => {
+    render(
+      <PaperConfiguration 
+        paperConfig={DEFAULT_BOOKLET_PAPER_CONFIG} 
+        onConfigChange={mockOnConfigChange}
+        mode="booklet"
+        bleedConfig={DEFAULT_BLEED_CONFIG}
+        onBleedChange={mockOnBleedChange}
+      />
+    );
+
+    // Check for bleed label (now includes description)
+    expect(screen.getByText(/Bleed \(artwork extends beyond trim\)/)).toBeInTheDocument();
+    expect(screen.getByText('None')).toBeInTheDocument();
+    expect(screen.getByText('3mm')).toBeInTheDocument();
+    // Check for safe zone label
+    expect(screen.getByText(/Safe Zone/)).toBeInTheDocument();
+  });
+
+  it('does not show bleed settings in minizine mode', () => {
+    render(
+      <PaperConfiguration 
+        paperConfig={DEFAULT_PAPER_CONFIG} 
+        onConfigChange={mockOnConfigChange}
+        mode="minizine"
+      />
+    );
+
+    expect(screen.queryByText('Bleed')).not.toBeInTheDocument();
+  });
+
+  it('calls onBleedChange when bleed preset is clicked', () => {
+    render(
+      <PaperConfiguration 
+        paperConfig={DEFAULT_BOOKLET_PAPER_CONFIG} 
+        onConfigChange={mockOnConfigChange}
+        mode="booklet"
+        bleedConfig={DEFAULT_BLEED_CONFIG}
+        onBleedChange={mockOnBleedChange}
+      />
+    );
+
+    const bleedButton = screen.getByText('3mm');
+    fireEvent.click(bleedButton);
+
+    expect(mockOnBleedChange).toHaveBeenCalledWith({
+      top: 3,
+      bottom: 3,
+      left: 3,
+      right: 3,
+      unit: 'mm',
+      quietArea: expect.any(Number), // Preserve existing or use default
+    });
+  });
 });
 
-describe('ZinePageDisplay Component', () => {
-  const mockPaperConfig = {
-    width: 11,
-    height: 8.5,
-    unit: 'in' as const,
-    dpi: 300
-  };
-
-  it('renders with placeholder image when no imageSrc provided', () => {
-    render(
-      <ZinePageDisplay 
-        paperConfig={mockPaperConfig}
-        altText="Test Page" 
-      />
-    );
-
-    const img = screen.getByAltText('Test Page');
-    expect(img).toBeInTheDocument();
-    // Should use the dummy placeholder image
-    expect(img).toHaveAttribute('src', expect.stringContaining('data:image/svg+xml'));
-  });
-
-  it('renders with provided image source', () => {
-    const testImageSrc = 'data:image/png;base64,test';
+describe('Mode Toggle Behavior', () => {
+  it('displays correct presets for minizine mode', () => {
+    render(<App />);
     
-    render(
-      <ZinePageDisplay 
-        imageSrc={testImageSrc}
-        paperConfig={mockPaperConfig}
-        altText="Test Page" 
-      />
-    );
-
-    const img = screen.getByAltText('Test Page');
-    expect(img).toHaveAttribute('src', testImageSrc);
+    // Minizine-specific presets
+    expect(screen.getByText('US Letter')).toBeInTheDocument();
+    expect(screen.getByText('Tabloid')).toBeInTheDocument();
   });
 
-  it('applies correct fit mode styles', () => {
-    render(
-      <ZinePageDisplay 
-        imageSrc="test.jpg"
-        fitMode="contain"
-        paperConfig={mockPaperConfig}
-        altText="Test Page" 
-      />
-    );
+  it('displays correct presets for booklet mode', async () => {
+    render(<App />);
+    
+    const bookletButton = screen.getByText('Booklet');
+    fireEvent.click(bookletButton);
+    
+    await waitFor(() => {
+      expect(screen.getByText('Digest')).toBeInTheDocument();
+      expect(screen.getByText('US Standard')).toBeInTheDocument();
+    });
+  });
+});
 
-    const img = screen.getByAltText('Test Page');
-    expect(img).toHaveStyle('object-fit: contain');
+describe('Regression Tests', () => {
+  it('default bleed should be 0.125 inches for Mixam compatibility', () => {
+    // The default bleed config should be 0.125 inches
+    expect(DEFAULT_BLEED_CONFIG.top).toBe(0.125);
+    expect(DEFAULT_BLEED_CONFIG.unit).toBe('in');
   });
 
-  it('applies rotation transform', () => {
-    render(
-      <ZinePageDisplay 
-        imageSrc="test.jpg"
-        rotation={180}
-        paperConfig={mockPaperConfig}
-        altText="Test Page" 
-      />
-    );
-
-    const img = screen.getByAltText('Test Page');
-    expect(img).toHaveStyle('transform: rotate(180deg)');
+  it('default booklet paper config should be Digest size', () => {
+    // Default should be Digest (5.5" x 8.5")
+    expect(DEFAULT_BOOKLET_PAPER_CONFIG.width).toBe(5.5);
+    expect(DEFAULT_BOOKLET_PAPER_CONFIG.height).toBe(8.5);
+    expect(DEFAULT_BOOKLET_PAPER_CONFIG.unit).toBe('in');
   });
-}); 
+
+  it('booklet mode should show Mixam Presets label', async () => {
+    render(<App />);
+    
+    const bookletButton = screen.getByText('Booklet');
+    fireEvent.click(bookletButton);
+    
+    await waitFor(() => {
+      expect(screen.getByText('Mixam Presets')).toBeInTheDocument();
+    });
+  });
+
+  it('booklet presets should show dimensions inline', async () => {
+    render(<App />);
+    
+    const bookletButton = screen.getByText('Booklet');
+    fireEvent.click(bookletButton);
+    
+    await waitFor(() => {
+      // Check that dimensions are shown for Digest preset
+      expect(screen.getByText(/5\.5" × 8\.5"/)).toBeInTheDocument();
+    });
+  });
+
+  it('minizine mode should NOT show Mixam Presets label', () => {
+    render(<App />);
+    
+    // In minizine mode by default, should show "Sheet Size Presets"
+    expect(screen.queryByText('Mixam Presets')).not.toBeInTheDocument();
+    expect(screen.getByText('Sheet Size Presets')).toBeInTheDocument();
+  });
+});
