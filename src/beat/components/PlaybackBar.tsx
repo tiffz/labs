@@ -91,6 +91,10 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
   const barRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState<boolean>(false);
 
+  // Check if "Loop track" mode is active (loop enabled but no section selected)
+  // Defined early because handleClick needs it
+  const isLoopTrackMode = loopEnabled && selectedSectionIds.length === 0;
+
   const getTimeFromEvent = useCallback(
     (e: React.MouseEvent | MouseEvent) => {
       if (!barRef.current || duration === 0) return 0;
@@ -111,7 +115,8 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
       
       // Auto-select the section at this timestamp (extend when shift is held)
       // Skip if section is already selected (unless shift is held for range selection)
-      if (sections.length > 0 && onSelectSection) {
+      // Also skip auto-selection in "Loop Track" mode to avoid unexpectedly changing loop mode
+      if (sections.length > 0 && onSelectSection && !isLoopTrackMode) {
         const sectionAtTime = sections.find(
           (s) => clampedTime >= s.startTime && clampedTime < s.endTime
         );
@@ -120,7 +125,7 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
         }
       }
     },
-    [duration, onSeek, getTimeFromEvent, dragging, sections, onSelectSection, selectedSectionIds]
+    [duration, onSeek, getTimeFromEvent, dragging, sections, onSelectSection, selectedSectionIds, isLoopTrackMode]
   );
 
   const handleBarDrag = useCallback(
@@ -166,8 +171,9 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
   const syncStartPercent = duration > 0 ? (syncStartTime / duration) * 100 : 0;
 
-  // Only show sync start handle if there's an intro to skip
-  const showSyncStartHandle = syncStartTime > 0.5 || musicStartTime > 0.5;
+  // Show sync start handle when there's any intro or if user might need to adjust sync
+  // Lower threshold to make it more discoverable for songs with delayed beat entry
+  const showSyncStartHandle = syncStartTime > 0.1 || musicStartTime > 0.1;
   
   // Show music end marker if music ends significantly before track ends (more than 2 seconds of trailing silence)
   const effectiveMusicEndTime = musicEndTime ?? duration;
@@ -184,9 +190,6 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
     (s) => currentTime >= s.startTime && currentTime < s.endTime
   );
   const currentSectionId = currentSection?.id;
-
-  // Check if "Loop track" mode is active (loop enabled but no section selected)
-  const isLoopTrackMode = loopEnabled && selectedSectionIds.length === 0;
   
   // Handle section click - toggle if already selected
   const handleSectionClick = useCallback(
@@ -470,7 +473,7 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
                   className={`sync-handle ${dragging ? 'dragging' : ''}`}
                   style={{ left: `${syncStartPercent}%` }}
                   onMouseDown={handleSyncDragStart}
-                  title={`Beat sync starts at ${formatTime(syncStartTime)} — drag to adjust`}
+                  title={`Beat sync starts at ${formatTime(syncStartTime)} — drag to adjust where beat 1 begins (useful if song has an intro or pickup notes)`}
                 />
               )}
 

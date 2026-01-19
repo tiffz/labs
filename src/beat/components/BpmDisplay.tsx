@@ -64,6 +64,17 @@ const BpmDisplay: React.FC<BpmDisplayProps> = ({ bpm, confidence, onBpmChange })
     [bpm, onBpmChange]
   );
 
+  // Halve or double BPM (for octave errors)
+  const halveBpm = useCallback(() => {
+    const newBpm = Math.max(20, bpm / 2);
+    onBpmChange(Math.round(newBpm * 100) / 100);
+  }, [bpm, onBpmChange]);
+
+  const doubleBpm = useCallback(() => {
+    const newBpm = Math.min(300, bpm * 2);
+    onBpmChange(Math.round(newBpm * 100) / 100);
+  }, [bpm, onBpmChange]);
+
   // Show confidence indicator
   const confidenceColor =
     confidence === undefined
@@ -77,6 +88,15 @@ const BpmDisplay: React.FC<BpmDisplayProps> = ({ bpm, confidence, onBpmChange })
   return (
     <div className="bpm-display">
       <div className="bpm-controls">
+        <button
+          className="transport-btn secondary"
+          onClick={halveBpm}
+          title="Halve BPM"
+          style={{ padding: '0.25rem 0.4rem', fontSize: '0.75rem', fontWeight: 600 }}
+        >
+          ÷2
+        </button>
+
         <button
           className="transport-btn secondary"
           onClick={(e) => adjustBpm(e.shiftKey ? -1 : -0.1)}
@@ -112,6 +132,15 @@ const BpmDisplay: React.FC<BpmDisplayProps> = ({ bpm, confidence, onBpmChange })
           <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>
             add
           </span>
+        </button>
+
+        <button
+          className="transport-btn secondary"
+          onClick={doubleBpm}
+          title="Double BPM"
+          style={{ padding: '0.25rem 0.4rem', fontSize: '0.75rem', fontWeight: 600 }}
+        >
+          ×2
         </button>
       </div>
       <span className="bpm-label">BPM</span>

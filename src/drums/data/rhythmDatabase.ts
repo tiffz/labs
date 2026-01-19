@@ -31,6 +31,20 @@ export interface RhythmDefinition {
  * Database of known rhythms and their variations
  */
 export const RHYTHM_DATABASE: Record<string, RhythmDefinition> = {
+  rockAndRoll: {
+    name: 'Rock and Roll',
+    description: 'A basic rock beat commonly used in pop, rock, and many Western music styles. The pattern emphasizes the backbeat (beats 2 and 4) with a kick on 1 and 3, creating the driving feel that defines rock music.',
+    learnMoreLinks: [
+      { title: 'Wikipedia: Backbeat', url: 'https://en.wikipedia.org/wiki/Beat_(music)#Backbeat' },
+    ],
+    basePattern: 'D---T---D-D-T---',
+    timeSignature: { numerator: 4, denominator: 4 },
+    variations: [
+      { notation: 'D---T---D-D-T---' },
+      { notation: 'D---T---D---T---', note: 'Simple backbeat' },
+      { notation: 'D-K-T-K-D-D-T-K-', note: 'With hi-hat pattern' },
+    ],
+  },
   maqsum: {
     name: 'Maqsum',
     description: 'A very common 4/4 rhythm in Middle Eastern drumming. This is typically the first rhythm students learn because of its straightforward pattern and versatility.',

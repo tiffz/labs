@@ -10,6 +10,8 @@ interface UseSectionSelectionOptions {
   bpm: number;
   /** Music start time in seconds */
   musicStartTime: number;
+  /** Music end time in seconds (when music actually ends, may be before track ends) */
+  musicEndTime?: number;
   /** Beats per measure (time signature numerator) */
   beatsPerMeasure: number;
   /** Total duration in seconds */
@@ -56,6 +58,7 @@ export function useSectionSelection({
   sections,
   bpm,
   musicStartTime,
+  musicEndTime,
   beatsPerMeasure,
   duration,
   mergeSections,
@@ -130,15 +133,29 @@ export function useSectionSelection({
     setLoopEnabled(false);
   }, [setLoopRegion, setLoopEnabled]);
 
-  /** Set up loop for the entire track (from music start to end) */
+  /** Set up loop for the entire track (from music start to music end, snapped to measure boundary) */
   const loopEntireTrack = useCallback(() => {
     setSelectedSectionIds([]);
+    // Use music end time if available (before trailing silence), otherwise use duration
+    const effectiveEndTime = musicEndTime !== undefined && musicEndTime < duration 
+      ? musicEndTime 
+      : duration;
+    // Snap end time to the nearest measure boundary (biased toward ending earlier)
+    // This prevents the loop from ending in the middle of a measure
+    const snappedEndTime = extendToMeasureBoundary(
+      effectiveEndTime, 
+      'start',  // 'start' direction snaps backward to the previous measure boundary
+      bpm, 
+      musicStartTime, 
+      beatsPerMeasure, 
+      duration
+    );
     setLoopRegion({
       startTime: musicStartTime,
-      endTime: duration,
+      endTime: snappedEndTime,
     });
     setLoopEnabled(true);
-  }, [musicStartTime, duration, setLoopRegion, setLoopEnabled]);
+  }, [musicStartTime, musicEndTime, duration, bpm, beatsPerMeasure, setLoopRegion, setLoopEnabled]);
 
   /** Combine all selected sections into one merged section */
   const combineSelected = useCallback(() => {

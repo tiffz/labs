@@ -20,9 +20,10 @@ interface DrumAccompanimentProps {
   volume?: number;
 }
 
-// Common darbuka rhythms (correct patterns from rhythm database)
+// Common drum rhythms (correct patterns from rhythm database)
 // 2/4 rhythms are stored with original and doubled versions for 4/4 time signatures
 const PRESET_RHYTHMS_BASE = [
+  { name: 'Rock', notation: 'D---T---D-D-T---', is2_4: false },    // Rock and Roll - best default for pop/rock
   { name: 'Maqsum', notation: 'D-T-__T-D---T---', is2_4: false },  // Standard 4/4 Maqsum
   { name: 'Baladi', notation: 'D-D-__T-D---T---', is2_4: false },  // Starts with two dums
   { name: 'Saidi', notation: 'D-T-__D-D---T---', is2_4: false },   // Has DD in middle

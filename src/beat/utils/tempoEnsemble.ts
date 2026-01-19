@@ -345,7 +345,7 @@ function _snapBpmToInteger(bpm: number, _confidence: number, _fineTuneScore?: nu
   const nearest = Math.round(bpm);
   const delta = Math.abs(nearest - bpm);
   
-  if (confidence < 0.3) {
+  if (_confidence < 0.3) {
     return Math.round(bpm * 10) / 10;
   }
   

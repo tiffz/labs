@@ -128,6 +128,7 @@ const App: React.FC = () => {
     sections,
     bpm: analysisResult?.bpm ?? 120,
     musicStartTime: analysisResult?.musicStartTime ?? 0,
+    musicEndTime: analysisResult?.musicEndTime,
     beatsPerMeasure: timeSignature.numerator,
     duration,
     mergeSections,

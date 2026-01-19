@@ -17,6 +17,7 @@ import { detectFermatasFromGaps, detectGapsForResync, detectGapOnsets, type GapW
 import { runQuickBpmAccuracyTest, formatBpmAccuracyReport } from './bpmAccuracyTest';
 import { analyzeTempoVariation } from './sectionalTempoAnalyzer';
 import { detectOnsets } from './analysis/onsets';
+import { alignBeatGridToDownbeat } from './downbeatAlignment';
 // Legacy detectors - DEPRECATED, kept for API compatibility
 // Use detectFermatasFromGaps from './gapFermataDetector' instead
 /** @deprecated Use detectFermatasFromGaps from gapFermataDetector instead */
@@ -461,6 +462,46 @@ export async function analyzeBeat(
     }
   }
 
+  // Align beat grid to the first actual downbeat
+  // This handles songs with pickup notes (like "La Isla Bonita")
+  reportProgress('Aligning beat grid', 52);
+  await yieldToMainThread();
+  
+  let alignedMusicStartTime = musicStartTime;
+  try {
+    const alignment = alignBeatGridToDownbeat(
+      audioBuffer,
+      finalBpm,
+      musicStartTime,
+      4 // beatsPerMeasure (assume 4/4 for now)
+    );
+    
+    if (alignment.confidence >= 0.4) {
+      alignedMusicStartTime = alignment.alignedStartTime;
+      
+      if (alignment.hasPickup) {
+        warnings.push('Detected pickup notes - beat 1 adjusted');
+      }
+      
+      // If alignment changed significantly, regenerate beats from new start
+      if (Math.abs(alignedMusicStartTime - musicStartTime) > 0.1) {
+        console.log(`[BeatAnalyzer] Adjusted music start from ${musicStartTime.toFixed(3)}s to ${alignedMusicStartTime.toFixed(3)}s for downbeat alignment`);
+        
+        // Regenerate beat grid from aligned start
+        const beatInterval = 60 / finalBpm;
+        beats = [];
+        let beatTime = alignedMusicStartTime;
+        while (beatTime < audioBuffer.duration) {
+          beats.push(beatTime);
+          beatTime += beatInterval;
+        }
+        offset = alignedMusicStartTime;
+      }
+    }
+  } catch (err) {
+    console.warn('[BeatAnalyzer] Downbeat alignment failed:', err);
+  }
+
   // Analyze tempo variation across sections (diagnostic tool)
   // This helps identify if the song has variable tempo
   if (typeof window !== 'undefined' && import.meta.env?.DEV) {
@@ -593,7 +634,7 @@ export async function analyzeBeat(
     confidence,
     confidenceLevel,
     beats,
-    musicStartTime,
+    musicStartTime: alignedMusicStartTime, // Use aligned time for proper beat 1 placement
     musicEndTime,
     offset,
     warnings,
