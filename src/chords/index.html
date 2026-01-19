@@ -22,8 +22,15 @@
     <!-- Material Symbols: Use block to prevent FOUC -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
     
-    <!-- Analytics -->
-    <script src="/scripts/analytics.js"></script>
+    <!-- Analytics - Only load in production -->
+    <script>
+        if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+            const script = document.createElement('script');
+            script.async = true;
+            script.src = '/scripts/analytics.js';
+            document.head.appendChild(script);
+        }
+    </script>
     
     <!-- Styles -->
     <link rel="stylesheet" href="/styles/shared.css" />

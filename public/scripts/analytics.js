@@ -119,6 +119,18 @@
       appName = 'cat-clicker';
     } else if (path.includes('/zines/')) {
       appName = 'zine-maker';
+    } else if (path.includes('/drums/')) {
+      appName = 'darbuka-rhythm-trainer';
+    } else if (path.includes('/beat/')) {
+      appName = 'find-the-beat';
+    } else if (path.includes('/chords/')) {
+      appName = 'chord-progression-generator';
+    } else if (path.includes('/forms/')) {
+      appName = 'form-intersections';
+    } else if (path.includes('/story/')) {
+      appName = 'save-the-cat-story-generator';
+    } else if (path.includes('/corp/')) {
+      appName = 'corporate-ladder';
     }
     
     // Track the app visit

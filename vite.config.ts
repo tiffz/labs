@@ -24,7 +24,6 @@ export default defineConfig({
         main: resolve(__dirname, 'src/index.html'),
         cats: resolve(__dirname, 'src/cats/index.html'),
           zines: resolve(__dirname, 'src/zines/index.html'),
-          'comic-pdf': resolve(__dirname, 'src/comic-pdf/index.html'),
           corp: resolve(__dirname, 'src/corp/index.html'),
           drums: resolve(__dirname, 'src/drums/index.html'),
           story: resolve(__dirname, 'src/story/index.html'),

@@ -5,7 +5,9 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
-    <link rel="icon" type="image/png" href="/icons/cat-android.png" />
+    <link rel="icon" type="image/svg+xml" href="/icons/favicon-story.svg" />
+    <link rel="apple-touch-icon" href="/icons/favicon-story.svg" />
+    <meta name="theme-color" content="#8b5cf6" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Save the Cat! Story Generator</title>
     <meta
@@ -18,6 +20,16 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
+    
+    <!-- Analytics - Only load in production -->
+    <script>
+        if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+            const script = document.createElement('script');
+            script.async = true;
+            script.src = '/scripts/analytics.js';
+            document.head.appendChild(script);
+        }
+    </script>
   </head>
   <body style="font-family: 'Inter', sans-serif">
     <div id="root"></div>

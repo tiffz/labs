@@ -15,6 +15,16 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Noto+Color+Emoji&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="./styles/corp.css">
+    
+    <!-- Analytics - Only load in production -->
+    <script>
+        if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+            const script = document.createElement('script');
+            script.async = true;
+            script.src = '/scripts/analytics.js';
+            document.head.appendChild(script);
+        }
+    </script>
 </head>
 <body>
 
