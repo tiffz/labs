@@ -8,6 +8,7 @@ A web application for learning and practicing Darbuka drum rhythms. Enter rhythm
 - **Professional Music Notation**: Rhythms displayed using standard music notation via VexFlow
 - **Time Signature Support**: Choose from various time signatures (4/4, 3/4, 6/8, etc.)
 - **Rhythm Presets**: Quick access to standard Middle Eastern rhythms (Maqsum, Saeidi, Baladi, Ayoub)
+- **Drum Tab Import**: Import drum tabs from Ultimate Guitar and convert to darbuka notation (see [DRUM_TAB_IMPORT.md](docs/DRUM_TAB_IMPORT.md))
 - **Audio Playback**: Hear rhythms played back with dynamic volume based on beat position
 - **Metronome**: Built-in metronome with adjustable BPM
 - **URL Sharing**: Share rhythms via URL - perfect for teaching students

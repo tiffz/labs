@@ -4,9 +4,10 @@ import { RHYTHM_DATABASE } from '../data/rhythmDatabase';
 
 interface RhythmPresetsProps {
   onSelectPreset: (notation: string, timeSignature: TimeSignature) => void;
+  onImportDrumTab?: () => void;
 }
 
-const RhythmPresets: React.FC<RhythmPresetsProps> = ({ onSelectPreset }) => {
+const RhythmPresets: React.FC<RhythmPresetsProps> = ({ onSelectPreset, onImportDrumTab }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -27,6 +28,11 @@ const RhythmPresets: React.FC<RhythmPresetsProps> = ({ onSelectPreset }) => {
     setIsOpen(false);
   };
 
+  const handleImportDrumTab = () => {
+    setIsOpen(false);
+    onImportDrumTab?.();
+  };
+
   return (
     <div className="rhythm-presets-dropdown" ref={dropdownRef}>
       <button
@@ -39,6 +45,8 @@ const RhythmPresets: React.FC<RhythmPresetsProps> = ({ onSelectPreset }) => {
       
       {isOpen && (
         <div className="dropdown-menu">
+          {/* Preset Rhythms Section */}
+          <div className="dropdown-section-header">Preset Rhythms</div>
           {Object.values(RHYTHM_DATABASE).map((rhythm) => (
             <button
               key={rhythm.name}
@@ -49,6 +57,21 @@ const RhythmPresets: React.FC<RhythmPresetsProps> = ({ onSelectPreset }) => {
               {rhythm.name} ({rhythm.timeSignature.numerator}/{rhythm.timeSignature.denominator})
             </button>
           ))}
+          
+          {/* Import Section */}
+          {onImportDrumTab && (
+            <>
+              <div className="dropdown-section-header">Import</div>
+              <button
+                className="dropdown-item dropdown-item-action"
+                onClick={handleImportDrumTab}
+                type="button"
+              >
+                <span className="material-symbols-outlined dropdown-item-icon">upload</span>
+                Import Drum Tab...
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>
@@ -56,4 +79,3 @@ const RhythmPresets: React.FC<RhythmPresetsProps> = ({ onSelectPreset }) => {
 };
 
 export default RhythmPresets;
-

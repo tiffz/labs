@@ -4,6 +4,8 @@ import type { PlaybackSettings } from '../types/settings';
 import { getSixteenthsPerMeasure } from '../utils/timeSignatureUtils';
 import RhythmPresets from './RhythmPresets';
 import DownloadDropdown from './DownloadDropdown';
+import DrumTabImportModal from './DrumTabImportModal';
+import { isDrumTab } from '../utils/drumTabParser';
 
 /** Selection state for syncing with display */
 interface SelectionState {
@@ -62,6 +64,8 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
 }) => {
   const [showTooltip, setShowTooltip] = useState(false);
   const [showDownloadDropdown, setShowDownloadDropdown] = useState(false);
+  const [showDrumTabModal, setShowDrumTabModal] = useState(false);
+  const [pastedDrumTab, setPastedDrumTab] = useState('');
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const downloadButtonRef = useRef<HTMLButtonElement>(null);
   
@@ -113,6 +117,32 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
       onNotationChange(value);
     }
     // If invalid characters are present, ignore the change
+  };
+
+  // Handle paste events to detect drum tab format
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const pastedText = e.clipboardData.getData('text');
+    
+    // Check if the pasted content looks like a drum tab
+    if (isDrumTab(pastedText)) {
+      e.preventDefault(); // Don't paste the raw text
+      setPastedDrumTab(pastedText);
+      setShowDrumTabModal(true);
+    }
+    // Otherwise, let the normal paste handling occur
+  };
+
+  // Handle drum tab import confirmation
+  const handleDrumTabImport = (convertedNotation: string) => {
+    onNotationChange(convertedNotation);
+    setShowDrumTabModal(false);
+    setPastedDrumTab('');
+  };
+
+  // Handle drum tab import cancellation
+  const handleDrumTabCancel = () => {
+    setShowDrumTabModal(false);
+    setPastedDrumTab('');
   };
 
   // Auto-resize textarea on mount and when notation changes
@@ -336,6 +366,10 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
               onNotationChange(notation);
               onTimeSignatureChange(ts);
             }}
+            onImportDrumTab={() => {
+              setPastedDrumTab('');
+              setShowDrumTabModal(true);
+            }}
           />
           <div className="icon-button-group">
             <button
@@ -435,6 +469,7 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
           id="rhythm-notation-input"
           className="input-field input-field-expandable"
           value={notation}
+          onPaste={handlePaste}
           onChange={(e) => {
             handleNotationChange(e.target.value);
             // Auto-resize textarea if focused
@@ -468,6 +503,15 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
         {/* Visual feedback is handled by the canvas preview - no separate UI here */}
       </div>
       </div>
+
+      {/* Drum Tab Import Modal */}
+      {showDrumTabModal && (
+        <DrumTabImportModal
+          rawTabText={pastedDrumTab}
+          onImport={handleDrumTabImport}
+          onCancel={handleDrumTabCancel}
+        />
+      )}
     </div>
   );
 };
