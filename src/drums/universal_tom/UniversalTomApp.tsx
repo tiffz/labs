@@ -77,7 +77,7 @@ const UniversalTomApp: React.FC = () => {
                             className="w-full flex-grow bg-gray-900 border border-purple-500/20 rounded-lg p-6 text-purple-100 font-mono text-sm leading-relaxed focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 resize-none shadow-inner transition-colors scrollbar-thin scrollbar-thumb-purple-900/50"
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
-                            placeholder="Paste Universal Tom font text here... (e.g. 2.4J alda...)"
+                            placeholder="Paste Universal Tom font text here... (e.g. 4J alda...)"
                             spellCheck={false}
                             autoFocus
                         />

@@ -19,14 +19,11 @@ vi.mock('../components/VexFlowRenderer', () => ({
 vi.mock('../utils/universalTomParser', () => ({
     parseUniversalTom: vi.fn((input) => {
         if (input.includes('a')) return 'D---';
-        // If input contains '3.4J' but no 'a', it should still return something for the renderer to activate
-        // For '3.4J a', it should return 'D---'
-        // For '2.4J a', it should return 'D---'
         return ''; // Default empty
     }),
     detectTimeSignature: vi.fn((input) => {
-        if (input.includes('3.4J')) return { numerator: 3, denominator: 4 };
-        if (input.includes('2.4J')) return { numerator: 2, denominator: 4 };
+        if (input.includes('3J')) return { numerator: 3, denominator: 4 };
+        if (input.includes('2J')) return { numerator: 2, denominator: 4 };
         return null;
     })
 }));
@@ -53,13 +50,12 @@ describe('UniversalTomApp', () => {
         expect(screen.getByText('D---')).toBeInTheDocument();
     });
 
-    it('detects time signature and passes it to renderer', () => {
+    it('updates time signature from parser', () => {
         render(<UniversalTomApp />);
         const textarea = screen.getByPlaceholderText(/Paste Universal Tom/i);
 
-        // Input "3.4J" -> Mock detects 3/4
-        // Also input 'a' so that VexFlowRenderer actually renders! (Condition: parsedNotation)
-        fireEvent.change(textarea, { target: { value: '3.4J a' } });
+        // Update input to '3J a' to match new expectation
+        fireEvent.change(textarea, { target: { value: '3J a' } });
 
         expect(screen.getByTestId('vf-timesig-num')).toHaveTextContent('3');
         expect(screen.getByTestId('vf-timesig-den')).toHaveTextContent('4');
@@ -80,7 +76,7 @@ describe('UniversalTomApp', () => {
         expect(button).toBeDisabled();
 
         const textarea = screen.getByPlaceholderText(/Paste Universal Tom/i);
-        fireEvent.change(textarea, { target: { value: 'a' } }); // Mock returns D---
+        fireEvent.change(textarea, { target: { value: 'a' } });
 
         expect(button).toBeEnabled();
     });
@@ -90,10 +86,7 @@ describe('UniversalTomApp', () => {
         render(<UniversalTomApp />);
 
         const textarea = screen.getByPlaceholderText(/Paste Universal Tom/i);
-        fireEvent.change(textarea, { target: { value: '2.4J a' } });
-        // Mock Logic:
-        // parseUniversalTom('2.4J a') -> includes 'a', returns 'D---'.
-        // detectTimeSignature('2.4J a') -> includes '2.4J', returns { numerator: 2, denominator: 4 }.
+        fireEvent.change(textarea, { target: { value: '2J a' } });
 
         const button = screen.getByText(/Open in Trainer/i);
         fireEvent.click(button);

@@ -23,5 +23,5 @@ fi
 # Run lint-staged for changed files (this is already optimized to only run on changed files)
 npx lint-staged
 
-# Run knip to warn about dead code (non-blocking - CI handles strict enforcement)
-npm run knip -- --no-exit-code
+# Run knip to enforce dead code check (blocking, aligned with CI)
+npm run knip

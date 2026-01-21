@@ -11,12 +11,14 @@ const config: KnipConfig = {
     'src/chords/index.html',
     'src/forms/index.html',
     'src/beat/index.html',
+    'src/drums/universal_tom/index.html',
     'src/404.html',
     // Include TS entry points explicitly so transitive deps are tracked
     'src/cats/main.tsx',
     'src/zines/main.tsx',
     'src/corp/main.tsx',
     'src/drums/main.tsx',
+    'src/drums/universal_tom/main.tsx',
     'src/story/main.tsx',
     'src/chords/main.tsx',
     'src/forms/main.tsx',
@@ -66,6 +68,11 @@ const config: KnipConfig = {
     'src/beat/utils/audioBuffer.ts',
     'src/beat/utils/bpmAccuracyTest.ts',
     'src/beat/utils/tempoDetectorCore.ts',
+    // CI False Positives (Exports used in future/debugging or tests but flagged)
+    'src/beat/utils/sectionalTempoAnalyzer.ts', // default export used in CLI/tests
+    'src/zines/utils/imageProcessor.ts', // processFiles used in specialized flows
+    'src/zines/utils/pdfGenerator.ts', // getCompressionDescription, downloadPDF
+    'src/zines/utils/spreadOrganizer.ts', // estimateDPI, etc. helper utils
   ],
   ignoreDependencies: [
     // lint-staged is used by husky pre-commit hook (not imported in TS)

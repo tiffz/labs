@@ -3,16 +3,17 @@ import type { TimeSignature } from '../../shared/rhythm/types';
 // ... existing imports ...
 
 export function detectTimeSignature(input: string): TimeSignature | null {
-    // Regex matches "Digits.DigitsJ" e.g. "2.4J" -> 2/4, "3.8J" -> 3/8
-    // Group 1: Numerator, Group 2: Denominator
-    const match = /\b(\d+)\.(\d+)J/.exec(input);
-    if (match && match[1] && match[2]) {
-        const numerator = parseInt(match[1], 10);
-        const denominator = parseInt(match[2], 10);
-        if (!isNaN(numerator) && numerator > 0 && !isNaN(denominator) && denominator > 0) {
-            return { numerator, denominator };
+    // Regex matches "DigitsJ" e.g. "4J" -> 4/4, "3J" -> 3/4
+
+    // Check for "DigitsJ" (Implicit Denominator 4)
+    const implicitMatch = /\b(\d+)J/.exec(input);
+    if (implicitMatch && implicitMatch[1]) {
+        const numerator = parseInt(implicitMatch[1], 10);
+        if (!isNaN(numerator) && numerator > 0) {
+            return { numerator, denominator: 4 };
         }
     }
+
     return null;
 }
 
@@ -220,58 +221,44 @@ function decodeValue(code: string): string {
     }
 }
 
+// Re-implementing parseUniversalTom to support beat grouping
 export function parseUniversalTom(input: string): string {
     let result = '';
-    // Remove spaces, newlines, tabs from input?
-    // User input has spaces: "1.4J  alda;dalda; ..."
-    // We should preserve structure if possible or valid tokens.
-    // The font tokens rely on adjacency.
-
     let remaining = input.trim();
 
-    // Clean input: Remove measure/line metadata like "1.4J", "2.4J"
-    // Regex: Start of line, digits, dot, space?, digits, J
-    remaining = remaining.replace(/^\d+\.\s*\d*J\s*/gm, '');
-    // Remove bar lines and other structural chars for now?
-    // Keep structure if we can map it.
-    // The user input has `[` and `:{` which look like repeats or section markers.
-    // `[` might be start repeat? `:{` end repeat?
-    // Let's first just focus on note tokens.
+    // Clean input: Remove time signature metadata like "4J"
+    remaining = remaining.replace(/^\d+J\s*/gm, ''); // 4J (New format)
+
+    // Tracking for formatting
+    let accumulatedTicks = 0;
+    const ticksPerBeat = 4; // Standard quarter note = 4 ticks (16th grid)
 
     while (remaining.length > 0) {
         // Skip whitespace
         if (/^\s/.test(remaining[0])) {
-            // result += ' '; // Preserve spacing?
-            // Actually standard parser handles spacing.
             remaining = remaining.slice(1);
             continue;
         }
 
         // Check for structural chars
         if (remaining.startsWith('|')) {
-            result += '| ';
+            result = result.trimEnd() + ' | ';
             remaining = remaining.slice(1);
+            accumulatedTicks = 0; // Reset visual grouping on barline? Maybe.
             continue;
         }
         if (remaining.startsWith('[')) {
-            // result += '| '; // User requested to ignore structure
             remaining = remaining.slice(1);
             continue;
         }
         if (remaining.startsWith(':{')) {
-            // result += ' :| '; // User requested to ignore structure
             remaining = remaining.slice(2);
             continue;
         }
-        // `aj` `al` etc.
 
-        // Find longest match from COMPOUND_MAP
+        // Find longest match
         let match = '';
         let code = '';
-
-        // Sort keys by length descending to ensure longest match
-        // Optimization: In a real app we'd pre-sort keys. 
-        // For now, iterate.
         const keys = Object.keys(COMPOUND_MAP).sort((a, b) => b.length - a.length);
 
         for (const key of keys) {
@@ -283,20 +270,36 @@ export function parseUniversalTom(input: string): string {
         }
 
         if (match) {
-            // Decode the mapped code based on pairs (Sound+Duration)
-            // code is like "AZCZBZCZ" -> pairs AZ, CZ, BZ, CZ
+            // Decode pairs
             for (let i = 0; i < code.length; i += 2) {
                 const pair = code.slice(i, i + 2);
                 const decoded = decodeValue(pair);
-                result += decoded + ' ';
+
+                // Calculate ticks for this note to handle spacing
+                // decodeValue returns like "D---" (length 4) or "D-" (length 2)
+                // Actually decodeValue returns just the string. 
+                // We need to know the duration.
+                // We can derive it from string length (since each char is 1 tick usually, sound or dash or underscore).
+                // "D---" length 4 = 4 ticks.
+                // "D" length 1 = 1 tick.
+                const noteTicks = decoded.length;
+
+                result += decoded;
+                accumulatedTicks += noteTicks;
+
+                // Add space if we crossed a beat boundary (multiple of 4)
+                // And only if valid note (length > 0)
+                if (noteTicks > 0) {
+                    // Check if we just completed a beat or crossed one
+                    // Ideally we place space AFTER the note that completes the group
+                    // Simple heuristic: if accumulatedTicks is divisible by 4, add space.
+                    if (accumulatedTicks % ticksPerBeat === 0) {
+                        result += ' ';
+                    }
+                }
             }
             remaining = remaining.slice(match.length);
         } else {
-            // No match found - skip character
-            // Or checking if it is a simple token not in map? 
-            // Most simple tokens like `aj` are in map.
-            // If we hit unknown char, maybe just skip it to prevent infinite loop
-            // console.warn('Unknown token at:', remaining.slice(0, 10));
             remaining = remaining.slice(1);
         }
     }
