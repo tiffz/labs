@@ -28,6 +28,9 @@ export interface DropTarget {
   /** Exact character position based on cursor X within the note (for breaking tied notes) */
   exactCharPosition: number;
   notePos: NotePosition;
+  isImplicitRest?: boolean;
+  x: number;
+  y: number;
 }
 
 /**
@@ -43,23 +46,25 @@ export interface DropTarget {
  * @param notePos - The note position info
  * @returns The exact character position, snapped to meaningful boundaries
  */
-export function calculateExactCharPosition(cursorX: number, notePos: NotePosition): number {
-  const noteStartX = notePos.x;
-  const noteEndX = notePos.x + notePos.width;
-  const noteMidX = noteStartX + (noteEndX - noteStartX) / 2;
-  
-  // For ALL notes (tied or regular), snap to meaningful boundaries:
-  // - If cursor is in the first half of the note, snap to the START
-  // - If cursor is in the second half, snap to the END
-  // This creates a predictable, intuitive dropping experience
-  
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function calculateExactCharPosition(_cursorX: number, notePos: NotePosition): number {
+  // For ALL notes (tied or regular), if the cursor is within the visual bounds of the note,
+  // we almost certainly mean "replace this note" (which starts at charPosition).
+  // The previous logic split the note in half (left=replace, right=append), which felt "shifted".
+
+  // New Logic:
+  // If we are strictly within the note's visual box (with a small margin for gaps), snap to START.
+  // This makes "dropping on a note" always mean "target this note".
+
+  return notePos.charPosition;
+
+  /* Legacy Logic (Shifted Feeling)
   if (cursorX <= noteMidX) {
-    // Snap to the start of this note
     return notePos.charPosition;
   } else {
-    // Snap to the end of this note (start of next position)
     return notePos.charPosition + notePos.durationInSixteenths;
   }
+  */
 }
 
 /**
@@ -84,107 +89,72 @@ export function findDropTarget(
     return null;
   }
 
-  const staveHeight = 100;
-  const lineStartY = 40;
-  const maxLineDistance = staveHeight * 0.5; // Tighter tolerance: 50% of stave height
-  
-  // Calculate cursor's stave Y position (middle of stave)
-  const cursorStaveY = cursorY - 20; // Approximate: cursor Y minus offset to stave middle
-  const cursorLineIndex = Math.round((cursorStaveY - lineStartY) / staveHeight);
-  const cursorLineCenterY = lineStartY + cursorLineIndex * staveHeight + (staveHeight / 5) * 2;
-  
-  // Find notes on the same visual line (within maxLineDistance)
-  const sameLineNotes: NotePosition[] = [];
-  
-  for (const notePos of notePositions) {
-    let noteStaveY: number;
-    if (notePos.staveY !== undefined) {
-      noteStaveY = notePos.staveY + (staveHeight / 5) * 2; // Middle line of stave
-    } else {
-      noteStaveY = notePos.y + 25; // Approximate stave middle from note Y
-    }
-    
-    const yDistance = Math.abs(cursorLineCenterY - noteStaveY);
-    
-    if (yDistance <= maxLineDistance) {
-      sameLineNotes.push(notePos);
-    }
+  if (notePositions.length === 0) {
+    return null;
   }
-  
-  // If we found notes on the same line, pick the closest by X distance
-  // When cursor is in a gap between notes, prefer the note to the RIGHT (next note)
-  // This ensures clicking at the start of a measure selects that measure's first note
-  if (sameLineNotes.length > 0) {
-    let closestNote = sameLineNotes[0];
-    let minDistance = Infinity;
-    
-    for (const notePos of sameLineNotes) {
-      const noteStartX = notePos.x;
-      const noteEndX = notePos.x + notePos.width;
-      
-      // Calculate distance - prefer notes where cursor is within bounds
-      // When at a boundary, prefer the NEXT note (more intuitive for insertion)
-      let dx: number;
-      if (cursorX >= noteStartX && cursorX < noteEndX) {
-        // Cursor is within note bounds (exclusive end) - strongly prefer
-        // Use distance from NOTE START rather than center, so boundary clicks prefer next note
-        dx = (cursorX - noteStartX) * 0.01;
-      } else if (cursorX <= noteStartX) {
-        // Cursor is at or to the LEFT of note start - this is the NEXT note
-        // When cursor is exactly at noteStartX, dx=0 (perfect match for insertion)
-        dx = (noteStartX - cursorX) * 0.5;
-      } else {
-        // Cursor is to the RIGHT of note end - this is a PREVIOUS note
-        // Use high penalty so we never prefer past notes over upcoming ones
-        dx = 1000 + (cursorX - noteEndX) * 1.5;
-      }
-      
-      if (dx < minDistance) {
-        minDistance = dx;
-        closestNote = notePos;
-      }
-    }
-    
-    const exactPos = calculateExactCharPosition(cursorX, closestNote);
-    
-    return {
-      measureIndex: closestNote.measureIndex,
-      noteIndex: closestNote.noteIndex,
-      charPosition: closestNote.charPosition,
-      exactCharPosition: exactPos,
-      notePos: closestNote,
-    };
-  }
-  
-  // Fall back to closest note overall, but weight Y distance VERY heavily
-  // Also prefer notes that are closer horizontally (within reasonable X distance)
+
+  // We used to try to categorize notes into "lines" based on hardcoded Y offsets.
+  // This was fragile for wrapped lines or dynamic layouts (Bug 15).
+  // Instead, we now look at ALL notes and pick the one that minimizes a weighted distance function.
+  // We weight Y distance heavily so that we prioritize the correct line,
+  // but we don't hard-exclude anything based on arbitrary Y bands.
+
   let closestNote = notePositions[0];
   let minDistance = Infinity;
-  const maxReasonableXDistance = 200; // Don't consider notes more than 200px away horizontally
+
+  // Configuration for weighted distance
+  const Y_WEIGHT = 50; // Heavily penalize vertical distance (prefer same line)
+  const BOUNDS_BONUS = 0.01; // Tiny distance if within bounds (prefer exact hit)
+  const NEXT_NOTE_PREFERENCE = 0.5; // Preference for next note when between notes
+  const PREV_NOTE_PENALTY = 1.5; // Penalty for previous note (don't match backwards)
+
+  // Stave visual parameters (for vertical center calculation)
+  const STAVE_HEIGHT = 100;
 
   for (const notePos of notePositions) {
-    const noteCenterX = notePos.x + notePos.width / 2;
-    const dx = Math.abs(cursorX - noteCenterX);
-    
-    // Skip notes that are too far horizontally
-    if (dx > maxReasonableXDistance) {
-      continue;
-    }
-    
-    let noteStaveY: number;
+    const noteStartX = notePos.x;
+    const noteEndX = notePos.x + notePos.width;
+
+    // Calculate vertical distance from "stave center"
+    // Use stored staveY if available (most accurate), otherwise guess from note Y
+    let noteStaveCenterY: number;
     if (notePos.staveY !== undefined) {
-      noteStaveY = notePos.staveY + (staveHeight / 5) * 2;
+      noteStaveCenterY = notePos.staveY + (STAVE_HEIGHT / 2);
     } else {
-      noteStaveY = notePos.y + 25;
+      noteStaveCenterY = notePos.y + 25; // Approximate if missing
     }
-    
-    const dy = cursorY - noteStaveY;
-    // Weight Y distance VERY heavily (30x) to strongly prefer notes on nearby lines
-    // Also weight X distance moderately (2x) to prefer horizontally closer notes
-    const distance = Math.sqrt((dx * dx * 2) + (dy * dy * 30));
-    
-    if (distance < minDistance) {
-      minDistance = distance;
+
+    // We adjust cursor Y to be relative to stave center too? 
+    // Actually, simple DY is effectively Center-to-CursorY distance.
+    // If cursor is on the line, DY is small.
+    const dy = Math.abs(cursorY - noteStaveCenterY);
+
+    // Calculate horizontal distance metric
+    let dxScore: number;
+
+    if (cursorX >= noteStartX && cursorX < noteEndX) {
+      // Direct hit on note body
+      dxScore = (cursorX - noteStartX) * BOUNDS_BONUS;
+    } else if (cursorX <= noteStartX) {
+      // To the left (aiming at this note's start)
+      dxScore = (noteStartX - cursorX) * NEXT_NOTE_PREFERENCE;
+    } else {
+      // To the right (aiming past this note)
+      // We generally want to avoid matching "past" notes unless we are really close
+      dxScore = (cursorX - noteEndX) * PREV_NOTE_PENALTY;
+    }
+
+    // Combine scores
+    // Distance = sqrt((dx^2) + (dy^2 * weight))
+    // We use dxScore directly as a linear component for fine-tuning
+
+    // Actually, let's stick to the simpler scalar distance logic from the fallback, 
+    // but refined with the bounds checks.
+
+    const weightedDist = Math.sqrt(Math.pow(dxScore, 2) + Math.pow(dy * Y_WEIGHT, 2));
+
+    if (weightedDist < minDistance) {
+      minDistance = weightedDist;
       closestNote = notePos;
     }
   }
@@ -195,6 +165,10 @@ export function findDropTarget(
     charPosition: closestNote.charPosition,
     exactCharPosition: calculateExactCharPosition(cursorX, closestNote),
     notePos: closestNote,
+    isImplicitRest: false, // Default to false for now, logic handled in preview
+    x: closestNote.x,
+    y: closestNote.y
   };
 }
+
 

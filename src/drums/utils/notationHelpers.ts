@@ -13,6 +13,7 @@ const NOTATION_MAP: Record<string, DrumSound> = {
   'S': 'slap',
   's': 'slap',
   '_': 'rest',
+  '%': 'simile', // Phase 21: Support Simile in pattern analysis
 };
 
 /**
@@ -48,21 +49,21 @@ export function isDottedDuration(durationInSixteenths: number): boolean {
 export function parsePatternToNotes(pattern: string): Array<{ sound: DrumSound; duration: number }> {
   const notes: Array<{ sound: DrumSound; duration: number }> = [];
   let i = 0;
-  
+
   while (i < pattern.length) {
     const char = pattern[i];
-    
+
     // Skip spaces
     if (char === ' ') {
       i++;
       continue;
     }
-    
+
     // Check if it's a drum sound or rest
     if (NOTATION_MAP[char]) {
       const sound = NOTATION_MAP[char];
       let duration = 1; // Start with 1 sixteenth note
-      
+
       // For rests (_), count consecutive underscores; for others, count dashes
       let j = i + 1;
       if (char === '_') {
@@ -78,7 +79,10 @@ export function parsePatternToNotes(pattern: string): Array<{ sound: DrumSound; 
           j++;
         }
       }
-      
+
+      if (sound === 'simile') {
+        duration = 16;
+      }
       notes.push({ sound, duration });
       i = j;
     } else if (char === '-') {
@@ -89,7 +93,7 @@ export function parsePatternToNotes(pattern: string): Array<{ sound: DrumSound; 
       i++;
     }
   }
-  
+
   return notes;
 }
 

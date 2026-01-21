@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, type SetStateAction } from 'react';
 
 /**
  * Custom hook for managing notation history (undo/redo)
@@ -29,7 +29,7 @@ export function useNotationHistory(initialNotation: string) {
   /**
    * Update notation without adding to history (for internal operations)
    */
-  const setNotationWithoutHistory = useCallback((newNotation: string) => {
+  const setNotationWithoutHistory = useCallback((newNotation: SetStateAction<string>) => {
     setNotation(newNotation);
   }, []);
 
@@ -38,7 +38,7 @@ export function useNotationHistory(initialNotation: string) {
    */
   const undo = useCallback(() => {
     if (history.length === 0) return;
-    
+
     const previousNotation = history[history.length - 1];
     setHistory(prev => prev.slice(0, -1));
     setRedoStack(prev => [...prev, notation]);
@@ -50,7 +50,7 @@ export function useNotationHistory(initialNotation: string) {
    */
   const redo = useCallback(() => {
     if (redoStack.length === 0) return;
-    
+
     const nextNotation = redoStack[redoStack.length - 1];
     setRedoStack(prev => prev.slice(0, -1));
     setHistory(prev => [...prev, notation]);

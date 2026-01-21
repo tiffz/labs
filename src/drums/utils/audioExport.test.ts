@@ -72,14 +72,14 @@ let mockOfflineContextInstance: {
 
 global.OfflineAudioContext = vi.fn().mockImplementation((numberOfChannels: number, length: number, sampleRate: number) => {
   decodeAudioDataCalls = [];
-  
+
   const mockBufferSource = {
     buffer: null,
     start: vi.fn(),
     stop: vi.fn(),
     connect: vi.fn(),
   };
-  
+
   const mockGainNode = {
     gain: {
       setValueAtTime: vi.fn(),
@@ -87,7 +87,7 @@ global.OfflineAudioContext = vi.fn().mockImplementation((numberOfChannels: numbe
     },
     connect: vi.fn(),
   };
-  
+
   mockOfflineContextInstance = {
     decodeAudioData: vi.fn().mockImplementation((arrayBuffer: ArrayBuffer) => {
       decodeAudioDataCalls.push(arrayBuffer);
@@ -111,7 +111,7 @@ global.OfflineAudioContext = vi.fn().mockImplementation((numberOfChannels: numbe
       getChannelData: () => new Float32Array(length),
     }),
   };
-  
+
   return mockOfflineContextInstance;
 }) as unknown as typeof OfflineAudioContext;
 
@@ -211,10 +211,10 @@ describe('audioExport', () => {
           }
           return data;
         },
-      } as AudioBuffer;
+      } as unknown as AudioBuffer;
 
       const blob = audioBufferToWav(mockBuffer);
-      
+
       expect(blob).toBeInstanceOf(Blob);
       expect(blob.type).toBe('audio/wav');
       expect(blob.size).toBeGreaterThan(0);
@@ -235,7 +235,7 @@ describe('audioExport', () => {
       } as AudioBuffer;
 
       const blob = audioBufferToWav(mockBuffer);
-      
+
       expect(blob).toBeInstanceOf(Blob);
       expect(blob.type).toBe('audio/wav');
     });
@@ -257,7 +257,7 @@ describe('audioExport', () => {
       } as AudioBuffer;
 
       const blob = await exportAudioBuffer(mockBuffer, 'wav');
-      
+
       expect(blob).toBeInstanceOf(Blob);
       expect(blob.type).toBe('audio/wav');
     });
@@ -277,7 +277,7 @@ describe('audioExport', () => {
       } as AudioBuffer;
 
       const blob = await exportAudioBuffer(mockBuffer, 'mp3');
-      
+
       expect(blob).toBeInstanceOf(Blob);
       expect(blob.type).toBe('audio/mp3');
     });
@@ -451,8 +451,9 @@ describe('audioExport', () => {
       });
 
       // Should not throw, but should warn
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => { });
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+
       const buffer = await renderRhythmAudio(
         mockRhythm,
         120,
@@ -467,6 +468,7 @@ describe('audioExport', () => {
       );
 
       consoleSpy.mockRestore();
+      consoleErrorSpy.mockRestore();
       global.fetch = originalFetch;
     });
   });

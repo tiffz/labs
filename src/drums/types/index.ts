@@ -6,4 +6,7 @@ export type {
   Measure,
   TimeSignature,
   ParsedRhythm,
+  RepeatMarker,
+  SectionRepeat,
+  MeasureRepeat,
 } from '../../shared/rhythm/types';

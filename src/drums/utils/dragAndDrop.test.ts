@@ -1,34 +1,46 @@
 import { describe, it, expect } from 'vitest';
-import { 
-  insertPatternAtPosition, 
-  replacePatternAtPosition, 
+import {
+  insertPatternAtPosition,
+  replacePatternAtPosition,
   getPatternDuration,
-  findMeasureBoundaries 
+  findMeasureBoundaries
 } from './dragAndDrop';
+import { parseRhythm } from '../../shared/rhythm/rhythmParser';
 import type { TimeSignature } from '../types';
 
 describe('dragAndDrop', () => {
   const timeSignature: TimeSignature = { numerator: 4, denominator: 4 };
 
+  // Helper to allow tests to remain concise
+  const insert = (not: string, pos: number, pat: string) => {
+    const parsed = parseRhythm(not, timeSignature);
+    return insertPatternAtPosition(not, pos, pat, parsed, timeSignature);
+  };
+
+  const replace = (not: string, pos: number, pat: string, dur: number) => {
+    const parsed = parseRhythm(not, timeSignature);
+    return replacePatternAtPosition(not, pos, pat, dur, timeSignature, parsed);
+  };
+
   describe('insertPatternAtPosition', () => {
     it('should insert at the beginning of notation', () => {
-      const result = insertPatternAtPosition('DKTK', 0, 'T');
+      const result = insert('DKTK', 0, 'T');
       expect(result).toBe('TDKTK');
     });
 
     it('should insert at the end of notation', () => {
-      const result = insertPatternAtPosition('DKTK', 4, 'T');
+      const result = insert('DKTK', 4, 'T');
       expect(result).toBe('DKTKT');
     });
 
     it('should insert at a note boundary (between notes)', () => {
-      const result = insertPatternAtPosition('DKTK', 2, 'S');
+      const result = insert('DKTK', 2, 'S');
       expect(result).toBe('DKSTK');
     });
 
     it('should break a long note when inserting in the middle', () => {
       // D--- is a whole note (4 sixteenths), insert at position 2 (middle)
-      const result = insertPatternAtPosition('D---', 2, 'T');
+      const result = insert('D---', 2, 'T');
       // Should become D- (half note) + T + D- (half note)
       expect(result).toBe('D-TD-');
     });
@@ -36,30 +48,30 @@ describe('dragAndDrop', () => {
     it('should break a long note at various positions', () => {
       // D--- is a whole note (4 sixteenths)
       // Insert at position 1: D (quarter rest of original) + T + D-- (3/4 of original)
-      const result1 = insertPatternAtPosition('D---', 1, 'T');
+      const result1 = insert('D---', 1, 'T');
       expect(result1).toBe('DTD--');
-      
+
       // Insert at position 3: D-- (3/4 of original) + T + D (quarter rest)
-      const result3 = insertPatternAtPosition('D---', 3, 'T');
+      const result3 = insert('D---', 3, 'T');
       expect(result3).toBe('D--TD');
     });
 
     it('should break a rest when inserting in the middle', () => {
       // ____ is 4 sixteenth rests
-      const result = insertPatternAtPosition('____', 2, 'D');
+      const result = insert('____', 2, 'D');
       expect(result).toBe('__D__');
     });
 
     it('should handle inserting a pattern (not just single note)', () => {
       // D--- is a whole note, insert pattern at position 2
-      const result = insertPatternAtPosition('D---', 2, 'TK');
+      const result = insert('D---', 2, 'TK');
       expect(result).toBe('D-TKD-');
     });
 
     it('should handle complex notation with multiple notes', () => {
       // D-T- = half Dum + half Tak
       // Insert at position 3 (middle of Tak)
-      const result = insertPatternAtPosition('D-T-', 3, 'K');
+      const result = insert('D-T-', 3, 'K');
       // D- stays, T becomes split at position 1 of itself
       // T (1 sixteenth) + K + - (1 sixteenth -> becomes another T)
       expect(result).toBe('D-TKT');
@@ -68,14 +80,14 @@ describe('dragAndDrop', () => {
 
   describe('replacePatternAtPosition', () => {
     it('should replace at the start of a note', () => {
-      const result = replacePatternAtPosition('DKTK', 0, 'S', 1, timeSignature);
+      const result = replace('DKTK', 0, 'S', 1);
       expect(result.newNotation).toBe('SKTK');
       expect(result.replacedLength).toBe(1);
     });
 
     it('should break a note when replacing in the middle', () => {
       // D--- is 4 sixteenths, replace at position 2 with T (1 sixteenth)
-      const result = replacePatternAtPosition('D---', 2, 'T', 1, timeSignature);
+      const result = replace('D---', 2, 'T', 1);
       // Original: D--- = 4 sixteenths at positions 0,1,2,3
       // Prefix: positions 0-1 = D- (2 sixteenths)
       // Pattern T replaces 1 sixteenth at position 2
@@ -88,7 +100,7 @@ describe('dragAndDrop', () => {
     it('should break a long tied note (16 sixteenths) when replacing in the middle', () => {
       // D--------------- is 16 sixteenths (whole note)
       // Replace at position 8 with K (1 sixteenth)
-      const result = replacePatternAtPosition('D---------------', 8, 'K', 1, timeSignature);
+      const result = replace('D---------------', 8, 'K', 1);
       // Should become: D------- (8 sixteenths) + K (1) + D------ (7 sixteenths) = 16 total
       expect(result.newNotation).toBe('D-------KD------');
       expect(result.replacedStart).toBe(8);
@@ -97,13 +109,13 @@ describe('dragAndDrop', () => {
 
     it('should correctly break tied note at various positions', () => {
       // Test breaking at position 4 (1/4 through the note)
-      const result4 = replacePatternAtPosition('D---------------', 4, 'K', 1, timeSignature);
+      const result4 = replace('D---------------', 4, 'K', 1);
       // D--- (4) + K (1) + D---------- (11) = 16
       expect(result4.newNotation).toBe('D---KD----------');
       expect(result4.newNotation.length).toBe(16);
-      
+
       // Test breaking at position 12 (3/4 through the note)
-      const result12 = replacePatternAtPosition('D---------------', 12, 'K', 1, timeSignature);
+      const result12 = replace('D---------------', 12, 'K', 1);
       // D----------- (12) + K (1) + D-- (3) = 16
       expect(result12.newNotation).toBe('D-----------KD--');
       expect(result12.newNotation.length).toBe(16);
@@ -113,7 +125,7 @@ describe('dragAndDrop', () => {
       // Test with notation spanning two measures (32 sixteenths in 4/4)
       // D------------------------------- = 32 sixteenths (2 measures)
       // Replace at position 16 (start of measure 2) with K
-      const result = replacePatternAtPosition('D-------------------------------', 16, 'K', 1, timeSignature);
+      const result = replace('D-------------------------------', 16, 'K', 1);
       // D--------------- (16) + K (1) + D-------------- (15) = 32
       expect(result.newNotation).toBe('D---------------KD--------------');
       expect(result.newNotation.length).toBe(32);
@@ -122,7 +134,7 @@ describe('dragAndDrop', () => {
     it('should correctly replace at the start of a note (boundary case)', () => {
       // D---T--- = Dum(4) + Tak(4) = 8 sixteenths
       // Replace at position 4 (start of Tak) with K (1 sixteenth)
-      const result = replacePatternAtPosition('D---T---', 4, 'K', 1, timeSignature);
+      const result = replace('D---T---', 4, 'K', 1);
       // D--- (4) + K (1) + T-- (3) = 8
       // The Tak note should be properly broken, not just sliced
       expect(result.newNotation).toBe('D---KT--');
@@ -131,7 +143,7 @@ describe('dragAndDrop', () => {
 
     it('should correctly replace at position 0', () => {
       // Replace at the very start of notation
-      const result = replacePatternAtPosition('D---T---', 0, 'K', 1, timeSignature);
+      const result = replace('D---T---', 0, 'K', 1);
       // K (1) + D-- (3) + T--- (4) = 8
       expect(result.newNotation).toBe('KD--T---');
       expect(result.newNotation.length).toBe(8);
@@ -140,14 +152,14 @@ describe('dragAndDrop', () => {
     it('should handle replacing entire note at boundary', () => {
       // D---T--- = 8 sixteenths
       // Replace at position 4 with K--- (4 sixteenths, same duration as Tak)
-      const result = replacePatternAtPosition('D---T---', 4, 'K---', 4, timeSignature);
+      const result = replace('D---T---', 4, 'K---', 4);
       // D--- (4) + K--- (4) = 8 (Tak is completely replaced)
       expect(result.newNotation).toBe('D---K---');
       expect(result.newNotation.length).toBe(8);
     });
 
     it('should handle replacing at the end (append)', () => {
-      const result = replacePatternAtPosition('DK', 2, 'T', 1, timeSignature);
+      const result = replace('DK', 2, 'T', 1);
       expect(result.newNotation).toBe('DKT');
     });
 
@@ -157,14 +169,14 @@ describe('dragAndDrop', () => {
       // Pattern should START at position 16, not END there
       const tiedNote = 'T-------------------------------'; // 32 sixteenths
       expect(tiedNote.length).toBe(32);
-      
+
       // Insert a sixteenth Ka note at position 16
-      const result = replacePatternAtPosition(tiedNote, 16, 'K', 1, timeSignature);
-      
+      const result = replace(tiedNote, 16, 'K', 1);
+
       // Expected: T--------------- (16) + K (1) + T-------------- (15) = 32
       expect(result.newNotation).toBe('T---------------KT--------------');
       expect(result.newNotation.length).toBe(32);
-      
+
       // Verify K is at position 16 (the 17th character, 0-indexed as 16)
       expect(result.newNotation[16]).toBe('K');
     });
@@ -172,14 +184,14 @@ describe('dragAndDrop', () => {
     it('should insert quarter note (4 sixteenths) at position 16 - pattern should START at 16, not END there', () => {
       // This tests the "longer patterns placed to END at insertion point" issue
       const tiedNote = 'T-------------------------------'; // 32 sixteenths
-      
+
       // Insert a quarter note Ka at position 16
-      const result = replacePatternAtPosition(tiedNote, 16, 'K---', 4, timeSignature);
-      
+      const result = replace(tiedNote, 16, 'K---', 4);
+
       // Expected: T--------------- (16) + K--- (4) + T----------- (12) = 32
       expect(result.newNotation).toBe('T---------------K---T-----------');
       expect(result.newNotation.length).toBe(32);
-      
+
       // Verify K is at position 16 (pattern STARTS at 16, not ENDS there)
       expect(result.newNotation[16]).toBe('K');
       expect(result.newNotation[17]).toBe('-');
@@ -191,7 +203,7 @@ describe('dragAndDrop', () => {
 
     it('should replace multiple notes with a longer pattern', () => {
       // Replace from position 0 with a pattern that spans 4 sixteenths
-      const result = replacePatternAtPosition('DKTK', 0, 'S---', 4, timeSignature);
+      const result = replace('DKTK', 0, 'S---', 4);
       expect(result.newNotation).toBe('S---');
     });
   });
@@ -264,7 +276,7 @@ describe('dragAndDrop', () => {
       const cleanNotation = notation.replace(/[\s\n]/g, '');
       const selectionLength = fromEnd - fromStart;
       const selectedPattern = cleanNotation.slice(fromStart, fromEnd);
-      
+
       // Helper to heal orphaned dashes
       const healOrphanedDashes = (notationAfterRemoval: string): string => {
         if (fromStart < notationAfterRemoval.length && notationAfterRemoval[fromStart] === '-') {
@@ -279,27 +291,27 @@ describe('dragAndDrop', () => {
         }
         return notationAfterRemoval;
       };
-      
+
       let finalInsertPosition: number;
-      
+
       if (toPosition <= fromStart) {
         // Moving BACKWARD
         let notationWithoutSelection = cleanNotation.slice(0, fromStart) + cleanNotation.slice(fromEnd);
         notationWithoutSelection = healOrphanedDashes(notationWithoutSelection);
-        return insertPatternAtPosition(notationWithoutSelection, toPosition, selectedPattern);
+        return insert(notationWithoutSelection, toPosition, selectedPattern);
       } else {
         // Moving FORWARD
         let notationWithoutSelection = cleanNotation.slice(0, fromStart) + cleanNotation.slice(fromEnd);
         notationWithoutSelection = healOrphanedDashes(notationWithoutSelection);
-        
+
         if (toPosition >= fromEnd) {
           finalInsertPosition = toPosition - selectionLength;
         } else {
           finalInsertPosition = fromStart;
         }
-        
+
         finalInsertPosition = Math.max(0, Math.min(finalInsertPosition, notationWithoutSelection.length));
-        return insertPatternAtPosition(notationWithoutSelection, finalInsertPosition, selectedPattern);
+        return insert(notationWithoutSelection, finalInsertPosition, selectedPattern);
       }
     }
 
@@ -426,6 +438,89 @@ describe('dragAndDrop', () => {
         // After removal: K
         // finalPos = 2 - 1 = 1, at end
         expect(result).toBe('KD');
+      });
+    });
+  });
+});
+
+// Consolidated Mapping Tests (from debug files)
+import { mapLogicalToStringIndex } from './dragAndDrop';
+
+describe('Mapping Debug & Regressions', () => {
+  const timeSignature: TimeSignature = { numerator: 4, denominator: 4, beatGrouping: [4, 4, 4, 4] };
+
+  describe('Full String Mapping Debug', () => {
+    const input = `T-K-K---S-----TK | % |x6 | DKTKD-DKTKD--DKSK-DKTDKTK| T-D---K-___TKT-D | DDKKT-ST-SSK-- | KDD--D__DD-----|: DKTKKTKTTKTKD--D:|x3`;
+
+    it('should map M12 (Section Start) correctly', () => {
+      const parsed = parseRhythm(input, timeSignature);
+      // M0 (1) + M1 (1) + M2..M7 (6 repeats) = 8 measures.
+      // M8, M9, M10, M11 (Linear).
+      // M12 is Section Start.
+      const mStart = 12 * 16;
+      const map = mapLogicalToStringIndex(input, mStart, parsed, timeSignature);
+      const charAtTarget = input[map.index];
+      const context = input.slice(map.index, map.index + 10);
+
+      expect(charAtTarget).toBe('D');
+      expect(context).toContain('DKTK');
+    });
+
+    it('should map M13 (Ghost) back to M12 string index', () => {
+      const parsed = parseRhythm(input, timeSignature);
+      const mStart = 13 * 16;
+      const map = mapLogicalToStringIndex(input, mStart, parsed, timeSignature);
+      const charAtTarget = input[map.index];
+      expect(charAtTarget).toBe('D');
+    });
+  });
+
+  describe('Section Repeat Mapping', () => {
+    const notation = 'D---D---D---D---|: T---T---T---T--- :|x3';
+
+    it('should map logical position of Section Start correctly', () => {
+      const parsed = parseRhythm(notation, timeSignature);
+      // M0 takes 16 chars + header. M1 starts after M0.
+      // M1 is "T...". Logical pos of M1 Start = 16.
+      const map = mapLogicalToStringIndex(notation, 16, parsed, timeSignature);
+      const charAtTarget = notation[map.index];
+      expect(charAtTarget).toBe('T');
+    });
+
+    it('should map logical position of Ghost Measure correctly (M2)', () => {
+      const parsed = parseRhythm(notation, timeSignature);
+      // M2 is the first ghost of the section repeat.
+      const m2Pos = 32;
+      const map = mapLogicalToStringIndex(notation, m2Pos, parsed, timeSignature);
+      const charAtTarget = notation[map.index];
+      expect(charAtTarget).toBe('T');
+    });
+  });
+
+  describe('Multi-Measure Repeat Editing Reproduction', () => {
+    describe('Scenario 1: Simile Repeats (| % |xN)', () => {
+      // Notation: M0(D...), M1(Simile of M0), M2(Ghost of M1)
+      const notation = 'D---D---D---D---|%|x2';
+
+      it('should map note selection in Simile measure to the % symbol', () => {
+        const parsed = parseRhythm(notation, timeSignature);
+        // User clicks 2nd beat (Tick 20) in M1 (Simile)
+        const map = mapLogicalToStringIndex(notation, 20, parsed, timeSignature);
+        const char = notation[map.index];
+        expect(char).toBe('%');
+      });
+    });
+
+    describe('Scenario 2: Section Repeats (|: A | B :|xN)', () => {
+      const sectionNotation = '|: D--- | k--- :|x2';
+
+      it('should map ghost edits back to source note correctly', () => {
+        const parsed = parseRhythm(sectionNotation, timeSignature);
+        // User clicks 'k' in M3 (Ghost of M1).
+        // M0, M1 (Source). M2, M3 (Ghost).
+        const targetTick = 48; // Start of M3
+        const map = mapLogicalToStringIndex(sectionNotation, targetTick, parsed, timeSignature);
+        expect(sectionNotation[map.index]).toBe('k');
       });
     });
   });

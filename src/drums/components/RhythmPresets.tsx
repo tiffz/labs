@@ -4,10 +4,10 @@ import { RHYTHM_DATABASE } from '../data/rhythmDatabase';
 
 interface RhythmPresetsProps {
   onSelectPreset: (notation: string, timeSignature: TimeSignature) => void;
-  onImportDrumTab?: () => void;
+  onImportTab?: () => void;
 }
 
-const RhythmPresets: React.FC<RhythmPresetsProps> = ({ onSelectPreset, onImportDrumTab }) => {
+const RhythmPresets: React.FC<RhythmPresetsProps> = ({ onSelectPreset, onImportTab }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -28,9 +28,9 @@ const RhythmPresets: React.FC<RhythmPresetsProps> = ({ onSelectPreset, onImportD
     setIsOpen(false);
   };
 
-  const handleImportDrumTab = () => {
+  const handleImportTab = () => {
     setIsOpen(false);
-    onImportDrumTab?.();
+    onImportTab?.();
   };
 
   return (
@@ -59,16 +59,16 @@ const RhythmPresets: React.FC<RhythmPresetsProps> = ({ onSelectPreset, onImportD
           ))}
           
           {/* Import Section */}
-          {onImportDrumTab && (
+          {onImportTab && (
             <>
               <div className="dropdown-section-header">Import</div>
               <button
                 className="dropdown-item dropdown-item-action"
-                onClick={handleImportDrumTab}
+                onClick={handleImportTab}
                 type="button"
               >
                 <span className="material-symbols-outlined dropdown-item-icon">upload</span>
-                Import Drum Tab...
+                Import Tab...
               </button>
             </>
           )}

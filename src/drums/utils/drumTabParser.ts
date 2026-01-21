@@ -12,21 +12,56 @@
 const DRUM_COMPONENTS = ['BD', 'SD', 'HH', 'CC', 'RC', 'ST', 'LT', 'FT', 'SR'] as const;
 type DrumComponent = (typeof DRUM_COMPONENTS)[number];
 
+/** Map of alternative/short codes to standard codes */
+const COMPONENT_MAPPING: Record<string, DrumComponent> = {
+  'B': 'BD', 'K': 'BD', // Kick
+  'S': 'SD', 'SN': 'SD',
+  'H': 'HH', 'HI': 'HH',
+  'C': 'CC', 'CR': 'CC',
+  'R': 'RC', 'RD': 'RC',
+  'T': 'ST', 'T1': 'ST', 'HT': 'ST', // High Tom -> Small Tom
+  'ST': 'ST',
+  't': 'ST',
+  'L': 'LT', 'T2': 'LT',
+  'F': 'FT', 'T3': 'FT',
+};
+
+// Start with default mappings
+DRUM_COMPONENTS.forEach(c => { COMPONENT_MAPPING[c] = c; });
+
 /** Characters that indicate a hit on that beat */
-const HIT_CHARS = new Set(['o', 'O', 'x', 'X']);
+const HIT_CHARS = new Set(['o', 'O', 'x', 'X', 'f', 'F', 'g', 'G', '#']);
 
 /** Characters that indicate a double hit (two sixteenths) */
-const DOUBLE_HIT_CHARS = new Set(['d', 'D']);
+const DOUBLE_HIT_CHARS = new Set(['d', 'D', 'b', 'B']);
 
-/** Pattern to match a drum component line */
-const DRUM_LINE_PATTERN = /^(BD|SD|HH|CC|RC|ST|LT|FT|SR)\s+(.+)$/i;
+/** Pattern to match a drum component line.
+ *  Relaxed to allow various separators like ':', '|', '>', or just spaces.
+ *  Group 1: Component (1-2 letters)
+ *  Group 2: The tab data (must contain typical tab chars)
+ */
+const DRUM_LINE_PATTERN = /^([A-Za-z]{1,2})\s*[:|/>\s-)]?\s*([-xoXO|dDfFgG#\s]+)$/i;
 
 /** Pattern to detect if text looks like a drum tab */
-const DRUM_TAB_DETECTION_PATTERN = /^(BD|SD|HH|CC|RC|ST|LT|FT|SR)\s+[-xoXO|d\s]+$/im;
+// Matches lines that start with a component and contain typical tab characters
+// EXCLUDES common guitar string names (e, B, G, D, A, E) to prevent false positives
+const DRUM_TAB_DETECTION_PATTERN = /^(?!e:|B:|G:|D:|A:|E:|e\||B\||G\||D\||A\||E\|)([A-Za-z]{1,2})\s*[:|/>\s-)]?\s*[-xoXO|dDfFgG#\s]{3,}$/im;
+
+/** Pattern to detect section headers like [intro], [verse A], "Intro:", "Verse 1:", etc. */
+// Exclude typical drum components followed by colon (e.g. "SD:") from being sections
+const SECTION_HEADER_PATTERN = /^(?!BD:|SD:|HH:|CC:|RC:|ST:|LT:|FT:|SR:|B:|S:|H:|C:)(?:\[([^\]]+)\]|(.+):)\s*$/i;
 
 export interface ParsedMeasure {
   notation: string;
   count: number; // How many times this pattern repeats consecutively
+}
+
+/** A detected section in the tab */
+export interface DrumTabSection {
+  /** Section name (e.g., "intro", "verse A") */
+  name: string;
+  /** Converted notation for this section */
+  notation: string;
 }
 
 export interface DrumTabParseOptions {
@@ -44,17 +79,30 @@ export const DEFAULT_PARSE_OPTIONS: DrumTabParseOptions = {
   includeHiHat: false,
 };
 
+export interface DrumPattern {
+  /** The darbuka notation for this pattern */
+  notation: string;
+  /** Total number of occurrences in the tab */
+  count: number;
+  /** Percentage of total measures (0-1) */
+  frequency: number;
+}
+
 export interface ParsedDrumTab {
   /** The converted darbuka notation (full) */
   notation: string;
   /** Unique measures with repeat counts */
   uniqueMeasures: ParsedMeasure[];
+  /** Pattern analysis results - sorted by frequency */
+  patterns: DrumPattern[];
   /** Simplified notation showing just unique patterns */
   simplifiedNotation: string;
   /** Number of measures detected */
   measureCount: number;
   /** Which drum components were found in the tab */
   componentsFound: DrumComponent[];
+  /** Detected sections in the tab */
+  sections: DrumTabSection[];
   /** Any warnings during parsing */
   warnings: string[];
 }
@@ -81,36 +129,111 @@ export function isDrumTab(text: string): boolean {
   return drumLineCount >= 2 && hasBarseparator;
 }
 
+interface DrumDataBlock {
+  sectionName: string;
+  data: Map<DrumComponent, string>;
+}
+
 /**
  * Extracts timing data for each component, properly handling continuations.
+ * Also detects section headers to group data by sections.
  */
-function extractDrumData(text: string): Map<DrumComponent, string> {
-  const result = new Map<DrumComponent, string>();
+
+
+/**
+ * Talleys unique 1-bar patterns from the detected measures.
+ */
+function tallyPatterns(measures: string[]): DrumPattern[] {
+  if (measures.length === 0) return [];
+
+  const counts = new Map<string, number>();
+  measures.forEach(m => {
+    counts.set(m, (counts.get(m) || 0) + 1);
+  });
+
+  const patterns: DrumPattern[] = [];
+  counts.forEach((count, notation) => {
+    patterns.push({
+      notation,
+      count,
+      frequency: count / measures.length
+    });
+  });
+
+  // Sort by count descending
+  return patterns.sort((a, b) => b.count - a.count);
+}
+
+// ... (existing helper functions)
+
+// I need to be careful.
+
+
+interface DrumDataBlock {
+  sectionName: string;
+  data: Map<DrumComponent, string>;
+}
+
+/**
+ * Extracts timing data for each component, properly handling continuations.
+ * Also detects section headers to group data by sections.
+ */
+function extractDrumDataWithSections(text: string): DrumDataBlock[] {
+  const sections: DrumDataBlock[] = [];
   const lines = text.split('\n');
 
+  let currentSectionName = 'Full Song';
   let blockComponentOrder: DrumComponent[] = [];
   let blockData = new Map<DrumComponent, string>();
+  let sectionData = new Map<DrumComponent, string>();
   let continuationIndex = 0;
+
+  const flushBlock = () => {
+    if (blockData.size > 0) {
+      blockData.forEach((data, comp) => {
+        const existing = sectionData.get(comp) || '';
+        sectionData.set(comp, existing + data);
+      });
+      blockData = new Map();
+      blockComponentOrder = [];
+      continuationIndex = 0;
+    }
+  };
+
+  const flushSection = () => {
+    flushBlock();
+    if (sectionData.size > 0) {
+      sections.push({ sectionName: currentSectionName, data: new Map(sectionData) });
+      sectionData = new Map();
+    }
+  };
 
   for (const line of lines) {
     const trimmed = line.trim();
 
+    // Check for section header
+    const sectionMatch = trimmed.match(SECTION_HEADER_PATTERN);
+    if (sectionMatch) {
+      flushSection();
+      // Extract name from either [bracketed] format (group 1) or "Name:" format (group 2)
+      // If neither is present (shouldn't happen with regex, but safe fallback), use 'Full Song'
+      const extractedName = sectionMatch[1] || sectionMatch[2] || 'Full Song';
+      currentSectionName = extractedName.trim() || 'Full Song';
+      continue;
+    }
+
     if (!trimmed) {
-      if (blockData.size > 0) {
-        for (const [comp, data] of blockData) {
-          const existing = result.get(comp) || '';
-          result.set(comp, existing + data);
-        }
-        blockData = new Map();
-        blockComponentOrder = [];
-        continuationIndex = 0;
-      }
+      flushBlock();
       continue;
     }
 
     const match = trimmed.match(DRUM_LINE_PATTERN);
-    if (match) {
-      const component = match[1].toUpperCase() as DrumComponent;
+    // Check if it's a valid component match by checking mapping
+    const rawComponent = match ? match[1].toUpperCase() : null;
+    const mappedComponent = rawComponent ? COMPONENT_MAPPING[rawComponent] : null;
+
+    if (match && mappedComponent) {
+      const component = mappedComponent;
       const timing = match[2];
 
       if (!blockComponentOrder.includes(component)) {
@@ -118,7 +241,7 @@ function extractDrumData(text: string): Map<DrumComponent, string> {
       }
       blockData.set(component, (blockData.get(component) || '') + timing);
       continuationIndex = 0;
-    } else if (blockComponentOrder.length > 0 && trimmed.match(/^[-xoXO|d\s]+$/)) {
+    } else if (blockComponentOrder.length > 0 && trimmed.match(/^[-xoXO|dDfFgG#\s]+$/)) {
       if (continuationIndex < blockComponentOrder.length) {
         const component = blockComponentOrder[continuationIndex];
         blockData.set(component, (blockData.get(component) || '') + trimmed);
@@ -128,21 +251,29 @@ function extractDrumData(text: string): Map<DrumComponent, string> {
         }
       }
     } else if (blockData.size > 0) {
-      for (const [comp, data] of blockData) {
-        const existing = result.get(comp) || '';
-        result.set(comp, existing + data);
-      }
-      blockData = new Map();
-      blockComponentOrder = [];
-      continuationIndex = 0;
+      flushBlock();
     }
   }
 
-  if (blockData.size > 0) {
-    for (const [comp, data] of blockData) {
+  flushSection();
+
+  // If we only have one section named "Full Song", check if there are actually any sections
+  // If not, return with that name
+  return sections;
+}
+
+/**
+ * Legacy function for backwards compatibility - extracts all data as one block.
+ */
+function extractDrumData(text: string): Map<DrumComponent, string> {
+  const sections = extractDrumDataWithSections(text);
+  const result = new Map<DrumComponent, string>();
+
+  for (const section of sections) {
+    section.data.forEach((data, comp) => {
       const existing = result.get(comp) || '';
       result.set(comp, existing + data);
-    }
+    });
   }
 
   return result;
@@ -219,16 +350,16 @@ function convertToDarbuka(
  */
 function simplifyToEighthNotes(notation: string): string {
   let result = '';
-  
+
   for (let i = 0; i < notation.length; i += 2) {
     const pos1 = notation[i] || '_';
     const pos2 = notation[i + 1] || '_';
-    
+
     // Check for hits (D, T, or K)
     const isHit = (c: string) => c === 'D' || c === 'T' || c === 'K';
     const hit1 = isHit(pos1) ? pos1 : null;
     const hit2 = isHit(pos2) ? pos2 : null;
-    
+
     if (hit1 && hit2) {
       // Both positions have hits - output both (preserves "oo" → "DD")
       result += hit1 + hit2;
@@ -243,7 +374,7 @@ function simplifyToEighthNotes(notation: string): string {
       result += '__';
     }
   }
-  
+
   return result;
 }
 
@@ -317,22 +448,12 @@ function cleanupNotation(notation: string): string {
 }
 
 /**
- * Main parser function.
+ * Process drum data into notation.
  */
-export function parseDrumTab(
-  text: string,
-  options: DrumTabParseOptions = DEFAULT_PARSE_OPTIONS
-): ParsedDrumTab {
-  const warnings: string[] = [];
-  const drumData = extractDrumData(text);
-
-  const componentsFound: DrumComponent[] = [];
-  for (const comp of DRUM_COMPONENTS) {
-    if (drumData.has(comp)) {
-      componentsFound.push(comp);
-    }
-  }
-
+function processDataToNotation(
+  drumData: Map<DrumComponent, string>,
+  options: DrumTabParseOptions
+): { notation: string; measures: string[] } | null {
   const bdData = drumData.get('BD');
   const sdData = drumData.get('SD');
   const hhData = drumData.get('HH');
@@ -343,15 +464,7 @@ export function parseDrumTab(
   const hasHh = options.includeHiHat && hhData;
 
   if (!hasBd && !hasSd && !hasHh) {
-    warnings.push('No selected drum components found in tab');
-    return {
-      notation: '',
-      uniqueMeasures: [],
-      simplifiedNotation: '',
-      measureCount: 0,
-      componentsFound,
-      warnings,
-    };
+    return null;
   }
 
   // Parse timing data
@@ -360,24 +473,15 @@ export function parseDrumTab(
   const hhHits = hhData ? parseTimingToHits(hhData) : [];
 
   // Find the shortest length to ensure alignment
-  // Only consider lengths of components that are enabled
   const lengths: number[] = [];
   if (options.includeBass && bdHits.length > 0) lengths.push(bdHits.length);
   if (options.includeSnare && sdHits.length > 0) lengths.push(sdHits.length);
   if (options.includeHiHat && hhHits.length > 0) lengths.push(hhHits.length);
-  
+
   const maxLength = lengths.length > 0 ? Math.min(...lengths) : 0;
 
   if (maxLength === 0) {
-    warnings.push('No timing data found in tab');
-    return {
-      notation: '',
-      uniqueMeasures: [],
-      simplifiedNotation: '',
-      measureCount: 0,
-      componentsFound,
-      warnings,
-    };
+    return null;
   }
 
   // Convert to darbuka notation (16th notes)
@@ -392,19 +496,90 @@ export function parseDrumTab(
   // Clean up each measure
   const cleanedMeasures = measures.map(m => cleanupNotation(m));
 
+  return {
+    notation: cleanedMeasures.join(' '),
+    measures: cleanedMeasures,
+  };
+}
+
+/**
+ * Main parser function.
+ */
+export function parseDrumTab(
+  text: string,
+  options: DrumTabParseOptions = DEFAULT_PARSE_OPTIONS
+): ParsedDrumTab {
+  const warnings: string[] = [];
+  const sectionBlocks = extractDrumDataWithSections(text);
+  const drumData = extractDrumData(text);
+
+  const componentsFound: DrumComponent[] = [];
+  for (const comp of DRUM_COMPONENTS) {
+    if (drumData.has(comp)) {
+      componentsFound.push(comp);
+    }
+  }
+
+  // Process all data together for full notation
+  const fullResult = processDataToNotation(drumData, options);
+
+  // Even if fullResult is null (e.g. valid components found but disabled in options),
+  // we should return the metadata so the UI can prompt the user to enable them.
+  if (!fullResult && componentsFound.length === 0) {
+    warnings.push('No selected drum components found in tab');
+    return {
+      notation: '',
+      uniqueMeasures: [],
+      patterns: [],
+      simplifiedNotation: '',
+      measureCount: 0,
+      componentsFound,
+      sections: [],
+      warnings,
+    };
+  }
+
+  // Use empty result if processing failed/filtered but components exist
+  const finalNotation = fullResult ? fullResult.notation : '';
+  const finalMeasures = fullResult ? fullResult.measures : [];
+
+  // Process each section
+  const sections: DrumTabSection[] = [];
+  for (const block of sectionBlocks) {
+    const sectionResult = processDataToNotation(block.data, options);
+    // Include section even if notation is empty (might be filtered components)
+    if (sectionResult && sectionResult.notation) {
+      sections.push({
+        name: block.sectionName,
+        notation: sectionResult.notation,
+      });
+    } else if (block.data.size > 0) {
+      // Check if there are components that are just disabled
+      const hasComponents = Array.from(block.data.keys()).some(k => componentsFound.includes(k));
+      if (hasComponents) {
+        sections.push({
+          name: block.sectionName,
+          notation: '', // Empty notation for now
+        });
+      }
+    }
+  }
+
   // Group repeating measures
-  const groups = groupRepeatingMeasures(cleanedMeasures);
+  const groups = groupRepeatingMeasures(finalMeasures);
 
   // Create outputs
-  const fullNotation = cleanedMeasures.join(' ');
   const simplifiedNotation = createSimplifiedNotation(groups);
+  const patterns = tallyPatterns(finalMeasures);
 
   return {
-    notation: fullNotation,
+    notation: finalNotation,
     uniqueMeasures: groups,
+    patterns,
     simplifiedNotation,
-    measureCount: measures.length,
+    measureCount: finalMeasures.length,
     componentsFound,
+    sections,
     warnings,
   };
 }

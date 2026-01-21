@@ -24,9 +24,9 @@ interface RhythmDisplayProps {
   onRequestPaletteFocus?: () => void;
 }
 
-const RhythmDisplay = forwardRef<HTMLDivElement, RhythmDisplayProps>(({ 
-  rhythm, 
-  currentNote, 
+const RhythmDisplay = forwardRef<HTMLDivElement, RhythmDisplayProps>(({
+  rhythm,
+  currentNote,
   metronomeEnabled = false,
   currentMetronomeBeat = null,
   onDropPattern,
@@ -66,22 +66,22 @@ const RhythmDisplay = forwardRef<HTMLDivElement, RhythmDisplayProps>(({
           </div>
         )}
 
-        <div className="staff-container">
-        <VexFlowRenderer 
-          rhythm={rhythm} 
-          currentNote={currentNote}
-          metronomeEnabled={metronomeEnabled}
-          currentMetronomeBeat={currentMetronomeBeat}
-          onDropPattern={onDropPattern}
-          dragDropMode={dragDropMode}
-          notation={notation}
-          timeSignature={timeSignature}
-          selection={selection}
-          onSelectionChange={onSelectionChange}
-          onMoveSelection={onMoveSelection}
-          onDeleteSelection={onDeleteSelection}
-          onRequestPaletteFocus={onRequestPaletteFocus}
-        />
+        <div className="staff-container" style={{ minHeight: '150px' }}>
+          <VexFlowRenderer
+            rhythm={rhythm}
+            currentNote={currentNote}
+            metronomeEnabled={metronomeEnabled}
+            currentMetronomeBeat={currentMetronomeBeat}
+            onDropPattern={onDropPattern}
+            dragDropMode={dragDropMode}
+            notation={notation}
+            timeSignature={timeSignature}
+            selection={selection}
+            onSelectionChange={onSelectionChange}
+            onMoveSelection={onMoveSelection}
+            onDeleteSelection={onDeleteSelection}
+            onRequestPaletteFocus={onRequestPaletteFocus}
+          />
         </div>
       </CollapsibleSection>
     </div>

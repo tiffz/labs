@@ -27,6 +27,8 @@ A web application for learning and practicing Darbuka drum rhythms with visual n
 - `utils/reverb.ts` - Reverb effect using impulse response
 - `hooks/useNotationHistory.ts` - Undo/redo for notation
 - `hooks/usePlayback.ts` - Playback state management
+- `hooks/useRhythmSelection.ts` - Selection state and logic
+- `hooks/useKeyboardShortcuts.ts` - Keyboard interaction handler
 
 ## Development
 

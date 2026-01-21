@@ -10,7 +10,7 @@ import { getPatternDuration, replacePatternAtPosition } from './dragAndDrop';
 import { calculateReplacementHighlights, calculateNoteHighlightBounds } from './previewRenderer';
 import { findDropTarget } from './dropTargetFinder';
 import { findInsertionTarget, calculateInsertionLineFromGap } from './insertionTargetFinder';
-import type { TimeSignature } from '../types';
+import type { TimeSignature, ParsedRhythm } from '../types';
 import type { NotePosition } from './dropTargetFinder';
 import type { HighlightBounds, InsertionLineBounds } from './previewRenderer';
 
@@ -27,6 +27,8 @@ export interface DropPreviewResult {
   replacementHighlights: HighlightBounds[];
   /** For insert mode: position of insertion line */
   insertionLine: InsertionLineBounds | null;
+  /** The measure index of the drop target (crucial for handling repeat instance divergence) */
+  targetMeasureIndex?: number;
 }
 
 /**
@@ -43,6 +45,7 @@ export interface DropPreviewResult {
  * @param dragDropMode - 'replace' or 'insert'
  * @param notePositions - Array of note positions for finding drop target
  * @param containerRef - Container element for coordinate conversion
+ * @param parsedRhythm - Parsed rhythm data (REQUIRED for Phase 21 Mapping)
  * @returns Drop preview result
  */
 export function computeDropPreview(
@@ -53,7 +56,8 @@ export function computeDropPreview(
   timeSignature: TimeSignature,
   dragDropMode: 'replace' | 'insert',
   notePositions: NotePosition[],
-  containerRef: { current: HTMLDivElement | null }
+  containerRef: { current: HTMLDivElement | null },
+  parsedRhythm: ParsedRhythm
 ): DropPreviewResult {
   // Default: no drop possible
   const defaultResult: DropPreviewResult = {
@@ -82,7 +86,7 @@ export function computeDropPreview(
   const svgY = cursorY - svgRect.top;
 
   const cleanNotation = notation.replace(/[\s\n]/g, '');
-  
+
   // Handle empty notation case - always allow insertion at start
   if (notePositions.length === 0 || cleanNotation.length === 0) {
     return {
@@ -96,77 +100,48 @@ export function computeDropPreview(
 
   // Find drop target note
   const dropTarget = findDropTarget(svgX, svgY, notePositions);
+
   if (!dropTarget) {
-    // If no drop target found but we have notes, try inserting at the end of actual notation
-    return {
-      isValid: true,
-      previewType: 'insert',
-      dropPosition: cleanNotation.length,
-      replacementHighlights: [],
-      insertionLine: null,
-    };
+    // No target found (too far from any note)
+    return defaultResult;
   }
 
-  const { charPosition } = dropTarget;
-  
-  // Check if this is an "implicit rest" - a note that exists in rendered form
-  // but not in the actual notation string (auto-filled to complete a measure)
-  // This happens when charPosition >= cleanNotation.length
-  const isImplicitRest = charPosition >= cleanNotation.length;
-
-  // Compute preview based on mode
-  if (dragDropMode === 'insert') {
-    // Insert mode: use completely rewritten insertion target finder
-    // This finds actual gaps between notes and uses cursor position directly
-    // Pass notation and timeSignature to handle end-of-measure insertion
-    const insertionTarget = findInsertionTarget(svgX, svgY, notePositions, notation, timeSignature);
-    
-    if (insertionTarget) {
-      // Use cursor Y position directly for insertion line positioning
-      const insertionLine = calculateInsertionLineFromGap(insertionTarget.gap, insertionTarget.cursorY);
-      
-      // Clamp insertion position to actual notation length for implicit rests
-      const clampedPosition = Math.min(insertionTarget.insertionCharPosition, cleanNotation.length);
-      
-      return {
-        isValid: true,
-        previewType: 'insert',
-        dropPosition: clampedPosition,
-        replacementHighlights: [],
-        insertionLine,
+  // Handle dropping on implicit rests (padding) or standard replace
+  if (dragDropMode === 'replace') {
+    // Check for "Implicit Rests" (Padding at end of measure)
+    if (dropTarget.isImplicitRest) {
+      // User is targeting the void space.
+      // We calculate highlight for the void.
+      const implicitRestHighlight: HighlightBounds = {
+        x: dropTarget.x,
+        y: dropTarget.y,
+        width: 40, // default width
+        height: 60, // default height
       };
-    } else {
-      return defaultResult;
-    }
-  } else {
-    // Replace mode: handle implicit rests specially
-    // Implicit rests are auto-filled rests that don't exist in the notation string
-    // They should be treated as append targets
-    if (isImplicitRest) {
-      // Calculate highlight bounds for the implicit rest (visual feedback)
-      const implicitRestHighlight = calculateNoteHighlightBounds(dropTarget.notePos);
-      
+
       return {
         isValid: true,
         previewType: 'replace', // Show as replace (red highlight) for consistency
-        dropPosition: cleanNotation.length, // Append at end of actual notation
+        dropPosition: dropTarget.exactCharPosition, // Use Logical Tick position
         replacementHighlights: [implicitRestHighlight],
         insertionLine: null,
+        targetMeasureIndex: dropTarget.measureIndex,
       };
     }
-    
+
     // Normal replace mode: use exact position within the note
     // This allows breaking tied notes when dropping in the middle
     const dropPosition = dropTarget.exactCharPosition;
-    
+
     // Try replacement first
     const patternDuration = getPatternDuration(pattern);
     const replacementResult = replacePatternAtPosition(
-      cleanNotation,
+      notation, // RAW notation
       dropPosition,
       pattern,
       patternDuration,
-      timeSignature
+      timeSignature,
+      parsedRhythm
     );
 
     // If replacement succeeded, show replacement preview
@@ -174,8 +149,8 @@ export function computeDropPreview(
       // Replacement is possible - compute highlights
       const highlights = calculateReplacementHighlights(
         notePositions,
-        replacementResult.replacedStart,
-        replacementResult.replacedEnd
+        dropPosition,
+        dropPosition + patternDuration
       );
 
       // If highlights are empty, try to find notes that overlap with the replacement range
@@ -186,9 +161,9 @@ export function computeDropPreview(
           const noteStart = np.charPosition;
           const noteEnd = noteStart + np.durationInSixteenths;
           // Check if note overlaps with replacement range
-          return noteStart < replacementResult.replacedEnd && noteEnd > replacementResult.replacedStart;
+          return noteStart < (dropPosition + patternDuration) && noteEnd > dropPosition;
         });
-        
+
         if (overlappingNotes.length > 0) {
           finalHighlights = overlappingNotes.map(np => calculateNoteHighlightBounds(np));
         }
@@ -202,31 +177,32 @@ export function computeDropPreview(
           dropPosition,
           replacementHighlights: finalHighlights,
           insertionLine: null,
+          targetMeasureIndex: dropTarget.measureIndex,
         };
       }
     }
-    
+
     // Replacement failed - check if we should fall back to insert at end
     // This allows appending at the end of the sequence in replace mode
     if (notePositions.length > 0) {
       // Find the last note
-      const lastNote = notePositions.reduce((max, np) => 
+      const lastNote = notePositions.reduce((max, np) =>
         (np.charPosition + np.durationInSixteenths > max.charPosition + max.durationInSixteenths) ? np : max,
         notePositions[0]
       );
       const lastNoteEnd = lastNote.charPosition + lastNote.durationInSixteenths;
-      
+
       // Check if the drop target is at or near the end of the notation
       // Allow insertion if we're targeting the last note or position is at/past the end
-      const isAtEnd = dropPosition >= lastNoteEnd - 1 || charPosition === lastNote.charPosition;
-      
+      const isAtEnd = dropPosition >= lastNoteEnd - 1 || dropPosition === lastNote.charPosition;
+
       if (isAtEnd) {
         // Use insertion target finder for proper end-of-sequence handling
         const insertionTarget = findInsertionTarget(svgX, svgY, notePositions, notation, timeSignature);
-        
+
         if (insertionTarget) {
           const insertionLine = calculateInsertionLineFromGap(insertionTarget.gap, insertionTarget.cursorY);
-          
+
           return {
             isValid: true,
             previewType: 'insert',
@@ -237,9 +213,10 @@ export function computeDropPreview(
         }
       }
     }
-    
+
     // Replacement not possible and not at end - return invalid
     return defaultResult;
   }
-}
 
+  return defaultResult;
+}

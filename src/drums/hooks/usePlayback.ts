@@ -22,7 +22,12 @@ export function usePlayback({
   playbackSettings,
 }: UsePlaybackOptions) {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [currentNote, setCurrentNote] = useState<{ measureIndex: number; noteIndex: number } | null>(null);
+  const [currentNote, setCurrentNote] = useState<{
+    measureIndex: number;
+    noteIndex: number;
+    repeatIteration?: number;
+    maxRepeats?: number;
+  } | null>(null);
   const [currentMetronomeBeat, setCurrentMetronomeBeat] = useState<{
     measureIndex: number;
     positionInSixteenths: number;
@@ -40,8 +45,8 @@ export function usePlayback({
     rhythmPlayer.play(
       parsedRhythm,
       bpm,
-      (measureIndex, noteIndex) => {
-        setCurrentNote({ measureIndex, noteIndex });
+      (measureIndex, noteIndex, repeatIteration, maxRepeats) => {
+        setCurrentNote({ measureIndex, noteIndex, repeatIteration, maxRepeats });
       },
       () => {
         setIsPlaying(false);

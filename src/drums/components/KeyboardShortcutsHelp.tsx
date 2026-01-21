@@ -59,6 +59,22 @@ const KeyboardShortcutsHelp: React.FC<KeyboardShortcutsHelpProps> = ({ isOpen, o
           </div>
           <div className="keyboard-shortcut-item">
             <div className="keyboard-shortcut-keys">
+              <kbd>{modKeyText}</kbd>
+              <span>+</span>
+              <kbd>C</kbd>
+            </div>
+            <div className="keyboard-shortcut-description">Copy selected notation</div>
+          </div>
+          <div className="keyboard-shortcut-item">
+            <div className="keyboard-shortcut-keys">
+              <kbd>Shift</kbd>
+              <span>+</span>
+              <kbd>Click</kbd>
+            </div>
+            <div className="keyboard-shortcut-description">Extend selection to note</div>
+          </div>
+          <div className="keyboard-shortcut-item">
+            <div className="keyboard-shortcut-keys">
               <kbd>?</kbd>
             </div>
             <div className="keyboard-shortcut-description">Show this help</div>

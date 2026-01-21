@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { rhythmPlayer } from './rhythmPlayer';
 import { parseRhythm } from './rhythmParser';
 import type { TimeSignature } from '../types';
+import { audioPlayer } from './audioPlayer'; // Import for assertion
 
 // Mock the audio player
 vi.mock('./audioPlayer', () => ({
@@ -144,19 +145,19 @@ describe('rhythmPlayer timing accuracy', () => {
       // Advance through 3 loops
       vi.advanceTimersByTime(0); // Loop 1 start
       vi.advanceTimersByTime(3000); // Advance 3 loops worth of time
-      
+
       // Should have at least 9 notes (3 per loop * 3 loops)
       expect(noteTimes.length).toBeGreaterThanOrEqual(9);
-      
+
       // Verify first loop
       expect(noteTimes[0]).toBe(0); // D
       expect(noteTimes[1]).toBe(250); // T
       expect(noteTimes[2]).toBe(500); // Auto-filled rest
-      
+
       // Verify second loop starts around 1000ms (allow 1ms scheduling overhead)
       expect(noteTimes[3]).toBeGreaterThanOrEqual(1000);
       expect(noteTimes[3]).toBeLessThanOrEqual(1001);
-      
+
       // Verify third loop starts around 2000ms (allow 2ms scheduling overhead)
       expect(noteTimes[6]).toBeGreaterThanOrEqual(2000);
       expect(noteTimes[6]).toBeLessThanOrEqual(2002);
@@ -180,10 +181,10 @@ describe('rhythmPlayer timing accuracy', () => {
       // Advance through 10 loops
       vi.advanceTimersByTime(0); // Loop 1 start
       vi.advanceTimersByTime(10000); // Advance 10 loops worth of time
-      
+
       // Should have at least 30 notes (3 per loop * 10 loops)
       expect(noteTimes.length).toBeGreaterThanOrEqual(30);
-      
+
       // Check 10th loop starts around 9000ms (9 complete loops * 1000ms)
       // Allow 10ms drift over 10 loops
       const loop10StartIndex = 27; // 9 complete loops * 3 notes
@@ -397,7 +398,7 @@ describe('rhythmPlayer timing accuracy', () => {
       const parsedRhythm = parseRhythm(notation, timeSignature);
       const bpm = 120;
 
-      const metronomeBeats: Array<{ measureIndex: number; positionInSixteenths: number; isDownbeat: boolean }> = [];
+      const metronomeEvents: Array<{ measureIndex: number; positionInSixteenths: number; isDownbeat: boolean }> = [];
 
       await rhythmPlayer.play(
         parsedRhythm,
@@ -406,36 +407,24 @@ describe('rhythmPlayer timing accuracy', () => {
         undefined,
         true, // metronomeEnabled
         (measureIndex, positionInSixteenths, isDownbeat) => {
-          metronomeBeats.push({ measureIndex, positionInSixteenths, isDownbeat });
+          metronomeEvents.push({ measureIndex, positionInSixteenths, isDownbeat });
         }
       );
 
-      // At 120 BPM, quarter note = 500ms, sixteenth = 125ms
-      // For 4/4 time, beat groups are [4, 4, 4, 4] sixteenths
-      // Metronome should click at positions: 0 (downbeat), 4, 8, 12
-      // Times: 0ms, 500ms, 1000ms, 1500ms
+      // Metronome callback fires for every 16th note (visual cursor).
+      // We process the stream to find the beats (positions 0, 4, 8, 12).
+      const beatPositions = [0, 4, 8, 12];
 
-      // Advance through all beats - advance enough time to trigger all scheduled beats
-      vi.advanceTimersByTime(0); // Trigger immediate beats (downbeat at 0ms)
-      expect(metronomeBeats.length).toBeGreaterThanOrEqual(1);
-      expect(metronomeBeats[0]).toEqual({ measureIndex: 0, positionInSixteenths: 0, isDownbeat: true });
+      vi.advanceTimersByTime(2000); // 1 full measure
 
-      vi.advanceTimersByTime(500); // Advance to first beat (500ms) - position 4
-      expect(metronomeBeats.length).toBeGreaterThanOrEqual(2);
-      if (metronomeBeats.length >= 2) {
-        expect(metronomeBeats[1]).toEqual({ measureIndex: 0, positionInSixteenths: 4, isDownbeat: false });
-      }
+      const beats = metronomeEvents.filter(e => beatPositions.includes(e.positionInSixteenths));
 
-      vi.advanceTimersByTime(500); // Advance to second beat (1000ms) - position 8
-      expect(metronomeBeats.length).toBeGreaterThanOrEqual(3);
-      if (metronomeBeats.length >= 3) {
-        expect(metronomeBeats[2]).toEqual({ measureIndex: 0, positionInSixteenths: 8, isDownbeat: false });
-      }
-
-      vi.advanceTimersByTime(500); // Advance to third beat (1500ms) - position 12
-      // Should have exactly 4 beats for 4/4 time
-      expect(metronomeBeats.length).toBe(4);
-      expect(metronomeBeats[3]).toEqual({ measureIndex: 0, positionInSixteenths: 12, isDownbeat: false });
+      // Should have at least one full set of beats
+      expect(beats.length).toBeGreaterThanOrEqual(4);
+      expect(beats.find(b => b.positionInSixteenths === 0 && b.isDownbeat)).toBeDefined();
+      expect(beats.find(b => b.positionInSixteenths === 4)).toBeDefined();
+      expect(beats.find(b => b.positionInSixteenths === 8)).toBeDefined();
+      expect(beats.find(b => b.positionInSixteenths === 12)).toBeDefined();
     });
 
     it('should schedule metronome clicks for all beats in 3/4 time', async () => {
@@ -444,7 +433,7 @@ describe('rhythmPlayer timing accuracy', () => {
       const parsedRhythm = parseRhythm(notation, timeSignature);
       const bpm = 120;
 
-      const metronomeBeats: Array<{ measureIndex: number; positionInSixteenths: number; isDownbeat: boolean }> = [];
+      const metronomeEvents: Array<{ measureIndex: number; positionInSixteenths: number; isDownbeat: boolean }> = [];
 
       await rhythmPlayer.play(
         parsedRhythm,
@@ -453,23 +442,20 @@ describe('rhythmPlayer timing accuracy', () => {
         undefined,
         true, // metronomeEnabled
         (measureIndex, positionInSixteenths, isDownbeat) => {
-          metronomeBeats.push({ measureIndex, positionInSixteenths, isDownbeat });
+          metronomeEvents.push({ measureIndex, positionInSixteenths, isDownbeat });
         }
       );
 
-      // For 3/4 time, beat groups are [4, 4, 4] sixteenths
-      // Metronome should click at positions: 0 (downbeat), 4, 8
-      // At 120 BPM, sixteenth = 125ms, so beats are at 0ms, 500ms, 1000ms
+      // Beats at 0, 4, 8
+      const beatPositions = [0, 4, 8];
+      vi.advanceTimersByTime(1500);
 
-      // Advance through all beats
-      vi.advanceTimersByTime(0); // Downbeat at position 0
-      vi.advanceTimersByTime(500); // First beat at position 4
-      vi.advanceTimersByTime(500); // Second beat at position 8
+      const beats = metronomeEvents.filter(e => beatPositions.includes(e.positionInSixteenths));
 
-      expect(metronomeBeats.length).toBe(3);
-      expect(metronomeBeats[0]).toEqual({ measureIndex: 0, positionInSixteenths: 0, isDownbeat: true });
-      expect(metronomeBeats[1]).toEqual({ measureIndex: 0, positionInSixteenths: 4, isDownbeat: false });
-      expect(metronomeBeats[2]).toEqual({ measureIndex: 0, positionInSixteenths: 8, isDownbeat: false });
+      expect(beats.length).toBeGreaterThanOrEqual(3);
+      expect(beats.find(b => b.positionInSixteenths === 0)).toBeDefined();
+      expect(beats.find(b => b.positionInSixteenths === 4)).toBeDefined();
+      expect(beats.find(b => b.positionInSixteenths === 8)).toBeDefined();
     });
 
     it('should schedule metronome clicks for all beats in 6/8 time', async () => {
@@ -478,7 +464,7 @@ describe('rhythmPlayer timing accuracy', () => {
       const parsedRhythm = parseRhythm(notation, timeSignature);
       const bpm = 120;
 
-      const metronomeBeats: Array<{ measureIndex: number; positionInSixteenths: number; isDownbeat: boolean }> = [];
+      const metronomeEvents: Array<{ measureIndex: number; positionInSixteenths: number; isDownbeat: boolean }> = [];
 
       await rhythmPlayer.play(
         parsedRhythm,
@@ -487,19 +473,19 @@ describe('rhythmPlayer timing accuracy', () => {
         undefined,
         true, // metronomeEnabled
         (measureIndex, positionInSixteenths, isDownbeat) => {
-          metronomeBeats.push({ measureIndex, positionInSixteenths, isDownbeat });
+          metronomeEvents.push({ measureIndex, positionInSixteenths, isDownbeat });
         }
       );
 
-      // For 6/8 time, beat groups are [6, 6] sixteenths (two groups of 3 eighth notes)
-      // Metronome should click at positions: 0 (downbeat), 6
+      // Beats at 0, 6
+      const beatPositions = [0, 6];
+      vi.advanceTimersByTime(1500);
 
-      vi.advanceTimersByTime(0); // Downbeat
-      vi.advanceTimersByTime(750); // First beat group (6 * 125ms = 750ms)
+      const beats = metronomeEvents.filter(e => beatPositions.includes(e.positionInSixteenths));
 
-      expect(metronomeBeats.length).toBe(2);
-      expect(metronomeBeats[0]).toEqual({ measureIndex: 0, positionInSixteenths: 0, isDownbeat: true });
-      expect(metronomeBeats[1]).toEqual({ measureIndex: 0, positionInSixteenths: 6, isDownbeat: false });
+      expect(beats.length).toBeGreaterThanOrEqual(2);
+      expect(beats.find(b => b.positionInSixteenths === 0)).toBeDefined();
+      expect(beats.find(b => b.positionInSixteenths === 6)).toBeDefined();
     });
 
     it('should not play metronome clicks when metronome is disabled', async () => {
@@ -508,23 +494,23 @@ describe('rhythmPlayer timing accuracy', () => {
       const parsedRhythm = parseRhythm(notation, timeSignature);
       const bpm = 120;
 
-      const metronomeBeats: Array<{ measureIndex: number; positionInSixteenths: number; isDownbeat: boolean }> = [];
-
+      const metronomeEvents: any[] = [];
       await rhythmPlayer.play(
         parsedRhythm,
         bpm,
         undefined,
         undefined,
         false, // metronomeEnabled = false
-        (measureIndex, positionInSixteenths, isDownbeat) => {
-          metronomeBeats.push({ measureIndex, positionInSixteenths, isDownbeat });
-        }
+        (m, p, d) => metronomeEvents.push({ m, p, d })
       );
 
-      vi.advanceTimersByTime(2000); // Advance through multiple beats
+      vi.advanceTimersByTime(2000);
 
-      // No metronome beats should be recorded when disabled
-      expect(metronomeBeats.length).toBe(0);
+      // Callback should still fire for cursor
+      expect(metronomeEvents.length).toBeGreaterThan(0);
+
+      // Audio Click should NOT fire
+      expect(audioPlayer.playClick).not.toHaveBeenCalled();
     });
   });
 
@@ -544,7 +530,7 @@ describe('rhythmPlayer timing accuracy', () => {
 
       // Track which notes trigger visual highlighting
       const highlightedNotes: Array<{ measureIndex: number; noteIndex: number }> = [];
-      
+
       await rhythmPlayer.play(parsedRhythm, 120, (measureIndex, noteIndex) => {
         highlightedNotes.push({ measureIndex, noteIndex });
       });
@@ -557,7 +543,7 @@ describe('rhythmPlayer timing accuracy', () => {
       // Advance to the second measure (tied continuation)
       // At 120 BPM, one measure (16 sixteenths) = 16 * 125ms = 2000ms
       vi.advanceTimersByTime(2000);
-      
+
       // Both notes should be highlighted for visual feedback,
       // but the second one (isTiedFrom) should not have triggered a sound
       // (we can't directly test the audioPlayer.play call without more mocking,

@@ -1,11 +1,13 @@
-import React, { useEffect, useRef } from 'react';
-import { Renderer, Stave, StaveNote, Voice, Formatter, Dot } from 'vexflow';
+import React, { useEffect, useRef, useMemo } from 'react';
+import { Renderer, Stave, StaveNote, Voice, Formatter, Dot, BarlineType } from 'vexflow';
 import type { DrumSound } from '../types';
 
 interface MiniNotationRendererProps {
   pattern: string;
   width?: number;
   height?: number;
+  /** If true, show compact repeat notation (% for repeated measures) */
+  showCompactRepeats?: boolean;
 }
 
 /**
@@ -129,12 +131,44 @@ const parsePattern = (pattern: string): Array<{ sound: DrumSound; duration: numb
   return notes;
 };
 
+/**
+ * Detects consecutive identical measures in a pattern and returns compact notation info.
+ * A "measure" in this context is 16 sixteenths worth of notes.
+ */
+const detectRepeatedMeasures = (pattern: string): { uniquePattern: string; repeatCount: number } => {
+  // Split by spaces to get measures
+  const measures = pattern.split(/\s+/).filter(m => m.trim().length > 0);
+  
+  if (measures.length <= 1) {
+    return { uniquePattern: pattern, repeatCount: 1 };
+  }
+  
+  // Check if all measures are identical
+  const firstMeasure = measures[0];
+  const allIdentical = measures.every(m => m === firstMeasure);
+  
+  if (allIdentical) {
+    return { uniquePattern: firstMeasure, repeatCount: measures.length };
+  }
+  
+  return { uniquePattern: pattern, repeatCount: 1 };
+};
+
 const MiniNotationRenderer: React.FC<MiniNotationRendererProps> = ({ 
   pattern,
   width = 120,
   height = 80,
+  showCompactRepeats = false,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Detect repeated measures for compact display
+  const { uniquePattern, repeatCount } = useMemo(() => {
+    if (!showCompactRepeats) {
+      return { uniquePattern: pattern, repeatCount: 1 };
+    }
+    return detectRepeatedMeasures(pattern);
+  }, [pattern, showCompactRepeats]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -142,7 +176,7 @@ const MiniNotationRenderer: React.FC<MiniNotationRendererProps> = ({
     containerRef.current.innerHTML = '';
 
     try {
-      const notes = parsePattern(pattern);
+      const notes = parsePattern(uniquePattern);
       if (notes.length === 0) {
         return;
       }
@@ -156,8 +190,18 @@ const MiniNotationRenderer: React.FC<MiniNotationRendererProps> = ({
       renderer.resize(renderWidth, renderHeight);
       const context = renderer.getContext();
 
+      // Calculate width - narrower if showing repeats to make room for simile
+      const staveWidth = repeatCount > 1 ? renderWidth - 60 : renderWidth - 40;
+      
       // Create a single stave without time signature
-      const stave = new Stave(15, 35, renderWidth - 40, { numLines: 1 });
+      const stave = new Stave(15, 35, staveWidth, { numLines: 1 });
+      
+      // Add repeat barlines if this pattern repeats
+      if (repeatCount > 1) {
+        stave.setBegBarType(BarlineType.REPEAT_BEGIN);
+        stave.setEndBarType(BarlineType.REPEAT_END);
+      }
+      
       stave.setContext(context).draw();
 
       // Convert to VexFlow notes
@@ -201,7 +245,7 @@ const MiniNotationRenderer: React.FC<MiniNotationRendererProps> = ({
         // Format the notes
         new Formatter()
           .joinVoices([voice])
-          .format([voice], width - 25);
+          .format([voice], staveWidth - 25);
 
         // Draw the voice
         voice.draw(context, stave);
@@ -218,11 +262,24 @@ const MiniNotationRenderer: React.FC<MiniNotationRendererProps> = ({
             drawSymbolAboveNote(svgElement, noteX, noteY, note.sound);
           }
         });
+        
+        // Draw repeat count if applicable
+        if (repeatCount > 1) {
+          const repeatText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          repeatText.setAttribute('x', String(staveWidth + 25));
+          repeatText.setAttribute('y', String(55));
+          repeatText.setAttribute('font-family', 'Arial, sans-serif');
+          repeatText.setAttribute('font-size', '14');
+          repeatText.setAttribute('font-weight', 'bold');
+          repeatText.setAttribute('fill', '#666');
+          repeatText.textContent = `×${repeatCount}`;
+          svgElement.appendChild(repeatText);
+        }
       }
     } catch (error) {
-      console.error('Error rendering mini notation for pattern:', pattern, error);
+      console.error('Error rendering mini notation for pattern:', uniquePattern, error);
     }
-  }, [pattern, width, height]);
+  }, [uniquePattern, width, height, repeatCount]);
 
   return (
     <div 
