@@ -250,7 +250,7 @@ export function TabImportWizard({ isOpen, onClose, onImport, rawTabText = '', in
                                                     </button>
                                                 </div>
                                             </div>
-                                            {sections.map((section: any, idx: number) => (
+                                            {sections.map((section: { name: string; notation: string }, idx: number) => (
                                                 <label
                                                     key={idx}
                                                     className={`group p-3 border rounded-lg cursor-pointer transition-all flex items-start gap-3 hover:shadow-md ${state.selectedSections.has(idx) ? 'border-purple-500 bg-purple-50 ring-1 ring-purple-500' : 'border-gray-200 hover:border-purple-300'}`}

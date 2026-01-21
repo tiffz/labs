@@ -7,6 +7,8 @@ import RhythmInfoCard from './components/RhythmInfoCard';
 import KeyboardShortcutsHelp from './components/KeyboardShortcutsHelp';
 import RhythmSequencer from './components/RhythmSequencer';
 import CollapsibleSection from './components/CollapsibleSection';
+// UniversalTomInput removed
+
 import { parseRhythm } from './utils/rhythmParser';
 import { recognizeRhythm } from './utils/rhythmRecognition';
 import { useUrlState } from './hooks/useUrlState';
@@ -50,6 +52,7 @@ const App: React.FC = () => {
   const [playbackSettings, setPlaybackSettings] = useState<PlaybackSettings>(DEFAULT_SETTINGS);
   const [downloadFormat, setDownloadFormat] = useState<'wav' | 'mp3'>('wav');
   const [downloadLoops, setDownloadLoops] = useState<number>(1);
+
 
   // Refs (moved up to be available for hooks)
   const noteDisplayRef = useRef<HTMLDivElement>(null);
@@ -152,8 +155,8 @@ const App: React.FC = () => {
 
 
   // Handle drop from canvas or text input
-  const handleDropPattern = useCallback((pattern: string, charPosition: number, targetMeasureIndex?: number) => {
-    let targetCharPosition = charPosition;
+  const handleDropPattern = useCallback((pattern: string, charPosition: number) => {
+    const targetCharPosition = charPosition;
 
     // Reverted Phase 11 (Smart Repeats) due to user feedback (Confusing behavior).
     // Now we rely on standard "Redirect to Source" behavior handled by mapLogicalToStringIndex internally.
@@ -242,7 +245,7 @@ const App: React.FC = () => {
       const newNotation = insertPatternAtPosition(activeCleanNotation, targetCharPosition, pattern, parsedRhythm);
       setNotationWithoutHistory(newNotation);
     }
-  }, [notation, dragDropMode, addToHistory, timeSignature, setNotationWithoutHistory]);
+  }, [notation, dragDropMode, addToHistory, timeSignature, setNotationWithoutHistory, parsedRhythm]);
 
   // Debounce BPM changes - only apply after user stops typing for 500ms
   useEffect(() => {
@@ -588,6 +591,8 @@ const App: React.FC = () => {
         />
 
         <div className="main-workspace">
+
+
           <RhythmInput
             notation={notation}
             onNotationChange={(newNotation) => {
@@ -613,6 +618,8 @@ const App: React.FC = () => {
             onDownloadFormatChange={setDownloadFormat}
             onDownloadLoopsChange={setDownloadLoops}
           />
+
+
 
           <RhythmDisplay
             ref={noteDisplayRef}

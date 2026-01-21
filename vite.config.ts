@@ -20,16 +20,17 @@ export default defineConfig({
     target: 'es2020',
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
-        input: {
+      input: {
         main: resolve(__dirname, 'src/index.html'),
         cats: resolve(__dirname, 'src/cats/index.html'),
-          zines: resolve(__dirname, 'src/zines/index.html'),
-          corp: resolve(__dirname, 'src/corp/index.html'),
-          drums: resolve(__dirname, 'src/drums/index.html'),
-          story: resolve(__dirname, 'src/story/index.html'),
-          chords: resolve(__dirname, 'src/chords/index.html'),
-          forms: resolve(__dirname, 'src/forms/index.html'),
-          beat: resolve(__dirname, 'src/beat/index.html'),
+        zines: resolve(__dirname, 'src/zines/index.html'),
+        corp: resolve(__dirname, 'src/corp/index.html'),
+        drums: resolve(__dirname, 'src/drums/index.html'),
+        story: resolve(__dirname, 'src/story/index.html'),
+        chords: resolve(__dirname, 'src/chords/index.html'),
+        forms: resolve(__dirname, 'src/forms/index.html'),
+        beat: resolve(__dirname, 'src/beat/index.html'),
+        universal_tom: resolve(__dirname, 'src/drums/universal_tom/index.html'),
       },
       output: {
         manualChunks: {
@@ -82,12 +83,12 @@ export default defineConfig({
                 const level = (logData.level || 'info').toUpperCase();
                 const app = logData.app || 'APP';
                 const line = `\n[${app}-DEBUG ${timestamp}] [${level}] ${logData.message}`;
-                 const method = String(level || 'info').toLowerCase();
-                 const out: (...args: unknown[]) => void =
-                   method === 'error' ? console.error :
-                   method === 'warn' ? console.warn :
-                   method === 'debug' ? console.debug :
-                   method === 'info' ? console.info : console.log;
+                const method = String(level || 'info').toLowerCase();
+                const out: (...args: unknown[]) => void =
+                  method === 'error' ? console.error :
+                    method === 'warn' ? console.warn :
+                      method === 'debug' ? console.debug :
+                        method === 'info' ? console.info : console.log;
                 out(line);
                 if (logData.data) out(logData.data);
               } catch (error) {
@@ -249,9 +250,9 @@ export default defineConfig({
     setupFiles: './shared/test/setupTests.ts',
     include: ['**/*.test.{js,ts,jsx,tsx}'],
     exclude: [
-      'src/**/e2e/**', 
-      'e2e/**', 
-      'node_modules/**', 
+      'src/**/e2e/**',
+      'e2e/**',
+      'node_modules/**',
       'dist/**',
       // Expensive benchmark test - only run when beat files change (via INCLUDE_BEAT_BENCHMARK env)
       ...(process.env.INCLUDE_BEAT_BENCHMARK !== 'true' ? ['**/bpmDetectionBenchmark.test.ts'] : []),

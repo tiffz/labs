@@ -143,7 +143,7 @@ function findStringIndexForDuration(
   while (i < notation.length && ticksConsumed < targetDuration) {
     const char = notation[i];
 
-    if (/[DTKSdtks\.]/.test(char)) {
+    if (/[DTKSdtks.]/.test(char)) {
       ticksConsumed++;
       i++;
     }

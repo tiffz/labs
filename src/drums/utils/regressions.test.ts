@@ -112,7 +112,7 @@ describe('Regression Tests (Phase 5, 6 & 7)', () => {
         // Total 4 + 2 + 2 = 8.
 
         // Setup: Single measure, 4/4 (16 ticks). Dotted Quarter (6) at start.
-        const notation = 'D-----_ _ _ _ _'; // 6 + 10 = 16.
+
         // Drop "K-" (2) at pos 0.
         // We want to replace D----- (6) with K- (2).
         // Result should be: K- (2) + D- (4, Remainder of 6-2=4?).

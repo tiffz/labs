@@ -46,25 +46,16 @@ export interface DropTarget {
  * @param notePos - The note position info
  * @returns The exact character position, snapped to meaningful boundaries
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function calculateExactCharPosition(_cursorX: number, notePos: NotePosition): number {
-  // For ALL notes (tied or regular), if the cursor is within the visual bounds of the note,
-  // we almost certainly mean "replace this note" (which starts at charPosition).
-  // The previous logic split the note in half (left=replace, right=append), which felt "shifted".
 
-  // New Logic:
-  // If we are strictly within the note's visual box (with a small margin for gaps), snap to START.
-  // This makes "dropping on a note" always mean "target this note".
+export function calculateExactCharPosition(cursorX: number, notePos: NotePosition): number {
+  const noteMidX = notePos.x + (notePos.width / 2);
 
-  return notePos.charPosition;
-
-  /* Legacy Logic (Shifted Feeling)
+  // Snap to start or end of note based on which half the cursor is in
   if (cursorX <= noteMidX) {
     return notePos.charPosition;
   } else {
     return notePos.charPosition + notePos.durationInSixteenths;
   }
-  */
 }
 
 /**
@@ -137,11 +128,11 @@ export function findDropTarget(
       dxScore = (cursorX - noteStartX) * BOUNDS_BONUS;
     } else if (cursorX <= noteStartX) {
       // To the left (aiming at this note's start)
-      dxScore = (noteStartX - cursorX) * NEXT_NOTE_PREFERENCE;
+      dxScore = (noteStartX - cursorX) * NEXT_NOTE_PREFERENCE + 0.0001;
     } else {
       // To the right (aiming past this note)
       // We generally want to avoid matching "past" notes unless we are really close
-      dxScore = (cursorX - noteEndX) * PREV_NOTE_PENALTY;
+      dxScore = (cursorX - noteEndX) * PREV_NOTE_PENALTY + 0.0001;
     }
 
     // Combine scores

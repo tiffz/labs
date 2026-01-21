@@ -386,7 +386,7 @@ const RhythmSequencer: React.FC<RhythmSequencerProps> = ({
         dragStateRef.current.dragStart = { position, sound: dragStart.sound };
       }
     }
-  }, [updateNotation]);
+  }, [updateNotation, parsedRhythm, sixteenthsPerMeasure]);
 
   const handleMouseUp = useCallback(() => {
     dragStateRef.current.isDragging = false;

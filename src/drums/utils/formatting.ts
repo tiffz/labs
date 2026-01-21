@@ -1,5 +1,5 @@
 
-import { getSixteenthsPerMeasure } from './timeSignatureUtils';
+
 import { type TimeSignature } from '../types';
 
 /**
@@ -20,12 +20,12 @@ export interface FormatOptions {
  */
 export function formatRhythm(
     notation: string,
-    timeSignature: TimeSignature,
-    options: FormatOptions = { measuresPerLine: 2 }
+    _timeSignature: TimeSignature,
+    _options: FormatOptions = { measuresPerLine: 2 } // eslint-disable-line @typescript-eslint/no-unused-vars
 ): string {
     if (!notation) return '';
 
-    const sixteenthsPerMeasure = getSixteenthsPerMeasure(timeSignature);
+    // const sixteenthsPerMeasure = getSixteenthsPerMeasure(timeSignature);
 
     // 1. Tokenize keeping repeat syntax intact
     // We want to split by spaces/newlines but keep |xN, |:, :| together
@@ -38,8 +38,7 @@ export function formatRhythm(
     const tokens = flat.split(/\s+/).filter(t => t.length > 0);
 
     let formatted = '';
-    let measureCount = 0;
-    let currentMeasureSixths = 0;
+
 
     for (let i = 0; i < tokens.length; i++) {
         const token = tokens[i];
@@ -54,8 +53,7 @@ export function formatRhythm(
                 // Maybe force newline?
                 // For now, let's treat it as neutral or checking repeats
                 formatted = formatted.trimEnd() + '\n';
-                measureCount = 0; // Reset line counter
-                currentMeasureSixths = 0;
+                formatted = formatted.trimEnd() + '\n';
             }
             continue;
         }
@@ -68,12 +66,8 @@ export function formatRhythm(
 
         // Assume it's a note pattern
         // Calculate duration
-        let duration = 0;
-        for (const char of token) {
-            if (['D', 'T', 'K', 'S', 'd', 't', 'k', 's', '_'].includes(char)) duration++;
-            else if (char === '-') duration++;
-            // Ignore others
-        }
+        // Assume it's a note pattern
+        // Just keeping it simple for now
 
         // If adding this token exceeds measure?
         // Using a simpler heuristic: Just clean up spaces.

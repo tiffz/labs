@@ -1,6 +1,6 @@
 
-import type { MeasureDefinition, ParsedRhythm } from '../../shared/rhythm/types';
-import type { DrumSound, TimeSignature } from '../types';
+import type { ParsedRhythm } from '../../shared/rhythm/types';
+import type { DrumSound, TimeSignature, RepeatMarker } from '../types';
 import { parsePatternToNotes } from './notationHelpers';
 import { getSixteenthsPerMeasure } from './timeSignatureUtils';
 
@@ -66,7 +66,7 @@ export function expandSimileMeasure(notation: string, measureIndex: number, pars
   const sourceStringIndex = mapping.sourceStringIndex;
 
   // 1. Check for Repeat Group membership using parsed metadata
-  let repeatGroup: any = null;
+  let repeatGroup: RepeatMarker | null = null;
   if (parsed.repeats) {
     for (const rep of parsed.repeats) {
       if (rep.type === 'measure' && rep.repeatMeasures.includes(measureIndex)) {

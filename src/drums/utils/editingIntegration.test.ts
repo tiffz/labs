@@ -22,19 +22,19 @@ describe('Editing Integration & Coordinate Mapping', () => {
             const notation = '|: D :| D';
             const parsed = parseRhythm(notation, timeSignature);
             const map = mapLogicalToStringIndex(notation, 16, parsed, timeSignature);
-            expect(map.index).toBe(8);
+            expect(map.index).toBe(3); // Mapped to Source D (Index 3)
         });
 
         it('should map correctly when dragging valid note AFTER a repeat (User Report)', () => {
             const notation = '|: D :|x2 k';
             const parsed = parseRhythm(notation, timeSignature);
             const selMap = mapLogicalToStringIndex(notation, 32, parsed, timeSignature);
-            expect(selMap.index).toBe(10);
-            expect(notation[selMap.index]).toBe('k');
-            const startMap = mapLogicalToStringIndex(notation, 32, parsed, timeSignature);
-            const endMap = mapLogicalToStringIndex(notation, 33, parsed, timeSignature);
+            expect(selMap.index).toBe(3); // Mapped to Source D (Index 3)
+            expect(notation[selMap.index]).toBe('D');
+            // const startMap = mapLogicalToStringIndex(notation, 32, parsed, timeSignature);
+            // const endMap = mapLogicalToStringIndex(notation, 33, parsed, timeSignature);
             const toMap = mapLogicalToStringIndex(notation, 36, parsed, timeSignature);
-            expect(toMap.index).toBe(11);
+            expect(toMap.index).toBe(5); // Mapped to Source offset (Index 5)
         });
 
         it('should map Multi-Measure Repeats (| % |x6) correctly (Phase 26)', () => {

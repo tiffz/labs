@@ -494,7 +494,7 @@ describe('rhythmPlayer timing accuracy', () => {
       const parsedRhythm = parseRhythm(notation, timeSignature);
       const bpm = 120;
 
-      const metronomeEvents: any[] = [];
+      const metronomeEvents: Array<{ m: number; p: number; d: boolean }> = [];
       await rhythmPlayer.play(
         parsedRhythm,
         bpm,

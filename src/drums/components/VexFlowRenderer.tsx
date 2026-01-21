@@ -176,6 +176,8 @@ interface VexFlowRendererProps {
   onDeleteSelection?: () => void;
   /** Callback to request focus on the note palette (for Tab navigation) */
   onRequestPaletteFocus?: () => void;
+  /** Optional mode for denser rendering (e.g. for import preview) */
+  compactMode?: boolean;
 }
 
 /**
@@ -347,6 +349,7 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
   onMoveSelection,
   onDeleteSelection,
   onRequestPaletteFocus,
+  compactMode = false,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const metronomeDotsRef = useRef<Map<string, SVGCircleElement>>(new Map());
@@ -432,7 +435,7 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
       const isLongMeasure = sixteenthsPerMeasure > 32; // More than 8/4 equivalent
 
       // Fixed width for simile (repeat) measures - compact and consistent
-      const SIMILE_MEASURE_WIDTH = 60;
+      const SIMILE_MEASURE_WIDTH = compactMode ? 40 : 60;
 
       const calculateMeasureWidth = (measure: typeof rhythm.measures[0], measureIndex: number): number => {
         // Check if this measure is a simile repeat
@@ -441,10 +444,10 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
           return SIMILE_MEASURE_WIDTH;
         }
 
-        const baseWidth = 120; // Base width for time signature, barlines, etc.
+        const baseWidth = compactMode ? 100 : 120; // Base width for time signature, barlines, etc.
         // Use smaller width per note for long measures to keep them readable
-        const widthPerNote = isLongMeasure ? 20 : 25;
-        const minWidth = 200;
+        const widthPerNote = compactMode ? 20 : (isLongMeasure ? 20 : 25);
+        const minWidth = compactMode ? 150 : 200;
         // For long time signatures, don't cap the width - let it expand
         // This ensures notes don't escape or overlap
         const maxWidth = isLongMeasure ? Infinity : 850;
@@ -797,6 +800,8 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
 
             return staveNote;
           });
+
+
 
           if (staveNotes.length > 0) {
             const beatsPerMeasure = rhythm.timeSignature.numerator;
@@ -1813,7 +1818,7 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
         svg.appendChild(line);
       }
     }
-  }, [notation, timeSignature, dragDropMode, onDropPattern]);
+  }, [notation, timeSignature, dragDropMode, onDropPattern, rhythm]); // Added rhythm
 
   const handleContainerDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     // Only clear preview if leaving the container entirely (not entering a child)
@@ -1878,7 +1883,7 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
     if (previewResult.isValid) {
       onDropPattern(pattern, previewResult.dropPosition, previewResult.targetMeasureIndex);
     }
-  }, [notation, timeSignature, dragDropMode, onDropPattern]);
+  }, [notation, timeSignature, dragDropMode, onDropPattern, rhythm]);
 
   // Helper to announce to screen readers via the live region
   const announce = useCallback((message: string) => {

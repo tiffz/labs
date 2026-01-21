@@ -40,7 +40,7 @@ const DOUBLE_HIT_CHARS = new Set(['d', 'D', 'b', 'B']);
  *  Group 1: Component (1-2 letters)
  *  Group 2: The tab data (must contain typical tab chars)
  */
-const DRUM_LINE_PATTERN = /^([A-Za-z]{1,2})\s*[:|/>\s-)]?\s*([-xoXO|dDfFgG#\s]+)$/i;
+const DRUM_LINE_PATTERN = /^([A-Za-z]{1,2})\s*[:|/>\s)]?\s*([-xoXO|dDfFgG#\s]+)$/i;
 
 /** Pattern to detect if text looks like a drum tab */
 // Matches lines that start with a component and contain typical tab characters
@@ -525,7 +525,7 @@ export function parseDrumTab(
 
   // Even if fullResult is null (e.g. valid components found but disabled in options),
   // we should return the metadata so the UI can prompt the user to enable them.
-  if (!fullResult && componentsFound.length === 0) {
+  if (!fullResult) {
     warnings.push('No selected drum components found in tab');
     return {
       notation: '',

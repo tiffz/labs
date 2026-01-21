@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import type { TimeSignature, ParsedRhythm } from '../types';
 import type { PlaybackSettings } from '../types/settings';
-import { getSixteenthsPerMeasure } from '../utils/timeSignatureUtils';
+import { } from '../utils/timeSignatureUtils';
 import RhythmPresets from './RhythmPresets';
 import DownloadDropdown from './DownloadDropdown';
 import { TabImportWizard } from './TabImportWizard';

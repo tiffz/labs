@@ -11,13 +11,19 @@
 
 import { parsePatternToNotes } from './notationHelpers';
 import { getSixteenthsPerMeasure } from './timeSignatureUtils';
-// @ts-ignore - Importing from shared parser which we just exported
-import { preprocessRepeats, parseRhythm, parseNotation } from '../../shared/rhythm/rhythmParser';
-import { expandSimileMeasure } from './notationUtils';
-import type { TimeSignature } from '../types';
-import type { DrumSound } from '../types';
+// Importing from shared parser which we just exported
+import { preprocessRepeats, parseNotation } from '../../shared/rhythm/rhythmParser';
+import type { TimeSignature, DrumSound, RepeatMarker, SectionRepeat, MeasureRepeat } from '../types';
 
 export type SequencerCell = DrumSound | 'rest' | null;
+
+// Helper type to handle mixed note objects from different parsers
+type AnyNote = {
+  isBarline?: boolean;
+  durationInSixteenths?: number;
+  duration?: number | string;
+  sound?: DrumSound | string;
+};
 
 export interface SequencerGrid {
   cells: SequencerCell[]; // [position] - each position has one sound or null
@@ -67,7 +73,7 @@ export function notationToGrid(notation: string, timeSignature: TimeSignature): 
 
   let position = 0;
   for (const note of notes) {
-    if (note.isBarline) {
+    if ((note as AnyNote).isBarline) {
       // Barline Logic: Align to next measure boundary
       const remainder = position % sixteenthsPerMeasure;
       if (remainder > 0) {
@@ -120,7 +126,7 @@ export function notationToGrid(notation: string, timeSignature: TimeSignature): 
 
     // Handle Note Duration
     // parseNotation uses 'durationInSixteenths', parsePatternToNotes uses 'duration'
-    const noteDuration = (note as any).durationInSixteenths ?? note.duration;
+    const noteDuration = (note as AnyNote).durationInSixteenths ?? ((note as AnyNote).duration as number);
     const duration = noteDuration;
 
     // Fill extension with nulls (already implicit if we skip setting)
@@ -153,7 +159,7 @@ export function notationToGrid(notation: string, timeSignature: TimeSignature): 
  */
 export function getLinkedPositions(
   position: number,
-  repeats: any[],
+  repeats: RepeatMarker[],
   sixteenthsPerMeasure: number
 ): number[] {
   if (!repeats || repeats.length === 0) return [position];
@@ -183,9 +189,9 @@ export function getLinkedPositions(
         // Section Repeat logic: Source (start..end) <-> Repeats
         // Check if currentM is in Source range
         // FIX: Use correctly mapped properties from parser (startMeasure, endMeasure, repeatCount)
-        const start = r.startMeasure ?? r.start; // Fallback? No, parser uses startMeasure.
-        const end = r.endMeasure ?? r.end;
-        const count = r.repeatCount ?? r.count;
+        const start = r.startMeasure;
+        const end = r.endMeasure;
+        const count = r.repeatCount;
 
         if (currentM >= start && currentM <= end) {
           const relative = currentM - start;
@@ -199,9 +205,9 @@ export function getLinkedPositions(
           isLinked = true;
         } else {
           // Check if it is a repeat
-          const start = r.startMeasure ?? r.start;
-          const end = r.endMeasure ?? r.end;
-          const count = r.repeatCount ?? r.count;
+          const start = r.startMeasure;
+          const end = r.endMeasure;
+          const count = r.repeatCount;
           const span = end - start + 1;
           // Ensure it's strictly AFTER the source block
           if (currentM > end) {
@@ -257,7 +263,7 @@ export function getLinkedPositions(
  * - A null cell BEFORE any sound (leading nulls) becomes a rest
  * - A null cell between two sounds (not extending the previous sound) becomes a rest
  */
-export function gridToNotation(grid: SequencerGrid, repeats?: any[]): string {
+export function gridToNotation(grid: SequencerGrid, repeats?: RepeatMarker[]): string {
 
   // Use actualLength if available, otherwise use cells.length
   // actualLength represents where the last note ends (including its duration)
@@ -268,40 +274,17 @@ export function gridToNotation(grid: SequencerGrid, repeats?: any[]): string {
   const sixteenthsPerMeasure = grid.sixteenthsPerMeasure;
   const numMeasures = Math.ceil(endIndex / sixteenthsPerMeasure);
 
-  // Helper to check if a measure index is a start or end of a section repeat
-  const getRepeatInfo = (measureIdx: number) => {
-    if (!repeats) return { start: false, end: false, count: 0 };
-    let start = false;
-    let end = false;
-    let count = 0;
-
-    // We only support restoring Section Repeats (collapsed in grid)
-    // Measure Repeats (single repeats) are typically expanded in parsedRhythm 
-    // unless we change that logic. For now, we focus on Section Repeats.
-    for (const r of repeats) {
-      if (r.type === 'section') {
-        if (r.startMeasure === measureIdx) start = true;
-        if (r.endMeasure === measureIdx) {
-          end = true;
-          count = r.repeatCount;
-        }
-      }
-    }
-    return { start, end, count, startMeasure: -1, endMeasure: -1 };
-  };
-
-
   // Helper to find if current measure is a Measure Repeat (Simile)
   const getMeasureRepeat = (measureIdx: number) => {
     if (!repeats) return null;
-    return repeats.find(r => r.type === 'measure' && r.repeatMeasures.includes(measureIdx));
+    return repeats.find(r => r.type === 'measure' && (r as MeasureRepeat).repeatMeasures.includes(measureIdx)) as MeasureRepeat | undefined;
   };
 
   // Logic was originally intended to use measure-by-measure checks.
   // But we pivoted to slice-based generation below.
 
   // Slice-based generation (Robust for ties)
-  const slices = [];
+  const slices: string[] = [];
 
   // Find the global last sound index
   let globalLastSound = -1;
@@ -391,19 +374,6 @@ export function gridToNotation(grid: SequencerGrid, repeats?: any[]): string {
     slices.push(currentSlice);
   }
 
-  // Now assemble with repeats
-  let finalString = '';
-  for (let m = 0; m < slices.length; m++) {
-    const { start, end, count } = getRepeatInfo(m);
-    if (start) finalString += '|: ';
-    finalString += slices[m];
-    if (end) finalString += ` :|x${count} `;
-    else if (m < slices.length - 1) finalString += ' | ';
-
-    // Clean up extra bars if MeasureRepeat (%) was used
-    // If we pushed '%', we still want bars. `A | % | %`. Correct.
-  }
-
   // Collapse identical consecutive measures (Fix for Sequencer Expansion)
   const collapsedString = collapseRepeats(slices, repeats);
   return collapsedString.trim();
@@ -413,14 +383,14 @@ export function gridToNotation(grid: SequencerGrid, repeats?: any[]): string {
  * Collapses consecutive identical measure slices into |xN syntax.
  * Respects existing section repeats if passed, but prioritizes collapsing identically generated content.
  */
-export function collapseRepeats(slices: string[], existingRepeats?: any[]): string {
+export function collapseRepeats(slices: string[], existingRepeats?: RepeatMarker[]): string {
   let result = '';
   let i = 0;
 
   // Helper to find matching section repeat starting at index i
-  const findSectionRepeat = (startIndex: number): any | null => {
+  const findSectionRepeat = (startIndex: number): SectionRepeat | null => {
     if (!existingRepeats) return null;
-    return existingRepeats.find(r => r.type === 'section' && r.startMeasure === startIndex);
+    return (existingRepeats.find(r => r.type === 'section' && r.startMeasure === startIndex) as SectionRepeat) || null;
   };
 
   while (i < slices.length) {
