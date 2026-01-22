@@ -9,7 +9,7 @@ import RhythmSequencer from './components/RhythmSequencer';
 import CollapsibleSection from './components/CollapsibleSection';
 // UniversalTomInput removed
 
-import { parseRhythm } from './utils/rhythmParser';
+import { parseRhythm, findMeasureIndexFromVisualTick } from './utils/rhythmParser';
 import { recognizeRhythm } from './utils/rhythmRecognition';
 import { useUrlState } from './hooks/useUrlState';
 import { useNotationHistory } from './hooks/useNotationHistory';
@@ -156,7 +156,8 @@ const App: React.FC = () => {
 
   // Handle drop from canvas or text input
   const handleDropPattern = useCallback((pattern: string, charPosition: number) => {
-    const targetCharPosition = charPosition;
+    // We will calculate targetCharPosition from logical mapping below
+    // const targetCharPosition = charPosition;
 
     // Reverted Phase 11 (Smart Repeats) due to user feedback (Confusing behavior).
     // Now we rely on standard "Redirect to Source" behavior handled by mapLogicalToStringIndex internally.
@@ -164,8 +165,16 @@ const App: React.FC = () => {
     // Derived clean version for replacement logic
     // Phase 27: Expand Simile (Drag Drop Support)
     // Check if target position is in a Simile Measure
-    const sixteenths = getSixteenthsPerMeasure(timeSignature);
-    const targetMeasureIdx = Math.floor(charPosition / sixteenths);
+    // Check if this is a ghost, wait... expandSimileMeasure now handles ghost checking internally (Phase 37).
+    // Check if this is a ghost, wait... expandSimileMeasure now handles ghost checking internally (Phase 37).
+    // So we just pass the naive measure index (which might be a ghost index).
+    // FIX Phase 39: Use findMeasureIndexFromVisualTick (Visual Coordinate Fix)
+    // Drag coordinates come from VexFlow which skips hidden measures.
+    const lookup = findMeasureIndexFromVisualTick(parsedRhythm, charPosition);
+    const targetMeasureIdx = lookup.index;
+    const logicalCharPosition = lookup.logicalMeasureStartTick + lookup.localTick;
+    // Use logical position for editing operations
+    const targetCharPosition = logicalCharPosition;
 
     // We assume parsedRhythm is current.
     let expandedNotation = notation;
@@ -191,13 +200,22 @@ const App: React.FC = () => {
     if (dragDropMode === 'replace') {
       // Always try replacement - replacePatternAtPosition handles edge cases and measure boundaries
       // If replacement fails (replacedLength === 0), fall back to insert
+      // FIX Phase 37 Correction 2: Re-parse if expansion occurred.
+      // If expandSimileMeasure changed the notation (unrolled repeats), the original `parsedRhythm` 
+      // is STALE (its mapping reflects the old compressed structure).
+      // We must re-parse the NEW notation to generate a correct mapping (Linear) for the edit.
+      let activeParsedRhythm = parsedRhythm;
+      if (expandedNotation !== notation) {
+        activeParsedRhythm = parseRhythm(expandedNotation, timeSignature);
+      }
+
       const result = replacePatternAtPosition(
-        expandedNotation, // Pass Expanded notation
-        targetCharPosition, // Logical Position (Ticks)
+        expandedNotation,
+        targetCharPosition,
         pattern,
         patternDuration,
         timeSignature,
-        expandedParsed // Unified Mapping Requirement (Updated)
+        activeParsedRhythm
       );
 
       // Phase 12: Block crossing repeat boundaries (Issue 19)

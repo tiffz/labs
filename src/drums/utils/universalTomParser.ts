@@ -226,8 +226,8 @@ export function parseUniversalTom(input: string): string {
     let result = '';
     let remaining = input.trim();
 
-    // Clean input: Remove time signature metadata like "4J"
-    remaining = remaining.replace(/^\d+J\s*/gm, ''); // 4J (New format)
+    // Clean input: Remove line numbers (1., 2.) and time signature metadata (4J, 1.4J)
+    remaining = remaining.replace(/^(\d+\.\s*)?(\d+J\s*)?/gm, '');
 
     // Tracking for formatting
     let accumulatedTicks = 0;

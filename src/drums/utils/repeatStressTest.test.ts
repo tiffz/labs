@@ -1,6 +1,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { parseRhythm } from './rhythmParser';
+// getExpandedMeasureIndexFromSourceTicks is removed as it's unused
 
 /**
  * COMPREHENSIVE REPEAT ARCHITECTURE STRESS TESTS
@@ -108,12 +109,12 @@ ${MB}`;
 
     describe('2. Section Repeats (|: ... :| xN)', () => {
         it('should handle simple section repeat', () => {
-            // |: M1 M2 :| x2 -> Source + 2 repeats = 3 instances.
-            // (M1 M2) (M1 M2) (M1 M2) -> 6 measures.
+            // |: M1 M2 :| x2 -> Total Count 2.
+            // (M1 M2) (M1 M2) -> 4 measures.
             const notation = `|: ${M1} ${M2} :| x2`;
             const rhythm = parseRhythm(notation, { numerator: 4, denominator: 4 });
 
-            expect(rhythm.measures.length).toBe(6);
+            expect(rhythm.measures.length).toBe(4);
             // M0, M1 are source.
             // M2 is repeat of M0.
             // M3 is repeat of M1.
@@ -124,8 +125,8 @@ ${MB}`;
         it('should handle nested repeats (implicit)', () => {
             // |: M1 |x2 :| x2
             // Inner: M1 |x2 -> M1 M1 (2 measures).
-            // Outer: |: (M1 M1) :| x2 -> Source + 2 Repeats.
-            // (M1 M1) (M1 M1) (M1 M1) -> 6 measures.
+            // Outer: |: (M1 M1) :| x2 -> Total Count 2.
+            // (M1 M1) (M1 M1) -> 4 measures.
             const notation = `|: ${M1} |x2 :| x2`;
             // Note: Parser pass 1 expands inner |x2.
             // Pass 1 result: |: M1 M1 :| x2.
@@ -133,7 +134,8 @@ ${MB}`;
 
             const rhythm = parseRhythm(notation, { numerator: 4, denominator: 4 });
 
-            expect(rhythm.measures.length).toBe(6);
+            console.log('Nested Repeat Length:', rhythm.measures.length);
+            expect(rhythm.measures.length).toBe(4);
 
             // Mapping:
             // M0: Source.
@@ -240,8 +242,8 @@ ${MB}`;
             // |: M1 |x2
             //    M2 :| x2
             // Inner: M1 M1. Block = M1 M1 M2. (3 measures).
-            // Outer x2 -> Source + 2 Repeats = 3 instances.
-            // 3 * 3 = 9 measures.
+            // Outer x2 -> Total Count 2.
+            // 2 * 3 = 6 measures.
             const M1 = 'D-T-____D-T-____';
             const M2 = 'D-K-____D-K-____'; // valid 16 ticks
 
@@ -250,7 +252,7 @@ ${M2} :| x2`;
 
             const rhythm = parseRhythm(notation, { numerator: 4, denominator: 4 });
 
-            expect(rhythm.measures.length).toBe(9);
+            expect(rhythm.measures.length).toBe(6);
 
             // Check Mapping
             // Block is indices 0, 1, 2. (M1, M1, M2).
@@ -264,5 +266,6 @@ ${M2} :| x2`;
             expect(rhythm.measureSourceMapping?.[8]).toBe(2);
         });
     });
+
 
 });

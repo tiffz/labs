@@ -2,8 +2,8 @@
 import { useState, useCallback, useEffect, type RefObject } from 'react';
 import { getPatternDuration, replacePatternAtIndex, insertPatternAtIndex, mapLogicalToStringIndex } from '../utils/dragAndDrop';
 import { expandSimileMeasure } from '../utils/notationUtils';
-import { parseRhythm } from '../../shared/rhythm/rhythmParser';
-import { getSixteenthsPerMeasure } from '../utils/timeSignatureUtils';
+import { parseRhythm, findMeasureIndexAtTick, findMeasureIndexFromVisualTick } from '../../shared/rhythm/rhythmParser';
+// getSixteenthsPerMeasure removed (unused)
 import type { TimeSignature, ParsedRhythm } from '../types';
 
 interface UseRhythmSelectionProps {
@@ -155,31 +155,39 @@ export function useRhythmSelection({
         }
 
         const patternDuration = getPatternDuration(pattern);
+        // FIX Phase 39: Use findMeasureIndexFromVisualTick (Visual Coordinate Fix)
+        // Selection comes from Visual Coordinates (VexFlow), which skips ghosts.
+        const lookup = findMeasureIndexFromVisualTick(parsedRhythm, selection.startCharPosition);
+        const startMeasureIdx = lookup.index;
+        // Calculate Logical Char Position for string mapping
+        const logicalCharPosition = lookup.logicalMeasureStartTick + lookup.localTick;
 
-        // Convert Logical Position (Ticks) -> String Index
-        // VexFlow provides selection.startCharPosition as a Logical Time offset (in sixteenths).
-        // We must map this to the actual character index in the string.
+        let currentNotation = notation;
+        let currentParsed = parsedRhythm;
+
+        // FIX Phase 37 Correction 3: Check for Simile/Ghost Expansion
+        const expanded = expandSimileMeasure(currentNotation, startMeasureIdx, currentParsed);
+        if (expanded !== currentNotation) {
+            currentNotation = expanded;
+            currentParsed = parseRhythm(currentNotation, timeSignature);
+            setNotationWithoutHistory(currentNotation);
+        }
+
+        // Convert Logical Position (Ticks) -> String Index using Updated Rhythm
+        // Note: findMeasureIndexAtTick logic relies on ParsedRhythm structure.
+        // If we expanded, we should ideally re-calculate index? 
+        // But logical ticks (selection.startCharPosition) are invariant relative to structure timeline.
+        // So we can map directly.
         const map = mapLogicalToStringIndex(
-            notation,
-            selection.startCharPosition,
-            parsedRhythm,
+            currentNotation,
+            logicalCharPosition,
+            currentParsed,
             timeSignature
         );
 
         let startIndex = map.index;
 
         // "Wrong Note" Bug Fix (Phase 24) - Refined for Mapped Indices
-        // Ensure we handle snapping if the mapped index lands on a dash 'sub-beat'
-        // mapLogicalToStringIndex usually points to the start of the beat, but let's be safe.
-        // We look backwards from startIndex to find the note head if we landed on a dash/space
-        // that belongs to the previous note?
-        // Actually, mapLogicalToStringIndex is robust.
-        // However, if the USER selected a range starting mid-note (e.g. on the 2nd dash),
-        // we want to replace the whole note.
-        // But mapLogicalToStringIndex simply finds the string index covering that tick.
-        // If that tick is a dash '-', it returns the index of that dash.
-        // So we DO need to snap backwards to the Note Head.
-
         while (startIndex > 0 && (notation[startIndex] === '-' || notation[startIndex] === ' ')) {
             startIndex--;
         }
@@ -187,21 +195,23 @@ export function useRhythmSelection({
         addToHistory(notation);
 
         // Use replacePatternAtIndex with the SNAPPPED start position
+        // We use insertPatternAtIndex logic for cleaner replacement or replacePatternAtIndex?
+        // replacePatternAtIndex replaces a specific duration in the string.
         const result = replacePatternAtIndex(
-            notation,
+            currentNotation,
             startIndex,
             pattern,
             patternDuration
         );
 
+
+
         setNotationWithoutHistory(result.newNotation);
 
         // Update selection to the newly inserted pattern
-        // Note: For selection highlight to work, we'd need to know the new endIndex
-        // calculating exactly would require re-parsing. For now, clear selection or guess.
         setSelectionState({
             startCharPosition: selection.startCharPosition,
-            endCharPosition: selection.startCharPosition + pattern.length, // Approximate
+            endCharPosition: selection.startCharPosition + patternDuration,
             isSelecting: false,
             anchorPosition: null,
         });
@@ -217,9 +227,10 @@ export function useRhythmSelection({
 
         // Convert Logical positions to String Indices
         // Phase 27: Check if we are targeting a Simile Measure
-        // We calculate measure index via simple division assuming rigid 16th grid
-        const sixteenths = getSixteenthsPerMeasure(timeSignature);
-        const startMeasureIdx = Math.floor(selection.startCharPosition / sixteenths);
+        // FIX Phase 39: Use findMeasureIndexFromVisualTick
+        const lookup = findMeasureIndexFromVisualTick(parsedRhythm, selection.startCharPosition);
+        const startMeasureIdx = lookup.index;
+        const logicalCharPosition = lookup.logicalMeasureStartTick + lookup.localTick;
 
         let currentNotation = notation;
         let currentParsed = parsedRhythm;
@@ -236,8 +247,11 @@ export function useRhythmSelection({
         }
 
         // Re-calculate String Indices using potentially Updated Notation/ParsedRhythm
-        const startMap = mapLogicalToStringIndex(currentNotation, selection.startCharPosition, currentParsed, timeSignature);
-        const endMap = mapLogicalToStringIndex(currentNotation, selection.endCharPosition, currentParsed, timeSignature);
+        const endLookup = findMeasureIndexFromVisualTick(currentParsed, selection.endCharPosition);
+        const logicalEndCharPosition = endLookup.logicalMeasureStartTick + endLookup.localTick;
+
+        const startMap = mapLogicalToStringIndex(currentNotation, logicalCharPosition, currentParsed, timeSignature);
+        const endMap = mapLogicalToStringIndex(currentNotation, logicalEndCharPosition, currentParsed, timeSignature);
 
         // ... wait, I need to add imports first.
 
@@ -260,9 +274,12 @@ export function useRhythmSelection({
 
         // Phase 27: Expand Multi-Measure Repeats at Source AND Target?
         // Source Expansion
-        const sixteenths = getSixteenthsPerMeasure(timeSignature);
-        const startMeasureIdx = Math.floor(fromStartLogical / sixteenths);
-        const targetMeasureIdx = Math.floor(toPositionLogical / sixteenths);
+        // FIX Phase 38: Use findMeasureIndexAtTick for robust lookup
+        const startLookup = findMeasureIndexAtTick(parsedRhythm, fromStartLogical);
+        const startMeasureIdx = startLookup.index;
+
+        const targetLookup = findMeasureIndexAtTick(parsedRhythm, toPositionLogical);
+        const targetMeasureIdx = targetLookup.index;
 
         let expanded = expandSimileMeasure(currentNotation, startMeasureIdx, currentParsed);
         if (expanded !== currentNotation) {

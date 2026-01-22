@@ -140,3 +140,37 @@ Eliminates duplicate calculations across codebase and provides single source of 
 - Single source of truth for time signature logic
 - Eliminates duplicate calculations
 - Consistent behavior across all components
+
+## Sequencer Architecture & Coordinate Systems
+
+### Coordinate Systems
+
+**Decision**: Distinct coordinate systems for "Visual" (VexFlow) and "Logical" (Sequencer) representations, bridged by `findMeasureIndexFromVisualTick`.
+
+**Rationale**:
+
+- **Visual Coordinate System (Compressed)**: Used by VexFlow to render repeats. Simile repeats (`%`) and Section repeats (`|: :|x3`) are rendered as single blocks.
+- **Logical Coordinate System (Expanded)**: Used by the Sequencer and Drag-Drop logic. All repeats are fully unrolled into a flat timeline of measures.
+
+**Implementation**:
+
+- `findMeasureIndexFromVisualTick`: Converts a "Visual Tick" (e.g., clicking on the 3rd repeat of a section) into the correct "Logical Index" (e.g., Measure 18) by iterating through the Repeat Map.
+
+### Repeat Handling Strategy
+
+**Decision**: Use "Total Count" logic for Simile Repeats (`|xN`).
+
+**Rationale**:
+To maintain backward compatibility and align with user expectations (where `x2` typically means "Play 2 Total Times" in this specific app context, or at least consistent with legacy tests), we use **Total Count**.
+
+**Implementation**:
+
+- **Parser (`rhythmParser.ts`)**: Interprets `x7` as "7 Total Instances" (Source + 6 Repeats).
+- **Generator (`sequencerUtils.ts`)**: Reconstructs notation by collapsing 7 identical instances into `x7` (Duration 7).
+- **Visual Compression**: Ghost measures are hidden in the view. `calculateHiddenMeasureIndices` hides `count - 1` blocks.
+- **Section Parsing**: `processSectionRepeats` uses `i < count` (Total Count) loop logic.
+
+**Gotchas**:
+
+- **Single Repeat Markers**: We MUST preserve Section Repeat markers even if `count=1` (`|: A :|x1`), otherwise the Sequencer loses structural intent and collapses them destructively.
+- **Ghost Measures**: Editing a "Ghost Measure" (a repetition) implicitly targets the Source Measure. The Drag-Drop logic must handle this redirection.

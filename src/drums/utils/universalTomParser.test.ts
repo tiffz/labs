@@ -84,3 +84,14 @@ describe('universalTomParser', () => {
         expect(detectTimeSignature('6J')).toEqual({ numerator: 6, denominator: 4 });
     });
 });
+
+it('should ignore line numbers prefix (e.g. 1. 4J)', () => {
+    // User reported issue: "1.4J ..." causes extra notes. 
+    // "1." should be ignored. "4J" is time sig.
+    const input = `1.4J aj`;
+    // Expect: "4J" detected as Time Sig (handled by detectTimeSignature, removed by parser).
+    // "aj" -> "A-" -> "D---" (4 ticks, since X=4).
+
+    const result = parseUniversalTom(input);
+    expect(result).toBe('D---');
+});

@@ -279,9 +279,9 @@ describe('rhythmParser', () => {
     });
 
     it('should expand section repeat syntax: |: D-T-D-T-D-T-D-T- | D---T---D---T--- :| x2', () => {
-      // Logic Check: count=2 means "Repeat 2 times" (Total 3 iterations: Source + Repeat 1 + Repeat 2)
+      // Logic Check: count=2 means "2 Total Instances" (Source + 1 Repeat)
       // Source block = 2 measures.
-      // Total measures = 2 * 3 = 6 measures.
+      // Total measures = 2 * 2 = 4 measures.
       // Phase 23: Section repeats are physically unrolled in the measures array (for linear playback),
       // but logically grouped via 'repeats' metadata.
       const rhythm = parseRhythm('|: D-T-D-T-D-T-D-T- | D---T---D---T--- :| x2', {
@@ -290,7 +290,7 @@ describe('rhythmParser', () => {
       });
 
       // Expect expanded form
-      expect(rhythm.measures).toHaveLength(6);
+      expect(rhythm.measures).toHaveLength(4);
       expect(rhythm.isValid).toBe(true);
 
       // Should have a section repeat marker

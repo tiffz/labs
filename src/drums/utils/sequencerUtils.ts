@@ -352,11 +352,13 @@ export function gridToNotation(grid: SequencerGrid, repeats?: RepeatMarker[]): s
         k = p;
       }
     }
+
     return sliceStr;
   };
 
   for (let m = 0; m < numMeasures; m++) {
     const currentSlice = generateSlice(m);
+    // console.log(`DEBUG: Measure ${m} Slice: '${currentSlice}'`);
 
     // Check if this is a valid Simile Repeat
     // We strictly check if content matches source
@@ -406,9 +408,10 @@ export function collapseRepeats(slices: string[], existingRepeats?: RepeatMarker
       const sourceSlices = slices.slice(startMeasure, endMeasure + 1);
 
       // Check each repetition
-      // FIX Phase 32: Validate ALL repeats (1..repeatCount).
-      // Previously stopped at repeatCount-1, missing the last repeat.
-      for (let r = 1; r <= repeatCount; r++) {
+      // FIX Phase 77: Total Count Validation.
+      // repeatCount=3 means 3 Total Instances. Source is #1. We validate #2 and #3.
+      // So loop r=1 to r < repeatCount.
+      for (let r = 1; r < repeatCount; r++) {
         const repeatStart = startMeasure + (blockLength * r);
         // Bounds check
         if (repeatStart + blockLength > slices.length) {
@@ -420,7 +423,6 @@ export function collapseRepeats(slices: string[], existingRepeats?: RepeatMarker
         // Deep compare slices
         for (let k = 0; k < blockLength; k++) {
           if (repeatSlices[k] !== sourceSlices[k]) {
-            console.log(`Collapse Mismatch at R${r} K${k}. Source: ${sourceSlices[k]}, Repeat: ${repeatSlices[k]}`);
             isValid = false;
             break;
           }
@@ -435,9 +437,9 @@ export function collapseRepeats(slices: string[], existingRepeats?: RepeatMarker
         result += sourceSlices.join(' | ');
         result += ` :|x${repeatCount}`;
 
-        // Advance past all repeats AND source
-        // Source + N Repeats = (repeatCount + 1) blocks.
-        i += blockLength * (repeatCount + 1);
+        // Advance past all instances (Total Count)
+        // Source + (count-1) Repeats = count blocks.
+        i += blockLength * repeatCount;
         continue;
       }
       // If invalid, fall through to single measure logic (Divergence!)

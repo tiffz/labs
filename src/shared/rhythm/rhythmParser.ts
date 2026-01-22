@@ -19,7 +19,7 @@ interface RepeatPreprocessResult {
 }
 
 const NOTATION_MAP: Record<string, DrumSound> = {
-  D: 'dum', d: 'dum', T: 'tak', t: 'tak', K: 'ka', k: 'ka', S: 'slap', s: 'slap', _: 'rest', '%': 'simile',
+  D: 'dum', d: 'dum', T: 'tak', t: 'tak', K: 'ka', k: 'ka', S: 'slap', s: 'slap', _: 'rest', '-': 'rest', '%': 'simile',
 };
 
 function getDurationType(sixteenths: number): { duration: NoteDuration; isDotted: boolean } {
@@ -262,6 +262,8 @@ function processSingleRepeats(notation: string, sixteenthsPerMeasure: number): {
     const measuresInRepeat = countMeasuresInNotation(repeatContent, sixteenthsPerMeasure);
 
     // FIX Phase 23: Total Instances = Count
+    // Reverted Phase 75: Stay with Total Count for Single Repeats to preserve legacy data
+    // |x6 means "Play 6 times" (Total 6)
     const totalInstances = count;
     const expanded = Array(totalInstances).fill(repeatContent);
     finalNotation += expanded.join(' ') + ' ';
@@ -336,8 +338,13 @@ function processSectionRepeats(notation: string, sixteenthsPerMeasure: number, i
 
     for (let i = 0; i < preMatchMeasures; i++) {
       if (inputMappingIndex + i < inputMapping.length) {
-        // console.log(`Pushing InputMapping[${inputMappingIndex+i}]`);
-        measureMapping.push(inputMapping[inputMappingIndex + i]);
+        // FIX Phase 32/37: Must shift sourceMeasureIndex by expansion drift
+        const originalDef = inputMapping[inputMappingIndex + i];
+        const drift = currentMeasureIndex - inputMappingIndex;
+        measureMapping.push({
+          sourceMeasureIndex: originalDef.sourceMeasureIndex + drift,
+          sourceStringIndex: originalDef.sourceStringIndex
+        });
       }
       else measureMapping.push({ sourceMeasureIndex: currentMeasureIndex + i, sourceStringIndex: lastIndex + (i * 16) });
     }
@@ -347,6 +354,7 @@ function processSectionRepeats(notation: string, sixteenthsPerMeasure: number, i
     const content = match[1].trim();
     let actualPaddedContent = content;
     const count = match[2] ? parseInt(match[2], 10) : 1;
+    console.log(`DEBUG: Section Match '${match[0]}' -> count ${count}`);
     const contentSixteenths = countDurationInSixteenths(content);
     if (contentSixteenths > 0 && contentSixteenths < sixteenthsPerMeasure) {
       actualPaddedContent += ' ' + '_'.repeat(sixteenthsPerMeasure - contentSixteenths);
@@ -358,19 +366,26 @@ function processSectionRepeats(notation: string, sixteenthsPerMeasure: number, i
     const startMeasure = currentMeasureIndex;
     const endMeasure = currentMeasureIndex + measuresInContent - 1;
 
-    if (count > 1) repeats.push({ type: 'section', startMeasure, endMeasure, repeatCount: count });
+    if (count >= 1) repeats.push({ type: 'section', startMeasure, endMeasure, repeatCount: count });
 
     // FIX Phase 23/32: Standard "Repeat 3 Times" implies Source + 3 Repetitions (Total 4).
-    // Loop must run count + 1 times (0..count).
-    // i=0 is Source. i=1..count are Repeats.
-    for (let i = 0; i <= count; i++) {
+    // Reverted Phase 75: Total Count. i < count.
+    for (let i = 0; i < count; i++) {
       finalNotation += actualPaddedContent + ' ';
 
       if (i === 0) {
         // Source Iteration: Consume input mapping
         const sourceMappings: MeasureDefinition[] = [];
+        const drift = currentMeasureIndex - inputMappingIndex; // Should be 0 usually if just incremented
+
         for (let m = 0; m < measuresInContent; m++) {
-          if (inputMappingIndex + m < inputMapping.length) sourceMappings.push(inputMapping[inputMappingIndex + m]);
+          if (inputMappingIndex + m < inputMapping.length) {
+            const def = inputMapping[inputMappingIndex + m];
+            sourceMappings.push({
+              sourceMeasureIndex: def.sourceMeasureIndex + drift,
+              sourceStringIndex: def.sourceStringIndex
+            });
+          }
           else {
             if (sourceMappings.length > 0) sourceMappings.push(sourceMappings[sourceMappings.length - 1]);
             else sourceMappings.push({ sourceMeasureIndex: startMeasure, sourceStringIndex: match.index });
@@ -379,39 +394,37 @@ function processSectionRepeats(notation: string, sixteenthsPerMeasure: number, i
         inputMappingIndex += measuresInContent;
         for (const def of sourceMappings) measureMapping.push({ ...def });
       } else {
-        // Ghost Iteration: Copy from Source measures (which were just added)
-        // Source measures are at indices [startMeasure, startMeasure + measuresInContent - 1] in the measureMapping array?
-        // Wait, measureMapping.length grows.
-        // We can access them directly since we just pushed them in i=0.
-        // But what if count > 2? i=2 copies from i=0.
-        // The source measures in `measureMapping` are at indices corresponding to the logical measures of the first iteration.
-        // These logical indices start at `currentMeasureIndex` (before loop increment).
-        // Wait, `currentMeasureIndex` is incremented AFTER loop.
-        // So valid indices are `measureMapping.length`? No.
-        // We can trust `startMeasure`. It is the logical start index of the section.
-        // `measureMapping` is indexed by logical measure index.
-        // So measureMapping[startMeasure + m] gives the definition for the m-th measure of the source.
-
+        // Ghost Iteration: Copy from Source measures
         for (let m = 0; m < measuresInContent; m++) {
           const sourceDef = measureMapping[startMeasure + m];
-          // We must ensure sourceDef exists (it should, from i=0)
           if (sourceDef) {
             measureMapping.push({ sourceMeasureIndex: sourceDef.sourceMeasureIndex, sourceStringIndex: sourceDef.sourceStringIndex });
           } else {
-            // Fallback if something went wrong (shouldn't happen)
             measureMapping.push({ sourceMeasureIndex: startMeasure + m, sourceStringIndex: match.index });
           }
         }
       }
     }
-    currentMeasureIndex += measuresInContent * count;
+    currentMeasureIndex += measuresInContent * count; // Fix Indexing Lag
     lastIndex = match.index + match[0].length;
   }
 
   const suffix = notation.slice(lastIndex);
   finalNotation += suffix;
   const suffixMeasures = countMeasuresInNotation(suffix, sixteenthsPerMeasure);
-  for (let i = 0; i < suffixMeasures; i++) measureMapping.push(inputMapping[inputMappingIndex + i] || { sourceMeasureIndex: currentMeasureIndex + i, sourceStringIndex: lastIndex });
+  for (let i = 0; i < suffixMeasures; i++) {
+    // FIX Phase 32/37: Shift suffix check
+    if (inputMappingIndex + i < inputMapping.length) {
+      const originalDef = inputMapping[inputMappingIndex + i];
+      const drift = currentMeasureIndex - inputMappingIndex;
+      measureMapping.push({
+        sourceMeasureIndex: originalDef.sourceMeasureIndex + drift,
+        sourceStringIndex: originalDef.sourceStringIndex
+      });
+    } else {
+      measureMapping.push({ sourceMeasureIndex: currentMeasureIndex + i, sourceStringIndex: lastIndex });
+    }
+  }
 
   return { notation: finalNotation, repeats, measureMapping };
 }
@@ -612,4 +625,123 @@ export function parseRhythm(notation: string, timeSignature: TimeSignature): Par
   } catch (error) {
     return { measures: [], timeSignature, isValid: false, error: error instanceof Error ? error.message : 'Error', measureMapping: [] };
   }
+}
+
+/**
+ * Finds the Logical Measure Index (Expanded/Visual Index) corresponding to a specific tick position.
+ * This replaces naive `Math.floor(tick / 16)` calculations which fail when measures are overfull/underfull.
+ * It iterates the Expanded Timeline (via measureMapping) to match VexFlow's coordinate system.
+ */
+export function findMeasureIndexAtTick(parsed: ParsedRhythm, targetTick: number): { index: number; measureStartTick: number } {
+  if (!parsed.measureMapping || parsed.measureMapping.length === 0) {
+    if (!parsed.measures || parsed.measures.length === 0) return { index: 0, measureStartTick: 0 };
+    // Fallback: Naive calculation if no mapping
+    return {
+      index: Math.floor(targetTick / 16),
+      measureStartTick: Math.floor(targetTick / 16) * 16
+    };
+  }
+
+  let currentTick = 0;
+  // Iterate EXPANDED timeline via mapping
+  for (let i = 0; i < parsed.measureMapping.length; i++) {
+    const mapping = parsed.measureMapping[i];
+    const sourceMeasure = parsed.measures[mapping.sourceMeasureIndex];
+    if (!sourceMeasure) continue;
+
+    // Use totalDuration calculated during split.
+    // This matches VexFlow's visual duration calculation if splitIntoMeasures is the source of truth.
+    // NOTE: VexFlowRenderer uses Math.max(sum, 16) for rendering width.
+    // We must match that logic to stay in sync with UI.
+    const duration = Math.max(sourceMeasure.totalDuration, 16);
+
+    // Check if target is within this measure [start, end)
+    if (targetTick >= currentTick && targetTick < currentTick + duration) {
+      return { index: i, measureStartTick: currentTick };
+    }
+
+    currentTick += duration;
+  }
+
+  // If past the end, return index = length (Append)
+  return { index: parsed.measureMapping.length, measureStartTick: currentTick };
+}
+
+/**
+ * Maps a VISUAL tick position (from VexFlow click/drag) to the actual logical measure index.
+ * This is critical because VexFlow HIDES section repeats (ghosts), creating a Compressed Visual Timeline
+ * that differs from the Expanded Logical Timeline.
+ * 
+ * Logic must match VexFlowRenderer's hiddenMeasureIndices calculation.
+ */
+export function findMeasureIndexFromVisualTick(parsed: ParsedRhythm, visualTick: number): { index: number; visualMeasureStartTick: number; logicalMeasureStartTick: number; localTick: number } {
+  if (!parsed.measures || parsed.measures.length === 0) return { index: 0, visualMeasureStartTick: 0, logicalMeasureStartTick: 0, localTick: 0 };
+
+  // 1. Identify Hidden Indices (Must match VexFlowRenderer logic exactly)
+  const hiddenMeasureIndices = new Set<number>();
+  if (parsed.repeats) {
+    parsed.repeats.forEach(repeat => {
+      // (x3) => Source + 3 Ghosts. Total 4.
+      // We hide ALL ghosts. Source remains visible.
+      // NOTE: We only hide SECTION repeats (where Visual = 1 measure, Logical = N measures).
+      // Simile Repeats (x6) are usually rendered sequentially effectively (or handled differently).
+      // VexFlowRenderer lines 461-476 confirms only 'section' repeats are hidden.
+      if (repeat.type === 'section' && repeat.repeatCount > 0) {
+        const blockLength = repeat.endMeasure - repeat.startMeasure + 1;
+        // FIX Phase 77: Total Count implies repeatCount - 1 Ghosts.
+        const measuresToHide = blockLength * (repeat.repeatCount - 1);
+        const startHiddenIndex = repeat.endMeasure + 1;
+
+        for (let i = 0; i < measuresToHide; i++) {
+          hiddenMeasureIndices.add(startHiddenIndex + i);
+        }
+      }
+    });
+  }
+
+  // 2. Iterate Measures in Visual Order (Skipping Hidden)
+  let currentVisualTick = 0;
+  let currentLogicalTick = 0;
+
+  for (let i = 0; i < parsed.measures.length; i++) {
+    const measure = parsed.measures[i];
+
+    // Determine duration (Same logic as Logical Mapping - use actual content duration)
+    const duration = Math.max(measure.notes.reduce((sum, n) => sum + (n.durationInSixteenths || 0), 0), 16);
+
+    // SKIP Hidden measures (They consume 0 visual time)
+    if (hiddenMeasureIndices.has(i)) {
+      currentLogicalTick += duration;
+      continue;
+    }
+
+    const measureEndTick = currentVisualTick + duration;
+
+    // Check if target is within this Visible Measure
+    if (visualTick >= currentVisualTick && visualTick < measureEndTick) {
+      return {
+        index: i,
+        visualMeasureStartTick: currentVisualTick,
+        logicalMeasureStartTick: currentLogicalTick,
+        localTick: visualTick - currentVisualTick
+      };
+    }
+
+    currentVisualTick += duration;
+    currentLogicalTick += duration;
+  }
+
+  // If beyond end, return last visible measure
+  // We need to find the last non-hidden index
+  let lastVisibleIndex = parsed.measures.length - 1;
+  while (lastVisibleIndex > 0 && hiddenMeasureIndices.has(lastVisibleIndex)) {
+    lastVisibleIndex--;
+  }
+
+  return {
+    index: lastVisibleIndex,
+    visualMeasureStartTick: currentVisualTick,
+    logicalMeasureStartTick: currentLogicalTick,
+    localTick: 0 // Default to start of appended measure
+  };
 }

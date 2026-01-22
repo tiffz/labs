@@ -1,4 +1,5 @@
 import { parsePatternToNotes } from './notationHelpers';
+import { findMeasureIndexAtTick } from '../utils/rhythmParser';
 import { getSixteenthsPerMeasure } from './timeSignatureUtils';
 import type { TimeSignature, ParsedRhythm } from '../types';
 
@@ -75,8 +76,13 @@ export function mapLogicalToStringIndex(
   timeSignature: TimeSignature = { numerator: 4, denominator: 4 }
 ): { index: number; logicalReached: number } {
   const sixteenthsPerMeasure = getSixteenthsPerMeasure(timeSignature);
-  const measureIdx = Math.floor(logicalPos / sixteenthsPerMeasure);
-  const offset = logicalPos % sixteenthsPerMeasure;
+
+  // FIX Phase 38: Use Systemic Coordinate Resolution
+  // Must use findMeasureIndexAtTick to resolve correct Logical Measure Index
+  // accounting for overfull/underfull measures in VexFlow timeline.
+  const lookup = findMeasureIndexAtTick(parsedRhythm, logicalPos);
+  const measureIdx = lookup.index;
+  const offset = logicalPos - lookup.measureStartTick;
 
   const def = parsedRhythm.measureMapping?.[measureIdx];
 
@@ -219,6 +225,14 @@ export function replacePatternAtPosition(
   // If we consumed fewer ticks than required, it implies we hit a boundary (Barline, structure, or EOF).
   // However, we must distinguish between "Overflow" (Pattern too long for measure) 
   // and "Implicit Rest" (Pattern replaces void at end of incomplete measure).
+
+  // DEBUG
+  if (logicalPosition > 170) {
+    const content = notation.slice(startStringIndex, endStringIndex);
+    const spans = /[|:x]/.test(content);
+    console.log(`DEBUG: replacePattern lp=${logicalPosition} idx=${startStringIndex} end=${endStringIndex} consumed=${ticksConsumed} req=${patternDuration} content='${content}' spans=${spans}`);
+  }
+
   if (ticksConsumed < patternDuration) {
     const sixteenthsPerMeasure = getSixteenthsPerMeasure(timeSignature);
     const measureOffset = logicalPosition % sixteenthsPerMeasure;
@@ -227,21 +241,19 @@ export function replacePatternAtPosition(
     // If it exceeds boundaries, it's an Overflow and should be blocked.
     if (measureOffset + patternDuration <= sixteenthsPerMeasure) {
       // Valid Implicit Edit.
-      // If we consumed NOTHING (replacedLength=0), we return 0 => Fallback to Insert.
-      // If we consumed SOMETHING (partial replacement), we return that length.
-      // App.tsx uses `replacedLength > 0` to decide Replace vs Insert.
-      // If we replace existing notes + void, replacedLength should reflect the notes consumed.
+      // ...
       return {
         newNotation: notation.slice(0, startStringIndex) + pattern + notation.slice(endStringIndex),
         replacedStart: startStringIndex,
         replacedEnd: endStringIndex,
-        replacedLength: ticksConsumed, // Logic: Use newly constructed string, report what was removed.
+        replacedLength: ticksConsumed,
         blocked: false
       };
     }
 
+    console.log('[replacePattern] BLOCKED: Overflow', { ticksConsumed, patternDuration, measureOffset, sixteenthsPerMeasure });
     return {
-      newNotation: notation, // No change
+      newNotation: notation,
       replacedStart: startStringIndex,
       replacedEnd: startStringIndex,
       replacedLength: 0,
