@@ -586,7 +586,7 @@ export function parseRhythm(notation: string, timeSignature: TimeSignature): Par
     if (notes.length === 0) return { measures: [], timeSignature, isValid: true, measureMapping: [] };
     const measures = splitIntoMeasures(notes, timeSignature);
     const validation = validateMeasures(measures, timeSignature);
-    let repeats = preprocessedRepeats.length > 0 ? [...preprocessedRepeats] : [];
+    const repeats = preprocessedRepeats.length > 0 ? [...preprocessedRepeats] : [];
 
     for (let i = 0; i < measures.length; i++) {
       const measure = measures[i];
@@ -604,7 +604,8 @@ export function parseRhythm(notation: string, timeSignature: TimeSignature): Par
 
     // Phase 23: Implicit Repeat Detection
     // After handling explicit Simile measures, we check for identical measure content.
-    repeats = detectIdenticalMeasures(measures, repeats);
+    // DISABLING implicit repeats per user request (Phase 4). Only explicit % or repeat bars should be effective.
+    // repeats = detectIdenticalMeasures(measures, repeats);
 
     const measureSourceMapping: Record<number, number> = {};
     if (repeats) {

@@ -13,7 +13,9 @@ export function isCompoundTimeSignature(timeSignature: TimeSignature): boolean {
  * Asymmetric time signatures have /8 denominator and numerator NOT divisible by 3
  */
 export function isAsymmetricTimeSignature(timeSignature: TimeSignature): boolean {
-  return timeSignature.denominator === 8 && timeSignature.numerator % 3 !== 0;
+  if (timeSignature.denominator === 8) return timeSignature.numerator % 3 !== 0;
+  if (timeSignature.denominator === 16) return timeSignature.numerator % 4 !== 0;
+  return false;
 }
 
 /**
@@ -42,6 +44,16 @@ export function getDefaultBeatGrouping(timeSignature: TimeSignature): number[] {
   // Regular time signatures (/4): groups of 4 sixteenths (quarter notes)
   if (timeSignature.denominator === 4) {
     return Array(timeSignature.numerator).fill(4);
+  }
+
+  // Time signatures with /16 denominator
+  if (timeSignature.denominator === 16) {
+    // If divisible by 4 (e.g. 4/16, 8/16, 12/16), group in 4s (quarter note beats)
+    if (timeSignature.numerator % 4 === 0) {
+      return Array(timeSignature.numerator / 4).fill(4);
+    }
+    // Otherwise fallback to single group for now (e.g. 5/16)
+    return [timeSignature.numerator];
   }
 
   // Fallback: single group
@@ -162,6 +174,9 @@ export function getBeatGroupInfo(
  * @returns Number of sixteenth notes in one measure
  */
 export function getSixteenthsPerMeasure(timeSignature: TimeSignature): number {
+  if (timeSignature.denominator === 16) {
+    return timeSignature.numerator;
+  }
   return timeSignature.denominator === 8
     ? timeSignature.numerator * 2 // eighth notes -> sixteenths
     : timeSignature.numerator * 4; // quarter notes -> sixteenths

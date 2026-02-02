@@ -3,14 +3,19 @@ import type { TimeSignature } from '../../shared/rhythm/types';
 // ... existing imports ...
 
 export function detectTimeSignature(input: string): TimeSignature | null {
-    // Regex matches "DigitsJ" e.g. "4J" -> 4/4, "3J" -> 3/4
+    // Regex matches "Digits[JKL]" e.g. "4J" -> 4/4, "7K" -> 7/8, "15L" -> 15/16
 
-    // Check for "DigitsJ" (Implicit Denominator 4)
-    const implicitMatch = /\b(\d+)J/.exec(input);
-    if (implicitMatch && implicitMatch[1]) {
-        const numerator = parseInt(implicitMatch[1], 10);
+    const match = /\b(\d+)([JKL])/.exec(input);
+    if (match && match[1] && match[2]) {
+        const numerator = parseInt(match[1], 10);
+        let denominator = 4;
+
+        if (match[2] === 'J') denominator = 4;
+        if (match[2] === 'K') denominator = 8;
+        if (match[2] === 'L') denominator = 16;
+
         if (!isNaN(numerator) && numerator > 0) {
-            return { numerator, denominator: 4 };
+            return { numerator, denominator };
         }
     }
 
@@ -163,6 +168,10 @@ const COMPOUND_MAP: Record<string, string> = {
     'ajssaj': 'AYAY',
     'alssal': 'BYBY',
     'ajssal': 'AYBY',
+    'ajsal': 'AYBY', // Variant of ajssal
+    'dal': 'BY', // Tak 8th (Fix for Alda;dal)
+    'alsal': 'BYBY', // Variant of alssal
+    '=': 'RY', // Eighth Rest
 };
 
 const SOUND_MAP: Record<string, string> = {
@@ -227,7 +236,17 @@ export function parseUniversalTom(input: string): string {
     let remaining = input.trim();
 
     // Clean input: Remove line numbers (1., 2.) and time signature metadata (4J, 1.4J)
-    remaining = remaining.replace(/^(\d+\.\s*)?(\d+J\s*)?/gm, '');
+    // Also handle K (/8) and L (/16)
+    remaining = remaining.replace(/^(\d+\.\s*)?(\d+[JKL]\s*)?/gm, '');
+
+    // Preprocessing hacks for user-friendliness
+    // 1. Collapse multiple 's' -> 'ss' (e.g. ajsssssal -> ajssal)
+    remaining = remaining.replace(/s{3,}/g, 'ss');
+
+    // 2. Fix capitalization issues (e.g. Alda; -> alda;)
+    // Replacer function: if match is Upper, make Lower.
+    // Targeted: Only if it looks like a token start.
+    remaining = remaining.replace(/\b[A-Z]/g, (char) => char.toLowerCase());
 
     // Tracking for formatting
     let accumulatedTicks = 0;

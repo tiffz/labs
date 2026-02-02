@@ -309,9 +309,9 @@ describe('rhythmParser', () => {
       expect(rhythm.isValid).toBe(true);
     });
 
-    it('should auto-detect consecutive identical measures (implicit repeats)', () => {
+    it('should NOT auto-detect consecutive identical measures (implicit repeats disabled)', () => {
       // Same notation repeated 3 times manually (no repeat syntax)
-      // Auto-detection is ENABLED
+      // Auto-detection is DISABLED
       const rhythm = parseRhythm('D-T-D-T-D-T-D-T- D-T-D-T-D-T-D-T- D-T-D-T-D-T-D-T-', {
         numerator: 4,
         denominator: 4,
@@ -321,10 +321,7 @@ describe('rhythmParser', () => {
       expect(rhythm.isValid).toBe(true);
 
       // Should auto-detect repeats
-      expect(rhythm.repeats).toBeDefined();
-      expect(rhythm.repeats?.length).toBeGreaterThan(0);
-      const measureRepeat = rhythm.repeats?.find(r => r.type === 'measure');
-      expect(measureRepeat).toBeDefined();
+      expect(rhythm.repeats).toBeUndefined();
     });
 
     it('should not create repeat markers for different measures', () => {

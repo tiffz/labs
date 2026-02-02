@@ -217,6 +217,7 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
             >
               <option value="4">4</option>
               <option value="8">8</option>
+              <option value="16">16</option>
             </select>
             {showTimeSigDropdown && (
               <div
@@ -306,10 +307,10 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
             />
             <span className="input-suffix">BPM</span>
           </div>
-          
-          {/* Beat Grouping Input for Compound and Asymmetric Time Signatures */}
+
+          {/* Beat Grouping Input for Compound, Asymmetric, and /16 Time Signatures */}
           <div className="beat-grouping-control">
-            {(isCompoundTimeSignature(timeSignature) || isAsymmetricTimeSignature(timeSignature)) && (
+            {(isCompoundTimeSignature(timeSignature) || isAsymmetricTimeSignature(timeSignature) || timeSignature.denominator === 16) && (
               <>
                 <div className="beat-grouping-header">
                   <label htmlFor="beat-grouping-input" className="beat-grouping-label">
@@ -322,20 +323,20 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
                         <div className="tooltip-title">Beat Grouping</div>
                         <div className="tooltip-content">
                           <p>
-                            <strong>Compound rhythms</strong> (ie: 6/8, 9/8, 12/8) are grouped into sets of 3 eighth notes by default. 
+                            <strong>Compound rhythms</strong> (ie: 6/8, 9/8, 12/8) are grouped into sets of 3 eighth notes by default.
                             For example, 12/8 defaults to 3+3+3+3.
                           </p>
                           <p>
-                            <strong>Asymmetric rhythms</strong> (ie: 5/8, 7/8, 11/8) can have different groupings. 
+                            <strong>Asymmetric rhythms</strong> (ie: 5/8, 7/8, 11/8) can have different groupings.
                             For example, 11/8 can be 3+3+3+2 or 2+3+3+3.
                           </p>
                           <p>
-                            You can adjust the grouping for any /8 time signature to create custom patterns.
+                            You can adjust the grouping for any /8 or /16 time signature to create custom patterns.
                           </p>
                         </div>
-                        <a 
-                          href="https://en.wikipedia.org/wiki/Additive_rhythm_and_divisive_rhythm#Additive_rhythm" 
-                          target="_blank" 
+                        <a
+                          href="https://en.wikipedia.org/wiki/Additive_rhythm_and_divisive_rhythm#Additive_rhythm"
+                          target="_blank"
                           rel="noopener noreferrer"
                           className="tooltip-link"
                         >
@@ -360,7 +361,7 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
               </>
             )}
           </div>
-          
+
           {/* Right-aligned controls group: Metronome + Settings */}
           <div className="right-controls-group">
             {/* Metronome Toggle */}
