@@ -17,8 +17,6 @@ interface NotePaletteProps {
   onInsertPattern: (pattern: string) => void;
   remainingBeats: number;
   timeSignature: TimeSignature;
-  dragDropMode?: 'replace' | 'insert';
-  onDragDropModeChange?: (mode: 'replace' | 'insert') => void;
   /** Current selection state */
   selection?: SelectionState | null;
   /** Duration of current selection in sixteenths */
@@ -100,8 +98,6 @@ const SINGLE_NOTE_TABLE = {
 const NotePalette = forwardRef<NotePaletteHandle, NotePaletteProps>(({ 
   onInsertPattern, 
   remainingBeats,
-  dragDropMode = 'replace',
-  onDragDropModeChange,
   selection,
   selectionDuration = 0,
   onReplaceSelection,
@@ -447,19 +443,6 @@ const NotePalette = forwardRef<NotePaletteHandle, NotePaletteProps>(({
               />
               <span>Sound preview</span>
             </label>
-            {onDragDropModeChange && (
-              <button
-                type="button"
-                className="drag-drop-mode-toggle"
-                onClick={() => onDragDropModeChange(dragDropMode === 'replace' ? 'insert' : 'replace')}
-                data-tooltip={dragDropMode === 'replace' ? 'Replace mode' : 'Insert mode'}
-                aria-label={`${dragDropMode === 'replace' ? 'Replace' : 'Insert'} mode - Click to toggle`}
-              >
-                <span className="material-symbols-outlined">
-                  {dragDropMode === 'replace' ? 'swap_horiz' : 'add_circle'}
-                </span>
-              </button>
-            )}
           </div>
         </div>
       </div>

@@ -113,6 +113,13 @@ export function useRhythmSelection({
                 return; // Click is inside input section, don't clear
             }
 
+            // Check if click is inside the playback controls (Play/Stop, BPM, etc.)
+            // This preserves selection when starting/stopping playback for scoped playback
+            const playbackControls = document.querySelector('.playback-controls-bar');
+            if (playbackControls && playbackControls.contains(e.target as Node)) {
+                return; // Click is inside playback controls, don't clear
+            }
+
             // Click is outside all interactive areas, clear the selection
             clearSelection();
         };

@@ -1,4 +1,5 @@
-import type { DrumSound } from '../types';
+import type { DrumSound, ParsedRhythm } from '../types';
+import type { NotePosition } from './dropTargetFinder';
 
 /**
  * Notation mapping used internally by parsePatternToNotes
@@ -95,5 +96,67 @@ export function parsePatternToNotes(pattern: string): Array<{ sound: DrumSound; 
   }
 
   return notes;
+}
+
+/**
+ * Reverse mapping from DrumSound to notation character
+ */
+const SOUND_TO_CHAR: Record<string, string> = {
+  dum: 'D',
+  tak: 'T',
+  ka: 'K',
+  slap: 'S',
+  rest: '_',
+};
+
+/**
+ * Build notation text from a selection of notes using parsed rhythm data.
+ * This avoids fragile string-index mapping and works correctly across
+ * repeat markers, section repeats, simile measures, etc.
+ *
+ * @param positions - Note positions from VexFlow rendering (notePositionsRef.current)
+ * @param rhythm - Parsed rhythm containing measures with note data
+ * @param startCharPosition - Start of selection in tick space (inclusive)
+ * @param endCharPosition - End of selection in tick space (exclusive)
+ * @returns Notation string for the selected notes
+ */
+export function buildNotationFromSelection(
+  positions: NotePosition[],
+  rhythm: ParsedRhythm,
+  startCharPosition: number,
+  endCharPosition: number
+): string {
+  // Find notes within the selection range, sorted by position
+  const selected = positions
+    .filter(p => p.charPosition >= startCharPosition && p.charPosition < endCharPosition)
+    .sort((a, b) => a.charPosition - b.charPosition);
+
+  // Deduplicate by charPosition (ghost/repeat measures share the same position)
+  const seen = new Set<number>();
+  const uniqueSelected = selected.filter(p => {
+    if (seen.has(p.charPosition)) return false;
+    seen.add(p.charPosition);
+    return true;
+  });
+
+  // Map each note position back to notation characters
+  const parts: string[] = [];
+  for (const pos of uniqueSelected) {
+    const measure = rhythm.measures[pos.measureIndex];
+    if (!measure) continue;
+    const note = measure.notes[pos.noteIndex];
+    if (!note) continue;
+
+    const ch = SOUND_TO_CHAR[note.sound] || '_';
+    if (note.durationInSixteenths === 1) {
+      parts.push(ch);
+    } else {
+      // For rests, use underscores for continuation; for notes, use dashes
+      const cont = note.sound === 'rest' ? '_' : '-';
+      parts.push(ch + cont.repeat(note.durationInSixteenths - 1));
+    }
+  }
+
+  return parts.join('');
 }
 

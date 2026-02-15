@@ -6,6 +6,7 @@ import { getDefaultBeatGrouping, isCompoundTimeSignature, isAsymmetricTimeSignat
 import { findDropTarget, type NotePosition } from '../utils/dropTargetFinder';
 import { computeDropPreview } from '../utils/dropPreview';
 import { getCurrentDraggedPattern } from './NotePalette';
+import { buildNotationFromSelection } from '../utils/notationHelpers';
 
 /**
  * Checks if a measure is at the start of a section repeat
@@ -100,6 +101,9 @@ function findClickedNote(
 
   // PASS 2: Click is not directly on any notehead - find the closest one
   // Use distance to notehead center for intuitive "closest note" behavior
+  // But only if within a reasonable distance - clicking far from any note
+  // (e.g. empty space to the right of a stave) should return null to allow deselection
+  const maxClickDistance = 40; // Max pixels from notehead center to count as a click on it
   let closestNote: NotePosition | null = null;
   let minDistance = Infinity;
 
@@ -112,6 +116,9 @@ function findClickedNote(
       closestNote = notePos;
     }
   }
+
+  // If the closest note is too far away, treat as clicking empty space
+  if (minDistance > maxClickDistance) return null;
 
   return closestNote;
 }
@@ -162,8 +169,7 @@ interface VexFlowRendererProps {
   currentNote?: { measureIndex: number; noteIndex: number; repeatIteration?: number; maxRepeats?: number } | null;
   metronomeEnabled?: boolean;
   currentMetronomeBeat?: { measureIndex: number; positionInSixteenths: number; isDownbeat: boolean } | null;
-  onDropPattern?: (pattern: string, charPosition: number, targetMeasureIndex?: number) => void;
-  dragDropMode?: 'replace' | 'insert';
+  onDropPattern?: (pattern: string, charPosition: number, operationType: 'replace' | 'insert') => void;
   notation?: string;
   timeSignature?: TimeSignature;
   /** Current selection state */
@@ -178,6 +184,8 @@ interface VexFlowRendererProps {
   onRequestPaletteFocus?: () => void;
   /** Optional mode for denser rendering (e.g. for import preview) */
   compactMode?: boolean;
+  /** Whether to auto-scroll to keep the current playing note visible */
+  autoScrollDuringPlayback?: boolean;
 }
 
 /**
@@ -341,7 +349,6 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
   metronomeEnabled = false,
   currentMetronomeBeat = null,
   onDropPattern,
-  dragDropMode = 'replace',
   notation = '',
   timeSignature,
   selection = null,
@@ -350,10 +357,12 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
   onDeleteSelection,
   onRequestPaletteFocus,
   compactMode = false,
+  autoScrollDuringPlayback = false,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const metronomeDotsRef = useRef<Map<string, SVGCircleElement>>(new Map());
   const notePositionsRef = useRef<NotePosition[]>([]);
+  const prevScrollStaveYRef = useRef<number | null>(null);
   // Track simile symbols by measure index for playback highlighting
   const simileGroupsRef = useRef<Map<number, SVGGElement>>(new Map());
   // Track repeat count text elements for highlighting
@@ -1767,14 +1776,13 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
     const pattern = getCurrentDraggedPattern();
     // cleanNotation removed - use raw notation
 
-    // Compute drop preview
+    // Compute drop preview (unified: mode auto-detected from cursor position)
     const previewResult = computeDropPreview(
       e.clientX,
       e.clientY,
       pattern,
       notation, // Phase 21: Pass RAW notation
       timeSignature,
-      dragDropMode,
       notePositionsRef.current,
       containerRef,
       rhythm // Phase 21: Pass parsed rhythm
@@ -1818,7 +1826,7 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
         svg.appendChild(line);
       }
     }
-  }, [notation, timeSignature, dragDropMode, onDropPattern, rhythm]); // Added rhythm
+  }, [notation, timeSignature, onDropPattern, rhythm]);
 
   const handleContainerDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     // Only clear preview if leaving the container entirely (not entering a child)
@@ -1867,23 +1875,22 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
     }
 
 
-    // Compute drop position using the same logic as preview
+    // Compute drop position using the same logic as preview (unified: mode auto-detected)
     const previewResult = computeDropPreview(
       e.clientX,
       e.clientY,
       pattern,
       notation, // Phase 21: Pass RAW notation
       timeSignature,
-      dragDropMode,
       notePositionsRef.current,
       containerRef,
       rhythm // Phase 21: Pass parsed rhythm
     );
 
-    if (previewResult.isValid) {
-      onDropPattern(pattern, previewResult.dropPosition, previewResult.targetMeasureIndex);
+    if (previewResult.isValid && (previewResult.previewType === 'replace' || previewResult.previewType === 'insert')) {
+      onDropPattern(pattern, previewResult.dropPosition, previewResult.previewType);
     }
-  }, [notation, timeSignature, dragDropMode, onDropPattern, rhythm]);
+  }, [notation, timeSignature, onDropPattern, rhythm]);
 
   // Helper to announce to screen readers via the live region
   const announce = useCallback((message: string) => {
@@ -1922,6 +1929,43 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
       return sorted[(currentIndex - 1 + sorted.length) % sorted.length];
     }
   }, [selection]);
+
+  // Auto-scroll to keep current playing note visible during playback.
+  // Uses allStaveNoteRefsRef (populated by the main render effect) to find the
+  // current note's SVG element and scroll it into view when the stave line changes.
+  useEffect(() => {
+    if (!currentNote || !autoScrollDuringPlayback) return;
+
+    // Find the stave note ref for the current playing note
+    const staveNoteRef = allStaveNoteRefsRef.current.find(
+      ref => ref.measureIndex === currentNote.measureIndex && ref.noteIndex === currentNote.noteIndex
+    );
+
+    if (!staveNoteRef) return;
+
+    const staveY = staveNoteRef.stave.getY();
+
+    // Only scroll when we move to a different stave line (not for every note)
+    if (prevScrollStaveYRef.current !== null && Math.abs(staveY - prevScrollStaveYRef.current) < 50) {
+      return; // Same line, no scroll needed
+    }
+    prevScrollStaveYRef.current = staveY;
+
+    // Use the native scrollIntoView on the note's SVG element
+    // block: 'center' keeps the current line centered in the viewport
+    // inline: 'nearest' prevents unwanted horizontal scrolling
+    const svgEl = staveNoteRef.staveNote.getSVGElement();
+    if (svgEl) {
+      svgEl.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+    }
+  }, [currentNote, autoScrollDuringPlayback]);
+
+  // Reset scroll tracking when playback stops
+  useEffect(() => {
+    if (!currentNote) {
+      prevScrollStaveYRef.current = null;
+    }
+  }, [currentNote]);
 
   // Keyboard handler for navigation and actions
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -2036,7 +2080,29 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
       }
       return;
     }
-  }, [selection, onSelectionChange, onDeleteSelection, onRequestPaletteFocus, findAdjacentNote, announce]);
+
+    // Copy selection with Cmd/Ctrl+C
+    if (key === 'c' && (e.metaKey || e.ctrlKey)) {
+      if (selection && selection.startCharPosition !== null && selection.endCharPosition !== null && rhythm) {
+        e.preventDefault();
+        try {
+          const selectedText = buildNotationFromSelection(
+            notePositionsRef.current,
+            rhythm,
+            selection.startCharPosition,
+            selection.endCharPosition
+          );
+          if (selectedText) {
+            navigator.clipboard.writeText(selectedText);
+            announce('Copied notation to clipboard');
+          }
+        } catch {
+          // Clipboard write failed silently
+        }
+      }
+      return;
+    }
+  }, [selection, onSelectionChange, onDeleteSelection, onRequestPaletteFocus, findAdjacentNote, announce, rhythm]);
 
   if (rhythm.measures.length === 0) {
     return null;

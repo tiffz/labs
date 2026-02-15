@@ -44,7 +44,6 @@ const App: React.FC = () => {
   const [debouncedBpm, setDebouncedBpm] = useState<number>(initialState.bpm);
   const debounceTimeoutRef = useRef<number | null>(null);
   const [metronomeEnabled, setMetronomeEnabled] = useState<boolean>(initialState.metronomeEnabled || false);
-  const [dragDropMode, setDragDropMode] = useState<'replace' | 'insert'>('replace');
   const [showKeyboardHelp, setShowKeyboardHelp] = useState<boolean>(false);
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [showShareFeedback, setShowShareFeedback] = useState<boolean>(false);
@@ -103,6 +102,14 @@ const App: React.FC = () => {
     return calculateRemainingBeats(notation, timeSignature);
   }, [notation, timeSignature]);
 
+  // Compute selection range for scoped playback (loop only selected notes)
+  const selectionRange = useMemo(() => {
+    if (selection && selection.startCharPosition !== null && selection.endCharPosition !== null) {
+      return { startTick: selection.startCharPosition, endTick: selection.endCharPosition };
+    }
+    return null;
+  }, [selection]);
+
   // Use playback hook for consistent playback state management
   const {
     isPlaying,
@@ -117,6 +124,7 @@ const App: React.FC = () => {
     debouncedBpm,
     metronomeEnabled,
     playbackSettings,
+    selectionRange,
   });
 
   const handleInsertPattern = useCallback((pattern: string) => {
@@ -155,55 +163,33 @@ const App: React.FC = () => {
 
 
   // Handle drop from canvas or text input
-  const handleDropPattern = useCallback((pattern: string, charPosition: number) => {
-    // We will calculate targetCharPosition from logical mapping below
-    // const targetCharPosition = charPosition;
-
-    // Reverted Phase 11 (Smart Repeats) due to user feedback (Confusing behavior).
-    // Now we rely on standard "Redirect to Source" behavior handled by mapLogicalToStringIndex internally.
-
-    // Derived clean version for replacement logic
-    // Phase 27: Expand Simile (Drag Drop Support)
-    // Check if target position is in a Simile Measure
-    // Check if this is a ghost, wait... expandSimileMeasure now handles ghost checking internally (Phase 37).
-    // Check if this is a ghost, wait... expandSimileMeasure now handles ghost checking internally (Phase 37).
-    // So we just pass the naive measure index (which might be a ghost index).
+  // operationType is determined automatically by the unified drop preview (cursor position relative to notes)
+  const handleDropPattern = useCallback((pattern: string, charPosition: number, operationType: 'replace' | 'insert') => {
     // FIX Phase 39: Use findMeasureIndexFromVisualTick (Visual Coordinate Fix)
     // Drag coordinates come from VexFlow which skips hidden measures.
     const lookup = findMeasureIndexFromVisualTick(parsedRhythm, charPosition);
     const targetMeasureIdx = lookup.index;
     const logicalCharPosition = lookup.logicalMeasureStartTick + lookup.localTick;
-    // Use logical position for editing operations
     const targetCharPosition = logicalCharPosition;
 
-    // We assume parsedRhythm is current.
+    // Phase 27: Expand Simile (Drag Drop Support)
     let expandedNotation = notation;
     let expandedParsed = parsedRhythm;
 
     const expanded = expandSimileMeasure(expandedNotation, targetMeasureIdx, expandedParsed);
     if (expanded !== expandedNotation) {
       expandedNotation = expanded;
-      // We must update parsedRhythm to match expanded notation for accurate mapping
       expandedParsed = parseRhythm(expandedNotation, timeSignature);
-      // Set state logic handled by result logic below... 
-      // But replacePatternAtPosition needs the NEW notation/parsedRhythm.
-      // And activeCleanNotation needs to be derived from NEW notation.
     }
 
-    // Derived clean version for replacement logic
     const activeCleanNotation = expandedNotation.replace(/[\s\n]/g, '');
-
     const patternDuration = getPatternDuration(pattern);
 
     addToHistory(notation);
 
-    if (dragDropMode === 'replace') {
-      // Always try replacement - replacePatternAtPosition handles edge cases and measure boundaries
-      // If replacement fails (replacedLength === 0), fall back to insert
+    if (operationType === 'replace') {
+      // Replace mode: overwrite notes at the drop position
       // FIX Phase 37 Correction 2: Re-parse if expansion occurred.
-      // If expandSimileMeasure changed the notation (unrolled repeats), the original `parsedRhythm` 
-      // is STALE (its mapping reflects the old compressed structure).
-      // We must re-parse the NEW notation to generate a correct mapping (Linear) for the edit.
       let activeParsedRhythm = parsedRhythm;
       if (expandedNotation !== notation) {
         activeParsedRhythm = parseRhythm(expandedNotation, timeSignature);
@@ -218,52 +204,28 @@ const App: React.FC = () => {
         activeParsedRhythm
       );
 
-      // Phase 12: Block crossing repeat boundaries (Issue 19)
-      // Check if we are replacing across a barline or distinct structural boundary
-      // Note: replacedStart/End are indices into CLEAN notation.
-      // We need to check if the original text (with barlines) had structure there.
-      // Or simply check if the result obliterated a Barline?
-      // Simpler: Check if the replaced range in the OLD string contained `|` or `:`.
-      // mapLogicalToStringIndex(activeCleanNotation, ...) gives string indices.
-      // Wait, replacement logic uses CLEAN notation indices to slice CLEAN notation.
-      // It doesn't use the raw string with barlines.
-      // If we operate on clean notation, barlines don't exist.
-      // BUT `replacePatternAtPosition` is supposed to handle notation... wait.
-      // `replacePatternAtPosition` takes `notation` string.
-      // In `App.tsx` line 164, we pass `cleanNotation`.
-      // `cleanNotation` has NO barlines. `notation.replace(/[\s\n]/g, '')`.
-      // Wait. If we strip spaces, do we strip `|`?
-      // `[\s\n]` does NOT match `|`. So Barlines ARE in `cleanNotation`.
-      // Correct.
-      // So `result.replacedStart` and `replacedEnd` are indices in `activeCleanNotation`.
-      // We can check `activeCleanNotation.slice(start, end)` for `|` or `:`.
-
-      // FIX Phase 35: Use `expandedNotation` for slicing, as `replacedStart/End` are indices into THAT string.
-      // Previously used `activeCleanNotation` which caused index misalignment (stripping spaces) leading to false boundary detection.
+      // Phase 12: Block crossing repeat boundaries
       const replacedContent = expandedNotation.slice(result.replacedStart, result.replacedEnd);
       const spansBoundary = /[|:x]/.test(replacedContent);
 
-      // Check if replacement was explicitly blocked by dragAndDrop logic (due to structure collision)
       if (result.blocked || spansBoundary) {
-        // Block the drop (do nothing).
-        // Do NOT fall back to insert, as that causes measure overflow/extension.
         return;
       }
 
-      // If replacement succeeded (replacedLength > 0), use the new notation
       if (result.replacedLength > 0) {
         setNotationWithoutHistory(result.newNotation);
-      } else {
-        // Replacement failed - fall back to insert
-        const newNotation = insertPatternAtPosition(activeCleanNotation, targetCharPosition, pattern, parsedRhythm);
-        setNotationWithoutHistory(newNotation);
       }
+      // If replacement failed, do nothing (the preview already validated this)
     } else {
-      // Insert pattern at position
-      const newNotation = insertPatternAtPosition(activeCleanNotation, targetCharPosition, pattern, parsedRhythm);
+      // Insert mode: insert pattern between notes at the drop position
+      let activeParsedRhythm = parsedRhythm;
+      if (expandedNotation !== notation) {
+        activeParsedRhythm = parseRhythm(expandedNotation, timeSignature);
+      }
+      const newNotation = insertPatternAtPosition(activeCleanNotation, targetCharPosition, pattern, activeParsedRhythm, timeSignature);
       setNotationWithoutHistory(newNotation);
     }
-  }, [notation, dragDropMode, addToHistory, timeSignature, setNotationWithoutHistory, parsedRhythm]);
+  }, [notation, addToHistory, timeSignature, setNotationWithoutHistory, parsedRhythm]);
 
   // Debounce BPM changes - only apply after user stops typing for 500ms
   useEffect(() => {
@@ -646,7 +608,6 @@ const App: React.FC = () => {
             metronomeEnabled={metronomeEnabled}
             currentMetronomeBeat={currentMetronomeBeat}
             onDropPattern={handleDropPattern}
-            dragDropMode={dragDropMode}
             notation={notation}
             timeSignature={timeSignature}
             selection={selection}
@@ -654,6 +615,7 @@ const App: React.FC = () => {
             onMoveSelection={handleMoveSelection}
             onDeleteSelection={handleDeleteSelection}
             onRequestPaletteFocus={handleRequestPaletteFocus}
+            autoScrollDuringPlayback={playbackSettings.autoScrollDuringPlayback}
           />
 
           {/* Sequencer section */}
@@ -693,8 +655,6 @@ const App: React.FC = () => {
           onInsertPattern={handleInsertPattern}
           remainingBeats={remainingBeats}
           timeSignature={timeSignature}
-          dragDropMode={dragDropMode}
-          onDragDropModeChange={setDragDropMode}
           selection={selection}
           selectionDuration={selectionDuration}
           onReplaceSelection={handleReplaceSelection}

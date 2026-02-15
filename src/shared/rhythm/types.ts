@@ -70,6 +70,7 @@ export interface PlaybackSettings {
   emphasizeSimpleRhythms: boolean; // Whether to emphasize beat groups in /4 rhythms
   metronomeVolume: number; // 0-100, volume for metronome clicks
   reverbStrength: number; // 0-100, reverb effect strength (0 = no reverb, 100 = full reverb)
+  autoScrollDuringPlayback: boolean; // Whether to auto-scroll to keep current note visible
 }
 
 export const DEFAULT_PLAYBACK_SETTINGS: PlaybackSettings = {
@@ -79,4 +80,5 @@ export const DEFAULT_PLAYBACK_SETTINGS: PlaybackSettings = {
   emphasizeSimpleRhythms: false, // Default to false - only accent measure start for /4
   metronomeVolume: 50,
   reverbStrength: 20, // Default to 20% reverb
+  autoScrollDuringPlayback: true, // Default to on - scroll to follow playback
 };

@@ -117,7 +117,6 @@ const UniversalTomApp: React.FC = () => {
                                 <div className="text-black">
                                     <VexFlowRenderer
                                         rhythm={parsedRhythm}
-                                        dragDropMode="replace"
                                         notation={parsedNotation}
                                         currentNote={null}
                                         metronomeEnabled={false}

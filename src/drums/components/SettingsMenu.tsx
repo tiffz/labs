@@ -375,6 +375,30 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({
               </SettingsHelpTooltip>
             </label>
           </div>
+
+          <div className="settings-group">
+            <label className="settings-checkbox-label">
+              <input
+                type="checkbox"
+                checked={settings.autoScrollDuringPlayback}
+                onChange={(e) => onSettingsChange({
+                  ...settings,
+                  autoScrollDuringPlayback: e.target.checked,
+                })}
+                className="settings-checkbox"
+              />
+              <SettingsHelpTooltip
+                ariaLabel="Help for auto-scroll during playback"
+                content={
+                  <div className="tooltip-content">
+                    <p>When enabled, the page automatically scrolls to keep the currently playing note visible. Useful for long pieces.</p>
+                  </div>
+                }
+              >
+                <span>Auto-scroll during playback</span>
+              </SettingsHelpTooltip>
+            </label>
+          </div>
         </div>
       </div>
     </div>

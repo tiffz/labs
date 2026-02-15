@@ -9,6 +9,7 @@ interface UsePlaybackOptions {
   debouncedBpm: number;
   metronomeEnabled: boolean;
   playbackSettings: PlaybackSettings;
+  selectionRange?: { startTick: number; endTick: number } | null;
 }
 
 /**
@@ -20,6 +21,7 @@ export function usePlayback({
   debouncedBpm,
   metronomeEnabled,
   playbackSettings,
+  selectionRange,
 }: UsePlaybackOptions) {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentNote, setCurrentNote] = useState<{
@@ -42,6 +44,9 @@ export function usePlayback({
     setIsPlaying(true);
     setCurrentNote(null);
 
+    // Pass tick range if there's a selection to scope playback
+    const tickRange = selectionRange ? { startTick: selectionRange.startTick, endTick: selectionRange.endTick } : undefined;
+
     rhythmPlayer.play(
       parsedRhythm,
       bpm,
@@ -57,9 +62,10 @@ export function usePlayback({
       (measureIndex, positionInSixteenths, isDownbeat) => {
         setCurrentMetronomeBeat({ measureIndex, positionInSixteenths, isDownbeat });
       },
-      playbackSettings
+      playbackSettings,
+      tickRange
     );
-  }, [parsedRhythm, bpm, metronomeEnabled, playbackSettings]);
+  }, [parsedRhythm, bpm, metronomeEnabled, playbackSettings, selectionRange]);
 
   const handleStop = useCallback(() => {
     rhythmPlayer.stop();

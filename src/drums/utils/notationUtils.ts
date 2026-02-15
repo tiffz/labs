@@ -14,7 +14,7 @@ const REVERSE_MAP: Record<DrumSound, string> = {
   'simile': '%'
 };
 
-export function noteToNotation(note: { sound: DrumSound; durationInSixteenths: number }): string {
+function noteToNotation(note: { sound: DrumSound; durationInSixteenths: number }): string {
   if (note.sound === 'simile') return '%';
 
   const char = REVERSE_MAP[note.sound] || 'D';
@@ -53,80 +53,6 @@ export function calculateRemainingBeats(
   const remaining = beatsPerMeasure - positionInMeasure;
 
   return remaining === beatsPerMeasure ? beatsPerMeasure : remaining;
-}
-
-/**
- * Maps a logical tick position (relative to compressed source notation) to the actual expanded measure index.
- * It accounts for measures that are visually present but logically "skipped" in the source string (ghosts).
- * 
- * E.g. |: A :|x3 | B.
- * Source: A (0-16), B (16-32).
- * Expanded: A (0), A(Ghost, 1), A(Ghost, 2), A(Ghost, 3), B (4).
- * 
- * Input Ticks: 16 (Start of B).
- * Naive (16/16) -> Index 1 (Ghost A). WRONG.
- * Correct Mapping -> Index 4 (B).
- * 
- * @param sourceTicks - The logical position in ticks derived from source notation accumulation
- * @param parsed - The parsed rhythm containing measure mapping info
- */
-/**
- * Maps a logical tick position (relative to compressed source notation) to the actual expanded measure index.
- * Returns both the index and the start tick of that measure in the source timeline.
- */
-export function getExpandedMeasureIndexDetails(sourceTicks: number, parsed: ParsedRhythm): { index: number; measureStartTick: number } {
-  if (!parsed.measures || parsed.measures.length === 0) return { index: 0, measureStartTick: 0 };
-
-  let currentSourceTicks = 0;
-
-  for (let i = 0; i < parsed.measures.length; i++) {
-    const measure = parsed.measures[i];
-
-    // Check if this is a ghost (Implicit repeat instance)
-    const mapping = parsed.measureMapping ? parsed.measureMapping[i] : undefined;
-    const isGhost = mapping !== undefined && mapping.sourceMeasureIndex !== i;
-
-    // Determine duration of this measure
-    // Assuming 16ths per measure is constant or derived from measure content?
-    // Usually standard measures are 16 ticks. But let's use actual content duration if possible.
-    // Or better: use durationInSixteenths sum.
-    const duration = measure.notes.reduce((sum, n) => sum + (n.durationInSixteenths || 0), 0);
-    // Fallback? A measure usually has fixed capacity, but content might be less.
-    // Wait. VexFlowRenderer uses "effectiveStart + localOffset".
-    // "Measure start char position". "globalCharPosition += measureDuration".
-    // So we should track measure duration.
-
-    // BUT VexFlowRenderer uses `measureDuration` calculated from notes.
-    // Which matches `duration` below.
-
-    if (isGhost) {
-      // Ghosts do NOT advance source time.
-      // But they occupy an index.
-      // We skip them in time check.
-    } else {
-      // Real source measure. Advances source time.
-      const measureEndTicks = currentSourceTicks + duration;
-
-      // Is our target within this source measure?
-      // Check [start, end).
-      if (sourceTicks >= currentSourceTicks && sourceTicks < measureEndTicks) {
-        return { index: i, measureStartTick: currentSourceTicks };
-      }
-
-      currentSourceTicks += duration;
-    }
-  }
-
-  // If we exceeded all measures (e.g. at very end), return last index?
-  // Or if input was larger than total duration.
-  return { index: Math.max(0, parsed.measures.length - 1), measureStartTick: currentSourceTicks };
-}
-
-/** 
- * Wrapper for backward compatibility or simple index lookup 
- */
-export function getExpandedMeasureIndexFromSourceTicks(sourceTicks: number, parsed: ParsedRhythm): number {
-  return getExpandedMeasureIndexDetails(sourceTicks, parsed).index;
 }
 
 // Helper to expand a measure string from the parsed rhythm if it's a simile OR section repeat ghost

@@ -8,8 +8,7 @@ interface RhythmDisplayProps {
   currentNote?: { measureIndex: number; noteIndex: number } | null;
   metronomeEnabled?: boolean;
   currentMetronomeBeat?: { measureIndex: number; positionInSixteenths: number; isDownbeat: boolean } | null;
-  onDropPattern?: (pattern: string, charPosition: number) => void;
-  dragDropMode?: 'replace' | 'insert';
+  onDropPattern?: (pattern: string, charPosition: number, operationType: 'replace' | 'insert') => void;
   notation?: string;
   timeSignature?: TimeSignature;
   /** Current selection state */
@@ -22,6 +21,8 @@ interface RhythmDisplayProps {
   onDeleteSelection?: () => void;
   /** Callback to request focus on the note palette */
   onRequestPaletteFocus?: () => void;
+  /** Whether to auto-scroll to keep the current playing note visible */
+  autoScrollDuringPlayback?: boolean;
 }
 
 const RhythmDisplay = forwardRef<HTMLDivElement, RhythmDisplayProps>(({
@@ -30,7 +31,6 @@ const RhythmDisplay = forwardRef<HTMLDivElement, RhythmDisplayProps>(({
   metronomeEnabled = false,
   currentMetronomeBeat = null,
   onDropPattern,
-  dragDropMode = 'replace',
   notation = '',
   timeSignature,
   selection = null,
@@ -38,6 +38,7 @@ const RhythmDisplay = forwardRef<HTMLDivElement, RhythmDisplayProps>(({
   onMoveSelection,
   onDeleteSelection,
   onRequestPaletteFocus,
+  autoScrollDuringPlayback = false,
 }, ref) => {
   const { measures, isValid, error } = rhythm;
 
@@ -73,7 +74,6 @@ const RhythmDisplay = forwardRef<HTMLDivElement, RhythmDisplayProps>(({
             metronomeEnabled={metronomeEnabled}
             currentMetronomeBeat={currentMetronomeBeat}
             onDropPattern={onDropPattern}
-            dragDropMode={dragDropMode}
             notation={notation}
             timeSignature={timeSignature}
             selection={selection}
@@ -81,6 +81,7 @@ const RhythmDisplay = forwardRef<HTMLDivElement, RhythmDisplayProps>(({
             onMoveSelection={onMoveSelection}
             onDeleteSelection={onDeleteSelection}
             onRequestPaletteFocus={onRequestPaletteFocus}
+            autoScrollDuringPlayback={autoScrollDuringPlayback}
           />
         </div>
       </CollapsibleSection>

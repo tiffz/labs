@@ -37,6 +37,7 @@ describe('usePlayback', () => {
     metronomeVolume: 50,
     reverbStrength: 20,
     emphasizeSimpleRhythms: false,
+    autoScrollDuringPlayback: true,
   };
 
   beforeEach(() => {
@@ -86,7 +87,8 @@ describe('usePlayback', () => {
       expect.any(Function), // onComplete
       false, // metronomeEnabled
       expect.any(Function), // metronomeCallback
-      defaultSettings
+      defaultSettings,
+      undefined // tickRange (no selection)
     );
     expect(result.current.isPlaying).toBe(true);
   });
@@ -346,6 +348,64 @@ describe('usePlayback', () => {
 
     const playCall = vi.mocked(rhythmPlayer.play).mock.calls[0];
     expect(playCall[4]).toBe(true); // metronomeEnabled parameter
+  });
+
+  it('should pass tickRange when selectionRange is provided', () => {
+    const selectionRange = { startTick: 16, endTick: 32 };
+
+    const { result } = renderHook(() =>
+      usePlayback({
+        parsedRhythm: mockParsedRhythm,
+        bpm: 120,
+        debouncedBpm: 120,
+        metronomeEnabled: false,
+        playbackSettings: defaultSettings,
+        selectionRange,
+      })
+    );
+
+    act(() => {
+      result.current.handlePlay();
+    });
+
+    expect(rhythmPlayer.play).toHaveBeenCalledWith(
+      mockParsedRhythm,
+      120,
+      expect.any(Function),
+      expect.any(Function),
+      false,
+      expect.any(Function),
+      defaultSettings,
+      { startTick: 16, endTick: 32 }
+    );
+  });
+
+  it('should pass undefined tickRange when selectionRange is null', () => {
+    const { result } = renderHook(() =>
+      usePlayback({
+        parsedRhythm: mockParsedRhythm,
+        bpm: 120,
+        debouncedBpm: 120,
+        metronomeEnabled: false,
+        playbackSettings: defaultSettings,
+        selectionRange: null,
+      })
+    );
+
+    act(() => {
+      result.current.handlePlay();
+    });
+
+    expect(rhythmPlayer.play).toHaveBeenCalledWith(
+      mockParsedRhythm,
+      120,
+      expect.any(Function),
+      expect.any(Function),
+      false,
+      expect.any(Function),
+      defaultSettings,
+      undefined
+    );
   });
 });
 

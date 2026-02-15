@@ -25,11 +25,11 @@ afterEach(() => {
 // Mock RhythmDisplay to expose drop handler
 vi.mock('./components/RhythmDisplay', () => {
   return {
-    default: (props: { onDropPattern: (p: string, t: number) => void, onSelectionChange: (s: number, e: number, l: number) => void, notation: string }) => (
+    default: (props: { onDropPattern: (p: string, t: number, op: 'replace' | 'insert') => void, onSelectionChange: (s: number, e: number, l: number) => void, notation: string }) => (
       <div data-testid="rhythm-display-mock">
         Note Display
-        <button data-testid="trigger-drop" onClick={() => props.onDropPattern('S---', 144)}>Trigger Drop (P4)</button>
-        <button data-testid="trigger-drop-ghost" onClick={() => props.onDropPattern('S---', 160)}>Drop on Ghost (M10)</button>
+        <button data-testid="trigger-drop" onClick={() => props.onDropPattern('S---', 144, 'replace')}>Trigger Drop (P4)</button>
+        <button data-testid="trigger-drop-ghost" onClick={() => props.onDropPattern('S---', 160, 'replace')}>Drop on Ghost (M10)</button>
         {/* We expose selection handlers here too since RhythmDisplay receives them */}
         <button
           data-testid="trigger-select-ghost"
