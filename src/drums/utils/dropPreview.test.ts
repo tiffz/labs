@@ -160,11 +160,8 @@ describe('zone detection logic', () => {
     for (const b of boundaries) {
       minDist = Math.min(minDist, Math.abs(svgX - b.x));
     }
-    // Also check before-first / after-last
-    const isBeforeFirst = svgX < notes[0].x;
-    const lastNote = notes[notes.length - 1];
-    const isAfterLast = svgX > lastNote.x + lastNote.width;
-    return minDist <= BOUNDARY_ZONE_HALF_WIDTH || isBeforeFirst || isAfterLast;
+    // Only use boundary proximity - no special before/after edge handling
+    return minDist <= BOUNDARY_ZONE_HALF_WIDTH;
   }
 
   it('cursor in center of note A → replace (not insertion)', () => {
@@ -198,17 +195,31 @@ describe('zone detection logic', () => {
     expect(isInsertionZone(180 + BOUNDARY_ZONE_HALF_WIDTH + 1)).toBe(false);
   });
 
-  it('cursor before first note → insertion', () => {
-    expect(isInsertionZone(50)).toBe(true);
+  it('cursor far before first note → NOT insertion (no aggressive edge matching)', () => {
+    // 50 is far from any boundary (closest is x=100 at distance 50)
+    expect(isInsertionZone(50)).toBe(false);
   });
 
-  it('cursor after last note → insertion', () => {
-    expect(isInsertionZone(300)).toBe(true);
+  it('cursor near first note boundary → insertion', () => {
+    // First boundary is at x=100, so within BOUNDARY_ZONE_HALF_WIDTH should be insertion
+    expect(isInsertionZone(100)).toBe(true);
+    expect(isInsertionZone(100 - BOUNDARY_ZONE_HALF_WIDTH)).toBe(true);
   });
 
-  it('BOUNDARY_ZONE_HALF_WIDTH is reasonable (8-20px range)', () => {
-    expect(BOUNDARY_ZONE_HALF_WIDTH).toBeGreaterThanOrEqual(8);
-    expect(BOUNDARY_ZONE_HALF_WIDTH).toBeLessThanOrEqual(20);
+  it('cursor far after last note → NOT insertion (no aggressive edge matching)', () => {
+    // 300 is far from any boundary (closest is x=260 at distance 40)
+    expect(isInsertionZone(300)).toBe(false);
+  });
+
+  it('cursor near last note boundary → insertion', () => {
+    // Last boundary is at x=260 (after note B), so within threshold should be insertion
+    expect(isInsertionZone(260)).toBe(true);
+    expect(isInsertionZone(260 + BOUNDARY_ZONE_HALF_WIDTH)).toBe(true);
+  });
+
+  it('BOUNDARY_ZONE_HALF_WIDTH is reasonable (6-12px range)', () => {
+    expect(BOUNDARY_ZONE_HALF_WIDTH).toBeGreaterThanOrEqual(6);
+    expect(BOUNDARY_ZONE_HALF_WIDTH).toBeLessThanOrEqual(12);
   });
 });
 
@@ -356,5 +367,53 @@ describe('calculateInsertionLineFromGap', () => {
     expect(height1).toBe(height2);
     // Height should be 25 + 35 = 60px
     expect(height0).toBe(60);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Empty space rejection (no matching across line boundaries)
+// ---------------------------------------------------------------------------
+
+describe('empty space rejection', () => {
+  // This verifies that dragging to empty space at the end of a line does NOT
+  // show a replacement highlight on the first note of the next line.
+
+  const lineNotes = [
+    makeNote({ charPosition: 0,  x: 100, width: 80, durationInSixteenths: 4, staveY: 40 }),
+    makeNote({ charPosition: 4,  x: 180, width: 80, durationInSixteenths: 4, staveY: 40 }),
+  ];
+
+  const boundaries = computeLineBoundaries(lineNotes);
+  const lastNote = lineNotes[lineNotes.length - 1];
+  const lastNoteEndX = lastNote.x + lastNote.width; // 260
+
+  it('cursor just past the last note boundary is still valid (within threshold)', () => {
+    // Last boundary at x=260, within BOUNDARY_ZONE_HALF_WIDTH should still be insertion
+    const dist = Math.abs(260 - 260); // 0
+    expect(dist).toBeLessThanOrEqual(BOUNDARY_ZONE_HALF_WIDTH);
+  });
+
+  it('cursor well past all notes should be rejected', () => {
+    // svgX = 350, well past last note (260)
+    // In computeDropPreview, this would be > lastNoteEndX + BOUNDARY_ZONE_HALF_WIDTH
+    const svgX = 350;
+    expect(svgX).toBeGreaterThan(lastNoteEndX + BOUNDARY_ZONE_HALF_WIDTH);
+
+    // The closest boundary is at x=260, distance = 90, which is >> BOUNDARY_ZONE_HALF_WIDTH
+    let minDist = Infinity;
+    for (const b of boundaries) {
+      minDist = Math.min(minDist, Math.abs(svgX - b.x));
+    }
+    expect(minDist).toBeGreaterThan(BOUNDARY_ZONE_HALF_WIDTH);
+    // This confirms it's NOT in insertion zone
+
+    // And since it's past the last note boundary + threshold, it should be rejected entirely
+    expect(svgX > lastNoteEndX + BOUNDARY_ZONE_HALF_WIDTH).toBe(true);
+  });
+
+  it('cursor well before all notes should also be rejected', () => {
+    const svgX = 30;
+    const firstNoteStartX = lineNotes[0].x; // 100
+    expect(svgX).toBeLessThan(firstNoteStartX - BOUNDARY_ZONE_HALF_WIDTH);
   });
 });

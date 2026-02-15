@@ -114,4 +114,41 @@ describe('formatRhythm', () => {
     const outputNotes = result.replace(/[|x\d%:\s\n]/g, '');
     expect(outputNotes).toBe(inputNotes);
   });
+
+  it('preserves section repeat with count (:|x3)', () => {
+    const input = '|:D-D-TKT-D---T-TK:|x3';
+    const result = formatRhythm(input, ts44);
+    expect(result).toContain(':|x3');
+    // Notes should be preserved
+    const inputNotes = input.replace(/[|x\d%:\s\n]/g, '');
+    const outputNotes = result.replace(/[|x\d%:\s\n]/g, '');
+    expect(outputNotes).toBe(inputNotes);
+  });
+
+  it('preserves section repeat with count :|x2', () => {
+    const input = '|:D-D-TKT-D---T-TK:|x2';
+    const result = formatRhythm(input, ts44);
+    expect(result).toContain(':|x2');
+  });
+
+  it('preserves multi-measure section repeat with count', () => {
+    const input = '|:D-D-TKT-D---T-TKT-T-TKT-D---T-TK:|x3';
+    const result = formatRhythm(input, ts44);
+    expect(result).toContain(':|x3');
+    // Notes should be preserved
+    const inputNotes = input.replace(/[|x\d%:\s\n]/g, '');
+    const outputNotes = result.replace(/[|x\d%:\s\n]/g, '');
+    expect(outputNotes).toBe(inputNotes);
+  });
+
+  it('preserves :|x3 even when mixed with measure repeats', () => {
+    const input = 'D-D-TKT-D---T-TK|x2|:D-D-TKT-D---T-TK:|x3D-D-TKT-D---T-TK';
+    const result = formatRhythm(input, ts44);
+    expect(result).toContain('|x2');
+    expect(result).toContain(':|x3');
+    // All notes preserved
+    const inputNotes = input.replace(/[|x\d%:\s\n]/g, '');
+    const outputNotes = result.replace(/[|x\d%:\s\n]/g, '');
+    expect(outputNotes).toBe(inputNotes);
+  });
 });

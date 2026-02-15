@@ -9,7 +9,7 @@ import RhythmSequencer from './components/RhythmSequencer';
 import CollapsibleSection from './components/CollapsibleSection';
 // UniversalTomInput removed
 
-import { parseRhythm, findMeasureIndexFromVisualTick } from './utils/rhythmParser';
+import { parseRhythm, findMeasureIndexFromVisualTick, expandSelectionToRepeats } from './utils/rhythmParser';
 import { recognizeRhythm } from './utils/rhythmRecognition';
 import { useUrlState } from './hooks/useUrlState';
 import { useNotationHistory } from './hooks/useNotationHistory';
@@ -102,13 +102,19 @@ const App: React.FC = () => {
     return calculateRemainingBeats(notation, timeSignature);
   }, [notation, timeSignature]);
 
-  // Compute selection range for scoped playback (loop only selected notes)
+  // Compute selection range for scoped playback (loop only selected notes).
+  // Uses expandSelectionToRepeats to convert visual tick range to unrolled tick range,
+  // so selecting a repeated measure (e.g. with |x3) loops all iterations, not just one.
   const selectionRange = useMemo(() => {
     if (selection && selection.startCharPosition !== null && selection.endCharPosition !== null) {
-      return { startTick: selection.startCharPosition, endTick: selection.endCharPosition };
+      return expandSelectionToRepeats(
+        parsedRhythm,
+        selection.startCharPosition,
+        selection.endCharPosition
+      );
     }
     return null;
-  }, [selection]);
+  }, [selection, parsedRhythm]);
 
   // Use playback hook for consistent playback state management
   const {

@@ -16,23 +16,29 @@ interface Token { type: TokenType; value: string }
 /**
  * Tokenize rhythm notation into meaningful tokens.
  * Handles note characters, repeat markers (|xN), section repeats (|: :|),
- * simile (%), and standalone barlines (|).
+ * section repeats with count (:|xN), simile (%), and standalone barlines (|).
  */
 function tokenize(notation: string): Token[] {
     const tokens: Token[] = [];
     // Match patterns in priority order (longer patterns first)
-    // |x\d+ = repeat marker, |: = section start, :| = section end
-    // % = simile, | = barline, [DdTtKkSs_\-]+ = note chars
-    const regex = /(\|x\d+)|(\|:)?(:\|)|(\|:)|(%)|(\|)|([DdTtKkSs_-]+)/g;
+    // |x\d+ = measure repeat marker
+    // :|x\d+ = section end with repeat count (MUST come before bare :|)
+    // |:...:| = combined section (edge case)
+    // :| = section end (bare)
+    // |: = section start
+    // % = simile, | = barline, note chars
+    const regex = /(\|x\d+)|(\|:)?(:\|x\d+)|(\|:)?(:\|)|(\|:)|(%)|(\|)|([DdTtKkSs_-]+)/g;
     let m;
     while ((m = regex.exec(notation)) !== null) {
         if (m[1]) tokens.push({ type: 'repeat', value: m[1] });
-        else if (m[2] && m[3]) tokens.push({ type: 'sectionEnd', value: m[2] + m[3] }); // |:...:| edge case
-        else if (m[3]) tokens.push({ type: 'sectionEnd', value: m[3] });
-        else if (m[4]) tokens.push({ type: 'sectionStart', value: m[4] });
-        else if (m[5]) tokens.push({ type: 'simile', value: m[5] });
-        else if (m[6]) tokens.push({ type: 'barline', value: m[6] });
-        else if (m[7]) tokens.push({ type: 'notes', value: m[7] });
+        else if (m[2] && m[3]) tokens.push({ type: 'sectionEnd', value: m[2] + m[3] }); // |:...:|xN
+        else if (m[3]) tokens.push({ type: 'sectionEnd', value: m[3] }); // :|xN
+        else if (m[4] && m[5]) tokens.push({ type: 'sectionEnd', value: m[4] + m[5] }); // |:...:|
+        else if (m[5]) tokens.push({ type: 'sectionEnd', value: m[5] }); // :|
+        else if (m[6]) tokens.push({ type: 'sectionStart', value: m[6] }); // |:
+        else if (m[7]) tokens.push({ type: 'simile', value: m[7] }); // %
+        else if (m[8]) tokens.push({ type: 'barline', value: m[8] }); // |
+        else if (m[9]) tokens.push({ type: 'notes', value: m[9] }); // note chars
     }
     return tokens;
 }
@@ -174,9 +180,10 @@ export function formatRhythm(
             }
 
             case 'sectionEnd': {
-                // :| closes a repeat section (includes the barline)
+                // :| or :|xN closes a repeat section (includes the barline)
+                // Preserve the full token value which may include a repeat count (e.g. ":|x3")
                 output = output.trimEnd();
-                output += ':|';
+                output += token.value;
                 posInMeasure = 0;
                 endMeasure(false);
                 break;

@@ -195,15 +195,15 @@ export function useRhythmSelection({
         let startIndex = map.index;
 
         // "Wrong Note" Bug Fix (Phase 24) - Refined for Mapped Indices
-        while (startIndex > 0 && (notation[startIndex] === '-' || notation[startIndex] === ' ')) {
+        // IMPORTANT: Must use currentNotation (not original notation) since simile
+        // expansion may have changed the string, shifting indices.
+        while (startIndex > 0 && (currentNotation[startIndex] === '-' || currentNotation[startIndex] === ' ')) {
             startIndex--;
         }
 
         addToHistory(notation);
 
-        // Use replacePatternAtIndex with the SNAPPPED start position
-        // We use insertPatternAtIndex logic for cleaner replacement or replacePatternAtIndex?
-        // replacePatternAtIndex replaces a specific duration in the string.
+        // Use replacePatternAtIndex with the SNAPPED start position
         const result = replacePatternAtIndex(
             currentNotation,
             startIndex,

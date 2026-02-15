@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { parseNotation, parseRhythm, detectIdenticalMeasures } from './rhythmParser';
-import type { Measure } from '../types';
+import { parseNotation, parseRhythm, detectIdenticalMeasures, expandSelectionToRepeats } from './rhythmParser';
+import type { Measure, TimeSignature } from '../types';
 
 describe('rhythmParser', () => {
   describe('parseNotation', () => {
@@ -390,6 +390,85 @@ describe('rhythmParser', () => {
       const repeats = detectIdenticalMeasures(measures);
 
       expect(repeats).toHaveLength(0);
+    });
+  });
+
+  describe('expandSelectionToRepeats', () => {
+    const ts44: TimeSignature = { numerator: 4, denominator: 4 };
+
+    it('returns the same range when no repeats exist', () => {
+      const parsed = parseRhythm('D-D-TKT-D---T-TK D-D-TKT-D---T-TK', ts44);
+      const result = expandSelectionToRepeats(parsed, 0, 16);
+      expect(result).toEqual({ startTick: 0, endTick: 16 });
+    });
+
+    it('returns the same range for partial measure selection (no repeat expansion)', () => {
+      const parsed = parseRhythm('D-D-TKT-D---T-TK|x3', ts44);
+      // Select only half of the first measure
+      const result = expandSelectionToRepeats(parsed, 0, 8);
+      expect(result).toEqual({ startTick: 0, endTick: 8 });
+    });
+
+    it('expands selection through section repeat iterations', () => {
+      // |: D-D-TKT-D---T-TK :|x3 creates 3 iterations of the measure
+      // Visual: 1 measure (ticks 0-16)
+      // Unrolled: 3 measures (ticks 0-48)
+      const parsed = parseRhythm('|: D-D-TKT-D---T-TK :|x3', ts44);
+      // Select the visible measure (visual ticks 0-16)
+      const result = expandSelectionToRepeats(parsed, 0, 16);
+      // Should expand to cover all 3 iterations
+      expect(result.startTick).toBe(0);
+      expect(result.endTick).toBeGreaterThan(16);
+    });
+
+    it('does not expand when selection does not overlap with repeats', () => {
+      // Two measures, then a section repeat
+      const parsed = parseRhythm('D-D-TKT-D---T-TK |: D-D-TKT-D---T-TK :|x2', ts44);
+      // Select only the first measure (before the repeat)
+      const result = expandSelectionToRepeats(parsed, 0, 16);
+      expect(result).toEqual({ startTick: 0, endTick: 16 });
+    });
+
+    it('handles empty rhythm gracefully', () => {
+      const parsed = parseRhythm('', ts44);
+      const result = expandSelectionToRepeats(parsed, 0, 16);
+      expect(result).toEqual({ startTick: 0, endTick: 16 });
+    });
+
+    it('does not expand measure repeat — respects user selection exactly', () => {
+      // D-D-TKT-D---T-TK|x3 creates 3 visible iterations: 0-16, 16-32, 32-48
+      // Simile symbols are clickable, so user has fine-grained control.
+      // Selecting just the source should NOT auto-expand to all iterations.
+      const parsed = parseRhythm('D-D-TKT-D---T-TK|x3', ts44);
+      const result = expandSelectionToRepeats(parsed, 0, 16);
+      expect(result).toEqual({ startTick: 0, endTick: 16 });
+    });
+
+    it('respects selection of source + one ghost for measure repeat', () => {
+      const parsed = parseRhythm('D-D-TKT-D---T-TK|x3', ts44);
+      // Select source + first simile (2 of 3 iterations)
+      const result = expandSelectionToRepeats(parsed, 0, 32);
+      expect(result).toEqual({ startTick: 0, endTick: 32 });
+    });
+
+    it('respects selection of all iterations for measure repeat', () => {
+      const parsed = parseRhythm('D-D-TKT-D---T-TK|x3', ts44);
+      // Select all 3 iterations
+      const result = expandSelectionToRepeats(parsed, 0, 48);
+      expect(result).toEqual({ startTick: 0, endTick: 48 });
+    });
+
+    it('respects selection of only a ghost (simile) measure', () => {
+      const parsed = parseRhythm('D-D-TKT-D---T-TK|x3', ts44);
+      // Select only the first ghost
+      const result = expandSelectionToRepeats(parsed, 16, 32);
+      expect(result).toEqual({ startTick: 16, endTick: 32 });
+    });
+
+    it('does not expand non-repeated measure adjacent to a measure repeat', () => {
+      const parsed = parseRhythm('D-D-TKT-D---T-TK D-D-TKT-D---T-TK|x2', ts44);
+      const result = expandSelectionToRepeats(parsed, 0, 16);
+      expect(result).toEqual({ startTick: 0, endTick: 16 });
     });
   });
 });

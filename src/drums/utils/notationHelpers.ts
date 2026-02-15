@@ -110,15 +110,38 @@ const SOUND_TO_CHAR: Record<string, string> = {
 };
 
 /**
+ * Build notation for a single measure from parsed rhythm data.
+ */
+function buildMeasureNotation(rhythm: ParsedRhythm, measureIndex: number): string {
+  const measure = rhythm.measures[measureIndex];
+  if (!measure) return '';
+
+  const parts: string[] = [];
+  for (const note of measure.notes) {
+    const ch = SOUND_TO_CHAR[note.sound] || '_';
+    if (note.durationInSixteenths === 1) {
+      parts.push(ch);
+    } else {
+      const cont = note.sound === 'rest' ? '_' : '-';
+      parts.push(ch + cont.repeat(note.durationInSixteenths - 1));
+    }
+  }
+  return parts.join('');
+}
+
+/**
  * Build notation text from a selection of notes using parsed rhythm data.
  * This avoids fragile string-index mapping and works correctly across
  * repeat markers, section repeats, simile measures, etc.
+ *
+ * When the selection covers a complete measure that has a repeat marker (|xN or :|xN),
+ * the repeat notation is included in the output.
  *
  * @param positions - Note positions from VexFlow rendering (notePositionsRef.current)
  * @param rhythm - Parsed rhythm containing measures with note data
  * @param startCharPosition - Start of selection in tick space (inclusive)
  * @param endCharPosition - End of selection in tick space (exclusive)
- * @returns Notation string for the selected notes
+ * @returns Notation string for the selected notes (with repeat markers if applicable)
  */
 export function buildNotationFromSelection(
   positions: NotePosition[],
@@ -139,7 +162,55 @@ export function buildNotationFromSelection(
     return true;
   });
 
-  // Map each note position back to notation characters
+  // Identify which unique measures are covered by the selection
+  const selectedMeasureIndices = new Set<number>();
+  for (const pos of uniqueSelected) {
+    selectedMeasureIndices.add(pos.measureIndex);
+  }
+
+  // Check if any selected measures are part of a repeat group and the entire
+  // repeated section is selected. If so, include the repeat marker in output.
+  if (rhythm.repeats && selectedMeasureIndices.size > 0) {
+    for (const repeat of rhythm.repeats) {
+      if (repeat.type === 'measure') {
+        // Measure repeat (|xN): check if the source measure is fully selected
+        if (selectedMeasureIndices.has(repeat.sourceMeasure)) {
+          // Check if the source measure is fully selected (all notes included)
+          const measureNotes = uniqueSelected.filter(p => p.measureIndex === repeat.sourceMeasure);
+          const measureDuration = rhythm.measures[repeat.sourceMeasure]?.notes.reduce(
+            (sum, n) => sum + n.durationInSixteenths, 0
+          ) || 0;
+          const selectedDuration = measureNotes.reduce((sum, p) => {
+            const note = rhythm.measures[p.measureIndex]?.notes[p.noteIndex];
+            return sum + (note?.durationInSixteenths || 0);
+          }, 0);
+
+          if (selectedDuration >= measureDuration && repeat.repeatMeasures.length > 0) {
+            // Full measure selected with repeats - include |xN
+            const totalCount = repeat.repeatMeasures.length + 1; // source + repeats
+            const measureNotation = buildMeasureNotation(rhythm, repeat.sourceMeasure);
+            return measureNotation + '|x' + totalCount;
+          }
+        }
+      } else if (repeat.type === 'section') {
+        // Section repeat (|: ... :|xN): check if all measures in the section are selected
+        const sectionMeasures: number[] = [];
+        for (let i = repeat.startMeasure; i <= repeat.endMeasure; i++) {
+          sectionMeasures.push(i);
+        }
+        const allSectionSelected = sectionMeasures.every(i => selectedMeasureIndices.has(i));
+
+        if (allSectionSelected && repeat.repeatCount > 1) {
+          // Entire section selected - include |: ... :|xN
+          const measureNotations = sectionMeasures.map(i => buildMeasureNotation(rhythm, i));
+          const separator = sectionMeasures.length > 1 ? '| ' : '';
+          return '|: ' + measureNotations.join(separator) + ' :|x' + repeat.repeatCount;
+        }
+      }
+    }
+  }
+
+  // No repeat markers apply - build plain notation
   const parts: string[] = [];
   for (const pos of uniqueSelected) {
     const measure = rhythm.measures[pos.measureIndex];

@@ -746,3 +746,114 @@ export function findMeasureIndexFromVisualTick(parsed: ParsedRhythm, visualTick:
     localTick: 0 // Default to start of appended measure
   };
 }
+
+/**
+ * Expand a visual tick range to include all iterations of repeated measures.
+ * 
+ * Handles two types of repeats:
+ * 
+ * 1. **Section repeats** (`|: ... :|x3`): Ghost measures are hidden in visual space.
+ *    The user selects the source measure(s), and this function includes the hidden
+ *    ghost iterations in the unrolled range.
+ * 
+ * 2. **Measure repeats** (`|x3`): Ghost measures are visible in visual space (rendered
+ *    as simile/% symbols). The user selects only the source measure, and this function
+ *    detects that it belongs to a repeat group and includes all iterations.
+ * 
+ * @param parsed - Parsed rhythm with measure and repeat info
+ * @param visualStartTick - Start of selection in visual ticks
+ * @param visualEndTick - End of selection in visual ticks
+ * @returns Unrolled tick range { startTick, endTick }
+ */
+export function expandSelectionToRepeats(
+  parsed: ParsedRhythm,
+  visualStartTick: number,
+  visualEndTick: number
+): { startTick: number; endTick: number } {
+  if (!parsed.measures || parsed.measures.length === 0 || !parsed.repeats) {
+    return { startTick: visualStartTick, endTick: visualEndTick };
+  }
+
+  // --- Phase 1: Handle section repeats (hidden ghosts) ---
+  // Build set of hidden measure indices
+  const hiddenMeasureIndices = new Set<number>();
+  parsed.repeats.forEach(repeat => {
+    if (repeat.type === 'section' && repeat.repeatCount > 0) {
+      const blockLength = repeat.endMeasure - repeat.startMeasure + 1;
+      const measuresToHide = blockLength * (repeat.repeatCount - 1);
+      const startHiddenIndex = repeat.endMeasure + 1;
+      for (let j = 0; j < measuresToHide; j++) {
+        hiddenMeasureIndices.add(startHiddenIndex + j);
+      }
+    }
+  });
+
+  // Walk through measures tracking visual and unrolled ticks
+  let currentVisualTick = 0;
+  let currentUnrolledTick = 0;
+  let unrolledStart: number | null = null;
+  let unrolledEnd: number | null = null;
+
+  // Track which measure indices overlap the selection (for measure repeat detection)
+  const selectedMeasureIndices = new Set<number>();
+
+  // Map from measure index → unrolled tick start
+  const measureUnrolledStarts: number[] = [];
+
+  // Once we encounter a visible measure past the selection, stop extending
+  // through hidden ghosts (those would belong to a different repeat group).
+  let sectionRepeatExtensionDone = false;
+
+  for (let i = 0; i < parsed.measures.length; i++) {
+    const measure = parsed.measures[i];
+    const duration = Math.max(
+      measure.notes.reduce((sum, n) => sum + (n.durationInSixteenths || 0), 0),
+      16
+    );
+    measureUnrolledStarts.push(currentUnrolledTick);
+
+    if (hiddenMeasureIndices.has(i)) {
+      // Hidden ghost (section repeat) - include if source was selected
+      // and we haven't moved past the selected region
+      if (!sectionRepeatExtensionDone && unrolledStart !== null && unrolledEnd !== null) {
+        unrolledEnd = currentUnrolledTick + duration;
+      }
+      currentUnrolledTick += duration;
+      continue;
+    }
+
+    // Visible measure
+    const measureVisualEnd = currentVisualTick + duration;
+
+    if (currentVisualTick < visualEndTick && measureVisualEnd > visualStartTick) {
+      // Overlaps with selection
+      const localStart = Math.max(0, visualStartTick - currentVisualTick);
+      const localEnd = Math.min(duration, visualEndTick - currentVisualTick);
+
+      if (unrolledStart === null) {
+        unrolledStart = currentUnrolledTick + localStart;
+      }
+      unrolledEnd = currentUnrolledTick + localEnd;
+      selectedMeasureIndices.add(i);
+    } else if (unrolledStart !== null) {
+      // Past the selection - stop extending through hidden ghosts
+      sectionRepeatExtensionDone = true;
+    }
+
+    currentVisualTick += duration;
+    currentUnrolledTick += duration;
+  }
+
+  // Note: No expansion for measure repeats (|x3).
+  // For measure repeats, all iterations are visible as simile (%) symbols
+  // which are individually clickable/selectable. The user's visual selection
+  // should be respected exactly — selecting 2 of 3 iterations means loop 2,
+  // not all 3. Only section repeats (|: ... :|x3) need expansion because
+  // their ghost iterations are hidden and can't be selected individually.
+  if (unrolledStart !== null && unrolledEnd !== null) {
+    return { startTick: unrolledStart, endTick: unrolledEnd };
+  }
+
+  // Fallback: return original range
+  return { startTick: visualStartTick, endTick: visualEndTick };
+}

@@ -48,10 +48,11 @@ export interface DropPreviewResult {
  * Total insertion zone width = 2 * BOUNDARY_ZONE_HALF_WIDTH.
  * 
  * A larger value makes insertion easier to target but shrinks replace zones.
- * With 12px (24px total), a typical quarter note (~70-100px) retains ~50-80px of replace zone,
- * keeping replacement as the dominant target while still providing accessible insertion zones.
+ * With 8px (16px total), a typical quarter note (~70-100px) retains ~55-85px of replace zone,
+ * making replacement the dominant and easy-to-target operation while still providing
+ * accessible insertion zones at note boundaries.
  */
-export const BOUNDARY_ZONE_HALF_WIDTH = 12;
+export const BOUNDARY_ZONE_HALF_WIDTH = 8;
 
 /** Stave layout constants */
 const STAVE_HEIGHT = 100;
@@ -242,20 +243,27 @@ export function computeDropPreview(
     }
   }
 
-  // Special handling for edges: if cursor is before the first note or after the last
-  // note on this line, always prefer insertion (even if slightly outside the zone)
-  const sortedLineNotes = [...lineNotes].sort((a, b) => a.x - b.x);
-  const firstNoteOnLine = sortedLineNotes[0];
-  const lastNoteOnLine = sortedLineNotes[sortedLineNotes.length - 1];
-  const isBeforeFirstNote = firstNoteOnLine && svgX < firstNoteOnLine.x;
-  const isAfterLastNote = lastNoteOnLine && svgX > lastNoteOnLine.x + lastNoteOnLine.width;
-
-  // Determine if we're in an insertion zone
+  // Determine if we're in an insertion zone.
+  // Uses the same boundary threshold for all boundaries, including edges.
+  // This avoids aggressively forcing insertion when cursor is merely near
+  // the start or end of a line, keeping replacement as the dominant target.
   const isInInsertionZone = (
-    (closestBoundary !== null && minBoundaryDist <= BOUNDARY_ZONE_HALF_WIDTH) ||
-    isBeforeFirstNote ||
-    isAfterLastNote
+    closestBoundary !== null && minBoundaryDist <= BOUNDARY_ZONE_HALF_WIDTH
   );
+
+  // Check if cursor is in empty space past all notes on this line.
+  // If so, don't match to any target — the user is hovering over blank area
+  // and we should NOT show a replacement highlight on the next line's first note.
+  const sortedLineNotes = [...lineNotes].sort((a, b) => a.x - b.x);
+  const lastNoteOnLine = sortedLineNotes[sortedLineNotes.length - 1];
+  const lastNoteEndX = lastNoteOnLine ? lastNoteOnLine.x + lastNoteOnLine.width : 0;
+  const firstNoteOnLine = sortedLineNotes[0];
+  const firstNoteStartX = firstNoteOnLine ? firstNoteOnLine.x : Infinity;
+
+  if (!isInInsertionZone && (svgX > lastNoteEndX + BOUNDARY_ZONE_HALF_WIDTH || svgX < firstNoteStartX - BOUNDARY_ZONE_HALF_WIDTH)) {
+    // Cursor is in empty space beyond all notes on the current line — no valid drop
+    return defaultResult;
+  }
 
   if (isInInsertionZone && closestBoundary) {
     // --- INSERTION MODE ---

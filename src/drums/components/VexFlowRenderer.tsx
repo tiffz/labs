@@ -577,6 +577,18 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
       allStaveNoteRefsRef.current = [];
       notePositionsRef.current = [];
 
+      // Track simile measure positions for adding to notePositionsRef later.
+      // These allow clicking on simile (%) symbols to create/extend selections.
+      const simileMeasurePositions: Array<{
+        measureIndex: number;
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+        staveY: number;
+        durationInSixteenths: number;
+      }> = [];
+
       // Render each line
       lines.forEach((lineIndices, lineIndex) => {
         let xPosition = leftMargin;
@@ -754,6 +766,20 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
 
               svgElement.appendChild(simileGroup);
               simileGroupsRef.current.set(measureIndex, simileGroup);
+
+              // Record simile position so it can be added to notePositionsRef later.
+              // This makes simile symbols clickable/selectable.
+              const staveY = stave.getY();
+              const middleY = stave.getYForLine(3);
+              simileMeasurePositions.push({
+                measureIndex,
+                x: xPosition,
+                y: middleY - 20,
+                width: measureWidth,
+                height: 40,
+                staveY,
+                durationInSixteenths: getSixteenthsPerMeasure(rhythm.timeSignature),
+              });
             }
             xPosition += measureWidth;
             return;
@@ -1079,6 +1105,35 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
             tiedGroupEnd: (pos.isTiedFrom || pos.isTiedTo) ? groupEnd : undefined,
           });
         }
+
+        // Add simile (%) measures to notePositionsRef so they're clickable/selectable.
+        // Each simile is treated as a single "note" covering the full measure duration.
+        // The charPosition is the visual tick position of the ghost measure (not the source).
+        for (const similePos of simileMeasurePositions) {
+          // Compute the visual tick position for this ghost measure.
+          // Walk through measures up to this index, summing durations of visible measures.
+          let visualTick = 0;
+          for (let m = 0; m < similePos.measureIndex; m++) {
+            if (!hiddenMeasureIndices.has(m)) {
+              const dur = rhythm.measures[m]?.notes.reduce(
+                (sum, n) => sum + (n.durationInSixteenths || 0), 0
+              ) || similePos.durationInSixteenths;
+              visualTick += Math.max(dur, similePos.durationInSixteenths);
+            }
+          }
+
+          notePositionsRef.current.push({
+            measureIndex: similePos.measureIndex,
+            noteIndex: 0,
+            x: similePos.x,
+            y: similePos.y,
+            width: similePos.width,
+            height: similePos.height,
+            charPosition: visualTick,
+            durationInSixteenths: similePos.durationInSixteenths,
+            staveY: similePos.staveY,
+          });
+        }
       }
 
       // Draw custom symbols and highlighting using stored StaveNote references
@@ -1332,6 +1387,36 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
             }
           }
         });
+
+        // Also include simile (%) measures in selection highlight.
+        // Simile positions are appended to notePositionsRef AFTER the stave note entries,
+        // so they won't be found by the allStaveNoteRefs.forEach above.
+        for (const similePos of simileMeasurePositions) {
+          // Use the computed charPosition from notePositionsRef (visual tick)
+          const simileEntry = notePositionsRef.current.find(
+            np => np.measureIndex === similePos.measureIndex && np.noteIndex === 0
+              && np.x === similePos.x
+          );
+          if (!simileEntry) continue;
+
+          const noteCharPosition = simileEntry.charPosition;
+          const noteEndPosition = noteCharPosition + simileEntry.durationInSixteenths;
+
+          if (noteCharPosition < endCharPosition && noteEndPosition > startCharPosition) {
+            const staveY = similePos.staveY;
+            const existing = selectedNotesByLine.get(staveY);
+            if (existing) {
+              existing.minX = Math.min(existing.minX, similePos.x);
+              existing.maxX = Math.max(existing.maxX, similePos.x + similePos.width);
+            } else {
+              selectedNotesByLine.set(staveY, {
+                minX: similePos.x,
+                maxX: similePos.x + similePos.width,
+                staveY,
+              });
+            }
+          }
+        }
 
         // Draw continuous highlight boxes for each stave line with high visibility
         selectedNotesByLine.forEach(({ minX, maxX, staveY }) => {

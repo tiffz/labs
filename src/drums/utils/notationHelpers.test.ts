@@ -227,4 +227,99 @@ describe('buildNotationFromSelection', () => {
     // D-__TKT-D---____ + STKT
     expect(result).toBe('D-__TKT-D---____STKT');
   });
+
+  it('should include measure repeat marker when full measure is selected', () => {
+    // Create a rhythm with a measure repeat (|x2): measure 0 repeated once (= 2 total)
+    const rhythmWithMeasureRepeat: ParsedRhythm = {
+      isValid: true,
+      measures: [
+        {
+          notes: [
+            { sound: 'dum', duration: 'eighth', durationInSixteenths: 2, isDotted: false },
+            { sound: 'tak', duration: 'eighth', durationInSixteenths: 2, isDotted: false },
+            { sound: 'ka', duration: 'quarter', durationInSixteenths: 4, isDotted: false },
+            { sound: 'rest', duration: 'half', durationInSixteenths: 8, isDotted: false },
+          ],
+          totalDuration: 16,
+        },
+        // Ghost measure (repeat of measure 0)
+        {
+          notes: [
+            { sound: 'dum', duration: 'eighth', durationInSixteenths: 2, isDotted: false },
+            { sound: 'tak', duration: 'eighth', durationInSixteenths: 2, isDotted: false },
+            { sound: 'ka', duration: 'quarter', durationInSixteenths: 4, isDotted: false },
+            { sound: 'rest', duration: 'half', durationInSixteenths: 8, isDotted: false },
+          ],
+          totalDuration: 16,
+        },
+      ],
+      repeats: [
+        {
+          type: 'measure',
+          sourceMeasure: 0,
+          repeatMeasures: [1], // measure 1 is a repeat of measure 0
+        },
+      ],
+      error: undefined,
+    };
+
+    const positions: NotePosition[] = [
+      makePos(0, 0, 0, 2),   // D-
+      makePos(0, 1, 2, 2),   // T-
+      makePos(0, 2, 4, 4),   // K---
+      makePos(0, 3, 8, 8),   // ________
+    ];
+
+    const result = buildNotationFromSelection(
+      positions, rhythmWithMeasureRepeat, 0, 16
+    );
+    // Full measure selected with 1 repeat → should include |x2
+    expect(result).toBe('D-T-K---________|x2');
+  });
+
+  it('should NOT include repeat marker for partial measure selection', () => {
+    const rhythmWithRepeat: ParsedRhythm = {
+      isValid: true,
+      measures: [
+        {
+          notes: [
+            { sound: 'dum', duration: 'eighth', durationInSixteenths: 2, isDotted: false },
+            { sound: 'tak', duration: 'eighth', durationInSixteenths: 2, isDotted: false },
+            { sound: 'ka', duration: 'quarter', durationInSixteenths: 4, isDotted: false },
+            { sound: 'rest', duration: 'half', durationInSixteenths: 8, isDotted: false },
+          ],
+          totalDuration: 16,
+        },
+        {
+          notes: [
+            { sound: 'dum', duration: 'eighth', durationInSixteenths: 2, isDotted: false },
+            { sound: 'tak', duration: 'eighth', durationInSixteenths: 2, isDotted: false },
+            { sound: 'ka', duration: 'quarter', durationInSixteenths: 4, isDotted: false },
+            { sound: 'rest', duration: 'half', durationInSixteenths: 8, isDotted: false },
+          ],
+          totalDuration: 16,
+        },
+      ],
+      repeats: [
+        {
+          type: 'measure',
+          sourceMeasure: 0,
+          repeatMeasures: [1],
+        },
+      ],
+      error: undefined,
+    };
+
+    const positions: NotePosition[] = [
+      makePos(0, 0, 0, 2),
+      makePos(0, 1, 2, 2),
+    ];
+
+    // Only select first two notes (partial measure)
+    const result = buildNotationFromSelection(
+      positions, rhythmWithRepeat, 0, 4
+    );
+    // Partial selection - should NOT include repeat marker
+    expect(result).toBe('D-T-');
+  });
 });
