@@ -11,17 +11,48 @@ export interface ScoreNote {
   dotted?: boolean;
   rest?: boolean;
   finger?: number;
+  tieStart?: boolean;
+  tieStop?: boolean;
+  grace?: boolean;
+  tuplet?: { actual: number; normal: number };
+  chordSymbol?: string;
+  lyric?: string;
+}
+
+export interface RepeatBarline {
+  measureIndex: number;
+  direction: 'forward' | 'backward';
+  times?: number;
+}
+
+export interface VoltaBracket {
+  startMeasure: number;
+  endMeasure: number;
+  endingNumber: number;
+}
+
+export interface ScoreNavigation {
+  segnoMeasure?: number;
+  codaMeasure?: number;
+  tocodaMeasure?: number;
+  dalsegnoMeasure?: number;
+  repeats?: RepeatBarline[];
+  voltas?: VoltaBracket[];
 }
 
 export interface ScoreMeasure {
   notes: ScoreNote[];
+  repeatStart?: boolean;
+  repeatEnd?: boolean;
+  repeatTimes?: number;
+  endingNumber?: number;
 }
 
 export interface ScorePart {
   id: string;
   name: string;
   clef: 'treble' | 'bass';
-  hand: 'right' | 'left';
+  hand: 'right' | 'left' | 'voice';
   measures: ScoreMeasure[];
 }
 
@@ -32,6 +63,7 @@ export interface PianoScore {
   timeSignature: { numerator: number; denominator: number };
   tempo: number;
   parts: ScorePart[];
+  navigation?: ScoreNavigation;
 }
 
 export interface MidiDevice {

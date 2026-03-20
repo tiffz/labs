@@ -18,6 +18,8 @@ interface DrumAccompanimentProps {
   currentBeat: number;
   metronomeEnabled?: boolean;
   volume?: number;
+  notationStyle?: NotationStyle;
+  notationWidth?: number;
 }
 
 // Common drum rhythms (correct patterns from rhythm database)
@@ -51,6 +53,8 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
   currentBeat,
   metronomeEnabled = false,
   volume = 70,
+  notationStyle,
+  notationWidth,
 }) => {
   const [selectedPreset, setSelectedPreset] = useState(0);
   const [customNotation, setCustomNotation] = useState<string | null>(null);
@@ -293,13 +297,13 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
               measures: [parsedRhythm.measures[currentMeasureIndex]],
             }}
             currentNoteIndex={currentNoteIndex}
-            width={320}
+            width={notationWidth ?? 320}
             height={metronomeEnabled ? 120 : 100}
-            style={{
+            style={notationStyle ?? {
               staffColor: '#c8c4d8',
               noteColor: '#c8c4d8',
               textColor: '#c8c4d8',
-              highlightColor: '#22c55e', // Bright green for clear visibility
+              highlightColor: '#22c55e',
             } as NotationStyle}
             showDrumSymbols={true}
             drumSymbolScale={0.6}

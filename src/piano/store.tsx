@@ -9,6 +9,12 @@ import { DEFAULT_SCORE } from './data/scales';
 
 export type ActiveMode = 'none' | 'play' | 'practice' | 'free-practice';
 
+export interface ScoreSection {
+  name: string;
+  startMeasure: number;
+  endMeasure: number;
+}
+
 interface PianoState {
   score: PianoScore | null;
   activeMode: ActiveMode;
@@ -46,6 +52,19 @@ interface PianoState {
   undoStack: PianoScore[];
   redoStack: PianoScore[];
   ghostNotes: { midi: number; duration: NoteDuration }[];
+  fullScore: PianoScore | null;
+  sections: ScoreSection[];
+  activeSectionIndex: number | null;
+  zoomLevel: number;
+  selectedMeasureRange: { start: number; end: number } | null;
+  showVocalPart: boolean;
+  practiceVoice: boolean;
+  showRightHand: boolean;
+  showLeftHand: boolean;
+  isExerciseScore: boolean;
+  drumEnabled: boolean;
+  drumVolume: number;
+  currentBeat: number;
 }
 
 type Action =
@@ -89,7 +108,22 @@ type Action =
   | { type: 'SET_VIEWING_RUN'; index: number | null }
   | { type: 'SET_GHOST_NOTES'; notes: { midi: number; duration: NoteDuration }[] }
   | { type: 'STEP_INPUT_CHORD'; midis: number[]; duration?: NoteDuration; dotted?: boolean }
-  | { type: 'SET_SCORE_FROM_ABC'; score: PianoScore };
+  | { type: 'SET_SCORE_FROM_ABC'; score: PianoScore }
+  | { type: 'SET_SECTIONS'; sections: ScoreSection[] }
+  | { type: 'LOAD_SECTION'; index: number }
+  | { type: 'CLEAR_SECTIONS' }
+  | { type: 'SET_ZOOM'; level: number }
+  | { type: 'SELECT_MEASURE'; index: number }
+  | { type: 'SELECT_MEASURE_RANGE'; index: number }
+  | { type: 'CLEAR_MEASURE_SELECTION' }
+  | { type: 'SET_SHOW_VOCAL'; show: boolean }
+  | { type: 'SET_PRACTICE_VOICE'; enabled: boolean }
+  | { type: 'SET_SHOW_RIGHT_HAND'; show: boolean }
+  | { type: 'SET_SHOW_LEFT_HAND'; show: boolean }
+  | { type: 'SET_IS_EXERCISE'; isExercise: boolean }
+  | { type: 'SET_DRUM_ENABLED'; enabled: boolean }
+  | { type: 'SET_DRUM_VOLUME'; volume: number }
+  | { type: 'SET_CURRENT_BEAT'; beat: number };
 
 // eslint-disable-next-line react-refresh/only-export-components -- exported for tests alongside Provider
 export const initialState: PianoState = {
@@ -106,7 +140,7 @@ export const initialState: PianoState = {
   midiDevices: [],
   activeMidiNotes: new Set(),
   trackMuted: new Map(),
-  trackVolume: new Map([['rh', 1], ['lh', 1]]),
+  trackVolume: new Map([['rh', 1], ['lh', 1], ['voice', 1]]),
   masterVolume: 1,
   masterMuted: false,
   metronomeVolume: 0.7,
@@ -129,6 +163,19 @@ export const initialState: PianoState = {
   undoStack: [],
   redoStack: [],
   ghostNotes: [],
+  fullScore: null,
+  sections: [],
+  activeSectionIndex: null,
+  zoomLevel: 1.0,
+  selectedMeasureRange: null,
+  showVocalPart: false,
+  practiceVoice: false,
+  showRightHand: true,
+  showLeftHand: true,
+  isExerciseScore: true,
+  drumEnabled: false,
+  drumVolume: 70,
+  currentBeat: 0,
 };
 
 function addChordToPart(
@@ -153,12 +200,23 @@ function addChordToPart(
 // eslint-disable-next-line react-refresh/only-export-components -- exported for tests alongside Provider
 export function reducer(state: PianoState, action: Action): PianoState {
   switch (action.type) {
-    case 'SET_SCORE':
+    case 'SET_SCORE': {
+      const measureCount = Math.max(...action.score.parts.map(p => p.measures.length), 0);
+      let autoZoom = 1.0;
+      if (measureCount > 40) autoZoom = 0.6;
+      else if (measureCount > 20) autoZoom = 0.7;
+      else if (measureCount > 8) autoZoom = 0.85;
+      const hasVocal = action.score.parts.some(p => p.hand === 'voice');
       return {
         ...state, score: action.score, tempo: action.score.tempo,
         currentMeasureIndex: 0, currentNoteIndices: new Map(),
         practiceResults: [], practiceResultsByNoteId: new Map(),
+        fullScore: null, sections: [], activeSectionIndex: null,
+        zoomLevel: autoZoom, selectedMeasureRange: null,
+        showVocalPart: hasVocal,
+        isExerciseScore: false,
       };
+    }
     case 'SET_SCORE_FROM_ABC': {
       if (!state.score) return state;
       return {
@@ -388,7 +446,8 @@ export function reducer(state: PianoState, action: Action): PianoState {
       if (!state.score) return state;
       const practicedParts = state.score.parts.filter(p =>
         (p.hand === 'right' && state.practiceRightHand) ||
-        (p.hand === 'left' && state.practiceLeftHand)
+        (p.hand === 'left' && state.practiceLeftHand) ||
+        (p.hand === 'voice' && state.practiceVoice)
       );
       if (practicedParts.length === 0) return state;
       const refPart = practicedParts[0];
@@ -434,6 +493,70 @@ export function reducer(state: PianoState, action: Action): PianoState {
     }
     case 'SET_GHOST_NOTES':
       return { ...state, ghostNotes: action.notes };
+    case 'SET_SECTIONS':
+      return { ...state, sections: action.sections, activeSectionIndex: null };
+    case 'LOAD_SECTION': {
+      const section = state.sections[action.index];
+      const source = state.fullScore ?? state.score;
+      if (!section || !source) return state;
+      const slicedParts = source.parts.map(p => ({
+        ...p,
+        measures: p.measures.slice(section.startMeasure, section.endMeasure + 1),
+      }));
+      const sectionScore: PianoScore = {
+        ...source,
+        id: `${source.id}-section-${action.index}`,
+        title: `${source.title} — ${section.name}`,
+        parts: slicedParts,
+      };
+      return {
+        ...state,
+        score: sectionScore,
+        fullScore: state.fullScore ?? source,
+        activeSectionIndex: action.index,
+        currentMeasureIndex: 0,
+        currentNoteIndices: new Map(),
+      };
+    }
+    case 'CLEAR_SECTIONS':
+      return {
+        ...state,
+        sections: [],
+        activeSectionIndex: null,
+        score: state.fullScore ?? state.score,
+        fullScore: null,
+      };
+    case 'SET_ZOOM':
+      return { ...state, zoomLevel: Math.max(0.4, Math.min(2.0, action.level)) };
+    case 'SELECT_MEASURE': {
+      return { ...state, selectedMeasureRange: { start: action.index, end: action.index } };
+    }
+    case 'SELECT_MEASURE_RANGE': {
+      if (!state.selectedMeasureRange) {
+        return { ...state, selectedMeasureRange: { start: action.index, end: action.index } };
+      }
+      const start = Math.min(state.selectedMeasureRange.start, action.index);
+      const end = Math.max(state.selectedMeasureRange.start, action.index);
+      return { ...state, selectedMeasureRange: { start, end } };
+    }
+    case 'CLEAR_MEASURE_SELECTION':
+      return { ...state, selectedMeasureRange: null };
+    case 'SET_SHOW_VOCAL':
+      return { ...state, showVocalPart: action.show };
+    case 'SET_PRACTICE_VOICE':
+      return { ...state, practiceVoice: action.enabled };
+    case 'SET_SHOW_RIGHT_HAND':
+      return { ...state, showRightHand: action.show, practiceRightHand: action.show ? state.practiceRightHand : false };
+    case 'SET_SHOW_LEFT_HAND':
+      return { ...state, showLeftHand: action.show, practiceLeftHand: action.show ? state.practiceLeftHand : false };
+    case 'SET_IS_EXERCISE':
+      return { ...state, isExerciseScore: action.isExercise };
+    case 'SET_DRUM_ENABLED':
+      return { ...state, drumEnabled: action.enabled };
+    case 'SET_DRUM_VOLUME':
+      return { ...state, drumVolume: action.volume };
+    case 'SET_CURRENT_BEAT':
+      return { ...state, currentBeat: action.beat };
     default:
       return state;
   }
@@ -543,10 +666,28 @@ export function PianoProvider({ children }: { children: React.ReactNode }) {
     engine.setTempo(score.tempo);
   }, [engine]);
 
+  const getPlaybackScore = useCallback((): { score: PianoScore; measureOffset: number } | null => {
+    const s = stateRef.current;
+    if (!s.score) return null;
+    if (s.selectedMeasureRange) {
+      const { start, end } = s.selectedMeasureRange;
+      const slicedParts = s.score.parts.map(p => ({
+        ...p,
+        measures: p.measures.slice(start, end + 1),
+      }));
+      return {
+        score: { ...s.score, id: `${s.score.id}-sel`, parts: slicedParts },
+        measureOffset: start,
+      };
+    }
+    return { score: s.score, measureOffset: 0 };
+  }, []);
+
   const startPlayback = useCallback(() => {
     const gen = ++playbackGenRef.current;
     const s = stateRef.current;
-    if (!s.score) return;
+    const ps = getPlaybackScore();
+    if (!ps) return;
 
     engine.setTempo(s.tempo);
     engine.setLoop(s.loopingEnabled);
@@ -559,21 +700,23 @@ export function PianoProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'UPDATE_POSITION', measureIndex: -1, noteIndices: new Map() });
     };
 
-    engine.start(s.score, s.soundType, (_beat, measureIdx, noteIndices, isPlaying) => {
+    engine.start(ps.score, s.soundType, (beat, measureIdx, noteIndices, isPlaying) => {
       if (playbackGenRef.current !== gen) return;
-      dispatch({ type: 'UPDATE_POSITION', measureIndex: measureIdx, noteIndices });
+      dispatch({ type: 'UPDATE_POSITION', measureIndex: measureIdx + ps.measureOffset, noteIndices });
+      dispatch({ type: 'SET_CURRENT_BEAT', beat });
       if (!isPlaying) return;
     }, onEnd).then(() => {
       if (playbackGenRef.current !== gen) return;
       dispatch({ type: 'SET_PLAYING', playing: true });
       engine.setMetronome(stateRef.current.metronomeEnabled);
     });
-  }, [engine]);
+  }, [engine, getPlaybackScore]);
 
   const startPracticeRun = useCallback(async () => {
     const gen = ++playbackGenRef.current;
     const s = stateRef.current;
-    if (!s.score) return;
+    const ps = getPlaybackScore();
+    if (!ps) return;
     dispatch({ type: 'START_PRACTICE_RUN' });
 
     dispatch({ type: 'SET_COUNTING_IN', counting: true });
@@ -600,31 +743,34 @@ export function PianoProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'UPDATE_POSITION', measureIndex: -1, noteIndices: new Map() });
     };
 
-    engine.start(currentState.score!, currentState.soundType, (_beat, measureIdx, noteIndices, isPlaying) => {
+    engine.start(ps.score, currentState.soundType, (beat, measureIdx, noteIndices, isPlaying) => {
       if (playbackGenRef.current !== gen) return;
-      dispatch({ type: 'UPDATE_POSITION', measureIndex: measureIdx, noteIndices });
+      dispatch({ type: 'UPDATE_POSITION', measureIndex: measureIdx + ps.measureOffset, noteIndices });
+      dispatch({ type: 'SET_CURRENT_BEAT', beat });
       if (!isPlaying) return;
     }, onEnd).then(() => {
       if (playbackGenRef.current !== gen) return;
       dispatch({ type: 'SET_PLAYING', playing: true });
       engine.setMetronome(stateRef.current.metronomeEnabled);
     });
-  }, [engine]);
+  }, [engine, getPlaybackScore]);
 
   const startFreePractice = useCallback(() => {
     const s = stateRef.current;
     if (!s.score) return;
     dispatch({ type: 'START_PRACTICE_RUN' });
 
+    const startMeasure = s.selectedMeasureRange?.start ?? 0;
     const noteIndices = new Map<string, number>();
     const practicedParts = s.score.parts.filter(p =>
       (p.hand === 'right' && s.practiceRightHand) ||
-      (p.hand === 'left' && s.practiceLeftHand)
+      (p.hand === 'left' && s.practiceLeftHand) ||
+      (p.hand === 'voice' && s.practiceVoice)
     );
     for (const part of practicedParts) {
       noteIndices.set(part.id, 0);
     }
-    dispatch({ type: 'UPDATE_POSITION', measureIndex: 0, noteIndices });
+    dispatch({ type: 'UPDATE_POSITION', measureIndex: startMeasure, noteIndices });
   }, []);
 
   const startMode = useCallback((mode: ActiveMode) => {

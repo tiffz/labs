@@ -1,10 +1,16 @@
-import type { PianoScore } from '../types';
-import { DURATION_BEATS, midiToFrequency } from '../types';
+import type { PianoScore, ScoreNote } from '../types';
+import { midiToFrequency, durationToBeats } from '../types';
 import { PianoSynthesizer, SampledPiano, SimpleSynthesizer, type WaveformType } from '../../shared/playback/instruments';
 import type { Instrument } from '../../shared/playback/instruments';
 import type { SoundType } from '../../chords/types/soundOptions';
 import { recordNoteExpectedTime, clearExpectedTimes, refreshHeldNotes } from './practiceTimingStore';
 import clickSoundUrl from '../../drums/assets/sounds/click.mp3';
+
+interface TieContinuation {
+  measureIndex: number;
+  noteIndex: number;
+  beatOffset: number;
+}
 
 interface NoteEvent {
   partId: string;
@@ -15,6 +21,7 @@ interface NoteEvent {
   pitches: number[];
   duration: number;
   rest: boolean;
+  continuations?: TieContinuation[];
 }
 
 type PositionCallback = (
@@ -74,25 +81,42 @@ export class ScorePlaybackEngine {
     return this.clickLoadingPromise;
   }
 
+  private compressor: DynamicsCompressorNode | null = null;
+
+  private getOutputNode(): AudioNode {
+    const ctx = this.getAudioContext();
+    if (!this.compressor) {
+      this.compressor = ctx.createDynamicsCompressor();
+      this.compressor.threshold.value = -18;
+      this.compressor.knee.value = 12;
+      this.compressor.ratio.value = 4;
+      this.compressor.attack.value = 0.003;
+      this.compressor.release.value = 0.15;
+      this.compressor.connect(ctx.destination);
+    }
+    return this.compressor;
+  }
+
   private createInstrument(soundType: SoundType): Instrument {
     const ctx = this.getAudioContext();
+    const output = this.getOutputNode();
     if (soundType === 'piano-sampled') {
       if (!this.sampledPiano) {
         this.sampledPiano = new SampledPiano(ctx);
       }
-      this.sampledPiano.connect(ctx.destination);
+      this.sampledPiano.connect(output);
       return this.sampledPiano;
     }
     if (soundType === 'piano') {
       const inst = new PianoSynthesizer(ctx);
-      inst.connect(ctx.destination);
+      inst.connect(output);
       return inst;
     }
     const waveMap: Record<string, WaveformType> = {
       sine: 'sine', square: 'square', sawtooth: 'sawtooth', triangle: 'triangle',
     };
     const inst = new SimpleSynthesizer(ctx, waveMap[soundType] || 'sine');
-    inst.connect(ctx.destination);
+    inst.connect(output);
     return inst;
   }
 
@@ -105,10 +129,11 @@ export class ScorePlaybackEngine {
   ): Promise<void> {
     if (soundType === 'piano-sampled') {
       const ctx = this.getAudioContext();
+      const output = this.getOutputNode();
       if (!this.sampledPiano) {
         this.sampledPiano = new SampledPiano(ctx);
       }
-      this.sampledPiano.connect(ctx.destination);
+      this.sampledPiano.connect(output);
       if (progressCallback) {
         this.sampledPiano.setLoadingProgressCallback(progressCallback);
       }
@@ -119,16 +144,142 @@ export class ScorePlaybackEngine {
     }
   }
 
+  private getNoteDurationBeats(note: ScoreNote): number {
+    let dur = durationToBeats(note.duration, note.dotted);
+    if (note.tuplet) {
+      dur = dur * (note.tuplet.normal / note.tuplet.actual);
+    }
+    return dur;
+  }
+
+  private resolvePlaybackOrder(score: PianoScore): number[] {
+    const nav = score.navigation;
+    const measureCount = Math.max(...score.parts.map(p => p.measures.length), 0);
+    if (measureCount === 0) return [];
+
+    const repeats = nav?.repeats ?? [];
+    const voltas = nav?.voltas ?? [];
+
+    // Build a map of forward/backward repeat barlines
+    const forwardMap = new Map<number, true>();
+    const backwardMap = new Map<number, number>();
+    for (const r of repeats) {
+      if (r.direction === 'forward') forwardMap.set(r.measureIndex, true);
+      if (r.direction === 'backward') backwardMap.set(r.measureIndex, r.times ?? 2);
+    }
+
+    const voltasByMeasure = new Map<number, number>();
+    for (const v of voltas) {
+      for (let m = v.startMeasure; m <= v.endMeasure; m++) {
+        voltasByMeasure.set(m, v.endingNumber);
+      }
+    }
+
+    const hasSimpleRepeats = repeats.length > 0;
+    const hasDSAlCoda = nav?.dalsegnoMeasure !== undefined;
+
+    if (!nav || (!hasSimpleRepeats && !hasDSAlCoda)) {
+      const order: number[] = [];
+      for (let i = 0; i < measureCount; i++) order.push(i);
+      return order;
+    }
+
+    // Phase 1: Handle simple repeats and voltas
+    const expandedOrder: number[] = [];
+    let i = 0;
+    let repeatStart = 0;
+    const repeatCountUsed = new Map<number, number>();
+
+    while (i < measureCount) {
+      if (forwardMap.has(i)) repeatStart = i;
+
+      const voltaNum = voltasByMeasure.get(i);
+      const timesUsed = repeatCountUsed.get(repeatStart) ?? 0;
+      const pass = timesUsed + 1;
+
+      if (voltaNum !== undefined && voltaNum !== pass) {
+        i++;
+        continue;
+      }
+
+      expandedOrder.push(i);
+
+      if (backwardMap.has(i)) {
+        const totalTimes = backwardMap.get(i)!;
+        const used = (repeatCountUsed.get(repeatStart) ?? 0) + 1;
+        if (used < totalTimes) {
+          repeatCountUsed.set(repeatStart, used);
+          i = repeatStart;
+          continue;
+        } else {
+          repeatCountUsed.set(repeatStart, used);
+        }
+      }
+
+      i++;
+    }
+
+    // Phase 2: Handle D.S. al Coda on the expanded order
+    if (!hasDSAlCoda) return expandedOrder;
+
+    const segno = nav!.segnoMeasure ?? 0;
+    const tocoda = nav!.tocodaMeasure ?? nav!.dalsegnoMeasure!;
+    const coda = nav!.codaMeasure ?? measureCount;
+    const ds = nav!.dalsegnoMeasure!;
+
+    const order: number[] = [];
+
+    // Play expanded order up to and including D.S. measure
+    for (const m of expandedOrder) {
+      order.push(m);
+      if (m === ds) break;
+    }
+
+    // Jump to segno, play until tocoda
+    for (let m = segno; m <= tocoda && m < measureCount; m++) {
+      order.push(m);
+    }
+
+    // Jump to coda, play until end
+    for (let m = coda; m < measureCount; m++) {
+      order.push(m);
+    }
+
+    return order;
+  }
+
   private buildEvents(score: PianoScore): NoteEvent[] {
     const events: NoteEvent[] = [];
+    const playbackOrder = this.resolvePlaybackOrder(score);
+
     for (const part of score.parts) {
       let beatPos = 0;
-      for (let mi = 0; mi < part.measures.length; mi++) {
+      const tieExtend = new Map<number, NoteEvent>();
+
+      for (const mi of playbackOrder) {
+        if (mi >= part.measures.length) continue;
         const measure = part.measures[mi];
         for (let ni = 0; ni < measure.notes.length; ni++) {
           const note = measure.notes[ni];
-          const dur = DURATION_BEATS[note.duration] * (note.dotted ? 1.5 : 1);
-          events.push({
+          if (note.grace) continue;
+
+          const dur = this.getNoteDurationBeats(note);
+
+          if (note.tieStop) {
+            for (const pitch of note.pitches) {
+              const prev = tieExtend.get(pitch);
+              if (prev) {
+                if (!prev.continuations) prev.continuations = [];
+                prev.continuations.push({ measureIndex: mi, noteIndex: ni, beatOffset: prev.duration });
+                prev.duration += dur;
+                if (!note.tieStart) tieExtend.delete(pitch);
+              }
+            }
+            beatPos += dur;
+            continue;
+          }
+
+          const event: NoteEvent = {
             partId: part.id,
             noteId: note.id,
             measureIndex: mi,
@@ -137,7 +288,15 @@ export class ScorePlaybackEngine {
             pitches: note.pitches,
             duration: dur,
             rest: !!note.rest,
-          });
+          };
+          events.push(event);
+
+          if (note.tieStart) {
+            for (const pitch of note.pitches) {
+              tieExtend.set(pitch, event);
+            }
+          }
+
           beatPos += dur;
         }
       }
@@ -245,6 +404,12 @@ export class ScorePlaybackEngine {
     const elapsed = now - this.startTime;
     const currentBeat = elapsed * (this.tempo / 60);
 
+    // Skip gap when tab was backgrounded (rAF was throttled)
+    const maxGapBeats = 1;
+    if (this.scheduledUpTo >= 0 && currentBeat > this.scheduledUpTo + maxGapBeats) {
+      this.scheduledUpTo = currentBeat;
+    }
+
     if (currentBeat >= this.totalBeats) {
       if (this.loopEnabled) {
         clearExpectedTimes();
@@ -308,11 +473,12 @@ export class ScorePlaybackEngine {
           const volume = this.trackVolume.get(event.partId) ?? 1;
           const audioTime = this.startTime + event.beatPosition * (60 / this.tempo);
           const durSec = event.duration * (60 / this.tempo);
+          const trimmedDur = event.duration > 4 ? durSec : durSec * 0.9;
           for (const midi of event.pitches) {
             this.instrument.playNote({
               frequency: midiToFrequency(midi),
               startTime: audioTime,
-              duration: durSec * 0.9,
+              duration: trimmedDur,
               velocity: 0.7 * volume * this.masterVolume,
             });
           }
@@ -329,8 +495,23 @@ export class ScorePlaybackEngine {
       if (event.beatPosition > currentBeat) break;
       const endBeat = event.beatPosition + event.duration;
       if (currentBeat >= event.beatPosition && currentBeat < endBeat) {
-        curMeasure = event.measureIndex;
-        noteIndices.set(event.partId, event.noteIndex);
+        const beatInEvent = currentBeat - event.beatPosition;
+        if (event.continuations && event.continuations.length > 0) {
+          let activeCont: TieContinuation | null = null;
+          for (const cont of event.continuations) {
+            if (beatInEvent >= cont.beatOffset) activeCont = cont;
+          }
+          if (activeCont) {
+            curMeasure = activeCont.measureIndex;
+            noteIndices.set(event.partId, activeCont.noteIndex);
+          } else {
+            curMeasure = event.measureIndex;
+            noteIndices.set(event.partId, event.noteIndex);
+          }
+        } else {
+          curMeasure = event.measureIndex;
+          noteIndices.set(event.partId, event.noteIndex);
+        }
         if (!event.rest) {
           const audioTimeForNote = this.startTime + event.beatPosition * secPerBeat;
           const wallTimeMs = perfNow + (audioTimeForNote - now) * 1000;

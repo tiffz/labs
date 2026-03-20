@@ -2,7 +2,11 @@ import React, { useEffect, useCallback, useState, useRef, useMemo } from 'react'
 import { usePiano } from '../store';
 import { scoreToAbc, abcToScore } from '../utils/abcNotation';
 
-const NoteInput: React.FC = () => {
+interface NoteInputProps {
+  onImportClick?: () => void;
+}
+
+const NoteInput: React.FC<NoteInputProps> = ({ onImportClick }) => {
   const { state, dispatch } = usePiano();
   const isEditing = state.inputMode === 'step-input';
   const [abcExpanded, setAbcExpanded] = useState(false);
@@ -88,6 +92,26 @@ const NoteInput: React.FC = () => {
           <span className="material-symbols-outlined" style={{ fontSize: 18 }}>edit</span>
           {isEditing ? 'Done' : 'Edit'}
         </button>
+
+        {onImportClick && (
+          <button
+            className="btn btn-small"
+            onClick={onImportClick}
+            title="Import a music file (MusicXML, MIDI, MuseScore)"
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>upload_file</span>
+            Import
+          </button>
+        )}
+
+        {state.selectedMeasureRange && (
+          <span className="selection-info">
+            Measures {state.selectedMeasureRange.start + 1}–{state.selectedMeasureRange.end + 1} selected
+            <button className="clear-selection-btn" onClick={() => dispatch({ type: 'CLEAR_MEASURE_SELECTION' })} title="Clear selection">
+              <span className="material-symbols-outlined">close</span>
+            </button>
+          </span>
+        )}
 
         {isEditing && (
           <button

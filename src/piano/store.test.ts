@@ -433,4 +433,145 @@ describe('piano store reducer', () => {
       expect(next.selectedDuration).toBe('eighth');
     });
   });
+
+  describe('SET_ZOOM', () => {
+    it('sets zoom level within range', () => {
+      const next = reducer(initialState, { type: 'SET_ZOOM', level: 0.7 });
+      expect(next.zoomLevel).toBe(0.7);
+    });
+
+    it('clamps zoom to minimum 0.4', () => {
+      const next = reducer(initialState, { type: 'SET_ZOOM', level: 0.1 });
+      expect(next.zoomLevel).toBe(0.4);
+    });
+
+    it('clamps zoom to maximum 2.0', () => {
+      const next = reducer(initialState, { type: 'SET_ZOOM', level: 3.0 });
+      expect(next.zoomLevel).toBe(2.0);
+    });
+  });
+
+  describe('SET_SCORE auto-zoom', () => {
+    it('sets zoom to 1.0 for small scores (<=8 measures)', () => {
+      const next = reducer(initialState, { type: 'SET_SCORE', score: minimalScore });
+      expect(next.zoomLevel).toBe(1.0);
+    });
+
+    it('sets zoom to 0.85 for 9-20 measures', () => {
+      const score: PianoScore = {
+        ...minimalScore,
+        parts: minimalScore.parts.map(p => ({
+          ...p, measures: Array.from({ length: 15 }, () => ({ notes: [] })),
+        })),
+      };
+      const next = reducer(initialState, { type: 'SET_SCORE', score });
+      expect(next.zoomLevel).toBe(0.85);
+    });
+
+    it('sets zoom to 0.7 for 21-40 measures', () => {
+      const score: PianoScore = {
+        ...minimalScore,
+        parts: minimalScore.parts.map(p => ({
+          ...p, measures: Array.from({ length: 30 }, () => ({ notes: [] })),
+        })),
+      };
+      const next = reducer(initialState, { type: 'SET_SCORE', score });
+      expect(next.zoomLevel).toBe(0.7);
+    });
+
+    it('sets zoom to 0.6 for 41+ measures', () => {
+      const score: PianoScore = {
+        ...minimalScore,
+        parts: minimalScore.parts.map(p => ({
+          ...p, measures: Array.from({ length: 50 }, () => ({ notes: [] })),
+        })),
+      };
+      const next = reducer(initialState, { type: 'SET_SCORE', score });
+      expect(next.zoomLevel).toBe(0.6);
+    });
+  });
+
+  describe('SELECT_MEASURE / SELECT_MEASURE_RANGE / CLEAR_MEASURE_SELECTION', () => {
+    it('selects a single measure', () => {
+      const next = reducer(initialState, { type: 'SELECT_MEASURE', index: 3 });
+      expect(next.selectedMeasureRange).toEqual({ start: 3, end: 3 });
+    });
+
+    it('extends selection with range', () => {
+      const state = stateWith({ selectedMeasureRange: { start: 2, end: 2 } });
+      const next = reducer(state, { type: 'SELECT_MEASURE_RANGE', index: 5 });
+      expect(next.selectedMeasureRange).toEqual({ start: 2, end: 5 });
+    });
+
+    it('handles range in reverse direction', () => {
+      const state = stateWith({ selectedMeasureRange: { start: 5, end: 5 } });
+      const next = reducer(state, { type: 'SELECT_MEASURE_RANGE', index: 1 });
+      expect(next.selectedMeasureRange).toEqual({ start: 1, end: 5 });
+    });
+
+    it('creates new selection if no existing range for SELECT_MEASURE_RANGE', () => {
+      const next = reducer(initialState, { type: 'SELECT_MEASURE_RANGE', index: 7 });
+      expect(next.selectedMeasureRange).toEqual({ start: 7, end: 7 });
+    });
+
+    it('clears selection', () => {
+      const state = stateWith({ selectedMeasureRange: { start: 2, end: 5 } });
+      const next = reducer(state, { type: 'CLEAR_MEASURE_SELECTION' });
+      expect(next.selectedMeasureRange).toBeNull();
+    });
+
+    it('SET_SCORE clears measure selection', () => {
+      const state = stateWith({ selectedMeasureRange: { start: 1, end: 3 } });
+      const next = reducer(state, { type: 'SET_SCORE', score: minimalScore });
+      expect(next.selectedMeasureRange).toBeNull();
+    });
+  });
+
+  describe('vocal part state', () => {
+    it('SET_SHOW_VOCAL toggles showVocalPart', () => {
+      expect(initialState.showVocalPart).toBe(false);
+      const next = reducer(initialState, { type: 'SET_SHOW_VOCAL', show: true });
+      expect(next.showVocalPart).toBe(true);
+      const next2 = reducer(next, { type: 'SET_SHOW_VOCAL', show: false });
+      expect(next2.showVocalPart).toBe(false);
+    });
+
+    it('SET_PRACTICE_VOICE toggles practiceVoice', () => {
+      expect(initialState.practiceVoice).toBe(false);
+      const next = reducer(initialState, { type: 'SET_PRACTICE_VOICE', enabled: true });
+      expect(next.practiceVoice).toBe(true);
+    });
+
+    it('ADVANCE_FREE_TEMPO includes voice part when practiceVoice is true', () => {
+      const scoreWithVoice: PianoScore = {
+        ...minimalScore,
+        parts: [
+          {
+            id: 'rh', name: 'Right Hand', clef: 'treble' as const, hand: 'right' as const,
+            measures: [{ notes: [{ id: 'r1', pitches: [60], duration: 'quarter' as const }] }],
+          },
+          {
+            id: 'lh', name: 'Left Hand', clef: 'bass' as const, hand: 'left' as const,
+            measures: [{ notes: [] }],
+          },
+          {
+            id: 'voice', name: 'Vocal', clef: 'treble' as const, hand: 'voice' as const,
+            measures: [{ notes: [{ id: 'v1', pitches: [72], duration: 'quarter' as const }] }],
+          },
+        ],
+      };
+      const state = stateWith({
+        score: scoreWithVoice, practiceVoice: true,
+        practiceRightHand: true, practiceLeftHand: false,
+        freeTempoMeasureIndex: 0, freeTempoNoteIndex: -1,
+      });
+      const next = reducer(state, { type: 'ADVANCE_FREE_TEMPO' });
+      expect(next.currentNoteIndices.has('voice')).toBe(true);
+      expect(next.currentNoteIndices.has('rh')).toBe(true);
+    });
+
+    it('trackVolume includes voice entry by default', () => {
+      expect(initialState.trackVolume.get('voice')).toBe(1);
+    });
+  });
 });

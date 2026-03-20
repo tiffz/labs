@@ -1,7 +1,16 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { usePiano, type ActiveMode } from '../store';
 import { SOUND_OPTIONS, type SoundType } from '../../chords/types/soundOptions';
+import DrumAccompaniment from '../../beat/components/DrumAccompaniment';
+import type { NotationStyle } from '../../shared/notation/DrumNotationMini';
+
+const PIANO_DRUM_STYLE: NotationStyle = {
+  staffColor: '#94a3b8',
+  noteColor: '#64748b',
+  textColor: '#64748b',
+  highlightColor: '#7c3aed',
+};
 
 const PART_LABELS: Record<string, string> = { rh: 'Treble', lh: 'Bass' };
 
@@ -108,6 +117,7 @@ SettingsDropdown.displayName = 'SettingsDropdown';
 
 const PlaybackControls: React.FC = () => {
   const { state, dispatch, engine, startMode, stopMode } = usePiano();
+  const hasVocalPart = useMemo(() => state.score?.parts.some(p => p.hand === 'voice') ?? false, [state.score]);
   const [tempoInput, setTempoInput] = useState(String(state.tempo));
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsBtnRef = useRef<HTMLButtonElement>(null);
@@ -341,24 +351,99 @@ const PlaybackControls: React.FC = () => {
 
       <div className="sb-options-section">
         <div className="sb-section-title">Systems to practice</div>
-        <div className="sb-hand-selection">
-          <label className="sb-checkbox">
-            <input
-              type="checkbox" checked={state.practiceRightHand}
-              onChange={e => dispatch({ type: 'SET_PRACTICE_RIGHT_HAND', enabled: e.target.checked })}
-              disabled={isActive}
-            />
-            <span>Right Hand / Treble</span>
-          </label>
-          <label className="sb-checkbox">
-            <input
-              type="checkbox" checked={state.practiceLeftHand}
-              onChange={e => dispatch({ type: 'SET_PRACTICE_LEFT_HAND', enabled: e.target.checked })}
-              disabled={isActive}
-            />
-            <span>Left Hand / Bass</span>
-          </label>
+        <div className="sb-systems-grid">
+          <div className="sb-system-row sb-system-header">
+            <span className="sb-system-label" />
+            <span className="sb-col-header">Show</span>
+            <span className="sb-col-header">Practice</span>
+            <span className="sb-col-header">Sound</span>
+          </div>
+          {hasVocalPart && (
+            <div className="sb-system-row">
+              <span className="sb-system-label">Vocal Melody</span>
+              <label className="sb-toggle-label">
+                <input type="checkbox" checked={state.showVocalPart}
+                  onChange={e => dispatch({ type: 'SET_SHOW_VOCAL', show: e.target.checked })}
+                />
+              </label>
+              <label className="sb-toggle-label">
+                <input type="checkbox" checked={state.practiceVoice}
+                  onChange={e => dispatch({ type: 'SET_PRACTICE_VOICE', enabled: e.target.checked })}
+                  disabled={isActive || !state.showVocalPart}
+                />
+              </label>
+              <label className="sb-toggle-label">
+                <input type="checkbox" checked={!(state.trackMuted.get('voice') ?? false)}
+                  onChange={() => handleTrackMute('voice')}
+                />
+              </label>
+            </div>
+          )}
+          <div className="sb-system-row">
+            <span className="sb-system-label">Right Hand / Treble</span>
+            <label className="sb-toggle-label">
+              <input type="checkbox" checked={state.showRightHand}
+                onChange={e => dispatch({ type: 'SET_SHOW_RIGHT_HAND', show: e.target.checked })}
+              />
+            </label>
+            <label className="sb-toggle-label">
+              <input type="checkbox" checked={state.practiceRightHand}
+                onChange={e => dispatch({ type: 'SET_PRACTICE_RIGHT_HAND', enabled: e.target.checked })}
+                disabled={isActive || !state.showRightHand}
+              />
+            </label>
+            <label className="sb-toggle-label">
+              <input type="checkbox" checked={!(state.trackMuted.get('rh') ?? false)}
+                onChange={() => handleTrackMute('rh')}
+              />
+            </label>
+          </div>
+          <div className="sb-system-row">
+            <span className="sb-system-label">Left Hand / Bass</span>
+            <label className="sb-toggle-label">
+              <input type="checkbox" checked={state.showLeftHand}
+                onChange={e => dispatch({ type: 'SET_SHOW_LEFT_HAND', show: e.target.checked })}
+              />
+            </label>
+            <label className="sb-toggle-label">
+              <input type="checkbox" checked={state.practiceLeftHand}
+                onChange={e => dispatch({ type: 'SET_PRACTICE_LEFT_HAND', enabled: e.target.checked })}
+                disabled={isActive || !state.showLeftHand}
+              />
+            </label>
+            <label className="sb-toggle-label">
+              <input type="checkbox" checked={!(state.trackMuted.get('lh') ?? false)}
+                onChange={() => handleTrackMute('lh')}
+              />
+            </label>
+          </div>
         </div>
+      </div>
+
+      <div className="sb-drum-section">
+        <label className="sb-drum-toggle">
+          <input
+            type="checkbox"
+            checked={state.drumEnabled}
+            onChange={e => dispatch({ type: 'SET_DRUM_ENABLED', enabled: e.target.checked })}
+          />
+          <span>Add drums</span>
+        </label>
+        {state.drumEnabled && (
+          <DrumAccompaniment
+            bpm={state.tempo}
+            timeSignature={state.score?.timeSignature ?? { numerator: 4, denominator: 4 }}
+            isPlaying={state.isPlaying && state.activeMode !== 'free-practice' && !state.countingIn}
+            currentBeatTime={state.currentBeat * (60 / state.tempo)}
+            currentBeat={state.score?.timeSignature
+              ? Math.floor(state.currentBeat / (4 / (state.score.timeSignature.denominator))) % state.score.timeSignature.numerator
+              : Math.floor(state.currentBeat) % 4
+            }
+            volume={state.drumVolume}
+            notationStyle={PIANO_DRUM_STYLE}
+            notationWidth={250}
+          />
+        )}
       </div>
 
       {state.sampleLoadingProgress && (

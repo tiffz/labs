@@ -6,9 +6,15 @@ const WHITE_KEYS = [
   { note: 'C', midi: 0 }, { note: 'D', midi: 2 }, { note: 'E', midi: 4 },
   { note: 'F', midi: 5 }, { note: 'G', midi: 7 }, { note: 'A', midi: 9 }, { note: 'B', midi: 11 },
 ];
+// Position each black key between the two white keys it sits between.
+// White key indices: C=0, D=1, E=2, F=3, G=4, A=5, B=6
+// The `afterWhite` value indicates which white key index the black key follows.
 const BLACK_KEYS = [
-  { note: 'C#', midi: 1, left: 1 }, { note: 'D#', midi: 3, left: 2 },
-  { note: 'F#', midi: 6, left: 4 }, { note: 'G#', midi: 8, left: 5 }, { note: 'A#', midi: 10, left: 6 },
+  { note: 'C#', label: 'C#', midi: 1, afterWhite: 0 },
+  { note: 'D#', label: 'D#', midi: 3, afterWhite: 1 },
+  { note: 'F#', label: 'F#', midi: 6, afterWhite: 3 },
+  { note: 'G#', label: 'G#', midi: 8, afterWhite: 4 },
+  { note: 'A#', label: 'A#', midi: 10, afterWhite: 5 },
 ];
 
 const OCTAVES = [3, 4, 5];
@@ -210,7 +216,9 @@ const PianoKeyboard: React.FC = () => {
             {BLACK_KEYS.map(k => {
               const midi = (octave + 1) * 12 + k.midi;
               const active = state.activeMidiNotes.has(midi);
-              const leftPct = ((k.left - 0.5) / 7) * 100;
+              // Place centered on the border between white keys at index afterWhite and afterWhite+1
+              // Each white key spans 1/7 of the octave group width
+              const leftPct = ((k.afterWhite + 1) / 7) * 100;
               return (
                 <button
                   key={midi}
@@ -219,7 +227,9 @@ const PianoKeyboard: React.FC = () => {
                   onMouseDown={() => handleNoteOn(midi)}
                   onMouseUp={() => handleNoteOff(midi)}
                   onMouseLeave={() => handleNoteOff(midi)}
-                />
+                >
+                  <span className="black-key-label">{k.label}{octave}</span>
+                </button>
               );
             })}
           </div>

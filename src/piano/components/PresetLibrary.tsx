@@ -9,6 +9,12 @@ import type { Key } from '../types';
 
 type TonalType = 'scale' | 'arpeggio' | 'pentascale';
 
+const ENHARMONIC_MAP: Record<string, string> = {
+  'Db': 'C#', 'C#': 'Db',
+  'Eb': 'D#', 'D#': 'Eb',
+  'Ab': 'G#', 'G#': 'Ab',
+};
+
 const TYPE_OPTIONS: { value: ExerciseType; label: string }[] = [
   { value: 'scale',      label: 'Natural' },
   { value: 'pentascale', label: 'Pentascale' },
@@ -31,9 +37,9 @@ const DIR_LABELS: Record<Direction, string> = {
 };
 
 const PresetLibrary: React.FC = () => {
-  const { loadScore } = usePiano();
-  const [expanded, setExpanded] = useState(true);
-  const [hasSelection, setHasSelection] = useState(true);
+  const { state, dispatch, loadScore } = usePiano();
+  const [expanded, setExpanded] = useState(state.isExerciseScore);
+  const [hasSelection, setHasSelection] = useState(state.isExerciseScore);
   const [exerciseType, setExerciseType] = useState<ExerciseType>('scale');
   const [quality, setQuality] = useState<'major' | 'minor'>('major');
   const [direction, setDirection] = useState<Direction>('both');
@@ -42,15 +48,28 @@ const PresetLibrary: React.FC = () => {
   const [selectedKey, setSelectedKey] = useState<Key>('C');
   const [chromaticNote, setChromaticNote] = useState('C');
 
+  useEffect(() => {
+    if (!state.isExerciseScore) {
+      setExpanded(false);
+      setHasSelection(false);
+    }
+  }, [state.isExerciseScore]);
+
   const loadTonal = useCallback((q: 'major' | 'minor', key: Key, type: TonalType, dir: Direction, oct: number, sub: Subdivision) => {
     const score = generateExerciseScore(q, type, key, dir, oct, sub);
-    if (score) loadScore(score);
-  }, [loadScore]);
+    if (score) {
+      loadScore(score);
+      dispatch({ type: 'SET_IS_EXERCISE', isExercise: true });
+    }
+  }, [loadScore, dispatch]);
 
   const loadChromatic = useCallback((note: string, dir: Direction, oct: number, sub: Subdivision) => {
     const score = generateChromaticScore(note, dir, oct, sub);
-    if (score) loadScore(score);
-  }, [loadScore]);
+    if (score) {
+      loadScore(score);
+      dispatch({ type: 'SET_IS_EXERCISE', isExercise: true });
+    }
+  }, [loadScore, dispatch]);
 
   const reload = useCallback(() => {
     if (!hasSelection) return;
@@ -91,7 +110,7 @@ const PresetLibrary: React.FC = () => {
   const isTonal = exerciseType !== 'chromatic';
   const keys = quality === 'major' ? MAJOR_KEYS : MINOR_KEYS;
 
-  const summaryText = hasSelection
+  const summaryText = (hasSelection && state.isExerciseScore)
     ? (isTonal
       ? `${selectedKey} ${quality === 'major' ? 'Maj' : 'Min'} ${TYPE_LABELS[exerciseType]}`
       : `Chromatic from ${chromaticNote}`)
@@ -128,11 +147,23 @@ const PresetLibrary: React.FC = () => {
               <div className="ex-quality-toggle">
                 <button
                   className={`ex-qual-btn ${quality === 'major' ? 'active' : ''}`}
-                  onClick={() => setQuality('major')}
+                  onClick={() => {
+                    setQuality('major');
+                    if (!MAJOR_KEYS.includes(selectedKey)) {
+                      const mapped = ENHARMONIC_MAP[selectedKey];
+                      if (mapped) setSelectedKey(mapped as Key);
+                    }
+                  }}
                 >Major</button>
                 <button
                   className={`ex-qual-btn ${quality === 'minor' ? 'active' : ''}`}
-                  onClick={() => setQuality('minor')}
+                  onClick={() => {
+                    setQuality('minor');
+                    if (!MINOR_KEYS.includes(selectedKey)) {
+                      const mapped = ENHARMONIC_MAP[selectedKey];
+                      if (mapped) setSelectedKey(mapped as Key);
+                    }
+                  }}
                 >Minor</button>
               </div>
             )}

@@ -63,6 +63,9 @@ export default defineConfig({
       },
     },
   },
+  optimizeDeps: {
+    include: ['jszip', 'midi-json-parser', 'webmscore'],
+  },
   server: {
     middlewareMode: false,
   },
