@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { noteToMidi, findBestSample, type LoadedSample, type VelocityLayer } from './sampleLoader';
+import { noteToMidi, findBestSample, type LoadedSample, type VelocityLayer } from '../../../../shared/playback/instruments/sampleLoader';
 
 describe('noteToMidi', () => {
   it('converts C4 (middle C) to MIDI note 60', () => {

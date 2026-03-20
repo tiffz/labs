@@ -21,37 +21,26 @@ import {
 
 /**
  * Salamander Grand Piano sample configuration
- * Using samples hosted on GitHub (commonly used by Tone.js)
+ * Using the Tone.js-hosted Salamander samples (reliable CDN)
  */
-const SAMPLE_BASE_URL = 'https://nbrosowsky.github.io/tonern/Salamander/';
+const SAMPLE_BASE_URL = 'https://tonejs.github.io/audio/salamander/';
 
 /**
- * Notes to load (every 3 semitones for good coverage with pitch shifting)
- * This reduces download size while maintaining quality
+ * Available sample points (only A, C, Ds, Fs are hosted per octave)
  */
 const SAMPLE_NOTES = [
-  'A0', 'C1', 'Eb1', 'Gb1', 'A1', 'C2', 'Eb2', 'Gb2',
-  'A2', 'C3', 'Eb3', 'Gb3', 'A3', 'C4', 'Eb4', 'Gb4',
-  'A4', 'C5', 'Eb5', 'Gb5', 'A5', 'C6', 'Eb6', 'Gb6',
-  'A6', 'C7', 'Eb7', 'Gb7', 'A7', 'C8',
+  'A0', 'C1', 'Ds1', 'Fs1', 'A1', 'C2', 'Ds2', 'Fs2',
+  'A2', 'C3', 'Ds3', 'Fs3', 'A3', 'C4', 'Ds4', 'Fs4',
+  'A4', 'C5', 'Ds5', 'Fs5', 'A5', 'C6', 'Ds6', 'Fs6',
+  'A6', 'C7', 'Ds7', 'Fs7', 'A7', 'C8',
 ];
 
 /**
- * Velocity layers for dynamic response
- * Using 2 layers for balance between quality and download size
+ * Single velocity layer (Tone.js samples don't have multiple velocity layers)
  */
 const VELOCITY_LAYERS: VelocityLayer[] = [
-  { name: 'mf', velocityMin: 0, velocityMax: 0.6, suffix: 'v5' },
-  { name: 'f', velocityMin: 0.6, velocityMax: 1.0, suffix: 'v10' },
+  { name: 'default', velocityMin: 0, velocityMax: 1.0, suffix: '' },
 ];
-
-/**
- * Convert note name for URL (Eb -> Ds for Salamander naming convention)
- */
-function formatNoteForUrl(note: string): string {
-  // Salamander uses sharps, so convert flats
-  return note.replace('Eb', 'Ds').replace('Gb', 'Fs').replace('Ab', 'Gs').replace('Bb', 'As');
-}
 
 /**
  * Generate sample entries for loading
@@ -61,11 +50,10 @@ function generateSampleEntries(): SampleEntry[] {
   
   for (const note of SAMPLE_NOTES) {
     for (const layer of VELOCITY_LAYERS) {
-      const urlNote = formatNoteForUrl(note);
       entries.push({
         note,
         midiNote: noteToMidi(note),
-        url: `${SAMPLE_BASE_URL}${urlNote}${layer.suffix}.mp3`,
+        url: `${SAMPLE_BASE_URL}${note}.mp3`,
         velocityLayer: layer.name,
       });
     }

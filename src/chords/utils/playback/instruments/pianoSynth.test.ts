@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { PianoSynthesizer } from './pianoSynth';
+import { PianoSynthesizer } from '../../../../shared/playback/instruments/pianoSynth';
 
 // Mock AudioContext and related interfaces
 const createMockGainNode = () => ({

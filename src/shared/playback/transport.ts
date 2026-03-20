@@ -5,7 +5,7 @@
  * never stored as separate state that can drift.
  */
 
-import type { TimeSignature } from '../../types';
+import type { TimeSignature } from '../rhythm/types';
 
 export class Transport {
   private audioContext: AudioContext;

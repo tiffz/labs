@@ -14,15 +14,15 @@ import type { TimeSignature } from '../../types';
 import type { SoundType } from '../../types/soundOptions';
 import type { StyledChordNotes } from '../chordStyling';
 import { durationToBeats } from '../durationValidation';
-import { Transport } from './transport';
-import { Track } from './track';
+import { Transport } from '../../../shared/playback/transport';
+import { Track } from '../../../shared/playback/track';
 import { 
   PianoSynthesizer, 
   SimpleSynthesizer, 
   SampledPiano,
   type WaveformType,
   type Instrument,
-} from './instruments';
+} from '../../../shared/playback/instruments';
 import type { NoteEvent, NoteParams, ActiveNotes, PendingChanges, PlaybackConfig } from './types';
 import { createReverb, type ReverbNodes } from '../../../shared/audio/reverb';
 

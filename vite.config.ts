@@ -31,6 +31,7 @@ export default defineConfig({
         forms: resolve(__dirname, 'src/forms/index.html'),
         beat: resolve(__dirname, 'src/beat/index.html'),
         universal_tom: resolve(__dirname, 'src/drums/universal_tom/index.html'),
+        piano: resolve(__dirname, 'src/piano/index.html'),
       },
       output: {
         manualChunks: {

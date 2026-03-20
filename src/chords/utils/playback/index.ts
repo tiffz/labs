@@ -19,10 +19,10 @@ export {
 } from './playbackEngine';
 
 // Transport
-export { Transport } from './transport';
+export { Transport } from '../../../shared/playback/transport';
 
 // Track
-export { Track } from './track';
+export { Track } from '../../../shared/playback/track';
 
 // Instruments
 export { 
@@ -34,7 +34,7 @@ export {
   SampledPiano,
   type WaveformType,
   type SampleLoadingState,
-} from './instruments';
+} from '../../../shared/playback/instruments';
 
 // Types
 export type { 

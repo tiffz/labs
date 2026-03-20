@@ -53,7 +53,7 @@ export function noteToMidi(note: string): number {
     'C': 0, 'D': 2, 'E': 4, 'F': 5, 'G': 7, 'A': 9, 'B': 11
   };
   
-  const match = note.match(/^([A-G])([#b]?)(\d+)$/);
+  const match = note.match(/^([A-G])([#bs]?)(\d+)$/);
   if (!match) {
     throw new Error(`Invalid note name: ${note}`);
   }
@@ -61,7 +61,7 @@ export function noteToMidi(note: string): number {
   const [, noteName, accidental, octaveStr] = match;
   let midiNote = noteNames[noteName] + (parseInt(octaveStr, 10) + 1) * 12;
   
-  if (accidental === '#') midiNote += 1;
+  if (accidental === '#' || accidental === 's') midiNote += 1;
   else if (accidental === 'b') midiNote -= 1;
   
   return midiNote;
