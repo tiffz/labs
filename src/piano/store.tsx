@@ -88,7 +88,8 @@ type Action =
   | { type: 'ADVANCE_FREE_TEMPO' }
   | { type: 'SET_VIEWING_RUN'; index: number | null }
   | { type: 'SET_GHOST_NOTES'; notes: { midi: number; duration: NoteDuration }[] }
-  | { type: 'STEP_INPUT_CHORD'; midis: number[]; duration?: NoteDuration; dotted?: boolean };
+  | { type: 'STEP_INPUT_CHORD'; midis: number[]; duration?: NoteDuration; dotted?: boolean }
+  | { type: 'SET_SCORE_FROM_ABC'; score: PianoScore };
 
 // eslint-disable-next-line react-refresh/only-export-components -- exported for tests alongside Provider
 export const initialState: PianoState = {
@@ -158,6 +159,15 @@ export function reducer(state: PianoState, action: Action): PianoState {
         currentMeasureIndex: 0, currentNoteIndices: new Map(),
         practiceResults: [], practiceResultsByNoteId: new Map(),
       };
+    case 'SET_SCORE_FROM_ABC': {
+      if (!state.score) return state;
+      return {
+        ...state,
+        score: action.score,
+        undoStack: [...state.undoStack.slice(-49), state.score],
+        redoStack: [],
+      };
+    }
     case 'SET_ACTIVE_MODE':
       return {
         ...state, activeMode: action.mode,

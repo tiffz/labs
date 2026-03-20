@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Renderer, Stave, StaveNote, Voice, Formatter, StaveConnector, Beam, Dot, Annotation, Accidental } from 'vexflow';
+import { Renderer, Stave, StaveNote, Voice, Formatter, StaveConnector, Beam, Dot, Annotation, Accidental, Fraction } from 'vexflow';
 import type { PianoScore, PracticeNoteResult, ScoreNote } from '../types';
 import { DURATION_VEXFLOW, midiToPitchStringForKey } from '../types';
 
@@ -127,7 +127,15 @@ function createAccidentalTracker(keyAccMap: Map<string, string>) {
 }
 
 // --- Beaming ---
-// VexFlow's Beam.generateBeams handles beat-group-aware beaming correctly
+function getBeamGroups(timeSig: { numerator: number; denominator: number }): Fraction[] | undefined {
+  const { numerator, denominator } = timeSig;
+  // Compound meters (numerator divisible by 3 and > 3): group in 3s
+  if (numerator > 3 && numerator % 3 === 0) {
+    return [new Fraction(3, denominator)];
+  }
+  // Simple meters: default VexFlow grouping (1 beat = 1/denominator) works fine
+  return undefined;
+}
 
 const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
   score, currentMeasureIndex, currentNoteIndices, activeMidiNotes,
@@ -401,6 +409,7 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
           formatter.joinVoices([bassVoice]);
           formatter.format([trebleVoice, bassVoice], formatWidth);
 
+          const beamGroups = getBeamGroups(score.timeSignature);
           let trebleBeams: Beam[] = [];
           let bassBeams: Beam[] = [];
           try {
@@ -408,6 +417,7 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
               beamRests: false,
               beamMiddleOnly: false,
               stemDirection: 1,
+              groups: beamGroups,
             });
           } catch { /* beam generation is non-critical */ }
           try {
@@ -415,6 +425,7 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
               beamRests: false,
               beamMiddleOnly: false,
               stemDirection: -1,
+              groups: beamGroups,
             });
           } catch { /* beam generation is non-critical */ }
 
