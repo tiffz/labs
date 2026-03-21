@@ -370,6 +370,33 @@ describe('piano store reducer', () => {
     });
   });
 
+  describe('CANCEL_PRACTICE_RUN', () => {
+    it('clears current run without appending to practice session', () => {
+      const result: PracticeNoteResult = {
+        noteId: 'n-1', expectedPitches: [60], playedPitches: [60],
+        timingOffsetMs: 12, pitchCorrect: true, timing: 'perfect',
+      };
+      const state = stateWith({
+        currentRunStartTime: 1234,
+        practiceResults: [result],
+        practiceResultsByNoteId: new Map([['n-1', result]]),
+        practiceSession: { scoreId: 'test', runs: [] },
+      });
+      const next = reducer(state, { type: 'CANCEL_PRACTICE_RUN' });
+      expect(next.currentRunStartTime).toBeNull();
+      expect(next.practiceResults).toEqual([]);
+      expect(next.practiceResultsByNoteId.size).toBe(0);
+      expect(next.practiceSession?.runs).toHaveLength(0);
+    });
+  });
+
+  describe('SET_MIDI_SOUND_VOLUME', () => {
+    it('updates keypress MIDI sound volume', () => {
+      const next = reducer(initialState, { type: 'SET_MIDI_SOUND_VOLUME', volume: 0.35 });
+      expect(next.midiSoundVolume).toBe(0.35);
+    });
+  });
+
   describe('ADVANCE_FREE_TEMPO', () => {
     it('advances to the next non-rest note', () => {
       const scoreWithRest: PianoScore = {

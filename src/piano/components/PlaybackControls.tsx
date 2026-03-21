@@ -17,7 +17,7 @@ const PART_LABELS: Record<string, string> = { rh: 'Treble', lh: 'Bass' };
 
 interface SettingsDropdownProps {
   anchorRef: React.RefObject<HTMLButtonElement | null>;
-  state: { masterVolume: number; masterMuted: boolean; metronomeVolume: number; metronomeEnabled: boolean; score: { parts: { id: string; name: string }[] } | null; trackMuted: Map<string, boolean>; trackVolume: Map<string, number>; soundType: string; activeMode: string; drumEnabled: boolean; drumVolume: number; countInEveryLoop: boolean; midiSoundEnabled: boolean };
+  state: { masterVolume: number; masterMuted: boolean; metronomeVolume: number; metronomeEnabled: boolean; score: { parts: { id: string; name: string }[] } | null; trackMuted: Map<string, boolean>; trackVolume: Map<string, number>; soundType: string; activeMode: string; drumEnabled: boolean; drumVolume: number; countInEveryLoop: boolean; midiSoundEnabled: boolean; midiSoundVolume: number };
   isActive: boolean;
   onMasterVolume: (v: number) => void;
   onMasterMute: () => void;
@@ -29,10 +29,11 @@ interface SettingsDropdownProps {
   onDrumVolume: (v: number) => void;
   onCountInEveryLoop: (enabled: boolean) => void;
   onMidiSound: (enabled: boolean) => void;
+  onMidiSoundVolume: (v: number) => void;
 }
 
 const SettingsDropdown = React.forwardRef<HTMLDivElement, SettingsDropdownProps>(
-  ({ anchorRef, state, isActive, onMasterVolume, onMasterMute, onMetronomeVolume, onMetronomeToggle, onTrackMute, onTrackVolume, onSoundChange, onDrumVolume, onCountInEveryLoop, onMidiSound }, ref) => {
+  ({ anchorRef, state, isActive, onMasterVolume, onMasterMute, onMetronomeVolume, onMetronomeToggle, onTrackMute, onTrackVolume, onSoundChange, onDrumVolume, onCountInEveryLoop, onMidiSound, onMidiSoundVolume }, ref) => {
     const [pos, setPos] = useState({ top: 0, right: 0 });
 
     useEffect(() => {
@@ -112,6 +113,13 @@ const SettingsDropdown = React.forwardRef<HTMLDivElement, SettingsDropdownProps>
                 style={{ margin: 0 }} />
               Play sound on key press
             </label>
+          </div>
+          <div className="sb-settings-row">
+            <span className="sb-settings-label">Key press vol</span>
+            <input type="range" min={0} max={1} step={0.01} value={state.midiSoundVolume}
+              onChange={e => onMidiSoundVolume(parseFloat(e.target.value))}
+              className={`volume-slider ${!state.midiSoundEnabled ? 'disabled-slider' : ''}`}
+              disabled={!state.midiSoundEnabled} />
           </div>
         </div>
         <div className="sb-settings-divider" />
@@ -589,6 +597,7 @@ const PlaybackControls: React.FC = () => {
           onDrumVolume={handleDrumVolume}
           onCountInEveryLoop={(enabled) => dispatch({ type: 'SET_COUNT_IN_EVERY_LOOP', enabled })}
           onMidiSound={(enabled) => dispatch({ type: 'SET_MIDI_SOUND', enabled })}
+          onMidiSoundVolume={(volume) => dispatch({ type: 'SET_MIDI_SOUND_VOLUME', volume })}
         />,
         document.body,
       )}

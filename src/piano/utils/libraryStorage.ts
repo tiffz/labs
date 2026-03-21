@@ -30,6 +30,7 @@ export interface GlobalPracticePreferences {
   soundType: SoundType;
   microphoneEnabled?: boolean;
   midiSoundEnabled?: boolean;
+  midiSoundVolume?: number;
 }
 
 const SETTINGS_KEY = 'piano-song-settings';

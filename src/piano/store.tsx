@@ -85,6 +85,7 @@ interface PianoState {
   hasTempoVariance: boolean;
   mediaBeats: number[] | null;
   midiSoundEnabled: boolean;
+  midiSoundVolume: number;
 }
 
 type Action =
@@ -160,6 +161,8 @@ type Action =
   | { type: 'SET_SMART_METRONOME'; enabled: boolean }
   | { type: 'SET_MEDIA_BEATS'; beats: number[] | null; hasTempoVariance: boolean }
   | { type: 'SET_MIDI_SOUND'; enabled: boolean }
+  | { type: 'SET_MIDI_SOUND_VOLUME'; volume: number }
+  | { type: 'CANCEL_PRACTICE_RUN' }
   | { type: 'RESTORE_PRACTICE_SETTINGS'; settings: SongPracticeSettings }
   | { type: 'RESTORE_GLOBAL_PREFERENCES'; prefs: GlobalPracticePreferences };
 
@@ -229,6 +232,7 @@ export const initialState: PianoState = {
   hasTempoVariance: false,
   mediaBeats: null,
   midiSoundEnabled: false,
+  midiSoundVolume: 0.7,
 };
 
 function addChordToPart(
@@ -358,6 +362,13 @@ export function reducer(state: PianoState, action: Action): PianoState {
         currentRunStartTime: null,
       };
     }
+    case 'CANCEL_PRACTICE_RUN':
+      return {
+        ...state,
+        currentRunStartTime: null,
+        practiceResults: [],
+        practiceResultsByNoteId: new Map(),
+      };
     case 'CLEAR_SESSION':
       return {
         ...state,
@@ -689,6 +700,8 @@ export function reducer(state: PianoState, action: Action): PianoState {
       return { ...state, smartMetronomeEnabled: action.enabled };
     case 'SET_MIDI_SOUND':
       return { ...state, midiSoundEnabled: action.enabled };
+    case 'SET_MIDI_SOUND_VOLUME':
+      return { ...state, midiSoundVolume: action.volume };
     case 'SET_MEDIA_BEATS':
       return { ...state, mediaBeats: action.beats, hasTempoVariance: action.hasTempoVariance };
     case 'SET_CURRENT_BEAT':
@@ -738,6 +751,7 @@ export function reducer(state: PianoState, action: Action): PianoState {
         countInEveryLoop: p.countInEveryLoop,
         soundType: p.soundType,
         midiSoundEnabled: p.midiSoundEnabled ?? false,
+        midiSoundVolume: p.midiSoundVolume ?? 0.7,
       };
     }
     default:
@@ -808,7 +822,7 @@ export function PianoProvider({ children }: { children: React.ReactNode }) {
           }
         }
         if (s.midiSoundEnabled) {
-          engine.playMidiNote(note, velocity);
+          engine.playMidiNote(note, velocity * s.midiSoundVolume);
         }
       } else {
         recordMidiNoteOff(note);
@@ -1044,26 +1058,71 @@ export function PianoProvider({ children }: { children: React.ReactNode }) {
       if (isDebugEnabled()) {
         logDebugEvent({ type: 'practice_end', t: performance.now(), resultCount: s.practiceResults.length });
       }
-      dispatch({ type: 'END_PRACTICE_RUN' });
+
+      const getMeasureCount = () => {
+        if (!s.score) return 0;
+        if (s.selectedMeasureRange) {
+          return Math.max(0, s.selectedMeasureRange.end - s.selectedMeasureRange.start + 1);
+        }
+        return Math.max(...s.score.parts.map((p) => p.measures.length), 0);
+      };
+
+      const getProgressRatio = () => {
+        const measureCount = getMeasureCount();
+        if (measureCount <= 0) return 1;
+        if (s.activeMode === 'free-practice') {
+          const measureIdx = s.freeTempoMeasureIndex >= 0 ? s.freeTempoMeasureIndex : 0;
+          if (s.selectedMeasureRange) {
+            const relative = measureIdx - s.selectedMeasureRange.start;
+            return Math.max(0, Math.min(1, (relative + 1) / measureCount));
+          }
+          return Math.max(0, Math.min(1, (measureIdx + 1) / measureCount));
+        }
+        const measureIdx = s.currentMeasureIndex >= 0 ? s.currentMeasureIndex : 0;
+        if (s.selectedMeasureRange) {
+          const relative = measureIdx - s.selectedMeasureRange.start;
+          return Math.max(0, Math.min(1, (relative + 1) / measureCount));
+        }
+        return Math.max(0, Math.min(1, (measureIdx + 1) / measureCount));
+      };
+
+      const shouldDiscardCurrentRun =
+        s.currentRunStartTime !== null &&
+        getProgressRatio() < 0.5;
+
+      const runs = [...(s.practiceSession?.runs ?? [])];
+      if (!shouldDiscardCurrentRun && s.currentRunStartTime && s.practiceSession) {
+        const total = s.practiceResults.length;
+        const hits = s.practiceResults.filter((r) => r.timing === 'perfect' && r.pitchCorrect).length;
+        runs.push({
+          startTime: s.currentRunStartTime,
+          endTime: Date.now(),
+          results: [...s.practiceResults],
+          accuracy: total > 0 ? Math.round((hits / total) * 100) : 0,
+        });
+      }
+
+      if (shouldDiscardCurrentRun) {
+        dispatch({ type: 'CANCEL_PRACTICE_RUN' });
+      } else {
+        dispatch({ type: 'END_PRACTICE_RUN' });
+      }
 
       // Save practice record
-      const postState = stateRef.current;
-      const session = postState.practiceSession;
-      if (session && session.runs.length > 0 && postState.score) {
-        const runs = session.runs;
+      if (runs.length > 0 && s.score) {
         const avgAcc = Math.round(runs.reduce((sum, r) => sum + r.accuracy, 0) / runs.length);
-        const bestAcc = Math.max(...runs.map(r => r.accuracy));
+        const bestAcc = Math.max(...runs.map((r) => r.accuracy));
         const totalMs = runs.reduce((sum, r) => sum + (r.endTime - r.startTime), 0);
         const hands: string[] = [];
-        if (postState.practiceRightHand) hands.push('right');
-        if (postState.practiceLeftHand) hands.push('left');
-        if (postState.practiceChords) hands.push('chords');
+        if (s.practiceRightHand) hands.push('right');
+        if (s.practiceLeftHand) hands.push('left');
+        if (s.practiceChords) hands.push('chords');
         const record: PracticeRecord = {
           id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
           timestamp: Date.now(),
-          scoreId: postState.score.id,
-          scoreTitle: postState.score.title || 'Untitled',
-          tempo: postState.tempo,
+          scoreId: s.score.id,
+          scoreTitle: s.score.title || 'Untitled',
+          tempo: s.tempo,
           runs,
           bestAccuracy: bestAcc,
           averageAccuracy: avgAcc,
@@ -1181,7 +1240,8 @@ export function PianoProvider({ children }: { children: React.ReactNode }) {
   // Auto-save global practice preferences (debounced)
   const globalSaveTimerRef = useRef<number | null>(null);
   const { masterVolume, masterMuted, metronomeVolume, metronomeEnabled,
-    loopingEnabled, countInEveryLoop, soundType, microphoneActive, midiSoundEnabled } = state;
+    loopingEnabled, countInEveryLoop, soundType, microphoneActive, midiSoundEnabled,
+    midiSoundVolume } = state;
   useEffect(() => {
     if (globalSaveTimerRef.current) clearTimeout(globalSaveTimerRef.current);
     globalSaveTimerRef.current = window.setTimeout(() => {
@@ -1190,6 +1250,7 @@ export function PianoProvider({ children }: { children: React.ReactNode }) {
         loopingEnabled, countInEveryLoop, soundType,
         microphoneEnabled: microphoneActive,
         midiSoundEnabled,
+        midiSoundVolume,
       };
       import('./utils/libraryStorage').then(({ saveGlobalPreferences }) => {
         saveGlobalPreferences(prefs);
@@ -1197,7 +1258,8 @@ export function PianoProvider({ children }: { children: React.ReactNode }) {
     }, 1500);
     return () => { if (globalSaveTimerRef.current) clearTimeout(globalSaveTimerRef.current); };
   }, [masterVolume, masterMuted, metronomeVolume, metronomeEnabled,
-      loopingEnabled, countInEveryLoop, soundType, microphoneActive, midiSoundEnabled]);
+      loopingEnabled, countInEveryLoop, soundType, microphoneActive, midiSoundEnabled,
+      midiSoundVolume]);
 
   const value: PianoContextValue = {
     state, dispatch, engine, midi, startMode, stopMode, loadScore, toggleMicrophone,
