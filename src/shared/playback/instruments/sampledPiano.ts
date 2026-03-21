@@ -224,7 +224,6 @@ export class SampledPiano extends BaseInstrument {
   playNote({ frequency, startTime, duration, velocity = 0.8 }: PlayNoteParams): void {
     if (this.disposed) return;
     
-    // If samples aren't loaded, fail silently (fallback should handle this)
     if (!this.isReady()) {
       console.warn('SampledPiano: Samples not loaded, skipping note');
       return;
@@ -233,13 +232,10 @@ export class SampledPiano extends BaseInstrument {
     const audioContext = this.audioContext;
     const now = audioContext.currentTime;
     
-    // Ensure start time is not in the past
     const clampedStartTime = Math.max(startTime, now + 0.005);
     
-    // Convert frequency to MIDI note
     const midiNote = Math.round(12 * Math.log2(frequency / 440) + 69);
     
-    // Find best sample for this note and velocity
     const result = findBestSample(midiNote, velocity, this.samples, VELOCITY_LAYERS);
     
     if (!result) {
@@ -249,69 +245,64 @@ export class SampledPiano extends BaseInstrument {
     
     const { sample, pitchShift } = result;
     
-    // Create buffer source
     const source = audioContext.createBufferSource();
     source.buffer = sample.buffer;
     
-    // Apply pitch shifting if needed
-    if (pitchShift !== 0) {
-      source.playbackRate.value = this.getPitchShiftRate(pitchShift);
-    }
+    const rate = pitchShift !== 0 ? this.getPitchShiftRate(pitchShift) : 1;
+    source.playbackRate.value = rate;
     
-    // Create gain node for envelope
     const gainNode = audioContext.createGain();
     
-    // Calculate gain based on velocity
-    // Use a more natural velocity curve (not linear)
-    const velocityCurve = Math.pow(velocity, 0.7); // Softer curve for more natural dynamics
-    const velocityGain = 0.4 + (velocityCurve * 0.6); // Range: 0.4 to 1.0
+    const velocityCurve = Math.pow(velocity, 0.7);
+    const velocityGain = 0.4 + (velocityCurve * 0.6);
     const peakGain = this.baseGain * velocityGain;
     
-    // Simple, clean envelope using only linear ramps (no discontinuities):
-    // - Fast attack to peak
-    // - Hold at peak (sample's natural decay is in the audio itself)
-    // - Smooth linear fade at the end
+    // Use the actual playback duration accounting for pitch shift
+    const sampleDuration = sample.buffer.duration / rate;
+    const effectiveDuration = Math.min(duration, sampleDuration);
     
-    // Attack: quick ramp to peak
+    // Scale release time with note length for smoother endings on long notes
+    const releaseTime = duration > 3.0
+      ? Math.min(0.8, duration * 0.15)
+      : this.releaseTime;
+    
+    // Attack
     gainNode.gain.setValueAtTime(0, clampedStartTime);
     gainNode.gain.linearRampToValueAtTime(peakGain, clampedStartTime + this.attackTime);
     
-    // Hold at peak gain - the sample's recorded decay provides natural sound
-    // We calculate when to start the release fade
-    const releaseStartTime = Math.max(
+    // Let the sample's natural decay do the work — use setTargetAtTime for a
+    // gentle complementary exponential decay that avoids fighting the recording
+    // but ensures very long notes don't sustain at an unnaturally high level
+    const decayStart = clampedStartTime + this.attackTime;
+    // tau chosen so gain halves roughly every 3-4 seconds (natural piano behavior)
+    const tau = Math.max(1.5, Math.min(4.0, effectiveDuration * 0.4));
+    gainNode.gain.setTargetAtTime(peakGain * 0.08, decayStart, tau);
+    
+    // At release point, transition to a smooth fade-out
+    const releaseStart = Math.max(
       clampedStartTime + this.attackTime + 0.05,
-      clampedStartTime + duration - this.releaseTime
+      clampedStartTime + effectiveDuration - releaseTime
     );
+    const sustainElapsed = releaseStart - decayStart;
+    const gainAtRelease = peakGain * 0.08 +
+      (peakGain - peakGain * 0.08) * Math.exp(-sustainElapsed / tau);
+    gainNode.gain.setValueAtTime(gainAtRelease, releaseStart);
+    gainNode.gain.linearRampToValueAtTime(0, clampedStartTime + effectiveDuration);
     
-    // Hold until release (continuous linear ramp at same value = hold)
-    gainNode.gain.linearRampToValueAtTime(peakGain, releaseStartTime);
+    const modulation = this.createModulation(audioContext, clampedStartTime, effectiveDuration);
     
-    // Release: smooth linear fade to zero
-    gainNode.gain.linearRampToValueAtTime(0, clampedStartTime + duration);
-    
-    // Create subtle modulation for long notes
-    const modulation = this.createModulation(audioContext, clampedStartTime, duration);
-    
-    // Build the audio chain
     if (modulation) {
-      // source -> gainNode -> modulationGain -> output
       source.connect(gainNode);
       gainNode.connect(modulation.modulationGain);
       modulation.modulationGain.connect(this.output);
     } else {
-      // source -> gainNode -> output
       source.connect(gainNode);
       gainNode.connect(this.output);
     }
     
-    // Start playback
     source.start(clampedStartTime);
+    source.stop(clampedStartTime + effectiveDuration + 0.15);
     
-    // Stop the source after the note duration (plus buffer for release tail)
-    const adjustedDuration = duration / (source.playbackRate.value || 1);
-    source.stop(clampedStartTime + adjustedDuration + 0.15);
-    
-    // Cleanup
     source.onended = () => {
       gainNode.disconnect();
       if (modulation) {

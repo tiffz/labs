@@ -22,13 +22,24 @@ src/piano/
 │   ├── PresetLibrary.tsx        # Exercise selector (scales, arps, etc.)
 │   ├── NoteInput.tsx            # Edit mode toolbar, ABC input
 │   ├── PianoKeyboard.tsx        # On-screen keyboard, chord buffering
+│   ├── VideoPlayer.tsx          # Video/audio media player, analysis UI, sync
 │   └── MidiPanel.tsx            # (Dead code — moved to header)
 ├── data/
 │   └── scales.ts                # Exercise generation (scales, arpeggios, chromatic)
 └── utils/
     ├── scorePlayback.ts         # ScorePlaybackEngine (audio scheduling)
     ├── midiInput.ts             # Web MIDI API wrapper
-    └── practiceTimingStore.ts   # High-precision timing singleton
+    ├── practiceTimingStore.ts   # High-precision timing singleton
+    ├── dtw.ts                   # Dynamic Time Warping (Sakoe-Chiba band)
+    ├── scoreChroma.ts           # Synthetic chromagram from PianoScore
+    └── videoScoreCorrelation.ts # DTW-based video/audio-to-score alignment
+```
+
+Also used (in `src/beat/utils/`):
+
+```
+src/beat/utils/
+└── chromaExtractor.ts           # HPCP chroma extraction via Essentia.js
 ```
 
 ## Design Principles
@@ -97,11 +108,31 @@ Both the on-screen keyboard and MIDI input use an 80ms debounce buffer. When mul
 
 Audio instruments (`PianoSynthesizer`, `SimpleSynthesizer`, `SampledPiano`) live in `src/shared/playback/` and are shared with the chord progression generator app. The `ScorePlaybackEngine` creates instrument instances on demand and manages their lifecycle (connect/disconnect/stopAll).
 
+### Video/Audio-to-Score Synchronization
+
+When users upload a video or audio file, the app helps align the recording with the score using a combination of automatic detection and manual tools:
+
+1. **Music start detection**: Analyzes the audio's RMS energy to find where the music begins (skipping silence, title cards, etc.). This detected "music start" time becomes the initial offset.
+
+2. **BPM detection**: Uses the beat analysis pipeline to detect the recording's tempo and suggest adjustments if it differs significantly from the score BPM.
+
+3. **Tap to align**: Since automatic alignment can't reliably handle arbitrary recordings (different arrangements, intros, etc.), the app provides a "Tap to align" feature. The user plays the audio and taps a button on beat 1 of measure 1 — this instantly sets the offset to the current playback time. This is fast (~2 seconds of effort) and 100% reliable.
+
+4. **Manual offset slider**: Fine-tune the offset in 0.1s increments for precise alignment.
+
+**Playback sync strategy**: The media plays at its original speed (`playbackRate = 1`). At playback start, the player seeks to `offset + sectionOffset`. After that initial seek, the media plays untouched — no tempo changes, no periodic drift correction. The only re-seek happens on loop boundaries (detected when `currentBeat` jumps backward). This keeps the original recording perfectly intact and eliminates jitter.
+
+**BPM suggestion**: If the detected BPM differs from the score BPM by more than 5%, the app suggests adjusting the score's tempo.
+
+**Note**: `dtw.ts`, `scoreChroma.ts`, and `chromaExtractor.ts` still exist in the codebase for potential future use (e.g., advanced section-level analysis).
+
 ## Performance Considerations
 
 - **Memoized re-renders**: `ScoreDisplay` computes a `stateKey` hash and skips re-rendering if nothing meaningful changed (note content, practice results, position, ghost notes)
 - **RAF-based scheduling**: Audio events are scheduled 200ms ahead using `requestAnimationFrame`, balancing latency with scheduling reliability
 - **Metronome deduplication**: Click times are tracked by rounded millisecond key with a 50ms minimum gap to prevent double-clicks at loop boundaries
+- **Music start detection**: Simple RMS scan with 50ms windows — near-instant even for long files.
+- **Smooth video playback**: Media plays at native speed with a single seek at playback start. No `playbackRate` manipulation or periodic drift correction — the only re-seek is on loop restart.
 
 ## Responsive Design
 
@@ -119,5 +150,8 @@ Tests focus on the pure-logic modules that don't require DOM or audio:
 - **`types.test.ts`** — MIDI conversion utilities, duration calculations
 - **`scales.test.ts`** — Exercise generation invariants (measure fullness, fingering, direction)
 - **`store.test.ts`** — Reducer state transitions (30+ cases covering edit, undo/redo, practice runs, accuracy)
+- **`dtw.test.ts`** — DTW algorithm correctness: identical/stretched sequences, distance functions, band constraints, monotonicity
+- **`scoreChroma.test.ts`** — Chromagram generation: frame rate, pitch-class placement, L2 normalization, multi-part handling
+- **`videoScoreCorrelation.test.ts`** — `lookupAudioTime` binary search/interpolation: edge cases (empty, single-point, clamping), large mappings
 
-Components that depend on VexFlow, Web Audio, or Web MIDI are validated through manual testing with a connected MIDI controller.
+Components that depend on VexFlow, Web Audio, or Web MIDI are validated through manual testing with a connected MIDI controller. The `chromaExtractor` (Essentia.js WASM) is integration-tested manually because it requires the Essentia WASM runtime.

@@ -57,36 +57,23 @@ function getChordNotes(chord: Chord, clef: 'bass' | 'treble' = 'treble'): number
   // Generate notes from intervals
   let notes = chordIntervals.map(interval => baseOctave + interval);
   
-  // Constrain notes to reasonable ranges to minimize ledger lines
-  // Use tighter ranges for better readability
-  // Bass clef: Stay within staff lines (E2 to D4) to minimize ledger lines
-  // Treble clef: C4 to G5 (comfortable range)
-  const minNote = clef === 'bass' ? 40 : 60; // E2 for bass (40), C4 for treble (60)
-  const maxNote = clef === 'bass' ? 62 : 79; // D4 for bass (62), G5 for treble (79)
+  const minNote = clef === 'bass' ? 40 : 60;  // E2 for bass, C4 for treble
+  const maxNote = clef === 'bass' ? 62 : 84;  // D4 for bass, C6 for treble (room for inversions)
   
-  // Find the range of notes
   const lowestNote = Math.min(...notes);
   const highestNote = Math.max(...notes);
   
-  // If the entire chord is out of range, move it as a unit
   if (highestNote > maxNote) {
-    // Calculate how many octaves to move down
     const octavesDown = Math.ceil((highestNote - maxNote) / 12);
     notes = notes.map(n => n - (octavesDown * 12));
   } else if (lowestNote < minNote) {
-    // Calculate how many octaves to move up
     const octavesUp = Math.ceil((minNote - lowestNote) / 12);
     notes = notes.map(n => n + (octavesUp * 12));
   }
   
-  // Final safety clamp - ensure no individual note is outside range
   notes = notes.map(note => {
-    while (note < minNote) {
-      note += 12;
-    }
-    while (note > maxNote) {
-      note -= 12;
-    }
+    while (note < minNote) note += 12;
+    while (note > maxNote) note -= 12;
     return note;
   });
   
@@ -128,9 +115,8 @@ function toOpenVoicing(notes: number[]): number[] {
  * Constrains notes to prevent excessive ledger lines
  */
 function randomizeOctaves(notes: number[], clef: 'bass' | 'treble' = 'treble'): number[] {
-  // Use same tighter ranges as main function
-  const minNote = clef === 'bass' ? 40 : 60; // E2 for bass (40), C4 for treble (60)
-  const maxNote = clef === 'bass' ? 62 : 79; // D4 for bass (62), G5 for treble (79)
+  const minNote = clef === 'bass' ? 40 : 60;
+  const maxNote = clef === 'bass' ? 62 : 84;
   
   return notes.map((note) => {
     // Randomize each note's octave independently, but constrain to range
@@ -180,45 +166,31 @@ export function generateVoicing(chord: Chord, options: VoicingOptions, clef: 'ba
     notes = toOpenVoicing(notes);
   }
   
-  // Randomize octaves if enabled (treble only)
   if (options.randomizeOctaves) {
     notes = randomizeOctaves(notes, clef);
   }
   
-  // Final constraint check - ensure all notes are within reasonable range
-  // This is critical to prevent excessive ledger lines
-  // Use tighter ranges for better readability
-  // Bass clef: Stay within staff lines (E2 to D4) to minimize ledger lines
-  // Treble clef: C4 to G5 (comfortable range)
-  const minNote = clef === 'bass' ? 40 : 60; // E2 for bass (40), C4 for treble (60)
-  const maxNote = clef === 'bass' ? 62 : 79; // D4 for bass (62), G5 for treble (79)
+  // Treble range: C4 (60) to C6 (84) — wide enough for inversions
+  const minTreble = 60;
+  const maxTreble = 84;
   
-  // Find the range of notes after all transformations
   const lowestNote = Math.min(...notes);
   const highestNote = Math.max(...notes);
   
-  // If the entire chord is out of range, move it as a unit
-  if (highestNote > maxNote) {
-    // Calculate how many octaves to move down
-    const octavesDown = Math.ceil((highestNote - maxNote) / 12);
+  if (highestNote > maxTreble) {
+    const octavesDown = Math.ceil((highestNote - maxTreble) / 12);
     notes = notes.map(n => n - (octavesDown * 12));
-  } else if (lowestNote < minNote) {
-    // Calculate how many octaves to move up
-    const octavesUp = Math.ceil((minNote - lowestNote) / 12);
+  } else if (lowestNote < minTreble) {
+    const octavesUp = Math.ceil((minTreble - lowestNote) / 12);
     notes = notes.map(n => n + (octavesUp * 12));
   }
   
-  // Final safety clamp - ensure no individual note is outside range
   notes = notes.map(note => {
-    while (note < minNote) {
-      note += 12;
-    }
-    while (note > maxNote) {
-      note -= 12;
-    }
+    while (note < minTreble) note += 12;
+    while (note > maxTreble) note -= 12;
     return note;
   });
   
-  return notes.sort((a, b) => a - b); // Sort notes from low to high
+  return notes.sort((a, b) => a - b);
 }
 

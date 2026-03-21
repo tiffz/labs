@@ -1,21 +1,32 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { PianoProvider, usePiano } from './store';
-import { midiToNoteName } from './types';
 import ScoreDisplay from './components/ScoreDisplay';
 import PlaybackControls from './components/PlaybackControls';
 import NoteInput from './components/NoteInput';
-import PresetLibrary from './components/PresetLibrary';
 import PracticeMode from './components/PracticeMode';
 import PianoKeyboard from './components/PianoKeyboard';
 import PracticeDashboard from './components/PracticeDashboard';
 import ImportModal from './components/ImportModal';
 import SectionSplitter from './components/SectionSplitter';
+import Analytics from './components/Analytics';
+import CurrentlyPracticing from './components/CurrentlyPracticing';
+import ExercisePicker from './components/ExercisePicker';
+import InputSources from './components/InputSources';
+import VideoPlayer from './components/VideoPlayer';
+import { saveScoreToLibrary } from './utils/libraryStorage';
+import { enableDebug } from './utils/practiceDebugLog';
+import DebugPanel from './components/DebugPanel';
+
+const debugMode = new URLSearchParams(window.location.search).has('debug');
+if (debugMode) enableDebug();
 
 function PianoApp() {
   const { state, dispatch, startMode, stopMode, loadScore } = usePiano();
   const [showImportModal, setShowImportModal] = useState(false);
   const [dropFile, setDropFile] = useState<File | null>(null);
   const [showDropOverlay, setShowDropOverlay] = useState(false);
+  const [showExercisePicker, setShowExercisePicker] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(false);
   const dragCounterRef = useRef(0);
 
   // Global drag-and-drop
@@ -36,12 +47,22 @@ function PianoApp() {
       }
     };
     const handleDragOver = (e: DragEvent) => { e.preventDefault(); };
+    const MEDIA_EXTS = ['.mp3', '.mp4', '.wav', '.ogg', '.webm', '.m4a', '.aac', '.flac', '.aiff'];
     const handleDrop = (e: DragEvent) => {
       e.preventDefault();
       dragCounterRef.current = 0;
       setShowDropOverlay(false);
       const file = e.dataTransfer?.files?.[0];
-      if (file) {
+      if (!file) return;
+
+      const ext = file.name.toLowerCase().replace(/^.*(\.[^.]+)$/, '$1');
+      const isMedia = file.type.startsWith('audio/') || file.type.startsWith('video/') || MEDIA_EXTS.includes(ext);
+
+      if (isMedia) {
+        const url = URL.createObjectURL(file);
+        const isVideo = file.type.startsWith('video/') || ['.mp4', '.webm'].includes(ext);
+        dispatch({ type: 'SET_MEDIA_FILE', file: { name: file.name, url, type: isVideo ? 'video' : 'audio' } });
+      } else {
         setDropFile(file);
         setShowImportModal(true);
       }
@@ -58,16 +79,26 @@ function PianoApp() {
     };
   }, []);
 
+  const hasInputSource = state.midiConnected || state.microphoneActive;
+
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.code === 'Escape' && showAnalytics) {
+      setShowAnalytics(false);
+      return;
+    }
+    if (e.code === 'Escape' && showExercisePicker) {
+      setShowExercisePicker(false);
+      return;
+    }
     if (e.code === 'Space' && state.inputMode !== 'step-input') {
       e.preventDefault();
       if (state.activeMode !== 'none') {
         stopMode();
       } else {
-        startMode(state.midiConnected ? 'practice' : 'play');
+        startMode(hasInputSource ? 'practice' : 'play');
       }
     }
-  }, [state.activeMode, state.inputMode, state.midiConnected, startMode, stopMode]);
+  }, [state.activeMode, state.inputMode, hasInputSource, startMode, stopMode, showAnalytics, showExercisePicker]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -76,14 +107,6 @@ function PianoApp() {
 
   const isEditing = state.inputMode === 'step-input';
   const isPracticing = state.activeMode === 'practice' || state.activeMode === 'free-practice';
-
-  const handleZoomIn = useCallback(() => {
-    dispatch({ type: 'SET_ZOOM', level: Math.round((state.zoomLevel + 0.1) * 10) / 10 });
-  }, [state.zoomLevel, dispatch]);
-
-  const handleZoomOut = useCallback(() => {
-    dispatch({ type: 'SET_ZOOM', level: Math.round((state.zoomLevel - 0.1) * 10) / 10 });
-  }, [state.zoomLevel, dispatch]);
 
   const handleMeasureClick = useCallback((measureIndex: number, shiftKey: boolean) => {
     if (isEditing) return;
@@ -131,11 +154,15 @@ function PianoApp() {
     return undefined;
   }, [state.viewingRunIndex, state.practiceSession, isPracticing, state.practiceResultsByNoteId]);
 
-  const handleImport = useCallback((score: import('./types').PianoScore, sections?: import('./utils/parseMusicXml').ParsedSections[]) => {
+  const handleImport = useCallback((score: import('./types').PianoScore, sections?: import('./utils/parseMusicXml').ParsedSections[], mediaFile?: { name: string; url: string; type: 'audio' | 'video' } | null) => {
     loadScore(score);
     if (sections && sections.length > 0) {
       dispatch({ type: 'SET_SECTIONS', sections: sections.map(s => ({ name: s.name, startMeasure: s.startMeasure, endMeasure: s.endMeasure })) });
     }
+    if (mediaFile) {
+      dispatch({ type: 'SET_MEDIA_FILE', file: mediaFile });
+    }
+    saveScoreToLibrary(score, 'import');
     setDropFile(null);
   }, [loadScore, dispatch]);
 
@@ -145,7 +172,8 @@ function PianoApp() {
         <div className="drop-overlay">
           <div className="drop-overlay-content">
             <span className="material-symbols-outlined">upload_file</span>
-            <p>Drop music file to import</p>
+            <p>Drop to import</p>
+            <span className="drop-overlay-hint">Music files (MusicXML, MIDI, MuseScore) or audio/video (MP3, MP4, WAV)</span>
           </div>
         </div>
       )}
@@ -153,40 +181,25 @@ function PianoApp() {
         open={showImportModal}
         onClose={() => { setShowImportModal(false); setDropFile(null); }}
         onImport={handleImport}
+        onMediaFile={(mf) => dispatch({ type: 'SET_MEDIA_FILE', file: mf })}
         initialFile={dropFile}
+      />
+      <ExercisePicker
+        open={showExercisePicker}
+        onClose={() => setShowExercisePicker(false)}
+        onImportClick={() => { setShowExercisePicker(false); setShowImportModal(true); }}
       />
       <header className="piano-header">
         <h1>Piano Practice</h1>
         <div className="header-spacer" />
-        <div className="header-midi">
-          <span className={`midi-dot ${state.midiConnected ? 'connected' : ''}`} />
-          <span className="midi-label">
-            {state.midiConnected ? 'MIDI Connected' : 'No MIDI controller'}
-          </span>
-          <div className="midi-active-notes">
-            {Array.from(state.activeMidiNotes).map(n => (
-              <span key={n} className="midi-note-badge">{midiToNoteName(n)}</span>
-            ))}
-          </div>
-        </div>
+        <InputSources />
       </header>
       <div className="piano-layout">
         <div className="main-content">
-          <div style={{ display: isEditing ? 'none' : undefined }}>
-            <PresetLibrary />
-          </div>
+          <CurrentlyPracticing onSwitchExercise={() => setShowExercisePicker(true)} />
           <NoteInput onImportClick={() => setShowImportModal(true)} />
 
           <div className="score-container">
-            <div className="zoom-controls">
-              <button className="zoom-btn" onClick={handleZoomOut} title="Zoom out" disabled={state.zoomLevel <= 0.4}>
-                <span className="material-symbols-outlined">remove</span>
-              </button>
-              <span className="zoom-level">{Math.round(state.zoomLevel * 100)}%</span>
-              <button className="zoom-btn" onClick={handleZoomIn} title="Zoom in" disabled={state.zoomLevel >= 2.0}>
-                <span className="material-symbols-outlined">add</span>
-              </button>
-            </div>
             {state.score ? (
               <ScoreDisplay
                 score={state.score}
@@ -201,11 +214,16 @@ function PianoApp() {
                 selectedMeasureRange={state.selectedMeasureRange}
                 onMeasureClick={handleMeasureClick}
                 showVocalPart={state.showVocalPart}
+                showChords={state.showChords}
               />
             ) : (
               <div className="empty-score">
                 <span className="material-symbols-outlined" style={{ fontSize: 48, opacity: 0.3 }}>music_note</span>
                 <p>Select an exercise or edit notes to begin</p>
+                <button className="np-switch-btn" onClick={() => setShowExercisePicker(true)} style={{ marginTop: 12 }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 16 }}>library_music</span>
+                  Choose Exercise
+                </button>
               </div>
             )}
           </div>
@@ -218,9 +236,30 @@ function PianoApp() {
 
         <aside className="sidebar">
           <PlaybackControls />
+          <VideoPlayer />
           <PracticeDashboard />
+          <button className="analytics-sidebar-link" onClick={() => setShowAnalytics(true)}>
+            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>insights</span>
+            Practice Analytics
+          </button>
         </aside>
       </div>
+      {showAnalytics && (
+        <div className="analytics-modal-overlay" onClick={() => setShowAnalytics(false)}>
+          <div className="analytics-modal" onClick={e => e.stopPropagation()}>
+            <div className="analytics-modal-header">
+              <h2>Practice Analytics</h2>
+              <button className="analytics-modal-close" onClick={() => setShowAnalytics(false)} title="Close">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <div className="analytics-modal-body">
+              <Analytics />
+            </div>
+          </div>
+        </div>
+      )}
+      {debugMode && <DebugPanel />}
     </div>
   );
 }

@@ -7,20 +7,49 @@ import type { ParsedSections } from '../utils/parseMusicXml';
 interface ImportModalProps {
   open: boolean;
   onClose: () => void;
-  onImport: (score: PianoScore, sections?: ParsedSections[]) => void;
+  onImport: (score: PianoScore, sections?: ParsedSections[], mediaFile?: { name: string; url: string; type: 'audio' | 'video' } | null) => void;
+  onMediaFile?: (file: { name: string; url: string; type: 'audio' | 'video' }) => void;
   initialFile?: File | null;
 }
 
-const ACCEPTED_EXTENSIONS = '.musicxml,.xml,.mxl,.mid,.midi,.mscz,.mscx';
+const ACCEPTED_EXTENSIONS = '.musicxml,.xml,.mxl,.mid,.midi,.mscz,.mscx,.mp3,.mp4,.wav,.ogg,.webm,.m4a,.aac,.flac,.aiff';
+const MUSIC_EXTS = ['.musicxml', '.xml', '.mxl', '.mid', '.midi', '.mscz', '.mscx'];
+const MEDIA_EXTS = ['.mp3', '.mp4', '.wav', '.ogg', '.webm', '.m4a', '.aac', '.flac', '.aiff'];
 
-export default function ImportModal({ open, onClose, onImport, initialFile }: ImportModalProps) {
+function getFileExt(name: string): string {
+  return name.toLowerCase().replace(/^.*(\.[^.]+)$/, '$1');
+}
+
+function isMediaFile(file: File): boolean {
+  if (file.type.startsWith('audio/') || file.type.startsWith('video/')) return true;
+  return MEDIA_EXTS.includes(getFileExt(file.name));
+}
+
+function isMusicFile(file: File): boolean {
+  return MUSIC_EXTS.includes(getFileExt(file.name));
+}
+
+export default function ImportModal({ open, onClose, onImport, onMediaFile, initialFile }: ImportModalProps) {
   const [dragOver, setDragOver] = useState(false);
   const [progress, setProgress] = useState<ImportProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<ImportResult | null>(null);
+  const [mediaFile, setMediaFile] = useState<{ name: string; url: string; type: 'audio' | 'video' } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const mediaInputRef = useRef<HTMLInputElement>(null);
 
   const processFile = useCallback(async (file: File) => {
+    if (isMediaFile(file) && !isMusicFile(file)) {
+      const url = URL.createObjectURL(file);
+      const isVideo = file.type.startsWith('video/') || ['.mp4', '.webm'].includes(getFileExt(file.name));
+      if (preview) {
+        setMediaFile({ name: file.name, url, type: isVideo ? 'video' : 'audio' });
+      } else if (onMediaFile) {
+        onMediaFile({ name: file.name, url, type: isVideo ? 'video' : 'audio' });
+        onClose();
+      }
+      return;
+    }
     setError(null);
     setPreview(null);
     try {
@@ -30,7 +59,7 @@ export default function ImportModal({ open, onClose, onImport, initialFile }: Im
       setError(err instanceof Error ? err.message : String(err));
       setProgress(null);
     }
-  }, []);
+  }, [preview, onMediaFile, onClose]);
 
   React.useEffect(() => {
     if (open && initialFile) {
@@ -50,14 +79,23 @@ export default function ImportModal({ open, onClose, onImport, initialFile }: Im
     if (file) processFile(file);
   }, [processFile]);
 
+  const handleMediaSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    const isVideo = file.type.startsWith('video/');
+    setMediaFile({ name: file.name, url, type: isVideo ? 'video' : 'audio' });
+  }, []);
+
   const handleConfirm = useCallback(() => {
     if (preview) {
-      onImport(preview.score, preview.sections);
+      onImport(preview.score, preview.sections, mediaFile);
       onClose();
       setPreview(null);
       setProgress(null);
+      setMediaFile(null);
     }
-  }, [preview, onImport, onClose]);
+  }, [preview, onImport, onClose, mediaFile]);
 
   const handleClose = useCallback(() => {
     onClose();
@@ -65,7 +103,9 @@ export default function ImportModal({ open, onClose, onImport, initialFile }: Im
     setProgress(null);
     setError(null);
     setDragOver(false);
-  }, [onClose]);
+    if (mediaFile) URL.revokeObjectURL(mediaFile.url);
+    setMediaFile(null);
+  }, [onClose, mediaFile]);
 
   if (!open) return null;
 
@@ -79,7 +119,7 @@ export default function ImportModal({ open, onClose, onImport, initialFile }: Im
     <div className="import-modal-overlay" onClick={handleClose}>
       <div className="import-modal" onClick={e => e.stopPropagation()}>
         <div className="import-modal-header">
-          <h2>Import Music File</h2>
+          <h2>Import File</h2>
           <button className="import-modal-close" onClick={handleClose} title="Close">
             <span className="material-symbols-outlined">close</span>
           </button>
@@ -96,10 +136,13 @@ export default function ImportModal({ open, onClose, onImport, initialFile }: Im
             >
               <span className="material-symbols-outlined import-drop-icon">upload_file</span>
               <p className="import-drop-text">
-                Drag & drop a music file here, or click to browse
+                Drag & drop a file here, or click to browse
               </p>
               <p className="import-drop-formats">
-                MusicXML, MIDI, MuseScore (.musicxml, .xml, .mxl, .mid, .midi, .mscz)
+                Sheet music: MusicXML, MIDI, MuseScore (.musicxml, .xml, .mxl, .mid, .midi, .mscz)
+              </p>
+              <p className="import-drop-formats" style={{ marginTop: 4 }}>
+                Audio/Video: MP3, MP4, WAV, OGG, FLAC, AAC — syncs with playback
               </p>
               <input
                 ref={fileInputRef}
@@ -152,6 +195,27 @@ export default function ImportModal({ open, onClose, onImport, initialFile }: Im
                   <span className="import-detail-label">Parts</span>
                   <span className="import-detail-value">{partCount}</span>
                 </div>
+              </div>
+
+              <div className="import-media-section">
+                <p className="import-media-label">
+                  <span className="material-symbols-outlined" style={{ fontSize: 16, verticalAlign: 'middle' }}>videocam</span>
+                  {' '}Optionally attach audio/video to sync with playback
+                </p>
+                {mediaFile ? (
+                  <div className="import-media-info">
+                    <span>{mediaFile.name}</span>
+                    <button className="import-media-remove" onClick={() => { URL.revokeObjectURL(mediaFile.url); setMediaFile(null); }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: 14 }}>close</span>
+                    </button>
+                  </div>
+                ) : (
+                  <button className="import-media-btn" onClick={() => mediaInputRef.current?.click()}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 16 }}>upload</span>
+                    Add Audio/Video
+                  </button>
+                )}
+                <input ref={mediaInputRef} type="file" accept="audio/*,video/*" onChange={handleMediaSelect} style={{ display: 'none' }} />
               </div>
             </div>
           )}

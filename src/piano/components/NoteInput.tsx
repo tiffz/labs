@@ -58,8 +58,18 @@ const NoteInput: React.FC<NoteInputProps> = ({ onImportClick }) => {
     };
   }, []);
 
-  const toggleEdit = () => {
-    dispatch({ type: 'SET_INPUT_MODE', mode: isEditing ? 'select' : 'step-input' });
+  const hasChanges = isEditing && state.editSnapshot && state.score &&
+    JSON.stringify(state.score) !== JSON.stringify(state.editSnapshot);
+
+  const handleEdit = () => {
+    dispatch({ type: 'SET_INPUT_MODE', mode: 'step-input' });
+  };
+  const handleSave = () => {
+    dispatch({ type: 'SET_INPUT_MODE', mode: 'select' });
+  };
+  const handleCancel = () => {
+    if (hasChanges && !window.confirm('Discard unsaved changes?')) return;
+    dispatch({ type: 'CANCEL_EDIT' });
   };
 
   const handleUndo = useCallback(() => dispatch({ type: 'UNDO' }), [dispatch]);
@@ -84,14 +94,27 @@ const NoteInput: React.FC<NoteInputProps> = ({ onImportClick }) => {
   return (
     <div className="note-input">
       <div className="input-toolbar">
-        <button
-          className={`btn btn-small ${isEditing ? 'active' : ''}`}
-          onClick={toggleEdit}
-          title={isEditing ? 'Exit edit mode' : 'Edit notes'}
-        >
-          <span className="material-symbols-outlined" style={{ fontSize: 18 }}>edit</span>
-          {isEditing ? 'Done' : 'Edit'}
-        </button>
+        {!isEditing ? (
+          <button
+            className="btn btn-small"
+            onClick={handleEdit}
+            title="Edit notes"
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>edit</span>
+            Edit
+          </button>
+        ) : (
+          <>
+            <button className="btn btn-small btn-primary" onClick={handleSave} title="Save changes">
+              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>check</span>
+              Save
+            </button>
+            <button className="btn btn-small" onClick={handleCancel} title="Discard changes">
+              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>close</span>
+              Cancel
+            </button>
+          </>
+        )}
 
         {onImportClick && (
           <button
@@ -104,14 +127,24 @@ const NoteInput: React.FC<NoteInputProps> = ({ onImportClick }) => {
           </button>
         )}
 
-        {state.selectedMeasureRange && (
-          <span className="selection-info">
-            Measures {state.selectedMeasureRange.start + 1}–{state.selectedMeasureRange.end + 1} selected
-            <button className="clear-selection-btn" onClick={() => dispatch({ type: 'CLEAR_MEASURE_SELECTION' })} title="Clear selection">
-              <span className="material-symbols-outlined">close</span>
-            </button>
-          </span>
-        )}
+        <div className="toolbar-spacer" />
+
+        <div className="zoom-controls">
+          <button className="zoom-btn" onClick={() => dispatch({ type: 'SET_ZOOM', level: Math.round((state.zoomLevel - 0.1) * 10) / 10 })} title="Zoom out" disabled={state.zoomLevel <= 0.4}>
+            <span className="material-symbols-outlined">remove</span>
+          </button>
+          <button
+            className="zoom-level-btn"
+            onClick={() => dispatch({ type: 'SET_ZOOM', level: 1.0 })}
+            title="Reset to 100%"
+            disabled={state.zoomLevel === 1.0}
+          >
+            {Math.round(state.zoomLevel * 100)}%
+          </button>
+          <button className="zoom-btn" onClick={() => dispatch({ type: 'SET_ZOOM', level: Math.round((state.zoomLevel + 0.1) * 10) / 10 })} title="Zoom in" disabled={state.zoomLevel >= 2.0}>
+            <span className="material-symbols-outlined">add</span>
+          </button>
+        </div>
 
         {isEditing && (
           <button

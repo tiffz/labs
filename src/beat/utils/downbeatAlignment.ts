@@ -55,7 +55,7 @@ function detectOnsetsWithEnergy(audioBuffer: MinimalAudioBuffer): OnsetWithEnerg
   }
   
   const maxEnergy = Math.max(...energies);
-  if (maxEnergy === 0) return [];
+  if (maxEnergy < 0.01) return [];
   
   // Normalize energies
   const normalized = energies.map(e => e / maxEnergy);

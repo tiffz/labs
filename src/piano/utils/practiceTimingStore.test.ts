@@ -4,7 +4,9 @@ import {
   recordMidiNoteOff,
   getMidiNoteOnTime,
   getAllMidiNoteOnTimes,
+  isNoteHeld,
   refreshHeldNotes,
+  getRecentMidiPresses,
   recordNoteExpectedTime,
   getNoteExpectedTime,
   clearExpectedTimes,
@@ -17,7 +19,7 @@ describe('practiceTimingStore', () => {
   });
 
   describe('MIDI note on/off', () => {
-    it('records note-on time and clears it on note-off', () => {
+    it('records note-on time and retains it after note-off', () => {
       recordMidiNoteOn(60, 1000);
       expect(getMidiNoteOnTime(60)).toBe(1000);
 
@@ -25,7 +27,17 @@ describe('practiceTimingStore', () => {
       expect(getMidiNoteOnTime(60)).toBe(2000);
 
       recordMidiNoteOff(60);
-      expect(getMidiNoteOnTime(60)).toBeUndefined();
+      expect(getMidiNoteOnTime(60)).toBe(2000);
+      expect(isNoteHeld(60)).toBe(false);
+    });
+
+    it('tracks held state separately from timing', () => {
+      recordMidiNoteOn(60, 100);
+      expect(isNoteHeld(60)).toBe(true);
+
+      recordMidiNoteOff(60);
+      expect(isNoteHeld(60)).toBe(false);
+      expect(getMidiNoteOnTime(60)).toBe(100);
     });
 
     it('returns undefined for notes that were never recorded', () => {
@@ -34,10 +46,11 @@ describe('practiceTimingStore', () => {
   });
 
   describe('getAllMidiNoteOnTimes', () => {
-    it('returns all held note entries', () => {
+    it('returns all note entries including released', () => {
       recordMidiNoteOn(60, 10);
       recordMidiNoteOn(64, 20);
       recordMidiNoteOn(67, 30);
+      recordMidiNoteOff(64);
 
       const all = getAllMidiNoteOnTimes();
       expect(all.size).toBe(3);
@@ -47,14 +60,29 @@ describe('practiceTimingStore', () => {
     });
   });
 
+  describe('getRecentMidiPresses', () => {
+    it('returns only notes within the time window', () => {
+      const now = performance.now();
+      recordMidiNoteOn(60, now - 100);
+      recordMidiNoteOn(64, now - 500);
+      recordMidiNoteOn(67, now - 2000);
+
+      const recent = getRecentMidiPresses(600);
+      expect(recent).toContain(60);
+      expect(recent).toContain(64);
+      expect(recent).not.toContain(67);
+    });
+  });
+
   describe('refreshHeldNotes', () => {
-    it('updates every held key to the given timestamp', () => {
+    it('updates only currently-held keys to the given timestamp', () => {
       recordMidiNoteOn(60, 100);
       recordMidiNoteOn(64, 200);
+      recordMidiNoteOff(64);
       refreshHeldNotes(999);
 
       expect(getMidiNoteOnTime(60)).toBe(999);
-      expect(getMidiNoteOnTime(64)).toBe(999);
+      expect(getMidiNoteOnTime(64)).toBe(200);
     });
   });
 

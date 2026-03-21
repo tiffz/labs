@@ -31,6 +31,103 @@ type PositionCallback = (
   isPlaying: boolean,
 ) => void;
 
+/**
+ * Resolve the actual playback order of measures, handling repeats,
+ * voltas, and D.S. al Coda navigation.  Used by both the playback
+ * engine and the video-to-score correlation.
+ */
+export function resolvePlaybackOrder(score: PianoScore): number[] {
+  const nav = score.navigation;
+  const measureCount = Math.max(...score.parts.map(p => p.measures.length), 0);
+  if (measureCount === 0) return [];
+
+  const repeats = nav?.repeats ?? [];
+  const voltas = nav?.voltas ?? [];
+
+  const forwardMap = new Map<number, true>();
+  const backwardMap = new Map<number, number>();
+  for (const r of repeats) {
+    if (r.direction === 'forward') forwardMap.set(r.measureIndex, true);
+    if (r.direction === 'backward') backwardMap.set(r.measureIndex, r.times ?? 2);
+  }
+
+  const voltasByMeasure = new Map<number, number>();
+  for (const v of voltas) {
+    for (let m = v.startMeasure; m <= v.endMeasure; m++) {
+      voltasByMeasure.set(m, v.endingNumber);
+    }
+  }
+
+  const hasSimpleRepeats = repeats.length > 0;
+  const hasDSAlCoda = nav?.dalsegnoMeasure !== undefined;
+
+  if (!nav || (!hasSimpleRepeats && !hasDSAlCoda)) {
+    const order: number[] = [];
+    for (let i = 0; i < measureCount; i++) order.push(i);
+    return order;
+  }
+
+  // Phase 1: Handle simple repeats and voltas
+  const expandedOrder: number[] = [];
+  let i = 0;
+  let repeatStart = 0;
+  const repeatCountUsed = new Map<number, number>();
+
+  while (i < measureCount) {
+    if (forwardMap.has(i)) repeatStart = i;
+
+    const voltaNum = voltasByMeasure.get(i);
+    const timesUsed = repeatCountUsed.get(repeatStart) ?? 0;
+    const pass = timesUsed + 1;
+
+    if (voltaNum !== undefined && voltaNum !== pass) {
+      i++;
+      continue;
+    }
+
+    expandedOrder.push(i);
+
+    if (backwardMap.has(i)) {
+      const totalTimes = backwardMap.get(i)!;
+      const used = (repeatCountUsed.get(repeatStart) ?? 0) + 1;
+      if (used < totalTimes) {
+        repeatCountUsed.set(repeatStart, used);
+        i = repeatStart;
+        continue;
+      } else {
+        repeatCountUsed.set(repeatStart, used);
+      }
+    }
+
+    i++;
+  }
+
+  // Phase 2: Handle D.S. al Coda on the expanded order
+  if (!hasDSAlCoda) return expandedOrder;
+
+  const segno = nav!.segnoMeasure ?? 0;
+  const tocoda = nav!.tocodaMeasure ?? nav!.dalsegnoMeasure!;
+  const coda = nav!.codaMeasure ?? measureCount;
+  const ds = nav!.dalsegnoMeasure!;
+
+  const order: number[] = [];
+
+  for (const m of expandedOrder) {
+    order.push(m);
+    if (m === ds) break;
+  }
+
+  for (let m = segno; m <= tocoda && m < measureCount; m++) {
+    order.push(m);
+  }
+
+  for (let m = coda; m < measureCount; m++) {
+    order.push(m);
+  }
+
+  return order;
+}
+
 export class ScorePlaybackEngine {
   private audioContext: AudioContext | null = null;
   private instrument: Instrument | null = null;
@@ -57,6 +154,9 @@ export class ScorePlaybackEngine {
   private generation = 0;
   private masterVolume = 1;
   private metronomeVolume = 0.7;
+  private drumBuffers = new Map<string, AudioBuffer>();
+  private drumCallback: ((scheduledUpTo: number, scheduleEnd: number, startTime: number, tempo: number, audioCtx: AudioContext) => void) | null = null;
+  private drumScheduledUpTo = -1;
 
   private getAudioContext(): AudioContext {
     if (!this.audioContext) {
@@ -153,99 +253,7 @@ export class ScorePlaybackEngine {
   }
 
   private resolvePlaybackOrder(score: PianoScore): number[] {
-    const nav = score.navigation;
-    const measureCount = Math.max(...score.parts.map(p => p.measures.length), 0);
-    if (measureCount === 0) return [];
-
-    const repeats = nav?.repeats ?? [];
-    const voltas = nav?.voltas ?? [];
-
-    // Build a map of forward/backward repeat barlines
-    const forwardMap = new Map<number, true>();
-    const backwardMap = new Map<number, number>();
-    for (const r of repeats) {
-      if (r.direction === 'forward') forwardMap.set(r.measureIndex, true);
-      if (r.direction === 'backward') backwardMap.set(r.measureIndex, r.times ?? 2);
-    }
-
-    const voltasByMeasure = new Map<number, number>();
-    for (const v of voltas) {
-      for (let m = v.startMeasure; m <= v.endMeasure; m++) {
-        voltasByMeasure.set(m, v.endingNumber);
-      }
-    }
-
-    const hasSimpleRepeats = repeats.length > 0;
-    const hasDSAlCoda = nav?.dalsegnoMeasure !== undefined;
-
-    if (!nav || (!hasSimpleRepeats && !hasDSAlCoda)) {
-      const order: number[] = [];
-      for (let i = 0; i < measureCount; i++) order.push(i);
-      return order;
-    }
-
-    // Phase 1: Handle simple repeats and voltas
-    const expandedOrder: number[] = [];
-    let i = 0;
-    let repeatStart = 0;
-    const repeatCountUsed = new Map<number, number>();
-
-    while (i < measureCount) {
-      if (forwardMap.has(i)) repeatStart = i;
-
-      const voltaNum = voltasByMeasure.get(i);
-      const timesUsed = repeatCountUsed.get(repeatStart) ?? 0;
-      const pass = timesUsed + 1;
-
-      if (voltaNum !== undefined && voltaNum !== pass) {
-        i++;
-        continue;
-      }
-
-      expandedOrder.push(i);
-
-      if (backwardMap.has(i)) {
-        const totalTimes = backwardMap.get(i)!;
-        const used = (repeatCountUsed.get(repeatStart) ?? 0) + 1;
-        if (used < totalTimes) {
-          repeatCountUsed.set(repeatStart, used);
-          i = repeatStart;
-          continue;
-        } else {
-          repeatCountUsed.set(repeatStart, used);
-        }
-      }
-
-      i++;
-    }
-
-    // Phase 2: Handle D.S. al Coda on the expanded order
-    if (!hasDSAlCoda) return expandedOrder;
-
-    const segno = nav!.segnoMeasure ?? 0;
-    const tocoda = nav!.tocodaMeasure ?? nav!.dalsegnoMeasure!;
-    const coda = nav!.codaMeasure ?? measureCount;
-    const ds = nav!.dalsegnoMeasure!;
-
-    const order: number[] = [];
-
-    // Play expanded order up to and including D.S. measure
-    for (const m of expandedOrder) {
-      order.push(m);
-      if (m === ds) break;
-    }
-
-    // Jump to segno, play until tocoda
-    for (let m = segno; m <= tocoda && m < measureCount; m++) {
-      order.push(m);
-    }
-
-    // Jump to coda, play until end
-    for (let m = coda; m < measureCount; m++) {
-      order.push(m);
-    }
-
-    return order;
+    return resolvePlaybackOrder(score);
   }
 
   private buildEvents(score: PianoScore): NoteEvent[] {
@@ -381,6 +389,7 @@ export class ScorePlaybackEngine {
     this.onEndCallback = onEnd || null;
     this.currentScore = score;
     this.scheduledUpTo = -1;
+    this.drumScheduledUpTo = -1;
     this.scheduledClickTimes.clear();
     this.lastClickAudioTime = -1;
     clearExpectedTimes();
@@ -417,6 +426,7 @@ export class ScorePlaybackEngine {
         const secPerBeat = 60 / this.tempo;
         this.startTime += this.totalBeats * secPerBeat;
         this.scheduledUpTo = -1;
+        this.drumScheduledUpTo = -1;
         if (this.onLoopCallback) this.onLoopCallback();
         this.animFrameId = requestAnimationFrame(this.tick);
         return;
@@ -463,6 +473,17 @@ export class ScorePlaybackEngine {
       }
     }
 
+    if (this.drumCallback && this.audioContext) {
+      this.drumCallback(
+        this.drumScheduledUpTo,
+        scheduleUpTo,
+        this.startTime,
+        this.tempo,
+        this.audioContext,
+      );
+      this.drumScheduledUpTo = scheduleUpTo;
+    }
+
     for (const event of this.events) {
       if (event.beatPosition <= this.scheduledUpTo) continue;
       if (event.beatPosition > scheduleUpTo) break;
@@ -473,7 +494,11 @@ export class ScorePlaybackEngine {
           const volume = this.trackVolume.get(event.partId) ?? 1;
           const audioTime = this.startTime + event.beatPosition * (60 / this.tempo);
           const durSec = event.duration * (60 / this.tempo);
-          const trimmedDur = event.duration > 4 ? durSec : durSec * 0.9;
+          const eventEndBeat = event.beatPosition + event.duration;
+          const isNearEnd = eventEndBeat >= this.totalBeats - 0.01;
+          const trimmedDur = isNearEnd
+            ? durSec + 1.5
+            : event.duration > 4 ? durSec : durSec * 0.9;
           for (const midi of event.pitches) {
             this.instrument.playNote({
               frequency: midiToFrequency(midi),
@@ -550,6 +575,39 @@ export class ScorePlaybackEngine {
   setTempo(tempo: number) { this.tempo = tempo; }
   setMasterVolume(volume: number) { this.masterVolume = volume; }
   setMetronomeVolume(volume: number) { this.metronomeVolume = volume; }
+
+  /**
+   * Register a drum scheduling callback. Called each tick with the look-ahead window
+   * so drums can be scheduled with precise Web Audio timing.
+   */
+  setDrumCallback(cb: typeof this.drumCallback) {
+    this.drumCallback = cb;
+    this.drumScheduledUpTo = -1;
+  }
+
+  /** Load a drum sound buffer into the engine's AudioContext for precise scheduling */
+  async loadDrumSound(name: string, url: string): Promise<void> {
+    if (this.drumBuffers.has(name)) return;
+    const ctx = this.getAudioContext();
+    const resp = await fetch(url);
+    const ab = await resp.arrayBuffer();
+    this.drumBuffers.set(name, await ctx.decodeAudioData(ab));
+  }
+
+  /** Play a drum hit at a precise Web Audio time */
+  playDrumAt(soundName: string, audioTime: number, volume: number): void {
+    if (soundName === 'rest') return;
+    const buffer = this.drumBuffers.get(soundName);
+    if (!buffer || !this.audioContext) return;
+    const source = this.audioContext.createBufferSource();
+    source.buffer = buffer;
+    const gain = this.audioContext.createGain();
+    gain.gain.setValueAtTime(Math.max(0, Math.min(1, volume)), audioTime);
+    source.connect(gain);
+    gain.connect(this.audioContext.destination);
+    source.onended = () => { source.disconnect(); gain.disconnect(); };
+    source.start(Math.max(audioTime, this.audioContext.currentTime));
+  }
 
   playNote(midi: number, duration = 0.3) {
     const ctx = this.getAudioContext();

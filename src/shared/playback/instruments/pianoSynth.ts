@@ -119,10 +119,8 @@ export class PianoSynthesizer extends BaseInstrument {
     const audioContext = this.audioContext;
     const now = audioContext.currentTime;
     
-    // Ensure start time is not in the past
     const clampedStartTime = Math.max(startTime, now + 0.005);
     
-    // Calculate ADSR timing
     const attackTime = ENVELOPE.attack;
     const decayTime = ENVELOPE.decay;
     const releaseTime = duration > 2.0 
@@ -130,30 +128,27 @@ export class PianoSynthesizer extends BaseInstrument {
       : Math.min(duration * ENVELOPE.releaseRatio, 0.3);
     const sustainTime = Math.max(0, duration - attackTime - decayTime - releaseTime);
     
-    // Create modulation for long notes
     const modulationGain = this.createModulation(audioContext, clampedStartTime, duration);
     
-    // Create oscillators for each harmonic
+    // Lower notes ring longer naturally; scale decay rate by register
+    const registerFactor = Math.max(0.6, Math.min(1.4, frequency / 440));
+    
     PIANO_HARMONICS.forEach((harmonic, index) => {
       const osc = audioContext.createOscillator();
       const noteGain = audioContext.createGain();
       
       osc.type = 'sine';
       
-      // Apply slight random detuning for natural string-like sound
       const detuneCents = this.getRandomDetune(harmonic.detuneRange);
       osc.frequency.value = frequency * harmonic.multiplier;
       osc.detune.value = detuneCents;
       
-      // Calculate gain with velocity, harmonic level, and brightness
       const brightnessFactor = this.getBrightnessFactor(velocity, index);
       const peakGain = this.baseGain * harmonic.gain * velocity * brightnessFactor;
       
-      // Per-harmonic decay time (higher harmonics decay faster)
       const harmonicDecayTime = decayTime / harmonic.decayMultiplier;
       const sustainGain = peakGain * ENVELOPE.sustainLevel;
       
-      // ADSR envelope using only linear ramps (more stable, no discontinuities)
       // Attack: 0 -> peak
       noteGain.gain.setValueAtTime(0, clampedStartTime);
       noteGain.gain.linearRampToValueAtTime(peakGain, clampedStartTime + attackTime);
@@ -164,17 +159,28 @@ export class PianoSynthesizer extends BaseInstrument {
         clampedStartTime + attackTime + harmonicDecayTime
       );
       
-      // Sustain: gradual natural decay (pianos don't hold perfectly steady)
+      // Sustain: simulate exponential decay via setTargetAtTime
+      // Real pianos decay roughly as e^(-t/tau); tau depends on register and harmonic
       const sustainEndTime = clampedStartTime + attackTime + harmonicDecayTime + sustainTime;
       if (sustainTime > 0) {
-        const endSustainGain = sustainGain * 0.75;
-        noteGain.gain.linearRampToValueAtTime(endSustainGain, sustainEndTime);
+        // tau = time constant; higher harmonics and higher registers decay faster
+        const baseTau = 2.5 / registerFactor;
+        const harmonicTau = baseTau / harmonic.decayMultiplier;
+        const tau = Math.max(0.3, Math.min(harmonicTau, sustainTime * 0.6));
+        noteGain.gain.setTargetAtTime(
+          sustainGain * 0.05,
+          clampedStartTime + attackTime + harmonicDecayTime,
+          tau
+        );
+        // Schedule the release from wherever the exponential has reached
+        const decayedGain = sustainGain * 0.05 +
+          (sustainGain - sustainGain * 0.05) * Math.exp(-sustainTime / tau);
+        noteGain.gain.setValueAtTime(decayedGain, sustainEndTime);
       }
       
       // Release: smooth fade to zero
       noteGain.gain.linearRampToValueAtTime(0, clampedStartTime + duration);
       
-      // Connect through modulation if available, otherwise direct
       osc.connect(noteGain);
       if (modulationGain) {
         noteGain.connect(modulationGain);
@@ -182,20 +188,16 @@ export class PianoSynthesizer extends BaseInstrument {
         noteGain.connect(this.output);
       }
       
-      // Schedule start and stop
       osc.start(clampedStartTime);
       osc.stop(clampedStartTime + duration + 0.02);
       
-      // Auto-cleanup
       osc.onended = () => {
         noteGain.disconnect();
       };
     });
     
-    // Connect modulation to output if used
     if (modulationGain) {
       modulationGain.connect(this.output);
-      // Note: modulationGain cleanup happens when LFO ends
     }
   }
 }

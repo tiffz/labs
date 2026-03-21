@@ -21,6 +21,7 @@ interface ScoreDisplayProps {
   selectedMeasureRange?: { start: number; end: number } | null;
   onMeasureClick?: (measureIndex: number, shiftKey: boolean) => void;
   showVocalPart?: boolean;
+  showChords?: boolean;
 }
 
 const RESULT_COLORS = {
@@ -41,7 +42,11 @@ function applyNoteStyle(
   },
 ) {
   if (opts.isGreyed) {
-    staveNote.setStyle({ fillStyle: '#cbd5e1', strokeStyle: '#cbd5e1' });
+    if (opts.isCurrent) {
+      staveNote.setStyle({ fillStyle: GREYED_CURRENT, strokeStyle: GREYED_CURRENT });
+    } else {
+      staveNote.setStyle({ fillStyle: GREYED_NOTE, strokeStyle: GREYED_NOTE });
+    }
     return;
   }
   if (opts.isCurrent) {
@@ -61,8 +66,12 @@ function applyNoteStyle(
   }
 }
 
+const GREYED_NOTE = '#94a3b8';
+const GREYED_CURRENT = '#a78bfa';
+const GREYED_STAFF = '#d4d8e0';
+
 function applyGreyToSVGElement(el: SVGElement) {
-  const GREY = '#cbd5e1';
+  const GREY = GREYED_NOTE;
   if (el instanceof SVGElement) {
     const tag = el.tagName.toLowerCase();
     const isShape = tag === 'rect' || tag === 'line' || tag === 'path'
@@ -161,8 +170,8 @@ function getBeamGroups(timeSig: { numerator: number; denominator: number }): Fra
   return [new Fraction(1, denominator)];
 }
 
-const TREBLE_8VA_THRESHOLD = 84; // C6 — ~3 ledger lines above treble staff
-const BASS_8VA_THRESHOLD = 65;   // F4 — ~3 ledger lines above bass staff
+const TREBLE_8VA_THRESHOLD = 86; // D6 — 3+ ledger lines above treble staff
+const BASS_8VA_THRESHOLD = 72;   // C5 — keeps 1-octave scales readable without 8va
 
 function renderOttavaBracket(
   svgEl: SVGElement,
@@ -183,6 +192,7 @@ function renderOttavaBracket(
     text.setAttribute('font-family', 'Roboto, sans-serif');
     text.setAttribute('font-style', 'italic');
     text.setAttribute('fill', '#94a3b8');
+    text.setAttribute('stroke', 'none');
     text.textContent = type;
     svgEl.appendChild(text);
 
@@ -226,7 +236,7 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
   score, currentMeasureIndex, currentNoteIndices, activeMidiNotes,
   practiceResultsByNoteId, greyedOutHands, hiddenHands, ghostNotes,
   zoomLevel = 1.0, selectedMeasureRange, onMeasureClick,
-  showVocalPart = false,
+  showVocalPart = false, showChords = true,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const stateKeyRef = useRef('');
@@ -278,6 +288,7 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
       zm: zoomLevel,
       sel: selectedMeasureRange ? `${selectedMeasureRange.start}-${selectedMeasureRange.end}` : '',
       sv: showVocalPart,
+      sc: showChords,
     });
     if (stateKey === stateKeyRef.current) return;
     stateKeyRef.current = stateKey;
@@ -421,7 +432,7 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
               if (keySigCount > 0) { try { vocal.addKeySignature(vexKey); } catch { /* skip */ } }
               vocal.addTimeSignature(`${score.timeSignature.numerator}/${score.timeSignature.denominator}`);
             }
-            if (voiceGreyed) vocal.setStyle({ strokeStyle: '#e2e8f0', fillStyle: '#e2e8f0' });
+            if (voiceGreyed) vocal.setStyle({ strokeStyle: GREYED_STAFF, fillStyle: GREYED_STAFF });
             vocalStaves.push(vocal);
           }
 
@@ -432,7 +443,7 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
               if (keySigCount > 0) { try { treble.addKeySignature(vexKey); } catch { /* skip */ } }
               treble.addTimeSignature(`${score.timeSignature.numerator}/${score.timeSignature.denominator}`);
             }
-            if (rhGreyed) treble.setStyle({ strokeStyle: '#e2e8f0', fillStyle: '#e2e8f0' });
+            if (rhGreyed) treble.setStyle({ strokeStyle: GREYED_STAFF, fillStyle: GREYED_STAFF });
             trebleStaves.push(treble);
           }
 
@@ -443,7 +454,7 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
               if (keySigCount > 0) { try { bass.addKeySignature(vexKey); } catch { /* skip */ } }
               bass.addTimeSignature(`${score.timeSignature.numerator}/${score.timeSignature.denominator}`);
             }
-            if (lhGreyed) bass.setStyle({ strokeStyle: '#e2e8f0', fillStyle: '#e2e8f0' });
+            if (lhGreyed) bass.setStyle({ strokeStyle: GREYED_STAFF, fillStyle: GREYED_STAFF });
             bassStaves.push(bass);
           }
 
@@ -481,6 +492,7 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
             text.setAttribute('font-size', '11');
             text.setAttribute('font-family', 'Roboto, sans-serif');
             text.setAttribute('fill', '#94a3b8');
+            text.setAttribute('stroke', 'none');
             text.textContent = String(startMeasure + 1);
             svgEl.appendChild(text);
           }
@@ -721,7 +733,7 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
           }
 
           // --- Vocal voice (optional) ---
-          interface VocalLyricInfo { noteId: string; lyric: string; }
+          interface VocalLyricInfo { noteId: string; lyric: string; isCurrent: boolean; }
           let vocalNotes: StaveNote[] | undefined;
           const vocalLyrics: VocalLyricInfo[] = [];
           if (vocalPart && vocalStave) {
@@ -747,7 +759,7 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
                   practiceResult: practiceResultsByNoteId?.get(note.id),
                 });
                 if (note.lyric && !note.rest && note.id) {
-                  vocalLyrics.push({ noteId: note.id, lyric: note.lyric });
+                  vocalLyrics.push({ noteId: note.id, lyric: note.lyric, isCurrent: isCurrentMeasure && noteIdx === voiceNoteIdx });
                 }
                 if (note.id) noteIdToStaveNote.set(note.id, staveNote);
 
@@ -872,7 +884,7 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
             } catch { /* beam generation is non-critical */ }
             trebleVoice.draw(context, trebleStave);
             if (rhGreyed) {
-              trebleBeams.forEach(b => { b.setStyle({ fillStyle: '#cbd5e1', strokeStyle: '#cbd5e1' }); });
+              trebleBeams.forEach(b => { b.setStyle({ fillStyle: GREYED_NOTE, strokeStyle: GREYED_NOTE }); });
             }
             const trebleBeamsBefore = svgElForBeams ? svgElForBeams.children.length : 0;
             trebleBeams.forEach(b => b.setContext(context).draw());
@@ -892,7 +904,7 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
             } catch { /* beam generation is non-critical */ }
             bassVoice.draw(context, bassStave);
             if (lhGreyed) {
-              bassBeams.forEach(b => { b.setStyle({ fillStyle: '#cbd5e1', strokeStyle: '#cbd5e1' }); });
+              bassBeams.forEach(b => { b.setStyle({ fillStyle: GREYED_NOTE, strokeStyle: GREYED_NOTE }); });
             }
             const bassBeamsBefore = svgElForBeams ? svgElForBeams.children.length : 0;
             bassBeams.forEach(b => b.setContext(context).draw());
@@ -915,7 +927,7 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
 
             vocalVoice.draw(context, vocalStave);
             if (voiceGreyed) {
-              vocalBeams.forEach(b => { b.setStyle({ fillStyle: '#cbd5e1', strokeStyle: '#cbd5e1' }); });
+              vocalBeams.forEach(b => { b.setStyle({ fillStyle: GREYED_NOTE, strokeStyle: GREYED_NOTE }); });
             }
             vocalBeams.forEach(b => b.setContext(context).draw());
 
@@ -940,7 +952,9 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
                   text.setAttribute('y', String(lyricBaseY));
                   text.setAttribute('font-size', '11');
                   text.setAttribute('font-family', 'Roboto, sans-serif');
-                  text.setAttribute('fill', voiceGreyed ? '#cbd5e1' : '#475569');
+                  text.setAttribute('fill', voiceGreyed ? (lyr.isCurrent ? GREYED_CURRENT : GREYED_NOTE) : lyr.isCurrent ? '#7c3aed' : '#1e293b');
+                  text.setAttribute('stroke', 'none');
+                  if (lyr.isCurrent) text.setAttribute('font-weight', 'bold');
                   text.setAttribute('text-anchor', 'middle');
                   text.textContent = lyr.lyric;
                   svgElForBeams.appendChild(text);
@@ -956,7 +970,7 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
           lineBass8vaFlags.push(...bass8vaFlags);
 
           // Render chord symbols as SVG text above the topmost visible stave
-          {
+          if (showChords) {
             interface ChordInfo { symbol: string; beatPos: number }
             const measureChords: ChordInfo[] = [];
             for (const part of score.parts) {
@@ -972,6 +986,27 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
             }
 
             if (measureChords.length > 0) {
+              // Determine the current beat position in this measure for highlighting
+              let currentBeatInMeasure = -1;
+              if (isCurrentMeasure) {
+                const lhMeasure = showBass ? lhPart?.measures[mi] : undefined;
+                const candidates: [typeof rhMeasure, number][] = [
+                  [rhMeasure, rhNoteIdx],
+                  [lhMeasure, lhNoteIdx],
+                  [vocalPart?.measures[mi], voiceNoteIdx],
+                ];
+                for (const [part, idx] of candidates) {
+                  if (part && idx >= 0) {
+                    let b = 0;
+                    for (let i = 0; i < idx && i < part.notes.length; i++) {
+                      b += durationToBeats(part.notes[i].duration, part.notes[i].dotted);
+                    }
+                    currentBeatInMeasure = b;
+                    break;
+                  }
+                }
+              }
+
               const beatToSN: { beat: number; sn: StaveNote }[] = [];
               const addBeats = (scoreNotes: ScoreNote[], staveNotes: StaveNote[]) => {
                 let beat = 0;
@@ -995,13 +1030,18 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
                 const svgElChords = containerRef.current!.querySelector('svg');
                 if (svgElChords) {
                   const chordY = topStaveY - 8;
-                  for (const chord of measureChords) {
+                  for (let ci = 0; ci < measureChords.length; ci++) {
+                    const chord = measureChords[ci];
                     let closest = beatToSN[0];
                     let minDiff = Math.abs(chord.beatPos - closest.beat);
                     for (const bn of beatToSN) {
                       const diff = Math.abs(chord.beatPos - bn.beat);
                       if (diff < minDiff) { minDiff = diff; closest = bn; }
                     }
+
+                    const nextChordBeat = ci + 1 < measureChords.length ? measureChords[ci + 1].beatPos : Infinity;
+                    const isChordCurrent = currentBeatInMeasure >= chord.beatPos && currentBeatInMeasure < nextChordBeat;
+
                     try {
                       const x = closest.sn.getAbsoluteX();
                       const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -1009,8 +1049,9 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
                       text.setAttribute('y', String(chordY));
                       text.setAttribute('font-size', '12');
                       text.setAttribute('font-family', 'Roboto, sans-serif');
-                      text.setAttribute('font-weight', 'bold');
-                      text.setAttribute('fill', '#1e293b');
+                      text.setAttribute('font-weight', isChordCurrent ? '700' : '600');
+                      text.setAttribute('fill', isChordCurrent ? '#7c3aed' : '#1e293b');
+                      text.setAttribute('stroke', 'none');
                       text.setAttribute('text-anchor', 'middle');
                       text.textContent = chord.symbol;
                       svgElChords.appendChild(text);
@@ -1169,7 +1210,7 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
       }
       if (mainContent) { mainContent.style.overflowY = ''; mainContent.scrollTop = savedScrollTop; }
     }
-  }, [score, currentMeasureIndex, currentNoteIndices, activeMidiNotes, practiceResultsByNoteId, greyedOutHands, hiddenHands, ghostNotes, zoomLevel, selectedMeasureRange, showVocalPart]);
+  }, [score, currentMeasureIndex, currentNoteIndices, activeMidiNotes, practiceResultsByNoteId, greyedOutHands, hiddenHands, ghostNotes, zoomLevel, selectedMeasureRange, showVocalPart, showChords]);
 
   // Auto-scroll during playback to keep current measure visible
   useEffect(() => {

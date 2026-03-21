@@ -2,8 +2,9 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom';
 import { usePiano, type ActiveMode } from '../store';
 import { SOUND_OPTIONS, type SoundType } from '../../chords/types/soundOptions';
-import DrumAccompaniment from '../../beat/components/DrumAccompaniment';
+import DrumAccompaniment, { type DrumScheduler } from '../../beat/components/DrumAccompaniment';
 import type { NotationStyle } from '../../shared/notation/DrumNotationMini';
+import { getScorePlaybackEngine } from '../utils/scorePlayback';
 
 const PIANO_DRUM_STYLE: NotationStyle = {
   staffColor: '#94a3b8',
@@ -16,7 +17,7 @@ const PART_LABELS: Record<string, string> = { rh: 'Treble', lh: 'Bass' };
 
 interface SettingsDropdownProps {
   anchorRef: React.RefObject<HTMLButtonElement | null>;
-  state: { masterVolume: number; masterMuted: boolean; metronomeVolume: number; metronomeEnabled: boolean; score: { parts: { id: string; name: string }[] } | null; trackMuted: Map<string, boolean>; trackVolume: Map<string, number>; soundType: string; activeMode: string };
+  state: { masterVolume: number; masterMuted: boolean; metronomeVolume: number; metronomeEnabled: boolean; score: { parts: { id: string; name: string }[] } | null; trackMuted: Map<string, boolean>; trackVolume: Map<string, number>; soundType: string; activeMode: string; drumEnabled: boolean; drumVolume: number; countInEveryLoop: boolean };
   isActive: boolean;
   onMasterVolume: (v: number) => void;
   onMasterMute: () => void;
@@ -25,10 +26,12 @@ interface SettingsDropdownProps {
   onTrackMute: (id: string) => void;
   onTrackVolume: (id: string, v: number) => void;
   onSoundChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  onDrumVolume: (v: number) => void;
+  onCountInEveryLoop: (enabled: boolean) => void;
 }
 
 const SettingsDropdown = React.forwardRef<HTMLDivElement, SettingsDropdownProps>(
-  ({ anchorRef, state, isActive, onMasterVolume, onMasterMute, onMetronomeVolume, onMetronomeToggle, onTrackMute, onTrackVolume, onSoundChange }, ref) => {
+  ({ anchorRef, state, isActive, onMasterVolume, onMasterMute, onMetronomeVolume, onMetronomeToggle, onTrackMute, onTrackVolume, onSoundChange, onDrumVolume, onCountInEveryLoop }, ref) => {
     const [pos, setPos] = useState({ top: 0, right: 0 });
 
     useEffect(() => {
@@ -77,6 +80,30 @@ const SettingsDropdown = React.forwardRef<HTMLDivElement, SettingsDropdownProps>
               className={`volume-slider ${!state.metronomeEnabled ? 'disabled-slider' : ''}`}
               disabled={!state.metronomeEnabled} />
           </div>
+          {state.drumEnabled && (
+            <div className="sb-settings-row">
+              <button className="btn btn-small"
+                onClick={() => onDrumVolume(state.drumVolume > 0 ? 0 : 0.7)}
+                title={state.drumVolume === 0 ? 'Unmute drums' : 'Mute drums'}>
+                <span className="material-symbols-outlined" style={{ fontSize: 16 }}>
+                  {state.drumVolume === 0 ? 'volume_off' : 'volume_up'}
+                </span>
+              </button>
+              <span className="sb-settings-label">Drums</span>
+              <input type="range" min={0} max={1} step={0.01} value={state.drumVolume}
+                onChange={e => onDrumVolume(parseFloat(e.target.value))}
+                className={`volume-slider ${state.drumVolume === 0 ? 'disabled-slider' : ''}`}
+                disabled={state.drumVolume === 0} />
+            </div>
+          )}
+          <div className="sb-settings-row" style={{ marginTop: 4 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--piano-text-secondary)', cursor: 'pointer', userSelect: 'none' }}>
+              <input type="checkbox" checked={state.countInEveryLoop}
+                onChange={e => onCountInEveryLoop(e.target.checked)}
+                style={{ margin: 0 }} />
+              Count-in on every loop
+            </label>
+          </div>
         </div>
         <div className="sb-settings-divider" />
         <div className="sb-settings-section">
@@ -118,6 +145,10 @@ SettingsDropdown.displayName = 'SettingsDropdown';
 const PlaybackControls: React.FC = () => {
   const { state, dispatch, engine, startMode, stopMode } = usePiano();
   const hasVocalPart = useMemo(() => state.score?.parts.some(p => p.hand === 'voice') ?? false, [state.score]);
+  const hasChordSymbols = useMemo(() => {
+    if (!state.score) return false;
+    return state.score.parts.some(p => p.measures.some(m => m.notes.some(n => !!n.chordSymbol)));
+  }, [state.score]);
   const [tempoInput, setTempoInput] = useState(String(state.tempo));
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsBtnRef = useRef<HTMLButtonElement>(null);
@@ -215,6 +246,10 @@ const PlaybackControls: React.FC = () => {
     engine.setMetronomeVolume(value);
   };
 
+  const handleDrumVolume = (value: number) => {
+    dispatch({ type: 'SET_DRUM_VOLUME', volume: value });
+  };
+
   const handleModeToggle = (mode: ActiveMode) => {
     if (state.activeMode === mode) {
       stopMode();
@@ -224,11 +259,23 @@ const PlaybackControls: React.FC = () => {
   };
 
   const [tip, setTip] = useState<{ text: string; x: number; y: number } | null>(null);
+  const [systemsExpanded, setSystemsExpanded] = useState(true);
   const showTip = useCallback((e: React.MouseEvent, text: string) => {
     const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    setTip({ text, x: r.left + r.width / 2, y: r.top });
+    const cx = r.left + r.width / 2;
+    const clamped = Math.max(120, Math.min(cx, window.innerWidth - 120));
+    setTip({ text, x: clamped, y: r.top });
   }, []);
   const hideTip = useCallback(() => setTip(null), []);
+
+  const drumScheduler = useMemo<DrumScheduler>(() => {
+    const eng = getScorePlaybackEngine();
+    return {
+      loadSound: (name, url) => eng.loadDrumSound(name, url),
+      playAt: (name, time, vol) => eng.playDrumAt(name, time, vol),
+      setCallback: (cb) => eng.setDrumCallback(cb),
+    };
+  }, []);
 
   const isActive = state.activeMode !== 'none';
   const isPracticing = state.activeMode === 'practice' || state.activeMode === 'free-practice';
@@ -239,8 +286,8 @@ const PlaybackControls: React.FC = () => {
         <button
           className={`sb-mode-btn practice-primary ${state.activeMode === 'practice' ? 'active practice' : ''}`}
           onClick={() => handleModeToggle('practice')}
-          disabled={!state.score || (!state.midiConnected && state.activeMode !== 'practice')}
-          onMouseEnter={e => showTip(e, !state.midiConnected ? 'Connect a MIDI controller to practice' : 'Play along with the metronome and get timing feedback')}
+          disabled={!state.score || ((!state.midiConnected && !state.microphoneActive) && state.activeMode !== 'practice')}
+          onMouseEnter={e => showTip(e, (!state.midiConnected && !state.microphoneActive) ? 'Connect a MIDI controller or enable mic to practice' : 'Play along with the metronome and get timing feedback')}
           onMouseLeave={hideTip}
         >
           <span className="material-symbols-outlined">{state.activeMode === 'practice' ? 'pause' : 'play_arrow'}</span>
@@ -249,8 +296,8 @@ const PlaybackControls: React.FC = () => {
         <button
           className={`sb-mode-btn ${state.activeMode === 'free-practice' ? 'active free-practice' : ''}`}
           onClick={() => handleModeToggle('free-practice')}
-          disabled={!state.score || (!state.midiConnected && state.activeMode !== 'free-practice')}
-          onMouseEnter={e => showTip(e, !state.midiConnected ? 'Connect a MIDI controller for free tempo' : 'Play at your own pace — notes advance as you play correctly')}
+          disabled={!state.score || ((!state.midiConnected && !state.microphoneActive) && state.activeMode !== 'free-practice')}
+          onMouseEnter={e => showTip(e, (!state.midiConnected && !state.microphoneActive) ? 'Connect a MIDI controller or enable mic for free tempo' : 'Play at your own pace — notes advance as you play correctly')}
           onMouseLeave={hideTip}
         >
           <span className="material-symbols-outlined">{state.activeMode === 'free-practice' ? 'pause' : 'slow_motion_video'}</span>
@@ -292,16 +339,36 @@ const PlaybackControls: React.FC = () => {
       <div className="sb-play-row">
         <div className="sb-tempo">
           <label className="sb-label">BPM</label>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={tempoInput}
-            onChange={e => setTempoInput(e.target.value)}
-            onBlur={handleTempoBlur}
-            onKeyDown={handleTempoKeyDown}
-            className="sb-tempo-input"
-            disabled={isActive}
-          />
+          <div className="ex-stepper sb-bpm-stepper">
+            <input
+              type="text"
+              inputMode="numeric"
+              value={tempoInput}
+              onChange={e => setTempoInput(e.target.value)}
+              onBlur={handleTempoBlur}
+              onKeyDown={handleTempoKeyDown}
+              className="ex-stepper-input"
+              disabled={isActive}
+            />
+            <div className="ex-stepper-arrows">
+              <button
+                className="ex-stepper-arrow"
+                onClick={() => { const n = Math.min(300, state.tempo + 1); dispatch({ type: 'SET_TEMPO', tempo: n }); engine.setTempo(n); }}
+                disabled={isActive || state.tempo >= 300}
+                aria-label="Increase BPM"
+              >
+                <span className="material-symbols-outlined">arrow_drop_up</span>
+              </button>
+              <button
+                className="ex-stepper-arrow"
+                onClick={() => { const n = Math.max(20, state.tempo - 1); dispatch({ type: 'SET_TEMPO', tempo: n }); engine.setTempo(n); }}
+                disabled={isActive || state.tempo <= 20}
+                aria-label="Decrease BPM"
+              >
+                <span className="material-symbols-outlined">arrow_drop_down</span>
+              </button>
+            </div>
+          </div>
           <button
             className="btn btn-small sb-tempo-adj"
             onClick={() => setTempoMultiplied(0.5)}
@@ -350,74 +417,105 @@ const PlaybackControls: React.FC = () => {
       </div>
 
       <div className="sb-options-section">
-        <div className="sb-section-title">Systems to practice</div>
-        <div className="sb-systems-grid">
-          <div className="sb-system-row sb-system-header">
-            <span className="sb-system-label" />
-            <span className="sb-col-header">Show</span>
-            <span className="sb-col-header">Practice</span>
-            <span className="sb-col-header">Sound</span>
-          </div>
-          {hasVocalPart && (
+        <button className="sb-section-toggle" onClick={() => setSystemsExpanded(v => !v)}>
+          <span className="material-symbols-outlined sb-toggle-arrow" style={{ transform: systemsExpanded ? 'rotate(0deg)' : 'rotate(-90deg)' }}>
+            expand_more
+          </span>
+          <span className="sb-section-title">Systems to practice</span>
+        </button>
+        {systemsExpanded && (
+          <div className="sb-systems-grid">
+            <div className="sb-system-row sb-system-header">
+              <span className="sb-system-label" />
+              <span className="sb-col-header">Show</span>
+              <span className="sb-col-header">Practice</span>
+              <span className="sb-col-header">Sound</span>
+            </div>
+            {hasVocalPart && (
+              <div className="sb-system-row">
+                <span className="sb-system-label">Vocal Melody</span>
+                <label className="sb-toggle-label">
+                  <input type="checkbox" checked={state.showVocalPart}
+                    onChange={e => dispatch({ type: 'SET_SHOW_VOCAL', show: e.target.checked })}
+                  />
+                </label>
+                <label className="sb-toggle-label">
+                  <input type="checkbox" checked={state.practiceVoice}
+                    onChange={e => dispatch({ type: 'SET_PRACTICE_VOICE', enabled: e.target.checked })}
+                    disabled={isActive || !state.showVocalPart}
+                  />
+                </label>
+                <label className="sb-toggle-label">
+                  <input type="checkbox" checked={!(state.trackMuted.get('voice') ?? false)}
+                    onChange={() => handleTrackMute('voice')}
+                  />
+                </label>
+              </div>
+            )}
             <div className="sb-system-row">
-              <span className="sb-system-label">Vocal Melody</span>
+              <span className="sb-system-label">Right Hand / Treble</span>
               <label className="sb-toggle-label">
-                <input type="checkbox" checked={state.showVocalPart}
-                  onChange={e => dispatch({ type: 'SET_SHOW_VOCAL', show: e.target.checked })}
+                <input type="checkbox" checked={state.showRightHand}
+                  onChange={e => dispatch({ type: 'SET_SHOW_RIGHT_HAND', show: e.target.checked })}
                 />
               </label>
               <label className="sb-toggle-label">
-                <input type="checkbox" checked={state.practiceVoice}
-                  onChange={e => dispatch({ type: 'SET_PRACTICE_VOICE', enabled: e.target.checked })}
-                  disabled={isActive || !state.showVocalPart}
+                <input type="checkbox" checked={state.practiceRightHand}
+                  onChange={e => dispatch({ type: 'SET_PRACTICE_RIGHT_HAND', enabled: e.target.checked })}
+                  disabled={isActive || !state.showRightHand}
                 />
               </label>
               <label className="sb-toggle-label">
-                <input type="checkbox" checked={!(state.trackMuted.get('voice') ?? false)}
-                  onChange={() => handleTrackMute('voice')}
+                <input type="checkbox" checked={!(state.trackMuted.get('rh') ?? false)}
+                  onChange={() => handleTrackMute('rh')}
                 />
               </label>
             </div>
-          )}
-          <div className="sb-system-row">
-            <span className="sb-system-label">Right Hand / Treble</span>
-            <label className="sb-toggle-label">
-              <input type="checkbox" checked={state.showRightHand}
-                onChange={e => dispatch({ type: 'SET_SHOW_RIGHT_HAND', show: e.target.checked })}
-              />
-            </label>
-            <label className="sb-toggle-label">
-              <input type="checkbox" checked={state.practiceRightHand}
-                onChange={e => dispatch({ type: 'SET_PRACTICE_RIGHT_HAND', enabled: e.target.checked })}
-                disabled={isActive || !state.showRightHand}
-              />
-            </label>
-            <label className="sb-toggle-label">
-              <input type="checkbox" checked={!(state.trackMuted.get('rh') ?? false)}
-                onChange={() => handleTrackMute('rh')}
-              />
-            </label>
+            <div className="sb-system-row">
+              <span className="sb-system-label">Left Hand / Bass</span>
+              <label className="sb-toggle-label">
+                <input type="checkbox" checked={state.showLeftHand}
+                  onChange={e => dispatch({ type: 'SET_SHOW_LEFT_HAND', show: e.target.checked })}
+                />
+              </label>
+              <label className="sb-toggle-label">
+                <input type="checkbox" checked={state.practiceLeftHand}
+                  onChange={e => dispatch({ type: 'SET_PRACTICE_LEFT_HAND', enabled: e.target.checked })}
+                  disabled={isActive || !state.showLeftHand}
+                />
+              </label>
+              <label className="sb-toggle-label">
+                <input type="checkbox" checked={!(state.trackMuted.get('lh') ?? false)}
+                  onChange={() => handleTrackMute('lh')}
+                />
+              </label>
+            </div>
+            {hasChordSymbols && (
+              <div className="sb-system-row">
+                <span className="sb-system-label">
+                  Chords
+                  <span
+                    className="material-symbols-outlined sb-help-icon"
+                    onMouseEnter={e => showTip(e, 'When enabled, you\'ll be scored on playing the correct chord at the right time. Any voicing or inversion of the chord is accepted.')}
+                    onMouseLeave={hideTip}
+                  >help</span>
+                </span>
+                <label className="sb-toggle-label">
+                  <input type="checkbox" checked={state.showChords}
+                    onChange={e => dispatch({ type: 'SET_SHOW_CHORDS', show: e.target.checked })}
+                  />
+                </label>
+                <label className="sb-toggle-label">
+                  <input type="checkbox" checked={state.practiceChords}
+                    onChange={e => dispatch({ type: 'SET_PRACTICE_CHORDS', enabled: e.target.checked })}
+                    disabled={isActive || !state.showChords}
+                  />
+                </label>
+                <label className="sb-toggle-label" />
+              </div>
+            )}
           </div>
-          <div className="sb-system-row">
-            <span className="sb-system-label">Left Hand / Bass</span>
-            <label className="sb-toggle-label">
-              <input type="checkbox" checked={state.showLeftHand}
-                onChange={e => dispatch({ type: 'SET_SHOW_LEFT_HAND', show: e.target.checked })}
-              />
-            </label>
-            <label className="sb-toggle-label">
-              <input type="checkbox" checked={state.practiceLeftHand}
-                onChange={e => dispatch({ type: 'SET_PRACTICE_LEFT_HAND', enabled: e.target.checked })}
-                disabled={isActive || !state.showLeftHand}
-              />
-            </label>
-            <label className="sb-toggle-label">
-              <input type="checkbox" checked={!(state.trackMuted.get('lh') ?? false)}
-                onChange={() => handleTrackMute('lh')}
-              />
-            </label>
-          </div>
-        </div>
+        )}
       </div>
 
       <div className="sb-drum-section">
@@ -439,9 +537,10 @@ const PlaybackControls: React.FC = () => {
               ? Math.floor(state.currentBeat / (4 / (state.score.timeSignature.denominator))) % state.score.timeSignature.numerator
               : Math.floor(state.currentBeat) % 4
             }
-            volume={state.drumVolume}
+            volume={state.drumVolume * (state.masterMuted ? 0 : state.masterVolume) * 100}
             notationStyle={PIANO_DRUM_STYLE}
             notationWidth={250}
+            scheduler={drumScheduler}
           />
         )}
       </div>
@@ -478,6 +577,8 @@ const PlaybackControls: React.FC = () => {
           onTrackMute={handleTrackMute}
           onTrackVolume={handleTrackVolume}
           onSoundChange={handleSoundChange}
+          onDrumVolume={handleDrumVolume}
+          onCountInEveryLoop={(enabled) => dispatch({ type: 'SET_COUNT_IN_EVERY_LOOP', enabled })}
         />,
         document.body,
       )}

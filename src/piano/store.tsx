@@ -1,11 +1,15 @@
 import React, { createContext, useContext, useReducer, useCallback, useRef, useEffect } from 'react';
-import type { PianoScore, MidiDevice, NoteDuration, PracticeNoteResult, PracticeRun, PracticeSession } from './types';
+import type { PianoScore, MidiDevice, NoteDuration, PracticeNoteResult, PracticeRun, PracticeSession, Key } from './types';
 import { generateNoteId, durationToBeats } from './types';
 import type { SoundType } from '../chords/types/soundOptions';
 import { ScorePlaybackEngine, getScorePlaybackEngine } from './utils/scorePlayback';
 import { getMidiInput, type MidiInput } from './utils/midiInput';
 import { recordMidiNoteOn, recordMidiNoteOff, clearAll as clearTimingStore } from './utils/practiceTimingStore';
 import { DEFAULT_SCORE } from './data/scales';
+import { addRecord, type PracticeRecord } from './utils/practiceHistory';
+import { AcousticInput } from './utils/acousticInput';
+import type { SongPracticeSettings, GlobalPracticePreferences } from './utils/libraryStorage';
+import { isDebugEnabled, logDebugEvent } from './utils/practiceDebugLog';
 
 export type ActiveMode = 'none' | 'play' | 'practice' | 'free-practice';
 
@@ -65,6 +69,17 @@ interface PianoState {
   drumEnabled: boolean;
   drumVolume: number;
   currentBeat: number;
+  editSnapshot: PianoScore | null;
+  showChords: boolean;
+  practiceChords: boolean;
+  mediaFile: { name: string; url: string; type: 'audio' | 'video' } | null;
+  mediaStartOffset: number;
+  mediaVolume: number;
+  mediaMuted: boolean;
+  mediaVisible: boolean;
+  microphoneActive: boolean;
+  detectedPitch: number | null;
+  countInEveryLoop: boolean;
 }
 
 type Action =
@@ -123,7 +138,22 @@ type Action =
   | { type: 'SET_IS_EXERCISE'; isExercise: boolean }
   | { type: 'SET_DRUM_ENABLED'; enabled: boolean }
   | { type: 'SET_DRUM_VOLUME'; volume: number }
-  | { type: 'SET_CURRENT_BEAT'; beat: number };
+  | { type: 'SET_CURRENT_BEAT'; beat: number }
+  | { type: 'CANCEL_EDIT' }
+  | { type: 'UPDATE_SCORE_META'; title?: string; key?: Key; tempo?: number; timeSignature?: { numerator: number; denominator: number } }
+  | { type: 'TRANSPOSE_SCORE'; semitones: number }
+  | { type: 'SET_SHOW_CHORDS'; show: boolean }
+  | { type: 'SET_PRACTICE_CHORDS'; enabled: boolean }
+  | { type: 'SET_MEDIA_FILE'; file: PianoState['mediaFile'] }
+  | { type: 'SET_MEDIA_START_OFFSET'; offset: number }
+  | { type: 'SET_MEDIA_VOLUME'; volume: number }
+  | { type: 'SET_MEDIA_MUTED'; muted: boolean }
+  | { type: 'SET_MEDIA_VISIBLE'; visible: boolean }
+  | { type: 'SET_MICROPHONE_ACTIVE'; active: boolean }
+  | { type: 'SET_DETECTED_PITCH'; pitch: number | null }
+  | { type: 'SET_COUNT_IN_EVERY_LOOP'; enabled: boolean }
+  | { type: 'RESTORE_PRACTICE_SETTINGS'; settings: SongPracticeSettings }
+  | { type: 'RESTORE_GLOBAL_PREFERENCES'; prefs: GlobalPracticePreferences };
 
 // eslint-disable-next-line react-refresh/only-export-components -- exported for tests alongside Provider
 export const initialState: PianoState = {
@@ -174,8 +204,19 @@ export const initialState: PianoState = {
   showLeftHand: true,
   isExerciseScore: true,
   drumEnabled: false,
-  drumVolume: 70,
+  drumVolume: 0.7,
   currentBeat: 0,
+  editSnapshot: null,
+  showChords: true,
+  practiceChords: false,
+  mediaFile: null,
+  mediaStartOffset: 0,
+  mediaVolume: 0.8,
+  mediaMuted: false,
+  mediaVisible: true,
+  microphoneActive: false,
+  detectedPitch: null,
+  countInEveryLoop: false,
 };
 
 function addChordToPart(
@@ -320,8 +361,14 @@ export function reducer(state: PianoState, action: Action): PianoState {
       };
     case 'SET_DOTTED':
       return { ...state, dotted: action.dotted };
-    case 'SET_INPUT_MODE':
-      return { ...state, inputMode: action.mode };
+    case 'SET_INPUT_MODE': {
+      if (action.mode === 'step-input') {
+        return { ...state, inputMode: action.mode, editSnapshot: state.score ? JSON.parse(JSON.stringify(state.score)) : null, undoStack: [], redoStack: [] };
+      }
+      return { ...state, inputMode: action.mode, editSnapshot: null, undoStack: [], redoStack: [] };
+    }
+    case 'CANCEL_EDIT':
+      return { ...state, inputMode: 'select', score: state.editSnapshot ?? state.score, editSnapshot: null, undoStack: [], redoStack: [] };
     case 'SET_SAMPLE_LOADING':
       return { ...state, sampleLoadingProgress: action.progress };
     case 'STEP_INPUT_NOTE': {
@@ -555,8 +602,122 @@ export function reducer(state: PianoState, action: Action): PianoState {
       return { ...state, drumEnabled: action.enabled };
     case 'SET_DRUM_VOLUME':
       return { ...state, drumVolume: action.volume };
+    case 'UPDATE_SCORE_META': {
+      if (!state.score) return state;
+      const updated = { ...state.score };
+      if (action.title !== undefined) updated.title = action.title;
+      if (action.key !== undefined) updated.key = action.key;
+      if (action.tempo !== undefined) updated.tempo = action.tempo;
+      if (action.timeSignature !== undefined) updated.timeSignature = action.timeSignature;
+      return { ...state, score: updated, tempo: updated.tempo };
+    }
+    case 'TRANSPOSE_SCORE': {
+      if (!state.score) return state;
+      const semi = action.semitones;
+      const KEY_ORDER: Key[] = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+      const FLAT_ORDER: Key[] = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+      const keyIdx: Record<string, number> = {
+        'C':0,'C#':1,'Db':1,'D':2,'D#':3,'Eb':3,'E':4,'F':5,
+        'F#':6,'Gb':6,'G':7,'G#':8,'Ab':8,'A':9,'A#':10,'Bb':10,'B':11,
+      };
+      const usesFlats = ['C','F','Bb','Eb','Ab','Db','Gb'].includes(state.score.key);
+      const oldIdx = keyIdx[state.score.key] ?? 0;
+      const newIdx = ((oldIdx + semi) % 12 + 12) % 12;
+      const newKey = (usesFlats ? FLAT_ORDER : KEY_ORDER)[newIdx];
+      const CHORD_ROOTS = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+      const FLAT_ROOTS = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+      const roots = usesFlats ? FLAT_ROOTS : CHORD_ROOTS;
+
+      function transposeChord(sym: string): string {
+        const m = sym.match(/^([A-G][#b]?)(.*)/);
+        if (!m) return sym;
+        const ri = keyIdx[m[1]];
+        if (ri === undefined) return sym;
+        const ni = ((ri + semi) % 12 + 12) % 12;
+        return roots[ni] + m[2];
+      }
+
+      const newParts = state.score.parts.map(part => ({
+        ...part,
+        measures: part.measures.map(measure => ({
+          ...measure,
+          notes: measure.notes.map(note => ({
+            ...note,
+            pitches: note.rest ? [] : note.pitches.map(p => p + semi),
+            chordSymbol: note.chordSymbol ? transposeChord(note.chordSymbol) : undefined,
+          })),
+        })),
+      }));
+      return { ...state, score: { ...state.score, key: newKey, parts: newParts } };
+    }
+    case 'SET_SHOW_CHORDS':
+      return { ...state, showChords: action.show };
+    case 'SET_PRACTICE_CHORDS':
+      return { ...state, practiceChords: action.enabled };
+    case 'SET_MEDIA_FILE':
+      return { ...state, mediaFile: action.file };
+    case 'SET_MEDIA_START_OFFSET':
+      return { ...state, mediaStartOffset: action.offset };
+    case 'SET_MEDIA_VOLUME':
+      return { ...state, mediaVolume: action.volume };
+    case 'SET_MEDIA_MUTED':
+      return { ...state, mediaMuted: action.muted };
+    case 'SET_MEDIA_VISIBLE':
+      return { ...state, mediaVisible: action.visible };
+    case 'SET_MICROPHONE_ACTIVE':
+      return { ...state, microphoneActive: action.active };
+    case 'SET_DETECTED_PITCH':
+      return { ...state, detectedPitch: action.pitch };
+    case 'SET_COUNT_IN_EVERY_LOOP':
+      return { ...state, countInEveryLoop: action.enabled };
     case 'SET_CURRENT_BEAT':
       return { ...state, currentBeat: action.beat };
+    case 'RESTORE_PRACTICE_SETTINGS': {
+      const s = action.settings;
+      const trackMuted = new Map(Object.entries(s.trackMuted));
+      const trackVolume = new Map(Object.entries(s.trackVolume));
+      const hasVocal = s.score.parts.some(p => p.hand === 'voice');
+      return {
+        ...state,
+        score: s.score,
+        tempo: s.tempo,
+        showVocalPart: hasVocal && s.showVocalPart,
+        showRightHand: s.showRightHand,
+        showLeftHand: s.showLeftHand,
+        showChords: s.showChords,
+        practiceRightHand: s.practiceRightHand,
+        practiceLeftHand: s.practiceLeftHand,
+        practiceVoice: s.practiceVoice,
+        practiceChords: s.practiceChords,
+        drumEnabled: s.drumEnabled,
+        drumVolume: s.drumVolume,
+        zoomLevel: s.zoomLevel,
+        selectedMeasureRange: s.selectedMeasureRange,
+        trackMuted,
+        trackVolume,
+        currentMeasureIndex: 0,
+        currentNoteIndices: new Map(),
+        practiceResults: [],
+        practiceResultsByNoteId: new Map(),
+        fullScore: null,
+        sections: [],
+        activeSectionIndex: null,
+        isExerciseScore: false,
+      };
+    }
+    case 'RESTORE_GLOBAL_PREFERENCES': {
+      const p = action.prefs;
+      return {
+        ...state,
+        masterVolume: p.masterVolume,
+        masterMuted: p.masterMuted,
+        metronomeVolume: p.metronomeVolume,
+        metronomeEnabled: p.metronomeEnabled,
+        loopingEnabled: p.loopingEnabled,
+        countInEveryLoop: p.countInEveryLoop,
+        soundType: p.soundType,
+      };
+    }
     default:
       return state;
   }
@@ -566,6 +727,7 @@ interface PianoContextValue {
   state: PianoState;
   dispatch: React.Dispatch<Action>;
   engine: ScorePlaybackEngine;
+  toggleMicrophone: () => void;
   midi: MidiInput;
   startMode: (mode: ActiveMode) => void;
   stopMode: () => void;
@@ -580,6 +742,7 @@ export function PianoProvider({ children }: { children: React.ReactNode }) {
   const midiRef = useRef<MidiInput>(getMidiInput());
   const countInTimerRef = useRef<number | null>(null);
   const playbackGenRef = useRef(0);
+  const acousticRef = useRef<AcousticInput | null>(null);
   const stateRef = useRef(state);
   stateRef.current = state;
 
@@ -712,24 +875,16 @@ export function PianoProvider({ children }: { children: React.ReactNode }) {
     });
   }, [engine, getPlaybackScore]);
 
-  const startPracticeRun = useCallback(async () => {
-    const gen = ++playbackGenRef.current;
-    const s = stateRef.current;
-    const ps = getPlaybackScore();
+  const launchPracticePlayback = useCallback(async (gen: number, ps: ReturnType<typeof getPlaybackScore>) => {
     if (!ps) return;
-    dispatch({ type: 'START_PRACTICE_RUN' });
-
-    dispatch({ type: 'SET_COUNTING_IN', counting: true });
-    await engine.playCountIn(s.tempo);
-    if (playbackGenRef.current !== gen) return;
-    dispatch({ type: 'SET_COUNTING_IN', counting: false });
-
     const currentState = stateRef.current;
     if (currentState.activeMode !== 'practice') return;
 
+    const useCountInLoop = currentState.countInEveryLoop && currentState.loopingEnabled;
+
     engine.setTempo(currentState.tempo);
-    engine.setLoop(currentState.loopingEnabled);
-    engine.setLoopCallback(() => {
+    engine.setLoop(useCountInLoop ? false : currentState.loopingEnabled);
+    engine.setLoopCallback(useCountInLoop ? null : () => {
       if (playbackGenRef.current !== gen) return;
       dispatch({ type: 'END_PRACTICE_RUN' });
       dispatch({ type: 'START_PRACTICE_RUN' });
@@ -738,6 +893,19 @@ export function PianoProvider({ children }: { children: React.ReactNode }) {
     const onEnd = () => {
       if (playbackGenRef.current !== gen) return;
       dispatch({ type: 'END_PRACTICE_RUN' });
+
+      if (useCountInLoop) {
+        dispatch({ type: 'START_PRACTICE_RUN' });
+        dispatch({ type: 'SET_COUNTING_IN', counting: true });
+        engine.playCountIn(stateRef.current.tempo).then(() => {
+          if (playbackGenRef.current !== gen) return;
+          dispatch({ type: 'SET_COUNTING_IN', counting: false });
+          if (stateRef.current.activeMode !== 'practice') return;
+          launchPracticePlayback(gen, ps);
+        });
+        return;
+      }
+
       dispatch({ type: 'SET_PLAYING', playing: false });
       dispatch({ type: 'SET_ACTIVE_MODE', mode: 'none' });
       dispatch({ type: 'UPDATE_POSITION', measureIndex: -1, noteIndices: new Map() });
@@ -755,10 +923,35 @@ export function PianoProvider({ children }: { children: React.ReactNode }) {
     });
   }, [engine, getPlaybackScore]);
 
+  const startPracticeRun = useCallback(async () => {
+    const gen = ++playbackGenRef.current;
+    const s = stateRef.current;
+    const ps = getPlaybackScore();
+    if (!ps) return;
+    dispatch({ type: 'START_PRACTICE_RUN' });
+    if (isDebugEnabled()) {
+      logDebugEvent({ type: 'practice_start', t: performance.now(), mode: 'practice',
+        tempo: s.tempo, scoreTitle: s.score?.title || '', practiceRH: s.practiceRightHand,
+        practiceLH: s.practiceLeftHand, micActive: s.microphoneActive });
+    }
+
+    dispatch({ type: 'SET_COUNTING_IN', counting: true });
+    await engine.playCountIn(s.tempo);
+    if (playbackGenRef.current !== gen) return;
+    dispatch({ type: 'SET_COUNTING_IN', counting: false });
+
+    await launchPracticePlayback(gen, ps);
+  }, [engine, getPlaybackScore, launchPracticePlayback]);
+
   const startFreePractice = useCallback(() => {
     const s = stateRef.current;
     if (!s.score) return;
     dispatch({ type: 'START_PRACTICE_RUN' });
+    if (isDebugEnabled()) {
+      logDebugEvent({ type: 'practice_start', t: performance.now(), mode: 'free-practice',
+        tempo: s.tempo, scoreTitle: s.score.title || '', practiceRH: s.practiceRightHand,
+        practiceLH: s.practiceLeftHand, micActive: s.microphoneActive });
+    }
 
     const startMeasure = s.selectedMeasureRange?.start ?? 0;
     const noteIndices = new Map<string, number>();
@@ -811,14 +1004,165 @@ export function PianoProvider({ children }: { children: React.ReactNode }) {
 
     const s = stateRef.current;
     if (s.activeMode === 'practice' || s.activeMode === 'free-practice') {
+      if (isDebugEnabled()) {
+        logDebugEvent({ type: 'practice_end', t: performance.now(), resultCount: s.practiceResults.length });
+      }
       dispatch({ type: 'END_PRACTICE_RUN' });
+
+      // Save practice record
+      const postState = stateRef.current;
+      const session = postState.practiceSession;
+      if (session && session.runs.length > 0 && postState.score) {
+        const runs = session.runs;
+        const avgAcc = Math.round(runs.reduce((sum, r) => sum + r.accuracy, 0) / runs.length);
+        const bestAcc = Math.max(...runs.map(r => r.accuracy));
+        const totalMs = runs.reduce((sum, r) => sum + (r.endTime - r.startTime), 0);
+        const hands: string[] = [];
+        if (postState.practiceRightHand) hands.push('right');
+        if (postState.practiceLeftHand) hands.push('left');
+        if (postState.practiceChords) hands.push('chords');
+        const record: PracticeRecord = {
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          timestamp: Date.now(),
+          scoreId: postState.score.id,
+          scoreTitle: postState.score.title || 'Untitled',
+          tempo: postState.tempo,
+          runs,
+          bestAccuracy: bestAcc,
+          averageAccuracy: avgAcc,
+          totalDurationMs: totalMs,
+          practiceMode: s.activeMode === 'free-practice' ? 'free-practice' : 'practice',
+          handsUsed: hands,
+        };
+        addRecord(record);
+      }
     }
     dispatch({ type: 'SET_ACTIVE_MODE', mode: 'none' });
     dispatch({ type: 'UPDATE_POSITION', measureIndex: -1, noteIndices: new Map() });
   }, [engine]);
 
+  const toggleMicrophone = useCallback(async () => {
+    if (acousticRef.current?.isRunning()) {
+      acousticRef.current.stop();
+      acousticRef.current = null;
+      dispatch({ type: 'SET_MICROPHONE_ACTIVE', active: false });
+      dispatch({ type: 'SET_DETECTED_PITCH', pitch: null });
+    } else {
+      const acoustic = new AcousticInput({
+        onNoteOn: (midi) => {
+          recordMidiNoteOn(midi, performance.now());
+          dispatch({ type: 'ADD_MIDI_NOTE', note: midi });
+        },
+        onNoteOff: (midi) => {
+          recordMidiNoteOff(midi);
+          dispatch({ type: 'REMOVE_MIDI_NOTE', note: midi });
+        },
+        onPitchDetected: (midi) => {
+          dispatch({ type: 'SET_DETECTED_PITCH', pitch: midi });
+        },
+      });
+      try {
+        await acoustic.start();
+        acousticRef.current = acoustic;
+        dispatch({ type: 'SET_MICROPHONE_ACTIVE', active: true });
+      } catch (err) {
+        console.error('Microphone access failed:', err);
+      }
+    }
+  }, []);
+
+  // Load global preferences + last selection on mount
+  useEffect(() => {
+    import('./utils/libraryStorage').then(({ getGlobalPreferences, getLastSelection, getSongSettings }) => {
+      const prefs = getGlobalPreferences();
+      if (prefs) {
+        dispatch({ type: 'RESTORE_GLOBAL_PREFERENCES', prefs });
+        if (prefs.microphoneEnabled && !acousticRef.current?.isRunning()) {
+          toggleMicrophone();
+        }
+      }
+      const last = getLastSelection();
+      if (last?.score) {
+        if (!last.isExercise) {
+          const saved = getSongSettings(last.score.id);
+          if (saved) {
+            dispatch({ type: 'RESTORE_PRACTICE_SETTINGS', settings: saved });
+            engine.setTempo(saved.tempo);
+            return;
+          }
+        }
+        dispatch({ type: 'SET_SCORE', score: last.score });
+        dispatch({ type: 'SET_IS_EXERCISE', isExercise: last.isExercise });
+        engine.setTempo(last.score.tempo);
+      }
+    });
+  }, [dispatch, toggleMicrophone, engine]);
+
+  // Auto-save per-song practice settings (debounced)
+  const songSaveTimerRef = useRef<number | null>(null);
+  const { score, tempo, showVocalPart, showRightHand, showLeftHand, showChords,
+    practiceRightHand, practiceLeftHand, practiceVoice, practiceChords,
+    drumEnabled, drumVolume, zoomLevel, selectedMeasureRange,
+    trackMuted, trackVolume, isExerciseScore } = state;
+  useEffect(() => {
+    if (!score || isExerciseScore) return;
+    const scoreId = score.id;
+    if (songSaveTimerRef.current) clearTimeout(songSaveTimerRef.current);
+    songSaveTimerRef.current = window.setTimeout(() => {
+      const settings: import('./utils/libraryStorage').SongPracticeSettings = {
+        tempo, showVocalPart, showRightHand, showLeftHand, showChords,
+        practiceRightHand, practiceLeftHand, practiceVoice, practiceChords,
+        drumEnabled, drumVolume, zoomLevel, selectedMeasureRange,
+        trackMuted: Object.fromEntries(trackMuted),
+        trackVolume: Object.fromEntries(trackVolume),
+        score,
+      };
+      import('./utils/libraryStorage').then(({ saveSongSettings, syncLibraryEntryFromScore }) => {
+        saveSongSettings(scoreId, settings);
+        syncLibraryEntryFromScore(score);
+      });
+    }, 1500);
+    return () => { if (songSaveTimerRef.current) clearTimeout(songSaveTimerRef.current); };
+  }, [score, tempo, showVocalPart, showRightHand, showLeftHand, showChords,
+      practiceRightHand, practiceLeftHand, practiceVoice, practiceChords,
+      drumEnabled, drumVolume, zoomLevel, selectedMeasureRange,
+      trackMuted, trackVolume, isExerciseScore]);
+
+  // Persist last selection so it's restored on refresh
+  const selectionSaveRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (!score) return;
+    if (selectionSaveRef.current) clearTimeout(selectionSaveRef.current);
+    selectionSaveRef.current = window.setTimeout(() => {
+      import('./utils/libraryStorage').then(({ saveLastSelection }) => {
+        saveLastSelection({ score, isExercise: isExerciseScore });
+      });
+    }, 500);
+    return () => { if (selectionSaveRef.current) clearTimeout(selectionSaveRef.current); };
+  }, [score, isExerciseScore]);
+
+  // Auto-save global practice preferences (debounced)
+  const globalSaveTimerRef = useRef<number | null>(null);
+  const { masterVolume, masterMuted, metronomeVolume, metronomeEnabled,
+    loopingEnabled, countInEveryLoop, soundType, microphoneActive } = state;
+  useEffect(() => {
+    if (globalSaveTimerRef.current) clearTimeout(globalSaveTimerRef.current);
+    globalSaveTimerRef.current = window.setTimeout(() => {
+      const prefs: import('./utils/libraryStorage').GlobalPracticePreferences = {
+        masterVolume, masterMuted, metronomeVolume, metronomeEnabled,
+        loopingEnabled, countInEveryLoop, soundType,
+        microphoneEnabled: microphoneActive,
+      };
+      import('./utils/libraryStorage').then(({ saveGlobalPreferences }) => {
+        saveGlobalPreferences(prefs);
+      });
+    }, 1500);
+    return () => { if (globalSaveTimerRef.current) clearTimeout(globalSaveTimerRef.current); };
+  }, [masterVolume, masterMuted, metronomeVolume, metronomeEnabled,
+      loopingEnabled, countInEveryLoop, soundType, microphoneActive]);
+
   const value: PianoContextValue = {
-    state, dispatch, engine, midi, startMode, stopMode, loadScore,
+    state, dispatch, engine, midi, startMode, stopMode, loadScore, toggleMicrophone,
   };
   return <PianoContext.Provider value={value}>{children}</PianoContext.Provider>;
 }
