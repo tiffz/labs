@@ -169,6 +169,18 @@ body {
   content: '🥁';
 }
 
+.app-icon.word-rhythm {
+  background: linear-gradient(135deg, #ffd6a5 0%, #ffc6ff 100%);
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-icon.word-rhythm::before {
+  content: '🌴';
+}
+
 .app-icon.chords {
   background: linear-gradient(135deg, #0ea5e9 0%, #8b5cf6 100%);
   font-size: 1.15rem;
