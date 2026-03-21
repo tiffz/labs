@@ -280,6 +280,27 @@ describe('useUrlState', () => {
       expect(window.location.search).toContain('bpm=140');
     });
 
+    it('should push a new history entry for rapid non-bpm/rhythm changes', () => {
+      const { result } = renderHook(() => useUrlState());
+      const initialLength = window.history.length;
+
+      act(() => {
+        result.current.syncToUrl({
+          notation: 'D-T-__T-D---T---',
+          timeSignature: { numerator: 4, denominator: 4 },
+          bpm: 130,
+        });
+        result.current.syncToUrl({
+          notation: 'D-T-__T-D---T---',
+          timeSignature: { numerator: 7, denominator: 8 },
+          bpm: 130,
+        });
+      });
+
+      expect(window.history.length).toBe(initialLength + 2);
+      expect(window.location.search).toContain('time=7%2F8');
+    });
+
     it('should support full back/forward cycle with popstate', () => {
       const { result } = renderHook(() => useUrlState());
       const callback = vi.fn();

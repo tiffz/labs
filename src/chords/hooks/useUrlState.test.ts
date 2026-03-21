@@ -110,6 +110,20 @@ describe('useUrlState (chords)', () => {
       expect(window.location.search).toContain('tempo=140');
     });
 
+    it('should push a new history entry for rapid non-tempo changes', () => {
+      const { result } = renderHook(() => useUrlState());
+      const initialLength = window.history.length;
+
+      act(() => {
+        result.current.syncToUrl(makeState({ tempo: 130 }));
+        result.current.syncToUrl(makeState({ tempo: 130, key: 'G' }));
+      });
+
+      expect(window.history.length).toBe(initialLength + 2);
+      expect(window.location.search).toContain('key=G');
+      expect(window.location.search).toContain('tempo=130');
+    });
+
     it('should support popstate listener for back/forward navigation', () => {
       const { result } = renderHook(() => useUrlState());
       const callback = vi.fn();
@@ -141,6 +155,20 @@ describe('useUrlState (chords)', () => {
 
       window.dispatchEvent(new PopStateEvent('popstate'));
       expect(callback).not.toHaveBeenCalled();
+    });
+
+    it('should emit null state when URL has no params on popstate', () => {
+      const { result } = renderHook(() => useUrlState());
+      const callback = vi.fn();
+
+      act(() => {
+        result.current.setupPopStateListener(callback);
+      });
+
+      window.history.replaceState({}, '', '/chords/');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+
+      expect(callback).toHaveBeenCalledWith(null);
     });
   });
 });

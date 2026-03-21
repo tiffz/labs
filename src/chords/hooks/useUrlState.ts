@@ -8,6 +8,7 @@ import type { ChordProgressionState, Key, ChordStylingStrategy } from '../types'
 import { COMMON_CHORD_PROGRESSIONS } from '../data/chordProgressions';
 import { CHORD_STYLING_STRATEGIES } from '../data/chordStylingStrategies';
 import { ALL_KEYS } from '../utils/randomization';
+import { getHistoryUpdateStrategy } from '../../shared/utils/urlHistory';
 
 
 /**
@@ -74,6 +75,7 @@ function parseUrlParams(): Partial<ChordProgressionState> | null {
 }
 
 const DEBOUNCE_MS = 800;
+const REPLACE_DEBOUNCE_PARAMS = new Set(['tempo']);
 
 function buildUrl(state: ChordProgressionState): string {
   const params: string[] = [];
@@ -125,10 +127,18 @@ export function useUrlState() {
   const syncToUrl = useCallback((state: ChordProgressionState): void => {
     const newUrl = buildUrl(state);
     const currentUrl = window.location.pathname + window.location.search;
-    if (newUrl === currentUrl) return;
-
     const now = Date.now();
-    if (now - lastPushTimeRef.current < DEBOUNCE_MS) {
+    const strategy = getHistoryUpdateStrategy({
+      currentUrl,
+      newUrl,
+      now,
+      lastPushTime: lastPushTimeRef.current,
+      debounceMs: DEBOUNCE_MS,
+      replaceDebounceParams: REPLACE_DEBOUNCE_PARAMS,
+    });
+
+    if (strategy === 'skip') return;
+    if (strategy === 'replace') {
       window.history.replaceState({}, '', newUrl);
     } else {
       window.history.pushState({}, '', newUrl);
@@ -139,12 +149,10 @@ export function useUrlState() {
   /**
    * Listen for browser back/forward navigation
    */
-  const setupPopStateListener = useCallback((onStateChange: (state: Partial<ChordProgressionState>) => void) => {
+  const setupPopStateListener = useCallback((onStateChange: (state: Partial<ChordProgressionState> | null) => void) => {
     const handlePopState = () => {
       const newState = parseUrlParams();
-      if (newState) {
-        onStateChange(newState);
-      }
+      onStateChange(newState);
     };
     
     window.addEventListener('popstate', handlePopState);

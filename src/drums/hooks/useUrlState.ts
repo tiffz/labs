@@ -1,5 +1,6 @@
 import { useCallback, useRef } from 'react';
 import type { TimeSignature } from '../types';
+import { getHistoryUpdateStrategy } from '../../shared/utils/urlHistory';
 
 interface UrlState {
   notation: string;
@@ -60,6 +61,7 @@ function parseUrlParams(): UrlState {
 }
 
 const DEBOUNCE_MS = 800;
+const REPLACE_DEBOUNCE_PARAMS = new Set(['rhythm', 'bpm']);
 
 function buildUrl(state: UrlState): string {
   const params = new URLSearchParams(window.location.search);
@@ -113,10 +115,18 @@ export function useUrlState() {
   const syncToUrl = useCallback((state: UrlState): void => {
     const newUrl = buildUrl(state);
     const currentUrl = window.location.pathname + window.location.search;
-    if (newUrl === currentUrl) return;
-
     const now = Date.now();
-    if (now - lastPushTimeRef.current < DEBOUNCE_MS) {
+    const strategy = getHistoryUpdateStrategy({
+      currentUrl,
+      newUrl,
+      now,
+      lastPushTime: lastPushTimeRef.current,
+      debounceMs: DEBOUNCE_MS,
+      replaceDebounceParams: REPLACE_DEBOUNCE_PARAMS,
+    });
+
+    if (strategy === 'skip') return;
+    if (strategy === 'replace') {
       window.history.replaceState({}, '', newUrl);
     } else {
       window.history.pushState({}, '', newUrl);

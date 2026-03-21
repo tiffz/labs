@@ -20,6 +20,7 @@ interface LoadingState {
 
 const App: React.FC = () => {
   const { getInitialState, syncToUrl, setupPopStateListener } = useUrlState();
+  const initialStateRef = useRef<ChordProgressionState | null>(null);
   
   const [state, setState] = useState<ChordProgressionState>(() => {
     // Try to get initial state from URL
@@ -28,25 +29,27 @@ const App: React.FC = () => {
     if (urlState) {
       // Use URL state, fill in defaults for missing values
       const timeSignature = urlState.timeSignature || randomTimeSignature();
-                return {
-                  progression: urlState.progression || randomChordProgression(),
-                  key: urlState.key || randomKey(),
-                  tempo: urlState.tempo || randomTempo(),
-                  timeSignature,
-                  stylingStrategy: urlState.stylingStrategy || randomStylingStrategy(timeSignature),
-                  voicingOptions: {
-                    useInversions: false,
-                    useOpenVoicings: false,
-                    randomizeOctaves: false,
-                  },
-                  soundType: 'piano',
-                  measuresPerChord: urlState.measuresPerChord || 1,
-                };
+      const initialState: ChordProgressionState = {
+        progression: urlState.progression || randomChordProgression(),
+        key: urlState.key || randomKey(),
+        tempo: urlState.tempo || randomTempo(),
+        timeSignature,
+        stylingStrategy: urlState.stylingStrategy || randomStylingStrategy(timeSignature),
+        voicingOptions: {
+          useInversions: false,
+          useOpenVoicings: false,
+          randomizeOctaves: false,
+        },
+        soundType: 'piano',
+        measuresPerChord: urlState.measuresPerChord || 1,
+      };
+      initialStateRef.current = initialState;
+      return initialState;
     }
     
     // No URL state, use random defaults
     const timeSignature = randomTimeSignature();
-    return {
+    const initialState: ChordProgressionState = {
       progression: randomChordProgression(),
       key: randomKey(),
       tempo: randomTempo(),
@@ -60,6 +63,8 @@ const App: React.FC = () => {
       soundType: 'piano',
       measuresPerChord: 1,
     };
+    initialStateRef.current = initialState;
+    return initialState;
   });
 
   const [isPlaying, setIsPlaying] = useState(false);
@@ -255,6 +260,18 @@ const App: React.FC = () => {
   // Set up browser navigation listener
   useEffect(() => {
     return setupPopStateListener((urlState) => {
+      if (!urlState) {
+        const baseState = initialStateRef.current;
+        if (!baseState) return;
+        setState(prevState => ({
+          ...prevState,
+          ...baseState,
+          voicingOptions: prevState.voicingOptions,
+          soundType: prevState.soundType,
+        }));
+        return;
+      }
+
       setState(prevState => ({
         ...prevState,
         ...urlState,

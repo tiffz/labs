@@ -30,95 +30,120 @@
     
     <div class="container">
       <h1>Tiff Zhang Labs</h1>
-      <p class="subtitle">A collection of experimental apps and tools</p>
-      
-      <div class="apps-grid" id="stable-apps">
-        <a href="/zines/" class="app-card" data-stage="stable">
-          <div class="app-icon zines"></div>
-          <div class="app-info">
-            <h3 class="app-title">Zine Studio</h3>
-            <p class="app-description">Format image files into zines for home or professional printing</p>
-          </div>
-        </a>
-        
-        <a href="/drums/" class="app-card" data-stage="stable">
-          <div class="app-icon drums"></div>
-          <div class="app-info">
-            <h3 class="app-title">Darbuka Rhythm Trainer</h3>
-            <p class="app-description">Learn and practice Darbuka drum rhythms</p>
-          </div>
-        </a>
-        
-        <a href="/forms/" class="app-card" data-stage="stable">
-          <div class="app-icon forms"></div>
-          <div class="app-info">
-            <h3 class="app-title">Form Intersections</h3>
-            <p class="app-description">3D visualization tool for practicing Drawabox form intersections</p>
-          </div>
-        </a>
-      </div>
-      
-      <div class="development-section" id="development-section" style="display: none;">
-        <h2 class="section-title">Apps in Development</h2>
-        <p class="section-subtitle">Early prototypes and experimental features</p>
-        <div class="apps-grid" id="development-apps">
-          <a href="/cats/" class="app-card development" data-stage="development">
-            <div class="app-icon cats"></div>
-            <div class="app-info">
-              <h3 class="app-title">Cat Clicker <span class="dev-badge">PROTOTYPE</span></h3>
-              <p class="app-description">Click a cat for the greater good</p>
-            </div>
-          </a>
-          
-          <a href="/corp/" class="app-card development" data-stage="development">
-            <div class="app-icon corp"></div>
-            <div class="app-info">
-              <h3 class="app-title">Corporate Ladder <span class="dev-badge">PROTOTYPE</span></h3>
-              <p class="app-description">Crawl through the dungeons of corporate life</p>
-            </div>
-          </a>
-          
-          <a href="/story/" class="app-card development" data-stage="development">
-            <div class="app-icon story"></div>
-            <div class="app-info">
-              <h3 class="app-title">Save the Cat! Story Generator <span class="dev-badge">PROTOTYPE</span></h3>
-              <p class="app-description">Generate random story plots using the Save the Cat! beat structure</p>
-            </div>
-          </a>
-          
-          <a href="/chords/" class="app-card development" data-stage="development">
-            <div class="app-icon drums"></div>
-            <div class="app-info">
-              <h3 class="app-title">Chord Progression Generator <span class="dev-badge">PROTOTYPE</span></h3>
-              <p class="app-description">Generate random chord progressions for practice and inspiration</p>
-            </div>
-          </a>
-          
-          <a href="/beat/" class="app-card development" data-stage="development">
-            <div class="app-icon beat"></div>
-            <div class="app-info">
-              <h3 class="app-title">Find the Beat <span class="dev-badge">PROTOTYPE</span></h3>
-              <p class="app-description">Analyze music to find the beat - automatic BPM detection and visual beat guidance</p>
-            </div>
-          </a>
-          
-          <a href="/piano/" class="app-card development" data-stage="development">
-            <div class="app-icon drums"></div>
-            <div class="app-info">
-              <h3 class="app-title">Piano Practice <span class="dev-badge">PROTOTYPE</span></h3>
-              <p class="app-description">Practice piano with exercises, MIDI controller support, and real-time feedback</p>
-            </div>
-          </a>
+      <p class="subtitle">A growing catalog of music, art, and game experiments</p>
+
+      <div class="catalog-toolbar">
+        <div class="catalog-filters" role="group" aria-label="Filter by readiness">
+          <button class="filter-chip is-active" type="button" data-filter-stage="all">All</button>
+          <button class="filter-chip" type="button" data-filter-stage="stable">Stable</button>
+          <button class="filter-chip" type="button" data-filter-stage="development">Experimental</button>
         </div>
       </div>
-      
-      <div class="toggle-section">
-        <button id="toggle-development" class="toggle-btn">
-          <span class="toggle-text">Show apps in development</span>
-          <span class="toggle-icon">▼</span>
-        </button>
+
+      <div class="catalog-columns">
+        <section class="catalog-section" data-category-section="music">
+          <div class="section-heading">
+            <h2 class="section-title">Music</h2>
+          </div>
+          <div class="apps-grid">
+            <a href="/drums/" class="app-card" data-stage="stable" data-name="Darbuka Rhythm Trainer" data-description="Learn and practice Darbuka drum rhythms">
+              <div class="app-icon drums"></div>
+              <div class="app-info">
+                <h3 class="app-title">Darbuka Rhythm Trainer</h3>
+                <p class="app-description">Learn and practice Darbuka drum rhythms</p>
+              </div>
+              <span class="status-badge status-stable">Stable</span>
+            </a>
+
+            <a href="/chords/" class="app-card" data-stage="development" data-name="Chord Progression Generator" data-description="Generate random chord progressions for practice and inspiration">
+              <div class="app-icon chords"></div>
+              <div class="app-info">
+                <h3 class="app-title">Chord Progression Generator</h3>
+                <p class="app-description">Generate random chord progressions for practice and inspiration</p>
+              </div>
+              <span class="status-badge status-development">Experimental</span>
+            </a>
+
+            <a href="/beat/" class="app-card" data-stage="development" data-name="Find the Beat" data-description="Analyze music with BPM detection and visual beat guidance">
+              <div class="app-icon beat"></div>
+              <div class="app-info">
+                <h3 class="app-title">Find the Beat</h3>
+                <p class="app-description">Analyze music with BPM detection and visual beat guidance</p>
+              </div>
+              <span class="status-badge status-development">Experimental</span>
+            </a>
+
+            <a href="/piano/" class="app-card" data-stage="development" data-name="Piano Practice" data-description="Practice piano with exercises, MIDI support, and realtime feedback">
+              <div class="app-icon piano"></div>
+              <div class="app-info">
+                <h3 class="app-title">Piano Practice</h3>
+                <p class="app-description">Practice piano with exercises, MIDI support, and realtime feedback</p>
+              </div>
+              <span class="status-badge status-development">Experimental</span>
+            </a>
+          </div>
+        </section>
+
+        <section class="catalog-section" data-category-section="art">
+          <div class="section-heading">
+            <h2 class="section-title">Art &amp; Writing</h2>
+          </div>
+          <div class="apps-grid">
+            <a href="/zines/" class="app-card" data-stage="stable" data-name="Zine Studio" data-description="Format image files into zines for home or professional printing">
+              <div class="app-icon zines"></div>
+              <div class="app-info">
+                <h3 class="app-title">Zine Studio</h3>
+                <p class="app-description">Format image files into zines for home or professional printing</p>
+              </div>
+              <span class="status-badge status-stable">Stable</span>
+            </a>
+
+            <a href="/forms/" class="app-card" data-stage="stable" data-name="Form Intersections" data-description="3D visualization tool for practicing Drawabox form intersections">
+              <div class="app-icon forms"></div>
+              <div class="app-info">
+                <h3 class="app-title">Form Intersections</h3>
+                <p class="app-description">3D visualization for Drawabox form intersections</p>
+              </div>
+              <span class="status-badge status-stable">Stable</span>
+            </a>
+
+            <a href="/story/" class="app-card" data-stage="development" data-name="Save the Cat Story Generator" data-description="Generate random story plots from the Save the Cat beat structure">
+              <div class="app-icon story"></div>
+              <div class="app-info">
+                <h3 class="app-title">Save the Cat Story Generator</h3>
+                <p class="app-description">Generate random story plots from the Save the Cat beat structure</p>
+              </div>
+              <span class="status-badge status-development">Experimental</span>
+            </a>
+          </div>
+        </section>
+
+        <section class="catalog-section" data-category-section="games">
+          <div class="section-heading">
+            <h2 class="section-title">Games</h2>
+          </div>
+          <div class="apps-grid">
+            <a href="/cats/" class="app-card" data-stage="development" data-name="Cat Clicker" data-description="Click a cat for the greater good">
+              <div class="app-icon cats"></div>
+              <div class="app-info">
+                <h3 class="app-title">Cat Clicker</h3>
+                <p class="app-description">Click a cat for the greater good</p>
+              </div>
+              <span class="status-badge status-development">Experimental</span>
+            </a>
+
+            <a href="/corp/" class="app-card" data-stage="development" data-name="Corporate Ladder" data-description="Crawl through the dungeons of corporate life">
+              <div class="app-icon corp"></div>
+              <div class="app-info">
+                <h3 class="app-title">Corporate Ladder</h3>
+                <p class="app-description">Crawl through the dungeons of corporate life</p>
+              </div>
+              <span class="status-badge status-development">Experimental</span>
+            </a>
+
+          </div>
+        </section>
       </div>
-      
     </div>
 
     <!-- Scripts -->
