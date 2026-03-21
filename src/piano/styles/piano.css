@@ -2668,67 +2668,65 @@ body {
    Follows sidebar design conventions: same padding, radius, font tokens.
    ========================================================================== */
 
-/* ── Section container ── */
+/* ══════════════════════════════════════════════════════════════
+   VIDEO / AUDIO PLAYER — redesigned to match sidebar Material style
+   ═════════════════════════════════════════════════════════════ */
+
 .vp-section {
-  margin: 0 var(--sp-3);
-  border: 1px solid var(--piano-border);
-  border-radius: var(--radius-lg);
-  background: var(--piano-bg);
+  margin-bottom: var(--sp-3);
+  padding: 0 var(--sp-4);
 }
 
-/* ── Header bar ── */
-.vp-bar {
+/* ── Collapsible header (matches sb-section-toggle) ── */
+.vp-header {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  padding: var(--sp-2) var(--sp-3);
-  background: var(--piano-surface);
-  border-bottom: 1px solid var(--piano-border);
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  min-height: 36px;
-}
-.vp-collapse-btn {
+  width: 100%;
+  padding: var(--sp-2) 0;
   background: none;
   border: none;
-  padding: 0;
+  border-bottom: 1px solid var(--piano-border);
   cursor: pointer;
-  color: var(--piano-text-secondary);
-  display: flex;
-  align-items: center;
+  text-align: left;
+  font-family: inherit;
 }
-.vp-icon {
+.vp-header-arrow {
+  font-size: 18px;
   color: var(--piano-text-secondary);
+  transition: transform var(--transition-normal);
+  flex-shrink: 0;
 }
-.vp-name {
-  font-size: var(--text-base);
-  font-weight: var(--weight-medium);
+.vp-header-icon {
+  font-size: 16px !important;
+  color: var(--piano-text-secondary);
+  flex-shrink: 0;
+}
+.vp-header-name {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
   color: var(--piano-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 160px;
+  min-width: 0;
 }
-
-/* ── Badge (Synced / Close / Not synced / Analyzing) ── */
-.vp-badge {
+.vp-header-badge {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
   font-size: var(--text-xs);
-  font-weight: var(--weight-semibold);
-  padding: 2px var(--sp-2);
-  border: 1px solid var(--badge-c, var(--piano-border));
-  color: var(--badge-c, var(--piano-text-secondary));
-  border-radius: var(--radius-full);
-  white-space: nowrap;
-  line-height: 1;
-}
-.vp-badge--muted {
   color: var(--piano-text-secondary);
-  border-color: var(--piano-border);
+  white-space: nowrap;
+}
+.vp-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
 }
 
-/* ── Spinner (inline & loader) ── */
+/* ── Spinner (shared) ── */
 .vp-spin {
   width: 10px;
   height: 10px;
@@ -2736,6 +2734,7 @@ body {
   border-top-color: var(--piano-primary);
   border-radius: 50%;
   animation: vp-rotate 0.7s linear infinite;
+  display: inline-block;
 }
 @keyframes vp-rotate {
   to {
@@ -2743,13 +2742,8 @@ body {
   }
 }
 
-/* ── Action icon buttons ── */
-.vp-actions {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-}
-.vp-act {
+/* ── Small icon button (matches sidebar btn style) ── */
+.vp-icon-btn {
   background: none;
   border: none;
   cursor: pointer;
@@ -2758,148 +2752,145 @@ body {
   border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
-  transition: all var(--transition-fast);
+  transition:
+    color var(--transition-fast),
+    background var(--transition-fast);
 }
-.vp-act .material-symbols-outlined {
+.vp-icon-btn .material-symbols-outlined {
   font-size: 16px;
 }
-.vp-act:hover {
+.vp-icon-btn:hover {
   color: var(--piano-primary);
   background: var(--piano-surface-hover);
 }
-.vp-act--danger:hover {
+.vp-icon-btn--danger:hover {
   color: var(--piano-danger);
 }
 
 /* ── Video element ── */
-.vp-media {
+.vp-video {
   width: 100%;
   max-width: 100%;
   height: auto;
+  max-height: 200px;
   background: #000;
   object-fit: contain;
-  border-radius: 0;
+  border-radius: var(--radius-sm);
+  margin: var(--sp-2) 0;
   display: block;
 }
 
-/* ── Expandable detail panel ── */
-.vp-detail {
-  padding: var(--sp-3);
+/* ── Body (detail panel) ── */
+.vp-body {
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
-  border-top: 1px solid var(--piano-border);
+  padding: var(--sp-2) 0;
 }
 
 /* ── Loader (analysis in progress) ── */
-.vp-loader {
+.vp-analyzing {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: var(--sp-2);
+  align-items: stretch;
+  gap: var(--sp-1);
   padding: var(--sp-3) 0;
 }
-.vp-loader-ring {
-  width: 24px;
-  height: 24px;
-  border: 3px solid var(--piano-border);
-  border-top-color: var(--piano-primary);
-  border-radius: 50%;
-  animation: vp-rotate 0.7s linear infinite;
-}
-.vp-loader-text {
-  font-size: var(--text-sm);
+.vp-analyzing-text {
+  font-size: var(--text-xs);
   color: var(--piano-text-secondary);
-  text-align: center;
 }
-.vp-loader-track {
+.vp-analyzing-track {
   width: 100%;
-  max-width: 180px;
   height: 3px;
   background: var(--piano-border);
   border-radius: 2px;
   overflow: hidden;
 }
-.vp-loader-fill {
+.vp-analyzing-fill {
   height: 100%;
-  width: 40%;
+  width: 30%;
   background: var(--piano-primary);
   border-radius: 2px;
-  animation: vp-slide 1.2s ease-in-out infinite;
+  animation: vp-slide 1.4s ease-in-out infinite;
 }
 @keyframes vp-slide {
   0% {
     transform: translateX(-100%);
   }
   100% {
-    transform: translateX(350%);
+    transform: translateX(430%);
   }
 }
 
-/* ── Status message ── */
-.vp-msg {
+/* ── Error message ── */
+.vp-error {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
   font-size: var(--text-sm);
-  padding: var(--sp-1) var(--sp-2);
-  border-radius: var(--radius-sm);
-  background: var(--piano-surface);
-}
-.vp-msg--err {
   color: var(--piano-danger);
 }
-.vp-msg-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  background: var(--msg-c, var(--piano-text-secondary));
-}
-.vp-msg-text {
-  color: var(--piano-text);
-  font-weight: var(--weight-medium);
-  flex: 1;
+.vp-error .material-symbols-outlined {
+  font-size: 14px;
 }
 
-/* ── Metrics chips ── */
-.vp-metrics {
+/* ── Inline info row (compact metrics) ── */
+.vp-info-row {
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
-  gap: var(--sp-1) var(--sp-2);
-}
-.vp-metric {
+  gap: var(--sp-1);
   font-size: var(--text-xs);
+  color: var(--piano-text);
+  padding: var(--sp-1) 0;
+}
+.vp-info-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  font-weight: var(--weight-medium);
+}
+.vp-info-label {
   color: var(--piano-text-secondary);
-  background: var(--piano-surface);
-  padding: 2px var(--sp-2);
-  border-radius: var(--radius-full);
+  font-weight: normal;
+}
+.vp-info-sep {
+  width: 1px;
+  height: 12px;
+  background: var(--piano-border);
+  flex-shrink: 0;
+  margin: 0 2px;
+}
+.vp-info-item--tag {
+  color: var(--piano-warning);
+  font-style: italic;
+  font-weight: normal;
+}
+.vp-info-item--live {
+  color: var(--piano-primary);
 }
 
-/* ── BPM suggestion banner ── */
-.vp-suggest {
+/* ── BPM suggestion ── */
+.vp-suggestion {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  padding: var(--sp-2) var(--sp-3);
+  padding: var(--sp-1) var(--sp-2);
   background: var(--piano-warning-light);
-  border: 1px solid var(--piano-warning);
-  border-radius: var(--radius-md);
-  font-size: var(--text-sm);
-}
-.vp-suggest-icon {
-  font-size: 16px !important;
-  color: var(--piano-warning);
-}
-.vp-suggest-text {
-  flex: 1;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
   color: var(--piano-text);
 }
-.vp-suggest-btn {
+.vp-suggestion .material-symbols-outlined {
+  font-size: 14px;
+  color: var(--piano-warning);
+}
+.vp-suggestion-apply {
   background: var(--piano-warning);
   color: #fff;
   border: none;
-  padding: var(--sp-1) var(--sp-3);
+  padding: 2px var(--sp-2);
   border-radius: var(--radius-sm);
   font-size: var(--text-xs);
   font-weight: var(--weight-semibold);
@@ -2907,48 +2898,100 @@ body {
   cursor: pointer;
   white-space: nowrap;
   transition: background var(--transition-fast);
+  margin-left: auto;
 }
-.vp-suggest-btn:hover {
+.vp-suggestion-apply:hover {
   background: #d97706;
 }
 
-/* ── Tap to align ── */
-.vp-align-btn {
+/* ── Controls rows (shared layout for toggle/offset/volume) ── */
+.vp-controls-row {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  width: 100%;
-  padding: var(--sp-2) var(--sp-3);
-  background: var(--piano-surface);
+}
+
+/* ── Toggle button (Smart Metronome, etc.) ── */
+.vp-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: var(--sp-1) var(--sp-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--piano-border);
+  background: transparent;
+  color: var(--piano-text-secondary);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast);
+}
+.vp-toggle-btn .material-symbols-outlined {
+  font-size: 14px;
+}
+.vp-toggle-btn:hover {
+  background: var(--piano-surface-alt);
+  border-color: var(--piano-text-secondary);
+}
+.vp-toggle-btn--on {
+  background: var(--piano-primary);
+  color: #fff;
+  border-color: var(--piano-primary);
+}
+.vp-toggle-btn--on:hover {
+  background: var(--piano-primary-hover);
+  border-color: var(--piano-primary-hover);
+}
+.vp-hint {
+  font-size: var(--text-xs);
+  color: var(--piano-warning);
+  font-style: italic;
+}
+
+/* ── Text button (Tap to align, cancel) ── */
+.vp-text-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: var(--sp-1) var(--sp-2);
+  background: none;
   border: 1px dashed var(--piano-border);
   border-radius: var(--radius-sm);
   color: var(--piano-primary);
-  font: var(--text-label);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  font-family: inherit;
   cursor: pointer;
   transition:
     background var(--transition-fast),
     border-color var(--transition-fast);
 }
-.vp-align-btn:hover {
+.vp-text-btn .material-symbols-outlined {
+  font-size: 14px;
+}
+.vp-text-btn:hover {
   background: var(--piano-primary-light);
   border-color: var(--piano-primary);
 }
 
-.vp-tap-active {
+/* ── Tap to align active row ── */
+.vp-tap-row {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  padding: var(--sp-2) var(--sp-3);
-  background: var(--piano-primary-light);
-  border: 1px solid var(--piano-primary);
-  border-radius: var(--radius-sm);
+  flex: 1;
 }
 .vp-tap-pulse {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: var(--piano-primary);
   animation: vp-pulse 1s ease-in-out infinite;
+  flex-shrink: 0;
 }
 @keyframes vp-pulse {
   0%,
@@ -2961,64 +3004,12 @@ body {
     transform: scale(1.3);
   }
 }
-.vp-tap-label {
-  flex: 1;
-  font: var(--text-label);
+.vp-tap-msg {
+  font-size: var(--text-xs);
   color: var(--piano-text);
-}
-.vp-tap-btn {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-1);
-  padding: var(--sp-1) var(--sp-3);
-  border: none;
-  border-radius: var(--radius-sm);
-  font: var(--text-label);
-  font-weight: 600;
-  cursor: pointer;
-  transition: background var(--transition-fast);
-}
-.vp-tap-btn--go {
-  background: var(--piano-primary);
-  color: #fff;
-}
-.vp-tap-btn--go:hover {
-  background: var(--piano-primary-dark, #5b21b6);
-}
-.vp-tap-btn--cancel {
-  background: transparent;
-  color: var(--piano-text-secondary);
-}
-.vp-tap-btn--cancel:hover {
-  background: var(--piano-surface-alt);
+  flex: 1;
 }
 
-/* ── Inline row (offset, volume) ── */
-.vp-row {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-}
-.vp-lbl {
-  font-size: var(--text-sm);
-  color: var(--piano-text-secondary);
-  font-weight: var(--weight-medium);
-  white-space: nowrap;
-  min-width: 48px;
-}
-.vp-num-input {
-  width: 64px;
-  padding: var(--sp-1) var(--sp-2);
-  border: 1px solid var(--piano-border);
-  border-radius: var(--radius-sm);
-  font-family: inherit;
-  font-size: var(--text-sm);
-  text-align: center;
-}
-.vp-num-input:focus {
-  border-color: var(--piano-primary);
-  outline: none;
-}
 .vp-unit {
   font-size: var(--text-sm);
   color: var(--piano-text-secondary);

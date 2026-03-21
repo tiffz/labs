@@ -3,7 +3,7 @@
  * Syncs progression, key, tempo, time signature, and styling to URL parameters
  */
 
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import type { ChordProgressionState, Key, ChordStylingStrategy } from '../types';
 import { COMMON_CHORD_PROGRESSIONS } from '../data/chordProgressions';
 import { CHORD_STYLING_STRATEGIES } from '../data/chordStylingStrategies';
@@ -73,67 +73,67 @@ function parseUrlParams(): Partial<ChordProgressionState> | null {
   return Object.keys(result).length > 0 ? result : null;
 }
 
-/**
- * Update URL parameters without triggering a page reload
- */
-function updateUrlParams(state: ChordProgressionState): void {
+const DEBOUNCE_MS = 800;
+
+function buildUrl(state: ChordProgressionState): string {
   const params: string[] = [];
   
-  // Add progression
   if (state.progression?.name) {
     params.push(`progression=${encodeURIComponent(state.progression.name)}`);
   }
   
-  // Add key
   if (state.key) {
     params.push(`key=${encodeURIComponent(state.key)}`);
   }
   
-  // Add tempo
   if (state.tempo) {
     params.push(`tempo=${state.tempo}`);
   }
   
-  // Add time signature
   if (state.timeSignature) {
     const timeSigString = `${state.timeSignature.numerator}/${state.timeSignature.denominator}`;
     params.push(`time=${encodeURIComponent(timeSigString)}`);
   }
   
-  // Add styling strategy
   if (state.stylingStrategy) {
     params.push(`styling=${encodeURIComponent(state.stylingStrategy)}`);
   }
   
-  // Add measures per chord (only if not default value of 1)
   if (state.measuresPerChord && state.measuresPerChord !== 1) {
     params.push(`measuresPerChord=${state.measuresPerChord}`);
   }
   
-  // Update URL without reloading
-  const newUrl = params.length > 0
+  return params.length > 0
     ? `${window.location.pathname}?${params.join('&')}`
     : window.location.pathname;
-  
-  window.history.replaceState({}, '', newUrl);
 }
 
 /**
  * Custom hook to sync app state with URL parameters
  */
 export function useUrlState() {
-  /**
-   * Get initial state from URL on mount
-   */
+  const lastPushTimeRef = useRef(0);
+
   const getInitialState = useCallback((): Partial<ChordProgressionState> | null => {
     return parseUrlParams();
   }, []);
   
   /**
-   * Sync current state to URL
+   * Sync current state to URL. Uses pushState to support back/forward navigation,
+   * with a debounce window so rapid changes (e.g. typing tempo) don't flood history.
    */
   const syncToUrl = useCallback((state: ChordProgressionState): void => {
-    updateUrlParams(state);
+    const newUrl = buildUrl(state);
+    const currentUrl = window.location.pathname + window.location.search;
+    if (newUrl === currentUrl) return;
+
+    const now = Date.now();
+    if (now - lastPushTimeRef.current < DEBOUNCE_MS) {
+      window.history.replaceState({}, '', newUrl);
+    } else {
+      window.history.pushState({}, '', newUrl);
+      lastPushTimeRef.current = now;
+    }
   }, []);
   
   /**

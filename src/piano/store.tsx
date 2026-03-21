@@ -9,6 +9,7 @@ import { DEFAULT_SCORE } from './data/scales';
 import { addRecord, type PracticeRecord } from './utils/practiceHistory';
 import { AcousticInput } from './utils/acousticInput';
 import type { SongPracticeSettings, GlobalPracticePreferences } from './utils/libraryStorage';
+import { SmartBeatMap } from './utils/smartBeatMap';
 import { isDebugEnabled, logDebugEvent } from './utils/practiceDebugLog';
 
 export type ActiveMode = 'none' | 'play' | 'practice' | 'free-practice';
@@ -80,6 +81,10 @@ interface PianoState {
   microphoneActive: boolean;
   detectedPitch: number | null;
   countInEveryLoop: boolean;
+  smartMetronomeEnabled: boolean;
+  hasTempoVariance: boolean;
+  mediaBeats: number[] | null;
+  midiSoundEnabled: boolean;
 }
 
 type Action =
@@ -152,6 +157,9 @@ type Action =
   | { type: 'SET_MICROPHONE_ACTIVE'; active: boolean }
   | { type: 'SET_DETECTED_PITCH'; pitch: number | null }
   | { type: 'SET_COUNT_IN_EVERY_LOOP'; enabled: boolean }
+  | { type: 'SET_SMART_METRONOME'; enabled: boolean }
+  | { type: 'SET_MEDIA_BEATS'; beats: number[] | null; hasTempoVariance: boolean }
+  | { type: 'SET_MIDI_SOUND'; enabled: boolean }
   | { type: 'RESTORE_PRACTICE_SETTINGS'; settings: SongPracticeSettings }
   | { type: 'RESTORE_GLOBAL_PREFERENCES'; prefs: GlobalPracticePreferences };
 
@@ -217,6 +225,10 @@ export const initialState: PianoState = {
   microphoneActive: false,
   detectedPitch: null,
   countInEveryLoop: false,
+  smartMetronomeEnabled: false,
+  hasTempoVariance: false,
+  mediaBeats: null,
+  midiSoundEnabled: false,
 };
 
 function addChordToPart(
@@ -655,7 +667,10 @@ export function reducer(state: PianoState, action: Action): PianoState {
     case 'SET_PRACTICE_CHORDS':
       return { ...state, practiceChords: action.enabled };
     case 'SET_MEDIA_FILE':
-      return { ...state, mediaFile: action.file };
+      return {
+        ...state, mediaFile: action.file,
+        ...(action.file === null ? { mediaBeats: null, hasTempoVariance: false, smartMetronomeEnabled: false } : {}),
+      };
     case 'SET_MEDIA_START_OFFSET':
       return { ...state, mediaStartOffset: action.offset };
     case 'SET_MEDIA_VOLUME':
@@ -670,6 +685,12 @@ export function reducer(state: PianoState, action: Action): PianoState {
       return { ...state, detectedPitch: action.pitch };
     case 'SET_COUNT_IN_EVERY_LOOP':
       return { ...state, countInEveryLoop: action.enabled };
+    case 'SET_SMART_METRONOME':
+      return { ...state, smartMetronomeEnabled: action.enabled };
+    case 'SET_MIDI_SOUND':
+      return { ...state, midiSoundEnabled: action.enabled };
+    case 'SET_MEDIA_BEATS':
+      return { ...state, mediaBeats: action.beats, hasTempoVariance: action.hasTempoVariance };
     case 'SET_CURRENT_BEAT':
       return { ...state, currentBeat: action.beat };
     case 'RESTORE_PRACTICE_SETTINGS': {
@@ -716,6 +737,7 @@ export function reducer(state: PianoState, action: Action): PianoState {
         loopingEnabled: p.loopingEnabled,
         countInEveryLoop: p.countInEveryLoop,
         soundType: p.soundType,
+        midiSoundEnabled: p.midiSoundEnabled ?? false,
       };
     }
     default:
@@ -762,7 +784,7 @@ export function PianoProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'SET_MIDI_CONNECTED', connected });
       dispatch({ type: 'SET_MIDI_DEVICES', devices });
     });
-    midi.onNote((type, note, _velocity, timestamp) => {
+    midi.onNote((type, note, velocity, timestamp) => {
       if (type === 'noteon') {
         recordMidiNoteOn(note, timestamp);
         dispatch({ type: 'ADD_MIDI_NOTE', note });
@@ -785,10 +807,15 @@ export function PianoProvider({ children }: { children: React.ReactNode }) {
             }, 80);
           }
         }
-        engine.playNote(note);
+        if (s.midiSoundEnabled) {
+          engine.playMidiNote(note, velocity);
+        }
       } else {
         recordMidiNoteOff(note);
         dispatch({ type: 'REMOVE_MIDI_NOTE', note });
+        if (stateRef.current.midiSoundEnabled) {
+          engine.stopMidiNote(note);
+        }
         const s = stateRef.current;
         if (s.inputMode === 'step-input' && s.durationMode === 'auto') {
           const startTime = midiHoldTimers.current.get(note);
@@ -855,6 +882,11 @@ export function PianoProvider({ children }: { children: React.ReactNode }) {
     engine.setTempo(s.tempo);
     engine.setLoop(s.loopingEnabled);
     engine.setLoopCallback(null);
+    engine.setSmartBeatMap(
+      s.smartMetronomeEnabled && s.mediaBeats
+        ? new SmartBeatMap(s.mediaBeats, s.mediaStartOffset)
+        : null,
+    );
 
     const onEnd = () => {
       if (playbackGenRef.current !== gen) return;
@@ -884,6 +916,11 @@ export function PianoProvider({ children }: { children: React.ReactNode }) {
 
     engine.setTempo(currentState.tempo);
     engine.setLoop(useCountInLoop ? false : currentState.loopingEnabled);
+    engine.setSmartBeatMap(
+      currentState.smartMetronomeEnabled && currentState.mediaBeats
+        ? new SmartBeatMap(currentState.mediaBeats, currentState.mediaStartOffset)
+        : null,
+    );
     engine.setLoopCallback(useCountInLoop ? null : () => {
       if (playbackGenRef.current !== gen) return;
       dispatch({ type: 'END_PRACTICE_RUN' });
@@ -921,7 +958,7 @@ export function PianoProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'SET_PLAYING', playing: true });
       engine.setMetronome(stateRef.current.metronomeEnabled);
     });
-  }, [engine, getPlaybackScore]);
+  }, [engine]);
 
   const startPracticeRun = useCallback(async () => {
     const gen = ++playbackGenRef.current;
@@ -1144,7 +1181,7 @@ export function PianoProvider({ children }: { children: React.ReactNode }) {
   // Auto-save global practice preferences (debounced)
   const globalSaveTimerRef = useRef<number | null>(null);
   const { masterVolume, masterMuted, metronomeVolume, metronomeEnabled,
-    loopingEnabled, countInEveryLoop, soundType, microphoneActive } = state;
+    loopingEnabled, countInEveryLoop, soundType, microphoneActive, midiSoundEnabled } = state;
   useEffect(() => {
     if (globalSaveTimerRef.current) clearTimeout(globalSaveTimerRef.current);
     globalSaveTimerRef.current = window.setTimeout(() => {
@@ -1152,6 +1189,7 @@ export function PianoProvider({ children }: { children: React.ReactNode }) {
         masterVolume, masterMuted, metronomeVolume, metronomeEnabled,
         loopingEnabled, countInEveryLoop, soundType,
         microphoneEnabled: microphoneActive,
+        midiSoundEnabled,
       };
       import('./utils/libraryStorage').then(({ saveGlobalPreferences }) => {
         saveGlobalPreferences(prefs);
@@ -1159,7 +1197,7 @@ export function PianoProvider({ children }: { children: React.ReactNode }) {
     }, 1500);
     return () => { if (globalSaveTimerRef.current) clearTimeout(globalSaveTimerRef.current); };
   }, [masterVolume, masterMuted, metronomeVolume, metronomeEnabled,
-      loopingEnabled, countInEveryLoop, soundType, microphoneActive]);
+      loopingEnabled, countInEveryLoop, soundType, microphoneActive, midiSoundEnabled]);
 
   const value: PianoContextValue = {
     state, dispatch, engine, midi, startMode, stopMode, loadScore, toggleMicrophone,

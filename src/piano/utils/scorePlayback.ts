@@ -4,6 +4,7 @@ import { PianoSynthesizer, SampledPiano, SimpleSynthesizer, type WaveformType } 
 import type { Instrument } from '../../shared/playback/instruments';
 import type { SoundType } from '../../chords/types/soundOptions';
 import { recordNoteExpectedTime, clearExpectedTimes, refreshHeldNotes } from './practiceTimingStore';
+import type { SmartBeatMap } from './smartBeatMap';
 import clickSoundUrl from '../../drums/assets/sounds/click.mp3';
 
 interface TieContinuation {
@@ -157,10 +158,11 @@ export class ScorePlaybackEngine {
   private drumBuffers = new Map<string, AudioBuffer>();
   private drumCallback: ((scheduledUpTo: number, scheduleEnd: number, startTime: number, tempo: number, audioCtx: AudioContext) => void) | null = null;
   private drumScheduledUpTo = -1;
+  private smartBeatMap: SmartBeatMap | null = null;
 
   private getAudioContext(): AudioContext {
     if (!this.audioContext) {
-      this.audioContext = new AudioContext();
+      this.audioContext = new AudioContext({ latencyHint: 'interactive' });
     }
     return this.audioContext;
   }
@@ -259,14 +261,20 @@ export class ScorePlaybackEngine {
   private buildEvents(score: PianoScore): NoteEvent[] {
     const events: NoteEvent[] = [];
     const playbackOrder = this.resolvePlaybackOrder(score);
+    const beatsPerMeasure = score.timeSignature.numerator *
+      (4 / score.timeSignature.denominator);
 
     for (const part of score.parts) {
       let beatPos = 0;
       const tieExtend = new Map<number, NoteEvent>();
 
-      for (const mi of playbackOrder) {
+      for (let orderIdx = 0; orderIdx < playbackOrder.length; orderIdx++) {
+        const mi = playbackOrder[orderIdx];
         if (mi >= part.measures.length) continue;
         const measure = part.measures[mi];
+        const measureStart = beatPos;
+        let measureBeats = 0;
+
         for (let ni = 0; ni < measure.notes.length; ni++) {
           const note = measure.notes[ni];
           if (note.grace) continue;
@@ -284,6 +292,7 @@ export class ScorePlaybackEngine {
               }
             }
             beatPos += dur;
+            measureBeats += dur;
             continue;
           }
 
@@ -306,7 +315,16 @@ export class ScorePlaybackEngine {
           }
 
           beatPos += dur;
+          measureBeats += dur;
         }
+
+        // Force exact beatsPerMeasure for every full measure to prevent
+        // inter-part beat drift from floating-point accumulation.
+        // Only allow a shorter duration for genuine pickup measures
+        // (first in playback order with fewer beats than a full measure).
+        const isPickup = orderIdx === 0 && measureBeats > 0
+          && measureBeats < beatsPerMeasure - 0.01;
+        beatPos = measureStart + (isPickup ? measureBeats : beatsPerMeasure);
       }
     }
     return events.sort((a, b) => a.beatPosition - b.beatPosition);
@@ -407,11 +425,23 @@ export class ScorePlaybackEngine {
     this.tick();
   }
 
+  /** Convert elapsed seconds to beat position (variable or fixed tempo). */
+  private elapsedToBeat(elapsed: number): number {
+    if (this.smartBeatMap) return this.smartBeatMap.timeToBeat(elapsed);
+    return elapsed * (this.tempo / 60);
+  }
+
+  /** Convert beat position to elapsed seconds (variable or fixed tempo). */
+  private beatToElapsed(beat: number): number {
+    if (this.smartBeatMap) return this.smartBeatMap.beatToTime(beat);
+    return beat * (60 / this.tempo);
+  }
+
   private tick = () => {
     if (!this.playing || !this.audioContext) return;
     const now = this.audioContext.currentTime;
     const elapsed = now - this.startTime;
-    const currentBeat = elapsed * (this.tempo / 60);
+    const currentBeat = this.elapsedToBeat(elapsed);
 
     // Skip gap when tab was backgrounded (rAF was throttled)
     const maxGapBeats = 1;
@@ -423,8 +453,7 @@ export class ScorePlaybackEngine {
       if (this.loopEnabled) {
         clearExpectedTimes();
         refreshHeldNotes(performance.now());
-        const secPerBeat = 60 / this.tempo;
-        this.startTime += this.totalBeats * secPerBeat;
+        this.startTime += this.beatToElapsed(this.totalBeats);
         this.scheduledUpTo = -1;
         this.drumScheduledUpTo = -1;
         if (this.onLoopCallback) this.onLoopCallback();
@@ -443,18 +472,17 @@ export class ScorePlaybackEngine {
     }
 
     const lookAhead = 0.2;
-    const lookAheadBeats = lookAhead * (this.tempo / 60);
-    const scheduleUpTo = currentBeat + lookAheadBeats;
+    const lookAheadBeat = this.elapsedToBeat(elapsed + lookAhead);
+    const scheduleUpTo = lookAheadBeat;
 
     if (this.metronomeEnabled) {
       const { numerator, denominator } = this.currentScore?.timeSignature ?? { numerator: 4, denominator: 4 };
       const beatsPerClick = 4 / denominator;
-      const secPerBeat = 60 / this.tempo;
       const firstBeat = Math.ceil(Math.max(this.scheduledUpTo, 0) / beatsPerClick) * beatsPerClick;
       for (let b = firstBeat; b <= scheduleUpTo; b += beatsPerClick) {
         if (b < 0) continue;
         if (this.loopEnabled && b >= this.totalBeats) continue;
-        const audioTime = this.startTime + b * secPerBeat;
+        const audioTime = this.startTime + this.beatToElapsed(b);
         const timeKey = Math.round(audioTime * 1000);
         if (this.scheduledClickTimes.has(timeKey)) continue;
         if (this.lastClickAudioTime >= 0 && (audioTime - this.lastClickAudioTime) < 0.05) continue;
@@ -492,8 +520,8 @@ export class ScorePlaybackEngine {
         const muted = this.trackMuted.get(event.partId) ?? false;
         if (!muted && this.instrument) {
           const volume = this.trackVolume.get(event.partId) ?? 1;
-          const audioTime = this.startTime + event.beatPosition * (60 / this.tempo);
-          const durSec = event.duration * (60 / this.tempo);
+          const audioTime = this.startTime + this.beatToElapsed(event.beatPosition);
+          const durSec = this.beatToElapsed(event.beatPosition + event.duration) - this.beatToElapsed(event.beatPosition);
           const eventEndBeat = event.beatPosition + event.duration;
           const isNearEnd = eventEndBeat >= this.totalBeats - 0.01;
           const trimmedDur = isNearEnd
@@ -515,7 +543,6 @@ export class ScorePlaybackEngine {
     let curMeasure = 0;
     const noteIndices = new Map<string, number>();
     const perfNow = performance.now();
-    const secPerBeat = 60 / this.tempo;
     for (const event of this.events) {
       if (event.beatPosition > currentBeat) break;
       const endBeat = event.beatPosition + event.duration;
@@ -538,7 +565,7 @@ export class ScorePlaybackEngine {
           noteIndices.set(event.partId, event.noteIndex);
         }
         if (!event.rest) {
-          const audioTimeForNote = this.startTime + event.beatPosition * secPerBeat;
+          const audioTimeForNote = this.startTime + this.beatToElapsed(event.beatPosition);
           const wallTimeMs = perfNow + (audioTimeForNote - now) * 1000;
           recordNoteExpectedTime(event.noteId, wallTimeMs);
         }
@@ -575,6 +602,7 @@ export class ScorePlaybackEngine {
   setTempo(tempo: number) { this.tempo = tempo; }
   setMasterVolume(volume: number) { this.masterVolume = volume; }
   setMetronomeVolume(volume: number) { this.metronomeVolume = volume; }
+  setSmartBeatMap(map: SmartBeatMap | null) { this.smartBeatMap = map; }
 
   /**
    * Register a drum scheduling callback. Called each tick with the look-ahead window
@@ -609,6 +637,55 @@ export class ScorePlaybackEngine {
     source.start(Math.max(audioTime, this.audioContext.currentTime));
   }
 
+  /**
+   * Tracks the last trigger time per MIDI note to debounce rapid duplicates.
+   * Some controllers send redundant note-on messages within a few ms.
+   */
+  private midiNoteLastTrigger = new Map<number, number>();
+  private static readonly MIDI_DEBOUNCE_MS = 30;
+
+  /** Dedicated low-latency instrument for MIDI key-press sounds (bypasses compressor). */
+  private midiInstrument: Instrument | null = null;
+
+  private getMidiInstrument(): Instrument {
+    if (!this.midiInstrument) {
+      const ctx = this.getAudioContext();
+      const inst = new PianoSynthesizer(ctx);
+      inst.connect(ctx.destination);
+      this.midiInstrument = inst;
+    }
+    return this.midiInstrument;
+  }
+
+  /**
+   * Play a MIDI note with minimal latency.
+   * Bypasses the compressor, debounces rapid re-triggers, and uses velocity.
+   */
+  playMidiNote(midi: number, velocity = 0.7) {
+    const now = performance.now();
+    const last = this.midiNoteLastTrigger.get(midi);
+    if (last !== undefined && now - last < ScorePlaybackEngine.MIDI_DEBOUNCE_MS) {
+      return;
+    }
+    this.midiNoteLastTrigger.set(midi, now);
+
+    const ctx = this.getAudioContext();
+    if (ctx.state === 'suspended') ctx.resume();
+
+    this.getMidiInstrument().playNote({
+      frequency: midiToFrequency(midi),
+      startTime: ctx.currentTime,
+      duration: 0.4,
+      velocity: Math.min(1, velocity) * this.masterVolume,
+    });
+  }
+
+  /** Clear debounce tracking for a released note so re-strikes register. */
+  stopMidiNote(midi: number) {
+    this.midiNoteLastTrigger.delete(midi);
+  }
+
+  /** Play a short preview note (used by non-MIDI contexts like onscreen keyboard). */
   playNote(midi: number, duration = 0.3) {
     const ctx = this.getAudioContext();
     if (ctx.state === 'suspended') ctx.resume();

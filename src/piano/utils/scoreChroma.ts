@@ -7,6 +7,10 @@
  *
  * This "synthetic chromagram" is aligned with the DTW audio chromagram to
  * produce a non-linear time mapping between score and recording.
+ *
+ * When a playbackOrder is supplied (from resolvePlaybackOrder), the chroma
+ * follows the actual performance order — accounting for repeats, D.S. al
+ * Coda, voltas, etc.  Without it, measures are traversed linearly.
  */
 
 import type { PianoScore } from '../types';
@@ -19,25 +23,30 @@ export interface ScoreChromaResult {
   frameRate: number;
   /** Total duration of the score in seconds. */
   durationSec: number;
+  /** Total beats in the expanded score. */
+  totalBeats: number;
 }
 
 /**
  * Build a chromagram from a PianoScore.
  *
- * @param score       The score to convert
- * @param bpm         Tempo to use (beats per minute)
- * @param frameRate   Chroma frame rate in Hz (default 10)
+ * @param score          The score to convert
+ * @param bpm            Tempo to use (beats per minute)
+ * @param frameRate      Chroma frame rate in Hz (default 10)
+ * @param playbackOrder  Optional measure indices in performance order
+ *                       (from resolvePlaybackOrder).  When omitted, measures
+ *                       are used in their stored order.
  */
 export function buildScoreChroma(
   score: PianoScore,
   bpm: number,
   frameRate = 10,
+  playbackOrder?: number[],
 ): ScoreChromaResult {
   const secPerBeat = 60 / bpm;
   const beatsPerMeasure =
     score.timeSignature.numerator * (4 / score.timeSignature.denominator);
 
-  // Collect all sounding note events: [startSec, endSec, pitchClass]
   interface NoteSpan {
     startSec: number;
     endSec: number;
@@ -45,9 +54,18 @@ export function buildScoreChroma(
   }
   const spans: NoteSpan[] = [];
 
+  // When playbackOrder is provided, iterate measures in that order.
+  // Otherwise fall back to the linear measure list.
+  const measureOrder = playbackOrder ?? undefined;
+
   for (const part of score.parts) {
     let beatPos = 0;
-    for (const measure of part.measures) {
+    const measureIndices = measureOrder ?? part.measures.map((_, i) => i);
+
+    for (const mi of measureIndices) {
+      const measure = part.measures[mi];
+      if (!measure) continue;
+
       let measureBeatPos = 0;
       for (const note of measure.notes) {
         if (note.grace) continue;
@@ -70,11 +88,12 @@ export function buildScoreChroma(
   }
 
   if (spans.length === 0) {
-    return { frames: [], frameRate, durationSec: 0 };
+    return { frames: [], frameRate, durationSec: 0, totalBeats: 0 };
   }
 
   const maxEnd = Math.max(...spans.map(s => s.endSec));
   const durationSec = maxEnd;
+  const totalBeats = Math.ceil(durationSec / secPerBeat);
   const numFrames = Math.max(1, Math.ceil(durationSec * frameRate));
   const frameDur = 1 / frameRate;
 
@@ -86,10 +105,8 @@ export function buildScoreChroma(
     const chroma = new Float32Array(12);
 
     for (const span of spans) {
-      // Check overlap with this frame
       if (span.endSec <= frameStart || span.startSec >= frameEnd) continue;
 
-      // Energy decays linearly from onset (simple model)
       const age = Math.max(0, frameStart - span.startSec);
       const totalLen = span.endSec - span.startSec;
       const energy = totalLen > 0 ? Math.max(0.1, 1 - age / totalLen) : 1;
@@ -107,5 +124,5 @@ export function buildScoreChroma(
     frames.push(chroma);
   }
 
-  return { frames, frameRate, durationSec };
+  return { frames, frameRate, durationSec, totalBeats };
 }

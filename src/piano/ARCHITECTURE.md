@@ -110,21 +110,34 @@ Audio instruments (`PianoSynthesizer`, `SimpleSynthesizer`, `SampledPiano`) live
 
 ### Video/Audio-to-Score Synchronization
 
-When users upload a video or audio file, the app helps align the recording with the score using a combination of automatic detection and manual tools:
+When users upload a video or audio file, the app aligns the recording with the score using a multi-stage pipeline:
 
-1. **Music start detection**: Analyzes the audio's RMS energy to find where the music begins (skipping silence, title cards, etc.). This detected "music start" time becomes the initial offset.
+1. **Music start detection** (`detectMusicStart`): RMS energy analysis with 50ms windows to find where audio first becomes audible, skipping silence/title cards.
 
-2. **BPM detection**: Uses the beat analysis pipeline to detect the recording's tempo and suggest adjustments if it differs significantly from the score BPM.
+2. **BPM detection**: Beat analysis pipeline (`analyzeBeat` in `src/beat/utils/`) detects the recording's tempo and suggests adjustments if it differs from the score BPM by more than 5%.
 
-3. **Tap to align**: Since automatic alignment can't reliably handle arbitrary recordings (different arrangements, intros, etc.), the app provides a "Tap to align" feature. The user plays the audio and taps a button on beat 1 of measure 1 — this instantly sets the offset to the current playback time. This is fast (~2 seconds of effort) and 100% reliable.
+3. **Chroma-based DTW alignment** (`videoScoreCorrelation.ts`): The core alignment engine:
+   - Builds a synthetic chromagram from the score at 8 Hz using `buildScoreChroma` (always at the score's BPM so beat indices match the playback engine)
+   - Extracts HPCP chroma features from the audio via Essentia.js (`extractAudioChroma`), capped at 1200 frames
+   - Runs Dynamic Time Warping with a 35% Sakoe-Chiba band for rubato tolerance
+   - Samples the DTW warp path at each integer beat to produce per-beat audio timestamps
+   - Applies `fixDtwOutliers` — a conservative outlier-only correction that preserves natural rubato while fixing erratic jumps (replaces intervals >2.5× or <0.4× local median)
 
-4. **Manual offset slider**: Fine-tune the offset in 0.1s increments for precise alignment.
+4. **Smart Metronome** (`SmartBeatMap`): When the recording has variable tempo, the DTW-derived beat timestamps are used to create a `SmartBeatMap` that maps between beat indices and audio times with linear interpolation. This allows the metronome and score playback to follow the recording's actual rubato timing.
 
-**Playback sync strategy**: The media plays at its original speed (`playbackRate = 1`). At playback start, the player seeks to `offset + sectionOffset`. After that initial seek, the media plays untouched — no tempo changes, no periodic drift correction. The only re-seek happens on loop boundaries (detected when `currentBeat` jumps backward). This keeps the original recording perfectly intact and eliminates jitter.
+5. **Offset derivation**: When DTW beats are available, `bestOffset` is set to `beats[0]` (the DTW's computed audio time for beat 0). This ensures the SmartBeatMap's timeline is exactly consistent with the DTW alignment, avoiding the mismatch that occurred when using the separate downbeat alignment estimate.
 
-**BPM suggestion**: If the detected BPM differs from the score BPM by more than 5%, the app suggests adjusting the score's tempo.
+6. **Manual tools**: "Tap to align" (play audio, tap on beat 1 of measure 1) and a manual offset slider for fine-tuning.
 
-**Note**: `dtw.ts`, `scoreChroma.ts`, and `chromaExtractor.ts` still exist in the codebase for potential future use (e.g., advanced section-level analysis).
+**Playback sync strategy**: The media plays at native speed. At playback start, the player seeks to `offset + SmartBeatMap.beatToTime(beat)`. A drift-correction loop compares the expected audio time (from the current beat position) with the media element's `currentTime` and applies gentle playback rate adjustments (0.97–1.03) for small drift or hard seeks for large drift (>400ms). Loop boundaries trigger an immediate re-seek.
+
+### Inter-Part Beat Position Synchronization
+
+The `buildEvents` method in `ScorePlaybackEngine` processes each part independently, which can lead to floating-point accumulation drift between parts (e.g., the vocal part and piano parts diverge by a fraction of a beat after many measures). To prevent this:
+
+- Every non-pickup measure advances `beatPos` by exactly `beatsPerMeasure`, regardless of the sum of note durations in that measure
+- Only the first measure in the playback order is allowed to be shorter (genuine anacrusis/pickup)
+- This ensures all parts have events at exactly the same beat positions, which is critical for correct highlighting of the vocal melody alongside piano parts
 
 ## Performance Considerations
 
@@ -132,7 +145,9 @@ When users upload a video or audio file, the app helps align the recording with 
 - **RAF-based scheduling**: Audio events are scheduled 200ms ahead using `requestAnimationFrame`, balancing latency with scheduling reliability
 - **Metronome deduplication**: Click times are tracked by rounded millisecond key with a 50ms minimum gap to prevent double-clicks at loop boundaries
 - **Music start detection**: Simple RMS scan with 50ms windows — near-instant even for long files.
-- **Smooth video playback**: Media plays at native speed with a single seek at playback start. No `playbackRate` manipulation or periodic drift correction — the only re-seek is on loop restart.
+- **Chroma extraction throttling**: Audio chroma extraction yields to the main thread every 30 frames and caps total frames at 1200 to keep DTW tractable without freezing the UI.
+- **Smooth video playback**: Media plays at native speed with gentle drift correction (playback rate 0.97–1.03 for small drift, hard seek for >400ms). Loop boundaries trigger immediate re-seek.
+- **Inter-part beat alignment**: `buildEvents` forces exact `beatsPerMeasure` per measure to prevent floating-point drift between parts.
 
 ## Responsive Design
 
@@ -153,5 +168,9 @@ Tests focus on the pure-logic modules that don't require DOM or audio:
 - **`dtw.test.ts`** — DTW algorithm correctness: identical/stretched sequences, distance functions, band constraints, monotonicity
 - **`scoreChroma.test.ts`** — Chromagram generation: frame rate, pitch-class placement, L2 normalization, multi-part handling
 - **`videoScoreCorrelation.test.ts`** — `lookupAudioTime` binary search/interpolation: edge cases (empty, single-point, clamping), large mappings
+- **`parseMusicXml.test.ts`** — MusicXML parsing: vocal part detection, lyrics, multi-voice, chord symbols, grace notes, key/time signatures
+- **`parseMidi.test.ts`** — MIDI file parsing: note splitting, chord grouping, duration quantization, tempo/time/key signature extraction
+- **`importScore.test.ts`** — Format detection and dispatching for .musicxml, .xml, .mxl, .mid files
+- **`abcNotation.test.ts`** — ABC notation round-trip: parsing, serialization, accidentals, ties, multi-part
 
 Components that depend on VexFlow, Web Audio, or Web MIDI are validated through manual testing with a connected MIDI controller. The `chromaExtractor` (Essentia.js WASM) is integration-tested manually because it requires the Essentia WASM runtime.

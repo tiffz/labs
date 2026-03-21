@@ -232,7 +232,7 @@ export class SampledPiano extends BaseInstrument {
     const audioContext = this.audioContext;
     const now = audioContext.currentTime;
     
-    const clampedStartTime = Math.max(startTime, now + 0.005);
+    const clampedStartTime = Math.max(startTime, now);
     
     const midiNote = Math.round(12 * Math.log2(frequency / 440) + 69);
     

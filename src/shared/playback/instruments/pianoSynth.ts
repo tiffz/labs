@@ -119,7 +119,7 @@ export class PianoSynthesizer extends BaseInstrument {
     const audioContext = this.audioContext;
     const now = audioContext.currentTime;
     
-    const clampedStartTime = Math.max(startTime, now + 0.005);
+    const clampedStartTime = Math.max(startTime, now);
     
     const attackTime = ENVELOPE.attack;
     const decayTime = ENVELOPE.decay;

@@ -208,5 +208,106 @@ describe('useUrlState', () => {
       expect(callback).not.toHaveBeenCalled();
     });
   });
+
+  describe('browser history (back/forward navigation)', () => {
+    it('should create history entries when URL changes via pushState', () => {
+      const { result } = renderHook(() => useUrlState());
+      const initialLength = window.history.length;
+
+      act(() => {
+        result.current.syncToUrl({
+          notation: 'D-T-K-',
+          timeSignature: { numerator: 4, denominator: 4 },
+          bpm: 120,
+        });
+      });
+
+      // pushState should have been called, adding a history entry
+      expect(window.history.length).toBe(initialLength + 1);
+      expect(window.location.search).toContain('rhythm=D-T-K-');
+    });
+
+    it('should not create duplicate history entries for the same URL', () => {
+      const { result } = renderHook(() => useUrlState());
+
+      act(() => {
+        result.current.syncToUrl({
+          notation: 'D-T-K-',
+          timeSignature: { numerator: 4, denominator: 4 },
+          bpm: 120,
+        });
+      });
+
+      const lengthAfterFirst = window.history.length;
+
+      act(() => {
+        result.current.syncToUrl({
+          notation: 'D-T-K-',
+          timeSignature: { numerator: 4, denominator: 4 },
+          bpm: 120,
+        });
+      });
+
+      expect(window.history.length).toBe(lengthAfterFirst);
+    });
+
+    it('should use replaceState for rapid consecutive changes (debounce)', () => {
+      const { result } = renderHook(() => useUrlState());
+      const initialLength = window.history.length;
+
+      act(() => {
+        // Rapid sequence simulating typing a BPM value
+        result.current.syncToUrl({
+          notation: 'D-T-__T-D---T---',
+          timeSignature: { numerator: 4, denominator: 4 },
+          bpm: 1,
+        });
+        result.current.syncToUrl({
+          notation: 'D-T-__T-D---T---',
+          timeSignature: { numerator: 4, denominator: 4 },
+          bpm: 14,
+        });
+        result.current.syncToUrl({
+          notation: 'D-T-__T-D---T---',
+          timeSignature: { numerator: 4, denominator: 4 },
+          bpm: 140,
+        });
+      });
+
+      // Only the first call should pushState; the rapid follow-ups should replaceState
+      expect(window.history.length).toBe(initialLength + 1);
+      // Final value should be in the URL
+      expect(window.location.search).toContain('bpm=140');
+    });
+
+    it('should support full back/forward cycle with popstate', () => {
+      const { result } = renderHook(() => useUrlState());
+      const callback = vi.fn();
+
+      act(() => {
+        result.current.setupPopStateListener(callback);
+      });
+
+      // Push a state change
+      act(() => {
+        result.current.syncToUrl({
+          notation: 'D--KD-T-',
+          timeSignature: { numerator: 2, denominator: 4 },
+          bpm: 160,
+        });
+      });
+
+      expect(window.location.search).toContain('rhythm=D--KD-T-');
+
+      // Simulate back button (browser fires popstate with the previous URL state)
+      window.history.replaceState({}, '', '/drums');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+
+      expect(callback).toHaveBeenCalledWith(expect.objectContaining({
+        notation: 'D-T-__T-D---T---',
+        bpm: 120,
+      }));
+    });
+  });
 });
 

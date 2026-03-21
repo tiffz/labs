@@ -234,10 +234,11 @@ function createBeamsFromBeatGroups(
   let currentPosition = 0;
   let currentNoteIndex = 0;
 
-  // Determine if we should use sub-grouping
-  // Only sub-group for simple time signatures (4/4, 2/4, etc.)
-  // For compound (12/8) and asymmetric (7/8) time, respect the beat grouping
-  const useSubGrouping = !isCompoundTimeSignature(timeSignature) && !isAsymmetricTimeSignature(timeSignature);
+  // Sub-group into quarter-note-sized beams only for longer simple time signatures (4/4, 3/4, etc.).
+  // For 2/4, compound (12/8), and asymmetric (7/8) time, beam the full beat group together
+  // since 2/4 measures are short enough that cross-beat beaming is standard practice.
+  const isShortMeter = timeSignature.numerator <= 2 && timeSignature.denominator === 4;
+  const useSubGrouping = !isShortMeter && !isCompoundTimeSignature(timeSignature) && !isAsymmetricTimeSignature(timeSignature);
 
   // Process each beat group
   for (const beatGroupSize of beatGroupingInSixteenths) {

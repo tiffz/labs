@@ -17,7 +17,7 @@ const PART_LABELS: Record<string, string> = { rh: 'Treble', lh: 'Bass' };
 
 interface SettingsDropdownProps {
   anchorRef: React.RefObject<HTMLButtonElement | null>;
-  state: { masterVolume: number; masterMuted: boolean; metronomeVolume: number; metronomeEnabled: boolean; score: { parts: { id: string; name: string }[] } | null; trackMuted: Map<string, boolean>; trackVolume: Map<string, number>; soundType: string; activeMode: string; drumEnabled: boolean; drumVolume: number; countInEveryLoop: boolean };
+  state: { masterVolume: number; masterMuted: boolean; metronomeVolume: number; metronomeEnabled: boolean; score: { parts: { id: string; name: string }[] } | null; trackMuted: Map<string, boolean>; trackVolume: Map<string, number>; soundType: string; activeMode: string; drumEnabled: boolean; drumVolume: number; countInEveryLoop: boolean; midiSoundEnabled: boolean };
   isActive: boolean;
   onMasterVolume: (v: number) => void;
   onMasterMute: () => void;
@@ -28,10 +28,11 @@ interface SettingsDropdownProps {
   onSoundChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onDrumVolume: (v: number) => void;
   onCountInEveryLoop: (enabled: boolean) => void;
+  onMidiSound: (enabled: boolean) => void;
 }
 
 const SettingsDropdown = React.forwardRef<HTMLDivElement, SettingsDropdownProps>(
-  ({ anchorRef, state, isActive, onMasterVolume, onMasterMute, onMetronomeVolume, onMetronomeToggle, onTrackMute, onTrackVolume, onSoundChange, onDrumVolume, onCountInEveryLoop }, ref) => {
+  ({ anchorRef, state, isActive, onMasterVolume, onMasterMute, onMetronomeVolume, onMetronomeToggle, onTrackMute, onTrackVolume, onSoundChange, onDrumVolume, onCountInEveryLoop, onMidiSound }, ref) => {
     const [pos, setPos] = useState({ top: 0, right: 0 });
 
     useEffect(() => {
@@ -102,6 +103,14 @@ const SettingsDropdown = React.forwardRef<HTMLDivElement, SettingsDropdownProps>
                 onChange={e => onCountInEveryLoop(e.target.checked)}
                 style={{ margin: 0 }} />
               Count-in on every loop
+            </label>
+          </div>
+          <div className="sb-settings-row" style={{ marginTop: 4 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--piano-text-secondary)', cursor: 'pointer', userSelect: 'none' }}>
+              <input type="checkbox" checked={state.midiSoundEnabled}
+                onChange={e => onMidiSound(e.target.checked)}
+                style={{ margin: 0 }} />
+              Play sound on key press
             </label>
           </div>
         </div>
@@ -579,6 +588,7 @@ const PlaybackControls: React.FC = () => {
           onSoundChange={handleSoundChange}
           onDrumVolume={handleDrumVolume}
           onCountInEveryLoop={(enabled) => dispatch({ type: 'SET_COUNT_IN_EVERY_LOOP', enabled })}
+          onMidiSound={(enabled) => dispatch({ type: 'SET_MIDI_SOUND', enabled })}
         />,
         document.body,
       )}

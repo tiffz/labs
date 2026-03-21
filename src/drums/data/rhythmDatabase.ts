@@ -31,20 +31,6 @@ export interface RhythmDefinition {
  * Database of known rhythms and their variations
  */
 export const RHYTHM_DATABASE: Record<string, RhythmDefinition> = {
-  rockAndRoll: {
-    name: 'Rock and Roll',
-    description: 'A basic rock beat commonly used in pop, rock, and many Western music styles. The pattern emphasizes the backbeat (beats 2 and 4) with a kick on 1 and 3, creating the driving feel that defines rock music.',
-    learnMoreLinks: [
-      { title: 'Wikipedia: Backbeat', url: 'https://en.wikipedia.org/wiki/Beat_(music)#Backbeat' },
-    ],
-    basePattern: 'D---T---D-D-T---',
-    timeSignature: { numerator: 4, denominator: 4 },
-    variations: [
-      { notation: 'D---T---D-D-T---' },
-      { notation: 'D---T---D---T---', note: 'Simple backbeat' },
-      { notation: 'D-K-T-K-D-D-T-K-', note: 'With hi-hat pattern' },
-    ],
-  },
   maqsum: {
     name: 'Maqsum',
     description: 'A very common 4/4 rhythm in Middle Eastern drumming. This is typically the first rhythm students learn because of its straightforward pattern and versatility.',
@@ -61,20 +47,6 @@ export const RHYTHM_DATABASE: Record<string, RhythmDefinition> = {
       { notation: 'D-T-__T-D-K-T-K-' },
       { notation: 'D-T-K-T-D-K-T---' },
       { notation: 'D-T-K-T-D-K-T-K-' },
-    ],
-  },
-  ayoub: {
-    name: 'Ayoub',
-    description: 'An energetic 2/4 rhythm often used in fast-paced dance music.',
-    learnMoreLinks: [
-      { title: 'Darbuka Planet: Ayoub Rhythm', url: 'https://www.darbukaplanet.com/pages/ayoub-darbuka-rhythm' },
-    ],
-    basePattern: 'D--KD-T-',
-    timeSignature: { numerator: 2, denominator: 4 },
-    variations: [
-      { notation: 'D--KD-T-' },
-      { notation: 'D-TKD-T-' },
-      { notation: 'D-TKT-D-', note: 'Used in the song "La Bass Fe Eyne"' },
     ],
   },
   saeidi: {
@@ -109,6 +81,61 @@ export const RHYTHM_DATABASE: Record<string, RhythmDefinition> = {
       { notation: 'D-D-__T-D-K-T-K-' },
       { notation: 'D-D-K-T-D-K-T---' },
       { notation: 'D-D-K-T-D-K-T-K-' },
+    ],
+  },
+  ayoub: {
+    name: 'Ayoub',
+    description: 'An energetic 2/4 rhythm often used in fast-paced dance music.',
+    learnMoreLinks: [
+      { title: 'Darbuka Planet: Ayoub Rhythm', url: 'https://www.darbukaplanet.com/pages/ayoub-darbuka-rhythm' },
+    ],
+    basePattern: 'D--KD-T-',
+    timeSignature: { numerator: 2, denominator: 4 },
+    variations: [
+      { notation: 'D--KD-T-' },
+      { notation: 'D-TKD-T-' },
+      { notation: 'D-TKT-D-', note: 'Used in the song "La Bass Fe Eyne"' },
+    ],
+  },
+  malfuf: {
+    name: 'Malfuf',
+    description: 'A 2/4 rhythm with a strong Dum followed by two Teks. Closely related to Ayoub but with a slightly different feel.',
+    learnMoreLinks: [
+      { title: 'The Troupe: Malfuf and Kahleegi', url: 'https://threewinds.wordpress.com/rhythm-24-the-malfuf-and-kahleegi/' },
+    ],
+    basePattern: 'D--T--T-',
+    timeSignature: { numerator: 2, denominator: 4 },
+    variations: [
+      { notation: 'D--T--T-' },
+      { notation: 'D-KT-KT-' },
+      { notation: 'DKKTKKTK', note: 'Busy Ka ornamentation' },
+    ],
+  },
+  kahleegi: {
+    name: 'Kahleegi',
+    description: 'A 2/4 rhythm and companion to Malfuf. Begins with two consecutive Dums followed by a Tek.',
+    learnMoreLinks: [
+      { title: 'The Troupe: Malfuf and Kahleegi', url: 'https://threewinds.wordpress.com/rhythm-24-the-malfuf-and-kahleegi/' },
+    ],
+    basePattern: 'D--D--T-',
+    timeSignature: { numerator: 2, denominator: 4 },
+    variations: [
+      { notation: 'D--D--T-' },
+      { notation: 'DK-D--K-', note: 'Swing feel variation' },
+    ],
+  },
+  rockAndRoll: {
+    name: 'Rock and Roll',
+    description: 'A basic rock beat commonly used in pop, rock, and many Western music styles. The pattern emphasizes the backbeat (beats 2 and 4) with a kick on 1 and 3, creating the driving feel that defines rock music.',
+    learnMoreLinks: [
+      { title: 'Wikipedia: Backbeat', url: 'https://en.wikipedia.org/wiki/Beat_(music)#Backbeat' },
+    ],
+    basePattern: 'D---T---D-D-T---',
+    timeSignature: { numerator: 4, denominator: 4 },
+    variations: [
+      { notation: 'D---T---D-D-T---' },
+      { notation: 'D---T---D---T---', note: 'Simple backbeat' },
+      { notation: 'D-K-T-K-D-D-T-K-', note: 'With hi-hat pattern' },
     ],
   },
 };

@@ -29,6 +29,7 @@ export interface GlobalPracticePreferences {
   countInEveryLoop: boolean;
   soundType: SoundType;
   microphoneEnabled?: boolean;
+  midiSoundEnabled?: boolean;
 }
 
 const SETTINGS_KEY = 'piano-song-settings';

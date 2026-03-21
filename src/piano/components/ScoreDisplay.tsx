@@ -43,7 +43,7 @@ function applyNoteStyle(
 ) {
   if (opts.isGreyed) {
     if (opts.isCurrent) {
-      staveNote.setStyle({ fillStyle: GREYED_CURRENT, strokeStyle: GREYED_CURRENT });
+      staveNote.setStyle({ fillStyle: '#7c3aed', strokeStyle: '#7c3aed' });
     } else {
       staveNote.setStyle({ fillStyle: GREYED_NOTE, strokeStyle: GREYED_NOTE });
     }

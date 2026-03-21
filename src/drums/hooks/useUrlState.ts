@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import type { TimeSignature } from '../types';
 
 interface UrlState {
@@ -59,21 +59,17 @@ function parseUrlParams(): UrlState {
   return { notation, timeSignature, bpm, beatGrouping, metronomeEnabled };
 }
 
-/**
- * Update URL parameters without triggering a page reload
- */
-function updateUrlParams(state: UrlState): void {
-  // Start with existing params to preserve any extra flags (like universal_tom)
+const DEBOUNCE_MS = 800;
+
+function buildUrl(state: UrlState): string {
   const params = new URLSearchParams(window.location.search);
 
-  // Clear known state params so we can set them fresh
   params.delete('rhythm');
   params.delete('bpm');
   params.delete('time');
   params.delete('groups');
   params.delete('metronome');
 
-  // Only add params if they differ from defaults
   if (state.notation !== DEFAULT_STATE.notation) {
     params.set('rhythm', state.notation);
   }
@@ -88,40 +84,44 @@ function updateUrlParams(state: UrlState): void {
     params.set('time', timeSigString);
   }
 
-  // Add beat grouping if present
   if (state.beatGrouping && state.beatGrouping.length > 0) {
-    const groupsString = state.beatGrouping.join('+');
-    params.set('groups', groupsString);
+    params.set('groups', state.beatGrouping.join('+'));
   }
 
-  // Add metronome state if enabled (only add if true to keep URL clean)
   if (state.metronomeEnabled) {
     params.set('metronome', 'true');
   }
 
-  // Update URL without reloading
   const queryString = params.toString();
-  const newUrl = queryString ? `${window.location.pathname}?${queryString}` : window.location.pathname;
-
-  window.history.replaceState({}, '', newUrl);
+  return queryString ? `${window.location.pathname}?${queryString}` : window.location.pathname;
 }
 
 /**
  * Custom hook to sync app state with URL parameters
  */
 export function useUrlState() {
-  /**
-   * Get initial state from URL on mount
-   */
+  const lastPushTimeRef = useRef(0);
+
   const getInitialState = useCallback((): UrlState => {
     return parseUrlParams();
   }, []);
 
   /**
-   * Sync current state to URL
+   * Sync current state to URL. Uses pushState to support back/forward navigation,
+   * with a debounce window so rapid changes (e.g. typing BPM) don't flood history.
    */
   const syncToUrl = useCallback((state: UrlState): void => {
-    updateUrlParams(state);
+    const newUrl = buildUrl(state);
+    const currentUrl = window.location.pathname + window.location.search;
+    if (newUrl === currentUrl) return;
+
+    const now = Date.now();
+    if (now - lastPushTimeRef.current < DEBOUNCE_MS) {
+      window.history.replaceState({}, '', newUrl);
+    } else {
+      window.history.pushState({}, '', newUrl);
+      lastPushTimeRef.current = now;
+    }
   }, []);
 
   /**

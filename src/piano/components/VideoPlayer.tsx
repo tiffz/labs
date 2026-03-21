@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback, useState } from 'react';
+import React, { useRef, useEffect, useCallback, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { usePiano } from '../store';
 import { durationToBeats, type NoteDuration } from '../types';
@@ -6,6 +6,7 @@ import {
   correlateVideoWithScore,
   type CorrelationResult,
 } from '../utils/videoScoreCorrelation';
+import { SmartBeatMap } from '../utils/smartBeatMap';
 
 const VideoPlayer: React.FC = () => {
   const { state, dispatch } = usePiano();
@@ -31,6 +32,21 @@ const VideoPlayer: React.FC = () => {
   const hideTip = useCallback(() => setTip(null), []);
 
   const scoreBpm = state.score?.tempo ?? 0;
+
+  const beatMapRef = useRef<SmartBeatMap | null>(null);
+  useEffect(() => {
+    if (state.smartMetronomeEnabled && state.mediaBeats) {
+      beatMapRef.current = new SmartBeatMap(state.mediaBeats, state.mediaStartOffset);
+    } else {
+      beatMapRef.current = null;
+    }
+  }, [state.smartMetronomeEnabled, state.mediaBeats, state.mediaStartOffset]);
+
+  const liveBpm = useMemo(() => {
+    if (!state.smartMetronomeEnabled || !state.mediaBeats || !state.isPlaying) return null;
+    const map = new SmartBeatMap(state.mediaBeats, state.mediaStartOffset);
+    return Math.round(map.instantBpm(state.currentBeat));
+  }, [state.smartMetronomeEnabled, state.mediaBeats, state.mediaStartOffset, state.isPlaying, state.currentBeat]);
 
   // ── File handling ──
 
@@ -80,7 +96,7 @@ const VideoPlayer: React.FC = () => {
     return () => el.removeEventListener('loadedmetadata', onReady);
   }, [state.mediaFile]);
 
-  // ── Analysis: detect music start + BPM ──
+  // ── Analysis ──
 
   const prevUrlRef = useRef<string | null>(null);
   useEffect(() => {
@@ -97,7 +113,7 @@ const VideoPlayer: React.FC = () => {
     let cancelled = false;
     const analyze = async () => {
       setAnalysisStatus('analyzing');
-      setAnalysisProgress('Loading audio...');
+      setAnalysisProgress('Loading audio…');
       setAnalysisError(null);
       setCorrelation(null);
 
@@ -107,21 +123,23 @@ const VideoPlayer: React.FC = () => {
         const arrayBuffer = await resp.arrayBuffer();
         if (cancelled) { audioCtx.close(); return; }
 
-        setAnalysisProgress('Decoding audio...');
+        setAnalysisProgress('Decoding audio…');
         await new Promise(r => setTimeout(r, 0));
         const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
         if (cancelled) { audioCtx.close(); return; }
 
-        setAnalysisProgress('Detecting tempo...');
+        setAnalysisProgress('Detecting tempo…');
         await new Promise(r => setTimeout(r, 0));
         const { analyzeBeat } = await import('../../beat/utils/beatAnalyzer');
-        const beatResult = await analyzeBeat(audioBuffer, (stage, progress) => {
-          if (!cancelled) setAnalysisProgress(`${stage} (${Math.round(progress * 100)}%)`);
+        const beatResult = await analyzeBeat(audioBuffer, (_stage, progress) => {
+          const pct = Math.min(100, Math.round(progress));
+          if (!cancelled) setAnalysisProgress(`Detecting tempo… ${pct}%`);
         });
         if (cancelled) { audioCtx.close(); return; }
 
+        setAnalysisProgress('Aligning with score…');
         const result = await correlateVideoWithScore(
-          audioBuffer, beatResult, scoreBpm,
+          audioBuffer, state.score!, beatResult, scoreBpm,
           (msg) => { if (!cancelled) setAnalysisProgress(msg); },
         );
         if (cancelled) { audioCtx.close(); return; }
@@ -129,7 +147,12 @@ const VideoPlayer: React.FC = () => {
         setCorrelation(result);
         audioCtx.close();
         setAnalysisStatus('done');
-        dispatch({ type: 'SET_MEDIA_START_OFFSET', offset: result.musicStartTime });
+        dispatch({ type: 'SET_MEDIA_START_OFFSET', offset: result.bestOffset });
+        dispatch({ type: 'SET_MEDIA_BEATS', beats: result.beats, hasTempoVariance: result.hasTempoVariance });
+
+        if (result.hasTempoVariance) {
+          dispatch({ type: 'SET_SMART_METRONOME', enabled: true });
+        }
       } catch (err) {
         if (!cancelled) {
           setAnalysisStatus('error');
@@ -140,6 +163,7 @@ const VideoPlayer: React.FC = () => {
 
     analyze();
     return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.mediaFile?.url, scoreBpm, dispatch, state.mediaFile]);
 
   // ── Volume sync ──
@@ -161,10 +185,17 @@ const VideoPlayer: React.FC = () => {
 
   const getAudioStartTime = useCallback(() => {
     const s = stateRef.current;
-    const sectionOffsetSec = s.selectedMeasureRange
-      ? getSectionStartTime(s.selectedMeasureRange.start, s.score, s.tempo)
+    const sectionOffsetBeats = s.selectedMeasureRange
+      ? getSectionStartBeats(s.selectedMeasureRange.start, s.score)
       : 0;
-    const scoreTimeSec = s.currentBeat * (60 / s.tempo) + sectionOffsetSec;
+    const totalBeat = s.currentBeat + sectionOffsetBeats;
+
+    const map = beatMapRef.current;
+    if (map) {
+      return manualOffsetRef.current + map.beatToTime(totalBeat);
+    }
+
+    const scoreTimeSec = totalBeat * (60 / s.tempo);
     return manualOffsetRef.current + scoreTimeSec;
   }, []);
 
@@ -191,10 +222,24 @@ const VideoPlayer: React.FC = () => {
     const checkLoop = () => {
       const s = stateRef.current;
       if (!s.isPlaying) { if (!el.paused) el.pause(); return; }
-      if (s.currentBeat < prevBeatRef.current - 0.5) {
-        const t = getAudioStartTime();
-        el.currentTime = Math.max(0, Math.min(t, el.duration || Infinity));
+
+      const isLoopReset = s.currentBeat < prevBeatRef.current - 0.5;
+      const expected = getAudioStartTime();
+      const actual = el.currentTime;
+      const drift = actual - expected;
+
+      if (isLoopReset) {
+        el.currentTime = Math.max(0, Math.min(expected, el.duration || Infinity));
+        el.playbackRate = 1;
+      } else if (Math.abs(drift) > 0.4) {
+        el.currentTime = Math.max(0, Math.min(expected, el.duration || Infinity));
+        el.playbackRate = 1;
+      } else if (Math.abs(drift) > 0.08) {
+        el.playbackRate = drift > 0 ? 0.97 : 1.03;
+      } else {
+        el.playbackRate = 1;
       }
+
       prevBeatRef.current = s.currentBeat;
       rafRef.current = requestAnimationFrame(checkLoop);
     };
@@ -205,8 +250,6 @@ const VideoPlayer: React.FC = () => {
   }, [state.isPlaying, state.mediaFile, mediaReady, getAudioStartTime]);
 
   // ── Tap to align ──
-  // While tapping mode is active, the media plays freely.
-  // User taps the button on beat 1 of measure 1 → we record currentTime as the offset.
 
   const tapMediaRef = useRef<HTMLVideoElement | HTMLAudioElement | null>(null);
 
@@ -243,142 +286,198 @@ const VideoPlayer: React.FC = () => {
 
   return (
     <div className="vp-section">
-      {/* ── Header ── */}
-      <div className="vp-bar">
-        <button className="vp-collapse-btn" onClick={() => setCollapsed(v => !v)}
-          aria-label={collapsed ? 'Expand' : 'Collapse'}>
-          <span className="material-symbols-outlined" style={{
-            fontSize: 18,
-            transform: collapsed ? 'rotate(-90deg)' : 'rotate(0)',
-            transition: 'transform var(--transition-normal)',
-          }}>expand_more</span>
-        </button>
-
-        <span className="material-symbols-outlined vp-icon" style={{ fontSize: 16 }}>
+      {/* ── Header row ── */}
+      <div className="vp-header" role="button" tabIndex={0} onClick={() => setCollapsed(v => !v)}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setCollapsed(v => !v); } }}>
+        <span className="material-symbols-outlined vp-header-arrow" style={{
+          transform: collapsed ? 'rotate(-90deg)' : 'rotate(0)',
+        }}>expand_more</span>
+        <span className="material-symbols-outlined vp-header-icon">
           {isVideo ? 'videocam' : 'audiotrack'}
         </span>
-        <span className="vp-name">{state.mediaFile.name}</span>
+        <span className="vp-header-name">{state.mediaFile.name}</span>
 
         {isAnalyzing && (
-          <span className="vp-badge vp-badge--muted">
-            <span className="vp-spin" /> Analyzing…
+          <span className="vp-header-badge">
+            <span className="vp-spin" />
           </span>
         )}
 
-        <div style={{ flex: 1 }} />
+        <span style={{ flex: 1 }} />
 
-        <div className="vp-actions">
-          <button className="vp-act" onClick={() => dispatch({ type: 'SET_MEDIA_MUTED', muted: !state.mediaMuted })}
+        <span className="vp-header-actions" onClick={e => e.stopPropagation()}>
+          <button className="vp-icon-btn" onClick={() => dispatch({ type: 'SET_MEDIA_MUTED', muted: !state.mediaMuted })}
             onMouseEnter={e => showTip(e, state.mediaMuted ? 'Unmute' : 'Mute')} onMouseLeave={hideTip}>
             <span className="material-symbols-outlined">
               {state.mediaMuted ? 'volume_off' : 'volume_up'}
             </span>
           </button>
           {isVideo && (
-            <button className="vp-act" onClick={() => dispatch({ type: 'SET_MEDIA_VISIBLE', visible: !state.mediaVisible })}
+            <button className="vp-icon-btn" onClick={() => dispatch({ type: 'SET_MEDIA_VISIBLE', visible: !state.mediaVisible })}
               onMouseEnter={e => showTip(e, state.mediaVisible ? 'Hide video' : 'Show video')} onMouseLeave={hideTip}>
               <span className="material-symbols-outlined">
                 {state.mediaVisible ? 'visibility' : 'visibility_off'}
               </span>
             </button>
           )}
-          <button className="vp-act" onClick={() => fileInputRef.current?.click()}
+          <button className="vp-icon-btn" onClick={() => fileInputRef.current?.click()}
             onMouseEnter={e => showTip(e, 'Replace file')} onMouseLeave={hideTip}>
             <span className="material-symbols-outlined">swap_horiz</span>
           </button>
-          <button className="vp-act vp-act--danger" onClick={handleRemove}
+          <button className="vp-icon-btn vp-icon-btn--danger" onClick={handleRemove}
             onMouseEnter={e => showTip(e, 'Remove')} onMouseLeave={hideTip}>
             <span className="material-symbols-outlined">close</span>
           </button>
           <input ref={fileInputRef} type="file" accept="audio/*,video/*" onChange={handleFileSelect} style={{ display: 'none' }} />
-        </div>
+        </span>
       </div>
 
       {/* ── Media elements ── */}
-      <video ref={videoRef} className="vp-media" preload="auto"
+      <video ref={videoRef} className="vp-video" preload="auto"
         style={{ display: showVideo ? 'block' : 'none' }} />
       <audio ref={audioRef as React.RefObject<HTMLAudioElement>} preload="auto"
         style={{ display: 'none' }} />
 
       {/* ── Body ── */}
       {!collapsed && (
-        <div className="vp-detail">
+        <div className="vp-body">
           {isAnalyzing && (
-            <div className="vp-loader">
-              <div className="vp-loader-ring" />
-              <span className="vp-loader-text">{analysisProgress}</span>
-              <div className="vp-loader-track"><div className="vp-loader-fill" /></div>
+            <div className="vp-analyzing">
+              <span className="vp-analyzing-text">{analysisProgress}</span>
+              <div className="vp-analyzing-track"><div className="vp-analyzing-fill" /></div>
             </div>
           )}
 
           {analysisError && (
-            <div className="vp-msg vp-msg--err">
-              <span className="material-symbols-outlined" style={{ fontSize: 14 }}>error</span>
+            <div className="vp-error">
+              <span className="material-symbols-outlined">error</span>
               {analysisError}
             </div>
           )}
 
           {correlation && (
-            <div className="vp-msg">
-              <span className="material-symbols-outlined" style={{ fontSize: 14, color: 'var(--piano-primary)' }}>info</span>
-              <span className="vp-msg-text">{correlation.recommendation}</span>
-            </div>
+            <>
+              {/* Metrics as an inline row */}
+              <div className="vp-info-row">
+                <span className="vp-info-item">
+                  <span className="vp-info-label">Detected</span>
+                  ~{Math.round(correlation.detectedBpm)} BPM
+                </span>
+                <span className="vp-info-sep" />
+                <span className="vp-info-item">
+                  <span className="vp-info-label">Score</span>
+                  {correlation.scoreBpm} BPM
+                </span>
+                <span className="vp-info-sep" />
+                <span className="vp-info-item">
+                  <span className="vp-info-label">Start</span>
+                  {correlation.musicStartTime.toFixed(1)}s
+                </span>
+                {correlation.hasPickup && (
+                  <>
+                    <span className="vp-info-sep" />
+                    <span className="vp-info-item vp-info-item--tag">Pickup</span>
+                  </>
+                )}
+                {liveBpm !== null && (
+                  <>
+                    <span className="vp-info-sep" />
+                    <span className="vp-info-item vp-info-item--live">
+                      <span className="vp-info-label">Live</span>
+                      ~{liveBpm} BPM
+                    </span>
+                  </>
+                )}
+              </div>
+
+              {/* BPM suggestion */}
+              {correlation.suggestedBpm && (
+                <div className="vp-suggestion">
+                  <span className="material-symbols-outlined">lightbulb</span>
+                  <span>
+                    Recording matches ~{correlation.suggestedBpm} BPM better
+                  </span>
+                  <button className="vp-suggestion-apply" onClick={handleApplyBpm}>
+                    Apply
+                  </button>
+                </div>
+              )}
+
+              {/* Smart Metronome toggle */}
+              {state.mediaBeats && (
+                <div className="vp-controls-row">
+                  <button
+                    className={`vp-toggle-btn ${state.smartMetronomeEnabled ? 'vp-toggle-btn--on' : ''}`}
+                    onClick={() => dispatch({ type: 'SET_SMART_METRONOME', enabled: !state.smartMetronomeEnabled })}
+                    onMouseEnter={e => showTip(e,
+                      state.smartMetronomeEnabled
+                        ? 'Disable Smart Metronome — revert to fixed BPM'
+                        : 'Enable Smart Metronome — metronome follows the recording\'s actual tempo',
+                    )}
+                    onMouseLeave={hideTip}
+                  >
+                    <span className="material-symbols-outlined">
+                      {state.smartMetronomeEnabled ? 'music_note' : 'music_off'}
+                    </span>
+                    Smart Metronome
+                  </button>
+                  {correlation.hasTempoVariance && !state.smartMetronomeEnabled && (
+                    <span className="vp-hint">Variable tempo detected</span>
+                  )}
+                </div>
+              )}
+            </>
           )}
 
-          {correlation?.suggestedBpm && (
-            <div className="vp-suggest">
-              <span className="material-symbols-outlined vp-suggest-icon">lightbulb</span>
-              <span className="vp-suggest-text">
-                Recording ~{Math.round(correlation.detectedBpm)} BPM (score: {correlation.scoreBpm})
-              </span>
-              <button className="vp-suggest-btn" onClick={handleApplyBpm}>
-                Apply {correlation.suggestedBpm} BPM
-              </button>
-            </div>
-          )}
-
-          {/* ── Tap to align ── */}
-          {tapping ? (
-            <div className="vp-tap-active">
-              <span className="vp-tap-pulse" />
-              <span className="vp-tap-label">Listening… tap when you hear beat 1</span>
-              <button className="vp-tap-btn vp-tap-btn--go" onClick={handleTap}>
+          {/* Tap to align / Offset / Volume */}
+          <div className="vp-controls-row">
+            {tapping ? (
+              <div className="vp-tap-row">
+                <span className="vp-tap-pulse" />
+                <span className="vp-tap-msg">Tap when you hear beat 1</span>
+                <button className="vp-toggle-btn vp-toggle-btn--on" onClick={handleTap}>
+                  <span className="material-symbols-outlined">touch_app</span>
+                  Tap
+                </button>
+                <button className="vp-text-btn" onClick={cancelTap}>Cancel</button>
+              </div>
+            ) : (
+              <button className="vp-text-btn" onClick={startTapping}
+                onMouseEnter={e => showTip(e, 'Play the audio and tap on beat 1 of measure 1 to set the sync point')}
+                onMouseLeave={hideTip}>
                 <span className="material-symbols-outlined">touch_app</span>
-                Tap
+                Tap to align
               </button>
-              <button className="vp-tap-btn vp-tap-btn--cancel" onClick={cancelTap}>
-                Cancel
-              </button>
-            </div>
-          ) : (
-            <button className="vp-align-btn" onClick={startTapping}
-              onMouseEnter={e => showTip(e, 'Play the audio and tap on beat 1 of measure 1 to set the sync point')}
-              onMouseLeave={hideTip}>
-              <span className="material-symbols-outlined" style={{ fontSize: 16 }}>touch_app</span>
-              Tap to align
-            </button>
-          )}
+            )}
+          </div>
 
-          {/* ── Offset ── */}
-          <div className="vp-row">
-            <span className="vp-lbl">Offset</span>
-            <input type="number" className="vp-num-input" step={0.1}
+          <div className="vp-controls-row">
+            <span className="sb-label">Offset</span>
+            <input type="number" className="sb-tempo-input" step={0.1}
               value={Number(state.mediaStartOffset.toFixed(1))}
               onChange={e => dispatch({ type: 'SET_MEDIA_START_OFFSET', offset: parseFloat(e.target.value) || 0 })} />
             <span className="vp-unit">s</span>
-            <button className="vp-act" onClick={() => dispatch({ type: 'SET_MEDIA_START_OFFSET', offset: 0 })}
+            {correlation && (
+              <button className="vp-icon-btn"
+                onClick={() => dispatch({ type: 'SET_MEDIA_START_OFFSET', offset: correlation.bestOffset })}
+                onMouseEnter={e => showTip(e, `Reset to auto (${correlation.bestOffset.toFixed(1)}s)`)}
+                onMouseLeave={hideTip}>
+                <span className="material-symbols-outlined">auto_fix_high</span>
+              </button>
+            )}
+            <button className="vp-icon-btn" onClick={() => dispatch({ type: 'SET_MEDIA_START_OFFSET', offset: 0 })}
               onMouseEnter={e => showTip(e, 'Reset to 0')} onMouseLeave={hideTip}>
               <span className="material-symbols-outlined">restart_alt</span>
             </button>
           </div>
 
-          {/* ── Volume ── */}
-          <div className="vp-row">
-            <span className="vp-lbl">Volume</span>
+          <div className="vp-controls-row">
+            <span className="sb-label">Volume</span>
             <input type="range" min={0} max={1} step={0.01}
               value={state.mediaVolume}
               onChange={e => dispatch({ type: 'SET_MEDIA_VOLUME', volume: parseFloat(e.target.value) })}
               className={`volume-slider${state.mediaMuted ? ' disabled-slider' : ''}`}
+              style={{ flex: 1 }}
               disabled={state.mediaMuted} />
           </div>
         </div>
@@ -392,10 +491,9 @@ const VideoPlayer: React.FC = () => {
   );
 };
 
-function getSectionStartTime(
+function getSectionStartBeats(
   startMeasure: number,
   score: { parts: { measures: { notes: { duration: NoteDuration; dotted?: boolean }[] }[] }[]; timeSignature: { numerator: number; denominator: number } } | null,
-  tempo: number,
 ): number {
   if (!score || startMeasure <= 0) return 0;
   const part = score.parts[0];
@@ -409,7 +507,7 @@ function getSectionStartTime(
     }
     totalBeats += Math.max(mBeats, score.timeSignature.numerator * (4 / score.timeSignature.denominator));
   }
-  return totalBeats * (60 / tempo);
+  return totalBeats;
 }
 
 export default VideoPlayer;
