@@ -31,7 +31,6 @@ export const ChordProgressionSelector: React.FC<ChordProgressionSelectorProps> =
       <input
         type="text"
         className="ep-custom-prog-input"
-        list={listId}
         value={value}
         onChange={(event) => onInputChange(event.target.value)}
         onKeyDown={(event) => {
@@ -42,15 +41,6 @@ export const ChordProgressionSelector: React.FC<ChordProgressionSelectorProps> =
         }}
         placeholder="I–V–vi–IV or C–G–Am–F"
       />
-      <datalist id={listId}>
-        {COMMON_CHORD_PROGRESSIONS.map((progression) => (
-          <option
-            key={`${listId}-${progression.name}`}
-            value={progression.progression.join('–')}
-            label={progression.name}
-          />
-        ))}
-      </datalist>
       {error ? <p className="ep-custom-prog-error">{error}</p> : null}
       {!error && warning ? <p className="ep-custom-prog-warning">{warning}</p> : null}
       <div className="ep-prog-grid">

@@ -19,7 +19,6 @@ export const CHORD_STYLE_OPTIONS: ChordStyleOption[] = [
   { id: 'simple', label: 'Simple', description: 'Whole note chords' },
   { id: 'one-per-beat', label: 'Per Beat', description: 'One chord strike per beat' },
   { id: 'oom-pahs', label: 'Oom-Pah', description: 'Alternating bass note and chord (LH/RH/LH/RH)' },
-  { id: 'waltz', label: 'Waltz', description: '3/4 waltz pattern — bass note then two chords', timeSignature: { numerator: 3, denominator: 4 } },
   { id: 'pop-rock-ballad', label: 'Pop-Rock Ballad', description: 'Pop-rock ballad with syncopated bass' },
   { id: 'pop-rock-uptempo', label: 'Pop-Rock Up Tempo', description: 'Backbeat chords on 2 & 4 with syncopated bass' },
   { id: 'tresillo', label: 'Tresillo', description: '3+3+2 rhythmic pattern used in pop, Latin, and rock' },
@@ -181,6 +180,23 @@ function getChordToneByDegree(chordTones: number[], degree: number): number {
   return chordTones[Math.min(idx, chordTones.length - 1)];
 }
 
+const QUALITY_INTERVALS: Record<Chord['quality'], number[]> = {
+  major: [0, 4, 7],
+  minor: [0, 3, 7],
+  diminished: [0, 3, 6],
+  augmented: [0, 4, 8],
+  sus2: [0, 2, 7],
+  sus4: [0, 5, 7],
+  dominant7: [0, 4, 7, 10],
+  major7: [0, 4, 7, 11],
+  minor7: [0, 3, 7, 10],
+};
+
+function getBassChordTones(chord: Chord, bassRoot: number): number[] {
+  const intervals = QUALITY_INTERVALS[chord.quality] ?? QUALITY_INTERVALS.major;
+  return [bassRoot, bassRoot + (intervals[1] ?? 4), bassRoot + (intervals[2] ?? 7)];
+}
+
 function generateNotesFromPattern(
   pattern: StylePattern['treble'] | StylePattern['bass'],
   pitches: number[],
@@ -243,11 +259,11 @@ export function generateChordProgressionScore(config: ChordExerciseConfig): Pian
     const bassNotes = generateVoicing(chord, voicingOpts, 'bass');
     const symbol = chordToSymbol(chord, key);
 
-    const sortedBassTones = [...bassNotes].sort((a, b) => a - b);
+    const bassChordTones = getBassChordTones(chord, bassNotes[0]);
     for (let m = 0; m < measuresPerChord; m++) {
       const isFirst = m === 0;
       const rhNotes = generateNotesFromPattern(pattern.treble, trebleNotes, symbol, isFirst);
-      const lhNotes = generateNotesFromPattern(pattern.bass, bassNotes, undefined, false, sortedBassTones);
+      const lhNotes = generateNotesFromPattern(pattern.bass, bassNotes, undefined, false, bassChordTones);
       rhMeasures.push({ notes: rhNotes });
       lhMeasures.push({ notes: lhNotes });
     }

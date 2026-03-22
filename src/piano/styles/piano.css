@@ -3330,7 +3330,17 @@ body {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
   padding: var(--sp-2);
-  animation: mat-tip-in var(--transition-fast);
+  animation: np-popover-in var(--transition-fast);
+}
+@keyframes np-popover-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 .np-pop-keys {
   display: flex;

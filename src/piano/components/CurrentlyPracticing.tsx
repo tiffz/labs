@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useState, useRef, useEffect } from 'react';
+import React, { useMemo, useCallback, useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { usePiano } from '../store';
 import { durationToBeats } from '../types';
@@ -114,6 +114,14 @@ const ChipPopover: React.FC<{
   children: React.ReactNode;
 }> = ({ anchor, open, onClose, children }) => {
   const ref = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState<{ left: number; top: number } | null>(null);
+
+  const updatePosition = useCallback(() => {
+    if (!anchor) return;
+    const rect = anchor.getBoundingClientRect();
+    setPosition({ left: rect.left, top: rect.bottom + 4 });
+  }, [anchor]);
+
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
@@ -123,10 +131,23 @@ const ChipPopover: React.FC<{
     return () => document.removeEventListener('mousedown', handler);
   }, [open, onClose, anchor]);
 
-  if (!open || !anchor) return null;
-  const rect = anchor.getBoundingClientRect();
+  useLayoutEffect(() => {
+    if (!open || !anchor) {
+      setPosition(null);
+      return;
+    }
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [open, anchor, updatePosition]);
+
+  if (!open || !anchor || !position) return null;
   return createPortal(
-    <div ref={ref} className="np-popover" style={{ left: rect.left, top: rect.bottom + 4 }}>
+    <div ref={ref} className="np-popover" style={{ left: position.left, top: position.top }}>
       {children}
     </div>,
     document.body,
@@ -314,7 +335,6 @@ const CurrentlyPracticing: React.FC<CurrentlyPracticingProps> = ({ onSwitchExerc
           )
       );
       const styleId = overrides.styleId ?? (chordExerciseMeta.styleId as ChordStyleId) ?? 'simple';
-      const styleOpt = CHORD_STYLE_OPTIONS.find((option) => option.id === styleId);
       const nextKey = parsed.inferredKey ?? baseKey;
       const nextTempo = score.tempo;
       const nextScore = generateChordProgressionScore({
@@ -324,7 +344,7 @@ const CurrentlyPracticing: React.FC<CurrentlyPracticingProps> = ({ onSwitchExerc
         key: nextKey,
         voicingStyle: (chordExerciseMeta.voicingStyle as ChordVoicingStyle) ?? 'root',
         measuresPerChord: ((chordExerciseMeta.measuresPerChord as 1 | 2) ?? 1),
-        timeSignature: styleOpt?.timeSignature ?? score.timeSignature,
+        timeSignature: { numerator: 4, denominator: 4 },
         styleId,
       });
       nextScore.tempo = nextTempo;

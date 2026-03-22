@@ -154,8 +154,6 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({ open, onClose, onImport
         )
     );
     const effectiveKey = parsed.inferredKey ?? key;
-    const styleOpt = CHORD_STYLE_OPTIONS.find(s => s.id === style);
-    const timeSig = styleOpt?.timeSignature ?? { numerator: 4, denominator: 4 };
     const score = generateChordProgressionScore({
       progression: parsed.romanNumerals as RomanNumeral[],
       progressionName: presetMatch?.name ?? 'Custom progression',
@@ -163,7 +161,7 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({ open, onClose, onImport
       key: effectiveKey,
       voicingStyle: voicing,
       measuresPerChord: mpc,
-      timeSignature: timeSig,
+      timeSignature: { numerator: 4, denominator: 4 },
       styleId: style,
     });
     loadScore(score);
