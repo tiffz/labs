@@ -18,6 +18,7 @@ import { useSectionDetection } from './hooks/useSectionDetection';
 import { useChordAnalysis } from './hooks/useChordAnalysis';
 import { useSectionSelection } from './hooks/useSectionSelection';
 import type { TimeSignature } from '../shared/rhythm/types';
+import AppTooltip from '../shared/components/AppTooltip';
 
 const App: React.FC = () => {
   const [mediaFile, setMediaFile] = useState<MediaFile | null>(null);
@@ -417,10 +418,10 @@ const App: React.FC = () => {
 
                   {/* Loop mode controls */}
                   <div className="loop-options">
-                    <label 
-                      className={`loop-option has-tooltip ${!loopEnabled ? 'active' : ''}`} 
-                      data-tooltip="Play through"
-                    >
+                    <AppTooltip title="Play through">
+                      <label 
+                        className={`loop-option has-tooltip ${!loopEnabled ? 'active' : ''}`} 
+                      >
                       <input
                         type="radio"
                         name="loopMode"
@@ -428,11 +429,12 @@ const App: React.FC = () => {
                         onChange={() => setLoopEnabled(false)}
                       />
                       <span className="material-symbols-outlined">arrow_forward</span>
-                    </label>
-                    <label 
-                      className={`loop-option has-tooltip ${loopEnabled && selectedSectionIds.length === 0 ? 'active' : ''}`} 
-                      data-tooltip="Loop track"
-                    >
+                      </label>
+                    </AppTooltip>
+                    <AppTooltip title="Loop track">
+                      <label 
+                        className={`loop-option has-tooltip ${loopEnabled && selectedSectionIds.length === 0 ? 'active' : ''}`} 
+                      >
                       <input
                         type="radio"
                         name="loopMode"
@@ -440,11 +442,12 @@ const App: React.FC = () => {
                         onChange={loopEntireTrack}
                       />
                       <span className="material-symbols-outlined">repeat</span>
-                    </label>
-                    <label 
-                      className={`loop-option has-tooltip ${loopEnabled && selectedSectionIds.length > 0 ? 'active' : ''}`} 
-                      data-tooltip="Loop section"
-                    >
+                      </label>
+                    </AppTooltip>
+                    <AppTooltip title="Loop section">
+                      <label 
+                        className={`loop-option has-tooltip ${loopEnabled && selectedSectionIds.length > 0 ? 'active' : ''}`} 
+                      >
                       <input
                         type="radio"
                         name="loopMode"
@@ -463,13 +466,15 @@ const App: React.FC = () => {
                         }}
                       />
                       <span className="material-symbols-outlined">repeat_one</span>
-                    </label>
+                      </label>
+                    </AppTooltip>
                   </div>
                 </div>
 
                 {/* Volume Mixer - under transport */}
                 <div className="volume-mixer horizontal">
-                  <div className="mixer-row has-tooltip" data-tooltip="Track volume">
+                  <AppTooltip title="Track volume">
+                    <div className="mixer-row has-tooltip">
                     <span className="mixer-label">
                       <span className="material-symbols-outlined">music_note</span>
                     </span>
@@ -482,8 +487,10 @@ const App: React.FC = () => {
                       className="mixer-slider"
                     />
                     <span className="mixer-value">{audioVolume}%</span>
-                  </div>
-                  <div className="mixer-row has-tooltip" data-tooltip="Drum volume">
+                    </div>
+                  </AppTooltip>
+                  <AppTooltip title="Drum volume">
+                    <div className="mixer-row has-tooltip">
                     <span className="mixer-label">
                       <span className="material-symbols-outlined">music_cast</span>
                     </span>
@@ -496,8 +503,10 @@ const App: React.FC = () => {
                       className="mixer-slider"
                     />
                     <span className="mixer-value">{drumVolume}%</span>
-                  </div>
-                  <div className="mixer-row has-tooltip" data-tooltip="Metronome volume">
+                    </div>
+                  </AppTooltip>
+                  <AppTooltip title="Metronome volume">
+                    <div className="mixer-row has-tooltip">
                     <span className="mixer-label">
                       <span className="material-symbols-outlined">timer</span>
                     </span>
@@ -511,7 +520,8 @@ const App: React.FC = () => {
                       disabled={!metronomeEnabled}
                     />
                     <span className="mixer-value">{metronomeVolume}%</span>
-                  </div>
+                    </div>
+                  </AppTooltip>
                 </div>
               </div>
 
@@ -572,12 +582,11 @@ const App: React.FC = () => {
                 />
                 {/* Effective BPM when playback speed is adjusted */}
                 {playbackRate !== 1.0 && (
-                  <span 
-                    className="effective-bpm has-tooltip"
-                    data-tooltip={`Playing at ${playbackRate}× speed`}
-                  >
-                    → {Math.round(analysisResult.bpm * playbackRate)}
-                  </span>
+                  <AppTooltip title={`Playing at ${playbackRate}× speed`}>
+                    <span className="effective-bpm has-tooltip">
+                      → {Math.round(analysisResult.bpm * playbackRate)}
+                    </span>
+                  </AppTooltip>
                 )}
                 {/* BPM Confidence indicator - right after BPM */}
                 {(() => {
@@ -609,13 +618,12 @@ const App: React.FC = () => {
                   }
                   
                   return (
-                    <span 
-                      className={`confidence-badge ${confidenceLevel} has-tooltip tooltip-multiline`}
-                      data-tooltip={messages.join('\n')}
-                    >
-                      <span className="material-symbols-outlined">{icon}</span>
-                      <span className="confidence-label">{label}</span>
-                    </span>
+                    <AppTooltip title={messages.join('\n')}>
+                      <span className={`confidence-badge ${confidenceLevel} has-tooltip tooltip-multiline`}>
+                        <span className="material-symbols-outlined">{icon}</span>
+                        <span className="confidence-label">{label}</span>
+                      </span>
+                    </AppTooltip>
                   );
                 })()}
                 <div className="time-sig">
@@ -634,12 +642,11 @@ const App: React.FC = () => {
                     </span>
                     {/* Transposed key when transpose is active */}
                     {transposeSemitones !== 0 && (
-                      <span
-                        className="effective-key has-tooltip"
-                        data-tooltip={`Transposed ${transposeSemitones > 0 ? '+' : ''}${transposeSemitones} semitones`}
-                      >
-                        → {transposeKey(chordResult.key, transposeSemitones)}{chordResult.scale === 'minor' ? 'm' : ''}
-                      </span>
+                      <AppTooltip title={`Transposed ${transposeSemitones > 0 ? '+' : ''}${transposeSemitones} semitones`}>
+                        <span className="effective-key has-tooltip">
+                          → {transposeKey(chordResult.key, transposeSemitones)}{chordResult.scale === 'minor' ? 'm' : ''}
+                        </span>
+                      </AppTooltip>
                     )}
                     {/* Key confidence badge */}
                     {(() => {
@@ -649,39 +656,40 @@ const App: React.FC = () => {
                       const icon = level === 'high' ? 'verified' : level === 'medium' ? 'help' : 'warning';
                       
                       return (
-                        <span 
-                          className={`confidence-badge small ${level} has-tooltip`}
-                          data-tooltip={`${label} confidence in key detection`}
-                        >
-                          <span className="material-symbols-outlined">{icon}</span>
-                        </span>
+                        <AppTooltip title={`${label} confidence in key detection`}>
+                          <span className={`confidence-badge small ${level} has-tooltip`}>
+                            <span className="material-symbols-outlined">{icon}</span>
+                          </span>
+                        </AppTooltip>
                       );
                     })()}
                   </div>
                   {/* Transpose controls */}
                   <div className="transpose-controls">
-                    <button
-                      className="transpose-btn has-tooltip"
-                      data-tooltip="Transpose down 1 semitone"
-                      disabled={transposeSemitones <= -12}
-                      onClick={() => setTransposeSemitones(t => Math.max(-12, t - 1))}
-                    >
-                      <span className="material-symbols-outlined">remove</span>
-                    </button>
+                    <AppTooltip title="Transpose down 1 semitone">
+                      <button
+                        className="transpose-btn has-tooltip"
+                        disabled={transposeSemitones <= -12}
+                        onClick={() => setTransposeSemitones(t => Math.max(-12, t - 1))}
+                      >
+                        <span className="material-symbols-outlined">remove</span>
+                      </button>
+                    </AppTooltip>
                     <span
                       className={`transpose-value ${transposeSemitones !== 0 ? 'active' : ''}`}
                       title={transposeSemitones === 0 ? 'Original pitch' : `${transposeSemitones > 0 ? '+' : ''}${transposeSemitones} semitones`}
                     >
                       {transposeSemitones === 0 ? '0' : (transposeSemitones > 0 ? `+${transposeSemitones}` : transposeSemitones)}
                     </span>
-                    <button
-                      className="transpose-btn has-tooltip"
-                      data-tooltip="Transpose up 1 semitone"
-                      disabled={transposeSemitones >= 12}
-                      onClick={() => setTransposeSemitones(t => Math.min(12, t + 1))}
-                    >
-                      <span className="material-symbols-outlined">add</span>
-                    </button>
+                    <AppTooltip title="Transpose up 1 semitone">
+                      <button
+                        className="transpose-btn has-tooltip"
+                        disabled={transposeSemitones >= 12}
+                        onClick={() => setTransposeSemitones(t => Math.min(12, t + 1))}
+                      >
+                        <span className="material-symbols-outlined">add</span>
+                      </button>
+                    </AppTooltip>
                   </div>
                 </div>
               )}

@@ -64,6 +64,8 @@ labs/
 3. **To share code or components:**
    - Place shared utilities/components in `src/shared/` and import them as needed.
    - Keep app-specific code inside each app's folder for isolation.
+   - For UX widgets and design primitives, prefer existing shared components before building app-local alternatives.
+   - Use `src/shared/components/AppTooltip.tsx` for standard hover/focus tooltips across apps.
 
 4. **To update dependencies:**
    - Update the root `package.json` and run `npm install`.
@@ -119,6 +121,13 @@ The project uses a streamlined setup:
 - **Single TypeScript Config**: `tsconfig.json` handles all code
 - **Automated Build**: `npm run build` handles everything automatically
 - **Multi-App Support**: `vite.config.ts` configures multiple entry points
+
+## UX and Design Conventions
+
+- **Reuse First**: For common UI problems (tooltips, toggles, icon buttons, controls), prefer shared components in `src/shared/components`.
+- **Material Defaults**: By default, apps should follow Material Design interaction conventions (spacing rhythm, control sizing, focus/hover behavior, and widget ergonomics), then customize visual styling per app identity.
+- **Tooltip Standard**: Use `AppTooltip` (MUI-based) as the default tooltip primitive. Avoid custom CSS pseudo-tooltips or ad-hoc tooltip systems unless a rich, non-standard help surface is required.
+- **Icon Standard**: Use Material Design iconography by default (Material Symbols / MDI) unless there is a documented reason to use a different icon set.
 
 ## Continuous Integration & Deployment (CI/CD)
 

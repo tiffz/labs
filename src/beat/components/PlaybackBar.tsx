@@ -3,6 +3,7 @@ import type { Section } from '../utils/sectionDetector';
 import type { LoopRegion } from '../hooks/useBeatSync';
 import type { ChordEvent, KeyChange } from '../utils/chordAnalyzer';
 import type { TempoRegion } from '../utils/tempoRegions';
+import AppTooltip from '../../shared/components/AppTooltip';
 
 /** Playback position and timing state */
 export interface PlaybackState {
@@ -632,35 +633,39 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
             {onExtendSelection && (
               <div className="section-nudge-controls">
                 <span className="nudge-label">Nudge selection:</span>
-                <button 
-                  className="nudge-btn has-tooltip"
-                  onClick={() => onExtendSelection('start', -1)}
-                  data-tooltip="Extend start 1 measure earlier"
-                >
-                  <span className="material-symbols-outlined">first_page</span>
-                </button>
-                <button 
-                  className="nudge-btn has-tooltip"
-                  onClick={() => onExtendSelection('start', 1)}
-                  data-tooltip="Shrink start 1 measure later"
-                >
-                  <span className="material-symbols-outlined">chevron_right</span>
-                </button>
+                <AppTooltip title="Extend start 1 measure earlier">
+                  <button 
+                    className="nudge-btn has-tooltip"
+                    onClick={() => onExtendSelection('start', -1)}
+                  >
+                    <span className="material-symbols-outlined">first_page</span>
+                  </button>
+                </AppTooltip>
+                <AppTooltip title="Shrink start 1 measure later">
+                  <button 
+                    className="nudge-btn has-tooltip"
+                    onClick={() => onExtendSelection('start', 1)}
+                  >
+                    <span className="material-symbols-outlined">chevron_right</span>
+                  </button>
+                </AppTooltip>
                 <span className="nudge-divider">|</span>
-                <button 
-                  className="nudge-btn has-tooltip"
-                  onClick={() => onExtendSelection('end', -1)}
-                  data-tooltip="Shrink end 1 measure earlier"
-                >
-                  <span className="material-symbols-outlined">chevron_left</span>
-                </button>
-                <button 
-                  className="nudge-btn has-tooltip"
-                  onClick={() => onExtendSelection('end', 1)}
-                  data-tooltip="Extend end 1 measure later"
-                >
-                  <span className="material-symbols-outlined">last_page</span>
-                </button>
+                <AppTooltip title="Shrink end 1 measure earlier">
+                  <button 
+                    className="nudge-btn has-tooltip"
+                    onClick={() => onExtendSelection('end', -1)}
+                  >
+                    <span className="material-symbols-outlined">chevron_left</span>
+                  </button>
+                </AppTooltip>
+                <AppTooltip title="Extend end 1 measure later">
+                  <button 
+                    className="nudge-btn has-tooltip"
+                    onClick={() => onExtendSelection('end', 1)}
+                  >
+                    <span className="material-symbols-outlined">last_page</span>
+                  </button>
+                </AppTooltip>
               </div>
             )}
             <button 

@@ -219,9 +219,12 @@ describe('App', () => {
 
       // Wait for state update - randomize adds to history, so undo should be enabled
       await waitFor(() => {
-        const undoButton = screen.getByLabelText('Undo');
+        const undoButton = document.querySelector(
+          '.rhythm-edit-controls .icon-button[aria-label="Undo"]'
+        ) as HTMLButtonElement | null;
+        expect(undoButton).not.toBeNull();
         // If randomize was called, undo should be enabled (notation was added to history)
-        expect(undoButton).not.toBeDisabled();
+        expect(undoButton as HTMLButtonElement).not.toBeDisabled();
       }, { timeout: 1000 });
     });
 
@@ -251,27 +254,35 @@ describe('App', () => {
       render(<App />);
 
       const input = screen.getByLabelText('Rhythm Notation') as HTMLTextAreaElement;
-      const undoButton = screen.getByLabelText('Undo');
-      const redoButton = screen.getByLabelText('Redo');
+      const getUndoButtons = () =>
+        Array.from(
+          document.querySelectorAll('button[aria-label="Undo"]')
+        ) as HTMLButtonElement[];
+      const getRedoButtons = () =>
+        Array.from(
+          document.querySelectorAll('button[aria-label="Redo"]')
+        ) as HTMLButtonElement[];
 
       // Initially undo/redo should be disabled
-      expect(undoButton).toBeDisabled();
-      expect(redoButton).toBeDisabled();
+      expect(getUndoButtons().every((button) => button.disabled)).toBe(true);
+      expect(getRedoButtons().every((button) => button.disabled)).toBe(true);
 
       // Make a change
       fireEvent.change(input, { target: { value: 'D-T-K-T-' } });
 
       // Undo should be enabled
-      expect(undoButton).not.toBeDisabled();
+      const enabledUndo = getUndoButtons().find((button) => !button.disabled);
+      expect(enabledUndo).toBeDefined();
 
       // Undo
-      fireEvent.click(undoButton);
+      fireEvent.click(enabledUndo as HTMLButtonElement);
 
       expect(input.value).toBe('D-T-__T-D---T---');
-      expect(redoButton).not.toBeDisabled();
+      const enabledRedo = getRedoButtons().find((button) => !button.disabled);
+      expect(enabledRedo).toBeDefined();
 
       // Redo
-      fireEvent.click(redoButton);
+      fireEvent.click(enabledRedo as HTMLButtonElement);
 
       expect(input.value).toBe('D-T-K-T-');
     });

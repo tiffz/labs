@@ -2,12 +2,6 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useUrlState } from './useUrlState';
 
-function decodeBase64Url(input: string): string {
-  const normalized = input.replace(/-/g, '+').replace(/_/g, '/');
-  const padded = `${normalized}${'='.repeat((4 - (normalized.length % 4)) % 4)}`;
-  return atob(padded);
-}
-
 describe('useUrlState', () => {
   beforeEach(() => {
     // Reset URL before each test
@@ -135,7 +129,7 @@ describe('useUrlState', () => {
       });
       
       const params = new URLSearchParams(window.location.search);
-      expect(decodeBase64Url(params.get('r64') || '')).toBe('D-T-K-');
+      expect(params.get('rhythm')).toBe('D-T-K-');
       expect(params.get('time')).toBe('3/4');
       expect(params.get('bpm')).toBe('140');
     });
@@ -166,7 +160,7 @@ describe('useUrlState', () => {
       });
       
       const params = new URLSearchParams(window.location.search);
-      expect(decodeBase64Url(params.get('r64') || '')).toBe('D-T-K-');
+      expect(params.get('rhythm')).toBe('D-T-K-');
       expect(params.has('time')).toBe(false);
       expect(params.has('bpm')).toBe(false);
     });
@@ -230,7 +224,7 @@ describe('useUrlState', () => {
 
       // pushState should have been called, adding a history entry
       expect(window.history.length).toBe(initialLength + 1);
-      expect(decodeBase64Url(new URLSearchParams(window.location.search).get('r64') || '')).toBe(
+      expect(new URLSearchParams(window.location.search).get('rhythm')).toBe(
         'D-T-K-'
       );
     });
@@ -326,7 +320,7 @@ describe('useUrlState', () => {
         });
       });
 
-      expect(decodeBase64Url(new URLSearchParams(window.location.search).get('r64') || '')).toBe(
+      expect(new URLSearchParams(window.location.search).get('rhythm')).toBe(
         'D--KD-T-'
       );
 

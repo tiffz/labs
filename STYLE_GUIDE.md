@@ -149,3 +149,24 @@ The ESLint configuration is set up to support style guide compliance. Additional
 - [Google TypeScript Style Guide](https://google.github.io/styleguide/tsguide.html)
 - See `GEMINI.md` section 7 for project-wide style standards
 - See `DEVELOPMENT.md` for development guidelines
+
+## Shared UX and Design System Rules
+
+These rules are required for new UI work across apps in this monorepo:
+
+1. **Prefer shared components for common design problems**
+   - Before creating new UI primitives (tooltip, icon button, toggle, dropdown behaviors), check `src/shared/components` and reuse/extend existing components first.
+   - If a new primitive is truly needed, add it in shared so other apps can adopt it.
+
+2. **Use Material patterns as the default interaction model**
+   - Default UX behavior should align with Material Design conventions (control sizing, spacing rhythm, focus/hover states, and accessibility patterns).
+   - App-specific branding is applied through styling/theme tokens, not by reinventing interaction mechanics.
+
+3. **Tooltip standard**
+   - Use `src/shared/components/AppTooltip.tsx` for standard black hover/focus tooltips.
+   - Do **not** introduce custom `data-tooltip` CSS pseudo-tooltips or bespoke one-off tooltip portals for standard tooltip use cases.
+   - Only use custom help overlays when content is materially richer than a tooltip (multi-section panels, dense linked help, etc.).
+
+4. **Icon standard**
+   - Use Material Design icon sets (Material Symbols and/or MDI) by default.
+   - Deviations require a clear product/design reason.

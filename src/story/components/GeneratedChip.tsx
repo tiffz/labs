@@ -1,4 +1,6 @@
 import React from 'react';
+import AppTooltip from '../../shared/components/AppTooltip';
+import DiceIcon from '../../shared/components/DiceIcon';
 
 interface GeneratedChipProps {
   rerollId: string;
@@ -37,22 +39,15 @@ export const GeneratedChip: React.FC<GeneratedChipProps> = ({
 
   return (
     <div className={containerClass}>
-      <button
-        className={`${buttonClass} self-start`}
-        onClick={() => onReroll(rerollId)}
-        title="Reroll this element"
-        aria-label={`Reroll ${rerollId}`}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          height={iconSize}
-          viewBox="0 -960 960 960"
-          width={iconSize}
-          fill="currentColor"
+      <AppTooltip title="Reroll this element">
+        <button
+          className={`${buttonClass} self-start`}
+          onClick={() => onReroll(rerollId)}
+          aria-label={`Reroll ${rerollId}`}
         >
-          <path d="M220-160q-24 0-42-18t-18-42v-520q0-24 18-42t42-18h520q24 0 42 18t18 42v520q0 24-18 42t-42 18H220Zm0-60h520v-520H220v520Zm170-110q21 0 35.5-14.5T440-380q0-21-14.5-35.5T390-430q-21 0-35.5 14.5T340-380q0 21 14.5 35.5T390-330Zm180 0q21 0 35.5-14.5T620-380q0-21-14.5-35.5T570-430q-21 0-35.5 14.5T520-380q0 21 14.5 35.5T570-330ZM390-510q21 0 35.5-14.5T440-560q0-21-14.5-35.5T390-610q-21 0-35.5 14.5T340-560q0 21 14.5 35.5T390-510Zm180 0q21 0 35.5-14.5T620-560q0-21-14.5-35.5T570-610q-21 0-35.5 14.5T520-560q0 21 14.5 35.5T570-510ZM220-740v520-520Z" />
-        </svg>
-      </button>
+          <DiceIcon variant="single" size={iconSize} />
+        </button>
+      </AppTooltip>
       <span className={textClass}>{content}</span>
     </div>
   );

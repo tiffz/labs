@@ -17,7 +17,7 @@ import { getAllEntries, getSongSettings, type LibraryEntry } from '../utils/libr
 import type { Key } from '../types';
 import type { RomanNumeral } from '../../chords/types';
 import { parseProgressionText } from '../../shared/music/chordProgressionText';
-import { useMatTooltip } from './useMatTooltip';
+import AppTooltip from '../../shared/components/AppTooltip';
 import {
   ChordProgressionSelector,
   ChordStyleSelector,
@@ -72,16 +72,15 @@ const GroupLabel: React.FC<{
   children: React.ReactNode;
   onRandomize?: () => void;
   tipText?: string;
-  showTip: (e: React.MouseEvent, text: string) => void;
-  hideTip: () => void;
-}> = ({ children, onRandomize, tipText, showTip, hideTip }) => (
+}> = ({ children, onRandomize, tipText }) => (
   <label className="ep-group-label">
     {children}
     {onRandomize && (
-      <button className="ep-label-dice" onClick={onRandomize}
-        onMouseEnter={e => showTip(e, tipText ?? 'Randomize')} onMouseLeave={hideTip}>
-        <DiceSvg />
-      </button>
+      <AppTooltip title={tipText ?? 'Randomize this option by picking a new value.'}>
+        <button className="ep-label-dice" onClick={onRandomize}>
+          <DiceSvg />
+        </button>
+      </AppTooltip>
     )}
   </label>
 );
@@ -94,7 +93,6 @@ interface ExercisePickerProps {
 
 const ExercisePicker: React.FC<ExercisePickerProps> = ({ open, onClose, onImportClick }) => {
   const { dispatch, loadScore, engine } = usePiano();
-  const { showTip, hideTip, tipPortal } = useMatTooltip();
   const panelRef = useRef<HTMLDivElement>(null);
 
   const [section, setSection] = useState<'scales' | 'progressions' | 'songs'>('scales');
@@ -321,7 +319,7 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({ open, onClose, onImport
             <div className="ep-scales">
               <div className="ep-group">
                 <GroupLabel onRandomize={() => setScaleType(pickRandom(SCALE_TYPE_OPTIONS.map(t => t.value), scaleType))}
-                  tipText="Randomize scale type" showTip={showTip} hideTip={hideTip}>Scale type</GroupLabel>
+                  tipText="Randomize scale type. Click to pick a random scale type.">Scale type</GroupLabel>
                 <div className="ep-chip-row">
                   {SCALE_TYPE_OPTIONS.map(t => (
                     <button key={t.value} className={`ep-chip ${scaleType === t.value ? 'active' : ''}`}
@@ -334,7 +332,7 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({ open, onClose, onImport
 
               {isTonal && (
                 <div className="ep-group">
-                  <GroupLabel showTip={showTip} hideTip={hideTip}>Quality</GroupLabel>
+                  <GroupLabel>Quality</GroupLabel>
                   <div className="ep-chip-row">
                     <button className={`ep-chip ${quality === 'major' ? 'active' : ''}`} onClick={() => {
                       setQuality('major');
@@ -358,7 +356,7 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({ open, onClose, onImport
                 <GroupLabel onRandomize={() => {
                   if (isTonal) setSelectedKey(pickRandom(keys as unknown as string[], selectedKey) as Key);
                   else setChromaticNote(pickRandom(CHROMATIC_NOTES, chromaticNote));
-                }} tipText="Randomize key" showTip={showTip} hideTip={hideTip}>Key</GroupLabel>
+                }} tipText="Randomize key. Click to pick a random key.">Key</GroupLabel>
                 <div className="ep-key-grid">
                   {(isTonal ? keys : CHROMATIC_NOTES).map(k => (
                     <button key={k} className={`ep-key-btn ${k === (isTonal ? selectedKey : chromaticNote) ? 'active' : ''}`}
@@ -371,7 +369,7 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({ open, onClose, onImport
 
               <div className="ep-row-3">
                 <div className="ep-group">
-                  <GroupLabel showTip={showTip} hideTip={hideTip}>Direction</GroupLabel>
+                  <GroupLabel>Direction</GroupLabel>
                   <div className="ep-chip-row">
                     {DIR_OPTIONS.map(d => (
                       <button key={d.value} className={`ep-chip ${direction === d.value ? 'active' : ''}`} onClick={() => setDirection(d.value)}>
@@ -383,7 +381,7 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({ open, onClose, onImport
                 </div>
 
                 <div className="ep-group ep-group-sm">
-                  <GroupLabel showTip={showTip} hideTip={hideTip}>Octaves</GroupLabel>
+                  <GroupLabel>Octaves</GroupLabel>
                   <div className="ep-chip-row">
                     {[1, 2, 3, 4].map(n => (
                       <button key={n} className={`ep-chip ep-chip-num ${octaves === n ? 'active' : ''}`} onClick={() => setOctaves(n)}>
@@ -394,7 +392,7 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({ open, onClose, onImport
                 </div>
 
                 <div className="ep-group ep-group-sm">
-                  <GroupLabel showTip={showTip} hideTip={hideTip}>Subdivisions</GroupLabel>
+                  <GroupLabel>Subdivisions</GroupLabel>
                   <div className="ep-chip-row">
                     {([1, 2, 3, 4] as Subdivision[]).map(n => (
                       <button key={n} className={`ep-chip ep-chip-num ${subdivision === n ? 'active' : ''}`} onClick={() => setSubdivision(n)}>
@@ -420,7 +418,7 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({ open, onClose, onImport
                     setCustomProgressionWarning('');
                   }
                 }}
-                  tipText="Randomize progression" showTip={showTip} hideTip={hideTip}>Progression</GroupLabel>
+                  tipText="Randomize progression. Click to pick a random chord progression.">Progression</GroupLabel>
                 <ChordProgressionSelector
                   value={customProgressionInput}
                   selectedProgression={selectedProgression}
@@ -452,7 +450,7 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({ open, onClose, onImport
               <div className="ep-row-3">
                 <div className="ep-group">
                   <GroupLabel onRandomize={() => setProgKey(pickRandom(MAJOR_KEYS as unknown as string[], progKey) as Key)}
-                    tipText="Randomize key" showTip={showTip} hideTip={hideTip}>Key</GroupLabel>
+                    tipText="Randomize key. Click to pick a random key.">Key</GroupLabel>
                   <div className="ep-key-grid">
                     {MAJOR_KEYS.map(k => (
                       <button key={k} className={`ep-key-btn ${k === progKey ? 'active' : ''}`} onClick={() => setProgKey(k as Key)}>
@@ -464,7 +462,7 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({ open, onClose, onImport
 
                 <div className="ep-group">
                   <GroupLabel onRandomize={() => setVoicingStyle(pickRandom(VOICING_OPTIONS.map(o => o.value), voicingStyle))}
-                    tipText="Randomize voicing" showTip={showTip} hideTip={hideTip}>Voicing</GroupLabel>
+                    tipText="Randomize voicing. Click to pick a random voicing style.">Voicing</GroupLabel>
                   <div className="ep-chip-row">
                     {VOICING_OPTIONS.map(v => (
                       <button key={v.value} className={`ep-chip ${voicingStyle === v.value ? 'active' : ''}`} onClick={() => setVoicingStyle(v.value)}>
@@ -475,7 +473,7 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({ open, onClose, onImport
                 </div>
 
                 <div className="ep-group ep-group-sm">
-                  <GroupLabel showTip={showTip} hideTip={hideTip}>Meas / Chord</GroupLabel>
+                  <GroupLabel>Meas / Chord</GroupLabel>
                   <div className="ep-chip-row">
                     {[1, 2, 3, 4].map(n => (
                       <button key={n} className={`ep-chip ep-chip-num ${measuresPerChord === n ? 'active' : ''}`} onClick={() => setMeasuresPerChord(Math.min(4, n) as 1 | 2)}>
@@ -488,7 +486,7 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({ open, onClose, onImport
 
               <div className="ep-group">
                 <GroupLabel onRandomize={() => setChordStyle(pickRandom(CHORD_STYLE_OPTIONS.map(o => o.id), chordStyle))}
-                  tipText="Randomize style" showTip={showTip} hideTip={hideTip}>Style</GroupLabel>
+                  tipText="Randomize style. Click to pick a random accompaniment style.">Style</GroupLabel>
                 <ChordStyleSelector
                   selectedStyle={chordStyle}
                   onSelectStyle={(styleId) => setChordStyle(styleId)}
@@ -548,10 +546,11 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({ open, onClose, onImport
               </span>
               <span className="ep-footer-text">{previewText}</span>
             </div>
-            <button className="ep-randomize-all" onClick={section === 'scales' ? randomizeAllScales : randomizeAllChords}
-              onMouseEnter={e => showTip(e, 'Randomize all options')} onMouseLeave={hideTip}>
-              <DiceSvg /> Randomize All
-            </button>
+            <AppTooltip title="Randomize all options. Click to pick a fresh random setup.">
+              <button className="ep-randomize-all" onClick={section === 'scales' ? randomizeAllScales : randomizeAllChords}>
+                <DiceSvg /> Randomize All
+              </button>
+            </AppTooltip>
             <button className="ep-go-btn" onClick={section === 'scales' ? handleScaleLoad : handleProgLoad}>
               <span className="material-symbols-outlined" style={{ fontSize: 18 }}>play_arrow</span>
               {section === 'scales' ? 'Load Scale' : 'Load Progression'}
@@ -559,7 +558,6 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({ open, onClose, onImport
           </div>
         )}
       </div>
-      {tipPortal}
     </div>,
     document.body,
   );

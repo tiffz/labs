@@ -13,13 +13,6 @@ interface UrlState {
 const URL_PARAM_RHYTHM = 'rhythm';
 const URL_PARAM_RHYTHM_B64 = 'r64';
 
-function encodeBase64Url(input: string): string {
-  return btoa(input)
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/g, '');
-}
-
 function decodeBase64Url(input: string): string | null {
   try {
     const normalized = input.replace(/-/g, '+').replace(/_/g, '/');
@@ -86,7 +79,7 @@ function parseUrlParams(): UrlState {
 }
 
 const DEBOUNCE_MS = 800;
-const REPLACE_DEBOUNCE_PARAMS = new Set([URL_PARAM_RHYTHM, URL_PARAM_RHYTHM_B64, 'bpm']);
+const REPLACE_DEBOUNCE_PARAMS = new Set([URL_PARAM_RHYTHM, 'bpm']);
 
 function buildUrl(state: UrlState): string {
   const params = new URLSearchParams(window.location.search);
@@ -99,7 +92,7 @@ function buildUrl(state: UrlState): string {
   params.delete('metronome');
 
   if (state.notation !== DEFAULT_STATE.notation) {
-    params.set(URL_PARAM_RHYTHM_B64, encodeBase64Url(state.notation));
+    params.set(URL_PARAM_RHYTHM, state.notation);
   }
 
   if (state.bpm !== DEFAULT_STATE.bpm) {

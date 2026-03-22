@@ -5,6 +5,7 @@ import { audioPlayer } from '../utils/audioPlayer';
 import { COMMON_PATTERNS } from '../data/commonPatterns';
 import { getPatternDuration } from '../utils/dragAndDrop';
 import type { TimeSignature } from '../types';
+import AppTooltip from '../../shared/components/AppTooltip';
 
 /** Selection state for notes */
 interface SelectionState {
@@ -91,6 +92,14 @@ const SINGLE_NOTE_TABLE = {
     { sound: 'S', label: 'Slap', isRest: false },
     { sound: '_', label: 'Rest', isRest: true },
   ],
+};
+
+const SOUND_TOOLTIP_COPY: Record<string, string> = {
+  D: 'Dum: low bass tone played in the center of the drum.',
+  T: 'Tak: bright rim tone for accents.',
+  K: 'Ka: lighter edge tone, often used for subdivisions.',
+  S: 'Slap: sharp muted accent stroke.',
+  _: 'Rest: silence for this note duration.',
 };
 
 // Common drum patterns are now imported from data/commonPatterns.ts
@@ -461,54 +470,58 @@ const NotePalette = forwardRef<NotePaletteHandle, NotePaletteProps>(({
             <tr>
               {SINGLE_NOTE_TABLE.columns.map((col, idx) => (
                 <th key={idx} className="symbol-header">
-                  {col.sound === 'D' && (
-                    <svg width="16" height="24" viewBox="-2 -10 16 30">
-                      <path 
-                        d="M 6 -7 Q -2 -7, -2 0 Q -2 7, 6 7 L 6 13" 
-                        stroke="black" 
-                        strokeWidth="1.8" 
-                        fill="none"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  )}
-                  {col.sound === 'T' && (
-                    <svg width="16" height="16" viewBox="-8 -8 16 16">
-                      <path 
-                        d="M -6 6 L 0 -6 L 6 6" 
-                        stroke="black" 
-                        strokeWidth="1.8" 
-                        fill="none"
-                        strokeLinecap="round"
-                        strokeLinejoin="miter"
-                      />
-                    </svg>
-                  )}
-                  {col.sound === 'K' && (
-                    <svg width="16" height="16" viewBox="-8 -8 16 16">
-                      <path 
-                        d="M -6 -6 L 0 6 L 6 -6" 
-                        stroke="black" 
-                        strokeWidth="1.8" 
-                        fill="none"
-                        strokeLinecap="round"
-                        strokeLinejoin="miter"
-                      />
-                    </svg>
-                  )}
-                  {col.sound === 'S' && (
-                    <svg width="16" height="16" viewBox="-8 -8 16 16">
-                      <circle 
-                        cx="0" 
-                        cy="0" 
-                        r="7" 
-                        fill="black" 
-                        stroke="none"
-                      />
-                    </svg>
-                  )}
-                  {col.sound === '.' && <span style={{ fontSize: '0.9rem', fontWeight: 'normal' }}>Rest</span>}
+                  <AppTooltip title={SOUND_TOOLTIP_COPY[col.sound] ?? `${col.label} sound`}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {col.sound === 'D' && (
+                        <svg width="16" height="24" viewBox="-2 -10 16 30">
+                          <path 
+                            d="M 6 -7 Q -2 -7, -2 0 Q -2 7, 6 7 L 6 13" 
+                            stroke="black" 
+                            strokeWidth="1.8" 
+                            fill="none"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      )}
+                      {col.sound === 'T' && (
+                        <svg width="16" height="16" viewBox="-8 -8 16 16">
+                          <path 
+                            d="M -6 6 L 0 -6 L 6 6" 
+                            stroke="black" 
+                            strokeWidth="1.8" 
+                            fill="none"
+                            strokeLinecap="round"
+                            strokeLinejoin="miter"
+                          />
+                        </svg>
+                      )}
+                      {col.sound === 'K' && (
+                        <svg width="16" height="16" viewBox="-8 -8 16 16">
+                          <path 
+                            d="M -6 -6 L 0 6 L 6 -6" 
+                            stroke="black" 
+                            strokeWidth="1.8" 
+                            fill="none"
+                            strokeLinecap="round"
+                            strokeLinejoin="miter"
+                          />
+                        </svg>
+                      )}
+                      {col.sound === 'S' && (
+                        <svg width="16" height="16" viewBox="-8 -8 16 16">
+                          <circle 
+                            cx="0" 
+                            cy="0" 
+                            r="7" 
+                            fill="black" 
+                            stroke="none"
+                          />
+                        </svg>
+                      )}
+                      {col.sound === '_' && <span style={{ fontSize: '0.9rem', fontWeight: 'normal' }}>Rest</span>}
+                    </span>
+                  </AppTooltip>
                 </th>
               ))}
             </tr>

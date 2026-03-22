@@ -16,6 +16,8 @@ interface MetronomeToggleButtonProps {
   ariaLabel?: string;
   onMouseEnter?: React.MouseEventHandler<HTMLButtonElement>;
   onMouseLeave?: React.MouseEventHandler<HTMLButtonElement>;
+  includeNativeTitle?: boolean;
+  includeDataTooltip?: boolean;
 }
 
 const MetronomeToggleButton: React.FC<MetronomeToggleButtonProps> = ({
@@ -34,6 +36,8 @@ const MetronomeToggleButton: React.FC<MetronomeToggleButtonProps> = ({
   ariaLabel = 'Toggle metronome',
   onMouseEnter,
   onMouseLeave,
+  includeNativeTitle = true,
+  includeDataTooltip = true,
 }) => {
   const classes = `${className}${enabled ? ` ${activeClassName}` : ''}`.trim();
   return (
@@ -42,11 +46,11 @@ const MetronomeToggleButton: React.FC<MetronomeToggleButtonProps> = ({
       className={classes}
       onClick={onToggle}
       aria-label={ariaLabel}
-      title={enabled ? tooltipOn : tooltipOff}
+      title={includeNativeTitle ? (enabled ? tooltipOn : tooltipOff) : undefined}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       data-tooltip={
-        dataTooltipOn || dataTooltipOff
+        includeDataTooltip && (dataTooltipOn || dataTooltipOff)
           ? enabled
             ? dataTooltipOn ?? tooltipOn
             : dataTooltipOff ?? tooltipOff

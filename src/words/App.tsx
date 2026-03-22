@@ -57,6 +57,7 @@ import { LyricImportModal } from './components/LyricImportModal';
 import { getRhythmTemplatePresets } from '../shared/rhythm/presetDatabase';
 import MetronomeToggleButton from '../shared/components/MetronomeToggleButton';
 import DiceIcon from '../shared/components/DiceIcon';
+import AppTooltip from '../shared/components/AppTooltip';
 import dumSound from '../drums/assets/sounds/dum.wav';
 import takSound from '../drums/assets/sounds/tak.wav';
 import kaSound from '../drums/assets/sounds/ka.wav';
@@ -304,17 +305,18 @@ const SettingHelpLabel: React.FC<{ text: string; help: string }> = ({
 }) => (
   <span className="words-setting-label">
     {text}
-    <button
-      className="words-setting-help"
-      type="button"
-      tabIndex={-1}
-      aria-label={`${text} help`}
-      data-tooltip={help}
-    >
-      <span className="material-symbols-outlined" aria-hidden="true">
-        info
-      </span>
-    </button>
+    <AppTooltip title={help}>
+      <button
+        className="words-setting-help"
+        type="button"
+        tabIndex={-1}
+        aria-label={`${text} help`}
+      >
+        <span className="material-symbols-outlined" aria-hidden="true">
+          info
+        </span>
+      </button>
+    </AppTooltip>
   </span>
 );
 
@@ -2672,18 +2674,18 @@ const App: React.FC = () => {
             {randomizeMenuOpen ? (
               <div ref={randomizeMenuRef} className="words-randomize-menu">
                 {RANDOMIZE_MODE_OPTIONS.map((option) => (
-                  <button
-                    key={option.mode}
-                    type="button"
-                    className="words-button words-randomize-option"
-                    title={option.tooltip}
-                    onClick={() => {
-                      applyRandomization(option.mode);
-                      setRandomizeMenuOpen(false);
-                    }}
-                  >
-                    {option.label}
-                  </button>
+                  <AppTooltip key={option.mode} title={option.tooltip}>
+                    <button
+                      type="button"
+                      className="words-button words-randomize-option"
+                      onClick={() => {
+                        applyRandomization(option.mode);
+                        setRandomizeMenuOpen(false);
+                      }}
+                    >
+                      {option.label}
+                    </button>
+                  </AppTooltip>
                 ))}
               </div>
             ) : null}
@@ -2964,19 +2966,20 @@ const App: React.FC = () => {
                 }
               }}
             />
-            <button
-              type="button"
-              className="words-inline-dice-button words-icon-tooltip"
-              onClick={() => {
-                const nextBpm = clampBpm(Math.round(80 + Math.random() * 70));
-                setBpm(nextBpm);
-                setBpmInput(String(nextBpm));
-              }}
-              data-tooltip="Randomize BPM"
-              aria-label="Randomize BPM"
-            >
-              <DiceIcon variant="single" size={15} />
-            </button>
+            <AppTooltip title="Randomize BPM">
+              <button
+                type="button"
+                className="words-inline-dice-button words-icon-tooltip"
+                onClick={() => {
+                  const nextBpm = clampBpm(Math.round(80 + Math.random() * 70));
+                  setBpm(nextBpm);
+                  setBpmInput(String(nextBpm));
+                }}
+                aria-label="Randomize BPM"
+              >
+                <DiceIcon variant="single" size={15} />
+              </button>
+            </AppTooltip>
           </label>
           <label className="words-inline-control">
             key
@@ -2990,15 +2993,16 @@ const App: React.FC = () => {
                 </option>
               ))}
             </select>
-            <button
-              type="button"
-              className="words-inline-dice-button words-icon-tooltip"
-              onClick={() => setSongKey(pickRandom(ALL_KEYS))}
-              data-tooltip="Randomize key"
-              aria-label="Randomize key"
-            >
-              <DiceIcon variant="single" size={15} />
-            </button>
+            <AppTooltip title="Randomize key">
+              <button
+                type="button"
+                className="words-inline-dice-button words-icon-tooltip"
+                onClick={() => setSongKey(pickRandom(ALL_KEYS))}
+                aria-label="Randomize key"
+              >
+                <DiceIcon variant="single" size={15} />
+              </button>
+            </AppTooltip>
           </label>
           <label className="words-inline-control">
             meter
@@ -3022,21 +3026,25 @@ const App: React.FC = () => {
               ))}
             </select>
           </label>
-          <MetronomeToggleButton
-            enabled={metronomeEnabled}
-            onToggle={() => {
-              const nextEnabled = !metronomeEnabled;
-              setMetronomeEnabled(nextEnabled);
-              handleMetronomeToggle(nextEnabled);
-            }}
-            className="words-button words-button-icon words-icon-tooltip words-metronome-toggle"
-            activeClassName="is-on"
-            showOnLabel={false}
-            tooltipOn="Metronome is on"
-            tooltipOff="Metronome is off"
-            dataTooltipOn="Metronome is on"
-            dataTooltipOff="Metronome is off"
-          />
+          <AppTooltip title={metronomeEnabled ? 'Metronome is on' : 'Metronome is off'}>
+            <span>
+              <MetronomeToggleButton
+                enabled={metronomeEnabled}
+                onToggle={() => {
+                  const nextEnabled = !metronomeEnabled;
+                  setMetronomeEnabled(nextEnabled);
+                  handleMetronomeToggle(nextEnabled);
+                }}
+                className="words-button words-button-icon words-icon-tooltip words-metronome-toggle"
+                activeClassName="is-on"
+                showOnLabel={false}
+                tooltipOn="Metronome is on"
+                tooltipOff="Metronome is off"
+                includeNativeTitle={false}
+                includeDataTooltip={false}
+              />
+            </span>
+          </AppTooltip>
           <button
             ref={soundButtonRef}
             className={`words-button words-gear-button${soundMenuOpen ? ' is-open' : ''}`}
@@ -3067,17 +3075,18 @@ const App: React.FC = () => {
                   onChange={(event) => setMasterVolume(Number(event.target.value))}
                 />
                 <span>{masterVolume}</span>
-                <button
-                  type="button"
-                  className="words-button words-button-icon words-icon-tooltip"
-                  onClick={() => setMasterMuted((previous) => !previous)}
-                  data-tooltip={masterMuted ? 'Unmute master volume' : 'Mute master volume'}
-                  aria-label={masterMuted ? 'Unmute master volume' : 'Mute master volume'}
-                >
-                  <span className="material-symbols-outlined">
-                    {volumeIconName(masterMuted)}
-                  </span>
-                </button>
+                <AppTooltip title={masterMuted ? 'Unmute master volume' : 'Mute master volume'}>
+                  <button
+                    type="button"
+                    className="words-button words-button-icon words-icon-tooltip"
+                    onClick={() => setMasterMuted((previous) => !previous)}
+                    aria-label={masterMuted ? 'Unmute master volume' : 'Mute master volume'}
+                  >
+                    <span className="material-symbols-outlined">
+                      {volumeIconName(masterMuted)}
+                    </span>
+                  </button>
+                </AppTooltip>
               </label>
               <label className="words-slider-row">
                 drums volume
@@ -3091,17 +3100,18 @@ const App: React.FC = () => {
                   }
                 />
                 <span>{drumsVolume}</span>
-                <button
-                  type="button"
-                  className="words-button words-button-icon words-icon-tooltip"
-                  onClick={() => setDrumsMuted((previous) => !previous)}
-                  data-tooltip={drumsMuted ? 'Unmute drums' : 'Mute drums'}
-                  aria-label={drumsMuted ? 'Unmute drums' : 'Mute drums'}
-                >
-                  <span className="material-symbols-outlined">
-                    {volumeIconName(drumsMuted)}
-                  </span>
-                </button>
+                <AppTooltip title={drumsMuted ? 'Unmute drums' : 'Mute drums'}>
+                  <button
+                    type="button"
+                    className="words-button words-button-icon words-icon-tooltip"
+                    onClick={() => setDrumsMuted((previous) => !previous)}
+                    aria-label={drumsMuted ? 'Unmute drums' : 'Mute drums'}
+                  >
+                    <span className="material-symbols-outlined">
+                      {volumeIconName(drumsMuted)}
+                    </span>
+                  </button>
+                </AppTooltip>
               </label>
               <label className="words-slider-row">
                 accent volume
@@ -3122,17 +3132,18 @@ const App: React.FC = () => {
                   }
                 />
                 <span>{playbackSettings.measureAccentVolume}</span>
-                <button
-                  type="button"
-                  className="words-button words-button-icon words-icon-tooltip"
-                  onClick={() => setAccentMuted((previous) => !previous)}
-                  data-tooltip={accentMuted ? 'Unmute accents' : 'Mute accents'}
-                  aria-label={accentMuted ? 'Unmute accents' : 'Mute accents'}
-                >
-                  <span className="material-symbols-outlined">
-                    {volumeIconName(accentMuted)}
-                  </span>
-                </button>
+                <AppTooltip title={accentMuted ? 'Unmute accents' : 'Mute accents'}>
+                  <button
+                    type="button"
+                    className="words-button words-button-icon words-icon-tooltip"
+                    onClick={() => setAccentMuted((previous) => !previous)}
+                    aria-label={accentMuted ? 'Unmute accents' : 'Mute accents'}
+                  >
+                    <span className="material-symbols-outlined">
+                      {volumeIconName(accentMuted)}
+                    </span>
+                  </button>
+                </AppTooltip>
               </label>
               <label className="words-slider-row">
                 metronome volume
@@ -3149,17 +3160,18 @@ const App: React.FC = () => {
                   }
                 />
                 <span>{playbackSettings.metronomeVolume}</span>
-                <button
-                  type="button"
-                  className="words-button words-button-icon words-icon-tooltip"
-                  onClick={() => setMetronomeMuted((previous) => !previous)}
-                  data-tooltip={metronomeMuted ? 'Unmute metronome' : 'Mute metronome'}
-                  aria-label={metronomeMuted ? 'Unmute metronome' : 'Mute metronome'}
-                >
-                  <span className="material-symbols-outlined">
-                    {volumeIconName(metronomeMuted)}
-                  </span>
-                </button>
+                <AppTooltip title={metronomeMuted ? 'Unmute metronome' : 'Mute metronome'}>
+                  <button
+                    type="button"
+                    className="words-button words-button-icon words-icon-tooltip"
+                    onClick={() => setMetronomeMuted((previous) => !previous)}
+                    aria-label={metronomeMuted ? 'Unmute metronome' : 'Mute metronome'}
+                  >
+                    <span className="material-symbols-outlined">
+                      {volumeIconName(metronomeMuted)}
+                    </span>
+                  </button>
+                </AppTooltip>
               </label>
               <div className="words-chord-settings">
                 <label className="words-slider-row">
@@ -3218,17 +3230,18 @@ const App: React.FC = () => {
                     }
                   />
                   <span>{chordVolume}</span>
-                  <button
-                    type="button"
-                    className="words-button words-button-icon words-icon-tooltip"
-                    onClick={() => setChordMuted((previous) => !previous)}
-                    data-tooltip={chordMuted ? 'Unmute chords' : 'Mute chords'}
-                    aria-label={chordMuted ? 'Unmute chords' : 'Mute chords'}
-                  >
-                    <span className="material-symbols-outlined">
-                      {volumeIconName(chordMuted)}
-                    </span>
-                  </button>
+                  <AppTooltip title={chordMuted ? 'Unmute chords' : 'Mute chords'}>
+                    <button
+                      type="button"
+                      className="words-button words-button-icon words-icon-tooltip"
+                      onClick={() => setChordMuted((previous) => !previous)}
+                      aria-label={chordMuted ? 'Unmute chords' : 'Mute chords'}
+                    >
+                      <span className="material-symbols-outlined">
+                        {volumeIconName(chordMuted)}
+                      </span>
+                    </button>
+                  </AppTooltip>
                 </label>
               </div>
               <div className="words-chord-settings">
@@ -3256,21 +3269,22 @@ const App: React.FC = () => {
                         }
                       />
                       <span>{backingBeatVolume}</span>
-                      <button
-                        type="button"
-                        className="words-button words-button-icon words-icon-tooltip"
-                        onClick={() => setBackingBeatMuted((previous) => !previous)}
-                        data-tooltip={
-                          backingBeatMuted ? 'Unmute backing drums' : 'Mute backing drums'
-                        }
-                        aria-label={
-                          backingBeatMuted ? 'Unmute backing drums' : 'Mute backing drums'
-                        }
+                      <AppTooltip
+                        title={backingBeatMuted ? 'Unmute backing drums' : 'Mute backing drums'}
                       >
-                        <span className="material-symbols-outlined">
-                          {volumeIconName(backingBeatMuted)}
-                        </span>
-                      </button>
+                        <button
+                          type="button"
+                          className="words-button words-button-icon words-icon-tooltip"
+                          onClick={() => setBackingBeatMuted((previous) => !previous)}
+                          aria-label={
+                            backingBeatMuted ? 'Unmute backing drums' : 'Mute backing drums'
+                          }
+                        >
+                          <span className="material-symbols-outlined">
+                            {volumeIconName(backingBeatMuted)}
+                          </span>
+                        </button>
+                      </AppTooltip>
                     </label>
                     <label className="word-rhythm-toggle words-toggle-inline">
                       <input
@@ -3313,24 +3327,26 @@ const App: React.FC = () => {
                               {preset.label}
                             </button>
                           ))}
-                          <button
-                            type="button"
-                            className="words-button words-button-template words-button-template-icon words-icon-tooltip"
-                            onClick={() => randomizeBackingTemplate('preset')}
-                            data-tooltip="Random preset template"
-                            aria-label="Random preset template"
-                          >
-                            <DiceIcon variant="single" size={15} />
-                          </button>
-                          <button
-                            type="button"
-                            className="words-button words-button-template words-button-template-icon words-icon-tooltip"
-                            onClick={() => randomizeBackingTemplate('full')}
-                            data-tooltip="Fully randomize template"
-                            aria-label="Fully randomize template"
-                          >
-                            <DiceIcon variant="multiple" size={15} />
-                          </button>
+                          <AppTooltip title="Random preset template">
+                            <button
+                              type="button"
+                              className="words-button words-button-template words-button-template-icon words-icon-tooltip"
+                              onClick={() => randomizeBackingTemplate('preset')}
+                              aria-label="Random preset template"
+                            >
+                              <DiceIcon variant="single" size={15} />
+                            </button>
+                          </AppTooltip>
+                          <AppTooltip title="Fully randomize template">
+                            <button
+                              type="button"
+                              className="words-button words-button-template words-button-template-icon words-icon-tooltip"
+                              onClick={() => randomizeBackingTemplate('full')}
+                              aria-label="Fully randomize template"
+                            >
+                              <DiceIcon variant="multiple" size={15} />
+                            </button>
+                          </AppTooltip>
                         </div>
                       </>
                     ) : null}
@@ -3420,33 +3436,36 @@ const App: React.FC = () => {
                       <option value="bridge">{sectionDisplayName.includes('Bridge') ? sectionDisplayName : 'Bridge'}</option>
                     </select>
                     {section.type === 'chorus' ? (
-                      <button
-                        type="button"
-                        className={`words-button words-button-icon words-link-toggle words-link-toggle-chorus words-icon-tooltip${
-                          section.linkedToPreviousChorusLyrics
-                            ? ' is-linked'
-                            : ' is-unlinked'
-                        }`}
-                        onClick={() =>
-                          updateSection(section.id, (previousSection) => {
-                            return {
-                              ...previousSection,
-                              linkedToPreviousChorusLyrics:
-                                !previousSection.linkedToPreviousChorusLyrics,
-                            };
-                          })
-                        }
-                        aria-label="Toggle chorus lyrics linking"
-                        data-tooltip={
+                      <AppTooltip
+                        title={
                           section.linkedToPreviousChorusLyrics
                             ? 'Chorus lyrics are linked. Click to unlink lyrics for this chorus.'
                             : 'Chorus lyrics are unlinked. Click to relink lyrics for this chorus.'
                         }
                       >
-                        <span className="material-symbols-outlined">
-                          {section.linkedToPreviousChorusLyrics ? 'link' : 'link_off'}
-                        </span>
-                      </button>
+                        <button
+                          type="button"
+                          className={`words-button words-button-icon words-link-toggle words-link-toggle-chorus words-icon-tooltip${
+                            section.linkedToPreviousChorusLyrics
+                              ? ' is-linked'
+                              : ' is-unlinked'
+                          }`}
+                          onClick={() =>
+                            updateSection(section.id, (previousSection) => {
+                              return {
+                                ...previousSection,
+                                linkedToPreviousChorusLyrics:
+                                  !previousSection.linkedToPreviousChorusLyrics,
+                              };
+                            })
+                          }
+                          aria-label="Toggle chorus lyrics linking"
+                        >
+                          <span className="material-symbols-outlined">
+                            {section.linkedToPreviousChorusLyrics ? 'link' : 'link_off'}
+                          </span>
+                        </button>
+                      </AppTooltip>
                     ) : null}
                     <div className="words-section-actions-inline">
                       <div
@@ -3461,26 +3480,27 @@ const App: React.FC = () => {
                           }
                         }}
                       >
-                        <button
-                          type="button"
-                          className={`words-button words-button-icon words-icon-tooltip${
-                            openSectionSettingsId === section.id ? ' is-open' : ''
-                          }`}
-                          onClick={() =>
-                            setOpenSectionSettingsId((previous) => {
-                              setGenerationMenuOpen(false);
-                              setSoundMenuOpen(false);
-                              setExportMenuOpen(false);
-                              return previous === section.id ? null : section.id;
-                            })
-                          }
-                          aria-label={`${sectionDisplayName} settings`}
-                          data-tooltip="Section settings"
-                        >
-                          <span className="material-symbols-outlined">
-                            settings
-                          </span>
-                        </button>
+                        <AppTooltip title="Section settings">
+                          <button
+                            type="button"
+                            className={`words-button words-button-icon words-icon-tooltip${
+                              openSectionSettingsId === section.id ? ' is-open' : ''
+                            }`}
+                            onClick={() =>
+                              setOpenSectionSettingsId((previous) => {
+                                setGenerationMenuOpen(false);
+                                setSoundMenuOpen(false);
+                                setExportMenuOpen(false);
+                                return previous === section.id ? null : section.id;
+                              })
+                            }
+                            aria-label={`${sectionDisplayName} settings`}
+                          >
+                            <span className="material-symbols-outlined">
+                              settings
+                            </span>
+                          </button>
+                        </AppTooltip>
                         {openSectionSettingsId === section.id ? (
                           typeof document !== 'undefined' && sectionSettingsPosition
                             ? createPortal(
@@ -3512,17 +3532,18 @@ const App: React.FC = () => {
                                   }
                                   placeholder="I–V–vi–IV or C–G–Am–F"
                                 />
-                                <button
-                                  className="words-button words-button-icon words-icon-tooltip"
-                                  type="button"
-                                  onClick={() =>
-                                    randomizeChordProgression(section.id)
-                                  }
-                                  data-tooltip="Randomize section chords"
-                                  aria-label="Randomize section chords"
-                                >
-                                  <DiceIcon variant="single" size={16} />
-                                </button>
+                                <AppTooltip title="Randomize section chords">
+                                  <button
+                                    className="words-button words-button-icon words-icon-tooltip"
+                                    type="button"
+                                    onClick={() =>
+                                      randomizeChordProgression(section.id)
+                                    }
+                                    aria-label="Randomize section chords"
+                                  >
+                                    <DiceIcon variant="single" size={16} />
+                                  </button>
+                                </AppTooltip>
                               </div>
                             </label>
                             <label className="words-slider-row words-chord-row">
@@ -3544,84 +3565,91 @@ const App: React.FC = () => {
                                     </option>
                                   ))}
                                 </select>
-                                <button
-                                  className="words-button words-button-icon words-icon-tooltip"
-                                  type="button"
-                                  onClick={() => randomizeChordStyle(section.id)}
-                                  data-tooltip="Randomize chord style"
-                                  aria-label="Randomize chord style"
-                                >
-                                  <DiceIcon variant="single" size={16} />
-                                </button>
+                                <AppTooltip title="Randomize chord style">
+                                  <button
+                                    className="words-button words-button-icon words-icon-tooltip"
+                                    type="button"
+                                    onClick={() => randomizeChordStyle(section.id)}
+                                    aria-label="Randomize chord style"
+                                  >
+                                    <DiceIcon variant="single" size={16} />
+                                  </button>
+                                </AppTooltip>
                               </div>
                             </label>
                             {section.type === 'chorus' ? (
                               <div className="words-chorus-link-controls">
                                 <strong>chorus linking</strong>
                                 <div className="words-chorus-link-row">
-                                  <button
-                                    type="button"
-                                    className={`words-button words-button-icon words-link-toggle words-link-toggle-chorus words-icon-tooltip${
-                                      section.linkedToPreviousChorusLyrics
-                                        ? ' is-linked'
-                                        : ' is-unlinked'
-                                    }`}
-                                    onClick={() =>
-                                      updateSection(
-                                        section.id,
-                                        (previousSection) => ({
-                                          ...previousSection,
-                                          linkedToPreviousChorusLyrics:
-                                            !previousSection.linkedToPreviousChorusLyrics,
-                                        })
-                                      )
-                                    }
-                                    data-tooltip={
+                                  <AppTooltip
+                                    title={
                                       section.linkedToPreviousChorusLyrics
                                         ? 'Lyrics are linked: editing one linked chorus updates all linked chorus lyrics.'
                                         : 'Lyrics are unlinked: this chorus keeps its own lyrics.'
                                     }
-                                    aria-label="Toggle chorus lyrics linking"
                                   >
-                                    <span className="material-symbols-outlined">
-                                      {section.linkedToPreviousChorusLyrics
-                                        ? 'link'
-                                        : 'link_off'}
-                                    </span>
-                                  </button>
+                                    <button
+                                      type="button"
+                                      className={`words-button words-button-icon words-link-toggle words-link-toggle-chorus words-icon-tooltip${
+                                        section.linkedToPreviousChorusLyrics
+                                          ? ' is-linked'
+                                          : ' is-unlinked'
+                                      }`}
+                                      onClick={() =>
+                                        updateSection(
+                                          section.id,
+                                          (previousSection) => ({
+                                            ...previousSection,
+                                            linkedToPreviousChorusLyrics:
+                                              !previousSection.linkedToPreviousChorusLyrics,
+                                          })
+                                        )
+                                      }
+                                      aria-label="Toggle chorus lyrics linking"
+                                    >
+                                      <span className="material-symbols-outlined">
+                                        {section.linkedToPreviousChorusLyrics
+                                          ? 'link'
+                                          : 'link_off'}
+                                      </span>
+                                    </button>
+                                  </AppTooltip>
                                   <span>lyrics link</span>
                                 </div>
                                 <div className="words-chorus-link-row">
-                                  <button
-                                    type="button"
-                                    className={`words-button words-button-icon words-link-toggle words-icon-tooltip${
-                                      section.linkedToPreviousChorusTemplate
-                                        ? ' is-linked'
-                                        : ' is-unlinked'
-                                    }`}
-                                    onClick={() =>
-                                      updateSection(
-                                        section.id,
-                                        (previousSection) => ({
-                                          ...previousSection,
-                                          linkedToPreviousChorusTemplate:
-                                            !previousSection.linkedToPreviousChorusTemplate,
-                                        })
-                                      )
-                                    }
-                                    data-tooltip={
+                                  <AppTooltip
+                                    title={
                                       section.linkedToPreviousChorusTemplate
                                         ? 'Rhythm template is linked across linked choruses.'
                                         : 'Rhythm template is unlinked for this chorus.'
                                     }
-                                    aria-label="Toggle chorus rhythm template linking"
                                   >
-                                    <span className="material-symbols-outlined">
-                                      {section.linkedToPreviousChorusTemplate
-                                        ? 'link'
-                                        : 'link_off'}
-                                    </span>
-                                  </button>
+                                    <button
+                                      type="button"
+                                      className={`words-button words-button-icon words-link-toggle words-icon-tooltip${
+                                        section.linkedToPreviousChorusTemplate
+                                          ? ' is-linked'
+                                          : ' is-unlinked'
+                                      }`}
+                                      onClick={() =>
+                                        updateSection(
+                                          section.id,
+                                          (previousSection) => ({
+                                            ...previousSection,
+                                            linkedToPreviousChorusTemplate:
+                                              !previousSection.linkedToPreviousChorusTemplate,
+                                          })
+                                        )
+                                      }
+                                      aria-label="Toggle chorus rhythm template linking"
+                                    >
+                                      <span className="material-symbols-outlined">
+                                        {section.linkedToPreviousChorusTemplate
+                                          ? 'link'
+                                          : 'link_off'}
+                                      </span>
+                                    </button>
+                                  </AppTooltip>
                                   <span>template link</span>
                                 </div>
                               </div>
@@ -3662,28 +3690,30 @@ const App: React.FC = () => {
                                   {preset.label}
                                 </button>
                               ))}
-                              <button
-                                type="button"
-                                className="words-button words-button-template words-button-template-icon words-icon-tooltip"
-                                onClick={() =>
-                                  randomizeSectionTemplate(section.id, 'preset')
-                                }
-                                data-tooltip="Random preset template"
-                                aria-label="Random preset template"
-                              >
-                                <DiceIcon variant="single" size={15} />
-                              </button>
-                              <button
-                                type="button"
-                                className="words-button words-button-template words-button-template-icon words-icon-tooltip"
-                                onClick={() =>
-                                  randomizeSectionTemplate(section.id, 'full')
-                                }
-                                data-tooltip="Fully randomize template"
-                                aria-label="Fully randomize template"
-                              >
-                                <DiceIcon variant="multiple" size={15} />
-                              </button>
+                              <AppTooltip title="Random preset template">
+                                <button
+                                  type="button"
+                                  className="words-button words-button-template words-button-template-icon words-icon-tooltip"
+                                  onClick={() =>
+                                    randomizeSectionTemplate(section.id, 'preset')
+                                  }
+                                  aria-label="Random preset template"
+                                >
+                                  <DiceIcon variant="single" size={15} />
+                                </button>
+                              </AppTooltip>
+                              <AppTooltip title="Fully randomize template">
+                                <button
+                                  type="button"
+                                  className="words-button words-button-template words-button-template-icon words-icon-tooltip"
+                                  onClick={() =>
+                                    randomizeSectionTemplate(section.id, 'full')
+                                  }
+                                  aria-label="Fully randomize template"
+                                >
+                                  <DiceIcon variant="multiple" size={15} />
+                                </button>
+                              </AppTooltip>
                             </div>
                             {sectionTemplatePreviewById.get(section.id)?.isValid &&
                             (sectionTemplatePreviewById.get(section.id)?.measures
@@ -3719,65 +3749,71 @@ const App: React.FC = () => {
                             : null
                         ) : null}
                       </div>
-                      <button
-                        type="button"
-                        className={
-                          isPlaying && activeSectionLoopId === section.id
-                            ? 'words-button words-button-primary words-section-loop-button words-icon-tooltip'
-                            : 'words-button words-button-icon words-icon-tooltip'
-                        }
-                        onClick={() => {
-                          if (isPlaying && activeSectionLoopId === section.id) {
-                            stopPlaybackImmediately();
-                            setActiveSectionLoopId(null);
-                            return;
-                          }
-                          playSectionLoop(section.id, index);
-                        }}
-                        data-tooltip={
+                      <AppTooltip
+                        title={
                           isPlaying && activeSectionLoopId === section.id
                             ? 'Pause section loop'
                             : 'Play this section in a loop'
                         }
-                        aria-label={`${
-                          isPlaying && activeSectionLoopId === section.id
-                            ? 'Pause'
-                            : 'Play'
-                        } ${sectionDisplayName} section loop`}
                       >
-                        {isPlaying && activeSectionLoopId === section.id ? (
-                          <>
-                            <span className="material-symbols-outlined">pause</span>
-                            pause
-                          </>
-                        ) : (
-                          <span className="material-symbols-outlined">
-                            play_arrow
-                          </span>
-                        )}
-                      </button>
-                      <button
-                        type="button"
-                        className={`words-button words-button-icon words-icon-tooltip${
-                          section.isLocked ? ' is-open' : ''
-                        }`}
-                        onClick={() =>
-                          updateSection(section.id, (previousSection) => ({
-                            ...previousSection,
-                            isLocked: !previousSection.isLocked,
-                          }))
-                        }
-                        data-tooltip={
+                        <button
+                          type="button"
+                          className={
+                            isPlaying && activeSectionLoopId === section.id
+                              ? 'words-button words-button-primary words-section-loop-button words-icon-tooltip'
+                              : 'words-button words-button-icon words-icon-tooltip'
+                          }
+                          onClick={() => {
+                            if (isPlaying && activeSectionLoopId === section.id) {
+                              stopPlaybackImmediately();
+                              setActiveSectionLoopId(null);
+                              return;
+                            }
+                            playSectionLoop(section.id, index);
+                          }}
+                          aria-label={`${
+                            isPlaying && activeSectionLoopId === section.id
+                              ? 'Pause'
+                              : 'Play'
+                          } ${sectionDisplayName} section loop`}
+                        >
+                          {isPlaying && activeSectionLoopId === section.id ? (
+                            <>
+                              <span className="material-symbols-outlined">pause</span>
+                              pause
+                            </>
+                          ) : (
+                            <span className="material-symbols-outlined">
+                              play_arrow
+                            </span>
+                          )}
+                        </button>
+                      </AppTooltip>
+                      <AppTooltip
+                        title={
                           section.isLocked
                             ? 'Section is locked and excluded from randomization'
                             : 'Lock this section to keep it unchanged when randomizing'
                         }
-                        aria-label={`Toggle lock for ${sectionDisplayName}`}
                       >
-                        <span className="material-symbols-outlined">
-                          {section.isLocked ? 'lock' : 'lock_open'}
-                        </span>
-                      </button>
+                        <button
+                          type="button"
+                          className={`words-button words-button-icon words-icon-tooltip${
+                            section.isLocked ? ' is-open' : ''
+                          }`}
+                          onClick={() =>
+                            updateSection(section.id, (previousSection) => ({
+                              ...previousSection,
+                              isLocked: !previousSection.isLocked,
+                            }))
+                          }
+                          aria-label={`Toggle lock for ${sectionDisplayName}`}
+                        >
+                          <span className="material-symbols-outlined">
+                            {section.isLocked ? 'lock' : 'lock_open'}
+                          </span>
+                        </button>
+                      </AppTooltip>
                       <div
                         className="words-section-randomize-anchor"
                         ref={(element) => {
@@ -3788,78 +3824,85 @@ const App: React.FC = () => {
                           }
                         }}
                       >
-                        <button
-                          type="button"
-                          className="words-button words-button-icon"
-                          onClick={() =>
-                            setSectionRandomizeMenuId((previous) =>
-                              previous === section.id ? null : section.id
-                            )
-                          }
+                        <AppTooltip
                           title={
                             section.isLocked
                               ? 'Section is locked'
                               : 'Open randomization options for this section'
                           }
-                          aria-label={`Randomize ${sectionDisplayName}`}
                         >
-                          <DiceIcon variant="single" size={16} />
-                        </button>
+                          <button
+                            type="button"
+                            className="words-button words-button-icon"
+                            onClick={() =>
+                              setSectionRandomizeMenuId((previous) =>
+                                previous === section.id ? null : section.id
+                              )
+                            }
+                            aria-label={`Randomize ${sectionDisplayName}`}
+                          >
+                            <DiceIcon variant="single" size={16} />
+                          </button>
+                        </AppTooltip>
                         {sectionRandomizeMenuId === section.id ? (
                           <div className="words-randomize-menu words-randomize-menu-section">
                             {RANDOMIZE_MODE_OPTIONS.map((option) => (
-                              <button
-                                key={`${section.id}-${option.mode}`}
-                                type="button"
-                                className="words-button words-randomize-option"
-                                title={option.tooltip}
-                                onClick={() => {
-                                  applyRandomization(option.mode, section.id);
-                                  setSectionRandomizeMenuId(null);
-                                }}
-                              >
-                                {option.label}
-                              </button>
+                              <AppTooltip key={`${section.id}-${option.mode}`} title={option.tooltip}>
+                                <button
+                                  type="button"
+                                  className="words-button words-randomize-option"
+                                  onClick={() => {
+                                    applyRandomization(option.mode, section.id);
+                                    setSectionRandomizeMenuId(null);
+                                  }}
+                                >
+                                  {option.label}
+                                </button>
+                              </AppTooltip>
                             ))}
                           </div>
                         ) : null}
                       </div>
-                      <button
-                        type="button"
-                        className="words-button words-button-icon words-icon-tooltip"
-                        onClick={() => scrollSectionIntoNotationView(section.id)}
-                        data-tooltip="Show this section in notation"
-                        aria-label={`Show ${sectionDisplayName} in notation`}
-                      >
-                        <span className="material-symbols-outlined">visibility</span>
-                      </button>
-                      <button
-                        type="button"
-                        className="words-button words-button-icon words-icon-tooltip"
-                        onClick={() => moveSection(section.id, -1)}
-                        aria-label={`Move ${sectionDisplayName} up`}
-                        data-tooltip="Move section up"
-                      >
-                        <span className="material-symbols-outlined">arrow_upward</span>
-                      </button>
-                      <button
-                        type="button"
-                        className="words-button words-button-icon words-icon-tooltip"
-                        onClick={() => moveSection(section.id, 1)}
-                        aria-label={`Move ${sectionDisplayName} down`}
-                        data-tooltip="Move section down"
-                      >
-                        <span className="material-symbols-outlined">arrow_downward</span>
-                      </button>
-                      <button
-                        type="button"
-                        className="words-button words-button-icon words-button-danger words-icon-tooltip"
-                        onClick={() => removeSection(section.id)}
-                        aria-label={`Remove ${sectionDisplayName}`}
-                        data-tooltip="Delete section"
-                      >
-                        <span className="material-symbols-outlined">delete</span>
-                      </button>
+                      <AppTooltip title="Show this section in notation">
+                        <button
+                          type="button"
+                          className="words-button words-button-icon words-icon-tooltip"
+                          onClick={() => scrollSectionIntoNotationView(section.id)}
+                          aria-label={`Show ${sectionDisplayName} in notation`}
+                        >
+                          <span className="material-symbols-outlined">visibility</span>
+                        </button>
+                      </AppTooltip>
+                      <AppTooltip title="Move section up">
+                        <button
+                          type="button"
+                          className="words-button words-button-icon words-icon-tooltip"
+                          onClick={() => moveSection(section.id, -1)}
+                          aria-label={`Move ${sectionDisplayName} up`}
+                        >
+                          <span className="material-symbols-outlined">arrow_upward</span>
+                        </button>
+                      </AppTooltip>
+                      <AppTooltip title="Move section down">
+                        <button
+                          type="button"
+                          className="words-button words-button-icon words-icon-tooltip"
+                          onClick={() => moveSection(section.id, 1)}
+                          aria-label={`Move ${sectionDisplayName} down`}
+                        >
+                          <span className="material-symbols-outlined">arrow_downward</span>
+                        </button>
+                      </AppTooltip>
+                      <AppTooltip title="Delete section">
+                        <button
+                          type="button"
+                          className="words-button words-button-icon words-button-danger words-icon-tooltip"
+                          onClick={() => removeSection(section.id)}
+                          aria-label={`Remove ${sectionDisplayName}`}
+                        >
+                          <span className="material-symbols-outlined">delete</span>
+                        </button>
+                      </AppTooltip>
                     </div>
                   </div>
                   <textarea

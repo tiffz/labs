@@ -4,6 +4,8 @@
  */
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import AppTooltip from '../../shared/components/AppTooltip';
+import DiceIcon from '../../shared/components/DiceIcon';
 
 interface OptionChipProps {
   label: string;
@@ -40,10 +42,10 @@ const OptionChip: React.FC<OptionChipProps> = ({
   inlineMax,
   hideLabel = false,
 }) => {
-  const [showTooltip, setShowTooltip] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(value);
+  const [suppressChipTooltip, setSuppressChipTooltip] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -110,21 +112,22 @@ const OptionChip: React.FC<OptionChipProps> = ({
     <div className="option-chip-row">
       {!hideLabel && <span className="option-chip-label">{label}:</span>}
       <div className="option-chip-container" ref={containerRef}>
-        <div
-          className={`option-chip ${isLocked ? 'locked' : ''} ${showDropdown ? 'dropdown-open' : ''}`}
-          onClick={handleChipClick}
-          onMouseEnter={() => tooltip && setShowTooltip(true)}
-          onMouseLeave={() => setShowTooltip(false)}
-          title={tooltip}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              handleChipClick();
-            }
-          }}
+        <AppTooltip
+          title={tooltip ?? ''}
+          disabled={suppressChipTooltip || showDropdown || isEditing}
         >
+          <div
+            className={`option-chip ${isLocked ? 'locked' : ''} ${showDropdown ? 'dropdown-open' : ''}`}
+            onClick={handleChipClick}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleChipClick();
+              }
+            }}
+          >
           {isEditing && inlineEdit ? (
             <input
               ref={inputRef}
@@ -143,41 +146,44 @@ const OptionChip: React.FC<OptionChipProps> = ({
           )}
           <div className="option-chip-actions">
             {onRandomize && (
+              <AppTooltip title="Randomize this option">
+                <button
+                  className="option-chip-dice"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRandomize();
+                  }}
+                  onMouseEnter={() => setSuppressChipTooltip(true)}
+                  onMouseLeave={() => setSuppressChipTooltip(false)}
+                  onFocus={() => setSuppressChipTooltip(true)}
+                  onBlur={() => setSuppressChipTooltip(false)}
+                  aria-label="Randomize"
+                >
+                  <DiceIcon variant="single" size={14} />
+                </button>
+              </AppTooltip>
+            )}
+            <AppTooltip title={isLocked ? 'Unlock to allow randomization' : 'Lock to prevent randomization'}>
               <button
-                className="option-chip-dice"
+                className="option-chip-lock"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onRandomize();
+                  onLockToggle();
                 }}
-                title="Randomize this option"
-                aria-label="Randomize"
+                onMouseEnter={() => setSuppressChipTooltip(true)}
+                onMouseLeave={() => setSuppressChipTooltip(false)}
+                onFocus={() => setSuppressChipTooltip(true)}
+                onBlur={() => setSuppressChipTooltip(false)}
+                aria-label={isLocked ? 'Unlock' : 'Lock'}
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  height="14"
-                  viewBox="0 -960 960 960"
-                  width="14"
-                  fill="currentColor"
-                >
-                  <path d="M220-160q-24 0-42-18t-18-42v-520q0-24 18-42t42-18h520q24 0 42 18t18 42v520q0 24-18 42t-42 18H220Zm0-60h520v-520H220v520Zm170-110q21 0 35.5-14.5T440-380q0-21-14.5-35.5T390-430q-21 0-35.5 14.5T340-380q0 21 14.5 35.5T390-330Zm180 0q21 0 35.5-14.5T620-380q0-21-14.5-35.5T570-430q-21 0-35.5 14.5T520-380q0 21 14.5 35.5T570-330ZM390-510q21 0 35.5-14.5T440-560q0-21-14.5-35.5T390-610q-21 0-35.5 14.5T340-560q0 21 14.5 35.5T390-510Zm180 0q21 0 35.5-14.5T620-560q0-21-14.5-35.5T570-610q-21 0-35.5 14.5T520-560q0 21 14.5 35.5T570-510ZM220-740v520-520Z" />
-                </svg>
+                <span className="material-symbols-outlined">
+                  {isLocked ? 'lock' : 'lock_open'}
+                </span>
               </button>
-            )}
-            <button
-              className="option-chip-lock"
-              onClick={(e) => {
-                e.stopPropagation();
-                onLockToggle();
-              }}
-              title={isLocked ? 'Unlock to allow randomization' : 'Lock to prevent randomization'}
-              aria-label={isLocked ? 'Unlock' : 'Lock'}
-            >
-              <span className="material-symbols-outlined">
-                {isLocked ? 'lock' : 'lock_open'}
-              </span>
-            </button>
+            </AppTooltip>
           </div>
-        </div>
+          </div>
+        </AppTooltip>
         {showDropdown && options && (
           <div className="option-chip-dropdown">
             {options.map((option) => (
@@ -194,11 +200,6 @@ const OptionChip: React.FC<OptionChipProps> = ({
                 {option.label}
               </button>
             ))}
-          </div>
-        )}
-        {showTooltip && tooltip && !showDropdown && (
-          <div className="option-chip-tooltip">
-            {tooltip}
           </div>
         )}
       </div>

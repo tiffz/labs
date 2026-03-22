@@ -1,5 +1,4 @@
 import React, { useRef, useEffect, useCallback, useState, useMemo } from 'react';
-import { createPortal } from 'react-dom';
 import { usePiano } from '../store';
 import { durationToBeats, type NoteDuration } from '../types';
 import {
@@ -7,6 +6,7 @@ import {
   type CorrelationResult,
 } from '../utils/videoScoreCorrelation';
 import { SmartBeatMap } from '../utils/smartBeatMap';
+import { useMatTooltip } from './useMatTooltip';
 
 const VideoPlayer: React.FC = () => {
   const { state, dispatch } = usePiano();
@@ -22,14 +22,8 @@ const VideoPlayer: React.FC = () => {
   const [correlation, setCorrelation] = useState<CorrelationResult | null>(null);
   const [collapsed, setCollapsed] = useState(false);
   const [tapping, setTapping] = useState(false);
-  const [tip, setTip] = useState<{ text: string; x: number; y: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const showTip = useCallback((e: React.MouseEvent, text: string) => {
-    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    setTip({ text, x: r.left + r.width / 2, y: r.top });
-  }, []);
-  const hideTip = useCallback(() => setTip(null), []);
+  const { showTip, hideTip, tipPortal } = useMatTooltip();
 
   const scoreBpm = state.score?.tempo ?? 0;
 
@@ -483,10 +477,7 @@ const VideoPlayer: React.FC = () => {
         </div>
       )}
 
-      {tip && createPortal(
-        <div className="mat-tooltip" style={{ left: tip.x, top: tip.y }}>{tip.text}</div>,
-        document.body,
-      )}
+      {tipPortal}
     </div>
   );
 };

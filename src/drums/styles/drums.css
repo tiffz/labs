@@ -533,58 +533,6 @@
     color: #dc2626;
   }
 
-  /* Tooltip on hover */
-  .icon-button::after {
-    content: attr(data-tooltip);
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%) translateY(-0.5rem);
-    padding: 0.375rem 0.625rem;
-    background-color: rgba(0, 0, 0, 0.9);
-    color: white;
-    font-size: 0.75rem;
-    font-weight: 500;
-    white-space: nowrap;
-    border-radius: 0.25rem;
-    opacity: 0;
-    pointer-events: none;
-    transition:
-      opacity 0.2s ease,
-      transform 0.2s ease;
-    z-index: 1000;
-  }
-
-  .icon-button:hover:not(:disabled)::after {
-    opacity: 1;
-    transform: translateX(-50%) translateY(-0.25rem);
-  }
-
-  /* Tooltip arrow */
-  .icon-button::before {
-    content: '';
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%) translateY(0.25rem);
-    width: 0;
-    height: 0;
-    border-left: 0.25rem solid transparent;
-    border-right: 0.25rem solid transparent;
-    border-top: 0.25rem solid rgba(0, 0, 0, 0.9);
-    opacity: 0;
-    pointer-events: none;
-    transition:
-      opacity 0.2s ease,
-      transform 0.2s ease;
-    z-index: 1000;
-  }
-
-  .icon-button:hover:not(:disabled)::before {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0rem);
-  }
-
   .input-label {
     font-weight: 600;
     font-size: 0.875rem;
@@ -1788,18 +1736,6 @@
     font-weight: 600;
     color: var(--text-color);
     margin-bottom: 0.5rem;
-  }
-
-  .settings-help-tooltip-container {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    position: relative;
-  }
-
-  .settings-tooltip {
-    position: absolute;
-    z-index: 1001;
   }
 
   .settings-value {

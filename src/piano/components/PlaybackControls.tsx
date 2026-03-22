@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { usePiano, type ActiveMode } from '../store';
 import { SOUND_OPTIONS, type SoundType } from '../../chords/types/soundOptions';
@@ -6,6 +6,7 @@ import DrumAccompaniment, { type DrumScheduler } from '../../beat/components/Dru
 import type { NotationStyle } from '../../shared/notation/DrumNotationMini';
 import { getScorePlaybackEngine } from '../utils/scorePlayback';
 import MetronomeToggleButton from '../../shared/components/MetronomeToggleButton';
+import AppTooltip from '../../shared/components/AppTooltip';
 
 const PIANO_DRUM_STYLE: NotationStyle = {
   staffColor: '#94a3b8',
@@ -276,15 +277,7 @@ const PlaybackControls: React.FC = () => {
     }
   };
 
-  const [tip, setTip] = useState<{ text: string; x: number; y: number } | null>(null);
   const [systemsExpanded, setSystemsExpanded] = useState(true);
-  const showTip = useCallback((e: React.MouseEvent, text: string) => {
-    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const cx = r.left + r.width / 2;
-    const clamped = Math.max(120, Math.min(cx, window.innerWidth - 120));
-    setTip({ text, x: clamped, y: r.top });
-  }, []);
-  const hideTip = useCallback(() => setTip(null), []);
 
   const drumScheduler = useMemo<DrumScheduler>(() => {
     const eng = getScorePlaybackEngine();
@@ -301,36 +294,36 @@ const PlaybackControls: React.FC = () => {
   return (
     <div className="sidebar-playback">
       <div className="sb-mode-buttons">
-        <button
-          className={`sb-mode-btn practice-primary ${state.activeMode === 'practice' ? 'active practice' : ''}`}
-          onClick={() => handleModeToggle('practice')}
-          disabled={!state.score || ((!state.midiConnected && !state.microphoneActive) && state.activeMode !== 'practice')}
-          onMouseEnter={e => showTip(e, (!state.midiConnected && !state.microphoneActive) ? 'Connect a MIDI controller or enable mic to practice' : 'Play along with the metronome and get timing feedback')}
-          onMouseLeave={hideTip}
-        >
+        <AppTooltip title={(!state.midiConnected && !state.microphoneActive) ? 'Connect a MIDI controller or enable mic to practice' : 'Play along with the metronome and get timing feedback'}>
+          <button
+            className={`sb-mode-btn practice-primary ${state.activeMode === 'practice' ? 'active practice' : ''}`}
+            onClick={() => handleModeToggle('practice')}
+            disabled={!state.score || ((!state.midiConnected && !state.microphoneActive) && state.activeMode !== 'practice')}
+          >
           <span className="material-symbols-outlined">{state.activeMode === 'practice' ? 'pause' : 'play_arrow'}</span>
           <span className="sb-mode-label">{state.activeMode === 'practice' ? 'Stop' : 'Practice'}</span>
-        </button>
-        <button
-          className={`sb-mode-btn ${state.activeMode === 'free-practice' ? 'active free-practice' : ''}`}
-          onClick={() => handleModeToggle('free-practice')}
-          disabled={!state.score || ((!state.midiConnected && !state.microphoneActive) && state.activeMode !== 'free-practice')}
-          onMouseEnter={e => showTip(e, (!state.midiConnected && !state.microphoneActive) ? 'Connect a MIDI controller or enable mic for free tempo' : 'Play at your own pace — notes advance as you play correctly')}
-          onMouseLeave={hideTip}
-        >
+          </button>
+        </AppTooltip>
+        <AppTooltip title={(!state.midiConnected && !state.microphoneActive) ? 'Connect a MIDI controller or enable mic for free tempo' : 'Play at your own pace — notes advance as you play correctly'}>
+          <button
+            className={`sb-mode-btn ${state.activeMode === 'free-practice' ? 'active free-practice' : ''}`}
+            onClick={() => handleModeToggle('free-practice')}
+            disabled={!state.score || ((!state.midiConnected && !state.microphoneActive) && state.activeMode !== 'free-practice')}
+          >
           <span className="material-symbols-outlined">{state.activeMode === 'free-practice' ? 'pause' : 'slow_motion_video'}</span>
           <span className="sb-mode-label">{state.activeMode === 'free-practice' ? 'Stop' : 'Free Tempo'}</span>
-        </button>
-        <button
-          className={`sb-mode-btn ${state.activeMode === 'play' ? 'active play' : ''}`}
-          onClick={() => handleModeToggle('play')}
-          disabled={!state.score}
-          onMouseEnter={e => showTip(e, 'Listen to the score without practice tracking')}
-          onMouseLeave={hideTip}
-        >
+          </button>
+        </AppTooltip>
+        <AppTooltip title="Listen to the score without practice tracking">
+          <button
+            className={`sb-mode-btn ${state.activeMode === 'play' ? 'active play' : ''}`}
+            onClick={() => handleModeToggle('play')}
+            disabled={!state.score}
+          >
           <span className="material-symbols-outlined">{state.activeMode === 'play' ? 'pause' : 'play_circle'}</span>
           <span className="sb-mode-label">{state.activeMode === 'play' ? 'Stop' : 'Play'}</span>
-        </button>
+          </button>
+        </AppTooltip>
       </div>
 
       {state.countingIn && (
@@ -387,54 +380,60 @@ const PlaybackControls: React.FC = () => {
               </button>
             </div>
           </div>
-          <button
-            className="btn btn-small sb-tempo-adj"
-            onClick={() => setTempoMultiplied(0.5)}
-            disabled={isActive}
-            title="Half tempo"
-          >
-            ½×
-          </button>
-          <button
-            className="btn btn-small sb-tempo-adj"
-            onClick={() => setTempoMultiplied(2)}
-            disabled={isActive}
-            title="Double tempo"
-          >
-            2×
-          </button>
+          <AppTooltip title="Half tempo">
+            <button
+              className="btn btn-small sb-tempo-adj"
+              onClick={() => setTempoMultiplied(0.5)}
+              disabled={isActive}
+            >
+              ½×
+            </button>
+          </AppTooltip>
+          <AppTooltip title="Double tempo">
+            <button
+              className="btn btn-small sb-tempo-adj"
+              onClick={() => setTempoMultiplied(2)}
+              disabled={isActive}
+            >
+              2×
+            </button>
+          </AppTooltip>
         </div>
       </div>
 
       <div className="sb-icon-row">
-        <MetronomeToggleButton
-          enabled={state.metronomeEnabled}
-          onToggle={handleMetronomeToggle}
-          className="metronome-btn"
-          label={undefined}
-          showOnLabel={false}
-          tooltipOn="Metronome (on)"
-          tooltipOff="Metronome (off)"
-          onMouseEnter={e => showTip(e, state.metronomeEnabled ? 'Metronome: On' : 'Metronome: Off')}
-          onMouseLeave={hideTip}
-        />
-        <button
-          className={`metronome-btn ${state.loopingEnabled ? 'active' : ''}`}
-          onClick={handleLoopToggle}
-          onMouseEnter={e => showTip(e, `Loop ${state.loopingEnabled ? '(on)' : '(off)'}`)}
-          onMouseLeave={hideTip}
-        >
-          <span className="material-symbols-outlined">repeat</span>
-        </button>
-        <button
-          ref={settingsBtnRef}
-          className={`metronome-btn ${settingsOpen ? 'active' : ''}`}
-          onClick={() => setSettingsOpen(v => !v)}
-          onMouseEnter={e => showTip(e, 'Sound settings')}
-          onMouseLeave={hideTip}
-        >
-          <span className="material-symbols-outlined">settings</span>
-        </button>
+        <AppTooltip title={state.metronomeEnabled ? 'Metronome: On' : 'Metronome: Off'}>
+          <span>
+            <MetronomeToggleButton
+              enabled={state.metronomeEnabled}
+              onToggle={handleMetronomeToggle}
+              className="metronome-btn"
+              label={undefined}
+              showOnLabel={false}
+              tooltipOn="Metronome (on)"
+              tooltipOff="Metronome (off)"
+              includeNativeTitle={false}
+              includeDataTooltip={false}
+            />
+          </span>
+        </AppTooltip>
+        <AppTooltip title={`Loop ${state.loopingEnabled ? '(on)' : '(off)'}`}>
+          <button
+            className={`metronome-btn ${state.loopingEnabled ? 'active' : ''}`}
+            onClick={handleLoopToggle}
+          >
+            <span className="material-symbols-outlined">repeat</span>
+          </button>
+        </AppTooltip>
+        <AppTooltip title="Sound settings">
+          <button
+            ref={settingsBtnRef}
+            className={`metronome-btn ${settingsOpen ? 'active' : ''}`}
+            onClick={() => setSettingsOpen(v => !v)}
+          >
+            <span className="material-symbols-outlined">settings</span>
+          </button>
+        </AppTooltip>
       </div>
 
       <div className="sb-options-section">
@@ -515,11 +514,9 @@ const PlaybackControls: React.FC = () => {
               <div className="sb-system-row">
                 <span className="sb-system-label">
                   Chords
-                  <span
-                    className="material-symbols-outlined sb-help-icon"
-                    onMouseEnter={e => showTip(e, 'When enabled, you\'ll be scored on playing the correct chord at the right time. Any voicing or inversion of the chord is accepted.')}
-                    onMouseLeave={hideTip}
-                  >help</span>
+                  <AppTooltip title="When enabled, you'll be scored on playing the correct chord at the right time. Any voicing or inversion of the chord is accepted.">
+                    <span className="material-symbols-outlined sb-help-icon">help</span>
+                  </AppTooltip>
                 </span>
                 <label className="sb-toggle-label">
                   <input type="checkbox" checked={state.showChords}
@@ -573,16 +570,6 @@ const PlaybackControls: React.FC = () => {
             style={{ width: `${(state.sampleLoadingProgress.loaded / state.sampleLoadingProgress.total) * 100}%` }}
           />
         </div>
-      )}
-
-      {tip && createPortal(
-        <div
-          className="mat-tooltip"
-          style={{ left: tip.x, top: tip.y }}
-        >
-          {tip.text}
-        </div>,
-        document.body,
       )}
 
       {settingsOpen && createPortal(

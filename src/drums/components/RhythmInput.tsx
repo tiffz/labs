@@ -7,6 +7,7 @@ import DownloadDropdown from './DownloadDropdown';
 import { TabImportWizard } from './TabImportWizard';
 import { detectTabType, isTab, type TabType } from '../utils/tabDetector';
 import { formatRhythm } from '../utils/formatting';
+import AppTooltip from '../../shared/components/AppTooltip';
 
 interface RhythmInputProps {
   notation: string;
@@ -256,26 +257,28 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
               }}
             />
             <div className="icon-button-group">
-              <button
-                className="icon-button"
-                onClick={(e) => onShare(e)}
-                type="button"
-                aria-label="Share rhythm"
-                data-tooltip="Share"
-              >
-                <span className="material-symbols-outlined">share</span>
-              </button>
-              <div style={{ position: 'relative' }}>
+              <AppTooltip title="Share">
                 <button
-                  ref={downloadButtonRef}
                   className="icon-button"
-                  onClick={() => setShowDownloadDropdown(!showDownloadDropdown)}
+                  onClick={(e) => onShare(e)}
                   type="button"
-                  aria-label="Download rhythm"
-                  data-tooltip="Download"
+                  aria-label="Share rhythm"
                 >
-                  <span className="material-symbols-outlined">download</span>
+                  <span className="material-symbols-outlined">share</span>
                 </button>
+              </AppTooltip>
+              <div style={{ position: 'relative' }}>
+                <AppTooltip title="Download">
+                  <button
+                    ref={downloadButtonRef}
+                    className="icon-button"
+                    onClick={() => setShowDownloadDropdown(!showDownloadDropdown)}
+                    type="button"
+                    aria-label="Download rhythm"
+                  >
+                    <span className="material-symbols-outlined">download</span>
+                  </button>
+                </AppTooltip>
                 {showDownloadDropdown && (
                   <DownloadDropdown
                     rhythm={parsedRhythm}
@@ -293,55 +296,60 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
                   />
                 )}
               </div>
-              <button
-                className="icon-button"
-                onClick={onRandomize}
-                type="button"
-                aria-label="Randomize rhythm"
-                data-tooltip="Randomize"
-              >
-                <span className="material-symbols-outlined">shuffle</span>
-              </button>
-              <button
-                className="icon-button"
-                onClick={onUndo}
-                type="button"
-                disabled={!canUndo}
-                aria-label="Undo"
-                data-tooltip="Undo"
-              >
-                <span className="material-symbols-outlined">undo</span>
-              </button>
-              <button
-                className="icon-button"
-                onClick={onRedo}
-                type="button"
-                disabled={!canRedo}
-                aria-label="Redo"
-                data-tooltip="Redo"
-              >
-                <span className="material-symbols-outlined">redo</span>
-              </button>
-              <button
-                className="icon-button"
-                onClick={onDeleteLast}
-                type="button"
-                disabled={notation.length === 0}
-                aria-label="Delete last note"
-                data-tooltip="Delete Last Note"
-              >
-                <span className="material-symbols-outlined">backspace</span>
-              </button>
-              <button
-                className="icon-button icon-button-danger"
-                onClick={onClear}
-                type="button"
-                disabled={notation.length === 0}
-                aria-label="Clear rhythm"
-                data-tooltip="Clear"
-              >
-                <span className="material-symbols-outlined">delete</span>
-              </button>
+              <AppTooltip title="Randomize">
+                <button
+                  className="icon-button"
+                  onClick={onRandomize}
+                  type="button"
+                  aria-label="Randomize rhythm"
+                >
+                  <span className="material-symbols-outlined">shuffle</span>
+                </button>
+              </AppTooltip>
+              <AppTooltip title="Undo">
+                <button
+                  className="icon-button"
+                  onClick={onUndo}
+                  type="button"
+                  disabled={!canUndo}
+                  aria-label="Undo"
+                >
+                  <span className="material-symbols-outlined">undo</span>
+                </button>
+              </AppTooltip>
+              <AppTooltip title="Redo">
+                <button
+                  className="icon-button"
+                  onClick={onRedo}
+                  type="button"
+                  disabled={!canRedo}
+                  aria-label="Redo"
+                >
+                  <span className="material-symbols-outlined">redo</span>
+                </button>
+              </AppTooltip>
+              <AppTooltip title="Delete Last Note">
+                <button
+                  className="icon-button"
+                  onClick={onDeleteLast}
+                  type="button"
+                  disabled={notation.length === 0}
+                  aria-label="Delete last note"
+                >
+                  <span className="material-symbols-outlined">backspace</span>
+                </button>
+              </AppTooltip>
+              <AppTooltip title="Clear">
+                <button
+                  className="icon-button icon-button-danger"
+                  onClick={onClear}
+                  type="button"
+                  disabled={notation.length === 0}
+                  aria-label="Clear rhythm"
+                >
+                  <span className="material-symbols-outlined">delete</span>
+                </button>
+              </AppTooltip>
             </div>
           </div>
         </div>

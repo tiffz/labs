@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import type { PlaybackSettings } from '../types/settings';
 import { DEFAULT_SETTINGS } from '../types/settings';
-import SettingsHelpTooltip from './SettingsHelpTooltip';
+import AppTooltip from '../../shared/components/AppTooltip';
 
 interface SettingsMenuProps {
   isOpen: boolean;
@@ -203,16 +203,9 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({
         <div className="settings-content">
           <div className="settings-group">
             <label htmlFor="measure-accent-volume" className="settings-label">
-              <SettingsHelpTooltip
-                ariaLabel="Help for measure accent volume"
-                content={
-                  <div className="tooltip-content">
-                    <p>Volume for the first note of each measure (downbeat)</p>
-                  </div>
-                }
-              >
+              <AppTooltip title="Volume for the first note of each measure (downbeat).">
                 <span>Measure Accent Volume</span>
-              </SettingsHelpTooltip>
+              </AppTooltip>
               <span className="settings-value">{settings.measureAccentVolume}%</span>
             </label>
             <div className="settings-slider-wrapper">
@@ -233,16 +226,9 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({
 
           <div className="settings-group">
             <label htmlFor="beat-group-accent-volume" className="settings-label">
-              <SettingsHelpTooltip
-                ariaLabel="Help for beat group accent volume"
-                content={
-                  <div className="tooltip-content">
-                    <p>Volume for the first note of each beat group (for compound and asymmetric rhythms)</p>
-                  </div>
-                }
-              >
+              <AppTooltip title="Volume for the first note of each beat group (for compound and asymmetric rhythms).">
                 <span>Beat Group Accent Volume</span>
-              </SettingsHelpTooltip>
+              </AppTooltip>
               <span className="settings-value">{settings.beatGroupAccentVolume}%</span>
             </label>
             <div className="settings-slider-wrapper">
@@ -271,16 +257,9 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({
 
           <div className="settings-group">
             <label htmlFor="non-accent-volume" className="settings-label">
-              <SettingsHelpTooltip
-                ariaLabel="Help for non-accent volume"
-                content={
-                  <div className="tooltip-content">
-                    <p>Volume for non-accented notes (cannot exceed accent volumes)</p>
-                  </div>
-                }
-              >
+              <AppTooltip title="Volume for non-accented notes (cannot exceed accent volumes).">
                 <span>Non-Accent Volume</span>
-              </SettingsHelpTooltip>
+              </AppTooltip>
               <span className="settings-value">{settings.nonAccentVolume}%</span>
             </label>
             <div className="settings-slider-wrapper">
@@ -363,16 +342,9 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({
                 onChange={(e) => handleEmphasizeSimpleRhythmsChange(e.target.checked)}
                 className="settings-checkbox"
               />
-              <SettingsHelpTooltip
-                ariaLabel="Help for emphasize simple rhythms"
-                content={
-                  <div className="tooltip-content">
-                    <p>When enabled, accents beat groups in /4 rhythms.</p>
-                  </div>
-                }
-              >
+              <AppTooltip title="When enabled, accents beat groups in /4 rhythms.">
                 <span>Emphasize beats in simple rhythms</span>
-              </SettingsHelpTooltip>
+              </AppTooltip>
             </label>
           </div>
 
@@ -387,16 +359,9 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({
                 })}
                 className="settings-checkbox"
               />
-              <SettingsHelpTooltip
-                ariaLabel="Help for auto-scroll during playback"
-                content={
-                  <div className="tooltip-content">
-                    <p>When enabled, the page automatically scrolls to keep the currently playing note visible. Useful for long pieces.</p>
-                  </div>
-                }
-              >
+              <AppTooltip title="When enabled, the page automatically scrolls to keep the currently playing note visible. Useful for long pieces.">
                 <span>Auto-scroll during playback</span>
-              </SettingsHelpTooltip>
+              </AppTooltip>
             </label>
           </div>
         </div>

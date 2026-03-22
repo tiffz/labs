@@ -12,6 +12,7 @@ import { useUrlState } from './hooks/useUrlState';
 import { CHORD_STYLING_STRATEGIES } from './data/chordStylingStrategies';
 import MetronomeToggleButton from '../shared/components/MetronomeToggleButton';
 import { AudioPlayer } from '../shared/audio/audioPlayer';
+import AppTooltip from '../shared/components/AppTooltip';
 import clickSound from '../drums/assets/sounds/click.mp3';
 
 // Loading state for piano samples
@@ -438,15 +439,19 @@ const App: React.FC = () => {
                 ? `Loading ${loadingPercent}%` 
                 : isPlaying ? 'Stop' : 'Play'}
             </button>
-            <MetronomeToggleButton
-              enabled={metronomeEnabled}
-              onToggle={() => setMetronomeEnabled((previous) => !previous)}
-              className="chords-metronome-toggle"
-              activeClassName="active"
-              showOnLabel={false}
-              tooltipOn="Metronome: On"
-              tooltipOff="Metronome: Off"
-            />
+            <AppTooltip title={metronomeEnabled ? 'Metronome: On' : 'Metronome: Off'}>
+              <MetronomeToggleButton
+                enabled={metronomeEnabled}
+                onToggle={() => setMetronomeEnabled((previous) => !previous)}
+                className="chords-metronome-toggle"
+                activeClassName="active"
+                showOnLabel={false}
+                tooltipOn="Metronome: On"
+                tooltipOff="Metronome: Off"
+                includeNativeTitle={false}
+                includeDataTooltip={false}
+              />
+            </AppTooltip>
             <div className="sound-control">
               <label htmlFor="sound-type">Sound:</label>
               <select

@@ -4,6 +4,7 @@ import {
   parseLyricSections,
   type ParsedLyricSectionDraft,
 } from '../../shared/music/lyricSectionParser';
+import AppTooltip from '../../shared/components/AppTooltip';
 
 interface LyricImportModalProps {
   isOpen: boolean;
@@ -174,42 +175,45 @@ export const LyricImportModal: React.FC<LyricImportModalProps> = ({
                   <p className="words-import-section-preview">{draft.lyrics}</p>
                   {draft.type === 'chorus' ? (
                     <div className="words-import-link-row">
-                      <button
-                        type="button"
-                        className={`words-button words-button-icon words-link-toggle words-link-toggle-chorus${
-                          draft.suggestedChorusLink ? ' is-linked' : ' is-unlinked'
-                        }`}
-                        onClick={() =>
-                          setDrafts((previous) => {
-                            const source = previous[index];
-                            if (!source || source.type !== 'chorus') return previous;
-                            const nextLinked = !source.suggestedChorusLink;
-                            if (!source.normalizedLyrics) {
-                              return previous.map((entry, entryIndex) =>
-                                entryIndex === index
-                                  ? { ...entry, suggestedChorusLink: nextLinked }
-                                  : entry
-                              );
-                            }
-                            return previous.map((entry) =>
-                              entry.type === 'chorus' &&
-                              entry.normalizedLyrics === source.normalizedLyrics
-                                ? { ...entry, suggestedChorusLink: nextLinked }
-                                : entry
-                            );
-                          })
-                        }
+                      <AppTooltip
                         title={
                           draft.suggestedChorusLink
                             ? 'Identical chorus lyrics linked'
                             : 'Chorus variation detected - lyrics unlinked'
                         }
-                        aria-label="Toggle chorus lyrics linking"
                       >
-                        <span className="material-symbols-outlined">
-                          {draft.suggestedChorusLink ? 'link' : 'link_off'}
-                        </span>
-                      </button>
+                        <button
+                          type="button"
+                          className={`words-button words-button-icon words-link-toggle words-link-toggle-chorus${
+                            draft.suggestedChorusLink ? ' is-linked' : ' is-unlinked'
+                          }`}
+                          onClick={() =>
+                            setDrafts((previous) => {
+                              const source = previous[index];
+                              if (!source || source.type !== 'chorus') return previous;
+                              const nextLinked = !source.suggestedChorusLink;
+                              if (!source.normalizedLyrics) {
+                                return previous.map((entry, entryIndex) =>
+                                  entryIndex === index
+                                    ? { ...entry, suggestedChorusLink: nextLinked }
+                                    : entry
+                                );
+                              }
+                              return previous.map((entry) =>
+                                entry.type === 'chorus' &&
+                                entry.normalizedLyrics === source.normalizedLyrics
+                                  ? { ...entry, suggestedChorusLink: nextLinked }
+                                  : entry
+                              );
+                            })
+                          }
+                          aria-label="Toggle chorus lyrics linking"
+                        >
+                          <span className="material-symbols-outlined">
+                            {draft.suggestedChorusLink ? 'link' : 'link_off'}
+                          </span>
+                        </button>
+                      </AppTooltip>
                       <span>
                         {draft.suggestedChorusLink
                           ? 'Identical chorus lyrics linked'

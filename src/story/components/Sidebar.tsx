@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { genres } from '../data/genres';
 import { RadioOption } from './RadioOption';
+import DiceIcon from '../../shared/components/DiceIcon';
 
 interface SidebarProps {
   selectedGenre: string;
@@ -94,15 +95,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ selectedGenre, onGenreChange, 
               className="flex items-center justify-center w-5 h-5 rounded bg-orange-100 text-orange-700 hover:bg-orange-200 transition-colors duration-150 focus:outline-none focus:ring-1 focus:ring-orange-400 flex-shrink-0"
               aria-label="Get another tip"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                height={14}
-                viewBox="0 -960 960 960"
-                width={14}
-                fill="currentColor"
-              >
-                <path d="M220-160q-24 0-42-18t-18-42v-520q0-24 18-42t42-18h520q24 0 42 18t18 42v520q0 24-18 42t-42 18H220Zm0-60h520v-520H220v520Zm170-110q21 0 35.5-14.5T440-380q0-21-14.5-35.5T390-430q-21 0-35.5 14.5T340-380q0 21 14.5 35.5T390-330Zm180 0q21 0 35.5-14.5T620-380q0-21-14.5-35.5T570-430q-21 0-35.5 14.5T520-380q0 21 14.5 35.5T570-330ZM390-510q21 0 35.5-14.5T440-560q0-21-14.5-35.5T390-610q-21 0-35.5 14.5T340-560q0 21 14.5 35.5T390-510Zm180 0q21 0 35.5-14.5T620-560q0-21-14.5-35.5T570-610q-21 0-35.5 14.5T520-560q0 21 14.5 35.5T570-510ZM220-740v520-520Z" />
-              </svg>
+              <DiceIcon variant="single" size={14} />
             </button>
             <span className="text-xs text-slate-700">{tips[tipIndex]}</span>
           </div>

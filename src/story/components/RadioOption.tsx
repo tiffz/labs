@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React from 'react';
+import AppTooltip from '../../shared/components/AppTooltip';
 
 interface RadioOptionProps {
   group: string;
@@ -15,39 +16,7 @@ export const RadioOption: React.FC<RadioOptionProps> = ({
   onChange,
   tooltip,
 }) => {
-  const [showTooltip, setShowTooltip] = useState(false);
-  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
-  const labelRef = useRef<HTMLLabelElement>(null);
   const inputId = `${group}-${value.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
-
-  useEffect(() => {
-    if (showTooltip && tooltip && labelRef.current) {
-      const rect = labelRef.current.getBoundingClientRect();
-      const tooltipWidth = 256; // w-64
-      
-      // Calculate position
-      let left = rect.left + rect.width / 2 - tooltipWidth / 2;
-      let top = rect.bottom + 8;
-      
-      // Adjust for left edge
-      if (left < 8) {
-        left = 8;
-      }
-      
-      // Adjust for right edge (sidebar is 320px wide, so check against that)
-      const sidebarWidth = 320;
-      if (left + tooltipWidth > sidebarWidth - 8) {
-        left = sidebarWidth - tooltipWidth - 8;
-      }
-      
-      // If would go off bottom, show above
-      if (top + 100 > window.innerHeight) {
-        top = rect.top - 8;
-      }
-      
-      setTooltipPosition({ top, left });
-    }
-  }, [showTooltip, tooltip]);
 
   return (
     <div className="relative inline-flex">
@@ -60,26 +29,14 @@ export const RadioOption: React.FC<RadioOptionProps> = ({
         onChange={onChange}
         className="sr-only peer"
       />
-      <label
-        ref={labelRef}
-        htmlFor={inputId}
-        className="cursor-pointer rounded-full border border-orange-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-all duration-150 hover:border-orange-300 hover:bg-gradient-to-br hover:from-orange-50/50 hover:to-pink-50/30 peer-checked:border-orange-400 peer-checked:bg-gradient-to-br peer-checked:from-orange-500 peer-checked:via-orange-500 peer-checked:to-pink-500/70 peer-checked:text-white shadow-sm hover:shadow"
-        onMouseEnter={() => tooltip && setShowTooltip(true)}
-        onMouseLeave={() => setShowTooltip(false)}
-      >
-        {value}
-      </label>
-      {tooltip && showTooltip && (
-        <div 
-          className="fixed w-64 px-3 py-2 bg-slate-800 text-white text-xs rounded-md z-[100] shadow-lg pointer-events-none"
-          style={{
-            top: `${tooltipPosition.top}px`,
-            left: `${tooltipPosition.left}px`,
-          }}
+      <AppTooltip title={tooltip ?? ''}>
+        <label
+          htmlFor={inputId}
+          className="cursor-pointer rounded-full border border-orange-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-all duration-150 hover:border-orange-300 hover:bg-gradient-to-br hover:from-orange-50/50 hover:to-pink-50/30 peer-checked:border-orange-400 peer-checked:bg-gradient-to-br peer-checked:from-orange-500 peer-checked:via-orange-500 peer-checked:to-pink-500/70 peer-checked:text-white shadow-sm hover:shadow"
         >
-          {tooltip}
-        </div>
-      )}
+          {value}
+        </label>
+      </AppTooltip>
     </div>
   );
 };

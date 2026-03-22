@@ -25,6 +25,8 @@ import { transposeKeyUp, transposeKeyDown } from '../utils/keyTransposition';
 import OptionChip from './OptionChip';
 import ChordStylePreview from './ChordStylePreview';
 import { parseProgressionText } from '../../shared/music/chordProgressionText';
+import AppTooltip from '../../shared/components/AppTooltip';
+import DiceIcon from '../../shared/components/DiceIcon';
 
 interface ManualControlsProps {
   state: ChordProgressionState;
@@ -273,39 +275,40 @@ const ManualControls: React.FC<ManualControlsProps> = ({
                 onClick={(event) => event.stopPropagation()}
               />
               <div className="option-chip-actions">
-              <button
-                className="option-chip-dice"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  handleRandomizeProgression();
-                }}
-                disabled={lockedOptions.progression}
-                title="Randomize progression"
-                aria-label="Randomize progression"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  height="14"
-                  viewBox="0 -960 960 960"
-                  width="14"
-                  fill="currentColor"
+                <AppTooltip title="Randomize progression">
+                  <button
+                    className="option-chip-dice"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleRandomizeProgression();
+                    }}
+                    disabled={lockedOptions.progression}
+                    aria-label="Randomize progression"
+                  >
+                    <DiceIcon variant="single" size={14} />
+                  </button>
+                </AppTooltip>
+                <AppTooltip
+                  title={
+                    lockedOptions.progression
+                      ? 'Unlock to allow randomization'
+                      : 'Lock to prevent randomization'
+                  }
                 >
-                  <path d="M220-160q-24 0-42-18t-18-42v-520q0-24 18-42t42-18h520q24 0 42 18t18 42v520q0 24-18 42t-42 18H220Zm0-60h520v-520H220v520Zm170-110q21 0 35.5-14.5T440-380q0-21-14.5-35.5T390-430q-21 0-35.5 14.5T340-380q0 21 14.5 35.5T390-330Zm180 0q21 0 35.5-14.5T620-380q0-21-14.5-35.5T570-430q-21 0-35.5 14.5T520-380q0 21 14.5 35.5T570-330ZM390-510q21 0 35.5-14.5T440-560q0-21-14.5-35.5T390-610q-21 0-35.5 14.5T340-560q0 21 14.5 35.5T390-510Zm180 0q21 0 35.5-14.5T620-560q0-21-14.5-35.5T570-610q-21 0-35.5 14.5T520-560q0 21 14.5 35.5T570-510ZM220-740v520-520Z" />
-                </svg>
-              </button>
-              <button
-                className="option-chip-lock"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onLockChange('progression', !lockedOptions.progression)
-                }}
-                title={lockedOptions.progression ? 'Unlock' : 'Lock'}
-                aria-label={lockedOptions.progression ? 'Unlock progression' : 'Lock progression'}
-              >
-                <span className="material-symbols-outlined">
-                  {lockedOptions.progression ? 'lock' : 'lock_open'}
-                </span>
-              </button>
+                  <button
+                    className="option-chip-lock"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onLockChange('progression', !lockedOptions.progression)
+                    }}
+                    aria-label={lockedOptions.progression ? 'Unlock progression' : 'Lock progression'}
+                  >
+                    <span className="material-symbols-outlined">
+                      {lockedOptions.progression ? 'lock' : 'lock_open'}
+                    </span>
+                  </button>
+                </AppTooltip>
+              
             </div>
             </div>
             {showProgressionDropdown && (
@@ -456,9 +459,10 @@ const ManualControls: React.FC<ManualControlsProps> = ({
             <div
               style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}
             >
-              <button
-                className="control-section-randomize"
-                onClick={() => {
+              <AppTooltip title="Randomize time signature">
+                <button
+                  className="control-section-randomize"
+                  onClick={() => {
                   if (!lockedOptions.timeSignature) {
                     // If styling is locked, only randomize compatible time signatures
                     let availableTimeSigs = availableTimeSignatures;
@@ -493,32 +497,32 @@ const ManualControls: React.FC<ManualControlsProps> = ({
                       });
                     }
                   }
-                }}
-                disabled={lockedOptions.timeSignature}
-                title="Randomize time signature"
-                aria-label="Randomize time signature"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  height="14"
-                  viewBox="0 -960 960 960"
-                  width="14"
-                  fill="currentColor"
+                  }}
+                  disabled={lockedOptions.timeSignature}
+                  aria-label="Randomize time signature"
                 >
-                  <path d="M220-160q-24 0-42-18t-18-42v-520q0-24 18-42t42-18h520q24 0 42 18t18 42v520q0 24-18 42t-42 18H220Zm0-60h520v-520H220v520Zm170-110q21 0 35.5-14.5T440-380q0-21-14.5-35.5T390-430q-21 0-35.5 14.5T340-380q0 21 14.5 35.5T390-330Zm180 0q21 0 35.5-14.5T620-380q0-21-14.5-35.5T570-430q-21 0-35.5 14.5T520-380q0 21 14.5 35.5T570-330ZM390-510q21 0 35.5-14.5T440-560q0-21-14.5-35.5T390-610q-21 0-35.5 14.5T340-560q0 21 14.5 35.5T390-510Zm180 0q21 0 35.5-14.5T620-560q0-21-14.5-35.5T570-610q-21 0-35.5 14.5T520-560q0 21 14.5 35.5T570-510ZM220-740v520-520Z" />
-                </svg>
-              </button>
-              <button
-                className={`control-section-lock ${lockedOptions.timeSignature ? 'locked' : ''}`}
-                onClick={() =>
-                  onLockChange('timeSignature', !lockedOptions.timeSignature)
+                  <DiceIcon variant="single" size={14} />
+                </button>
+              </AppTooltip>
+              <AppTooltip
+                title={
+                  lockedOptions.timeSignature
+                    ? 'Unlock to allow randomization'
+                    : 'Lock to prevent randomization'
                 }
-                title={lockedOptions.timeSignature ? 'Unlock' : 'Lock'}
               >
-                <span className="material-symbols-outlined">
-                  {lockedOptions.timeSignature ? 'lock' : 'lock_open'}
-                </span>
-              </button>
+                <button
+                  className={`control-section-lock ${lockedOptions.timeSignature ? 'locked' : ''}`}
+                  onClick={() =>
+                    onLockChange('timeSignature', !lockedOptions.timeSignature)
+                  }
+                  aria-label={lockedOptions.timeSignature ? 'Unlock time signature' : 'Lock time signature'}
+                >
+                  <span className="material-symbols-outlined">
+                    {lockedOptions.timeSignature ? 'lock' : 'lock_open'}
+                  </span>
+                </button>
+              </AppTooltip>
             </div>
           </div>
           <div className="time-signature-tabs">
@@ -560,9 +564,10 @@ const ManualControls: React.FC<ManualControlsProps> = ({
             <div
               style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}
             >
-              <button
-                className="control-section-randomize"
-                onClick={() => {
+              <AppTooltip title="Randomize styling">
+                <button
+                  className="control-section-randomize"
+                  onClick={() => {
                   if (
                     !lockedOptions.stylingStrategy &&
                     compatibleStyles.length > 0
@@ -573,35 +578,35 @@ const ManualControls: React.FC<ManualControlsProps> = ({
                       ];
                     onStateChange({ stylingStrategy: randomStyle });
                   }
-                }}
-                disabled={lockedOptions.stylingStrategy}
-                title="Randomize styling"
-                aria-label="Randomize styling"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  height="14"
-                  viewBox="0 -960 960 960"
-                  width="14"
-                  fill="currentColor"
+                  }}
+                  disabled={lockedOptions.stylingStrategy}
+                  aria-label="Randomize styling"
                 >
-                  <path d="M220-160q-24 0-42-18t-18-42v-520q0-24 18-42t42-18h520q24 0 42 18t18 42v520q0 24-18 42t-42 18H220Zm0-60h520v-520H220v520Zm170-110q21 0 35.5-14.5T440-380q0-21-14.5-35.5T390-430q-21 0-35.5 14.5T340-380q0 21 14.5 35.5T390-330Zm180 0q21 0 35.5-14.5T620-380q0-21-14.5-35.5T570-430q-21 0-35.5 14.5T520-380q0 21 14.5 35.5T570-330ZM390-510q21 0 35.5-14.5T440-560q0-21-14.5-35.5T390-610q-21 0-35.5 14.5T340-560q0 21 14.5 35.5T390-510Zm180 0q21 0 35.5-14.5T620-560q0-21-14.5-35.5T570-610q-21 0-35.5 14.5T520-560q0 21 14.5 35.5T570-510ZM220-740v520-520Z" />
-                </svg>
-              </button>
-              <button
-                className={`control-section-lock ${lockedOptions.stylingStrategy ? 'locked' : ''}`}
-                onClick={() =>
-                  onLockChange(
-                    'stylingStrategy',
-                    !lockedOptions.stylingStrategy
-                  )
+                  <DiceIcon variant="single" size={14} />
+                </button>
+              </AppTooltip>
+              <AppTooltip
+                title={
+                  lockedOptions.stylingStrategy
+                    ? 'Unlock to allow randomization'
+                    : 'Lock to prevent randomization'
                 }
-                title={lockedOptions.stylingStrategy ? 'Unlock' : 'Lock'}
               >
-                <span className="material-symbols-outlined">
-                  {lockedOptions.stylingStrategy ? 'lock' : 'lock_open'}
-                </span>
-              </button>
+                <button
+                  className={`control-section-lock ${lockedOptions.stylingStrategy ? 'locked' : ''}`}
+                  onClick={() =>
+                    onLockChange(
+                      'stylingStrategy',
+                      !lockedOptions.stylingStrategy
+                    )
+                  }
+                  aria-label={lockedOptions.stylingStrategy ? 'Unlock styling' : 'Lock styling'}
+                >
+                  <span className="material-symbols-outlined">
+                    {lockedOptions.stylingStrategy ? 'lock' : 'lock_open'}
+                  </span>
+                </button>
+              </AppTooltip>
             </div>
           </div>
           <div className="style-preview-grid">

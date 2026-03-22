@@ -343,50 +343,6 @@
   line-height: 1;
 }
 
-.words-setting-help::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  left: 50%;
-  top: calc(100% + 8px);
-  transform: translateX(-50%);
-  max-width: 240px;
-  min-width: 180px;
-  padding: 7px 8px;
-  border-radius: 8px;
-  background: #0f172a;
-  color: #f8fafc;
-  font-size: 0.68rem;
-  font-weight: 600;
-  text-transform: none;
-  letter-spacing: 0;
-  line-height: 1.25;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 120ms ease;
-  z-index: 260;
-}
-
-.words-setting-help::before {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: calc(100% + 4px);
-  transform: translateX(-50%);
-  border: 4px solid transparent;
-  border-bottom-color: #0f172a;
-  opacity: 0;
-  transition: opacity 120ms ease;
-  pointer-events: none;
-  z-index: 260;
-}
-
-.words-setting-help:hover::after,
-.words-setting-help:hover::before,
-.words-setting-help:focus-visible::after,
-.words-setting-help:focus-visible::before {
-  opacity: 1;
-}
-
 .words-slider-row input[type='range'] {
   width: 100%;
 }
@@ -805,70 +761,6 @@
 
 .words-icon-tooltip {
   position: relative;
-}
-
-.words-icon-tooltip::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  left: 50%;
-  top: calc(100% + 8px);
-  transform: translateX(-50%);
-  max-width: 220px;
-  min-width: 150px;
-  padding: 7px 8px;
-  border-radius: 8px;
-  background: #0f172a;
-  color: #f8fafc;
-  font-size: 0.68rem;
-  font-weight: 600;
-  text-transform: none;
-  letter-spacing: 0;
-  line-height: 1.25;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 120ms ease;
-  z-index: 240;
-}
-
-.words-icon-tooltip::before {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: calc(100% + 4px);
-  transform: translateX(-50%);
-  border: 4px solid transparent;
-  border-bottom-color: #0f172a;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 120ms ease;
-  z-index: 240;
-}
-
-.words-icon-tooltip:hover::after,
-.words-icon-tooltip:hover::before,
-.words-icon-tooltip:focus-visible::after,
-.words-icon-tooltip:focus-visible::before {
-  opacity: 1;
-}
-
-.words-icon-tooltip:hover,
-.words-icon-tooltip:focus-visible {
-  z-index: 230;
-}
-
-/* Keep section-settings tooltips inside the menu surface. */
-.words-section-settings-menu .words-icon-tooltip::after,
-.words-section-settings-menu-portal .words-icon-tooltip::after {
-  left: auto;
-  right: 0;
-  transform: none;
-}
-
-.words-section-settings-menu .words-icon-tooltip::before,
-.words-section-settings-menu-portal .words-icon-tooltip::before {
-  left: auto;
-  right: 10px;
-  transform: none;
 }
 
 .words-template-edit-link {
