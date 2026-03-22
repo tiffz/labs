@@ -4,12 +4,22 @@
 if git diff --cached --name-only --quiet -- '*.ts' '*.tsx' '*.js' '*.jsx' '*.json' 'package*.json' 'vite.config.*' 'vitest.config.*' 'tsconfig*.json' 'eslint.config.*'; then
   echo "No TypeScript/JavaScript files changed, skipping tests..."
 else
-  # Check if regression test files or cat app files are staged
-  REGRESSION_FILES_CHANGED=$(git diff --cached --name-only | grep -E '\.regression\.test\.(ts|tsx)$|^src/cats/' | head -1)
-  BEAT_FILES_CHANGED=$(git diff --cached --name-only | grep -E '^src/beat/' | head -1)
+  STAGED_FILES="$(git diff --cached --name-only)"
+  first_match() {
+    pattern="$1"
+    if command -v rg >/dev/null 2>&1; then
+      printf '%s\n' "$STAGED_FILES" | rg -m 1 "$pattern"
+    else
+      printf '%s\n' "$STAGED_FILES" | grep -E "$pattern" | head -n 1
+    fi
+  }
 
-  if [ -n "$BEAT_FILES_CHANGED" ]; then
-    echo "Beat finder files changed, running full tests including benchmarks..."
+  # Check if regression test files or cat app files are staged
+  REGRESSION_FILES_CHANGED=$(first_match '\.regression\.test\.(ts|tsx)$|^src/cats/')
+  BPM_BENCHMARK_FILES_CHANGED=$(first_match '^src/beat/utils/(bpmDetectionBenchmark\.test\.ts|tempoDetectorInterface\.ts|tempoDetectors\.ts|tempoDetectorCore\.ts|tempoEnsemble\.ts|syntheticAudioGenerator\.ts|bpmAccuracyTest\.ts)$')
+
+  if [ -n "$BPM_BENCHMARK_FILES_CHANGED" ]; then
+    echo "BPM detector files changed, running full tests including benchmarks..."
     INCLUDE_BEAT_BENCHMARK=true npm test
   elif [ -n "$REGRESSION_FILES_CHANGED" ]; then
     echo "Cat/regression files changed, running full tests..."

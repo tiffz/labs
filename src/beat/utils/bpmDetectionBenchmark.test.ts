@@ -87,6 +87,12 @@ async function runBpmTest(testCase: BpmTestCase): Promise<{
   octaveStatus: 'exact' | 'half' | 'double' | 'wrong';
   confidence: number;
 }> {
+  const cacheKey = `${ALGORITHM}:${testCase.id}`;
+  const cached = bpmTestResultCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
   const mockBuffer = generateSyntheticAudio(testCase.config);
   const result = await detector.detect(mockBuffer);
   
@@ -98,7 +104,7 @@ async function runBpmTest(testCase: BpmTestCase): Promise<{
     (testCase.octaveError === 'half' && octaveStatus === 'half') ||
     (testCase.octaveError === 'double' && octaveStatus === 'double');
   
-  return {
+  const computed = {
     detected,
     expected: testCase.expectedBpm,
     error,
@@ -106,7 +112,22 @@ async function runBpmTest(testCase: BpmTestCase): Promise<{
     octaveStatus,
     confidence: result.confidence,
   };
+
+  bpmTestResultCache.set(cacheKey, computed);
+  return computed;
 }
+
+const bpmTestResultCache = new Map<
+  string,
+  {
+    detected: number;
+    expected: number;
+    error: number;
+    passed: boolean;
+    octaveStatus: 'exact' | 'half' | 'double' | 'wrong';
+    confidence: number;
+  }
+>();
 
 describe('BPM Detection Benchmark', () => {
   describe('Standard BPM Test Cases', () => {

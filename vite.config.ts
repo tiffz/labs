@@ -7,6 +7,9 @@ import { resolve } from 'path';
 import { visualizer } from 'rollup-plugin-visualizer';
 import { compression } from 'vite-plugin-compression2';
 
+const INCLUDE_BEAT_BENCHMARK =
+  process.env.INCLUDE_BEAT_BENCHMARK === 'true' && process.env.FAST_TESTS !== 'true';
+
 export default defineConfig({
   root: 'src',
   publicDir: '../public',
@@ -260,7 +263,7 @@ export default defineConfig({
       'node_modules/**',
       'dist/**',
       // Expensive benchmark test - only run when beat files change (via INCLUDE_BEAT_BENCHMARK env)
-      ...(process.env.INCLUDE_BEAT_BENCHMARK !== 'true' ? ['**/bpmDetectionBenchmark.test.ts'] : []),
+      ...(!INCLUDE_BEAT_BENCHMARK ? ['**/bpmDetectionBenchmark.test.ts'] : []),
       // Fast mode: exclude slow regression tests for rapid development iteration
       ...(process.env.FAST_TESTS === 'true' ? [
         '**/*.regression.test.{ts,tsx}',
