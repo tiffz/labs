@@ -92,10 +92,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ selectedGenre, onGenreChange, 
           <div className="flex items-center gap-2">
             <button
               onClick={handleRerollTip}
-              className="flex items-center justify-center w-5 h-5 rounded bg-orange-100 text-orange-700 hover:bg-orange-200 transition-colors duration-150 focus:outline-none focus:ring-1 focus:ring-orange-400 flex-shrink-0"
+              className="flex items-center justify-center w-5 h-5 rounded bg-orange-50 text-orange-500 hover:text-orange-600 hover:bg-orange-100 transition-colors duration-150 focus:outline-none focus:ring-1 focus:ring-orange-400 flex-shrink-0"
               aria-label="Get another tip"
             >
-              <DiceIcon variant="single" size={14} />
+              <DiceIcon variant="single" size={14} opacity={0.8} />
             </button>
             <span className="text-xs text-slate-700">{tips[tipIndex]}</span>
           </div>

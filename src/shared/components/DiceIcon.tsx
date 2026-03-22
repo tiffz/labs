@@ -6,6 +6,7 @@ interface DiceIconProps {
   variant?: DiceIconVariant;
   size?: number;
   className?: string;
+  opacity?: number;
 }
 
 // Source paths from Material Design Icons (Pictogrammers):
@@ -22,12 +23,14 @@ const DiceIcon: React.FC<DiceIconProps> = ({
   variant = 'single',
   size = 18,
   className,
+  opacity = 0.88,
 }) => (
   <svg
     viewBox="0 0 24 24"
     width={size}
     height={size}
     fill="currentColor"
+    opacity={opacity}
     aria-hidden="true"
     className={className}
     focusable="false"
