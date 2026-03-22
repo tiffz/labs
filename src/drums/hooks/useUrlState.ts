@@ -10,6 +10,26 @@ interface UrlState {
   metronomeEnabled?: boolean;
 }
 
+const URL_PARAM_RHYTHM = 'rhythm';
+const URL_PARAM_RHYTHM_B64 = 'r64';
+
+function encodeBase64Url(input: string): string {
+  return btoa(input)
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/g, '');
+}
+
+function decodeBase64Url(input: string): string | null {
+  try {
+    const normalized = input.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = `${normalized}${'='.repeat((4 - (normalized.length % 4)) % 4)}`;
+    return atob(padded);
+  } catch {
+    return null;
+  }
+}
+
 const DEFAULT_STATE: UrlState = {
   notation: 'D-T-__T-D---T---', // Maqsum
   timeSignature: { numerator: 4, denominator: 4 },
@@ -24,7 +44,12 @@ const DEFAULT_STATE: UrlState = {
 function parseUrlParams(): UrlState {
   const params = new URLSearchParams(window.location.search);
 
-  const notation = params.get('rhythm') || DEFAULT_STATE.notation;
+  const notationFromB64 = params.get(URL_PARAM_RHYTHM_B64);
+  const decodedNotation = notationFromB64
+    ? decodeBase64Url(notationFromB64)
+    : null;
+  const notation =
+    decodedNotation || params.get(URL_PARAM_RHYTHM) || DEFAULT_STATE.notation;
   const bpm = parseInt(params.get('bpm') || '', 10) || DEFAULT_STATE.bpm;
 
   // Parse time signature (format: "4/4")
@@ -61,19 +86,20 @@ function parseUrlParams(): UrlState {
 }
 
 const DEBOUNCE_MS = 800;
-const REPLACE_DEBOUNCE_PARAMS = new Set(['rhythm', 'bpm']);
+const REPLACE_DEBOUNCE_PARAMS = new Set([URL_PARAM_RHYTHM, URL_PARAM_RHYTHM_B64, 'bpm']);
 
 function buildUrl(state: UrlState): string {
   const params = new URLSearchParams(window.location.search);
 
-  params.delete('rhythm');
+  params.delete(URL_PARAM_RHYTHM);
+  params.delete(URL_PARAM_RHYTHM_B64);
   params.delete('bpm');
   params.delete('time');
   params.delete('groups');
   params.delete('metronome');
 
   if (state.notation !== DEFAULT_STATE.notation) {
-    params.set('rhythm', state.notation);
+    params.set(URL_PARAM_RHYTHM_B64, encodeBase64Url(state.notation));
   }
 
   if (state.bpm !== DEFAULT_STATE.bpm) {

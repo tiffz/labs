@@ -93,6 +93,7 @@ const Analytics: React.FC = () => {
         <TimingBar label="Perfect" pct={timing.perfectPct} color="#22c55e" />
         <TimingBar label="Early" pct={timing.earlyPct} color="#3b82f6" />
         <TimingBar label="Late" pct={timing.latePct} color="#ef4444" />
+        <TimingBar label="Wrong pitch" pct={timing.wrongPitchPct} color="#f59e0b" />
         <TimingBar label="Missed" pct={timing.missedPct} color="#94a3b8" />
       </div>
 

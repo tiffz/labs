@@ -2,6 +2,12 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useUrlState } from './useUrlState';
 
+function decodeBase64Url(input: string): string {
+  const normalized = input.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = `${normalized}${'='.repeat((4 - (normalized.length % 4)) % 4)}`;
+  return atob(padded);
+}
+
 describe('useUrlState', () => {
   beforeEach(() => {
     // Reset URL before each test
@@ -129,7 +135,7 @@ describe('useUrlState', () => {
       });
       
       const params = new URLSearchParams(window.location.search);
-      expect(params.get('rhythm')).toBe('D-T-K-');
+      expect(decodeBase64Url(params.get('r64') || '')).toBe('D-T-K-');
       expect(params.get('time')).toBe('3/4');
       expect(params.get('bpm')).toBe('140');
     });
@@ -160,7 +166,7 @@ describe('useUrlState', () => {
       });
       
       const params = new URLSearchParams(window.location.search);
-      expect(params.get('rhythm')).toBe('D-T-K-');
+      expect(decodeBase64Url(params.get('r64') || '')).toBe('D-T-K-');
       expect(params.has('time')).toBe(false);
       expect(params.has('bpm')).toBe(false);
     });
@@ -224,7 +230,9 @@ describe('useUrlState', () => {
 
       // pushState should have been called, adding a history entry
       expect(window.history.length).toBe(initialLength + 1);
-      expect(window.location.search).toContain('rhythm=D-T-K-');
+      expect(decodeBase64Url(new URLSearchParams(window.location.search).get('r64') || '')).toBe(
+        'D-T-K-'
+      );
     });
 
     it('should not create duplicate history entries for the same URL', () => {
@@ -318,7 +326,9 @@ describe('useUrlState', () => {
         });
       });
 
-      expect(window.location.search).toContain('rhythm=D--KD-T-');
+      expect(decodeBase64Url(new URLSearchParams(window.location.search).get('r64') || '')).toBe(
+        'D--KD-T-'
+      );
 
       // Simulate back button (browser fires popstate with the previous URL state)
       window.history.replaceState({}, '', '/drums');

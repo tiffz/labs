@@ -9,6 +9,7 @@ export interface SongSection {
   lyrics: string;
   chordProgressionInput: string;
   chordStyleId: ChordStyleId;
+  isLocked: boolean;
   templateNotation: string;
   templateBias: number;
   rhythmVariationSeed: number;
@@ -35,6 +36,7 @@ export function createDefaultSection(
     lyrics: isChorus && previousChorus ? previousChorus.lyrics : '',
     chordProgressionInput: '',
     chordStyleId: 'simple',
+    isLocked: false,
     templateNotation:
       isChorus && previousChorus
         ? previousChorus.templateNotation

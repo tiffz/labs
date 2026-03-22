@@ -1,8 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import type { TimeSignature } from '../types';
 import type { PlaybackSettings } from '../types/settings';
 import HelpTooltip from './HelpTooltip';
 import SettingsMenu from './SettingsMenu';
+import MetronomeToggleButton from '../../shared/components/MetronomeToggleButton';
 import {
   isAsymmetricTimeSignature,
   isCompoundTimeSignature,
@@ -48,6 +50,9 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
   const [beatGroupingInput, setBeatGroupingInput] = useState<string>('');
   const [beatGroupingError, setBeatGroupingError] = useState<string>('');
   const [showTimeSigDropdown, setShowTimeSigDropdown] = useState<boolean>(false);
+  const [tip, setTip] = useState<{ text: string; x: number; y: number } | null>(
+    null
+  );
   const settingsButtonRef = useRef<HTMLButtonElement>(null);
   const timeSigInputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -159,6 +164,15 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
       beatGrouping: parsed,
     });
   };
+
+  const showTip = useCallback((e: React.MouseEvent, text: string) => {
+    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const cx = r.left + r.width / 2;
+    const clamped = Math.max(120, Math.min(cx, window.innerWidth - 120));
+    setTip({ text, x: clamped, y: r.top });
+  }, []);
+
+  const hideTip = useCallback(() => setTip(null), []);
 
   return (
     <div className="playback-controls-bar">
@@ -365,15 +379,19 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
           {/* Right-aligned controls group: Metronome + Settings */}
           <div className="right-controls-group">
             {/* Metronome Toggle */}
-            <button
-              className={`metronome-button ${metronomeEnabled ? 'active' : ''}`}
-              onClick={() => onMetronomeToggle(!metronomeEnabled)}
-              type="button"
-              aria-label="Toggle metronome"
-              title={metronomeEnabled ? 'Metronome: On' : 'Metronome: Off'}
-            >
-              <span className="metronome-label">Metronome</span>
-            </button>
+            <MetronomeToggleButton
+              enabled={metronomeEnabled}
+              onToggle={() => onMetronomeToggle(!metronomeEnabled)}
+              className="metronome-button"
+              label={undefined}
+              showOnLabel={false}
+              tooltipOn="Metronome: On"
+              tooltipOff="Metronome: Off"
+              onMouseEnter={(event) =>
+                showTip(event, metronomeEnabled ? 'Metronome: On' : 'Metronome: Off')
+              }
+              onMouseLeave={hideTip}
+            />
 
             {/* Settings Button */}
             <div className="settings-button-container">
@@ -400,6 +418,13 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
           </div>
         </div>
       </div>
+      {tip &&
+        createPortal(
+          <div className="mat-tooltip" style={{ left: tip.x, top: tip.y }}>
+            {tip.text}
+          </div>,
+          document.body
+        )}
     </div>
   );
 };

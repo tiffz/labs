@@ -300,9 +300,10 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
+  gap: 4px;
+  min-width: 36px;
   height: 36px;
-  padding: 0;
+  padding: 0 8px;
   border: 1px solid var(--piano-border);
   border-radius: var(--radius-lg);
   background: var(--piano-surface);
@@ -322,6 +323,13 @@ body {
 }
 .metronome-btn .material-symbols-outlined {
   font-size: 20px;
+}
+
+.metronome-btn .metronome-on-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
 /* ==========================================================================
@@ -1643,6 +1651,9 @@ body {
 .timing-seg.late {
   background: var(--piano-danger);
 }
+.timing-seg.wrong-pitch {
+  background: #f59e0b;
+}
 .timing-seg.missed {
   background: var(--piano-text-muted);
 }
@@ -2181,6 +2192,17 @@ body {
   background: var(--piano-primary);
   color: #fff;
   border-color: var(--piano-primary);
+}
+
+.sb-drum-section .preset-btn.preset-btn-icon {
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .sb-drum-section .drum-pattern-input input {
   width: 100%;

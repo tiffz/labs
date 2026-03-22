@@ -1,7 +1,9 @@
-import React, { useEffect, useRef, useMemo } from 'react';
+import React, { useEffect, useRef, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Renderer, Stave, StaveNote, Voice, Formatter, Beam, Dot, BarlineType } from 'vexflow';
 import type { ParsedRhythm, Note, DrumSound, TimeSignature } from '../rhythm/types';
 import { drawDrumSymbol } from './drumSymbols';
+import DiceIcon from '../components/DiceIcon';
 import {
   getDefaultBeatGrouping,
   isCompoundTimeSignature,
@@ -91,6 +93,24 @@ interface DrumNotationMiniProps {
   currentBeat?: number | null;
   /** Whether playback is active (for metronome dot animation) */
   isPlaying?: boolean;
+  /** Optional embedded template randomization controls */
+  templateRandomizeOptions?: {
+    onRandomPreset?: () => void;
+    onRandomFull?: () => void;
+    randomPresetTooltip?: string;
+    randomFullTooltip?: string;
+  };
+  /** Optional Darbuka Trainer link rendered under the mini notation */
+  darbukaLinkOptions?: {
+    notation?: string;
+    bpm?: number;
+    timeSignature?: TimeSignature;
+    metronomeEnabled?: boolean;
+    href?: string;
+    label?: string;
+    className?: string;
+    style?: React.CSSProperties;
+  };
 }
 
 /**
@@ -288,8 +308,15 @@ const DrumNotationMini: React.FC<DrumNotationMiniProps> = ({
   showMetronomeDots = false,
   currentBeat = null,
   isPlaying = false,
+  templateRandomizeOptions,
+  darbukaLinkOptions,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [randomizeTooltip, setRandomizeTooltip] = useState<{
+    text: string;
+    x: number;
+    y: number;
+  } | null>(null);
 
   // Resolve style to NotationStyle object
   const resolvedStyle = useMemo((): NotationStyle => {
@@ -634,12 +661,175 @@ const DrumNotationMini: React.FC<DrumNotationMiniProps> = ({
     return null;
   }
 
+  const darbukaHref = (() => {
+    if (!darbukaLinkOptions) return null;
+    if (darbukaLinkOptions.href) return darbukaLinkOptions.href;
+    if (!darbukaLinkOptions.notation) return null;
+    const params = new URLSearchParams();
+    params.set('rhythm', darbukaLinkOptions.notation);
+    if (typeof darbukaLinkOptions.bpm === 'number') {
+      params.set('bpm', String(Math.round(darbukaLinkOptions.bpm)));
+    }
+    if (darbukaLinkOptions.timeSignature) {
+      params.set(
+        'time',
+        `${darbukaLinkOptions.timeSignature.numerator}/${darbukaLinkOptions.timeSignature.denominator}`
+      );
+    }
+    if (darbukaLinkOptions.metronomeEnabled) {
+      params.set('metronome', 'true');
+    }
+    return `/drums/?${params.toString()}`;
+  })();
+
   return (
-    <div
-      ref={containerRef}
-      className="drum-notation-mini"
-      style={{ width: '100%', overflowX: 'auto' }}
-    />
+    <div style={{ width: '100%' }}>
+      {templateRandomizeOptions?.onRandomPreset || templateRandomizeOptions?.onRandomFull ? (
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            gap: '6px',
+            marginBottom: '6px',
+          }}
+        >
+          {templateRandomizeOptions.onRandomPreset ? (
+            <button
+              type="button"
+              onClick={templateRandomizeOptions.onRandomPreset}
+              aria-label={templateRandomizeOptions.randomPresetTooltip ?? 'Random preset template'}
+              onMouseEnter={(event) => {
+                const rect = event.currentTarget.getBoundingClientRect();
+                setRandomizeTooltip({
+                  text:
+                    templateRandomizeOptions.randomPresetTooltip ??
+                    'Random preset template',
+                  x: rect.left + rect.width / 2,
+                  y: rect.bottom + 8,
+                });
+              }}
+              onMouseLeave={() => setRandomizeTooltip(null)}
+              onBlur={() => setRandomizeTooltip(null)}
+              style={{
+                width: '28px',
+                height: '28px',
+                minWidth: '28px',
+                minHeight: '28px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: '8px',
+                border: '1px solid #9fd8e6',
+                background: '#ffffff',
+                color: '#0f766e',
+                cursor: 'pointer',
+              }}
+            >
+              <DiceIcon variant="single" size={16} />
+            </button>
+          ) : null}
+          {templateRandomizeOptions.onRandomFull ? (
+            <button
+              type="button"
+              onClick={templateRandomizeOptions.onRandomFull}
+              aria-label={templateRandomizeOptions.randomFullTooltip ?? 'Fully randomize template'}
+              onMouseEnter={(event) => {
+                const rect = event.currentTarget.getBoundingClientRect();
+                setRandomizeTooltip({
+                  text:
+                    templateRandomizeOptions.randomFullTooltip ??
+                    'Fully randomize template',
+                  x: rect.left + rect.width / 2,
+                  y: rect.bottom + 8,
+                });
+              }}
+              onMouseLeave={() => setRandomizeTooltip(null)}
+              onBlur={() => setRandomizeTooltip(null)}
+              style={{
+                width: '28px',
+                height: '28px',
+                minWidth: '28px',
+                minHeight: '28px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: '8px',
+                border: '1px solid #9fd8e6',
+                background: '#ffffff',
+                color: '#0f766e',
+                cursor: 'pointer',
+              }}
+            >
+              <DiceIcon variant="multiple" size={16} />
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+      {randomizeTooltip && typeof document !== 'undefined'
+        ? createPortal(
+            <div
+              style={{
+                position: 'fixed',
+                left: `${randomizeTooltip.x}px`,
+                top: `${randomizeTooltip.y}px`,
+                transform: 'translateX(-50%)',
+                background: '#111827',
+                color: '#f8fafc',
+                borderRadius: '8px',
+                padding: '7px 9px',
+                fontSize: '11px',
+                fontWeight: 600,
+                lineHeight: 1.3,
+                zIndex: 420,
+                maxWidth: '220px',
+                pointerEvents: 'none',
+                boxShadow: '0 6px 14px rgba(0, 0, 0, 0.22)',
+              }}
+            >
+              {randomizeTooltip.text}
+            </div>,
+            document.body
+          )
+        : null}
+      <div
+        ref={containerRef}
+        className="drum-notation-mini"
+        style={{ width: '100%', overflowX: 'auto' }}
+      />
+      {darbukaHref ? (
+        <div style={{ marginTop: '6px', display: 'flex', justifyContent: 'center' }}>
+          <a
+            href={darbukaHref}
+            target="_blank"
+            rel="noreferrer noopener"
+            className={`drum-notation-mini-edit-link${darbukaLinkOptions?.className ? ` ${darbukaLinkOptions.className}` : ''}`}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              fontSize: 'var(--drum-mini-link-size, 0.75rem)',
+              fontWeight: 600,
+              color: 'var(--drum-mini-link-color, #64748b)',
+              textDecoration: 'var(--drum-mini-link-text-decoration, none)',
+              padding: 'var(--drum-mini-link-padding, 0)',
+              borderRadius: 'var(--drum-mini-link-radius, 0.25rem)',
+              border: 'var(--drum-mini-link-border, 0)',
+              background: 'var(--drum-mini-link-bg, transparent)',
+              ...darbukaLinkOptions?.style,
+            }}
+          >
+            {darbukaLinkOptions?.label ?? 'Edit in Darbuka Trainer'}
+            <span
+              className="material-symbols-outlined"
+              style={{ fontSize: '14px', lineHeight: 1 }}
+              aria-hidden="true"
+            >
+              open_in_new
+            </span>
+          </a>
+        </div>
+      ) : null}
+    </div>
   );
 };
 

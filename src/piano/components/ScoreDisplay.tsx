@@ -28,6 +28,7 @@ const RESULT_COLORS = {
   perfect: '#10b981',
   early: '#3b82f6',
   late: '#ef4444',
+  wrong_pitch: '#f59e0b',
   missed: '#94a3b8',
 };
 
@@ -1184,7 +1185,9 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
               rect.setAttribute('fill', 'transparent');
               rect.setAttribute('stroke', 'none');
               let tip: string;
-              if (result.timing === 'missed') {
+              if (result.timing === 'wrong_pitch') {
+                tip = 'Wrong pitch/chord';
+              } else if (result.timing === 'missed') {
                 tip = 'Missed';
               } else if (result.timing === 'perfect') {
                 tip = `Perfect (${Math.abs(Math.round(result.timingOffsetMs))}ms)`;

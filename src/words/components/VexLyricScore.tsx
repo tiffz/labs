@@ -36,6 +36,7 @@ interface VexLyricScoreProps {
   autoFollowPlayback?: boolean;
   isPlaying?: boolean;
   zoomLevel?: number;
+  scrollContainer?: HTMLElement | null;
 }
 
 const DURATION_MAP: Record<string, string> = {
@@ -250,6 +251,7 @@ const VexLyricScore: React.FC<VexLyricScoreProps> = ({
   autoFollowPlayback = true,
   isPlaying = false,
   zoomLevel = 1,
+  scrollContainer = null,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const noteElementsRef = useRef<Map<string, SVGElement>>(new Map());
@@ -982,13 +984,14 @@ const VexLyricScore: React.FC<VexLyricScoreProps> = ({
       marker: currentPlaybackLine,
       target: lineAnchor,
       state: autoScrollStateRef.current,
+      scrollContainer,
       minIntervalMs: 200,
       minDeltaPx: 56,
       preferredTopRatio: 0.18,
       allowBackward: false,
     });
     maxScrolledLineRef.current = currentPlaybackLine;
-  }, [currentNote, autoFollowPlayback, isPlaying]);
+  }, [currentNote, autoFollowPlayback, isPlaying, scrollContainer]);
 
   useEffect(() => {
     if (isPlaying) return;

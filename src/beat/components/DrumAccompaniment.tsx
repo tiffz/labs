@@ -1,8 +1,11 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import type { TimeSignature } from '../../shared/rhythm/types';
 import { parseRhythm } from '../../shared/rhythm/rhythmParser';
+import { getRhythmTemplatePresets } from '../../shared/rhythm/presetDatabase';
 import { AudioPlayer } from '../../shared/audio/audioPlayer';
 import DrumNotationMini, { type NotationStyle } from '../../shared/notation/DrumNotationMini';
+import DiceIcon from '../../shared/components/DiceIcon';
 
 // Import drum sounds
 import dumSound from '../../drums/assets/sounds/dum.wav';
@@ -17,6 +20,19 @@ export interface DrumScheduler {
   setCallback(cb: ((scheduledUpTo: number, scheduleEnd: number, startTime: number, tempo: number, audioCtx: AudioContext) => void) | null): void;
 }
 
+export interface DrumTemplateButtonProps {
+  isActive: boolean;
+  onClick: () => void;
+  className: string;
+  ariaLabel?: string;
+  title?: string;
+  onMouseEnter?: React.MouseEventHandler<HTMLButtonElement>;
+  onMouseLeave?: React.MouseEventHandler<HTMLButtonElement>;
+  onFocus?: React.FocusEventHandler<HTMLButtonElement>;
+  onBlur?: React.FocusEventHandler<HTMLButtonElement>;
+  children: React.ReactNode;
+}
+
 interface DrumAccompanimentProps {
   bpm: number;
   timeSignature: TimeSignature;
@@ -28,32 +44,39 @@ interface DrumAccompanimentProps {
   notationStyle?: NotationStyle;
   notationWidth?: number;
   scheduler?: DrumScheduler;
+  TemplateButtonComponent?: React.ComponentType<DrumTemplateButtonProps>;
+  templateButtonClassName?: string;
+  randomizeButtonClassName?: string;
 }
 
-// Common drum rhythms (correct patterns from rhythm database)
-// 2/4 rhythms are stored with original and doubled versions for 4/4 time signatures
-const PRESET_RHYTHMS_BASE = [
-  { name: 'Rock', notation: 'D---T---D-D-T---', is2_4: false },    // Rock and Roll - best default for pop/rock
-  { name: 'Maqsum', notation: 'D-T-__T-D---T---', is2_4: false },  // Standard 4/4 Maqsum
-  { name: 'Baladi', notation: 'D-D-__T-D---T---', is2_4: false },  // Starts with two dums
-  { name: 'Saidi', notation: 'D-T-__D-D---T---', is2_4: false },   // Has DD in middle
-  { name: 'Malfuf', notation: 'D--T--T-', is2_4: true },           // 2/4 feel
-  { name: 'Ayoub', notation: 'D--KD-T-', is2_4: true },            // Energetic 2/4
-];
-
-// Helper to get rhythm notation adjusted for time signature
-const getAdjustedNotation = (preset: typeof PRESET_RHYTHMS_BASE[0], timeSignature: TimeSignature): string => {
-  // If it's a 2/4 rhythm and we're in 4/4, double it
-  if (preset.is2_4 && timeSignature.numerator === 4 && timeSignature.denominator === 4) {
-    return preset.notation + preset.notation; // Repeat to fill the measure
-  }
-  return preset.notation;
-};
-
-// For display purposes, use the base rhythms
-const PRESET_RHYTHMS = PRESET_RHYTHMS_BASE;
-
 const DRUM_SOUNDS = { dum: dumSound, tak: takSound, ka: kaSound, slap: slapSound } as const;
+
+const DefaultTemplateButton: React.FC<DrumTemplateButtonProps> = ({
+  isActive,
+  onClick,
+  className,
+  ariaLabel,
+  title,
+  onMouseEnter,
+  onMouseLeave,
+  onFocus,
+  onBlur,
+  children,
+}) => (
+  <button
+    onClick={onClick}
+    className={`${className}${isActive ? ' active' : ''}`}
+    aria-label={ariaLabel}
+    title={title}
+    onMouseEnter={onMouseEnter}
+    onMouseLeave={onMouseLeave}
+    onFocus={onFocus}
+    onBlur={onBlur}
+    type="button"
+  >
+    {children}
+  </button>
+);
 
 const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
   bpm,
@@ -66,11 +89,18 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
   notationStyle,
   notationWidth,
   scheduler,
+  TemplateButtonComponent,
+  templateButtonClassName,
+  randomizeButtonClassName,
 }) => {
   const [selectedPreset, setSelectedPreset] = useState(0);
   const [customNotation, setCustomNotation] = useState<string | null>(null);
   const [currentNoteIndex, setCurrentNoteIndex] = useState<number | null>(null);
   const [currentMeasureIndex, setCurrentMeasureIndex] = useState(0);
+  const [hoverTip, setHoverTip] = useState<{ text: string; x: number; y: number } | null>(
+    null
+  );
+  const presetRhythms = useMemo(() => getRhythmTemplatePresets(timeSignature), [timeSignature]);
 
   const audioPlayerRef = useRef<AudioPlayer | null>(null);
   const lastPlayedNoteRef = useRef<number>(-1);
@@ -80,12 +110,17 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
     if (customNotation !== null) {
       return customNotation;
     }
-    return getAdjustedNotation(PRESET_RHYTHMS_BASE[selectedPreset], timeSignature);
-  }, [customNotation, selectedPreset, timeSignature]);
+    return presetRhythms[selectedPreset]?.notation ?? presetRhythms[0]?.notation ?? '';
+  }, [customNotation, selectedPreset, presetRhythms]);
 
   const parsedRhythm = useMemo(() => {
     return parseRhythm(notation, timeSignature);
   }, [notation, timeSignature]);
+  const sixteenthsPerMeasure = useMemo(
+    () => Math.max(4, Math.round((timeSignature.numerator * 16) / timeSignature.denominator)),
+    [timeSignature]
+  );
+  const TemplateButton = TemplateButtonComponent ?? DefaultTemplateButton;
 
   // Fallback: initialize own AudioPlayer when no engine scheduler is provided
   useEffect(() => {
@@ -221,18 +256,52 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
 
   const handleNotationChange = useCallback((value: string) => {
     setCustomNotation(value);
-    // Check if it matches a preset (comparing base notation)
-    const matchingPresetIndex = PRESET_RHYTHMS_BASE.findIndex(p => 
-      p.notation === value || 
-      (p.is2_4 && p.notation + p.notation === value) // Match doubled 2/4 rhythms too
-    );
+    const matchingPresetIndex = presetRhythms.findIndex((preset) => preset.notation === value);
     if (matchingPresetIndex >= 0) {
       setSelectedPreset(matchingPresetIndex);
       setCustomNotation(null); // Use preset instead
     } else {
       setSelectedPreset(-1);
     }
-  }, []);
+  }, [presetRhythms]);
+  const randomizePresetTemplate = useCallback(() => {
+    if (presetRhythms.length === 0) return;
+    const nextIndex = Math.floor(Math.random() * presetRhythms.length);
+    setSelectedPreset(nextIndex);
+    setCustomNotation(null);
+  }, [presetRhythms]);
+  const randomizeFullTemplate = useCallback(() => {
+    const tokens = ['D', 'T', 'K', 'S', '-', '-'];
+    let nextNotation = '';
+    for (let i = 0; i < sixteenthsPerMeasure; i += 1) {
+      nextNotation += tokens[Math.floor(Math.random() * tokens.length)];
+    }
+    if (!/[DTKS]/.test(nextNotation)) {
+      const randomIndex = Math.floor(Math.random() * nextNotation.length);
+      nextNotation = `${nextNotation.slice(0, randomIndex)}D${nextNotation.slice(randomIndex + 1)}`;
+    }
+    setCustomNotation(nextNotation);
+    setSelectedPreset(-1);
+  }, [sixteenthsPerMeasure]);
+  const showTip = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement> | React.FocusEvent<HTMLButtonElement>, text: string) => {
+      const rect = event.currentTarget.getBoundingClientRect();
+      setHoverTip({
+        text,
+        x: rect.left + rect.width / 2,
+        y: rect.bottom + 10,
+      });
+    },
+    []
+  );
+  const hideTip = useCallback(() => setHoverTip(null), []);
+
+  useEffect(() => {
+    if (selectedPreset < 0) return;
+    if (selectedPreset >= presetRhythms.length) {
+      setSelectedPreset(0);
+    }
+  }, [selectedPreset, presetRhythms.length]);
 
   /**
    * Parse a Darbuka Trainer URL and extract the rhythm notation
@@ -287,28 +356,45 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
     // If not a URL, allow normal paste behavior
   }, [parseRhythmFromUrl, handleNotationChange]);
 
-  const handleOpenEditor = useCallback(() => {
-    const params = new URLSearchParams();
-    params.set('rhythm', notation);
-    params.set('bpm', String(Math.round(bpm)));
-    params.set('time', `${timeSignature.numerator}/${timeSignature.denominator}`);
-    const url = `/drums/?${params.toString()}`;
-    window.open(url, '_blank');
-  }, [notation, timeSignature, bpm]);
-
   return (
     <div className="drum-accompaniment">
       {/* Preset selector */}
       <div className="drum-presets">
-        {PRESET_RHYTHMS.map((preset, index) => (
-          <button
-            key={preset.name}
+        {presetRhythms.map((preset, index) => (
+          <TemplateButton
+            key={preset.id}
             onClick={() => handlePresetChange(index)}
-            className={`preset-btn ${selectedPreset === index ? 'active' : ''}`}
+            isActive={selectedPreset === index}
+            className={`preset-btn ${templateButtonClassName ?? ''}`.trim()}
+            ariaLabel={`Use ${preset.label} drum preset`}
           >
-            {preset.name}
-          </button>
+            {preset.label}
+          </TemplateButton>
         ))}
+        <TemplateButton
+          onClick={randomizePresetTemplate}
+          isActive={false}
+          className={`preset-btn preset-btn-icon ${randomizeButtonClassName ?? ''}`.trim()}
+          ariaLabel="Random preset template"
+          onMouseEnter={(event) => showTip(event, 'Random preset template')}
+          onMouseLeave={hideTip}
+          onFocus={(event) => showTip(event, 'Random preset template')}
+          onBlur={hideTip}
+        >
+          <DiceIcon variant="single" size={15} />
+        </TemplateButton>
+        <TemplateButton
+          onClick={randomizeFullTemplate}
+          isActive={false}
+          className={`preset-btn preset-btn-icon ${randomizeButtonClassName ?? ''}`.trim()}
+          ariaLabel="Fully randomize template"
+          onMouseEnter={(event) => showTip(event, 'Fully randomize template')}
+          onMouseLeave={hideTip}
+          onFocus={(event) => showTip(event, 'Fully randomize template')}
+          onBlur={hideTip}
+        >
+          <DiceIcon variant="multiple" size={15} />
+        </TemplateButton>
       </div>
 
       {/* Always visible notation input */}
@@ -357,6 +443,13 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
             showMetronomeDots={metronomeEnabled}
             currentBeat={currentBeat}
             isPlaying={isPlaying}
+            darbukaLinkOptions={{
+              notation,
+              bpm,
+              timeSignature,
+              metronomeEnabled,
+              className: 'drum-edit-link',
+            }}
           />
         </div>
       ) : (
@@ -365,12 +458,33 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
           {parsedRhythm.error && <span className="error-detail">{parsedRhythm.error}</span>}
         </div>
       )}
+      {hoverTip && typeof document !== 'undefined'
+        ? createPortal(
+            <div
+              style={{
+                position: 'fixed',
+                left: `${hoverTip.x}px`,
+                top: `${hoverTip.y}px`,
+                transform: 'translateX(-50%)',
+                background: '#374151',
+                color: '#f9fafb',
+                borderRadius: '6px',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                lineHeight: 1.2,
+                padding: '8px 10px',
+                zIndex: 420,
+                pointerEvents: 'none',
+                boxShadow: '0 8px 18px rgba(15, 23, 42, 0.28)',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {hoverTip.text}
+            </div>,
+            document.body
+          )
+        : null}
 
-      {/* Edit link */}
-      <button onClick={handleOpenEditor} className="drum-edit-link">
-        <span className="material-symbols-outlined">open_in_new</span>
-        Edit in Darbuka Trainer
-      </button>
     </div>
   );
 };

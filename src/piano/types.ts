@@ -82,7 +82,12 @@ export interface MidiDevice {
   connected: boolean;
 }
 
-export type TimingJudgment = 'perfect' | 'early' | 'late' | 'missed';
+export type TimingJudgment =
+  | 'perfect'
+  | 'early'
+  | 'late'
+  | 'wrong_pitch'
+  | 'missed';
 
 export interface PracticeNoteResult {
   noteId: string;

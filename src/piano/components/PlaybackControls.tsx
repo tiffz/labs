@@ -5,6 +5,7 @@ import { SOUND_OPTIONS, type SoundType } from '../../chords/types/soundOptions';
 import DrumAccompaniment, { type DrumScheduler } from '../../beat/components/DrumAccompaniment';
 import type { NotationStyle } from '../../shared/notation/DrumNotationMini';
 import { getScorePlaybackEngine } from '../utils/scorePlayback';
+import MetronomeToggleButton from '../../shared/components/MetronomeToggleButton';
 
 const PIANO_DRUM_STYLE: NotationStyle = {
   staffColor: '#94a3b8',
@@ -406,14 +407,17 @@ const PlaybackControls: React.FC = () => {
       </div>
 
       <div className="sb-icon-row">
-        <button
-          className={`metronome-btn ${state.metronomeEnabled ? 'active' : ''}`}
-          onClick={handleMetronomeToggle}
-          onMouseEnter={e => showTip(e, `Metronome ${state.metronomeEnabled ? '(on)' : '(off)'}`)}
+        <MetronomeToggleButton
+          enabled={state.metronomeEnabled}
+          onToggle={handleMetronomeToggle}
+          className="metronome-btn"
+          label={undefined}
+          showOnLabel={false}
+          tooltipOn="Metronome (on)"
+          tooltipOff="Metronome (off)"
+          onMouseEnter={e => showTip(e, state.metronomeEnabled ? 'Metronome: On' : 'Metronome: Off')}
           onMouseLeave={hideTip}
-        >
-          <span className="material-symbols-outlined">timer</span>
-        </button>
+        />
         <button
           className={`metronome-btn ${state.loopingEnabled ? 'active' : ''}`}
           onClick={handleLoopToggle}

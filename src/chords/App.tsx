@@ -10,6 +10,9 @@ import ManualControls from './components/ManualControls';
 import { SOUND_OPTIONS } from './types/soundOptions';
 import { useUrlState } from './hooks/useUrlState';
 import { CHORD_STYLING_STRATEGIES } from './data/chordStylingStrategies';
+import MetronomeToggleButton from '../shared/components/MetronomeToggleButton';
+import { AudioPlayer } from '../shared/audio/audioPlayer';
+import clickSound from '../drums/assets/sounds/click.mp3';
 
 // Loading state for piano samples
 interface LoadingState {
@@ -68,11 +71,15 @@ const App: React.FC = () => {
   });
 
   const [isPlaying, setIsPlaying] = useState(false);
+  const [metronomeEnabled, setMetronomeEnabled] = useState(false);
   const [currentChordIndex, setCurrentChordIndex] = useState<number | null>(null);
   const [activeNoteGroups, setActiveNoteGroups] = useState<Set<string>>(new Set());
   const [lockedOptions, setLockedOptions] = useState<LockedOptions>({});
   const [loadingState, setLoadingState] = useState<LoadingState>({ isLoading: false, progress: 0, total: 0 });
   const currentLoopIdRef = useRef<number>(0);
+  const metronomeEnabledRef = useRef(metronomeEnabled);
+  const metronomeAudioPlayerRef = useRef<AudioPlayer | null>(null);
+  const lastMetronomeBeatRef = useRef<number>(-1);
 
   // Helper function to generate styled chords
   const generateExpandedStyledChords = useCallback((currentState: ChordProgressionState): StyledChordNotes[] => {
@@ -96,6 +103,22 @@ const App: React.FC = () => {
     return expandedStyledChords;
   }, []);
 
+  useEffect(() => {
+    metronomeEnabledRef.current = metronomeEnabled;
+  }, [metronomeEnabled]);
+
+  const playMetronomeClick = useCallback((isDownbeat: boolean) => {
+    if (!metronomeEnabledRef.current) return;
+    if (!metronomeAudioPlayerRef.current) {
+      metronomeAudioPlayerRef.current = new AudioPlayer({
+        clickUrl: clickSound,
+        enableReverb: false,
+      });
+    }
+    const volume = isDownbeat ? 0.8 : 0.5;
+    void metronomeAudioPlayerRef.current.playClick(volume);
+  }, []);
+
   // Create playback update callback
   const createPlaybackCallback = useCallback((timeSignature: { numerator: number }) => {
     return (positionInBeats: number, activeNotes: Map<number, ActiveNotes>, playing: boolean) => {
@@ -103,6 +126,7 @@ const App: React.FC = () => {
         setIsPlaying(false);
         setCurrentChordIndex(null);
         setActiveNoteGroups(new Set());
+        lastMetronomeBeatRef.current = -1;
         return;
       }
       
@@ -121,10 +145,16 @@ const App: React.FC = () => {
       // Calculate current chord index from current beat
       const beatsPerMeasure = timeSignature.numerator;
       const currentChordIdx = Math.floor(positionInBeats / beatsPerMeasure);
+      const beatIndex = Math.floor(positionInBeats + 0.0001);
+      if (metronomeEnabledRef.current && beatIndex !== lastMetronomeBeatRef.current) {
+        lastMetronomeBeatRef.current = beatIndex;
+        const isDownbeat = beatIndex % Math.max(1, beatsPerMeasure) === 0;
+        playMetronomeClick(isDownbeat);
+      }
       setCurrentChordIndex(currentChordIdx);
       setActiveNoteGroups(noteGroups);
     };
-  }, []);
+  }, [playMetronomeClick]);
 
   const handleRandomize = () => {
     const wasPlaying = isPlaying;
@@ -281,6 +311,29 @@ const App: React.FC = () => {
     });
   }, [setupPopStateListener]);
 
+  useEffect(() => {
+    if (state.soundType !== 'piano-sampled') return;
+    const playbackEngine = getPlaybackEngine();
+    if (playbackEngine.areSamplesLoaded()) return;
+    let cancelled = false;
+    const preload = async () => {
+      playbackEngine.setSampleLoadingCallback((loaded, total) => {
+        if (cancelled) return;
+        setLoadingState({ isLoading: loaded < total, progress: loaded, total });
+      });
+      await playbackEngine.loadSamples();
+      if (!cancelled) {
+        setLoadingState({ isLoading: false, progress: 0, total: 0 });
+      }
+      playbackEngine.setSampleLoadingCallback(null);
+    };
+    void preload();
+    return () => {
+      cancelled = true;
+      playbackEngine.setSampleLoadingCallback(null);
+    };
+  }, [state.soundType]);
+
   const handleLockChange = (option: keyof LockedOptions, locked: boolean) => {
     setLockedOptions({ ...lockedOptions, [option]: locked });
   };
@@ -342,6 +395,8 @@ const App: React.FC = () => {
   useEffect(() => {
     return () => {
       disposePlaybackEngine();
+      metronomeAudioPlayerRef.current?.destroy();
+      metronomeAudioPlayerRef.current = null;
     };
   }, []);
 
@@ -383,6 +438,15 @@ const App: React.FC = () => {
                 ? `Loading ${loadingPercent}%` 
                 : isPlaying ? 'Stop' : 'Play'}
             </button>
+            <MetronomeToggleButton
+              enabled={metronomeEnabled}
+              onToggle={() => setMetronomeEnabled((previous) => !previous)}
+              className="chords-metronome-toggle"
+              activeClassName="active"
+              showOnLabel={false}
+              tooltipOn="Metronome: On"
+              tooltipOff="Metronome: Off"
+            />
             <div className="sound-control">
               <label htmlFor="sound-type">Sound:</label>
               <select

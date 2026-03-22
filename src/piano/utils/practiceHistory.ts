@@ -100,9 +100,15 @@ export function getKeyProficiency(): Map<string, { avgAccuracy: number; count: n
   return result;
 }
 
-export function getTimingAnalysis(): { earlyPct: number; latePct: number; perfectPct: number; missedPct: number } {
+export function getTimingAnalysis(): {
+  earlyPct: number;
+  latePct: number;
+  perfectPct: number;
+  wrongPitchPct: number;
+  missedPct: number;
+} {
   const records = getAll();
-  let early = 0, late = 0, perfect = 0, missed = 0;
+  let early = 0, late = 0, perfect = 0, wrongPitch = 0, missed = 0;
 
   for (const r of records) {
     for (const run of r.runs) {
@@ -111,19 +117,23 @@ export function getTimingAnalysis(): { earlyPct: number; latePct: number; perfec
           case 'early': early++; break;
           case 'late': late++; break;
           case 'perfect': perfect++; break;
+          case 'wrong_pitch': wrongPitch++; break;
           case 'missed': missed++; break;
         }
       }
     }
   }
 
-  const total = early + late + perfect + missed;
-  if (total === 0) return { earlyPct: 0, latePct: 0, perfectPct: 0, missedPct: 0 };
+  const total = early + late + perfect + wrongPitch + missed;
+  if (total === 0) {
+    return { earlyPct: 0, latePct: 0, perfectPct: 0, wrongPitchPct: 0, missedPct: 0 };
+  }
 
   return {
     earlyPct: Math.round((early / total) * 100),
     latePct: Math.round((late / total) * 100),
     perfectPct: Math.round((perfect / total) * 100),
+    wrongPitchPct: Math.round((wrongPitch / total) * 100),
     missedPct: Math.round((missed / total) * 100),
   };
 }
@@ -163,6 +173,11 @@ export function getRecommendations(records: PracticeRecord[]): string[] {
     recs.push(`You tend to rush — ${timing.earlyPct}% of notes are early. Try using the metronome at a slower tempo.`);
   } else if (timing.latePct > 30) {
     recs.push(`You tend to drag — ${timing.latePct}% of notes are late. Try listening ahead to the metronome.`);
+  }
+  if (timing.wrongPitchPct > 20) {
+    recs.push(
+      `Pitch mismatches are ${timing.wrongPitchPct}% of attempts. Try slower chord transitions and lock each shape before moving.`
+    );
   }
 
   const daysSincePractice = new Map<string, number>();

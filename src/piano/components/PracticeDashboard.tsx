@@ -3,16 +3,17 @@ import { usePiano } from '../store';
 import type { PracticeNoteResult } from '../types';
 
 function getTimingBreakdown(results: PracticeNoteResult[]) {
-  let perfect = 0, early = 0, late = 0, missed = 0;
+  let perfect = 0, early = 0, late = 0, wrongPitch = 0, missed = 0;
   for (const r of results) {
     switch (r.timing) {
       case 'perfect': perfect++; break;
       case 'early': early++; break;
       case 'late': late++; break;
+      case 'wrong_pitch': wrongPitch++; break;
       case 'missed': missed++; break;
     }
   }
-  return { perfect, early, late, missed, total: results.length };
+  return { perfect, early, late, wrongPitch, missed, total: results.length };
 }
 
 function TimingBar({ results }: { results: PracticeNoteResult[] }) {
@@ -21,12 +22,14 @@ function TimingBar({ results }: { results: PracticeNoteResult[] }) {
   const pctPerfect = (b.perfect / b.total) * 100;
   const pctEarly = (b.early / b.total) * 100;
   const pctLate = (b.late / b.total) * 100;
+  const pctWrongPitch = (b.wrongPitch / b.total) * 100;
   const pctMissed = (b.missed / b.total) * 100;
   return (
-    <div className="timing-bar" title={`${b.perfect} perfect, ${b.early} early, ${b.late} late, ${b.missed} missed`}>
+    <div className="timing-bar" title={`${b.perfect} perfect, ${b.early} early, ${b.late} late, ${b.wrongPitch} wrong pitch, ${b.missed} missed`}>
       {pctPerfect > 0 && <div className="timing-seg perfect" style={{ width: `${pctPerfect}%` }} />}
       {pctEarly > 0 && <div className="timing-seg early" style={{ width: `${pctEarly}%` }} />}
       {pctLate > 0 && <div className="timing-seg late" style={{ width: `${pctLate}%` }} />}
+      {pctWrongPitch > 0 && <div className="timing-seg wrong-pitch" style={{ width: `${pctWrongPitch}%` }} />}
       {pctMissed > 0 && <div className="timing-seg missed" style={{ width: `${pctMissed}%` }} />}
     </div>
   );
@@ -50,6 +53,10 @@ function TimingBreakdownDetail({ results, label }: { results: PracticeNoteResult
         <span className="breakdown-item late">
           <span className="breakdown-dot" style={{ background: '#ef4444' }} />
           {b.late} late
+        </span>
+        <span className="breakdown-item wrong-pitch">
+          <span className="breakdown-dot" style={{ background: '#f59e0b' }} />
+          {b.wrongPitch} wrong pitch
         </span>
         <span className="breakdown-item missed">
           <span className="breakdown-dot" style={{ background: '#94a3b8' }} />

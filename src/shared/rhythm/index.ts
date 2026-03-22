@@ -2,3 +2,4 @@
 export * from './types';
 export * from './timeSignatureUtils';
 export { parseRhythm, parseNotation } from './rhythmParser';
+export * from './presetDatabase';

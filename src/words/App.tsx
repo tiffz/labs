@@ -14,6 +14,7 @@ import {
 } from '../drums/wordRhythm/prosodyEngine';
 import VexLyricScore from './components/VexLyricScore';
 import DrumNotationMini from '../shared/notation/DrumNotationMini';
+import { AudioPlayer } from '../shared/audio/audioPlayer';
 import { SOUND_OPTIONS, type SoundType } from '../chords/types/soundOptions';
 import {
   CHORD_STYLE_OPTIONS,
@@ -43,11 +44,23 @@ import {
   type SongSectionType,
 } from '../shared/music/songSections';
 import {
+  looksLikeFullSongLyrics,
+  type ParsedLyricSectionDraft,
+} from '../shared/music/lyricSectionParser';
+import {
   subscribeToPopState,
   syncUrlWithHistory,
   type UrlRoutingHistoryState,
 } from '../shared/utils/urlRouting';
 import { parseOptionalNumberParam } from '../shared/utils/urlParams';
+import { LyricImportModal } from './components/LyricImportModal';
+import { getRhythmTemplatePresets } from '../shared/rhythm/presetDatabase';
+import MetronomeToggleButton from '../shared/components/MetronomeToggleButton';
+import DiceIcon from '../shared/components/DiceIcon';
+import dumSound from '../drums/assets/sounds/dum.wav';
+import takSound from '../drums/assets/sounds/tak.wav';
+import kaSound from '../drums/assets/sounds/ka.wav';
+import slapSound from '../drums/assets/sounds/slap2.wav';
 
 const DEFAULT_LYRICS = `Sunrise on the shoreline
 Ocean wind through palm trees`;
@@ -61,18 +74,109 @@ const TIME_SIGNATURE_OPTIONS: Array<
   Pick<TimeSignature, 'numerator' | 'denominator'>
 > = [{ numerator: 4, denominator: 4 }];
 
-const TEMPLATE_PRESETS = [
-  { label: 'Rock', notation: 'D---T---D-D-T---' },
-  { label: 'Maqsum', notation: 'D-T-__T-D---T---' },
-  { label: 'Baladi', notation: 'D-D-__T-D---T---' },
-  { label: 'Saidi', notation: 'D-T-__D-D---T---' },
-  { label: 'Malfuf', notation: 'D--T--T-D--T--T-' },
-  { label: 'Ayoub', notation: 'D--KD-T-D--KD-T-' },
+const TEMPLATE_PRESETS = getRhythmTemplatePresets(DEFAULT_TIME_SIGNATURE).map(
+  (preset) => ({
+    label: preset.label,
+    notation: preset.notation,
+  })
+);
+type RandomizeMode = 'phrasing' | 'groove' | 'chords' | 'everything';
+const RANDOMIZE_MODE_OPTIONS: Array<{
+  mode: RandomizeMode;
+  label: string;
+  tooltip: string;
+}> = [
+  {
+    mode: 'phrasing',
+    label: 'Phrasing',
+    tooltip: 'Rerolls rhythms and articulation while preserving section templates.',
+  },
+  {
+    mode: 'groove',
+    label: 'Groove',
+    tooltip: 'Rerolls phrasing and also randomizes rhythm templates.',
+  },
+  {
+    mode: 'chords',
+    label: 'Chords',
+    tooltip: 'Randomizes chord progressions while keeping current grooves.',
+  },
+  {
+    mode: 'everything',
+    label: 'Everything',
+    tooltip: 'Randomizes phrasing, grooves, chords, key, style, and tempo.',
+  },
 ];
+const BACKING_FALLBACK_TEMPLATE = 'D---D---D---D---';
+const DRUM_SOUNDS = {
+  dum: dumSound,
+  tak: takSound,
+  ka: kaSound,
+  slap: slapSound,
+} as const;
+
+function pickRandom<T>(items: readonly T[]): T {
+  return items[Math.floor(Math.random() * items.length)] as T;
+}
+
+function clampBpm(value: number): number {
+  return Math.max(40, Math.min(220, value));
+}
+
+function generateRandomTemplateNotation(): string {
+  const anchors: Array<'D' | 'T' | 'K'> = ['D', 'T', 'K'];
+  const notes = Array.from({ length: 16 }, () => '-');
+  notes[0] = 'D';
+  notes[8] = 'D';
+  for (let i = 0; i < notes.length; i += 1) {
+    if (notes[i] !== '-') continue;
+    const roll = Math.random();
+    if (roll < 0.24) {
+      notes[i] = pickRandom(anchors);
+    } else if (roll < 0.3) {
+      notes[i] = '_';
+    }
+  }
+  if (notes.every((token) => token === '-')) notes[0] = 'D';
+  return notes.join('');
+}
+
+function getTemplateSyncopationScore(notation: string): number {
+  const compact = notation.replace(/\s+/g, '');
+  const length = compact.length > 0 ? compact.length : 16;
+  let score = 0;
+  for (let index = 0; index < compact.length; index += 1) {
+    const token = compact[index];
+    if (!token || token === '-' || token === '_') continue;
+    const onQuarter = index % 4 === 0;
+    const onEighth = index % 2 === 0;
+    if (!onQuarter) score += 2;
+    else if (!onEighth) score += 1;
+  }
+  return score / Math.max(1, length);
+}
+
+function getNoteSoundAtSixteenth(
+  notes: Array<{ durationInSixteenths: number; sound: string }>,
+  sixteenthOffset: number
+): string | null {
+  let cursor = 0;
+  for (const note of notes) {
+    if (cursor === sixteenthOffset) {
+      return note.sound;
+    }
+    cursor += note.durationInSixteenths;
+  }
+  return null;
+}
+
+function volumeIconName(isMuted: boolean): string {
+  return isMuted ? 'volume_off' : 'volume_up';
+}
 
 const APP_DEFAULT_GENERATION_SETTINGS: WordRhythmAdvancedSettings = {
   ...DEFAULT_WORD_RHYTHM_SETTINGS,
-  templateBias: 100,
+  templateBias: 80,
   templateNotation: TEMPLATE_PRESETS[0].notation,
 };
 const DEFAULT_WORD_RESULT = generateWordRhythm(DEFAULT_LYRICS, {
@@ -108,6 +212,7 @@ So you can come and dance with me`,
 const CHORD_PARSE_REGEX = /^([A-G](?:#|b)?)(maj7|m7|m|7|sus2|sus4|dim|aug)?$/i;
 const URL_PARAM_LYRICS = 'l';
 const URL_PARAM_PATTERN = 'pat';
+const URL_PARAM_PATTERN_B64 = 'pat64';
 const URL_PARAM_BPM = 'bpm';
 const URL_PARAM_TIME = 'time';
 const URL_PARAM_METRONOME = 'met';
@@ -157,6 +262,17 @@ function cloneSectionsSnapshot(sections: SongSection[]): SongSection[] {
   return sections.map((section) => ({ ...section }));
 }
 
+function normalizeSection(section: SongSection): SongSection {
+  return {
+    ...section,
+    isLocked: section.isLocked ?? false,
+  };
+}
+
+function normalizeSectionsSnapshot(sections: SongSection[]): SongSection[] {
+  return sections.map(normalizeSection);
+}
+
 const GENERATION_SETTING_HELP = {
   adventurousness:
     'Higher values allow bolder rhythmic shapes and less predictable note lengths.',
@@ -178,7 +294,8 @@ const GENERATION_SETTING_HELP = {
     'Biases against inserting rests inside a single multi-syllable word.',
   lineBreakGapBias:
     'Biases toward leaving a small rest between lyric lines when spacing allows.',
-  templateBias: 'How strongly generation follows the selected template groove.',
+  templateBias:
+    'How strongly generation follows the selected template groove. Higher values make regeneration change less.',
 } satisfies Record<string, string>;
 
 const SettingHelpLabel: React.FC<{ text: string; help: string }> = ({
@@ -309,10 +426,28 @@ const App: React.FC = () => {
   const [autoFollowPlayback, setAutoFollowPlayback] = useState<boolean>(true);
   const [generationMenuOpen, setGenerationMenuOpen] = useState<boolean>(false);
   const [soundMenuOpen, setSoundMenuOpen] = useState<boolean>(false);
+  const [randomizeMenuOpen, setRandomizeMenuOpen] = useState<boolean>(false);
+  const [sectionRandomizeMenuId, setSectionRandomizeMenuId] = useState<
+    string | null
+  >(null);
   const [songKey, setSongKey] = useState<Key>(DEFAULT_SONG_KEY);
   const [drumsVolume, setDrumsVolume] = useState<number>(100);
+  const [masterVolume, setMasterVolume] = useState<number>(100);
+  const [masterMuted, setMasterMuted] = useState<boolean>(false);
+  const [drumsMuted, setDrumsMuted] = useState<boolean>(false);
+  const [accentMuted, setAccentMuted] = useState<boolean>(false);
+  const [metronomeMuted, setMetronomeMuted] = useState<boolean>(false);
   const [chordSoundType, setChordSoundType] = useState<SoundType>('piano');
   const [chordVolume, setChordVolume] = useState<number>(58);
+  const [chordMuted, setChordMuted] = useState<boolean>(false);
+  const [backingBeatEnabled, setBackingBeatEnabled] = useState<boolean>(false);
+  const [backingBeatUseTemplate, setBackingBeatUseTemplate] =
+    useState<boolean>(true);
+  const [backingBeatNotation, setBackingBeatNotation] = useState<string>(
+    BACKING_FALLBACK_TEMPLATE
+  );
+  const [backingBeatVolume, setBackingBeatVolume] = useState<number>(42);
+  const [backingBeatMuted, setBackingBeatMuted] = useState<boolean>(false);
   const [sampledPianoLoad, setSampledPianoLoad] = useState<{
     loading: boolean;
     loaded: number;
@@ -325,11 +460,14 @@ const App: React.FC = () => {
     useState<WordRhythmAdvancedSettings>(APP_DEFAULT_GENERATION_SETTINGS);
   const [isStickyControlsStuck, setIsStickyControlsStuck] =
     useState<boolean>(false);
+  const [isScoreActionsStuck, setIsScoreActionsStuck] = useState<boolean>(false);
   const [openSectionSettingsId, setOpenSectionSettingsId] = useState<
     string | null
   >(null);
   const [exportMenuOpen, setExportMenuOpen] = useState<boolean>(false);
   const [scoreZoom, setScoreZoom] = useState<number>(1);
+  const [lyricImportOpen, setLyricImportOpen] = useState<boolean>(false);
+  const [lyricImportText, setLyricImportText] = useState<string>('');
   const [playbackSelectionRange, setPlaybackSelectionRange] = useState<{
     startTick: number;
     endTick: number;
@@ -337,8 +475,9 @@ const App: React.FC = () => {
   const [activeSectionLoopId, setActiveSectionLoopId] = useState<string | null>(
     null
   );
-  const [pendingPlaybackStart, setPendingPlaybackStart] =
-    useState<boolean>(false);
+  const [pendingPlaybackStartMode, setPendingPlaybackStartMode] = useState<
+    'all' | 'section' | null
+  >(null);
   const [sectionSettingsPosition, setSectionSettingsPosition] = useState<{
     top: number;
     left: number;
@@ -346,18 +485,26 @@ const App: React.FC = () => {
     maxHeight: number;
   } | null>(null);
   const stickyControlsRef = useRef<HTMLElement | null>(null);
+  const scoreActionsRef = useRef<HTMLDivElement | null>(null);
   const generationMenuRef = useRef<HTMLDivElement | null>(null);
   const generationButtonRef = useRef<HTMLButtonElement | null>(null);
   const soundMenuRef = useRef<HTMLDivElement | null>(null);
   const soundButtonRef = useRef<HTMLButtonElement | null>(null);
   const exportMenuRef = useRef<HTMLDivElement | null>(null);
+  const randomizeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const randomizeMenuRef = useRef<HTMLDivElement | null>(null);
   const exportButtonRef = useRef<HTMLButtonElement | null>(null);
+  const sectionRandomizeAnchorRefs = useRef<Map<string, HTMLDivElement>>(
+    new Map()
+  );
   const sectionSettingsAnchorRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const sectionSettingsMenuRef = useRef<HTMLDivElement | null>(null);
   const sectionsColumnRef = useRef<HTMLElement | null>(null);
   const notationScrollRef = useRef<HTMLElement | null>(null);
   const notationSectionRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const chordAudioContextRef = useRef<AudioContext | null>(null);
+  const backingAudioPlayerRef = useRef<AudioPlayer | null>(null);
+  const lastBackingTriggerRef = useRef<string | null>(null);
   const chordSampledPianoRef = useRef<SampledPiano | null>(null);
   const chordInstrumentRef = useRef<Instrument | null>(null);
   const chordInstrumentTypeRef = useRef<SoundType | null>(null);
@@ -399,17 +546,6 @@ const App: React.FC = () => {
     if (metronomeEnabled) params.set('metronome', 'true');
     return `/drums/?${params.toString()}`;
   }, [notation, timeSignature, bpm, metronomeEnabled]);
-  const getDarbukaTemplateEditUrl = (templateNotation: string) => {
-    const params = new URLSearchParams();
-    params.set('rhythm', templateNotation);
-    params.set(
-      'time',
-      `${timeSignature.numerator}/${timeSignature.denominator}`
-    );
-    params.set('bpm', String(bpm));
-    if (metronomeEnabled) params.set('metronome', 'true');
-    return `/drums/?${params.toString()}`;
-  };
   const sectionTemplatePreviewById = useMemo(() => {
     const previews = new Map<string, ReturnType<typeof parseRhythm>>();
     sections.forEach((section) => {
@@ -443,7 +579,7 @@ const App: React.FC = () => {
   const applySectionsChange = useCallback(
     (transform: (previous: SongSection[]) => SongSection[]) => {
       setSections((previous) => {
-        const next = transform(previous);
+        const next = normalizeSectionsSnapshot(transform(previous));
         if (next === previous) return previous;
         pushUndoSnapshot(previous, songKeyRef.current);
         return next;
@@ -456,7 +592,6 @@ const App: React.FC = () => {
       SongSection & {
         effectiveLyrics: string;
         effectiveTemplateNotation: string;
-        effectiveTemplateBias: number;
       }
     > = [];
     const linkedChorusLyricsSource = sections.find(
@@ -479,12 +614,6 @@ const App: React.FC = () => {
         linkedChorusTemplateSource
           ? linkedChorusTemplateSource.templateNotation
           : section.templateNotation;
-      const inheritedTemplateBias =
-        section.type === 'chorus' &&
-        section.linkedToPreviousChorusTemplate &&
-        linkedChorusTemplateSource
-          ? linkedChorusTemplateSource.templateBias
-          : section.templateBias;
       output.push({
         ...section,
         effectiveLyrics: inheritedLyrics,
@@ -492,7 +621,6 @@ const App: React.FC = () => {
           inheritedTemplateNotation ||
           APP_DEFAULT_GENERATION_SETTINGS.templateNotation ||
           '',
-        effectiveTemplateBias: inheritedTemplateBias,
       });
     });
     return output;
@@ -531,7 +659,6 @@ const App: React.FC = () => {
         generationSettings: {
           ...generationSettings,
           templateNotation: section.effectiveTemplateNotation,
-          templateBias: section.effectiveTemplateBias,
         },
       });
       const parsed = parseRhythm(result.notation, timeSignature);
@@ -593,6 +720,47 @@ const App: React.FC = () => {
       ),
     }));
   }, [sectionMeasureRanges, sixteenthsPerMeasure]);
+  const backingPatternRhythm = useMemo(() => {
+    if (!backingBeatEnabled) return null;
+    if (!backingBeatUseTemplate) {
+      const parsed = parseRhythm(backingBeatNotation || BACKING_FALLBACK_TEMPLATE, timeSignature);
+      return parsed.isValid && parsed.measures.length > 0 ? parsed : null;
+    }
+    const sourceTemplate =
+      effectiveSections[0]?.effectiveTemplateNotation ||
+      TEMPLATE_PRESETS[0]?.notation ||
+      BACKING_FALLBACK_TEMPLATE;
+    const parsed = parseRhythm(sourceTemplate, timeSignature);
+    return parsed.isValid && parsed.measures.length > 0 ? parsed : null;
+  }, [
+    backingBeatEnabled,
+    backingBeatUseTemplate,
+    backingBeatNotation,
+    timeSignature,
+    effectiveSections,
+  ]);
+  const backingTemplateMeasureMap = useMemo(() => {
+    const map = new Map<number, Array<{ durationInSixteenths: number; sound: string }>>();
+    if (!backingBeatEnabled || !backingBeatUseTemplate) return map;
+    sectionRenderPlans.forEach((plan) => {
+      const parsed = parseRhythm(
+        plan.section.effectiveTemplateNotation || BACKING_FALLBACK_TEMPLATE,
+        timeSignature
+      );
+      if (!parsed.isValid || parsed.measures.length === 0) return;
+      for (let localOffset = 0; localOffset < plan.totalMeasureCount; localOffset += 1) {
+        const templateMeasure =
+          parsed.measures[localOffset % parsed.measures.length];
+        map.set(plan.startMeasure + localOffset, templateMeasure.notes);
+      }
+    });
+    return map;
+  }, [
+    backingBeatEnabled,
+    backingBeatUseTemplate,
+    sectionRenderPlans,
+    timeSignature,
+  ]);
 
   const chordLabelsByMeasure = useMemo(() => {
     const labels = new Map<number, string>();
@@ -644,18 +812,39 @@ const App: React.FC = () => {
     return styles;
   }, [sectionRenderPlans]);
   const effectivePlaybackSettings = useMemo(() => {
-    const scale = Math.max(0, Math.min(100, drumsVolume)) / 100;
+    const masterScale =
+      masterMuted ? 0 : Math.max(0, Math.min(100, masterVolume)) / 100;
+    const drumsScale =
+      (drumsMuted ? 0 : Math.max(0, Math.min(100, drumsVolume)) / 100) *
+      masterScale;
+    const accentScale = accentMuted ? 0 : 1;
+    const metronomeScale = metronomeMuted ? 0 : masterScale;
     return {
       ...playbackSettings,
-      nonAccentVolume: Math.round(playbackSettings.nonAccentVolume * scale),
+      nonAccentVolume: Math.round(playbackSettings.nonAccentVolume * drumsScale),
       beatGroupAccentVolume: Math.round(
-        playbackSettings.beatGroupAccentVolume * scale
+        playbackSettings.beatGroupAccentVolume * drumsScale * accentScale
       ),
       measureAccentVolume: Math.round(
-        playbackSettings.measureAccentVolume * scale
+        playbackSettings.measureAccentVolume * drumsScale * accentScale
       ),
+      metronomeVolume: Math.round(playbackSettings.metronomeVolume * metronomeScale),
     };
-  }, [playbackSettings, drumsVolume]);
+  }, [
+    playbackSettings,
+    drumsVolume,
+    drumsMuted,
+    accentMuted,
+    metronomeMuted,
+    masterVolume,
+    masterMuted,
+  ]);
+  const effectiveChordVolume = useMemo(() => {
+    const masterScale =
+      masterMuted ? 0 : Math.max(0, Math.min(100, masterVolume)) / 100;
+    const chordScale = chordMuted ? 0 : Math.max(0, Math.min(100, chordVolume)) / 100;
+    return Math.max(0, Math.min(1, chordScale * masterScale));
+  }, [chordVolume, chordMuted, masterVolume, masterMuted]);
   const {
     isPlaying,
     currentNote,
@@ -676,9 +865,79 @@ const App: React.FC = () => {
       ? currentNote.measureIndex
       : null;
   const stopPlaybackImmediately = useCallback(() => {
-    chordInstrumentRef.current?.stopAll(0);
     handleStop();
+    chordInstrumentRef.current?.stopAll(0);
+    if (chordInstrumentRef.current) {
+      chordInstrumentRef.current.disconnect();
+    }
+    chordInstrumentRef.current = null;
+    chordInstrumentTypeRef.current = null;
   }, [handleStop]);
+
+  useEffect(() => {
+    const player = new AudioPlayer({
+      soundUrls: DRUM_SOUNDS,
+      enableReverb: false,
+    });
+    void player.initialize().then(() => {
+      backingAudioPlayerRef.current = player;
+    });
+    return () => {
+      player.destroy();
+      backingAudioPlayerRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (
+      !isPlaying ||
+      !backingBeatEnabled ||
+      !currentMetronomeBeat ||
+      !backingPatternRhythm
+    ) {
+      lastBackingTriggerRef.current = null;
+      return;
+    }
+    const triggerKey = `${currentMetronomeBeat.measureIndex}-${currentMetronomeBeat.positionInSixteenths}`;
+    if (lastBackingTriggerRef.current === triggerKey) return;
+    lastBackingTriggerRef.current = triggerKey;
+    const sixteenthOffset = currentMetronomeBeat.positionInSixteenths;
+    const templateMeasureNotes = backingTemplateMeasureMap.get(
+      currentMetronomeBeat.measureIndex
+    );
+    const fallbackPatternMeasure =
+      backingPatternRhythm.measures[
+        currentMetronomeBeat.measureIndex % backingPatternRhythm.measures.length
+      ];
+    const patternNotes = templateMeasureNotes ?? fallbackPatternMeasure?.notes;
+    if (!patternNotes) return;
+    const sound = getNoteSoundAtSixteenth(patternNotes, sixteenthOffset);
+    if (!sound || sound === 'rest' || sound === '_') return;
+    const player = backingAudioPlayerRef.current;
+    if (!player) return;
+    const masterScale =
+      masterMuted ? 0 : Math.max(0, Math.min(100, masterVolume)) / 100;
+    const backingScale =
+      backingBeatMuted
+        ? 0
+        : Math.max(0, Math.min(100, backingBeatVolume)) / 100;
+    const soundToken =
+      sound === 'dum' || sound === 'tak' || sound === 'ka' || sound === 'slap'
+        ? sound
+        : null;
+    if (!soundToken) return;
+    player.play(soundToken, Math.max(0, Math.min(1, backingScale * masterScale)));
+  }, [
+    isPlaying,
+    backingBeatEnabled,
+    backingPatternRhythm,
+    backingTemplateMeasureMap,
+    currentMetronomeBeat,
+    backingBeatVolume,
+    backingBeatMuted,
+    masterVolume,
+    masterMuted,
+  ]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => setDebouncedBpm(bpm), 350);
@@ -686,14 +945,20 @@ const App: React.FC = () => {
   }, [bpm]);
 
   useEffect(() => {
-    if (!pendingPlaybackStart) return;
-    setPendingPlaybackStart(false);
+    if (!pendingPlaybackStartMode) return;
+    if (pendingPlaybackStartMode === 'section' && !playbackSelectionRange) return;
+    setPendingPlaybackStartMode(null);
     stopPlaybackImmediately();
     const frame = window.requestAnimationFrame(() => {
       handlePlay();
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [pendingPlaybackStart, handlePlay, stopPlaybackImmediately]);
+  }, [
+    pendingPlaybackStartMode,
+    playbackSelectionRange,
+    handlePlay,
+    stopPlaybackImmediately,
+  ]);
 
   useEffect(() => {
     setBpmInput(String(bpm));
@@ -708,12 +973,23 @@ const App: React.FC = () => {
     let frameId = 0;
     const checkStickyState = () => {
       frameId = 0;
-      if (!stickyControlsRef.current) return;
-      const nextIsStuck =
-        stickyControlsRef.current.getBoundingClientRect().top <= 0;
-      setIsStickyControlsStuck((previous) =>
-        previous === nextIsStuck ? previous : nextIsStuck
-      );
+      if (stickyControlsRef.current) {
+        const nextIsStuck =
+          stickyControlsRef.current.getBoundingClientRect().top <= 0;
+        setIsStickyControlsStuck((previous) =>
+          previous === nextIsStuck ? previous : nextIsStuck
+        );
+      }
+      if (scoreActionsRef.current) {
+        const stickyTop = Number.parseFloat(
+          window.getComputedStyle(scoreActionsRef.current).top || '0'
+        );
+        const nextScoreStuck =
+          scoreActionsRef.current.getBoundingClientRect().top <= stickyTop + 0.5;
+        setIsScoreActionsStuck((previous) =>
+          previous === nextScoreStuck ? previous : nextScoreStuck
+        );
+      }
     };
     const onScrollOrResize = () => {
       if (frameId !== 0) return;
@@ -783,6 +1059,53 @@ const App: React.FC = () => {
     },
     []
   );
+
+  useEffect(() => {
+    if (chordSoundType !== 'piano-sampled') return;
+    let cancelled = false;
+    const preloadSampledPiano = async () => {
+      if (!chordAudioContextRef.current) {
+        chordAudioContextRef.current = new AudioContext({
+          latencyHint: 'interactive',
+        });
+      }
+      const ctx = chordAudioContextRef.current;
+      if (!ctx) return;
+      if (!chordSampledPianoRef.current) {
+        chordSampledPianoRef.current = new SampledPiano(ctx);
+        chordSampledPianoRef.current.connect(ctx.destination);
+      }
+      if (
+        chordSampledPianoRef.current.isReady() ||
+        sampledPianoLoad.loading
+      ) {
+        return;
+      }
+      chordSampledPianoRef.current.setLoadingProgressCallback((loaded, total) => {
+        if (cancelled) return;
+        setSampledPianoLoad({
+          loading: loaded < total,
+          loaded,
+          total,
+          ready: false,
+        });
+      });
+      setSampledPianoLoad((previous) => ({ ...previous, loading: true }));
+      await chordSampledPianoRef.current.loadSamples();
+      if (cancelled) return;
+      setSampledPianoLoad((previous) => ({
+        ...previous,
+        loading: false,
+        ready: chordSampledPianoRef.current?.isReady() ?? false,
+        loaded: previous.total > 0 ? previous.total : 1,
+        total: previous.total > 0 ? previous.total : 1,
+      }));
+    };
+    void preloadSampledPiano();
+    return () => {
+      cancelled = true;
+    };
+  }, [chordSoundType, sampledPianoLoad.loading]);
 
   useEffect(() => {
     if (!isPlaying) {
@@ -864,8 +1187,13 @@ const App: React.FC = () => {
       if (chordSoundType === 'piano-sampled') {
         if (!chordSampledPianoRef.current) {
           chordSampledPianoRef.current = new SampledPiano(ctx);
-          chordSampledPianoRef.current.connect(ctx.destination);
         }
+        try {
+          chordSampledPianoRef.current.disconnect();
+        } catch {
+          // Ignore disconnect errors when no active connections exist.
+        }
+        chordSampledPianoRef.current.connect(ctx.destination);
         chordSampledPianoRef.current.setLoadingProgressCallback(
           (loaded, total) => {
             setSampledPianoLoad({
@@ -962,7 +1290,7 @@ const App: React.FC = () => {
       const secPerBeat = measureSeconds / Math.max(0.001, beatsPerMeasure);
       const sectionStyle = chordStyleByMeasure.get(measureIndex) ?? 'simple';
       const patternHits = getChordHitsForStyle(sectionStyle, timeSignature);
-      const velocity = Math.max(0, Math.min(1, chordVolume / 100));
+      const velocity = effectiveChordVolume;
       const startTime = ctx.currentTime + 0.01;
       patternHits.forEach((hit) => {
         const hitPitches =
@@ -998,7 +1326,7 @@ const App: React.FC = () => {
     parsedRhythm.measures,
     bpm,
     timeSignature,
-    chordVolume,
+    effectiveChordVolume,
     chordSoundType,
     sampledPianoLoad.loading,
     sampledPianoLoad.ready,
@@ -1025,10 +1353,21 @@ const App: React.FC = () => {
       if (!inSectionSettingsAnchor && !inSectionSettingsMenu) {
         setOpenSectionSettingsId(null);
       }
+      const inSectionRandomizeAnchor =
+        target instanceof Element &&
+        target.closest('.words-section-randomize-anchor');
+      if (!inSectionRandomizeAnchor) {
+        setSectionRandomizeMenuId(null);
+      }
       const inExportMenu = exportMenuRef.current?.contains(target);
       const inExportButton = exportButtonRef.current?.contains(target);
       if (!inExportMenu && !inExportButton) {
         setExportMenuOpen(false);
+      }
+      const inRandomizeMenu = randomizeMenuRef.current?.contains(target);
+      const inRandomizeButton = randomizeButtonRef.current?.contains(target);
+      if (!inRandomizeMenu && !inRandomizeButton) {
+        setRandomizeMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', onPointerDown);
@@ -1157,24 +1496,6 @@ const App: React.FC = () => {
     );
   };
 
-  const updateSectionTemplateBias = (sectionId: string, templateBias: number) => {
-    applySectionsChange((previous) =>
-      previous.map((section) => {
-        const edited = previous.find((candidate) => candidate.id === sectionId);
-        if (
-          edited?.type === 'chorus' &&
-          edited.linkedToPreviousChorusTemplate &&
-          section.type === 'chorus' &&
-          section.linkedToPreviousChorusTemplate
-        ) {
-          return { ...section, templateBias };
-        }
-        if (section.id === sectionId) return { ...section, templateBias };
-        return section;
-      })
-    );
-  };
-
   const addSection = (type: SongSectionType) => {
     applySectionsChange((previous) => {
       const previousChorus =
@@ -1196,6 +1517,51 @@ const App: React.FC = () => {
       ];
     });
   };
+
+  const openLyricImport = useCallback((rawText: string) => {
+    if (!rawText.trim()) return;
+    setLyricImportText(rawText);
+    setLyricImportOpen(true);
+  }, []);
+
+  const applyLyricImport = useCallback(
+    (drafts: ParsedLyricSectionDraft[]) => {
+      const nextSections: SongSection[] = [];
+      drafts
+        .filter((draft) => draft.lyrics.trim().length > 0)
+        .forEach((draft) => {
+          const previousChorus = findPreviousChorus(nextSections, nextSections.length);
+          const nextSection = createDefaultSection(
+            draft.type,
+            APP_DEFAULT_GENERATION_SETTINGS,
+            previousChorus ?? undefined
+          );
+          nextSection.type = draft.type;
+          nextSection.lyrics = draft.lyrics.trim();
+          nextSection.linkedToPreviousChorusLyrics =
+            draft.type === 'chorus'
+              ? Boolean(draft.suggestedChorusLink)
+              : false;
+          nextSection.linkedToPreviousChorusTemplate =
+            draft.type === 'chorus' ? true : false;
+          nextSections.push(nextSection);
+        });
+      if (nextSections.length === 0) return;
+      applySectionsChange(() => nextSections);
+      setLyricImportOpen(false);
+    },
+    [applySectionsChange]
+  );
+
+  const handleSectionLyricsPaste = useCallback(
+    (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
+      const pastedText = event.clipboardData.getData('text/plain');
+      if (!looksLikeFullSongLyrics(pastedText)) return;
+      event.preventDefault();
+      openLyricImport(pastedText);
+    },
+    [openLyricImport]
+  );
 
   const removeSection = (sectionId: string) => {
     if (sections.length <= 1) return;
@@ -1226,29 +1592,10 @@ const App: React.FC = () => {
     });
   };
 
-  const regenerateBoth = (seedDelta = 1) => {
-    const delta = Math.max(1, seedDelta);
-    applySectionsChange((previous) =>
-      previous.map((section) => ({
-        ...section,
-        rhythmVariationSeed: section.rhythmVariationSeed + delta,
-        soundVariationSeed: section.soundVariationSeed + delta,
-      }))
-    );
-  };
-
-  const regenerateSection = (sectionId: string) => {
-    updateSection(sectionId, (section) => ({
-      ...section,
-      rhythmVariationSeed: section.rhythmVariationSeed + 1,
-      soundVariationSeed: section.soundVariationSeed + 1,
-    }));
-  };
-
   const playAllSections = () => {
     setActiveSectionLoopId(null);
     setPlaybackSelectionRange(null);
-    setPendingPlaybackStart(true);
+    setPendingPlaybackStartMode('all');
   };
 
   const playSectionLoop = (sectionId: string, sectionIndex: number) => {
@@ -1256,7 +1603,7 @@ const App: React.FC = () => {
     if (!range || range.endTick <= range.startTick) return;
     setActiveSectionLoopId(sectionId);
     setPlaybackSelectionRange(range);
-    setPendingPlaybackStart(true);
+    setPendingPlaybackStartMode('section');
   };
 
   const handleResetGenerationSettings = () => {
@@ -1264,11 +1611,149 @@ const App: React.FC = () => {
   };
 
   const randomizeChordProgression = (sectionId: string) => {
-    const randomProgression = getRandomPopularChordProgressionInKey(songKey);
+    applyRandomization('chords', sectionId);
+  };
+
+  const randomizeChordStyle = (sectionId: string) => {
+    if (sections.find((section) => section.id === sectionId)?.isLocked) return;
+    const nextStyle = pickRandom(CHORD_STYLE_OPTIONS).id;
     updateSection(sectionId, (section) => ({
       ...section,
-      chordProgressionInput: randomProgression.display,
+      chordStyleId: nextStyle,
     }));
+  };
+
+  const randomizeSectionTemplate = (sectionId: string, mode: 'preset' | 'full') => {
+    if (sections.find((section) => section.id === sectionId)?.isLocked) return;
+    const notation =
+      mode === 'preset'
+        ? pickRandom(TEMPLATE_PRESETS).notation
+        : generateRandomTemplateNotation();
+    updateSectionTemplateNotation(sectionId, notation);
+  };
+
+  const randomizeBackingTemplate = (mode: 'preset' | 'full') => {
+    const notation =
+      mode === 'preset'
+        ? pickRandom(TEMPLATE_PRESETS).notation
+        : generateRandomTemplateNotation();
+    setBackingBeatNotation(notation);
+  };
+
+  const pickContrastingTemplate = (
+    pool: typeof TEMPLATE_PRESETS,
+    referenceNotation: string | null
+  ) => {
+    if (!referenceNotation) return pickRandom(pool).notation;
+    const baseline = getTemplateSyncopationScore(referenceNotation);
+    const scored = pool
+      .map((preset) => ({
+        notation: preset.notation,
+        score: getTemplateSyncopationScore(preset.notation),
+      }))
+      .sort((a, b) => Math.abs(b.score - baseline) - Math.abs(a.score - baseline));
+    return scored[0]?.notation ?? pickRandom(pool).notation;
+  };
+
+  const applyRandomization = (
+    mode: RandomizeMode,
+    sectionId?: string
+  ) => {
+    const nextKey =
+      mode === 'everything' ? pickRandom(ALL_KEYS) : songKey;
+    if (mode === 'everything') {
+      const nextBpm = clampBpm(Math.round(80 + Math.random() * 70));
+      setBpm(nextBpm);
+      setBpmInput(String(nextBpm));
+      setSongKey(nextKey);
+    }
+    applySectionsChange((previous) => {
+      const targetIds = new Set(
+        previous
+          .filter((section) => !section.isLocked)
+          .filter((section) => !sectionId || section.id === sectionId)
+          .map((section) => section.id)
+      );
+      if (targetIds.size === 0) return previous;
+
+      const verseBaseProgression = getRandomPopularChordProgressionInKey(nextKey).display;
+      const chorusProgression =
+        Math.random() < 0.68
+          ? verseBaseProgression
+          : getRandomPopularChordProgressionInKey(nextKey).display;
+      let bridgeProgression = getRandomPopularChordProgressionInKey(nextKey).display;
+      for (let attempts = 0; attempts < 4; attempts += 1) {
+        if (
+          bridgeProgression !== verseBaseProgression &&
+          bridgeProgression !== chorusProgression
+        ) {
+          break;
+        }
+        bridgeProgression = getRandomPopularChordProgressionInKey(nextKey).display;
+      }
+      const verseTemplate = pickRandom(TEMPLATE_PRESETS).notation;
+      const chorusTemplate =
+        Math.random() < 0.72
+          ? pickContrastingTemplate(TEMPLATE_PRESETS, verseTemplate)
+          : verseTemplate;
+      const bridgeTemplate = pickContrastingTemplate(
+        TEMPLATE_PRESETS,
+        chorusTemplate
+      );
+      const next = previous.map((section) => {
+        if (!targetIds.has(section.id)) return section;
+        const shouldRerollPhrasing =
+          mode === 'phrasing' || mode === 'groove' || mode === 'everything';
+        const shouldRerollChords =
+          mode === 'chords' || mode === 'everything';
+        const shouldRerollGroove = mode === 'groove' || mode === 'everything';
+        const sectionProgression =
+          section.type === 'bridge'
+            ? bridgeProgression
+            : section.type === 'chorus'
+              ? chorusProgression
+              : verseBaseProgression;
+        const sectionTemplate =
+          section.type === 'bridge'
+            ? bridgeTemplate
+            : section.type === 'chorus'
+              ? chorusTemplate
+              : verseTemplate;
+        return {
+          ...section,
+          rhythmVariationSeed: shouldRerollPhrasing
+            ? section.rhythmVariationSeed + 1
+            : section.rhythmVariationSeed,
+          soundVariationSeed: shouldRerollPhrasing
+            ? section.soundVariationSeed + 1
+            : section.soundVariationSeed,
+          chordProgressionInput: shouldRerollChords
+            ? sectionProgression
+            : section.chordProgressionInput,
+          chordStyleId:
+            mode === 'everything'
+              ? pickRandom(CHORD_STYLE_OPTIONS).id
+              : section.chordStyleId,
+          templateNotation: shouldRerollGroove
+            ? sectionTemplate
+            : section.templateNotation,
+        };
+      });
+
+      // Re-link identical choruses automatically after randomization.
+      let previousChorusLyrics = '';
+      return next.map((section) => {
+        if (section.type !== 'chorus') return section;
+        const normalized = section.lyrics.trim().replace(/\s+/g, ' ');
+        const linked = normalized.length > 0 && normalized === previousChorusLyrics;
+        previousChorusLyrics = normalized || previousChorusLyrics;
+        return {
+          ...section,
+          linkedToPreviousChorusLyrics: linked,
+          linkedToPreviousChorusTemplate: true,
+        };
+      });
+    });
   };
 
   const setSectionChordProgression = (sectionId: string, input: string) => {
@@ -1384,6 +1869,7 @@ const App: React.FC = () => {
         return {
           id: plan.section.id,
           title: sectionDisplayNames[index] ?? `Section ${index + 1}`,
+          isLoopActive: isPlaying && activeSectionLoopId === plan.section.id,
           measureNumberOffset: plan.startMeasure,
           showMeasureNumbers: parsedRhythm.measures.length > 4,
           rhythm,
@@ -1404,6 +1890,8 @@ const App: React.FC = () => {
       currentNote,
       currentMetronomeBeat,
       activeChordMeasure,
+      activeSectionLoopId,
+      isPlaying,
       sectionDisplayNames,
       parsedRhythm.measures.length,
     ]
@@ -1413,6 +1901,8 @@ const App: React.FC = () => {
     const params = new URLSearchParams(search);
     const sectionsParam = params.get(URL_PARAM_SECTIONS);
     const encodedLyrics = params.get(URL_PARAM_LYRICS);
+    const encodedPattern = params.get(URL_PARAM_PATTERN_B64);
+    const patternParam = params.get(URL_PARAM_PATTERN);
     const bpmParam = Number(params.get(URL_PARAM_BPM));
     const timeParam = params.get(URL_PARAM_TIME);
     const metronomeParam = params.get(URL_PARAM_METRONOME);
@@ -1439,7 +1929,7 @@ const App: React.FC = () => {
             setSongKey(parsed.songKey);
           }
           if (Array.isArray(parsed.sections) && parsed.sections.length > 0) {
-            setSections(parsed.sections);
+            setSections(normalizeSectionsSnapshot(parsed.sections));
           }
         } catch {
           // Ignore malformed section payload and fall back below.
@@ -1462,6 +1952,13 @@ const App: React.FC = () => {
     if (!Number.isNaN(bpmParam) && bpmParam >= 40 && bpmParam <= 220) {
       setBpm(bpmParam);
       setDebouncedBpm(bpmParam);
+    }
+    const decodedPattern = encodedPattern
+      ? decodeBase64UrlUtf8(encodedPattern)
+      : null;
+    const nextPattern = decodedPattern ?? patternParam;
+    if (nextPattern && nextPattern.trim().length > 0) {
+      setNotation(nextPattern);
     }
     if (timeParam) {
       const [numerator, denominator] = timeParam.split('/').map(Number);
@@ -1549,8 +2046,9 @@ const App: React.FC = () => {
         encodeBase64UrlUtf8(JSON.stringify({ sections, songKey }))
       );
     }
-    if (notation !== DEFAULT_WORD_RESULT.notation)
-      params.set(URL_PARAM_PATTERN, notation);
+    if (notation !== DEFAULT_WORD_RESULT.notation) {
+      params.set(URL_PARAM_PATTERN_B64, encodeBase64UrlUtf8(notation));
+    }
     if (bpm !== 100) params.set(URL_PARAM_BPM, String(bpm));
     if (
       timeSignature.numerator !== DEFAULT_TIME_SIGNATURE.numerator ||
@@ -1606,6 +2104,8 @@ const App: React.FC = () => {
         setGenerationMenuOpen(false);
         setSoundMenuOpen(false);
         setOpenSectionSettingsId(null);
+        setSectionRandomizeMenuId(null);
+        setRandomizeMenuOpen(false);
         setExportMenuOpen(false);
         return;
       }
@@ -1627,7 +2127,7 @@ const App: React.FC = () => {
       } else {
         setActiveSectionLoopId(null);
         setPlaybackSelectionRange(null);
-        setPendingPlaybackStart(true);
+        setPendingPlaybackStartMode('all');
       }
     };
     window.addEventListener('keydown', onKeyDown);
@@ -1651,7 +2151,7 @@ const App: React.FC = () => {
       const snapshot = undoHistoryRef.current.pop();
       if (!snapshot) return;
       event.preventDefault();
-      setSections(cloneSectionsSnapshot(snapshot.sections));
+      setSections(normalizeSectionsSnapshot(cloneSectionsSnapshot(snapshot.sections)));
       setSongKey(snapshot.songKey);
     };
     window.addEventListener('keydown', onUndoChange);
@@ -1828,8 +2328,11 @@ const App: React.FC = () => {
           (_, offset) => !usedMeasureOffsets.has(offset)
         );
         if (remainingChords.length > 0) {
-          sectionLines.push('[Instrumental]');
-          sectionLines.push(...formatRemainingMeasureChords(remainingChords));
+          const instrumentalLines = formatRemainingMeasureChords(remainingChords);
+          sectionLines.push(`Instrumental chords: ${instrumentalLines[0] ?? ''}`.trim());
+          if (instrumentalLines.length > 1) {
+            sectionLines.push(...instrumentalLines.slice(1));
+          }
         }
         return sectionLines.join('\n');
       })
@@ -2153,13 +2656,38 @@ const App: React.FC = () => {
         className={`words-sticky-controls${isStickyControlsStuck ? ' is-stuck' : ''}`}
       >
         <div className="words-regenerate-row">
-          <button
-            className="words-button words-button-primary"
-            type="button"
-            onClick={() => regenerateBoth(1)}
-          >
-            randomize rhythm
-          </button>
+          <div className="words-randomize-anchor">
+            <button
+              ref={randomizeButtonRef}
+              className="words-button words-button-primary"
+              type="button"
+              onClick={() => {
+                setRandomizeMenuOpen((previous) => !previous);
+                setGenerationMenuOpen(false);
+                setSoundMenuOpen(false);
+              }}
+            >
+              randomize rhythm
+            </button>
+            {randomizeMenuOpen ? (
+              <div ref={randomizeMenuRef} className="words-randomize-menu">
+                {RANDOMIZE_MODE_OPTIONS.map((option) => (
+                  <button
+                    key={option.mode}
+                    type="button"
+                    className="words-button words-randomize-option"
+                    title={option.tooltip}
+                    onClick={() => {
+                      applyRandomization(option.mode);
+                      setRandomizeMenuOpen(false);
+                    }}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
           <button
             ref={generationButtonRef}
             className={`words-button words-gear-button${generationMenuOpen ? ' is-open' : ''}`}
@@ -2262,6 +2790,22 @@ const App: React.FC = () => {
                       }
                     />
                     <span>{generationSettings.tieCrossingBias}</span>
+                  </label>
+                  <label className="words-slider-row">
+                    <SettingHelpLabel
+                      text="template influence"
+                      help={GENERATION_SETTING_HELP.templateBias}
+                    />
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={generationSettings.templateBias}
+                      onChange={(event) =>
+                        updateSetting('templateBias', Number(event.target.value))
+                      }
+                    />
+                    <span>{generationSettings.templateBias}</span>
                   </label>
                 </div>
 
@@ -2420,6 +2964,19 @@ const App: React.FC = () => {
                 }
               }}
             />
+            <button
+              type="button"
+              className="words-inline-dice-button words-icon-tooltip"
+              onClick={() => {
+                const nextBpm = clampBpm(Math.round(80 + Math.random() * 70));
+                setBpm(nextBpm);
+                setBpmInput(String(nextBpm));
+              }}
+              data-tooltip="Randomize BPM"
+              aria-label="Randomize BPM"
+            >
+              <DiceIcon variant="single" size={15} />
+            </button>
           </label>
           <label className="words-inline-control">
             key
@@ -2433,6 +2990,15 @@ const App: React.FC = () => {
                 </option>
               ))}
             </select>
+            <button
+              type="button"
+              className="words-inline-dice-button words-icon-tooltip"
+              onClick={() => setSongKey(pickRandom(ALL_KEYS))}
+              data-tooltip="Randomize key"
+              aria-label="Randomize key"
+            >
+              <DiceIcon variant="single" size={15} />
+            </button>
           </label>
           <label className="words-inline-control">
             meter
@@ -2456,17 +3022,21 @@ const App: React.FC = () => {
               ))}
             </select>
           </label>
-          <label className="word-rhythm-toggle">
-            <input
-              type="checkbox"
-              checked={metronomeEnabled}
-              onChange={(event) => {
-                setMetronomeEnabled(event.target.checked);
-                handleMetronomeToggle(event.target.checked);
-              }}
-            />
-            metronome
-          </label>
+          <MetronomeToggleButton
+            enabled={metronomeEnabled}
+            onToggle={() => {
+              const nextEnabled = !metronomeEnabled;
+              setMetronomeEnabled(nextEnabled);
+              handleMetronomeToggle(nextEnabled);
+            }}
+            className="words-button words-button-icon words-icon-tooltip words-metronome-toggle"
+            activeClassName="is-on"
+            showOnLabel={false}
+            tooltipOn="Metronome is on"
+            tooltipOff="Metronome is off"
+            dataTooltipOn="Metronome is on"
+            dataTooltipOff="Metronome is off"
+          />
           <button
             ref={soundButtonRef}
             className={`words-button words-gear-button${soundMenuOpen ? ' is-open' : ''}`}
@@ -2488,6 +3058,28 @@ const App: React.FC = () => {
                 <strong>Sound settings</strong>
               </div>
               <label className="words-slider-row">
+                master volume
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={masterVolume}
+                  onChange={(event) => setMasterVolume(Number(event.target.value))}
+                />
+                <span>{masterVolume}</span>
+                <button
+                  type="button"
+                  className="words-button words-button-icon words-icon-tooltip"
+                  onClick={() => setMasterMuted((previous) => !previous)}
+                  data-tooltip={masterMuted ? 'Unmute master volume' : 'Mute master volume'}
+                  aria-label={masterMuted ? 'Unmute master volume' : 'Mute master volume'}
+                >
+                  <span className="material-symbols-outlined">
+                    {volumeIconName(masterMuted)}
+                  </span>
+                </button>
+              </label>
+              <label className="words-slider-row">
                 drums volume
                 <input
                   type="range"
@@ -2499,22 +3091,17 @@ const App: React.FC = () => {
                   }
                 />
                 <span>{drumsVolume}</span>
-              </label>
-              <label className="words-slider-row">
-                playback volume
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={playbackSettings.nonAccentVolume}
-                  onChange={(event) =>
-                    setPlaybackSettings((previous) => ({
-                      ...previous,
-                      nonAccentVolume: Number(event.target.value),
-                    }))
-                  }
-                />
-                <span>{playbackSettings.nonAccentVolume}</span>
+                <button
+                  type="button"
+                  className="words-button words-button-icon words-icon-tooltip"
+                  onClick={() => setDrumsMuted((previous) => !previous)}
+                  data-tooltip={drumsMuted ? 'Unmute drums' : 'Mute drums'}
+                  aria-label={drumsMuted ? 'Unmute drums' : 'Mute drums'}
+                >
+                  <span className="material-symbols-outlined">
+                    {volumeIconName(drumsMuted)}
+                  </span>
+                </button>
               </label>
               <label className="words-slider-row">
                 accent volume
@@ -2535,6 +3122,17 @@ const App: React.FC = () => {
                   }
                 />
                 <span>{playbackSettings.measureAccentVolume}</span>
+                <button
+                  type="button"
+                  className="words-button words-button-icon words-icon-tooltip"
+                  onClick={() => setAccentMuted((previous) => !previous)}
+                  data-tooltip={accentMuted ? 'Unmute accents' : 'Mute accents'}
+                  aria-label={accentMuted ? 'Unmute accents' : 'Mute accents'}
+                >
+                  <span className="material-symbols-outlined">
+                    {volumeIconName(accentMuted)}
+                  </span>
+                </button>
               </label>
               <label className="words-slider-row">
                 metronome volume
@@ -2551,6 +3149,17 @@ const App: React.FC = () => {
                   }
                 />
                 <span>{playbackSettings.metronomeVolume}</span>
+                <button
+                  type="button"
+                  className="words-button words-button-icon words-icon-tooltip"
+                  onClick={() => setMetronomeMuted((previous) => !previous)}
+                  data-tooltip={metronomeMuted ? 'Unmute metronome' : 'Mute metronome'}
+                  aria-label={metronomeMuted ? 'Unmute metronome' : 'Mute metronome'}
+                >
+                  <span className="material-symbols-outlined">
+                    {volumeIconName(metronomeMuted)}
+                  </span>
+                </button>
               </label>
               <div className="words-chord-settings">
                 <label className="words-slider-row">
@@ -2609,7 +3218,150 @@ const App: React.FC = () => {
                     }
                   />
                   <span>{chordVolume}</span>
+                  <button
+                    type="button"
+                    className="words-button words-button-icon words-icon-tooltip"
+                    onClick={() => setChordMuted((previous) => !previous)}
+                    data-tooltip={chordMuted ? 'Unmute chords' : 'Mute chords'}
+                    aria-label={chordMuted ? 'Unmute chords' : 'Mute chords'}
+                  >
+                    <span className="material-symbols-outlined">
+                      {volumeIconName(chordMuted)}
+                    </span>
+                  </button>
                 </label>
+              </div>
+              <div className="words-chord-settings">
+                <label className="word-rhythm-toggle words-toggle-inline">
+                  <input
+                    type="checkbox"
+                    checked={backingBeatEnabled}
+                    onChange={(event) =>
+                      setBackingBeatEnabled(event.target.checked)
+                    }
+                  />
+                  Add backing drums
+                </label>
+                {backingBeatEnabled ? (
+                  <>
+                    <label className="words-slider-row">
+                      backing drum volume
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        value={backingBeatVolume}
+                        onChange={(event) =>
+                          setBackingBeatVolume(Number(event.target.value))
+                        }
+                      />
+                      <span>{backingBeatVolume}</span>
+                      <button
+                        type="button"
+                        className="words-button words-button-icon words-icon-tooltip"
+                        onClick={() => setBackingBeatMuted((previous) => !previous)}
+                        data-tooltip={
+                          backingBeatMuted ? 'Unmute backing drums' : 'Mute backing drums'
+                        }
+                        aria-label={
+                          backingBeatMuted ? 'Unmute backing drums' : 'Mute backing drums'
+                        }
+                      >
+                        <span className="material-symbols-outlined">
+                          {volumeIconName(backingBeatMuted)}
+                        </span>
+                      </button>
+                    </label>
+                    <label className="word-rhythm-toggle words-toggle-inline">
+                      <input
+                        type="checkbox"
+                        checked={backingBeatUseTemplate}
+                        onChange={(event) =>
+                          setBackingBeatUseTemplate(event.target.checked)
+                        }
+                      />
+                      Use section templates
+                    </label>
+                    {!backingBeatUseTemplate ? (
+                      <>
+                        <label className="words-slider-row words-chord-row">
+                          backing beat notation
+                          <div className="words-template-input-with-link words-template-input-only">
+                            <input
+                              className="words-template-input"
+                              type="text"
+                              value={backingBeatNotation}
+                              onChange={(event) =>
+                                setBackingBeatNotation(event.target.value)
+                              }
+                              placeholder={BACKING_FALLBACK_TEMPLATE}
+                            />
+                          </div>
+                        </label>
+                        <div className="words-section-template-presets">
+                          {TEMPLATE_PRESETS.map((preset) => (
+                            <button
+                              key={`backing-${preset.label}`}
+                              type="button"
+                              className={`words-button words-button-template${
+                                backingBeatNotation === preset.notation
+                                  ? ' is-active'
+                                  : ''
+                              }`}
+                              onClick={() => setBackingBeatNotation(preset.notation)}
+                            >
+                              {preset.label}
+                            </button>
+                          ))}
+                          <button
+                            type="button"
+                            className="words-button words-button-template words-button-template-icon words-icon-tooltip"
+                            onClick={() => randomizeBackingTemplate('preset')}
+                            data-tooltip="Random preset template"
+                            aria-label="Random preset template"
+                          >
+                            <DiceIcon variant="single" size={15} />
+                          </button>
+                          <button
+                            type="button"
+                            className="words-button words-button-template words-button-template-icon words-icon-tooltip"
+                            onClick={() => randomizeBackingTemplate('full')}
+                            data-tooltip="Fully randomize template"
+                            aria-label="Fully randomize template"
+                          >
+                            <DiceIcon variant="multiple" size={15} />
+                          </button>
+                        </div>
+                      </>
+                    ) : null}
+                    {!backingBeatUseTemplate &&
+                    backingPatternRhythm?.isValid &&
+                    (backingPatternRhythm.measures.length ?? 0) > 0 ? (
+                      <div className="words-template-preview words-section-template-preview">
+                        <DrumNotationMini
+                          rhythm={backingPatternRhythm}
+                          width={320}
+                          style="light"
+                          showDrumSymbols={true}
+                          drumSymbolScale={0.52}
+                          darbukaLinkOptions={{
+                            notation: backingBeatUseTemplate
+                              ? APP_DEFAULT_GENERATION_SETTINGS.templateNotation
+                              : backingBeatNotation,
+                            bpm,
+                            timeSignature,
+                            metronomeEnabled,
+                            className: 'words-template-edit-link',
+                          }}
+                        />
+                      </div>
+                    ) : !backingBeatUseTemplate ? (
+                      <p className="words-template-error">
+                        Backing beat notation is invalid for this meter.
+                      </p>
+                    ) : null}
+                  </>
+                ) : null}
               </div>
               <label className="word-rhythm-toggle words-toggle-inline">
                 <input
@@ -2634,7 +3386,6 @@ const App: React.FC = () => {
                 ...section,
                 effectiveLyrics: section.lyrics,
                 effectiveTemplateNotation: section.templateNotation,
-                effectiveTemplateBias: section.templateBias,
               };
               const effectiveLyrics = effectiveSection.effectiveLyrics;
               const sectionDisplayName = sectionDisplayNames[index] ?? 'Section';
@@ -2643,6 +3394,8 @@ const App: React.FC = () => {
                   key={section.id}
                   className={`words-section-card${
                     openSectionSettingsId === section.id ? ' is-settings-open' : ''
+                  }${
+                    isPlaying && activeSectionLoopId === section.id ? ' is-looping' : ''
                   }`}
                 >
                   <div className="words-section-head">
@@ -2669,7 +3422,7 @@ const App: React.FC = () => {
                     {section.type === 'chorus' ? (
                       <button
                         type="button"
-                        className={`words-button words-button-icon words-link-toggle words-icon-tooltip${
+                        className={`words-button words-button-icon words-link-toggle words-link-toggle-chorus words-icon-tooltip${
                           section.linkedToPreviousChorusLyrics
                             ? ' is-linked'
                             : ' is-unlinked'
@@ -2768,30 +3521,39 @@ const App: React.FC = () => {
                                   data-tooltip="Randomize section chords"
                                   aria-label="Randomize section chords"
                                 >
-                                  <span className="material-symbols-outlined">
-                                    casino
-                                  </span>
+                                  <DiceIcon variant="single" size={16} />
                                 </button>
                               </div>
                             </label>
                             <label className="words-slider-row words-chord-row">
                               chord style
-                              <select
-                                className="words-select-inline"
-                                value={section.chordStyleId}
-                                onChange={(event) =>
-                                  updateSection(section.id, (previousSection) => ({
-                                    ...previousSection,
-                                    chordStyleId: event.target.value as ChordStyleId,
-                                  }))
-                                }
-                              >
-                                {CHORD_STYLE_OPTIONS.map((option) => (
-                                  <option key={option.id} value={option.id}>
-                                    {option.label}
-                                  </option>
-                                ))}
-                              </select>
+                              <div className="words-chord-input-with-action">
+                                <select
+                                  className="words-select-inline"
+                                  value={section.chordStyleId}
+                                  onChange={(event) =>
+                                    updateSection(section.id, (previousSection) => ({
+                                      ...previousSection,
+                                      chordStyleId: event.target.value as ChordStyleId,
+                                    }))
+                                  }
+                                >
+                                  {CHORD_STYLE_OPTIONS.map((option) => (
+                                    <option key={option.id} value={option.id}>
+                                      {option.label}
+                                    </option>
+                                  ))}
+                                </select>
+                                <button
+                                  className="words-button words-button-icon words-icon-tooltip"
+                                  type="button"
+                                  onClick={() => randomizeChordStyle(section.id)}
+                                  data-tooltip="Randomize chord style"
+                                  aria-label="Randomize chord style"
+                                >
+                                  <DiceIcon variant="single" size={16} />
+                                </button>
+                              </div>
                             </label>
                             {section.type === 'chorus' ? (
                               <div className="words-chorus-link-controls">
@@ -2799,7 +3561,7 @@ const App: React.FC = () => {
                                 <div className="words-chorus-link-row">
                                   <button
                                     type="button"
-                                    className={`words-button words-button-icon words-link-toggle words-icon-tooltip${
+                                    className={`words-button words-button-icon words-link-toggle words-link-toggle-chorus words-icon-tooltip${
                                       section.linkedToPreviousChorusLyrics
                                         ? ' is-linked'
                                         : ' is-unlinked'
@@ -2849,8 +3611,8 @@ const App: React.FC = () => {
                                     }
                                     data-tooltip={
                                       section.linkedToPreviousChorusTemplate
-                                        ? 'Rhythm template and template influence are linked across linked choruses.'
-                                        : 'Rhythm template and influence are unlinked for this chorus.'
+                                        ? 'Rhythm template is linked across linked choruses.'
+                                        : 'Rhythm template is unlinked for this chorus.'
                                     }
                                     aria-label="Toggle chorus rhythm template linking"
                                   >
@@ -2900,6 +3662,28 @@ const App: React.FC = () => {
                                   {preset.label}
                                 </button>
                               ))}
+                              <button
+                                type="button"
+                                className="words-button words-button-template words-button-template-icon words-icon-tooltip"
+                                onClick={() =>
+                                  randomizeSectionTemplate(section.id, 'preset')
+                                }
+                                data-tooltip="Random preset template"
+                                aria-label="Random preset template"
+                              >
+                                <DiceIcon variant="single" size={15} />
+                              </button>
+                              <button
+                                type="button"
+                                className="words-button words-button-template words-button-template-icon words-icon-tooltip"
+                                onClick={() =>
+                                  randomizeSectionTemplate(section.id, 'full')
+                                }
+                                data-tooltip="Fully randomize template"
+                                aria-label="Fully randomize template"
+                              >
+                                <DiceIcon variant="multiple" size={15} />
+                              </button>
                             </div>
                             {sectionTemplatePreviewById.get(section.id)?.isValid &&
                             (sectionTemplatePreviewById.get(section.id)?.measures
@@ -2911,6 +3695,16 @@ const App: React.FC = () => {
                                   style="light"
                                   showDrumSymbols={true}
                                   drumSymbolScale={0.52}
+                                  darbukaLinkOptions={{
+                                    notation:
+                                      section.templateNotation ||
+                                      APP_DEFAULT_GENERATION_SETTINGS.templateNotation ||
+                                      TEMPLATE_PRESETS[0].notation,
+                                    bpm,
+                                    timeSignature,
+                                    metronomeEnabled,
+                                    className: 'words-template-edit-link',
+                                  }}
                                 />
                               </div>
                             ) : (
@@ -2919,35 +3713,6 @@ const App: React.FC = () => {
                                 meter.
                               </p>
                             )}
-                            <a
-                              className="words-template-edit-link"
-                              href={getDarbukaTemplateEditUrl(
-                                section.templateNotation ||
-                                  APP_DEFAULT_GENERATION_SETTINGS
-                                    .templateNotation ||
-                                  TEMPLATE_PRESETS[0].notation
-                              )}
-                              target="_blank"
-                              rel="noreferrer noopener"
-                            >
-                              Edit in Darbuka Trainer
-                            </a>
-                            <label className="words-slider-row">
-                              template influence
-                              <input
-                                type="range"
-                                min={0}
-                                max={100}
-                                value={section.templateBias}
-                                onChange={(event) =>
-                                  updateSectionTemplateBias(
-                                    section.id,
-                                    Number(event.target.value)
-                                  )
-                                }
-                              />
-                              <span>{section.templateBias}</span>
-                            </label>
                                 </div>,
                                 document.body
                               )
@@ -2993,13 +3758,72 @@ const App: React.FC = () => {
                       </button>
                       <button
                         type="button"
-                        className="words-button words-button-icon words-icon-tooltip"
-                        onClick={() => regenerateSection(section.id)}
-                        data-tooltip="Randomize rhythm for this section only"
-                        aria-label={`Randomize ${sectionDisplayName} rhythm`}
+                        className={`words-button words-button-icon words-icon-tooltip${
+                          section.isLocked ? ' is-open' : ''
+                        }`}
+                        onClick={() =>
+                          updateSection(section.id, (previousSection) => ({
+                            ...previousSection,
+                            isLocked: !previousSection.isLocked,
+                          }))
+                        }
+                        data-tooltip={
+                          section.isLocked
+                            ? 'Section is locked and excluded from randomization'
+                            : 'Lock this section to keep it unchanged when randomizing'
+                        }
+                        aria-label={`Toggle lock for ${sectionDisplayName}`}
                       >
-                        <span className="material-symbols-outlined">casino</span>
+                        <span className="material-symbols-outlined">
+                          {section.isLocked ? 'lock' : 'lock_open'}
+                        </span>
                       </button>
+                      <div
+                        className="words-section-randomize-anchor"
+                        ref={(element) => {
+                          if (element) {
+                            sectionRandomizeAnchorRefs.current.set(section.id, element);
+                          } else {
+                            sectionRandomizeAnchorRefs.current.delete(section.id);
+                          }
+                        }}
+                      >
+                        <button
+                          type="button"
+                          className="words-button words-button-icon"
+                          onClick={() =>
+                            setSectionRandomizeMenuId((previous) =>
+                              previous === section.id ? null : section.id
+                            )
+                          }
+                          title={
+                            section.isLocked
+                              ? 'Section is locked'
+                              : 'Open randomization options for this section'
+                          }
+                          aria-label={`Randomize ${sectionDisplayName}`}
+                        >
+                          <DiceIcon variant="single" size={16} />
+                        </button>
+                        {sectionRandomizeMenuId === section.id ? (
+                          <div className="words-randomize-menu words-randomize-menu-section">
+                            {RANDOMIZE_MODE_OPTIONS.map((option) => (
+                              <button
+                                key={`${section.id}-${option.mode}`}
+                                type="button"
+                                className="words-button words-randomize-option"
+                                title={option.tooltip}
+                                onClick={() => {
+                                  applyRandomization(option.mode, section.id);
+                                  setSectionRandomizeMenuId(null);
+                                }}
+                              >
+                                {option.label}
+                              </button>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
                       <button
                         type="button"
                         className="words-button words-button-icon words-icon-tooltip"
@@ -3042,6 +3866,7 @@ const App: React.FC = () => {
                     className="words-textarea words-section-textarea"
                     rows={4}
                     value={effectiveLyrics}
+                    onPaste={handleSectionLyricsPaste}
                     onChange={(event) => {
                       updateSectionLyrics(section.id, event.target.value);
                     }}
@@ -3082,11 +3907,28 @@ const App: React.FC = () => {
               </span>
               bridge
             </button>
+            <button
+              className="words-button words-button-add"
+              type="button"
+              onClick={() =>
+                openLyricImport(
+                  sections.map((section) => section.lyrics).filter(Boolean).join('\n\n')
+                )
+              }
+            >
+              <span className="material-symbols-outlined" aria-hidden="true">
+                content_paste
+              </span>
+              import lyrics
+            </button>
           </div>
         </article>
 
         <article className="words-rhythm-card" ref={notationScrollRef}>
-          <div className="words-score-actions">
+          <div
+            ref={scoreActionsRef}
+            className={`words-score-actions${isScoreActionsStuck ? ' is-stuck' : ''}`}
+          >
             <div className="words-score-stats">
               <span>{scoreMeasureCount} measures</span>
               <span>~{estimatedSongDuration}</span>
@@ -3177,7 +4019,9 @@ const App: React.FC = () => {
             {notationSectionBlocks.map((block) => (
               <section
                 key={block.id}
-                className="words-notation-section"
+                className={`words-notation-section${
+                  block.isLoopActive ? ' is-active' : ''
+                }`}
                 ref={(element) => {
                   if (element) notationSectionRefs.current.set(block.id, element);
                   else notationSectionRefs.current.delete(block.id);
@@ -3201,6 +4045,7 @@ const App: React.FC = () => {
                   autoFollowPlayback={autoFollowPlayback}
                   isPlaying={isPlaying}
                   zoomLevel={scoreZoom}
+                  scrollContainer={notationScrollRef.current}
                 />
               </section>
             ))}
@@ -3219,6 +4064,12 @@ const App: React.FC = () => {
           </div>
         </article>
       </section>
+      <LyricImportModal
+        isOpen={lyricImportOpen}
+        initialText={lyricImportText}
+        onClose={() => setLyricImportOpen(false)}
+        onApply={applyLyricImport}
+      />
     </div>
   );
 };

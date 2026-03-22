@@ -28,7 +28,7 @@ describe('PlaybackControls', () => {
     
     const metronomeButton = screen.getByLabelText('Toggle metronome');
     expect(metronomeButton).toBeInTheDocument();
-    expect(screen.getByText('Metronome')).toBeInTheDocument();
+    expect(metronomeButton).toHaveAttribute('title', 'Metronome: Off');
   });
 
   it('should show active state when metronome is enabled', () => {

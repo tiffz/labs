@@ -25,4 +25,22 @@ describe('chord progression text parsing', () => {
   it('infers key from diatonic chords', () => {
     expect(inferKeyFromChordSymbols(['Db', 'Ab', 'Bbm', 'Gb'])).toBe('Db');
   });
+
+  it('auto-normalizes chord qualities to nearest diatonic progression when needed', () => {
+    const parsed = parseProgressionText('Dm-A-C-F', 'C');
+    expect(parsed.isValid).toBe(true);
+    expect(parsed.format).toBe('chord');
+    expect(parsed.inferredKey).toBe('C');
+    expect(parsed.romanNumerals).toEqual(['ii', 'vi', 'I', 'IV']);
+    expect(parsed.chordSymbols).toEqual(['Dm', 'Am', 'C', 'F']);
+  });
+
+  it('maps Dm-G-C-F into the number system in C', () => {
+    const parsed = parseProgressionText('Dm-G-C-F', 'G');
+    expect(parsed.isValid).toBe(true);
+    expect(parsed.format).toBe('chord');
+    expect(parsed.inferredKey).toBe('C');
+    expect(parsed.romanNumerals).toEqual(['ii', 'V', 'I', 'IV']);
+    expect(parsed.chordSymbols).toEqual(['Dm', 'G', 'C', 'F']);
+  });
 });

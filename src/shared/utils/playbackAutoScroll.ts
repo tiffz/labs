@@ -8,6 +8,7 @@ export interface PlaybackAutoScrollOptions {
   marker: number | string;
   target: Element;
   state: PlaybackAutoScrollState;
+  scrollContainer?: HTMLElement | null;
   minIntervalMs?: number;
   minDeltaPx?: number;
   preferredTopRatio?: number;
@@ -24,6 +25,7 @@ export function scrollPlaybackTarget({
   marker,
   target,
   state,
+  scrollContainer,
   minIntervalMs = 240,
   minDeltaPx = 56,
   preferredTopRatio = 0.33,
@@ -34,7 +36,8 @@ export function scrollPlaybackTarget({
   const now = performance.now();
   if (state.lastScrollAtMs > 0 && now - state.lastScrollAtMs < minIntervalMs) return;
 
-  const mainContent = target.closest('.main-content') as HTMLElement | null;
+  const mainContent =
+    scrollContainer ?? (target.closest('.main-content') as HTMLElement | null);
 
   if (mainContent) {
     const containerRect = mainContent.getBoundingClientRect();

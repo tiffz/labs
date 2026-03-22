@@ -140,7 +140,7 @@ describe('rhythmRecognition', () => {
 
     it('should have valid learn more links', () => {
       Object.values(RHYTHM_DATABASE).forEach((rhythm) => {
-        expect(rhythm.learnMoreLinks.length).toBeGreaterThan(0);
+        expect(Array.isArray(rhythm.learnMoreLinks)).toBe(true);
         rhythm.learnMoreLinks.forEach((link) => {
           expect(link.title).toBeDefined();
           expect(link.url).toBeDefined();

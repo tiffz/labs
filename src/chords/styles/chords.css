@@ -209,6 +209,42 @@
   font-size: 1.25rem;
 }
 
+.chords-metronome-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.chords-metronome-toggle:hover {
+  border-color: var(--primary-light);
+}
+
+.chords-metronome-toggle.active {
+  color: white;
+  border-color: var(--primary);
+  background: var(--primary);
+}
+
+.chords-metronome-toggle .material-symbols-outlined {
+  font-size: 1.1rem;
+}
+
+.chords-metronome-toggle .metronome-on-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
 .sound-control {
   display: flex;
   align-items: center;

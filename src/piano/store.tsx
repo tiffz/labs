@@ -1261,6 +1261,23 @@ export function PianoProvider({ children }: { children: React.ReactNode }) {
       loopingEnabled, countInEveryLoop, soundType, microphoneActive, midiSoundEnabled,
       midiSoundVolume]);
 
+  useEffect(() => {
+    if (soundType !== 'piano-sampled') return;
+    let cancelled = false;
+    const preload = async () => {
+      try {
+        await engine.prepareSoundType('piano-sampled');
+      } catch {
+        // Keep UI responsive; playback still retries on demand.
+      }
+      if (cancelled) return;
+    };
+    void preload();
+    return () => {
+      cancelled = true;
+    };
+  }, [engine, soundType]);
+
   const value: PianoContextValue = {
     state, dispatch, engine, midi, startMode, stopMode, loadScore, toggleMicrophone,
   };

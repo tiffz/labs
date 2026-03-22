@@ -108,6 +108,7 @@ function assignPlayedToExpected(
   expectedNotes: ExpectedNote[],
   midiTimes: ReadonlyMap<number, number>,
   beatDurationMs: number,
+  allowPitchClassForHands = false,
 ): Set<string> {
   const now = performance.now();
   const recentPlayed = played.filter(p => {
@@ -137,12 +138,20 @@ function assignPlayedToExpected(
     if (exp.chordSymbol) continue;
     const available = recentPlayed.filter(p => !claimed.has(p));
     const allClose = exp.pitches.every(ep =>
-      available.some(p => Math.abs(p - ep) <= PROXIMITY_SEMITONES),
+      available.some(
+        p =>
+          Math.abs(p - ep) <= PROXIMITY_SEMITONES ||
+          (allowPitchClassForHands && pitchClassDistance(p, ep) <= 1),
+      ),
     );
     if (allClose) {
       readyIds.add(exp.noteId);
       for (const ep of exp.pitches) {
-        const match = available.find(p => Math.abs(p - ep) <= PROXIMITY_SEMITONES);
+        const match = available.find(
+          p =>
+            Math.abs(p - ep) <= PROXIMITY_SEMITONES ||
+            (allowPitchClassForHands && pitchClassDistance(p, ep) <= 1),
+        );
         if (match !== undefined) claimed.add(match);
       }
     }
@@ -157,6 +166,7 @@ const PracticeMode: React.FC = () => {
   const isPracticing = state.activeMode === 'practice' || state.activeMode === 'free-practice';
   const isFreeTempo = state.activeMode === 'free-practice';
   const useMic = state.microphoneActive;
+  const allowChordPracticeOctaveFlex = state.practiceChords;
 
   const expectedByPartRef = useRef<Map<string, ExpectedNote>>(new Map());
   const partsPlayedRef = useRef<Set<string>>(new Set());
@@ -178,9 +188,11 @@ const PracticeMode: React.FC = () => {
     if (expected.chordSymbol) return matchesChord(played, expected.chordSymbol);
     if (expected.pitches.length === 0) return false;
     if (expected.pitches.every(p => played.includes(p))) return true;
-    if (useMic) return pitchClassMatch(played, expected.pitches);
+    if (useMic || allowChordPracticeOctaveFlex) {
+      return pitchClassMatch(played, expected.pitches);
+    }
     return false;
-  }, [useMic]);
+  }, [useMic, allowChordPracticeOctaveFlex]);
 
   const evaluateFreeTempo = useCallback((played: number[]) => {
     if (waitingForReleaseRef.current) return;
@@ -269,6 +281,8 @@ const PracticeMode: React.FC = () => {
     }
 
     const expectedTime = getNoteExpectedTime(expected.noteId) ?? performance.now();
+    const allowPitchClassForExpected =
+      useMic || (allowChordPracticeOctaveFlex && expected.hand !== 'chords');
     const scopedPlayed = getRelevantPlayedNotesForExpected(
       played,
       expected,
@@ -281,7 +295,11 @@ const PracticeMode: React.FC = () => {
     // If we have optimal assignment info, skip notes that don't have a match yet
     if (readyIds && !readyIds.has(expected.noteId)) {
       // Only skip if the note doesn't have an exact pitch in the played set
-      if (!expected.chordSymbol && !hasExactPitchMatch(scopedPlayed, expected.pitches)) {
+      if (
+        !expected.chordSymbol &&
+        !hasExactPitchMatch(scopedPlayed, expected.pitches) &&
+        !(allowPitchClassForExpected && pitchClassMatch(scopedPlayed, expected.pitches))
+      ) {
         return false;
       }
     }
@@ -291,19 +309,21 @@ const PracticeMode: React.FC = () => {
       !hasExactPitchMatch(scopedPlayed, expected.pitches) &&
       !isAttemptingNote(scopedPlayed, expected.pitches)
     ) {
-      if (!useMic || !pitchClassMatch(scopedPlayed, expected.pitches)) return false;
+      if (!allowPitchClassForExpected || !pitchClassMatch(scopedPlayed, expected.pitches)) {
+        return false;
+      }
     }
 
     const pitchCorrect = checkPitchCorrect(scopedPlayed, expected);
 
     let matchingPitches = expected.pitches.filter((p) => scopedPlayed.includes(p));
-    if (matchingPitches.length === 0 && useMic) {
+    if (matchingPitches.length === 0 && allowPitchClassForExpected) {
       matchingPitches = expected.pitches.filter(ep =>
         scopedPlayed.some(p => pitchClassDistance(p, ep) <= 1)
       );
     }
 
-    const relevantKeyTimes = useMic
+    const relevantKeyTimes = (useMic || allowPitchClassForExpected || expected.chordSymbol)
       ? expected.pitches
           .map(p => findPitchClassMidiTime(p, midiTimes))
           .filter((t): t is number => t !== undefined)
@@ -314,9 +334,11 @@ const PracticeMode: React.FC = () => {
     const earliestPress = relevantKeyTimes.length > 0 ? Math.min(...relevantKeyTimes) : performance.now();
     const timingOffsetMs = earliestPress - expectedTime;
 
+    const attemptedPitch =
+      expected.chordSymbol ? scopedPlayed.length > 0 : isAttemptingNote(scopedPlayed, expected.pitches);
     let timing: TimingJudgment;
     if (!pitchCorrect) {
-      timing = 'missed';
+      timing = attemptedPitch ? 'wrong_pitch' : 'missed';
     } else if (Math.abs(timingOffsetMs) < PERFECT_THRESHOLD_MS) {
       timing = 'perfect';
     } else if (timingOffsetMs < 0) {
@@ -350,14 +372,20 @@ const PracticeMode: React.FC = () => {
     } });
     evaluatedNoteIds.current.add(expected.noteId);
     return true;
-  }, [dispatch, checkPitchCorrect, useMic]);
+  }, [dispatch, checkPitchCorrect, useMic, allowChordPracticeOctaveFlex]);
 
   const evaluateTimedWithTiming = useCallback((played: number[]) => {
     const midiTimes = getAllMidiNoteOnTimes();
     const beatDurationMs = 60000 / (state.tempo || 80);
 
     const allExpected = [...expectedByPartRef.current.values()];
-    const readyIds = assignPlayedToExpected(played, allExpected, midiTimes, beatDurationMs);
+    const readyIds = assignPlayedToExpected(
+      played,
+      allExpected,
+      midiTimes,
+      beatDurationMs,
+      allowChordPracticeOctaveFlex
+    );
 
     for (const [, expected] of expectedByPartRef.current) {
       tryEvaluateNote(expected, played, midiTimes, readyIds);
@@ -370,7 +398,7 @@ const PracticeMode: React.FC = () => {
       if (!wasEvaluated) remaining.push(passed);
     }
     recentlyPassedRef.current = remaining;
-  }, [tryEvaluateNote, state.tempo]);
+  }, [tryEvaluateNote, state.tempo, allowChordPracticeOctaveFlex]);
 
   useEffect(() => {
     if (!isPracticing || !state.score) {
