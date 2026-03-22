@@ -104,6 +104,20 @@ describe('scales', () => {
     it('returns null for an unknown key', () => {
       expect(generateExerciseScore('major', 'scale', 'Z' as Key, 'ascending')).toBeNull();
     });
+
+    it('generates distinct IDs for B and Bb keys', () => {
+      const bMajor = generateExerciseScore('major', 'scale', 'B', 'ascending');
+      const bbMajor = generateExerciseScore('major', 'scale', 'Bb', 'ascending');
+      const fMajor = generateExerciseScore('major', 'scale', 'F', 'ascending');
+
+      expect(bMajor).not.toBeNull();
+      expect(bbMajor).not.toBeNull();
+      expect(fMajor).not.toBeNull();
+      expect(bMajor!.id).toContain('-b-');
+      expect(bbMajor!.id).toContain('-bb-');
+      expect(fMajor!.id).toContain('-f-');
+      expect(bMajor!.id).not.toBe(fMajor!.id);
+    });
   });
 
   describe('generateChromaticScore', () => {

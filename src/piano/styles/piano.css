@@ -3361,6 +3361,58 @@ body {
   color: white;
   border-color: var(--piano-primary);
 }
+.np-pop-form {
+  display: grid;
+  gap: var(--sp-2);
+  min-width: 260px;
+}
+.np-pop-label {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--piano-text-secondary);
+}
+.np-pop-select,
+.np-pop-input {
+  width: 100%;
+  border: 1px solid var(--piano-border);
+  border-radius: var(--radius-md);
+  padding: var(--sp-2) var(--sp-3);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  color: var(--piano-text);
+  background: white;
+}
+.np-pop-select:focus,
+.np-pop-input:focus {
+  outline: none;
+  border-color: var(--piano-primary);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+.np-pop-error {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: #b91c1c;
+  font-weight: var(--weight-semibold);
+}
+.np-pop-warning {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: #b45309;
+  font-weight: var(--weight-semibold);
+}
+.np-pop-apply {
+  border: 1px solid var(--piano-primary);
+  border-radius: var(--radius-md);
+  background: var(--piano-primary);
+  color: white;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  padding: var(--sp-2) var(--sp-3);
+  cursor: pointer;
+}
+.np-pop-apply:hover {
+  filter: brightness(0.95);
+}
 
 /* ==========================================================================
    EXERCISE PICKER OVERLAY
@@ -3633,6 +3685,33 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--sp-1);
+}
+.ep-custom-prog-input {
+  width: 100%;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--piano-border);
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  color: var(--piano-text);
+  background: white;
+}
+.ep-custom-prog-input:focus {
+  outline: none;
+  border-color: var(--piano-primary);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+.ep-custom-prog-error {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: #b91c1c;
+  font-weight: var(--weight-semibold);
+}
+.ep-custom-prog-warning {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: #b45309;
+  font-weight: var(--weight-semibold);
 }
 .ep-prog-item {
   display: flex;

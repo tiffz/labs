@@ -1,0 +1,28 @@
+import { describe, expect, it } from 'vitest';
+import {
+  inferKeyFromChordSymbols,
+  parseProgressionText,
+} from './chordProgressionText';
+
+describe('chord progression text parsing', () => {
+  it('parses roman progression using selected key', () => {
+    const parsed = parseProgressionText('I–V–vi–IV', 'D');
+    expect(parsed.isValid).toBe(true);
+    expect(parsed.format).toBe('roman');
+    expect(parsed.chordSymbols).toEqual(['D', 'A', 'Bm', 'G']);
+    expect(parsed.inferredKey).toBe('D');
+  });
+
+  it('parses chord progression and infers key', () => {
+    const parsed = parseProgressionText('C-G-Am-F', 'E');
+    expect(parsed.isValid).toBe(true);
+    expect(parsed.format).toBe('chord');
+    expect(parsed.inferredKey).toBe('C');
+    expect(parsed.chordSymbols).toEqual(['C', 'G', 'Am', 'F']);
+    expect(parsed.romanNumerals).toEqual(['I', 'V', 'vi', 'IV']);
+  });
+
+  it('infers key from diatonic chords', () => {
+    expect(inferKeyFromChordSymbols(['Db', 'Ab', 'Bbm', 'Gb'])).toBe('Db');
+  });
+});

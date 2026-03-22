@@ -181,7 +181,14 @@ function buildMeasures(
 }
 
 function keySlug(key: string): string {
-  return key.toLowerCase().replace('#', 's').replace('b', 'f');
+  const normalized = key.trim();
+  if (normalized.length === 2 && normalized[1] === '#') {
+    return `${normalized[0].toLowerCase()}s`;
+  }
+  if (normalized.length === 2 && normalized[1] === 'b') {
+    return `${normalized[0].toLowerCase()}b`;
+  }
+  return normalized.toLowerCase();
 }
 
 export const MAJOR_KEYS: Key[] = MAJOR.map(d => d.key);

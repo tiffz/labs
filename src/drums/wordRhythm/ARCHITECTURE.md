@@ -8,8 +8,8 @@ Primary implementation files:
 
 - `src/drums/wordRhythm/prosodyEngine.ts`
 - `src/drums/wordRhythm/prosodyEngine.test.ts`
-- `src/word_rhythm/App.tsx`
-- `src/word_rhythm/components/VexLyricScore.tsx`
+- `src/words/App.tsx`
+- `src/words/components/VexLyricScore.tsx`
 
 ## Core Data Flow
 
@@ -20,7 +20,8 @@ Primary implementation files:
    - durations (16th/eighth/dotted-eighth/quarter)
    - start offsets (`startSixteenth`) and durations (`durationSixteenths`)
 4. Notation is parsed by the shared rhythm parser for rendering/playback.
-5. `App.tsx` builds a `hitMap` keyed by rendered note position (`measureIndex-noteIndex`) for lyric tooltips and highlighting.
+5. `App.tsx` can orchestrate multi-section generation by invoking `generateWordRhythm()` per section and merging notation/hits.
+6. The merged score builds a `hitMap` keyed by rendered note position (`measureIndex-noteIndex`) for lyric tooltips and highlighting.
 
 ## Major Functional Rules
 
@@ -36,12 +37,14 @@ Primary implementation files:
   - long words may compress into faster subdivisions (for example `watermelon`)
   - small barline spill is allowed for tie-friendly phrasing
   - line breaks bias new words to start at measure boundaries
+  - optional line-break gap bias can leave extra rest between dense lyric lines
 - **Stroke heuristics**
   - major beats bias to `D` (1/3) and `T` (2/4)
   - off-beat fill uses `T`/`K` with anti-repetition guards (avoid repeated `K K`)
 - **Variation model**
   - separate seeds for rhythm variation and sound variation
   - regenerate controls can vary rhythm only, sounds only, or both
+  - section-aware orchestration can scope seeds/settings to individual sections
 
 ## Rendering Decisions
 
@@ -60,6 +63,7 @@ Primary implementation files:
 - constrained isolated rests
 - varied pulse values
 - barline placement heuristics and line-break measure starts
+- optional empty-space insertion between dense lyric lines
 - casing preservation and contraction handling (`won't`)
 - long-word speed-up behavior (`watermelon`)
 - variation seed divergence

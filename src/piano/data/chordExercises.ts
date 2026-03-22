@@ -47,6 +47,7 @@ function spellChordRoot(chord: Chord, key: Key): string {
 export interface ChordExerciseConfig {
   progression: RomanNumeral[];
   progressionName: string;
+  progressionInput?: string;
   key: Key;
   voicingStyle: ChordVoicingStyle;
   measuresPerChord: 1 | 2;
@@ -211,7 +212,16 @@ function generateNotesFromPattern(
 }
 
 export function generateChordProgressionScore(config: ChordExerciseConfig): PianoScore {
-  const { progression, key, voicingStyle, measuresPerChord, timeSignature, styleId = 'simple' } = config;
+  const {
+    progression,
+    progressionName,
+    progressionInput,
+    key,
+    voicingStyle,
+    measuresPerChord,
+    timeSignature,
+    styleId = 'simple',
+  } = config;
 
   const chords = progressionToChords(progression, key);
   const voicingOpts = {
@@ -244,11 +254,20 @@ export function generateChordProgressionScore(config: ChordExerciseConfig): Pian
   }
 
   return {
-    id: `chord-prog-${key}-${config.progressionName}-${styleId}`,
-    title: `${config.progressionName} in ${key}`,
+    id: `chord-prog-${key}-${progressionName}-${styleId}`,
+    title: `${progressionName} in ${key}`,
     key,
     timeSignature,
     tempo: 80,
+    exerciseConfig: {
+      kind: 'chord-progression',
+      progressionName,
+      progressionNumerals: progression,
+      progressionInput: progressionInput ?? progression.join('–'),
+      styleId,
+      voicingStyle,
+      measuresPerChord,
+    },
     parts: [
       { id: 'rh', name: 'Right Hand', clef: 'treble', hand: 'right', measures: rhMeasures },
       { id: 'lh', name: 'Left Hand', clef: 'bass', hand: 'left', measures: lhMeasures },

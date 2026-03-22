@@ -37,7 +37,7 @@ const PRESET_RHYTHMS_BASE = [
   { name: 'Maqsum', notation: 'D-T-__T-D---T---', is2_4: false },  // Standard 4/4 Maqsum
   { name: 'Baladi', notation: 'D-D-__T-D---T---', is2_4: false },  // Starts with two dums
   { name: 'Saidi', notation: 'D-T-__D-D---T---', is2_4: false },   // Has DD in middle
-  { name: 'Malfuf', notation: 'D---T-T-', is2_4: true },           // 2/4 feel
+  { name: 'Malfuf', notation: 'D--T--T-', is2_4: true },           // 2/4 feel
   { name: 'Ayoub', notation: 'D--KD-T-', is2_4: true },            // Energetic 2/4
 ];
 

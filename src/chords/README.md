@@ -31,6 +31,9 @@ Renders the musical notation using VexFlow:
 Sidebar UI for controlling generation parameters:
 
 - Chip-based inline editing interface
+- Custom progression text input accepting both `I–V–vi–IV` and `C–G–Am–F`
+- Preset selection auto-fills the custom progression box
+- Diatonic key inference when chord-symbol progressions are applied
 - Time signature tabs with visual selection
 - Chord styling previews with VexFlow-rendered examples
 - Lock/unlock functionality for randomization control
@@ -277,7 +280,6 @@ Unit tests are located in `src/chords/utils/*.test.ts`:
 ### Future Improvements
 
 - Add more chord styling patterns
-- Support for custom chord progressions
 - Export functionality (MIDI, PDF, audio)
 - More sophisticated voicing options
 - Visual feedback for locked options

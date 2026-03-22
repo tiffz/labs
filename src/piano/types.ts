@@ -64,6 +64,15 @@ export interface PianoScore {
   tempo: number;
   parts: ScorePart[];
   navigation?: ScoreNavigation;
+  exerciseConfig?: {
+    kind: 'chord-progression';
+    progressionName: string;
+    progressionNumerals: string[];
+    progressionInput?: string;
+    styleId?: string;
+    voicingStyle?: string;
+    measuresPerChord?: number;
+  };
 }
 
 export interface MidiDevice {

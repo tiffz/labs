@@ -16,7 +16,12 @@ import {
 import { getAllEntries, getSongSettings, type LibraryEntry } from '../utils/libraryStorage';
 import type { Key } from '../types';
 import type { RomanNumeral } from '../../chords/types';
+import { parseProgressionText } from '../../shared/music/chordProgressionText';
 import { useMatTooltip } from './useMatTooltip';
+import {
+  ChordProgressionSelector,
+  ChordStyleSelector,
+} from './ChordExerciseSelectors';
 
 type TonalType = 'scale' | 'arpeggio' | 'pentascale';
 
@@ -102,7 +107,12 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({ open, onClose, onImport
   const [selectedKey, setSelectedKey] = useState<Key>('C');
   const [chromaticNote, setChromaticNote] = useState('C');
 
-  const [selectedProgression, setSelectedProgression] = useState(0);
+  const [selectedProgression, setSelectedProgression] = useState<number | null>(0);
+  const [customProgressionInput, setCustomProgressionInput] = useState(
+    COMMON_CHORD_PROGRESSIONS[0]?.progression.join('–') ?? 'I–V–vi–IV'
+  );
+  const [customProgressionError, setCustomProgressionError] = useState('');
+  const [customProgressionWarning, setCustomProgressionWarning] = useState('');
   const [voicingStyle, setVoicingStyle] = useState<ChordVoicingStyle>('root');
   const [measuresPerChord, setMeasuresPerChord] = useState<1 | 2>(1);
   const [progKey, setProgKey] = useState<Key>('C');
@@ -122,15 +132,35 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({ open, onClose, onImport
     if (score) { loadScore(score); dispatch({ type: 'SET_IS_EXERCISE', isExercise: true }); }
   }, [loadScore, dispatch]);
 
-  const loadProgression = useCallback((progIdx: number, key: Key, voicing: ChordVoicingStyle, mpc: 1 | 2, style: ChordStyleId) => {
-    const prog = COMMON_CHORD_PROGRESSIONS[progIdx];
-    if (!prog) return;
+  const loadProgression = useCallback((input: string, key: Key, voicing: ChordVoicingStyle, mpc: 1 | 2, style: ChordStyleId) => {
+    const parsed = parseProgressionText(input, key);
+    if (!parsed.isValid || parsed.tokens.length < 2) {
+      setCustomProgressionError('Use I–V–vi–IV or C–G–Am–F with at least 2 chords.');
+      setCustomProgressionWarning('');
+      return false;
+    }
+    if (parsed.romanNumerals.length < 2) {
+      setCustomProgressionWarning(
+        'Progression is valid text but non-diatonic for the selected/inferred key.'
+      );
+      setCustomProgressionError('');
+      return false;
+    }
+    const presetMatch = COMMON_CHORD_PROGRESSIONS.find(
+      (progression) =>
+        progression.progression.length === parsed.romanNumerals.length &&
+        progression.progression.every(
+          (token, index) => token === parsed.romanNumerals[index]
+        )
+    );
+    const effectiveKey = parsed.inferredKey ?? key;
     const styleOpt = CHORD_STYLE_OPTIONS.find(s => s.id === style);
     const timeSig = styleOpt?.timeSignature ?? { numerator: 4, denominator: 4 };
     const score = generateChordProgressionScore({
-      progression: prog.progression as RomanNumeral[],
-      progressionName: prog.name,
-      key,
+      progression: parsed.romanNumerals as RomanNumeral[],
+      progressionName: presetMatch?.name ?? 'Custom progression',
+      progressionInput: input,
+      key: effectiveKey,
       voicingStyle: voicing,
       measuresPerChord: mpc,
       timeSignature: timeSig,
@@ -138,6 +168,12 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({ open, onClose, onImport
     });
     loadScore(score);
     dispatch({ type: 'SET_IS_EXERCISE', isExercise: true });
+    if (parsed.inferredKey && parsed.inferredKey !== key) {
+      setProgKey(parsed.inferredKey);
+    }
+    setCustomProgressionError('');
+    setCustomProgressionWarning('');
+    return true;
   }, [loadScore, dispatch]);
 
   const handleScaleLoad = () => {
@@ -150,8 +186,14 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({ open, onClose, onImport
   };
 
   const handleProgLoad = () => {
-    loadProgression(selectedProgression, progKey, voicingStyle, measuresPerChord, chordStyle);
-    onClose();
+    const ok = loadProgression(
+      customProgressionInput,
+      progKey,
+      voicingStyle,
+      measuresPerChord,
+      chordStyle
+    );
+    if (ok) onClose();
   };
 
   const handleSongLoad = (entry: LibraryEntry) => {
@@ -188,7 +230,14 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({ open, onClose, onImport
 
   // Randomize All for chord progressions
   const randomizeAllChords = useCallback(() => {
-    setSelectedProgression(Math.floor(Math.random() * COMMON_CHORD_PROGRESSIONS.length));
+    const nextIndex = Math.floor(Math.random() * COMMON_CHORD_PROGRESSIONS.length);
+    setSelectedProgression(nextIndex);
+    const next = COMMON_CHORD_PROGRESSIONS[nextIndex];
+    if (next) {
+      setCustomProgressionInput(next.progression.join('–'));
+      setCustomProgressionError('');
+      setCustomProgressionWarning('');
+    }
     setProgKey(pickRandom(MAJOR_KEYS as unknown as string[]) as Key);
     setVoicingStyle(pickRandom(VOICING_OPTIONS.map(o => o.value)));
     setMeasuresPerChord(pickRandom([1, 2, 3, 4]) as 1 | 2);
@@ -209,11 +258,27 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({ open, onClose, onImport
       return parts.join(' ') + ')';
     }
     if (section === 'progressions') {
-      const prog = COMMON_CHORD_PROGRESSIONS[selectedProgression];
-      return prog ? `${prog.name} in ${progKey}` : '';
+      const parsed = parseProgressionText(customProgressionInput, progKey);
+      const label = selectedProgression !== null
+        ? (COMMON_CHORD_PROGRESSIONS[selectedProgression]?.name ?? 'Custom progression')
+        : 'Custom progression';
+      const resolvedKey = parsed.inferredKey ?? progKey;
+      return `${label} in ${resolvedKey}`;
     }
     return '';
-  }, [section, isTonal, selectedKey, chromaticNote, quality, scaleType, direction, octaves, selectedProgression, progKey]);
+  }, [
+    section,
+    isTonal,
+    selectedKey,
+    chromaticNote,
+    quality,
+    scaleType,
+    direction,
+    octaves,
+    selectedProgression,
+    customProgressionInput,
+    progKey,
+  ]);
 
   useEffect(() => {
     if (!open) return;
@@ -347,16 +412,43 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({ open, onClose, onImport
           {section === 'progressions' && (
             <div className="ep-progressions">
               <div className="ep-group">
-                <GroupLabel onRandomize={() => setSelectedProgression(Math.floor(Math.random() * COMMON_CHORD_PROGRESSIONS.length))}
+                <GroupLabel onRandomize={() => {
+                  const nextIndex = Math.floor(Math.random() * COMMON_CHORD_PROGRESSIONS.length);
+                  setSelectedProgression(nextIndex);
+                  const next = COMMON_CHORD_PROGRESSIONS[nextIndex];
+                  if (next) {
+                    setCustomProgressionInput(next.progression.join('–'));
+                    setCustomProgressionError('');
+                    setCustomProgressionWarning('');
+                  }
+                }}
                   tipText="Randomize progression" showTip={showTip} hideTip={hideTip}>Progression</GroupLabel>
-                <div className="ep-prog-grid">
-                  {COMMON_CHORD_PROGRESSIONS.map((p, i) => (
-                    <button key={i} className={`ep-prog-item ${selectedProgression === i ? 'active' : ''}`} onClick={() => setSelectedProgression(i)}>
-                      <span className="ep-prog-name">{p.name}</span>
-                      {p.description && <span className="ep-prog-desc">{p.description}</span>}
-                    </button>
-                  ))}
-                </div>
+                <ChordProgressionSelector
+                  value={customProgressionInput}
+                  selectedProgression={selectedProgression}
+                  listId="ep-progression-presets"
+                  error={customProgressionError}
+                  warning={customProgressionWarning}
+                  onInputChange={(value) => {
+                    setCustomProgressionInput(value);
+                    const matchedIndex = COMMON_CHORD_PROGRESSIONS.findIndex(
+                      (progression) =>
+                        progression.name.toLowerCase() === value.toLowerCase() ||
+                        progression.progression.join('–') === value
+                    );
+                    setSelectedProgression(matchedIndex >= 0 ? matchedIndex : null);
+                    setCustomProgressionError('');
+                    setCustomProgressionWarning('');
+                  }}
+                  onSelectPreset={(index) => {
+                    const preset = COMMON_CHORD_PROGRESSIONS[index];
+                    if (!preset) return;
+                    setSelectedProgression(index);
+                    setCustomProgressionInput(preset.progression.join('–'));
+                    setCustomProgressionError('');
+                    setCustomProgressionWarning('');
+                  }}
+                />
               </div>
 
               <div className="ep-row-3">
@@ -399,14 +491,10 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({ open, onClose, onImport
               <div className="ep-group">
                 <GroupLabel onRandomize={() => setChordStyle(pickRandom(CHORD_STYLE_OPTIONS.map(o => o.id), chordStyle))}
                   tipText="Randomize style" showTip={showTip} hideTip={hideTip}>Style</GroupLabel>
-                <div className="ep-style-grid">
-                  {CHORD_STYLE_OPTIONS.map(s => (
-                    <button key={s.id} className={`ep-style-item ${chordStyle === s.id ? 'active' : ''}`} onClick={() => setChordStyle(s.id)}>
-                      <span className="ep-style-name">{s.label}</span>
-                      {s.description && <span className="ep-style-desc">{s.description}</span>}
-                    </button>
-                  ))}
-                </div>
+                <ChordStyleSelector
+                  selectedStyle={chordStyle}
+                  onSelectStyle={(styleId) => setChordStyle(styleId)}
+                />
               </div>
             </div>
           )}

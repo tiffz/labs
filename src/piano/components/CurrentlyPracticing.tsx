@@ -8,7 +8,20 @@ import {
   MAJOR_KEYS, MINOR_KEYS, CHROMATIC_NOTES,
   type Direction, type ExerciseType, type Subdivision,
 } from '../data/scales';
+import {
+  CHORD_STYLE_OPTIONS,
+  COMMON_CHORD_PROGRESSIONS,
+  generateChordProgressionScore,
+  type ChordStyleId,
+  type ChordVoicingStyle,
+} from '../data/chordExercises';
+import type { RomanNumeral } from '../../chords/types';
+import { parseProgressionText } from '../../shared/music/chordProgressionText';
 import { useMatTooltip } from './useMatTooltip';
+import {
+  ChordProgressionSelector,
+  ChordStyleSelector,
+} from './ChordExerciseSelectors';
 
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -25,6 +38,12 @@ const KEY_INDEX: Record<string, number> = {
 const ENHARMONIC_MAP: Record<string, string> = {
   'Db': 'C#', 'C#': 'Db', 'Eb': 'D#', 'D#': 'Eb', 'Ab': 'G#', 'G#': 'Ab',
 };
+const FLAT_TO_SHARP: Record<string, string> = {
+  Db: 'C#',
+  Eb: 'D#',
+  Ab: 'G#',
+  Bb: 'A#',
+};
 
 const DIR_CYCLE: Direction[] = ['ascending', 'descending', 'both'];
 const DIR_LABELS: Record<Direction, string> = { ascending: 'Asc', descending: 'Desc', both: 'Asc / Desc' };
@@ -34,7 +53,7 @@ const TYPE_LABELS: Record<ExerciseType, string> = { scale: 'Scale', pentascale: 
 
 const MAX_CHORD_DISPLAY = 6;
 
-type InlinePopover = 'key' | 'quality' | null;
+type InlinePopover = 'key' | 'quality' | 'chord-style' | 'chord-template' | null;
 
 interface ExerciseMeta {
   type: ExerciseType;
@@ -46,8 +65,22 @@ interface ExerciseMeta {
 }
 
 const SLUG_TO_KEY: Record<string, Key> = {
-  c: 'C', df: 'Db', d: 'D', ef: 'Eb', e: 'E', f: 'F',
-  fs: 'F#', g: 'G', af: 'Ab', a: 'A', fb: 'Bb',
+  c: 'C',
+  db: 'Db',
+  df: 'Db', // backward compat with old slug style
+  d: 'D',
+  eb: 'Eb',
+  ef: 'Eb', // backward compat with old slug style
+  e: 'E',
+  f: 'F',
+  fs: 'F#',
+  g: 'G',
+  ab: 'Ab',
+  af: 'Ab', // backward compat with old slug style
+  a: 'A',
+  bb: 'Bb',
+  fb: 'Bb', // backward compat with old slug style
+  b: 'B',
 };
 
 function parseExerciseId(id: string): ExerciseMeta | null {
@@ -120,6 +153,27 @@ const CurrentlyPracticing: React.FC<CurrentlyPracticingProps> = ({ onSwitchExerc
     if (!score || !state.isExerciseScore) return null;
     return parseExerciseId(score.id);
   }, [score, state.isExerciseScore]);
+  const chordExerciseMeta = useMemo(() => {
+    if (!score || !state.isExerciseScore) return null;
+    if (score.exerciseConfig?.kind !== 'chord-progression') return null;
+    return score.exerciseConfig;
+  }, [score, state.isExerciseScore]);
+  const [chordTemplateInput, setChordTemplateInput] = useState('');
+  const [chordTemplateError, setChordTemplateError] = useState('');
+  const [chordTemplateWarning, setChordTemplateWarning] = useState('');
+  const chordTemplateSelectedPresetIndex = useMemo(() => {
+    const normalizedInput = chordTemplateInput.trim();
+    if (!normalizedInput) return null;
+    const byNumerals = COMMON_CHORD_PROGRESSIONS.findIndex(
+      (progression) => progression.progression.join('–') === normalizedInput
+    );
+    if (byNumerals >= 0) return byNumerals;
+    const byName = COMMON_CHORD_PROGRESSIONS.findIndex(
+      (progression) =>
+        progression.name.toLowerCase() === normalizedInput.toLowerCase()
+    );
+    return byName >= 0 ? byName : null;
+  }, [chordTemplateInput]);
 
   const clearSelection = useCallback(() => {
     dispatch({ type: 'CLEAR_MEASURE_SELECTION' });
@@ -210,8 +264,6 @@ const CurrentlyPracticing: React.FC<CurrentlyPracticingProps> = ({ onSwitchExerc
     if (semitones !== 0) transpose(semitones);
   }, [score, transpose]);
 
-  const FLAT_TO_SHARP: Record<string, string> = { 'Db': 'C#', 'Eb': 'D#', 'Ab': 'G#', 'Bb': 'A#' };
-
   const reloadExercise = useCallback((overrides: Partial<ExerciseMeta>) => {
     if (!exerciseMeta) return;
     const m = { ...exerciseMeta, ...overrides };
@@ -229,8 +281,72 @@ const CurrentlyPracticing: React.FC<CurrentlyPracticingProps> = ({ onSwitchExerc
     setPopover(null);
   }, [exerciseMeta, loadScore, dispatch]);
 
+  const reloadChordExercise = useCallback(
+    (overrides: Partial<{
+      key: Key;
+      styleId: ChordStyleId;
+      progressionInput: string;
+    }>) => {
+      if (!score || !chordExerciseMeta) return;
+      const baseInput =
+        overrides.progressionInput ??
+        chordExerciseMeta.progressionInput ??
+        chordExerciseMeta.progressionNumerals.join('–');
+      const baseKey = overrides.key ?? score.key;
+      const parsed = parseProgressionText(baseInput, baseKey);
+      if (!parsed.isValid || parsed.tokens.length < 2) {
+        setChordTemplateError('Use I–V–vi–IV or C–G–Am–F with at least 2 chords.');
+        setChordTemplateWarning('');
+        return;
+      }
+      if (parsed.romanNumerals.length < 2) {
+        setChordTemplateWarning(
+          'Progression is valid text but non-diatonic for the selected/inferred key.'
+        );
+        setChordTemplateError('');
+        return;
+      }
+      const presetMatch = COMMON_CHORD_PROGRESSIONS.find(
+        (progression) =>
+          progression.progression.length === parsed.romanNumerals.length &&
+          progression.progression.every(
+            (token, index) => token === parsed.romanNumerals[index]
+          )
+      );
+      const styleId = overrides.styleId ?? (chordExerciseMeta.styleId as ChordStyleId) ?? 'simple';
+      const styleOpt = CHORD_STYLE_OPTIONS.find((option) => option.id === styleId);
+      const nextKey = parsed.inferredKey ?? baseKey;
+      const nextTempo = score.tempo;
+      const nextScore = generateChordProgressionScore({
+        progression: parsed.romanNumerals as RomanNumeral[],
+        progressionName: presetMatch?.name ?? chordExerciseMeta.progressionName ?? 'Custom progression',
+        progressionInput: baseInput,
+        key: nextKey,
+        voicingStyle: (chordExerciseMeta.voicingStyle as ChordVoicingStyle) ?? 'root',
+        measuresPerChord: ((chordExerciseMeta.measuresPerChord as 1 | 2) ?? 1),
+        timeSignature: styleOpt?.timeSignature ?? score.timeSignature,
+        styleId,
+      });
+      nextScore.tempo = nextTempo;
+      loadScore(nextScore);
+      dispatch({ type: 'SET_IS_EXERCISE', isExercise: true });
+      setChordTemplateError('');
+      setChordTemplateWarning('');
+      setPopover(null);
+    },
+    [score, chordExerciseMeta, loadScore, dispatch]
+  );
+
   const openPopover = (type: InlinePopover, e: React.MouseEvent) => {
     setPopoverAnchor(e.currentTarget as HTMLElement);
+    if (type === 'chord-template' && chordExerciseMeta) {
+      setChordTemplateInput(
+        chordExerciseMeta.progressionInput ??
+          chordExerciseMeta.progressionNumerals.join('–')
+      );
+      setChordTemplateError('');
+      setChordTemplateWarning('');
+    }
     setPopover(popover === type ? null : type);
   };
 
@@ -297,7 +413,42 @@ const CurrentlyPracticing: React.FC<CurrentlyPracticingProps> = ({ onSwitchExerc
         </span>
 
         <div className="np-meta">
-          {isExercise && meta ? (
+          {isExercise && chordExerciseMeta ? (
+            <>
+              <button
+                className="np-tag np-tag-interactive"
+                onClick={e => openPopover('key', e)}
+                onMouseEnter={e => showTip(e, 'Change key')}
+                onMouseLeave={hideTip}
+              >
+                {scoreInfo.key}
+              </button>
+              <button
+                className="np-tag np-tag-interactive"
+                onClick={e => openPopover('chord-style', e)}
+                onMouseEnter={e => showTip(e, 'Change chord style')}
+                onMouseLeave={hideTip}
+              >
+                {CHORD_STYLE_OPTIONS.find(
+                  s => s.id === (chordExerciseMeta.styleId as ChordStyleId)
+                )?.label ?? 'Style'}
+              </button>
+              <button
+                className="np-tag np-tag-interactive"
+                onClick={e => openPopover('chord-template', e)}
+                onMouseEnter={e =>
+                  showTip(
+                    e,
+                    chordExerciseMeta.progressionInput ??
+                      chordExerciseMeta.progressionNumerals.join(' – ')
+                  )
+                }
+                onMouseLeave={hideTip}
+              >
+                {chordExerciseMeta.progressionName}
+              </button>
+            </>
+          ) : isExercise && meta ? (
             <>
               {/* Key chip — click to open popover (no arrow icon) */}
               <button className="np-tag np-tag-interactive" onClick={e => openPopover('key', e)}
@@ -393,13 +544,81 @@ const CurrentlyPracticing: React.FC<CurrentlyPracticingProps> = ({ onSwitchExerc
 
       <ChipPopover anchor={popoverAnchor} open={popover === 'key'} onClose={() => setPopover(null)}>
         <div className="np-pop-keys">
-          {(meta?.type === 'chromatic' ? CHROMATIC_NOTES : (meta?.quality === 'major' ? MAJOR_KEYS : MINOR_KEYS)).map(k => (
-            <button key={k} className={`np-pop-key ${k === scoreInfo.key ? 'active' : ''}`}
-              onClick={() => reloadExercise({ key: k as Key })}>
+          {(chordExerciseMeta
+            ? MAJOR_KEYS
+            : meta?.type === 'chromatic'
+              ? CHROMATIC_NOTES
+              : meta?.quality === 'major'
+                ? MAJOR_KEYS
+                : MINOR_KEYS
+          ).map(k => (
+            <button
+              key={k}
+              className={`np-pop-key ${k === scoreInfo.key ? 'active' : ''}`}
+              onClick={() =>
+                chordExerciseMeta
+                  ? reloadChordExercise({ key: k as Key })
+                  : reloadExercise({ key: k as Key })
+              }
+            >
               {k}
             </button>
           ))}
         </div>
+      </ChipPopover>
+
+      <ChipPopover
+        anchor={popoverAnchor}
+        open={popover === 'chord-style'}
+        onClose={() => setPopover(null)}
+      >
+        {chordExerciseMeta ? (
+          <div className="ep-group" style={{ marginBottom: 0, minWidth: 260 }}>
+            <label className="ep-group-label">Style</label>
+            <ChordStyleSelector
+              selectedStyle={
+                ((chordExerciseMeta.styleId as ChordStyleId) ?? 'simple')
+              }
+              onSelectStyle={(styleId) => reloadChordExercise({ styleId })}
+            />
+          </div>
+        ) : null}
+      </ChipPopover>
+
+      <ChipPopover
+        anchor={popoverAnchor}
+        open={popover === 'chord-template'}
+        onClose={() => setPopover(null)}
+      >
+        {chordExerciseMeta ? (
+          <div className="ep-group" style={{ marginBottom: 0, minWidth: 360 }}>
+            <label className="ep-group-label">Progression</label>
+            <ChordProgressionSelector
+              value={chordTemplateInput}
+              selectedProgression={chordTemplateSelectedPresetIndex}
+              listId="np-chord-template-presets"
+              error={chordTemplateError}
+              warning={chordTemplateWarning}
+              onInputChange={(value) => {
+                setChordTemplateInput(value);
+                setChordTemplateError('');
+                setChordTemplateWarning('');
+              }}
+              onSelectPreset={(index) => {
+                const preset = COMMON_CHORD_PROGRESSIONS[index];
+                if (!preset) return;
+                const progressionInput = preset.progression.join('–');
+                setChordTemplateInput(progressionInput);
+                setChordTemplateError('');
+                setChordTemplateWarning('');
+                reloadChordExercise({ progressionInput });
+              }}
+              onEnter={() =>
+                reloadChordExercise({ progressionInput: chordTemplateInput })
+              }
+            />
+          </div>
+        ) : null}
       </ChipPopover>
 
       {tipPortal}
