@@ -126,6 +126,7 @@ The project uses a streamlined setup:
 
 - **Reuse First**: For common UI problems (tooltips, toggles, icon buttons, controls), prefer shared components in `src/shared/components`.
 - **Material Defaults**: By default, apps should follow Material Design interaction conventions (spacing rhythm, control sizing, focus/hover behavior, and widget ergonomics), then customize visual styling per app identity.
+- **MUI-First Implementation**: For React controls, prefer `@mui/material` primitives (`Menu`, `MenuItem`, `Select`, `TextField`, `Slider`, `Checkbox`, `IconButton`) over bespoke HTML widgets unless there is a measured UX/perf reason not to.
 - **Tooltip Standard**: Use `AppTooltip` (MUI-based) as the default tooltip primitive. Avoid custom CSS pseudo-tooltips or ad-hoc tooltip systems unless a rich, non-standard help surface is required.
 - **Icon Standard**: Use Material Design iconography by default (Material Symbols / MDI) unless there is a documented reason to use a different icon set.
 

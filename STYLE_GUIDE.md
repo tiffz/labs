@@ -161,6 +161,7 @@ These rules are required for new UI work across apps in this monorepo:
 2. **Use Material patterns as the default interaction model**
    - Default UX behavior should align with Material Design conventions (control sizing, spacing rhythm, focus/hover states, and accessibility patterns).
    - App-specific branding is applied through styling/theme tokens, not by reinventing interaction mechanics.
+   - For React apps, default to MUI primitives (`@mui/material`) for interactive controls before building custom HTML/CSS controls.
 
 3. **Tooltip standard**
    - Use `src/shared/components/AppTooltip.tsx` for standard black hover/focus tooltips.

@@ -1,9 +1,11 @@
-import React, { useCallback, useRef, useState, useMemo } from 'react';
+import React, { useCallback, useRef, useState, useMemo, useEffect } from 'react';
+import { Checkbox, FormControlLabel, IconButton, Menu, MenuItem, TextField } from '@mui/material';
 import type { Section } from '../utils/sectionDetector';
 import type { LoopRegion } from '../hooks/useBeatSync';
 import type { ChordEvent, KeyChange } from '../utils/chordAnalyzer';
 import type { TempoRegion } from '../utils/tempoRegions';
 import AppTooltip from '../../shared/components/AppTooltip';
+import type { UserPracticeLane } from '../types/library';
 
 /** Playback position and timing state */
 export interface PlaybackState {
@@ -29,13 +31,29 @@ export interface LoopState {
 /** Section selection and editing controls */
 export interface SectionControls {
   sections: Section[];
+  practiceLanes?: UserPracticeLane[];
+  generatedLaneLabel?: string;
+  referenceSections?: Section[];
+  referenceSelectedIds?: string[];
   selectedIds: string[];
   isDetecting: boolean;
   onSelect?: (section: Section, extendSelection: boolean) => void;
+  onSelectReference?: (section: Section, extendSelection: boolean) => void;
   onClear?: () => void;
   onCombine?: () => void;
   onSplit?: (sectionId: string, splitTime: number) => void;
   onExtend?: (direction: 'start' | 'end', delta: number) => void;
+  onSaveReferenceSelection?: () => void;
+  onSplitAtCurrentTime?: () => void;
+  onDeleteSelection?: () => void;
+  snapToMeasuresEnabled?: boolean;
+  onToggleSnapToMeasures?: (enabled: boolean) => void;
+  onCreateLane?: () => void;
+  onRenameLane?: (laneId: string, name: string) => void;
+  onDeleteLane?: (laneId: string) => void;
+  onCloneGeneratedLane?: () => void;
+  onCloneLane?: (laneId: string) => void;
+  onRenameSection?: (sectionId: string, label: string) => void;
 }
 
 /** Chord/key data for section hover display */
@@ -79,13 +97,28 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
   const { region: loopRegion, enabled: loopEnabled } = loop;
   const {
     sections,
+    practiceLanes = [],
+    generatedLaneLabel = 'Generated Sections',
+    referenceSections = [],
+    referenceSelectedIds = [],
     selectedIds: selectedSectionIds,
     isDetecting: isDetectingSections,
     onSelect: onSelectSection,
+    onSelectReference,
     onClear: onClearSelection,
     onCombine: onCombineSections,
-    onSplit: onSplitSection,
     onExtend: onExtendSelection,
+    onSaveReferenceSelection,
+    onSplitAtCurrentTime,
+    onDeleteSelection,
+    snapToMeasuresEnabled = true,
+    onToggleSnapToMeasures,
+    onCreateLane,
+    onRenameLane,
+    onDeleteLane,
+    onCloneGeneratedLane,
+    onCloneLane,
+    onRenameSection,
   } = sectionControls;
   const chordChanges = useMemo(() => chordData?.chordChanges ?? [], [chordData]);
   const keyChanges = useMemo(() => chordData?.keyChanges ?? [], [chordData]);
@@ -211,7 +244,21 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
     [onSelectSection, onClearSelection, selectedSectionIds, isLoopTrackMode, onSeek]
   );
 
-  const hasSelection = selectedSectionIds.length > 0;
+  const handleReferenceSectionClick = useCallback(
+    (e: React.MouseEvent, section: Section) => {
+      e.stopPropagation();
+      if (onSelectReference) {
+        onSelectReference(section, e.shiftKey);
+      } else if (onSelectSection) {
+        onSelectSection(section, e.shiftKey);
+      }
+    },
+    [onSelectReference, onSelectSection]
+  );
+
+  const hasSelection = selectedSectionIds.length > 0 || referenceSelectedIds.length > 0;
+  const activeSelectionIds = selectedSectionIds.length > 0 ? selectedSectionIds : referenceSelectedIds;
+  const activeSections = selectedSectionIds.length > 0 ? sections : referenceSections;
 
   // Extract just the first measure number for compact labels
   const getShortLabel = (label: string) => {
@@ -222,11 +269,11 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
 
   // Get the measure range for selected sections
   const getSelectionLabel = () => {
-    if (selectedSectionIds.length === 0) return '';
+    if (activeSelectionIds.length === 0) return '';
     
     // Get selected sections in order
-    const selectedSections = sections
-      .filter(s => selectedSectionIds.includes(s.id))
+    const selectedSections = activeSections
+      .filter(s => activeSelectionIds.includes(s.id))
       .sort((a, b) => a.startTime - b.startTime);
     
     if (selectedSections.length === 0) return '';
@@ -346,14 +393,69 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
   // Hovered section for tooltip
   const [hoveredSection, setHoveredSection] = useState<Section | null>(null);
   const [hoverPosition, setHoverPosition] = useState({ x: 0, y: 0 });
+  const hoverAnchorRef = useRef<HTMLElement | null>(null);
+  const hoverClearTimeoutRef = useRef<number | null>(null);
+  const [expandPracticeTracks, setExpandPracticeTracks] = useState(false);
+  const [laneMenuId, setLaneMenuId] = useState<string | null>(null);
+  const [laneMenuAnchor, setLaneMenuAnchor] = useState<HTMLElement | null>(null);
+  const [hoverDraftLabel, setHoverDraftLabel] = useState('');
+  const [hoveredSectionLocked, setHoveredSectionLocked] = useState(false);
+  const collapsedPracticeTracks = practiceLanes.length > 3 && !expandPracticeTracks;
+  const visiblePracticeLanes = collapsedPracticeTracks ? practiceLanes.slice(0, 3) : practiceLanes;
+  const hasTimelineLanes = referenceSections.length > 0 || visiblePracticeLanes.length > 0;
 
-  const handleSectionHover = useCallback((section: Section | null, e?: React.MouseEvent) => {
+  const handleSectionHover = useCallback((section: Section | null, e?: React.MouseEvent, locked = false) => {
+    if (hoverClearTimeoutRef.current !== null) {
+      window.clearTimeout(hoverClearTimeoutRef.current);
+      hoverClearTimeoutRef.current = null;
+    }
     setHoveredSection(section);
+    setHoveredSectionLocked(Boolean(section) && locked);
+    setHoverDraftLabel(section?.label ?? '');
     if (section && e) {
       const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-      setHoverPosition({ x: rect.left + rect.width / 2, y: rect.top });
+      setHoverPosition({ x: rect.left + rect.width / 2, y: rect.bottom });
+      hoverAnchorRef.current = e.currentTarget as HTMLElement;
+    } else {
+      hoverAnchorRef.current = null;
     }
   }, []);
+
+  useEffect(() => {
+    if (!hoveredSection || !hoverAnchorRef.current) return;
+    const updateHoverPosition = () => {
+      if (!hoverAnchorRef.current) return;
+      const rect = hoverAnchorRef.current.getBoundingClientRect();
+      setHoverPosition({ x: rect.left + rect.width / 2, y: rect.bottom });
+    };
+    updateHoverPosition();
+    window.addEventListener('scroll', updateHoverPosition, true);
+    window.addEventListener('resize', updateHoverPosition);
+    return () => {
+      window.removeEventListener('scroll', updateHoverPosition, true);
+      window.removeEventListener('resize', updateHoverPosition);
+    };
+  }, [hoveredSection]);
+
+  const openLaneMenu = (laneId: string, anchor: HTMLElement) => {
+    setLaneMenuId(laneId);
+    setLaneMenuAnchor(anchor);
+  };
+
+  const closeLaneMenu = () => {
+    setLaneMenuId(null);
+    setLaneMenuAnchor(null);
+  };
+
+  const scheduleHoverCardClose = () => {
+    if (hoverClearTimeoutRef.current !== null) {
+      window.clearTimeout(hoverClearTimeoutRef.current);
+    }
+    hoverClearTimeoutRef.current = window.setTimeout(() => {
+      setHoveredSection(null);
+      hoverAnchorRef.current = null;
+    }, 140);
+  };
   
   return (
     <div className="playback-bar-wrapper">
@@ -366,24 +468,29 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
       )}
 
       {/* Main playback bar with integrated sections */}
-      <div className="playback-bar-container">
-        <span className="time-display current">{formatTime(currentTime)}</span>
-
-        <div className="playback-bar-sections">
-          <div
-            ref={barRef}
-            className={`playback-bar ${dragging ? 'dragging' : ''}`}
-            onClick={handleClick}
-            onMouseMove={handleBarDrag}
-            role="slider"
-            aria-label="Playback position"
-            aria-valuenow={currentTime}
-            aria-valuemin={0}
-            aria-valuemax={duration}
-            tabIndex={0}
-          >
+      <div className={`playback-bar-container ${hasTimelineLanes ? 'has-lanes' : ''}`}>
+        <div className={`playback-bar-sections ${hasTimelineLanes ? 'has-lanes' : ''}`}>
+          <div className={`playback-ruler-row ${hasTimelineLanes ? 'has-lanes' : ''}`}>
+            {hasTimelineLanes && (
+              <div className="playback-ruler-spacer">
+                <span className="playback-ruler-time-readout">{`${formatTime(currentTime)} / ${formatTime(duration)}`}</span>
+              </div>
+            )}
+            <div className="playback-ruler-track-wrap">
+              <div
+                ref={barRef}
+                className={`playback-bar ${dragging ? 'dragging' : ''}`}
+                onClick={handleClick}
+                onMouseMove={handleBarDrag}
+                role="slider"
+                aria-label="Playback position"
+                aria-valuenow={currentTime}
+                aria-valuemin={0}
+                aria-valuemax={duration}
+                tabIndex={0}
+              >
             {/* Track background */}
-            <div className="playback-track">
+                <div className="playback-track">
               {/* Selected section highlight */}
               {sections.length > 0 && (
                 <div className="section-markers">
@@ -407,11 +514,42 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
                 </div>
               )}
 
+              {referenceSections.length > 0 && (
+                <div className="section-markers reference">
+                  {referenceSections.map((section) => {
+                    if (!referenceSelectedIds.includes(section.id)) return null;
+                    const startPercent = (section.startTime / duration) * 100;
+                    const widthPercent = ((section.endTime - section.startTime) / duration) * 100;
+                    return (
+                      <div
+                        key={`reference-selected-${section.id}`}
+                        className="section-marker selected reference"
+                        style={{
+                          left: `${startPercent}%`,
+                          width: `${widthPercent}%`,
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+              )}
+
               {/* Dimmed region before sync start (rubato intro) */}
               {syncStartPercent > 0 && (
                 <div
                   className="pre-sync-region"
                   style={{ left: '0%', width: `${syncStartPercent}%` }}
+                />
+              )}
+
+              {/* Selection region overlay (always visible when selected) */}
+              {hasSelection && loopRegion && (
+                <div
+                  className={`selection-region-overlay ${loopEnabled ? 'looping' : ''}`}
+                  style={{
+                    left: `${loopStartPercent}%`,
+                    width: `${loopWidthPercent}%`,
+                  }}
                 />
               )}
 
@@ -456,17 +594,7 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
               />
 
               {/* Section divider lines - rendered on top of progress */}
-              {sections.length > 0 && sections.map((section) => {
-                const startPercent = (section.startTime / duration) * 100;
-                if (startPercent < 0.5) return null;
-                return (
-                  <div
-                    key={`divider-${section.id}`}
-                    className="section-divider"
-                    style={{ left: `${startPercent}%` }}
-                  />
-                );
-              })}
+              {/* Removed dense section divider lines for clarity with multi-track editing */}
 
               {/* Sync start handle - simple draggable line */}
               {showSyncStartHandle && (
@@ -492,50 +620,217 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
                 className="playhead"
                 style={{ left: `${progressPercent}%` }}
               />
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Section labels row - below the bar */}
-          {sections.length > 0 && (
-            <div className="section-labels-row">
-              {sections.map((section) => {
-                const startPercent = (section.startTime / duration) * 100;
-                const widthPercent = ((section.endTime - section.startTime) / duration) * 100;
-                const isSelected = selectedSectionIds.includes(section.id);
-                const isPlaying = section.id === currentSectionId;
-                return (
-                  <button
-                    key={section.id}
-                    className={`section-label-btn ${isSelected ? 'selected' : ''} ${isPlaying ? 'playing' : ''}`}
-                    style={{
-                      left: `${startPercent}%`,
-                      width: `${widthPercent}%`,
-                    }}
-                    onClick={(e) => handleSectionClick(e, section)}
-                    onMouseEnter={(e) => handleSectionHover(section, e)}
-                    onMouseLeave={() => handleSectionHover(null)}
-                  >
-                    <span className="section-label-text">{getShortLabel(section.label)}</span>
+          {/* Section lanes - generated + editable practice lanes */}
+          <div className="lane-stack">
+            {hasTimelineLanes && (
+              <div className="lane-playhead-track-overlay">
+                <div className="lane-playhead-line" style={{ left: `${progressPercent}%` }}>
+                  <span className="lane-playhead-cap" />
+                </div>
+              </div>
+            )}
+            {referenceSections.length > 0 && (
+              <div className="lane-row">
+                <div className="lane-label-cell generated">
+                  <div className="lane-label-top">
+                    <span className="lane-label-text">{generatedLaneLabel}</span>
+                    <AppTooltip title="Auto-generated section guesses from analysis. Accuracy varies, and this lane is read-only. Use clone to create an editable lane.">
+                      <span className="material-symbols-outlined lane-info-icon">info</span>
+                    </AppTooltip>
+                    <div className="lane-menu-shell">
+                      <IconButton
+                        size="small"
+                        className="lane-menu-trigger"
+                        onClick={(event) => openLaneMenu('generated', event.currentTarget)}
+                      >
+                        <span className="material-symbols-outlined">more_horiz</span>
+                      </IconButton>
+                    </div>
+                  </div>
+                </div>
+                <div className="lane-track-cell section-labels-row section-labels-reference">
+                  {referenceSections.map((section) => {
+                    const startPercent = (section.startTime / duration) * 100;
+                    const widthPercent = ((section.endTime - section.startTime) / duration) * 100;
+                    const isSelected = referenceSelectedIds.includes(section.id);
+                    return (
+                      <button
+                        key={`reference-${section.id}`}
+                        className={`section-label-btn reference ${isSelected ? 'selected' : ''}`}
+                        style={{
+                          left: `${startPercent}%`,
+                          width: `${widthPercent}%`,
+                        }}
+                        onClick={(e) => handleReferenceSectionClick(e, section)}
+                        onMouseEnter={(e) => handleSectionHover(section, e, true)}
+                        onMouseLeave={scheduleHoverCardClose}
+                      >
+                        <span className="section-label-text">{getShortLabel(section.label)}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {visiblePracticeLanes.map((lane) => {
+              const laneSections = sections.filter((section) => (section as Section & { laneId?: string }).laneId === lane.id);
+              return (
+                <div key={lane.id} className="lane-row">
+                  <div className="lane-label-cell">
+                    <div className="lane-label-top">
+                      <input
+                        className="lane-name-input"
+                        defaultValue={lane.name}
+                        onBlur={(event) => onRenameLane?.(lane.id, event.target.value)}
+                      />
+                      <div className="lane-menu-shell">
+                        <IconButton
+                          size="small"
+                          className="lane-menu-trigger"
+                          onClick={(event) => openLaneMenu(lane.id, event.currentTarget)}
+                        >
+                          <span className="material-symbols-outlined">more_horiz</span>
+                        </IconButton>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="lane-track-cell section-labels-row">
+                    {laneSections.map((section) => {
+                      const startPercent = (section.startTime / duration) * 100;
+                      const widthPercent = ((section.endTime - section.startTime) / duration) * 100;
+                      const isSelected = selectedSectionIds.includes(section.id);
+                      const isPlaying = section.id === currentSectionId;
+                      return (
+                        <button
+                          key={section.id}
+                          className={`section-label-btn ${isSelected ? 'selected' : ''} ${isPlaying ? 'playing' : ''}`}
+                          style={{
+                            left: `${startPercent}%`,
+                            width: `${widthPercent}%`,
+                          }}
+                          onClick={(e) => handleSectionClick(e, section)}
+                          onMouseEnter={(e) => handleSectionHover(section, e, false)}
+                          onMouseLeave={scheduleHoverCardClose}
+                        >
+                          <span className="section-label-text">{getShortLabel(section.label)}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+            {onCreateLane && (
+              <div className="lane-row lane-row-create">
+                <div className="lane-label-cell lane-label-cell-create">
+                  <button type="button" className="lane-create-btn" onClick={onCreateLane}>
+                    <span className="material-symbols-outlined">add</span>
+                    New lane
                   </button>
-                );
-              })}
-            </div>
+                </div>
+                <div className="lane-track-cell section-labels-row lane-track-create" />
+              </div>
+            )}
+          </div>
+          {practiceLanes.length > 3 && (
+            <button
+              type="button"
+              className="practice-track-toggle"
+              onClick={() => setExpandPracticeTracks((value) => !value)}
+            >
+              {expandPracticeTracks ? 'Collapse lanes' : `Show all lanes (${practiceLanes.length})`}
+            </button>
           )}
         </div>
-
-        <span className="time-display duration">{formatTime(duration)}</span>
       </div>
+
+      <Menu
+        anchorEl={laneMenuAnchor}
+        open={Boolean(laneMenuAnchor && laneMenuId)}
+        onClose={closeLaneMenu}
+        PaperProps={{ className: 'lane-menu-paper' }}
+      >
+        {(laneMenuId === 'generated' ? !!onCloneGeneratedLane : !!onCloneLane) && (
+          <MenuItem
+            className="lane-menu-item"
+            onClick={() => {
+              if (laneMenuId === 'generated') {
+                onCloneGeneratedLane?.();
+              } else if (laneMenuId) {
+                onCloneLane?.(laneMenuId);
+              }
+              closeLaneMenu();
+            }}
+          >
+            <span className="material-symbols-outlined">content_copy</span>
+            Clone lane
+          </MenuItem>
+        )}
+        {laneMenuId && laneMenuId !== 'generated' && onDeleteLane && (
+          <MenuItem
+            className="lane-menu-item danger"
+            onClick={() => {
+              onDeleteLane(laneMenuId);
+              closeLaneMenu();
+            }}
+          >
+            <span className="material-symbols-outlined">delete</span>
+            Delete lane
+          </MenuItem>
+        )}
+      </Menu>
 
       {/* Section hover card */}
       {hoveredSection && (
         <div 
           className="section-hover-card"
           style={{ 
-            left: `${Math.min(Math.max(hoverPosition.x, 150), window.innerWidth - 150)}px`,
-            top: `${hoverPosition.y - 10}px`,
+            left: `${Math.min(Math.max(hoverPosition.x, 190), window.innerWidth - 190)}px`,
+            top: `${hoverPosition.y + 10}px`,
           }}
+          onMouseEnter={() => {
+            if (hoverClearTimeoutRef.current !== null) {
+              window.clearTimeout(hoverClearTimeoutRef.current);
+              hoverClearTimeoutRef.current = null;
+            }
+          }}
+          onMouseLeave={scheduleHoverCardClose}
         >
-          <div className="section-hover-title">{hoveredSection.label}</div>
+          {!hoveredSectionLocked && onRenameSection ? (
+            <TextField
+              value={hoverDraftLabel}
+              size="small"
+              className="section-hover-name-input"
+              onChange={(event) => setHoverDraftLabel(event.target.value)}
+              onBlur={() => {
+                const trimmed = hoverDraftLabel.trim();
+                if (trimmed.length > 0 && trimmed !== hoveredSection.label) {
+                  onRenameSection(hoveredSection.id, trimmed);
+                } else {
+                  setHoverDraftLabel(hoveredSection.label);
+                }
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  const trimmed = hoverDraftLabel.trim();
+                  if (trimmed.length > 0 && trimmed !== hoveredSection.label) {
+                    onRenameSection(hoveredSection.id, trimmed);
+                  }
+                }
+                if (event.key === 'Escape') {
+                  setHoverDraftLabel(hoveredSection.label);
+                }
+              }}
+            />
+          ) : (
+            <div className="section-hover-title">{hoveredSection.label}</div>
+          )}
           <div className="section-hover-times">
             <span>{formatTime(hoveredSection.startTime)}</span>
             <span className="section-hover-arrow">→</span>
@@ -545,8 +840,8 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
             Duration: {Math.round(hoveredSection.endTime - hoveredSection.startTime)}s
           </div>
           
-          {/* Chord progression for this section */}
-          {getChordsForSection(hoveredSection).length > 0 && (
+          {/* Analysis details only for generated/locked sections */}
+          {hoveredSectionLocked && getChordsForSection(hoveredSection).length > 0 && (
             <div className="section-hover-chords">
               <span className="section-hover-label">Chords (estimated):</span>
               <span className="section-chord-list">
@@ -556,7 +851,7 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
           )}
           
           {/* Key change in this section */}
-          {(() => {
+          {hoveredSectionLocked && (() => {
             const keyChange = getKeyChangeForSection(hoveredSection);
             if (keyChange) {
               return (
@@ -570,7 +865,7 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
           })()}
 
           {/* Tempo info for this section */}
-          {(() => {
+          {hoveredSectionLocked && (() => {
             const tempoInfo = getTempoInfoForSection(hoveredSection);
             if (tempoInfo.bpm || tempoInfo.description) {
               return (
@@ -600,35 +895,33 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
             <span className="section-actions-label">
               {getSelectionLabel()}:
             </span>
-            {selectedSectionIds.length >= 2 && onCombineSections && (
-              <button 
-                className="section-action-btn"
-                onClick={onCombineSections}
-                title="Combine selected sections into one"
-              >
-                <span className="material-symbols-outlined">merge</span>
-                <span>Combine</span>
-              </button>
+            {activeSelectionIds.length >= 2 && onCombineSections && (
+              <AppTooltip title="Combine selected sections">
+                <button className="section-action-btn icon-only" onClick={onCombineSections}>
+                  <span className="material-symbols-outlined">merge</span>
+                </button>
+              </AppTooltip>
             )}
-            {selectedSectionIds.length === 1 && onSplitSection && (
-              <button 
-                className="section-action-btn"
-                onClick={() => {
-                  const section = sections.find(s => s.id === selectedSectionIds[0]);
-                  if (section && currentTime > section.startTime && currentTime < section.endTime) {
-                    onSplitSection(section.id, currentTime);
-                  }
-                }}
-                disabled={!sections.some(s => 
-                  s.id === selectedSectionIds[0] && 
-                  currentTime > s.startTime && 
-                  currentTime < s.endTime
-                )}
-                title="Split section at current playback position"
-              >
-                <span className="material-symbols-outlined">vertical_split</span>
-                <span>Split here</span>
-              </button>
+            {onSaveReferenceSelection && referenceSelectedIds.length > 0 && (
+              <AppTooltip title="Save selected analysis range as practice section">
+                <button className="section-action-btn icon-only" onClick={onSaveReferenceSelection}>
+                  <span className="material-symbols-outlined">save</span>
+                </button>
+              </AppTooltip>
+            )}
+            {onSplitAtCurrentTime && (
+              <AppTooltip title={`Split at current timestamp (${currentTime.toFixed(1)}s)`}>
+                <button className="section-action-btn icon-only" onClick={onSplitAtCurrentTime}>
+                  <span className="material-symbols-outlined">content_cut</span>
+                </button>
+              </AppTooltip>
+            )}
+            {onDeleteSelection && selectedSectionIds.length > 0 && (
+              <AppTooltip title="Delete selected practice sections">
+                <button className="section-action-btn icon-only danger" onClick={onDeleteSelection}>
+                  <span className="material-symbols-outlined">delete</span>
+                </button>
+              </AppTooltip>
             )}
             {onExtendSelection && (
               <div className="section-nudge-controls">
@@ -668,14 +961,24 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
                 </AppTooltip>
               </div>
             )}
-            <button 
-              className="section-action-btn deselect"
-              onClick={onClearSelection}
-              title="Deselect all sections"
-            >
-              <span className="material-symbols-outlined">deselect</span>
-              <span>Deselect</span>
-            </button>
+            {onToggleSnapToMeasures && (
+              <FormControlLabel
+                className="section-checkbox-row inline compact mui"
+                control={
+                  <Checkbox
+                    size="small"
+                    checked={snapToMeasuresEnabled}
+                    onChange={(event) => onToggleSnapToMeasures(event.target.checked)}
+                  />
+                }
+                label={<span className="section-checkbox-label">Snap to measures</span>}
+              />
+            )}
+            <AppTooltip title="Deselect all sections">
+              <button className="section-action-btn deselect icon-only" onClick={onClearSelection}>
+                <span className="material-symbols-outlined">deselect</span>
+              </button>
+            </AppTooltip>
           </div>
         )}
       </div>

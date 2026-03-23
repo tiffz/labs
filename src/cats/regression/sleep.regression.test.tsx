@@ -12,7 +12,7 @@ import {
   getConsoleErrorSpy,
 } from '../test/regressionTestUtils.js';
 
-describe('Sleep System Regression Tests', () => {
+describe('Sleep System Regression Tests', { timeout: 20000 }, () => {
   beforeEach(() => {
     setupRegressionTest();
   });

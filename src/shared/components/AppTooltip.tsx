@@ -5,6 +5,8 @@ import { styled } from '@mui/material/styles';
 const StyledTooltip = styled(({ className, ...props }: TooltipProps) => (
   <Tooltip {...props} classes={{ popper: className }} />
 ))(() => ({
+  // Keep tooltips above in-app overlays/modals like the piano Exercise Picker.
+  zIndex: 4000,
   [`& .MuiTooltip-tooltip`]: {
     backgroundColor: '#202124',
     color: '#fff',

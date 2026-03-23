@@ -11,6 +11,7 @@ A web application for detecting BPM (beats per minute) in audio and video files,
 - **Confidence Scoring**: Reports detection confidence with detailed warnings
 - **Playback Speed Control**: Slow down playback to 50%, 75%, 90%, or 95% speed
 - **Volume Mixer**: Independent volume controls for audio, drums, and metronome click
+- **MUI-First Controls**: Menus, selects, sliders, and text inputs use MUI primitives for a11y and consistency
 - **Drum Accompaniment**: Play along with customizable Middle Eastern drum patterns
 - **Multi-Measure Patterns**: Support for complex, multi-measure drum loops
 - **Video Sync**: Video playback stays synchronized with audio analysis
@@ -139,25 +140,34 @@ The gap-based fermata detector (`gapFermataDetector.ts`) provides better results
 
 ```
 src/beat/
-├── App.tsx                     # Main application component
+├── App.tsx                     # App shell + state orchestration
+├── ARCHITECTURE.md             # UI architecture and design decisions
 ├── components/
 │   ├── BeatVisualizer.tsx      # Visual beat indicator (circles)
-│   ├── BpmDisplay.tsx          # BPM display with +/- adjustment
 │   ├── DrumAccompaniment.tsx   # Drum pattern player & editor
 │   ├── MediaUploader.tsx       # File upload with drag-drop
-│   ├── PlaybackBar.tsx         # Seek bar with sections & time display
-│   ├── TapTempo.tsx            # Manual tap-to-tempo (disabled)
-│   └── VideoPlayer.tsx         # Synced video playback
+│   ├── LandingFeatureGrid.tsx  # Landing feature cards
+│   ├── PlaybackBar.tsx         # Timeline ruler + generated/practice lanes
+│   ├── UploadLanding.tsx       # Upload and YouTube entry UI
+│   ├── VideoPlayer.tsx         # Local video playback
+│   └── YouTubePlayer.tsx       # Embedded YouTube playback + controller
 ├── hooks/
 │   ├── useAudioAnalysis.ts     # Audio decoding & BPM analysis
 │   ├── useBeatSync.ts          # Playback state & beat tracking
-│   └── useSectionDetection.ts  # Section detection state management
+│   ├── useSectionDetection.ts  # Analysis section detection
+│   └── useSectionSelection.ts  # Selection + loop editing behavior
+├── storage/
+│   ├── beatLibraryDb.ts        # IndexedDB records + normalization
+│   └── beatLibraryService.ts   # Library-level persistence service
+├── types/
+│   └── library.ts              # Entry + lane/practice data models
 ├── utils/
-│   ├── beatAnalyzer.ts         # Essentia.js BPM detection
+│   ├── analysisPipeline.ts     # Beat analysis pipeline coordinator
 │   ├── beatGrid.ts             # Beat position calculations
+│   ├── keyboardShortcuts.ts    # Global keyboard guards
 │   └── sectionDetector.ts      # Music structure segmentation
 └── styles/
-    └── beat.css                # Component styles
+    └── beat.css                # Beat route styling
 ```
 
 ### Key Hooks
@@ -363,11 +373,10 @@ npm test -- --run src/beat/utils/onsetAlignmentScorer.test.ts
 
 ## Future Improvements
 
-- [x] ~~Section detection for looped practice~~ ✓ Implemented
-- [ ] Tap tempo for manual BPM input (temporarily disabled for polish)
+- [ ] Timeline virtualization for very large lane counts
+- [ ] Stronger integration tests for YouTube playback/history restore
 - [ ] Beat phase adjustment (shift grid left/right)
 - [ ] Time signature detection
 - [ ] Waveform visualization
 - [ ] Export synchronized drum track
-- [ ] Save/load section edits
-- [ ] Section labels (custom naming beyond measure numbers)
+- [ ] Enhanced lane/group editing shortcuts

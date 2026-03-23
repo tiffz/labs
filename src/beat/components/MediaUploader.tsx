@@ -1,11 +1,16 @@
 import React, { useCallback, useState, useRef, useEffect } from 'react';
+import { buildYouTubeEmbedUrl, extractYouTubeVideoId } from '../storage/beatLibraryService';
 
 export type MediaType = 'audio' | 'video';
+export type MediaSourceType = 'local' | 'youtube';
 
 export interface MediaFile {
   file: File;
   type: MediaType;
   url: string;
+  sourceType?: MediaSourceType;
+  sourceUrl?: string;
+  youtubeVideoId?: string;
 }
 
 interface MediaUploaderProps {
@@ -108,6 +113,21 @@ const MediaUploader: React.FC<MediaUploaderProps> = ({ onFileSelect }) => {
     setIsLoadingUrl(true);
 
     try {
+      const youtubeVideoId = extractYouTubeVideoId(urlToLoad);
+      if (youtubeVideoId) {
+        const embedUrl = buildYouTubeEmbedUrl(youtubeVideoId);
+        const file = new File([], `youtube-${youtubeVideoId}.url`, { type: 'text/uri-list' });
+        onFileSelect({
+          file,
+          type: 'video',
+          url: embedUrl,
+          sourceType: 'youtube',
+          sourceUrl: urlToLoad,
+          youtubeVideoId,
+        });
+        return;
+      }
+
       const response = await fetch(urlToLoad);
       if (!response.ok) {
         throw new Error(`Failed to fetch: ${response.status} ${response.statusText}`);
@@ -124,7 +144,7 @@ const MediaUploader: React.FC<MediaUploaderProps> = ({ onFileSelect }) => {
       const url = URL.createObjectURL(blob);
       
       
-      onFileSelect({ file, type: mediaType, url });
+      onFileSelect({ file, type: mediaType, url, sourceType: 'local', sourceUrl: urlToLoad });
     } catch (err) {
       console.error('[MediaUploader] URL load failed:', err);
       setError(err instanceof Error ? err.message : 'Failed to load media from URL');
@@ -153,7 +173,7 @@ const MediaUploader: React.FC<MediaUploaderProps> = ({ onFileSelect }) => {
       // Create object URL for playback
       const url = URL.createObjectURL(file);
 
-      onFileSelect({ file, type: mediaType, url });
+      onFileSelect({ file, type: mediaType, url, sourceType: 'local' });
     },
     [onFileSelect]
   );
@@ -256,7 +276,7 @@ const MediaUploader: React.FC<MediaUploaderProps> = ({ onFileSelect }) => {
         <input
           type="text"
           className="url-input"
-          placeholder="https://example.com/video.webm"
+          placeholder="https://example.com/video.webm or https://youtube.com/watch?v=..."
           value={urlInput}
           onChange={e => setUrlInput(e.target.value)}
           onKeyDown={e => {
@@ -267,9 +287,12 @@ const MediaUploader: React.FC<MediaUploaderProps> = ({ onFileSelect }) => {
           disabled={isLoadingUrl}
         />
         <button
-          className="url-load-btn"
-          onClick={handleUrlLoad}
+          className="url-load-btn icon-only"
+          onClick={() => {
+            void handleUrlLoad();
+          }}
           disabled={isLoadingUrl || !urlInput.trim()}
+          type="button"
         >
           {isLoadingUrl ? (
             <span className="analyzing-spinner small" />

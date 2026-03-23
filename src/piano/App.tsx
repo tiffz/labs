@@ -77,7 +77,7 @@ function PianoApp() {
       window.removeEventListener('dragover', handleDragOver);
       window.removeEventListener('drop', handleDrop);
     };
-  }, []);
+  }, [dispatch]);
 
   const hasInputSource = state.midiConnected || state.microphoneActive;
 

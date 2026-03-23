@@ -23,6 +23,8 @@ interface SectionDetectionOptions {
   chordChangeTimes?: number[];
   /** Key changes - these mark definite section boundaries */
   keyChanges?: KeyChangeInfo[];
+  /** Fermata end times used as boundary hints */
+  fermataEndTimes?: number[];
 }
 
 interface UseSectionDetectionReturn {

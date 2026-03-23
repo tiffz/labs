@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { act, render, screen, fireEvent } from '@testing-library/react';
 import PlaybackBar from './PlaybackBar';
 import type { Section } from '../utils/sectionDetector';
 import type { PlaybackState, LoopState, SectionControls } from './PlaybackBar';
@@ -19,15 +19,16 @@ describe('PlaybackBar', () => {
   };
 
   const mockSections: Section[] = [
-    { id: 'section-0', startTime: 0, endTime: 30, label: 'M1-15', color: '#9d8ec7', confidence: 1 },
-    { id: 'section-1', startTime: 30, endTime: 60, label: 'M15-30', color: '#9d8ec7', confidence: 1 },
-    { id: 'section-2', startTime: 60, endTime: 90, label: 'M30-45', color: '#9d8ec7', confidence: 1 },
+    { id: 'section-0', startTime: 0, endTime: 30, label: 'M1-15', color: '#9d8ec7', confidence: 1, laneId: 'lane-1' } as Section,
+    { id: 'section-1', startTime: 30, endTime: 60, label: 'M15-30', color: '#9d8ec7', confidence: 1, laneId: 'lane-1' } as Section,
+    { id: 'section-2', startTime: 60, endTime: 90, label: 'M30-45', color: '#9d8ec7', confidence: 1, laneId: 'lane-1' } as Section,
   ];
 
   const defaultSectionControls: SectionControls = {
     sections: [],
     selectedIds: [],
     isDetecting: false,
+    practiceLanes: [{ id: 'lane-1', name: 'My Sections', createdAt: 1 }],
   };
 
   const defaultProps = {
@@ -45,8 +46,7 @@ describe('PlaybackBar', () => {
   it('should render time displays', () => {
     render(<PlaybackBar {...defaultProps} />);
 
-    expect(screen.getByText('0:30')).toBeInTheDocument();
-    expect(screen.getByText('3:00')).toBeInTheDocument();
+    expect(screen.getByText('0:30 / 3:00')).toBeInTheDocument();
   });
 
   it('should not render loop controls (moved to App)', () => {
@@ -119,7 +119,7 @@ describe('PlaybackBar', () => {
   });
 
   it('should show Deselect button when sections are selected', () => {
-    render(
+    const { container } = render(
       <PlaybackBar
         {...defaultProps}
         sectionControls={{
@@ -131,12 +131,12 @@ describe('PlaybackBar', () => {
       />
     );
 
-    expect(screen.getByText('Deselect')).toBeInTheDocument();
+    expect(container.querySelector('.section-action-btn.deselect')).toBeInTheDocument();
   });
 
   it('should call onClear when Deselect button is clicked', () => {
     const onClear = vi.fn();
-    render(
+    const { container } = render(
       <PlaybackBar
         {...defaultProps}
         sectionControls={{
@@ -148,7 +148,7 @@ describe('PlaybackBar', () => {
       />
     );
 
-    const deselectBtn = screen.getByText('Deselect');
+    const deselectBtn = container.querySelector('.section-action-btn.deselect') as HTMLButtonElement;
     fireEvent.click(deselectBtn);
 
     expect(onClear).toHaveBeenCalledTimes(1);
@@ -236,7 +236,7 @@ describe('PlaybackBar', () => {
   });
 
   it('should show Combine button when multiple sections are selected', () => {
-    render(
+    const { container } = render(
       <PlaybackBar
         {...defaultProps}
         sectionControls={{
@@ -248,12 +248,15 @@ describe('PlaybackBar', () => {
       />
     );
 
-    expect(screen.getByText('Combine')).toBeInTheDocument();
+    const combineBtn = Array.from(container.querySelectorAll('.section-action-btn')).find(
+      (button) => button.textContent?.includes('merge')
+    );
+    expect(combineBtn).toBeInTheDocument();
   });
 
   it('should call onCombine when Combine button is clicked', () => {
     const onCombine = vi.fn();
-    render(
+    const { container } = render(
       <PlaybackBar
         {...defaultProps}
         sectionControls={{
@@ -265,14 +268,16 @@ describe('PlaybackBar', () => {
       />
     );
 
-    const combineBtn = screen.getByText('Combine');
+    const combineBtn = Array.from(container.querySelectorAll('.section-action-btn')).find(
+      (button) => button.textContent?.includes('merge')
+    ) as HTMLButtonElement;
     fireEvent.click(combineBtn);
 
     expect(onCombine).toHaveBeenCalledTimes(1);
   });
 
-  it('should show Split button when one section is selected and playhead is within it', () => {
-    render(
+  it('should show split-at-current-time button when callback is provided', () => {
+    const { container } = render(
       <PlaybackBar
         {...defaultProps}
         playback={{ ...defaultPlayback, currentTime: 45 }} // Within section-1 (30-60)
@@ -280,17 +285,20 @@ describe('PlaybackBar', () => {
           ...defaultSectionControls,
           sections: mockSections,
           selectedIds: ['section-1'],
-          onSplit: vi.fn(),
+          onSplitAtCurrentTime: vi.fn(),
         }}
       />
     );
 
-    expect(screen.getByText('Split here')).toBeInTheDocument();
+    const splitBtn = Array.from(container.querySelectorAll('.section-action-btn')).find(
+      (button) => button.textContent?.includes('content_cut')
+    );
+    expect(splitBtn).toBeInTheDocument();
   });
 
-  it('should call onSplit when Split button is clicked', () => {
-    const onSplit = vi.fn();
-    render(
+  it('should call onSplitAtCurrentTime when split button is clicked', () => {
+    const onSplitAtCurrentTime = vi.fn();
+    const { container } = render(
       <PlaybackBar
         {...defaultProps}
         playback={{ ...defaultPlayback, currentTime: 45 }}
@@ -298,33 +306,37 @@ describe('PlaybackBar', () => {
           ...defaultSectionControls,
           sections: mockSections,
           selectedIds: ['section-1'],
-          onSplit,
+          onSplitAtCurrentTime,
         }}
       />
     );
 
-    const splitBtn = screen.getByText('Split here');
+    const splitBtn = Array.from(container.querySelectorAll('.section-action-btn')).find(
+      (button) => button.textContent?.includes('content_cut')
+    ) as HTMLButtonElement;
     fireEvent.click(splitBtn);
 
-    expect(onSplit).toHaveBeenCalledWith('section-1', 45);
+    expect(onSplitAtCurrentTime).toHaveBeenCalledTimes(1);
   });
 
-  it('should disable Split button when playhead is outside selected section', () => {
-    render(
+  it('keeps split-at-current-time enabled when present', () => {
+    const { container } = render(
       <PlaybackBar
         {...defaultProps}
-        playback={{ ...defaultPlayback, currentTime: 10 }} // Outside section-1 (30-60)
+        playback={{ ...defaultPlayback, currentTime: 10 }}
         sectionControls={{
           ...defaultSectionControls,
           sections: mockSections,
           selectedIds: ['section-1'],
-          onSplit: vi.fn(),
+          onSplitAtCurrentTime: vi.fn(),
         }}
       />
     );
 
-    const splitBtn = screen.getByText('Split here').closest('button');
-    expect(splitBtn).toBeDisabled();
+    const splitBtn = Array.from(container.querySelectorAll('.section-action-btn')).find(
+      (button) => button.textContent?.includes('content_cut')
+    ) as HTMLButtonElement;
+    expect(splitBtn).toBeEnabled();
   });
 
   // Note: Loop control tests have been removed as those controls
@@ -389,6 +401,60 @@ describe('PlaybackBar', () => {
     });
   });
 
+  describe('lane ui', () => {
+    it('renders generated lane controls when reference sections are present', () => {
+      const onCreateLane = vi.fn();
+      const onCloneGeneratedLane = vi.fn();
+      const { container } = render(
+        <PlaybackBar
+          {...defaultProps}
+          sectionControls={{
+            ...defaultSectionControls,
+            referenceSections: [{ id: 'ref-1', startTime: 0, endTime: 20, label: 'M1-8', color: '#999', confidence: 1 }],
+            generatedLaneLabel: 'Generated Sections',
+            onCreateLane,
+            onCloneGeneratedLane,
+          }}
+        />
+      );
+
+      expect(screen.getByText('Generated Sections')).toBeInTheDocument();
+      const menuTrigger = container.querySelector('.lane-menu-trigger') as HTMLButtonElement;
+      fireEvent.click(menuTrigger);
+      fireEvent.click(screen.getByText('Clone lane'));
+      fireEvent.click(screen.getByText('New lane'));
+      expect(onCloneGeneratedLane).toHaveBeenCalledTimes(1);
+      expect(onCreateLane).toHaveBeenCalledTimes(1);
+    });
+
+    it('renders practice sections in their matching lane rows', () => {
+      const { container } = render(
+        <PlaybackBar
+          {...defaultProps}
+          sectionControls={{
+            ...defaultSectionControls,
+            practiceLanes: [
+              { id: 'lane-a', name: 'My Sections', createdAt: 1 },
+              { id: 'lane-b', name: 'Alt Sections', createdAt: 2 },
+            ],
+            sections: [
+              { id: 'a1', startTime: 0, endTime: 20, label: 'A1', color: '#999', confidence: 1, laneId: 'lane-a' } as Section,
+              { id: 'b1', startTime: 20, endTime: 40, label: 'B1', color: '#999', confidence: 1, laneId: 'lane-b' } as Section,
+            ],
+            selectedIds: [],
+          }}
+        />
+      );
+
+      const laneRows = container.querySelectorAll('.lane-row');
+      expect(laneRows.length).toBe(2);
+      expect(screen.getByDisplayValue('My Sections')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('Alt Sections')).toBeInTheDocument();
+      expect(screen.getByText('A1')).toBeInTheDocument();
+      expect(screen.getByText('B1')).toBeInTheDocument();
+    });
+  });
+
   describe('section dividers', () => {
     it('should render section dividers for all sections except the first', () => {
       const { container } = render(
@@ -399,8 +465,8 @@ describe('PlaybackBar', () => {
       );
 
       const dividers = container.querySelectorAll('.section-divider');
-      // First section starts at 0%, so no divider. Sections 2 and 3 have dividers.
-      expect(dividers.length).toBe(2);
+      // Divider lines were intentionally removed for multi-lane clarity.
+      expect(dividers.length).toBe(0);
     });
   });
 
@@ -413,7 +479,7 @@ describe('PlaybackBar', () => {
         />
       );
 
-      const sectionBtn = screen.getByText('M15');
+      const sectionBtn = screen.getByText('M15').closest('button') as HTMLButtonElement;
       fireEvent.mouseEnter(sectionBtn);
 
       // Hover card should appear with full label
@@ -424,6 +490,7 @@ describe('PlaybackBar', () => {
     });
 
     it('should hide hover card when mouse leaves', () => {
+      vi.useFakeTimers();
       const { container } = render(
         <PlaybackBar
           {...defaultProps}
@@ -431,12 +498,33 @@ describe('PlaybackBar', () => {
         />
       );
 
-      const sectionBtn = screen.getByText('M15');
+      const sectionBtn = screen.getByText('M15').closest('button') as HTMLButtonElement;
       fireEvent.mouseEnter(sectionBtn);
       expect(screen.getByText('M15-30')).toBeInTheDocument();
 
       fireEvent.mouseLeave(sectionBtn);
+      act(() => {
+        vi.advanceTimersByTime(180);
+      });
       expect(container.querySelector('.section-hover-card')).not.toBeInTheDocument();
+      vi.useRealTimers();
+    });
+
+    it('allows editing practice section name from hover card', () => {
+      const onRenameSection = vi.fn();
+      render(
+        <PlaybackBar
+          {...defaultProps}
+          sectionControls={{ ...defaultSectionControls, sections: mockSections, onRenameSection }}
+        />
+      );
+
+      const sectionBtn = screen.getByText('M15').closest('button') as HTMLButtonElement;
+      fireEvent.mouseEnter(sectionBtn);
+      const input = screen.getByDisplayValue('M15-30');
+      fireEvent.change(input, { target: { value: 'Verse Groove' } });
+      fireEvent.blur(input);
+      expect(onRenameSection).toHaveBeenCalledWith('section-1', 'Verse Groove');
     });
   });
 });

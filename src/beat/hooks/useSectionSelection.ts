@@ -28,6 +28,8 @@ interface UseSectionSelectionOptions {
   seek: (time: number) => void;
   /** Current loop region (from useBeatSync) */
   loopRegion: LoopRegion | null;
+  /** Whether loop boundaries should snap to measures */
+  snapToMeasures?: boolean;
 }
 
 interface UseSectionSelectionReturn {
@@ -67,6 +69,7 @@ export function useSectionSelection({
   setLoopEnabled,
   seek,
   loopRegion,
+  snapToMeasures = true,
 }: UseSectionSelectionOptions): UseSectionSelectionReturn {
   const [selectedSectionIds, setSelectedSectionIds] = useState<string[]>([]);
 
@@ -104,8 +107,12 @@ export function useSectionSelection({
         // Update loop region to span all selected sections, extended to measure boundaries
         const firstSection = sections[newStart];
         const lastSection = sections[newEnd];
-        const loopStart = extendToMeasureBoundary(firstSection.startTime, 'start', bpm, musicStartTime, beatsPerMeasure);
-        const loopEnd = extendToMeasureBoundary(lastSection.endTime, 'end', bpm, musicStartTime, beatsPerMeasure, duration);
+        const loopStart = snapToMeasures
+          ? extendToMeasureBoundary(firstSection.startTime, 'start', bpm, musicStartTime, beatsPerMeasure)
+          : firstSection.startTime;
+        const loopEnd = snapToMeasures
+          ? extendToMeasureBoundary(lastSection.endTime, 'end', bpm, musicStartTime, beatsPerMeasure, duration)
+          : lastSection.endTime;
         setLoopRegion({
           startTime: loopStart,
           endTime: loopEnd,
@@ -114,8 +121,12 @@ export function useSectionSelection({
       } else {
         // Single selection - extend to measure boundaries for smoother loops
         setSelectedSectionIds([section.id]);
-        const loopStart = extendToMeasureBoundary(section.startTime, 'start', bpm, musicStartTime, beatsPerMeasure);
-        const loopEnd = extendToMeasureBoundary(section.endTime, 'end', bpm, musicStartTime, beatsPerMeasure, duration);
+        const loopStart = snapToMeasures
+          ? extendToMeasureBoundary(section.startTime, 'start', bpm, musicStartTime, beatsPerMeasure)
+          : section.startTime;
+        const loopEnd = snapToMeasures
+          ? extendToMeasureBoundary(section.endTime, 'end', bpm, musicStartTime, beatsPerMeasure, duration)
+          : section.endTime;
         setLoopRegion({
           startTime: loopStart,
           endTime: loopEnd,
@@ -123,7 +134,7 @@ export function useSectionSelection({
         seek(loopStart);
       }
     },
-    [sections, selectedSectionIds, seek, setLoopRegion, bpm, musicStartTime, beatsPerMeasure, duration]
+    [sections, selectedSectionIds, seek, setLoopRegion, bpm, musicStartTime, beatsPerMeasure, duration, snapToMeasures]
   );
 
   /** Clear all section selection and disable looping */
@@ -142,20 +153,22 @@ export function useSectionSelection({
       : duration;
     // Snap end time to the nearest measure boundary (biased toward ending earlier)
     // This prevents the loop from ending in the middle of a measure
-    const snappedEndTime = extendToMeasureBoundary(
-      effectiveEndTime, 
-      'start',  // 'start' direction snaps backward to the previous measure boundary
-      bpm, 
-      musicStartTime, 
-      beatsPerMeasure, 
-      duration
-    );
+    const snappedEndTime = snapToMeasures
+      ? extendToMeasureBoundary(
+          effectiveEndTime,
+          'start',
+          bpm,
+          musicStartTime,
+          beatsPerMeasure,
+          duration
+        )
+      : effectiveEndTime;
     setLoopRegion({
       startTime: musicStartTime,
       endTime: snappedEndTime,
     });
     setLoopEnabled(true);
-  }, [musicStartTime, musicEndTime, duration, bpm, beatsPerMeasure, setLoopRegion, setLoopEnabled]);
+  }, [musicStartTime, musicEndTime, duration, bpm, beatsPerMeasure, setLoopRegion, setLoopEnabled, snapToMeasures]);
 
   /** Combine all selected sections into one merged section */
   const combineSelected = useCallback(() => {
