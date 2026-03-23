@@ -5696,8 +5696,9 @@ button:disabled {
 }
 
 .bpm-control-row .shared-bpm-input {
-  flex: 1;
-  max-width: none;
+  flex: 0 1 clamp(11rem, 48%, 15rem);
+  min-width: 11rem;
+  max-width: 15rem;
 }
 
 .bpm-time-sig {
@@ -5755,12 +5756,35 @@ button:disabled {
 }
 
 .playback-speed-controls .speed-control.sidebar {
-  min-width: 7rem;
+  --playback-speed-field-width: 10.25rem;
+  min-width: var(--playback-speed-field-width);
+  width: var(--playback-speed-field-width);
+  max-width: var(--playback-speed-field-width);
+}
+.playback-speed-controls .speed-control.sidebar,
+.playback-speed-controls .speed-control.sidebar.MuiFormControl-root {
+  grid-column: 1;
+  justify-self: start;
+  margin: 0 !important;
+}
+
+.playback-speed-controls .playback-bpm-chip {
+  grid-column: 2;
+  justify-self: start;
 }
 
 .playback-speed-controls {
+  --playback-speed-field-width: 10.25rem;
+  display: grid !important;
+  grid-template-columns: var(--playback-speed-field-width) max-content;
   align-items: stretch;
-  justify-content: flex-start;
+  justify-content: start;
+  justify-items: start;
+  column-gap: 0.42rem;
+  row-gap: 0.24rem;
+  width: 100%;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 .playback-speed-controls .playback-key-chip {
@@ -5770,6 +5794,8 @@ button:disabled {
 .playback-speed-controls .speed-control.sidebar .MuiInputBase-root {
   border-width: 0 !important;
   box-shadow: none !important;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .lane-label-cell.generated {

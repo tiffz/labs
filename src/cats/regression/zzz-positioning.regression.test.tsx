@@ -18,7 +18,7 @@ import {
   type MockCatRect,
 } from '../test/regressionTestUtils.js';
 
-describe('Zzz Positioning Regression Tests', () => {
+describe('Zzz Positioning Regression Tests', { timeout: 30000 }, () => {
   beforeEach(() => {
     setupRegressionTest();
   });

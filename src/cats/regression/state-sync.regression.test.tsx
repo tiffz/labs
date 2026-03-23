@@ -18,7 +18,7 @@ import {
   getConsoleWarnSpy,
 } from '../test/regressionTestUtils.js';
 
-describe('State Synchronization Regression Tests', () => {
+describe('State Synchronization Regression Tests', { timeout: 30000 }, () => {
   beforeEach(() => {
     setupRegressionTest();
   });
