@@ -1,5 +1,9 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { createPortal } from 'react-dom';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
+import IconButton from '@mui/material/IconButton';
 import { importScore, type ImportProgress, type ImportResult } from '../utils/importScore';
 import type { PianoScore } from '../types';
 import type { ParsedSections } from '../utils/parseMusicXml';
@@ -107,32 +111,44 @@ export default function ImportModal({ open, onClose, onImport, onMediaFile, init
     setMediaFile(null);
   }, [onClose, mediaFile]);
 
-  if (!open) return null;
-
   const previewScore = preview?.score;
   const measureCount = previewScore
     ? Math.max(...previewScore.parts.map(p => p.measures.length))
     : 0;
   const partCount = previewScore?.parts.filter(p => p.measures.some(m => m.notes.length > 0)).length ?? 0;
 
-  return createPortal(
-    <div className="import-modal-overlay" onClick={handleClose}>
-      <div className="import-modal" onClick={e => e.stopPropagation()}>
-        <div className="import-modal-header">
-          <h2>Import File</h2>
-          <button className="import-modal-close" onClick={handleClose} title="Close">
+  return (
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      maxWidth="md"
+      fullWidth
+      classes={{ paper: 'import-modal' }}
+    >
+      <DialogTitle className="import-modal-header">
+        <h2>Import File</h2>
+        <IconButton className="import-modal-close" onClick={handleClose} title="Close" size="small">
             <span className="material-symbols-outlined">close</span>
-          </button>
-        </div>
+        </IconButton>
+      </DialogTitle>
 
-        <div className="import-modal-body">
+      <DialogContent className="import-modal-body">
           {!preview && !progress?.stage && (
             <div
               className={`import-drop-zone ${dragOver ? 'drag-over' : ''}`}
+              role="button"
+              tabIndex={0}
+              aria-label="Choose a score or media file to import"
               onDragOver={e => { e.preventDefault(); setDragOver(true); }}
               onDragLeave={() => setDragOver(false)}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  fileInputRef.current?.click();
+                }
+              }}
             >
               <span className="material-symbols-outlined import-drop-icon">upload_file</span>
               <p className="import-drop-text">
@@ -219,16 +235,14 @@ export default function ImportModal({ open, onClose, onImport, onMediaFile, init
               </div>
             </div>
           )}
-        </div>
+      </DialogContent>
 
-        <div className="import-modal-footer">
-          <button className="import-cancel-btn" onClick={handleClose}>Cancel</button>
-          <button className="import-load-btn" onClick={handleConfirm} disabled={!preview}>
-            Load Score
-          </button>
-        </div>
-      </div>
-    </div>,
-    document.body,
+      <DialogActions className="import-modal-footer">
+        <button className="import-cancel-btn" onClick={handleClose}>Cancel</button>
+        <button className="import-load-btn" onClick={handleConfirm} disabled={!preview}>
+          Load Score
+        </button>
+      </DialogActions>
+    </Dialog>
   );
 }

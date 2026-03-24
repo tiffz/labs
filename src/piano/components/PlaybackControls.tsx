@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { createPortal } from 'react-dom';
+import Popover from '@mui/material/Popover';
 import { usePiano, type ActiveMode } from '../store';
 import { SOUND_OPTIONS, type SoundType } from '../../chords/types/soundOptions';
 import DrumAccompaniment, { type DrumScheduler } from '../../beat/components/DrumAccompaniment';
@@ -18,7 +18,6 @@ const PIANO_DRUM_STYLE: NotationStyle = {
 const PART_LABELS: Record<string, string> = { rh: 'Treble', lh: 'Bass' };
 
 interface SettingsDropdownProps {
-  anchorRef: React.RefObject<HTMLButtonElement | null>;
   state: { masterVolume: number; masterMuted: boolean; metronomeVolume: number; metronomeEnabled: boolean; score: { parts: { id: string; name: string }[] } | null; trackMuted: Map<string, boolean>; trackVolume: Map<string, number>; soundType: string; activeMode: string; drumEnabled: boolean; drumVolume: number; countInEveryLoop: boolean; midiSoundEnabled: boolean; midiSoundVolume: number };
   isActive: boolean;
   onMasterVolume: (v: number) => void;
@@ -35,29 +34,9 @@ interface SettingsDropdownProps {
 }
 
 const SettingsDropdown = React.forwardRef<HTMLDivElement, SettingsDropdownProps>(
-  ({ anchorRef, state, isActive, onMasterVolume, onMasterMute, onMetronomeVolume, onMetronomeToggle, onTrackMute, onTrackVolume, onSoundChange, onDrumVolume, onCountInEveryLoop, onMidiSound, onMidiSoundVolume }, ref) => {
-    const [pos, setPos] = useState({ top: 0, right: 0 });
-
-    useEffect(() => {
-      const update = () => {
-        if (!anchorRef.current) return;
-        const r = anchorRef.current.getBoundingClientRect();
-        setPos({
-          top: r.bottom + 6,
-          right: Math.max(8, window.innerWidth - r.right),
-        });
-      };
-      update();
-      window.addEventListener('scroll', update, true);
-      window.addEventListener('resize', update);
-      return () => {
-        window.removeEventListener('scroll', update, true);
-        window.removeEventListener('resize', update);
-      };
-    }, [anchorRef]);
-
+  ({ state, isActive, onMasterVolume, onMasterMute, onMetronomeVolume, onMetronomeToggle, onTrackMute, onTrackVolume, onSoundChange, onDrumVolume, onCountInEveryLoop, onMidiSound, onMidiSoundVolume }, ref) => {
     return (
-      <div className="sb-settings-dropdown" ref={ref} style={{ top: pos.top, right: pos.right }}>
+      <div className="sb-settings-dropdown" ref={ref}>
         <div className="sb-settings-section">
           <div className="sb-settings-row">
             <button className="btn btn-small" onClick={onMasterMute} title={state.masterMuted ? 'Unmute all' : 'Mute all'}>
@@ -171,25 +150,10 @@ const PlaybackControls: React.FC = () => {
   const [tempoInput, setTempoInput] = useState(String(state.tempo));
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsBtnRef = useRef<HTMLButtonElement>(null);
-  const settingsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setTempoInput(String(state.tempo));
   }, [state.tempo]);
-
-  useEffect(() => {
-    if (!settingsOpen) return;
-    const handleClick = (e: MouseEvent) => {
-      if (
-        settingsRef.current && !settingsRef.current.contains(e.target as Node) &&
-        settingsBtnRef.current && !settingsBtnRef.current.contains(e.target as Node)
-      ) {
-        setSettingsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [settingsOpen]);
 
   const commitTempo = (raw: string) => {
     const parsed = parseInt(raw);
@@ -572,10 +536,15 @@ const PlaybackControls: React.FC = () => {
         </div>
       )}
 
-      {settingsOpen && createPortal(
+      <Popover
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        anchorEl={settingsBtnRef.current}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        slotProps={{ paper: { className: 'sb-settings-popover' } }}
+      >
         <SettingsDropdown
-          ref={settingsRef}
-          anchorRef={settingsBtnRef}
           state={state}
           isActive={isActive}
           onMasterVolume={handleMasterVolume}
@@ -589,9 +558,8 @@ const PlaybackControls: React.FC = () => {
           onCountInEveryLoop={(enabled) => dispatch({ type: 'SET_COUNT_IN_EVERY_LOOP', enabled })}
           onMidiSound={(enabled) => dispatch({ type: 'SET_MIDI_SOUND', enabled })}
           onMidiSoundVolume={(volume) => dispatch({ type: 'SET_MIDI_SOUND_VOLUME', volume })}
-        />,
-        document.body,
-      )}
+        />
+      </Popover>
     </div>
   );
 };

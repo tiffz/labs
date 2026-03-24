@@ -1,7 +1,9 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
+import { ThemeProvider } from '@mui/material/styles';
 // Initialize server logger BEFORE any app modules so import-time errors are captured
 import { installServerLogger } from '../shared/utils/serverLogger';
+import { getAppTheme } from '../shared/ui/theme/appTheme';
 import './styles/corp.css';
 import CorpApp from './App';
 
@@ -11,6 +13,10 @@ installServerLogger('CORP');
 const rootEl = document.getElementById('root');
 if (rootEl) {
   const root = createRoot(rootEl);
-  root.render(<CorpApp />);
+  root.render(
+    <ThemeProvider theme={getAppTheme('corp')}>
+      <CorpApp />
+    </ThemeProvider>
+  );
 }
 

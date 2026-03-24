@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import Popover from '@mui/material/Popover';
 import type { ParsedRhythm } from '../types';
 import type { PlaybackSettings } from '../types/settings';
 import { renderRhythmAudio, exportAudioBuffer, calculateRhythmDuration, formatDuration } from '../utils/audioExport';
@@ -61,32 +62,12 @@ const DownloadDropdown: React.FC<DownloadDropdownProps> = ({
     onLoopsChange?.(newLoops);
   };
   const [isExporting, setIsExporting] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Calculate preview duration
   const singleLoopDuration = rhythm.isValid && rhythm.measures.length > 0
     ? calculateRhythmDuration(rhythm, bpm)
     : 0;
   const totalDuration = singleLoopDuration * loops;
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node) &&
-        buttonRef?.current &&
-        !buttonRef.current.contains(event.target as Node)
-      ) {
-        onClose();
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [isOpen, buttonRef, onClose]);
 
   const handleDownload = async () => {
     if (!rhythm.isValid || rhythm.measures.length === 0 || isExporting) {
@@ -129,15 +110,16 @@ const DownloadDropdown: React.FC<DownloadDropdownProps> = ({
   }
 
   return (
-    <div style={{ position: 'relative' }}>
+    <Popover
+      open={isOpen}
+      onClose={onClose}
+      anchorEl={buttonRef?.current ?? null}
+      anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+    >
       <div
-          ref={dropdownRef}
           className="download-dropdown"
           style={{
-            position: 'absolute',
-            top: '100%',
-            right: 0,
-            marginTop: '0.5rem',
             backgroundColor: 'white',
             border: '2px solid var(--border-color)',
             borderRadius: '0.375rem',
@@ -220,8 +202,8 @@ const DownloadDropdown: React.FC<DownloadDropdownProps> = ({
           >
             {isExporting ? 'Exporting...' : 'Download'}
           </button>
-        </div>
-    </div>
+      </div>
+    </Popover>
   );
 };
 

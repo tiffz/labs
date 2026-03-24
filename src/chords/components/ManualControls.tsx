@@ -4,6 +4,7 @@
  */
 
 import React, { useMemo, useEffect, useState, useRef, useCallback } from 'react';
+import Popover from '@mui/material/Popover';
 import type {
   ChordProgressionState,
   Key,
@@ -201,21 +202,12 @@ const ManualControls: React.FC<ManualControlsProps> = ({
     setCustomProgressionWarning('');
   }, [state.progression]);
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        progressionContainerRef.current &&
-        !progressionContainerRef.current.contains(event.target as Node)
-      ) {
-        if (showProgressionDropdown) {
-          setShowProgressionDropdown(false);
-          if (!lockedOptions.progression) applyCustomProgression();
-        }
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showProgressionDropdown, lockedOptions.progression, applyCustomProgression]);
+  const handleCloseProgressionDropdown = useCallback(() => {
+    setShowProgressionDropdown(false);
+    if (!lockedOptions.progression) {
+      applyCustomProgression();
+    }
+  }, [applyCustomProgression, lockedOptions.progression]);
 
   return (
     <>
@@ -311,39 +303,46 @@ const ManualControls: React.FC<ManualControlsProps> = ({
               
             </div>
             </div>
-            {showProgressionDropdown && (
-              <div className="option-chip-dropdown">
-                {orderedProgressionAutocompleteOptions
-                  .map((option) => (
-                    <button
-                      key={`${option.label}-${option.value}`}
-                      className={`option-chip-dropdown-item ${
-                        customProgressionInput.trim() === option.value ||
-                        state.progression.name === option.label
-                          ? 'selected'
-                          : ''
-                      }`}
-                      onClick={(event) => {
-                        event.preventDefault();
-                        setCustomProgressionInput(option.value);
-                        setCustomProgressionError('');
-                        setCustomProgressionWarning('');
-                        const presetMatch = COMMON_CHORD_PROGRESSIONS.find(
-                          (progression) => progression.name === option.label
-                        );
-                        if (presetMatch) {
-                          onStateChange({ progression: presetMatch });
-                        } else {
-                          applyCustomProgression();
-                        }
-                        setShowProgressionDropdown(false);
-                      }}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
+            <Popover
+              open={showProgressionDropdown}
+              anchorEl={progressionContainerRef.current}
+              onClose={handleCloseProgressionDropdown}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+              transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+              slotProps={{ paper: { className: 'option-chip-dropdown' } }}
+            >
+              <div className="option-chip-dropdown-list">
+                {orderedProgressionAutocompleteOptions.map((option) => (
+                  <button
+                    key={`${option.label}-${option.value}`}
+                    type="button"
+                    className={`option-chip-dropdown-item ${
+                      customProgressionInput.trim() === option.value ||
+                      state.progression.name === option.label
+                        ? 'selected'
+                        : ''
+                    }`}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      setCustomProgressionInput(option.value);
+                      setCustomProgressionError('');
+                      setCustomProgressionWarning('');
+                      const presetMatch = COMMON_CHORD_PROGRESSIONS.find(
+                        (progression) => progression.name === option.label
+                      );
+                      if (presetMatch) {
+                        onStateChange({ progression: presetMatch });
+                      } else {
+                        applyCustomProgression();
+                      }
+                      setShowProgressionDropdown(false);
+                    }}
+                  >
+                    {option.label}
+                  </button>
+                ))}
               </div>
-            )}
+            </Popover>
           </div>
         </div>
         {customProgressionError ? (
@@ -617,8 +616,18 @@ const ManualControls: React.FC<ManualControlsProps> = ({
                 <div
                   key={strategy}
                   className={`style-preview-item ${isSelected ? 'selected' : ''}`}
+                  role="button"
+                  tabIndex={lockedOptions.stylingStrategy ? -1 : 0}
+                  aria-label={`Choose ${config.name} chord style`}
                   onClick={() => {
                     if (!lockedOptions.stylingStrategy) {
+                      onStateChange({ stylingStrategy: strategy });
+                    }
+                  }}
+                  onKeyDown={(event) => {
+                    if (lockedOptions.stylingStrategy) return;
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
                       onStateChange({ stylingStrategy: strategy });
                     }
                   }}

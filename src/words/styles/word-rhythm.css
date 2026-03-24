@@ -244,6 +244,9 @@
 }
 
 .words-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid color-mix(in srgb, var(--pastel-6) 28%, #cbd5e1);
   background: color-mix(in srgb, var(--pastel-9) 88%, var(--pastel-8));
   color: #0f766e;
@@ -863,10 +866,6 @@
 }
 
 .words-randomize-menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  z-index: 130;
   min-width: 180px;
   display: grid;
   gap: 4px;
@@ -881,12 +880,22 @@
 }
 
 .words-randomize-menu-section {
+  position: absolute;
+  top: calc(100% + 6px);
   left: auto;
   right: 0;
+  z-index: 130;
 }
 
 .words-randomize-option {
   justify-content: flex-start;
+  width: 100%;
+}
+
+.words-randomize-menu-list,
+.words-export-menu-list {
+  display: grid;
+  gap: 6px;
   width: 100%;
 }
 
@@ -1044,6 +1053,7 @@
 .words-button-add {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
 }
 
@@ -1100,11 +1110,8 @@
 
 .words-export-menu {
   width: 280px;
-  right: 10px;
-  left: auto;
   display: grid;
   gap: 6px;
-  z-index: 90;
 }
 
 .words-export-option {

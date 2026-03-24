@@ -58,6 +58,31 @@ Users were experiencing stale UI updates requiring manual hard refresh.
 - Static assets cached efficiently
 - No manual refresh required
 
+## Accessibility and UI Primitive Strategy
+
+### Decision
+
+Adopt MUI as the default primitive library for complex interactive widgets and enforce accessibility guardrails through linting and tests.
+
+### Rationale
+
+- Custom dialog/menu implementations were producing repeat regressions in keyboard navigation and focus behavior.
+- Shared primitives reduce maintenance burden and improve consistency across apps.
+- A11y checks should be enforced by tooling, not just code review.
+
+### Implementation
+
+- Use MUI primitives (`Dialog`, `Menu`, `Popover`, `Autocomplete`, `Select`) for complex interaction surfaces.
+- Keep per-app look-and-feel using app-scoped theme tokens and ThemeProviders.
+- Enable `eslint-plugin-jsx-a11y` in the root ESLint flat config.
+- Add shared accessibility test helpers in `src/shared/test/` for repeatable audits.
+
+### Benefits
+
+- Better baseline accessibility across all micro-apps.
+- Fewer bespoke focus-trap/click-away bugs.
+- Faster future development through reusable, tested patterns.
+
 ## Quality Assurance
 
 ### Pre-commit Checks

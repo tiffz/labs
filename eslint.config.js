@@ -3,6 +3,7 @@ import tseslint from 'typescript-eslint';
 import pluginReact from 'eslint-plugin-react';
 import pluginReactHooks from 'eslint-plugin-react-hooks';
 import pluginReactRefresh from 'eslint-plugin-react-refresh';
+import pluginJsxA11y from 'eslint-plugin-jsx-a11y';
 import js from '@eslint/js';
 
 export default [
@@ -32,6 +33,7 @@ export default [
       react: pluginReact,
       'react-hooks': pluginReactHooks,
       'react-refresh': pluginReactRefresh,
+      'jsx-a11y': pluginJsxA11y,
     },
     languageOptions: {
       globals: {
@@ -46,7 +48,18 @@ export default [
     rules: {
       ...pluginReact.configs.recommended.rules,
       ...pluginReactHooks.configs.recommended.rules,
+      ...pluginJsxA11y.flatConfigs.recommended.rules,
       'react/react-in-jsx-scope': 'off',
+      // Start with actionable warnings to avoid noisy first rollout.
+      'jsx-a11y/click-events-have-key-events': 'warn',
+      'jsx-a11y/control-has-associated-label': 'off',
+      'jsx-a11y/interactive-supports-focus': 'warn',
+      'jsx-a11y/label-has-associated-control': 'off',
+      'jsx-a11y/media-has-caption': 'warn',
+      'jsx-a11y/no-autofocus': 'warn',
+      'jsx-a11y/no-noninteractive-element-interactions': 'warn',
+      'jsx-a11y/no-noninteractive-tabindex': 'warn',
+      'jsx-a11y/no-static-element-interactions': 'warn',
       'react-refresh/only-export-components': [
         'warn',
         { allowConstantExport: true },

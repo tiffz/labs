@@ -1,4 +1,5 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
+import Popover from '@mui/material/Popover';
 import type { PlaybackSettings } from '../types/settings';
 import { DEFAULT_SETTINGS } from '../types/settings';
 import AppTooltip from '../../shared/components/AppTooltip';
@@ -18,115 +19,6 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({
   onSettingsChange,
   buttonRef,
 }) => {
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const [position, setPosition] = React.useState<React.CSSProperties>({});
-
-  // Simplified positioning: button is always on right edge, so always right-align dropdown
-  useEffect(() => {
-    if (!isOpen || !buttonRef.current) return;
-
-    const calculatePosition = () => {
-      const buttonRect = buttonRef.current!.getBoundingClientRect();
-      const viewportWidth = window.innerWidth;
-      const viewportHeight = window.innerHeight;
-      const padding = 8;
-      const dropdownWidth = 380;
-      const dropdownHeight = 500;
-      
-      // Always right-align: dropdown's right edge aligns with button's right edge
-      // Calculate right position from viewport edge to button's right edge
-      const rightPos = viewportWidth - buttonRect.right;
-      
-      // Ensure dropdown doesn't overflow left edge of viewport
-      // If dropdown would extend past left edge, constrain it
-      const maxRightPos = viewportWidth - dropdownWidth - padding;
-      const finalRightPos = Math.min(rightPos, maxRightPos);
-      
-      // Vertical positioning: prefer below, fallback to above
-      const spaceBelow = viewportHeight - buttonRect.bottom - padding;
-      const spaceAbove = buttonRect.top - padding;
-      
-      let topPos: number;
-      let maxHeight: number;
-      
-      if (spaceBelow >= 200) {
-        topPos = buttonRect.bottom + 8;
-        maxHeight = Math.min(dropdownHeight, spaceBelow);
-      } else if (spaceAbove >= 200) {
-        topPos = buttonRect.top - Math.min(dropdownHeight, spaceAbove) - 8;
-        maxHeight = Math.min(dropdownHeight, spaceAbove);
-      } else {
-        // Limited space - use available space
-        if (spaceBelow > spaceAbove) {
-          topPos = buttonRect.bottom + 8;
-          maxHeight = Math.max(200, spaceBelow);
-        } else {
-          topPos = padding;
-          maxHeight = Math.max(200, spaceAbove);
-        }
-      }
-      
-      // Ensure top position is valid
-      topPos = Math.max(padding, topPos);
-      maxHeight = Math.min(maxHeight, viewportHeight - topPos - padding);
-      
-      setPosition({
-        position: 'fixed',
-        right: `${finalRightPos}px`,
-        top: `${topPos}px`,
-        maxHeight: `${maxHeight}px`,
-      });
-    };
-
-    // Calculate position after a brief delay to ensure DOM is ready
-    const timeoutId = setTimeout(calculatePosition, 0);
-    
-    // Recalculate on window resize and scroll
-    window.addEventListener('resize', calculatePosition);
-    window.addEventListener('scroll', calculatePosition, true);
-    
-    return () => {
-      clearTimeout(timeoutId);
-      window.removeEventListener('resize', calculatePosition);
-      window.removeEventListener('scroll', calculatePosition, true);
-    };
-  }, [isOpen, buttonRef]);
-
-  // Close dropdown when clicking outside (but allow button to toggle)
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node;
-      
-      // Don't close if clicking the button (let it toggle via its onClick handler)
-      if (buttonRef.current && buttonRef.current.contains(target)) {
-        return;
-      }
-      
-      // Close if clicking outside both button and dropdown
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(target)
-      ) {
-        onClose();
-      }
-    };
-
-    // Use a slight delay to allow button's onClick to fire first
-    const timeoutId = setTimeout(() => {
-      document.addEventListener('mousedown', handleClickOutside);
-    }, 0);
-
-    return () => {
-      clearTimeout(timeoutId);
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isOpen, onClose, buttonRef]);
-
-  if (!isOpen) return null;
-
-
   const handleNonAccentVolumeChange = (value: number) => {
     // Constrain non-accent volume to never exceed accent volumes
     const maxAllowed = Math.min(settings.measureAccentVolume, settings.beatGroupAccentVolume);
@@ -183,10 +75,13 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({
   };
 
   return (
-    <div 
-      className="settings-dropdown-container" 
-      ref={dropdownRef}
-      style={position}
+    <Popover
+      open={isOpen}
+      onClose={onClose}
+      anchorEl={buttonRef.current}
+      anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+      slotProps={{ paper: { className: 'settings-dropdown-container' } }}
     >
       <div className="settings-dropdown">
         <div className="settings-header">
@@ -366,7 +261,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({
           </div>
         </div>
       </div>
-    </div>
+    </Popover>
   );
 };
 

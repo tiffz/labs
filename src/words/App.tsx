@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import Popover from '@mui/material/Popover';
 import { usePlayback } from '../drums/hooks/usePlayback';
 import { parseRhythm } from '../drums/utils/rhythmParser';
 import { DEFAULT_SETTINGS } from '../drums/types/settings';
@@ -492,13 +493,12 @@ const App: React.FC = () => {
   const generationButtonRef = useRef<HTMLButtonElement | null>(null);
   const soundMenuRef = useRef<HTMLDivElement | null>(null);
   const soundButtonRef = useRef<HTMLButtonElement | null>(null);
-  const exportMenuRef = useRef<HTMLDivElement | null>(null);
   const randomizeButtonRef = useRef<HTMLButtonElement | null>(null);
-  const randomizeMenuRef = useRef<HTMLDivElement | null>(null);
   const exportButtonRef = useRef<HTMLButtonElement | null>(null);
   const sectionRandomizeAnchorRefs = useRef<Map<string, HTMLDivElement>>(
     new Map()
   );
+  const sectionRandomizeMenuRef = useRef<HTMLDivElement | null>(null);
   const sectionSettingsAnchorRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const sectionSettingsMenuRef = useRef<HTMLDivElement | null>(null);
   const sectionsColumnRef = useRef<HTMLElement | null>(null);
@@ -1358,17 +1358,16 @@ const App: React.FC = () => {
       const inSectionRandomizeAnchor =
         target instanceof Element &&
         target.closest('.words-section-randomize-anchor');
-      if (!inSectionRandomizeAnchor) {
+      const inSectionRandomizeMenu = sectionRandomizeMenuRef.current?.contains(target);
+      if (!inSectionRandomizeAnchor && !inSectionRandomizeMenu) {
         setSectionRandomizeMenuId(null);
       }
-      const inExportMenu = exportMenuRef.current?.contains(target);
       const inExportButton = exportButtonRef.current?.contains(target);
-      if (!inExportMenu && !inExportButton) {
+      if (!inExportButton) {
         setExportMenuOpen(false);
       }
-      const inRandomizeMenu = randomizeMenuRef.current?.contains(target);
       const inRandomizeButton = randomizeButtonRef.current?.contains(target);
-      if (!inRandomizeMenu && !inRandomizeButton) {
+      if (!inRandomizeButton) {
         setRandomizeMenuOpen(false);
       }
     };
@@ -2671,8 +2670,15 @@ const App: React.FC = () => {
             >
               randomize rhythm
             </button>
-            {randomizeMenuOpen ? (
-              <div ref={randomizeMenuRef} className="words-randomize-menu">
+            <Popover
+              open={randomizeMenuOpen}
+              anchorEl={randomizeButtonRef.current}
+              onClose={() => setRandomizeMenuOpen(false)}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+              transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+              slotProps={{ paper: { className: 'words-randomize-menu' } }}
+            >
+              <div className="words-randomize-menu-list">
                 {RANDOMIZE_MODE_OPTIONS.map((option) => (
                   <AppTooltip key={option.mode} title={option.tooltip}>
                     <button
@@ -2688,7 +2694,7 @@ const App: React.FC = () => {
                   </AppTooltip>
                 ))}
               </div>
-            ) : null}
+            </Popover>
           </div>
           <button
             ref={generationButtonRef}
@@ -3844,8 +3850,20 @@ const App: React.FC = () => {
                             <DiceIcon variant="single" size={16} />
                           </button>
                         </AppTooltip>
-                        {sectionRandomizeMenuId === section.id ? (
-                          <div className="words-randomize-menu words-randomize-menu-section">
+                        <Popover
+                          open={sectionRandomizeMenuId === section.id}
+                          anchorEl={sectionRandomizeAnchorRefs.current.get(section.id) ?? null}
+                          onClose={() => setSectionRandomizeMenuId(null)}
+                          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                          transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                          slotProps={{
+                            paper: {
+                              className: 'words-randomize-menu',
+                              ref: sectionRandomizeMenuRef,
+                            },
+                          }}
+                        >
+                          <div className="words-randomize-menu-list">
                             {RANDOMIZE_MODE_OPTIONS.map((option) => (
                               <AppTooltip key={`${section.id}-${option.mode}`} title={option.tooltip}>
                                 <button
@@ -3861,7 +3879,7 @@ const App: React.FC = () => {
                               </AppTooltip>
                             ))}
                           </div>
-                        ) : null}
+                        </Popover>
                       </div>
                       <AppTooltip title="Show this section in notation">
                         <button
@@ -4003,11 +4021,18 @@ const App: React.FC = () => {
             >
               export song
             </button>
-            {exportMenuOpen ? (
-              <div ref={exportMenuRef} className="words-dropdown-menu words-export-menu">
+            <Popover
+              open={exportMenuOpen}
+              anchorEl={exportButtonRef.current}
+              onClose={() => setExportMenuOpen(false)}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+              slotProps={{ paper: { className: 'words-dropdown-menu words-export-menu' } }}
+            >
+              <div className="words-export-menu-list">
                 <button
-                  className="words-button words-export-option"
                   type="button"
+                  className="words-button words-export-option"
                   onClick={() => {
                     void copyText(lyricsExportText);
                     setExportMenuOpen(false);
@@ -4016,8 +4041,8 @@ const App: React.FC = () => {
                   Copy lyrics
                 </button>
                 <button
-                  className="words-button words-export-option"
                   type="button"
+                  className="words-button words-export-option"
                   onClick={() => {
                     void copyText(asciiChordChartExportText);
                     setExportMenuOpen(false);
@@ -4026,8 +4051,8 @@ const App: React.FC = () => {
                   Copy ASCII chord chart
                 </button>
                 <button
-                  className="words-button words-export-option"
                   type="button"
+                  className="words-button words-export-option"
                   onClick={() => {
                     handleDownloadChordChartPdf();
                     setExportMenuOpen(false);
@@ -4036,8 +4061,8 @@ const App: React.FC = () => {
                   Download chord chart PDF
                 </button>
                 <button
-                  className="words-button words-export-option"
                   type="button"
+                  className="words-button words-export-option"
                   onClick={() => {
                     handleDownloadPianoMidi();
                     setExportMenuOpen(false);
@@ -4046,8 +4071,8 @@ const App: React.FC = () => {
                   Download piano MIDI
                 </button>
                 <button
-                  className="words-button words-export-option"
                   type="button"
+                  className="words-button words-export-option"
                   onClick={() => {
                     handleDownloadDrumsMidi();
                     setExportMenuOpen(false);
@@ -4056,7 +4081,7 @@ const App: React.FC = () => {
                   Download drums MIDI
                 </button>
               </div>
-            ) : null}
+            </Popover>
           </div>
           <div className="words-notation-sections">
             {notationSectionBlocks.map((block) => (

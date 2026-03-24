@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import Popover from '@mui/material/Popover';
 import { COMMON_BPMS, DEFAULT_BPM_MAX, DEFAULT_BPM_MIN } from '../../music/musicInputConstants';
 
 interface BpmInputProps {
@@ -32,6 +33,8 @@ const BpmInput: React.FC<BpmInputProps> = ({
 }) => {
   const [draft, setDraft] = useState(String(value));
   const [isEditing, setIsEditing] = useState(false);
+  const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
+  const anchorRef = React.useRef<HTMLDivElement | null>(null);
 
   const presets = useMemo(() => COMMON_BPMS.filter((candidate) => candidate >= min && candidate <= max), [max, min]);
   const filteredPresets = useMemo(() => presets, [presets]);
@@ -52,6 +55,14 @@ const BpmInput: React.FC<BpmInputProps> = ({
     onChange(next);
   };
 
+  useEffect(() => {
+    if (isEditing) {
+      setMenuAnchor(anchorRef.current);
+    } else {
+      setMenuAnchor(null);
+    }
+  }, [isEditing]);
+
   const bump = (delta: number): void => {
     const next = clamp(value + delta, min, max);
     onChange(next);
@@ -60,7 +71,7 @@ const BpmInput: React.FC<BpmInputProps> = ({
 
   return (
     <div className={className}>
-      <div className="shared-bpm-dropdown-anchor">
+      <div className="shared-bpm-dropdown-anchor" ref={anchorRef}>
         <div className="shared-bpm-main-row">
           <div className="shared-bpm-shell">
             <div className="shared-bpm-stepper" role="group" aria-label="BPM stepper">
@@ -68,6 +79,7 @@ const BpmInput: React.FC<BpmInputProps> = ({
                 className="shared-bpm-value"
                 type="text"
                 inputMode="numeric"
+                aria-label="Tempo in BPM"
                 value={draft}
                 onFocus={() => {
                   setDraft(String(Math.round(value)));
@@ -154,38 +166,37 @@ const BpmInput: React.FC<BpmInputProps> = ({
             {trailingActions}
           </div>
         </div>
-        {showPresetDropdown && isEditing && (
-          <div className="shared-bpm-dropdown" aria-label="Common BPMs">
-            <button
-              type="button"
-              className="shared-bpm-dropdown-trigger"
-              onMouseDown={(event) => event.preventDefault()}
-            >
-              Common BPMs
-            </button>
-            <div className="shared-bpm-dropdown-list" role="list" aria-label="Common BPM options">
-              {filteredPresets.length > 0 ? (
-                filteredPresets.map((preset) => (
-                  <button
-                    key={preset}
-                    type="button"
-                    className={`shared-bpm-dropdown-item ${Math.round(value) === preset ? 'active' : ''}`}
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => {
-                      onChange(preset);
-                      setDraft(String(preset));
-                      setIsEditing(false);
-                    }}
-                  >
-                    {preset}
-                  </button>
-                ))
-              ) : (
-                <span className="shared-bpm-dropdown-empty">No matching common BPMs</span>
-              )}
-            </div>
+        <Popover
+          open={Boolean(showPresetDropdown && isEditing && menuAnchor)}
+          anchorEl={menuAnchor}
+          onClose={() => setIsEditing(false)}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+          transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+          slotProps={{ paper: { className: 'shared-bpm-dropdown' } }}
+        >
+          <div className="shared-bpm-dropdown-list" role="list" aria-label="Common BPM options">
+            <span className="shared-bpm-dropdown-trigger">Common BPMs</span>
+            {filteredPresets.length > 0 ? (
+              filteredPresets.map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  className={`shared-bpm-dropdown-item ${Math.round(value) === preset ? 'active' : ''}`}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => {
+                    onChange(preset);
+                    setDraft(String(preset));
+                    setIsEditing(false);
+                  }}
+                >
+                  {preset}
+                </button>
+              ))
+            ) : (
+              <span className="shared-bpm-dropdown-empty">No matching common BPMs</span>
+            )}
           </div>
-        )}
+        </Popover>
       </div>
     </div>
   );

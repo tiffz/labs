@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import Dialog from '@mui/material/Dialog';
 import { usePiano } from '../store';
 import {
   generateExerciseScore, generateChromaticScore,
@@ -93,7 +93,6 @@ interface ExercisePickerProps {
 
 const ExercisePicker: React.FC<ExercisePickerProps> = ({ open, onClose, onImportClick }) => {
   const { dispatch, loadScore, engine } = usePiano();
-  const panelRef = useRef<HTMLDivElement>(null);
 
   const [section, setSection] = useState<'scales' | 'progressions' | 'songs'>('scales');
 
@@ -276,28 +275,24 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({ open, onClose, onImport
     progKey,
   ]);
 
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [open, onClose]);
-
-  if (!open) return null;
-
   const filteredEntries = search.trim()
     ? entries.filter(e => e.title.toLowerCase().includes(search.toLowerCase()))
     : entries;
 
-  return createPortal(
-    <div className="ep-overlay" onClick={onClose}>
-      <div className="ep-panel" ref={panelRef} onClick={e => e.stopPropagation()}>
-        <div className="ep-header">
-          <h2 className="ep-title">Choose Exercise</h2>
-          <button className="ep-close" onClick={onClose}>
-            <span className="material-symbols-outlined">close</span>
-          </button>
-        </div>
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth={false}
+      fullWidth={false}
+      slotProps={{ paper: { className: 'ep-panel' } }}
+    >
+      <div className="ep-header">
+        <h2 className="ep-title">Choose Exercise</h2>
+        <button type="button" className="ep-close" onClick={onClose}>
+          <span className="material-symbols-outlined">close</span>
+        </button>
+      </div>
 
         <div className="ep-sections">
           <button className={`ep-section-btn ${section === 'scales' ? 'active' : ''}`} onClick={() => setSection('scales')}>
@@ -557,9 +552,7 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({ open, onClose, onImport
             </button>
           </div>
         )}
-      </div>
-    </div>,
-    document.body,
+    </Dialog>
   );
 };
 

@@ -677,17 +677,15 @@ body {
 }
 
 /* ==========================================================================
-   SIDEBAR – Settings Dropdown (portal, fixed position)
+   SIDEBAR – Settings Dropdown
    ========================================================================== */
 
 .sb-settings-dropdown {
-  position: fixed;
   width: 340px;
   background: white;
   border: 1px solid var(--piano-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
-  z-index: 10000;
   padding: var(--sp-3) 0;
   animation: settings-in 0.12s ease-out;
 }
@@ -1664,17 +1662,6 @@ body {
 /* ==========================================================================
    IMPORT MODAL
    ========================================================================== */
-
-.import-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-  animation: fadeIn var(--transition-normal);
-}
 .import-modal {
   background: var(--piano-bg);
   border-radius: var(--radius-xl);
@@ -3404,21 +3391,8 @@ body {
 }
 
 /* ==========================================================================
-   EXERCISE PICKER OVERLAY
+   EXERCISE PICKER
    ========================================================================== */
-
-.ep-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 2000;
-  background: rgba(0, 0, 0, 0.4);
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: var(--sp-8) var(--sp-4);
-  overflow-y: auto;
-  animation: ep-fade-in 0.15s ease;
-}
 @keyframes ep-fade-in {
   from {
     opacity: 0;
@@ -3429,8 +3403,8 @@ body {
 }
 
 .ep-panel {
-  width: 100%;
-  max-width: 720px;
+  width: min(720px, calc(100vw - 32px));
+  max-width: none;
   max-height: 85vh;
   background: white;
   border-radius: var(--radius-xl);

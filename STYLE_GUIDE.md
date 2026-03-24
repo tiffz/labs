@@ -147,7 +147,7 @@ The ESLint configuration is set up to support style guide compliance. Additional
 ## References
 
 - [Google TypeScript Style Guide](https://google.github.io/styleguide/tsguide.html)
-- See `GEMINI.md` section 7 for project-wide style standards
+- See `GEMINI.md` for project-wide style standards
 - See `DEVELOPMENT.md` for development guidelines
 
 ## Shared UX and Design System Rules
@@ -171,3 +171,9 @@ These rules are required for new UI work across apps in this monorepo:
 4. **Icon standard**
    - Use Material Design icon sets (Material Symbols and/or MDI) by default.
    - Deviations require a clear product/design reason.
+
+5. **Accessibility and complex widget standard**
+   - For composite controls (dialogs, dropdown menus, popovers, combobox/autocomplete, and advanced selects), default to MUI primitives instead of app-local HTML/CSS implementations.
+   - New or refactored controls must support keyboard access, focus visibility, and semantic labeling (`aria-label`, `aria-labelledby`, and associated labels where applicable).
+   - If a custom widget is required, document why MUI is insufficient and match MUI-equivalent behavior for focus management, escape handling, and click-away behavior.
+   - Treat `jsx-a11y` lint warnings in touched files as action items before merge.

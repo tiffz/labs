@@ -1032,7 +1032,13 @@
   }
 
   .metronome-button .material-symbols-outlined {
-    font-size: 1.05rem;
+    font-size: 1.25rem;
+    line-height: 1;
+    width: 1.25rem;
+    height: 1.25rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .metronome-button.active {
@@ -1120,13 +1126,8 @@
 
   /* Settings Dropdown Container */
   .settings-dropdown-container {
-    position: fixed;
     z-index: 1000;
     animation: fadeIn 0.15s ease;
-    /* Container should have no width - let dropdown determine width */
-    width: auto;
-    margin: 0;
-    padding: 0;
   }
 
   .play-button .material-symbols-outlined,

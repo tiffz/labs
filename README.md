@@ -126,9 +126,11 @@ The project uses a streamlined setup:
 
 - **Reuse First**: For common UI problems (tooltips, toggles, icon buttons, controls), prefer shared components in `src/shared/components`.
 - **Material Defaults**: By default, apps should follow Material Design interaction conventions (spacing rhythm, control sizing, focus/hover behavior, and widget ergonomics), then customize visual styling per app identity.
-- **MUI-First Implementation**: For React controls, prefer `@mui/material` primitives (`Menu`, `MenuItem`, `Select`, `TextField`, `Slider`, `Checkbox`, `IconButton`) over bespoke HTML widgets unless there is a measured UX/perf reason not to.
+- **MUI-First Implementation**: For React controls, prefer `@mui/material` primitives (`Menu`, `MenuItem`, `Dialog`, `Popover`, `Select`, `Autocomplete`, `TextField`, `Slider`, `Checkbox`, `IconButton`) over bespoke HTML widgets unless there is a measured UX/perf reason not to.
 - **Tooltip Standard**: Use `AppTooltip` (MUI-based) as the default tooltip primitive. Avoid custom CSS pseudo-tooltips or ad-hoc tooltip systems unless a rich, non-standard help surface is required.
 - **Icon Standard**: Use Material Design iconography by default (Material Symbols / MDI) unless there is a documented reason to use a different icon set.
+- **Accessibility Non-Negotiables**: Keyboard access, visible focus states, and semantic labels are required for all interactive controls; custom composite widgets must match MUI-level behavior for focus management and escape handling.
+- **Per-App Theming**: Keep each app's visual identity via app-scoped theme tokens while reusing MUI interaction primitives; avoid global one-size-fits-all restyling.
 
 ## Continuous Integration & Deployment (CI/CD)
 
@@ -220,6 +222,7 @@ For CI/CD troubleshooting, see `DEVELOPMENT.md` for detailed debugging procedure
 - **Write tests for new components and features - place test files alongside the code they test.**
 - **Ensure all tests pass before committing:** `npm test`
 - **Run linting before committing:** `npm run lint`
+- **Address accessibility lint warnings in touched code paths**, and avoid introducing new JSX a11y regressions.
 - **CI/CD will automatically handle deployment** - focus on writing quality code and tests
 - **When editing an app, use the app's own CSS and assets unless you are intentionally sharing code.**
 - **If you see custom CSS classes (e.g., `.card-bg`, `.font-heading`), do not remove them—they are required for the original look and feel.**

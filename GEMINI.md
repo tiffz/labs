@@ -62,6 +62,15 @@ For detailed architecture, CI/CD, and development patterns, see:
 
 Use deterministic tools (linters, formatters) rather than asking AI to enforce style.
 
+## Accessibility and UI Implementation Rules
+
+- Use MUI first for complex widgets: `Dialog`, `Menu`, `Popover`, `Autocomplete`, `Select`.
+- Preserve each app's style identity with app-level theme tokens; do not flatten everything into one global visual style.
+- Avoid new ad hoc focus traps and click-away logic when an MUI primitive already solves the interaction model.
+- For touched UI code, ensure keyboard operability and visible focus states.
+- Resolve meaningful `jsx-a11y` warnings in changed areas before finishing a task.
+- Prefer shared primitives in `src/shared/components` before creating app-local interaction components.
+
 ## Cache Busting
 
 HTML files use `NetworkFirst` strategy and cache-control headers to ensure fresh content. Static assets use content-based hashes. See `DEVELOPMENT.md` for details.

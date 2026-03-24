@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import BpmInput from './BpmInput';
+import { runA11yAudit } from '../../test/a11y';
 
 describe('BpmInput', () => {
   it('does not clobber local draft while editing', () => {
@@ -25,5 +26,11 @@ describe('BpmInput', () => {
     fireEvent.blur(input);
 
     expect(onChange).toHaveBeenCalledWith(220);
+  });
+
+  it('has no basic accessibility violations', async () => {
+    const onChange = vi.fn();
+    const { container } = render(<BpmInput value={120} onChange={onChange} />);
+    await expect(runA11yAudit(container)).resolves.toHaveNoViolations();
   });
 });

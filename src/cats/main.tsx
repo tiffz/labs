@@ -1,7 +1,9 @@
 import { StrictMode } from 'react'
 import ReactDOM from 'react-dom/client'
+import { ThemeProvider } from '@mui/material/styles'
 // Initialize server logger BEFORE any app modules so import-time errors are captured
 import { installServerLogger } from '../shared/utils/serverLogger'
+import { getAppTheme } from '../shared/ui/theme/appTheme'
 import './styles/cats.css'
 import App from './App.tsx'
 import { CoordinateSystemProvider } from './context/CoordinateSystemContext'
@@ -12,11 +14,13 @@ installServerLogger('CATS');
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <CoordinateSystemProvider>
-      <WorldProvider>
-        <App />
-      </WorldProvider>
-    </CoordinateSystemProvider>
+    <ThemeProvider theme={getAppTheme('cats')}>
+      <CoordinateSystemProvider>
+        <WorldProvider>
+          <App />
+        </WorldProvider>
+      </CoordinateSystemProvider>
+    </ThemeProvider>
   </StrictMode>
 )
 

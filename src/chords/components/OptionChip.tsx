@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import Popover from '@mui/material/Popover';
 import AppTooltip from '../../shared/components/AppTooltip';
 import DiceIcon from '../../shared/components/DiceIcon';
 
@@ -59,18 +60,17 @@ const OptionChip: React.FC<OptionChipProps> = ({
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setShowDropdown(false);
         if (isEditing) {
           handleInlineSave();
         }
       }
     };
 
-    if (showDropdown || isEditing) {
+    if (isEditing) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [showDropdown, isEditing, handleInlineSave]);
+  }, [isEditing, handleInlineSave]);
 
   useEffect(() => {
     // Update edit value when value prop changes (but not while editing)
@@ -184,11 +184,19 @@ const OptionChip: React.FC<OptionChipProps> = ({
           </div>
           </div>
         </AppTooltip>
-        {showDropdown && options && (
-          <div className="option-chip-dropdown">
-            {options.map((option) => (
+        <Popover
+          open={Boolean(showDropdown && options?.length)}
+          anchorEl={containerRef.current}
+          onClose={() => setShowDropdown(false)}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+          transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+          slotProps={{ paper: { className: 'option-chip-dropdown' } }}
+        >
+          <div className="option-chip-dropdown-list">
+            {options?.map((option) => (
               <button
                 key={option.value}
+                type="button"
                 className={`option-chip-dropdown-item ${option.value === value ? 'selected' : ''}`}
                 onClick={() => {
                   if (onSelect) {
@@ -201,7 +209,7 @@ const OptionChip: React.FC<OptionChipProps> = ({
               </button>
             ))}
           </div>
-        )}
+        </Popover>
       </div>
     </div>
   );

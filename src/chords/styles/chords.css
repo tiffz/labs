@@ -584,17 +584,16 @@
 }
 
 .option-chip-dropdown {
-  position: absolute;
-  top: calc(100% + 0.25rem);
-  left: 0;
-  right: 0;
+  min-width: 220px;
   background-color: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 0.375rem;
   box-shadow: var(--shadow-lg);
-  z-index: 200;
   max-height: 200px;
   overflow-y: auto;
+}
+
+.option-chip-dropdown-list {
   display: flex;
   flex-direction: column;
 }
