@@ -15,6 +15,9 @@
   --pastel-7: #8dd9da;
   --pastel-8: #b7ebe6;
   --pastel-9: #ffffff;
+  --words-slider-track: #0f766e;
+  --words-slider-rail: color-mix(in srgb, var(--pastel-8) 74%, #ffffff);
+  --words-slider-mark: color-mix(in srgb, var(--pastel-8) 72%, #ffffff);
   --surface-border: 1px solid color-mix(in srgb, var(--pastel-6) 24%, #dbeafe);
   background: linear-gradient(
     110deg,
@@ -348,9 +351,9 @@
 
 .words-slider-row .words-slider-input {
   width: 100%;
-  --app-slider-track: #0f766e;
-  --app-slider-rail: color-mix(in srgb, var(--pastel-8) 74%, #ffffff);
-  --app-slider-mark: color-mix(in srgb, var(--pastel-8) 72%, #ffffff);
+  --app-slider-track: var(--words-slider-track);
+  --app-slider-rail: var(--words-slider-rail);
+  --app-slider-mark: var(--words-slider-mark);
 }
 
 .words-slider-row .words-slider-input .MuiSlider-thumb {
@@ -1103,6 +1106,9 @@
 }
 
 .words-bpm-dropdown .shared-bpm-slider-wrap {
+  --words-slider-track: #0f766e;
+  --words-slider-rail: color-mix(in srgb, #b7ebe6 74%, #ffffff);
+  --words-slider-mark: color-mix(in srgb, #b7ebe6 72%, #ffffff);
   padding: 0.4rem 0.66rem 1.22rem;
   border: 1px solid color-mix(in srgb, var(--pastel-6) 26%, #cbd5e1);
   border-radius: 0.6rem;
@@ -1110,9 +1116,15 @@
 }
 
 .words-bpm-slider {
-  --app-slider-track: #0f766e;
-  --app-slider-rail: color-mix(in srgb, var(--pastel-7) 60%, #ffffff);
-  --app-slider-mark: color-mix(in srgb, var(--pastel-7) 70%, #ffffff);
+  --app-slider-track: var(--words-slider-track, #0f766e);
+  --app-slider-rail: var(
+    --words-slider-rail,
+    color-mix(in srgb, #b7ebe6 74%, #ffffff)
+  );
+  --app-slider-mark: var(
+    --words-slider-mark,
+    color-mix(in srgb, #b7ebe6 72%, #ffffff)
+  );
 }
 
 .words-bpm-slider .MuiSlider-markLabel {

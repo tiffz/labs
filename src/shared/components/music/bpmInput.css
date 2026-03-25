@@ -87,8 +87,8 @@
   display: inline-flex;
   align-items: stretch;
   align-self: stretch;
-  flex: 0 0 auto;
-  min-width: 0;
+  flex: 1 1 var(--bpm-stepper-min-width, 7.2rem);
+  min-width: var(--bpm-stepper-min-width, 7.2rem);
   border-right: 1px solid var(--bpm-divider);
   padding-right: 0.28rem;
 }
@@ -108,8 +108,9 @@
   color: var(--bpm-text);
   font: inherit;
   font-weight: 700;
-  width: 4.8ch;
-  min-width: 4.8ch;
+  width: 100%;
+  min-width: 0;
+  flex: 1 1 auto;
   outline: none;
   text-align: center;
   padding: 0 0.45rem;
@@ -179,6 +180,7 @@
 .shared-bpm-rate-inline {
   display: inline-flex;
   align-self: stretch;
+  flex: 0 0 auto;
   padding-left: 0.14rem;
   gap: 0;
 }
@@ -240,6 +242,7 @@
   display: inline-flex;
   align-self: stretch;
   align-items: center;
+  flex: 0 0 auto;
   border-left: 1px solid var(--bpm-divider);
   padding: 0 0.08rem 0 0.3rem;
   gap: 0.08rem;
