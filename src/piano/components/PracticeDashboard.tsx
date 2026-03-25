@@ -75,8 +75,9 @@ const PracticeDashboard: React.FC = () => {
   if (!session || session.runs.length === 0) return null;
 
   const allResults = session.runs.flatMap(r => r.results);
+  const recentRuns = session.runs.slice(-10);
   const avgAccuracy = Math.round(
-    session.runs.reduce((sum, r) => sum + r.accuracy, 0) / session.runs.length
+    recentRuns.reduce((sum, r) => sum + r.accuracy, 0) / recentRuns.length
   );
   const bestRun = session.runs.reduce((best, r) => r.accuracy > best.accuracy ? r : best);
 
@@ -100,7 +101,7 @@ const PracticeDashboard: React.FC = () => {
         </div>
         <div className="stat">
           <span className="stat-value">{avgAccuracy}%</span>
-          <span className="stat-label">Avg</span>
+          <span className="stat-label">Avg (10)</span>
         </div>
         <div className="stat">
           <span className="stat-value">{bestRun.accuracy}%</span>

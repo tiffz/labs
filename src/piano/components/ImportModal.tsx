@@ -7,6 +7,7 @@ import IconButton from '@mui/material/IconButton';
 import { importScore, type ImportProgress, type ImportResult } from '../utils/importScore';
 import type { PianoScore } from '../types';
 import type { ParsedSections } from '../utils/parseMusicXml';
+import { getImportFileKind } from '../utils/importFileType';
 
 interface ImportModalProps {
   open: boolean;
@@ -17,22 +18,6 @@ interface ImportModalProps {
 }
 
 const ACCEPTED_EXTENSIONS = '.musicxml,.xml,.mxl,.mid,.midi,.mscz,.mscx,.mp3,.mp4,.wav,.ogg,.webm,.m4a,.aac,.flac,.aiff';
-const MUSIC_EXTS = ['.musicxml', '.xml', '.mxl', '.mid', '.midi', '.mscz', '.mscx'];
-const MEDIA_EXTS = ['.mp3', '.mp4', '.wav', '.ogg', '.webm', '.m4a', '.aac', '.flac', '.aiff'];
-
-function getFileExt(name: string): string {
-  return name.toLowerCase().replace(/^.*(\.[^.]+)$/, '$1');
-}
-
-function isMediaFile(file: File): boolean {
-  if (file.type.startsWith('audio/') || file.type.startsWith('video/')) return true;
-  return MEDIA_EXTS.includes(getFileExt(file.name));
-}
-
-function isMusicFile(file: File): boolean {
-  return MUSIC_EXTS.includes(getFileExt(file.name));
-}
-
 export default function ImportModal({ open, onClose, onImport, onMediaFile, initialFile }: ImportModalProps) {
   const [dragOver, setDragOver] = useState(false);
   const [progress, setProgress] = useState<ImportProgress | null>(null);
@@ -41,11 +26,13 @@ export default function ImportModal({ open, onClose, onImport, onMediaFile, init
   const [mediaFile, setMediaFile] = useState<{ name: string; url: string; type: 'audio' | 'video' } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaInputRef = useRef<HTMLInputElement>(null);
+  const processedInitialFileRef = useRef<File | null>(null);
 
   const processFile = useCallback(async (file: File) => {
-    if (isMediaFile(file) && !isMusicFile(file)) {
+    if (getImportFileKind(file) === 'media') {
       const url = URL.createObjectURL(file);
-      const isVideo = file.type.startsWith('video/') || ['.mp4', '.webm'].includes(getFileExt(file.name));
+      const lowerName = file.name.toLowerCase();
+      const isVideo = file.type.startsWith('video/') || lowerName.endsWith('.mp4') || lowerName.endsWith('.webm');
       if (preview) {
         setMediaFile({ name: file.name, url, type: isVideo ? 'video' : 'audio' });
       } else if (onMediaFile) {
@@ -66,7 +53,12 @@ export default function ImportModal({ open, onClose, onImport, onMediaFile, init
   }, [preview, onMediaFile, onClose]);
 
   React.useEffect(() => {
-    if (open && initialFile) {
+    if (!open) {
+      processedInitialFileRef.current = null;
+      return;
+    }
+    if (initialFile && processedInitialFileRef.current !== initialFile) {
+      processedInitialFileRef.current = initialFile;
       processFile(initialFile);
     }
   }, [open, initialFile, processFile]);
@@ -126,7 +118,7 @@ export default function ImportModal({ open, onClose, onImport, onMediaFile, init
       classes={{ paper: 'import-modal' }}
     >
       <DialogTitle className="import-modal-header">
-        <h2>Import File</h2>
+        <span className="import-modal-title">Import File</span>
         <IconButton className="import-modal-close" onClick={handleClose} title="Close" size="small">
             <span className="material-symbols-outlined">close</span>
         </IconButton>

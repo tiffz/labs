@@ -2,6 +2,26 @@
 
 This directory contains shared utilities that are used across all micro-apps in the labs project.
 
+## Unified Playback Platform
+
+Music apps (`drums`, `words`, `piano`, `chords`, `beat`) share playback primitives under:
+
+- `shared/playback/audioContextLifecycle.ts`
+- `shared/playback/transport.ts`
+- `shared/playback/track.ts`
+- `shared/playback/scheduler.ts`
+- `shared/playback/instrumentFactory.ts`
+- `shared/audio/audioPlayer.ts`
+- `shared/audio/metronomePlayer.ts`
+- `shared/audio/clickService.ts`
+
+### Adapter Contract
+
+- Shared modules own timing/lifecycle primitives (context resume, loop position, look-ahead ticking, instrument instantiation, click scheduling).
+- App adapters own domain behavior (notation parsing, highlighting, SmartBeatMap/media sync, auto-scroll, drum pattern semantics, practice scoring).
+- App adapters may optimize callback resolution (`beat` vs `subdivision`) based on UX/perf needs, but should avoid re-implementing audio lifecycle.
+- New playback features should first be proposed in shared modules; app-level reimplementation should be a last resort.
+
 ## Audio Utilities (`audio/`)
 
 Shared audio playback infrastructure using the Web Audio API.
@@ -42,7 +62,9 @@ await metronome.start(
   4,
   (measure, position, isDownbeat) => {
     console.log(`Beat at measure ${measure}, position ${position}`);
-  }
+  },
+  undefined,
+  'beat'
 );
 ```
 

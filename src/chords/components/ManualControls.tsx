@@ -28,6 +28,7 @@ import ChordStylePreview from './ChordStylePreview';
 import { parseProgressionText } from '../../shared/music/chordProgressionText';
 import AppTooltip from '../../shared/components/AppTooltip';
 import DiceIcon from '../../shared/components/DiceIcon';
+import BpmInput from '../../shared/components/music/BpmInput';
 
 interface ManualControlsProps {
   state: ChordProgressionState;
@@ -134,8 +135,8 @@ const ManualControls: React.FC<ManualControlsProps> = ({
     return getCompatibleStylingStrategies(state.timeSignature);
   }, [state.timeSignature]);
 
-  const applyCustomProgression = useCallback(() => {
-    const trimmed = customProgressionInput.trim();
+  const applyCustomProgression = useCallback((inputOverride?: string) => {
+    const trimmed = (inputOverride ?? customProgressionInput).trim();
     const presetByName = COMMON_CHORD_PROGRESSIONS.find(
       (progression) =>
         progression.name.toLowerCase() === trimmed.toLowerCase()
@@ -144,19 +145,26 @@ const ManualControls: React.FC<ManualControlsProps> = ({
       ? presetByName.progression.join('–')
       : trimmed;
     const parsed = parseProgressionText(normalizedInput, state.key);
-    if (!parsed.isValid || parsed.tokens.length < 2) {
+    if (!parsed.isValid || parsed.tokens.length < 1) {
       setCustomProgressionError(
-        'Use I–V–vi–IV or C–G–Am–F with at least 2 chords.'
+        'Use I–V–vi–IV or C–G–Am–F with at least 1 chord.'
       );
       setCustomProgressionWarning('');
       return;
     }
-    if (parsed.format === 'chord' && parsed.romanNumerals.length < 2) {
-      setCustomProgressionWarning(
-        'Format is valid, but this progression is non-diatonic in the inferred key.'
+    if (parsed.format === 'chord' && parsed.romanNumerals.length < 1) {
+      setCustomProgressionError(
+        'Could not map this chord progression to scale degrees. Try roman numerals (I–V–vi–IV).'
       );
-      setCustomProgressionError('');
+      setCustomProgressionWarning('');
       return;
+    }
+    if (parsed.format === 'chord' && parsed.romanNumerals.length < parsed.tokens.length) {
+      setCustomProgressionWarning(
+        'Format is valid, but some chords were approximated to diatonic scale degrees.'
+      );
+    } else {
+      setCustomProgressionWarning('');
     }
     const presetMatch = COMMON_CHORD_PROGRESSIONS.find(
       (progression) =>
@@ -178,7 +186,6 @@ const ManualControls: React.FC<ManualControlsProps> = ({
     }
     onStateChange(updates);
     setCustomProgressionError('');
-    setCustomProgressionWarning('');
     setCustomProgressionInput(normalizedInput);
   }, [customProgressionInput, onStateChange, state.key]);
 
@@ -197,17 +204,16 @@ const ManualControls: React.FC<ManualControlsProps> = ({
   ]);
 
   useEffect(() => {
-    setCustomProgressionInput(state.progression.progression.join('–'));
+    if (state.progression.name !== 'Custom progression') {
+      setCustomProgressionInput(state.progression.progression.join('–'));
+    }
     setCustomProgressionError('');
     setCustomProgressionWarning('');
   }, [state.progression]);
 
   const handleCloseProgressionDropdown = useCallback(() => {
     setShowProgressionDropdown(false);
-    if (!lockedOptions.progression) {
-      applyCustomProgression();
-    }
-  }, [applyCustomProgression, lockedOptions.progression]);
+  }, []);
 
   return (
     <>
@@ -225,18 +231,14 @@ const ManualControls: React.FC<ManualControlsProps> = ({
             <div
               className={`option-chip ${lockedOptions.progression ? 'locked' : ''} ${showProgressionDropdown ? 'dropdown-open' : ''}`}
               onClick={() => {
-                if (!lockedOptions.progression) {
-                  setShowProgressionDropdown((previous) => !previous);
-                }
+                if (!lockedOptions.progression) setShowProgressionDropdown(true);
               }}
               role="button"
               tabIndex={0}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' || event.key === ' ') {
                   event.preventDefault();
-                  if (!lockedOptions.progression) {
-                    setShowProgressionDropdown((previous) => !previous);
-                  }
+                  if (!lockedOptions.progression) setShowProgressionDropdown(true);
                 }
               }}
             >
@@ -251,6 +253,11 @@ const ManualControls: React.FC<ManualControlsProps> = ({
                 }}
                 onFocus={() => {
                   if (!lockedOptions.progression) setShowProgressionDropdown(true);
+                }}
+                onBlur={() => {
+                  if (!lockedOptions.progression && customProgressionInput.trim().length > 0) {
+                    applyCustomProgression();
+                  }
                 }}
                 onKeyDown={(event) => {
                   if (event.key === 'Enter') {
@@ -307,9 +314,19 @@ const ManualControls: React.FC<ManualControlsProps> = ({
               open={showProgressionDropdown}
               anchorEl={progressionContainerRef.current}
               onClose={handleCloseProgressionDropdown}
+              disableAutoFocus
+              disableEnforceFocus
+              disableRestoreFocus
               anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
               transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-              slotProps={{ paper: { className: 'option-chip-dropdown' } }}
+              slotProps={{
+                paper: {
+                  className: 'option-chip-dropdown',
+                  style: progressionContainerRef.current
+                    ? { minWidth: `${Math.max(260, progressionContainerRef.current.offsetWidth)}px` }
+                    : undefined,
+                },
+              }}
             >
               <div className="option-chip-dropdown-list">
                 {orderedProgressionAutocompleteOptions.map((option) => (
@@ -322,6 +339,7 @@ const ManualControls: React.FC<ManualControlsProps> = ({
                         ? 'selected'
                         : ''
                     }`}
+                    onMouseDown={(event) => event.preventDefault()}
                     onClick={(event) => {
                       event.preventDefault();
                       setCustomProgressionInput(option.value);
@@ -333,7 +351,7 @@ const ManualControls: React.FC<ManualControlsProps> = ({
                       if (presetMatch) {
                         onStateChange({ progression: presetMatch });
                       } else {
-                        applyCustomProgression();
+                        applyCustomProgression(option.value);
                       }
                       setShowProgressionDropdown(false);
                     }}
@@ -407,24 +425,65 @@ const ManualControls: React.FC<ManualControlsProps> = ({
           </div>
         </div>
 
-        <OptionChip
-          label="Tempo"
-          value={`${state.tempo}`}
-          isLocked={lockedOptions.tempo || false}
-          tooltip="Beats per minute (BPM)"
-          inlineEdit={true}
-          inlineType="number"
-          inlineMin={20}
-          inlineMax={300}
-          onInlineChange={(newValue) => {
-            const tempo = parseInt(newValue, 10);
-            if (!isNaN(tempo) && tempo >= 20 && tempo <= 300) {
-              onStateChange({ tempo });
-            }
-          }}
-          onLockToggle={() => onLockChange('tempo', !lockedOptions.tempo)}
-          onRandomize={handleRandomizeTempo}
-        />
+        <div className="option-chip-row">
+          <span className="option-chip-label">Tempo:</span>
+          <div className="option-chip-container">
+            <div className={`chords-tempo-shell ${lockedOptions.tempo ? 'locked' : ''}`}>
+              <BpmInput
+                value={state.tempo}
+                onChange={(next) => {
+                  const tempo = Math.max(20, Math.min(300, Math.round(next)));
+                  onStateChange({ tempo });
+                }}
+                min={20}
+                max={300}
+                disabled={lockedOptions.tempo}
+                className="chords-bpm-input"
+                dropdownClassName="chords-bpm-dropdown"
+                sliderClassName="chords-bpm-slider"
+                dropdownOffsetPx={20}
+                trailingActions={(
+                  <>
+                    <AppTooltip title="Randomize tempo">
+                      <button
+                        type="button"
+                        className="option-chip-dice"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleRandomizeTempo();
+                        }}
+                        disabled={lockedOptions.tempo}
+                        aria-label="Randomize tempo"
+                      >
+                        <DiceIcon variant="single" size={14} />
+                      </button>
+                    </AppTooltip>
+                    <AppTooltip
+                      title={
+                        lockedOptions.tempo
+                          ? 'Unlock to allow randomization'
+                          : 'Lock to prevent randomization'
+                      }
+                    >
+                      <button
+                        className="option-chip-lock"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onLockChange('tempo', !lockedOptions.tempo);
+                        }}
+                        aria-label={lockedOptions.tempo ? 'Unlock tempo' : 'Lock tempo'}
+                      >
+                        <span className="material-symbols-outlined">
+                          {lockedOptions.tempo ? 'lock' : 'lock_open'}
+                        </span>
+                      </button>
+                    </AppTooltip>
+                  </>
+                )}
+              />
+            </div>
+          </div>
+        </div>
 
         <OptionChip
           label="Measures per chord"

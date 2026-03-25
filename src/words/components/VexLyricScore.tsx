@@ -978,7 +978,15 @@ const VexLyricScore: React.FC<VexLyricScoreProps> = ({
     const currentPlaybackLine = noteLineIndexRef.current.get(currentKey);
     const noteEl = noteElementsRef.current.get(currentKey);
     if (currentPlaybackLine === undefined || !noteEl) return;
-    if (currentPlaybackLine <= maxScrolledLineRef.current) return;
+    const isLoopBack = currentPlaybackLine < maxScrolledLineRef.current;
+    if (isLoopBack) {
+      // Loop restart: clear monotonic guards so auto-follow can move upward.
+      autoScrollStateRef.current.lastMarker = null;
+      autoScrollStateRef.current.lastScrollAtMs = 0;
+      autoScrollStateRef.current.lastTargetTop = null;
+    } else if (currentPlaybackLine === maxScrolledLineRef.current) {
+      return;
+    }
     const lineAnchor = lineAnchorRef.current.get(currentPlaybackLine) ?? noteEl;
     scrollPlaybackTarget({
       marker: currentPlaybackLine,
@@ -988,7 +996,7 @@ const VexLyricScore: React.FC<VexLyricScoreProps> = ({
       minIntervalMs: 200,
       minDeltaPx: 56,
       preferredTopRatio: 0.18,
-      allowBackward: false,
+      allowBackward: isLoopBack,
     });
     maxScrolledLineRef.current = currentPlaybackLine;
   }, [currentNote, autoFollowPlayback, isPlaying, scrollContainer]);

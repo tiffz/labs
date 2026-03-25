@@ -106,7 +106,14 @@ Both the on-screen keyboard and MIDI input use an 80ms debounce buffer. When mul
 
 ### Shared Playback Infrastructure
 
-Audio instruments (`PianoSynthesizer`, `SimpleSynthesizer`, `SampledPiano`) live in `src/shared/playback/` and are shared with the chord progression generator app. The `ScorePlaybackEngine` creates instrument instances on demand and manages their lifecycle (connect/disconnect/stopAll).
+Piano playback is now aligned to the shared playback platform boundaries:
+
+- `audioContextLifecycle` handles resume/visibility recovery
+- `instrumentFactory` handles sound-type to instrument wiring
+- `clickService` handles click sample loading/playback
+- `transport` and `scheduler` primitives remain shared references for clock and tick semantics across apps
+
+`ScorePlaybackEngine` still owns piano-specific behavior (SmartBeatMap timing, count-in flow, practice timing hooks, note expectation projection), but lifecycle and instrument concerns are centralized in `src/shared/`.
 
 ### Video/Audio-to-Score Synchronization
 

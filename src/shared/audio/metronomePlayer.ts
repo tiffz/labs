@@ -11,6 +11,7 @@ export type MetronomeCallback = (
   positionInSixteenths: number,
   isDownbeat: boolean
 ) => void;
+export type MetronomeResolution = 'beat' | 'subdivision';
 
 /**
  * Standalone metronome player for playing click tracks
@@ -30,6 +31,7 @@ export class MetronomePlayer {
   private beatVolume = 0.5;
   private isLooping = true;
   private numMeasures = 1;
+  private resolution: MetronomeResolution = 'beat';
 
   constructor(audioPlayer: AudioPlayer) {
     this.audioPlayer = audioPlayer;
@@ -48,7 +50,8 @@ export class MetronomePlayer {
     timeSignature: TimeSignature,
     numMeasures: number = 1,
     onBeat?: MetronomeCallback,
-    onPlaybackEnd?: () => void
+    onPlaybackEnd?: () => void,
+    resolution: MetronomeResolution = 'beat',
   ): Promise<void> {
     this.stop();
 
@@ -65,6 +68,7 @@ export class MetronomePlayer {
     this.numMeasures = numMeasures;
     this.onBeat = onBeat || null;
     this.onPlaybackEnd = onPlaybackEnd || null;
+    this.resolution = resolution;
     this.startTime = performance.now();
     this.loopCount = 0;
 
@@ -92,16 +96,22 @@ export class MetronomePlayer {
     for (let measureIndex = 0; measureIndex < this.numMeasures; measureIndex++) {
       const measureStartOffset = measureIndex * sixteenthsPerMeasure * msPerSixteenth;
 
-      // Calculate beat positions for this measure
-      const beatPositions: { position: number; isDownbeat: boolean }[] = [{ position: 0, isDownbeat: true }];
-
-      let cumulativePosition = 0;
-      beatGroupingInSixteenths.forEach(groupSize => {
-        cumulativePosition += groupSize;
-        if (cumulativePosition < sixteenthsPerMeasure) {
-          beatPositions.push({ position: cumulativePosition, isDownbeat: false });
-        }
-      });
+      const beatPositions: { position: number; isDownbeat: boolean }[] =
+        this.resolution === 'subdivision'
+          ? Array.from({ length: sixteenthsPerMeasure }, (_, idx) => ({
+            position: idx,
+            isDownbeat: idx === 0,
+          }))
+          : [{ position: 0, isDownbeat: true }];
+      if (this.resolution === 'beat') {
+        let cumulativePosition = 0;
+        beatGroupingInSixteenths.forEach(groupSize => {
+          cumulativePosition += groupSize;
+          if (cumulativePosition < sixteenthsPerMeasure) {
+            beatPositions.push({ position: cumulativePosition, isDownbeat: false });
+          }
+        });
+      }
 
       // Schedule each beat
       beatPositions.forEach(({ position, isDownbeat }) => {
@@ -115,7 +125,12 @@ export class MetronomePlayer {
 
           // Play click
           const volume = isDownbeat ? this.downbeatVolume : this.beatVolume;
-          this.audioPlayer.playClick(volume);
+          const hasFastPlay = typeof (this.audioPlayer as { playClickNowIfReady?: (v?: number) => void }).playClickNowIfReady === 'function';
+          if (hasFastPlay) {
+            (this.audioPlayer as { playClickNowIfReady: (v?: number) => void }).playClickNowIfReady(volume);
+          } else {
+            void this.audioPlayer.playClick(volume);
+          }
 
           // Notify callback
           if (this.onBeat) {

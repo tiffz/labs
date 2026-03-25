@@ -146,7 +146,7 @@ const OptionChip: React.FC<OptionChipProps> = ({
           )}
           <div className="option-chip-actions">
             {onRandomize && (
-              <AppTooltip title="Randomize this option">
+              <AppTooltip title={`Randomize ${label.toLowerCase()}`}>
                 <button
                   className="option-chip-dice"
                   onClick={(e) => {
@@ -190,7 +190,14 @@ const OptionChip: React.FC<OptionChipProps> = ({
           onClose={() => setShowDropdown(false)}
           anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
           transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-          slotProps={{ paper: { className: 'option-chip-dropdown' } }}
+          slotProps={{
+            paper: {
+              className: 'option-chip-dropdown',
+              style: containerRef.current
+                ? { minWidth: `${Math.max(220, containerRef.current.offsetWidth)}px` }
+                : undefined,
+            },
+          }}
         >
           <div className="option-chip-dropdown-list">
             {options?.map((option) => (

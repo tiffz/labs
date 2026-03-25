@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import BpmInput from './BpmInput';
 import { runA11yAudit } from '../../test/a11y';
 
@@ -28,9 +28,63 @@ describe('BpmInput', () => {
     expect(onChange).toHaveBeenCalledWith(220);
   });
 
+  it('does not emit when blur value is unchanged', () => {
+    const onChange = vi.fn();
+    render(<BpmInput value={120} onChange={onChange} />);
+    const input = screen.getByRole('textbox');
+
+    fireEvent.focus(input);
+    fireEvent.blur(input);
+
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   it('has no basic accessibility violations', async () => {
     const onChange = vi.fn();
     const { container } = render(<BpmInput value={120} onChange={onChange} />);
     await expect(runA11yAudit(container)).resolves.toHaveNoViolations();
+  });
+
+  it('does not emit changes while disabled', () => {
+    const onChange = vi.fn();
+    render(<BpmInput value={120} onChange={onChange} disabled />);
+    const input = screen.getByRole('textbox');
+    fireEvent.focus(input);
+    fireEvent.keyDown(input, { key: 'ArrowUp' });
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('allows arrow buttons without input focus', () => {
+    const onChange = vi.fn();
+    render(<BpmInput value={120} onChange={onChange} />);
+    const increase = screen.getByRole('button', { name: 'Increase BPM' });
+    fireEvent.click(increase);
+    expect(onChange).toHaveBeenCalledWith(121);
+  });
+
+  it('shows Common BPMs header when preset dropdown opens', async () => {
+    const onChange = vi.fn();
+    render(<BpmInput value={120} onChange={onChange} />);
+    const input = screen.getByRole('textbox');
+
+    fireEvent.focus(input);
+
+    expect(await screen.findByText('Common BPMs')).toBeInTheDocument();
+  });
+
+  it('selects a preset BPM and closes the dropdown', async () => {
+    const onChange = vi.fn();
+    render(<BpmInput value={120} onChange={onChange} />);
+    const input = screen.getByRole('textbox');
+
+    fireEvent.focus(input);
+    const presetList = await screen.findByRole('list', { name: 'Common BPM presets' });
+    const preset = within(presetList).getByRole('button', { name: '140' });
+    fireEvent.click(preset);
+
+    expect(onChange).toHaveBeenCalledWith(140);
+    await waitFor(() => {
+      expect(screen.queryByText('Common BPMs')).not.toBeInTheDocument();
+    });
   });
 });

@@ -16,6 +16,7 @@ import VideoPlayer from './components/VideoPlayer';
 import { saveScoreToLibrary } from './utils/libraryStorage';
 import { enableDebug } from './utils/practiceDebugLog';
 import DebugPanel from './components/DebugPanel';
+import { getImportFileKind } from './utils/importFileType';
 
 const debugMode = new URLSearchParams(window.location.search).has('debug');
 if (debugMode) enableDebug();
@@ -47,22 +48,19 @@ function PianoApp() {
       }
     };
     const handleDragOver = (e: DragEvent) => { e.preventDefault(); };
-    const MEDIA_EXTS = ['.mp3', '.mp4', '.wav', '.ogg', '.webm', '.m4a', '.aac', '.flac', '.aiff'];
     const handleDrop = (e: DragEvent) => {
       e.preventDefault();
       dragCounterRef.current = 0;
       setShowDropOverlay(false);
       const file = e.dataTransfer?.files?.[0];
       if (!file) return;
-
-      const ext = file.name.toLowerCase().replace(/^.*(\.[^.]+)$/, '$1');
-      const isMedia = file.type.startsWith('audio/') || file.type.startsWith('video/') || MEDIA_EXTS.includes(ext);
-
-      if (isMedia) {
+      const kind = getImportFileKind(file);
+      if (kind === 'media') {
+        const lowerName = file.name.toLowerCase();
         const url = URL.createObjectURL(file);
-        const isVideo = file.type.startsWith('video/') || ['.mp4', '.webm'].includes(ext);
+        const isVideo = file.type.startsWith('video/') || lowerName.endsWith('.mp4') || lowerName.endsWith('.webm');
         dispatch({ type: 'SET_MEDIA_FILE', file: { name: file.name, url, type: isVideo ? 'video' : 'audio' } });
-      } else {
+      } else if (kind === 'music') {
         setDropFile(file);
         setShowImportModal(true);
       }

@@ -17,14 +17,14 @@ import { durationToBeats } from '../durationValidation';
 import { Transport } from '../../../shared/playback/transport';
 import { Track } from '../../../shared/playback/track';
 import { 
-  PianoSynthesizer, 
-  SimpleSynthesizer, 
   SampledPiano,
-  type WaveformType,
   type Instrument,
 } from '../../../shared/playback/instruments';
 import type { NoteEvent, NoteParams, ActiveNotes, PendingChanges, PlaybackConfig } from './types';
 import { createReverb, type ReverbNodes } from '../../../shared/audio/reverb';
+import { createManagedAudioContext, ensureAudioContextRunning } from '../../../shared/playback/audioContextLifecycle';
+import { createInstrumentForSoundType } from '../../../shared/playback/instrumentFactory';
+import { PlaybackScheduler } from '../../../shared/playback/scheduler';
 
 /**
  * Convert MIDI note number to frequency
@@ -56,6 +56,7 @@ export type SampleLoadingCallback = (loaded: number, total: number) => void;
 
 export class PlaybackEngine {
   private audioContext: AudioContext | null = null;
+  private audioContextDispose: (() => void) | null = null;
   private transport: Transport | null = null;
   private trebleTrack: Track | null = null;
   private bassTrack: Track | null = null;
@@ -72,7 +73,7 @@ export class PlaybackEngine {
   private onSampleLoadingProgress: SampleLoadingCallback | null = null;
   
   // Scheduler state
-  private schedulerInterval: number | null = null;
+  private scheduler: PlaybackScheduler | null = null;
   private uiAnimationFrame: number | null = null;
   
   // Configuration
@@ -100,9 +101,9 @@ export class PlaybackEngine {
    */
   private getAudioContext(): AudioContext {
     if (!this.audioContext || this.audioContext.state === 'closed') {
-      const AudioContextClass = window.AudioContext || 
-        (window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      this.audioContext = new AudioContextClass();
+      const managed = createManagedAudioContext();
+      this.audioContext = managed.context;
+      this.audioContextDispose = managed.dispose;
     }
     return this.audioContext;
   }
@@ -165,20 +166,23 @@ export class PlaybackEngine {
    */
   private createInstrument(soundType: SoundType): Instrument {
     const ctx = this.getAudioContext();
-    
-    if (soundType === 'piano-sampled') {
-      // Use shared sampled piano instance if available and loaded
-      if (this.sampledPiano && this.sampledPiano.isReady()) {
-        return this.sampledPiano;
-      }
+    if (soundType === 'piano-sampled' && !(this.sampledPiano && this.sampledPiano.isReady())) {
       // Fall back to synth if samples aren't loaded
       console.warn('Sampled piano not ready, falling back to synthesized piano');
-      return new PianoSynthesizer(ctx);
-    } else if (soundType === 'piano') {
-      return new PianoSynthesizer(ctx);
-    } else {
-      return new SimpleSynthesizer(ctx, soundType as WaveformType);
+      return createInstrumentForSoundType({
+        soundType: 'piano',
+        context: ctx,
+        output: this.masterGain ?? ctx.destination,
+        connectOutput: false,
+      });
     }
+    return createInstrumentForSoundType({
+      soundType,
+      context: ctx,
+      output: this.masterGain ?? ctx.destination,
+      sampledPiano: this.sampledPiano,
+      connectOutput: false,
+    });
   }
   
   /**
@@ -551,8 +555,8 @@ export class PlaybackEngine {
     const ctx = this.getAudioContext();
     
     // Resume AudioContext if suspended (required by browsers for user-initiated audio)
-    if (ctx.state === 'suspended') {
-      ctx.resume().catch(err => console.warn('Failed to resume AudioContext:', err));
+    if (!(await ensureAudioContextRunning(ctx))) {
+      console.warn('Failed to resume AudioContext');
     }
     
     // Initialize audio chain (includes reverb setup)
@@ -585,7 +589,10 @@ export class PlaybackEngine {
     this.rebuildTracks();
     
     // Start scheduler loop
-    this.schedulerInterval = window.setInterval(this.schedulerTick, this.SCHEDULE_INTERVAL_MS);
+    this.scheduler = new PlaybackScheduler(this.schedulerTick, {
+      intervalMs: this.SCHEDULE_INTERVAL_MS,
+    });
+    this.scheduler.start();
     
     // Do an immediate scheduler tick to start audio
     this.schedulerTick();
@@ -599,10 +606,8 @@ export class PlaybackEngine {
    */
   stop(): void {
     // Stop scheduler
-    if (this.schedulerInterval !== null) {
-      clearInterval(this.schedulerInterval);
-      this.schedulerInterval = null;
-    }
+    this.scheduler?.stop();
+    this.scheduler = null;
     
     // Stop UI loop
     if (this.uiAnimationFrame !== null) {
@@ -798,9 +803,8 @@ export class PlaybackEngine {
     this.reverbInitialized = false;
     
     // Close audio context
-    if (this.audioContext && this.audioContext.state !== 'closed') {
-      this.audioContext.close().catch(() => {});
-    }
+    this.audioContextDispose?.();
+    this.audioContextDispose = null;
     this.audioContext = null;
     this.transport = null;
     this.onUpdate = null;

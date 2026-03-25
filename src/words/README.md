@@ -24,6 +24,14 @@
 - BPM editing is lenient while typing; value clamps only on blur/enter.
 - Meter is currently locked to `4/4`.
 
+## Shared Playback Integration
+
+Words routes playback through the shared drums playback stack (audio lifecycle, scheduling, metronome callbacks), while keeping words-specific behavior in-app:
+
+- lyric/section randomization and notation generation
+- score highlighting and loop-back auto-scroll behavior
+- section/global loop semantics
+
 ## Presubmit checklist
 
 - `npm run lint`

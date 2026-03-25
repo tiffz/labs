@@ -85,10 +85,26 @@ class DrumAudioPlayer {
   }
 
   /**
+   * Fast playback path for hot scheduling loops.
+   * Caller must ensure playback has already initialized/resumed audio.
+   */
+  playNowIfReady(sound: DrumSound, volume: number = 1.0, duration?: number): void {
+    if (sound === 'rest') return;
+    this.player.playNowIfReady(sound, volume, duration);
+  }
+
+  /**
    * Play metronome click
    */
   async playClick(volume: number = 1.0): Promise<void> {
     await this.player.playClick(volume);
+  }
+
+  /**
+   * Fast click playback path for hot scheduling loops.
+   */
+  playClickNowIfReady(volume: number = 1.0): void {
+    this.player.playClickNowIfReady(volume);
   }
 
   /**

@@ -43,3 +43,13 @@ Each character represents a 16th note:
 ## Development
 
 See `GEMINI.md` for technical architecture details and `DEVELOPMENT.md` for architecture decision records.
+
+## Shared Playback Integration
+
+Drums uses the shared playback/audio platform for lifecycle and scheduling primitives:
+
+- `shared/audio/audioPlayer` for Web Audio lifecycle, sample playback, reverb, health checks
+- `shared/playback/scheduler` for periodic stability checks
+- shared metronome callback resolution (`beat` or `subdivision`) through playback hook options
+
+Drums-specific semantics (notation parsing, repeat handling, section/tick-range playback) stay in the drums adapter layer.

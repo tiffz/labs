@@ -12,15 +12,25 @@ function beatsPerMeasure(score: PianoScore): number {
   return (numerator / denominator) * 4;
 }
 
-function assertMeasuresFitTimeSignature(score: PianoScore): void {
+function assertMeasuresFitTimeSignature(score: PianoScore, allowLastMeasureShort = false): void {
   const target = beatsPerMeasure(score);
   for (const part of score.parts) {
-    for (const measure of part.measures) {
+    for (let idx = 0; idx < part.measures.length; idx++) {
+      const measure = part.measures[idx];
       let sum = 0;
       for (const note of measure.notes) {
-        sum += durationToBeats(note.duration, note.dotted);
+        let beats = durationToBeats(note.duration, note.dotted);
+        if (note.tuplet) {
+          beats *= note.tuplet.normal / note.tuplet.actual;
+        }
+        sum += beats;
       }
-      expect(sum).toBeCloseTo(target, 5);
+      const isLast = idx === part.measures.length - 1;
+      if (allowLastMeasureShort && isLast) {
+        expect(sum).toBeLessThanOrEqual(target + 0.00001);
+      } else {
+        expect(sum).toBeCloseTo(target, 5);
+      }
     }
   }
 }
@@ -99,6 +109,24 @@ describe('scales', () => {
           }
         }
       }
+    });
+
+    it('uses triplet eighths in 4/4 when subdivision is 3', () => {
+      const score = generateExerciseScore('major', 'scale', 'C', 'ascending', 1, 3)!;
+      expect(score.timeSignature).toEqual({ numerator: 4, denominator: 4 });
+      for (const part of score.parts) {
+        const played = part.measures.flatMap((m) => m.notes).filter((n) => !n.rest);
+        expect(played.length).toBeGreaterThan(0);
+        for (const note of played) {
+          expect(note.duration).toBe('eighth');
+          expect(note.tuplet).toEqual({ actual: 3, normal: 2 });
+        }
+        const finalMeasure = part.measures[part.measures.length - 1];
+        const finalRests = finalMeasure.notes.filter((n) => n.rest);
+        expect(finalRests.length).toBeLessThanOrEqual(2);
+        expect(finalMeasure.notes.length % 3).toBe(0);
+      }
+      assertMeasuresFitTimeSignature(score, true);
     });
 
     it('returns null for an unknown key', () => {

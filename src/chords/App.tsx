@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import Popover from '@mui/material/Popover';
 import type { ChordProgressionState, LockedOptions } from './types';
 import { randomChordProgression, randomKey, randomTimeSignature, randomTempo, randomStylingStrategy } from './utils/randomization';
 import { progressionToChords } from './utils/chordTheory';
@@ -13,6 +14,7 @@ import { CHORD_STYLING_STRATEGIES } from './data/chordStylingStrategies';
 import MetronomeToggleButton from '../shared/components/MetronomeToggleButton';
 import { AudioPlayer } from '../shared/audio/audioPlayer';
 import AppTooltip from '../shared/components/AppTooltip';
+import AppSlider from '../shared/components/AppSlider';
 import clickSound from '../drums/assets/sounds/click.mp3';
 
 // Loading state for piano samples
@@ -77,8 +79,15 @@ const App: React.FC = () => {
   const [activeNoteGroups, setActiveNoteGroups] = useState<Set<string>>(new Set());
   const [lockedOptions, setLockedOptions] = useState<LockedOptions>({});
   const [loadingState, setLoadingState] = useState<LoadingState>({ isLoading: false, progress: 0, total: 0 });
+  const [masterVolume, setMasterVolume] = useState(0.9);
+  const [pianoVolume, setPianoVolume] = useState(0.9);
+  const [metronomeVolume, setMetronomeVolume] = useState(0.75);
+  const [playbackSettingsOpen, setPlaybackSettingsOpen] = useState(false);
   const currentLoopIdRef = useRef<number>(0);
   const metronomeEnabledRef = useRef(metronomeEnabled);
+  const masterVolumeRef = useRef(masterVolume);
+  const metronomeVolumeRef = useRef(metronomeVolume);
+  const settingsButtonRef = useRef<HTMLButtonElement | null>(null);
   const metronomeAudioPlayerRef = useRef<AudioPlayer | null>(null);
   const lastMetronomeBeatRef = useRef<number>(-1);
 
@@ -108,6 +117,19 @@ const App: React.FC = () => {
     metronomeEnabledRef.current = metronomeEnabled;
   }, [metronomeEnabled]);
 
+  useEffect(() => {
+    masterVolumeRef.current = masterVolume;
+  }, [masterVolume]);
+
+  useEffect(() => {
+    metronomeVolumeRef.current = metronomeVolume;
+  }, [metronomeVolume]);
+
+  useEffect(() => {
+    const playbackEngine = getPlaybackEngine();
+    playbackEngine.setVolume(Math.max(0, Math.min(1, masterVolume * pianoVolume)));
+  }, [masterVolume, pianoVolume]);
+
   const playMetronomeClick = useCallback((isDownbeat: boolean) => {
     if (!metronomeEnabledRef.current) return;
     if (!metronomeAudioPlayerRef.current) {
@@ -116,7 +138,11 @@ const App: React.FC = () => {
         enableReverb: false,
       });
     }
-    const volume = isDownbeat ? 0.8 : 0.5;
+    const base = isDownbeat ? 0.8 : 0.5;
+    const volume = Math.max(
+      0,
+      Math.min(1, base * masterVolumeRef.current * metronomeVolumeRef.current)
+    );
     void metronomeAudioPlayerRef.current.playClick(volume);
   }, []);
 
@@ -471,6 +497,72 @@ const App: React.FC = () => {
                 ))}
               </select>
             </div>
+            <AppTooltip title="Playback settings">
+              <button
+                ref={settingsButtonRef}
+                type="button"
+                className={`chords-settings-button ${playbackSettingsOpen ? 'active' : ''}`}
+                onClick={() => setPlaybackSettingsOpen((previous) => !previous)}
+                aria-label="Playback settings"
+              >
+                <span className="material-symbols-outlined">tune</span>
+              </button>
+            </AppTooltip>
+            <Popover
+              open={playbackSettingsOpen}
+              onClose={() => setPlaybackSettingsOpen(false)}
+              anchorEl={settingsButtonRef.current}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+              disableAutoFocus
+              disableEnforceFocus
+              disableRestoreFocus
+              slotProps={{ paper: { className: 'chords-playback-settings-popover' } }}
+            >
+              <div className="chords-playback-settings-menu">
+                <label className="chords-playback-setting-row">
+                  <span>Master volume</span>
+                  <AppSlider
+                    className="chords-playback-slider"
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={Math.round(masterVolume * 100)}
+                    aria-label="Master volume"
+                    onChange={(event) => setMasterVolume(Number(event.target.value) / 100)}
+                  />
+                  <strong>{Math.round(masterVolume * 100)}</strong>
+                </label>
+                <label className="chords-playback-setting-row">
+                  <span>Piano volume</span>
+                  <AppSlider
+                    className="chords-playback-slider"
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={Math.round(pianoVolume * 100)}
+                    aria-label="Piano volume"
+                    onChange={(event) => setPianoVolume(Number(event.target.value) / 100)}
+                  />
+                  <strong>{Math.round(pianoVolume * 100)}</strong>
+                </label>
+                <label className="chords-playback-setting-row">
+                  <span>Metronome volume</span>
+                  <AppSlider
+                    className="chords-playback-slider"
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={Math.round(metronomeVolume * 100)}
+                    aria-label="Metronome volume"
+                    onChange={(event) =>
+                      setMetronomeVolume(Number(event.target.value) / 100)
+                    }
+                  />
+                  <strong>{Math.round(metronomeVolume * 100)}</strong>
+                </label>
+              </div>
+            </Popover>
           </div>
           <div className="chords-score">
             <ChordScoreRenderer state={state} currentChordIndex={currentChordIndex} activeNoteGroups={activeNoteGroups} />

@@ -32,6 +32,30 @@ const RESULT_COLORS = {
   missed: '#94a3b8',
 };
 
+const WRONG_PITCH_GHOST_MAX_DISTANCE = 3;
+const SEMITONE_TO_PIXEL_SHIFT = 3.5;
+
+function closestWrongPitchDelta(
+  expectedPitches: number[],
+  playedPitches: number[],
+): number | null {
+  if (expectedPitches.length === 0 || playedPitches.length === 0) return null;
+  let bestAbs = Number.POSITIVE_INFINITY;
+  let bestDelta: number | null = null;
+  for (const expected of expectedPitches) {
+    for (const played of playedPitches) {
+      const delta = played - expected;
+      const abs = Math.abs(delta);
+      if (abs < bestAbs) {
+        bestAbs = abs;
+        bestDelta = delta;
+      }
+    }
+  }
+  if (bestDelta === null || bestAbs > WRONG_PITCH_GHOST_MAX_DISTANCE) return null;
+  return bestDelta;
+}
+
 function applyNoteStyle(
   staveNote: StaveNote,
   note: ScoreNote,
@@ -171,6 +195,24 @@ function getBeamGroups(timeSig: { numerator: number; denominator: number }): Fra
   return [new Fraction(1, denominator)];
 }
 
+function getBeamGroupsForNotes(
+  timeSig: { numerator: number; denominator: number },
+  notes: ScoreNote[],
+): Fraction[] {
+  const hasTripletEighths = notes.some(
+    (note) =>
+      !note.rest &&
+      note.duration === 'eighth' &&
+      note.tuplet?.actual === 3 &&
+      note.tuplet?.normal === 2,
+  );
+  if (hasTripletEighths) {
+    // In 4/4 triplet subdivision, beam in groups of 3 eighths.
+    return [new Fraction(3, 8)];
+  }
+  return getBeamGroups(timeSig);
+}
+
 const TREBLE_8VA_THRESHOLD = 86; // D6 — 3+ ledger lines above treble staff
 const BASS_8VA_THRESHOLD = 72;   // C5 — keeps 1-octave scales readable without 8va
 
@@ -282,7 +324,14 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
       parts: score.parts.map(p => p.measures.map(m => m.notes.length)),
       mi: currentMeasureIndex, ni: Array.from(currentNoteIndices.entries()),
       active: activeMidiNotes ? Array.from(activeMidiNotes).sort() : [],
-      pr: practiceResultsByNoteId ? Array.from(practiceResultsByNoteId.entries()).map(([k, v]) => `${k}:${v.timing}:${Math.round(v.timingOffsetMs)}`).sort() : [],
+      pr: practiceResultsByNoteId
+        ? Array.from(practiceResultsByNoteId.entries())
+            .map(
+              ([k, v]) =>
+                `${k}:${v.timing}:${Math.round(v.timingOffsetMs)}:${v.pitchCorrect ? 1 : 0}:${v.playedPitches.join(',')}`,
+            )
+            .sort()
+        : [],
       gh: greyedOutHands ? Array.from(greyedOutHands) : [],
       hh: hiddenHands ? Array.from(hiddenHands) : [],
       gn: ghostNotes ? ghostNotes.map(g => `${g.midi}:${g.duration}`) : [],
@@ -872,15 +921,14 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
             formatter.format(voicesToFormat, formatWidth);
           }
 
-          const beamGroups = getBeamGroups(score.timeSignature);
-
           const svgElForBeams = containerRef.current!.querySelector('svg');
 
           if (trebleVoice && trebleStave) {
             let trebleBeams: Beam[] = [];
             try {
+              const trebleBeamGroups = getBeamGroupsForNotes(score.timeSignature, trebleScoreNotes);
               trebleBeams = Beam.generateBeams(trebleNotes, {
-                beamRests: false, beamMiddleOnly: false, stemDirection: 1, groups: beamGroups,
+                beamRests: false, beamMiddleOnly: false, stemDirection: 1, groups: trebleBeamGroups,
               });
             } catch { /* beam generation is non-critical */ }
             trebleVoice.draw(context, trebleStave);
@@ -899,8 +947,9 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
           if (bassVoice && bassStave) {
             let bassBeams: Beam[] = [];
             try {
+              const bassBeamGroups = getBeamGroupsForNotes(score.timeSignature, bassScoreNotes);
               bassBeams = Beam.generateBeams(bassNotes, {
-                beamRests: false, beamMiddleOnly: false, stemDirection: -1, groups: beamGroups,
+                beamRests: false, beamMiddleOnly: false, stemDirection: -1, groups: bassBeamGroups,
               });
             } catch { /* beam generation is non-critical */ }
             bassVoice.draw(context, bassStave);
@@ -919,8 +968,13 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
           if (vocalVoice && vocalStave) {
             let vocalBeams: Beam[] = [];
             try {
+              const vocalMeasure = vocalPart?.measures[mi];
+              const vocalBeamGroups = getBeamGroupsForNotes(
+                score.timeSignature,
+                vocalMeasure?.notes ?? [],
+              );
               vocalBeams = Beam.generateBeams(vocalNotes!, {
-                beamRests: false, beamMiddleOnly: false, stemDirection: 1, groups: beamGroups,
+                beamRests: false, beamMiddleOnly: false, stemDirection: 1, groups: vocalBeamGroups,
               });
             } catch { /* non-critical */ }
 
@@ -1133,7 +1187,8 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
 
       // Draw tuplet brackets
       for (const tg of tupletGroups) {
-        if (tg.notes.length < 2) continue;
+        // Only draw complete tuplets (e.g. 3 notes for triplet).
+        if (tg.notes.length < tg.actual) continue;
         try {
           const tuplet = new Tuplet(tg.notes, {
             numNotes: tg.actual,
@@ -1171,6 +1226,31 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
                 ghost.setAttribute('opacity', '0.45');
                 ghost.setAttribute('transform', `rotate(-20 ${noteX + shiftX} ${headY})`);
                 svgEl.appendChild(ghost);
+              }
+
+              if (result.timing === 'wrong_pitch' && !result.pitchCorrect) {
+                const deltaSemitones = closestWrongPitchDelta(
+                  result.expectedPitches,
+                  result.playedPitches,
+                );
+                if (deltaSemitones !== null) {
+                  const MAX_SHIFT = 18;
+                  const clampedMs = Math.max(-200, Math.min(200, result.timingOffsetMs));
+                  const shiftX = (clampedMs / 200) * MAX_SHIFT;
+                  const shiftY = -deltaSemitones * SEMITONE_TO_PIXEL_SHIFT;
+                  const ghost = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+                  ghost.setAttribute('cx', String(noteX + shiftX));
+                  ghost.setAttribute('cy', String(headY + shiftY));
+                  ghost.setAttribute('rx', '6');
+                  ghost.setAttribute('ry', '4.5');
+                  ghost.setAttribute('fill', RESULT_COLORS.wrong_pitch);
+                  ghost.setAttribute('opacity', '0.45');
+                  ghost.setAttribute(
+                    'transform',
+                    `rotate(-20 ${noteX + shiftX} ${headY + shiftY})`,
+                  );
+                  svgEl.appendChild(ghost);
+                }
               }
 
               const bx = bbox.getX();

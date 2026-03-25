@@ -10,6 +10,7 @@ interface UsePlaybackOptions {
   metronomeEnabled: boolean;
   playbackSettings: PlaybackSettings;
   selectionRange?: { startTick: number; endTick: number } | null;
+  metronomeResolution?: 'sixteenth' | 'beat';
 }
 
 /**
@@ -22,6 +23,7 @@ export function usePlayback({
   metronomeEnabled,
   playbackSettings,
   selectionRange,
+  metronomeResolution,
 }: UsePlaybackOptions) {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentNote, setCurrentNote] = useState<{
@@ -47,25 +49,43 @@ export function usePlayback({
     // Pass tick range if there's a selection to scope playback
     const tickRange = selectionRange ? { startTick: selectionRange.startTick, endTick: selectionRange.endTick } : undefined;
 
+    const onNote = (measureIndex: number, noteIndex: number, repeatIteration?: number, maxRepeats?: number) => {
+      setCurrentNote({ measureIndex, noteIndex, repeatIteration, maxRepeats });
+    };
+    const onEnd = () => {
+      setIsPlaying(false);
+      setCurrentNote(null);
+      setCurrentMetronomeBeat(null);
+    };
+    const onMet = (measureIndex: number, positionInSixteenths: number, isDownbeat: boolean) => {
+      setCurrentMetronomeBeat({ measureIndex, positionInSixteenths, isDownbeat });
+    };
+
+    if (metronomeResolution) {
+      rhythmPlayer.play(
+        parsedRhythm,
+        bpm,
+        onNote,
+        onEnd,
+        metronomeEnabled,
+        onMet,
+        playbackSettings,
+        tickRange,
+        metronomeResolution,
+      );
+      return;
+    }
     rhythmPlayer.play(
       parsedRhythm,
       bpm,
-      (measureIndex, noteIndex, repeatIteration, maxRepeats) => {
-        setCurrentNote({ measureIndex, noteIndex, repeatIteration, maxRepeats });
-      },
-      () => {
-        setIsPlaying(false);
-        setCurrentNote(null);
-        setCurrentMetronomeBeat(null);
-      },
+      onNote,
+      onEnd,
       metronomeEnabled,
-      (measureIndex, positionInSixteenths, isDownbeat) => {
-        setCurrentMetronomeBeat({ measureIndex, positionInSixteenths, isDownbeat });
-      },
+      onMet,
       playbackSettings,
-      tickRange
+      tickRange,
     );
-  }, [parsedRhythm, bpm, metronomeEnabled, playbackSettings, selectionRange]);
+  }, [parsedRhythm, bpm, metronomeEnabled, playbackSettings, selectionRange, metronomeResolution]);
 
   const handleStop = useCallback(() => {
     rhythmPlayer.stop();

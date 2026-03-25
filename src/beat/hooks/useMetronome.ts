@@ -2,6 +2,8 @@ import { useCallback, useRef, useEffect, useState } from 'react';
 
 // Import click sound
 import clickSound from '../../drums/assets/sounds/click.mp3';
+import { ensureAudioContextRunning } from '../../shared/playback/audioContextLifecycle';
+import { loadClickSample, playClickSampleAt, type LoadedClickSample } from '../../shared/audio/clickService';
 
 interface UseMetronomeOptions {
   /** Function to get the AudioContext (called lazily) */
@@ -28,7 +30,7 @@ export function useMetronome({
   getAudioContext,
   volume,
 }: UseMetronomeOptions): UseMetronomeReturn {
-  const clickBufferRef = useRef<AudioBuffer | null>(null);
+  const clickSampleRef = useRef<LoadedClickSample | null>(null);
   const volumeRef = useRef(volume);
   const [isLoaded, setIsLoaded] = useState(false);
   const loadAttemptedRef = useRef(false);
@@ -40,7 +42,7 @@ export function useMetronome({
 
   // Load click sound (called lazily when needed)
   const ensureClickLoaded = useCallback(async () => {
-    if (clickBufferRef.current || loadAttemptedRef.current) return;
+    if (clickSampleRef.current || loadAttemptedRef.current) return;
 
     const audioContext = getAudioContext();
     if (!audioContext) return;
@@ -48,10 +50,9 @@ export function useMetronome({
     loadAttemptedRef.current = true;
 
     try {
-      const response = await fetch(clickSound);
-      const arrayBuffer = await response.arrayBuffer();
-      clickBufferRef.current = await audioContext.decodeAudioData(arrayBuffer);
-      setIsLoaded(true);
+      const loaded = await loadClickSample(audioContext, clickSound);
+      clickSampleRef.current = loaded;
+      setIsLoaded(Boolean(loaded));
     } catch (err) {
       console.warn('Failed to load click sound:', err);
     }
@@ -70,36 +71,25 @@ export function useMetronome({
     (isDownbeat: boolean) => {
       const audioContext = getAudioContext();
       if (!audioContext) return;
+      if (audioContext.state === 'suspended') {
+        void ensureAudioContextRunning(audioContext);
+      }
 
       // Try to load if not loaded yet
-      if (!clickBufferRef.current) {
+      if (!clickSampleRef.current) {
         ensureClickLoaded();
         return;
       }
 
       try {
-        const source = audioContext.createBufferSource();
-        source.buffer = clickBufferRef.current;
-
-        // Apply metronome volume with beat 1 accent
-        const gainNode = audioContext.createGain();
         const baseVolume = volumeRef.current / 100;
-        gainNode.gain.value = isDownbeat ? baseVolume : baseVolume * 0.4;
-
-        // Pitch shift for beat 1 (higher = more distinct)
-        source.playbackRate.value = isDownbeat ? 1.3 : 1.0;
-
-        source.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-
-        // Clean up nodes after playback to prevent memory leak
-        // Without this, GainNodes accumulate and cause audio crackling over time
-        source.onended = () => {
-          source.disconnect();
-          gainNode.disconnect();
-        };
-
-        source.start();
+        playClickSampleAt(
+          audioContext,
+          clickSampleRef.current,
+          audioContext.currentTime,
+          isDownbeat ? baseVolume : baseVolume * 0.4,
+          isDownbeat ? 1.3 : 1.0,
+        );
       } catch {
         // Ignore click errors
       }

@@ -95,9 +95,20 @@ A modular, stable playback system designed from the ground up to eliminate timin
 
 - **`playbackEngine.ts`**: Central orchestrator
   - Manages Transport, Tracks, and audio chain (master gain → compressor → destination)
-  - Runs two separate loops: **scheduler** (setInterval) and **UI** (requestAnimationFrame)
+  - Runs two separate loops: shared **PlaybackScheduler** (look-ahead tick) and **UI** (requestAnimationFrame)
   - Implements live editing strategies for different parameter types
   - Handles pending changes queue for measure-boundary updates
+
+##### Shared Platform Boundaries
+
+The chords playback adapter now uses shared primitives for:
+
+- Audio context lifecycle (`audioContextLifecycle`)
+- Instrument creation (`instrumentFactory`)
+- Playback scheduler loop (`scheduler`)
+- Transport + track timing (`transport`, `track`)
+
+Chord progression semantics, highlighting policy, and measure-boundary update rules remain app-level responsibilities.
 
 ##### Key Stability Guarantees
 

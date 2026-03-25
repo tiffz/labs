@@ -1,0 +1,58 @@
+.app-slider {
+  --app-slider-rail: color-mix(
+    in srgb,
+    var(--border-subtle, #d5d9e2) 75%,
+    transparent
+  );
+  --app-slider-track: var(--accent-primary, #7c3aed);
+  --app-slider-thumb: var(--app-slider-track);
+  --app-slider-shadow: color-mix(
+    in srgb,
+    var(--app-slider-track) 28%,
+    transparent
+  );
+  --app-slider-mark: color-mix(
+    in srgb,
+    var(--border-subtle, #d5d9e2) 70%,
+    transparent
+  );
+  --app-slider-mark-active: var(--app-slider-track);
+
+  color: var(--app-slider-track) !important;
+  padding: 6px 0 !important;
+}
+
+.app-slider .MuiSlider-rail {
+  background-color: var(--app-slider-rail) !important;
+  opacity: 1 !important;
+}
+
+.app-slider .MuiSlider-track {
+  border: 0 !important;
+  background-color: var(--app-slider-track) !important;
+}
+
+.app-slider .MuiSlider-thumb {
+  width: 16px;
+  height: 16px;
+  box-shadow: 0 0 0 0 var(--app-slider-shadow);
+  transition: box-shadow 120ms ease;
+}
+
+.app-slider .MuiSlider-thumb:hover,
+.app-slider .MuiSlider-thumb.Mui-focusVisible {
+  box-shadow: 0 0 0 4px var(--app-slider-shadow);
+}
+
+.app-slider .MuiSlider-mark {
+  width: 2px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--app-slider-mark);
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.app-slider .MuiSlider-mark.MuiSlider-markActive {
+  background: var(--app-slider-mark-active);
+}

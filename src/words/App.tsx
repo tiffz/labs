@@ -59,6 +59,8 @@ import { getRhythmTemplatePresets } from '../shared/rhythm/presetDatabase';
 import MetronomeToggleButton from '../shared/components/MetronomeToggleButton';
 import DiceIcon from '../shared/components/DiceIcon';
 import AppTooltip from '../shared/components/AppTooltip';
+import AppSlider from '../shared/components/AppSlider';
+import BpmInput from '../shared/components/music/BpmInput';
 import dumSound from '../drums/assets/sounds/dum.wav';
 import takSound from '../drums/assets/sounds/tak.wav';
 import kaSound from '../drums/assets/sounds/ka.wav';
@@ -423,7 +425,6 @@ const App: React.FC = () => {
     DEFAULT_TIME_SIGNATURE
   );
   const [bpm, setBpm] = useState<number>(100);
-  const [bpmInput, setBpmInput] = useState<string>('100');
   const [debouncedBpm, setDebouncedBpm] = useState<number>(100);
   const [metronomeEnabled, setMetronomeEnabled] = useState<boolean>(true);
   const [autoFollowPlayback, setAutoFollowPlayback] = useState<boolean>(true);
@@ -861,6 +862,7 @@ const App: React.FC = () => {
     metronomeEnabled,
     playbackSettings: effectivePlaybackSettings,
     selectionRange: playbackSelectionRange,
+    metronomeResolution: 'beat',
   });
   const activeChordMeasure =
     isPlaying && chordLabelsByMeasure.size > 0 && currentNote
@@ -961,10 +963,6 @@ const App: React.FC = () => {
     handlePlay,
     stopPlaybackImmediately,
   ]);
-
-  useEffect(() => {
-    setBpmInput(String(bpm));
-  }, [bpm]);
 
   useEffect(() => {
     if (isPlaying) stopPlaybackImmediately();
@@ -1766,17 +1764,6 @@ const App: React.FC = () => {
     if (parsed.isValid && parsed.format === 'chord' && parsed.inferredKey) {
       setSongKey(parsed.inferredKey);
     }
-  };
-
-  const commitBpmInput = () => {
-    const parsed = Number(bpmInput);
-    if (!Number.isFinite(parsed)) {
-      setBpmInput(String(bpm));
-      return;
-    }
-    const clamped = Math.min(220, Math.max(40, Math.round(parsed)));
-    setBpm(clamped);
-    setBpmInput(String(clamped));
   };
 
   const sectionDisplayNames = useMemo(() => {
@@ -2731,10 +2718,10 @@ const App: React.FC = () => {
                       text="adventurousness"
                       help={GENERATION_SETTING_HELP.adventurousness}
                     />
-                    <input
-                      type="range"
+                    <AppSlider
                       min={0}
                       max={100}
+                      className="words-slider-input"
                       value={generationSettings.adventurousness}
                       onChange={(event) =>
                         updateSetting(
@@ -2750,10 +2737,10 @@ const App: React.FC = () => {
                       text="dotted note bias"
                       help={GENERATION_SETTING_HELP.dottedBias}
                     />
-                    <input
-                      type="range"
+                    <AppSlider
                       min={0}
                       max={100}
+                      className="words-slider-input"
                       value={generationSettings.dottedBias}
                       onChange={(event) =>
                         updateSetting('dottedBias', Number(event.target.value))
@@ -2766,10 +2753,10 @@ const App: React.FC = () => {
                       text="sixteenth bias"
                       help={GENERATION_SETTING_HELP.sixteenthBias}
                     />
-                    <input
-                      type="range"
+                    <AppSlider
                       min={0}
                       max={100}
+                      className="words-slider-input"
                       value={generationSettings.sixteenthBias}
                       onChange={(event) =>
                         updateSetting(
@@ -2785,10 +2772,10 @@ const App: React.FC = () => {
                       text="tie crossing bias"
                       help={GENERATION_SETTING_HELP.tieCrossingBias}
                     />
-                    <input
-                      type="range"
+                    <AppSlider
                       min={0}
                       max={100}
+                      className="words-slider-input"
                       value={generationSettings.tieCrossingBias}
                       onChange={(event) =>
                         updateSetting(
@@ -2804,10 +2791,10 @@ const App: React.FC = () => {
                       text="template influence"
                       help={GENERATION_SETTING_HELP.templateBias}
                     />
-                    <input
-                      type="range"
+                    <AppSlider
                       min={0}
                       max={100}
+                      className="words-slider-input"
                       value={generationSettings.templateBias}
                       onChange={(event) =>
                         updateSetting('templateBias', Number(event.target.value))
@@ -2824,10 +2811,10 @@ const App: React.FC = () => {
                       text="word starts to beats"
                       help={GENERATION_SETTING_HELP.alignWordStartsToBeats}
                     />
-                    <input
-                      type="range"
+                    <AppSlider
                       min={0}
                       max={100}
+                      className="words-slider-input"
                       value={generationSettings.alignWordStartsToBeats}
                       onChange={(event) =>
                         updateSetting(
@@ -2843,10 +2830,10 @@ const App: React.FC = () => {
                       text="stress to major beats"
                       help={GENERATION_SETTING_HELP.alignStressToMajorBeats}
                     />
-                    <input
-                      type="range"
+                    <AppSlider
                       min={0}
                       max={100}
+                      className="words-slider-input"
                       value={generationSettings.alignStressToMajorBeats}
                       onChange={(event) =>
                         updateSetting(
@@ -2862,10 +2849,10 @@ const App: React.FC = () => {
                       text="motif variation"
                       help={GENERATION_SETTING_HELP.motifVariation}
                     />
-                    <input
-                      type="range"
+                    <AppSlider
                       min={0}
                       max={100}
+                      className="words-slider-input"
                       value={generationSettings.motifVariation}
                       onChange={(event) =>
                         updateSetting(
@@ -2881,10 +2868,10 @@ const App: React.FC = () => {
                       text="mid-measure rest bias"
                       help={GENERATION_SETTING_HELP.midMeasureRestBias}
                     />
-                    <input
-                      type="range"
+                    <AppSlider
                       min={0}
                       max={100}
+                      className="words-slider-input"
                       value={generationSettings.midMeasureRestBias}
                       onChange={(event) =>
                         updateSetting(
@@ -2900,10 +2887,10 @@ const App: React.FC = () => {
                       text="avoid splitting words w/ rests"
                       help={GENERATION_SETTING_HELP.avoidIntraWordRests}
                     />
-                    <input
-                      type="range"
+                    <AppSlider
                       min={0}
                       max={100}
+                      className="words-slider-input"
                       value={generationSettings.avoidIntraWordRests}
                       onChange={(event) =>
                         updateSetting(
@@ -2919,10 +2906,10 @@ const App: React.FC = () => {
                       text="line-break empty-space bias"
                       help={GENERATION_SETTING_HELP.lineBreakGapBias}
                     />
-                    <input
-                      type="range"
+                    <AppSlider
                       min={0}
                       max={100}
+                      className="words-slider-input"
                       value={generationSettings.lineBreakGapBias}
                       onChange={(event) =>
                         updateSetting(
@@ -2954,38 +2941,29 @@ const App: React.FC = () => {
           >
             {isPlaying ? 'stop' : 'play'}
           </button>
-          <label className="words-inline-control">
+          <label className="words-inline-control words-inline-control-bpm">
             bpm
-            <input
-              type="number"
+            <BpmInput
+              value={bpm}
+              onChange={(next) => setBpm(clampBpm(next))}
               min={40}
               max={220}
-              value={bpmInput}
-              onChange={(event) => setBpmInput(event.target.value)}
-              onBlur={commitBpmInput}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') {
-                  commitBpmInput();
-                }
-                if (event.key === 'Escape') {
-                  setBpmInput(String(bpm));
-                }
-              }}
+              className="words-bpm-input"
+              dropdownClassName="words-bpm-dropdown"
+              sliderClassName="words-bpm-slider"
+              trailingActions={(
+                <AppTooltip title="Randomize tempo">
+                  <button
+                    type="button"
+                    className="words-inline-dice-button words-icon-tooltip"
+                    onClick={() => setBpm(clampBpm(Math.round(80 + Math.random() * 70)))}
+                    aria-label="Randomize tempo"
+                  >
+                    <DiceIcon variant="single" size={15} />
+                  </button>
+                </AppTooltip>
+              )}
             />
-            <AppTooltip title="Randomize BPM">
-              <button
-                type="button"
-                className="words-inline-dice-button words-icon-tooltip"
-                onClick={() => {
-                  const nextBpm = clampBpm(Math.round(80 + Math.random() * 70));
-                  setBpm(nextBpm);
-                  setBpmInput(String(nextBpm));
-                }}
-                aria-label="Randomize BPM"
-              >
-                <DiceIcon variant="single" size={15} />
-              </button>
-            </AppTooltip>
           </label>
           <label className="words-inline-control">
             key
@@ -3073,10 +3051,10 @@ const App: React.FC = () => {
               </div>
               <label className="words-slider-row">
                 master volume
-                <input
-                  type="range"
+                <AppSlider
                   min={0}
                   max={100}
+                  className="words-slider-input"
                   value={masterVolume}
                   onChange={(event) => setMasterVolume(Number(event.target.value))}
                 />
@@ -3096,10 +3074,10 @@ const App: React.FC = () => {
               </label>
               <label className="words-slider-row">
                 drums volume
-                <input
-                  type="range"
+                <AppSlider
                   min={0}
                   max={100}
+                  className="words-slider-input"
                   value={drumsVolume}
                   onChange={(event) =>
                     setDrumsVolume(Number(event.target.value))
@@ -3121,10 +3099,10 @@ const App: React.FC = () => {
               </label>
               <label className="words-slider-row">
                 accent volume
-                <input
-                  type="range"
+                <AppSlider
                   min={0}
                   max={100}
+                  className="words-slider-input"
                   value={playbackSettings.measureAccentVolume}
                   onChange={(event) =>
                     setPlaybackSettings((previous) => ({
@@ -3153,10 +3131,10 @@ const App: React.FC = () => {
               </label>
               <label className="words-slider-row">
                 metronome volume
-                <input
-                  type="range"
+                <AppSlider
                   min={0}
                   max={100}
+                  className="words-slider-input"
                   value={playbackSettings.metronomeVolume}
                   onChange={(event) =>
                     setPlaybackSettings((previous) => ({
@@ -3226,10 +3204,10 @@ const App: React.FC = () => {
                 ) : null}
                 <label className="words-slider-row">
                   chord volume
-                  <input
-                    type="range"
+                  <AppSlider
                     min={0}
                     max={100}
+                    className="words-slider-input"
                     value={chordVolume}
                     onChange={(event) =>
                       setChordVolume(Number(event.target.value))
@@ -3265,10 +3243,10 @@ const App: React.FC = () => {
                   <>
                     <label className="words-slider-row">
                       backing drum volume
-                      <input
-                        type="range"
+                      <AppSlider
                         min={0}
                         max={100}
+                        className="words-slider-input"
                         value={backingBeatVolume}
                         onChange={(event) =>
                           setBackingBeatVolume(Number(event.target.value))

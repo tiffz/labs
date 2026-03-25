@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import type { ZineMode, PDFGenerationOptions, PDFExportFormat, BookletPageInfo, SpreadInfo, PDFResult, PaperConfig } from '../types';
 import { estimateUncompressedSize, estimateCompressedSize, formatFileSize } from '../utils/pdfGenerator';
+import AppSlider from '../../shared/components/AppSlider';
 
 interface ExportOptionsProps {
   mode: ZineMode;
@@ -162,11 +163,10 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({
 
           <div className="flex items-center gap-2">
             <span className="text-xs text-amber-700 w-16 flex-shrink-0">Quality</span>
-            <input
-              type="range"
-              min="0.5"
-              max="1"
-              step="0.05"
+            <AppSlider
+              min={0.5}
+              max={1}
+              step={0.05}
               value={options.jpegQuality}
               onChange={(e) => handleJpegQualityChange(parseFloat(e.target.value))}
               className="compression-slider flex-1"
@@ -178,11 +178,10 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({
 
           <div className="flex items-center gap-2">
             <span className="text-xs text-amber-700 w-16 flex-shrink-0">Resolution</span>
-            <input
-              type="range"
-              min="0.25"
-              max="1"
-              step="0.05"
+            <AppSlider
+              min={0.25}
+              max={1}
+              step={0.05}
               value={options.resolutionScale}
               onChange={(e) => handleResolutionScaleChange(parseFloat(e.target.value))}
               className="compression-slider flex-1"

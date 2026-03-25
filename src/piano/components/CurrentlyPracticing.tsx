@@ -1,5 +1,5 @@
-import React, { useMemo, useCallback, useState, useRef, useEffect, useLayoutEffect } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useMemo, useCallback, useState, useRef, useEffect } from 'react';
+import Popover from '@mui/material/Popover';
 import { usePiano } from '../store';
 import { durationToBeats } from '../types';
 import type { Key } from '../types';
@@ -108,49 +108,23 @@ function parseExerciseId(id: string): ExerciseMeta | null {
 }
 
 const ChipPopover: React.FC<{
+  id?: string;
   anchor: HTMLElement | null;
   open: boolean;
   onClose: () => void;
   children: React.ReactNode;
-}> = ({ anchor, open, onClose, children }) => {
-  const ref = useRef<HTMLDivElement>(null);
-  const [position, setPosition] = useState<{ left: number; top: number } | null>(null);
-
-  const updatePosition = useCallback(() => {
-    if (!anchor) return;
-    const rect = anchor.getBoundingClientRect();
-    setPosition({ left: rect.left, top: rect.bottom + 4 });
-  }, [anchor]);
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node) && anchor && !anchor.contains(e.target as Node)) onClose();
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [open, onClose, anchor]);
-
-  useLayoutEffect(() => {
-    if (!open || !anchor) {
-      setPosition(null);
-      return;
-    }
-    updatePosition();
-    window.addEventListener('resize', updatePosition);
-    window.addEventListener('scroll', updatePosition, true);
-    return () => {
-      window.removeEventListener('resize', updatePosition);
-      window.removeEventListener('scroll', updatePosition, true);
-    };
-  }, [open, anchor, updatePosition]);
-
-  if (!open || !anchor || !position) return null;
-  return createPortal(
-    <div ref={ref} className="np-popover" style={{ left: position.left, top: position.top }}>
+}> = ({ id, anchor, open, onClose, children }) => {
+  return (
+    <Popover
+      open={open}
+      anchorEl={anchor}
+      onClose={onClose}
+      anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+      transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+      slotProps={{ paper: { className: 'np-popover', id } }}
+    >
       {children}
-    </div>,
-    document.body,
+    </Popover>
   );
 };
 
@@ -315,12 +289,12 @@ const CurrentlyPracticing: React.FC<CurrentlyPracticingProps> = ({ onSwitchExerc
         chordExerciseMeta.progressionNumerals.join('–');
       const baseKey = overrides.key ?? score.key;
       const parsed = parseProgressionText(baseInput, baseKey);
-      if (!parsed.isValid || parsed.tokens.length < 2) {
-        setChordTemplateError('Use I–V–vi–IV or C–G–Am–F with at least 2 chords.');
+      if (!parsed.isValid || parsed.tokens.length < 1) {
+        setChordTemplateError('Use I, I–V–vi–IV, or C–G–Am–F.');
         setChordTemplateWarning('');
         return;
       }
-      if (parsed.romanNumerals.length < 2) {
+      if (parsed.romanNumerals.length < 1) {
         setChordTemplateWarning(
           'Progression is valid text but non-diatonic for the selected/inferred key.'
         );
@@ -420,6 +394,9 @@ const CurrentlyPracticing: React.FC<CurrentlyPracticingProps> = ({ onSwitchExerc
   const isExercise = scoreInfo.isExercise;
   const meta = exerciseMeta;
   const isTonal = meta && meta.type !== 'chromatic';
+  const keyPopoverId = 'np-key-popover';
+  const chordStylePopoverId = 'np-chord-style-popover';
+  const chordTemplatePopoverId = 'np-chord-template-popover';
 
   return (
     <div className="now-practicing">
@@ -438,6 +415,9 @@ const CurrentlyPracticing: React.FC<CurrentlyPracticingProps> = ({ onSwitchExerc
               <button
                 className="np-tag np-tag-interactive"
                 onClick={e => openPopover('key', e)}
+                aria-haspopup="dialog"
+                aria-expanded={popover === 'key'}
+                aria-controls={popover === 'key' ? keyPopoverId : undefined}
                 onMouseEnter={e => showTip(e, 'Change key')}
                 onMouseLeave={hideTip}
               >
@@ -446,6 +426,9 @@ const CurrentlyPracticing: React.FC<CurrentlyPracticingProps> = ({ onSwitchExerc
               <button
                 className="np-tag np-tag-interactive"
                 onClick={e => openPopover('chord-style', e)}
+                aria-haspopup="dialog"
+                aria-expanded={popover === 'chord-style'}
+                aria-controls={popover === 'chord-style' ? chordStylePopoverId : undefined}
                 onMouseEnter={e => showTip(e, 'Change chord style')}
                 onMouseLeave={hideTip}
               >
@@ -456,6 +439,9 @@ const CurrentlyPracticing: React.FC<CurrentlyPracticingProps> = ({ onSwitchExerc
               <button
                 className="np-tag np-tag-interactive"
                 onClick={e => openPopover('chord-template', e)}
+                aria-haspopup="dialog"
+                aria-expanded={popover === 'chord-template'}
+                aria-controls={popover === 'chord-template' ? chordTemplatePopoverId : undefined}
                 onMouseEnter={e =>
                   showTip(
                     e,
@@ -472,6 +458,9 @@ const CurrentlyPracticing: React.FC<CurrentlyPracticingProps> = ({ onSwitchExerc
             <>
               {/* Key chip — click to open popover (no arrow icon) */}
               <button className="np-tag np-tag-interactive" onClick={e => openPopover('key', e)}
+                aria-haspopup="dialog"
+                aria-expanded={popover === 'key'}
+                aria-controls={popover === 'key' ? keyPopoverId : undefined}
                 onMouseEnter={e => showTip(e, 'Change key')} onMouseLeave={hideTip}>
                 {scoreInfo.key}
               </button>
@@ -562,7 +551,7 @@ const CurrentlyPracticing: React.FC<CurrentlyPracticingProps> = ({ onSwitchExerc
         </span>
       )}
 
-      <ChipPopover anchor={popoverAnchor} open={popover === 'key'} onClose={() => setPopover(null)}>
+      <ChipPopover id={keyPopoverId} anchor={popoverAnchor} open={popover === 'key'} onClose={() => setPopover(null)}>
         <div className="np-pop-keys">
           {(chordExerciseMeta
             ? MAJOR_KEYS
@@ -588,6 +577,7 @@ const CurrentlyPracticing: React.FC<CurrentlyPracticingProps> = ({ onSwitchExerc
       </ChipPopover>
 
       <ChipPopover
+        id={chordStylePopoverId}
         anchor={popoverAnchor}
         open={popover === 'chord-style'}
         onClose={() => setPopover(null)}
@@ -606,6 +596,7 @@ const CurrentlyPracticing: React.FC<CurrentlyPracticingProps> = ({ onSwitchExerc
       </ChipPopover>
 
       <ChipPopover
+        id={chordTemplatePopoverId}
         anchor={popoverAnchor}
         open={popover === 'chord-template'}
         onClose={() => setPopover(null)}

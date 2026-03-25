@@ -466,27 +466,19 @@
      SLIDER
      ============================================ */
   .compression-slider {
-    -webkit-appearance: none;
-    appearance: none;
-    height: 6px;
-    border-radius: 3px;
-    background: var(--color-border);
+    --app-slider-track: var(--color-primary);
+    --app-slider-rail: var(--color-border);
   }
 
-  .compression-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: var(--color-primary);
-    cursor: pointer;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  .compression-slider .MuiSlider-thumb {
     border: 2px solid white;
-    transition: all 0.15s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
   }
 
-  .compression-slider::-webkit-slider-thumb:hover {
-    transform: scale(1.15);
+  .compression-slider .MuiSlider-thumb:hover,
+  .compression-slider .MuiSlider-thumb.Mui-focusVisible {
+    box-shadow: 0 0 0 4px
+      color-mix(in srgb, var(--color-primary) 24%, transparent);
   }
 
   /* ============================================

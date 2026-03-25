@@ -1645,26 +1645,41 @@ const App: React.FC = () => {
                       value={Math.round(effectiveBpm)}
                       onChange={handleBpmChange}
                       className="shared-bpm-input"
+                      dropdownClassName="beat-bpm-dropdown"
+                      sliderClassName="beat-bpm-slider"
                       trailingActions={
-                        <AppTooltip title={isYouTube ? 'Reset BPM to default 120' : 'Reset BPM to detected analysis value'}>
-                          <button
-                            type="button"
-                            className="inline-icon-btn"
-                            disabled={
-                              isYouTube
-                                ? Math.round(youtubeManualBpm) === 120
-                                : detectedBpmBaseline === null || Math.round(effectiveBpm) === Math.round(detectedBpmBaseline)
-                            }
-                            onClick={() => {
-                              if (isYouTube) {
-                                handleBpmChange(120);
-                              } else if (detectedBpmBaseline !== null) {
-                                handleBpmChange(detectedBpmBaseline);
+                        <AppTooltip
+                          title={
+                            isYouTube
+                              ? 'Reset to default: 120 BPM'
+                              : `Reset to detected: ${Math.round(detectedBpmBaseline ?? effectiveBpm)} BPM`
+                          }
+                        >
+                          <span className="bpm-reset-tooltip-anchor">
+                            <button
+                              type="button"
+                              className="inline-icon-btn bpm-reset-btn"
+                              aria-label={
+                                isYouTube
+                                  ? 'Reset to default: 120 BPM'
+                                  : `Reset to detected: ${Math.round(detectedBpmBaseline ?? effectiveBpm)} BPM`
                               }
-                            }}
-                          >
-                            <span className="material-symbols-outlined">restart_alt</span>
-                          </button>
+                              disabled={
+                                isYouTube
+                                  ? Math.round(youtubeManualBpm) === 120
+                                  : detectedBpmBaseline === null || Math.round(effectiveBpm) === Math.round(detectedBpmBaseline)
+                              }
+                              onClick={() => {
+                                if (isYouTube) {
+                                  handleBpmChange(120);
+                                } else if (detectedBpmBaseline !== null) {
+                                  handleBpmChange(detectedBpmBaseline);
+                                }
+                              }}
+                            >
+                              <span className="material-symbols-outlined">restart_alt</span>
+                            </button>
+                          </span>
                         </AppTooltip>
                       }
                     />

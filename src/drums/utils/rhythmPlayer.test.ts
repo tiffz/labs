@@ -8,9 +8,11 @@ import { audioPlayer } from './audioPlayer'; // Import for assertion
 vi.mock('./audioPlayer', () => ({
   audioPlayer: {
     play: vi.fn(),
+    playNowIfReady: vi.fn(),
     stopAll: vi.fn(),
     stopAllDrumSounds: vi.fn(),
     playClick: vi.fn(),
+    playClickNowIfReady: vi.fn(),
     setReverbStrength: vi.fn(),
     // New methods for audio health management
     ensureResumed: vi.fn().mockResolvedValue(true),
@@ -511,6 +513,36 @@ describe('rhythmPlayer timing accuracy', () => {
 
       // Audio Click should NOT fire
       expect(audioPlayer.playClick).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('lifecycle recovery', () => {
+    it('resumes audio on visibility restore while playing', async () => {
+      const notation = 'D---';
+      const timeSignature: TimeSignature = { numerator: 4, denominator: 4 };
+      const parsedRhythm = parseRhythm(notation, timeSignature);
+      await rhythmPlayer.play(parsedRhythm, 120);
+      vi.advanceTimersByTime(0);
+
+      Object.defineProperty(document, 'visibilityState', {
+        configurable: true,
+        value: 'visible',
+      });
+      document.dispatchEvent(new Event('visibilitychange'));
+
+      expect(audioPlayer.ensureResumed).toHaveBeenCalled();
+    });
+
+    it('runs periodic health recovery when audio is unhealthy', async () => {
+      vi.mocked(audioPlayer.isHealthy).mockReturnValue(false);
+      const notation = 'D---';
+      const timeSignature: TimeSignature = { numerator: 4, denominator: 4 };
+      const parsedRhythm = parseRhythm(notation, timeSignature);
+      await rhythmPlayer.play(parsedRhythm, 120);
+      vi.advanceTimersByTime(2100);
+
+      expect(audioPlayer.ensureResumed).toHaveBeenCalled();
+      vi.mocked(audioPlayer.isHealthy).mockReturnValue(true);
     });
   });
 

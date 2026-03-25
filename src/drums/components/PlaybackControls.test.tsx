@@ -123,7 +123,7 @@ describe('PlaybackControls', () => {
   it('should render BPM input', () => {
     render(<PlaybackControls {...defaultProps} />);
     
-    const bpmInput = screen.getByPlaceholderText('BPM') as HTMLInputElement;
+    const bpmInput = screen.getByLabelText('Tempo in BPM') as HTMLInputElement;
     expect(bpmInput).toBeInTheDocument();
     expect(bpmInput.value).toBe('120');
   });
@@ -132,8 +132,10 @@ describe('PlaybackControls', () => {
     const onBpmChange = vi.fn();
     render(<PlaybackControls {...defaultProps} onBpmChange={onBpmChange} />);
     
-    const bpmInput = screen.getByPlaceholderText('BPM');
+    const bpmInput = screen.getByLabelText('Tempo in BPM');
+    fireEvent.focus(bpmInput);
     fireEvent.change(bpmInput, { target: { value: '140' } });
+    fireEvent.blur(bpmInput);
     
     expect(onBpmChange).toHaveBeenCalledWith(140);
   });

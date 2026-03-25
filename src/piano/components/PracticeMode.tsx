@@ -15,6 +15,10 @@ const GRACE_PERIOD_MS = 200;
 const PROXIMITY_SEMITONES = 2;
 const EVAL_BATCH_WINDOW_MS = 40;
 const MIDI_RE_EVAL_WINDOW_MS = 80;
+// Acoustic detection uses a rolling majority window, which adds onset latency.
+const MIC_TIMING_COMPENSATION_MS = 160;
+// Avoid anchoring mic timing to stale held notes from previous beats.
+const MIC_TIMING_MAX_EARLY_WINDOW_MS = 260;
 
 interface ExpectedNote { pitches: number[]; noteId: string; hand: string; chordSymbol?: string }
 interface PassedNote extends ExpectedNote { passedAt: number }
@@ -36,6 +40,20 @@ function pitchClassMatch(played: number[], expectedPitches: number[]): boolean {
   return expectedPitches.length > 0 && expectedPitches.every(ep =>
     played.some(p => pitchClassDistance(p, ep) <= 1)
   );
+}
+
+function deriveOctaveOffset(played: number[], expectedPitches: number[]): number | null {
+  const deltas: number[] = [];
+  for (const expected of expectedPitches) {
+    for (const actual of played) {
+      if (pitchClassDistance(actual, expected) <= 1) {
+        deltas.push(actual - expected);
+      }
+    }
+  }
+  if (deltas.length === 0) return null;
+  const avgDelta = deltas.reduce((sum, delta) => sum + delta, 0) / deltas.length;
+  return Math.round(avgDelta / 12) * 12;
 }
 
 function getHandSplitPoint(expectedNotes: ExpectedNote[]): number {
@@ -80,19 +98,31 @@ function getRelevantPlayedNotesForExpected(
   return candidates;
 }
 
-function findPitchClassMidiTime(
-  expectedPitch: number,
-  midiTimes: ReadonlyMap<number, number>,
-): number | undefined {
-  const exact = midiTimes.get(expectedPitch);
-  if (exact !== undefined) return exact;
-  let best: number | undefined;
-  for (const [midi, time] of midiTimes) {
-    if (pitchClassDistance(midi, expectedPitch) <= 1) {
-      if (best === undefined || time < best) best = time;
-    }
-  }
-  return best;
+function isPitchNearExpected(
+  midi: number,
+  expectedPitches: number[],
+  allowPitchClass: boolean,
+): boolean {
+  return expectedPitches.some(
+    (expectedPitch) =>
+      Math.abs(midi - expectedPitch) <= PROXIMITY_SEMITONES ||
+      (allowPitchClass && pitchClassDistance(midi, expectedPitch) <= 1),
+  );
+}
+
+function pickTimingReferenceTime(
+  relevantTimes: number[],
+  expectedTime: number,
+  useMic: boolean,
+): number {
+  if (relevantTimes.length === 0) return performance.now();
+  const filtered = useMic
+    ? relevantTimes.filter((time) => time >= expectedTime - MIC_TIMING_MAX_EARLY_WINDOW_MS)
+    : relevantTimes;
+  const source = filtered.length > 0 ? filtered : relevantTimes;
+  return source.reduce((closest, current) => (
+    Math.abs(current - expectedTime) < Math.abs(closest - expectedTime) ? current : closest
+  ));
 }
 
 /**
@@ -176,13 +206,31 @@ const PracticeMode: React.FC = () => {
   const recentlyPassedRef = useRef<PassedNote[]>([]);
   const graceTimerRef = useRef<number | null>(null);
   const evalTimerRef = useRef<number | null>(null);
+  const octaveAnchorByHandRef = useRef<Map<string, number>>(new Map());
 
   useEffect(() => {
     evaluatedNoteIds.current = new Set();
     missedNotes.current = new Map();
     recentlyPassedRef.current = [];
     expectedByPartRef.current = new Map();
+    octaveAnchorByHandRef.current = new Map();
   }, [state.currentRunStartTime]);
+
+  const getAnchoredExpectedPitches = useCallback((expected: ExpectedNote, played: number[]): number[] => {
+    if (useMic || expected.chordSymbol) {
+      return expected.pitches;
+    }
+    const existingOffset = octaveAnchorByHandRef.current.get(expected.hand);
+    if (existingOffset !== undefined) {
+      return expected.pitches.map((pitch) => pitch + existingOffset);
+    }
+    const detectedOffset = deriveOctaveOffset(played, expected.pitches);
+    if (detectedOffset === null) {
+      return expected.pitches;
+    }
+    octaveAnchorByHandRef.current.set(expected.hand, detectedOffset);
+    return expected.pitches.map((pitch) => pitch + detectedOffset);
+  }, [useMic]);
 
   const checkPitchCorrect = useCallback((played: number[], expected: ExpectedNote): boolean => {
     if (expected.chordSymbol) return matchesChord(played, expected.chordSymbol);
@@ -199,14 +247,18 @@ const PracticeMode: React.FC = () => {
 
     for (const [partId, expected] of expectedByPartRef.current) {
       if (partsPlayedRef.current.has(partId)) continue;
+      const anchoredExpected = {
+        ...expected,
+        pitches: getAnchoredExpectedPitches(expected, played),
+      };
 
-      if (checkPitchCorrect(played, expected)) {
+      if (checkPitchCorrect(played, anchoredExpected)) {
         const result: PracticeNoteResult = {
           noteId: expected.noteId,
-          expectedPitches: expected.pitches,
+          expectedPitches: anchoredExpected.pitches,
           playedPitches: useMic
-            ? played.filter(p => expected.pitches.some(ep => pitchClassDistance(p, ep) <= 1))
-            : expected.pitches.filter(p => played.includes(p)),
+            ? played.filter(p => anchoredExpected.pitches.some(ep => pitchClassDistance(p, ep) <= 1))
+            : anchoredExpected.pitches.filter(p => played.includes(p)),
           timingOffsetMs: 0,
           pitchCorrect: true,
           timing: 'perfect',
@@ -222,7 +274,7 @@ const PracticeMode: React.FC = () => {
       waitingForReleaseRef.current = true;
       dispatch({ type: 'ADVANCE_FREE_TEMPO' });
     }
-  }, [dispatch, checkPitchCorrect, useMic]);
+  }, [dispatch, checkPitchCorrect, getAnchoredExpectedPitches, useMic]);
 
   const tryEvaluateNote = useCallback((
     expected: ExpectedNote,
@@ -249,10 +301,14 @@ const PracticeMode: React.FC = () => {
           if (pitchNowCorrect) {
             missedNotes.current.delete(expected.noteId);
             const relevantTimes = useMic
-              ? expected.pitches.map(p => findPitchClassMidiTime(p, midiTimes)).filter((t): t is number => t !== undefined)
+              ? played
+                  .filter((midi) => isPitchNearExpected(midi, expected.pitches, true))
+                  .map((midi) => midiTimes.get(midi))
+                  .filter((t): t is number => t !== undefined)
               : expected.pitches.map(p => midiTimes.get(p)).filter((t): t is number => t !== undefined);
-            const press = relevantTimes.length > 0 ? Math.min(...relevantTimes) : performance.now();
-            const offset = press - expectedTime;
+            const press = pickTimingReferenceTime(relevantTimes, expectedTime, useMic);
+            const rawOffset = press - expectedTime;
+            const offset = useMic ? rawOffset - MIC_TIMING_COMPENSATION_MS : rawOffset;
             const newTiming: TimingJudgment = Math.abs(offset) < PERFECT_THRESHOLD_MS ? 'perfect' : offset < 0 ? 'early' : 'late';
             const correctedPitches = useMic
               ? expected.pitches.filter(ep => played.some(p => pitchClassDistance(p, ep) <= 1))
@@ -291,14 +347,16 @@ const PracticeMode: React.FC = () => {
       useMic,
       [...expectedByPartRef.current.values()]
     );
+    const anchoredExpectedPitches = getAnchoredExpectedPitches(expected, scopedPlayed);
+    const anchoredExpected: ExpectedNote = { ...expected, pitches: anchoredExpectedPitches };
 
     // If we have optimal assignment info, skip notes that don't have a match yet
     if (readyIds && !readyIds.has(expected.noteId)) {
       // Only skip if the note doesn't have an exact pitch in the played set
       if (
         !expected.chordSymbol &&
-        !hasExactPitchMatch(scopedPlayed, expected.pitches) &&
-        !(allowPitchClassForExpected && pitchClassMatch(scopedPlayed, expected.pitches))
+        !hasExactPitchMatch(scopedPlayed, anchoredExpectedPitches) &&
+        !(allowPitchClassForExpected && pitchClassMatch(scopedPlayed, anchoredExpectedPitches))
       ) {
         return false;
       }
@@ -306,36 +364,45 @@ const PracticeMode: React.FC = () => {
 
     if (
       !expected.chordSymbol &&
-      !hasExactPitchMatch(scopedPlayed, expected.pitches) &&
-      !isAttemptingNote(scopedPlayed, expected.pitches)
+      !hasExactPitchMatch(scopedPlayed, anchoredExpectedPitches) &&
+      !isAttemptingNote(scopedPlayed, anchoredExpectedPitches)
     ) {
-      if (!allowPitchClassForExpected || !pitchClassMatch(scopedPlayed, expected.pitches)) {
+      if (!allowPitchClassForExpected || !pitchClassMatch(scopedPlayed, anchoredExpectedPitches)) {
         return false;
       }
     }
 
-    const pitchCorrect = checkPitchCorrect(scopedPlayed, expected);
+    const pitchCorrect = checkPitchCorrect(scopedPlayed, anchoredExpected);
 
-    let matchingPitches = expected.pitches.filter((p) => scopedPlayed.includes(p));
+    let matchingPitches = anchoredExpectedPitches.filter((p) => scopedPlayed.includes(p));
     if (matchingPitches.length === 0 && allowPitchClassForExpected) {
-      matchingPitches = expected.pitches.filter(ep =>
+      matchingPitches = anchoredExpectedPitches.filter(ep =>
         scopedPlayed.some(p => pitchClassDistance(p, ep) <= 1)
       );
     }
 
-    const relevantKeyTimes = (useMic || allowPitchClassForExpected || expected.chordSymbol)
-      ? expected.pitches
-          .map(p => findPitchClassMidiTime(p, midiTimes))
-          .filter((t): t is number => t !== undefined)
-      : matchingPitches
-          .map(p => midiTimes.get(p))
-          .filter((t): t is number => t !== undefined);
+    const relevantKeyTimes =
+      (useMic || allowPitchClassForExpected || expected.chordSymbol)
+        ? scopedPlayed
+            .filter((midi) =>
+              expected.chordSymbol
+                ? true
+                : isPitchNearExpected(midi, anchoredExpectedPitches, allowPitchClassForExpected),
+            )
+            .map((midi) => midiTimes.get(midi))
+            .filter((t): t is number => t !== undefined)
+        : matchingPitches
+            .map((p) => midiTimes.get(p))
+            .filter((t): t is number => t !== undefined);
 
-    const earliestPress = relevantKeyTimes.length > 0 ? Math.min(...relevantKeyTimes) : performance.now();
-    const timingOffsetMs = earliestPress - expectedTime;
+    const timingPress = pickTimingReferenceTime(relevantKeyTimes, expectedTime, useMic);
+    const rawTimingOffsetMs = timingPress - expectedTime;
+    const timingOffsetMs = useMic
+      ? rawTimingOffsetMs - MIC_TIMING_COMPENSATION_MS
+      : rawTimingOffsetMs;
 
     const attemptedPitch =
-      expected.chordSymbol ? scopedPlayed.length > 0 : isAttemptingNote(scopedPlayed, expected.pitches);
+      expected.chordSymbol ? scopedPlayed.length > 0 : isAttemptingNote(scopedPlayed, anchoredExpectedPitches);
     let timing: TimingJudgment;
     if (!pitchCorrect) {
       timing = attemptedPitch ? 'wrong_pitch' : 'missed';
@@ -355,7 +422,7 @@ const PracticeMode: React.FC = () => {
     if (isDebugEnabled()) {
       logDebugEvent({
         type: 'eval_attempt', t: performance.now(), noteId: expected.noteId,
-        played: scopedPlayed, expectedPitches: expected.pitches, pitchCorrect, timing,
+        played: scopedPlayed, expectedPitches: anchoredExpectedPitches, pitchCorrect, timing,
         timingOffsetMs, useMic,
         midiTimesSnapshot: [...midiTimes.entries()],
         expectedTime: getNoteExpectedTime(expected.noteId) ?? null,
@@ -364,7 +431,7 @@ const PracticeMode: React.FC = () => {
 
     dispatch({ type: 'ADD_PRACTICE_RESULT', result: {
       noteId: expected.noteId,
-      expectedPitches: expected.pitches,
+      expectedPitches: anchoredExpectedPitches,
       playedPitches: matchingPitches.length > 0 ? matchingPitches : played,
       timingOffsetMs,
       pitchCorrect,
@@ -372,7 +439,7 @@ const PracticeMode: React.FC = () => {
     } });
     evaluatedNoteIds.current.add(expected.noteId);
     return true;
-  }, [dispatch, checkPitchCorrect, useMic, allowChordPracticeOctaveFlex]);
+  }, [dispatch, checkPitchCorrect, useMic, allowChordPracticeOctaveFlex, getAnchoredExpectedPitches]);
 
   const evaluateTimedWithTiming = useCallback((played: number[]) => {
     const midiTimes = getAllMidiNoteOnTimes();

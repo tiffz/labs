@@ -19,6 +19,15 @@ A web application for detecting BPM (beats per minute) in audio and video files,
 
 ## Architecture
 
+### Shared Playback Integration
+
+Beat uses shared playback/audio services for common timing and click behavior:
+
+- `shared/audio/clickService` (metronome sample loading/playback)
+- `shared/playback/audioContextLifecycle` (resume + visibility recovery)
+
+Beat-specific behavior (fermata pauses, adaptive resync, media-element drift correction, tempo-region mapping) remains in `useBeatSync`.
+
 ### BPM Detection
 
 The app uses [**Essentia.js**](https://essentia.upf.edu/essentiajs.html) for tempo detection - the JavaScript/WASM port of the industry-standard Essentia library developed by the Music Technology Group at Universitat Pompeu Fabra (MTG/UPF).

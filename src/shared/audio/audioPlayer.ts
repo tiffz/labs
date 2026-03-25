@@ -221,6 +221,66 @@ export class AudioPlayer {
   }
 
   /**
+   * Shared buffer playback helper with optional absolute start time.
+   */
+  private playBuffer(
+    buffer: AudioBuffer,
+    volume: number,
+    duration?: number,
+    startTime?: number,
+    trackAsActive: boolean = true,
+  ): void {
+    if (!this.audioContext) return;
+    try {
+      const source = this.audioContext.createBufferSource();
+      source.buffer = buffer;
+
+      const gainNode = this.audioContext.createGain();
+      const now = this.audioContext.currentTime;
+      const startAt = Math.max(startTime ?? now, now);
+      gainNode.gain.setValueAtTime(Math.max(0, Math.min(1, volume)), startAt);
+
+      // Only apply fade-out for very short notes (< 0.15 seconds / 150ms)
+      if (duration !== undefined && duration > 0 && duration < 0.15) {
+        const fadeStartTime = startAt + duration * 0.8;
+        const fadeEndTime = startAt + duration;
+        gainNode.gain.setValueAtTime(volume, fadeStartTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, fadeEndTime);
+      }
+
+      // Connect audio chain with reverb support
+      if (this.reverbNodes && this.reverbStrength > 0) {
+        source.connect(gainNode);
+        gainNode.connect(this.reverbNodes.dryGain);
+        gainNode.connect(this.reverbNodes.convolver);
+      } else {
+        source.connect(gainNode);
+        gainNode.connect(this.audioContext.destination);
+      }
+
+      if (trackAsActive) {
+        this.activeSources.add(source);
+      }
+
+      source.onended = () => {
+        if (trackAsActive) {
+          this.activeSources.delete(source);
+        }
+        source.disconnect();
+        gainNode.disconnect();
+      };
+
+      source.start(startAt);
+
+      if (duration !== undefined && duration > 0 && duration < 0.15) {
+        source.stop(startAt + duration + 0.01);
+      }
+    } catch (err) {
+      console.error('Error playing buffer:', err);
+    }
+  }
+
+  /**
    * Play a sound by name with optional volume control
    * @param soundName - The name of the sound to play
    * @param volume - Volume level (0.0 to 1.0), defaults to 1.0
@@ -237,52 +297,19 @@ export class AudioPlayer {
       console.warn(`Sound "${soundName}" not loaded`);
       return;
     }
+    this.playBuffer(buffer, volume, duration);
+  }
 
-    try {
-      const source = this.audioContext.createBufferSource();
-      source.buffer = buffer;
-
-      const gainNode = this.audioContext.createGain();
-      const now = this.audioContext.currentTime;
-
-      gainNode.gain.setValueAtTime(Math.max(0, Math.min(1, volume)), now);
-
-      // Only apply fade-out for very short notes (< 0.15 seconds / 150ms)
-      if (duration !== undefined && duration > 0 && duration < 0.15) {
-        const fadeStartTime = now + duration * 0.8;
-        const fadeEndTime = now + duration;
-
-        gainNode.gain.setValueAtTime(volume, fadeStartTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, fadeEndTime);
-      }
-
-      // Connect audio chain with reverb support
-      if (this.reverbNodes && this.reverbStrength > 0) {
-        source.connect(gainNode);
-        gainNode.connect(this.reverbNodes.dryGain);
-        gainNode.connect(this.reverbNodes.convolver);
-      } else {
-        source.connect(gainNode);
-        gainNode.connect(this.audioContext.destination);
-      }
-
-      this.activeSources.add(source);
-
-      // Clean up nodes after playback to prevent memory leak
-      source.onended = () => {
-        this.activeSources.delete(source);
-        source.disconnect();
-        gainNode.disconnect();
-      };
-
-      source.start(now);
-
-      if (duration !== undefined && duration > 0 && duration < 0.15) {
-        source.stop(now + duration + 0.01);
-      }
-    } catch (err) {
-      console.error(`Error playing ${soundName} sound:`, err);
-    }
+  /**
+   * Fast path: play a loaded sound immediately if context is already running.
+   * Does not call ensureResumed(), so callers should use this in hot loops only
+   * after initialization/startup already succeeded.
+   */
+  playNowIfReady(soundName: string, volume: number = 1.0, duration?: number): void {
+    if (!this.audioContext || this.audioContext.state !== 'running') return;
+    const buffer = this.buffers.get(soundName);
+    if (!buffer) return;
+    this.playBuffer(buffer, volume, duration);
   }
 
   /**
@@ -292,28 +319,15 @@ export class AudioPlayer {
   async playClick(volume: number = 1.0): Promise<void> {
     const isReady = await this.ensureResumed();
     if (!isReady || !this.audioContext || !this.clickBuffer) return;
+    this.playBuffer(this.clickBuffer, volume, undefined, undefined, false);
+  }
 
-    try {
-      const source = this.audioContext.createBufferSource();
-      source.buffer = this.clickBuffer;
-
-      const gainNode = this.audioContext.createGain();
-      gainNode.gain.setValueAtTime(Math.max(0, Math.min(1, volume)), this.audioContext.currentTime);
-
-      source.connect(gainNode);
-      gainNode.connect(this.audioContext.destination);
-
-      // Clean up nodes after playback to prevent memory leak
-      // Without this, GainNodes accumulate and cause audio crackling over time
-      source.onended = () => {
-        source.disconnect();
-        gainNode.disconnect();
-      };
-
-      source.start(this.audioContext.currentTime);
-    } catch (err) {
-      console.error('Error playing click sound:', err);
-    }
+  /**
+   * Fast path: play click immediately when context is already running.
+   */
+  playClickNowIfReady(volume: number = 1.0): void {
+    if (!this.audioContext || this.audioContext.state !== 'running' || !this.clickBuffer) return;
+    this.playBuffer(this.clickBuffer, volume, undefined, undefined, false);
   }
 
   /**

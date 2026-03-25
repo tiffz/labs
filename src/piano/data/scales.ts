@@ -24,13 +24,15 @@ interface SubConfig {
   duration: NoteDuration;
   perMeasure: number;
   timeSig: { numerator: number; denominator: number };
+  tuplet?: { actual: number; normal: number };
 }
 
 function subConfig(sub: Subdivision): SubConfig {
   switch (sub) {
     case 1: return { duration: 'quarter',   perMeasure: 4,  timeSig: { numerator: 4,  denominator: 4 } };
     case 2: return { duration: 'eighth',    perMeasure: 8,  timeSig: { numerator: 4,  denominator: 4 } };
-    case 3: return { duration: 'eighth',    perMeasure: 12, timeSig: { numerator: 12, denominator: 8 } };
+    // Keep exercise meter in 4/4 and express subdivision-3 as triplets.
+    case 3: return { duration: 'eighth',    perMeasure: 12, timeSig: { numerator: 4, denominator: 4 }, tuplet: { actual: 3, normal: 2 } };
     case 4: return { duration: 'sixteenth', perMeasure: 16, timeSig: { numerator: 4,  denominator: 4 } };
   }
 }
@@ -158,22 +160,51 @@ function buildMeasures(
   notes: { midi: number; finger: number }[],
   cfg: SubConfig,
 ): ScoreMeasure[] {
-  const beatsPerNote = DURATION_BEATS[cfg.duration];
+  const beatsPerNote = DURATION_BEATS[cfg.duration] * (cfg.tuplet ? (cfg.tuplet.normal / cfg.tuplet.actual) : 1);
   const beatsPerMeasure = (cfg.timeSig.numerator / cfg.timeSig.denominator) * 4;
   const measures: ScoreMeasure[] = [];
 
   for (let i = 0; i < notes.length; i += cfg.perMeasure) {
     const chunk = notes.slice(i, i + cfg.perMeasure);
+    const isLastChunk = i + cfg.perMeasure >= notes.length;
     const scoreNotes: ScoreNote[] = chunk.map(n => ({
       id: generateNoteId(),
       pitches: [n.midi],
       duration: cfg.duration,
       finger: n.finger,
+      tuplet: cfg.tuplet,
     }));
     const usedBeats = chunk.length * beatsPerNote;
     const remaining = beatsPerMeasure - usedBeats;
     if (remaining > 0.001) {
-      scoreNotes.push(...fillWithRests(remaining));
+      // For final triplet chunks, only add the minimum rests required to
+      // complete the last tuplet group (e.g. 2 notes -> add 1 rest).
+      if (cfg.tuplet && isLastChunk) {
+        const missingToCompleteTuplet =
+          (cfg.tuplet.actual - (chunk.length % cfg.tuplet.actual)) % cfg.tuplet.actual;
+        for (let i = 0; i < missingToCompleteTuplet; i++) {
+          scoreNotes.push({
+            id: generateNoteId(),
+            pitches: [],
+            duration: cfg.duration,
+            rest: true,
+            tuplet: cfg.tuplet,
+          });
+        }
+      } else if (cfg.tuplet) {
+        const tupletRestCount = Math.round(remaining / beatsPerNote);
+        for (let i = 0; i < tupletRestCount; i++) {
+          scoreNotes.push({
+            id: generateNoteId(),
+            pitches: [],
+            duration: cfg.duration,
+            rest: true,
+            tuplet: cfg.tuplet,
+          });
+        }
+      } else {
+        scoreNotes.push(...fillWithRests(remaining));
+      }
     }
     measures.push({ notes: scoreNotes });
   }

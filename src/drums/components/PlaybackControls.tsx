@@ -5,6 +5,7 @@ import type { PlaybackSettings } from '../types/settings';
 import HelpTooltip from './HelpTooltip';
 import SettingsMenu from './SettingsMenu';
 import MetronomeToggleButton from '../../shared/components/MetronomeToggleButton';
+import BpmInput from '../../shared/components/music/BpmInput';
 import {
   isAsymmetricTimeSignature,
   isCompoundTimeSignature,
@@ -290,36 +291,17 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
             )}
           </div>
           <div className="bpm-control-inline">
-            <label htmlFor="bpm-input" className="sr-only">BPM</label>
-            <input
-              id="bpm-input"
-              type="number"
-              className="control-input"
+            <BpmInput
               value={bpm}
-              onChange={(e) => {
-                const val = e.target.value;
-                if (val === '') {
-                  onBpmChange(120);
-                } else {
-                  const num = parseInt(val, 10);
-                  if (!isNaN(num)) {
-                    onBpmChange(num);
-                  }
-                }
-              }}
-              onBlur={(e) => {
-                const num = parseInt(e.target.value, 10);
-                if (isNaN(num) || num < 20) {
-                  onBpmChange(20);
-                } else if (num > 300) {
-                  onBpmChange(300);
-                }
-              }}
-              min="20"
-              max="300"
-              placeholder="BPM"
+              onChange={(next) => onBpmChange(Math.max(20, Math.min(300, Math.round(next))))}
+              min={20}
+              max={300}
+              disabled={isPlaying}
+              className="drums-shared-bpm-input"
+              dropdownClassName="drums-bpm-dropdown"
+              sliderClassName="drums-bpm-slider"
+              leadingActions={<span className="drums-bpm-inline-label">BPM</span>}
             />
-            <span className="input-suffix">BPM</span>
           </div>
 
           {/* Beat Grouping Input for Compound, Asymmetric, and /16 Time Signatures */}

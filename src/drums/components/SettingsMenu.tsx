@@ -3,6 +3,7 @@ import Popover from '@mui/material/Popover';
 import type { PlaybackSettings } from '../types/settings';
 import { DEFAULT_SETTINGS } from '../types/settings';
 import AppTooltip from '../../shared/components/AppTooltip';
+import AppSlider from '../../shared/components/AppSlider';
 
 interface SettingsMenuProps {
   isOpen: boolean;
@@ -104,11 +105,10 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({
               <span className="settings-value">{settings.measureAccentVolume}%</span>
             </label>
             <div className="settings-slider-wrapper">
-              <input
+              <AppSlider
                 id="measure-accent-volume"
-                type="range"
-                min="0"
-                max="100"
+                min={0}
+                max={100}
                 value={settings.measureAccentVolume}
                 onChange={(e) => handleMeasureAccentChange(parseInt(e.target.value, 10))}
                 className="settings-slider"
@@ -127,11 +127,10 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({
               <span className="settings-value">{settings.beatGroupAccentVolume}%</span>
             </label>
             <div className="settings-slider-wrapper">
-              <input
+              <AppSlider
                 id="beat-group-accent-volume"
-                type="range"
-                min="0"
-                max="100"
+                min={0}
+                max={100}
                 value={settings.beatGroupAccentVolume}
                 onChange={(e) => {
                   const value = parseInt(e.target.value, 10);
@@ -158,11 +157,10 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({
               <span className="settings-value">{settings.nonAccentVolume}%</span>
             </label>
             <div className="settings-slider-wrapper">
-              <input
+              <AppSlider
                 id="non-accent-volume"
-                type="range"
-                min="0"
-                max="100"
+                min={0}
+                max={100}
                 value={settings.nonAccentVolume}
                 onChange={(e) => {
                   const value = parseInt(e.target.value, 10);
@@ -187,11 +185,10 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({
               <span className="settings-value">{settings.metronomeVolume}%</span>
             </label>
             <div className="settings-slider-wrapper">
-              <input
+              <AppSlider
                 id="metronome-volume"
-                type="range"
-                min="0"
-                max="100"
+                min={0}
+                max={100}
                 value={settings.metronomeVolume}
                 onChange={(e) => {
                   const value = parseInt(e.target.value, 10);
@@ -214,11 +211,10 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({
               <span className="settings-value">{settings.reverbStrength}%</span>
             </label>
             <div className="settings-slider-wrapper">
-              <input
+              <AppSlider
                 id="reverb-strength"
-                type="range"
-                min="0"
-                max="100"
+                min={0}
+                max={100}
                 value={settings.reverbStrength}
                 onChange={(e) => handleReverbStrengthChange(parseInt(e.target.value, 10))}
                 className="settings-slider"

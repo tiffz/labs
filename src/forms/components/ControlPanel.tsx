@@ -1,5 +1,6 @@
 import type { PlacementConfig, ViewSettings, FormType } from '../types';
 import { ALL_FORM_TYPES, FORM_TYPE_LABELS } from '../utils/formGenerators';
+import AppSlider from '../../shared/components/AppSlider';
 
 interface ControlPanelProps {
   config: PlacementConfig;
@@ -96,8 +97,7 @@ function ControlPanel({
               <span className="slider-label">Number of Forms</span>
               <span className="slider-value">{config.formCount}</span>
             </div>
-            <input
-              type="range"
+            <AppSlider
               className="slider-input"
               min={3}
               max={12}
@@ -117,8 +117,7 @@ function ControlPanel({
               <span className="slider-label">Form Fill Opacity</span>
               <span className="slider-value">{Math.round(viewSettings.formOpacity * 100)}%</span>
             </div>
-            <input
-              type="range"
+            <AppSlider
               className="slider-input"
               min={0}
               max={100}

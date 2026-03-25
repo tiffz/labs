@@ -55,6 +55,26 @@ describe('piano store reducer', () => {
       expect(next.practiceResults).toEqual([]);
       expect(next.practiceResultsByNoteId.size).toBe(0);
     });
+
+    it('resets sidebar run history when loading a different score', () => {
+      const state = stateWith({
+        score: { ...minimalScore, id: 'exercise-a' },
+        practiceSession: {
+          scoreId: 'exercise-a',
+          runs: [{
+            startTime: 1000,
+            endTime: 2000,
+            results: [],
+            accuracy: 82,
+          }],
+        },
+      });
+      const next = reducer(state, {
+        type: 'SET_SCORE',
+        score: { ...minimalScore, id: 'exercise-b' },
+      });
+      expect(next.practiceSession).toEqual({ scoreId: 'exercise-b', runs: [] });
+    });
   });
 
   describe('SET_TEMPO', () => {

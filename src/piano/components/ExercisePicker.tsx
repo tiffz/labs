@@ -131,12 +131,12 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({ open, onClose, onImport
 
   const loadProgression = useCallback((input: string, key: Key, voicing: ChordVoicingStyle, mpc: 1 | 2, style: ChordStyleId) => {
     const parsed = parseProgressionText(input, key);
-    if (!parsed.isValid || parsed.tokens.length < 2) {
-      setCustomProgressionError('Use I–V–vi–IV or C–G–Am–F with at least 2 chords.');
+    if (!parsed.isValid || parsed.tokens.length < 1) {
+      setCustomProgressionError('Use I, I–V–vi–IV, or C–G–Am–F.');
       setCustomProgressionWarning('');
       return false;
     }
-    if (parsed.romanNumerals.length < 2) {
+    if (parsed.romanNumerals.length < 1) {
       setCustomProgressionWarning(
         'Progression is valid text but non-diatonic for the selected/inferred key.'
       );

@@ -2,6 +2,7 @@ import type { ParsedRhythm } from '../types';
 import type { PlaybackSettings } from '../types/settings';
 import { audioPlayer } from './audioPlayer';
 import { getDefaultBeatGrouping, getBeatGroupInfo, getSixteenthsPerMeasure, getBeatGroupingInSixteenths } from './timeSignatureUtils';
+import { PlaybackScheduler } from '../../shared/playback/scheduler';
 
 /**
  * Callback for when a note starts playing
@@ -46,8 +47,9 @@ class RhythmPlayer {
   private pendingBpm: number | null = null; // BPM to apply at next measure boundary
   private lastLoopEndTime = 0; // Track when the last loop ended for smooth BPM transitions
   private visibilityHandler: (() => void) | null = null; // Visibility change handler
-  private healthCheckInterval: number | null = null; // Periodic health check
+  private healthCheckScheduler: PlaybackScheduler | null = null; // Periodic health check
   private tickRange: { startTick: number; endTick: number } | null = null; // Optional tick range for selection-scoped playback
+  private metronomeResolution: 'sixteenth' | 'beat' = 'sixteenth';
 
   /**
    * Play a rhythm at the specified BPM (loops continuously)
@@ -68,7 +70,8 @@ class RhythmPlayer {
     metronomeEnabled?: boolean,
     onMetronomeBeat?: MetronomeCallback,
     settings?: PlaybackSettings,
-    tickRange?: { startTick: number; endTick: number }
+    tickRange?: { startTick: number; endTick: number },
+    metronomeResolution: 'sixteenth' | 'beat' = 'sixteenth',
   ): Promise<void> {
     this.stop(); // Stop any existing playback
 
@@ -93,6 +96,7 @@ class RhythmPlayer {
     this.onMetronomeBeat = onMetronomeBeat || null;
     this.settings = settings || null;
     this.tickRange = tickRange || null;
+    this.metronomeResolution = metronomeResolution;
 
     // Update reverb strength when starting playback
     if (settings) {
@@ -151,7 +155,7 @@ class RhythmPlayer {
     this.stopHealthCheck();
 
     // Check audio health every 2 seconds
-    this.healthCheckInterval = window.setInterval(() => {
+    this.healthCheckScheduler = new PlaybackScheduler(() => {
       if (!this.isPlaying) {
         this.stopHealthCheck();
         return;
@@ -163,17 +167,16 @@ class RhythmPlayer {
           console.warn('Health check: failed to resume audio:', err);
         });
       }
-    }, 2000);
+    }, { intervalMs: 2000 });
+    this.healthCheckScheduler.start();
   }
 
   /**
    * Stop periodic health checks
    */
   private stopHealthCheck(): void {
-    if (this.healthCheckInterval !== null) {
-      window.clearInterval(this.healthCheckInterval);
-      this.healthCheckInterval = null;
-    }
+    this.healthCheckScheduler?.stop();
+    this.healthCheckScheduler = null;
   }
 
   /**
@@ -302,7 +305,7 @@ class RhythmPlayer {
     let measureStartTick = 0;
 
     rhythm.measures.forEach((measure, measureIndex) => {
-      // Schedule ticks for EVERY 16th note in the measure
+      // Schedule metronome updates at configured resolution.
       const sixteenthsPerMeasure = getSixteenthsPerMeasure(rhythm.timeSignature);
 
       // Calculate beat boundaries for metronome CLICKs
@@ -323,7 +326,11 @@ class RhythmPlayer {
         }
       }
 
-      for (let pos = 0; pos < sixteenthsPerMeasure; pos++) {
+      const positionsToEmit = this.metronomeResolution === 'beat'
+        ? Array.from(clickPositions.values()).sort((a, b) => a - b)
+        : Array.from({ length: sixteenthsPerMeasure }, (_, index) => index);
+
+      for (const pos of positionsToEmit) {
         const absoluteTick = measureStartTick + pos;
         
         // Skip metronome beats outside the tick range
@@ -364,7 +371,7 @@ class RhythmPlayer {
 
         if (!this.isPlaying) return;
 
-        // Visual Tick (ALWAYS fire for smooth cursor)
+        // Visual tick callback
         if (this.onMetronomeBeat) {
           this.onMetronomeBeat(measureIndex, positionInMeasure, isDownbeat);
         }
@@ -385,7 +392,11 @@ class RhythmPlayer {
         // Play click with louder volume for downbeat
         const baseVolume = isDownbeat ? 0.8 : 0.5;
         const clickVolume = baseVolume * (settings.metronomeVolume / 100);
-        audioPlayer.playClick(clickVolume);
+        if (typeof (audioPlayer as { playClickNowIfReady?: (volume: number) => void }).playClickNowIfReady === 'function') {
+          (audioPlayer as { playClickNowIfReady: (volume: number) => void }).playClickNowIfReady(clickVolume);
+        } else {
+          void audioPlayer.playClick(clickVolume);
+        }
 
       }, delay);
 
@@ -468,7 +479,15 @@ class RhythmPlayer {
               }
 
               // Play the sound with dynamic volume and optional fade-out
-              audioPlayer.play(note.sound, volume, fadeDuration);
+              if (typeof (audioPlayer as { playNowIfReady?: (sound: typeof note.sound, volume: number, duration?: number) => void }).playNowIfReady === 'function') {
+                (audioPlayer as { playNowIfReady: (sound: typeof note.sound, volume: number, duration?: number) => void }).playNowIfReady(
+                  note.sound,
+                  volume,
+                  fadeDuration,
+                );
+              } else {
+                void audioPlayer.play(note.sound, volume, fadeDuration);
+              }
             }
 
             // Notify listeners for visual highlighting (even for tied notes)

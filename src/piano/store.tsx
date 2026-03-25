@@ -264,10 +264,17 @@ export function reducer(state: PianoState, action: Action): PianoState {
       else if (measureCount > 20) autoZoom = 0.7;
       else if (measureCount > 8) autoZoom = 0.85;
       const hasVocal = action.score.parts.some(p => p.hand === 'voice');
+      const isSameScore = state.score?.id === action.score.id;
       return {
         ...state, score: action.score, tempo: action.score.tempo,
         currentMeasureIndex: 0, currentNoteIndices: new Map(),
         practiceResults: [], practiceResultsByNoteId: new Map(),
+        // Keep sidebar runs scoped to the current loaded score/exercise.
+        practiceSession: isSameScore
+          ? state.practiceSession
+          : { scoreId: action.score.id, runs: [] },
+        currentRunStartTime: null,
+        viewingRunIndex: null,
         fullScore: null, sections: [], activeSectionIndex: null,
         zoomLevel: autoZoom, selectedMeasureRange: null,
         showVocalPart: hasVocal,

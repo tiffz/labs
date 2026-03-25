@@ -28,6 +28,17 @@
     /* Transitions */
     --transition-fast: all 0.15s ease;
     --transition-base: all 0.2s ease;
+
+    /* Unified dropdown tokens */
+    --menu-surface: #ffffff;
+    --menu-border: var(--border-color);
+    --menu-radius: 0.5rem;
+    --menu-shadow: var(--shadow-lg);
+    --menu-header-bg: #f9fafb;
+    --menu-header-border: #f3f4f6;
+    --menu-header-text: #9ca3af;
+    --menu-item-hover-bg: #faf5ff;
+    --menu-item-hover-text: var(--primary-purple);
   }
 
   body {
@@ -782,17 +793,12 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.5rem 0.75rem;
-    background-color: white;
-    border: 2px solid var(--border-color);
-    border-radius: 0.375rem;
-    transition: var(--transition-base);
+    padding: 0;
+    background-color: transparent;
+    border: 0;
+    border-radius: 0;
+    transition: none;
     flex-shrink: 0; /* Prevent from shrinking too much */
-  }
-
-  .bpm-control-inline:focus-within {
-    border-color: var(--primary-purple);
-    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1); /* Focus ring */
   }
 
   .control-input {
@@ -819,6 +825,147 @@
     font-size: 0.875rem;
     font-weight: 500;
     color: #6b7280;
+  }
+  .bpm-control-inline .input-suffix {
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+  .drums-shared-bpm-input {
+    width: auto;
+    min-width: 244px;
+    --bpm-shell-height: 44px;
+    --bpm-shell-radius: 0.375rem;
+    --bpm-bg: #ffffff;
+    --bpm-border: var(--border-color);
+    --bpm-text: var(--text-color);
+    --bpm-muted: #6b7280;
+    --bpm-focus: var(--primary-purple);
+    --bpm-dropdown-bg: #ffffff;
+    --bpm-dropdown-border: var(--border-color);
+    --bpm-dropdown-header-bg: #f9fafb;
+    --bpm-dropdown-header-border: #f3f4f6;
+    --bpm-dropdown-hover-bg: #f3f4f6;
+    --bpm-dropdown-active-bg: #ede9fe;
+    --bpm-dropdown-active-text: #5b21b6;
+    --bpm-focus-ring: 0 0 0 3px rgba(124, 58, 237, 0.1);
+    --bpm-dropdown-offset-y: 8px;
+    --bpm-dropdown-min-width: 280px;
+  }
+
+  .drums-shared-bpm-input .shared-bpm-shell {
+    border-width: 2px;
+    border-color: var(--border-color);
+    padding: 0 0.38rem;
+    min-height: 44px;
+    font-size: 1rem;
+    font-weight: 500;
+    border-radius: 0.375rem;
+    box-shadow: none;
+  }
+
+  .drums-shared-bpm-input .shared-bpm-leading-actions {
+    padding: 0 0.62rem 0 0.18rem;
+  }
+
+  .drums-shared-bpm-input .shared-bpm-arrows {
+    width: 18px;
+  }
+
+  .drums-shared-bpm-input .shared-bpm-arrow {
+    width: 18px;
+  }
+
+  .drums-shared-bpm-input .shared-bpm-arrow .material-symbols-outlined {
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+  }
+
+  .drums-shared-bpm-input .shared-bpm-value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-color);
+  }
+
+  .drums-shared-bpm-input .shared-bpm-rate-btn.inline {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: #9ca3af;
+  }
+
+  .drums-shared-bpm-input .shared-bpm-rate-btn.inline:hover:not(:disabled) {
+    color: var(--text-color);
+  }
+
+  .drums-shared-bpm-input .shared-bpm-trailing-actions {
+    padding: 0 0.5rem;
+    gap: 0;
+    border-left: 1px solid var(--bpm-divider);
+  }
+
+  .drums-bpm-inline-label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.025em;
+    color: #6b7280;
+    text-transform: uppercase;
+    user-select: none;
+  }
+
+  .drums-bpm-dropdown {
+    border-radius: var(--menu-radius);
+    border: 1px solid var(--menu-border);
+    background: var(--menu-surface);
+    box-shadow: var(--menu-shadow);
+  }
+
+  .drums-bpm-dropdown .shared-bpm-dropdown-trigger {
+    padding: 0.5rem 1rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--menu-header-text);
+    background: var(--menu-header-bg);
+    border-bottom: 1px solid var(--menu-header-border);
+  }
+
+  .drums-bpm-dropdown .shared-bpm-dropdown-header-row {
+    border-bottom: 1px solid var(--menu-header-border);
+    padding-bottom: 0.15rem;
+    margin: 0 0.2rem;
+  }
+
+  .drums-bpm-dropdown .shared-bpm-dropdown-current {
+    font-size: 0.72rem;
+    color: #6b7280;
+    background: #f3f4f6;
+  }
+
+  .drums-bpm-dropdown .shared-bpm-slider-wrap {
+    padding: 0.74rem 0.86rem 0.78rem;
+  }
+
+  .drums-bpm-slider {
+    --app-slider-track: var(--primary-purple);
+    --app-slider-rail: color-mix(in srgb, var(--menu-border) 74%, transparent);
+    --app-slider-mark: color-mix(in srgb, var(--menu-border) 78%, transparent);
+  }
+
+  .drums-bpm-dropdown .shared-bpm-dropdown-list {
+    padding: 0.72rem 0.76rem 1.08rem;
+  }
+
+  .drums-bpm-dropdown .shared-bpm-presets-section {
+    padding: 0.56rem 0.08rem 0.12rem;
+  }
+
+  .drums-bpm-dropdown .shared-bpm-presets-row {
+    padding: 0.06rem 0.02rem 0.18rem;
   }
 
   /* Beat Grouping Control */
@@ -1665,10 +1812,10 @@
 
   /* Settings Dropdown Styles */
   .settings-dropdown {
-    background-color: white;
-    border: 1px solid var(--border-color);
-    border-radius: 0.5rem;
-    box-shadow: var(--shadow-lg);
+    background-color: var(--menu-surface);
+    border: 1px solid var(--menu-border);
+    border-radius: var(--menu-radius);
+    box-shadow: var(--menu-shadow);
     width: 380px; /* Fixed width for larger screens */
     min-width: 280px; /* Minimum width for smaller screens */
     max-width: 400px;
@@ -1753,12 +1900,9 @@
 
   .settings-slider {
     width: 100%;
-    height: 0.5rem;
-    border-radius: 0.25rem;
-    background: #e5e7eb;
-    outline: none;
-    -webkit-appearance: none;
-    appearance: none;
+    --app-slider-track: var(--primary-purple);
+    --app-slider-rail: #e5e7eb;
+    --app-slider-shadow: rgba(124, 58, 237, 0.22);
     position: relative;
     z-index: 1;
   }
@@ -1777,24 +1921,9 @@
     z-index: 0;
   }
 
-  .settings-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
+  .settings-slider .MuiSlider-thumb {
     width: 1.25rem;
     height: 1.25rem;
-    border-radius: 50%;
-    background: var(--primary-purple);
-    cursor: pointer;
-    border: 2px solid white;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  }
-
-  .settings-slider::-moz-range-thumb {
-    width: 1.25rem;
-    height: 1.25rem;
-    border-radius: 50%;
-    background: var(--primary-purple);
-    cursor: pointer;
     border: 2px solid white;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   }
@@ -1803,11 +1932,8 @@
     outline: none;
   }
 
-  .settings-slider:focus::-webkit-slider-thumb {
-    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
-  }
-
-  .settings-slider:focus::-moz-range-thumb {
+  .settings-slider .MuiSlider-thumb:hover,
+  .settings-slider .MuiSlider-thumb.Mui-focusVisible {
     box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
   }
 
@@ -2640,10 +2766,10 @@
     top: calc(100% + 0.25rem);
     left: 0;
     min-width: 300px;
-    background-color: white;
-    border: 1px solid var(--border-color);
-    border-radius: 0.5rem;
-    box-shadow: var(--shadow-lg);
+    background-color: var(--menu-surface);
+    border: 1px solid var(--menu-border);
+    border-radius: var(--menu-radius);
+    box-shadow: var(--menu-shadow);
     z-index: 1000;
     overflow: hidden;
   }
@@ -2667,8 +2793,8 @@
   }
 
   .dropdown-item:hover {
-    background-color: #faf5ff;
-    color: var(--primary-purple);
+    background-color: var(--menu-item-hover-bg);
+    color: var(--menu-item-hover-text);
   }
 
   .dropdown-section-header {
@@ -2677,9 +2803,9 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: #9ca3af;
-    background-color: #f9fafb;
-    border-bottom: 1px solid #f3f4f6;
+    color: var(--menu-header-text);
+    background-color: var(--menu-header-bg);
+    border-bottom: 1px solid var(--menu-header-border);
   }
 
   .dropdown-item-action {
@@ -2926,11 +3052,11 @@
 
   /* Selection Dropdown */
   .selection-dropdown {
-    background: white;
-    border-radius: 0.5rem;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    background: var(--menu-surface);
+    border-radius: var(--menu-radius);
+    box-shadow: var(--menu-shadow);
     padding: 0.5rem;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--menu-border);
     max-width: 320px;
   }
 

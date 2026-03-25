@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import Popover from '@mui/material/Popover';
 import { usePiano, type ActiveMode } from '../store';
 import { SOUND_OPTIONS, type SoundType } from '../../chords/types/soundOptions';
@@ -7,6 +7,8 @@ import type { NotationStyle } from '../../shared/notation/DrumNotationMini';
 import { getScorePlaybackEngine } from '../utils/scorePlayback';
 import MetronomeToggleButton from '../../shared/components/MetronomeToggleButton';
 import AppTooltip from '../../shared/components/AppTooltip';
+import BpmInput from '../../shared/components/music/BpmInput';
+import AppSlider from '../../shared/components/AppSlider';
 
 const PIANO_DRUM_STYLE: NotationStyle = {
   staffColor: '#94a3b8',
@@ -45,7 +47,7 @@ const SettingsDropdown = React.forwardRef<HTMLDivElement, SettingsDropdownProps>
               </span>
             </button>
             <span className="sb-settings-label">Master</span>
-            <input type="range" min={0} max={1} step={0.01} value={state.masterVolume}
+            <AppSlider min={0} max={1} step={0.01} value={state.masterVolume}
               onChange={e => onMasterVolume(parseFloat(e.target.value))}
               className={`volume-slider ${state.masterMuted ? 'disabled-slider' : ''}`}
               disabled={state.masterMuted} />
@@ -58,7 +60,7 @@ const SettingsDropdown = React.forwardRef<HTMLDivElement, SettingsDropdownProps>
               </span>
             </button>
             <span className="sb-settings-label">Metronome</span>
-            <input type="range" min={0} max={1} step={0.01} value={state.metronomeVolume}
+            <AppSlider min={0} max={1} step={0.01} value={state.metronomeVolume}
               onChange={e => onMetronomeVolume(parseFloat(e.target.value))}
               className={`volume-slider ${!state.metronomeEnabled ? 'disabled-slider' : ''}`}
               disabled={!state.metronomeEnabled} />
@@ -73,7 +75,7 @@ const SettingsDropdown = React.forwardRef<HTMLDivElement, SettingsDropdownProps>
                 </span>
               </button>
               <span className="sb-settings-label">Drums</span>
-              <input type="range" min={0} max={1} step={0.01} value={state.drumVolume}
+              <AppSlider min={0} max={1} step={0.01} value={state.drumVolume}
                 onChange={e => onDrumVolume(parseFloat(e.target.value))}
                 className={`volume-slider ${state.drumVolume === 0 ? 'disabled-slider' : ''}`}
                 disabled={state.drumVolume === 0} />
@@ -97,7 +99,7 @@ const SettingsDropdown = React.forwardRef<HTMLDivElement, SettingsDropdownProps>
           </div>
           <div className="sb-settings-row">
             <span className="sb-settings-label">Key press vol</span>
-            <input type="range" min={0} max={1} step={0.01} value={state.midiSoundVolume}
+            <AppSlider min={0} max={1} step={0.01} value={state.midiSoundVolume}
               onChange={e => onMidiSoundVolume(parseFloat(e.target.value))}
               className={`volume-slider ${!state.midiSoundEnabled ? 'disabled-slider' : ''}`}
               disabled={!state.midiSoundEnabled} />
@@ -116,7 +118,7 @@ const SettingsDropdown = React.forwardRef<HTMLDivElement, SettingsDropdownProps>
                   </span>
                 </button>
                 <span className="sb-settings-label">{PART_LABELS[part.id] ?? part.name}</span>
-                <input type="range" min={0} max={1} step={0.01}
+                <AppSlider min={0} max={1} step={0.01}
                   value={state.trackVolume.get(part.id) ?? 1}
                   onChange={e => onTrackVolume(part.id, parseFloat(e.target.value))}
                   className={`volume-slider ${muted ? 'disabled-slider' : ''}`}
@@ -147,35 +149,25 @@ const PlaybackControls: React.FC = () => {
     if (!state.score) return false;
     return state.score.parts.some(p => p.measures.some(m => m.notes.some(n => !!n.chordSymbol)));
   }, [state.score]);
-  const [tempoInput, setTempoInput] = useState(String(state.tempo));
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsBtnRef = useRef<HTMLButtonElement>(null);
+  const originalScoreTempo = state.score?.tempo ?? null;
+  const defaultTempo = originalScoreTempo ?? 80;
+  const hasTempoOverride = Math.round(state.tempo) !== Math.round(defaultTempo);
+  const canSaveTempoToSong = hasTempoOverride && originalScoreTempo !== null && !state.isExerciseScore;
 
-  useEffect(() => {
-    setTempoInput(String(state.tempo));
-  }, [state.tempo]);
-
-  const commitTempo = (raw: string) => {
-    const parsed = parseInt(raw);
-    if (!isNaN(parsed)) {
-      const clamped = Math.max(20, Math.min(300, parsed));
-      dispatch({ type: 'SET_TEMPO', tempo: clamped });
-      engine.setTempo(clamped);
-      setTempoInput(String(clamped));
-    } else {
-      setTempoInput(String(state.tempo));
-    }
+  const handleTempoChange = (nextTempo: number) => {
+    const clamped = Math.max(20, Math.min(300, Math.round(nextTempo)));
+    dispatch({ type: 'SET_TEMPO', tempo: clamped });
+    engine.setTempo(clamped);
   };
 
-  const handleTempoBlur = () => commitTempo(tempoInput);
-  const handleTempoKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') commitTempo(tempoInput);
+  const resetTempoToScore = () => {
+    handleTempoChange(defaultTempo);
   };
 
-  const setTempoMultiplied = (factor: number) => {
-    const newTempo = Math.max(20, Math.min(300, Math.round(state.tempo * factor)));
-    dispatch({ type: 'SET_TEMPO', tempo: newTempo });
-    engine.setTempo(newTempo);
+  const saveTempoToScore = () => {
+    dispatch({ type: 'UPDATE_SCORE_META', tempo: state.tempo });
   };
 
   const handleMetronomeToggle = () => {
@@ -236,6 +228,14 @@ const PlaybackControls: React.FC = () => {
   const handleModeToggle = (mode: ActiveMode) => {
     if (state.activeMode === mode) {
       stopMode();
+      return;
+    }
+
+    if (state.activeMode !== 'none') {
+      // Switching between active modes should fully stop the current mode first
+      // so practice/run state and engine callbacks are cleanly reset.
+      stopMode();
+      window.setTimeout(() => startMode(mode), 0);
     } else {
       startMode(mode);
     }
@@ -258,7 +258,10 @@ const PlaybackControls: React.FC = () => {
   return (
     <div className="sidebar-playback">
       <div className="sb-mode-buttons">
-        <AppTooltip title={(!state.midiConnected && !state.microphoneActive) ? 'Connect a MIDI controller or enable mic to practice' : 'Play along with the metronome and get timing feedback'}>
+        <AppTooltip
+          title={(!state.midiConnected && !state.microphoneActive) ? 'Connect a MIDI controller or enable mic to practice' : 'Play along with the metronome and get timing feedback'}
+          disabled={state.activeMode === 'practice'}
+        >
           <button
             className={`sb-mode-btn practice-primary ${state.activeMode === 'practice' ? 'active practice' : ''}`}
             onClick={() => handleModeToggle('practice')}
@@ -314,54 +317,45 @@ const PlaybackControls: React.FC = () => {
       <div className="sb-play-row">
         <div className="sb-tempo">
           <label className="sb-label">BPM</label>
-          <div className="ex-stepper sb-bpm-stepper">
-            <input
-              type="text"
-              inputMode="numeric"
-              value={tempoInput}
-              onChange={e => setTempoInput(e.target.value)}
-              onBlur={handleTempoBlur}
-              onKeyDown={handleTempoKeyDown}
-              className="ex-stepper-input"
-              disabled={isActive}
-            />
-            <div className="ex-stepper-arrows">
-              <button
-                className="ex-stepper-arrow"
-                onClick={() => { const n = Math.min(300, state.tempo + 1); dispatch({ type: 'SET_TEMPO', tempo: n }); engine.setTempo(n); }}
-                disabled={isActive || state.tempo >= 300}
-                aria-label="Increase BPM"
-              >
-                <span className="material-symbols-outlined">arrow_drop_up</span>
-              </button>
-              <button
-                className="ex-stepper-arrow"
-                onClick={() => { const n = Math.max(20, state.tempo - 1); dispatch({ type: 'SET_TEMPO', tempo: n }); engine.setTempo(n); }}
-                disabled={isActive || state.tempo <= 20}
-                aria-label="Decrease BPM"
-              >
-                <span className="material-symbols-outlined">arrow_drop_down</span>
-              </button>
+          <BpmInput
+            value={state.tempo}
+            onChange={handleTempoChange}
+            min={20}
+            max={300}
+            disabled={isActive}
+            className="sb-shared-bpm-input"
+            dropdownClassName="piano-bpm-dropdown"
+            sliderClassName="piano-bpm-slider"
+            trailingActions={
+              <AppTooltip title={`Reset to default: ${Math.round(defaultTempo)} BPM`}>
+                <button
+                  type="button"
+                  className="shared-bpm-inline-action sb-tempo-reset-btn"
+                  disabled={isActive || !hasTempoOverride}
+                  onClick={resetTempoToScore}
+                  aria-label={`Reset to default: ${Math.round(defaultTempo)} BPM`}
+                >
+                  <span className="material-symbols-outlined">restart_alt</span>
+                </button>
+              </AppTooltip>
+            }
+          />
+          {hasTempoOverride && !state.isExerciseScore ? (
+            <div className="sb-tempo-override-notice">
+              <span>
+                Using {Math.round(state.tempo)} BPM (default {Math.round(defaultTempo)} BPM).
+              </span>
+              {canSaveTempoToSong ? (
+                <button
+                  type="button"
+                  className="sb-tempo-save-btn"
+                  onClick={saveTempoToScore}
+                >
+                  Save to song
+                </button>
+              ) : null}
             </div>
-          </div>
-          <AppTooltip title="Half tempo">
-            <button
-              className="btn btn-small sb-tempo-adj"
-              onClick={() => setTempoMultiplied(0.5)}
-              disabled={isActive}
-            >
-              ½×
-            </button>
-          </AppTooltip>
-          <AppTooltip title="Double tempo">
-            <button
-              className="btn btn-small sb-tempo-adj"
-              onClick={() => setTempoMultiplied(2)}
-              disabled={isActive}
-            >
-              2×
-            </button>
-          </AppTooltip>
+          ) : null}
         </div>
       </div>
 

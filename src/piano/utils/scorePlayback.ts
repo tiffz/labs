@@ -1,11 +1,14 @@
 import type { PianoScore, ScoreNote } from '../types';
 import { midiToFrequency, durationToBeats } from '../types';
-import { PianoSynthesizer, SampledPiano, SimpleSynthesizer, type WaveformType } from '../../shared/playback/instruments';
+import { PianoSynthesizer, SampledPiano } from '../../shared/playback/instruments';
 import type { Instrument } from '../../shared/playback/instruments';
 import type { SoundType } from '../../chords/types/soundOptions';
 import { recordNoteExpectedTime, clearExpectedTimes, refreshHeldNotes } from './practiceTimingStore';
 import type { SmartBeatMap } from './smartBeatMap';
 import clickSoundUrl from '../../drums/assets/sounds/click.mp3';
+import { createManagedAudioContext, ensureAudioContextRunning } from '../../shared/playback/audioContextLifecycle';
+import { createInstrumentForSoundType } from '../../shared/playback/instrumentFactory';
+import { loadClickSample, playClickSampleAt, type LoadedClickSample } from '../../shared/audio/clickService';
 
 interface TieContinuation {
   measureIndex: number;
@@ -144,7 +147,7 @@ export class ScorePlaybackEngine {
   private trackMuted = new Map<string, boolean>();
   private trackVolume = new Map<string, number>();
   private sampledPiano: SampledPiano | null = null;
-  private clickBuffer: AudioBuffer | null = null;
+  private clickSample: LoadedClickSample | null = null;
   private clickLoadingPromise: Promise<void> | null = null;
   private scheduledClickTimes = new Set<number>();
   private lastClickAudioTime = -1;
@@ -162,20 +165,20 @@ export class ScorePlaybackEngine {
 
   private getAudioContext(): AudioContext {
     if (!this.audioContext) {
-      this.audioContext = new AudioContext({ latencyHint: 'interactive' });
+      const managed = createManagedAudioContext({ latencyHint: 'interactive' });
+      this.audioContext = managed.context;
     }
     return this.audioContext;
   }
 
   async loadClickSound(): Promise<void> {
-    if (this.clickBuffer) return;
+    if (this.clickSample) return;
     if (this.clickLoadingPromise) return this.clickLoadingPromise;
     this.clickLoadingPromise = (async () => {
       try {
         const ctx = this.getAudioContext();
-        const response = await fetch(clickSoundUrl);
-        const arrayBuffer = await response.arrayBuffer();
-        this.clickBuffer = await ctx.decodeAudioData(arrayBuffer);
+        const loaded = await loadClickSample(ctx, clickSoundUrl);
+        this.clickSample = loaded;
       } catch (e) {
         console.error('Failed to load click sound:', e);
       }
@@ -202,24 +205,15 @@ export class ScorePlaybackEngine {
   private createInstrument(soundType: SoundType): Instrument {
     const ctx = this.getAudioContext();
     const output = this.getOutputNode();
-    if (soundType === 'piano-sampled') {
-      if (!this.sampledPiano) {
-        this.sampledPiano = new SampledPiano(ctx);
-      }
-      this.sampledPiano.connect(output);
-      return this.sampledPiano;
+    if (soundType === 'piano-sampled' && !this.sampledPiano) {
+      this.sampledPiano = new SampledPiano(ctx);
     }
-    if (soundType === 'piano') {
-      const inst = new PianoSynthesizer(ctx);
-      inst.connect(output);
-      return inst;
-    }
-    const waveMap: Record<string, WaveformType> = {
-      sine: 'sine', square: 'square', sawtooth: 'sawtooth', triangle: 'triangle',
-    };
-    const inst = new SimpleSynthesizer(ctx, waveMap[soundType] || 'sine');
-    inst.connect(output);
-    return inst;
+    return createInstrumentForSoundType({
+      soundType,
+      context: ctx,
+      output,
+      sampledPiano: this.sampledPiano,
+    });
   }
 
   /**
@@ -332,7 +326,7 @@ export class ScorePlaybackEngine {
 
   async playCountIn(tempo: number): Promise<void> {
     const ctx = this.getAudioContext();
-    if (ctx.state === 'suspended') await ctx.resume();
+    await ensureAudioContextRunning(ctx);
     await this.loadClickSound();
 
     const startBuffer = 0.15;
@@ -353,16 +347,14 @@ export class ScorePlaybackEngine {
     const ctx = this.audioContext;
     if (!ctx) return;
 
-    if (this.clickBuffer) {
-      const source = ctx.createBufferSource();
-      source.buffer = this.clickBuffer;
-      const gain = ctx.createGain();
-      gain.gain.setValueAtTime((isDownbeat ? 0.8 : 0.4) * this.metronomeVolume * this.masterVolume, time);
-      source.playbackRate.value = isDownbeat ? 1.3 : 1.0;
-      source.connect(gain);
-      gain.connect(ctx.destination);
-      source.onended = () => { source.disconnect(); gain.disconnect(); };
-      source.start(time);
+    if (this.clickSample) {
+      playClickSampleAt(
+        ctx,
+        this.clickSample,
+        time,
+        (isDownbeat ? 0.8 : 0.4) * this.metronomeVolume * this.masterVolume,
+        isDownbeat ? 1.3 : 1.0,
+      );
     } else {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -389,7 +381,7 @@ export class ScorePlaybackEngine {
     const myGen = this.generation;
 
     const ctx = this.getAudioContext();
-    if (ctx.state === 'suspended') await ctx.resume();
+    await ensureAudioContextRunning(ctx);
     if (this.generation !== myGen) return;
 
     await this.loadClickSound();
@@ -670,7 +662,7 @@ export class ScorePlaybackEngine {
     this.midiNoteLastTrigger.set(midi, now);
 
     const ctx = this.getAudioContext();
-    if (ctx.state === 'suspended') ctx.resume();
+    if (ctx.state === 'suspended') void ensureAudioContextRunning(ctx);
 
     this.getMidiInstrument().playNote({
       frequency: midiToFrequency(midi),
@@ -688,7 +680,7 @@ export class ScorePlaybackEngine {
   /** Play a short preview note (used by non-MIDI contexts like onscreen keyboard). */
   playNote(midi: number, duration = 0.3) {
     const ctx = this.getAudioContext();
-    if (ctx.state === 'suspended') ctx.resume();
+    if (ctx.state === 'suspended') void ensureAudioContextRunning(ctx);
     if (!this.instrument) {
       this.instrument = this.createInstrument('piano');
     }
