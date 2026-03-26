@@ -1,7 +1,7 @@
 import React, { useMemo, useRef, useState } from 'react';
 import Popover from '@mui/material/Popover';
-import type { Key } from '../../../chords/types';
-import { progressionToChords } from '../../../chords/utils/chordTheory';
+import type { Key } from '../../music/chordTypes';
+import { progressionToChords } from '../../music/chordTheory';
 import { COMMON_CHORD_PROGRESSIONS, type CommonChordProgression } from '../../music/commonChordProgressions';
 import { parseProgressionText } from '../../music/chordProgressionText';
 import './chordProgressionInput.css';
@@ -59,6 +59,9 @@ function normalizeProgressionText(value: string): string {
     .replace(/[–—−-]/g, '-');
 }
 
+/**
+ * Shared chord progression editor with preset picking and key-aware resolution.
+ */
 const ChordProgressionInput: React.FC<ChordProgressionInputProps> = ({
   value,
   onChange,

@@ -23,6 +23,9 @@ interface MetronomeToggleButtonProps {
   [key: string]: unknown;
 }
 
+/**
+ * Shared metronome toggle control used across playback-oriented apps.
+ */
 const MetronomeToggleButton = React.forwardRef<
   HTMLButtonElement,
   MetronomeToggleButtonProps

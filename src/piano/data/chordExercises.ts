@@ -1,9 +1,12 @@
 import type { PianoScore, ScoreNote, ScoreMeasure, Key, NoteDuration } from '../types';
 import { generateNoteId } from '../types';
-import { progressionToChords } from '../../chords/utils/chordTheory';
-import { generateVoicing } from '../../chords/utils/chordVoicing';
-import type { RomanNumeral, Chord } from '../../chords/types';
-export { COMMON_CHORD_PROGRESSIONS } from '../../chords/data/chordProgressions';
+import { progressionToChords } from '../../shared/music/chordTheory';
+import { generateVoicing } from '../../shared/music/chordVoicing';
+import type { Chord, RomanNumeral } from '../../shared/music/chordTypes';
+import { COMMON_CHORD_PROGRESSIONS } from '../../shared/music/commonChordProgressions';
+import { spellRootForKey } from '../../shared/music/theory/pitchClass';
+
+export { COMMON_CHORD_PROGRESSIONS };
 
 export type ChordVoicingStyle = 'root' | 'inv1' | 'inv2' | 'open';
 export type ChordStyleId = 'simple' | 'one-per-beat' | 'oom-pahs' | 'waltz' | 'pop-rock-ballad' | 'pop-rock-uptempo' | 'tresillo' | 'jazzy';
@@ -25,22 +28,8 @@ export const CHORD_STYLE_OPTIONS: ChordStyleOption[] = [
   { id: 'jazzy', label: 'Jazzy', description: 'Walking bass line (1-3-5-3) with swing-feel chords' },
 ];
 
-const FLAT_CHROMATIC = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
-const SHARP_CHROMATIC = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-
-function usesFlatSpelling(key: Key): boolean {
-  return ['C', 'F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb'].includes(key);
-}
-
 function spellChordRoot(chord: Chord, key: Key): string {
-  const chromatic = usesFlatSpelling(key) ? FLAT_CHROMATIC : SHARP_CHROMATIC;
-  const rootMap: Record<string, number> = {
-    'C': 0, 'C#': 1, 'Db': 1, 'D': 2, 'D#': 3, 'Eb': 3,
-    'E': 4, 'F': 5, 'F#': 6, 'Gb': 6, 'G': 7, 'G#': 8,
-    'Ab': 8, 'A': 9, 'A#': 10, 'Bb': 10, 'B': 11,
-  };
-  const pc = rootMap[chord.root] ?? 0;
-  return chromatic[pc];
+  return spellRootForKey(chord.root, key);
 }
 
 export interface ChordExerciseConfig {

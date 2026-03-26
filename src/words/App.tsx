@@ -16,14 +16,14 @@ import {
 import VexLyricScore from './components/VexLyricScore';
 import DrumNotationMini from '../shared/notation/DrumNotationMini';
 import { AudioPlayer } from '../shared/audio/audioPlayer';
-import { SOUND_OPTIONS, type SoundType } from '../chords/types/soundOptions';
+import { SOUND_OPTIONS, type SoundType } from '../shared/music/soundOptions';
 import {
   CHORD_STYLE_OPTIONS,
   type ChordStyleId,
 } from '../piano/data/chordExercises';
-import { generateVoicing } from '../chords/utils/chordVoicing';
-import type { Chord as TheoryChord, ChordQuality, Key } from '../chords/types';
-import { ALL_KEYS } from '../chords/utils/randomization';
+import { generateVoicing } from '../shared/music/chordVoicing';
+import type { Chord as TheoryChord, ChordQuality, Key } from '../shared/music/chordTypes';
+import { ALL_KEYS } from '../shared/music/randomization';
 import { midiToFrequency } from '../piano/types';
 import {
   PianoSynthesizer,

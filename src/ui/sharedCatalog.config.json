@@ -1,0 +1,39 @@
+{
+  "includeRoots": ["src/shared"],
+  "excludePatterns": [
+    ".test.ts",
+    ".test.tsx",
+    ".spec.ts",
+    ".spec.tsx",
+    ".d.ts"
+  ],
+  "demoBySymbol": {
+    "BpmInput": "bpm-input",
+    "KeyInput": "key-input",
+    "ChordProgressionInput": "chord-progression-input",
+    "ChordStyleInput": "chord-style-input",
+    "DrumNotationMini": "drum-notation-mini",
+    "AppTooltip": "app-tooltip",
+    "MetronomeToggleButton": "metronome-toggle",
+    "DiceIcon": "dice-icon"
+  },
+  "stabilityOverrides": {
+    "src/shared/music/ARCHITECTURE.md": "stable"
+  },
+  "kindOverrides": {
+    "src/shared/music/ARCHITECTURE.md": "doc"
+  },
+  "extraEntries": [
+    {
+      "id": "shared-music-architecture",
+      "name": "Music Architecture",
+      "path": "src/shared/music/ARCHITECTURE.md",
+      "kind": "doc",
+      "stability": "stable",
+      "description": "Shared music ownership and dependency boundary guidance.",
+      "tags": ["docs", "architecture"],
+      "appsUsing": ["beat", "chords", "drums", "piano", "words"],
+      "demoId": null
+    }
+  ]
+}

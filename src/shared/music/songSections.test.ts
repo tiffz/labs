@@ -4,19 +4,23 @@ import {
   findPreviousChorus,
   type SongSection,
 } from './songSections';
-import { DEFAULT_WORD_RHYTHM_SETTINGS } from '../../drums/wordRhythm/prosodyEngine';
+
+const DEFAULT_SECTION_RHYTHM_SETTINGS = {
+  templateNotation: '',
+  templateBias: 50,
+};
 
 describe('songSections helpers', () => {
   it('creates chorus linked to previous chorus by default', () => {
     const previousChorus = {
-      ...createDefaultSection('chorus', DEFAULT_WORD_RHYTHM_SETTINGS),
+      ...createDefaultSection('chorus', DEFAULT_SECTION_RHYTHM_SETTINGS),
       lyrics: 'Shine on me',
       templateNotation: 'D---T---D-D-T---',
       templateBias: 80,
     };
     const nextChorus = createDefaultSection(
       'chorus',
-      DEFAULT_WORD_RHYTHM_SETTINGS,
+      DEFAULT_SECTION_RHYTHM_SETTINGS,
       previousChorus
     );
 
@@ -29,10 +33,10 @@ describe('songSections helpers', () => {
 
   it('finds nearest previous chorus', () => {
     const sections: SongSection[] = [
-      createDefaultSection('verse', DEFAULT_WORD_RHYTHM_SETTINGS),
-      createDefaultSection('chorus', DEFAULT_WORD_RHYTHM_SETTINGS),
-      createDefaultSection('bridge', DEFAULT_WORD_RHYTHM_SETTINGS),
-      createDefaultSection('chorus', DEFAULT_WORD_RHYTHM_SETTINGS),
+      createDefaultSection('verse', DEFAULT_SECTION_RHYTHM_SETTINGS),
+      createDefaultSection('chorus', DEFAULT_SECTION_RHYTHM_SETTINGS),
+      createDefaultSection('bridge', DEFAULT_SECTION_RHYTHM_SETTINGS),
+      createDefaultSection('chorus', DEFAULT_SECTION_RHYTHM_SETTINGS),
     ];
     const previous = findPreviousChorus(sections, 3);
     expect(previous?.type).toBe('chorus');

@@ -27,6 +27,9 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
+/**
+ * Shared tempo input with stepper, slider, and optional preset menu.
+ */
 const BpmInput: React.FC<BpmInputProps> = ({
   value,
   onChange,

@@ -11,6 +11,8 @@
 
 import { getEssentia } from './beatAnalyzer';
 import { applyTransitionModel, snapChordsToBeats } from './chordTransitions';
+import { areSameKey, getRelativeKey, normalizeKeySpelling } from './keyTheory';
+import { NOTE_TO_PITCH_CLASS } from '../../shared/music/theory/pitchClass';
 
 export interface ChordEvent {
   time: number; // Time in seconds
@@ -888,102 +890,6 @@ async function detectKey(
 }
 
 /**
- * Check if two keys are exactly the same (including enharmonic equivalents)
- */
-function areSameKey(
-  key1: string, scale1: string,
-  key2: string, scale2: string
-): boolean {
-  if (scale1 !== scale2) return false;
-  if (key1 === key2) return true;
-  
-  // Check enharmonic equivalents
-  const noteToSemitone: Record<string, number> = {
-    'C': 0, 'C#': 1, 'Db': 1, 'D': 2, 'D#': 3, 'Eb': 3,
-    'E': 4, 'F': 5, 'F#': 6, 'Gb': 6, 'G': 7, 'G#': 8, 'Ab': 8,
-    'A': 9, 'A#': 10, 'Bb': 10, 'B': 11,
-  };
-  
-  return noteToSemitone[key1] === noteToSemitone[key2];
-}
-
-/**
- * Check if key2 is the relative major/minor of key1
- * @deprecated Currently unused but kept for potential future use
- */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function _isRelativeKey(
-  key1: string, scale1: string,
-  key2: string, scale2: string
-): boolean {
-  if (scale1 === scale2) return false;
-  
-  const noteToSemitone: Record<string, number> = {
-    'C': 0, 'C#': 1, 'Db': 1, 'D': 2, 'D#': 3, 'Eb': 3,
-    'E': 4, 'F': 5, 'F#': 6, 'Gb': 6, 'G': 7, 'G#': 8, 'Ab': 8,
-    'A': 9, 'A#': 10, 'Bb': 10, 'B': 11,
-  };
-  
-  const semi1 = noteToSemitone[key1] ?? 0;
-  const semi2 = noteToSemitone[key2] ?? 0;
-  
-  // Minor key's relative major is 3 semitones up
-  if (scale1 === 'minor' && scale2 === 'major') {
-    return (semi1 + 3) % 12 === semi2;
-  }
-  // Major key's relative minor is 3 semitones down (9 semitones up)
-  if (scale1 === 'major' && scale2 === 'minor') {
-    return (semi1 + 9) % 12 === semi2;
-  }
-  
-  return false;
-}
-
-/**
- * Normalize key name to use flats or sharps based on context
- * In flat keys (F minor, Bb major, etc.), prefer flat spelling
- */
-function normalizeKeySpelling(key: string, scale: string, contextKey: string): string {
-  // Sharp to flat mappings
-  const sharpToFlat: Record<string, string> = {
-    'C#': 'Db', 'D#': 'Eb', 'F#': 'Gb', 'G#': 'Ab', 'A#': 'Bb',
-  };
-  
-  // Determine if context uses flats
-  const flatKeys = ['F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb'];
-  const contextUsesFlats = flatKeys.includes(contextKey) || 
-    ['Dm', 'Gm', 'Cm', 'Fm', 'Bbm'].some(k => contextKey.includes(k.charAt(0)));
-  
-  if (contextUsesFlats && sharpToFlat[key]) {
-    return sharpToFlat[key];
-  }
-  
-  return key;
-}
-
-/**
- * Get the relative major of a minor key (or relative minor of a major key)
- */
-function getRelativeKey(key: string, scale: string): { key: string; scale: string } {
-  const noteToSemitone: Record<string, number> = {
-    'C': 0, 'C#': 1, 'Db': 1, 'D': 2, 'D#': 3, 'Eb': 3,
-    'E': 4, 'F': 5, 'F#': 6, 'Gb': 6, 'G': 7, 'G#': 8, 'Ab': 8,
-    'A': 9, 'A#': 10, 'Bb': 10, 'B': 11,
-  };
-  const semitoneToNote = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
-  
-  const semi = noteToSemitone[key] ?? 0;
-  
-  if (scale === 'minor') {
-    // Relative major is 3 semitones up
-    return { key: semitoneToNote[(semi + 3) % 12], scale: 'major' };
-  } else {
-    // Relative minor is 3 semitones down (9 up)
-    return { key: semitoneToNote[(semi + 9) % 12], scale: 'minor' };
-  }
-}
-
-/**
  * Detect key changes using chord-based analysis
  * This is more accurate than HPCP-only detection because it uses
  * the actual detected chords to determine the key in each segment.
@@ -1037,11 +943,7 @@ function detectKeyChangesFromChords(
     // Special handling: if we're in a minor key, check for relative major patterns
     const relativeMajor = getRelativeKey(overallKey, overallScale);
     if (overallScale === 'minor') {
-      const noteToSemi: Record<string, number> = {
-        'C': 0, 'C#': 1, 'Db': 1, 'D': 2, 'D#': 3, 'Eb': 3,
-        'E': 4, 'F': 5, 'F#': 6, 'Gb': 6, 'G': 7, 'G#': 8, 'Ab': 8,
-        'A': 9, 'A#': 10, 'Bb': 10, 'B': 11,
-      };
+      const noteToSemi = NOTE_TO_PITCH_CLASS;
       const detectedSemi = noteToSemi[key] ?? 0;
       const relativeSemi = noteToSemi[relativeMajor.key] ?? 0;
       const overallSemi = noteToSemi[overallKey] ?? 0;
@@ -1197,11 +1099,7 @@ function detectKeyChangesFromChords(
 }
 
 // Note to semitone mapping for transition model
-const NOTE_TO_SEMITONE_CHORD: Record<string, number> = {
-  'C': 0, 'C#': 1, 'Db': 1, 'D': 2, 'D#': 3, 'Eb': 3,
-  'E': 4, 'F': 5, 'F#': 6, 'Gb': 6, 'G': 7, 'G#': 8, 'Ab': 8,
-  'A': 9, 'A#': 10, 'Bb': 10, 'B': 11,
-};
+const NOTE_TO_SEMITONE_CHORD: Record<string, number> = NOTE_TO_PITCH_CLASS;
 
 /**
  * Main chord analysis function

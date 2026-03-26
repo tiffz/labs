@@ -2,117 +2,18 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import type { TimeSignature } from '../../shared/rhythm/types';
 import { BeatGrid, VariableBeatGrid } from '../utils/beatGrid';
 import { getMeasureDuration } from '../utils/measureUtils';
+import {
+  getAdjustedElapsedTime,
+  getCompensatedDetune,
+} from '../utils/beatSyncMath';
 import { useMetronome } from './useMetronome';
 import type { TempoRegion } from '../utils/tempoRegions';
-
-/**
- * Calculate the detune value in cents that compensates for playback rate pitch shift.
- *
- * AudioBufferSourceNode's playbackRate affects both speed AND pitch.
- * To achieve pitch-corrected transposition, we need to:
- * 1. Calculate how many cents the playbackRate shifts the pitch
- * 2. Subtract that from our desired transpose to cancel it out
- * 3. Add the desired transposition
- *
- * Formula: detune = (transposeSemitones * 100) - (1200 * log2(playbackRate))
- *
- * Example at playbackRate=1.25, transpose=+1 semitone:
- * - playbackRate pitch shift = 1200 * log2(1.25) ≈ 386 cents
- * - desired transpose = 100 cents
- * - compensated detune = 100 - 386 = -286 cents
- * - Net effect: -286 + 386 = 100 cents = 1 semitone up ✓
- */
-function getCompensatedDetune(transposeSemitones: number, playbackRate: number): number {
-  const desiredCents = transposeSemitones * 100;
-  const playbackRatePitchShift = 1200 * Math.log2(playbackRate);
-  return desiredCents - playbackRatePitchShift;
-}
 
 export interface LoopRegion {
   startTime: number;
   endTime: number;
 }
 
-/**
- * Adjust elapsed time to account for fermatas/gaps
- * 
- * This function maps "audio timeline" (with fermata pauses) to "beat grid time"
- * (idealized time as if music played continuously at steady tempo).
- * 
- * Key behaviors:
- * 1. COMPLETE THE MEASURE: When a fermata starts, let the metronome finish
- *    the current measure (play through beat 4) before pausing
- * 2. RESUME ON BEAT 1: After the fermata, the beat grid resumes at the start
- *    of the next measure (beat 1), so the accented click is correct
- * 
- * @param elapsed - Current audio playback time
- * @param tempoRegions - Detected tempo regions (fermatas, etc.)
- * @param bpm - Current BPM (needed to calculate measure boundaries)
- * @param syncStart - When the beat grid starts
- * @param beatsPerMeasure - Number of beats per measure (default 4)
- */
-function getAdjustedElapsedTime(
-  elapsed: number,
-  tempoRegions: TempoRegion[] | undefined,
-  bpm: number,
-  syncStart: number,
-  beatsPerMeasure: number = 4
-): number {
-  if (!tempoRegions || tempoRegions.length === 0) {
-    return elapsed;
-  }
-
-  const beatInterval = 60 / bpm;
-  const measureDuration = beatInterval * beatsPerMeasure;
-  
-  // Get fermatas sorted by start time
-  const fermatas = tempoRegions
-    .filter(r => r.type === 'fermata' || r.type === 'rubato')
-    .sort((a, b) => a.startTime - b.startTime);
-  
-  if (fermatas.length === 0) {
-    return elapsed;
-  }
-  
-  let totalAdjustment = 0;
-  let cumulativeFermataDuration = 0;
-  
-  for (const fermata of fermatas) {
-    // Calculate where this fermata starts in "beat grid time" (accounting for previous fermatas)
-    const fermataStartInBeatGridTime = fermata.startTime - cumulativeFermataDuration;
-    
-    // Find the next measure boundary after the fermata starts
-    const measuresElapsed = (fermataStartInBeatGridTime - syncStart) / measureDuration;
-    const nextMeasureNumber = Math.ceil(measuresElapsed);
-    const measureBoundaryInBeatGridTime = syncStart + nextMeasureNumber * measureDuration;
-    
-    // Convert measure boundary to audio time
-    const measureBoundaryInAudioTime = measureBoundaryInBeatGridTime + cumulativeFermataDuration;
-    
-    const fermataDuration = fermata.endTime - fermata.startTime;
-    
-    // The adjustment maps fermata.endTime → measureBoundaryInBeatGridTime
-    // This ensures we resume at the start of a measure (beat 1)
-    const fermataAdjustment = fermata.endTime - measureBoundaryInBeatGridTime - cumulativeFermataDuration;
-    
-    if (elapsed >= fermata.endTime) {
-      // Past this fermata - apply full adjustment and continue
-      totalAdjustment += fermataAdjustment;
-      cumulativeFermataDuration += fermataDuration;
-    } else if (elapsed >= measureBoundaryInAudioTime) {
-      // In the "pause" portion (measure completed, waiting for fermata to end)
-      // Freeze beat grid at the measure boundary
-      totalAdjustment += (elapsed - measureBoundaryInAudioTime);
-      break;
-    } else if (elapsed > fermata.startTime) {
-      // Between fermata start and measure boundary - let measure complete
-      // No adjustment yet, metronome continues normally
-      break;
-    }
-  }
-
-  return elapsed - totalAdjustment;
-}
 
 interface UseBeatSyncOptions {
   audioBuffer: AudioBuffer | null;

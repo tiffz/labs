@@ -30,6 +30,9 @@ function normalizeToDisplayKey(key: MusicKey): MusicKey {
   return ENHARMONIC_TO_DISPLAY[key] ?? key;
 }
 
+/**
+ * Menu contract for selecting one key from a normalized key set.
+ */
 export interface KeyInputMenuProps {
   value: MusicKey;
   onSelect: (next: MusicKey) => void;
@@ -38,6 +41,9 @@ export interface KeyInputMenuProps {
   itemClassName?: string;
 }
 
+/**
+ * Reusable key-preset menu shown inside `KeyInput` popovers.
+ */
 export const KeyInputMenu: React.FC<KeyInputMenuProps> = ({
   value,
   onSelect,
@@ -84,6 +90,9 @@ interface KeyInputProps {
   menuItemClassName?: string;
 }
 
+/**
+ * Shared musical key input with optional semitone stepping and randomized selection.
+ */
 const KeyInput: React.FC<KeyInputProps> = ({
   value,
   onChange,

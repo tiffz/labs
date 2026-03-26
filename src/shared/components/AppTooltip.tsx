@@ -31,6 +31,9 @@ interface AppTooltipProps {
   disabled?: boolean;
 }
 
+/**
+ * Shared tooltip primitive with consistent delays, styling, and disabled-child handling.
+ */
 export default function AppTooltip({
   title,
   children,

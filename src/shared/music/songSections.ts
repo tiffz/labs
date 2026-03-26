@@ -1,5 +1,17 @@
-import type { WordRhythmAdvancedSettings } from '../../drums/wordRhythm/prosodyEngine';
-import type { ChordStyleId } from '../../piano/data/chordExercises';
+type ChordStyleId =
+  | 'simple'
+  | 'one-per-beat'
+  | 'oom-pahs'
+  | 'waltz'
+  | 'pop-rock-ballad'
+  | 'pop-rock-uptempo'
+  | 'tresillo'
+  | 'jazzy';
+
+interface SectionRhythmDefaults {
+  templateNotation?: string;
+  templateBias: number;
+}
 
 export type SongSectionType = 'verse' | 'chorus' | 'bridge';
 
@@ -26,7 +38,7 @@ export function createSectionId(): string {
 
 export function createDefaultSection(
   type: SongSectionType,
-  defaults: WordRhythmAdvancedSettings,
+  defaults: SectionRhythmDefaults,
   previousChorus?: SongSection
 ): SongSection {
   const isChorus = type === 'chorus';

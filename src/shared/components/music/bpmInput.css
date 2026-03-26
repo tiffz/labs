@@ -229,7 +229,7 @@
   border: none;
   background: transparent;
   color: var(--bpm-muted);
-  border-left: 1px solid var(--bpm-border);
+  border-left: 1px solid var(--bpm-divider);
   padding: 0 0.55rem;
   align-self: stretch;
   display: inline-flex;

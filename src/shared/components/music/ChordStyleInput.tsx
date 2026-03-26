@@ -2,6 +2,9 @@ import React, { useMemo, useRef, useState } from 'react';
 import Popover from '@mui/material/Popover';
 import './chordStyleInput.css';
 
+/**
+ * Generic option contract consumed by `ChordStyleInput`.
+ */
 export interface ChordStyleOptionLike {
   id: string;
   label: string;
@@ -17,6 +20,9 @@ interface ChordStyleMenuProps<TStyle extends string> {
   menuColumns?: 1 | 2 | 3 | 'auto';
 }
 
+/**
+ * Reusable option menu used by `ChordStyleInput` in popover and inline layouts.
+ */
 export const ChordStyleMenu = <TStyle extends string>({
   value,
   options,
@@ -81,6 +87,9 @@ interface ChordStyleInputProps<TStyle extends string> {
   disabled?: boolean;
 }
 
+/**
+ * Shared style picker for chord playback and arrangement strategies.
+ */
 const ChordStyleInput = <TStyle extends string>({
   value,
   options,

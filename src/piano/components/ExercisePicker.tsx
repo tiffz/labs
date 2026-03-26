@@ -15,7 +15,7 @@ import {
 } from '../data/chordExercises';
 import { getAllEntries, getSongSettings, type LibraryEntry } from '../utils/libraryStorage';
 import type { Key } from '../types';
-import type { RomanNumeral } from '../../chords/types';
+import type { RomanNumeral } from '../../shared/music/chordTypes';
 import { parseProgressionText } from '../../shared/music/chordProgressionText';
 import AppTooltip from '../../shared/components/AppTooltip';
 import {

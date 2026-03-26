@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useReducer, useCallback, useRef, useEffect } from 'react';
 import type { PianoScore, MidiDevice, NoteDuration, PracticeNoteResult, PracticeRun, PracticeSession, Key } from './types';
 import { generateNoteId, durationToBeats } from './types';
-import type { SoundType } from '../chords/types/soundOptions';
+import type { SoundType } from '../shared/music/soundOptions';
 import { ScorePlaybackEngine, getScorePlaybackEngine } from './utils/scorePlayback';
 import { getMidiInput, type MidiInput } from './utils/midiInput';
 import { recordMidiNoteOn, recordMidiNoteOff, clearAll as clearTimingStore } from './utils/practiceTimingStore';
@@ -11,6 +11,14 @@ import { AcousticInput } from './utils/acousticInput';
 import type { SongPracticeSettings, GlobalPracticePreferences } from './utils/libraryStorage';
 import { SmartBeatMap } from './utils/smartBeatMap';
 import { isDebugEnabled, logDebugEvent } from './utils/practiceDebugLog';
+import {
+  addChordToPart,
+  findNextFreeTempoPosition,
+} from './utils/storeScoreEditing';
+import {
+  computeAutoZoomLevel,
+  getMeasureCountForScore,
+} from './storeSelectors';
 
 export type ActiveMode = 'none' | 'play' | 'practice' | 'free-practice';
 
@@ -236,65 +244,12 @@ export const initialState: PianoState = {
   midiSoundVolume: 0.7,
 };
 
-function addChordToPart(
-  score: PianoScore, partId: string, pitches: number[], dur: NoteDuration, isDotted: boolean,
-): PianoScore {
-  const targetPart = score.parts.find(p => p.id === partId);
-  if (!targetPart) return score;
-  const beatsPerMeasure = (score.timeSignature.numerator / score.timeSignature.denominator) * 4;
-  const lastMeasure = targetPart.measures[targetPart.measures.length - 1] || { notes: [] };
-  const usedBeats = lastMeasure.notes.reduce((sum, n) => sum + durationToBeats(n.duration, n.dotted), 0);
-  const noteBeats = durationToBeats(dur, isDotted);
-  const newNote = { id: generateNoteId(), pitches, duration: dur, dotted: isDotted || undefined };
-  let newMeasures;
-  if (usedBeats + noteBeats > beatsPerMeasure + 0.001) {
-    newMeasures = [...targetPart.measures, { notes: [newNote] }];
-  } else {
-    newMeasures = [...targetPart.measures.slice(0, -1), { notes: [...lastMeasure.notes, newNote] }];
-  }
-  return { ...score, parts: score.parts.map(p => p.id === partId ? { ...p, measures: newMeasures } : p) };
-}
-
-function findNextFreeTempoPosition(
-  practicedParts: PianoScore['parts'],
-  startMeasureIndex: number,
-  startNoteIndex: number,
-): { measureIndex: number; noteIndex: number } | null {
-  if (practicedParts.length === 0) return null;
-  const maxMeasures = Math.max(...practicedParts.map((part) => part.measures.length), 0);
-  let measureIndex = Math.max(0, startMeasureIndex);
-  let noteIndex = Math.max(-1, startNoteIndex) + 1;
-
-  while (measureIndex < maxMeasures) {
-    const maxNotesInMeasure = Math.max(
-      ...practicedParts.map((part) => part.measures[measureIndex]?.notes.length ?? 0),
-      0,
-    );
-    while (noteIndex < maxNotesInMeasure) {
-      const hasPlayableNote = practicedParts.some((part) => {
-        const note = part.measures[measureIndex]?.notes[noteIndex];
-        return Boolean(note && !note.rest);
-      });
-      if (hasPlayableNote) {
-        return { measureIndex, noteIndex };
-      }
-      noteIndex += 1;
-    }
-    measureIndex += 1;
-    noteIndex = 0;
-  }
-  return null;
-}
-
 // eslint-disable-next-line react-refresh/only-export-components -- exported for tests alongside Provider
 export function reducer(state: PianoState, action: Action): PianoState {
   switch (action.type) {
     case 'SET_SCORE': {
-      const measureCount = Math.max(...action.score.parts.map(p => p.measures.length), 0);
-      let autoZoom = 1.0;
-      if (measureCount > 40) autoZoom = 0.6;
-      else if (measureCount > 20) autoZoom = 0.7;
-      else if (measureCount > 8) autoZoom = 0.85;
+      const measureCount = getMeasureCountForScore(action.score);
+      const autoZoom = computeAutoZoomLevel(measureCount);
       const hasVocal = action.score.parts.some(p => p.hand === 'voice');
       const isSameScore = state.score?.id === action.score.id;
       return {

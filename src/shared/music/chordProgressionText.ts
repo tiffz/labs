@@ -1,61 +1,16 @@
-import { ALL_KEYS } from '../../chords/utils/randomization';
-import { romanNumeralToChord } from '../../chords/utils/chordTheory';
-import type { Key, RomanNumeral, ChordQuality } from '../../chords/types';
+import { romanNumeralToChord } from './chordTheory';
+import type { ChordQuality, Key, RomanNumeral } from './chordTypes';
+import { ALL_KEYS } from './randomization';
+import {
+  NOTE_TO_PITCH_CLASS,
+  spellPitchClass as spellPitchClassForKey,
+  spellRootForKey,
+} from './theory/pitchClass';
 
 const PROGRESSION_SEPARATOR_REGEX = /\s*(?:[–—-]|,)\s*/;
 const ROMAN_TOKEN_REGEX = /^(?:I|II|III|IV|V|VI|VII|i|ii|iii|iv|v|vi|vii)$/;
 const CHORD_TOKEN_REGEX = /^[A-G](?:#|b)?(?:m|maj7|m7|7|sus2|sus4|dim|aug)?$/i;
-const FLAT_KEYS = new Set<Key>(['C', 'F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb']);
-const FLAT_CHROMATIC = [
-  'C',
-  'Db',
-  'D',
-  'Eb',
-  'E',
-  'F',
-  'Gb',
-  'G',
-  'Ab',
-  'A',
-  'Bb',
-  'B',
-];
-const SHARP_CHROMATIC = [
-  'C',
-  'C#',
-  'D',
-  'D#',
-  'E',
-  'F',
-  'F#',
-  'G',
-  'G#',
-  'A',
-  'A#',
-  'B',
-];
-
 const SHIFT_CANDIDATES = [0, -1, 1, -2, 2, -3, 3, -4, 4, -5, 5, -6, 6] as const;
-
-const ROOT_TO_PITCH_CLASS: Record<string, number> = {
-  C: 0,
-  'C#': 1,
-  Db: 1,
-  D: 2,
-  'D#': 3,
-  Eb: 3,
-  E: 4,
-  F: 5,
-  'F#': 6,
-  Gb: 6,
-  G: 7,
-  'G#': 8,
-  Ab: 8,
-  A: 9,
-  'A#': 10,
-  Bb: 10,
-  B: 11,
-};
 
 const MAJOR_DIATONIC_QUALITY_BY_DEGREE: Record<number, ChordQuality[]> = {
   1: ['major', 'major7'],
@@ -120,16 +75,11 @@ function tokenizeProgressionInput(input: string): string[] {
 }
 
 function spellRoot(root: string, key: Key): string {
-  const pitchClass = ROOT_TO_PITCH_CLASS[root];
-  if (pitchClass === undefined) return root;
-  const chromatic = FLAT_KEYS.has(key) ? FLAT_CHROMATIC : SHARP_CHROMATIC;
-  return chromatic[pitchClass] ?? root;
+  return spellRootForKey(root, key);
 }
 
 function spellPitchClass(pitchClass: number, key: Key): string {
-  const normalized = ((pitchClass % 12) + 12) % 12;
-  const chromatic = FLAT_KEYS.has(key) ? FLAT_CHROMATIC : SHARP_CHROMATIC;
-  return chromatic[normalized] ?? 'C';
+  return spellPitchClassForKey(pitchClass, key);
 }
 
 function parseChordToken(token: string): ParsedChordToken | null {
@@ -169,7 +119,7 @@ function romanToChordSymbols(romanTokens: RomanNumeral[], key: Key): string[] {
 }
 
 function getMajorScalePitchClasses(key: Key): number[] {
-  const tonicPc = ROOT_TO_PITCH_CLASS[key];
+  const tonicPc = NOTE_TO_PITCH_CLASS[key];
   if (tonicPc === undefined) return [];
   const majorScaleIntervals = [0, 2, 4, 5, 7, 9, 11];
   return majorScaleIntervals.map((interval) => (tonicPc + interval) % 12);
@@ -182,7 +132,7 @@ function findDegreeInKey(chordRootPc: number, key: Key): number | null {
 }
 
 function chordFitsDiatonicMajor(token: ParsedChordToken, key: Key): boolean {
-  const rootPc = ROOT_TO_PITCH_CLASS[token.root];
+  const rootPc = NOTE_TO_PITCH_CLASS[token.root];
   if (rootPc === undefined) return false;
   const degree = findDegreeInKey(rootPc, key);
   if (!degree) return false;
@@ -197,7 +147,7 @@ function chordTokensToRoman(
 ): RomanNumeral[] | null {
   const converted: RomanNumeral[] = [];
   for (const token of tokens) {
-    const rootPc = ROOT_TO_PITCH_CLASS[token.root];
+    const rootPc = NOTE_TO_PITCH_CLASS[token.root];
     if (rootPc === undefined) return null;
     const degree = findDegreeInKey(rootPc, key);
     if (!degree) return null;
@@ -221,7 +171,7 @@ function transposeChordTokens(
   key: Key
 ): ParsedChordToken[] {
   return tokens.map((token) => {
-    const rootPc = ROOT_TO_PITCH_CLASS[token.root] ?? 0;
+    const rootPc = NOTE_TO_PITCH_CLASS[token.root] ?? 0;
     const shiftedRoot = spellPitchClass(rootPc + semitoneShift, key);
     return { ...token, root: shiftedRoot };
   });
@@ -270,7 +220,7 @@ function findBestDiatonicFit(
 function rootPatternToRoman(tokens: ParsedChordToken[], key: Key): RomanNumeral[] | null {
   const converted: RomanNumeral[] = [];
   for (const token of tokens) {
-    const rootPc = ROOT_TO_PITCH_CLASS[token.root];
+    const rootPc = NOTE_TO_PITCH_CLASS[token.root];
     if (rootPc === undefined) return null;
     const degree = findDegreeInKey(rootPc, key);
     if (!degree) return null;

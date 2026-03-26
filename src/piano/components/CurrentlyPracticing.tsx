@@ -15,7 +15,7 @@ import {
   type ChordStyleId,
   type ChordVoicingStyle,
 } from '../data/chordExercises';
-import type { RomanNumeral } from '../../chords/types';
+import type { RomanNumeral } from '../../shared/music/chordTypes';
 import { parseProgressionText } from '../../shared/music/chordProgressionText';
 import type { MusicKey } from '../../shared/music/musicInputConstants';
 import { useMatTooltip } from './useMatTooltip';

@@ -14,6 +14,9 @@ interface AppSliderProps extends Omit<SliderProps, 'onChange' | 'value' | 'defau
   style?: React.CSSProperties;
 }
 
+/**
+ * Thin wrapper around MUI Slider that adapts callbacks to app legacy range events.
+ */
 export default function AppSlider({
   value,
   onChange,

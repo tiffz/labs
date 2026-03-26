@@ -1,5 +1,5 @@
 import type { PianoScore } from '../types';
-import type { SoundType } from '../../chords/types/soundOptions';
+import type { SoundType } from '../../shared/music/soundOptions';
 
 export interface SongPracticeSettings {
   tempo: number;

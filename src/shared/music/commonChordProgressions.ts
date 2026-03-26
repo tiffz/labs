@@ -1,4 +1,4 @@
-import type { RomanNumeral } from '../../chords/types';
+import type { RomanNumeral } from './chordTypes';
 
 export interface CommonChordProgression {
   name: string;

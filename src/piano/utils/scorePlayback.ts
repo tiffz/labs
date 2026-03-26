@@ -2,7 +2,7 @@ import type { PianoScore, ScoreNote } from '../types';
 import { midiToFrequency, durationToBeats } from '../types';
 import { PianoSynthesizer, SampledPiano } from '../../shared/playback/instruments';
 import type { Instrument } from '../../shared/playback/instruments';
-import type { SoundType } from '../../chords/types/soundOptions';
+import type { SoundType } from '../../shared/music/soundOptions';
 import { recordNoteExpectedTime, clearExpectedTimes, refreshHeldNotes } from './practiceTimingStore';
 import type { SmartBeatMap } from './smartBeatMap';
 import clickSoundUrl from '../../drums/assets/sounds/click.mp3';

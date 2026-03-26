@@ -27,6 +27,17 @@ import { sha256Fingerprint } from './utils/fingerprint';
 import { BEAT_ANALYSIS_VERSION } from './utils/analysisVersion';
 import { shouldHandleGlobalPlaybackSpacebar } from './utils/keyboardShortcuts';
 import {
+  createUserLane,
+  toLaneSection,
+  type LaneSection,
+  type PracticeEditorSnapshot,
+  userSectionsStorageKey,
+} from './utils/practiceSections';
+import {
+  mergeAdjacentLaneSections,
+  splitLaneSection,
+} from './utils/laneSectionOps';
+import {
   extractYouTubeVideoId,
   getLibraryRecord,
   getLocalFileForEntry,
@@ -44,30 +55,6 @@ import {
 import { getSchemaVersion } from './storage/beatLibraryDb';
 import type { BeatLibraryEntry, UploadTaskState, UserPracticeData, UserPracticeLane, UserPracticeSection } from './types/library';
 import { decodeMediaToBuffer, runBeatAnalysisPipeline } from './utils/analysisPipeline';
-
-const userSectionsStorageKey = (videoId: string) => `beat:user-sections:${videoId}`;
-type LaneSection = Section & { laneId: string };
-type PracticeEditorSnapshot = {
-  lanes: UserPracticeLane[];
-  sections: LaneSection[];
-  activeLaneId: string | null;
-};
-
-const createUserLane = (name: string): UserPracticeLane => ({
-  id: `lane-${crypto.randomUUID()}`,
-  name,
-  createdAt: Date.now(),
-});
-
-const toLaneSection = (section: UserPracticeSection, fallbackLaneId: string): LaneSection => ({
-  id: section.id,
-  label: section.label,
-  startTime: section.startTime,
-  endTime: section.endTime,
-  laneId: section.laneId ?? fallbackLaneId,
-  color: '#7eb5c4',
-  confidence: 1,
-});
 
 const App: React.FC = () => {
   const [mediaFile, setMediaFile] = useState<MediaFile | null>(null);
@@ -185,41 +172,11 @@ const App: React.FC = () => {
   });
 
   const mergeUserSections = useCallback((indexA: number, indexB: number) => {
-    setUserSections((prev) => {
-      const next = [...prev];
-      let a = indexA;
-      let b = indexB;
-      if (a > b) [a, b] = [b, a];
-      if (a < 0 || b >= next.length || b - a !== 1) return prev;
-      if (next[a].laneId !== next[b].laneId) return prev;
-      next[a] = {
-        ...next[a],
-        endTime: next[b].endTime,
-      };
-      next.splice(b, 1);
-      return next;
-    });
+    setUserSections((prev) => mergeAdjacentLaneSections(prev, indexA, indexB));
   }, []);
 
   const splitUserSections = useCallback((index: number, splitTime: number) => {
-    setUserSections((prev) => {
-      if (index < 0 || index >= prev.length) return prev;
-      const section = prev[index];
-      if (splitTime <= section.startTime || splitTime >= section.endTime) return prev;
-      const next = [...prev];
-      next[index] = {
-        ...section,
-        endTime: splitTime,
-        label: `${section.label} (a)`,
-      };
-      next.splice(index + 1, 0, {
-        ...section,
-        id: `user-${crypto.randomUUID()}`,
-        startTime: splitTime,
-        label: `${section.label} (b)`,
-      });
-      return next;
-    });
+    setUserSections((prev) => splitLaneSection(prev, index, splitTime));
   }, []);
 
   const handleUnifiedSeek = useCallback(

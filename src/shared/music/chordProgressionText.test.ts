@@ -56,4 +56,11 @@ describe('chord progression text parsing', () => {
     expect(parsed.resolvedKey).toBe('C');
     expect(parsed.resolvedDisplay).toBe('C–G–Am–F');
   });
+
+  it('spells enharmonic roots to match flat keys', () => {
+    const parsed = parseProgressionText('Db-Ab-Bbm-Gb', 'Db');
+    expect(parsed.isValid).toBe(true);
+    expect(parsed.inferredKey).toBe('Db');
+    expect(parsed.resolvedDisplay).toBe('Db–Ab–Bbm–Gb');
+  });
 });

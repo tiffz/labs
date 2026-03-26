@@ -19,7 +19,7 @@ src/
 
 ## Technology Stack
 
-- **React 18** with TypeScript (strict mode)
+- **React 19** with TypeScript (strict mode)
 - **Vite** for build tooling (multi-page configuration)
 - **Vitest + React Testing Library** for testing
 - **Tailwind CSS v3** (not v4 - use stable v3.4.x)

@@ -5,10 +5,9 @@
 import type { Key, TimeSignature, ChordProgressionConfig, ChordStylingStrategy } from '../types';
 import { COMMON_CHORD_PROGRESSIONS } from '../data/chordProgressions';
 import { CHORD_STYLING_STRATEGIES } from '../data/chordStylingStrategies';
+import { ALL_KEYS } from '../../shared/music/randomization';
 
-export const ALL_KEYS: Key[] = [
-  'C', 'C#', 'Db', 'D', 'D#', 'Eb', 'E', 'F', 'F#', 'Gb', 'G', 'G#', 'Ab', 'A', 'A#', 'Bb', 'B'
-];
+export { ALL_KEYS };
 
 // Common time signatures weighted by popularity in pop music
 const TIME_SIGNATURES: Array<{ timeSignature: TimeSignature; weight: number }> = [

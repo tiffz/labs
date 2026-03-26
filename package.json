@@ -4,8 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --host",
-    "build": "npm run knip && vite build",
+    "generate:shared-catalog": "node scripts/generate-shared-catalog.mjs",
+    "check:shared-catalog": "node scripts/generate-shared-catalog.mjs --check",
+    "dev": "npm run generate:shared-catalog && vite --host",
+    "build": "npm run generate:shared-catalog && npm run knip && vite build",
     "build:analyze": "ANALYZE=true vite build",
     "lint": "eslint . && npm run knip -- --no-exit-code",
     "test": "vitest run",
