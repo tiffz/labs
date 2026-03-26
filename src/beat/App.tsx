@@ -1789,6 +1789,7 @@ const App: React.FC = () => {
                       value={correctedDetectedKey ?? detectedKeyBaseline}
                       onChange={(next) => setCorrectedDetectedKey(next)}
                       className="shared-key-input"
+                      dropdownClassName="beat-key-dropdown"
                       showStepButtons
                       trailingActions={
                         <AppTooltip title="Reset to automatically detected key">

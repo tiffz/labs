@@ -9,7 +9,7 @@ import js from '@eslint/js';
 export default [
   // Global ignores
   {
-    ignores: ['dist/', 'node_modules/', '*.min.js', 'build/', 'coverage/', 'public/'],
+    ignores: ['dist/', 'node_modules/', '*.min.js', 'build/', 'coverage/', 'public/', 'storybook-static/'],
   },
 
   // Base JS and TS configs
@@ -18,7 +18,7 @@ export default [
 
   // Config for Node.js files (e.g., config files in root)
   {
-    files: ['eslint.config.js', 'vite.config.ts', 'vite.config.js', 'postcss.config.js', 'tailwind.config.js'],
+    files: ['eslint.config.js', 'vite.config.ts', 'vite.config.js', 'postcss.config.js', 'tailwind.config.js', 'scripts/**/*.mjs'],
     languageOptions: {
       globals: {
         ...globals.node,

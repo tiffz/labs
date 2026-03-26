@@ -20,8 +20,8 @@ import { parseProgressionText } from '../../shared/music/chordProgressionText';
 import AppTooltip from '../../shared/components/AppTooltip';
 import {
   ChordProgressionSelector,
-  ChordStyleSelector,
 } from './ChordExerciseSelectors';
+import ChordStyleInput from '../../shared/components/music/ChordStyleInput';
 
 type TonalType = 'scale' | 'arpeggio' | 'pentascale';
 
@@ -86,15 +86,36 @@ const GroupLabel: React.FC<{
 );
 
 interface ExercisePickerProps {
-  open: boolean;
+  open?: boolean;
   onClose: () => void;
-  onImportClick: () => void;
+  onImportClick?: () => void;
+  mode?: 'dialog' | 'inline';
+  title?: string;
+  allowedSections?: Array<'scales' | 'progressions' | 'songs'>;
+  initialSection?: 'scales' | 'progressions' | 'songs';
 }
 
-const ExercisePicker: React.FC<ExercisePickerProps> = ({ open, onClose, onImportClick }) => {
+const ExercisePicker: React.FC<ExercisePickerProps> = ({
+  open = true,
+  onClose,
+  onImportClick,
+  mode = 'dialog',
+  title = 'Choose Exercise',
+  allowedSections,
+  initialSection,
+}) => {
   const { dispatch, loadScore, engine } = usePiano();
 
-  const [section, setSection] = useState<'scales' | 'progressions' | 'songs'>('scales');
+  const visibleSections = allowedSections && allowedSections.length > 0
+    ? allowedSections
+    : (['scales', 'progressions', 'songs'] as const);
+  const showSectionTabs = visibleSections.length > 1;
+  const fallbackSection = visibleSections[0] ?? 'scales';
+  const initialResolvedSection =
+    initialSection && visibleSections.includes(initialSection)
+      ? initialSection
+      : fallbackSection;
+  const [section, setSection] = useState<'scales' | 'progressions' | 'songs'>(initialResolvedSection);
 
   const [scaleType, setScaleType] = useState<ExerciseType>('scale');
   const [quality, setQuality] = useState<'major' | 'minor'>('major');
@@ -117,7 +138,12 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({ open, onClose, onImport
 
   const [entries, setEntries] = useState<LibraryEntry[]>([]);
   const [search, setSearch] = useState('');
-  useEffect(() => { if (open) setEntries(getAllEntries()); }, [open]);
+  useEffect(() => { if (open || mode === 'inline') setEntries(getAllEntries()); }, [open, mode]);
+  useEffect(() => {
+    if (!visibleSections.includes(section)) {
+      setSection(fallbackSection);
+    }
+  }, [fallbackSection, section, visibleSections]);
 
   const loadTonal = useCallback((q: 'major' | 'minor', key: Key, type: TonalType, dir: Direction, oct: number, sub: Subdivision) => {
     const score = generateExerciseScore(q, type, key, dir, oct, sub);
@@ -279,35 +305,37 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({ open, onClose, onImport
     ? entries.filter(e => e.title.toLowerCase().includes(search.toLowerCase()))
     : entries;
 
-  return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      maxWidth={false}
-      fullWidth={false}
-      slotProps={{ paper: { className: 'ep-panel' } }}
-    >
+  const content = (
+    <>
       <div className="ep-header">
-        <h2 className="ep-title">Choose Exercise</h2>
+        <h2 className="ep-title">{title}</h2>
         <button type="button" className="ep-close" onClick={onClose}>
           <span className="material-symbols-outlined">close</span>
         </button>
       </div>
 
-        <div className="ep-sections">
-          <button className={`ep-section-btn ${section === 'scales' ? 'active' : ''}`} onClick={() => setSection('scales')}>
-            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>fitness_center</span>
-            Scales
-          </button>
-          <button className={`ep-section-btn ${section === 'progressions' ? 'active' : ''}`} onClick={() => setSection('progressions')}>
-            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>queue_music</span>
-            Chord Progressions
-          </button>
-          <button className={`ep-section-btn ${section === 'songs' ? 'active' : ''}`} onClick={() => setSection('songs')}>
-            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>library_music</span>
-            Songs
-          </button>
-        </div>
+        {showSectionTabs ? (
+          <div className="ep-sections">
+            {visibleSections.includes('scales') ? (
+              <button className={`ep-section-btn ${section === 'scales' ? 'active' : ''}`} onClick={() => setSection('scales')}>
+                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>fitness_center</span>
+                Scales
+              </button>
+            ) : null}
+            {visibleSections.includes('progressions') ? (
+              <button className={`ep-section-btn ${section === 'progressions' ? 'active' : ''}`} onClick={() => setSection('progressions')}>
+                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>queue_music</span>
+                Chord Progressions
+              </button>
+            ) : null}
+            {visibleSections.includes('songs') ? (
+              <button className={`ep-section-btn ${section === 'songs' ? 'active' : ''}`} onClick={() => setSection('songs')}>
+                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>library_music</span>
+                Songs
+              </button>
+            ) : null}
+          </div>
+        ) : null}
 
         <div className="ep-body">
           {section === 'scales' && (
@@ -418,6 +446,9 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({ open, onClose, onImport
                   value={customProgressionInput}
                   selectedProgression={selectedProgression}
                   listId="ep-progression-presets"
+                  keyContext={progKey}
+                  appearance="piano"
+                  presetColumns={2}
                   error={customProgressionError}
                   warning={customProgressionWarning}
                   onInputChange={(value) => {
@@ -482,9 +513,14 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({ open, onClose, onImport
               <div className="ep-group">
                 <GroupLabel onRandomize={() => setChordStyle(pickRandom(CHORD_STYLE_OPTIONS.map(o => o.id), chordStyle))}
                   tipText="Randomize style. Click to pick a random accompaniment style.">Style</GroupLabel>
-                <ChordStyleSelector
-                  selectedStyle={chordStyle}
-                  onSelectStyle={(styleId) => setChordStyle(styleId)}
+                <ChordStyleInput
+                  value={chordStyle}
+                  onChange={(styleId) => setChordStyle(styleId as ChordStyleId)}
+                  options={CHORD_STYLE_OPTIONS}
+                  triggerClassName="ep-custom-prog-input"
+                  dropdownClassName="ep-style-dropdown"
+                  appearance="piano"
+                  menuColumns={3}
                 />
               </div>
             </div>
@@ -498,10 +534,12 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({ open, onClose, onImport
                   <input type="text" placeholder="Search songs..." value={search}
                     onChange={e => setSearch(e.target.value)} className="ep-songs-search-input" />
                 </div>
-                <button className="ep-import-btn" onClick={() => { onClose(); onImportClick(); }}>
-                  <span className="material-symbols-outlined" style={{ fontSize: 16 }}>upload_file</span>
-                  Import
-                </button>
+                {onImportClick ? (
+                  <button className="ep-import-btn" onClick={() => { onClose(); onImportClick(); }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 16 }}>upload_file</span>
+                    Import
+                  </button>
+                ) : null}
               </div>
               {filteredEntries.length === 0 ? (
                 <div className="ep-songs-empty">
@@ -552,6 +590,20 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({ open, onClose, onImport
             </button>
           </div>
         )}
+    </>
+  );
+  if (mode === 'inline') {
+    return <div className="ep-panel ep-panel-inline">{content}</div>;
+  }
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth={false}
+      fullWidth={false}
+      slotProps={{ paper: { className: 'ep-panel' } }}
+    >
+      {content}
     </Dialog>
   );
 };

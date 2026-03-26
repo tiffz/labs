@@ -456,6 +456,38 @@ function extractNavigationFromAllParts(doc: Document): { navigation: ScoreNaviga
   return { navigation, repeats, voltas };
 }
 
+function applyNavigationToMeasures(parts: ScorePart[], navigation: ScoreNavigation): void {
+  const repeatStarts = new Set<number>();
+  const repeatEnds = new Map<number, number | undefined>();
+  for (const repeat of navigation.repeats ?? []) {
+    if (repeat.direction === 'forward') repeatStarts.add(repeat.measureIndex);
+    if (repeat.direction === 'backward') repeatEnds.set(repeat.measureIndex, repeat.times);
+  }
+
+  const endingByMeasure = new Map<number, number>();
+  for (const volta of navigation.voltas ?? []) {
+    for (let mi = volta.startMeasure; mi <= volta.endMeasure; mi++) {
+      if (!endingByMeasure.has(mi)) endingByMeasure.set(mi, volta.endingNumber);
+    }
+  }
+
+  for (const part of parts) {
+    for (let mi = 0; mi < part.measures.length; mi++) {
+      const measure = part.measures[mi];
+      if (repeatStarts.has(mi)) measure.repeatStart = true;
+      const repeatTimes = repeatEnds.get(mi);
+      if (repeatTimes !== undefined || repeatEnds.has(mi)) {
+        measure.repeatEnd = true;
+        if (repeatTimes !== undefined && Number.isFinite(repeatTimes)) {
+          measure.repeatTimes = repeatTimes;
+        }
+      }
+      const endingNumber = endingByMeasure.get(mi);
+      if (endingNumber !== undefined) measure.endingNumber = endingNumber;
+    }
+  }
+}
+
 export function parseMusicXml(xmlString: string): PianoScore & { sections?: ParsedSections[] } {
   const parser = new DOMParser();
   const doc = parser.parseFromString(xmlString, 'application/xml');
@@ -685,6 +717,8 @@ export function parseMusicXml(xmlString: string): PianoScore & { sections?: Pars
       });
     }
   }
+
+  applyNavigationToMeasures(scoreParts, navigation);
 
   const totalMeasureCount = Math.max(...scoreParts.map(p => p.measures.length), 0);
   const sections = extractSections(part, totalMeasureCount);

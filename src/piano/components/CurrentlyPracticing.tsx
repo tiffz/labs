@@ -5,7 +5,7 @@ import { durationToBeats } from '../types';
 import type { Key } from '../types';
 import {
   generateExerciseScore, generateChromaticScore,
-  MAJOR_KEYS, MINOR_KEYS, CHROMATIC_NOTES,
+  MAJOR_KEYS, MINOR_KEYS,
   type Direction, type ExerciseType, type Subdivision,
 } from '../data/scales';
 import {
@@ -17,11 +17,13 @@ import {
 } from '../data/chordExercises';
 import type { RomanNumeral } from '../../chords/types';
 import { parseProgressionText } from '../../shared/music/chordProgressionText';
+import type { MusicKey } from '../../shared/music/musicInputConstants';
 import { useMatTooltip } from './useMatTooltip';
 import {
   ChordProgressionSelector,
   ChordStyleSelector,
 } from './ChordExerciseSelectors';
+import { KeyInputMenu } from '../../shared/components/music/KeyInput';
 
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -129,12 +131,13 @@ const ChipPopover: React.FC<{
 };
 
 interface CurrentlyPracticingProps {
-  onSwitchExercise: () => void;
+  onLoadExercise: (event?: React.MouseEvent<HTMLElement>) => void;
+  onLoadSong: (event?: React.MouseEvent<HTMLElement>) => void;
 }
 
-const CurrentlyPracticing: React.FC<CurrentlyPracticingProps> = ({ onSwitchExercise }) => {
+const CurrentlyPracticing: React.FC<CurrentlyPracticingProps> = ({ onLoadExercise, onLoadSong }) => {
   const { state, dispatch, engine, loadScore } = usePiano();
-  const { score, selectedMeasureRange } = state;
+  const { score } = state;
   const { showTip, hideTip, tipPortal } = useMatTooltip();
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState('');
@@ -169,10 +172,6 @@ const CurrentlyPracticing: React.FC<CurrentlyPracticingProps> = ({ onSwitchExerc
     );
     return byName >= 0 ? byName : null;
   }, [chordTemplateInput]);
-
-  const clearSelection = useCallback(() => {
-    dispatch({ type: 'CLEAR_MEASURE_SELECTION' });
-  }, [dispatch]);
 
   const scoreInfo = useMemo(() => {
     if (!score) return null;
@@ -357,7 +356,7 @@ const CurrentlyPracticing: React.FC<CurrentlyPracticingProps> = ({ onSwitchExerc
     return (
       <div className="now-practicing np-empty">
         <span className="np-empty-text">No exercise loaded</span>
-        <button className="np-switch-btn" onClick={onSwitchExercise}>
+        <button className="np-switch-btn" onClick={() => onLoadExercise()}>
           <span className="material-symbols-outlined" style={{ fontSize: 16 }}>library_music</span>
           Choose Exercise
         </button>
@@ -533,47 +532,38 @@ const CurrentlyPracticing: React.FC<CurrentlyPracticingProps> = ({ onSwitchExerc
               <span className="material-symbols-outlined" style={{ fontSize: 15 }}>edit</span>
             </button>
           )}
-          <button className="np-switch-btn" onClick={onSwitchExercise}
-            onMouseEnter={e => showTip(e, 'Switch exercise or song')} onMouseLeave={hideTip}>
-            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>swap_horiz</span>
-            Switch
+          <button
+            className="np-switch-btn np-switch-btn-icon"
+            onClick={(event) => onLoadExercise(event)}
+            onMouseEnter={e => showTip(e, 'Load Exercise')} onMouseLeave={hideTip}
+            aria-label="Load Exercise"
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>fitness_center</span>
+            Exercise
+          </button>
+          <button
+            className="np-switch-btn np-switch-btn-icon"
+            onClick={(event) => onLoadSong(event)}
+            onMouseEnter={e => showTip(e, 'Load Song')} onMouseLeave={hideTip}
+            aria-label="Load Song"
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>library_music</span>
+            Song
           </button>
         </div>
       </div>
 
-      {selectedMeasureRange && (
-        <span className="np-selection">
-          Measures {selectedMeasureRange.start + 1}–{selectedMeasureRange.end + 1}
-          <button className="np-clear-sel" onClick={clearSelection}
-            onMouseEnter={e => showTip(e, 'Clear selection')} onMouseLeave={hideTip}>
-            <span className="material-symbols-outlined" style={{ fontSize: 13 }}>close</span>
-          </button>
-        </span>
-      )}
-
       <ChipPopover id={keyPopoverId} anchor={popoverAnchor} open={popover === 'key'} onClose={() => setPopover(null)}>
-        <div className="np-pop-keys">
-          {(chordExerciseMeta
-            ? MAJOR_KEYS
-            : meta?.type === 'chromatic'
-              ? CHROMATIC_NOTES
-              : meta?.quality === 'major'
-                ? MAJOR_KEYS
-                : MINOR_KEYS
-          ).map(k => (
-            <button
-              key={k}
-              className={`np-pop-key ${k === scoreInfo.key ? 'active' : ''}`}
-              onClick={() =>
-                chordExerciseMeta
-                  ? reloadChordExercise({ key: k as Key })
-                  : reloadExercise({ key: k as Key })
-              }
-            >
-              {k}
-            </button>
-          ))}
-        </div>
+        <KeyInputMenu
+          value={scoreInfo.key as unknown as MusicKey}
+          onSelect={(next) =>
+            chordExerciseMeta
+              ? reloadChordExercise({ key: next as unknown as Key })
+              : reloadExercise({ key: next as unknown as Key })
+          }
+          className="np-pop-keys"
+          itemClassName="np-pop-key"
+        />
       </ChipPopover>
 
       <ChipPopover
@@ -608,6 +598,11 @@ const CurrentlyPracticing: React.FC<CurrentlyPracticingProps> = ({ onSwitchExerc
               value={chordTemplateInput}
               selectedProgression={chordTemplateSelectedPresetIndex}
               listId="np-chord-template-presets"
+              keyContext={score?.key}
+              menuMode="inline"
+              appearance="piano"
+              presetColumns={2}
+              inlineMenuClassName="np-chord-template-inline-menu"
               error={chordTemplateError}
               warning={chordTemplateWarning}
               onInputChange={(value) => {

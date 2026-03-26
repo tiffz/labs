@@ -200,6 +200,42 @@ const PlaybackControls: React.FC = () => {
     engine.setTrackMuted(partId, muted);
   };
 
+  const setTrackMuted = (partId: string, muted: boolean) => {
+    dispatch({ type: 'SET_TRACK_MUTED', partId, muted });
+    engine.setTrackMuted(partId, muted);
+  };
+
+  const handleShowVocalPart = (show: boolean) => {
+    dispatch({ type: 'SET_SHOW_VOCAL', show });
+    if (!show) {
+      dispatch({ type: 'SET_PRACTICE_VOICE', enabled: false });
+      setTrackMuted('voice', true);
+    }
+  };
+
+  const handleShowRightHand = (show: boolean) => {
+    dispatch({ type: 'SET_SHOW_RIGHT_HAND', show });
+    if (!show) {
+      dispatch({ type: 'SET_PRACTICE_RIGHT_HAND', enabled: false });
+      setTrackMuted('rh', true);
+    }
+  };
+
+  const handleShowLeftHand = (show: boolean) => {
+    dispatch({ type: 'SET_SHOW_LEFT_HAND', show });
+    if (!show) {
+      dispatch({ type: 'SET_PRACTICE_LEFT_HAND', enabled: false });
+      setTrackMuted('lh', true);
+    }
+  };
+
+  const handleShowChords = (show: boolean) => {
+    dispatch({ type: 'SET_SHOW_CHORDS', show });
+    if (!show) {
+      dispatch({ type: 'SET_PRACTICE_CHORDS', enabled: false });
+    }
+  };
+
   const handleTrackVolume = (partId: string, value: number) => {
     dispatch({ type: 'SET_TRACK_VOLUME', partId, volume: value });
     engine.setTrackVolume(partId, value);
@@ -232,13 +268,9 @@ const PlaybackControls: React.FC = () => {
     }
 
     if (state.activeMode !== 'none') {
-      // Switching between active modes should fully stop the current mode first
-      // so practice/run state and engine callbacks are cleanly reset.
       stopMode();
-      window.setTimeout(() => startMode(mode), 0);
-    } else {
-      startMode(mode);
     }
+    startMode(mode);
   };
 
   const [systemsExpanded, setSystemsExpanded] = useState(true);
@@ -414,13 +446,13 @@ const PlaybackControls: React.FC = () => {
                 <span className="sb-system-label">Vocal Melody</span>
                 <label className="sb-toggle-label">
                   <input type="checkbox" checked={state.showVocalPart}
-                    onChange={e => dispatch({ type: 'SET_SHOW_VOCAL', show: e.target.checked })}
+                    onChange={e => handleShowVocalPart(e.target.checked)}
                   />
                 </label>
                 <label className="sb-toggle-label">
                   <input type="checkbox" checked={state.practiceVoice}
                     onChange={e => dispatch({ type: 'SET_PRACTICE_VOICE', enabled: e.target.checked })}
-                    disabled={isActive || !state.showVocalPart}
+                    disabled={!state.showVocalPart}
                   />
                 </label>
                 <label className="sb-toggle-label">
@@ -434,13 +466,13 @@ const PlaybackControls: React.FC = () => {
               <span className="sb-system-label">Right Hand / Treble</span>
               <label className="sb-toggle-label">
                 <input type="checkbox" checked={state.showRightHand}
-                  onChange={e => dispatch({ type: 'SET_SHOW_RIGHT_HAND', show: e.target.checked })}
+                  onChange={e => handleShowRightHand(e.target.checked)}
                 />
               </label>
               <label className="sb-toggle-label">
                 <input type="checkbox" checked={state.practiceRightHand}
                   onChange={e => dispatch({ type: 'SET_PRACTICE_RIGHT_HAND', enabled: e.target.checked })}
-                  disabled={isActive || !state.showRightHand}
+                  disabled={!state.showRightHand}
                 />
               </label>
               <label className="sb-toggle-label">
@@ -453,13 +485,13 @@ const PlaybackControls: React.FC = () => {
               <span className="sb-system-label">Left Hand / Bass</span>
               <label className="sb-toggle-label">
                 <input type="checkbox" checked={state.showLeftHand}
-                  onChange={e => dispatch({ type: 'SET_SHOW_LEFT_HAND', show: e.target.checked })}
+                  onChange={e => handleShowLeftHand(e.target.checked)}
                 />
               </label>
               <label className="sb-toggle-label">
                 <input type="checkbox" checked={state.practiceLeftHand}
                   onChange={e => dispatch({ type: 'SET_PRACTICE_LEFT_HAND', enabled: e.target.checked })}
-                  disabled={isActive || !state.showLeftHand}
+                  disabled={!state.showLeftHand}
                 />
               </label>
               <label className="sb-toggle-label">
@@ -478,13 +510,13 @@ const PlaybackControls: React.FC = () => {
                 </span>
                 <label className="sb-toggle-label">
                   <input type="checkbox" checked={state.showChords}
-                    onChange={e => dispatch({ type: 'SET_SHOW_CHORDS', show: e.target.checked })}
+                    onChange={e => handleShowChords(e.target.checked)}
                   />
                 </label>
                 <label className="sb-toggle-label">
                   <input type="checkbox" checked={state.practiceChords}
                     onChange={e => dispatch({ type: 'SET_PRACTICE_CHORDS', enabled: e.target.checked })}
-                    disabled={isActive || !state.showChords}
+                    disabled={!state.showChords}
                   />
                 </label>
                 <label className="sb-toggle-label" />

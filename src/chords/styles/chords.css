@@ -579,7 +579,7 @@
   flex: 1;
   border: none;
   background: transparent;
-  font-weight: 500;
+  font-weight: 600;
   font-size: 0.875rem;
   color: var(--text-color);
   padding: 0;
@@ -596,6 +596,34 @@
   border-radius: 0.25rem;
   padding: 0.125rem 0.25rem;
   margin: -0.125rem -0.25rem;
+}
+
+.option-chip-inline-progression {
+  flex: 1;
+  min-width: 0;
+}
+
+.option-chip-inline-progression .shared-chord-progression-text {
+  border: none;
+  background: transparent;
+  min-height: 0;
+  padding: 0;
+  border-radius: 0;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--text-color);
+}
+
+.option-chip-inline-progression .shared-chord-progression-text:focus {
+  box-shadow: none;
+  background-color: rgba(99, 102, 241, 0.05);
+  border-radius: 0.25rem;
+  padding: 0.125rem 0.25rem;
+  margin: -0.125rem -0.25rem;
+}
+
+.option-chip-inline-progression .shared-chord-progression-anchor {
+  width: 100%;
 }
 
 .option-chip-actions {
@@ -652,7 +680,7 @@
 }
 
 .chords-tempo-shell {
-  width: 100%;
+  width: min(100%, 272px);
 }
 
 .chords-tempo-shell.locked {
@@ -660,8 +688,93 @@
   --bpm-border: var(--primary);
 }
 
+.chords-key-shell {
+  width: min(100%, 272px);
+}
+
+.chords-key-shell.locked {
+  --key-bg: rgba(99, 102, 241, 0.05);
+  --key-border: var(--primary);
+}
+
+.chords-key-input {
+  width: min(100%, 272px);
+  min-width: 196px;
+  --key-shell-height: 38px;
+  --key-radius: 0.375rem;
+  --key-bg: var(--bg-card);
+  --key-border: var(--border-color);
+  --key-text: var(--text-color);
+  --key-muted: var(--text-secondary);
+  --key-focus: var(--primary);
+  --key-focus-ring: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  --key-divider: var(--border-color);
+  --key-control-hover-bg: var(--bg-sidebar);
+  --key-dropdown-bg: var(--bg-card);
+  --key-dropdown-border: var(--border-color);
+  --key-dropdown-padding: 0.64rem;
+  --key-grid-gap: 0.44rem;
+  --key-chip-min-height: 2.28rem;
+  --key-chip-font-size: 0.9rem;
+  --key-chip-font-weight: 600;
+}
+
+.chords-key-input .shared-key-value-btn {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.chords-key-input .shared-key-step-btn .material-symbols-outlined {
+  font-size: 1rem;
+}
+
+.chords-key-input .option-chip-dice,
+.chords-key-input .option-chip-lock {
+  width: 26px;
+  min-width: 26px;
+  height: 100%;
+  padding: 0;
+  border-radius: 0;
+}
+
+.chords-key-dropdown {
+  --key-dropdown-bg: var(--bg-card);
+  --key-dropdown-border: var(--border-color);
+  --key-chip-border: var(--border-color);
+  --key-chip-hover-border: var(--primary-light);
+  --key-chip-hover-bg: var(--bg-sidebar);
+  --key-chip-hover-shadow: var(--shadow-sm);
+  --key-chip-hover-transform: none;
+  --key-chip-active-border: var(--primary);
+  --key-chip-active-bg: rgba(99, 102, 241, 0.1);
+  --key-chip-active-text: var(--primary-dark);
+  --key-chip-active-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.2);
+  min-width: min(440px, calc(100vw - 28px));
+  max-width: min(560px, calc(100vw - 28px));
+  border-radius: 0.375rem;
+  border-color: var(--border-color);
+  box-shadow: var(--shadow-lg);
+}
+
+.chords-key-dropdown .shared-key-dropdown-list {
+  padding: 0.7rem;
+}
+
+.chords-key-dropdown .shared-key-grid {
+  gap: 0.5rem;
+}
+
+.chords-key-dropdown .shared-key-grid-item {
+  min-height: 2.3rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
 .chords-bpm-input {
-  width: 100%;
+  width: min(100%, 272px);
+  min-width: 196px;
+  --bpm-stepper-min-width: 5.2rem;
+  --bpm-value-padding: 0 0.28rem 0 0.46rem;
   --bpm-shell-height: 38px;
   --bpm-shell-radius: 0.375rem;
   --bpm-bg: var(--bg-card);
@@ -669,6 +782,7 @@
   --bpm-text: var(--text-color);
   --bpm-muted: var(--text-secondary);
   --bpm-focus: var(--primary);
+  --bpm-focus-ring: 0 0 0 3px rgba(99, 102, 241, 0.1);
   --bpm-divider: var(--border-color);
   --bpm-dropdown-bg: var(--bg-card);
   --bpm-dropdown-border: var(--border-color);
@@ -785,19 +899,62 @@
   border-bottom-color: var(--border-light);
 }
 
+.chords-bpm-dropdown .shared-bpm-presets-label {
+  color: var(--text-secondary);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.chords-bpm-dropdown .shared-bpm-preset-chip {
+  border-color: color-mix(in srgb, var(--border-color) 78%, transparent);
+  background: color-mix(in srgb, var(--bg-card) 94%, var(--bg-sidebar));
+  color: var(--text-color);
+  font-weight: 700;
+}
+
+.chords-bpm-dropdown .shared-bpm-preset-chip:hover {
+  border-color: var(--primary-light);
+  background: var(--bg-sidebar);
+  color: var(--primary-dark);
+}
+
+.chords-bpm-dropdown .shared-bpm-preset-chip.active {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 14%, var(--bg-card));
+  color: var(--primary-dark);
+  box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.2);
+}
+
 .option-chip-dropdown {
-  min-width: 220px;
+  --cp-input-border: var(--border-color);
+  --cp-focus-border: var(--primary);
+  --cp-focus-ring: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  --cp-surface-border: var(--border-color);
+  --cp-surface-shadow: var(--shadow-lg);
+  --cp-chip-border: var(--border-color);
+  --cp-chip-hover-border: var(--primary-light);
+  --cp-chip-hover-bg: var(--bg-sidebar);
+  --cp-chip-hover-shadow: var(--shadow-sm);
+  --cp-chip-hover-transform: none;
+  --cp-chip-active-border: var(--primary);
+  --cp-chip-active-bg: rgba(99, 102, 241, 0.08);
+  --cp-item-padding: 0.5rem 0.68rem;
+  --cp-item-gap: 0.12rem;
+  --cp-title-size: 0.875rem;
+  --cp-title-weight: 600;
+  --cp-meta-size: 0.8rem;
+  --cp-meta-line-height: 1.28;
+  min-width: min(620px, calc(100vw - 32px));
   background-color: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 0.375rem;
   box-shadow: var(--shadow-lg);
-  max-height: 200px;
-  overflow-y: auto;
 }
 
-.option-chip-dropdown-list {
-  display: flex;
-  flex-direction: column;
+@media (max-width: 760px) {
+  .option-chip-dropdown {
+    min-width: calc(100vw - 24px);
+  }
 }
 
 .option-chip-dropdown-item {

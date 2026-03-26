@@ -11,6 +11,7 @@
 import React, { useMemo, useRef, useEffect } from 'react';
 import type { ChordAnalysisResult, ChordEvent, KeyChange } from '../utils/chordAnalyzer';
 import type { Section } from '../utils/sectionDetector';
+import { scrollPlaybackTarget, type PlaybackAutoScrollState } from '../../shared/utils/playbackAutoScroll';
 
 interface ChordChartProps {
   /** Chord analysis result */
@@ -212,6 +213,11 @@ const ChordChart: React.FC<ChordChartProps> = ({
   musicStartTime = 0,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const autoScrollStateRef = useRef<PlaybackAutoScrollState>({
+    lastMarker: null,
+    lastScrollAtMs: 0,
+    lastTargetTop: null,
+  });
   
   const measures = useMemo(() => {
     if (!chordResult) return [];
@@ -232,17 +238,27 @@ const ChordChart: React.FC<ChordChartProps> = ({
 
   // Auto-scroll to current measure during playback
   useEffect(() => {
-    if (isPlaying && containerRef.current) {
-      const currentMeasureEl = containerRef.current.querySelector('.chord-chart-measure.current');
-      if (currentMeasureEl) {
-        currentMeasureEl.scrollIntoView({
-          behavior: 'smooth',
-          block: 'nearest',
-          inline: 'center',
-        });
-      }
-    }
+    if (!isPlaying || !containerRef.current) return;
+    const currentMeasureEl = containerRef.current.querySelector('.chord-chart-measure.current');
+    if (!currentMeasureEl) return;
+    scrollPlaybackTarget({
+      marker: currentMeasureIndex,
+      target: currentMeasureEl,
+      state: autoScrollStateRef.current,
+      scrollContainer: containerRef.current,
+      minIntervalMs: 80,
+      minDeltaPx: 24,
+      preferredTopRatio: 0.35,
+      allowBackward: true,
+    });
   }, [currentMeasureIndex, isPlaying]);
+
+  useEffect(() => {
+    if (isPlaying) return;
+    autoScrollStateRef.current.lastMarker = null;
+    autoScrollStateRef.current.lastScrollAtMs = 0;
+    autoScrollStateRef.current.lastTargetTop = null;
+  }, [isPlaying]);
 
   // Map section IDs to color indices for visual distinction
   const sectionColorMap = useMemo(() => {

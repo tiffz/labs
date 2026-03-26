@@ -1,7 +1,9 @@
-import React, { useEffect, useRef, useCallback } from 'react';
-import { Renderer, Stave, StaveNote, Voice, Formatter, StaveConnector, Beam, Dot, Annotation, Accidental, Fraction, StaveTie, Tuplet } from 'vexflow';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
+import { Renderer, Stave, StaveNote, Voice, Formatter, StaveConnector, Beam, Dot, Annotation, Accidental, Fraction, StaveTie, Tuplet, BarlineType } from 'vexflow';
 import type { PianoScore, PracticeNoteResult, ScoreNote } from '../types';
 import { DURATION_VEXFLOW, midiToPitchStringForKey, durationToBeats } from '../types';
+import { matchesChord } from '../utils/chordMatcher';
+import { scrollPlaybackTarget, type PlaybackAutoScrollState } from '../../shared/utils/playbackAutoScroll';
 
 export interface GhostNote {
   midi: number;
@@ -34,6 +36,16 @@ const RESULT_COLORS = {
 
 const WRONG_PITCH_GHOST_MAX_DISTANCE = 3;
 const SEMITONE_TO_PIXEL_SHIFT = 3.5;
+const LYRIC_FONT_SIZE = 13;
+const CHORD_FONT_SIZE = 14;
+
+const DURATION_COMPLEXITY_WEIGHT: Record<string, number> = {
+  whole: 0.7,
+  half: 0.9,
+  quarter: 1.2,
+  eighth: 1.8,
+  sixteenth: 2.8,
+};
 
 function closestWrongPitchDelta(
   expectedPitches: number[],
@@ -275,6 +287,125 @@ function findOttavaRuns(flags: boolean[], notes: StaveNote[]): StaveNote[][] {
   return runs;
 }
 
+function drawNavigationLabel(
+  svg: SVGElement,
+  x: number,
+  y: number,
+  label: string,
+  options?: {
+    fontSize?: number;
+    fontFamily?: string;
+    fontStyle?: 'normal' | 'italic';
+    fontWeight?: string;
+    fill?: string;
+  },
+) {
+  const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  text.setAttribute('x', String(x));
+  text.setAttribute('y', String(y));
+  text.setAttribute('font-size', String(options?.fontSize ?? 11));
+  text.setAttribute(
+    'font-family',
+    options?.fontFamily ?? 'ui-serif, Georgia, "Times New Roman", serif',
+  );
+  text.setAttribute('font-style', options?.fontStyle ?? 'normal');
+  text.setAttribute('font-weight', options?.fontWeight ?? '600');
+  text.setAttribute('fill', options?.fill ?? '#111827');
+  text.setAttribute('stroke', 'none');
+  text.textContent = label;
+  svg.appendChild(text);
+}
+
+function drawCodaGlyph(
+  svg: SVGElement,
+  x: number,
+  y: number,
+) {
+  // Draw coda with vector primitives to avoid font/glyph dependencies.
+  const centerX = x + 8;
+  const centerY = y - 7;
+  const radius = 6;
+  const stroke = '#111827';
+
+  const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  circle.setAttribute('cx', String(centerX));
+  circle.setAttribute('cy', String(centerY));
+  circle.setAttribute('r', String(radius));
+  circle.setAttribute('fill', 'none');
+  circle.setAttribute('stroke', stroke);
+  circle.setAttribute('stroke-width', '1.35');
+  svg.appendChild(circle);
+
+  const hLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  hLine.setAttribute('x1', String(centerX - 8));
+  hLine.setAttribute('y1', String(centerY));
+  hLine.setAttribute('x2', String(centerX + 8));
+  hLine.setAttribute('y2', String(centerY));
+  hLine.setAttribute('stroke', stroke);
+  hLine.setAttribute('stroke-width', '1.35');
+  hLine.setAttribute('stroke-linecap', 'round');
+  svg.appendChild(hLine);
+
+  const vLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  vLine.setAttribute('x1', String(centerX));
+  vLine.setAttribute('y1', String(centerY - 8));
+  vLine.setAttribute('x2', String(centerX));
+  vLine.setAttribute('y2', String(centerY + 8));
+  vLine.setAttribute('stroke', stroke);
+  vLine.setAttribute('stroke-width', '1.35');
+  vLine.setAttribute('stroke-linecap', 'round');
+  svg.appendChild(vLine);
+}
+
+function drawSegnoGlyph(
+  svg: SVGElement,
+  x: number,
+  y: number,
+) {
+  // Segno approximation using vector curves and dots (no font/glyph requirements).
+  const stroke = '#111827';
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute(
+    'd',
+    [
+      `M ${x + 2} ${y - 3}`,
+      `C ${x + 9} ${y - 15}, ${x + 18} ${y + 3}, ${x + 8} ${y + 8}`,
+      `C ${x + 2} ${y + 11}, ${x + 1} ${y + 4}, ${x + 8} ${y + 1}`,
+      `C ${x + 15} ${y - 2}, ${x + 15} ${y + 12}, ${x + 5} ${y + 14}`,
+    ].join(' '),
+  );
+  path.setAttribute('fill', 'none');
+  path.setAttribute('stroke', stroke);
+  path.setAttribute('stroke-width', '1.35');
+  path.setAttribute('stroke-linecap', 'round');
+  path.setAttribute('stroke-linejoin', 'round');
+  svg.appendChild(path);
+
+  const slash = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  slash.setAttribute('x1', String(x + 1));
+  slash.setAttribute('y1', String(y + 15));
+  slash.setAttribute('x2', String(x + 17));
+  slash.setAttribute('y2', String(y - 9));
+  slash.setAttribute('stroke', stroke);
+  slash.setAttribute('stroke-width', '1.15');
+  slash.setAttribute('stroke-linecap', 'round');
+  svg.appendChild(slash);
+
+  const dotTop = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  dotTop.setAttribute('cx', String(x + 15));
+  dotTop.setAttribute('cy', String(y - 1));
+  dotTop.setAttribute('r', '1.3');
+  dotTop.setAttribute('fill', stroke);
+  svg.appendChild(dotTop);
+
+  const dotBottom = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  dotBottom.setAttribute('cx', String(x + 4));
+  dotBottom.setAttribute('cy', String(y + 8));
+  dotBottom.setAttribute('r', '1.3');
+  dotBottom.setAttribute('fill', stroke);
+  svg.appendChild(dotBottom);
+}
+
 const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
   score, currentMeasureIndex, currentNoteIndices, activeMidiNotes,
   practiceResultsByNoteId, greyedOutHands, hiddenHands, ghostNotes,
@@ -283,8 +414,36 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const stateKeyRef = useRef('');
-  const measureYMapRef = useRef<Map<number, number>>(new Map());
-  const lastScrolledLineRef = useRef(-1);
+  const [containerWidth, setContainerWidth] = useState(0);
+  const autoScrollStateRef = useRef<PlaybackAutoScrollState>({
+    lastMarker: null,
+    lastScrollAtMs: 0,
+    lastTargetTop: null,
+  });
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const updateWidth = () => {
+      const next = Math.round(el.clientWidth || 0);
+      setContainerWidth((prev) => (prev === next ? prev : next));
+    };
+
+    updateWidth();
+    window.addEventListener('resize', updateWidth);
+
+    let resizeObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(() => updateWidth());
+      resizeObserver.observe(el);
+    }
+
+    return () => {
+      window.removeEventListener('resize', updateWidth);
+      resizeObserver?.disconnect();
+    };
+  }, []);
 
   const handleMeasureClick = useCallback((e: MouseEvent) => {
     if (!onMeasureClick || !containerRef.current) return;
@@ -339,13 +498,10 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
       sel: selectedMeasureRange ? `${selectedMeasureRange.start}-${selectedMeasureRange.end}` : '',
       sv: showVocalPart,
       sc: showChords,
+      cw: containerWidth,
     });
     if (stateKey === stateKeyRef.current) return;
     stateKeyRef.current = stateKey;
-
-    const mainContent = containerRef.current.closest('.main-content') as HTMLElement | null;
-    const savedScrollTop = mainContent?.scrollTop ?? 0;
-    if (mainContent) mainContent.style.overflowY = 'hidden';
 
     containerRef.current.innerHTML = '';
 
@@ -353,10 +509,7 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
       const rhPart = score.parts.find(p => p.hand === 'right');
       const lhPart = score.parts.find(p => p.hand === 'left');
       const vocalPart = showVocalPart ? score.parts.find(p => p.hand === 'voice') : undefined;
-      if (!rhPart && !lhPart) {
-        if (mainContent) { mainContent.style.overflowY = ''; mainContent.scrollTop = savedScrollTop; }
-        return;
-      }
+      if (!rhPart && !lhPart) return;
 
       const showTreble = !(hiddenHands?.has('right'));
       const showBass = !(hiddenHands?.has('left'));
@@ -368,21 +521,90 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
         rhPart?.measures.length ?? 0,
         lhPart?.measures.length ?? 0,
       );
-      if (maxMeasures === 0) {
-        if (mainContent) { mainContent.style.overflowY = ''; mainContent.scrollTop = savedScrollTop; }
-        return;
-      }
+      if (maxMeasures === 0) return;
 
-      const rawContainerWidth = containerRef.current.clientWidth || 900;
+      const rawContainerWidth = containerWidth || containerRef.current.clientWidth || 900;
       const effectiveWidth = rawContainerWidth / zoomLevel;
+      const keySigCount = getKeySignatureInfo(score.key);
+      const vexKey = getVexflowKey(score.key);
+      const keyAccMap = getKeyAccidentalMap(score.key);
+      const HEADER_EXTRA = 50 + keySigCount * 12 + 35;
+      const availableWidth = effectiveWidth - 40;
 
-      const maxNotesInMeasure = Math.max(
-        ...score.parts.flatMap(p => p.measures.map(m => m.notes.length)),
-        1
-      );
-      const minMeasureWidth = Math.max(200, maxNotesInMeasure * 28 + 80);
-      const maxMeasuresPerLine = Math.max(4, Math.ceil(8 / zoomLevel));
-      const measuresPerLine = Math.min(maxMeasuresPerLine, Math.max(1, Math.floor((effectiveWidth - 40) / minMeasureWidth)));
+      const measureMinContentWidths = Array.from({ length: maxMeasures }, (_, mi) => {
+        const rhMeasure = rhPart?.measures[mi];
+        const lhMeasure = lhPart?.measures[mi];
+        const vMeasure = vocalPart?.measures[mi];
+        const rhCount = rhMeasure?.notes.length ?? 0;
+        const lhCount = lhMeasure?.notes.length ?? 0;
+        const vCount = vMeasure?.notes.length ?? 0;
+        const noteCount = Math.max(rhCount, lhCount, vCount, 1);
+
+        const complexityForMeasure = (measure: typeof rhMeasure): number => {
+          if (!measure) return 0;
+          return measure.notes.reduce((sum, note) => {
+            if (note.rest) return sum + 0.35;
+            const durWeight = DURATION_COMPLEXITY_WEIGHT[note.duration] ?? 1.3;
+            const chordFactor = Math.max(1, Math.sqrt(Math.max(note.pitches.length, 1)));
+            const dottedFactor = note.dotted ? 1.1 : 1;
+            const tupletFactor = note.tuplet ? 1.25 : 1;
+            return sum + durWeight * chordFactor * dottedFactor * tupletFactor;
+          }, 0);
+        };
+
+        const complexity = Math.max(
+          complexityForMeasure(rhMeasure),
+          complexityForMeasure(lhMeasure),
+          complexityForMeasure(vMeasure),
+          0,
+        );
+        const hasTuplets =
+          !!rhMeasure?.notes.some((n) => !!n.tuplet) ||
+          !!lhMeasure?.notes.some((n) => !!n.tuplet) ||
+          !!vMeasure?.notes.some((n) => !!n.tuplet);
+        const hasLyricsInMeasure = !!vMeasure?.notes.some((n) => !!n.lyric);
+        const hasChordSymbols =
+          !!rhMeasure?.notes.some((n) => !!n.chordSymbol) ||
+          !!lhMeasure?.notes.some((n) => !!n.chordSymbol) ||
+          !!vMeasure?.notes.some((n) => !!n.chordSymbol);
+
+        return Math.max(
+          146,
+          Math.min(
+            390,
+            132 +
+              noteCount * 22 +
+              complexity * 9 +
+              (hasTuplets ? 34 : 0) +
+              (hasLyricsInMeasure ? 20 : 0) +
+              (hasChordSymbols ? 10 : 0),
+          ),
+        );
+      });
+
+      const maxMeasuresPerLine = Math.max(2, Math.ceil(5.8 / zoomLevel));
+      const candidateStart = Math.min(maxMeasuresPerLine, maxMeasures);
+      let measuresPerLine = 1;
+      for (let candidate = candidateStart; candidate >= 1; candidate--) {
+        let fitsAllLines = true;
+        const lineCount = Math.ceil(maxMeasures / candidate);
+        for (let lineIdx = 0; lineIdx < lineCount; lineIdx++) {
+          const startMeasure = lineIdx * candidate;
+          const endMeasure = Math.min(startMeasure + candidate, maxMeasures);
+          const minContentNeeded = measureMinContentWidths
+            .slice(startMeasure, endMeasure)
+            .reduce((sum, width) => sum + width, 0);
+          const requiredWidth = HEADER_EXTRA + minContentNeeded;
+          if (requiredWidth > availableWidth) {
+            fitsAllLines = false;
+            break;
+          }
+        }
+        if (fitsAllLines) {
+          measuresPerLine = candidate;
+          break;
+        }
+      }
       const numLines = Math.ceil(maxMeasures / measuresPerLine);
 
       const staffSpacing = 80;
@@ -392,10 +614,6 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
         + (vocalPart && (showTreble || showBass) ? rawVocalSpacing : 0)
         + (showTreble && showBass ? staffSpacing : 0);
       const totalHeight = numLines * lineHeight + 60;
-      const keySigCount = getKeySignatureInfo(score.key);
-      const vexKey = getVexflowKey(score.key);
-      const keyAccMap = getKeyAccidentalMap(score.key);
-
       const rhGreyed = greyedOutHands?.has('right') ?? false;
       const lhGreyed = greyedOutHands?.has('left') ?? false;
       const voiceGreyed = greyedOutHands?.has('voice') ?? false;
@@ -403,7 +621,18 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
       const showMeasureNumbers = maxMeasures > 5;
 
       const noteIdToStaveNote = new Map<string, StaveNote>();
-      const measureYMap = new Map<number, number>();
+      const repeatStartMeasures = new Set<number>();
+      const repeatEndMeasures = new Map<number, number | undefined>();
+      for (const repeat of score.navigation?.repeats ?? []) {
+        if (repeat.direction === 'forward') repeatStartMeasures.add(repeat.measureIndex);
+        if (repeat.direction === 'backward') repeatEndMeasures.set(repeat.measureIndex, repeat.times);
+      }
+      const endingByMeasure = new Map<number, number>();
+      for (const volta of score.navigation?.voltas ?? []) {
+        for (let mi = volta.startMeasure; mi <= volta.endMeasure; mi++) {
+          if (!endingByMeasure.has(mi)) endingByMeasure.set(mi, volta.endingNumber);
+        }
+      }
 
       // Tie tracking with line index for cross-line tie support
       interface TiePair { first: StaveNote; firstIdx: number; last: StaveNote; lastIdx: number; firstLine: number; lastLine: number; partType?: 'treble' | 'bass' | 'vocal' }
@@ -439,29 +668,29 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
         const bassY = showBass ? yOffset : 0;
 
         const topStaveY = vocalPart ? vocalY : (showTreble ? trebleY : bassY);
-        for (let mi = startMeasure; mi < endMeasure; mi++) {
-          measureYMap.set(mi, topStaveY);
-        }
 
-        const HEADER_EXTRA = 50 + keySigCount * 12 + 35;
         const BASE_WEIGHT = 2;
 
         const measureWeights: number[] = [];
+        const lineMinContentWidths: number[] = [];
         for (let mi = startMeasure; mi < endMeasure; mi++) {
           const rhCount = rhPart?.measures[mi]?.notes.length ?? 0;
           const lhCount = lhPart?.measures[mi]?.notes.length ?? 0;
           const vCount = vocalPart?.measures[mi]?.notes.length ?? 0;
           const noteCount = Math.max(rhCount, lhCount, vCount, 1);
           measureWeights.push(BASE_WEIGHT + Math.max(noteCount, 3));
+          lineMinContentWidths.push(measureMinContentWidths[mi] ?? 100);
         }
 
         const totalWeight = measureWeights.reduce((a, b) => a + b, 0);
-        const availableWidth = effectiveWidth - 40;
-        const contentPool = availableWidth - HEADER_EXTRA;
+        const contentPool = Math.max(0, availableWidth - HEADER_EXTRA);
+        const minContentTotal = lineMinContentWidths.reduce((a, b) => a + b, 0);
+        const extraPool = Math.max(0, contentPool - minContentTotal);
 
         const rawWidths = measureWeights.map((w, i) => {
-          const share = (w / totalWeight) * contentPool;
-          return i === 0 ? share + HEADER_EXTRA : share;
+          const extraShare = totalWeight > 0 ? (w / totalWeight) * extraPool : 0;
+          const contentWidth = lineMinContentWidths[i] + extraShare;
+          return i === 0 ? contentWidth + HEADER_EXTRA : contentWidth;
         });
         const flooredWidths = rawWidths.map(w => Math.floor(w));
         flooredWidths[measuresInLine - 1] += availableWidth - flooredWidths.reduce((a, b) => a + b, 0);
@@ -474,6 +703,11 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
         for (let mi = startMeasure; mi < endMeasure; mi++) {
           const localIdx = mi - startMeasure;
           const w = flooredWidths[localIdx];
+          const measureForFlags = rhPart?.measures[mi] ?? lhPart?.measures[mi] ?? vocalPart?.measures[mi];
+          const hasRepeatStart = !!measureForFlags?.repeatStart || repeatStartMeasures.has(mi);
+          const repeatEndTimes = measureForFlags?.repeatTimes ?? repeatEndMeasures.get(mi);
+          const hasRepeatEnd = !!measureForFlags?.repeatEnd || repeatEndMeasures.has(mi);
+          const endingNumber = measureForFlags?.endingNumber ?? endingByMeasure.get(mi);
 
           if (vocalPart) {
             const vocal = new Stave(currentX, vocalY, w);
@@ -483,6 +717,8 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
               vocal.addTimeSignature(`${score.timeSignature.numerator}/${score.timeSignature.denominator}`);
             }
             if (voiceGreyed) vocal.setStyle({ strokeStyle: GREYED_STAFF, fillStyle: GREYED_STAFF });
+            if (hasRepeatStart) vocal.setBegBarType(BarlineType.REPEAT_BEGIN);
+            if (hasRepeatEnd) vocal.setEndBarType(BarlineType.REPEAT_END);
             vocalStaves.push(vocal);
           }
 
@@ -494,6 +730,8 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
               treble.addTimeSignature(`${score.timeSignature.numerator}/${score.timeSignature.denominator}`);
             }
             if (rhGreyed) treble.setStyle({ strokeStyle: GREYED_STAFF, fillStyle: GREYED_STAFF });
+            if (hasRepeatStart) treble.setBegBarType(BarlineType.REPEAT_BEGIN);
+            if (hasRepeatEnd) treble.setEndBarType(BarlineType.REPEAT_END);
             trebleStaves.push(treble);
           }
 
@@ -505,10 +743,33 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
               bass.addTimeSignature(`${score.timeSignature.numerator}/${score.timeSignature.denominator}`);
             }
             if (lhGreyed) bass.setStyle({ strokeStyle: GREYED_STAFF, fillStyle: GREYED_STAFF });
+            if (hasRepeatStart) bass.setBegBarType(BarlineType.REPEAT_BEGIN);
+            if (hasRepeatEnd) bass.setEndBarType(BarlineType.REPEAT_END);
             bassStaves.push(bass);
           }
 
           currentX += w;
+
+          if (hasRepeatEnd && repeatEndTimes && repeatEndTimes > 1) {
+            const svgEl = containerRef.current!.querySelector('svg');
+            const topRefStave = vocalStaves[localIdx] ?? trebleStaves[localIdx] ?? bassStaves[localIdx];
+            if (svgEl && topRefStave) {
+              drawNavigationLabel(
+                svgEl,
+                topRefStave.getX() + topRefStave.getWidth() - 18,
+                topStaveY - 20,
+                `${repeatEndTimes}x`,
+              );
+            }
+          }
+          if (endingNumber !== undefined) {
+            const svgEl = containerRef.current!.querySelector('svg');
+            const topRefStave = vocalStaves[localIdx] ?? trebleStaves[localIdx] ?? bassStaves[localIdx];
+            const isEndingStart = mi === 0 || endingByMeasure.get(mi - 1) !== endingNumber;
+            if (svgEl && topRefStave && isEndingStart) {
+              drawNavigationLabel(svgEl, topRefStave.getX() + 8, topStaveY - 20, `${endingNumber}.`);
+            }
+          }
         }
 
         {
@@ -545,6 +806,111 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
             text.setAttribute('stroke', 'none');
             text.textContent = String(startMeasure + 1);
             svgEl.appendChild(text);
+          }
+        }
+
+        // Navigation markers (Segno / Coda / To Coda / D.S.) and volta brackets.
+        {
+          const svgEl = containerRef.current!.querySelector('svg');
+          if (svgEl) {
+            const nav = score.navigation;
+            const labels: Array<{
+              measure: number | undefined;
+              kind: 'segno' | 'coda' | 'tocoda' | 'dalsegno';
+            }> = [
+              { measure: nav?.segnoMeasure, kind: 'segno' },
+              { measure: nav?.codaMeasure, kind: 'coda' },
+              { measure: nav?.tocodaMeasure, kind: 'tocoda' },
+              { measure: nav?.dalsegnoMeasure, kind: 'dalsegno' },
+            ];
+            const labelsByMeasure = new Map<number, Array<'segno' | 'coda' | 'tocoda' | 'dalsegno'>>();
+            for (const label of labels) {
+              if (label.measure === undefined) continue;
+              if (label.measure < startMeasure || label.measure >= endMeasure) continue;
+              const bucket = labelsByMeasure.get(label.measure) ?? [];
+              // De-duplicate same-kind labels in one measure to avoid stacked artifacts.
+              if (!bucket.includes(label.kind)) bucket.push(label.kind);
+              labelsByMeasure.set(label.measure, bucket);
+            }
+            for (const [measure, kinds] of labelsByMeasure) {
+              const localIdx = measure - startMeasure;
+              const markerStave = vocalStaves[localIdx] ?? trebleStaves[localIdx] ?? bassStaves[localIdx];
+              if (!markerStave) continue;
+
+              for (let i = 0; i < kinds.length; i++) {
+                const kind = kinds[i];
+                const x = markerStave.getX() + 6;
+                // Stack multiple markers vertically instead of drawing on top of each other.
+                const y = topStaveY - 34 + i * 13;
+                if (kind === 'segno') {
+                  drawSegnoGlyph(svgEl, x, y);
+                } else if (kind === 'coda') {
+                  drawNavigationLabel(svgEl, x, y, 'Coda', {
+                    fontStyle: 'italic',
+                    fontWeight: '600',
+                  });
+                  drawCodaGlyph(svgEl, x + 32, y);
+                } else if (kind === 'tocoda') {
+                  drawNavigationLabel(svgEl, x, y, 'To Coda', {
+                    fontStyle: 'italic',
+                    fontWeight: '600',
+                  });
+                  drawCodaGlyph(svgEl, x + 50, y);
+                } else {
+                  drawNavigationLabel(svgEl, x, y, 'D.S. al Coda', {
+                    fontStyle: 'italic',
+                    fontWeight: '600',
+                  });
+                }
+              }
+            }
+
+            for (const volta of score.navigation?.voltas ?? []) {
+              if (volta.endMeasure < startMeasure || volta.startMeasure >= endMeasure) continue;
+              const visStart = Math.max(volta.startMeasure, startMeasure);
+              const visEnd = Math.min(volta.endMeasure, endMeasure - 1);
+              const startIdx = visStart - startMeasure;
+              const endIdx = visEnd - startMeasure;
+              const startStave = vocalStaves[startIdx] ?? trebleStaves[startIdx] ?? bassStaves[startIdx];
+              const endStave = vocalStaves[endIdx] ?? trebleStaves[endIdx] ?? bassStaves[endIdx];
+              if (!startStave || !endStave) continue;
+
+              const y = topStaveY - 26;
+              const x1 = startStave.getX() + 2;
+              const x2 = endStave.getX() + endStave.getWidth() - 2;
+
+              const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+              line.setAttribute('x1', String(x1));
+              line.setAttribute('y1', String(y));
+              line.setAttribute('x2', String(x2));
+              line.setAttribute('y2', String(y));
+              line.setAttribute('stroke', '#334155');
+              line.setAttribute('stroke-width', '1.2');
+              svgEl.appendChild(line);
+
+              const hookStart = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+              hookStart.setAttribute('x1', String(x1));
+              hookStart.setAttribute('y1', String(y));
+              hookStart.setAttribute('x2', String(x1));
+              hookStart.setAttribute('y2', String(y + 10));
+              hookStart.setAttribute('stroke', '#334155');
+              hookStart.setAttribute('stroke-width', '1.2');
+              svgEl.appendChild(hookStart);
+
+              if (visEnd === volta.endMeasure) {
+                const hookEnd = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                hookEnd.setAttribute('x1', String(x2));
+                hookEnd.setAttribute('y1', String(y));
+                hookEnd.setAttribute('x2', String(x2));
+                hookEnd.setAttribute('y2', String(y + 10));
+                hookEnd.setAttribute('stroke', '#334155');
+                hookEnd.setAttribute('stroke-width', '1.2');
+                svgEl.appendChild(hookEnd);
+              }
+              if (visStart === volta.startMeasure) {
+                drawNavigationLabel(svgEl, x1 + 3, y - 3, `${volta.endingNumber}.`);
+              }
+            }
           }
         }
 
@@ -873,9 +1239,9 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
           if (!refStave) continue;
           const noteStartX = refStave.getNoteStartX();
           const staveEndX = refStave.getX() + refStave.getWidth();
-          const formatWidth = Math.max(50, staveEndX - noteStartX - 20);
+          const formatWidth = Math.max(60, staveEndX - noteStartX - 10);
 
-          const formatter = new Formatter({ softmaxFactor: 5 });
+          const formatter = new Formatter();
           const voicesToFormat: Voice[] = [];
 
           let trebleVoice: Voice | undefined;
@@ -1005,7 +1371,7 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
                   const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
                   text.setAttribute('x', String(noteX));
                   text.setAttribute('y', String(lyricBaseY));
-                  text.setAttribute('font-size', '11');
+                  text.setAttribute('font-size', String(LYRIC_FONT_SIZE));
                   text.setAttribute('font-family', 'Roboto, sans-serif');
                   text.setAttribute('fill', voiceGreyed ? (lyr.isCurrent ? GREYED_CURRENT : GREYED_NOTE) : lyr.isCurrent ? '#7c3aed' : '#1e293b');
                   text.setAttribute('stroke', 'none');
@@ -1096,16 +1462,20 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
 
                     const nextChordBeat = ci + 1 < measureChords.length ? measureChords[ci + 1].beatPos : Infinity;
                     const isChordCurrent = currentBeatInMeasure >= chord.beatPos && currentBeatInMeasure < nextChordBeat;
+                    const chordMatchActive =
+                      !!activeMidiNotes &&
+                      activeMidiNotes.size > 0 &&
+                      matchesChord(Array.from(activeMidiNotes), chord.symbol);
 
                     try {
                       const x = closest.sn.getAbsoluteX();
                       const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
                       text.setAttribute('x', String(x));
                       text.setAttribute('y', String(chordY));
-                      text.setAttribute('font-size', '12');
+                      text.setAttribute('font-size', String(CHORD_FONT_SIZE));
                       text.setAttribute('font-family', 'Roboto, sans-serif');
-                      text.setAttribute('font-weight', isChordCurrent ? '700' : '600');
-                      text.setAttribute('fill', isChordCurrent ? '#7c3aed' : '#1e293b');
+                      text.setAttribute('font-weight', (chordMatchActive || isChordCurrent) ? '700' : '600');
+                      text.setAttribute('fill', chordMatchActive ? '#10b981' : (isChordCurrent ? '#7c3aed' : '#1e293b'));
                       text.setAttribute('stroke', 'none');
                       text.setAttribute('text-anchor', 'middle');
                       text.textContent = chord.symbol;
@@ -1284,49 +1654,50 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
         }
       }
 
-      measureYMapRef.current = measureYMap;
-      if (mainContent) { mainContent.style.overflowY = ''; mainContent.scrollTop = savedScrollTop; }
     } catch (error) {
       console.error('Error rendering score:', error);
       if (containerRef.current) {
         containerRef.current.innerHTML = `<p style="color: red; padding: 1rem;">Error rendering score. Please try again.</p>`;
       }
-      if (mainContent) { mainContent.style.overflowY = ''; mainContent.scrollTop = savedScrollTop; }
     }
-  }, [score, currentMeasureIndex, currentNoteIndices, activeMidiNotes, practiceResultsByNoteId, greyedOutHands, hiddenHands, ghostNotes, zoomLevel, selectedMeasureRange, showVocalPart, showChords]);
+  }, [score, currentMeasureIndex, currentNoteIndices, activeMidiNotes, practiceResultsByNoteId, greyedOutHands, hiddenHands, ghostNotes, zoomLevel, selectedMeasureRange, showVocalPart, showChords, containerWidth]);
 
   // Auto-scroll during playback to keep current measure visible
   useEffect(() => {
     if (currentMeasureIndex < 0) {
-      lastScrolledLineRef.current = -1;
+      autoScrollStateRef.current.lastMarker = null;
+      autoScrollStateRef.current.lastScrollAtMs = 0;
+      autoScrollStateRef.current.lastTargetTop = null;
       return;
     }
-    const measureY = measureYMapRef.current.get(currentMeasureIndex);
-    if (measureY === undefined) return;
+    if (!containerRef.current) return;
 
-    const maxNotesInMeasure = Math.max(...score.parts.flatMap(p => p.measures.map(m => m.notes.length)), 1);
-    const rawWidth = containerRef.current?.clientWidth || 900;
-    const effectiveWidth = rawWidth / zoomLevel;
-    const minMeasureWidth = Math.max(200, maxNotesInMeasure * 28 + 80);
-    const maxMPL = Math.max(4, Math.ceil(8 / zoomLevel));
-    const measuresPerLine = Math.min(maxMPL, Math.max(1, Math.floor((effectiveWidth - 40) / minMeasureWidth)));
-    const currentLine = Math.floor(currentMeasureIndex / measuresPerLine);
+    const rafId = window.requestAnimationFrame(() => {
+      if (!containerRef.current) return;
+      const target = containerRef.current.querySelector(
+        `[data-measure-idx="${currentMeasureIndex}"]`,
+      ) as Element | null;
+      if (!target) return;
+      const mainContent = containerRef.current.closest('.main-content') as HTMLElement | null;
+      const beforeTop = mainContent?.scrollTop ?? 0;
+      scrollPlaybackTarget({
+        marker: currentMeasureIndex,
+        target,
+        state: autoScrollStateRef.current,
+        scrollContainer: mainContent,
+        minIntervalMs: 48,
+        minDeltaPx: 8,
+        preferredTopRatio: 0.12,
+        allowBackward: true,
+      });
+      // Fallback for cases where SVG rect geometry or container math fails.
+      if (mainContent && Math.abs(mainContent.scrollTop - beforeTop) < 2) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+      }
+    });
 
-    if (currentLine === lastScrolledLineRef.current) return;
-    lastScrolledLineRef.current = currentLine;
-
-    const mainContent = containerRef.current?.closest('.main-content') as HTMLElement | null;
-    if (!mainContent) return;
-
-    const scaledY = measureY * zoomLevel;
-    const viewportH = mainContent.clientHeight;
-    const targetScroll = scaledY - viewportH / 3;
-
-    if (targetScroll < 0) return;
-    if (Math.abs(mainContent.scrollTop - targetScroll) < 50) return;
-
-    mainContent.scrollTo({ top: targetScroll, behavior: 'smooth' });
-  }, [currentMeasureIndex, score, zoomLevel]);
+    return () => window.cancelAnimationFrame(rafId);
+  }, [currentMeasureIndex, currentNoteIndices, score, zoomLevel]);
 
   return <div className="score-display" ref={containerRef} />;
 };

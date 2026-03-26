@@ -43,4 +43,17 @@ describe('chord progression text parsing', () => {
     expect(parsed.romanNumerals).toEqual(['ii', 'V', 'I', 'IV']);
     expect(parsed.chordSymbols).toEqual(['Dm', 'G', 'C', 'F']);
   });
+
+  it('supports key-aware toggle for chord parsing', () => {
+    const parsed = parseProgressionText('C-G-Am-F', 'E', { keyAware: false, inferKey: false });
+    expect(parsed.isValid).toBe(true);
+    expect(parsed.inferredKey).toBe('E');
+    expect(parsed.romanNumerals).toEqual([]);
+  });
+
+  it('returns resolved display metadata', () => {
+    const parsed = parseProgressionText('I-V-vi-IV', 'C');
+    expect(parsed.resolvedKey).toBe('C');
+    expect(parsed.resolvedDisplay).toBe('C–G–Am–F');
+  });
 });

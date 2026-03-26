@@ -28,6 +28,10 @@ function makeState(): ChordProgressionState {
 }
 
 describe('ManualControls progression input', () => {
+  const openProgressionEditor = () => {
+    return screen.getByPlaceholderText('I–V–vi–IV or C–G–Am–F');
+  };
+
   it('applies custom chord-symbol progression on Enter', () => {
     const onStateChange = vi.fn();
     const lockedOptions: LockedOptions = {};
@@ -42,7 +46,7 @@ describe('ManualControls progression input', () => {
     );
     onStateChange.mockClear();
 
-    const input = screen.getByPlaceholderText('I–V–vi–IV or C–G–Am–F');
+    const input = openProgressionEditor();
     fireEvent.change(input, { target: { value: 'Dm-G-C-F' } });
     fireEvent.keyDown(input, { key: 'Enter' });
 
@@ -70,7 +74,7 @@ describe('ManualControls progression input', () => {
     );
     onStateChange.mockClear();
 
-    const input = screen.getByPlaceholderText('I–V–vi–IV or C–G–Am–F');
+    const input = openProgressionEditor();
     fireEvent.change(input, { target: { value: 'I' } });
     fireEvent.keyDown(input, { key: 'Enter' });
 

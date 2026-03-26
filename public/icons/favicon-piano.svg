@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Piano">
+  <rect x="2" y="2" width="60" height="60" rx="12" fill="#9fd7ec" />
+  <rect x="6" y="8" width="52" height="6" rx="1.5" fill="#4b5563" />
+  <rect x="8" y="14" width="12" height="44" rx="2.8" fill="#ffffff" />
+  <rect x="22" y="14" width="12" height="44" rx="2.8" fill="#ffffff" />
+  <rect x="36" y="14" width="12" height="44" rx="2.8" fill="#ffffff" />
+  <rect x="50" y="14" width="8" height="44" rx="2.2" fill="#ffffff" />
+  <rect x="16.8" y="26" width="6.4" height="14" rx="1.4" fill="#111827" />
+  <rect x="30.8" y="26" width="6.4" height="14" rx="1.4" fill="#111827" />
+  <rect x="44.8" y="26" width="6.4" height="14" rx="1.4" fill="#111827" />
+</svg>

@@ -464,6 +464,42 @@ describe('piano store reducer', () => {
       const next = reducer(state, { type: 'ADVANCE_FREE_TEMPO' });
       expect(next.freeTempoNoteIndex).toBe(-1);
     });
+
+    it('advances to a playable note from any practiced part', () => {
+      const scoreAcrossParts: PianoScore = {
+        ...minimalScore,
+        parts: [
+          {
+            id: 'rh', name: 'Right Hand', clef: 'treble' as const, hand: 'right' as const,
+            measures: [{
+              notes: [
+                { id: 'a', pitches: [60], duration: 'quarter' as const },
+                { id: 'b', pitches: [], duration: 'quarter' as const, rest: true },
+              ],
+            }],
+          },
+          {
+            id: 'lh', name: 'Left Hand', clef: 'bass' as const, hand: 'left' as const,
+            measures: [{
+              notes: [
+                { id: 'la', pitches: [48], duration: 'quarter' as const },
+                { id: 'lb', pitches: [50], duration: 'quarter' as const },
+              ],
+            }],
+          },
+        ],
+      };
+      const state = stateWith({
+        score: scoreAcrossParts,
+        freeTempoMeasureIndex: 0, freeTempoNoteIndex: 0,
+        practiceRightHand: true, practiceLeftHand: true,
+      });
+      const next = reducer(state, { type: 'ADVANCE_FREE_TEMPO' });
+      expect(next.freeTempoNoteIndex).toBe(1);
+      expect(next.freeTempoMeasureIndex).toBe(0);
+      expect(next.currentNoteIndices.get('rh')).toBe(1);
+      expect(next.currentNoteIndices.get('lh')).toBe(1);
+    });
   });
 
   describe('SET_DURATION_MODE', () => {

@@ -1,0 +1,217 @@
+.shared-key-dropdown-anchor {
+  width: 100%;
+}
+
+.shared-key-shell {
+  --key-focus-ring: 0 0 0 2px rgba(124, 58, 237, 0.14);
+  --key-control-hover-bg: #f5f3ff;
+  --key-dropdown-padding: 0.84rem;
+  --key-grid-gap: 0.46rem;
+  --key-chip-min-height: 2.24rem;
+  --key-chip-font-size: 0.88rem;
+  --key-chip-font-weight: 600;
+  --key-chip-hover-shadow: none;
+  --key-chip-hover-transform: none;
+  --key-chip-active-shadow: none;
+  display: flex;
+  align-items: center;
+  gap: 0.12rem;
+  min-height: var(--key-shell-height, 2.5rem);
+  border: 1px solid var(--key-border, color-mix(in srgb, #818cf8 32%, #c7d2fe));
+  background: var(--key-bg, #ffffff);
+  border-radius: var(--key-radius, 0.75rem);
+  overflow: hidden;
+  width: 100%;
+}
+
+.shared-key-shell:focus-within {
+  border-color: var(--key-focus, color-mix(in srgb, #7c3aed 56%, #c4b5fd));
+  box-shadow: var(--key-focus-ring);
+}
+
+.shared-key-value-btn {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: var(--key-text, #0f172a);
+  padding: 0.4rem 0.62rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+}
+
+.shared-key-value-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.shared-key-value-btn:focus-visible,
+.shared-key-inline-action:focus-visible,
+.shared-key-step-btn:focus-visible,
+.shared-key-grid-item:focus-visible {
+  outline: none;
+}
+
+.shared-key-value {
+  text-align: left;
+}
+
+.shared-key-value-btn .material-symbols-outlined {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  font-size: 1.04rem;
+  color: var(--key-muted, #64748b);
+}
+
+.shared-key-inline-action {
+  border: 0;
+  border-left: 1px solid
+    var(--key-divider, color-mix(in srgb, #94a3b8 22%, #e2e8f0));
+  background: color-mix(in srgb, #f8fafc 70%, transparent);
+  color: var(--key-muted, #64748b);
+  min-height: 100%;
+  min-width: 2.24rem;
+  padding: 0 0.72rem;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.shared-key-inline-action:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.shared-key-steps {
+  display: flex;
+  align-items: center;
+  border-left: 1px solid
+    var(--key-divider, color-mix(in srgb, #94a3b8 22%, #e2e8f0));
+  gap: 0.08rem;
+  padding: 0 0.08rem;
+}
+
+.shared-key-step-btn {
+  width: 1.7rem;
+  height: calc(var(--key-shell-height, 2.5rem) - 0.62rem);
+  border: 0;
+  background: color-mix(in srgb, #f8fafc 70%, transparent);
+  color: var(--key-muted, #64748b);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.45rem;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.shared-key-step-btn .material-symbols-outlined {
+  font-size: 1rem;
+}
+
+.shared-key-step-btn + .shared-key-step-btn {
+  border-left: 0;
+}
+
+.shared-key-step-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.shared-key-inline-action:hover:not(:disabled),
+.shared-key-step-btn:hover:not(:disabled) {
+  background: var(--key-control-hover-bg);
+  color: var(--key-text, #0f172a);
+}
+
+.shared-key-dropdown {
+  --key-dropdown-padding: 0.84rem;
+  --key-grid-gap: 0.46rem;
+  --key-chip-min-height: 2.24rem;
+  --key-chip-font-size: 0.88rem;
+  --key-chip-font-weight: 600;
+  --key-chip-hover-shadow: none;
+  --key-chip-hover-transform: none;
+  --key-chip-active-shadow: none;
+  --key-text: #0f172a;
+  --key-chip-bg: #ffffff;
+  --key-chip-border: color-mix(in srgb, #818cf8 28%, #c7d2fe);
+  --key-chip-hover-border: color-mix(in srgb, #7c3aed 42%, #c4b5fd);
+  --key-chip-hover-bg: color-mix(in srgb, #ede9fe 36%, #ffffff);
+  --key-chip-active-border: color-mix(in srgb, #6d28d9 56%, #a5b4fc);
+  --key-chip-active-bg: color-mix(in srgb, #ddd6fe 42%, #ffffff);
+  --key-chip-active-text: #5b21b6;
+  margin-top: var(--key-dropdown-offset, 0.38rem);
+  border: 1px solid
+    var(--key-dropdown-border, color-mix(in srgb, #8b5cf6 32%, #ddd6fe));
+  border-radius: 0.82rem;
+  background: var(--key-dropdown-bg, #ffffff);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
+  min-width: min(400px, calc(100vw - 24px));
+  max-width: min(560px, calc(100vw - 24px));
+}
+
+.shared-key-dropdown-list {
+  padding: var(--key-dropdown-padding, 0.84rem);
+}
+
+.shared-key-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--key-grid-gap, 0.46rem);
+}
+
+.shared-key-grid-item {
+  min-height: var(--key-chip-min-height, 2.24rem);
+  border: 1px solid
+    var(--key-chip-border, color-mix(in srgb, #94a3b8 24%, #e2e8f0));
+  border-radius: 0.55rem;
+  background: var(--key-chip-bg, #ffffff);
+  color: var(--key-text, #0f172a);
+  padding: 0.34rem 0.5rem;
+  font: inherit;
+  font-size: var(--key-chip-font-size, 0.88rem);
+  font-weight: var(--key-chip-font-weight, 600);
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease,
+    color 120ms ease,
+    box-shadow 120ms ease,
+    transform 120ms ease;
+}
+
+.shared-key-grid-item:hover {
+  border-color: var(
+    --key-chip-hover-border,
+    color-mix(in srgb, #7c3aed 42%, #c4b5fd)
+  );
+  background: var(
+    --key-chip-hover-bg,
+    color-mix(in srgb, #ede9fe 36%, #ffffff)
+  );
+  box-shadow: var(--key-chip-hover-shadow);
+  transform: var(--key-chip-hover-transform);
+}
+
+.shared-key-grid-item.active {
+  border-color: var(
+    --key-chip-active-border,
+    color-mix(in srgb, #6d28d9 56%, #a5b4fc)
+  );
+  background: var(
+    --key-chip-active-bg,
+    color-mix(in srgb, #ddd6fe 42%, #ffffff)
+  );
+  color: var(--key-chip-active-text, #5b21b6);
+  box-shadow: var(--key-chip-active-shadow);
+}

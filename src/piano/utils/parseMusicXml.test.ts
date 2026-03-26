@@ -286,6 +286,35 @@ describe('parseMusicXml', () => {
     expect(score.navigation!.codaMeasure).toBe(3);
   });
 
+  it('maps repeat and ending metadata onto measures', () => {
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+    <score-partwise>
+      <part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>
+      <part id="P1">
+        <measure number="1">
+          <attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+          <barline location="left"><repeat direction="forward"/></barline>
+          <barline location="right"><ending number="1" type="start"/></barline>
+          <note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><type>whole</type></note>
+        </measure>
+        <measure number="2">
+          <barline location="right">
+            <repeat direction="backward" times="2"/>
+            <ending number="1" type="stop"/>
+          </barline>
+          <note><pitch><step>D</step><octave>4</octave></pitch><duration>4</duration><type>whole</type></note>
+        </measure>
+      </part>
+    </score-partwise>`;
+    const score = parseMusicXml(xml);
+    const rhMeasures = score.parts[0].measures;
+    expect(rhMeasures[0].repeatStart).toBe(true);
+    expect(rhMeasures[0].endingNumber).toBe(1);
+    expect(rhMeasures[1].repeatEnd).toBe(true);
+    expect(rhMeasures[1].repeatTimes).toBe(2);
+    expect(rhMeasures[1].endingNumber).toBe(1);
+  });
+
   it('selects piano part when multiple parts exist', () => {
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
     <score-partwise>

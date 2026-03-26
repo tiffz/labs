@@ -11,6 +11,7 @@ import { createInstrumentForSoundType } from '../../shared/playback/instrumentFa
 import { loadClickSample, playClickSampleAt, type LoadedClickSample } from '../../shared/audio/clickService';
 
 interface TieContinuation {
+  noteId: string;
   measureIndex: number;
   noteIndex: number;
   beatOffset: number;
@@ -280,7 +281,12 @@ export class ScorePlaybackEngine {
               const prev = tieExtend.get(pitch);
               if (prev) {
                 if (!prev.continuations) prev.continuations = [];
-                prev.continuations.push({ measureIndex: mi, noteIndex: ni, beatOffset: prev.duration });
+                prev.continuations.push({
+                  noteId: note.id,
+                  measureIndex: mi,
+                  noteIndex: ni,
+                  beatOffset: prev.duration,
+                });
                 prev.duration += dur;
                 if (!note.tieStart) tieExtend.delete(pitch);
               }
@@ -540,6 +546,8 @@ export class ScorePlaybackEngine {
       const endBeat = event.beatPosition + event.duration;
       if (currentBeat >= event.beatPosition && currentBeat < endBeat) {
         const beatInEvent = currentBeat - event.beatPosition;
+        let activeNoteId = event.noteId;
+        let activeBeatPosition = event.beatPosition;
         if (event.continuations && event.continuations.length > 0) {
           let activeCont: TieContinuation | null = null;
           for (const cont of event.continuations) {
@@ -548,6 +556,8 @@ export class ScorePlaybackEngine {
           if (activeCont) {
             curMeasure = activeCont.measureIndex;
             noteIndices.set(event.partId, activeCont.noteIndex);
+            activeNoteId = activeCont.noteId;
+            activeBeatPosition = event.beatPosition + activeCont.beatOffset;
           } else {
             curMeasure = event.measureIndex;
             noteIndices.set(event.partId, event.noteIndex);
@@ -557,9 +567,9 @@ export class ScorePlaybackEngine {
           noteIndices.set(event.partId, event.noteIndex);
         }
         if (!event.rest) {
-          const audioTimeForNote = this.startTime + this.beatToElapsed(event.beatPosition);
+          const audioTimeForNote = this.startTime + this.beatToElapsed(activeBeatPosition);
           const wallTimeMs = perfNow + (audioTimeForNote - now) * 1000;
-          recordNoteExpectedTime(event.noteId, wallTimeMs);
+          recordNoteExpectedTime(activeNoteId, wallTimeMs);
         }
       }
     }

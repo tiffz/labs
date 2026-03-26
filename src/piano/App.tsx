@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, type MouseEvent as ReactMouseEvent } from 'react';
+import Popover from '@mui/material/Popover';
 import { PianoProvider, usePiano } from './store';
 import ScoreDisplay from './components/ScoreDisplay';
 import PlaybackControls from './components/PlaybackControls';
@@ -7,7 +8,6 @@ import PracticeMode from './components/PracticeMode';
 import PianoKeyboard from './components/PianoKeyboard';
 import PracticeDashboard from './components/PracticeDashboard';
 import ImportModal from './components/ImportModal';
-import SectionSplitter from './components/SectionSplitter';
 import Analytics from './components/Analytics';
 import CurrentlyPracticing from './components/CurrentlyPracticing';
 import ExercisePicker from './components/ExercisePicker';
@@ -27,8 +27,20 @@ function PianoApp() {
   const [dropFile, setDropFile] = useState<File | null>(null);
   const [showDropOverlay, setShowDropOverlay] = useState(false);
   const [showExercisePicker, setShowExercisePicker] = useState(false);
+  const [exercisePickerInitialSection, setExercisePickerInitialSection] = useState<'scales' | 'progressions' | 'songs'>('scales');
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const [exerciseAnchorEl, setExerciseAnchorEl] = useState<HTMLElement | null>(null);
+  const [songAnchorEl, setSongAnchorEl] = useState<HTMLElement | null>(null);
   const dragCounterRef = useRef(0);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 768px)');
+    const apply = () => setIsMobileViewport(mediaQuery.matches);
+    apply();
+    mediaQuery.addEventListener('change', apply);
+    return () => mediaQuery.removeEventListener('change', apply);
+  }, []);
 
   // Global drag-and-drop
   useEffect(() => {
@@ -121,6 +133,24 @@ function PianoApp() {
     }
   }, [isEditing, state.selectedMeasureRange, dispatch]);
 
+  const jumpToSelectedMeasures = useCallback(() => {
+    const range = state.selectedMeasureRange;
+    if (!range) return;
+    const scoreContainer = document.querySelector('.score-container') as HTMLElement | null;
+    if (!scoreContainer) return;
+    const target = scoreContainer.querySelector(
+      `[data-measure-idx="${range.start}"]`,
+    ) as SVGGraphicsElement | null;
+    if (!target) return;
+    target.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+    const mainContent = document.querySelector('.main-content') as HTMLElement | null;
+    if (mainContent) {
+      window.setTimeout(() => {
+        mainContent.scrollBy({ top: -96, behavior: 'smooth' });
+      }, 20);
+    }
+  }, [state.selectedMeasureRange]);
+
 
   const hiddenHands = useMemo(() => {
     const set = new Set<string>();
@@ -164,6 +194,35 @@ function PianoApp() {
     setDropFile(null);
   }, [loadScore, dispatch]);
 
+  const closeDesktopLoadMenus = useCallback(() => {
+    setExerciseAnchorEl(null);
+    setSongAnchorEl(null);
+  }, []);
+
+  const openExerciseFlow = useCallback((event?: ReactMouseEvent<HTMLElement>) => {
+    if (isMobileViewport) {
+      setExercisePickerInitialSection('scales');
+      setShowExercisePicker(true);
+      return;
+    }
+    setSongAnchorEl(null);
+    if (event?.currentTarget) {
+      setExerciseAnchorEl(event.currentTarget);
+    }
+  }, [isMobileViewport]);
+
+  const openSongFlow = useCallback((event?: ReactMouseEvent<HTMLElement>) => {
+    if (isMobileViewport) {
+      setExercisePickerInitialSection('songs');
+      setShowExercisePicker(true);
+      return;
+    }
+    setExerciseAnchorEl(null);
+    if (event?.currentTarget) {
+      setSongAnchorEl(event.currentTarget);
+    }
+  }, [isMobileViewport]);
+
   return (
     <div className="piano-app">
       {showDropOverlay && (
@@ -186,16 +245,59 @@ function PianoApp() {
         open={showExercisePicker}
         onClose={() => setShowExercisePicker(false)}
         onImportClick={() => { setShowExercisePicker(false); setShowImportModal(true); }}
+        initialSection={exercisePickerInitialSection}
       />
       <header className="piano-header">
         <h1>Piano Practice</h1>
         <div className="header-spacer" />
         <InputSources />
       </header>
+      <Popover
+        open={Boolean(exerciseAnchorEl)}
+        anchorEl={exerciseAnchorEl}
+        onClose={() => setExerciseAnchorEl(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        slotProps={{ paper: { className: 'piano-load-popover' } }}
+      >
+        <ExercisePicker
+          mode="inline"
+          onClose={() => setExerciseAnchorEl(null)}
+          allowedSections={['scales', 'progressions']}
+          initialSection="scales"
+          title="Load Exercise"
+        />
+      </Popover>
+      <Popover
+        open={Boolean(songAnchorEl)}
+        anchorEl={songAnchorEl}
+        onClose={() => setSongAnchorEl(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        slotProps={{ paper: { className: 'piano-load-popover' } }}
+      >
+        <ExercisePicker
+          mode="inline"
+          onClose={() => setSongAnchorEl(null)}
+          onImportClick={() => {
+            closeDesktopLoadMenus();
+            setShowImportModal(true);
+          }}
+          allowedSections={['songs']}
+          initialSection="songs"
+          title="Load Song"
+        />
+      </Popover>
       <div className="piano-layout">
         <div className="main-content">
-          <CurrentlyPracticing onSwitchExercise={() => setShowExercisePicker(true)} />
-          <NoteInput onImportClick={() => setShowImportModal(true)} />
+          <CurrentlyPracticing
+            onLoadExercise={(event) => openExerciseFlow(event)}
+            onLoadSong={(event) => openSongFlow(event)}
+          />
+          <NoteInput
+            onImportClick={() => setShowImportModal(true)}
+            onJumpToSelection={jumpToSelectedMeasures}
+          />
 
           <div className="score-container">
             {state.score ? (
@@ -218,15 +320,13 @@ function PianoApp() {
               <div className="empty-score">
                 <span className="material-symbols-outlined" style={{ fontSize: 48, opacity: 0.3 }}>music_note</span>
                 <p>Select an exercise or edit notes to begin</p>
-                <button className="np-switch-btn" onClick={() => setShowExercisePicker(true)} style={{ marginTop: 12 }}>
+                <button className="np-switch-btn" onClick={() => openExerciseFlow()} style={{ marginTop: 12 }}>
                   <span className="material-symbols-outlined" style={{ fontSize: 16 }}>library_music</span>
                   Choose Exercise
                 </button>
               </div>
             )}
           </div>
-
-          {!isEditing && state.score && <SectionSplitter />}
 
           <PracticeMode />
           {isEditing && <PianoKeyboard />}

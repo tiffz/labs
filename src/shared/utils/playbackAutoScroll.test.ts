@@ -14,10 +14,13 @@ function createContainer(scrollTop: number) {
   });
   container.getBoundingClientRect = () =>
     ({ top: 100, bottom: 500, left: 0, right: 800, width: 800, height: 400, x: 0, y: 100, toJSON: () => ({}) }) as DOMRect;
-  container.scrollTo = vi.fn(({ top }: ScrollToOptions) => {
-    if (typeof top === 'number') {
-      container.scrollTop = top;
-    }
+  Object.defineProperty(container, 'scrollTo', {
+    value: vi.fn(({ top }: ScrollToOptions) => {
+      if (typeof top === 'number') {
+        container.scrollTop = top;
+      }
+    }),
+    configurable: true,
   });
   return container;
 }
@@ -76,5 +79,28 @@ describe('playbackAutoScroll', () => {
 
     expect(container.scrollTo).toHaveBeenCalledTimes(1);
     expect(container.scrollTop).toBeLessThan(600);
+  });
+
+  it('uses smooth scrolling by default', () => {
+    const container = createContainer(0);
+    const target = createTarget(280);
+    const state: PlaybackAutoScrollState = {
+      lastMarker: null,
+      lastScrollAtMs: 0,
+      lastTargetTop: null,
+    };
+
+    scrollPlaybackTarget({
+      marker: 1,
+      target,
+      state,
+      scrollContainer: container,
+      minDeltaPx: 1,
+      minIntervalMs: 0,
+    });
+
+    expect(container.scrollTo).toHaveBeenCalledTimes(1);
+    const mock = container.scrollTo as unknown as { mock: { calls: Array<[ScrollToOptions]> } };
+    expect(mock.mock.calls[0][0]?.behavior).toBe('smooth');
   });
 });

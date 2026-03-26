@@ -66,11 +66,23 @@ describe('practiceTimingStore', () => {
       recordMidiNoteOn(60, now - 100);
       recordMidiNoteOn(64, now - 500);
       recordMidiNoteOn(67, now - 2000);
+      recordMidiNoteOff(67);
 
       const recent = getRecentMidiPresses(600);
       expect(recent).toContain(60);
       expect(recent).toContain(64);
       expect(recent).not.toContain(67);
+    });
+
+    it('includes held notes even when press time is outside window', () => {
+      const now = performance.now();
+      recordMidiNoteOn(72, now - 2500);
+      recordMidiNoteOn(74, now - 2500);
+      recordMidiNoteOff(74);
+
+      const recent = getRecentMidiPresses(400);
+      expect(recent).toContain(72);
+      expect(recent).not.toContain(74);
     });
   });
 

@@ -7,6 +7,7 @@ import { findDropTarget, type NotePosition } from '../utils/dropTargetFinder';
 import { computeDropPreview } from '../utils/dropPreview';
 import { getCurrentDraggedPattern } from './NotePalette';
 import { buildNotationFromSelection } from '../utils/notationHelpers';
+import { scrollPlaybackTarget, type PlaybackAutoScrollState } from '../../shared/utils/playbackAutoScroll';
 
 /**
  * Checks if a measure is at the start of a section repeat
@@ -363,7 +364,11 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const metronomeDotsRef = useRef<Map<string, SVGCircleElement>>(new Map());
   const notePositionsRef = useRef<NotePosition[]>([]);
-  const prevScrollStaveYRef = useRef<number | null>(null);
+  const autoScrollStateRef = useRef<PlaybackAutoScrollState>({
+    lastMarker: null,
+    lastScrollAtMs: 0,
+    lastTargetTop: null,
+  });
   // Track simile symbols by measure index for playback highlighting
   const simileGroupsRef = useRef<Map<number, SVGGElement>>(new Map());
   // Track repeat count text elements for highlighting
@@ -2030,26 +2035,26 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
     if (!staveNoteRef) return;
 
     const staveY = staveNoteRef.stave.getY();
-
-    // Only scroll when we move to a different stave line (not for every note)
-    if (prevScrollStaveYRef.current !== null && Math.abs(staveY - prevScrollStaveYRef.current) < 50) {
-      return; // Same line, no scroll needed
-    }
-    prevScrollStaveYRef.current = staveY;
-
-    // Use the native scrollIntoView on the note's SVG element
-    // block: 'center' keeps the current line centered in the viewport
-    // inline: 'nearest' prevents unwanted horizontal scrolling
     const svgEl = staveNoteRef.staveNote.getSVGElement();
-    if (svgEl) {
-      svgEl.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
-    }
+    if (!svgEl) return;
+    const lineMarker = Math.round(staveY / 50);
+    scrollPlaybackTarget({
+      marker: lineMarker,
+      target: svgEl,
+      state: autoScrollStateRef.current,
+      minIntervalMs: 120,
+      minDeltaPx: 48,
+      preferredTopRatio: 0.3,
+      allowBackward: true,
+    });
   }, [currentNote, autoScrollDuringPlayback]);
 
   // Reset scroll tracking when playback stops
   useEffect(() => {
     if (!currentNote) {
-      prevScrollStaveYRef.current = null;
+      autoScrollStateRef.current.lastMarker = null;
+      autoScrollStateRef.current.lastScrollAtMs = 0;
+      autoScrollStateRef.current.lastTargetTop = null;
     }
   }, [currentNote]);
 

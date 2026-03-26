@@ -1,0 +1,290 @@
+.shared-chord-progression-input,
+.shared-chord-progression-dropdown,
+.shared-chord-progression-inline-content {
+  --cp-input-border: color-mix(in srgb, #6366f1 34%, #c7d2fe);
+  --cp-input-bg: #fff;
+  --cp-input-text: #0f172a;
+  --cp-focus-border: color-mix(in srgb, #7c3aed 56%, #c4b5fd);
+  --cp-focus-ring: 0 0 0 2px rgba(124, 58, 237, 0.14);
+  --cp-surface-border: color-mix(in srgb, #8b5cf6 32%, #ddd6fe);
+  --cp-surface-bg: #fff;
+  --cp-surface-shadow: 0 14px 30px rgba(67, 56, 202, 0.14);
+  --cp-chip-border: color-mix(in srgb, #818cf8 28%, #c7d2fe);
+  --cp-chip-bg: color-mix(in srgb, #ffffff 93%, #eef2ff);
+  --cp-chip-hover-border: color-mix(in srgb, #7c3aed 42%, #c4b5fd);
+  --cp-chip-hover-bg: color-mix(in srgb, #ede9fe 36%, #ffffff);
+  --cp-chip-hover-shadow: 0 6px 14px rgba(79, 70, 229, 0.1);
+  --cp-chip-hover-transform: translateY(-1px);
+  --cp-chip-active-border: color-mix(in srgb, #6d28d9 56%, #a5b4fc);
+  --cp-chip-active-bg: color-mix(in srgb, #ddd6fe 42%, #ffffff);
+  --cp-chip-active-shadow:
+    inset 0 0 0 1px rgba(109, 40, 217, 0.14), 0 4px 10px rgba(67, 56, 202, 0.06);
+  --cp-title-color: #1e1b4b;
+  --cp-meta-color: #5b5d84;
+  --cp-item-padding: 0.68rem 0.82rem;
+  --cp-item-gap: 0.2rem;
+  --cp-title-size: 0.98rem;
+  --cp-title-weight: 700;
+  --cp-meta-size: 0.8rem;
+  --cp-meta-line-height: 1.34;
+  --cp-control-height: 2.28rem;
+  --cp-control-radius: 0.65rem;
+  --cp-control-font-size: 0.9rem;
+  --cp-control-line-height: 1.2;
+  --cp-control-padding: 0.46rem 0.74rem;
+}
+
+.shared-chord-progression-input {
+  display: flex;
+  flex-direction: column;
+  gap: 0.38rem;
+}
+
+.shared-chord-progression-anchor {
+  width: 100%;
+}
+
+.shared-chord-progression-text,
+.shared-chord-progression-trigger {
+  box-sizing: border-box;
+  width: 100%;
+  border: 1px solid var(--cp-input-border);
+  border-radius: var(--cp-control-radius);
+  background: var(--cp-input-bg);
+  color: var(--cp-input-text);
+  font: inherit;
+  font-size: var(--cp-control-font-size);
+  line-height: var(--cp-control-line-height);
+  min-height: var(--cp-control-height);
+  padding: var(--cp-control-padding);
+}
+
+.shared-chord-progression-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+}
+
+.shared-chord-progression-trigger-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.shared-chord-progression-text:disabled,
+.shared-chord-progression-trigger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.shared-chord-progression-dropdown {
+  min-width: min(460px, calc(100vw - 24px));
+  max-width: min(560px, calc(100vw - 24px));
+  border-radius: 0.82rem;
+  border: 1px solid color-mix(in srgb, var(--cp-surface-border) 92%, #e2e8f0);
+  background: var(--cp-surface-bg);
+  box-shadow: var(--cp-surface-shadow, 0 12px 28px rgba(15, 23, 42, 0.14));
+}
+
+.shared-chord-progression-inline-content {
+  width: 100%;
+}
+
+.shared-chord-progression-inline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.shared-chord-progression-dropdown-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.58rem;
+  padding: 0.78rem 0.8rem;
+}
+
+.shared-chord-progression-preset-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.44rem;
+  max-height: min(58vh, 560px);
+  overflow: auto;
+}
+
+.shared-chord-progression-preset-list--cols-1 {
+  grid-template-columns: 1fr;
+}
+
+.shared-chord-progression-preset-list--cols-2 {
+  grid-template-columns: 1fr 1fr;
+  max-height: none;
+  overflow: visible;
+}
+
+.shared-chord-progression-preset {
+  border: 1px solid var(--cp-chip-border);
+  border-radius: 0.68rem;
+  background: var(--cp-chip-bg);
+  color: inherit;
+  text-align: left;
+  padding: var(--cp-item-padding);
+  min-height: 4rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--cp-item-gap);
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease,
+    box-shadow 120ms ease,
+    transform 120ms ease;
+}
+
+.shared-chord-progression-preset:hover {
+  border-color: var(--cp-chip-hover-border);
+  background: var(--cp-chip-hover-bg);
+  box-shadow: var(--cp-chip-hover-shadow);
+  transform: var(--cp-chip-hover-transform);
+}
+
+.shared-chord-progression-preset.active {
+  border-color: var(--cp-chip-active-border);
+  background: var(--cp-chip-active-bg);
+  box-shadow: var(--cp-chip-active-shadow);
+}
+
+.shared-chord-progression-name {
+  font-weight: var(--cp-title-weight);
+  font-size: var(--cp-title-size);
+  line-height: 1.24;
+  color: var(--cp-title-color);
+}
+
+.shared-chord-progression-description,
+.shared-chord-progression-resolved {
+  font-size: var(--cp-meta-size);
+  line-height: var(--cp-meta-line-height);
+  color: var(--cp-meta-color);
+}
+
+.shared-chord-progression-error,
+.shared-chord-progression-warning {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.3;
+}
+
+.shared-chord-progression-error {
+  color: #b91c1c;
+}
+
+.shared-chord-progression-warning {
+  color: #92400e;
+}
+
+/* App appearance variants */
+.shared-chord-progression-text:focus,
+.shared-chord-progression-trigger:focus-visible {
+  outline: none;
+  border-color: var(--cp-focus-border);
+  box-shadow: var(--cp-focus-ring);
+}
+
+.shared-chord-progression-input--piano {
+  --cp-input-border: color-mix(in srgb, #7c3aed 26%, #d8b4fe);
+  --cp-focus-border: color-mix(in srgb, #7c3aed 60%, #c4b5fd);
+  --cp-focus-ring: 0 0 0 2px rgba(124, 58, 237, 0.14);
+  --cp-surface-border: color-mix(in srgb, #7c3aed 24%, #d8b4fe);
+  --cp-surface-shadow: 0 14px 30px rgba(124, 58, 237, 0.15);
+  --cp-chip-hover-border: color-mix(in srgb, #7c3aed 46%, #c4b5fd);
+  --cp-chip-hover-bg: color-mix(in srgb, #f5f3ff 70%, #fff);
+  --cp-chip-active-border: color-mix(in srgb, #7c3aed 62%, #c4b5fd);
+  --cp-chip-active-bg: color-mix(in srgb, #ede9fe 62%, #fff);
+}
+
+.shared-chord-progression-input--chords {
+  --cp-input-border: color-mix(in srgb, #6366f1 28%, #c7d2fe);
+  --cp-focus-border: color-mix(in srgb, #4f46e5 58%, #a5b4fc);
+  --cp-surface-border: color-mix(in srgb, #6366f1 26%, #c7d2fe);
+  --cp-surface-shadow: 0 12px 24px rgba(67, 56, 202, 0.16);
+  --cp-chip-hover-border: color-mix(in srgb, #6366f1 44%, #a5b4fc);
+  --cp-chip-hover-bg: color-mix(in srgb, #eef2ff 68%, #fff);
+  --cp-chip-active-border: color-mix(in srgb, #4f46e5 58%, #a5b4fc);
+  --cp-chip-active-bg: color-mix(in srgb, #e0e7ff 58%, #fff);
+}
+
+.shared-chord-progression-input--words {
+  --cp-input-border: color-mix(in srgb, #0a8a8f 34%, #bfeef0);
+  --cp-focus-border: color-mix(in srgb, #0a8a8f 58%, #67e8f9);
+  --cp-focus-ring: 0 0 0 2px rgba(10, 138, 143, 0.14);
+  --cp-surface-border: color-mix(in srgb, #0a8a8f 30%, #dbeafe);
+  --cp-surface-shadow: 0 10px 20px rgba(2, 132, 199, 0.16);
+  --cp-chip-border: color-mix(in srgb, #0a8a8f 24%, #cbd5e1);
+  --cp-chip-hover-border: color-mix(in srgb, #0a8a8f 48%, #67e8f9);
+  --cp-chip-hover-bg: color-mix(in srgb, #f0fdfa 72%, #fff);
+  --cp-chip-active-border: color-mix(in srgb, #0a8a8f 56%, #67e8f9);
+  --cp-chip-active-bg: color-mix(in srgb, #ccfbf1 44%, #fff);
+}
+
+.shared-chord-progression-dropdown--piano,
+.shared-chord-progression-inline-content--piano {
+  --cp-surface-border: color-mix(in srgb, #7c3aed 24%, #d8b4fe);
+  --cp-surface-shadow: 0 14px 30px rgba(124, 58, 237, 0.15);
+  --cp-focus-border: color-mix(in srgb, #7c3aed 60%, #c4b5fd);
+  --cp-focus-ring: 0 0 0 2px rgba(124, 58, 237, 0.14);
+  --cp-chip-hover-border: color-mix(in srgb, #7c3aed 46%, #c4b5fd);
+  --cp-chip-hover-bg: color-mix(in srgb, #f5f3ff 70%, #fff);
+  --cp-chip-active-border: color-mix(in srgb, #7c3aed 62%, #c4b5fd);
+  --cp-chip-active-bg: color-mix(in srgb, #ede9fe 62%, #fff);
+}
+
+.shared-chord-progression-dropdown--chords,
+.shared-chord-progression-inline-content--chords {
+  --cp-surface-border: color-mix(in srgb, #6366f1 26%, #c7d2fe);
+  --cp-surface-shadow: 0 12px 24px rgba(67, 56, 202, 0.16);
+  --cp-focus-border: color-mix(in srgb, #4f46e5 58%, #a5b4fc);
+  --cp-chip-hover-border: color-mix(in srgb, #6366f1 44%, #a5b4fc);
+  --cp-chip-hover-bg: color-mix(in srgb, #eef2ff 68%, #fff);
+  --cp-chip-active-border: color-mix(in srgb, #4f46e5 58%, #a5b4fc);
+  --cp-chip-active-bg: color-mix(in srgb, #e0e7ff 58%, #fff);
+}
+
+.shared-chord-progression-dropdown--words,
+.shared-chord-progression-inline-content--words {
+  --cp-surface-border: color-mix(in srgb, #0a8a8f 30%, #dbeafe);
+  --cp-surface-shadow: 0 10px 20px rgba(2, 132, 199, 0.16);
+  --cp-focus-border: color-mix(in srgb, #0a8a8f 58%, #67e8f9);
+  --cp-focus-ring: 0 0 0 2px rgba(10, 138, 143, 0.14);
+  --cp-chip-border: color-mix(in srgb, #0a8a8f 24%, #cbd5e1);
+  --cp-chip-hover-border: color-mix(in srgb, #0a8a8f 48%, #67e8f9);
+  --cp-chip-hover-bg: color-mix(in srgb, #f0fdfa 72%, #fff);
+  --cp-chip-active-border: color-mix(in srgb, #0a8a8f 56%, #67e8f9);
+  --cp-chip-active-bg: color-mix(in srgb, #ccfbf1 44%, #fff);
+}
+
+@media (min-width: 760px) {
+  .shared-chord-progression-dropdown {
+    min-width: min(760px, calc(100vw - 28px));
+    max-width: min(920px, calc(100vw - 28px));
+  }
+
+  .shared-chord-progression-preset-list {
+    grid-template-columns: 1fr 1fr;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .shared-chord-progression-preset-list--cols-1 {
+    grid-template-columns: 1fr;
+    max-height: min(58vh, 560px);
+    overflow: auto;
+  }
+
+  .shared-chord-progression-preset-list--cols-2 {
+    grid-template-columns: 1fr 1fr;
+    max-height: none;
+    overflow: visible;
+  }
+}

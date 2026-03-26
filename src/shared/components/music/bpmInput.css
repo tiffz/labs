@@ -6,7 +6,7 @@
 
 .shared-bpm-shell {
   --bpm-bg: var(--bg-input, #fff);
-  --bpm-border: var(--border-subtle, #d5d9e2);
+  --bpm-border: var(--border-subtle, color-mix(in srgb, #818cf8 32%, #c7d2fe));
   --bpm-text: var(--text-primary, #141a26);
   --bpm-muted: var(--text-secondary, #6f7790);
   --bpm-focus: var(--accent-primary, #7c3aed);
@@ -62,8 +62,8 @@
   --bpm-chip-min-width: 3.15rem;
   --bpm-chip-height: 1.9rem;
 
-  --bpm-shell-height: 38px;
-  --bpm-shell-radius: 14px;
+  --bpm-shell-height: 40px;
+  --bpm-shell-radius: 12px;
   --bpm-divider: color-mix(in srgb, var(--bpm-border) 72%, transparent);
   display: inline-flex;
   align-items: center;
@@ -87,8 +87,8 @@
   display: inline-flex;
   align-items: stretch;
   align-self: stretch;
-  flex: 1 1 var(--bpm-stepper-min-width, 7.2rem);
-  min-width: var(--bpm-stepper-min-width, 7.2rem);
+  flex: 1 1 var(--bpm-stepper-min-width, 6.9rem);
+  min-width: var(--bpm-stepper-min-width, 6.9rem);
   border-right: 1px solid var(--bpm-divider);
   padding-right: 0.28rem;
 }
@@ -112,8 +112,8 @@
   min-width: 0;
   flex: 1 1 auto;
   outline: none;
-  text-align: center;
-  padding: 0 0.45rem;
+  text-align: var(--bpm-value-text-align, left);
+  padding: var(--bpm-value-padding, 0 0.3rem 0 0.52rem);
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.01em;
   align-self: center;
@@ -274,10 +274,24 @@
 }
 
 .shared-bpm-dropdown {
-  background: var(--bpm-dropdown-bg);
-  border: 1px solid var(--bpm-dropdown-border);
-  border-radius: 10px;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
+  --bpm-focus: var(--accent-primary, #7c3aed);
+  --bpm-border: var(--border-subtle, color-mix(in srgb, #818cf8 32%, #c7d2fe));
+  --bpm-text: var(--text-primary, #141a26);
+  --bpm-muted: var(--text-secondary, #6f7790);
+  --bpm-slider-panel-bg: color-mix(
+    in srgb,
+    var(--bpm-dropdown-bg, #fff) 94%,
+    transparent
+  );
+  background: var(--bpm-dropdown-bg, #ffffff);
+  border: 1px solid
+    color-mix(
+      in srgb,
+      var(--bpm-dropdown-border, var(--bpm-border)) 92%,
+      #e2e8f0
+    );
+  border-radius: 0.82rem;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
   max-height: 300px;
   overflow-y: auto;
   margin-top: var(--bpm-dropdown-offset-y);
@@ -328,7 +342,7 @@
 
 .shared-bpm-slider-wrap {
   padding: var(--bpm-slider-wrap-padding);
-  border-radius: 0.6rem;
+  border-radius: 0.7rem;
   border: 1px solid
     color-mix(in srgb, var(--bpm-dropdown-border) 68%, transparent);
   background: var(--bpm-slider-panel-bg);
@@ -337,9 +351,9 @@
 }
 
 .shared-bpm-slider {
-  --app-slider-track: var(--bpm-focus);
-  --app-slider-thumb: var(--bpm-focus);
-  --app-slider-rail: color-mix(in srgb, var(--bpm-border) 82%, transparent);
+  --app-slider-track: color-mix(in srgb, var(--bpm-focus) 88%, #4f46e5);
+  --app-slider-thumb: var(--app-slider-track);
+  --app-slider-rail: color-mix(in srgb, var(--bpm-border) 72%, #cbd5e1);
   --app-slider-mark: color-mix(in srgb, var(--bpm-border) 84%, transparent);
   --app-slider-mark-active: color-mix(
     in srgb,

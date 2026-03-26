@@ -3,12 +3,11 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import KeyInput from './KeyInput';
 
 describe('KeyInput', () => {
-  it('fires onChange when selecting a key', () => {
+  it('fires onChange when selecting a key from grid', () => {
     const onChange = vi.fn();
     render(<KeyInput value="C" onChange={onChange} />);
-    const select = screen.getByRole('combobox');
-
-    fireEvent.change(select, { target: { value: 'D' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Change key' }));
+    fireEvent.click(screen.getByRole('button', { name: 'D' }));
 
     expect(onChange).toHaveBeenCalledWith('D');
   });
@@ -16,12 +15,10 @@ describe('KeyInput', () => {
   it('steps keys up and down by semitone', () => {
     const onChange = vi.fn();
     render(<KeyInput value="C" onChange={onChange} showStepButtons />);
-    const buttons = screen.getAllByRole('button');
-
-    fireEvent.click(buttons[0]);
-    fireEvent.click(buttons[1]);
+    fireEvent.click(screen.getByRole('button', { name: 'Lower key by semitone' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Raise key by semitone' }));
 
     expect(onChange).toHaveBeenCalledWith('B');
-    expect(onChange).toHaveBeenCalledWith('C#');
+    expect(onChange).toHaveBeenCalledWith('Db');
   });
 });

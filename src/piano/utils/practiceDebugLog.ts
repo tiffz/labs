@@ -15,7 +15,7 @@ export type DebugEvent =
   | { type: 'grace_miss'; t: number; noteId: string; expectedPitches: number[]; passedAt: number }
   | { type: 'active_notes_change'; t: number; activeNotes: number[] }
   | { type: 'practice_start'; t: number; mode: string; tempo: number; scoreTitle: string;
-      practiceRH: boolean; practiceLH: boolean; micActive: boolean }
+      practiceRH: boolean; practiceLH: boolean; practiceVoice?: boolean; practiceChords?: boolean; micActive: boolean }
   | { type: 'practice_end'; t: number; resultCount: number };
 
 interface DebugSnapshot {

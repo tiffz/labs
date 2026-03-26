@@ -565,7 +565,12 @@ const App: React.FC = () => {
             </Popover>
           </div>
           <div className="chords-score">
-            <ChordScoreRenderer state={state} currentChordIndex={currentChordIndex} activeNoteGroups={activeNoteGroups} />
+            <ChordScoreRenderer
+              state={state}
+              currentChordIndex={currentChordIndex}
+              activeNoteGroups={activeNoteGroups}
+              isPlaying={isPlaying}
+            />
           </div>
           
           <footer className="chords-footer">

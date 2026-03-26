@@ -5,6 +5,7 @@ import {
   getAllMidiNoteOnTimes,
   getNoteExpectedTime,
   getRecentMidiPresses,
+  isNoteHeld,
   pruneStale,
 } from '../utils/practiceTimingStore';
 import { matchesChord } from '../utils/chordMatcher';
@@ -20,7 +21,14 @@ const MIC_TIMING_COMPENSATION_MS = 160;
 // Avoid anchoring mic timing to stale held notes from previous beats.
 const MIC_TIMING_MAX_EARLY_WINDOW_MS = 260;
 
-interface ExpectedNote { pitches: number[]; noteId: string; hand: string; chordSymbol?: string }
+interface ExpectedNote {
+  pitches: number[];
+  noteId: string;
+  hand: string;
+  chordSymbol?: string;
+  tieStart?: boolean;
+  tieStop?: boolean;
+}
 interface PassedNote extends ExpectedNote { passedAt: number }
 
 function isAttemptingNote(played: number[], expectedPitches: number[]): boolean {
@@ -243,7 +251,19 @@ const PracticeMode: React.FC = () => {
   }, [useMic, allowChordPracticeOctaveFlex]);
 
   const evaluateFreeTempo = useCallback((played: number[]) => {
-    if (waitingForReleaseRef.current) return;
+    if (waitingForReleaseRef.current) {
+      const expectedNow = [...expectedByPartRef.current.values()];
+      // For ties in free-tempo mode, continuation notes should advance while held.
+      const canBypassReleaseForTieContinuation =
+        expectedNow.length > 0 &&
+        expectedNow.every((expected) => {
+          if (expected.chordSymbol || !expected.tieStop) return false;
+          const anchored = getAnchoredExpectedPitches(expected, played);
+          return anchored.length > 0 && anchored.every((pitch) => isNoteHeld(pitch));
+        });
+      if (!canBypassReleaseForTieContinuation) return;
+      waitingForReleaseRef.current = false;
+    }
 
     for (const [partId, expected] of expectedByPartRef.current) {
       if (partsPlayedRef.current.has(partId)) continue;
@@ -372,7 +392,13 @@ const PracticeMode: React.FC = () => {
       }
     }
 
-    const pitchCorrect = checkPitchCorrect(scopedPlayed, anchoredExpected);
+    const tieHeldNow =
+      !useMic &&
+      !!expected.tieStop &&
+      !expected.chordSymbol &&
+      anchoredExpectedPitches.length > 0 &&
+      anchoredExpectedPitches.every((pitch) => isNoteHeld(pitch));
+    const pitchCorrect = tieHeldNow ? true : checkPitchCorrect(scopedPlayed, anchoredExpected);
 
     let matchingPitches = anchoredExpectedPitches.filter((p) => scopedPlayed.includes(p));
     if (matchingPitches.length === 0 && allowPitchClassForExpected) {
@@ -380,6 +406,8 @@ const PracticeMode: React.FC = () => {
         scopedPlayed.some(p => pitchClassDistance(p, ep) <= 1)
       );
     }
+
+    const heldTieContinuation = tieHeldNow;
 
     const relevantKeyTimes =
       (useMic || allowPitchClassForExpected || expected.chordSymbol)
@@ -395,7 +423,9 @@ const PracticeMode: React.FC = () => {
             .map((p) => midiTimes.get(p))
             .filter((t): t is number => t !== undefined);
 
-    const timingPress = pickTimingReferenceTime(relevantKeyTimes, expectedTime, useMic);
+    const timingPress = heldTieContinuation
+      ? expectedTime
+      : pickTimingReferenceTime(relevantKeyTimes, expectedTime, useMic);
     const rawTimingOffsetMs = timingPress - expectedTime;
     const timingOffsetMs = useMic
       ? rawTimingOffsetMs - MIC_TIMING_COMPENSATION_MS
@@ -404,7 +434,9 @@ const PracticeMode: React.FC = () => {
     const attemptedPitch =
       expected.chordSymbol ? scopedPlayed.length > 0 : isAttemptingNote(scopedPlayed, anchoredExpectedPitches);
     let timing: TimingJudgment;
-    if (!pitchCorrect) {
+    if (heldTieContinuation && pitchCorrect) {
+      timing = 'perfect';
+    } else if (!pitchCorrect) {
       timing = attemptedPitch ? 'wrong_pitch' : 'missed';
     } else if (Math.abs(timingOffsetMs) < PERFECT_THRESHOLD_MS) {
       timing = 'perfect';
@@ -482,6 +514,7 @@ const PracticeMode: React.FC = () => {
     const practicedHands: string[] = [];
     if (state.practiceRightHand) practicedHands.push('right');
     if (state.practiceLeftHand) practicedHands.push('left');
+    if (state.practiceVoice) practicedHands.push('voice');
 
     for (const hand of practicedHands) {
       const part = state.score.parts.find(p => p.hand === hand);
@@ -497,7 +530,14 @@ const PracticeMode: React.FC = () => {
         if (noteIdx < measure.notes.length) {
           const note = measure.notes[noteIdx];
           if (!note.rest) {
-            newExpected.set(part.id, { pitches: note.pitches, noteId: note.id, hand, chordSymbol: note.chordSymbol });
+            newExpected.set(part.id, {
+              pitches: note.pitches,
+              noteId: note.id,
+              hand,
+              chordSymbol: note.chordSymbol,
+              tieStart: note.tieStart,
+              tieStop: note.tieStop,
+            });
           }
         }
       }
@@ -511,7 +551,14 @@ const PracticeMode: React.FC = () => {
         if (noteIdx < 0) continue;
         const note = part.measures[measureIdx]?.notes[noteIdx];
         if (note?.chordSymbol && !note.rest) {
-          newExpected.set('chords', { pitches: note.pitches, noteId: note.id, hand: 'chords', chordSymbol: note.chordSymbol });
+          newExpected.set('chords', {
+            pitches: note.pitches,
+            noteId: note.id,
+            hand: 'chords',
+            chordSymbol: note.chordSymbol,
+            tieStart: note.tieStart,
+            tieStop: note.tieStop,
+          });
           break;
         }
       }
@@ -545,7 +592,7 @@ const PracticeMode: React.FC = () => {
     }
   }, [isPracticing, isFreeTempo, state.score, state.isPlaying, state.currentMeasureIndex,
       state.currentNoteIndices, state.freeTempoMeasureIndex, state.freeTempoNoteIndex,
-      state.practiceRightHand, state.practiceLeftHand, state.practiceChords]);
+      state.practiceRightHand, state.practiceLeftHand, state.practiceVoice, state.practiceChords]);
 
   useEffect(() => {
     if (!isPracticing) {
@@ -643,7 +690,8 @@ const PracticeMode: React.FC = () => {
       const noteIndices = new Map<string, number>();
       const practicedParts = state.score.parts.filter(p =>
         (p.hand === 'right' && state.practiceRightHand) ||
-        (p.hand === 'left' && state.practiceLeftHand)
+        (p.hand === 'left' && state.practiceLeftHand) ||
+        (p.hand === 'voice' && state.practiceVoice)
       );
       for (const part of practicedParts) {
         noteIndices.set(part.id, 0);
@@ -653,7 +701,7 @@ const PracticeMode: React.FC = () => {
       stopMode();
     }
   }, [isFreeTempo, state.freeTempoNoteIndex, state.loopingEnabled, state.score,
-      state.practiceRightHand, state.practiceLeftHand, dispatch, stopMode]);
+      state.practiceRightHand, state.practiceLeftHand, state.practiceVoice, dispatch, stopMode]);
 
   return null;
 };

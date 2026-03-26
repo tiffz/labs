@@ -25,18 +25,68 @@ export interface PracticeRecord {
 }
 
 const HISTORY_KEY = 'piano-practice-history';
+const MAX_RECORDS = 1000;
+const MAX_RUNS_PER_RECORD = 64;
+const MAX_RESULTS_PER_RUN = 800;
 
 function getAll(): PracticeRecord[] {
   try {
     const raw = localStorage.getItem(HISTORY_KEY);
-    return raw ? JSON.parse(raw) : [];
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
   }
 }
 
+function compactRecord(record: PracticeRecord): PracticeRecord {
+  const runs = (record.runs ?? []).slice(-MAX_RUNS_PER_RECORD).map((run) => ({
+    ...run,
+    // Keep timing/pitch judgments but strip large pitch arrays from historical snapshots.
+    results: (run.results ?? []).slice(-MAX_RESULTS_PER_RUN).map((res) => ({
+      ...res,
+      noteId: res.noteId ?? '',
+      expectedPitches: [],
+      playedPitches: [],
+      timingOffsetMs: Number.isFinite(res.timingOffsetMs) ? Math.round(res.timingOffsetMs) : 0,
+      pitchCorrect: !!res.pitchCorrect,
+    })),
+  }));
+  return { ...record, runs };
+}
+
+function trySave(records: PracticeRecord[]): boolean {
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(records));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function saveAll(records: PracticeRecord[]): void {
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(records));
+  if (trySave(records)) return;
+
+  // First pass: compact payload-heavy run data.
+  let next = records.map(compactRecord);
+  if (trySave(next)) return;
+
+  // Second pass: evict oldest records until storage succeeds.
+  while (next.length > 1) {
+    next = next.slice(0, Math.max(1, next.length - Math.ceil(next.length * 0.15)));
+    if (trySave(next)) return;
+  }
+
+  // Final fallback: keep app responsive even if persistence is unavailable.
+  try {
+    localStorage.removeItem(HISTORY_KEY);
+    if (next.length > 0) {
+      void trySave([compactRecord(next[0])]);
+    }
+  } catch {
+    // Ignore storage failures; practice mode should still stop cleanly.
+  }
 }
 
 export function getAllRecords(): PracticeRecord[] {
@@ -45,8 +95,8 @@ export function getAllRecords(): PracticeRecord[] {
 
 export function addRecord(record: PracticeRecord): void {
   const records = getAll();
-  records.unshift(record);
-  if (records.length > 1000) records.length = 1000;
+  records.unshift(compactRecord(record));
+  if (records.length > MAX_RECORDS) records.length = MAX_RECORDS;
   saveAll(records);
 }
 

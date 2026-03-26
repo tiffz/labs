@@ -5,6 +5,7 @@ import { installServerLogger } from '../shared/utils/serverLogger';
 import { getAppTheme } from '../shared/ui/theme/appTheme';
 import App from './App';
 import './styles/beat.css';
+import '../shared/components/music/appSharedThemes.css';
 
 // Install server logging for this app
 installServerLogger('BEAT');

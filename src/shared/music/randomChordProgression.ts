@@ -1,4 +1,4 @@
-import { COMMON_CHORD_PROGRESSIONS } from '../../chords/data/chordProgressions';
+import { COMMON_CHORD_PROGRESSIONS } from './commonChordProgressions';
 import { progressionToChords } from '../../chords/utils/chordTheory';
 import type { Key, ChordQuality } from '../../chords/types';
 import { ALL_KEYS } from '../../chords/utils/randomization';

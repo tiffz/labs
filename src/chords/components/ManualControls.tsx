@@ -3,8 +3,7 @@
  * Chip-based inline editing interface
  */
 
-import React, { useMemo, useEffect, useState, useRef, useCallback } from 'react';
-import Popover from '@mui/material/Popover';
+import React, { useMemo, useEffect, useState, useCallback } from 'react';
 import type {
   ChordProgressionState,
   Key,
@@ -15,20 +14,20 @@ import type {
 import { COMMON_CHORD_PROGRESSIONS } from '../data/chordProgressions';
 import { CHORD_STYLING_STRATEGIES } from '../data/chordStylingStrategies';
 import {
-  ALL_KEYS,
   randomChordProgression,
   randomKey,
   randomTempo,
   randomMeasuresPerChord,
 } from '../utils/randomization';
 import { getCompatibleStylingStrategies } from '../utils/stylingCompatibility';
-import { transposeKeyUp, transposeKeyDown } from '../utils/keyTransposition';
 import OptionChip from './OptionChip';
 import ChordStylePreview from './ChordStylePreview';
 import { parseProgressionText } from '../../shared/music/chordProgressionText';
 import AppTooltip from '../../shared/components/AppTooltip';
 import DiceIcon from '../../shared/components/DiceIcon';
 import BpmInput from '../../shared/components/music/BpmInput';
+import ChordProgressionInput from '../../shared/components/music/ChordProgressionInput';
+import KeyInput from '../../shared/components/music/KeyInput';
 
 interface ManualControlsProps {
   state: ChordProgressionState;
@@ -73,35 +72,6 @@ const ManualControls: React.FC<ManualControlsProps> = ({
 
   const [customProgressionWarning, setCustomProgressionWarning] =
     useState<string>('');
-  const [showProgressionDropdown, setShowProgressionDropdown] =
-    useState<boolean>(false);
-  const progressionContainerRef = useRef<HTMLDivElement>(null);
-  const progressionAutocompleteOptions = useMemo(
-    () =>
-      COMMON_CHORD_PROGRESSIONS.map((progression) => ({
-        value: progression.progression.join('–'),
-        label: progression.name,
-      })),
-    []
-  );
-  const orderedProgressionAutocompleteOptions = useMemo(() => {
-    const query = customProgressionInput.trim().toLowerCase();
-    if (!query) return progressionAutocompleteOptions;
-    const scoreOption = (option: { value: string; label: string }): number => {
-      const label = option.label.toLowerCase();
-      const value = option.value.toLowerCase();
-      if (label === query || value === query) return 0;
-      if (label.startsWith(query) || value.startsWith(query)) return 1;
-      if (label.includes(query) || value.includes(query)) return 2;
-      return 3;
-    };
-    return [...progressionAutocompleteOptions].sort((a, b) => {
-      const scoreA = scoreOption(a);
-      const scoreB = scoreOption(b);
-      if (scoreA !== scoreB) return scoreA - scoreB;
-      return a.label.localeCompare(b.label);
-    });
-  }, [customProgressionInput, progressionAutocompleteOptions]);
 
   const handleRandomizeProgression = () => {
     const next = randomChordProgression();
@@ -109,7 +79,6 @@ const ManualControls: React.FC<ManualControlsProps> = ({
     setCustomProgressionInput(next.progression.join('–'));
     setCustomProgressionError('');
     setCustomProgressionWarning('');
-    setShowProgressionDropdown(false);
   };
 
   const handleRandomizeKey = () => {
@@ -211,10 +180,6 @@ const ManualControls: React.FC<ManualControlsProps> = ({
     setCustomProgressionWarning('');
   }, [state.progression]);
 
-  const handleCloseProgressionDropdown = useCallback(() => {
-    setShowProgressionDropdown(false);
-  }, []);
-
   return (
     <>
       <div className="manual-controls">
@@ -227,51 +192,37 @@ const ManualControls: React.FC<ManualControlsProps> = ({
 
         <div className="option-chip-row">
           <span className="option-chip-label">Progression:</span>
-          <div className="option-chip-container" ref={progressionContainerRef}>
-            <div
-              className={`option-chip ${lockedOptions.progression ? 'locked' : ''} ${showProgressionDropdown ? 'dropdown-open' : ''}`}
-              onClick={() => {
-                if (!lockedOptions.progression) setShowProgressionDropdown(true);
-              }}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' || event.key === ' ') {
-                  event.preventDefault();
-                  if (!lockedOptions.progression) setShowProgressionDropdown(true);
-                }
-              }}
-            >
-              <input
-                type="text"
+          <div className="option-chip-container">
+            <div className={`option-chip ${lockedOptions.progression ? 'locked' : ''}`}>
+              <ChordProgressionInput
                 value={customProgressionInput}
-                onChange={(event) => {
-                  setCustomProgressionInput(event.target.value);
+                onChange={(next) => {
+                  setCustomProgressionInput(next);
                   setCustomProgressionError('');
                   setCustomProgressionWarning('');
-                  if (!showProgressionDropdown) setShowProgressionDropdown(true);
                 }}
-                onFocus={() => {
-                  if (!lockedOptions.progression) setShowProgressionDropdown(true);
+                onCommit={applyCustomProgression}
+                presets={COMMON_CHORD_PROGRESSIONS}
+                selectedPresetIndex={COMMON_CHORD_PROGRESSIONS.findIndex(
+                  (progression) => progression.progression.join('–') === customProgressionInput
+                )}
+                onSelectPreset={(index) => {
+                  const preset = COMMON_CHORD_PROGRESSIONS[index];
+                  if (!preset) return;
+                  const value = preset.progression.join('–');
+                  setCustomProgressionInput(value);
+                  setCustomProgressionError('');
+                  setCustomProgressionWarning('');
+                  onStateChange({ progression: preset });
                 }}
-                onBlur={() => {
-                  if (!lockedOptions.progression && customProgressionInput.trim().length > 0) {
-                    applyCustomProgression();
-                  }
-                }}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') {
-                    event.preventDefault();
-                    applyCustomProgression();
-                    setShowProgressionDropdown(false);
-                  } else if (event.key === 'Escape') {
-                    setShowProgressionDropdown(false);
-                  }
-                }}
-                placeholder="I–V–vi–IV or C–G–Am–F"
-                className="option-chip-inline-input"
+                keyContext={state.key}
+                showResolvedForKey
+                className="option-chip-inline-progression"
+                inputClassName="option-chip-inline-input"
+                dropdownClassName="option-chip-dropdown"
+                appearance="chords"
+                presetColumns={1}
                 disabled={lockedOptions.progression}
-                onClick={(event) => event.stopPropagation()}
               />
               <div className="option-chip-actions">
                 <AppTooltip title="Randomize progression">
@@ -298,7 +249,7 @@ const ManualControls: React.FC<ManualControlsProps> = ({
                     className="option-chip-lock"
                     onClick={(event) => {
                       event.stopPropagation();
-                      onLockChange('progression', !lockedOptions.progression)
+                      onLockChange('progression', !lockedOptions.progression);
                     }}
                     aria-label={lockedOptions.progression ? 'Unlock progression' : 'Lock progression'}
                   >
@@ -307,60 +258,8 @@ const ManualControls: React.FC<ManualControlsProps> = ({
                     </span>
                   </button>
                 </AppTooltip>
-              
-            </div>
-            </div>
-            <Popover
-              open={showProgressionDropdown}
-              anchorEl={progressionContainerRef.current}
-              onClose={handleCloseProgressionDropdown}
-              disableAutoFocus
-              disableEnforceFocus
-              disableRestoreFocus
-              anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-              transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-              slotProps={{
-                paper: {
-                  className: 'option-chip-dropdown',
-                  style: progressionContainerRef.current
-                    ? { minWidth: `${Math.max(260, progressionContainerRef.current.offsetWidth)}px` }
-                    : undefined,
-                },
-              }}
-            >
-              <div className="option-chip-dropdown-list">
-                {orderedProgressionAutocompleteOptions.map((option) => (
-                  <button
-                    key={`${option.label}-${option.value}`}
-                    type="button"
-                    className={`option-chip-dropdown-item ${
-                      customProgressionInput.trim() === option.value ||
-                      state.progression.name === option.label
-                        ? 'selected'
-                        : ''
-                    }`}
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      setCustomProgressionInput(option.value);
-                      setCustomProgressionError('');
-                      setCustomProgressionWarning('');
-                      const presetMatch = COMMON_CHORD_PROGRESSIONS.find(
-                        (progression) => progression.name === option.label
-                      );
-                      if (presetMatch) {
-                        onStateChange({ progression: presetMatch });
-                      } else {
-                        applyCustomProgression(option.value);
-                      }
-                      setShowProgressionDropdown(false);
-                    }}
-                  >
-                    {option.label}
-                  </button>
-                ))}
               </div>
-            </Popover>
+            </div>
           </div>
         </div>
         {customProgressionError ? (
@@ -372,55 +271,54 @@ const ManualControls: React.FC<ManualControlsProps> = ({
 
         <div className="option-chip-row">
           <span className="option-chip-label">Key:</span>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              flex: 1,
-            }}
-          >
-            <div style={{ flex: 1 }}>
-              <OptionChip
-                label="Key"
+          <div className="option-chip-container">
+            <div className={`chords-key-shell ${lockedOptions.key ? 'locked' : ''}`}>
+              <KeyInput
                 value={state.key}
-                isLocked={lockedOptions.key || false}
-                tooltip="The key signature for the chord progression"
-                options={ALL_KEYS.map((key) => ({ value: key, label: key }))}
-                onSelect={(value) => onStateChange({ key: value as Key })}
-                onLockToggle={() => onLockChange('key', !lockedOptions.key)}
-                onRandomize={handleRandomizeKey}
-                hideLabel={true}
+                onChange={(next) => onStateChange({ key: next as Key })}
+                disabled={lockedOptions.key}
+                className="chords-key-input"
+                dropdownClassName="chords-key-dropdown"
+                showStepButtons
+                trailingActions={(
+                  <>
+                    <AppTooltip title="Randomize key">
+                      <button
+                        type="button"
+                        className="option-chip-dice"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleRandomizeKey();
+                        }}
+                        disabled={lockedOptions.key}
+                        aria-label="Randomize key"
+                      >
+                        <DiceIcon variant="single" size={14} />
+                      </button>
+                    </AppTooltip>
+                    <AppTooltip
+                      title={
+                        lockedOptions.key
+                          ? 'Unlock to allow randomization'
+                          : 'Lock to prevent randomization'
+                      }
+                    >
+                      <button
+                        className="option-chip-lock"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onLockChange('key', !lockedOptions.key);
+                        }}
+                        aria-label={lockedOptions.key ? 'Unlock key' : 'Lock key'}
+                      >
+                        <span className="material-symbols-outlined">
+                          {lockedOptions.key ? 'lock' : 'lock_open'}
+                        </span>
+                      </button>
+                    </AppTooltip>
+                  </>
+                )}
               />
-            </div>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.125rem',
-                flexShrink: 0,
-              }}
-            >
-              <button
-                className="key-transpose-button"
-                onClick={() => {
-                  onStateChange({ key: transposeKeyDown(state.key) });
-                }}
-                title="Transpose down one semitone"
-                aria-label="Transpose down"
-              >
-                <span className="material-symbols-outlined">remove</span>
-              </button>
-              <button
-                className="key-transpose-button"
-                onClick={() => {
-                  onStateChange({ key: transposeKeyUp(state.key) });
-                }}
-                title="Transpose up one semitone"
-                aria-label="Transpose up"
-              >
-                <span className="material-symbols-outlined">add</span>
-              </button>
             </div>
           </div>
         </div>

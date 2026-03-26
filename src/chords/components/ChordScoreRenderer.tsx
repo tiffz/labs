@@ -10,11 +10,13 @@ import { progressionToChords } from '../utils/chordTheory';
 import { generateVoicing } from '../utils/chordVoicing';
 import { generateStyledChordNotes } from '../utils/chordStyling';
 import { getKeySignature } from '../utils/keySignature';
+import { scrollPlaybackTarget, type PlaybackAutoScrollState } from '../../shared/utils/playbackAutoScroll';
 
 interface ChordScoreRendererProps {
   state: ChordProgressionState;
   currentChordIndex?: number | null;
   activeNoteGroups?: Set<string>; // Set of "measureIndex:clef:groupIndex" strings
+  isPlaying?: boolean;
 }
 
 /**
@@ -102,11 +104,22 @@ function notesToStaveNote(notes: number[], duration: string, clef: 'bass' | 'tre
 }
 
 
-const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({ state, currentChordIndex, activeNoteGroups = new Set() }) => {
+const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({
+  state,
+  currentChordIndex,
+  activeNoteGroups = new Set(),
+  isPlaying = false,
+}) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const stateRef = useRef<string>('');
   const scrollContainerRef = useRef<HTMLElement | null>(null);
   const noteElementMapRef = useRef<Map<string, SVGElement[]>>(new Map()); // Map note keys to SVG elements
+  const measureAnchorMapRef = useRef<Map<number, SVGElement>>(new Map());
+  const autoScrollStateRef = useRef<PlaybackAutoScrollState>({
+    lastMarker: null,
+    lastScrollAtMs: 0,
+    lastTargetTop: null,
+  });
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -171,6 +184,7 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({ state, currentC
     // Always render to update highlighting, but preserve scroll position when appropriate
     containerRef.current.innerHTML = '';
     noteElementMapRef.current.clear(); // Clear note element map on re-render
+    measureAnchorMapRef.current.clear();
 
     try {
       // Convert progression to actual chords
@@ -525,6 +539,10 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({ state, currentC
           const firstNote = trebleNotes.length > 0 ? trebleNotes[0] : (bassNotes.length > 0 ? bassNotes[0] : null);
           if (firstNote) {
             firstNoteRefs.set(measureIndex, { note: firstNote, stave: trebleStave });
+            const anchorElement = firstNote.getSVGElement();
+            if (anchorElement) {
+              measureAnchorMapRef.current.set(measureIndex, anchorElement);
+            }
           }
         }
         
@@ -653,6 +671,31 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({ state, currentC
       }
     }
   }, [state, currentChordIndex, activeNoteGroups]);
+
+  useEffect(() => {
+    if (!isPlaying || currentChordIndex === null || currentChordIndex === undefined) return;
+    const target =
+      measureAnchorMapRef.current.get(currentChordIndex)
+      ?? containerRef.current?.querySelector(`[data-measure-index="${currentChordIndex}"]`) as SVGElement | null;
+    if (!target) return;
+    scrollPlaybackTarget({
+      marker: currentChordIndex,
+      target,
+      state: autoScrollStateRef.current,
+      scrollContainer: scrollContainerRef.current,
+      minIntervalMs: 100,
+      minDeltaPx: 40,
+      preferredTopRatio: 0.3,
+      allowBackward: true,
+    });
+  }, [isPlaying, currentChordIndex]);
+
+  useEffect(() => {
+    if (isPlaying) return;
+    autoScrollStateRef.current.lastMarker = null;
+    autoScrollStateRef.current.lastScrollAtMs = 0;
+    autoScrollStateRef.current.lastTargetTop = null;
+  }, [isPlaying]);
 
   return (
     <div className="chord-score-container" ref={containerRef} />

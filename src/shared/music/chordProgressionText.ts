@@ -101,6 +101,14 @@ export interface ParsedProgressionText {
   chordSymbols: string[];
   romanNumerals: RomanNumeral[];
   inferredKey: Key | null;
+  resolvedKey: Key | null;
+  resolvedChordSymbols: string[];
+  resolvedDisplay: string;
+}
+
+export interface ParseProgressionTextOptions {
+  keyAware?: boolean;
+  inferKey?: boolean;
 }
 
 function tokenizeProgressionInput(input: string): string[] {
@@ -233,11 +241,11 @@ function findBestDiatonicFit(
       }
     | null = null;
 
-  ALL_KEYS.forEach((key) => {
-    SHIFT_CANDIDATES.forEach((shift) => {
+  for (const key of ALL_KEYS) {
+    for (const shift of SHIFT_CANDIDATES) {
       const shiftedTokens = transposeChordTokens(tokens, shift, key);
       const romanNumerals = chordTokensToRoman(shiftedTokens, key);
-      if (!romanNumerals || romanNumerals.length < 2) return;
+      if (!romanNumerals || romanNumerals.length < 2) continue;
       const chordSymbols = shiftedTokens.map(
         (token) => `${spellRoot(token.root, key)}${QUALITY_SUFFIX[token.quality] ?? ''}`
       );
@@ -248,16 +256,15 @@ function findBestDiatonicFit(
       if (!best || score > best.score) {
         best = { key, shift, romanNumerals, chordSymbols, score };
       }
-    });
-  });
+    }
+  }
 
-  return best
-    ? {
-        key: best.key,
-        romanNumerals: best.romanNumerals,
-        chordSymbols: best.chordSymbols,
-      }
-    : null;
+  if (!best) return null;
+  return {
+    key: best.key,
+    romanNumerals: best.romanNumerals,
+    chordSymbols: best.chordSymbols,
+  };
 }
 
 function rootPatternToRoman(tokens: ParsedChordToken[], key: Key): RomanNumeral[] | null {
@@ -287,11 +294,11 @@ function findBestRootPatternFit(
       }
     | null = null;
 
-  ALL_KEYS.forEach((key) => {
-    SHIFT_CANDIDATES.forEach((shift) => {
+  for (const key of ALL_KEYS) {
+    for (const shift of SHIFT_CANDIDATES) {
       const shiftedTokens = transposeChordTokens(tokens, shift, key);
       const romanNumerals = rootPatternToRoman(shiftedTokens, key);
-      if (!romanNumerals || romanNumerals.length < 2) return;
+      if (!romanNumerals || romanNumerals.length < 2) continue;
       const qualityMatches = shiftedTokens.reduce((sum, token, index) => {
         const roman = romanNumerals[index];
         if (!roman) return sum;
@@ -330,16 +337,15 @@ function findBestRootPatternFit(
           chordSymbols: romanToChordSymbols(romanNumerals, key),
         };
       }
-    });
-  });
+    }
+  }
 
-  return best
-    ? {
-        key: best.key,
-        romanNumerals: best.romanNumerals,
-        chordSymbols: best.chordSymbols,
-      }
-    : null;
+  if (!best) return null;
+  return {
+    key: best.key,
+    romanNumerals: best.romanNumerals,
+    chordSymbols: best.chordSymbols,
+  };
 }
 
 export function inferKeyFromChordSymbols(chordSymbols: string[]): Key | null {
@@ -378,8 +384,11 @@ export function inferKeyFromChordSymbols(chordSymbols: string[]): Key | null {
 
 export function parseProgressionText(
   input: string,
-  selectedKey: Key
+  selectedKey: Key,
+  options: ParseProgressionTextOptions = {}
 ): ParsedProgressionText {
+  const keyAware = options.keyAware ?? true;
+  const inferKey = options.inferKey ?? true;
   const tokens = tokenizeProgressionInput(input);
   if (tokens.length === 0) {
     return {
@@ -389,6 +398,9 @@ export function parseProgressionText(
       chordSymbols: [],
       romanNumerals: [],
       inferredKey: null,
+      resolvedKey: null,
+      resolvedChordSymbols: [],
+      resolvedDisplay: '',
     };
   }
 
@@ -401,11 +413,15 @@ export function parseProgressionText(
       romanNumerals: romanTokens,
       chordSymbols: romanToChordSymbols(romanTokens, selectedKey),
       inferredKey: selectedKey,
+      resolvedKey: selectedKey,
+      resolvedChordSymbols: romanToChordSymbols(romanTokens, selectedKey),
+      resolvedDisplay: romanToChordSymbols(romanTokens, selectedKey).join('–'),
     };
   }
 
   if (tokens.every((token) => CHORD_TOKEN_REGEX.test(token))) {
-    const inferredKey = inferKeyFromChordSymbols(tokens) ?? selectedKey;
+    const inferredKeyCandidate = inferKey ? inferKeyFromChordSymbols(tokens) : null;
+    const inferredKey = inferredKeyCandidate ?? selectedKey;
     const parsedTokens = tokens.map(parseChordToken);
     if (parsedTokens.some((token) => token === null)) {
       return {
@@ -415,16 +431,20 @@ export function parseProgressionText(
         chordSymbols: [],
         romanNumerals: [],
         inferredKey: null,
+        resolvedKey: null,
+        resolvedChordSymbols: [],
+        resolvedDisplay: '',
       };
     }
+    const mappingKey = keyAware ? inferredKey : selectedKey;
     const normalizedSymbols = tokens
-      .map((token) => normalizeChordToken(token, inferredKey))
+      .map((token) => normalizeChordToken(token, mappingKey))
       .filter(Boolean) as string[];
     let romanNumerals =
-      chordTokensToRoman(parsedTokens as ParsedChordToken[], inferredKey) ?? [];
-    let effectiveKey = inferredKey;
+      chordTokensToRoman(parsedTokens as ParsedChordToken[], mappingKey) ?? [];
+    let effectiveKey = mappingKey;
     let effectiveSymbols = normalizedSymbols;
-    if (romanNumerals.length < 2) {
+    if (romanNumerals.length < 2 && inferKey) {
       const fitted = findBestDiatonicFit(
         parsedTokens as ParsedChordToken[],
         selectedKey
@@ -452,6 +472,9 @@ export function parseProgressionText(
       chordSymbols: effectiveSymbols,
       romanNumerals,
       inferredKey: effectiveKey,
+      resolvedKey: effectiveKey,
+      resolvedChordSymbols: effectiveSymbols,
+      resolvedDisplay: effectiveSymbols.join('–'),
     };
   }
 
@@ -462,5 +485,8 @@ export function parseProgressionText(
     chordSymbols: [],
     romanNumerals: [],
     inferredKey: null,
+    resolvedKey: null,
+    resolvedChordSymbols: [],
+    resolvedDisplay: '',
   };
 }

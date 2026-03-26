@@ -13,6 +13,7 @@ const config: KnipConfig = {
     'src/beat/index.html',
     'src/piano/index.html',
     'src/words/index.html',
+    'src/ui/index.html',
     'src/drums/universal_tom/index.html',
     'src/404.html',
     // Include TS entry points explicitly so transitive deps are tracked
@@ -27,6 +28,7 @@ const config: KnipConfig = {
     'src/beat/main.tsx',
     'src/piano/main.tsx',
     'src/words/main.tsx',
+    'src/ui/main.tsx',
     'src/corp/App.tsx',
     'src/**/*.test.{ts,tsx}',
     // CLI tools for beat finder analysis (run via npx tsx, not imported by app)

@@ -4,6 +4,9 @@ import {
   COMMON_CHORD_PROGRESSIONS,
   type ChordStyleId,
 } from '../data/chordExercises';
+import type { Key } from '../types';
+import ChordProgressionInput from '../../shared/components/music/ChordProgressionInput';
+import ChordStyleInput from '../../shared/components/music/ChordStyleInput';
 
 interface ChordProgressionSelectorProps {
   value: string;
@@ -14,6 +17,12 @@ interface ChordProgressionSelectorProps {
   onInputChange: (value: string) => void;
   onSelectPreset: (index: number) => void;
   onEnter?: () => void;
+  keyContext?: Key;
+  inputInDropdown?: boolean;
+  menuMode?: 'popover' | 'inline';
+  appearance?: 'default' | 'piano' | 'words' | 'chords';
+  presetColumns?: 1 | 2 | 'auto';
+  inlineMenuClassName?: string;
 }
 
 export const ChordProgressionSelector: React.FC<ChordProgressionSelectorProps> = ({
@@ -25,39 +34,35 @@ export const ChordProgressionSelector: React.FC<ChordProgressionSelectorProps> =
   onInputChange,
   onSelectPreset,
   onEnter,
+  keyContext,
+  inputInDropdown = false,
+  menuMode = 'popover',
+  appearance = 'piano',
+  presetColumns = 2,
+  inlineMenuClassName,
 }) => {
+  void listId;
   return (
     <>
-      <input
-        type="text"
-        className="ep-custom-prog-input"
+      <ChordProgressionInput
         value={value}
-        onChange={(event) => onInputChange(event.target.value)}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter') {
-            event.preventDefault();
-            onEnter?.();
-          }
-        }}
-        placeholder="I–V–vi–IV or C–G–Am–F"
+        onChange={onInputChange}
+        onCommit={() => onEnter?.()}
+        selectedPresetIndex={selectedProgression}
+        onSelectPreset={onSelectPreset}
+        presets={COMMON_CHORD_PROGRESSIONS}
+        keyContext={keyContext}
+        inputClassName="ep-custom-prog-input"
+        dropdownClassName="ep-prog-dropdown"
+        showResolvedForKey
+        inputInDropdown={inputInDropdown}
+        menuMode={menuMode}
+        appearance={appearance}
+        presetColumns={presetColumns}
+        inlineMenuClassName={inlineMenuClassName}
       />
       {error ? <p className="ep-custom-prog-error">{error}</p> : null}
       {!error && warning ? <p className="ep-custom-prog-warning">{warning}</p> : null}
-      <div className="ep-prog-grid">
-        {COMMON_CHORD_PROGRESSIONS.map((progression, index) => (
-          <button
-            key={`${listId}-preset-${progression.name}`}
-            className={`ep-prog-item ${selectedProgression === index ? 'active' : ''}`}
-            onClick={() => onSelectPreset(index)}
-            type="button"
-          >
-            <span className="ep-prog-name">{progression.name}</span>
-            {progression.description ? (
-              <span className="ep-prog-desc">{progression.description}</span>
-            ) : null}
-          </button>
-        ))}
-      </div>
     </>
   );
 };
@@ -72,20 +77,16 @@ export const ChordStyleSelector: React.FC<ChordStyleSelectorProps> = ({
   onSelectStyle,
 }) => {
   return (
-    <div className="ep-style-grid">
-      {CHORD_STYLE_OPTIONS.map((styleOption) => (
-        <button
-          key={styleOption.id}
-          className={`ep-style-item ${selectedStyle === styleOption.id ? 'active' : ''}`}
-          onClick={() => onSelectStyle(styleOption.id)}
-          type="button"
-        >
-          <span className="ep-style-name">{styleOption.label}</span>
-          {styleOption.description ? (
-            <span className="ep-style-desc">{styleOption.description}</span>
-          ) : null}
-        </button>
-      ))}
-    </div>
+    <ChordStyleInput
+      value={selectedStyle}
+      onChange={(styleId) => onSelectStyle(styleId as ChordStyleId)}
+      options={CHORD_STYLE_OPTIONS}
+      appearance="piano"
+      menuMode="inline"
+      inlineMenuClassName="np-chord-style-inline-menu"
+      menuClassName="ep-style-grid shared-chord-style-menu--cols-3"
+      menuItemClassName="ep-style-item"
+      menuColumns={3}
+    />
   );
 };

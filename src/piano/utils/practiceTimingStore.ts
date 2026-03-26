@@ -44,7 +44,7 @@ export function getRecentMidiPresses(windowMs: number): number[] {
   const now = performance.now();
   const result: number[] = [];
   for (const [midi, time] of midiNoteOnTimes) {
-    if (now - time <= windowMs) result.push(midi);
+    if (heldNotes.has(midi) || now - time <= windowMs) result.push(midi);
   }
   return result;
 }

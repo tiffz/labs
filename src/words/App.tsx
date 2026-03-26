@@ -61,6 +61,9 @@ import DiceIcon from '../shared/components/DiceIcon';
 import AppTooltip from '../shared/components/AppTooltip';
 import AppSlider from '../shared/components/AppSlider';
 import BpmInput from '../shared/components/music/BpmInput';
+import ChordProgressionInput from '../shared/components/music/ChordProgressionInput';
+import ChordStyleInput from '../shared/components/music/ChordStyleInput';
+import KeyInput from '../shared/components/music/KeyInput';
 import dumSound from '../drums/assets/sounds/dum.wav';
 import takSound from '../drums/assets/sounds/tak.wav';
 import kaSound from '../drums/assets/sounds/ka.wav';
@@ -1350,7 +1353,13 @@ const App: React.FC = () => {
         target instanceof Element &&
         target.closest('.words-section-settings-anchor');
       const inSectionSettingsMenu = sectionSettingsMenuRef.current?.contains(target);
-      if (!inSectionSettingsAnchor && !inSectionSettingsMenu) {
+      const inSectionChordPopover =
+        target instanceof Element &&
+        Boolean(
+          target.closest('.words-section-chord-dropdown-root') ||
+          target.closest('.words-section-style-dropdown-root')
+        );
+      if (!inSectionSettingsAnchor && !inSectionSettingsMenu && !inSectionChordPopover) {
         setOpenSectionSettingsId(null);
       }
       const inSectionRandomizeAnchor =
@@ -1365,7 +1374,10 @@ const App: React.FC = () => {
         setExportMenuOpen(false);
       }
       const inRandomizeButton = randomizeButtonRef.current?.contains(target);
-      if (!inRandomizeButton) {
+      const inRandomizeMenu =
+        target instanceof Element &&
+        Boolean(target.closest('.words-randomize-menu'));
+      if (!inRandomizeButton && !inRandomizeMenu) {
         setRandomizeMenuOpen(false);
       }
     };
@@ -2967,26 +2979,24 @@ const App: React.FC = () => {
           </label>
           <label className="words-inline-control">
             key
-            <select
+            <KeyInput
               value={songKey}
-              onChange={(event) => setSongKey(event.target.value as Key)}
-            >
-              {ALL_KEYS.map((key) => (
-                <option key={key} value={key}>
-                  {key}
-                </option>
-              ))}
-            </select>
-            <AppTooltip title="Randomize key">
-              <button
-                type="button"
-                className="words-inline-dice-button words-icon-tooltip"
-                onClick={() => setSongKey(pickRandom(ALL_KEYS))}
-                aria-label="Randomize key"
-              >
-                <DiceIcon variant="single" size={15} />
-              </button>
-            </AppTooltip>
+              onChange={(next) => setSongKey(next as Key)}
+              className="words-key-input"
+              dropdownClassName="words-key-dropdown"
+              trailingActions={(
+                <AppTooltip title="Randomize key">
+                  <button
+                    type="button"
+                    className="words-inline-dice-button words-icon-tooltip"
+                    onClick={() => setSongKey(pickRandom(ALL_KEYS))}
+                    aria-label="Randomize key"
+                  >
+                    <DiceIcon variant="single" size={15} />
+                  </button>
+                </AppTooltip>
+              )}
+            />
           </label>
           <label className="words-inline-control">
             meter
@@ -3505,15 +3515,22 @@ const App: React.FC = () => {
                             <label className="words-slider-row words-chord-row">
                               section chords
                               <div className="words-chord-input-with-action">
-                                <input
-                                  type="text"
+                                <ChordProgressionInput
                                   value={section.chordProgressionInput}
-                                  onChange={(event) =>
-                                    setSectionChordProgression(
-                                      section.id,
-                                      event.target.value
-                                    )
+                                  onChange={(next) =>
+                                    setSectionChordProgression(section.id, next)
                                   }
+                                  onCommit={(next) =>
+                                    setSectionChordProgression(section.id, next)
+                                  }
+                                  keyContext={songKey}
+                                  showResolvedForKey
+                                  className="words-section-chord-input"
+                                  inputClassName="words-section-chord-text-input"
+                                  dropdownClassName="words-section-chord-dropdown"
+                                  appearance="words"
+                                  presetColumns={2}
+                                  showInputInPopover
                                   placeholder="I–V–vi–IV or C–G–Am–F"
                                 />
                                 <AppTooltip title="Randomize section chords">
@@ -3533,22 +3550,21 @@ const App: React.FC = () => {
                             <label className="words-slider-row words-chord-row">
                               chord style
                               <div className="words-chord-input-with-action">
-                                <select
-                                  className="words-select-inline"
+                                <ChordStyleInput
                                   value={section.chordStyleId}
-                                  onChange={(event) =>
+                                  onChange={(next) =>
                                     updateSection(section.id, (previousSection) => ({
                                       ...previousSection,
-                                      chordStyleId: event.target.value as ChordStyleId,
+                                      chordStyleId: next as ChordStyleId,
                                     }))
                                   }
-                                >
-                                  {CHORD_STYLE_OPTIONS.map((option) => (
-                                    <option key={option.id} value={option.id}>
-                                      {option.label}
-                                    </option>
-                                  ))}
-                                </select>
+                                  options={CHORD_STYLE_OPTIONS}
+                                  className="words-chord-style-input"
+                                  triggerClassName="words-select-inline words-chord-style-select"
+                                  dropdownClassName="words-section-style-dropdown"
+                                  appearance="words"
+                                  menuColumns={2}
+                                />
                                 <AppTooltip title="Randomize chord style">
                                   <button
                                     className="words-button words-button-icon words-icon-tooltip"

@@ -81,6 +81,14 @@ labs/
 
   Visit `/zines/` or any other app at `/yourapp/`. The custom 404 page is available at `/404.html`.
 
+- **Use `/ui` for shared UI development:**
+
+  ```sh
+  npm run dev
+  ```
+
+  Open `http://localhost:5173/ui/` for the internal shared UI gallery and module inventory.
+
 - **Run tests:**
 
   ```sh
@@ -125,12 +133,22 @@ The project uses a streamlined setup:
 ## UX and Design Conventions
 
 - **Reuse First**: For common UI problems (tooltips, toggles, icon buttons, controls), prefer shared components in `src/shared/components`.
+- **Shared UI Workshop**: Use `/ui/` as the default workshop for shared component states, appearance variants, and theming checks.
 - **Material Defaults**: By default, apps should follow Material Design interaction conventions (spacing rhythm, control sizing, focus/hover behavior, and widget ergonomics), then customize visual styling per app identity.
 - **MUI-First Implementation**: For React controls, prefer `@mui/material` primitives (`Menu`, `MenuItem`, `Dialog`, `Popover`, `Select`, `Autocomplete`, `TextField`, `Slider`, `Checkbox`, `IconButton`) over bespoke HTML widgets unless there is a measured UX/perf reason not to.
 - **Tooltip Standard**: Use `AppTooltip` (MUI-based) as the default tooltip primitive. Avoid custom CSS pseudo-tooltips or ad-hoc tooltip systems unless a rich, non-standard help surface is required.
 - **Icon Standard**: Use Material Design iconography by default (Material Symbols / MDI) unless there is a documented reason to use a different icon set.
 - **Accessibility Non-Negotiables**: Keyboard access, visible focus states, and semantic labels are required for all interactive controls; custom composite widgets must match MUI-level behavior for focus management and escape handling.
 - **Per-App Theming**: Keep each app's visual identity via app-scoped theme tokens while reusing MUI interaction primitives; avoid global one-size-fits-all restyling.
+- **Tokenized Theming Contract**: Prefer shared token families (`--bpm-*`, `--key-*`, `--cp-*`, `--cs-*`) and component appearance hooks over deep selector overrides. See `src/shared/SHARED_UI_CONVENTIONS.md`.
+- **Hidden Internal UI Index**: Use `/ui/` as the unlisted shared-code catalog and debugging index (visual and non-visual shared modules).
+
+## Shared UI Catalog Workflow
+
+- **Unlisted docs surface**: `/ui/` is intentionally not linked from the landing page.
+- **Shared module registry source**: edit `src/ui/sharedRegistry.ts` to register shared components/utilities/docs.
+- **Visual source of truth**: add/maintain component gallery examples in `src/ui/App.tsx`.
+- **Conventions source**: keep shared UI standards in `src/shared/SHARED_UI_CONVENTIONS.md`.
 
 ## Continuous Integration & Deployment (CI/CD)
 

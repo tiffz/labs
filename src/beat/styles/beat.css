@@ -4058,21 +4058,39 @@ body {
   max-width: 20.5rem;
   --bpm-dropdown-offset-y: 8px;
   --bpm-dropdown-min-width: 280px;
+  --bpm-value-padding: 0.3rem 0.52rem 0.3rem 0.62rem;
 }
 
 .shared-key-input {
   width: 100%;
-  max-width: 16.5rem;
+  max-width: 17rem;
+  --key-shell-height: 38px;
+  --key-radius: 0.375rem;
+  --key-bg: var(--bg-input);
+  --key-border: var(--border-subtle);
+  --key-text: var(--text-primary);
+  --key-muted: var(--text-secondary);
+  --key-focus: var(--border-focus);
+  --key-focus-ring: 0 0 0 3px rgba(157, 142, 199, 0.2);
+  --key-divider: var(--border-subtle);
+  --key-control-hover-bg: var(--bg-elevated);
+  --key-dropdown-bg: var(--bg-elevated);
+  --key-dropdown-border: var(--border-subtle);
+  --key-dropdown-padding: 0.74rem;
+  --key-grid-gap: 0.52rem;
+  --key-chip-min-height: 2.46rem;
+  --key-chip-font-size: 0.94rem;
+  --key-chip-font-weight: 600;
 }
 
-.shared-bpm-input .shared-bpm-main-row {
+.beat-app .shared-bpm-input .shared-bpm-main-row {
   display: flex;
   align-items: flex-start;
   gap: 0.4rem;
 }
 
-.shared-bpm-shell,
-.shared-key-shell {
+.beat-app .shared-bpm-shell,
+.beat-app .shared-key-shell {
   display: flex;
   align-items: center;
   gap: 0.08rem;
@@ -4084,8 +4102,55 @@ body {
   width: 100%;
 }
 
-.shared-bpm-shell:focus-within,
-.shared-key-shell:focus-within {
+.beat-app .shared-key-input .shared-key-value-btn {
+  padding: 0.42rem 0.72rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.beat-app .shared-key-input .shared-key-value-btn .material-symbols-outlined {
+  color: var(--text-muted);
+}
+
+.beat-key-dropdown.shared-key-dropdown {
+  --key-dropdown-bg: var(--bg-elevated);
+  --key-dropdown-border: var(--border-subtle);
+  --key-chip-bg: var(--bg-input);
+  --key-chip-border: var(--border-subtle);
+  --key-chip-hover-border: var(--accent-primary);
+  --key-chip-hover-bg: color-mix(in srgb, var(--bg-elevated) 86%, #0b1224);
+  --key-chip-hover-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
+  --key-chip-hover-transform: translateY(-1px);
+  --key-chip-active-border: #60a5fa;
+  --key-chip-active-bg: rgba(37, 99, 235, 0.18);
+  --key-chip-active-text: #bfdbfe;
+  --key-chip-active-shadow: 0 0 0 1px rgba(96, 165, 250, 0.24);
+  border-radius: 0.55rem;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-lg);
+}
+
+.beat-key-dropdown .shared-key-grid-item {
+  min-height: 2.46rem;
+  padding: 0.34rem 0.5rem;
+  border-radius: 0.45rem;
+  border-color: var(--border-subtle);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-size: 0.94rem;
+  font-weight: 600;
+}
+
+.beat-app .shared-key-shell {
+  gap: 0.12rem;
+  min-height: var(--key-shell-height, 2.375rem);
+  border-radius: var(--key-radius, 0.375rem);
+}
+
+.beat-app .shared-bpm-shell:focus-within,
+.beat-app .shared-key-shell:focus-within {
   border-color: var(--border-focus);
   box-shadow: 0 0 0 1px rgba(157, 142, 199, 0.2);
 }
@@ -4118,8 +4183,7 @@ body {
   min-width: 0;
 }
 
-.shared-bpm-value,
-.shared-key-select {
+.shared-bpm-value {
   min-width: 0;
   flex: 1;
   border: 0;
@@ -4133,33 +4197,14 @@ body {
 .shared-bpm-value {
   max-width: 5.2rem;
   min-width: 4.2rem;
-  text-align: center;
+  text-align: left;
+  padding: var(--bpm-value-padding);
   border-right: 1px solid var(--border-subtle);
   font-variant-numeric: tabular-nums;
 }
 
-.shared-key-select {
-  width: 100%;
-  min-height: 2.35rem;
-  color: var(--text-primary);
-}
-
-.shared-key-select.MuiInputBase-root {
-  padding-right: 0.4rem;
-}
-
-.shared-key-select .MuiSelect-select {
-  padding: 0.3rem 0.52rem !important;
-  font-size: 1.02rem;
-  font-weight: 600;
-}
-
-.shared-key-select .MuiSelect-icon {
-  color: var(--text-muted);
-}
-
 .shared-bpm-value:focus,
-.shared-key-select:focus {
+.shared-key-value-btn:focus {
   outline: none;
 }
 
@@ -4826,8 +4871,8 @@ button:disabled {
 }
 
 .shared-key-step-btn {
-  width: 2rem;
-  height: 2.15rem;
+  width: 2.05rem;
+  height: calc(var(--key-shell-height, 2.375rem) - 0.1rem);
   border: 0;
   background: color-mix(in srgb, var(--bg-elevated) 65%, transparent);
   color: var(--text-secondary);
@@ -5687,17 +5732,6 @@ button:disabled {
 .shared-bpm-trailing-actions .inline-icon-btn {
   border-left: 0 !important;
   border-radius: 0.45rem !important;
-}
-
-.shared-key-select .MuiSelect-icon,
-.shared-key-select .MuiNativeSelect-icon {
-  color: var(--text-muted) !important;
-}
-
-.shared-key-select .MuiSelect-select {
-  min-height: calc(var(--beat-control-height) - 2px);
-  display: inline-flex;
-  align-items: center;
 }
 
 .playback-key-chip.shifted {

@@ -13,6 +13,7 @@ export interface PlaybackAutoScrollOptions {
   minDeltaPx?: number;
   preferredTopRatio?: number;
   allowBackward?: boolean;
+  behavior?: ScrollBehavior;
 }
 
 /**
@@ -30,6 +31,7 @@ export function scrollPlaybackTarget({
   minDeltaPx = 56,
   preferredTopRatio = 0.33,
   allowBackward = true,
+  behavior = 'smooth',
 }: PlaybackAutoScrollOptions): void {
   if (state.lastMarker !== null && state.lastMarker === marker) return;
 
@@ -62,7 +64,7 @@ export function scrollPlaybackTarget({
       state.lastTargetTop = clampedDesiredTop;
       return;
     }
-    mainContent.scrollTo({ top: clampedDesiredTop, behavior: 'auto' });
+    mainContent.scrollTo({ top: clampedDesiredTop, behavior });
     state.lastMarker = marker;
     state.lastScrollAtMs = now;
     state.lastTargetTop = clampedDesiredTop;
@@ -89,7 +91,7 @@ export function scrollPlaybackTarget({
     state.lastTargetTop = clampedDesiredTop;
     return;
   }
-  window.scrollTo({ top: clampedDesiredTop, behavior: 'auto' });
+  window.scrollTo({ top: clampedDesiredTop, behavior });
   state.lastMarker = marker;
   state.lastScrollAtMs = now;
   state.lastTargetTop = clampedDesiredTop;

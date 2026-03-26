@@ -4,15 +4,21 @@ import { scoreToAbc, abcToScore } from '../utils/abcNotation';
 
 interface NoteInputProps {
   onImportClick?: () => void;
+  onJumpToSelection?: () => void;
 }
 
-const NoteInput: React.FC<NoteInputProps> = ({ onImportClick }) => {
+const NoteInput: React.FC<NoteInputProps> = ({ onImportClick, onJumpToSelection }) => {
   const { state, dispatch } = usePiano();
   const isEditing = state.inputMode === 'step-input';
   const [abcExpanded, setAbcExpanded] = useState(false);
   const [abcText, setAbcText] = useState('');
   const [isUserEditing, setIsUserEditing] = useState(false);
+  const [sectionsMenuOpen, setSectionsMenuOpen] = useState(false);
+  const [saveFeedback, setSaveFeedback] = useState<'saved' | 'exists' | null>(null);
+  const [saveToastStyle, setSaveToastStyle] = useState<React.CSSProperties | undefined>(undefined);
   const userEditTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sectionsMenuRef = useRef<HTMLDivElement | null>(null);
+  const saveSectionButtonRef = useRef<HTMLButtonElement | null>(null);
 
   const currentAbcFromScore = useMemo(() => {
     if (!state.score) return '';
@@ -58,6 +64,46 @@ const NoteInput: React.FC<NoteInputProps> = ({ onImportClick }) => {
     };
   }, []);
 
+  useEffect(() => {
+    if (!sectionsMenuOpen) return;
+    const onPointerDown = (event: MouseEvent) => {
+      if (!sectionsMenuRef.current) return;
+      const target = event.target as Node | null;
+      if (target && sectionsMenuRef.current.contains(target)) return;
+      setSectionsMenuOpen(false);
+    };
+    window.addEventListener('mousedown', onPointerDown);
+    return () => window.removeEventListener('mousedown', onPointerDown);
+  }, [sectionsMenuOpen]);
+
+  useEffect(() => {
+    if (!saveFeedback) return;
+    const timeout = window.setTimeout(() => setSaveFeedback(null), 1700);
+    return () => window.clearTimeout(timeout);
+  }, [saveFeedback]);
+
+  const updateSaveToastPosition = useCallback(() => {
+    const button = saveSectionButtonRef.current;
+    if (!button) return;
+    const rect = button.getBoundingClientRect();
+    const toastWidth = 170;
+    const left = Math.max(12, Math.min(window.innerWidth - toastWidth - 12, rect.left - 18));
+    const top = rect.bottom + 8;
+    setSaveToastStyle({ left, top, right: 'auto' });
+  }, []);
+
+  useEffect(() => {
+    if (!saveFeedback) return;
+    updateSaveToastPosition();
+    const onReposition = () => updateSaveToastPosition();
+    window.addEventListener('resize', onReposition);
+    window.addEventListener('scroll', onReposition, true);
+    return () => {
+      window.removeEventListener('resize', onReposition);
+      window.removeEventListener('scroll', onReposition, true);
+    };
+  }, [saveFeedback, updateSaveToastPosition]);
+
   const hasChanges = isEditing && state.editSnapshot && state.score &&
     JSON.stringify(state.score) !== JSON.stringify(state.editSnapshot);
 
@@ -74,6 +120,34 @@ const NoteInput: React.FC<NoteInputProps> = ({ onImportClick }) => {
 
   const handleUndo = useCallback(() => dispatch({ type: 'UNDO' }), [dispatch]);
   const handleRedo = useCallback(() => dispatch({ type: 'REDO' }), [dispatch]);
+  const activeSection = state.activeSectionIndex !== null
+    ? state.sections[state.activeSectionIndex] ?? null
+    : null;
+
+  const saveSelectionAsSection = useCallback(() => {
+    if (!state.selectedMeasureRange) return;
+    const { start, end } = state.selectedMeasureRange;
+    const existing = state.sections.find((sec) => sec.startMeasure === start && sec.endMeasure === end);
+    if (existing) {
+      setSaveFeedback('exists');
+      return;
+    }
+    const name = `Measures ${start + 1}-${end + 1}`;
+    const next = [...state.sections, { name, startMeasure: start, endMeasure: end }]
+      .sort((a, b) => a.startMeasure - b.startMeasure);
+    dispatch({ type: 'SET_SECTIONS', sections: next });
+    setSaveFeedback('saved');
+  }, [dispatch, state.selectedMeasureRange, state.sections]);
+
+  const loadSection = useCallback((index: number) => {
+    dispatch({ type: 'LOAD_SECTION', index });
+    setSectionsMenuOpen(false);
+  }, [dispatch]);
+
+  const loadFullScore = useCallback(() => {
+    dispatch({ type: 'CLEAR_SECTIONS' });
+    setSectionsMenuOpen(false);
+  }, [dispatch]);
 
   useEffect(() => {
     if (!isEditing) return;
@@ -127,7 +201,58 @@ const NoteInput: React.FC<NoteInputProps> = ({ onImportClick }) => {
           </button>
         )}
 
-        <div className="toolbar-spacer" />
+        <div className="np-sections-menu-wrap" ref={sectionsMenuRef}>
+          <button
+            className={`btn btn-small ${sectionsMenuOpen ? 'active' : ''}`}
+            onClick={() => setSectionsMenuOpen((prev) => !prev)}
+            title="Open saved sections"
+            aria-haspopup="menu"
+            aria-expanded={sectionsMenuOpen}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>bookmarks</span>
+            Sections
+            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>arrow_drop_down</span>
+          </button>
+          {sectionsMenuOpen ? (
+            <div className="np-sections-menu" role="menu">
+              {state.sections.length === 0 ? (
+                <div className="np-sections-empty">
+                  Select a measure range and click the save icon on the selection chip to create a practice section.
+                </div>
+              ) : (
+                <>
+                  {state.sections.map((section, idx) => (
+                    <button
+                      key={`${section.startMeasure}-${section.endMeasure}-${idx}`}
+                      className={`np-sections-item ${state.activeSectionIndex === idx ? 'active' : ''}`}
+                      onClick={() => loadSection(idx)}
+                      role="menuitem"
+                    >
+                      <span className="np-sections-item-name">{section.name}</span>
+                      <span className="np-sections-item-range">
+                        m. {section.startMeasure + 1}-{section.endMeasure + 1}
+                      </span>
+                    </button>
+                  ))}
+                </>
+              )}
+            </div>
+          ) : null}
+        </div>
+
+        <div className="toolbar-spacer np-toolbar-center">
+          {activeSection ? (
+            <div className="np-active-section-banner" role="status" aria-live="polite">
+              <span className="material-symbols-outlined" style={{ fontSize: 16 }}>flag</span>
+              <span>
+                Practicing section: <strong>{activeSection.name}</strong>
+              </span>
+              <button className="np-full-score-btn" onClick={loadFullScore}>
+                Full score
+              </button>
+            </div>
+          ) : null}
+        </div>
 
         <div className="zoom-controls">
           <button className="zoom-btn" onClick={() => dispatch({ type: 'SET_ZOOM', level: Math.round((state.zoomLevel - 0.1) * 10) / 10 })} title="Zoom out" disabled={state.zoomLevel <= 0.4}>
@@ -144,6 +269,44 @@ const NoteInput: React.FC<NoteInputProps> = ({ onImportClick }) => {
           <button className="zoom-btn" onClick={() => dispatch({ type: 'SET_ZOOM', level: Math.round((state.zoomLevel + 0.1) * 10) / 10 })} title="Zoom in" disabled={state.zoomLevel >= 2.0}>
             <span className="material-symbols-outlined">add</span>
           </button>
+          {state.selectedMeasureRange ? (
+            <div
+              className="selection-info zoom-selection-info"
+              role="status"
+              aria-live="polite"
+              title="Playback will loop only the currently selected measure range."
+            >
+              <span>
+                {state.selectedMeasureRange.start === state.selectedMeasureRange.end
+                  ? `Currently selected: Measure ${state.selectedMeasureRange.start + 1}`
+                  : `Currently selected: Measures ${state.selectedMeasureRange.start + 1}-${state.selectedMeasureRange.end + 1}`}
+              </span>
+              <button
+                className="selection-jump-btn"
+                onClick={() => onJumpToSelection?.()}
+                aria-label="Jump to selected measures"
+                title="Jump to selected measures"
+              >
+                <span className="material-symbols-outlined">center_focus_strong</span>
+              </button>
+              <button
+                className="selection-jump-btn"
+                onClick={saveSelectionAsSection}
+                aria-label="Save selected measures as practice section"
+                title="Save selected measures as practice section"
+                ref={saveSectionButtonRef}
+              >
+                <span className="material-symbols-outlined">bookmark_add</span>
+              </button>
+              <button
+                className="clear-selection-btn"
+                onClick={() => dispatch({ type: 'CLEAR_MEASURE_SELECTION' })}
+                aria-label="Clear selected measures"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+          ) : null}
         </div>
 
         {isEditing && (
@@ -165,6 +328,12 @@ const NoteInput: React.FC<NoteInputProps> = ({ onImportClick }) => {
           </span>
         )}
       </div>
+
+      {saveFeedback ? (
+        <div className={`np-save-toast ${saveFeedback}`} role="status" aria-live="polite" style={saveToastStyle}>
+          {saveFeedback === 'saved' ? 'Section saved' : 'Section already saved'}
+        </div>
+      ) : null}
 
       {isEditing && abcExpanded && (
         <div className="abc-input-section">
