@@ -81,6 +81,7 @@ body {
 /* Layout */
 .beat-app {
   min-height: 100vh;
+  width: 100%;
   max-width: 1200px;
   margin: 0 auto;
   padding: 1.5rem 1.25rem;
@@ -4441,6 +4442,17 @@ body {
 .beat-app {
   max-width: 1240px;
   padding: 1.25rem 1.1rem 2rem;
+}
+
+@media (max-width: 768px) {
+  .beat-app {
+    width: 100%;
+    padding: 1rem 0.75rem 1.5rem;
+  }
+
+  .beat-main {
+    gap: 1rem;
+  }
 }
 
 .beat-header {

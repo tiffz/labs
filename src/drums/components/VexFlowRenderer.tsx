@@ -396,8 +396,8 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
     hasDragged: false,
   });
 
-  // Re-render on window resize to recalculate responsive layout
-  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  // Re-render when the notation container width changes.
+  const [containerWidth, setContainerWidth] = useState(0);
 
   // Selection rectangle ref for direct DOM manipulation (avoids re-render conflicts with VexFlow)
   const selectionRectRef = useRef<HTMLDivElement | null>(null);
@@ -423,11 +423,25 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
   }, []);
 
   useEffect(() => {
-    const handleResize = () => {
-      setWindowWidth(window.innerWidth);
+    const container = containerRef.current;
+    if (!container) return;
+
+    const updateWidth = () => {
+      setContainerWidth(container.clientWidth);
     };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+
+    updateWidth();
+    const observer =
+      typeof ResizeObserver !== 'undefined'
+        ? new ResizeObserver(updateWidth)
+        : null;
+    observer?.observe(container);
+    window.addEventListener('resize', updateWidth);
+
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener('resize', updateWidth);
+    };
   }, []);
 
   useEffect(() => {
@@ -495,11 +509,11 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
       const measureWidths = rhythm.measures.map((m, i) => calculateMeasureWidth(m, i));
 
       // Layout measures into lines based on available width
-      // Use viewport width minus padding for responsive layout
-      const containerPadding = 40; // Account for margins and padding
-      const sidebarWidth = 280; // Approximate sidebar width
-      // For long measures, use a wider base line width
-      const baseMaxLineWidth = Math.max(600, Math.min(1200, windowWidth - sidebarWidth - containerPadding));
+      // Use measured container width so mobile/tablet layouts wrap correctly.
+      const containerPadding = compactMode ? 24 : 40;
+      const availableWidth =
+        containerWidth > 0 ? containerWidth - containerPadding : window.innerWidth - containerPadding;
+      const baseMaxLineWidth = Math.max(420, Math.min(1200, availableWidth));
       const lineHeight = 100;
       const leftMargin = 10;
       const rightMargin = 10;
@@ -1559,7 +1573,7 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
     // Preview rendering is handled in a separate useEffect below
     // Note: notation, timeSignature, and onDropPattern are used for drag/drop but don't need to trigger re-renders
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rhythm, currentNote, metronomeEnabled, windowWidth, selection]);
+  }, [rhythm, currentNote, metronomeEnabled, containerWidth, selection, compactMode]);
 
   // Separate effect to update metronome dot highlighting
   useEffect(() => {

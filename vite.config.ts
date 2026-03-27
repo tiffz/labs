@@ -1,7 +1,6 @@
 /// <reference types="vitest" />
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import { VitePWA } from 'vite-plugin-pwa';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 import { resolve } from 'path';
 import { visualizer } from 'rollup-plugin-visualizer';
@@ -197,63 +196,6 @@ export default defineConfig({
       open: true,
       gzipSize: true,
       brotliSize: true,
-    })] : []),
-    ...(!SKIP_DEPLOY_PLUGINS ? [VitePWA({
-      registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'favicon-cats.svg', 'favicon-zines.svg', 'favicon-corp.svg', 'cat-android.png', 'lightbulb-noto.png'],
-      manifest: {
-        name: 'Tiff Zhang Labs',
-        short_name: 'Labs',
-        description: 'A collection of experimental apps and tools by Tiff Zhang',
-        theme_color: '#8b5cf6',
-        background_color: '#ffffff',
-        display: 'standalone',
-        icons: [
-          {
-            src: 'favicon.svg',
-            sizes: '32x32',
-            type: 'image/svg+xml'
-          }
-        ]
-      },
-      workbox: {
-        globPatterns: ['**/*.{js,css,ico,png,svg}'], // Exclude HTML from service worker cache
-        navigateFallback: undefined,
-        navigateFallbackDenylist: [/^\/404\.html/],
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB to accommodate TensorFlow.js for Basic Pitch
-        // Use NetworkFirst strategy for HTML files to ensure fresh content
-        runtimeCaching: [
-          {
-            urlPattern: /\.html$/,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'html-cache',
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 0, // Don't cache HTML files
-              },
-              cacheableResponse: {
-                statuses: [200],
-              },
-            },
-          },
-          // Cache static assets with StaleWhileRevalidate for better performance
-          {
-            urlPattern: /\.(js|css|woff2?|png|jpg|jpeg|svg|gif|webp|ico|wasm)$/,
-            handler: 'StaleWhileRevalidate',
-            options: {
-              cacheName: 'static-assets',
-              expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days for hashed assets
-              },
-            },
-          },
-        ],
-      },
-      devOptions: {
-        enabled: false,
-      },
     })] : []),
   ],
   test: {

@@ -1,5 +1,8 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Popover from '@mui/material/Popover';
+import Drawer from '@mui/material/Drawer';
+import IconButton from '@mui/material/IconButton';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import type { ChordProgressionState, LockedOptions } from './types';
 import { randomChordProgression, randomKey, randomTimeSignature, randomTempo, randomStylingStrategy } from './utils/randomization';
 import { progressionToChords } from './utils/chordTheory';
@@ -83,11 +86,13 @@ const App: React.FC = () => {
   const [pianoVolume, setPianoVolume] = useState(0.9);
   const [metronomeVolume, setMetronomeVolume] = useState(0.75);
   const [playbackSettingsOpen, setPlaybackSettingsOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const currentLoopIdRef = useRef<number>(0);
   const metronomeEnabledRef = useRef(metronomeEnabled);
   const masterVolumeRef = useRef(masterVolume);
   const metronomeVolumeRef = useRef(metronomeVolume);
   const settingsButtonRef = useRef<HTMLButtonElement | null>(null);
+  const isResponsiveLayout = useMediaQuery('(max-width:980px)');
   const metronomeAudioPlayerRef = useRef<AudioPlayer | null>(null);
   const lastMetronomeBeatRef = useRef<number>(-1);
 
@@ -427,6 +432,12 @@ const App: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (!isResponsiveLayout && sidebarOpen) {
+      setSidebarOpen(false);
+    }
+  }, [isResponsiveLayout, sidebarOpen]);
+
   // Calculate loading progress percentage
   const loadingPercent = loadingState.total > 0 
     ? Math.round((loadingState.progress / loadingState.total) * 100) 
@@ -435,21 +446,64 @@ const App: React.FC = () => {
   return (
     <div className="chords-app">
       <header className="chords-header">
+        <IconButton
+          className="chords-menu-button"
+          aria-label="Open customization controls"
+          onClick={() => setSidebarOpen(true)}
+          size="small"
+        >
+          <span className="material-symbols-outlined" aria-hidden="true">
+            menu
+          </span>
+        </IconButton>
         <h1>Chord Progression Generator</h1>
       </header>
       
       <main className="chords-main">
-        <aside className="chords-sidebar">
-          <ManualControls
-            state={state}
-            lockedOptions={lockedOptions}
-            onStateChange={(updates) => {
-              handleStateChange(updates);
-            }}
-            onLockChange={handleLockChange}
-            onRandomize={handleRandomize}
-          />
-        </aside>
+        {isResponsiveLayout ? (
+          <Drawer
+            anchor="left"
+            open={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+            slotProps={{ paper: { className: 'chords-sidebar-drawer' } }}
+          >
+            <div className="chords-sidebar-drawer-header">
+              <strong>Customize</strong>
+              <IconButton
+                aria-label="Close customization controls"
+                onClick={() => setSidebarOpen(false)}
+                size="small"
+              >
+                <span className="material-symbols-outlined" aria-hidden="true">
+                  close
+                </span>
+              </IconButton>
+            </div>
+            <div className="chords-sidebar-drawer-content">
+              <ManualControls
+                state={state}
+                lockedOptions={lockedOptions}
+                onStateChange={(updates) => {
+                  handleStateChange(updates);
+                }}
+                onLockChange={handleLockChange}
+                onRandomize={handleRandomize}
+              />
+            </div>
+          </Drawer>
+        ) : (
+          <aside className="chords-sidebar">
+            <ManualControls
+              state={state}
+              lockedOptions={lockedOptions}
+              onStateChange={(updates) => {
+                handleStateChange(updates);
+              }}
+              onLockChange={handleLockChange}
+              onRandomize={handleRandomize}
+            />
+          </aside>
+        )}
 
         <div className="chords-main-content">
           <div className="chords-playback-controls">

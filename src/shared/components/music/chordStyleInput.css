@@ -245,3 +245,34 @@
     max-width: min(920px, calc(100vw - 28px));
   }
 }
+
+@media (max-width: 759px) {
+  .shared-chord-style-dropdown {
+    min-width: min(460px, calc(100vw - 16px));
+    max-width: min(560px, calc(100vw - 16px));
+  }
+
+  .shared-chord-style-dropdown-list {
+    padding: 0.68rem 0.68rem;
+  }
+
+  .shared-chord-style-menu {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .shared-chord-style-dropdown {
+    min-width: min(460px, calc(100vw - 12px));
+    max-width: min(560px, calc(100vw - 12px));
+  }
+
+  .shared-chord-style-menu {
+    grid-template-columns: 1fr;
+  }
+
+  .shared-chord-style-item {
+    min-height: 3.7rem;
+    padding: 0.58rem 0.66rem;
+  }
+}

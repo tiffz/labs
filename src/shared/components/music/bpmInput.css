@@ -455,6 +455,36 @@
   }
 }
 
+@media (max-width: 768px) {
+  .shared-bpm-shell {
+    width: min(100%, 100%);
+    max-width: 100%;
+    min-height: var(--control-height-touch, 44px);
+  }
+
+  .shared-bpm-dropdown {
+    min-width: min(320px, calc(100vw - 16px));
+    max-width: min(520px, calc(100vw - 16px));
+  }
+}
+
+@media (max-width: 480px) {
+  .shared-bpm-dropdown-list {
+    min-width: 0;
+    width: 100%;
+    padding: 0.62rem 0.62rem 0.92rem;
+  }
+
+  .shared-bpm-slider-wrap {
+    padding: 0.62rem 0.68rem 0.72rem;
+  }
+
+  .shared-bpm-rate-btn.inline {
+    min-width: 24px;
+    font-size: 0.68rem;
+  }
+}
+
 .shared-bpm-preset-chip:hover {
   border-color: color-mix(
     in srgb,

@@ -147,9 +147,17 @@ body {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  min-height: 100vh;
   background: var(--piano-bg);
   color: var(--piano-text);
   font-family: 'Roboto', system-ui, sans-serif;
+}
+
+@supports (height: 100dvh) {
+  .piano-app {
+    height: 100dvh;
+    min-height: 100dvh;
+  }
 }
 
 /* ==========================================================================
@@ -4661,8 +4669,14 @@ body {
    ========================================================================== */
 
 @media (max-width: 768px) {
+  .piano-app {
+    height: auto;
+    min-height: 100vh;
+  }
+
   .piano-layout {
     flex-direction: column;
+    overflow: visible;
   }
   .sidebar {
     width: 100%;
@@ -4677,6 +4691,7 @@ body {
   .piano-header {
     padding: var(--sp-2) var(--sp-3);
     gap: var(--sp-2);
+    flex-wrap: wrap;
   }
   .piano-header h1 {
     font-size: var(--text-lg);

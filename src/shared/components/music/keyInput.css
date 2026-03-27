@@ -219,3 +219,29 @@
   color: var(--key-chip-active-text, #5b21b6);
   box-shadow: var(--key-chip-active-shadow);
 }
+
+@media (max-width: 768px) {
+  .shared-key-shell {
+    min-height: var(--control-height-touch, 44px);
+  }
+
+  .shared-key-dropdown {
+    min-width: min(400px, calc(100vw - 16px));
+    max-width: min(560px, calc(100vw - 16px));
+  }
+
+  .shared-key-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .shared-key-dropdown {
+    min-width: min(400px, calc(100vw - 12px));
+    max-width: min(560px, calc(100vw - 12px));
+  }
+
+  .shared-key-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

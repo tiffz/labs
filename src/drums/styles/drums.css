@@ -109,6 +109,12 @@
     overflow: hidden;
   }
 
+  @supports (height: 100dvh) {
+    .app-layout {
+      height: 100dvh;
+    }
+  }
+
   /* Main content area */
   .main-content {
     flex: 1;
@@ -207,6 +213,8 @@
     .app-layout {
       flex-direction: column;
       height: auto;
+      min-height: 100vh;
+      overflow: visible;
     }
 
     .palette-sidebar {

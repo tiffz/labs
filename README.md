@@ -54,7 +54,7 @@ Notes:
 - CI regenerates the catalog before lint/test/build so stale generated output does not block deployments.
 - Git hooks also enforce freshness:
   - `pre-commit` regenerates and stages `src/ui/generatedSharedCatalog.ts` automatically.
-  - `pre-push` blocks push if catalog drift is detected and stages the regenerated file.
+  - `pre-push` warns (non-blocking) if catalog drift is detected.
 
 ## Development Rules (Short Version)
 
@@ -62,6 +62,17 @@ Notes:
 - Reuse `src/shared/**` before creating new app-local primitives.
 - Prefer Material/MUI interaction primitives for complex widgets.
 - Keep shared-layer boundaries clean (`src/shared/**` must not depend on app folders).
+
+## Responsive Checklist (Music Apps)
+
+Use this quick checklist before merging music UI changes:
+
+- Validate at `360px`, `390px`, `768px`, and `1024px` widths.
+- Confirm no horizontal page scroll on primary screens.
+- Ensure primary controls are touch-friendly (target size ~`44px`).
+- Verify popovers/dropdowns clamp to viewport width on mobile.
+- Check sticky controls/header behavior while scrolling long content.
+- Smoke-test playback/edit flows on phone-sized viewport before merge.
 
 ## CI/CD
 

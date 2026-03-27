@@ -36,10 +36,17 @@ function PianoApp() {
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(max-width: 768px)');
-    const apply = () => setIsMobileViewport(mediaQuery.matches);
+    const apply = () => {
+      const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
+      setIsMobileViewport(mediaQuery.matches || viewportWidth <= 768);
+    };
     apply();
     mediaQuery.addEventListener('change', apply);
-    return () => mediaQuery.removeEventListener('change', apply);
+    window.visualViewport?.addEventListener('resize', apply);
+    return () => {
+      mediaQuery.removeEventListener('change', apply);
+      window.visualViewport?.removeEventListener('resize', apply);
+    };
   }, []);
 
   // Global drag-and-drop

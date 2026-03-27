@@ -131,6 +131,14 @@ function clampBpm(value: number): number {
   return Math.max(40, Math.min(220, value));
 }
 
+function getViewportMetrics(): { width: number; height: number } {
+  const vv = window.visualViewport;
+  if (vv) {
+    return { width: vv.width, height: vv.height };
+  }
+  return { width: window.innerWidth, height: window.innerHeight };
+}
+
 function generateRandomTemplateNotation(): string {
   const anchors: Array<'D' | 'T' | 'K'> = ['D', 'T', 'K'];
   const notes = Array.from({ length: 16 }, () => '-');
@@ -1400,16 +1408,17 @@ const App: React.FC = () => {
       const anchor = sectionSettingsAnchorRefs.current.get(openSectionSettingsId);
       if (!anchor) return;
       const rect = anchor.getBoundingClientRect();
+      const { width: viewportWidth, height: viewportHeight } = getViewportMetrics();
       const horizontalPadding = 16;
       const viewportPadding = 16;
       const menuGap = 6;
-      const preferredMaxHeight = Math.min(window.innerHeight * 0.72, 720);
-      const menuWidth = Math.min(460, window.innerWidth - horizontalPadding * 2);
+      const preferredMaxHeight = Math.min(viewportHeight * 0.72, 720);
+      const menuWidth = Math.min(460, viewportWidth - horizontalPadding * 2);
       const left = Math.min(
         Math.max(horizontalPadding, rect.right - menuWidth),
-        window.innerWidth - menuWidth - horizontalPadding
+        viewportWidth - menuWidth - horizontalPadding
       );
-      const spaceBelow = window.innerHeight - rect.bottom - viewportPadding - menuGap;
+      const spaceBelow = viewportHeight - rect.bottom - viewportPadding - menuGap;
       const spaceAbove = rect.top - viewportPadding - menuGap;
       const openAbove = spaceBelow < 220 && spaceAbove > spaceBelow;
       const maxHeight = Math.max(
@@ -1444,12 +1453,16 @@ const App: React.FC = () => {
     };
     scheduleUpdate();
     window.addEventListener('resize', scheduleUpdate);
+    window.visualViewport?.addEventListener('resize', scheduleUpdate);
+    window.visualViewport?.addEventListener('scroll', scheduleUpdate);
     // Capture scroll from any scrollable ancestor/container so the menu
     // remains visually attached to the gear anchor.
     window.addEventListener('scroll', scheduleUpdate, true);
     return () => {
       if (frameId !== 0) window.cancelAnimationFrame(frameId);
       window.removeEventListener('resize', scheduleUpdate);
+      window.visualViewport?.removeEventListener('resize', scheduleUpdate);
+      window.visualViewport?.removeEventListener('scroll', scheduleUpdate);
       window.removeEventListener('scroll', scheduleUpdate, true);
     };
   }, [openSectionSettingsId]);

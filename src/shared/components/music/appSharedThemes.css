@@ -43,6 +43,37 @@
   --control-inline-gap: var(--space-1);
   --control-padding-x: var(--space-3);
   --control-font-size: var(--font-size-md);
+  --responsive-breakpoint-desktop: 1024px;
+  --responsive-breakpoint-tablet: 768px;
+  --responsive-breakpoint-mobile: 480px;
+  --responsive-page-padding: 16px;
+  --responsive-card-padding: 16px;
+}
+
+@media (max-width: 1024px) {
+  :root {
+    --responsive-page-padding: 14px;
+    --responsive-card-padding: 14px;
+    --control-height: var(--control-height-comfortable);
+  }
+}
+
+@media (max-width: 768px) {
+  :root {
+    --responsive-page-padding: 12px;
+    --responsive-card-padding: 12px;
+    --control-height: var(--control-height-touch);
+    --control-inline-gap: var(--space-2);
+    --control-padding-x: var(--space-3);
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --responsive-page-padding: 10px;
+    --responsive-card-padding: 10px;
+    --control-font-size: var(--font-size-sm);
+  }
 }
 
 .ui-bpm-default {

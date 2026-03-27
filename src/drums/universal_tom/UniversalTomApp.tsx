@@ -34,17 +34,17 @@ const UniversalTomApp: React.FC = () => {
     };
 
     return (
-        <div className="h-screen w-screen bg-black text-white flex flex-col overflow-hidden">
+        <div className="min-h-screen w-full bg-black text-white flex flex-col overflow-hidden">
             {/* Header */}
-            <header className="flex-none h-16 px-6 border-b border-purple-900/30 flex items-center justify-between bg-zinc-900/50">
-                <div className="flex items-center gap-3 overflow-visible">
+            <header className="flex-none min-h-16 px-4 sm:px-6 py-2 border-b border-purple-900/30 flex flex-wrap items-center justify-between gap-3 bg-zinc-900/50">
+                <div className="flex items-center gap-3 overflow-visible min-w-0">
                     <span className="material-symbols-outlined text-purple-400 text-3xl flex-shrink-0 overflow-visible">auto_fix_high</span>
-                    <h1 className="text-xl font-bold text-purple-100 uppercase tracking-widest">
+                    <h1 className="text-base sm:text-xl font-bold text-purple-100 uppercase tracking-widest">
                         Universal Tom Importer
                     </h1>
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto justify-end">
                     <a href="/drums/" className="text-purple-400 hover:text-purple-300 text-sm font-medium transition-colors">
                         Cancel
                     </a>
@@ -60,13 +60,13 @@ const UniversalTomApp: React.FC = () => {
             </header>
 
             {/* Main Content - 2 Column Layout */}
-            <main className="flex-grow p-6 grid grid-cols-2 gap-6 overflow-hidden">
+            <main className="flex-grow p-3 sm:p-6 grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6 overflow-auto">
 
                 {/* Left Column: Input + Raw Source */}
-                <div className="flex flex-col h-full space-y-4">
+                <div className="flex flex-col h-full space-y-3 sm:space-y-4">
 
                     {/* Top: Source Input (50%) */}
-                    <div className="flex-1 flex flex-col space-y-2 min-h-0">
+                    <div className="flex-1 flex flex-col space-y-2 min-h-[220px]">
                         <div className="flex justify-between items-baseline">
                             <label className="text-purple-300 text-xs font-bold uppercase tracking-wider">
                                 Source Text
@@ -84,7 +84,7 @@ const UniversalTomApp: React.FC = () => {
                     </div>
 
                     {/* Bottom: Raw Output (50%) */}
-                    <div className="flex-1 flex flex-col space-y-2 min-h-0">
+                    <div className="flex-1 flex flex-col space-y-2 min-h-[180px]">
                         <label className="text-purple-300 text-xs font-bold uppercase tracking-wider">
                             Converted Notation
                         </label>
@@ -99,7 +99,7 @@ const UniversalTomApp: React.FC = () => {
                 </div>
 
                 {/* Right Column: Preview (Full Height) */}
-                <div className="flex flex-col h-full space-y-2">
+                <div className="flex flex-col h-full space-y-2 min-h-[300px]">
                     <div className="flex justify-between items-baseline">
                         <label className="text-purple-300 text-xs font-bold uppercase tracking-wider">
                             Notation Preview
@@ -111,8 +111,8 @@ const UniversalTomApp: React.FC = () => {
                         )}
                     </div>
 
-                    <div className="flex-grow bg-white rounded-lg border border-zinc-800 shadow-sm overflow-hidden flex flex-col">
-                        <div className="flex-grow overflow-auto p-8">
+                    <div className="flex-grow bg-white rounded-lg border border-zinc-800 shadow-sm overflow-hidden flex flex-col min-h-[260px]">
+                        <div className="flex-grow overflow-auto p-4 sm:p-8">
                             {parsedRhythm ? (
                                 <div className="text-black">
                                     <VexFlowRenderer

@@ -300,3 +300,26 @@
     overflow: visible;
   }
 }
+
+@media (max-width: 759px) {
+  .shared-chord-progression-dropdown {
+    min-width: min(460px, calc(100vw - 16px));
+    max-width: min(560px, calc(100vw - 16px));
+  }
+
+  .shared-chord-progression-dropdown-list {
+    padding: 0.68rem 0.68rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .shared-chord-progression-dropdown {
+    min-width: min(460px, calc(100vw - 12px));
+    max-width: min(560px, calc(100vw - 12px));
+  }
+
+  .shared-chord-progression-preset {
+    min-height: 3.7rem;
+    padding: 0.58rem 0.66rem;
+  }
+}

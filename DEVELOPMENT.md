@@ -44,11 +44,11 @@ Users were experiencing stale UI updates requiring manual hard refresh.
 
 ### Implementation
 
-**HTML Files**: Never cached - `NetworkFirst` service worker strategy with `maxAgeSeconds: 0`, cache-control meta tags
+**HTML Files**: Fresh on navigation from origin server + cache-control meta tags.
 
 **Static Assets**: Content-based hashes - filename changes when content changes, `StaleWhileRevalidate` with 30-day cache
 
-**Service Worker**: Auto-updates via `registerType: 'autoUpdate'`, HTML excluded from precaching
+**Service Worker**: Not used for Labs surfaces (intentionally disabled so Labs is not installable as a PWA).
 
 **Deployment Headers**: `public/_headers` file for platforms that support it
 
@@ -82,6 +82,39 @@ Adopt MUI as the default primitive library for complex interactive widgets and e
 - Better baseline accessibility across all micro-apps.
 - Fewer bespoke focus-trap/click-away bugs.
 - Faster future development through reusable, tested patterns.
+
+## Responsive-By-Default UI Policy
+
+### Decision
+
+All music apps must ship mobile-first layouts and shared controls that remain usable at phone widths without horizontal scrolling.
+
+### Rationale
+
+- Several music pages were desktop-first and became difficult to use on phones.
+- Responsive behavior must be part of the default shared layer, not only app-specific fixes.
+- Guardrails in docs + shared CSS reduce regressions when new apps/components are added.
+
+### Implementation
+
+- Use mobile-first breakpoints as defaults: `<=480px` (phone), `<=768px` (tablet), `>768px` (desktop).
+- Keep minimum touch target size at `44px` for primary interactive controls.
+- For app shells:
+  - Avoid `100vw`/fixed-width layouts that force horizontal overflow.
+  - Prefer `width: 100%`, `minmax(0, 1fr)`, and bounded `max-width` containers.
+  - Ensure sticky headers/controls still allow content scrolling on narrow screens.
+- For shared dropdowns/popovers (BPM, key, progression, style):
+  - Clamp width to viewport (`calc(100vw - padding)`).
+  - Collapse multi-column menus to fewer columns on smaller breakpoints.
+- For JS-driven geometry:
+  - Recompute viewport-dependent positions on resize.
+  - Avoid hard-coded desktop offsets when placing floating UI.
+
+### Benefits
+
+- New music features are responsive by default.
+- Existing apps share the same mobile interaction baseline.
+- Less app-by-app rework after first mobile QA pass.
 
 ## Quality Assurance
 
@@ -134,7 +167,7 @@ The pre-commit hook intelligently selects test mode:
 ### Pre-push Guardrail
 
 - `pre-push` runs `npm run check:shared-catalog`.
-- If drift is detected, it regenerates and stages `src/ui/generatedSharedCatalog.ts`, then blocks push so the catalog update is committed intentionally.
+- If drift is detected, it prints a non-blocking reminder. CI still regenerates catalog before lint/test/build.
 
 ### Regression Test Architecture
 
