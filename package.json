@@ -6,9 +6,12 @@
   "scripts": {
     "generate:shared-catalog": "node scripts/generate-shared-catalog.mjs",
     "check:shared-catalog": "node scripts/generate-shared-catalog.mjs --check",
+    "prelint": "npm run generate:shared-catalog",
+    "pretest": "npm run generate:shared-catalog",
+    "prebuild": "npm run generate:shared-catalog",
     "check:shared-theme-contract": "node scripts/check-shared-theme-contract.mjs",
     "dev": "npm run generate:shared-catalog && vite --host",
-    "build": "npm run generate:shared-catalog && npm run knip && vite build",
+    "build": "npm run knip && vite build",
     "build:analyze": "ANALYZE=true vite build",
     "lint": "eslint . && npm run check:shared-theme-contract && npm run knip -- --no-exit-code",
     "test": "vitest run",

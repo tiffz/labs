@@ -50,8 +50,8 @@ npm run check:shared-catalog
 
 Notes:
 
-- `npm run dev` and `npm run build` run catalog generation automatically.
-- CI also enforces catalog freshness with `npm run check:shared-catalog`.
+- `npm run dev`, `npm run lint`, `npm test`, and `npm run build` all regenerate the catalog automatically.
+- CI regenerates the catalog before lint/test/build so stale generated output does not block deployments.
 
 ## Development Rules (Short Version)
 

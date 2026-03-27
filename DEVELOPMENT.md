@@ -156,7 +156,8 @@ npm run build        # Production build
 - Canonical shared music architecture: `src/shared/music/ARCHITECTURE.md`
 - Shared catalog generation:
   - `npm run generate:shared-catalog`
-  - `npm run check:shared-catalog` (enforced in CI)
+  - `npm run check:shared-catalog` (optional guard command)
+- Standard workflows (`lint`, `test`, `build`, and CI) regenerate the catalog automatically.
 - Shared boundary enforcement runs in CI (`src/shared/**` must not import app directories).
 
 For detailed CI/CD troubleshooting, see `.github/workflows/ci.yml` and GitHub Actions logs.
