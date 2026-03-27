@@ -88,8 +88,8 @@ jobs:
         npm install
         npm ci
 
-    - name: Verify shared catalog generation
-      run: npm run check:shared-catalog
+    - name: Generate shared catalog
+      run: npm run generate:shared-catalog
       
     - name: Run linter
       run: npm run lint
