@@ -1,5 +1,12 @@
 #!/usr/bin/env sh
 
+# If user is attempting an empty commit, don't run expensive checks.
+INITIAL_STAGED_FILES="$(git diff --cached --name-only)"
+if [ -z "$INITIAL_STAGED_FILES" ]; then
+  echo "No staged files; skipping pre-commit checks."
+  exit 0
+fi
+
 # Keep generated shared catalog in sync for every commit, even when
 # only workflow/docs files changed.
 npm run generate:shared-catalog
@@ -8,11 +15,16 @@ if ! git diff --quiet -- src/ui/generatedSharedCatalog.ts; then
   echo "Staged updated shared catalog (src/ui/generatedSharedCatalog.ts)."
 fi
 
+STAGED_FILES="$(git diff --cached --name-only)"
+if [ -z "$STAGED_FILES" ]; then
+  echo "No staged files after catalog sync; skipping pre-commit checks."
+  exit 0
+fi
+
 # Check if any TypeScript/JavaScript files are staged
 if git diff --cached --name-only --quiet -- '*.ts' '*.tsx' '*.js' '*.jsx' '*.json' 'package*.json' 'vite.config.*' 'vitest.config.*' 'tsconfig*.json' 'eslint.config.*'; then
   echo "No TypeScript/JavaScript files changed, skipping tests..."
 else
-  STAGED_FILES="$(git diff --cached --name-only)"
   first_match() {
     pattern="$1"
     if command -v rg >/dev/null 2>&1; then
@@ -39,7 +51,7 @@ else
 fi
 
 # Run lint-staged for changed files (this is already optimized to only run on changed files)
-npx lint-staged
+npx lint-staged --allow-empty
 
 # Run knip to enforce dead code check (blocking, aligned with CI)
 npm run knip
