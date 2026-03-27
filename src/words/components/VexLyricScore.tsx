@@ -1,9 +1,14 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { Renderer, Stave, StaveNote, Voice, Formatter, Dot, BarlineType, Beam, StaveTie, StaveConnector } from 'vexflow';
 import type { ParsedRhythm, TimeSignature } from '../../drums/types';
 import { drawDrumSymbol } from '../../drums/assets/drumSymbols';
 import type { SyllableHit } from '../../drums/wordRhythm/prosodyEngine';
 import { scrollPlaybackTarget } from '../../shared/utils/playbackAutoScroll';
+import {
+  syncPlaybackHighlightState,
+  type PlaybackBeatPointer,
+  type PlaybackNotePointer,
+} from '../utils/playbackHighlight';
 import {
   getDefaultBeatGrouping,
   getBeatGroupingInSixteenths,
@@ -267,11 +272,29 @@ const VexLyricScore: React.FC<VexLyricScoreProps> = ({
   const lineAnchorRef = useRef<Map<number, SVGElement>>(new Map());
   const activeKeyRef = useRef<string | null>(null);
   const maxScrolledLineRef = useRef<number>(-1);
+  const currentNoteRef = useRef<PlaybackNotePointer>(currentNote ?? null);
+  const currentMetronomeBeatRef = useRef<PlaybackBeatPointer>(currentMetronomeBeat ?? null);
   const autoScrollStateRef = useRef<{ lastMarker: number | string | null; lastScrollAtMs: number; lastTargetTop: number | null }>({
     lastMarker: null,
     lastScrollAtMs: 0,
     lastTargetTop: null,
   });
+
+  const syncPlaybackHighlight = useCallback((
+    nextNote: PlaybackNotePointer,
+    nextMetronomeBeat: PlaybackBeatPointer
+  ) => {
+    syncPlaybackHighlightState({
+      noteElements: noteElementsRef.current,
+      symbolElements: symbolElementsRef.current,
+      syllableElements: syllableElementsRef.current,
+      chordSystemNoteElements: chordSystemNoteElementsRef.current,
+      activeKeyRef,
+      currentNote: nextNote,
+      currentMetronomeBeat: nextMetronomeBeat,
+      rhythm,
+    });
+  }, [rhythm]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -825,6 +848,7 @@ const VexLyricScore: React.FC<VexLyricScoreProps> = ({
         x += measureWidth;
       });
     });
+    syncPlaybackHighlight(currentNoteRef.current, currentMetronomeBeatRef.current);
   }, [
     rhythm,
     timeSignature,
@@ -837,85 +861,15 @@ const VexLyricScore: React.FC<VexLyricScoreProps> = ({
     showMeasureNumbers,
     renderChordSystem,
     sectionMarkers,
+    syncPlaybackHighlight,
     zoomLevel,
   ]);
 
   useEffect(() => {
-    const setSvgColor = (element: Element, color: string) => {
-      const stroke = element.getAttribute('stroke');
-      const fill = element.getAttribute('fill');
-      if (stroke && stroke !== 'none') element.setAttribute('stroke', color);
-      if (fill && fill !== 'none') element.setAttribute('fill', color);
-    };
-
-    const setHighlighted = (key: string, highlighted: boolean) => {
-      const noteElement = noteElementsRef.current.get(key);
-      const noteColor = highlighted ? '#ef4444' : '#1f2937';
-      if (noteElement) {
-        setSvgColor(noteElement, noteColor);
-        noteElement.querySelectorAll('path, ellipse, circle, line, polygon, rect').forEach((part) => {
-          setSvgColor(part, noteColor);
-        });
-      }
-
-      const symbolElement = symbolElementsRef.current.get(key);
-      const symbolColor = highlighted ? '#ef4444' : '#1f2937';
-      if (symbolElement) {
-        symbolElement.querySelectorAll('path, circle').forEach((part) => {
-          setSvgColor(part, symbolColor);
-        });
-      }
-
-      const syllableElement = syllableElementsRef.current.get(key);
-      if (syllableElement) {
-        syllableElement.setAttribute('fill', highlighted ? '#ef4444' : '#111111');
-        syllableElement.setAttribute('font-weight', highlighted ? '900' : '700');
-      }
-    };
-    const highlightChordSystem = (
-      measureIndex: number | null,
-      positionInSixteenths: number
-    ) => {
-      chordSystemNoteElementsRef.current.forEach((entry) => {
-        const isActive =
-          measureIndex !== null &&
-          entry.measureIndex === measureIndex &&
-          positionInSixteenths >= entry.start &&
-          positionInSixteenths < entry.end;
-        const color = isActive ? '#ef4444' : '#1f2937';
-        setSvgColor(entry.element, color);
-        entry.element
-          .querySelectorAll('path, ellipse, circle, line, polygon, rect')
-          .forEach((part) => setSvgColor(part, color));
-      });
-    };
-
-    const previousKey = activeKeyRef.current;
-    const nextKey = currentNote ? `${currentNote.measureIndex}-${currentNote.noteIndex}` : null;
-    if (previousKey && previousKey !== nextKey) {
-      setHighlighted(previousKey, false);
-    }
-    if (nextKey) {
-      setHighlighted(nextKey, true);
-    }
-    if (currentMetronomeBeat) {
-      highlightChordSystem(
-        currentMetronomeBeat.measureIndex,
-        currentMetronomeBeat.positionInSixteenths
-      );
-    } else if (currentNote) {
-      const measure = rhythm.measures[currentNote.measureIndex];
-      const pos = measure
-        ? measure.notes
-            .slice(0, currentNote.noteIndex)
-            .reduce((sum, note) => sum + note.durationInSixteenths, 0)
-        : 0;
-      highlightChordSystem(currentNote.measureIndex, pos);
-    } else {
-      highlightChordSystem(null, 0);
-    }
-    activeKeyRef.current = nextKey;
-  }, [currentNote, currentMetronomeBeat, rhythm]);
+    currentNoteRef.current = currentNote ?? null;
+    currentMetronomeBeatRef.current = currentMetronomeBeat ?? null;
+    syncPlaybackHighlight(currentNoteRef.current, currentMetronomeBeatRef.current);
+  }, [currentNote, currentMetronomeBeat, syncPlaybackHighlight]);
 
   useEffect(() => {
     if (!metronomeEnabled || metronomeDotElementsRef.current.size === 0) return;

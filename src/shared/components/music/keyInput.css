@@ -3,23 +3,27 @@
 }
 
 .shared-key-shell {
-  --key-focus-ring: 0 0 0 2px rgba(124, 58, 237, 0.14);
+  --key-focus-ring: var(--theme-focus-ring, 0 0 0 2px rgba(124, 58, 237, 0.14));
   --key-control-hover-bg: #f5f3ff;
-  --key-dropdown-padding: 0.84rem;
-  --key-grid-gap: 0.46rem;
+  --key-dropdown-padding: calc(var(--space-3, 12px) + 1px);
+  --key-grid-gap: calc(var(--space-2, 8px) - 1px);
   --key-chip-min-height: 2.24rem;
-  --key-chip-font-size: 0.88rem;
-  --key-chip-font-weight: 600;
+  --key-chip-font-size: var(--font-size-md, 0.88rem);
+  --key-chip-font-weight: var(--font-weight-semibold, 600);
   --key-chip-hover-shadow: none;
   --key-chip-hover-transform: none;
   --key-chip-active-shadow: none;
   display: flex;
   align-items: center;
   gap: 0.12rem;
-  min-height: var(--key-shell-height, 2.5rem);
-  border: 1px solid var(--key-border, color-mix(in srgb, #818cf8 32%, #c7d2fe));
-  background: var(--key-bg, #ffffff);
-  border-radius: var(--key-radius, 0.75rem);
+  min-height: var(--key-shell-height, var(--control-height, 38px));
+  border: 1px solid
+    var(
+      --key-border,
+      var(--theme-border, color-mix(in srgb, #818cf8 32%, #c7d2fe))
+    );
+  background: var(--key-bg, var(--theme-surface, #ffffff));
+  border-radius: var(--key-radius, var(--control-radius, 0.75rem));
   overflow: hidden;
   width: 100%;
 }
@@ -34,7 +38,7 @@
   flex: 1;
   border: 0;
   background: transparent;
-  color: var(--key-text, #0f172a);
+  color: var(--key-text, var(--theme-text, #0f172a));
   padding: 0.4rem 0.62rem;
   font-size: 0.9rem;
   font-weight: 700;
@@ -142,8 +146,8 @@
   --key-chip-hover-shadow: none;
   --key-chip-hover-transform: none;
   --key-chip-active-shadow: none;
-  --key-text: #0f172a;
-  --key-chip-bg: #ffffff;
+  --key-text: var(--theme-text, #0f172a);
+  --key-chip-bg: var(--theme-surface, #ffffff);
   --key-chip-border: color-mix(in srgb, #818cf8 28%, #c7d2fe);
   --key-chip-hover-border: color-mix(in srgb, #7c3aed 42%, #c4b5fd);
   --key-chip-hover-bg: color-mix(in srgb, #ede9fe 36%, #ffffff);
@@ -155,7 +159,7 @@
     var(--key-dropdown-border, color-mix(in srgb, #8b5cf6 32%, #ddd6fe));
   border-radius: 0.82rem;
   background: var(--key-dropdown-bg, #ffffff);
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
+  box-shadow: var(--theme-shadow-lg, 0 12px 28px rgba(15, 23, 42, 0.14));
   min-width: min(400px, calc(100vw - 24px));
   max-width: min(560px, calc(100vw - 24px));
 }

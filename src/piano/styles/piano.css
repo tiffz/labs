@@ -91,6 +91,30 @@
   --transition-normal: 0.15s ease;
   --transition-slow: 0.2s ease;
 
+  /* Shared semantic theme bridge */
+  --theme-primary: var(--piano-primary);
+  --theme-primary-hover: var(--piano-primary-hover);
+  --theme-accent: var(--piano-info);
+  --theme-bg: var(--piano-bg);
+  --theme-surface: #ffffff;
+  --theme-surface-elevated: var(--piano-surface);
+  --theme-text: var(--piano-text);
+  --theme-text-secondary: var(--piano-text-secondary);
+  --theme-text-muted: var(--piano-text-muted);
+  --theme-border: var(--piano-border);
+  --theme-border-strong: var(--piano-border-strong);
+  --theme-focus-ring: 0 0 0 2px rgba(124, 58, 237, 0.14);
+  --theme-shadow-sm: var(--shadow-sm);
+  --theme-shadow-lg: var(--shadow-lg);
+  --theme-radius-sm: var(--radius-md);
+  --theme-radius-md: var(--radius-lg);
+  --theme-radius-lg: var(--radius-xl);
+  --control-height-compact: 32px;
+  --control-height-comfortable: 38px;
+  --control-height-touch: 44px;
+  --control-height: var(--control-height-comfortable);
+  --control-radius: var(--theme-radius-sm);
+
   /* ── Legacy alias (for components that still reference --radius) ── */
   --radius: var(--radius-lg);
 }
@@ -3762,6 +3786,10 @@ body {
 }
 
 .ep-panel {
+  --ep-control-height: var(--control-height);
+  --ep-control-height-lg: var(--control-height-touch);
+  --ep-control-radius: var(--control-radius);
+  --ep-control-font-size: var(--text-base);
   width: min(720px, calc(100vw - 32px));
   max-width: none;
   max-height: 85vh;
@@ -3919,15 +3947,16 @@ body {
   gap: var(--sp-1);
   padding: var(--sp-2) var(--sp-3);
   border: 1px solid var(--piano-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--ep-control-radius);
   background: white;
   font-family: inherit;
-  font-size: var(--text-base);
+  font-size: var(--ep-control-font-size);
   font-weight: var(--weight-medium);
   color: var(--piano-text-secondary);
   cursor: pointer;
   transition: all var(--transition-fast);
   white-space: nowrap;
+  min-height: var(--ep-control-height);
 }
 .ep-chip:hover {
   border-color: var(--piano-primary);
@@ -3961,9 +3990,10 @@ body {
 }
 .ep-key-btn {
   min-width: 40px;
-  padding: var(--sp-2) var(--sp-2);
+  min-height: var(--ep-control-height);
+  padding: 0 var(--sp-2);
   border: 1px solid var(--piano-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--ep-control-radius);
   background: white;
   font-family: inherit;
   font-size: var(--text-md);
@@ -4013,9 +4043,9 @@ body {
 
 /* Normalize progression selector control sizing/visual rhythm */
 .ep-progressions {
-  --ep-prog-control-height: 52px;
-  --ep-prog-control-radius: var(--radius-md);
-  --ep-prog-control-font-size: var(--text-md);
+  --ep-prog-control-height: var(--ep-control-height);
+  --ep-prog-control-radius: var(--ep-control-radius);
+  --ep-prog-control-font-size: var(--ep-control-font-size);
   --ep-prog-control-border: var(--piano-border);
 }
 
@@ -4026,7 +4056,7 @@ body {
   font-size: var(--ep-prog-control-font-size);
   font-weight: var(--weight-semibold);
   line-height: 1.25;
-  padding: 0.62rem 0.9rem;
+  padding: 0 0.9rem;
 }
 
 .ep-progressions .shared-chord-progression-text.ep-custom-prog-input {
@@ -4057,7 +4087,7 @@ body {
 
 .ep-progressions .ep-chip,
 .ep-progressions .ep-key-btn {
-  min-height: 44px;
+  min-height: var(--ep-control-height);
 }
 
 /* Progression grid (2 columns, full width, no scrollbar) */
@@ -4068,11 +4098,12 @@ body {
 }
 .ep-custom-prog-input {
   width: 100%;
-  padding: var(--sp-2) var(--sp-3);
+  min-height: var(--ep-control-height);
+  padding: 0 var(--sp-3);
   border: 1px solid var(--piano-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--ep-control-radius);
   font-family: inherit;
-  font-size: var(--text-sm);
+  font-size: var(--ep-control-font-size);
   color: var(--piano-text);
   background: white;
 }
@@ -4208,9 +4239,10 @@ body {
   display: inline-flex;
   align-items: center;
   gap: var(--sp-1);
-  padding: var(--sp-2) var(--sp-3);
+  min-height: var(--ep-control-height);
+  padding: 0 var(--sp-3);
   border: 1px solid var(--piano-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--ep-control-radius);
   background: white;
   color: var(--piano-text-secondary);
   font-family: inherit;
@@ -4230,9 +4262,10 @@ body {
   display: inline-flex;
   align-items: center;
   gap: var(--sp-2);
-  padding: var(--sp-3) var(--sp-6);
+  min-height: var(--ep-control-height-lg);
+  padding: 0 var(--sp-6);
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: var(--ep-control-radius);
   background: var(--piano-primary);
   color: white;
   font-family: inherit;
@@ -4277,9 +4310,10 @@ body {
   display: inline-flex;
   align-items: center;
   gap: var(--sp-1);
-  padding: var(--sp-2) var(--sp-3);
+  min-height: var(--ep-control-height);
+  padding: 0 var(--sp-3);
   border: 1px solid var(--piano-primary);
-  border-radius: var(--radius-md);
+  border-radius: var(--ep-control-radius);
   background: white;
   font-family: inherit;
   font-size: var(--text-sm);

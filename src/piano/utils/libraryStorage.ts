@@ -17,6 +17,11 @@ export interface SongPracticeSettings {
   selectedMeasureRange: { start: number; end: number } | null;
   trackMuted: Record<string, boolean>;
   trackVolume: Record<string, number>;
+  sections?: Array<{
+    name: string;
+    startMeasure: number;
+    endMeasure: number;
+  }>;
   score: PianoScore;
 }
 
@@ -59,6 +64,10 @@ function saveAllSettings(settings: Record<string, SongPracticeSettings>): void {
 
 export function getSongSettings(scoreId: string): SongPracticeSettings | undefined {
   return getAllSettings()[scoreId];
+}
+
+export function getAllSongSettings(): Record<string, SongPracticeSettings> {
+  return getAllSettings();
 }
 
 export function saveSongSettings(scoreId: string, settings: SongPracticeSettings): void {

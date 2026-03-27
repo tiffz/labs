@@ -1859,7 +1859,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [],
     "exportType": "named",
-    "demoId": "drum-notation-mini"
+    "demoId": null
   },
   {
     "id": "src-shared-notation-index-ts-getdrumsymbolchar",
@@ -3371,6 +3371,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "forms",
       "piano",
       "story",
+      "ui",
       "words",
       "zines"
     ],
@@ -3395,6 +3396,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "forms",
       "piano",
       "story",
+      "ui",
       "words",
       "zines"
     ],

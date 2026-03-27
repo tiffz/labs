@@ -1,3 +1,50 @@
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  --font-size-xs: 0.6875rem;
+  --font-size-sm: 0.75rem;
+  --font-size-md: 0.875rem;
+  --font-size-lg: 1rem;
+  --font-size-xl: 1.125rem;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --theme-primary: #7c3aed;
+  --theme-primary-hover: #6d28d9;
+  --theme-accent: #a855f7;
+  --theme-bg: #f8fafc;
+  --theme-surface: #ffffff;
+  --theme-surface-elevated: #ffffff;
+  --theme-text: #1e293b;
+  --theme-text-secondary: #64748b;
+  --theme-text-muted: #94a3b8;
+  --theme-border: #e2e8f0;
+  --theme-border-strong: #cbd5e1;
+  --theme-focus-ring: 0 0 0 2px rgba(124, 58, 237, 0.14);
+  --theme-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --theme-shadow-lg: 0 12px 28px rgba(15, 23, 42, 0.14);
+  --theme-radius-sm: 6px;
+  --theme-radius-md: 10px;
+  --theme-radius-lg: 12px;
+
+  --control-height-compact: 32px;
+  --control-height-comfortable: 38px;
+  --control-height-touch: 44px;
+  --control-height: var(--control-height-comfortable);
+  --control-radius: var(--theme-radius-sm);
+  --control-inline-gap: var(--space-1);
+  --control-padding-x: var(--space-3);
+  --control-font-size: var(--font-size-md);
+}
+
 .ui-bpm-default {
   --bpm-bg: #ffffff;
   --bpm-border: color-mix(in srgb, #818cf8 32%, #c7d2fe);
@@ -557,6 +604,16 @@
 }
 
 .ui-chords-style-dropdown.shared-chord-style-dropdown {
+  --primary: #6366f1;
+  --primary-dark: #4f46e5;
+  --primary-light: #818cf8;
+  --bg-card: #ffffff;
+  --bg-sidebar: #f1f5f9;
+  --text-color: #1e293b;
+  --text-secondary: #64748b;
+  --border-color: #e2e8f0;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.06);
   --cs-input-border: var(--border-color);
   --cs-focus-border: var(--primary);
   --cs-focus-ring: 0 0 0 3px rgba(99, 102, 241, 0.1);
@@ -584,6 +641,16 @@
 
 .option-chip-dropdown.shared-chord-progression-dropdown,
 .ui-chords-prog-dropdown.shared-chord-progression-dropdown {
+  --primary: #6366f1;
+  --primary-dark: #4f46e5;
+  --primary-light: #818cf8;
+  --bg-card: #ffffff;
+  --bg-sidebar: #f1f5f9;
+  --text-color: #1e293b;
+  --text-secondary: #64748b;
+  --border-color: #e2e8f0;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.06);
   --cp-input-border: var(--border-color);
   --cp-focus-border: var(--primary);
   --cp-focus-ring: 0 0 0 3px rgba(99, 102, 241, 0.1);
@@ -611,6 +678,17 @@
 
 .ep-prog-dropdown.shared-chord-progression-dropdown,
 .ui-piano-prog-dropdown.shared-chord-progression-dropdown {
+  --piano-bg: #ffffff;
+  --piano-surface: #f8fafc;
+  --piano-border: #e2e8f0;
+  --piano-border-strong: #cbd5e1;
+  --piano-text: #1e293b;
+  --piano-text-secondary: #64748b;
+  --piano-primary: #7c3aed;
+  --piano-primary-hover: #6d28d9;
+  --piano-primary-light: rgba(124, 58, 237, 0.08);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
   --cp-surface-bg: #fff;
   --cp-surface-border: color-mix(
     in srgb,
@@ -692,6 +770,17 @@
 
 .ep-style-dropdown.shared-chord-style-dropdown,
 .ui-piano-style-dropdown.shared-chord-style-dropdown {
+  --piano-bg: #ffffff;
+  --piano-surface: #f8fafc;
+  --piano-border: #e2e8f0;
+  --piano-border-strong: #cbd5e1;
+  --piano-text: #1e293b;
+  --piano-text-secondary: #64748b;
+  --piano-primary: #7c3aed;
+  --piano-primary-hover: #6d28d9;
+  --piano-primary-light: rgba(124, 58, 237, 0.08);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
   --cs-surface-bg: #fff;
   --cs-surface-border: color-mix(
     in srgb,

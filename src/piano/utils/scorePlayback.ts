@@ -479,7 +479,10 @@ export class ScorePlaybackEngine {
       const firstBeat = Math.ceil(Math.max(this.scheduledUpTo, 0) / beatsPerClick) * beatsPerClick;
       for (let b = firstBeat; b <= scheduleUpTo; b += beatsPerClick) {
         if (b < 0) continue;
-        if (this.loopEnabled && b >= this.totalBeats) continue;
+        // Never schedule metronome clicks at or beyond score end. This prevents
+        // look-ahead spillover clicks after a section ends (especially when loops
+        // are restarted externally, e.g. count-in every loop).
+        if (b >= this.totalBeats) continue;
         const audioTime = this.startTime + this.beatToElapsed(b);
         const timeKey = Math.round(audioTime * 1000);
         if (this.scheduledClickTimes.has(timeKey)) continue;

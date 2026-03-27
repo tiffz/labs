@@ -39,6 +39,30 @@
     --menu-header-text: #9ca3af;
     --menu-item-hover-bg: #faf5ff;
     --menu-item-hover-text: var(--primary-purple);
+
+    /* Shared semantic theme bridge */
+    --theme-primary: var(--primary-purple);
+    --theme-primary-hover: var(--primary-purple-dark);
+    --theme-accent: var(--accent-gold);
+    --theme-bg: var(--bg-color);
+    --theme-surface: #ffffff;
+    --theme-surface-elevated: var(--menu-surface);
+    --theme-text: var(--text-color);
+    --theme-text-secondary: #6b7280;
+    --theme-text-muted: #9ca3af;
+    --theme-border: var(--border-color);
+    --theme-border-strong: var(--measure-line-color);
+    --theme-focus-ring: 0 0 0 3px rgba(124, 58, 237, 0.1);
+    --theme-shadow-sm: var(--shadow-sm);
+    --theme-shadow-lg: var(--shadow-lg);
+    --theme-radius-sm: 0.375rem;
+    --theme-radius-md: 0.5rem;
+    --theme-radius-lg: 0.75rem;
+    --control-height-compact: 32px;
+    --control-height-comfortable: 38px;
+    --control-height-touch: 44px;
+    --control-height: var(--control-height-touch);
+    --control-radius: var(--theme-radius-sm);
   }
 
   body {

@@ -346,6 +346,34 @@ function buildCatalogEntries() {
     entries.push(extraEntry);
   }
 
+  // Ensure each demo id maps to a single canonical entry (avoid duplicate gallery cards
+  // when both a source file and an index re-export expose the same symbol).
+  const demoGroups = new Map();
+  for (const entry of entries) {
+    if (!entry.demoId) continue;
+    if (!demoGroups.has(entry.demoId)) demoGroups.set(entry.demoId, []);
+    demoGroups.get(entry.demoId).push(entry);
+  }
+
+  for (const group of demoGroups.values()) {
+    if (group.length <= 1) continue;
+    group.sort((a, b) => {
+      const score = (entry) => {
+        let value = 0;
+        if (entry.exportType === 'default') value += 200;
+        if (!/\/index\.[jt]sx?$/.test(entry.path)) value += 100;
+        if (entry.description && entry.description !== 'No JSDoc summary provided.') value += 20;
+        if (entry.path.toLowerCase().includes(entry.name.toLowerCase())) value += 10;
+        return value;
+      };
+      return score(b) - score(a);
+    });
+    const [, ...duplicates] = group;
+    for (const duplicate of duplicates) {
+      duplicate.demoId = null;
+    }
+  }
+
   entries.sort((a, b) => {
     const pathOrder = String(a.path).localeCompare(String(b.path));
     if (pathOrder !== 0) return pathOrder;

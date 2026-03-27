@@ -30,6 +30,37 @@ For cross-component standards (layering model, default-density rules, and rollou
   - Hover, focus, active, and disabled states use the same token model across components.
   - Prefer adjusting token values over adding one-off hover/focus selectors per app.
 
+- **Shared scale buckets over local nudges**
+  - Shared music inputs should consume bucketized spacing/size variables first.
+  - App-specific overrides should set bucket values (or density mode) rather than editing multiple internal paddings and gaps.
+
+## Shared semantic bridge
+
+App themes should map to a common semantic bridge before component-family tokens:
+
+- `--theme-primary`, `--theme-primary-hover`, `--theme-accent`
+- `--theme-text`, `--theme-text-secondary`, `--theme-text-muted`
+- `--theme-bg`, `--theme-surface`, `--theme-surface-elevated`
+- `--theme-border`, `--theme-border-strong`, `--theme-focus-ring`
+
+Shared component tokens (`--bpm-*`, `--key-*`, `--cp-*`, `--cs-*`) should derive from those semantic variables where possible.
+
+## Density and size buckets
+
+Use three density modes:
+
+- `compact` (32px controls)
+- `comfortable` (38px controls, default)
+- `touch` (44px controls)
+
+Recommended bridge variables:
+
+- `--control-height`
+- `--control-radius`
+- `--control-inline-gap`
+- `--control-padding-x`
+- `--control-font-size`
+
 ## Component token families
 
 - **Chord progression (`--cp-*`)**
@@ -57,13 +88,14 @@ For cross-component standards (layering model, default-density rules, and rollou
   - Shell/focus: `--bpm-bg`, `--bpm-border`, `--bpm-focus`, `--bpm-focus-ring`
   - Dropdown: `--bpm-dropdown-*`
   - Preset chips: `--bpm-chip-*`
+  - Density bridge: `--bpm-shell-height`, `--bpm-shell-radius`, `--bpm-value-padding`
 
 ## Practical guidance
 
 - Use both:
   - root class tokens for trigger/input shell
   - dropdown class tokens for portal-rendered menu content
-- Keep spacing variants local to app CSS (for example `min-height`, `gap`, `font-size`) while color/state stays tokenized.
+- Keep spacing variants bucketized in app CSS (for example via `--control-height` -> `--bpm-shell-height`) while color/state stays tokenized.
 - If adding a new shared input:
   - define token families first
   - add an appearance root class

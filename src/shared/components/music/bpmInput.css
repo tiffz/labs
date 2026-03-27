@@ -5,13 +5,16 @@
 }
 
 .shared-bpm-shell {
-  --bpm-bg: var(--bg-input, #fff);
-  --bpm-border: var(--border-subtle, color-mix(in srgb, #818cf8 32%, #c7d2fe));
-  --bpm-text: var(--text-primary, #141a26);
-  --bpm-muted: var(--text-secondary, #6f7790);
-  --bpm-focus: var(--accent-primary, #7c3aed);
+  --bpm-bg: var(--bg-input, var(--theme-surface, #fff));
+  --bpm-border: var(
+    --border-subtle,
+    var(--theme-border, color-mix(in srgb, #818cf8 32%, #c7d2fe))
+  );
+  --bpm-text: var(--text-primary, var(--theme-text, #141a26));
+  --bpm-muted: var(--text-secondary, var(--theme-text-secondary, #6f7790));
+  --bpm-focus: var(--accent-primary, var(--theme-primary, #7c3aed));
   --bpm-hover: color-mix(in srgb, var(--bpm-bg) 90%, #000 10%);
-  --bpm-dropdown-bg: var(--bg-card, #fff);
+  --bpm-dropdown-bg: var(--bg-card, var(--theme-surface-elevated, #fff));
   --bpm-dropdown-border: var(--bpm-border);
   --bpm-dropdown-hover-bg: color-mix(
     in srgb,
@@ -62,8 +65,8 @@
   --bpm-chip-min-width: 3.15rem;
   --bpm-chip-height: 1.9rem;
 
-  --bpm-shell-height: 40px;
-  --bpm-shell-radius: 12px;
+  --bpm-shell-height: var(--control-height, 38px);
+  --bpm-shell-radius: var(--control-radius, 12px);
   --bpm-divider: color-mix(in srgb, var(--bpm-border) 72%, transparent);
   display: inline-flex;
   align-items: center;
@@ -73,7 +76,7 @@
   color: var(--bpm-text);
   min-height: var(--bpm-shell-height);
   width: auto;
-  padding: 0 0.3rem;
+  padding: 0 calc(var(--space-1, 4px) + 1px);
   gap: 0.12rem;
   overflow: hidden;
 }
@@ -274,10 +277,13 @@
 }
 
 .shared-bpm-dropdown {
-  --bpm-focus: var(--accent-primary, #7c3aed);
-  --bpm-border: var(--border-subtle, color-mix(in srgb, #818cf8 32%, #c7d2fe));
-  --bpm-text: var(--text-primary, #141a26);
-  --bpm-muted: var(--text-secondary, #6f7790);
+  --bpm-focus: var(--accent-primary, var(--theme-primary, #7c3aed));
+  --bpm-border: var(
+    --border-subtle,
+    var(--theme-border, color-mix(in srgb, #818cf8 32%, #c7d2fe))
+  );
+  --bpm-text: var(--text-primary, var(--theme-text, #141a26));
+  --bpm-muted: var(--text-secondary, var(--theme-text-secondary, #6f7790));
   --bpm-slider-panel-bg: color-mix(
     in srgb,
     var(--bpm-dropdown-bg, #fff) 94%,

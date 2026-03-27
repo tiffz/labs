@@ -1,11 +1,19 @@
 .shared-chord-progression-input,
 .shared-chord-progression-dropdown,
 .shared-chord-progression-inline-content {
-  --cp-input-border: color-mix(in srgb, #6366f1 34%, #c7d2fe);
-  --cp-input-bg: #fff;
-  --cp-input-text: #0f172a;
-  --cp-focus-border: color-mix(in srgb, #7c3aed 56%, #c4b5fd);
-  --cp-focus-ring: 0 0 0 2px rgba(124, 58, 237, 0.14);
+  --cp-input-border: color-mix(
+    in srgb,
+    var(--theme-primary, #6366f1) 34%,
+    #c7d2fe
+  );
+  --cp-input-bg: var(--theme-surface, #fff);
+  --cp-input-text: var(--theme-text, #0f172a);
+  --cp-focus-border: color-mix(
+    in srgb,
+    var(--theme-primary, #7c3aed) 56%,
+    #c4b5fd
+  );
+  --cp-focus-ring: var(--theme-focus-ring, 0 0 0 2px rgba(124, 58, 237, 0.14));
   --cp-surface-border: color-mix(in srgb, #8b5cf6 32%, #ddd6fe);
   --cp-surface-bg: #fff;
   --cp-surface-shadow: 0 14px 30px rgba(67, 56, 202, 0.14);
@@ -23,15 +31,16 @@
   --cp-meta-color: #5b5d84;
   --cp-item-padding: 0.68rem 0.82rem;
   --cp-item-gap: 0.2rem;
-  --cp-title-size: 0.98rem;
-  --cp-title-weight: 700;
-  --cp-meta-size: 0.8rem;
+  --cp-title-size: var(--font-size-lg, 0.98rem);
+  --cp-title-weight: var(--font-weight-bold, 700);
+  --cp-meta-size: var(--font-size-sm, 0.8rem);
   --cp-meta-line-height: 1.34;
-  --cp-control-height: 2.28rem;
-  --cp-control-radius: 0.65rem;
-  --cp-control-font-size: 0.9rem;
+  --cp-control-height: var(--control-height, 2.28rem);
+  --cp-control-radius: var(--control-radius, 0.65rem);
+  --cp-control-font-size: var(--control-font-size, 0.9rem);
   --cp-control-line-height: 1.2;
-  --cp-control-padding: 0.46rem 0.74rem;
+  --cp-control-padding: calc(var(--space-2, 8px) - 1px)
+    calc(var(--space-3, 12px) + 1px);
 }
 
 .shared-chord-progression-input {
@@ -85,7 +94,10 @@
   border-radius: 0.82rem;
   border: 1px solid color-mix(in srgb, var(--cp-surface-border) 92%, #e2e8f0);
   background: var(--cp-surface-bg);
-  box-shadow: var(--cp-surface-shadow, 0 12px 28px rgba(15, 23, 42, 0.14));
+  box-shadow: var(
+    --cp-surface-shadow,
+    var(--theme-shadow-lg, 0 12px 28px rgba(15, 23, 42, 0.14))
+  );
 }
 
 .shared-chord-progression-inline-content {

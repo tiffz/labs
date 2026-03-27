@@ -8,6 +8,65 @@ This document defines default conventions for shared UI so apps stay naturally a
 - App teams should override tokens, not internals.
 - Defaults should encode the non-load-bearing UX decisions (spacing, typography scale, state behavior, focus treatment).
 
+## Theme Contract (Default)
+
+All music apps and `/ui` should publish the same semantic contract, then map app identity into these variables:
+
+- **Brand + text**
+  - `--theme-primary`, `--theme-primary-hover`, `--theme-accent`
+  - `--theme-text`, `--theme-text-secondary`, `--theme-text-muted`
+- **Surfaces**
+  - `--theme-bg`, `--theme-surface`, `--theme-surface-elevated`
+  - `--theme-border`, `--theme-border-strong`, `--theme-focus-ring`
+- **Elevation + shape**
+  - `--theme-shadow-sm`, `--theme-shadow-md`, `--theme-shadow-lg`
+  - `--theme-radius-sm`, `--theme-radius-md`, `--theme-radius-lg`
+
+Legacy app tokens (`--primary`, `--piano-primary`, `--accent-primary`, etc.) can remain, but should alias into the semantic contract during migration.
+
+## Scale Buckets (Required)
+
+### Spacing scale
+
+Use a 4px base grid:
+
+- `--space-1: 4px`
+- `--space-2: 8px`
+- `--space-3: 12px`
+- `--space-4: 16px`
+- `--space-5: 20px`
+- `--space-6: 24px`
+- `--space-8: 32px`
+
+### Typography scale
+
+- `--font-size-xs`, `--font-size-sm`, `--font-size-md`, `--font-size-lg`, `--font-size-xl`
+- `--font-weight-regular`, `--font-weight-medium`, `--font-weight-semibold`, `--font-weight-bold`
+
+### Control size buckets
+
+Shared interactive controls should support these buckets:
+
+- `compact`
+  - input/button height target: `32px`
+  - intended for dense sidebars and chip-heavy flows
+- `comfortable` (default)
+  - input/button height target: `38px`
+  - intended for most pages and gallery defaults
+- `touch`
+  - input/button height target: `44px`
+  - intended for touch-first flows
+
+Bucket-specific values should be expressed via variables, not one-off per-component pixel overrides.
+
+## Grid and Layout Conventions
+
+- Prefer responsive grids with `minmax()` and tokenized gaps:
+  - `gap: var(--space-3)` / `var(--space-4)`
+  - `grid-template-columns: repeat(auto-fit, minmax(240px, 1fr))` for demo cards by default
+- Prefer tokenized max widths for control groups (`--control-max-width`) rather than repeating literal widths across apps.
+- Avoid 1-2px local nudges unless there is a measured visual regression that cannot be solved by a bucket variable.
+
 ## Design Principles
 
 - **Parity First**: `/ui` should mirror production component composition, not just token snapshots.
@@ -52,10 +111,10 @@ This document defines default conventions for shared UI so apps stay naturally a
 ## Density and Typography Defaults
 
 - Shared controls should default to:
-  - medium density (not compact),
+  - `comfortable` density,
   - consistent line-height and click target sizing,
   - medium emphasis on selected labels and clear hierarchy for title/meta text.
-- App overrides can tune density, but should preserve legibility and interaction affordances.
+- App overrides can tune density (`compact` / `comfortable` / `touch`), but should preserve legibility and interaction affordances.
 
 ## UI Gallery Requirement
 
@@ -75,6 +134,7 @@ This document defines default conventions for shared UI so apps stay naturally a
 - [ ] `/ui` gallery examples added for component states and appearance variants.
 - [ ] Token family documented.
 - [ ] Root and dropdown class hooks exposed.
+- [ ] Size bucket behavior documented (`compact` / `comfortable` / `touch`).
 - [ ] Appearance behavior documented (if applicable).
 - [ ] Snapshot or integration coverage added.
 - [ ] README/dev docs updated with usage notes.

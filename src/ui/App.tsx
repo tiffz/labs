@@ -28,11 +28,29 @@ const KIND_ORDER: SharedCatalogKind[] = [
 
 const APPEARANCES = ['default', 'piano', 'words', 'chords'] as const;
 type Appearance = (typeof APPEARANCES)[number];
-type CatalogTab = 'docs' | 'gallery';
+type CatalogTab = 'gallery' | 'docs' | 'theme';
 const BPM_SURFACES = ['default', 'piano', 'words', 'chords', 'beat', 'drums'] as const;
 const KEY_SURFACES = ['default', 'piano', 'words', 'chords', 'beat'] as const;
 type BpmSurface = (typeof BPM_SURFACES)[number];
 type KeySurface = (typeof KEY_SURFACES)[number];
+type FunctionalSection =
+  | 'Shared UI Components'
+  | 'Music Input & Theory'
+  | 'Rhythm & Timing'
+  | 'Notation & Rendering'
+  | 'Audio & Playback'
+  | 'Theme & Styling'
+  | 'State & Runtime'
+  | 'Core Utilities';
+
+const APP_LINKS: Record<string, { label: string; href: string }> = {
+  beat: { label: 'Beat', href: '/beat/' },
+  chords: { label: 'Chords', href: '/chords/' },
+  drums: { label: 'Drums', href: '/drums/' },
+  piano: { label: 'Piano', href: '/piano/' },
+  words: { label: 'Words', href: '/words/' },
+  ui: { label: 'UI Gallery', href: '/ui/' },
+};
 
 function getBpmClass(surface: BpmSurface): string {
   switch (surface) {
@@ -192,9 +210,97 @@ function sortCatalog(entries: ReadonlyArray<SharedCatalogEntry>) {
   });
 }
 
-function getAppsLabel(entry: SharedCatalogEntry): string {
-  if (entry.appsUsing.length === 0) return 'Unused';
-  return entry.appsUsing.map((app) => app.toUpperCase()).join(', ');
+const FUNCTIONAL_SECTION_ORDER: FunctionalSection[] = [
+  'Shared UI Components',
+  'Music Input & Theory',
+  'Rhythm & Timing',
+  'Notation & Rendering',
+  'Audio & Playback',
+  'Theme & Styling',
+  'State & Runtime',
+  'Core Utilities',
+];
+
+function getFunctionalSection(entry: SharedCatalogEntry): FunctionalSection {
+  const path = entry.path.toLowerCase();
+  const name = entry.name.toLowerCase();
+  const tags = entry.tags.map((tag) => tag.toLowerCase());
+  const hasTag = (value: string) => tags.includes(value);
+
+  if (path.includes('/shared/components/') || entry.kind === 'component') {
+    return 'Shared UI Components';
+  }
+  if (
+    path.includes('/shared/music/') ||
+    name.includes('chord') ||
+    name.includes('key') ||
+    name.includes('bpm') ||
+    hasTag('music')
+  ) {
+    return 'Music Input & Theory';
+  }
+  if (
+    path.includes('/shared/rhythm/') ||
+    name.includes('tempo') ||
+    name.includes('timing') ||
+    hasTag('rhythm')
+  ) {
+    return 'Rhythm & Timing';
+  }
+  if (
+    path.includes('/shared/notation/') ||
+    name.includes('notation') ||
+    name.includes('vex')
+  ) {
+    return 'Notation & Rendering';
+  }
+  if (
+    path.includes('/shared/audio/') ||
+    path.includes('/shared/playback/') ||
+    name.includes('metronome') ||
+    hasTag('audio') ||
+    hasTag('playback')
+  ) {
+    return 'Audio & Playback';
+  }
+  if (
+    path.includes('/theme/') ||
+    name.includes('theme') ||
+    name.includes('token') ||
+    hasTag('theme') ||
+    hasTag('css')
+  ) {
+    return 'Theme & Styling';
+  }
+  if (entry.kind === 'hook' || entry.kind === 'service') {
+    return 'State & Runtime';
+  }
+  return 'Core Utilities';
+}
+
+function renderAppsUsingLinks(appsUsing: ReadonlyArray<string>) {
+  if (appsUsing.length === 0) return <span>Unused</span>;
+  return (
+    <span className="ui-app-links">
+      {appsUsing.map((app, index) => {
+        const meta = APP_LINKS[app];
+        const label = meta?.label ?? app.toUpperCase();
+        const href = meta?.href;
+        return (
+          <span key={`app-${app}`}>
+            {index > 0 ? ', ' : null}
+            {href ? (
+              <a href={href} target="_blank" rel="noreferrer">
+                {label}
+              </a>
+            ) : (
+              label
+            )}
+          </span>
+        );
+      })}
+    </span>
+  );
 }
 
 function BpmMultiDemo({
@@ -531,8 +637,6 @@ function DemoPanel({
             enabled={metronomeEnabled}
             onToggle={() => setMetronomeEnabled(!metronomeEnabled)}
             className="ui-metronome-toggle"
-            showOnLabel
-            onLabelText="On"
           />
         </div>
       );
@@ -561,7 +665,7 @@ function DemoPanel({
 }
 
 function App() {
-  const [activeTab, setActiveTab] = useState<CatalogTab>('docs');
+  const [activeTab, setActiveTab] = useState<CatalogTab>('gallery');
   const [kindFilter, setKindFilter] = useState<'all' | SharedCatalogKind>('all');
   const [query, setQuery] = useState('');
   const [bpmBySurface, setBpmBySurface] = useState<Record<BpmSurface, number>>({
@@ -592,6 +696,14 @@ function App() {
     chords: 'one-per-beat',
   });
   const [metronomeEnabled, setMetronomeEnabled] = useState(false);
+  const [densityDrafts, setDensityDrafts] = useState({
+    compact: 'I–V–vi–IV',
+    comfortable: 'ii–V–I',
+    touch: 'Db–Ab–Bbm–Gb',
+  });
+  const [collapsedSections, setCollapsedSections] = useState<Set<FunctionalSection>>(
+    () => new Set()
+  );
 
   const sortedEntries = useMemo(() => sortCatalog(SHARED_CATALOG), []);
   const filteredEntries = useMemo(() => {
@@ -608,6 +720,27 @@ function App() {
       );
     });
   }, [kindFilter, query, sortedEntries]);
+  const groupedFilteredEntries = useMemo(() => {
+    const groups = new Map<FunctionalSection, SharedCatalogEntry[]>();
+    for (const entry of filteredEntries) {
+      const section = getFunctionalSection(entry);
+      if (!groups.has(section)) groups.set(section, []);
+      groups.get(section)?.push(entry);
+    }
+    return FUNCTIONAL_SECTION_ORDER
+      .map((section) => ({ section, entries: groups.get(section) ?? [] }))
+      .filter((group) => group.entries.length > 0);
+  }, [filteredEntries]);
+  const isSectionCollapsed = (section: FunctionalSection) =>
+    collapsedSections.has(section);
+  const toggleSection = (section: FunctionalSection) => {
+    setCollapsedSections((previous) => {
+      const next = new Set(previous);
+      if (next.has(section)) next.delete(section);
+      else next.add(section);
+      return next;
+    });
+  };
 
   const componentsCount = SHARED_CATALOG.filter((entry) => entry.kind === 'component').length;
   const utilityCount = SHARED_CATALOG.filter((entry) => entry.kind === 'utility').length;
@@ -625,11 +758,9 @@ function App() {
   return (
     <main className="ui-docs-app">
       <header className="ui-docs-header">
-        <p className="ui-docs-eyebrow">Shared UI</p>
-        <h1>Unified Shared Catalog</h1>
-        <p>
-          One card per shared export: live preview when available, plus docs,
-          path, ownership, and app usage in the same place.
+        <h1>Labs UI Components</h1>
+        <p className="ui-docs-tagline">
+          Shared UI libraries used across Tiff Zhang Labs applications.
         </p>
         <div className="ui-summary-row">
           <article>
@@ -653,6 +784,15 @@ function App() {
           <button
             type="button"
             role="tab"
+            aria-selected={activeTab === 'gallery'}
+            className={`ui-tab-btn ${activeTab === 'gallery' ? 'active' : ''}`}
+            onClick={() => setActiveTab('gallery')}
+          >
+            Gallery
+          </button>
+          <button
+            type="button"
+            role="tab"
             aria-selected={activeTab === 'docs'}
             className={`ui-tab-btn ${activeTab === 'docs' ? 'active' : ''}`}
             onClick={() => setActiveTab('docs')}
@@ -662,42 +802,44 @@ function App() {
           <button
             type="button"
             role="tab"
-            aria-selected={activeTab === 'gallery'}
-            className={`ui-tab-btn ${activeTab === 'gallery' ? 'active' : ''}`}
-            onClick={() => setActiveTab('gallery')}
+            aria-selected={activeTab === 'theme'}
+            className={`ui-tab-btn ${activeTab === 'theme' ? 'active' : ''}`}
+            onClick={() => setActiveTab('theme')}
           >
-            Gallery
+            Theme
           </button>
         </div>
       </header>
 
       <section className="ui-docs-card">
-        <div className="ui-docs-controls">
-          <label>
-            Kind
-            <select
-              value={kindFilter}
-              onChange={(event) =>
-                setKindFilter(event.target.value as 'all' | SharedCatalogKind)
-              }
-            >
-              <option value="all">All</option>
-              {KIND_ORDER.map((kind) => (
-                <option key={kind} value={kind}>
-                  {kind}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Search
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="name, path, description, app, tag"
-            />
-          </label>
-        </div>
+        {activeTab !== 'theme' ? (
+          <div className="ui-docs-controls">
+            <label>
+              Kind
+              <select
+                value={kindFilter}
+                onChange={(event) =>
+                  setKindFilter(event.target.value as 'all' | SharedCatalogKind)
+                }
+              >
+                <option value="all">All</option>
+                {KIND_ORDER.map((kind) => (
+                  <option key={kind} value={kind}>
+                    {kind}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Search
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="name, path, description, app, tag"
+              />
+            </label>
+          </div>
+        ) : null}
 
         {activeTab === 'docs' ? (
           <div className="ui-docs-layout">
@@ -705,83 +847,114 @@ function App() {
               <h3>Table of Contents</h3>
               <p>{filteredEntries.length} entries</p>
               <nav className="ui-toc-list">
-                {filteredEntries.map((entry) => (
-                  <button
-                    type="button"
-                    key={`toc-${entry.id}`}
-                    className="ui-toc-item"
-                    onClick={() => jumpToDocsEntry(entry.id)}
-                  >
-                    <span>{entry.name}</span>
-                    <small>{entry.kind}</small>
-                  </button>
+                {groupedFilteredEntries.map((group) => (
+                  <section key={`toc-group-${group.section}`} className="ui-toc-section">
+                    <button
+                      type="button"
+                      className="ui-toc-section-toggle"
+                      onClick={() => toggleSection(group.section)}
+                    >
+                      <span>{group.section}</span>
+                      <small>{group.entries.length}</small>
+                    </button>
+                    {!isSectionCollapsed(group.section) ? (
+                      <div className="ui-toc-links">
+                        {group.entries.map((entry) => (
+                          <button
+                            type="button"
+                            key={`toc-${entry.id}`}
+                            className="ui-toc-link"
+                            onClick={() => jumpToDocsEntry(entry.id)}
+                          >
+                            {entry.name}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                  </section>
                 ))}
               </nav>
             </aside>
             <div className="ui-catalog-grid">
-              {filteredEntries.map((entry) => (
-                <article id={`doc-${entry.id}`} key={entry.id} className="ui-catalog-card">
-                  <header className="ui-catalog-card-header">
-                    <h2>{entry.name}</h2>
-                    <div className="ui-chip-row">
-                      <span className={`ui-chip ui-chip-kind ui-kind-${entry.kind}`}>
-                        {entry.kind}
-                      </span>
-                      <span className={`ui-chip ui-chip-stability ui-stability-${entry.stability}`}>
-                        {entry.stability}
-                      </span>
-                      <span className="ui-chip ui-chip-owner">{entry.owner}</span>
-                    </div>
-                  </header>
+              {groupedFilteredEntries.map((group) => (
+                <section key={`catalog-group-${group.section}`} className="ui-catalog-section">
+                  <button
+                    type="button"
+                    className="ui-catalog-section-toggle"
+                    onClick={() => toggleSection(group.section)}
+                  >
+                    <h2 className="ui-catalog-section-title">{group.section}</h2>
+                    <span>{group.entries.length}</span>
+                  </button>
+                  {!isSectionCollapsed(group.section) ? (
+                    <div className="ui-catalog-section-grid">
+                      {group.entries.map((entry) => (
+                        <article id={`doc-${entry.id}`} key={entry.id} className="ui-catalog-card">
+                          <header className="ui-catalog-card-header">
+                            <h2>{entry.name}</h2>
+                            <div className="ui-chip-row">
+                              <span className={`ui-chip ui-chip-kind ui-kind-${entry.kind}`}>
+                                {entry.kind}
+                              </span>
+                              <span className={`ui-chip ui-chip-stability ui-stability-${entry.stability}`}>
+                                {entry.stability}
+                              </span>
+                              <span className="ui-chip ui-chip-owner">{entry.owner}</span>
+                            </div>
+                          </header>
 
-                  {entry.demoId ? (
-                    <div className="ui-live-preview">
-                      <DemoPanel
-                        entry={entry}
-                        bpmBySurface={bpmBySurface}
-                        setBpmBySurface={setBpmBySurface}
-                        keyBySurface={keyBySurface}
-                        setKeyBySurface={setKeyBySurface}
-                        progressionByAppearance={progressionByAppearance}
-                        setProgressionByAppearance={setProgressionByAppearance}
-                        styleByAppearance={styleByAppearance}
-                        setStyleByAppearance={setStyleByAppearance}
-                        metronomeEnabled={metronomeEnabled}
-                        setMetronomeEnabled={setMetronomeEnabled}
-                      />
-                    </div>
-                  ) : null}
+                          {entry.demoId ? (
+                            <div className="ui-live-preview">
+                              <DemoPanel
+                                entry={entry}
+                                bpmBySurface={bpmBySurface}
+                                setBpmBySurface={setBpmBySurface}
+                                keyBySurface={keyBySurface}
+                                setKeyBySurface={setKeyBySurface}
+                                progressionByAppearance={progressionByAppearance}
+                                setProgressionByAppearance={setProgressionByAppearance}
+                                styleByAppearance={styleByAppearance}
+                                setStyleByAppearance={setStyleByAppearance}
+                                metronomeEnabled={metronomeEnabled}
+                                setMetronomeEnabled={setMetronomeEnabled}
+                              />
+                            </div>
+                          ) : null}
 
-                  <p className="ui-card-description">{entry.description}</p>
-                  <div className="ui-meta-grid">
-                    <p>
-                      <strong>Path:</strong> <code>{entry.path}</code>
-                    </p>
-                    <p>
-                      <strong>Export:</strong> <code>{entry.exportType}</code>
-                    </p>
-                    <p>
-                      <strong>Used by:</strong> {getAppsLabel(entry)}
-                    </p>
-                  </div>
-                  {entry.tags.length > 0 ? (
-                    <div className="ui-tag-row">
-                      {entry.tags.map((tag) => (
-                        <span key={`${entry.id}-${tag}`} className="ui-chip ui-chip-tag">
-                          {tag}
-                        </span>
+                          <p className="ui-card-description">{entry.description}</p>
+                          <div className="ui-meta-grid">
+                            <p>
+                              <strong>Path:</strong> <code>{entry.path}</code>
+                            </p>
+                            <p>
+                              <strong>Export:</strong> <code>{entry.exportType}</code>
+                            </p>
+                            <p>
+                              <strong>Used by:</strong> {renderAppsUsingLinks(entry.appsUsing)}
+                            </p>
+                          </div>
+                          {entry.tags.length > 0 ? (
+                            <div className="ui-tag-row">
+                              {entry.tags.map((tag) => (
+                                <span key={`${entry.id}-${tag}`} className="ui-chip ui-chip-tag">
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          ) : null}
+                        </article>
                       ))}
                     </div>
                   ) : null}
-                </article>
+                </section>
               ))}
             </div>
           </div>
-        ) : (
+        ) : activeTab === 'gallery' ? (
           <div className="ui-gallery-grid">
             {demoEntries.map((entry) => (
-              <article key={`gallery-${entry.id}`} className="ui-gallery-card">
-                <header className="ui-gallery-card-header">
+              <article key={`gallery-${entry.id}`} className="ui-gallery-item">
+                <header className="ui-gallery-item-header">
                   <h2>{entry.name}</h2>
                   <button
                     type="button"
@@ -791,7 +964,7 @@ function App() {
                     Open docs
                   </button>
                 </header>
-                <div className="ui-live-preview">
+                <div className="ui-live-preview ui-live-preview-flat">
                   <DemoPanel
                     entry={entry}
                     bpmBySurface={bpmBySurface}
@@ -808,6 +981,85 @@ function App() {
                 </div>
               </article>
             ))}
+          </div>
+        ) : (
+          <div className="ui-theme-tab">
+            <section className="ui-theme-foundation" aria-label="Default theme foundation">
+              <h2>Default Theme Foundation</h2>
+              <p className="ui-theme-copy">
+                The default contract uses semantic tokens and density buckets so shared controls
+                stay visually consistent while each app can still override palette and spacing.
+              </p>
+              <div className="ui-theme-swatches">
+                <span className="ui-theme-swatch ui-swatch-primary">Primary</span>
+                <span className="ui-theme-swatch ui-swatch-accent">Accent</span>
+                <span className="ui-theme-swatch ui-swatch-surface">Surface</span>
+                <span className="ui-theme-swatch ui-swatch-border">Border</span>
+              </div>
+              <div className="ui-size-buckets">
+                <div className="ui-size-demo compact">
+                  <strong>Compact</strong>
+                  <label htmlFor="density-compact">Progression</label>
+                  <input
+                    id="density-compact"
+                    value={densityDrafts.compact}
+                    onChange={(event) =>
+                      setDensityDrafts((prev) => ({ ...prev, compact: event.target.value }))
+                    }
+                  />
+                  <button type="button">Apply</button>
+                </div>
+                <div className="ui-size-demo comfortable">
+                  <strong>Comfortable</strong>
+                  <label htmlFor="density-comfortable">Progression</label>
+                  <input
+                    id="density-comfortable"
+                    value={densityDrafts.comfortable}
+                    onChange={(event) =>
+                      setDensityDrafts((prev) => ({ ...prev, comfortable: event.target.value }))
+                    }
+                  />
+                  <button type="button">Apply</button>
+                </div>
+                <div className="ui-size-demo touch">
+                  <strong>Touch</strong>
+                  <label htmlFor="density-touch">Progression</label>
+                  <input
+                    id="density-touch"
+                    value={densityDrafts.touch}
+                    onChange={(event) =>
+                      setDensityDrafts((prev) => ({ ...prev, touch: event.target.value }))
+                    }
+                  />
+                  <button type="button">Apply</button>
+                </div>
+              </div>
+            </section>
+            <section className="ui-theme-guidance">
+              <article>
+                <h3>Material Design in Labs</h3>
+                <p>
+                  We follow Material principles for hierarchy, spacing rhythm, interactive states,
+                  and elevation while still using app-specific visual identity tokens.
+                </p>
+              </article>
+              <article>
+                <h3>Relationship to Material UI</h3>
+                <p>
+                  `getAppTheme()` bridges the shared token contract into MUI so MUI components and
+                  CSS-first shared controls render with the same palette, spacing, radius, and
+                  typography choices.
+                </p>
+              </article>
+              <article>
+                <h3>How apps should apply MUI</h3>
+                <p>
+                  Wrap each app with `ThemeProvider` using its app theme id, define semantic
+                  `--theme-*` CSS variables at the app root, and pass explicit dropdown class hooks
+                  for portal-rendered menus to preserve app-level context.
+                </p>
+              </article>
+            </section>
           </div>
         )}
       </section>

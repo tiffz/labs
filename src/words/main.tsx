@@ -3,7 +3,6 @@ import { ThemeProvider } from '@mui/material/styles';
 import { installServerLogger } from '../shared/utils/serverLogger';
 import { getAppTheme } from '../shared/ui/theme/appTheme';
 import App from './App';
-import '../drums/styles/drums.css';
 import './styles/word-rhythm.css';
 import '../shared/components/music/appSharedThemes.css';
 

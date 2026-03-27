@@ -15,10 +15,15 @@ import {
   addChordToPart,
   findNextFreeTempoPosition,
 } from './utils/storeScoreEditing';
+import { resolveFreeTempoLoopStartPosition } from './utils/freeTempoLoop';
 import {
   computeAutoZoomLevel,
   getMeasureCountForScore,
 } from './storeSelectors';
+
+function getBaseScoreId(scoreId: string): string {
+  return scoreId.replace(/(?:-section-\d+)+$/, '');
+}
 
 export type ActiveMode = 'none' | 'play' | 'practice' | 'free-practice';
 
@@ -141,6 +146,7 @@ type Action =
   | { type: 'SET_SCORE_FROM_ABC'; score: PianoScore }
   | { type: 'SET_SECTIONS'; sections: ScoreSection[] }
   | { type: 'LOAD_SECTION'; index: number }
+  | { type: 'UNLOAD_SECTION' }
   | { type: 'CLEAR_SECTIONS' }
   | { type: 'SET_ZOOM'; level: number }
   | { type: 'SELECT_MEASURE'; index: number }
@@ -595,6 +601,16 @@ export function reducer(state: PianoState, action: Action): PianoState {
         currentNoteIndices: new Map(),
       };
     }
+    case 'UNLOAD_SECTION':
+      return {
+        ...state,
+        score: state.fullScore ?? state.score,
+        fullScore: null,
+        activeSectionIndex: null,
+        selectedMeasureRange: null,
+        currentMeasureIndex: 0,
+        currentNoteIndices: new Map(),
+      };
     case 'CLEAR_SECTIONS':
       return {
         ...state,
@@ -735,6 +751,8 @@ export function reducer(state: PianoState, action: Action): PianoState {
         drumVolume: s.drumVolume,
         zoomLevel: s.zoomLevel,
         selectedMeasureRange: s.selectedMeasureRange,
+        sections: s.sections ?? [],
+        activeSectionIndex: null,
         trackMuted,
         trackVolume,
         currentMeasureIndex: 0,
@@ -742,8 +760,6 @@ export function reducer(state: PianoState, action: Action): PianoState {
         practiceResults: [],
         practiceResultsByNoteId: new Map(),
         fullScore: null,
-        sections: [],
-        activeSectionIndex: null,
         isExerciseScore: false,
       };
     }
@@ -1020,11 +1036,11 @@ export function PianoProvider({ children }: { children: React.ReactNode }) {
       (p.hand === 'left' && s.practiceLeftHand) ||
       (p.hand === 'voice' && s.practiceVoice)
     );
-    const firstPlayable = findNextFreeTempoPosition(practicedParts, startMeasure, -1);
+    const firstPlayable = resolveFreeTempoLoopStartPosition(practicedParts, startMeasure);
     dispatch({
       type: 'SET_FREE_TEMPO_POSITION',
-      measureIndex: firstPlayable?.measureIndex ?? startMeasure,
-      noteIndex: firstPlayable?.noteIndex ?? -1,
+      measureIndex: firstPlayable.measureIndex,
+      noteIndex: firstPlayable.noteIndex,
       partIds: practicedParts.map((part) => part.id),
     });
   }, []);
@@ -1198,7 +1214,8 @@ export function PianoProvider({ children }: { children: React.ReactNode }) {
       const last = getLastSelection();
       if (last?.score) {
         if (!last.isExercise) {
-          const saved = getSongSettings(last.score.id);
+          const baseId = getBaseScoreId(last.score.id);
+          const saved = getSongSettings(last.score.id) ?? getSongSettings(baseId);
           if (saved) {
             dispatch({ type: 'RESTORE_PRACTICE_SETTINGS', settings: saved });
             engine.setTempo(saved.tempo);
@@ -1216,44 +1233,47 @@ export function PianoProvider({ children }: { children: React.ReactNode }) {
   const songSaveTimerRef = useRef<number | null>(null);
   const { score, tempo, showVocalPart, showRightHand, showLeftHand, showChords,
     practiceRightHand, practiceLeftHand, practiceVoice, practiceChords,
-    drumEnabled, drumVolume, zoomLevel, selectedMeasureRange,
+    drumEnabled, drumVolume, zoomLevel, selectedMeasureRange, sections, fullScore,
     trackMuted, trackVolume, isExerciseScore } = state;
   useEffect(() => {
     if (!score || isExerciseScore) return;
-    const scoreId = score.id;
+    const persistedScore = fullScore ?? score;
+    const scoreId = getBaseScoreId(persistedScore.id);
     if (songSaveTimerRef.current) clearTimeout(songSaveTimerRef.current);
     songSaveTimerRef.current = window.setTimeout(() => {
       const settings: import('./utils/libraryStorage').SongPracticeSettings = {
         tempo, showVocalPart, showRightHand, showLeftHand, showChords,
         practiceRightHand, practiceLeftHand, practiceVoice, practiceChords,
         drumEnabled, drumVolume, zoomLevel, selectedMeasureRange,
+        sections,
         trackMuted: Object.fromEntries(trackMuted),
         trackVolume: Object.fromEntries(trackVolume),
-        score,
+        score: persistedScore,
       };
       import('./utils/libraryStorage').then(({ saveSongSettings, syncLibraryEntryFromScore }) => {
         saveSongSettings(scoreId, settings);
-        syncLibraryEntryFromScore(score);
+        syncLibraryEntryFromScore(persistedScore);
       });
     }, 1500);
     return () => { if (songSaveTimerRef.current) clearTimeout(songSaveTimerRef.current); };
   }, [score, tempo, showVocalPart, showRightHand, showLeftHand, showChords,
       practiceRightHand, practiceLeftHand, practiceVoice, practiceChords,
-      drumEnabled, drumVolume, zoomLevel, selectedMeasureRange,
+      drumEnabled, drumVolume, zoomLevel, selectedMeasureRange, sections, fullScore,
       trackMuted, trackVolume, isExerciseScore]);
 
   // Persist last selection so it's restored on refresh
   const selectionSaveRef = useRef<number | null>(null);
   useEffect(() => {
     if (!score) return;
+    const persistedScore = fullScore ?? score;
     if (selectionSaveRef.current) clearTimeout(selectionSaveRef.current);
     selectionSaveRef.current = window.setTimeout(() => {
       import('./utils/libraryStorage').then(({ saveLastSelection }) => {
-        saveLastSelection({ score, isExercise: isExerciseScore });
+        saveLastSelection({ score: persistedScore, isExercise: isExerciseScore });
       });
     }, 500);
     return () => { if (selectionSaveRef.current) clearTimeout(selectionSaveRef.current); };
-  }, [score, isExerciseScore]);
+  }, [score, fullScore, isExerciseScore]);
 
   // Auto-save global practice preferences (debounced)
   const globalSaveTimerRef = useRef<number | null>(null);

@@ -35,6 +35,30 @@
     /* Transitions */
     --transition-fast: all 0.15s ease;
     --transition-base: all 0.2s ease;
+
+    /* Shared semantic theme bridge */
+    --theme-primary: var(--primary);
+    --theme-primary-hover: var(--primary-dark);
+    --theme-accent: var(--secondary);
+    --theme-bg: var(--bg-color);
+    --theme-surface: var(--bg-card);
+    --theme-surface-elevated: var(--bg-card);
+    --theme-text: var(--text-color);
+    --theme-text-secondary: var(--text-secondary);
+    --theme-text-muted: var(--text-muted);
+    --theme-border: var(--border-color);
+    --theme-border-strong: var(--border-light);
+    --theme-focus-ring: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    --theme-shadow-sm: var(--shadow-sm);
+    --theme-shadow-lg: var(--shadow-lg);
+    --theme-radius-sm: 0.375rem;
+    --theme-radius-md: 0.5rem;
+    --theme-radius-lg: 0.75rem;
+    --control-height-compact: 32px;
+    --control-height-comfortable: 38px;
+    --control-height-touch: 44px;
+    --control-height: var(--control-height-comfortable);
+    --control-radius: var(--theme-radius-sm);
   }
 
   /* Override shared.css body styles for chords app */
@@ -214,11 +238,11 @@
   align-items: center;
   justify-content: center;
   gap: 0;
-  width: 40px;
-  height: 40px;
+  width: var(--control-height);
+  height: var(--control-height);
   padding: 0;
   border: 1px solid var(--border-color);
-  border-radius: 0.5rem;
+  border-radius: var(--control-radius);
   background: var(--bg-card);
   color: var(--text-secondary);
   cursor: pointer;
@@ -258,9 +282,10 @@
 }
 
 .sound-select {
-  padding: 0.5rem 0.75rem;
+  min-height: var(--control-height);
+  padding: 0 0.75rem;
   border: 1px solid var(--border-color);
-  border-radius: 0.375rem;
+  border-radius: var(--control-radius);
   background-color: var(--bg-card);
   color: var(--text-color);
   font-size: 0.875rem;
@@ -283,10 +308,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: var(--control-height);
+  height: var(--control-height);
   border: 1px solid var(--border-color);
-  border-radius: 0.5rem;
+  border-radius: var(--control-radius);
   background: var(--bg-card);
   color: var(--text-secondary);
   cursor: pointer;
@@ -700,8 +725,8 @@
 .chords-key-input {
   width: min(100%, 272px);
   min-width: 196px;
-  --key-shell-height: 38px;
-  --key-radius: 0.375rem;
+  --key-shell-height: var(--control-height);
+  --key-radius: var(--control-radius);
   --key-bg: var(--bg-card);
   --key-border: var(--border-color);
   --key-text: var(--text-color);
@@ -714,7 +739,7 @@
   --key-dropdown-border: var(--border-color);
   --key-dropdown-padding: 0.64rem;
   --key-grid-gap: 0.44rem;
-  --key-chip-min-height: 2.28rem;
+  --key-chip-min-height: calc(var(--control-height) - 2px);
   --key-chip-font-size: 0.9rem;
   --key-chip-font-weight: 600;
 }
@@ -775,8 +800,8 @@
   min-width: 196px;
   --bpm-stepper-min-width: 5.2rem;
   --bpm-value-padding: 0 0.28rem 0 0.46rem;
-  --bpm-shell-height: 38px;
-  --bpm-shell-radius: 0.375rem;
+  --bpm-shell-height: var(--control-height);
+  --bpm-shell-radius: var(--control-radius);
   --bpm-bg: var(--bg-card);
   --bpm-border: var(--border-color);
   --bpm-text: var(--text-color);

@@ -1,10 +1,32 @@
 import React, { useEffect, useCallback, useState, useRef, useMemo } from 'react';
 import { usePiano } from '../store';
 import { scoreToAbc, abcToScore } from '../utils/abcNotation';
+import type { PianoScore } from '../types';
 
 interface NoteInputProps {
   onImportClick?: () => void;
   onJumpToSelection?: () => void;
+}
+
+function getBaseScoreId(scoreId: string): string {
+  return scoreId.replace(/(?:-section-\d+)+$/, '');
+}
+
+function getBaseTitleFromSectionTitle(title: string | undefined): string | null {
+  if (!title) return null;
+  const match = title.match(/^(.*?)(?:\s[—-]\sMeasures\s\d+\s*-\s*\d+)$/i);
+  return match?.[1]?.trim() ?? null;
+}
+
+function getMeasureCount(score: PianoScore | null | undefined): number {
+  if (!score) return 0;
+  return Math.max(...score.parts.map((part) => part.measures.length), 0);
+}
+
+function isSectionScopedScore(score: PianoScore | null | undefined): boolean {
+  if (!score) return false;
+  if (/(?:-section-\d+)+$/.test(score.id)) return true;
+  return Boolean(getBaseTitleFromSectionTitle(score.title));
 }
 
 const NoteInput: React.FC<NoteInputProps> = ({ onImportClick, onJumpToSelection }) => {
@@ -123,6 +145,9 @@ const NoteInput: React.FC<NoteInputProps> = ({ onImportClick, onJumpToSelection 
   const activeSection = state.activeSectionIndex !== null
     ? state.sections[state.activeSectionIndex] ?? null
     : null;
+  const sectionScopedById = /(?:-section-\d+)+$/.test(state.score?.id ?? '');
+  const sectionScopedByTitle = Boolean(getBaseTitleFromSectionTitle(state.score?.title));
+  const canReturnToFullScore = Boolean(activeSection || state.fullScore || sectionScopedById || sectionScopedByTitle);
 
   const saveSelectionAsSection = useCallback(() => {
     if (!state.selectedMeasureRange) return;
@@ -145,9 +170,71 @@ const NoteInput: React.FC<NoteInputProps> = ({ onImportClick, onJumpToSelection 
   }, [dispatch]);
 
   const loadFullScore = useCallback(() => {
-    dispatch({ type: 'CLEAR_SECTIONS' });
-    setSectionsMenuOpen(false);
-  }, [dispatch]);
+    // Normal section workflow: just unwind the active section view.
+    if (state.fullScore || state.activeSectionIndex !== null) {
+      dispatch({ type: 'UNLOAD_SECTION' });
+      setSectionsMenuOpen(false);
+      return;
+    }
+
+    // Recovery path: if a persisted session loaded a section-scoped score
+    // without section metadata, restore from base song settings/library entry.
+    const currentScoreId = state.score?.id;
+    if (!currentScoreId) {
+      setSectionsMenuOpen(false);
+      return;
+    }
+    const baseId = getBaseScoreId(currentScoreId);
+    const baseTitle = getBaseTitleFromSectionTitle(state.score?.title);
+    void import('../utils/libraryStorage').then(({ getSongSettings, getAllSongSettings, getAllEntries }) => {
+      const currentMeasureCount = getMeasureCount(state.score);
+      const sameFamily = (score: PianoScore) =>
+        score.id === baseId ||
+        getBaseScoreId(score.id) === baseId ||
+        (Boolean(baseTitle) && score.title.trim() === baseTitle);
+      const isUsableFullScore = (score: PianoScore) =>
+        sameFamily(score) &&
+        !isSectionScopedScore(score) &&
+        getMeasureCount(score) >= currentMeasureCount;
+
+      const directSaved = getSongSettings(baseId);
+      if (directSaved && isUsableFullScore(directSaved.score)) {
+        dispatch({ type: 'RESTORE_PRACTICE_SETTINGS', settings: directSaved });
+        dispatch({ type: 'CLEAR_MEASURE_SELECTION' });
+        setSectionsMenuOpen(false);
+        return;
+      }
+
+      const settingsCandidates = Object.values(getAllSongSettings());
+      const bestSavedSettings = settingsCandidates
+        .filter((candidate) => isUsableFullScore(candidate.score))
+        .sort((a, b) => getMeasureCount(b.score) - getMeasureCount(a.score))[0];
+      if (bestSavedSettings) {
+        dispatch({ type: 'RESTORE_PRACTICE_SETTINGS', settings: bestSavedSettings });
+        dispatch({ type: 'CLEAR_MEASURE_SELECTION' });
+        setSectionsMenuOpen(false);
+        return;
+      }
+
+      const entry = getAllEntries()
+        .filter((candidate) => isUsableFullScore(candidate.score))
+        .sort((a, b) => getMeasureCount(b.score) - getMeasureCount(a.score))[0];
+      if (entry) {
+        dispatch({ type: 'SET_SCORE', score: entry.score });
+        dispatch({ type: 'SET_IS_EXERCISE', isExercise: entry.source === 'exercise' });
+        dispatch({ type: 'CLEAR_MEASURE_SELECTION' });
+        setSectionsMenuOpen(false);
+        return;
+      }
+
+      // Absolute fallback: clear section marker from title so user sees this
+      // is no longer in an active saved section state.
+      if (baseTitle && state.score) {
+        dispatch({ type: 'UPDATE_SCORE_META', title: baseTitle });
+      }
+      setSectionsMenuOpen(false);
+    });
+  }, [dispatch, state.activeSectionIndex, state.fullScore, state.score]);
 
   useEffect(() => {
     if (!isEditing) return;
@@ -215,6 +302,15 @@ const NoteInput: React.FC<NoteInputProps> = ({ onImportClick, onJumpToSelection 
           </button>
           {sectionsMenuOpen ? (
             <div className="np-sections-menu" role="menu">
+              {canReturnToFullScore ? (
+                <button
+                  className="np-sections-item"
+                  onClick={loadFullScore}
+                  role="menuitem"
+                >
+                  <span className="np-sections-item-name">Return to full score</span>
+                </button>
+              ) : null}
               {state.sections.length === 0 ? (
                 <div className="np-sections-empty">
                   Select a measure range and click the save icon on the selection chip to create a practice section.
@@ -241,11 +337,17 @@ const NoteInput: React.FC<NoteInputProps> = ({ onImportClick, onJumpToSelection 
         </div>
 
         <div className="toolbar-spacer np-toolbar-center">
-          {activeSection ? (
+          {canReturnToFullScore ? (
             <div className="np-active-section-banner" role="status" aria-live="polite">
               <span className="material-symbols-outlined" style={{ fontSize: 16 }}>flag</span>
               <span>
-                Practicing section: <strong>{activeSection.name}</strong>
+                {activeSection ? (
+                  <>
+                    Practicing section: <strong>{activeSection.name}</strong>
+                  </>
+                ) : (
+                  <>Section mode active</>
+                )}
               </span>
               <button className="np-full-score-btn" onClick={loadFullScore}>
                 Full score

@@ -10,6 +10,11 @@ import {
 } from '../utils/practiceTimingStore';
 import { matchesChord } from '../utils/chordMatcher';
 import { isDebugEnabled, logDebugEvent } from '../utils/practiceDebugLog';
+import {
+  canAdvanceWhileWaitingForRelease,
+  getLatestAttackTime,
+} from '../utils/freeTempoInput';
+import { resolveFreeTempoLoopStartPosition } from '../utils/freeTempoLoop';
 
 const PERFECT_THRESHOLD_MS = 120;
 const GRACE_PERIOD_MS = 200;
@@ -215,6 +220,7 @@ const PracticeMode: React.FC = () => {
   const graceTimerRef = useRef<number | null>(null);
   const evalTimerRef = useRef<number | null>(null);
   const octaveAnchorByHandRef = useRef<Map<string, number>>(new Map());
+  const lastFreeTempoAdvanceInputTimeRef = useRef<number>(-Infinity);
 
   useEffect(() => {
     evaluatedNoteIds.current = new Set();
@@ -222,6 +228,7 @@ const PracticeMode: React.FC = () => {
     recentlyPassedRef.current = [];
     expectedByPartRef.current = new Map();
     octaveAnchorByHandRef.current = new Map();
+    lastFreeTempoAdvanceInputTimeRef.current = -Infinity;
   }, [state.currentRunStartTime]);
 
   const getAnchoredExpectedPitches = useCallback((expected: ExpectedNote, played: number[]): number[] => {
@@ -261,7 +268,13 @@ const PracticeMode: React.FC = () => {
           const anchored = getAnchoredExpectedPitches(expected, played);
           return anchored.length > 0 && anchored.every((pitch) => isNoteHeld(pitch));
         });
-      if (!canBypassReleaseForTieContinuation) return;
+      const canAdvance = canAdvanceWhileWaitingForRelease({
+        played,
+        midiTimes: getAllMidiNoteOnTimes(),
+        lastAdvanceInputTime: lastFreeTempoAdvanceInputTimeRef.current,
+        canBypassForTieContinuation: canBypassReleaseForTieContinuation,
+      });
+      if (!canAdvance) return;
       waitingForReleaseRef.current = false;
     }
 
@@ -292,6 +305,10 @@ const PracticeMode: React.FC = () => {
     const allExpected = [...expectedByPartRef.current.keys()];
     if (allExpected.length > 0 && allExpected.every(id => partsPlayedRef.current.has(id))) {
       waitingForReleaseRef.current = true;
+      const latestAttack = getLatestAttackTime(played, getAllMidiNoteOnTimes());
+      if (latestAttack !== null) {
+        lastFreeTempoAdvanceInputTimeRef.current = latestAttack;
+      }
       dispatch({ type: 'ADVANCE_FREE_TEMPO' });
     }
   }, [dispatch, checkPitchCorrect, getAnchoredExpectedPitches, useMic]);
@@ -680,6 +697,7 @@ const PracticeMode: React.FC = () => {
     };
   }, [state.activeMidiNotes,
       isPracticing, isFreeTempo, state.isPlaying, state.score, state.tempo,
+      state.freeTempoMeasureIndex, state.freeTempoNoteIndex,
       evaluateFreeTempo, evaluateTimedWithTiming]);
 
   useEffect(() => {
@@ -687,21 +705,24 @@ const PracticeMode: React.FC = () => {
     dispatch({ type: 'END_PRACTICE_RUN' });
     if (state.loopingEnabled && state.score) {
       dispatch({ type: 'START_PRACTICE_RUN' });
-      const noteIndices = new Map<string, number>();
       const practicedParts = state.score.parts.filter(p =>
         (p.hand === 'right' && state.practiceRightHand) ||
         (p.hand === 'left' && state.practiceLeftHand) ||
         (p.hand === 'voice' && state.practiceVoice)
       );
-      for (const part of practicedParts) {
-        noteIndices.set(part.id, 0);
-      }
-      dispatch({ type: 'UPDATE_POSITION', measureIndex: 0, noteIndices });
+      const startMeasure = state.selectedMeasureRange?.start ?? 0;
+      const loopStart = resolveFreeTempoLoopStartPosition(practicedParts, startMeasure);
+      dispatch({
+        type: 'SET_FREE_TEMPO_POSITION',
+        measureIndex: loopStart.measureIndex,
+        noteIndex: loopStart.noteIndex,
+        partIds: practicedParts.map((part) => part.id),
+      });
     } else {
       stopMode();
     }
   }, [isFreeTempo, state.freeTempoNoteIndex, state.loopingEnabled, state.score,
-      state.practiceRightHand, state.practiceLeftHand, state.practiceVoice, dispatch, stopMode]);
+      state.practiceRightHand, state.practiceLeftHand, state.practiceVoice, state.selectedMeasureRange, dispatch, stopMode]);
 
   return null;
 };

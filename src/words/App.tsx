@@ -55,6 +55,7 @@ import {
 } from '../shared/utils/urlRouting';
 import { parseOptionalNumberParam } from '../shared/utils/urlParams';
 import { LyricImportModal } from './components/LyricImportModal';
+import { getNotationScrollContainer } from './utils/scrollOwner';
 import { getRhythmTemplatePresets } from '../shared/rhythm/presetDatabase';
 import MetronomeToggleButton from '../shared/components/MetronomeToggleButton';
 import DiceIcon from '../shared/components/DiceIcon';
@@ -999,11 +1000,14 @@ const App: React.FC = () => {
       frameId = window.requestAnimationFrame(checkStickyState);
     };
     onScrollOrResize();
-    window.addEventListener('scroll', onScrollOrResize, { passive: true });
+    window.addEventListener('scroll', onScrollOrResize, {
+      passive: true,
+      capture: true,
+    });
     window.addEventListener('resize', onScrollOrResize);
     return () => {
       if (frameId !== 0) window.cancelAnimationFrame(frameId);
-      window.removeEventListener('scroll', onScrollOrResize);
+      window.removeEventListener('scroll', onScrollOrResize, true);
       window.removeEventListener('resize', onScrollOrResize);
     };
   }, []);
@@ -1896,6 +1900,7 @@ const App: React.FC = () => {
       parsedRhythm.measures.length,
     ]
   );
+  const playbackScrollContainer = getNotationScrollContainer(notationScrollRef.current);
 
   const hydrateFromUrlSearch = useCallback((search: string) => {
     const params = new URLSearchParams(search);
@@ -4107,7 +4112,7 @@ const App: React.FC = () => {
                   autoFollowPlayback={autoFollowPlayback}
                   isPlaying={isPlaying}
                   zoomLevel={scoreZoom}
-                  scrollContainer={notationScrollRef.current}
+                  scrollContainer={playbackScrollContainer}
                 />
               </section>
             ))}

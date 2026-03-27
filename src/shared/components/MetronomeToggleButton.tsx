@@ -42,7 +42,7 @@ const MetronomeToggleButton = React.forwardRef<
       tooltipOff = 'Metronome: Off',
       dataTooltipOn,
       dataTooltipOff,
-      showOnLabel = true,
+      showOnLabel = false,
       onLabelText = 'On',
       ariaLabel = 'Toggle metronome',
       onMouseEnter,
@@ -63,6 +63,7 @@ const MetronomeToggleButton = React.forwardRef<
         className={classes}
         onClick={onToggle}
         aria-label={ariaLabel}
+        aria-pressed={enabled}
         title={includeNativeTitle ? (enabled ? tooltipOn : tooltipOff) : undefined}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
