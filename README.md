@@ -52,6 +52,9 @@ Notes:
 
 - `npm run dev`, `npm run lint`, `npm test`, and `npm run build` all regenerate the catalog automatically.
 - CI regenerates the catalog before lint/test/build so stale generated output does not block deployments.
+- Git hooks also enforce freshness:
+  - `pre-commit` regenerates and stages `src/ui/generatedSharedCatalog.ts` automatically.
+  - `pre-push` blocks push if catalog drift is detected and stages the regenerated file.
 
 ## Development Rules (Short Version)
 

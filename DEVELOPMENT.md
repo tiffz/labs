@@ -129,6 +129,12 @@ The pre-commit hook intelligently selects test mode:
 - **Beat files changed** → Full tests with benchmarks
 - **Cat/regression files changed** → Standard tests
 - **Other files** → Fast tests only
+- Shared catalog is regenerated and staged automatically before these checks.
+
+### Pre-push Guardrail
+
+- `pre-push` runs `npm run check:shared-catalog`.
+- If drift is detected, it regenerates and stages `src/ui/generatedSharedCatalog.ts`, then blocks push so the catalog update is committed intentionally.
 
 ### Regression Test Architecture
 
