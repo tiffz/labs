@@ -33,5 +33,8 @@ tsconfig.tsbuildinfo
 test-results/
 playwright-report/
 
-# Custom folder name for hidden files 
+# Custom folder name for hidden files
 .hidden
+
+# Legacy local build artifacts
+storybook-static

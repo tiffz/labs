@@ -76,6 +76,10 @@ jobs:
           echo "beat_changed=false" >> $GITHUB_OUTPUT
           echo "No beat file changes - will skip benchmarks"
         fi
+
+    - name: Enforce shared-layer import boundaries
+      run: |
+        node -e "const fs=require('fs'); const path=require('path'); const root='src/shared'; const fileExt=/\.(ts|tsx)$/; const importPattern=/from\\s+['\"][^'\"]*(\\.{1,2}\\/)+((beat|chords|drums|piano|words)\\/)/; const violations=[]; const walk=(dir)=>{ for (const entry of fs.readdirSync(dir,{withFileTypes:true})) { const full=path.join(dir,entry.name); if (entry.isDirectory()) walk(full); else if (fileExt.test(entry.name)) { const text=fs.readFileSync(full,'utf8'); const lines=text.split(/\\r?\\n/); lines.forEach((line,idx)=>{ if(importPattern.test(line)) violations.push(full+':'+(idx+1)+': '+line.trim());}); } } }; walk(root); if (violations.length){ console.error('Shared layer may not import from app directories.\\n'+violations.join('\\n')); process.exit(1);} "
         
     - name: Install dependencies
       run: |
@@ -83,6 +87,9 @@ jobs:
         rm -rf node_modules package-lock.json
         npm install
         npm ci
+
+    - name: Verify shared catalog generation
+      run: npm run check:shared-catalog
       
     - name: Run linter
       run: npm run lint
@@ -94,7 +101,7 @@ jobs:
       env:
         INCLUDE_BEAT_BENCHMARK: ${{ steps.beat-changes.outputs.beat_changed }}
       run: npm test
-      
+
     - name: Build project
       run: npm run build
 
