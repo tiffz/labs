@@ -1,5 +1,13 @@
 #!/usr/bin/env sh
 
+# Keep generated shared catalog in sync for every commit, even when
+# only workflow/docs files changed.
+npm run generate:shared-catalog
+if ! git diff --quiet -- src/ui/generatedSharedCatalog.ts; then
+  git add src/ui/generatedSharedCatalog.ts
+  echo "Staged updated shared catalog (src/ui/generatedSharedCatalog.ts)."
+fi
+
 # Check if any TypeScript/JavaScript files are staged
 if git diff --cached --name-only --quiet -- '*.ts' '*.tsx' '*.js' '*.jsx' '*.json' 'package*.json' 'vite.config.*' 'vitest.config.*' 'tsconfig*.json' 'eslint.config.*'; then
   echo "No TypeScript/JavaScript files changed, skipping tests..."

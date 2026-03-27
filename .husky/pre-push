@@ -1,0 +1,14 @@
+#!/usr/bin/env sh
+
+# Final guardrail before push so CI/CD never sees a stale shared catalog.
+if ! npm run check:shared-catalog >/dev/null 2>&1; then
+  echo "Shared catalog was out of date. Regenerating now..."
+  npm run generate:shared-catalog
+
+  if ! git diff --quiet -- src/ui/generatedSharedCatalog.ts; then
+    git add src/ui/generatedSharedCatalog.ts
+    echo "Staged updated shared catalog. Commit these changes, then push again."
+  fi
+
+  exit 1
+fi
