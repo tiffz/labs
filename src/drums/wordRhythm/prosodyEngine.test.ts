@@ -239,6 +239,186 @@ describe('generateWordRhythm', () => {
     ]);
   });
 
+  it('expands ordinal number forms into ordinal words', () => {
+    const result = generateWordRhythm(
+      '1st 2nd 3rd 4th 21st 32nd 43rd 54th 100th 101st',
+      {
+        strictDictionaryMode: false,
+        timeSignature,
+        variationSeed: 0,
+      }
+    );
+
+    expect(result.analyses.map((analysis) => analysis.word)).toEqual([
+      'first',
+      'second',
+      'third',
+      'fourth',
+      'twenty',
+      'first',
+      'thirty',
+      'second',
+      'forty',
+      'third',
+      'fifty',
+      'fourth',
+      'one',
+      'hundredth',
+      'one',
+      'hundred',
+      'first',
+    ]);
+  });
+
+  it('supports pluralized ordinal tokens', () => {
+    const result = generateWordRhythm("1sts 22nd's", {
+      strictDictionaryMode: false,
+      timeSignature,
+      variationSeed: 0,
+    });
+
+    expect(result.analyses.map((analysis) => analysis.word)).toEqual([
+      'firsts',
+      'twenty',
+      'seconds',
+    ]);
+  });
+
+  it('can alternate strict vs spoken syllables for flexible words by seed', () => {
+    const counts = new Set<number>();
+    for (let seed = 0; seed < 12; seed += 1) {
+      const result = generateWordRhythm('comfortable', {
+        strictDictionaryMode: false,
+        timeSignature,
+        variationSeed: seed,
+      });
+      counts.add(result.analyses[0]?.syllables.length ?? -1);
+    }
+    expect(counts.has(3)).toBe(true);
+    expect(counts.has(4)).toBe(true);
+  });
+
+  it('handles common spoken-English words with stable syllable counts', () => {
+    const expectations: Record<string, number | number[]> = {
+      violet: 2,
+      violets: 2,
+      every: [2, 3],
+      different: [2, 3],
+      favorite: [2, 3],
+      chocolate: 2,
+      camera: 3,
+      family: 3,
+      beautiful: 3,
+      business: 2,
+      comfortable: [3, 4],
+      vegetable: 3,
+      interesting: 3,
+      restaurant: 3,
+      temperature: 3,
+      poem: 2,
+      orange: 2,
+      hour: 1,
+      rhythm: 2,
+      queue: 1,
+      people: 2,
+      because: 2,
+      really: 2,
+      idea: 3,
+      music: 2,
+      melody: 3,
+    };
+
+    const source = Object.keys(expectations).join(' ');
+    const result = generateWordRhythm(source, {
+      strictDictionaryMode: false,
+      timeSignature,
+      variationSeed: 0,
+    });
+
+    const byWord = new Map(
+      result.analyses.map((analysis) => [analysis.word.toLowerCase(), analysis])
+    );
+    const mismatches = Object.entries(expectations)
+      .map(([word, expected]) => {
+        const actualCount = byWord.get(word)?.syllables.length ?? -1;
+        const expectedCounts = Array.isArray(expected) ? expected : [expected];
+        return expectedCounts.includes(actualCount)
+          ? null
+          : { word, expectedCount: expectedCounts, actualCount };
+      })
+      .filter(Boolean);
+    expect(mismatches).toEqual([]);
+  });
+
+  it('keeps regular plural s/ies forms aligned with singular syllable counts', () => {
+    const sameCountPairs: Array<[string, string]> = [
+      ['violet', 'violets'],
+      ['planet', 'planets'],
+      ['river', 'rivers'],
+      ['camera', 'cameras'],
+      ['flower', 'flowers'],
+      ['rhythm', 'rhythms'],
+      ['story', 'stories'],
+      ['family', 'families'],
+      ['melody', 'melodies'],
+      ['idea', 'ideas'],
+      ['banana', 'bananas'],
+      ['poem', 'poems'],
+    ];
+    const mismatches = sameCountPairs
+      .map(([singular, plural]) => {
+        const singularResult = generateWordRhythm(singular, {
+          strictDictionaryMode: false,
+          timeSignature,
+          variationSeed: 0,
+        });
+        const pluralResult = generateWordRhythm(plural, {
+          strictDictionaryMode: false,
+          timeSignature,
+          variationSeed: 0,
+        });
+        const singularCount = singularResult.analyses[0]?.syllables.length ?? -1;
+        const pluralCount = pluralResult.analyses[0]?.syllables.length ?? -1;
+        return singularCount === pluralCount
+          ? null
+          : { singular, plural, singularCount, pluralCount };
+      })
+      .filter(Boolean);
+
+    expect(mismatches).toEqual([]);
+  });
+
+  it('keeps sibilant -es plurals free to add an extra syllable', () => {
+    const additivePairs: Array<[string, string]> = [
+      ['bus', 'buses'],
+      ['box', 'boxes'],
+      ['church', 'churches'],
+      ['dish', 'dishes'],
+      ['match', 'matches'],
+    ];
+    const mismatches = additivePairs
+      .map(([singular, plural]) => {
+        const singularResult = generateWordRhythm(singular, {
+          strictDictionaryMode: false,
+          timeSignature,
+          variationSeed: 0,
+        });
+        const pluralResult = generateWordRhythm(plural, {
+          strictDictionaryMode: false,
+          timeSignature,
+          variationSeed: 0,
+        });
+        const singularCount = singularResult.analyses[0]?.syllables.length ?? -1;
+        const pluralCount = pluralResult.analyses[0]?.syllables.length ?? -1;
+        return pluralCount > singularCount
+          ? null
+          : { singular, plural, singularCount, pluralCount };
+      })
+      .filter(Boolean);
+
+    expect(mismatches).toEqual([]);
+  });
+
   it('speeds up long words with faster subdivisions', () => {
     const result = generateWordRhythm('watermelon watermelon', {
       strictDictionaryMode: false,

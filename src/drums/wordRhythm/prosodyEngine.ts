@@ -72,12 +72,21 @@ interface PronunciationAnalysis {
 
 const STRESS_PHONEME_REGEX = /\d$/;
 const WORD_REGEX = /[A-Za-z'’]+/;
-const NUMBER_REGEX = /\d[\d,]*(?:\.\d+)?(?:['’]?s)?/i;
-const TOKEN_REGEX = /\d[\d,]*(?:\.\d+)?(?:['’]?s)?|[A-Za-z'’]+|[.,!?;:]/g;
+const NUMBER_REGEX = /\d[\d,]*(?:\.\d+)?(?:st|nd|rd|th)?(?:['’]?s)?/i;
+const TOKEN_REGEX =
+  /\d[\d,]*(?:\.\d+)?(?:st|nd|rd|th)?(?:['’]?s)?|[A-Za-z'’]+|[.,!?;:]/g;
 const STRONG_ENDING_REGEX = /(tion|sion|ic|ity|ian|ious|ive|ette|eer|ese)$/i;
-const SYLLABLE_COUNT_OVERRIDES: Record<string, number> = {
+const STRICT_SYLLABLE_COUNT_OVERRIDES: Record<string, number> = {
   violet: 2,
   violets: 2,
+  hour: 1,
+};
+const VARIABLE_SPOKEN_SYLLABLE_COUNTS: Record<string, number> = {
+  every: 2,
+  different: 2,
+  favorite: 2,
+  favourite: 2,
+  comfortable: 3,
 };
 
 export interface SyllableHit {
@@ -340,24 +349,70 @@ function pluralizeWord(word: string): string {
   return `${word}s`;
 }
 
+function ordinalizeWord(word: string): string {
+  const irregular: Record<string, string> = {
+    one: 'first',
+    two: 'second',
+    three: 'third',
+    five: 'fifth',
+    eight: 'eighth',
+    nine: 'ninth',
+    twelve: 'twelfth',
+  };
+  if (irregular[word]) return irregular[word];
+  if (word.endsWith('y') && word.length > 1) return `${word.slice(0, -1)}ieth`;
+  if (word.endsWith('e')) return `${word.slice(0, -1)}th`;
+  return `${word}th`;
+}
+
+function integerToOrdinalWords(value: bigint): string[] {
+  const baseWords = integerToWords(value);
+  if (baseWords.length === 0) return ['zeroth'];
+  const lastIndex = baseWords.length - 1;
+  return [
+    ...baseWords.slice(0, lastIndex),
+    ordinalizeWord(baseWords[lastIndex] ?? 'zero'),
+  ];
+}
+
+function getWordSignatureSeed(word: string): number {
+  let acc = 0;
+  for (const char of word) {
+    acc = (acc * 31 + char.charCodeAt(0)) % 1_000_003;
+  }
+  return acc;
+}
+
 function expandNumericToken(token: string): string[] | null {
   const normalizedToken = token.toLowerCase();
-  const hasColloquialSuffix = /(?:['’]?s)$/.test(normalizedToken);
-  const baseToken = hasColloquialSuffix
-    ? normalizedToken.replace(/(?:['’]?s)$/, '')
-    : normalizedToken;
-  const compact = baseToken.replace(/,/g, '');
-  if (!/^\d+(?:\.\d+)?$/.test(compact)) return null;
+  const ordinalMatch = normalizedToken.match(
+    /^(\d[\d,]*(?:\.\d+)?)(st|nd|rd|th)(['’]?s)?$/i
+  );
+  if (ordinalMatch) {
+    const compactOrdinal = (ordinalMatch[1] ?? '').replace(/,/g, '');
+    if (!compactOrdinal || compactOrdinal.includes('.')) return null;
+    const ordinalWords = integerToOrdinalWords(BigInt(compactOrdinal));
+    if (!ordinalWords.length) return null;
+    if (ordinalMatch[3]) {
+      const last = ordinalWords[ordinalWords.length - 1] ?? '';
+      return [...ordinalWords.slice(0, -1), pluralizeWord(last)];
+    }
+    return ordinalWords;
+  }
 
-  if (hasColloquialSuffix) {
-    if (compact.includes('.')) return null;
-    const numericValue = BigInt(compact);
+  const colloquialMatch = normalizedToken.match(/^(\d[\d,]*)(['’]?s)$/i);
+  if (colloquialMatch) {
+    const compactColloquial = (colloquialMatch[1] ?? '').replace(/,/g, '');
+    if (!compactColloquial) return null;
+    const numericValue = BigInt(compactColloquial);
     const baseWords = integerToWords(numericValue);
     if (baseWords.length === 0) return null;
-    const pluralizedTail = pluralizeWord(baseWords[baseWords.length - 1]);
+    const pluralizedTail = pluralizeWord(baseWords[baseWords.length - 1] ?? '');
     return [...baseWords.slice(0, -1), pluralizedTail];
   }
 
+  const compact = normalizedToken.replace(/,/g, '');
+  if (!/^\d+(?:\.\d+)?$/.test(compact)) return null;
   const decimalParts = compact.split('.');
   if (decimalParts.length === 2) {
     const [whole, fractional] = decimalParts;
@@ -387,7 +442,8 @@ function getHeuristicStressPattern(
 
 function analyzeWord(
   word: string,
-  strictDictionaryMode: boolean
+  strictDictionaryMode: boolean,
+  variantSeed = 0
 ): WordAnalysis {
   const normalized = normalizeWord(word);
   if (!normalized) {
@@ -399,7 +455,7 @@ function analyzeWord(
     };
   }
 
-  const forcedCount = SYLLABLE_COUNT_OVERRIDES[normalized];
+  const forcedCount = STRICT_SYLLABLE_COUNT_OVERRIDES[normalized];
   if (forcedCount) {
     const syllables = alignSyllableCount(word, forcedCount);
     return {
@@ -411,6 +467,35 @@ function analyzeWord(
   }
 
   const pronunciations = lookupPronunciations(normalized);
+  const spokenCount = VARIABLE_SPOKEN_SYLLABLE_COUNTS[normalized];
+  if (spokenCount && !strictDictionaryMode) {
+    const strictCount = pronunciations.length
+      ? parseStressPattern(pronunciations[0]).syllableCount
+      : Math.max(1, estimateSyllables(normalized.replace(/['’]/g, '')));
+    const useSpoken =
+      seededUnit(getWordSignatureSeed(normalized), variantSeed, strictCount) <
+      0.5;
+    const targetCount = useSpoken ? spokenCount : strictCount;
+    const syllables = alignSyllableCount(word, targetCount);
+    if (!useSpoken && pronunciations.length > 0) {
+      const parsed = parseStressPattern(pronunciations[0]);
+      const paddedStress = [...parsed.stressPattern];
+      while (paddedStress.length < syllables.length) paddedStress.push(0);
+      return {
+        word,
+        syllables,
+        stressPattern: paddedStress.slice(0, syllables.length),
+        source: 'dictionary',
+      };
+    }
+    return {
+      word,
+      syllables,
+      stressPattern: getHeuristicStressPattern(normalized, syllables.length),
+      source: useSpoken ? 'heuristic' : pronunciations.length > 0 ? 'dictionary' : 'heuristic',
+    };
+  }
+
   if (pronunciations.length > 0) {
     const parsed = parseStressPattern(pronunciations[0]);
     const syllables = alignSyllableCount(word, parsed.syllableCount);
@@ -1291,7 +1376,11 @@ export function generateWordRhythm(
         : null;
       const wordsToAnalyze = expandedWords ?? (WORD_REGEX.test(token) ? [token] : []);
       for (const wordToken of wordsToAnalyze) {
-        const analysis = analyzeWord(wordToken, options.strictDictionaryMode);
+        const analysis = analyzeWord(
+          wordToken,
+          options.strictDictionaryMode,
+          rhythmSeed + soundSeed + analyses.length
+        );
         lineByWordIndex.set(analyses.length, lineIndex);
         lineSyllables += analysis.syllables.length;
         analyses.push(analysis);
