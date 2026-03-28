@@ -193,6 +193,52 @@ describe('generateWordRhythm', () => {
     expect(analysis.syllables.length).toBe(1);
   });
 
+  it('forces violet and violets to two syllables', () => {
+    const result = generateWordRhythm('violet violets', {
+      strictDictionaryMode: false,
+      timeSignature,
+      variationSeed: 0,
+    });
+
+    const violet = result.analyses.find(
+      (analysis) => analysis.word.toLowerCase() === 'violet'
+    );
+    const violets = result.analyses.find(
+      (analysis) => analysis.word.toLowerCase() === 'violets'
+    );
+    expect(violet?.syllables).toEqual(['vio', 'let']);
+    expect(violets?.syllables).toEqual(['vio', 'lets']);
+  });
+
+  it('expands number tokens into words before syllable analysis', () => {
+    const result = generateWordRhythm('90 12.5', {
+      strictDictionaryMode: false,
+      timeSignature,
+      variationSeed: 0,
+    });
+
+    expect(result.analyses.map((analysis) => analysis.word)).toEqual([
+      'ninety',
+      'twelve',
+      'point',
+      'five',
+    ]);
+  });
+
+  it('expands colloquial decade-style numbers into pluralized words', () => {
+    const result = generateWordRhythm("90s 90's 90’s", {
+      strictDictionaryMode: false,
+      timeSignature,
+      variationSeed: 0,
+    });
+
+    expect(result.analyses.map((analysis) => analysis.word)).toEqual([
+      'nineties',
+      'nineties',
+      'nineties',
+    ]);
+  });
+
   it('speeds up long words with faster subdivisions', () => {
     const result = generateWordRhythm('watermelon watermelon', {
       strictDictionaryMode: false,

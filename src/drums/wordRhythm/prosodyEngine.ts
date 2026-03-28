@@ -72,8 +72,13 @@ interface PronunciationAnalysis {
 
 const STRESS_PHONEME_REGEX = /\d$/;
 const WORD_REGEX = /[A-Za-z'’]+/;
-const TOKEN_REGEX = /[A-Za-z'’]+|[.,!?;:]/g;
+const NUMBER_REGEX = /\d[\d,]*(?:\.\d+)?(?:['’]?s)?/i;
+const TOKEN_REGEX = /\d[\d,]*(?:\.\d+)?(?:['’]?s)?|[A-Za-z'’]+|[.,!?;:]/g;
 const STRONG_ENDING_REGEX = /(tion|sion|ic|ity|ian|ious|ive|ette|eer|ese)$/i;
+const SYLLABLE_COUNT_OVERRIDES: Record<string, number> = {
+  violet: 2,
+  violets: 2,
+};
 
 export interface SyllableHit {
   word: string;
@@ -233,6 +238,140 @@ function parseStressPattern(pronunciation: string): PronunciationAnalysis {
   };
 }
 
+function chunkToWordsUnder1000(value: number): string[] {
+  const ones = [
+    'zero',
+    'one',
+    'two',
+    'three',
+    'four',
+    'five',
+    'six',
+    'seven',
+    'eight',
+    'nine',
+  ] as const;
+  const teens = [
+    'ten',
+    'eleven',
+    'twelve',
+    'thirteen',
+    'fourteen',
+    'fifteen',
+    'sixteen',
+    'seventeen',
+    'eighteen',
+    'nineteen',
+  ] as const;
+  const tens = [
+    '',
+    '',
+    'twenty',
+    'thirty',
+    'forty',
+    'fifty',
+    'sixty',
+    'seventy',
+    'eighty',
+    'ninety',
+  ] as const;
+  const words: string[] = [];
+  let remaining = Math.max(0, Math.floor(value));
+
+  if (remaining >= 100) {
+    const hundreds = Math.floor(remaining / 100);
+    words.push(ones[hundreds], 'hundred');
+    remaining %= 100;
+  }
+
+  if (remaining >= 20) {
+    const tensDigit = Math.floor(remaining / 10);
+    words.push(tens[tensDigit]);
+    remaining %= 10;
+    if (remaining > 0) words.push(ones[remaining]);
+    return words;
+  }
+
+  if (remaining >= 10) {
+    words.push(teens[remaining - 10]);
+    return words;
+  }
+
+  if (remaining > 0) {
+    words.push(ones[remaining]);
+  }
+
+  return words;
+}
+
+function integerToWords(value: bigint): string[] {
+  if (value === 0n) return ['zero'];
+  const scales: Array<{ divisor: bigint; label: string }> = [
+    { divisor: 1_000_000_000n, label: 'billion' },
+    { divisor: 1_000_000n, label: 'million' },
+    { divisor: 1_000n, label: 'thousand' },
+  ];
+  const words: string[] = [];
+  let remainder = value;
+
+  for (const scale of scales) {
+    if (remainder < scale.divisor) continue;
+    const chunk = Number(remainder / scale.divisor);
+    remainder %= scale.divisor;
+    if (chunk > 0) {
+      words.push(...chunkToWordsUnder1000(chunk), scale.label);
+    }
+  }
+
+  const finalChunk = Number(remainder);
+  if (finalChunk > 0) {
+    words.push(...chunkToWordsUnder1000(finalChunk));
+  }
+
+  return words;
+}
+
+function pluralizeWord(word: string): string {
+  if (word.endsWith('y') && word.length > 1) {
+    const beforeY = word[word.length - 2] ?? '';
+    if (!/[aeiou]/i.test(beforeY)) return `${word.slice(0, -1)}ies`;
+  }
+  if (/(s|x|z|ch|sh)$/i.test(word)) return `${word}es`;
+  return `${word}s`;
+}
+
+function expandNumericToken(token: string): string[] | null {
+  const normalizedToken = token.toLowerCase();
+  const hasColloquialSuffix = /(?:['’]?s)$/.test(normalizedToken);
+  const baseToken = hasColloquialSuffix
+    ? normalizedToken.replace(/(?:['’]?s)$/, '')
+    : normalizedToken;
+  const compact = baseToken.replace(/,/g, '');
+  if (!/^\d+(?:\.\d+)?$/.test(compact)) return null;
+
+  if (hasColloquialSuffix) {
+    if (compact.includes('.')) return null;
+    const numericValue = BigInt(compact);
+    const baseWords = integerToWords(numericValue);
+    if (baseWords.length === 0) return null;
+    const pluralizedTail = pluralizeWord(baseWords[baseWords.length - 1]);
+    return [...baseWords.slice(0, -1), pluralizedTail];
+  }
+
+  const decimalParts = compact.split('.');
+  if (decimalParts.length === 2) {
+    const [whole, fractional] = decimalParts;
+    if (!whole || !fractional) return null;
+    const wholeWords = integerToWords(BigInt(whole));
+    const digitWords = [...fractional].map((digit) =>
+      integerToWords(BigInt(digit))[0] ?? 'zero'
+    );
+    return [...wholeWords, 'point', ...digitWords];
+  }
+
+  return integerToWords(BigInt(compact));
+}
+
 function getHeuristicStressPattern(
   word: string,
   syllableCount: number
@@ -257,6 +396,17 @@ function analyzeWord(
       syllables: [word],
       stressPattern: [1],
       source: 'unresolved',
+    };
+  }
+
+  const forcedCount = SYLLABLE_COUNT_OVERRIDES[normalized];
+  if (forcedCount) {
+    const syllables = alignSyllableCount(word, forcedCount);
+    return {
+      word,
+      syllables,
+      stressPattern: getHeuristicStressPattern(normalized, syllables.length),
+      source: 'heuristic',
     };
   }
 
@@ -1136,12 +1286,17 @@ export function generateWordRhythm(
     let lineAddedWords = 0;
     let lineSyllables = 0;
     for (const token of tokens) {
-      if (!WORD_REGEX.test(token)) continue;
-      const analysis = analyzeWord(token, options.strictDictionaryMode);
-      lineByWordIndex.set(analyses.length, lineIndex);
-      lineSyllables += analysis.syllables.length;
-      analyses.push(analysis);
-      lineAddedWords += 1;
+      const expandedWords = NUMBER_REGEX.test(token)
+        ? expandNumericToken(token)
+        : null;
+      const wordsToAnalyze = expandedWords ?? (WORD_REGEX.test(token) ? [token] : []);
+      for (const wordToken of wordsToAnalyze) {
+        const analysis = analyzeWord(wordToken, options.strictDictionaryMode);
+        lineByWordIndex.set(analyses.length, lineIndex);
+        lineSyllables += analysis.syllables.length;
+        analyses.push(analysis);
+        lineAddedWords += 1;
+      }
     }
     if (lineAddedWords > 0 && lineWordStartIndex > 0) {
       lineStartWordIndices.add(lineWordStartIndex);
