@@ -6,7 +6,7 @@ import type { Chord, ChordStylingStrategy, RomanNumeral } from '../../shared/mus
 import { parseChordSymbolToken } from '../../shared/music/chordProgressionText';
 import { COMMON_CHORD_PROGRESSIONS } from '../../shared/music/commonChordProgressions';
 import { spellRootForKey } from '../../shared/music/theory/pitchClass';
-import { CHORD_STYLING_PATTERNS, timeSignatureToKey } from '../../chords/data/chordStylingPatterns';
+import { CHORD_STYLING_PATTERNS, timeSignatureToKey } from '../../shared/music/chordStylingPatterns';
 
 export { COMMON_CHORD_PROGRESSIONS };
 

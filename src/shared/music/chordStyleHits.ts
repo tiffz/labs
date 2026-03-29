@@ -1,5 +1,5 @@
 import type { TimeSignature } from './chordTypes';
-import { CHORD_STYLING_PATTERNS, timeSignatureToKey } from '../../chords/data/chordStylingPatterns';
+import { CHORD_STYLING_PATTERNS, timeSignatureToKey } from './chordStylingPatterns';
 
 export interface ChordHit {
   offsetBeats: number;

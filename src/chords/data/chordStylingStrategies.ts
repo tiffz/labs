@@ -9,7 +9,7 @@
  */
 
 import type { ChordStylingStrategy, TimeSignature } from '../types';
-import { CHORD_STYLING_PATTERNS, keyToTimeSignature } from './chordStylingPatterns';
+import { CHORD_STYLING_PATTERNS, keyToTimeSignature } from '../../shared/music/chordStylingPatterns';
 
 export interface ChordStylingStrategyConfig {
   name: string;

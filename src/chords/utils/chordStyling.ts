@@ -6,7 +6,7 @@
 
 import type { Chord, ChordStylingStrategy, TimeSignature } from '../types';
 import { validateMeasureDurations } from './durationValidation';
-import { CHORD_STYLING_PATTERNS, timeSignatureToKey } from '../data/chordStylingPatterns';
+import { CHORD_STYLING_PATTERNS, timeSignatureToKey } from '../../shared/music/chordStylingPatterns';
 import { parseChordPattern, validatePatternLength } from './chordPatternParser';
 
 export interface StyledChordNotes {

@@ -1023,6 +1023,99 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-music-chordstylingpatterns-ts-chord-styling-patterns",
+    "name": "CHORD_STYLING_PATTERNS",
+    "path": "src/shared/music/chordStylingPatterns.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "chords",
+      "piano"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordstylingpatterns-ts-chordpatternconfig",
+    "name": "ChordPatternConfig",
+    "path": "src/shared/music/chordStylingPatterns.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "chords",
+      "piano"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordstylingpatterns-ts-chordstylingpattern",
+    "name": "ChordStylingPattern",
+    "path": "src/shared/music/chordStylingPatterns.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "chords",
+      "piano"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordstylingpatterns-ts-keytotimesignature",
+    "name": "keyToTimeSignature",
+    "path": "src/shared/music/chordStylingPatterns.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "chords",
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordstylingpatterns-ts-timesignaturetokey",
+    "name": "timeSignatureToKey",
+    "path": "src/shared/music/chordStylingPatterns.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "chords",
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-music-chordtheory-ts-harmonicmode",
     "name": "HarmonicMode",
     "path": "src/shared/music/chordTheory.ts",
