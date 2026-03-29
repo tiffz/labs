@@ -75,6 +75,8 @@ export interface VoicingOptions {
 export type ChordStylingStrategy =
   | 'simple'
   | 'one-per-beat'
+  | 'half-notes'
+  | 'eighth-notes'
   | 'oom-pahs'
   | 'waltz'
   | 'pop-rock-ballad'

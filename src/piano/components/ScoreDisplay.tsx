@@ -97,7 +97,15 @@ function applyNoteStyle(
     return;
   }
   if (opts.activeMidiNotes && opts.activeMidiNotes.size > 0 && !note.rest) {
-    if (note.pitches.some(p => opts.activeMidiNotes!.has(p))) {
+    const played = Array.from(opts.activeMidiNotes);
+    const strictMatched = note.pitches.length > 0 && note.pitches.every((expectedPitch) =>
+      played.some((playedPitch) => {
+        const expectedPc = ((expectedPitch % 12) + 12) % 12;
+        const playedPc = ((playedPitch % 12) + 12) % 12;
+        return expectedPc === playedPc;
+      })
+    );
+    if (strictMatched) {
       staveNote.setStyle({ fillStyle: '#10b981', strokeStyle: '#10b981' });
     }
   }
@@ -480,7 +488,13 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
 
     const stateKey = JSON.stringify({
       id: score.id, key: score.key, ts: score.timeSignature,
-      parts: score.parts.map(p => p.measures.map(m => m.notes.length)),
+      parts: score.parts.map((p) =>
+        p.measures.map((m) =>
+          m.notes
+            .map((n) => `${n.pitches.join('.')}:${n.duration}:${n.dotted ? 1 : 0}:${n.rest ? 1 : 0}:${n.chordSymbol ?? ''}`)
+            .join('|')
+        )
+      ),
       mi: currentMeasureIndex, ni: Array.from(currentNoteIndices.entries()),
       active: activeMidiNotes ? Array.from(activeMidiNotes).sort() : [],
       pr: practiceResultsByNoteId

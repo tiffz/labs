@@ -68,6 +68,7 @@ export interface PianoScore {
     kind: 'chord-progression';
     progressionName: string;
     progressionNumerals: string[];
+    chordSymbols?: string[];
     progressionInput?: string;
     styleId?: string;
     voicingStyle?: string;

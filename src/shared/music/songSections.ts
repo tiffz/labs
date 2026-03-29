@@ -1,12 +1,6 @@
-type ChordStyleId =
-  | 'simple'
-  | 'one-per-beat'
-  | 'oom-pahs'
-  | 'waltz'
-  | 'pop-rock-ballad'
-  | 'pop-rock-uptempo'
-  | 'tresillo'
-  | 'jazzy';
+import type { ChordStylingStrategy } from './chordTypes';
+
+type ChordStyleId = ChordStylingStrategy;
 
 interface SectionRhythmDefaults {
   templateNotation?: string;

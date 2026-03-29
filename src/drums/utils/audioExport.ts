@@ -5,6 +5,7 @@ import { createReverb, convertReverbStrengthToWetLevel } from './reverb';
 // @ts-expect-error - lamejs doesn't have TypeScript definitions
 // Use patched version to fix MPEGMode error
 import * as lamejs from 'lamejsfixbug121';
+import { encodeAudioBuffer } from '../../shared/music/audioCodecs';
 
 // Import audio files
 import dumSound from '../assets/sounds/dum.wav';
@@ -475,11 +476,8 @@ export function formatDuration(seconds: number): string {
  */
 export async function exportAudioBuffer(
   buffer: AudioBuffer,
-  format: 'wav' | 'mp3',
+  format: 'wav' | 'mp3' | 'ogg' | 'flac',
   bitrate?: number
 ): Promise<Blob> {
-  if (format === 'mp3') {
-    return audioBufferToMp3(buffer, bitrate || 128);
-  }
-  return audioBufferToWav(buffer);
+  return encodeAudioBuffer(buffer, format, { mp3BitrateKbps: bitrate || 128 });
 }

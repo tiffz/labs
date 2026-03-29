@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import Popover from '@mui/material/Popover';
 import Drawer from '@mui/material/Drawer';
 import IconButton from '@mui/material/IconButton';
@@ -18,6 +18,10 @@ import MetronomeToggleButton from '../shared/components/MetronomeToggleButton';
 import { AudioPlayer } from '../shared/audio/audioPlayer';
 import AppTooltip from '../shared/components/AppTooltip';
 import AppSlider from '../shared/components/AppSlider';
+import SharedExportPopover from '../shared/components/music/SharedExportPopover';
+import type { ExportSourceAdapter } from '../shared/music/exportTypes';
+import { buildSingleTrackMidi, type MidiNoteEvent } from '../shared/music/midiBuilder';
+import { renderMidiEventsToAudioBuffer } from '../shared/music/midiAudioRender';
 import clickSound from '../drums/assets/sounds/click.mp3';
 
 // Loading state for piano samples
@@ -25,6 +29,19 @@ interface LoadingState {
   isLoading: boolean;
   progress: number;  // 0-100
   total: number;
+}
+
+function chordDurationToBeats(duration: string): number {
+  const map: Record<string, number> = {
+    'w': 4,
+    'hd': 3,
+    'h': 2,
+    'qd': 1.5,
+    'q': 1,
+    '8': 0.5,
+    '16': 0.25,
+  };
+  return map[duration] ?? 1;
 }
 
 const App: React.FC = () => {
@@ -92,9 +109,11 @@ const App: React.FC = () => {
   const masterVolumeRef = useRef(masterVolume);
   const metronomeVolumeRef = useRef(metronomeVolume);
   const settingsButtonRef = useRef<HTMLButtonElement | null>(null);
+  const exportButtonRef = useRef<HTMLButtonElement | null>(null);
   const isResponsiveLayout = useMediaQuery('(max-width:980px)');
   const metronomeAudioPlayerRef = useRef<AudioPlayer | null>(null);
   const lastMetronomeBeatRef = useRef<number>(-1);
+  const [exportOpen, setExportOpen] = useState(false);
 
   // Helper function to generate styled chords
   const generateExpandedStyledChords = useCallback((currentState: ChordProgressionState): StyledChordNotes[] => {
@@ -117,6 +136,130 @@ const App: React.FC = () => {
     
     return expandedStyledChords;
   }, []);
+  const exportAdapter = useMemo<ExportSourceAdapter>(() => ({
+    id: 'chords',
+    title: 'Export Chord Progression',
+    fileBaseName: 'chords-progression',
+    stems: [
+      { id: 'treble', label: 'Treble', defaultSelected: true },
+      { id: 'bass', label: 'Bass', defaultSelected: true },
+    ],
+    defaultFormat: 'wav',
+    supportsFormat: (format) => ['midi', 'wav', 'mp3', 'ogg', 'flac'].includes(format),
+    estimateDurationSeconds: (loopCount) => {
+      const styled = generateExpandedStyledChords(state);
+      const beatsPerLoop = styled.reduce((sum, measure) => {
+        const trebleBeats = measure.trebleNotes.reduce((acc, item) => acc + chordDurationToBeats(item.duration), 0);
+        const bassBeats = measure.bassNotes.reduce((acc, item) => acc + chordDurationToBeats(item.duration), 0);
+        return sum + Math.max(trebleBeats, bassBeats);
+      }, 0);
+      return ((beatsPerLoop * loopCount) / Math.max(1, state.tempo)) * 60;
+    },
+    renderMidi: async ({ loopCount, selectedStemIds }) => {
+      const includeTreble = selectedStemIds.length === 0 || selectedStemIds.includes('treble');
+      const includeBass = selectedStemIds.length === 0 || selectedStemIds.includes('bass');
+      const styled = generateExpandedStyledChords(state);
+      const ticksPerQuarter = 480;
+      const measureTicks = state.timeSignature.numerator * ticksPerQuarter;
+      const events: MidiNoteEvent[] = [];
+      for (let loopIndex = 0; loopIndex < loopCount; loopIndex += 1) {
+        styled.forEach((measure, measureIndex) => {
+          const loopOffset = loopIndex * styled.length * measureTicks;
+          const measureStart = loopOffset + (measureIndex * measureTicks);
+          if (includeTreble) {
+            let cursor = measureStart;
+            measure.trebleNotes.forEach((group) => {
+              const durationTicks = Math.max(30, Math.round(chordDurationToBeats(group.duration) * ticksPerQuarter));
+              group.notes.forEach((pitch) => {
+                events.push({
+                  midi: pitch,
+                  startTick: cursor,
+                  durationTicks,
+                  velocity: 84,
+                  channel: 0,
+                });
+              });
+              cursor += durationTicks;
+            });
+          }
+          if (includeBass) {
+            let cursor = measureStart;
+            measure.bassNotes.forEach((group) => {
+              const durationTicks = Math.max(30, Math.round(chordDurationToBeats(group.duration) * ticksPerQuarter));
+              group.notes.forEach((pitch) => {
+                events.push({
+                  midi: pitch,
+                  startTick: cursor,
+                  durationTicks,
+                  velocity: 92,
+                  channel: 1,
+                });
+              });
+              cursor += durationTicks;
+            });
+          }
+        });
+      }
+      return buildSingleTrackMidi(events, state.tempo);
+    },
+    renderAudio: async ({ loopCount, selectedStemIds }) => {
+      const includeTreble = selectedStemIds.length === 0 || selectedStemIds.includes('treble');
+      const includeBass = selectedStemIds.length === 0 || selectedStemIds.includes('bass');
+      const styled = generateExpandedStyledChords(state);
+      const ticksPerQuarter = 480;
+      const measureTicks = state.timeSignature.numerator * ticksPerQuarter;
+      const trebleEvents: MidiNoteEvent[] = [];
+      const bassEvents: MidiNoteEvent[] = [];
+      for (let loopIndex = 0; loopIndex < loopCount; loopIndex += 1) {
+        styled.forEach((measure, measureIndex) => {
+          const loopOffset = loopIndex * styled.length * measureTicks;
+          const measureStart = loopOffset + (measureIndex * measureTicks);
+          if (includeTreble) {
+            let cursor = measureStart;
+            measure.trebleNotes.forEach((group) => {
+              const durationTicks = Math.max(30, Math.round(chordDurationToBeats(group.duration) * ticksPerQuarter));
+              group.notes.forEach((pitch) => {
+                trebleEvents.push({
+                  midi: pitch,
+                  startTick: cursor,
+                  durationTicks,
+                  velocity: 84,
+                  channel: 0,
+                });
+              });
+              cursor += durationTicks;
+            });
+          }
+          if (includeBass) {
+            let cursor = measureStart;
+            measure.bassNotes.forEach((group) => {
+              const durationTicks = Math.max(30, Math.round(chordDurationToBeats(group.duration) * ticksPerQuarter));
+              group.notes.forEach((pitch) => {
+                bassEvents.push({
+                  midi: pitch,
+                  startTick: cursor,
+                  durationTicks,
+                  velocity: 92,
+                  channel: 1,
+                });
+              });
+              cursor += durationTicks;
+            });
+          }
+        });
+      }
+      const stems: Record<string, AudioBuffer> = {};
+      if (trebleEvents.length > 0) {
+        stems.treble = await renderMidiEventsToAudioBuffer(trebleEvents, { bpm: state.tempo });
+      }
+      if (bassEvents.length > 0) {
+        stems.bass = await renderMidiEventsToAudioBuffer(bassEvents, { bpm: state.tempo });
+      }
+      const mixEvents = [...trebleEvents, ...bassEvents];
+      const mix = await renderMidiEventsToAudioBuffer(mixEvents, { bpm: state.tempo });
+      return { mix, stems };
+    },
+  }), [generateExpandedStyledChords, state]);
 
   useEffect(() => {
     metronomeEnabledRef.current = metronomeEnabled;
@@ -551,6 +694,24 @@ const App: React.FC = () => {
                 ))}
               </select>
             </div>
+            <AppTooltip title="Export">
+              <button
+                ref={exportButtonRef}
+                type="button"
+                className={`chords-settings-button ${exportOpen ? 'active' : ''}`}
+                onClick={() => setExportOpen((previous) => !previous)}
+                aria-label="Export progression"
+              >
+                <span className="material-symbols-outlined">download</span>
+              </button>
+            </AppTooltip>
+            <SharedExportPopover
+              open={exportOpen}
+              onClose={() => setExportOpen(false)}
+              anchorEl={exportButtonRef.current}
+              adapter={exportAdapter}
+              persistKey="chords"
+            />
             <AppTooltip title="Playback settings">
               <button
                 ref={settingsButtonRef}

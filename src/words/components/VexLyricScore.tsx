@@ -14,6 +14,7 @@ import {
   getBeatGroupingInSixteenths,
   getSixteenthsPerMeasure,
 } from '../../shared/rhythm/timeSignatureUtils';
+import { getChordHitsForStyle } from '../../shared/music/chordStyleHits';
 
 interface VexLyricScoreProps {
   rhythm: ParsedRhythm;
@@ -60,76 +61,6 @@ const SOUND_TO_PITCH: Record<string, string> = {
   rest: 'b/4',
   simile: 'b/4',
 };
-
-function getChordHitsForStyle(styleId: string, timeSignature: TimeSignature) {
-  const beatsPerMeasure =
-    timeSignature.numerator * (4 / timeSignature.denominator);
-  const quarterBeats = Math.max(0.25, 4 / timeSignature.denominator);
-  const beatStarts = Array.from(
-    { length: Math.max(1, timeSignature.numerator) },
-    (_, index) => index * quarterBeats
-  );
-  const clamp = (
-    hits: Array<{ offsetBeats: number; source: 'bass' | 'treble' | 'both'; durationBeats: number }>
-  ) =>
-    hits.filter(
-      (hit) => hit.offsetBeats >= 0 && hit.offsetBeats < beatsPerMeasure
-    );
-  switch (styleId) {
-    case 'one-per-beat':
-      return clamp(
-        beatStarts.map((offsetBeats) => ({
-          offsetBeats,
-          source: 'both' as const,
-          durationBeats: Math.min(quarterBeats, beatsPerMeasure - offsetBeats),
-        }))
-      );
-    case 'oom-pahs':
-      return clamp(
-        beatStarts.map((offsetBeats, index) => ({
-          offsetBeats,
-          source: index % 2 === 0 ? ('bass' as const) : ('treble' as const),
-          durationBeats: Math.min(quarterBeats, beatsPerMeasure - offsetBeats),
-        }))
-      );
-    case 'waltz':
-      return clamp([
-        { offsetBeats: 0, source: 'bass' as const, durationBeats: quarterBeats },
-        { offsetBeats: quarterBeats, source: 'treble' as const, durationBeats: quarterBeats },
-        { offsetBeats: quarterBeats * 2, source: 'treble' as const, durationBeats: quarterBeats },
-      ]);
-    case 'pop-rock-ballad':
-      return clamp([
-        { offsetBeats: 0, source: 'bass' as const, durationBeats: 1.5 },
-        { offsetBeats: 1.5, source: 'treble' as const, durationBeats: 0.5 },
-        { offsetBeats: 2, source: 'bass' as const, durationBeats: 1.5 },
-        { offsetBeats: 3.5, source: 'treble' as const, durationBeats: 0.5 },
-      ]);
-    case 'pop-rock-uptempo':
-      return clamp([
-        { offsetBeats: 0, source: 'bass' as const, durationBeats: 1 },
-        { offsetBeats: 1, source: 'treble' as const, durationBeats: 1 },
-        { offsetBeats: 2, source: 'bass' as const, durationBeats: 1 },
-        { offsetBeats: 3, source: 'treble' as const, durationBeats: 1 },
-      ]);
-    case 'tresillo':
-      return clamp([
-        { offsetBeats: 0, source: 'both' as const, durationBeats: 1.5 },
-        { offsetBeats: 1.5, source: 'both' as const, durationBeats: 1.5 },
-        { offsetBeats: 3, source: 'both' as const, durationBeats: 1 },
-      ]);
-    case 'jazzy':
-      return clamp([
-        { offsetBeats: 0, source: 'bass' as const, durationBeats: 1 },
-        { offsetBeats: 0.5, source: 'treble' as const, durationBeats: 0.5 },
-        { offsetBeats: 1, source: 'bass' as const, durationBeats: 1 },
-        { offsetBeats: 2, source: 'bass' as const, durationBeats: 1 },
-        { offsetBeats: 3, source: 'bass' as const, durationBeats: 1 },
-      ]);
-    default:
-      return [{ offsetBeats: 0, source: 'both' as const, durationBeats: beatsPerMeasure }];
-  }
-}
 
 function toVexDurationToken(sixteenths: number) {
   if (sixteenths >= 16) return { duration: 'w', isDotted: false };

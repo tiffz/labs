@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import Dialog from '@mui/material/Dialog';
 import { usePiano } from '../store';
 import {
@@ -49,6 +49,7 @@ const VOICING_OPTIONS: { value: ChordVoicingStyle; label: string }[] = [
   { value: 'inv1', label: '1st Inversion' },
   { value: 'inv2', label: '2nd Inversion' },
   { value: 'open', label: 'Open Voicing' },
+  { value: 'voice-leading', label: 'Voice Leading' },
 ];
 
 const DiceSvg: React.FC = () => (
@@ -66,6 +67,61 @@ function pickRandom<T>(arr: readonly T[], current?: T): T {
 
 const DIR_SHORT: Record<Direction, string> = { ascending: 'Asc', descending: 'Desc', both: 'Asc & Desc' };
 const TYPE_LABEL: Record<ExerciseType, string> = { scale: 'Scale', pentascale: 'Pentascale', arpeggio: 'Arpeggio', chromatic: 'Chromatic' };
+const SLUG_TO_KEY: Record<string, Key> = {
+  c: 'C',
+  db: 'Db',
+  df: 'Db',
+  d: 'D',
+  eb: 'Eb',
+  ef: 'Eb',
+  e: 'E',
+  f: 'F',
+  fs: 'F#',
+  g: 'G',
+  ab: 'Ab',
+  af: 'Ab',
+  a: 'A',
+  bb: 'Bb',
+  fb: 'Bb',
+  b: 'B',
+};
+
+function parseExerciseId(id: string): {
+  type: ExerciseType;
+  quality: 'major' | 'minor';
+  key: Key;
+  direction: Direction;
+  octaves: number;
+  subdivision: Subdivision;
+} | null {
+  const tonal = id.match(
+    /^(major|minor)-(scale|arpeggio|pentascale)-([a-z]{1,2})-(ascending|descending|both)-(\d+)-(\d+)$/
+  );
+  if (tonal) {
+    const key = SLUG_TO_KEY[tonal[3]];
+    if (!key) return null;
+    return {
+      quality: tonal[1] as 'major' | 'minor',
+      type: tonal[2] as ExerciseType,
+      key,
+      direction: tonal[4] as Direction,
+      octaves: parseInt(tonal[5], 10),
+      subdivision: parseInt(tonal[6], 10) as Subdivision,
+    };
+  }
+  const chrom = id.match(/^chromatic-([a-z]{1,2})-(ascending|descending|both)-(\d+)-(\d+)$/);
+  if (!chrom) return null;
+  const key = SLUG_TO_KEY[chrom[1]];
+  if (!key) return null;
+  return {
+    quality: 'major',
+    type: 'chromatic',
+    key,
+    direction: chrom[2] as Direction,
+    octaves: parseInt(chrom[3], 10),
+    subdivision: parseInt(chrom[4], 10) as Subdivision,
+  };
+}
 
 /** Label with an optional dice button inline */
 const GroupLabel: React.FC<{
@@ -104,7 +160,7 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({
   allowedSections,
   initialSection,
 }) => {
-  const { dispatch, loadScore, engine } = usePiano();
+  const { state, dispatch, loadScore, engine } = usePiano();
 
   const visibleSections = allowedSections && allowedSections.length > 0
     ? allowedSections
@@ -135,6 +191,8 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({
   const [measuresPerChord, setMeasuresPerChord] = useState<1 | 2>(1);
   const [progKey, setProgKey] = useState<Key>('C');
   const [chordStyle, setChordStyle] = useState<ChordStyleId>('simple');
+  const applyTimerRef = useRef<number | null>(null);
+  const hydratedDefaultsRef = useRef(false);
 
   const [entries, setEntries] = useState<LibraryEntry[]>([]);
   const [search, setSearch] = useState('');
@@ -144,16 +202,55 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({
       setSection(fallbackSection);
     }
   }, [fallbackSection, section, visibleSections]);
+  useEffect(() => {
+    if (!(open || mode === 'inline')) return;
+    if (hydratedDefaultsRef.current) return;
+    if (!state.score || !state.isExerciseScore) return;
+    hydratedDefaultsRef.current = true;
+    if (state.score.exerciseConfig?.kind === 'chord-progression') {
+      setSection('progressions');
+      setProgKey(state.score.key);
+      setCustomProgressionInput(
+        state.score.exerciseConfig.progressionInput ??
+          state.score.exerciseConfig.progressionNumerals.join('–')
+      );
+      setVoicingStyle((state.score.exerciseConfig.voicingStyle as ChordVoicingStyle) ?? 'root');
+      setMeasuresPerChord(((state.score.exerciseConfig.measuresPerChord as 1 | 2) ?? 1));
+      setChordStyle((state.score.exerciseConfig.styleId as ChordStyleId) ?? 'simple');
+      return;
+    }
+    const parsedScaleMeta = parseExerciseId(state.score.id);
+    if (!parsedScaleMeta) return;
+    setSection('scales');
+    setScaleType(parsedScaleMeta.type);
+    setQuality(parsedScaleMeta.quality);
+    setSelectedKey(parsedScaleMeta.key);
+    setChromaticNote(parsedScaleMeta.key);
+    setDirection(parsedScaleMeta.direction);
+    setOctaves(parsedScaleMeta.octaves);
+    setSubdivision(parsedScaleMeta.subdivision);
+  }, [mode, open, state.isExerciseScore, state.score, visibleSections]);
+  useEffect(() => {
+    if (!open && mode !== 'inline') {
+      hydratedDefaultsRef.current = false;
+    }
+  }, [mode, open]);
 
   const loadTonal = useCallback((q: 'major' | 'minor', key: Key, type: TonalType, dir: Direction, oct: number, sub: Subdivision) => {
     const score = generateExerciseScore(q, type, key, dir, oct, sub);
-    if (score) { loadScore(score); dispatch({ type: 'SET_IS_EXERCISE', isExercise: true }); }
-  }, [loadScore, dispatch]);
+    if (!score) return;
+    if (state.score?.id === score.id) return;
+    loadScore(score, { recordHistory: true });
+    dispatch({ type: 'SET_IS_EXERCISE', isExercise: true });
+  }, [dispatch, loadScore, state.score?.id]);
 
   const loadChromatic = useCallback((note: string, dir: Direction, oct: number, sub: Subdivision) => {
     const score = generateChromaticScore(note, dir, oct, sub);
-    if (score) { loadScore(score); dispatch({ type: 'SET_IS_EXERCISE', isExercise: true }); }
-  }, [loadScore, dispatch]);
+    if (!score) return;
+    if (state.score?.id === score.id) return;
+    loadScore(score, { recordHistory: true });
+    dispatch({ type: 'SET_IS_EXERCISE', isExercise: true });
+  }, [dispatch, loadScore, state.score?.id]);
 
   const loadProgression = useCallback((input: string, key: Key, voicing: ChordVoicingStyle, mpc: 1 | 2, style: ChordStyleId) => {
     const parsed = parseProgressionText(input, key);
@@ -179,7 +276,14 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({
     const effectiveKey = parsed.inferredKey ?? key;
     const score = generateChordProgressionScore({
       progression: parsed.romanNumerals as RomanNumeral[],
-      progressionName: presetMatch?.name ?? 'Custom progression',
+      chordSymbols: parsed.chordSymbols,
+      progressionName:
+        presetMatch?.name ??
+        (
+          parsed.romanNumeralDisplay.join('–') ||
+          parsed.romanNumerals.join('–') ||
+          'Custom progression'
+        ),
       progressionInput: input,
       key: effectiveKey,
       voicingStyle: voicing,
@@ -187,7 +291,12 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({
       timeSignature: { numerator: 4, denominator: 4 },
       styleId: style,
     });
-    loadScore(score);
+    if (state.score?.id === score.id) {
+      setCustomProgressionError('');
+      setCustomProgressionWarning('');
+      return true;
+    }
+    loadScore(score, { recordHistory: true });
     dispatch({ type: 'SET_IS_EXERCISE', isExercise: true });
     if (parsed.inferredKey && parsed.inferredKey !== key) {
       setProgKey(parsed.inferredKey);
@@ -195,27 +304,51 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({
     setCustomProgressionError('');
     setCustomProgressionWarning('');
     return true;
-  }, [loadScore, dispatch]);
+  }, [dispatch, loadScore, state.score?.id]);
 
-  const handleScaleLoad = () => {
-    if (scaleType === 'chromatic') {
-      loadChromatic(chromaticNote, direction, octaves, subdivision);
-    } else {
-      loadTonal(quality, selectedKey, scaleType as TonalType, direction, octaves, subdivision);
-    }
-    onClose();
-  };
-
-  const handleProgLoad = () => {
-    const ok = loadProgression(
-      customProgressionInput,
-      progKey,
-      voicingStyle,
-      measuresPerChord,
-      chordStyle
-    );
-    if (ok) onClose();
-  };
+  useEffect(() => {
+    if (!(open || mode === 'inline')) return;
+    if (section === 'songs') return;
+    if (applyTimerRef.current) window.clearTimeout(applyTimerRef.current);
+    applyTimerRef.current = window.setTimeout(() => {
+      if (section === 'scales') {
+        if (scaleType === 'chromatic') {
+          loadChromatic(chromaticNote, direction, octaves, subdivision);
+        } else {
+          loadTonal(quality, selectedKey, scaleType as TonalType, direction, octaves, subdivision);
+        }
+        return;
+      }
+      if (section === 'progressions') {
+        loadProgression(customProgressionInput, progKey, voicingStyle, measuresPerChord, chordStyle);
+      }
+    }, 220);
+    return () => {
+      if (applyTimerRef.current) {
+        window.clearTimeout(applyTimerRef.current);
+        applyTimerRef.current = null;
+      }
+    };
+  }, [
+    chromaticNote,
+    chordStyle,
+    customProgressionInput,
+    direction,
+    loadChromatic,
+    loadProgression,
+    loadTonal,
+    measuresPerChord,
+    mode,
+    octaves,
+    open,
+    progKey,
+    quality,
+    scaleType,
+    section,
+    selectedKey,
+    subdivision,
+    voicingStyle,
+  ]);
 
   const handleSongLoad = (entry: LibraryEntry) => {
     if (engine.isPlaying()) engine.stop();
@@ -570,7 +703,7 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({
           )}
         </div>
 
-        {/* Sticky footer with preview + randomize all + load */}
+        {/* Sticky footer with preview + randomize all */}
         {section !== 'songs' && (
           <div className="ep-footer">
             <div className="ep-footer-preview">
@@ -584,10 +717,7 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({
                 <DiceSvg /> Randomize All
               </button>
             </AppTooltip>
-            <button className="ep-go-btn" onClick={section === 'scales' ? handleScaleLoad : handleProgLoad}>
-              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>play_arrow</span>
-              {section === 'scales' ? 'Load Scale' : 'Load Progression'}
-            </button>
+            <span className="ep-footer-auto">Auto-applies while selecting</span>
           </div>
         )}
     </>

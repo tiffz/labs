@@ -49,8 +49,6 @@ const App: React.FC = () => {
   const [showShareFeedback, setShowShareFeedback] = useState<boolean>(false);
   const [shareFeedbackPosition, setShareFeedbackPosition] = useState<{ top: number; left: number } | null>(null);
   const [playbackSettings, setPlaybackSettings] = useState<PlaybackSettings>(DEFAULT_SETTINGS);
-  const [downloadFormat, setDownloadFormat] = useState<'wav' | 'mp3'>('wav');
-  const [downloadLoops, setDownloadLoops] = useState<number>(1);
 
 
   // Refs (moved up to be available for hooks)
@@ -599,10 +597,6 @@ const App: React.FC = () => {
             onShare={handleShare}
             canUndo={canUndo}
             canRedo={canRedo}
-            downloadFormat={downloadFormat}
-            downloadLoops={downloadLoops}
-            onDownloadFormatChange={setDownloadFormat}
-            onDownloadLoopsChange={setDownloadLoops}
           />
 
 

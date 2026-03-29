@@ -19,7 +19,9 @@ import AppTooltip from '../shared/components/AppTooltip';
 import MetronomeToggleButton from '../shared/components/MetronomeToggleButton';
 import BpmInput from '../shared/components/music/BpmInput';
 import KeyInput from '../shared/components/music/KeyInput';
+import SharedExportPopover from '../shared/components/music/SharedExportPopover';
 import { ALL_KEYS, type MusicKey } from '../shared/music/musicInputConstants';
+import type { ExportSourceAdapter } from '../shared/music/exportTypes';
 import { type Section } from './utils/sectionDetector';
 import { getMeasureDuration } from './utils/measureUtils';
 import { snapToMeasureStart } from './utils/measureUtils';
@@ -55,6 +57,21 @@ import {
 import { getSchemaVersion } from './storage/beatLibraryDb';
 import type { BeatLibraryEntry, UploadTaskState, UserPracticeData, UserPracticeLane, UserPracticeSection } from './types/library';
 import { decodeMediaToBuffer, runBeatAnalysisPipeline } from './utils/analysisPipeline';
+
+function repeatAudioBuffer(source: AudioBuffer, loops: number): AudioBuffer {
+  const safeLoops = Math.max(1, loops);
+  const outLength = source.length * safeLoops;
+  const context = new OfflineAudioContext(source.numberOfChannels, outLength, source.sampleRate);
+  const out = context.createBuffer(source.numberOfChannels, outLength, source.sampleRate);
+  for (let channel = 0; channel < source.numberOfChannels; channel += 1) {
+    const sourceData = source.getChannelData(channel);
+    const targetData = out.getChannelData(channel);
+    for (let loop = 0; loop < safeLoops; loop += 1) {
+      targetData.set(sourceData, loop * source.length);
+    }
+  }
+  return out;
+}
 
 const App: React.FC = () => {
   const [mediaFile, setMediaFile] = useState<MediaFile | null>(null);
@@ -94,9 +111,11 @@ const App: React.FC = () => {
   const [transferPracticeSectionsOnUpgrade, setTransferPracticeSectionsOnUpgrade] = useState(true);
   const youtubeControllerRef = useRef<YouTubeController | null>(null);
   const youtubeUpgradeInputRef = useRef<HTMLInputElement | null>(null);
+  const exportButtonRef = useRef<HTMLButtonElement | null>(null);
   const youtubeMetronomeContextRef = useRef<AudioContext | null>(null);
   const youtubeLastBeatRef = useRef(-1);
   const [youtubeManualBpm, setYoutubeManualBpm] = useState(120);
+  const [exportOpen, setExportOpen] = useState(false);
   const historyPastRef = useRef<PracticeEditorSnapshot[]>([]);
   const historyFutureRef = useRef<PracticeEditorSnapshot[]>([]);
   const isApplyingHistoryRef = useRef(false);
@@ -197,6 +216,32 @@ const App: React.FC = () => {
   const effectiveCurrentTime = isYouTubeMedia ? youtubePlayback.currentTime : currentTime;
   const effectiveIsPlaying = isYouTubeMedia ? youtubePlayback.isPlaying : isPlaying;
   const effectivePlaybackRate = isYouTubeMedia ? youtubePlayback.playbackRate : playbackRate;
+  const exportAdapter = useMemo<ExportSourceAdapter>(() => {
+    const hasAudio = Boolean(audioBuffer);
+    const baseName = (mediaFile?.name || 'beat-track')
+      .replace(/[^a-z0-9-_]+/gi, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '')
+      .toLowerCase();
+    return {
+      id: 'beat',
+      title: 'Export Beat Track',
+      fileBaseName: baseName || 'beat-track',
+      stems: [{ id: 'mix', label: 'Full mix', defaultSelected: true }],
+      defaultFormat: 'wav',
+      supportsFormat: (format) => {
+        if (!hasAudio) return false;
+        return format === 'wav' || format === 'mp3' || format === 'ogg' || format === 'flac';
+      },
+      estimateDurationSeconds: (loopCount) => (audioBuffer?.duration ?? 0) * loopCount,
+      renderAudio: async ({ loopCount }) => {
+        if (!audioBuffer) {
+          throw new Error('No audio loaded for export.');
+        }
+        return { mix: repeatAudioBuffer(audioBuffer, loopCount) };
+      },
+    };
+  }, [audioBuffer, mediaFile?.name]);
 
   const getYoutubeMetronomeAudioContext = useCallback(() => {
     if (!youtubeMetronomeContextRef.current || youtubeMetronomeContextRef.current.state === 'closed') {
@@ -1358,6 +1403,22 @@ const App: React.FC = () => {
                       ))}
                     </Select>
                   </FormControl>
+                  <button
+                    ref={exportButtonRef}
+                    className="nav-btn"
+                    onClick={() => setExportOpen(true)}
+                    aria-label="Export audio"
+                    title="Export audio"
+                  >
+                    <span className="material-symbols-outlined">download</span>
+                  </button>
+                  <SharedExportPopover
+                    open={exportOpen}
+                    anchorEl={exportButtonRef.current}
+                    onClose={() => setExportOpen(false)}
+                    adapter={exportAdapter}
+                    persistKey="beat"
+                  />
                   <div className="loop-options">
                     <AppTooltip title="Play through">
                       <label className={`loop-option has-tooltip ${!loopEnabled ? 'active' : ''}`}>

@@ -3,6 +3,7 @@ import BpmInput from '../shared/components/music/BpmInput';
 import KeyInput from '../shared/components/music/KeyInput';
 import ChordProgressionInput from '../shared/components/music/ChordProgressionInput';
 import ChordStyleInput from '../shared/components/music/ChordStyleInput';
+import SharedExportPopover from '../shared/components/music/SharedExportPopover';
 import DiceIcon from '../shared/components/DiceIcon';
 import AppTooltip from '../shared/components/AppTooltip';
 import MetronomeToggleButton from '../shared/components/MetronomeToggleButton';
@@ -16,6 +17,7 @@ import {
   type SharedCatalogEntry,
   type SharedCatalogKind,
 } from './generatedSharedCatalog';
+import type { ExportSourceAdapter } from '../shared/music/exportTypes';
 
 const KIND_ORDER: SharedCatalogKind[] = [
   'component',
@@ -31,8 +33,10 @@ type Appearance = (typeof APPEARANCES)[number];
 type CatalogTab = 'gallery' | 'docs' | 'theme';
 const BPM_SURFACES = ['default', 'piano', 'words', 'chords', 'beat', 'drums'] as const;
 const KEY_SURFACES = ['default', 'piano', 'words', 'chords', 'beat'] as const;
+const EXPORT_SURFACES = ['piano', 'words', 'chords', 'drums', 'beat'] as const;
 type BpmSurface = (typeof BPM_SURFACES)[number];
 type KeySurface = (typeof KEY_SURFACES)[number];
+type ExportSurface = (typeof EXPORT_SURFACES)[number];
 type FunctionalSection =
   | 'Shared UI Components'
   | 'Music Input & Theory'
@@ -557,6 +561,144 @@ function StyleMultiDemo({
   );
 }
 
+function buildExportDemoAdapter(surface: ExportSurface): ExportSourceAdapter {
+  const base = {
+    defaultFormat: 'wav' as const,
+    estimateDurationSeconds: (loopCount: number) => 8 * loopCount,
+    renderAudio: async (request) => {
+      const { selectedStemIds } = request;
+      const audioContext = new OfflineAudioContext(2, 44100, 44100);
+      const makeBuffer = (gain = 0.12) => {
+        const buffer = audioContext.createBuffer(2, 44100, 44100);
+        for (let channel = 0; channel < 2; channel += 1) {
+          const data = buffer.getChannelData(channel);
+          for (let i = 0; i < data.length; i += 1) {
+            const t = i / 44100;
+            data[i] = Math.sin(2 * Math.PI * 220 * t) * gain;
+          }
+        }
+        return buffer;
+      };
+      const stems: Record<string, AudioBuffer> = {};
+      for (const stemId of selectedStemIds) stems[stemId] = makeBuffer(0.1);
+      return {
+        mix: makeBuffer(0.14),
+        stems,
+      };
+    },
+  };
+
+  switch (surface) {
+    case 'piano':
+      return {
+        ...base,
+        id: 'piano',
+        title: 'Piano Export',
+        fileBaseName: 'ui-piano-export',
+        stems: [
+          { id: 'right-hand', label: 'Right Hand', defaultSelected: true },
+          { id: 'left-hand', label: 'Left Hand', defaultSelected: true },
+        ],
+        supportsFormat: (format) => ['midi', 'wav', 'mp3', 'ogg', 'flac'].includes(format),
+        renderMidi: async () => new Uint8Array([0x4d, 0x54, 0x68, 0x64]),
+      };
+    case 'words':
+      return {
+        ...base,
+        id: 'words',
+        title: 'Words Export',
+        fileBaseName: 'ui-words-export',
+        stems: [
+          { id: 'piano', label: 'Piano', defaultSelected: true },
+          { id: 'drums', label: 'Drums', defaultSelected: true },
+        ],
+        supportsFormat: (format) => ['midi', 'wav', 'mp3', 'ogg', 'flac'].includes(format),
+        renderMidi: async () => new Uint8Array([0x4d, 0x54, 0x68, 0x64]),
+      };
+    case 'chords':
+      return {
+        ...base,
+        id: 'chords',
+        title: 'Chords Export',
+        fileBaseName: 'ui-chords-export',
+        stems: [
+          { id: 'treble', label: 'Treble', defaultSelected: true },
+          { id: 'bass', label: 'Bass', defaultSelected: true },
+        ],
+        supportsFormat: (format) => ['midi', 'wav', 'mp3', 'ogg', 'flac'].includes(format),
+        renderMidi: async () => new Uint8Array([0x4d, 0x54, 0x68, 0x64]),
+      };
+    case 'drums':
+      return {
+        ...base,
+        id: 'drums',
+        title: 'Drums Export',
+        fileBaseName: 'ui-drums-export',
+        stems: [{ id: 'drums', label: 'Drums', defaultSelected: true }],
+        supportsFormat: (format) => ['midi', 'wav', 'mp3', 'ogg', 'flac'].includes(format),
+        renderMidi: async () => new Uint8Array([0x4d, 0x54, 0x68, 0x64]),
+      };
+    case 'beat':
+      return {
+        ...base,
+        id: 'beat',
+        title: 'Beat Export',
+        fileBaseName: 'ui-beat-export',
+        stems: [{ id: 'mix', label: 'Full Mix', defaultSelected: true }],
+        supportsFormat: (format) => ['wav', 'mp3', 'ogg', 'flac'].includes(format),
+      };
+  }
+}
+
+function SharedExportPopoverDemo() {
+  const [openBySurface, setOpenBySurface] = useState<Record<ExportSurface, boolean>>({
+    piano: false,
+    words: false,
+    chords: false,
+    drums: false,
+    beat: false,
+  });
+  const [anchorBySurface, setAnchorBySurface] = useState<Record<ExportSurface, HTMLElement | null>>({
+    piano: null,
+    words: null,
+    chords: null,
+    drums: null,
+    beat: null,
+  });
+
+  return (
+    <div className="ui-variant-grid">
+      {EXPORT_SURFACES.map((surface) => {
+        const adapter = buildExportDemoAdapter(surface);
+        return (
+          <section key={`export-${surface}`} className={`ui-preview-card ui-theme-${surface}`}>
+            <header>{surface}</header>
+            <div className="ui-demo-inline">
+              <button
+                type="button"
+                className="ui-demo-button"
+                onClick={(event) => {
+                  setAnchorBySurface((prev) => ({ ...prev, [surface]: event.currentTarget }));
+                  setOpenBySurface((prev) => ({ ...prev, [surface]: true }));
+                }}
+              >
+                Open export
+              </button>
+            </div>
+            <SharedExportPopover
+              open={openBySurface[surface]}
+              anchorEl={anchorBySurface[surface]}
+              onClose={() => setOpenBySurface((prev) => ({ ...prev, [surface]: false }))}
+              adapter={adapter}
+              persistKey={`ui-demo-${surface}`}
+            />
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
 function DemoPanel({
   entry,
   bpmBySurface,
@@ -651,6 +793,8 @@ function DemoPanel({
           </span>
         </div>
       );
+    case 'shared-export-popover':
+      return <SharedExportPopoverDemo />;
     case 'drum-notation-mini': {
       const rhythm = parseRhythm('D-T-K-T-', { numerator: 4, denominator: 4 });
       return (

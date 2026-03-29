@@ -741,6 +741,31 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-components-music-sharedexportpopover-tsx-sharedexportpopover",
+    "name": "SharedExportPopover",
+    "path": "src/shared/components/music/SharedExportPopover.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "music",
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "beat",
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "default",
+    "demoId": "shared-export-popover"
+  },
+  {
     "id": "shared-music-architecture",
     "name": "Music Architecture",
     "path": "src/shared/music/ARCHITECTURE.md",
@@ -758,6 +783,57 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "piano",
       "words"
     ],
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-audiocodecs-ts-audiobuffertomp3",
+    "name": "audioBufferToMp3",
+    "path": "src/shared/music/audioCodecs.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-audiocodecs-ts-audiobuffertowav",
+    "name": "audioBufferToWav",
+    "path": "src/shared/music/audioCodecs.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-audiocodecs-ts-encodeaudiobuffer",
+    "name": "encodeAudioBuffer",
+    "path": "src/shared/music/audioCodecs.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "function",
     "demoId": null
   },
   {
@@ -811,6 +887,45 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "words"
     ],
     "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordprogressiontext-ts-parsechordsymboltoken",
+    "name": "parseChordSymbolToken",
+    "path": "src/shared/music/chordProgressionText.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "chords",
+      "piano",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordprogressiontext-ts-parsedchordtoken",
+    "name": "ParsedChordToken",
+    "path": "src/shared/music/chordProgressionText.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "chords",
+      "piano",
+      "words"
+    ],
+    "exportType": "interface",
     "demoId": null
   },
   {
@@ -870,6 +985,41 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "words"
     ],
     "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordstylehits-ts-chordhit",
+    "name": "ChordHit",
+    "path": "src/shared/music/chordStyleHits.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordstylehits-ts-getchordhitsforstyle",
+    "name": "getChordHitsForStyle",
+    "path": "src/shared/music/chordStyleHits.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Returns chord-hit timing hints for visual/arrangement apps. Derived from shared chord style patterns so newly added styles work automatically without switch updates.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "function",
     "demoId": null
   },
   {
@@ -1143,6 +1293,381 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-music-exportservice-ts-executeexport",
+    "name": "executeExport",
+    "path": "src/shared/music/exportService.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-exportservice-ts-formatduration",
+    "name": "formatDuration",
+    "path": "src/shared/music/exportService.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-exporttypes-ts-default-export-quality",
+    "name": "DEFAULT_EXPORT_QUALITY",
+    "path": "src/shared/music/exportTypes.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "beat",
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-exporttypes-ts-export-formats",
+    "name": "EXPORT_FORMATS",
+    "path": "src/shared/music/exportTypes.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "beat",
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-exporttypes-ts-exportaudiorenderrequest",
+    "name": "ExportAudioRenderRequest",
+    "path": "src/shared/music/exportTypes.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "beat",
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-exporttypes-ts-exportaudiorenderresult",
+    "name": "ExportAudioRenderResult",
+    "path": "src/shared/music/exportTypes.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "beat",
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-exporttypes-ts-exportexecutionrequest",
+    "name": "ExportExecutionRequest",
+    "path": "src/shared/music/exportTypes.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "beat",
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-exporttypes-ts-exportexecutionresult",
+    "name": "ExportExecutionResult",
+    "path": "src/shared/music/exportTypes.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "beat",
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-exporttypes-ts-exportformat",
+    "name": "ExportFormat",
+    "path": "src/shared/music/exportTypes.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "beat",
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-exporttypes-ts-exportformatdescriptor",
+    "name": "ExportFormatDescriptor",
+    "path": "src/shared/music/exportTypes.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "beat",
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-exporttypes-ts-exportmetadata",
+    "name": "ExportMetadata",
+    "path": "src/shared/music/exportTypes.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "beat",
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-exporttypes-ts-exportmidirenderrequest",
+    "name": "ExportMidiRenderRequest",
+    "path": "src/shared/music/exportTypes.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "beat",
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-exporttypes-ts-exportpreview",
+    "name": "ExportPreview",
+    "path": "src/shared/music/exportTypes.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "beat",
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-exporttypes-ts-exportqualitysettings",
+    "name": "ExportQualitySettings",
+    "path": "src/shared/music/exportTypes.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "beat",
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-exporttypes-ts-exportsourceadapter",
+    "name": "ExportSourceAdapter",
+    "path": "src/shared/music/exportTypes.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "beat",
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-exporttypes-ts-exportstem",
+    "name": "ExportStem",
+    "path": "src/shared/music/exportTypes.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "beat",
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-exporttypes-ts-midirenderpayload",
+    "name": "MidiRenderPayload",
+    "path": "src/shared/music/exportTypes.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "beat",
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
     "id": "src-shared-music-lyricsectionparser-ts-lookslikefullsonglyrics",
     "name": "looksLikeFullSongLyrics",
     "path": "src/shared/music/lyricSectionParser.ts",
@@ -1192,6 +1717,86 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "words"
     ],
     "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-midiaudiorender-ts-rendermidieventstoaudiobuffer",
+    "name": "renderMidiEventsToAudioBuffer",
+    "path": "src/shared/music/midiAudioRender.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "chords",
+      "piano",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-midibuilder-ts-buildsingletrackmidi",
+    "name": "buildSingleTrackMidi",
+    "path": "src/shared/music/midiBuilder.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "chords",
+      "drums",
+      "piano",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-midibuilder-ts-downloadmidibytes",
+    "name": "downloadMidiBytes",
+    "path": "src/shared/music/midiBuilder.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "chords",
+      "drums",
+      "piano",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-midibuilder-ts-midinoteevent",
+    "name": "MidiNoteEvent",
+    "path": "src/shared/music/midiBuilder.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "chords",
+      "drums",
+      "piano",
+      "words"
+    ],
+    "exportType": "interface",
     "demoId": null
   },
   {

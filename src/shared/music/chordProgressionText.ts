@@ -9,7 +9,8 @@ import {
 
 const PROGRESSION_SEPARATOR_REGEX = /\s*(?:[–—-]|,)\s*/;
 const ROMAN_TOKEN_REGEX = /^(?:I|II|III|IV|V|VI|VII|i|ii|iii|iv|v|vi|vii)$/;
-const CHORD_TOKEN_REGEX = /^[A-G](?:#|b)?(?:m|maj7|m7|7|sus2|sus4|dim|aug)?$/i;
+const CHORD_TOKEN_REGEX =
+  /^[A-G](?:#|b)?(?:m|maj7|m7|7|sus|sus2|sus4|dim|aug)?(?:\/[A-G](?:#|b)?)?$/i;
 const SHIFT_CANDIDATES = [0, -1, 1, -2, 2, -3, 3, -4, 4, -5, 5, -6, 6] as const;
 
 const MAJOR_DIATONIC_QUALITY_BY_DEGREE: Record<number, ChordQuality[]> = {
@@ -44,9 +45,10 @@ const QUALITY_SUFFIX: Record<ChordQuality, string> = {
   minor7: 'm7',
 };
 
-interface ParsedChordToken {
+export interface ParsedChordToken {
   root: string;
   quality: ChordQuality;
+  bassRoot?: string;
 }
 
 export interface ParsedProgressionText {
@@ -55,6 +57,7 @@ export interface ParsedProgressionText {
   tokens: string[];
   chordSymbols: string[];
   romanNumerals: RomanNumeral[];
+  romanNumeralDisplay: string[];
   inferredKey: Key | null;
   resolvedKey: Key | null;
   resolvedChordSymbols: string[];
@@ -82,13 +85,17 @@ function spellPitchClass(pitchClass: number, key: Key): string {
   return spellPitchClassForKey(pitchClass, key);
 }
 
-function parseChordToken(token: string): ParsedChordToken | null {
+export function parseChordSymbolToken(token: string): ParsedChordToken | null {
   const match = token.match(
-    /^([A-G](?:#|b)?)(maj7|m7|m|7|sus2|sus4|dim|aug)?$/i
+    /^([A-G](?:#|b)?)(maj7|m7|m|7|sus|sus2|sus4|dim|aug)?(?:\/([A-G](?:#|b)?))?$/i
   );
   if (!match) return null;
   const root = `${match[1]?.[0]?.toUpperCase() ?? 'C'}${(match[1] ?? '').slice(1)}`;
   const suffix = (match[2] ?? '').toLowerCase();
+  const bassRootRaw = match[3];
+  const bassRoot = bassRootRaw
+    ? `${bassRootRaw[0]?.toUpperCase() ?? 'C'}${bassRootRaw.slice(1)}`
+    : undefined;
   const qualityBySuffix: Record<string, ChordQuality> = {
     '': 'major',
     m: 'minor',
@@ -96,19 +103,21 @@ function parseChordToken(token: string): ParsedChordToken | null {
     aug: 'augmented',
     sus2: 'sus2',
     sus4: 'sus4',
+    sus: 'sus4',
     '7': 'dominant7',
     maj7: 'major7',
     m7: 'minor7',
   };
   const quality = qualityBySuffix[suffix];
   if (!quality) return null;
-  return { root, quality };
+  return { root, quality, bassRoot };
 }
 
 function normalizeChordToken(token: string, key: Key): string | null {
-  const parsed = parseChordToken(token);
+  const parsed = parseChordSymbolToken(token);
   if (!parsed) return null;
-  return `${spellRoot(parsed.root, key)}${QUALITY_SUFFIX[parsed.quality] ?? ''}`;
+  const slashSuffix = parsed.bassRoot ? `/${spellRoot(parsed.bassRoot, key)}` : '';
+  return `${spellRoot(parsed.root, key)}${QUALITY_SUFFIX[parsed.quality] ?? ''}${slashSuffix}`;
 }
 
 function romanToChordSymbols(romanTokens: RomanNumeral[], key: Key): string[] {
@@ -163,6 +172,44 @@ function chordTokensToRoman(
     converted.push(roman);
   }
   return converted;
+}
+
+function qualityToRomanSuffix(quality: ChordQuality): string {
+  switch (quality) {
+    case 'sus2':
+      return 'sus2';
+    case 'sus4':
+      return 'sus4';
+    case 'dominant7':
+      return '7';
+    case 'major7':
+      return 'maj7';
+    case 'minor7':
+      return 'm7';
+    case 'augmented':
+      return 'aug';
+    case 'diminished':
+      return 'dim';
+    default:
+      return '';
+  }
+}
+
+function tokenToRomanDisplay(token: ParsedChordToken, key: Key): string | null {
+  const rootPc = NOTE_TO_PITCH_CLASS[token.root];
+  if (rootPc === undefined) return null;
+  const degree = findDegreeInKey(rootPc, key);
+  if (!degree) return null;
+  const roman = ROMAN_BY_DEGREE[degree];
+  if (!roman) return null;
+  const qualitySuffix = qualityToRomanSuffix(token.quality);
+  if (!token.bassRoot) return `${roman}${qualitySuffix}`;
+
+  const bassPc = NOTE_TO_PITCH_CLASS[token.bassRoot];
+  if (bassPc === undefined) return `${roman}${qualitySuffix}`;
+  const bassDegree = findDegreeInKey(bassPc, key);
+  if (!bassDegree) return `${roman}${qualitySuffix}/${token.bassRoot}`;
+  return `${roman}${qualitySuffix}/${bassDegree}`;
 }
 
 function transposeChordTokens(
@@ -280,11 +327,21 @@ function findBestRootPatternFit(
       const shiftPenalty = Math.abs(shift) * 0.05;
       const score = qualityMatches + selectedKeyBonus - shiftPenalty;
       if (!best || score > best.score) {
+        const shouldPreserveTokenQuality = shiftedTokens.some(
+          (token) =>
+            token.bassRoot !== undefined ||
+            !['major', 'minor', 'diminished'].includes(token.quality)
+        );
         best = {
           key,
           score,
           romanNumerals,
-          chordSymbols: romanToChordSymbols(romanNumerals, key),
+          chordSymbols: shouldPreserveTokenQuality
+            ? shiftedTokens.map((token) => {
+              const slashSuffix = token.bassRoot ? `/${spellRoot(token.bassRoot, key)}` : '';
+              return `${spellRoot(token.root, key)}${QUALITY_SUFFIX[token.quality] ?? ''}${slashSuffix}`;
+            })
+            : romanToChordSymbols(romanNumerals, key),
         };
       }
     }
@@ -299,7 +356,7 @@ function findBestRootPatternFit(
 }
 
 export function inferKeyFromChordSymbols(chordSymbols: string[]): Key | null {
-  const parsedTokens = chordSymbols.map(parseChordToken);
+  const parsedTokens = chordSymbols.map(parseChordSymbolToken);
   if (parsedTokens.some((token) => token === null)) return null;
   const concreteTokens = parsedTokens.filter(Boolean) as ParsedChordToken[];
   if (concreteTokens.length === 0) return null;
@@ -347,6 +404,7 @@ export function parseProgressionText(
       tokens: [],
       chordSymbols: [],
       romanNumerals: [],
+      romanNumeralDisplay: [],
       inferredKey: null,
       resolvedKey: null,
       resolvedChordSymbols: [],
@@ -363,6 +421,7 @@ export function parseProgressionText(
       romanNumerals: romanTokens,
       chordSymbols: romanToChordSymbols(romanTokens, selectedKey),
       inferredKey: selectedKey,
+      romanNumeralDisplay: romanTokens,
       resolvedKey: selectedKey,
       resolvedChordSymbols: romanToChordSymbols(romanTokens, selectedKey),
       resolvedDisplay: romanToChordSymbols(romanTokens, selectedKey).join('–'),
@@ -372,7 +431,7 @@ export function parseProgressionText(
   if (tokens.every((token) => CHORD_TOKEN_REGEX.test(token))) {
     const inferredKeyCandidate = inferKey ? inferKeyFromChordSymbols(tokens) : null;
     const inferredKey = inferredKeyCandidate ?? selectedKey;
-    const parsedTokens = tokens.map(parseChordToken);
+    const parsedTokens = tokens.map(parseChordSymbolToken);
     if (parsedTokens.some((token) => token === null)) {
       return {
         isValid: false,
@@ -380,6 +439,7 @@ export function parseProgressionText(
         tokens,
         chordSymbols: [],
         romanNumerals: [],
+      romanNumeralDisplay: [],
         inferredKey: null,
         resolvedKey: null,
         resolvedChordSymbols: [],
@@ -415,12 +475,19 @@ export function parseProgressionText(
         }
       }
     }
+    const effectiveParsedTokens = effectiveSymbols
+      .map(parseChordSymbolToken)
+      .filter(Boolean) as ParsedChordToken[];
+    const romanNumeralDisplay = effectiveParsedTokens
+      .map((token) => tokenToRomanDisplay(token, effectiveKey))
+      .filter(Boolean) as string[];
     return {
       isValid: true,
       format: 'chord',
       tokens,
       chordSymbols: effectiveSymbols,
       romanNumerals,
+      romanNumeralDisplay,
       inferredKey: effectiveKey,
       resolvedKey: effectiveKey,
       resolvedChordSymbols: effectiveSymbols,
@@ -434,6 +501,7 @@ export function parseProgressionText(
     tokens,
     chordSymbols: [],
     romanNumerals: [],
+    romanNumeralDisplay: [],
     inferredKey: null,
     resolvedKey: null,
     resolvedChordSymbols: [],

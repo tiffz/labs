@@ -103,6 +103,7 @@ interface PianoState {
 
 type Action =
   | { type: 'SET_SCORE'; score: PianoScore }
+  | { type: 'SET_SCORE_WITH_HISTORY'; score: PianoScore }
   | { type: 'SET_ACTIVE_MODE'; mode: ActiveMode }
   | { type: 'SET_PLAYING'; playing: boolean }
   | { type: 'SET_TEMPO'; tempo: number }
@@ -252,26 +253,42 @@ export const initialState: PianoState = {
 
 // eslint-disable-next-line react-refresh/only-export-components -- exported for tests alongside Provider
 export function reducer(state: PianoState, action: Action): PianoState {
+  const buildScoreLoadState = (
+    nextState: PianoState,
+    nextScore: PianoScore
+  ): PianoState => {
+    const measureCount = getMeasureCountForScore(nextScore);
+    const autoZoom = computeAutoZoomLevel(measureCount);
+    const hasVocal = nextScore.parts.some(p => p.hand === 'voice');
+    const isSameScore = nextState.score?.id === nextScore.id;
+    return {
+      ...nextState, score: nextScore, tempo: nextScore.tempo,
+      currentMeasureIndex: 0, currentNoteIndices: new Map(),
+      practiceResults: [], practiceResultsByNoteId: new Map(),
+      // Keep sidebar runs scoped to the current loaded score/exercise.
+      practiceSession: isSameScore
+        ? nextState.practiceSession
+        : { scoreId: nextScore.id, runs: [] },
+      currentRunStartTime: null,
+      viewingRunIndex: null,
+      fullScore: null, sections: [], activeSectionIndex: null,
+      zoomLevel: autoZoom, selectedMeasureRange: null,
+      showVocalPart: hasVocal,
+      isExerciseScore: false,
+    };
+  };
+
   switch (action.type) {
     case 'SET_SCORE': {
-      const measureCount = getMeasureCountForScore(action.score);
-      const autoZoom = computeAutoZoomLevel(measureCount);
-      const hasVocal = action.score.parts.some(p => p.hand === 'voice');
-      const isSameScore = state.score?.id === action.score.id;
+      return buildScoreLoadState(state, action.score);
+    }
+    case 'SET_SCORE_WITH_HISTORY': {
+      const loaded = buildScoreLoadState(state, action.score);
+      if (!state.score) return loaded;
       return {
-        ...state, score: action.score, tempo: action.score.tempo,
-        currentMeasureIndex: 0, currentNoteIndices: new Map(),
-        practiceResults: [], practiceResultsByNoteId: new Map(),
-        // Keep sidebar runs scoped to the current loaded score/exercise.
-        practiceSession: isSameScore
-          ? state.practiceSession
-          : { scoreId: action.score.id, runs: [] },
-        currentRunStartTime: null,
-        viewingRunIndex: null,
-        fullScore: null, sections: [], activeSectionIndex: null,
-        zoomLevel: autoZoom, selectedMeasureRange: null,
-        showVocalPart: hasVocal,
-        isExerciseScore: false,
+        ...loaded,
+        undoStack: [...state.undoStack.slice(-49), state.score],
+        redoStack: [],
       };
     }
     case 'SET_SCORE_FROM_ABC': {
@@ -791,7 +808,7 @@ interface PianoContextValue {
   midi: MidiInput;
   startMode: (mode: ActiveMode) => void;
   stopMode: () => void;
-  loadScore: (score: PianoScore) => void;
+  loadScore: (score: PianoScore, options?: { recordHistory?: boolean }) => void;
 }
 
 const PianoContext = createContext<PianoContextValue | null>(null);
@@ -888,9 +905,9 @@ export function PianoProvider({ children }: { children: React.ReactNode }) {
     midi.init();
   }, [midi, engine]);
 
-  const loadScore = useCallback((score: PianoScore) => {
+  const loadScore = useCallback((score: PianoScore, options?: { recordHistory?: boolean }) => {
     if (engine.isPlaying()) engine.stop();
-    dispatch({ type: 'SET_SCORE', score });
+    dispatch({ type: options?.recordHistory ? 'SET_SCORE_WITH_HISTORY' : 'SET_SCORE', score });
     engine.setTempo(score.tempo);
   }, [engine]);
 

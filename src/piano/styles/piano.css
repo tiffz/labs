@@ -1070,6 +1070,17 @@ body {
   flex-wrap: wrap;
   width: 100%;
 }
+.ni-icon-btn {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  padding: 0;
+  gap: 0;
+  justify-content: center;
+}
+.ni-icon-btn .material-symbols-outlined {
+  font-size: 18px;
+}
 .np-sections-menu-wrap {
   position: relative;
 }
@@ -3795,7 +3806,7 @@ body {
 
 .ep-panel {
   --ep-control-height: var(--control-height);
-  --ep-control-height-lg: var(--control-height-touch);
+  --ep-control-height-lg: var(--control-height);
   --ep-control-radius: var(--control-radius);
   --ep-control-font-size: var(--text-base);
   width: min(720px, calc(100vw - 32px));
@@ -3811,7 +3822,7 @@ body {
 }
 .ep-panel-inline {
   width: min(680px, calc(100vw - 32px));
-  max-height: min(80vh, 760px);
+  max-height: min(78vh, 700px);
 }
 .piano-load-popover {
   border-radius: var(--radius-xl);
@@ -3893,7 +3904,7 @@ body {
 
 /* Body area */
 .ep-body {
-  padding: var(--sp-5) var(--sp-6);
+  padding: var(--sp-4) var(--sp-5);
   overflow-y: auto;
   flex: 1;
   min-height: 0;
@@ -3901,7 +3912,7 @@ body {
 
 /* Groups */
 .ep-group {
-  margin-bottom: var(--sp-4);
+  margin-bottom: var(--sp-3);
 }
 .ep-group-sm {
   margin-bottom: var(--sp-3);
@@ -4045,7 +4056,7 @@ body {
 /* 3-column row */
 .ep-row-3 {
   display: flex;
-  gap: var(--sp-5);
+  gap: var(--sp-3);
   flex-wrap: wrap;
 }
 
@@ -4217,7 +4228,7 @@ body {
   line-height: 1.28;
 }
 
-/* Sticky footer with preview + load button */
+/* Sticky footer with preview + actions */
 .ep-footer {
   display: flex;
   align-items: center;
@@ -4227,6 +4238,12 @@ body {
   background: var(--piano-surface);
   position: sticky;
   bottom: 0;
+}
+.ep-footer-auto {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--piano-text-secondary);
+  white-space: nowrap;
 }
 .ep-footer-preview {
   display: flex;

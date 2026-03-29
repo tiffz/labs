@@ -2,14 +2,16 @@ import type { PianoScore, ScoreNote, ScoreMeasure, Key, NoteDuration } from '../
 import { generateNoteId } from '../types';
 import { progressionToChords } from '../../shared/music/chordTheory';
 import { generateVoicing } from '../../shared/music/chordVoicing';
-import type { Chord, RomanNumeral } from '../../shared/music/chordTypes';
+import type { Chord, ChordStylingStrategy, RomanNumeral } from '../../shared/music/chordTypes';
+import { parseChordSymbolToken } from '../../shared/music/chordProgressionText';
 import { COMMON_CHORD_PROGRESSIONS } from '../../shared/music/commonChordProgressions';
 import { spellRootForKey } from '../../shared/music/theory/pitchClass';
+import { CHORD_STYLING_PATTERNS, timeSignatureToKey } from '../../chords/data/chordStylingPatterns';
 
 export { COMMON_CHORD_PROGRESSIONS };
 
-export type ChordVoicingStyle = 'root' | 'inv1' | 'inv2' | 'open';
-export type ChordStyleId = 'simple' | 'one-per-beat' | 'oom-pahs' | 'waltz' | 'pop-rock-ballad' | 'pop-rock-uptempo' | 'tresillo' | 'jazzy';
+export type ChordVoicingStyle = 'root' | 'inv1' | 'inv2' | 'open' | 'voice-leading';
+export type ChordStyleId = ChordStylingStrategy;
 
 export interface ChordStyleOption {
   id: ChordStyleId;
@@ -18,15 +20,35 @@ export interface ChordStyleOption {
   timeSignature?: { numerator: number; denominator: number };
 }
 
-export const CHORD_STYLE_OPTIONS: ChordStyleOption[] = [
-  { id: 'simple', label: 'Simple', description: 'Whole note chords' },
-  { id: 'one-per-beat', label: 'Per Beat', description: 'One chord strike per beat' },
-  { id: 'oom-pahs', label: 'Oom-Pah', description: 'Alternating bass note and chord (LH/RH/LH/RH)' },
-  { id: 'pop-rock-ballad', label: 'Pop-Rock Ballad', description: 'Pop-rock ballad with syncopated bass' },
-  { id: 'pop-rock-uptempo', label: 'Pop-Rock Up Tempo', description: 'Backbeat chords on 2 & 4 with syncopated bass' },
-  { id: 'tresillo', label: 'Tresillo', description: '3+3+2 rhythmic pattern used in pop, Latin, and rock' },
-  { id: 'jazzy', label: 'Jazzy', description: 'Walking bass line (1-3-5-3) with swing-feel chords' },
+const STYLE_ORDER: ChordStyleId[] = [
+  'simple',
+  'one-per-beat',
+  'half-notes',
+  'eighth-notes',
+  'oom-pahs',
+  'waltz',
+  'pop-rock-ballad',
+  'pop-rock-uptempo',
+  'tresillo',
+  'jazzy',
 ];
+
+export const CHORD_STYLE_OPTIONS: ChordStyleOption[] = Object.entries(
+  CHORD_STYLING_PATTERNS
+)
+  .map(([id, config]) => ({
+    id: id as ChordStyleId,
+    label: config.name,
+    description: config.description,
+  }))
+  .sort((a, b) => {
+    const ai = STYLE_ORDER.indexOf(a.id);
+    const bi = STYLE_ORDER.indexOf(b.id);
+    if (ai === -1 && bi === -1) return a.label.localeCompare(b.label);
+    if (ai === -1) return 1;
+    if (bi === -1) return -1;
+    return ai - bi;
+  });
 
 function spellChordRoot(chord: Chord, key: Key): string {
   return spellRootForKey(chord.root, key);
@@ -34,6 +56,7 @@ function spellChordRoot(chord: Chord, key: Key): string {
 
 export interface ChordExerciseConfig {
   progression: RomanNumeral[];
+  chordSymbols?: string[];
   progressionName: string;
   progressionInput?: string;
   key: Key;
@@ -57,106 +80,149 @@ interface StylePattern {
   bass: { dur: NoteDuration; dotted?: boolean; rest?: boolean; count: number; degree?: number }[];
 }
 
-function getStylePattern(styleId: ChordStyleId): StylePattern {
-  switch (styleId) {
-    case 'one-per-beat':
-      return {
-        treble: [
-          { dur: 'quarter', count: 4 },
-        ],
-        bass: [
-          { dur: 'quarter', count: 4 },
-        ],
-      };
-    case 'oom-pahs':
-      return {
-        treble: [
-          { dur: 'quarter', rest: true, count: 1 },
-          { dur: 'quarter', count: 1 },
-          { dur: 'quarter', rest: true, count: 1 },
-          { dur: 'quarter', count: 1 },
-        ],
-        bass: [
-          { dur: 'quarter', count: 1 },
-          { dur: 'quarter', rest: true, count: 1 },
-          { dur: 'quarter', count: 1, degree: 5 },
-          { dur: 'quarter', rest: true, count: 1 },
-        ],
-      };
-    case 'waltz':
-      return {
-        treble: [
-          { dur: 'quarter', rest: true, count: 1 },
-          { dur: 'quarter', count: 1 },
-          { dur: 'quarter', count: 1 },
-        ],
-        bass: [
-          { dur: 'quarter', count: 1 },
-          { dur: 'quarter', rest: true, count: 1 },
-          { dur: 'quarter', rest: true, count: 1 },
-        ],
-      };
-    case 'pop-rock-ballad':
-      return {
-        treble: [
-          { dur: 'quarter', count: 4 },
-        ],
-        bass: [
-          { dur: 'quarter', dotted: true, count: 1 },
-          { dur: 'eighth', count: 1 },
-          { dur: 'quarter', dotted: true, count: 1 },
-          { dur: 'eighth', count: 1 },
-        ],
-      };
-    case 'tresillo':
-      return {
-        treble: [
-          { dur: 'quarter', dotted: true, count: 1 },
-          { dur: 'quarter', dotted: true, count: 1 },
-          { dur: 'quarter', count: 1 },
-        ],
-        bass: [
-          { dur: 'quarter', dotted: true, count: 1 },
-          { dur: 'quarter', dotted: true, count: 1 },
-          { dur: 'quarter', count: 1 },
-        ],
-      };
-    case 'pop-rock-uptempo':
-      return {
-        treble: [
-          { dur: 'quarter', rest: true, count: 1 },
-          { dur: 'quarter', count: 1 },
-          { dur: 'quarter', rest: true, count: 1 },
-          { dur: 'quarter', count: 1 },
-        ],
-        bass: [
-          { dur: 'quarter', dotted: true, count: 1 },
-          { dur: 'eighth', count: 1 },
-          { dur: 'quarter', dotted: true, count: 1 },
-          { dur: 'eighth', count: 1 },
-        ],
-      };
-    case 'jazzy':
-      return {
-        treble: [
-          { dur: 'eighth', count: 2 },
-          { dur: 'quarter', rest: true, count: 1 },
-          { dur: 'half', rest: true, count: 1 },
-        ],
-        bass: [
-          { dur: 'quarter', count: 1 },
-          { dur: 'quarter', count: 1, degree: 3 },
-          { dur: 'quarter', count: 1, degree: 5 },
-          { dur: 'quarter', count: 1, degree: 3 },
-        ],
-      };
-    case 'simple':
-    default:
-      return {
-        treble: [{ dur: 'whole', count: 1 }],
-        bass: [{ dur: 'whole', count: 1 }],
-      };
+function sixteenthsToDuration(
+  sixteenths: number
+): { dur: NoteDuration; dotted?: boolean } {
+  if (sixteenths >= 16) return { dur: 'whole' };
+  if (sixteenths === 12) return { dur: 'half', dotted: true };
+  if (sixteenths >= 8) return { dur: 'half' };
+  if (sixteenths === 6) return { dur: 'quarter', dotted: true };
+  if (sixteenths >= 4) return { dur: 'quarter' };
+  if (sixteenths === 3) return { dur: 'eighth', dotted: true };
+  if (sixteenths >= 2) return { dur: 'eighth' };
+  return { dur: 'sixteenth' };
+}
+
+function parsePatternNotation(
+  notation: string
+): Array<{ dur: NoteDuration; dotted?: boolean; rest?: boolean; count: number; degree?: number }> {
+  const entries: Array<{ dur: NoteDuration; dotted?: boolean; rest?: boolean; count: number; degree?: number }> = [];
+  let i = 0;
+  while (i < notation.length) {
+    const char = notation[i];
+    if (!char || char === ' ') {
+      i += 1;
+      continue;
+    }
+    if (char === '_') {
+      let len = 1;
+      let j = i + 1;
+      while (j < notation.length && notation[j] === '_') {
+        len += 1;
+        j += 1;
+      }
+      const duration = sixteenthsToDuration(len);
+      entries.push({ dur: duration.dur, dotted: duration.dotted, rest: true, count: 1 });
+      i = j;
+      continue;
+    }
+    if (char === 'C' || char === 'c' || /[0-9]/.test(char)) {
+      let len = 1;
+      let j = i + 1;
+      while (j < notation.length && notation[j] === '-') {
+        len += 1;
+        j += 1;
+      }
+      const duration = sixteenthsToDuration(len);
+      const degree = /[0-9]/.test(char) ? parseInt(char, 10) : undefined;
+      entries.push({ dur: duration.dur, dotted: duration.dotted, count: 1, degree });
+      i = j;
+      continue;
+    }
+    if (char === '-') {
+      i += 1;
+      continue;
+    }
+    i += 1;
   }
+  return entries;
+}
+
+function getStylePattern(
+  styleId: ChordStyleId,
+  timeSignature: { numerator: number; denominator: number }
+): StylePattern {
+  const config = CHORD_STYLING_PATTERNS[styleId];
+  if (!config) {
+    return {
+      treble: [{ dur: 'whole', count: 1 }],
+      bass: [{ dur: 'whole', count: 1 }],
+    };
+  }
+  const key = timeSignatureToKey(timeSignature);
+  const tsPattern = config.patterns[key];
+  if (!tsPattern) {
+    return {
+      treble: [{ dur: 'whole', count: 1 }],
+      bass: [{ dur: 'whole', count: 1 }],
+    };
+  }
+  return {
+    treble: parsePatternNotation(tsPattern.treble),
+    bass: parsePatternNotation(tsPattern.bass),
+  };
+}
+
+function scoreVoiceLeadingDistance(prev: number[], next: number[]): number {
+  if (prev.length === 0 || next.length === 0) return 0;
+  const len = Math.min(prev.length, next.length);
+  let total = 0;
+  for (let i = 0; i < len; i += 1) total += Math.abs(prev[i] - next[i]);
+  return total;
+}
+
+function normalizeTrebleRange(notes: number[]): number[] {
+  const minTreble = 60;
+  const maxTreble = 84;
+  return notes.map((note) => {
+    let adjusted = note;
+    while (adjusted < minTreble) adjusted += 12;
+    while (adjusted > maxTreble) adjusted -= 12;
+    return adjusted;
+  }).sort((a, b) => a - b);
+}
+
+function buildVoiceLeadingCandidates(chord: Chord): number[][] {
+  const candidates: number[][] = [];
+  for (const inversion of [0, 1, 2] as const) {
+    const candidate = generateVoicing(
+      { ...chord, inversion },
+      { useInversions: true, useOpenVoicings: false, randomizeOctaves: false },
+      'treble',
+    );
+    candidates.push(candidate);
+    candidates.push(candidate.map((note) => note + 12));
+    candidates.push(candidate.map((note) => note - 12));
+  }
+  const deduped = new Map<string, number[]>();
+  candidates.forEach((notes) => {
+    const normalized = normalizeTrebleRange(notes);
+    deduped.set(normalized.join(','), normalized);
+  });
+  return [...deduped.values()];
+}
+
+function pickVoiceLedVoicing(chord: Chord, previous: number[] | null): number[] {
+  const candidates = buildVoiceLeadingCandidates(chord);
+  if (candidates.length === 0) {
+    return generateVoicing(
+      chord,
+      { useInversions: false, useOpenVoicings: false, randomizeOctaves: false },
+      'treble',
+    );
+  }
+  if (!previous) return candidates[0];
+
+  let best = candidates[0];
+  let bestScore = scoreVoiceLeadingDistance(previous, best);
+  for (const candidate of candidates.slice(1)) {
+    const score = scoreVoiceLeadingDistance(previous, candidate);
+    if (score < bestScore) {
+      best = candidate;
+      bestScore = score;
+    }
+  }
+  return best;
 }
 
 /**
@@ -219,6 +285,7 @@ function generateNotesFromPattern(
 export function generateChordProgressionScore(config: ChordExerciseConfig): PianoScore {
   const {
     progression,
+    chordSymbols,
     progressionName,
     progressionInput,
     key,
@@ -228,7 +295,22 @@ export function generateChordProgressionScore(config: ChordExerciseConfig): Pian
     styleId = 'simple',
   } = config;
 
-  const chords = progressionToChords(progression, key);
+  const parsedSymbolChords = (chordSymbols ?? []).map((symbol) => {
+    const parsed = parseChordSymbolToken(symbol);
+    if (!parsed) return null;
+    return {
+      root: parsed.root,
+      quality: parsed.quality,
+      inversion: 0,
+      octave: 4,
+    } as Chord;
+  });
+  const canUseSymbolChords =
+    parsedSymbolChords.length === progression.length &&
+    parsedSymbolChords.every((chord) => chord !== null);
+  const chords = canUseSymbolChords
+    ? (parsedSymbolChords as Chord[])
+    : progressionToChords(progression, key);
   const voicingOpts = {
     useInversions: voicingStyle === 'inv1' || voicingStyle === 'inv2',
     useOpenVoicings: voicingStyle === 'open',
@@ -237,15 +319,19 @@ export function generateChordProgressionScore(config: ChordExerciseConfig): Pian
 
   const rhMeasures: ScoreMeasure[] = [];
   const lhMeasures: ScoreMeasure[] = [];
-  const pattern = getStylePattern(styleId);
+  const pattern = getStylePattern(styleId, timeSignature);
+  let previousTrebleVoicing: number[] | null = null;
 
   for (let ci = 0; ci < chords.length; ci++) {
     const chord = { ...chords[ci] };
     if (voicingStyle === 'inv1') chord.inversion = 1;
     if (voicingStyle === 'inv2') chord.inversion = 2;
 
-    const trebleNotes = generateVoicing(chord, voicingOpts, 'treble');
+    const trebleNotes = voicingStyle === 'voice-leading'
+      ? pickVoiceLedVoicing(chord, previousTrebleVoicing)
+      : generateVoicing(chord, voicingOpts, 'treble');
     const bassNotes = generateVoicing(chord, voicingOpts, 'bass');
+    previousTrebleVoicing = trebleNotes;
     const symbol = chordToSymbol(chord, key);
 
     const bassChordTones = getBassChordTones(chord, bassNotes[0]);
@@ -259,7 +345,7 @@ export function generateChordProgressionScore(config: ChordExerciseConfig): Pian
   }
 
   return {
-    id: `chord-prog-${key}-${progressionName}-${styleId}`,
+    id: `chord-prog-${key}-${progressionName}-${styleId}-${voicingStyle}`,
     title: `${progressionName} in ${key}`,
     key,
     timeSignature,
@@ -268,6 +354,7 @@ export function generateChordProgressionScore(config: ChordExerciseConfig): Pian
       kind: 'chord-progression',
       progressionName,
       progressionNumerals: progression,
+      chordSymbols: chordSymbols ?? [],
       progressionInput: progressionInput ?? progression.join('–'),
       styleId,
       voicingStyle,

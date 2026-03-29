@@ -53,37 +53,23 @@ function getNotesForSymbol(
     return [];
   }
   
-  // Get chord intervals based on quality
-  const chordIntervals: Record<string, number[]> = {
-    major: [0, 4, 7],      // Root, major third, perfect fifth
-    minor: [0, 3, 7],      // Root, minor third, perfect fifth
-    diminished: [0, 3, 6], // Root, minor third, diminished fifth
-    augmented: [0, 4, 8],  // Root, major third, augmented fifth
-    sus2: [0, 2, 7],       // Root, major second, perfect fifth
-    sus4: [0, 5, 7],       // Root, perfect fourth, perfect fifth
-    dominant7: [0, 4, 7, 10],   // Root, major third, perfect fifth, minor seventh
-    major7: [0, 4, 7, 11],      // Root, major third, perfect fifth, major seventh
-    minor7: [0, 3, 7, 10],      // Root, minor third, perfect fifth, minor seventh
+  const qualityDegreeToInterval: Record<string, Record<number, number>> = {
+    major: { 1: 0, 3: 4, 5: 7 },
+    minor: { 1: 0, 3: 3, 5: 7 },
+    diminished: { 1: 0, 3: 3, 5: 6 },
+    augmented: { 1: 0, 3: 4, 5: 8 },
+    sus2: { 1: 0, 2: 2, 3: 2, 5: 7 },
+    sus4: { 1: 0, 3: 5, 4: 5, 5: 7 },
+    dominant7: { 1: 0, 3: 4, 5: 7, 7: 10 },
+    major7: { 1: 0, 3: 4, 5: 7, 7: 11 },
+    minor7: { 1: 0, 3: 3, 5: 7, 7: 10 },
   };
-  
-  const intervals = chordIntervals[chord.quality] || chordIntervals.major;
-  
-  // Scale degree 1 = root (index 0), 3 = third (index 1), 5 = fifth (index 2), etc.
-  const noteIndex = scaleDegree - 1;
-  if (noteIndex < 0 || noteIndex >= intervals.length) {
-    // Invalid scale degree, return root as fallback
-    return [voicing[0]];
-  }
-  
-  // Get the root note from voicing (lowest note)
+  const degreeMap = qualityDegreeToInterval[chord.quality] ?? qualityDegreeToInterval.major;
+  const interval = degreeMap[scaleDegree];
+  if (interval === undefined) return [voicing[0]];
+
   const rootMidi = voicing[0];
-  
-  // Calculate the actual MIDI note for this scale degree
-  const targetInterval = intervals[noteIndex];
-  const targetNote = rootMidi + targetInterval;
-  
-  // Return the single note
-  return [targetNote];
+  return [rootMidi + interval];
 }
 
 /**

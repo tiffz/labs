@@ -87,25 +87,77 @@ export const CHORD_STYLING_PATTERNS: Record<string, ChordStylingPattern> = {
     patterns: {
       '4/4': {
         treble: 'C---C---C---C---', // 4 quarter note chords
-        bass: '1---1---1---1---',   // 4 quarter note roots
+        bass: '1---------------',   // Sustained whole-note root anchor
       },
       '3/4': {
         treble: 'C---C---C---', // 3 quarter note chords
-        bass: '1---1---1---',   // 3 quarter note roots
+        bass: '1-----------',   // Sustained dotted-half root anchor
       },
       '2/4': {
         treble: 'C---C---', // 2 quarter note chords
-        bass: '1---1---',   // 2 quarter note roots
+        bass: '1-------',   // Sustained half-note root anchor
       },
       '6/8': {
         // Converted from 3/4: halve durations (quarter -> eighth) and repeat 2x
         treble: 'C-C-C-C-C-C-', // 6 eighth notes (2 sixteenths each) = 12 sixteenths
-        bass: '1-1-1-1-1-1-',   // 6 eighth notes (2 sixteenths each) = 12 sixteenths
+        bass: '1-----------',   // Sustained root anchor across the measure
       },
       '12/8': {
         // Converted from 3/4: halve durations (quarter -> eighth) and repeat 4x
         treble: 'C-C-C-C-C-C-C-C-C-C-C-C-', // 12 eighth notes (2 sixteenths each) = 24 sixteenths
-        bass: '1-1-1-1-1-1-1-1-1-1-1-1-',   // 12 eighth notes (2 sixteenths each) = 24 sixteenths
+        bass: '1-----------------------',   // Sustained root anchor across the measure
+      },
+    },
+  },
+  'half-notes': {
+    name: 'Half Notes',
+    description: 'One chord every other beat',
+    patterns: {
+      '4/4': {
+        treble: 'C-------C-------',
+        bass: '1---------------',
+      },
+      '3/4': {
+        treble: 'C-------C---',
+        bass: '1-----------',
+      },
+      '2/4': {
+        treble: 'C-------',
+        bass: '1-------',
+      },
+      '6/8': {
+        treble: 'C-----C-----',
+        bass: '1-----------',
+      },
+      '12/8': {
+        treble: 'C-----C-----C-----C-----',
+        bass: '1-----------------------',
+      },
+    },
+  },
+  'eighth-notes': {
+    name: 'Eighth Notes',
+    description: 'Two chord hits per beat',
+    patterns: {
+      '4/4': {
+        treble: 'C-C-C-C-C-C-C-C-',
+        bass: '1-1-1-1-1-1-1-1-',
+      },
+      '3/4': {
+        treble: 'C-C-C-C-C-C-',
+        bass: '1-1-1-1-1-1-',
+      },
+      '2/4': {
+        treble: 'C-C-C-C-',
+        bass: '1-1-1-1-',
+      },
+      '6/8': {
+        treble: 'C-C-C-C-C-C-',
+        bass: '1-1-1-1-1-1-',
+      },
+      '12/8': {
+        treble: 'C-C-C-C-C-C-C-C-C-C-C-C-',
+        bass: '1-1-1-1-1-1-1-1-1-1-1-1-',
       },
     },
   },

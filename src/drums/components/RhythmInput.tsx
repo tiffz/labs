@@ -1,13 +1,14 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import type { TimeSignature, ParsedRhythm } from '../types';
 import type { PlaybackSettings } from '../types/settings';
 import { } from '../utils/timeSignatureUtils';
 import RhythmPresets from './RhythmPresets';
-import DownloadDropdown from './DownloadDropdown';
+import SharedExportPopover from '../../shared/components/music/SharedExportPopover';
 import { TabImportWizard } from './TabImportWizard';
 import { detectTabType, isTab, type TabType } from '../utils/tabDetector';
 import { formatRhythm } from '../utils/formatting';
 import AppTooltip from '../../shared/components/AppTooltip';
+import { createDrumsExportAdapter } from '../utils/exportAdapter';
 
 interface RhythmInputProps {
   notation: string;
@@ -26,10 +27,6 @@ interface RhythmInputProps {
   onShare: (event?: React.MouseEvent<HTMLButtonElement>) => void;
   canUndo: boolean;
   canRedo: boolean;
-  downloadFormat: 'wav' | 'mp3';
-  downloadLoops: number;
-  onDownloadFormatChange: (format: 'wav' | 'mp3') => void;
-  onDownloadLoopsChange: (loops: number) => void;
 }
 
 const RhythmInput: React.FC<RhythmInputProps> = ({
@@ -49,10 +46,6 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
   onShare,
   canUndo,
   canRedo,
-  downloadFormat,
-  downloadLoops,
-  onDownloadFormatChange,
-  onDownloadLoopsChange,
 }) => {
   const [showTooltip, setShowTooltip] = useState(false);
   const [showDownloadDropdown, setShowDownloadDropdown] = useState(false);
@@ -61,6 +54,13 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
   const [pastedTabType, setPastedTabType] = useState<TabType>('unknown');
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const downloadButtonRef = useRef<HTMLButtonElement>(null);
+  const exportAdapter = useMemo(() => createDrumsExportAdapter({
+    rhythm: parsedRhythm,
+    bpm,
+    playbackSettings,
+    metronomeEnabled,
+    notation,
+  }), [parsedRhythm, bpm, playbackSettings, metronomeEnabled, notation]);
 
   // NOTE: Selection syncing between display and textarea has been disabled
   // because it doesn't work correctly with repeat syntax (|x3, %, etc.)
@@ -280,19 +280,12 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
                   </button>
                 </AppTooltip>
                 {showDownloadDropdown && (
-                  <DownloadDropdown
-                    rhythm={parsedRhythm}
-                    notation={notation}
-                    bpm={bpm}
-                    playbackSettings={playbackSettings}
-                    metronomeEnabled={metronomeEnabled}
-                    isOpen={showDownloadDropdown}
+                  <SharedExportPopover
+                    open={showDownloadDropdown}
+                    anchorEl={downloadButtonRef.current}
                     onClose={() => setShowDownloadDropdown(false)}
-                    buttonRef={downloadButtonRef}
-                    format={downloadFormat}
-                    loops={downloadLoops}
-                    onFormatChange={onDownloadFormatChange}
-                    onLoopsChange={onDownloadLoopsChange}
+                    adapter={exportAdapter}
+                    persistKey="drums"
                   />
                 )}
               </div>

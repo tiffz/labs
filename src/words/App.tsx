@@ -39,6 +39,9 @@ import {
   computeCompletionPadMeasures,
 } from '../shared/music/chordProgressionCompletion';
 import {
+  getChordHitsForStyle,
+} from '../shared/music/chordStyleHits';
+import {
   createDefaultSection,
   findPreviousChorus,
   type SongSection,
@@ -64,6 +67,8 @@ import AppSlider from '../shared/components/AppSlider';
 import BpmInput from '../shared/components/music/BpmInput';
 import ChordProgressionInput from '../shared/components/music/ChordProgressionInput';
 import ChordStyleInput from '../shared/components/music/ChordStyleInput';
+import SharedExportPopover from '../shared/components/music/SharedExportPopover';
+import { createWordsExportAdapter } from './utils/exportAdapter';
 import KeyInput from '../shared/components/music/KeyInput';
 import dumSound from '../drums/assets/sounds/dum.wav';
 import takSound from '../drums/assets/sounds/tak.wav';
@@ -335,95 +340,6 @@ const SettingHelpLabel: React.FC<{ text: string; help: string }> = ({
   </span>
 );
 
-interface ChordHit {
-  offsetBeats: number;
-  source: 'bass' | 'treble' | 'both';
-  durationBeats: number;
-}
-
-function getChordHitsForStyle(
-  styleId: ChordStyleId,
-  timeSignature: TimeSignature
-): ChordHit[] {
-  const beatsPerMeasure =
-    timeSignature.numerator * (4 / timeSignature.denominator);
-  const quarterBeats = Math.max(0.25, 4 / timeSignature.denominator);
-  const beatStarts = Array.from(
-    { length: Math.max(1, timeSignature.numerator) },
-    (_, index) => index * quarterBeats
-  );
-  const clamp = (hits: ChordHit[]) =>
-    hits.filter(
-      (hit) => hit.offsetBeats >= 0 && hit.offsetBeats < beatsPerMeasure
-    );
-
-  switch (styleId) {
-    case 'one-per-beat':
-      return clamp(
-        beatStarts.map((offsetBeats) => ({
-          offsetBeats,
-          source: 'both',
-          durationBeats: Math.min(quarterBeats, beatsPerMeasure - offsetBeats),
-        }))
-      );
-    case 'oom-pahs':
-      return clamp(
-        beatStarts.map((offsetBeats, index) => ({
-          offsetBeats,
-          source: index % 2 === 0 ? 'bass' : 'treble',
-          durationBeats: Math.min(quarterBeats, beatsPerMeasure - offsetBeats),
-        }))
-      );
-    case 'waltz':
-      return clamp([
-        { offsetBeats: 0, source: 'bass', durationBeats: quarterBeats },
-        {
-          offsetBeats: quarterBeats,
-          source: 'treble',
-          durationBeats: quarterBeats,
-        },
-        {
-          offsetBeats: quarterBeats * 2,
-          source: 'treble',
-          durationBeats: quarterBeats,
-        },
-      ]);
-    case 'pop-rock-ballad':
-      return clamp([
-        { offsetBeats: 0, source: 'bass', durationBeats: 1.5 },
-        { offsetBeats: 1.5, source: 'treble', durationBeats: 0.5 },
-        { offsetBeats: 2, source: 'bass', durationBeats: 1.5 },
-        { offsetBeats: 3.5, source: 'treble', durationBeats: 0.5 },
-      ]);
-    case 'pop-rock-uptempo':
-      return clamp([
-        { offsetBeats: 0, source: 'bass', durationBeats: 1 },
-        { offsetBeats: 1, source: 'treble', durationBeats: 1 },
-        { offsetBeats: 2, source: 'bass', durationBeats: 1 },
-        { offsetBeats: 3, source: 'treble', durationBeats: 1 },
-      ]);
-    case 'tresillo':
-      return clamp([
-        { offsetBeats: 0, source: 'both', durationBeats: 1.5 },
-        { offsetBeats: 1.5, source: 'both', durationBeats: 1.5 },
-        { offsetBeats: 3, source: 'both', durationBeats: 1 },
-      ]);
-    case 'jazzy':
-      return clamp([
-        { offsetBeats: 0, source: 'bass', durationBeats: 1 },
-        { offsetBeats: 0.5, source: 'treble', durationBeats: 0.5 },
-        { offsetBeats: 1, source: 'bass', durationBeats: 1 },
-        { offsetBeats: 2, source: 'bass', durationBeats: 1 },
-        { offsetBeats: 3, source: 'bass', durationBeats: 1 },
-      ]);
-    case 'simple':
-    default:
-      return [
-        { offsetBeats: 0, source: 'both', durationBeats: beatsPerMeasure },
-      ];
-  }
-}
-
 const App: React.FC = () => {
   const [sections, setSections] = useState<SongSection[]>(DEFAULT_SECTIONS);
   const [generated, setGenerated] = useState<WordRhythmResult>(
@@ -481,6 +397,7 @@ const App: React.FC = () => {
     string | null
   >(null);
   const [exportMenuOpen, setExportMenuOpen] = useState<boolean>(false);
+  const [sharedExportOpen, setSharedExportOpen] = useState<boolean>(false);
   const [scoreZoom, setScoreZoom] = useState<number>(1);
   const [lyricImportOpen, setLyricImportOpen] = useState<boolean>(false);
   const [lyricImportText, setLyricImportText] = useState<string>('');
@@ -826,6 +743,21 @@ const App: React.FC = () => {
     });
     return styles;
   }, [sectionRenderPlans]);
+  const exportAdapter = useMemo(() => createWordsExportAdapter({
+    parsedRhythm,
+    bpm,
+    songKey,
+    timeSignature,
+    chordLabelsByMeasure,
+    chordStyleByMeasure,
+  }), [
+    parsedRhythm,
+    bpm,
+    songKey,
+    timeSignature,
+    chordLabelsByMeasure,
+    chordStyleByMeasure,
+  ]);
   const effectivePlaybackSettings = useMemo(() => {
     const masterScale =
       masterMuted ? 0 : Math.max(0, Math.min(100, masterVolume)) / 100;
@@ -2411,257 +2343,6 @@ const App: React.FC = () => {
     printWindow.onload = printNow;
     window.setTimeout(printNow, 160);
   };
-  type MidiNoteEvent = {
-    midi: number;
-    startTick: number;
-    durationTicks: number;
-    velocity: number;
-    channel: number;
-  };
-  const clampMidiValue = (value: number, min: number, max: number) =>
-    Math.max(min, Math.min(max, Math.round(value)));
-  const encodeVarLen = (value: number): number[] => {
-    let buffer = value & 0x7f;
-    const out: number[] = [];
-    while ((value >>= 7) > 0) {
-      buffer <<= 8;
-      buffer |= (value & 0x7f) | 0x80;
-    }
-    while (true) {
-      out.push(buffer & 0xff);
-      if (buffer & 0x80) {
-        buffer >>= 8;
-      } else {
-        break;
-      }
-    }
-    return out;
-  };
-  const buildSingleTrackMidi = (
-    events: MidiNoteEvent[],
-    bpmValue: number
-  ): Uint8Array => {
-    const ticksPerQuarter = 480;
-    const trackData: number[] = [];
-    const microsecondsPerQuarter = clampMidiValue(
-      Math.floor(60000000 / Math.max(1, bpmValue)),
-      1,
-      0xffffff
-    );
-    trackData.push(
-      0x00,
-      0xff,
-      0x51,
-      0x03,
-      (microsecondsPerQuarter >> 16) & 0xff,
-      (microsecondsPerQuarter >> 8) & 0xff,
-      microsecondsPerQuarter & 0xff
-    );
-    const timeline: Array<{
-      tick: number;
-      type: 'on' | 'off';
-      midi: number;
-      velocity: number;
-      channel: number;
-    }> = [];
-    events.forEach((event) => {
-      const startTick = Math.max(0, event.startTick);
-      const endTick = Math.max(startTick + 1, startTick + event.durationTicks);
-      timeline.push({
-        tick: startTick,
-        type: 'on',
-        midi: clampMidiValue(event.midi, 0, 127),
-        velocity: clampMidiValue(event.velocity, 1, 127),
-        channel: clampMidiValue(event.channel, 0, 15),
-      });
-      timeline.push({
-        tick: endTick,
-        type: 'off',
-        midi: clampMidiValue(event.midi, 0, 127),
-        velocity: 0,
-        channel: clampMidiValue(event.channel, 0, 15),
-      });
-    });
-    timeline.sort((a, b) => {
-      if (a.tick !== b.tick) return a.tick - b.tick;
-      if (a.type !== b.type) return a.type === 'off' ? -1 : 1;
-      return a.midi - b.midi;
-    });
-    let previousTick = 0;
-    timeline.forEach((event) => {
-      const delta = Math.max(0, event.tick - previousTick);
-      trackData.push(...encodeVarLen(delta));
-      if (event.type === 'on') {
-        trackData.push(0x90 | event.channel, event.midi, event.velocity);
-      } else {
-        trackData.push(0x80 | event.channel, event.midi, 0x00);
-      }
-      previousTick = event.tick;
-    });
-    trackData.push(0x00, 0xff, 0x2f, 0x00);
-    const header: number[] = [
-      0x4d,
-      0x54,
-      0x68,
-      0x64,
-      0x00,
-      0x00,
-      0x00,
-      0x06,
-      0x00,
-      0x00,
-      0x00,
-      0x01,
-      (ticksPerQuarter >> 8) & 0xff,
-      ticksPerQuarter & 0xff,
-    ];
-    const trackHeader: number[] = [
-      0x4d,
-      0x54,
-      0x72,
-      0x6b,
-      (trackData.length >> 24) & 0xff,
-      (trackData.length >> 16) & 0xff,
-      (trackData.length >> 8) & 0xff,
-      trackData.length & 0xff,
-    ];
-    return new Uint8Array([...header, ...trackHeader, ...trackData]);
-  };
-  const downloadBytes = (bytes: Uint8Array, fileName: string) => {
-    const blob = new Blob([bytes], { type: 'audio/midi' });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = fileName;
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 2000);
-  };
-  const handleDownloadDrumsMidi = () => {
-    const ticksPerSixteenth = 120;
-    const drumPitchBySound: Record<string, number> = {
-      dum: 36,
-      tak: 38,
-      ka: 42,
-      slap: 39,
-    };
-    const events: MidiNoteEvent[] = [];
-    let tickCursor = 0;
-    parsedRhythm.measures.forEach((measure) => {
-      measure.notes.forEach((note) => {
-        const sound = note.sound;
-        const pitch = drumPitchBySound[sound];
-        const durationTicks = Math.max(
-          ticksPerSixteenth,
-          Math.round(note.durationInSixteenths * ticksPerSixteenth)
-        );
-        if (pitch !== undefined) {
-          events.push({
-            midi: pitch,
-            startTick: tickCursor,
-            durationTicks: Math.max(30, Math.round(durationTicks * 0.8)),
-            velocity: 100,
-            channel: 9,
-          });
-        }
-        tickCursor += durationTicks;
-      });
-    });
-    if (events.length === 0) return;
-    downloadBytes(buildSingleTrackMidi(events, bpm), 'words-drums.mid');
-  };
-  const handleDownloadPianoMidi = () => {
-    const ticksPerQuarter = 480;
-    const events: MidiNoteEvent[] = [];
-    let tickCursor = 0;
-    parsedRhythm.measures.forEach((measure, measureIndex) => {
-      const measureTicks = Math.max(
-        ticksPerQuarter,
-        measure.notes.reduce(
-          (sum, note) => sum + note.durationInSixteenths * 120,
-          0
-        )
-      );
-      const chordToken = chordLabelsByMeasure.get(measureIndex) ?? songKey;
-      const parsed = chordToken.match(CHORD_PARSE_REGEX);
-      if (parsed) {
-        const root = parsed[1] ?? 'C';
-        const suffix = (parsed[2] ?? '').toLowerCase();
-        const qualityBySuffix: Record<string, ChordQuality> = {
-          '': 'major',
-          m: 'minor',
-          dim: 'diminished',
-          aug: 'augmented',
-          sus2: 'sus2',
-          sus4: 'sus4',
-          '7': 'dominant7',
-          maj7: 'major7',
-          m7: 'minor7',
-        };
-        const quality = qualityBySuffix[suffix];
-        if (quality) {
-          const chord: TheoryChord = {
-            root: `${root[0]?.toUpperCase() ?? 'C'}${root.slice(1)}`,
-            quality,
-            inversion: 0,
-            octave: 4,
-          };
-          const treble = generateVoicing(
-            chord,
-            {
-              useInversions: false,
-              useOpenVoicings: true,
-              randomizeOctaves: false,
-            },
-            'treble'
-          );
-          const bass = generateVoicing(
-            chord,
-            {
-              useInversions: false,
-              useOpenVoicings: false,
-              randomizeOctaves: false,
-            },
-            'bass'
-          );
-          const sectionStyle = chordStyleByMeasure.get(measureIndex) ?? 'simple';
-          const patternHits = getChordHitsForStyle(sectionStyle, timeSignature);
-          const secPerBeatEvents = patternHits.length > 0 ? patternHits : [{
-            offsetBeats: 0,
-            source: 'both' as const,
-            durationBeats:
-              timeSignature.numerator * (4 / timeSignature.denominator),
-          }];
-          secPerBeatEvents.forEach((hit) => {
-            const hitPitches =
-              hit.source === 'bass'
-                ? bass.slice(0, 1)
-                : hit.source === 'treble'
-                  ? treble.slice(0, 4)
-                  : [...new Set([...bass.slice(0, 1), ...treble.slice(0, 4)])];
-            const startTick = tickCursor + Math.round(hit.offsetBeats * ticksPerQuarter);
-            const durationTicks = Math.max(
-              60,
-              Math.round(hit.durationBeats * ticksPerQuarter * 0.92)
-            );
-            [...new Set(hitPitches)].forEach((midi) => {
-              events.push({
-                midi,
-                startTick,
-                durationTicks,
-                velocity: 84,
-                channel: 0,
-              });
-            });
-          });
-        }
-      }
-      tickCursor += measureTicks;
-    });
-    if (events.length === 0) return;
-    downloadBytes(buildSingleTrackMidi(events, bpm), 'words-piano.mid');
-  };
 
   return (
     <div className="words-page">
@@ -4076,24 +3757,21 @@ const App: React.FC = () => {
                   type="button"
                   className="words-button words-export-option"
                   onClick={() => {
-                    handleDownloadPianoMidi();
+                    setSharedExportOpen(true);
                     setExportMenuOpen(false);
                   }}
                 >
-                  Download piano MIDI
-                </button>
-                <button
-                  type="button"
-                  className="words-button words-export-option"
-                  onClick={() => {
-                    handleDownloadDrumsMidi();
-                    setExportMenuOpen(false);
-                  }}
-                >
-                  Download drums MIDI
+                  Export audio / MIDI…
                 </button>
               </div>
             </Popover>
+            <SharedExportPopover
+              open={sharedExportOpen}
+              anchorEl={exportButtonRef.current}
+              onClose={() => setSharedExportOpen(false)}
+              adapter={exportAdapter}
+              persistKey="words"
+            />
           </div>
           <div className="words-notation-sections">
             {notationSectionBlocks.map((block) => (

@@ -55,7 +55,21 @@ const TYPE_LABELS: Record<ExerciseType, string> = { scale: 'Scale', pentascale: 
 
 const MAX_CHORD_DISPLAY = 6;
 
-type InlinePopover = 'key' | 'quality' | 'chord-style' | 'chord-template' | null;
+type InlinePopover = 'key' | 'quality' | 'chord-style' | 'voicing' | 'chord-template' | null;
+const VOICING_OPTIONS: Array<{ value: ChordVoicingStyle; label: string }> = [
+  { value: 'root', label: 'Root Position' },
+  { value: 'inv1', label: '1st Inversion' },
+  { value: 'inv2', label: '2nd Inversion' },
+  { value: 'open', label: 'Open Voicing' },
+  { value: 'voice-leading', label: 'Voice Leading' },
+];
+const VOICING_LABELS: Record<ChordVoicingStyle, string> = {
+  root: 'Root',
+  inv1: '1st Inv',
+  inv2: '2nd Inv',
+  open: 'Open',
+  'voice-leading': 'Voice Lead',
+};
 
 interface ExerciseMeta {
   type: ExerciseType;
@@ -265,12 +279,12 @@ const CurrentlyPracticing: React.FC<CurrentlyPracticingProps> = ({ onLoadExercis
     if (m.type === 'chromatic') {
       const note = FLAT_TO_SHARP[m.key] ?? m.key;
       const s = generateChromaticScore(note, m.direction, m.octaves, m.subdivision);
-      if (s) { loadScore(s); dispatch({ type: 'SET_IS_EXERCISE', isExercise: true }); }
+      if (s) { loadScore(s, { recordHistory: true }); dispatch({ type: 'SET_IS_EXERCISE', isExercise: true }); }
     } else {
       const validKeys = m.quality === 'major' ? MAJOR_KEYS : MINOR_KEYS;
       const k = (validKeys as readonly string[]).includes(m.key) ? m.key : (ENHARMONIC_MAP[m.key] as Key) ?? m.key;
       const s = generateExerciseScore(m.quality, m.type, k, m.direction, m.octaves, m.subdivision);
-      if (s) { loadScore(s); dispatch({ type: 'SET_IS_EXERCISE', isExercise: true }); }
+      if (s) { loadScore(s, { recordHistory: true }); dispatch({ type: 'SET_IS_EXERCISE', isExercise: true }); }
     }
     setPopover(null);
   }, [exerciseMeta, loadScore, dispatch]);
@@ -280,6 +294,7 @@ const CurrentlyPracticing: React.FC<CurrentlyPracticingProps> = ({ onLoadExercis
       key: Key;
       styleId: ChordStyleId;
       progressionInput: string;
+      voicingStyle: ChordVoicingStyle;
     }>) => {
       if (!score || !chordExerciseMeta) return;
       const baseInput =
@@ -308,20 +323,28 @@ const CurrentlyPracticing: React.FC<CurrentlyPracticingProps> = ({ onLoadExercis
           )
       );
       const styleId = overrides.styleId ?? (chordExerciseMeta.styleId as ChordStyleId) ?? 'simple';
+      const voicingStyle =
+        overrides.voicingStyle ??
+        ((chordExerciseMeta.voicingStyle as ChordVoicingStyle) ?? 'root');
       const nextKey = parsed.inferredKey ?? baseKey;
       const nextTempo = score.tempo;
+      const progressionLabel =
+        parsed.romanNumeralDisplay.length > 0
+          ? parsed.romanNumeralDisplay.join('–')
+          : parsed.romanNumerals.join('–') || 'Custom progression';
       const nextScore = generateChordProgressionScore({
         progression: parsed.romanNumerals as RomanNumeral[],
-        progressionName: presetMatch?.name ?? chordExerciseMeta.progressionName ?? 'Custom progression',
+        chordSymbols: parsed.chordSymbols,
+        progressionName: presetMatch?.name ?? progressionLabel ?? chordExerciseMeta.progressionName ?? 'Custom progression',
         progressionInput: baseInput,
         key: nextKey,
-        voicingStyle: (chordExerciseMeta.voicingStyle as ChordVoicingStyle) ?? 'root',
+        voicingStyle,
         measuresPerChord: ((chordExerciseMeta.measuresPerChord as 1 | 2) ?? 1),
         timeSignature: { numerator: 4, denominator: 4 },
         styleId,
       });
       nextScore.tempo = nextTempo;
-      loadScore(nextScore);
+      loadScore(nextScore, { recordHistory: true });
       dispatch({ type: 'SET_IS_EXERCISE', isExercise: true });
       setChordTemplateError('');
       setChordTemplateWarning('');
@@ -395,6 +418,7 @@ const CurrentlyPracticing: React.FC<CurrentlyPracticingProps> = ({ onLoadExercis
   const isTonal = meta && meta.type !== 'chromatic';
   const keyPopoverId = 'np-key-popover';
   const chordStylePopoverId = 'np-chord-style-popover';
+  const voicingPopoverId = 'np-voicing-popover';
   const chordTemplatePopoverId = 'np-chord-template-popover';
 
   return (
@@ -437,6 +461,19 @@ const CurrentlyPracticing: React.FC<CurrentlyPracticingProps> = ({ onLoadExercis
               </button>
               <button
                 className="np-tag np-tag-interactive"
+                onClick={e => openPopover('voicing', e)}
+                aria-haspopup="dialog"
+                aria-expanded={popover === 'voicing'}
+                aria-controls={popover === 'voicing' ? voicingPopoverId : undefined}
+                onMouseEnter={e => showTip(e, 'Change voicing')}
+                onMouseLeave={hideTip}
+              >
+                {VOICING_LABELS[
+                  ((chordExerciseMeta.voicingStyle as ChordVoicingStyle) ?? 'root')
+                ]}
+              </button>
+              <button
+                className="np-tag np-tag-interactive"
                 onClick={e => openPopover('chord-template', e)}
                 aria-haspopup="dialog"
                 aria-expanded={popover === 'chord-template'}
@@ -450,7 +487,16 @@ const CurrentlyPracticing: React.FC<CurrentlyPracticingProps> = ({ onLoadExercis
                 }
                 onMouseLeave={hideTip}
               >
-                {chordExerciseMeta.progressionName}
+                {chordExerciseMeta.progressionName === 'Custom progression'
+                  ? (
+                    parseProgressionText(
+                      chordExerciseMeta.progressionInput ??
+                        chordExerciseMeta.progressionNumerals.join('–'),
+                      scoreInfo.key as Key
+                    ).romanNumeralDisplay.join('–') ||
+                    chordExerciseMeta.progressionNumerals.join('–')
+                  )
+                  : chordExerciseMeta.progressionName}
               </button>
             </>
           ) : isExercise && meta ? (
@@ -581,6 +627,34 @@ const CurrentlyPracticing: React.FC<CurrentlyPracticingProps> = ({ onLoadExercis
               }
               onSelectStyle={(styleId) => reloadChordExercise({ styleId })}
             />
+          </div>
+        ) : null}
+      </ChipPopover>
+
+      <ChipPopover
+        id={voicingPopoverId}
+        anchor={popoverAnchor}
+        open={popover === 'voicing'}
+        onClose={() => setPopover(null)}
+      >
+        {chordExerciseMeta ? (
+          <div className="ep-group" style={{ marginBottom: 0, minWidth: 260 }}>
+            <label className="ep-group-label">Voicing</label>
+            <div className="np-pop-keys">
+              {VOICING_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  className={`np-pop-key ${
+                    (((chordExerciseMeta.voicingStyle as ChordVoicingStyle) ?? 'root') === option.value)
+                      ? 'active'
+                      : ''
+                  }`}
+                  onClick={() => reloadChordExercise({ voicingStyle: option.value })}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
           </div>
         ) : null}
       </ChipPopover>

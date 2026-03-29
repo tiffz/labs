@@ -49,17 +49,32 @@ function pitchClassDistance(a: number, b: number): number {
   return Math.min(diff, 12 - diff);
 }
 
-function pitchClassMatch(played: number[], expectedPitches: number[]): boolean {
+function pitchClassMatchWithTolerance(
+  played: number[],
+  expectedPitches: number[],
+  tolerance: number,
+): boolean {
   return expectedPitches.length > 0 && expectedPitches.every(ep =>
-    played.some(p => pitchClassDistance(p, ep) <= 1)
+    played.some(p => pitchClassDistance(p, ep) <= tolerance)
   );
+}
+
+function shouldAllowPitchClassMatch(
+  expected: ExpectedNote,
+  useMic: boolean,
+  allowChordPracticeOctaveFlex: boolean,
+): boolean {
+  // For hand-note grading, allow octave-free pitch-class matching.
+  // Chord-symbol grading remains gated by practice-chords mode.
+  if (expected.hand === 'left' || expected.hand === 'right') return true;
+  return useMic || allowChordPracticeOctaveFlex;
 }
 
 function deriveOctaveOffset(played: number[], expectedPitches: number[]): number | null {
   const deltas: number[] = [];
   for (const expected of expectedPitches) {
     for (const actual of played) {
-      if (pitchClassDistance(actual, expected) <= 1) {
+      if (pitchClassDistance(actual, expected) === 0) {
         deltas.push(actual - expected);
       }
     }
@@ -115,11 +130,12 @@ function isPitchNearExpected(
   midi: number,
   expectedPitches: number[],
   allowPitchClass: boolean,
+  useMic: boolean,
 ): boolean {
   return expectedPitches.some(
     (expectedPitch) =>
       Math.abs(midi - expectedPitch) <= PROXIMITY_SEMITONES ||
-      (allowPitchClass && pitchClassDistance(midi, expectedPitch) <= 1),
+      (allowPitchClass && pitchClassDistance(midi, expectedPitch) <= (useMic ? 1 : 0)),
   );
 }
 
@@ -152,6 +168,7 @@ function assignPlayedToExpected(
   midiTimes: ReadonlyMap<number, number>,
   beatDurationMs: number,
   allowPitchClassForHands = false,
+  useMic = false,
 ): Set<string> {
   const now = performance.now();
   const recentPlayed = played.filter(p => {
@@ -168,10 +185,29 @@ function assignPlayedToExpected(
       readyIds.add(exp.noteId);
       continue;
     }
-    const exactAll = exp.pitches.every(p => recentPlayed.includes(p) && !claimed.has(p));
+    const exactAll = exp.pitches.every((expectedPitch) =>
+      recentPlayed.some(
+        (playedPitch) =>
+          !claimed.has(playedPitch) &&
+          (
+            playedPitch === expectedPitch ||
+            (allowPitchClassForHands && pitchClassDistance(playedPitch, expectedPitch) === 0)
+          )
+      )
+    );
     if (exactAll) {
       readyIds.add(exp.noteId);
-      exp.pitches.forEach(p => claimed.add(p));
+      exp.pitches.forEach((expectedPitch) => {
+        const claimedPitch = recentPlayed.find(
+          (playedPitch) =>
+            !claimed.has(playedPitch) &&
+            (
+              playedPitch === expectedPitch ||
+              (allowPitchClassForHands && pitchClassDistance(playedPitch, expectedPitch) === 0)
+            )
+        );
+        if (claimedPitch !== undefined) claimed.add(claimedPitch);
+      });
     }
   }
 
@@ -180,11 +216,13 @@ function assignPlayedToExpected(
     if (readyIds.has(exp.noteId)) continue;
     if (exp.chordSymbol) continue;
     const available = recentPlayed.filter(p => !claimed.has(p));
+    const allowPitchClass = allowPitchClassForHands || exp.hand === 'left' || exp.hand === 'right';
     const allClose = exp.pitches.every(ep =>
       available.some(
         p =>
-          Math.abs(p - ep) <= PROXIMITY_SEMITONES ||
-          (allowPitchClassForHands && pitchClassDistance(p, ep) <= 1),
+          (useMic && Math.abs(p - ep) <= PROXIMITY_SEMITONES) ||
+          (allowPitchClass && pitchClassDistance(p, ep) === 0) ||
+          p === ep,
       ),
     );
     if (allClose) {
@@ -192,8 +230,9 @@ function assignPlayedToExpected(
       for (const ep of exp.pitches) {
         const match = available.find(
           p =>
-            Math.abs(p - ep) <= PROXIMITY_SEMITONES ||
-            (allowPitchClassForHands && pitchClassDistance(p, ep) <= 1),
+            (useMic && Math.abs(p - ep) <= PROXIMITY_SEMITONES) ||
+            (allowPitchClass && pitchClassDistance(p, ep) === 0) ||
+            p === ep,
         );
         if (match !== undefined) claimed.add(match);
       }
@@ -251,8 +290,8 @@ const PracticeMode: React.FC = () => {
     if (expected.chordSymbol) return matchesChord(played, expected.chordSymbol);
     if (expected.pitches.length === 0) return false;
     if (expected.pitches.every(p => played.includes(p))) return true;
-    if (useMic || allowChordPracticeOctaveFlex) {
-      return pitchClassMatch(played, expected.pitches);
+    if (shouldAllowPitchClassMatch(expected, useMic, allowChordPracticeOctaveFlex)) {
+      return pitchClassMatchWithTolerance(played, expected.pitches, useMic ? 1 : 0);
     }
     return false;
   }, [useMic, allowChordPracticeOctaveFlex]);
@@ -374,8 +413,11 @@ const PracticeMode: React.FC = () => {
     }
 
     const expectedTime = getNoteExpectedTime(expected.noteId) ?? performance.now();
-    const allowPitchClassForExpected =
-      useMic || (allowChordPracticeOctaveFlex && expected.hand !== 'chords');
+    const allowPitchClassForExpected = shouldAllowPitchClassMatch(
+      expected,
+      useMic,
+      allowChordPracticeOctaveFlex
+    );
     const scopedPlayed = getRelevantPlayedNotesForExpected(
       played,
       expected,
@@ -393,7 +435,14 @@ const PracticeMode: React.FC = () => {
       if (
         !expected.chordSymbol &&
         !hasExactPitchMatch(scopedPlayed, anchoredExpectedPitches) &&
-        !(allowPitchClassForExpected && pitchClassMatch(scopedPlayed, anchoredExpectedPitches))
+        !(
+          allowPitchClassForExpected &&
+          pitchClassMatchWithTolerance(
+            scopedPlayed,
+            anchoredExpectedPitches,
+            useMic ? 1 : 0
+          )
+        )
       ) {
         return false;
       }
@@ -404,7 +453,14 @@ const PracticeMode: React.FC = () => {
       !hasExactPitchMatch(scopedPlayed, anchoredExpectedPitches) &&
       !isAttemptingNote(scopedPlayed, anchoredExpectedPitches)
     ) {
-      if (!allowPitchClassForExpected || !pitchClassMatch(scopedPlayed, anchoredExpectedPitches)) {
+      if (
+        !allowPitchClassForExpected ||
+        !pitchClassMatchWithTolerance(
+          scopedPlayed,
+          anchoredExpectedPitches,
+          useMic ? 1 : 0
+        )
+      ) {
         return false;
       }
     }
@@ -420,7 +476,7 @@ const PracticeMode: React.FC = () => {
     let matchingPitches = anchoredExpectedPitches.filter((p) => scopedPlayed.includes(p));
     if (matchingPitches.length === 0 && allowPitchClassForExpected) {
       matchingPitches = anchoredExpectedPitches.filter(ep =>
-        scopedPlayed.some(p => pitchClassDistance(p, ep) <= 1)
+        scopedPlayed.some(p => pitchClassDistance(p, ep) <= (useMic ? 1 : 0))
       );
     }
 
@@ -432,7 +488,12 @@ const PracticeMode: React.FC = () => {
             .filter((midi) =>
               expected.chordSymbol
                 ? true
-                : isPitchNearExpected(midi, anchoredExpectedPitches, allowPitchClassForExpected),
+                : isPitchNearExpected(
+                  midi,
+                  anchoredExpectedPitches,
+                  allowPitchClassForExpected,
+                  useMic
+                ),
             )
             .map((midi) => midiTimes.get(midi))
             .filter((t): t is number => t !== undefined)
@@ -495,12 +556,14 @@ const PracticeMode: React.FC = () => {
     const beatDurationMs = 60000 / (state.tempo || 80);
 
     const allExpected = [...expectedByPartRef.current.values()];
+    const allowPitchClassForHands = !useMic;
     const readyIds = assignPlayedToExpected(
       played,
       allExpected,
       midiTimes,
       beatDurationMs,
-      allowChordPracticeOctaveFlex
+      allowPitchClassForHands,
+      useMic
     );
 
     for (const [, expected] of expectedByPartRef.current) {

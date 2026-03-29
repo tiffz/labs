@@ -12,6 +12,7 @@
     "KeyInput": "key-input",
     "ChordProgressionInput": "chord-progression-input",
     "ChordStyleInput": "chord-style-input",
+    "SharedExportPopover": "shared-export-popover",
     "DrumNotationMini": "drum-notation-mini",
     "AppTooltip": "app-tooltip",
     "MetronomeToggleButton": "metronome-toggle",

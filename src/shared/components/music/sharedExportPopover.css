@@ -1,0 +1,189 @@
+.shared-export-popover {
+  border-radius: 12px !important;
+  border: 1px solid var(--theme-border, #d1d5db);
+  box-shadow: var(--theme-shadow-lg, 0 10px 30px rgba(0, 0, 0, 0.18));
+  background: var(--theme-surface-elevated, #ffffff);
+  color: var(--theme-text, #111827);
+}
+
+.shared-export-panel {
+  width: min(500px, calc(100vw - 20px));
+  max-height: min(78vh, 680px);
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--theme-text, #111827);
+  background: var(--theme-surface-elevated, #ffffff);
+}
+
+.shared-export-title {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.shared-export-subtitle {
+  font-size: 11px;
+  color: var(--theme-text-secondary, #6b7280);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.shared-export-format-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.shared-export-format-row {
+  border: 1px solid var(--theme-border, #d1d5db);
+  border-radius: 8px;
+  padding: 4px 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  min-height: 34px;
+  background: color-mix(
+    in srgb,
+    var(--theme-surface, #ffffff) 96%,
+    transparent
+  );
+}
+
+.shared-export-format-row:hover:not(.disabled) {
+  border-color: var(--theme-primary, #7c3aed);
+  background: color-mix(
+    in srgb,
+    var(--theme-primary, #7c3aed) 8%,
+    var(--theme-surface, #ffffff)
+  );
+}
+
+.shared-export-format-row:has(input[type='radio']:checked):not(.disabled) {
+  border-color: var(--theme-primary, #7c3aed);
+  background: color-mix(
+    in srgb,
+    var(--theme-primary, #7c3aed) 10%,
+    var(--theme-surface, #ffffff)
+  );
+}
+
+.shared-export-format-row input[type='radio'] {
+  margin: 0;
+  accent-color: var(--theme-primary, #7c3aed);
+}
+
+.shared-export-format-row.disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.shared-export-format-label {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+@media (max-width: 640px) {
+  .shared-export-format-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.shared-export-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.shared-export-row-inline {
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.shared-export-row-inline input,
+.shared-export-row-inline select {
+  width: 110px;
+  flex: 0 0 auto;
+}
+
+.shared-export-row label {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.shared-export-row input,
+.shared-export-row select {
+  width: 118px;
+  border: 1px solid var(--theme-border, #d1d5db);
+  border-radius: 7px;
+  padding: 4px 6px;
+  background: var(--theme-surface, #ffffff);
+  color: var(--theme-text, #111827);
+}
+
+.shared-export-stems {
+  border: 1px solid var(--theme-border, #e5e7eb);
+  border-radius: 9px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: color-mix(
+    in srgb,
+    var(--theme-surface, #ffffff) 94%,
+    transparent
+  );
+}
+
+.shared-export-stem-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.shared-export-preview {
+  font-size: 12px;
+  background: color-mix(
+    in srgb,
+    var(--theme-primary, #7c3aed) 10%,
+    var(--theme-surface, #ffffff)
+  );
+  border-radius: 9px;
+  padding: 6px 8px;
+}
+
+.shared-export-error {
+  color: #b91c1c;
+  background: color-mix(in srgb, #ef4444 12%, var(--theme-surface, #ffffff));
+  border: 1px solid
+    color-mix(in srgb, #ef4444 28%, var(--theme-border, #d1d5db));
+  border-radius: 8px;
+  font-size: 11px;
+  padding: 6px 8px;
+}
+
+.shared-export-action {
+  border: 0;
+  border-radius: 9px;
+  padding: 8px 10px;
+  background: var(--theme-primary, #7c3aed);
+  color: white;
+  cursor: pointer;
+  font-weight: 650;
+  font-size: 13px;
+}
+
+.shared-export-action:hover:not(:disabled) {
+  background: var(--theme-primary-hover, #6d28d9);
+}
+
+.shared-export-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

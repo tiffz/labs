@@ -63,4 +63,20 @@ describe('chord progression text parsing', () => {
     expect(parsed.inferredKey).toBe('Db');
     expect(parsed.resolvedDisplay).toBe('Db–Ab–Bbm–Gb');
   });
+
+  it('supports sus shorthand and keeps Roman suffix display', () => {
+    const parsed = parseProgressionText('C-G-F-Csus', 'C');
+    expect(parsed.isValid).toBe(true);
+    expect(parsed.romanNumerals).toEqual(['I', 'V', 'IV', 'I']);
+    expect(parsed.romanNumeralDisplay).toEqual(['I', 'V', 'IV', 'Isus4']);
+    expect(parsed.chordSymbols).toEqual(['C', 'G', 'F', 'Csus4']);
+  });
+
+  it('supports slash chords and maps slash bass to degree display', () => {
+    const parsed = parseProgressionText('C/E-G/B-Am/C', 'C');
+    expect(parsed.isValid).toBe(true);
+    expect(parsed.romanNumerals).toEqual(['I', 'V', 'vi']);
+    expect(parsed.romanNumeralDisplay).toEqual(['I/3', 'V/7', 'vi/1']);
+    expect(parsed.chordSymbols).toEqual(['C/E', 'G/B', 'Am/C']);
+  });
 });

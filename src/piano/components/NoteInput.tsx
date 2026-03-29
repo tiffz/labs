@@ -2,6 +2,8 @@ import React, { useEffect, useCallback, useState, useRef, useMemo } from 'react'
 import { usePiano } from '../store';
 import { scoreToAbc, abcToScore } from '../utils/abcNotation';
 import type { PianoScore } from '../types';
+import SharedExportPopover from '../../shared/components/music/SharedExportPopover';
+import { createPianoExportAdapter } from '../utils/exportAdapter';
 
 interface NoteInputProps {
   onImportClick?: () => void;
@@ -38,9 +40,11 @@ const NoteInput: React.FC<NoteInputProps> = ({ onImportClick, onJumpToSelection 
   const [sectionsMenuOpen, setSectionsMenuOpen] = useState(false);
   const [saveFeedback, setSaveFeedback] = useState<'saved' | 'exists' | null>(null);
   const [saveToastStyle, setSaveToastStyle] = useState<React.CSSProperties | undefined>(undefined);
+  const [exportOpen, setExportOpen] = useState(false);
   const userEditTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sectionsMenuRef = useRef<HTMLDivElement | null>(null);
   const saveSectionButtonRef = useRef<HTMLButtonElement | null>(null);
+  const exportButtonRef = useRef<HTMLButtonElement | null>(null);
 
   const currentAbcFromScore = useMemo(() => {
     if (!state.score) return '';
@@ -148,6 +152,9 @@ const NoteInput: React.FC<NoteInputProps> = ({ onImportClick, onJumpToSelection 
   const sectionScopedById = /(?:-section-\d+)+$/.test(state.score?.id ?? '');
   const sectionScopedByTitle = Boolean(getBaseTitleFromSectionTitle(state.score?.title));
   const canReturnToFullScore = Boolean(activeSection || state.fullScore || sectionScopedById || sectionScopedByTitle);
+  const exportAdapter = useMemo(() => (
+    state.score ? createPianoExportAdapter(state.score) : null
+  ), [state.score]);
 
   const saveSelectionAsSection = useCallback(() => {
     if (!state.selectedMeasureRange) return;
@@ -257,48 +264,65 @@ const NoteInput: React.FC<NoteInputProps> = ({ onImportClick, onJumpToSelection 
       <div className="input-toolbar">
         {!isEditing ? (
           <button
-            className="btn btn-small"
+            className="btn btn-small ni-icon-btn"
             onClick={handleEdit}
             title="Edit notes"
+            aria-label="Edit notes"
           >
             <span className="material-symbols-outlined" style={{ fontSize: 18 }}>edit</span>
-            Edit
           </button>
         ) : (
           <>
-            <button className="btn btn-small btn-primary" onClick={handleSave} title="Save changes">
+            <button className="btn btn-small btn-primary ni-icon-btn" onClick={handleSave} title="Save changes" aria-label="Save changes">
               <span className="material-symbols-outlined" style={{ fontSize: 18 }}>check</span>
-              Save
             </button>
-            <button className="btn btn-small" onClick={handleCancel} title="Discard changes">
+            <button className="btn btn-small ni-icon-btn" onClick={handleCancel} title="Discard changes" aria-label="Discard changes">
               <span className="material-symbols-outlined" style={{ fontSize: 18 }}>close</span>
-              Cancel
             </button>
           </>
         )}
 
         {onImportClick && (
           <button
-            className="btn btn-small"
+            className="btn btn-small ni-icon-btn"
             onClick={onImportClick}
             title="Import a music file (MusicXML, MIDI, MuseScore)"
+            aria-label="Import file"
           >
             <span className="material-symbols-outlined" style={{ fontSize: 18 }}>upload_file</span>
-            Import
           </button>
         )}
 
+        <button
+          ref={exportButtonRef}
+          className="btn btn-small ni-icon-btn"
+          onClick={() => setExportOpen(true)}
+          title="Export"
+          aria-label="Export score"
+          disabled={!state.score}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: 18 }}>download</span>
+        </button>
+        {exportAdapter ? (
+          <SharedExportPopover
+            open={exportOpen}
+            anchorEl={exportButtonRef.current}
+            onClose={() => setExportOpen(false)}
+            adapter={exportAdapter}
+            persistKey="piano"
+          />
+        ) : null}
+
         <div className="np-sections-menu-wrap" ref={sectionsMenuRef}>
           <button
-            className={`btn btn-small ${sectionsMenuOpen ? 'active' : ''}`}
+            className={`btn btn-small ni-icon-btn ${sectionsMenuOpen ? 'active' : ''}`}
             onClick={() => setSectionsMenuOpen((prev) => !prev)}
             title="Open saved sections"
+            aria-label="Open saved sections"
             aria-haspopup="menu"
             aria-expanded={sectionsMenuOpen}
           >
             <span className="material-symbols-outlined" style={{ fontSize: 18 }}>bookmarks</span>
-            Sections
-            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>arrow_drop_down</span>
           </button>
           {sectionsMenuOpen ? (
             <div className="np-sections-menu" role="menu">

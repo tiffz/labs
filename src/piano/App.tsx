@@ -166,6 +166,13 @@ function PianoApp() {
     return set.size > 0 ? set : undefined;
   }, [state.showRightHand, state.showLeftHand]);
 
+  const defaultExerciseSection = useMemo<'scales' | 'progressions'>(() => {
+    if (state.isExerciseScore && state.score?.exerciseConfig?.kind === 'chord-progression') {
+      return 'progressions';
+    }
+    return 'scales';
+  }, [state.isExerciseScore, state.score?.exerciseConfig?.kind]);
+
   const greyedOutHands = useMemo(() => {
     const set = new Set<string>();
     if (state.showRightHand && !state.practiceRightHand) set.add('right');
@@ -208,7 +215,7 @@ function PianoApp() {
 
   const openExerciseFlow = useCallback((event?: ReactMouseEvent<HTMLElement>) => {
     if (isMobileViewport) {
-      setExercisePickerInitialSection('scales');
+      setExercisePickerInitialSection(defaultExerciseSection);
       setShowExercisePicker(true);
       return;
     }
@@ -216,7 +223,7 @@ function PianoApp() {
     if (event?.currentTarget) {
       setExerciseAnchorEl(event.currentTarget);
     }
-  }, [isMobileViewport]);
+  }, [defaultExerciseSection, isMobileViewport]);
 
   const openSongFlow = useCallback((event?: ReactMouseEvent<HTMLElement>) => {
     if (isMobileViewport) {
@@ -271,7 +278,7 @@ function PianoApp() {
           mode="inline"
           onClose={() => setExerciseAnchorEl(null)}
           allowedSections={['scales', 'progressions']}
-          initialSection="scales"
+          initialSection={defaultExerciseSection}
           title="Load Exercise"
         />
       </Popover>
