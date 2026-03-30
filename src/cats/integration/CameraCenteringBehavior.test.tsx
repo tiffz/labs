@@ -31,7 +31,7 @@ describe('Camera Centering Behavior Tests', () => {
     
     catCoordinateSystem.catToScreen = vi.fn((coords: { x: number; y: number; z: number }) => {
       catToScreenCalls.push(coords);
-      return { x: coords.x, y: 400 }; // Simple mock return
+      return { x: coords.x, y: 400, scale: 1 }; // Simple mock return
     });
   });
 

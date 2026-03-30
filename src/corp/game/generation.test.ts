@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { createEmptyMap, generateRooms, carveRooms, connectRooms, seedEntities } from './generation';
 import { MAP_HEIGHT, MAP_WIDTH } from './constants';
+import type { GameState } from './types';
 
 // Minimal fake GameState for seeding
-const makeState = () => ({
+const makeState = (): GameState => ({
   map: createEmptyMap(),
   rooms: [],
   player: { id: 'player', pos: { x: 0, y: 0 }, emoji: '🧑‍💼', name: 'You', productivity: 200, maxProductivity: 200, happiness: 100, reputation: 100, inventory: {}, skills: { proficiency: 0, teamwork: 0 } },

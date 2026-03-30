@@ -6,11 +6,13 @@
 import React, { useEffect, useRef } from 'react';
 import { Renderer, Stave, StaveNote, Voice, Formatter, StaveConnector, BarlineType, Dot, Beam } from 'vexflow';
 import type { ChordProgressionState } from '../types';
+import type { Key } from '../../shared/music/chordTypes';
 import { progressionToChords } from '../utils/chordTheory';
 import { generateVoicing } from '../utils/chordVoicing';
 import { generateStyledChordNotes } from '../utils/chordStyling';
 import { getKeySignature } from '../utils/keySignature';
 import { scrollPlaybackTarget, type PlaybackAutoScrollState } from '../../shared/utils/playbackAutoScroll';
+import { spellPitchClass } from '../../shared/music/theory/pitchClass';
 
 interface ChordScoreRendererProps {
   state: ChordProgressionState;
@@ -22,10 +24,9 @@ interface ChordScoreRendererProps {
 /**
  * Converts MIDI note number to VexFlow pitch string
  */
-function midiToPitch(midiNote: number): string {
-  const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+function midiToPitch(midiNote: number, key: string): string {
   const octave = Math.floor(midiNote / 12) - 1;
-  const noteName = noteNames[midiNote % 12];
+  const noteName = spellPitchClass(midiNote % 12, key as Key);
   return `${noteName}/${octave}`;
 }
 
@@ -68,7 +69,12 @@ function normalizeKeyForVexFlow(key: string): string {
  * Converts chord notes to VexFlow StaveNote
  * Handles rests with consistent positioning (middle line for all rests)
  */
-function notesToStaveNote(notes: number[], duration: string, clef: 'bass' | 'treble'): StaveNote {
+function notesToStaveNote(
+  notes: number[],
+  duration: string,
+  clef: 'bass' | 'treble',
+  key: string
+): StaveNote {
   // Handle rests (empty notes array) - use consistent middle line position
   if (notes.length === 0) {
     // Use middle line (B) for all rests - consistent positioning
@@ -84,7 +90,7 @@ function notesToStaveNote(notes: number[], duration: string, clef: 'bass' | 'tre
     return staveNote;
   }
   
-  const pitches = notes.map(midiToPitch);
+  const pitches = notes.map((midiNote) => midiToPitch(midiNote, key));
   
   // Check if this is a dotted note (duration contains 'd' but not 'r' for rest)
   const isDotted = duration.includes('d') && !duration.includes('r');
@@ -94,6 +100,14 @@ function notesToStaveNote(notes: number[], duration: string, clef: 'bass' | 'tre
     duration: duration,
     clef: clef,
   });
+
+  // Keep stem rendering stable across voicings:
+  // treble stems up, bass stems down (except whole notes/rests).
+  const normalizedDuration = duration.replace('r', '').replace('d', '');
+  const isWholeNote = normalizedDuration === 'w';
+  if (!isWholeNote) {
+    staveNote.setStemDirection(clef === 'treble' ? 1 : -1);
+  }
   
   // Add dot for dotted notes
   if (isDotted) {
@@ -417,7 +431,12 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({
           // Notes are added sequentially - VexFlow calculates tick positions based on cumulative duration
           // So notes starting at the same cumulative duration will align when joinVoices is used
           styledChord.trebleNotes.forEach((trebleGroup, groupIndex) => {
-            const trebleNote = notesToStaveNote(trebleGroup.notes, trebleGroup.duration, 'treble');
+            const trebleNote = notesToStaveNote(
+              trebleGroup.notes,
+              trebleGroup.duration,
+              'treble',
+              state.key
+            );
             // Store note group identifier for later highlight updates
             const noteKey = `${measureIndex}:treble:${groupIndex}`;
             // Set data attribute on the note for later reference (VexFlow will preserve this in SVG)
@@ -430,7 +449,12 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({
           });
           
           styledChord.bassNotes.forEach((bassGroup, groupIndex) => {
-            const bassNote = notesToStaveNote(bassGroup.notes, bassGroup.duration, 'bass');
+            const bassNote = notesToStaveNote(
+              bassGroup.notes,
+              bassGroup.duration,
+              'bass',
+              state.key
+            );
             const noteKey = `${measureIndex}:bass:${groupIndex}`;
             if (activeNoteGroups.has(noteKey)) {
               bassNote.setStyle({ fillStyle: '#ef4444', strokeStyle: '#ef4444' });

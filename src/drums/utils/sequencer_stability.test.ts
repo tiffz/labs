@@ -22,7 +22,7 @@ describe('Sequencer Stability & Round Trip Integrity', () => {
             const parsed = parseRhythm(notation, timeSignature);
             const grid = notationToGrid(notation, timeSignature);
 
-            const roundTrip = gridToNotation(grid, parsed.repeats);
+            const roundTrip = gridToNotation(grid, parsed.repeats ?? []);
 
             // Check Invariant: Input Count == Output Count
             expect(roundTrip).toContain('|x7');
@@ -35,7 +35,7 @@ describe('Sequencer Stability & Round Trip Integrity', () => {
             const parsed = parseRhythm(notation, timeSignature);
             const grid = notationToGrid(notation, timeSignature);
 
-            const roundTrip = gridToNotation(grid, parsed.repeats);
+            const roundTrip = gridToNotation(grid, parsed.repeats ?? []);
 
             expect(roundTrip).toContain(':|x3');
         });
@@ -49,7 +49,7 @@ describe('Sequencer Stability & Round Trip Integrity', () => {
             const parsed = parseRhythm(notation, timeSignature);
 
             // Verify PArser State
-            const sectionRepeat = parsed.repeats.find(r => r.type === 'section');
+            const sectionRepeat = (parsed.repeats ?? []).find(r => r.type === 'section');
             expect(sectionRepeat).toBeDefined();
             expect(sectionRepeat?.repeatCount).toBe(1);
 

@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import type { RhythmDefinition } from '../utils/rhythmRecognition';
 import RhythmInfoCard from './RhythmInfoCard';
 
-const simpleVexFlowNoteMock = vi.fn(() => <div data-testid="mini-notation" />);
+const simpleVexFlowNoteMock = vi.fn((props: unknown) => <div data-testid="mini-notation" {...(props as object)} />);
 
 vi.mock('./SimpleVexFlowNote', () => ({
   default: (props: unknown) => simpleVexFlowNoteMock(props),
@@ -42,10 +42,13 @@ describe('RhythmInfoCard', () => {
       />
     );
 
-    const firstPreviewProps = simpleVexFlowNoteMock.mock.calls[0]?.[0] as {
-      timeSignature?: { numerator: number; denominator: number };
-    };
-    expect(firstPreviewProps.timeSignature).toEqual({ numerator: 8, denominator: 8 });
+    expect(simpleVexFlowNoteMock).toHaveBeenCalled();
+    const firstPreviewProps = simpleVexFlowNoteMock.mock.calls[0]?.[0] as
+      | {
+          timeSignature?: { numerator: number; denominator: number };
+        }
+      | undefined;
+    expect(firstPreviewProps?.timeSignature).toEqual({ numerator: 8, denominator: 8 });
 
     const buttons = screen.getAllByRole('button');
     const twoFourButton = buttons.find((button) =>

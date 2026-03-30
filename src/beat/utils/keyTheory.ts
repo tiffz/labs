@@ -13,7 +13,7 @@ export function areSameKey(
 
 export function normalizeKeySpelling(
   key: string,
-  scale: string,
+  _scale: string,
   contextKey: string
 ): string {
   const sharpToFlat: Record<string, string> = {

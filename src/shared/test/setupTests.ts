@@ -2,18 +2,22 @@ import '@testing-library/jest-dom';
 import { toHaveNoViolations } from 'jest-axe';
 import { afterEach, expect } from 'vitest';
 
-expect.extend(toHaveNoViolations);
+type VitestMatchers = Parameters<typeof expect.extend>[0];
+const axeMatchers: VitestMatchers = {
+  toHaveNoViolations: toHaveNoViolations as never,
+};
+expect.extend(axeMatchers);
 
 // Mock requestAnimationFrame and cancelAnimationFrame for test environment
 let animationFrameId = 0;
 const animationFrameCallbacks = new Map<number, FrameRequestCallback>();
-const animationFrameTimeouts = new Map<number, ReturnType<typeof setTimeout>>();
+const animationFrameTimeouts = new Map<number, number>();
 
 global.requestAnimationFrame = (callback: FrameRequestCallback): number => {
   const id = ++animationFrameId;
   
   // Use setTimeout with minimal delay to simulate animation frame
-  const timeoutId = setTimeout(() => {
+  const timeoutId = window.setTimeout(() => {
     // Only call callback if the frame hasn't been cancelled
     if (animationFrameCallbacks.has(id)) {
       animationFrameCallbacks.delete(id);
@@ -71,17 +75,17 @@ afterEach(() => {
   // This prevents setTimeout leaks from requestAnimationFrame mocks
   try {
     // Get the highest timeout ID to know the range
-    const testTimeoutId = setTimeout(() => {}, 0);
+    const testTimeoutId = window.setTimeout(() => {}, 0);
     // Clear a reasonable range of timeout IDs (up to 1000 should cover most test scenarios)
     // This is safer than clearing all IDs which could interfere with vitest internals
     for (let i = 0; i < Math.min(testTimeoutId, 1000); i++) {
       try {
-        clearTimeout(i);
+        window.clearTimeout(i);
       } catch {
         // Ignore errors for invalid IDs
       }
     }
-    clearTimeout(testTimeoutId);
+    window.clearTimeout(testTimeoutId);
   } catch {
     // Ignore errors during cleanup
   }
@@ -123,7 +127,8 @@ Object.defineProperty(window, 'gtag', {
 // Mock HTMLCanvasElement.getContext to suppress VexFlow errors in tests
 // VexFlow tries to use canvas for text measurement, but JSDOM doesn't support it
 const originalGetContext = HTMLCanvasElement.prototype.getContext;
-HTMLCanvasElement.prototype.getContext = function(
+const mockedGetContext = function (
+  this: HTMLCanvasElement,
   contextId: string,
   ...args: unknown[]
 ): RenderingContext | null {
@@ -178,5 +183,7 @@ HTMLCanvasElement.prototype.getContext = function(
     return mockContext;
   }
   // Fall back to original for other context types
-  return originalGetContext.call(this, contextId as never, ...(args as []));
+  return originalGetContext.call(this, contextId as never, ...(args as [])) as unknown as RenderingContext | null;
 };
+
+HTMLCanvasElement.prototype.getContext = mockedGetContext as unknown as HTMLCanvasElement['getContext'];

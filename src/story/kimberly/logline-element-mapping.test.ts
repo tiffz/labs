@@ -19,6 +19,7 @@ describe('Logline Element Mapping', () => {
         
         for (const elementId of elements) {
           const result = regenerateElement(genre, elementId);
+          expect(result).not.toBeNull();
           
           // The result should be a string, not an object
           expect(typeof result).toBe('string');
@@ -27,7 +28,7 @@ describe('Logline Element Mapping', () => {
           expect(result).not.toMatch(/^\{.*\}$/);
           
           // Make sure it's not empty
-          expect(result.length).toBeGreaterThan(0);
+          expect((result ?? '').length).toBeGreaterThan(0);
         }
       }
     });

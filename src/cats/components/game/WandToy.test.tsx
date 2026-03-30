@@ -20,6 +20,7 @@ describe('WandToy Component (Unified Mouse Tracking)', () => {
     isShaking: false,
     initialPosition: { x: 100, y: 100 },
     mouseState: mockMouseState,
+    onWandClick: vi.fn(),
   };
 
   beforeEach(() => {

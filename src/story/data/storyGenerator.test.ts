@@ -58,6 +58,7 @@ describe('Story Generator', () => {
       bStoryCharacterName: 'Maria Garcia',
       minorCharacterName: 'Robert Lee',
       logline: 'Test logline',
+      loglineElements: {},
       generatedContent: {},
     };
 

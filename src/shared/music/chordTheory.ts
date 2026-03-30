@@ -3,7 +3,7 @@
  */
 
 import type { Chord, ChordQuality, Key, RomanNumeral } from './chordTypes';
-import { NOTE_TO_PITCH_CLASS, SHARP_CHROMATIC } from './theory/pitchClass';
+import { NOTE_TO_PITCH_CLASS, spellPitchClass } from './theory/pitchClass';
 
 export type HarmonicMode = 'major' | 'minor';
 
@@ -50,7 +50,7 @@ export function romanNumeralToChord(
   const scaleIntervals =
     mode === 'major' ? MAJOR_SCALE_INTERVALS : MINOR_SCALE_INTERVALS;
   const rootChromaticIndex = (keyIndex + scaleIntervals[degree]) % 12;
-  const rootNote = SHARP_CHROMATIC[rootChromaticIndex] ?? 'C';
+  const rootNote = spellPitchClass(rootChromaticIndex, key);
 
   return {
     root: rootNote,

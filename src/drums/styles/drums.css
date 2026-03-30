@@ -66,6 +66,7 @@
   }
 
   body {
+    margin: 0;
     /* Font family is set in index.html with fallback metrics */
     overscroll-behavior-y: contain;
     background-color: var(--bg-color);
@@ -79,6 +80,7 @@
 
   /* Prevent initial flash by setting minimum heights on key containers */
   #root {
+    width: 100%;
     min-height: 100vh;
   }
 
@@ -106,7 +108,9 @@
   .app-layout {
     display: flex;
     height: 100vh;
-    overflow: hidden;
+    overflow-x: clip;
+    overflow-y: hidden;
+    width: 100%;
   }
 
   @supports (height: 100dvh) {
@@ -119,6 +123,7 @@
   .main-content {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 0;
     min-width: 0; /* Prevent overflow */
   }

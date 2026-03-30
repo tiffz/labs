@@ -10,14 +10,12 @@ describe('CatStateSystem', () => {
     originalNow = performance.now.bind(performance);
     nowMs = 0;
     // Stub performance.now to be controllable in tests
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (performance as any).now = () => nowMs;
+    Object.defineProperty(performance, 'now', { configurable: true, value: () => nowMs });
   });
 
   afterEach(() => {
     // Restore original performance.now
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (performance as any).now = originalNow;
+    Object.defineProperty(performance, 'now', { configurable: true, value: originalNow });
   });
 
   test('transitions through pounce flow: idle -> pouncePrep -> pouncing -> recover -> idle', () => {

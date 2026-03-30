@@ -43,7 +43,8 @@ describe('BpmInput', () => {
   it('has no basic accessibility violations', async () => {
     const onChange = vi.fn();
     const { container } = render(<BpmInput value={120} onChange={onChange} />);
-    await expect(runA11yAudit(container)).resolves.toHaveNoViolations();
+    const results = await runA11yAudit(container);
+    expect(results.violations).toHaveLength(0);
   });
 
   it('does not emit changes while disabled', () => {

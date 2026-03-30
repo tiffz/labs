@@ -27,7 +27,12 @@ describe('DrumNotationMini', () => {
     });
 
     it('handles empty rhythm gracefully', () => {
-      const rhythm = { measures: [], timeSignature: defaultTimeSignature };
+      const rhythm = {
+        isValid: true,
+        measures: [],
+        timeSignature: defaultTimeSignature,
+        measureMapping: [],
+      };
       const { container } = render(<DrumNotationMini rhythm={rhythm} />);
       // Should render null for empty rhythm
       expect(container.querySelector('.drum-notation-mini')).not.toBeInTheDocument();

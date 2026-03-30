@@ -34,6 +34,10 @@ describe('parsePatternToNotes', () => {
 });
 
 describe('buildNotationFromSelection', () => {
+  const parsedRhythmMeta = {
+    timeSignature: { numerator: 4, denominator: 4 },
+    measureMapping: [{ sourceMeasureIndex: 0, sourceStringIndex: 0 }],
+  };
   // Helper to create a NotePosition for testing
   function makePos(
     measureIndex: number,
@@ -83,6 +87,7 @@ describe('buildNotationFromSelection', () => {
         totalDuration: 16,
       },
     ],
+    ...parsedRhythmMeta,
     error: undefined,
   };
 
@@ -202,6 +207,7 @@ describe('buildNotationFromSelection', () => {
         twoMeasureRhythm.measures[1],
         twoMeasureRhythm.measures[0], // Ghost/repeat
       ],
+      ...parsedRhythmMeta,
       error: undefined,
     };
 
@@ -260,6 +266,7 @@ describe('buildNotationFromSelection', () => {
           repeatMeasures: [1], // measure 1 is a repeat of measure 0
         },
       ],
+      ...parsedRhythmMeta,
       error: undefined,
     };
 
@@ -307,6 +314,7 @@ describe('buildNotationFromSelection', () => {
           repeatMeasures: [1],
         },
       ],
+      ...parsedRhythmMeta,
       error: undefined,
     };
 

@@ -9,7 +9,6 @@ export class RugPlacementService {
   private static readonly RUG_SVG_HEIGHT = 100; // Reduced height for better perspective
   
   // World bounds (wall is at z=0)
-  private static readonly WALL_Z = 0;
   private static readonly WORLD_WIDTH = 1400;
   private static readonly WORLD_DEPTH = 1200;
 

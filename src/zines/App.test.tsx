@@ -37,15 +37,6 @@ beforeEach(() => {
     imageSmoothingQuality: 'high',
   };
   
-  // Canvas mock setup uses prototype patching below
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _mockCanvas = {
-    getContext: vi.fn(() => mockContext),
-    width: 800,
-    height: 600,
-    toDataURL: vi.fn(() => 'data:image/png;base64,test'),
-  };
-  
   Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
     value: vi.fn(() => mockContext),
     writable: true

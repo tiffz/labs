@@ -31,6 +31,7 @@ describe('DownloadDropdown', () => {
       },
     ],
     timeSignature: { numerator: 4, denominator: 4 },
+    measureMapping: [{ sourceMeasureIndex: 0, sourceStringIndex: 0 }],
   };
 
   const mockPlaybackSettings: PlaybackSettings = DEFAULT_SETTINGS;

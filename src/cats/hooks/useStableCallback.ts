@@ -7,8 +7,7 @@ import { useRef, useCallback } from 'react';
  * @param callback The callback function
  * @returns A stable callback reference
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function useStableCallback<T extends (...args: any[]) => any>(callback: T): T {
+export function useStableCallback<T extends (...args: never[]) => unknown>(callback: T): T {
   const callbackRef = useRef(callback);
   
   // Always keep the ref up to date
@@ -23,8 +22,7 @@ export function useStableCallback<T extends (...args: any[]) => any>(callback: T
 /**
  * Creates stable event handlers that won't cause re-renders
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function useStableHandlers<T extends Record<string, (...args: any[]) => any>>(
+export function useStableHandlers<T extends Record<string, (...args: never[]) => unknown>>(
   handlers: T
 ): T {
   const handlersRef = useRef(handlers);
@@ -41,13 +39,15 @@ export function useStableHandlers<T extends Record<string, (...args: any[]) => a
 
   if (keysChanged) {
     keysRef.current = currentKeys;
-    stableHandlersRef.current = currentKeys.reduce((stableHandlers, key) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (stableHandlers as any)[key] = (...args: unknown[]) => {
+    const nextStableHandlers: Partial<{
+      [K in keyof T]: (...args: Parameters<T[K]>) => ReturnType<T[K]>;
+    }> = {};
+    for (const key of currentKeys as Array<keyof T>) {
+      nextStableHandlers[key] = ((...args: Parameters<T[typeof key]>) => {
         return handlersRef.current[key](...args);
-      };
-      return stableHandlers;
-    }, {} as T);
+      }) as (...args: Parameters<T[typeof key]>) => ReturnType<T[typeof key]>;
+    }
+    stableHandlersRef.current = nextStableHandlers as T;
   }
 
   return stableHandlersRef.current;

@@ -8,6 +8,7 @@
  */
 
 import type { StoryDNA } from '../types';
+import type { BuddyLoveElements } from '../kimberly/logline-elements';
 import { genres, themes } from './genres';
 import { k } from '../kimberly';
 
@@ -101,19 +102,20 @@ export function generateStoryDNA(selectedGenre: string, selectedTheme: string): 
   );
   
   const logline = loglineResult.logline;
-  const loglineElements = loglineResult.elements;
+  const loglineElements = loglineResult.elements as unknown as Record<string, string>;
   
   // For Buddy Love, override some fields based on logline elements
   if (genre === 'Buddy Love') {
+    const buddyLoveElements = loglineResult.elements as BuddyLoveElements;
     const heroPossessive = k.his('hero');
     const heroObject = k.him('hero');
-    const completion = loglineElements.completion
+    const completion = buddyLoveElements.completion
       .replace(/{object}/g, heroObject)
       .replace(/{possessive}/g, heroPossessive);
     const bStoryCharacterFromLogline = `${bStoryCharacterName}, who ${completion}`;
     
     // Extract nemesis name from situation (same logic as above)
-    const buddyLoveNemesis = loglineElements.situation;
+    const buddyLoveNemesis = buddyLoveElements.situation;
     let buddyLoveNemesisName = '';
     if (buddyLoveNemesis.includes(',')) {
       buddyLoveNemesisName = buddyLoveNemesis.split(',')[0];
@@ -130,7 +132,7 @@ export function generateStoryDNA(selectedGenre: string, selectedTheme: string): 
       theme,
       hero,
       heroName,
-      flaw: loglineElements.incompleteness, // Use incompleteness as flaw
+      flaw: buddyLoveElements.incompleteness, // Use incompleteness as flaw
       initialSetting,
       act2Setting,
       bStoryCharacter: bStoryCharacterFromLogline,

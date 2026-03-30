@@ -138,6 +138,7 @@ describe('audioExport', () => {
       },
     ],
     timeSignature: { numerator: 4, denominator: 4 },
+    measureMapping: [{ sourceMeasureIndex: 0, sourceStringIndex: 0 }],
   };
 
   describe('calculateRhythmDuration', () => {
@@ -232,7 +233,7 @@ describe('audioExport', () => {
           }
           return data;
         },
-      } as AudioBuffer;
+      } as unknown as AudioBuffer;
 
       const blob = audioBufferToWav(mockBuffer);
 
@@ -254,7 +255,7 @@ describe('audioExport', () => {
           }
           return data;
         },
-      } as AudioBuffer;
+      } as unknown as AudioBuffer;
 
       const blob = await exportAudioBuffer(mockBuffer, 'wav');
 
@@ -274,7 +275,7 @@ describe('audioExport', () => {
           }
           return data;
         },
-      } as AudioBuffer;
+      } as unknown as AudioBuffer;
 
       const blob = await exportAudioBuffer(mockBuffer, 'mp3');
 
@@ -291,6 +292,7 @@ describe('audioExport', () => {
       emphasizeSimpleRhythms: false,
       reverbStrength: 0,
       metronomeVolume: 50,
+      autoScrollDuringPlayback: true,
     };
 
     beforeEach(() => {

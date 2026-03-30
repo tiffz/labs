@@ -10,13 +10,11 @@ describe('JumpImpulseSystem', () => {
   beforeEach(() => {
     originalNow = performance.now.bind(performance);
     nowMs = 0;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (performance as any).now = () => nowMs;
+    Object.defineProperty(performance, 'now', { configurable: true, value: () => nowMs });
   });
 
   afterEach(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (performance as any).now = originalNow;
+    Object.defineProperty(performance, 'now', { configurable: true, value: originalNow });
   });
 
   test('applies upward impulse and lands back on ground', () => {

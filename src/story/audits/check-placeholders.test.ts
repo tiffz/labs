@@ -52,8 +52,11 @@ function checkForPlaceholders(dna: StoryDNA, genre: string): string[] {
   if (hasPlaceholders(dna.nemesis)) {
     issues.push(`[${genre}] Nemesis: ${dna.nemesis}`);
   }
-  if (hasPlaceholders(dna.setting)) {
-    issues.push(`[${genre}] Setting: ${dna.setting}`);
+  if (hasPlaceholders(dna.initialSetting)) {
+    issues.push(`[${genre}] Initial setting: ${dna.initialSetting}`);
+  }
+  if (hasPlaceholders(dna.act2Setting)) {
+    issues.push(`[${genre}] Act 2 setting: ${dna.act2Setting}`);
   }
   
   // Check generated content cache
@@ -76,7 +79,7 @@ describe('Placeholder Leak Detection', () => {
     for (const genre of GENRES) {
       for (let i = 0; i < samplesPerGenre; i++) {
         clearCharacterNames();
-        const dna = generateStoryDNA(genre);
+        const dna = generateStoryDNA(genre, 'Random');
         const issues = checkForPlaceholders(dna, genre);
         allIssues.push(...issues);
       }

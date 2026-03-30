@@ -22,4 +22,10 @@ describe('shared chordTheory', () => {
     expect(ivChord.root).toBe('D');
     expect(iChord.quality).toBe('minor');
   });
+
+  it('spells diatonic roots for flat keys with flats', () => {
+    const progression: RomanNumeral[] = ['I', 'IV', 'V'];
+    const chords = progressionToChords(progression, 'Ab');
+    expect(chords.map((chord) => chord.root)).toEqual(['Ab', 'Db', 'Eb']);
+  });
 });

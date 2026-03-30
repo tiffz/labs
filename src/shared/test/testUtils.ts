@@ -124,11 +124,11 @@ export class MockCleanup {
   /**
    * Create a spy that will be automatically restored
    */
-  spyOn<T, K extends keyof T>(
+  spyOn<T extends Record<string, unknown>>(
     object: T,
-    method: K
+    method: string
   ): ReturnType<typeof vi.spyOn> {
-    const spy = vi.spyOn(object, method);
+    const spy = vi.spyOn(object as never, method as never);
     this.mocks.add(spy);
     return spy;
   }
@@ -160,7 +160,7 @@ export class MockCleanup {
       const [objectName, property] = key.split('.');
       // This is a simplified restore - in practice you'd need more sophisticated tracking
       if (objectName === 'Window' && typeof window !== 'undefined') {
-        (window as Record<string, unknown>)[property] = originalValue;
+        (window as unknown as Record<string, unknown>)[property] = originalValue;
       }
     });
     this.globalMocks.clear();

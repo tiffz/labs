@@ -3,8 +3,13 @@ import { SystemRunner, World } from './ECS';
 export class GameLoop {
   private rafId: number | null = null;
   private lastTs: number | null = null;
+  private world: World;
+  private systems: SystemRunner;
 
-  constructor(private world: World, private systems: SystemRunner) {}
+  constructor(world: World, systems: SystemRunner) {
+    this.world = world;
+    this.systems = systems;
+  }
 
   start() {
     if (this.rafId) return;

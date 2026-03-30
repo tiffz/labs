@@ -1,4 +1,4 @@
-import { test, expect, Page } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 
 // Simple stability checks for the Corporate Ladder app
 // - Page should load and render a frame within a short budget

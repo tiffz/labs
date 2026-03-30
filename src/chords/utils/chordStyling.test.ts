@@ -5,9 +5,8 @@ import type { TimeSignature } from '../types';
 
 describe('chordStyling', () => {
   const createMockChord = (): Chord => ({
-    root: 0, // C
+    root: 'C',
     quality: 'major',
-    notes: [60, 64, 67], // C, E, G
   });
 
   const createMockVoicing = () => [60, 64, 67]; // C major chord

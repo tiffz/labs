@@ -7,6 +7,8 @@ describe('resolveFreeTempoLoopStartPosition', () => {
     const practicedParts: PianoScore['parts'] = [
       {
         id: 'rh',
+        name: 'Right Hand',
+        clef: 'treble',
         hand: 'right',
         measures: [
           {
@@ -29,6 +31,8 @@ describe('resolveFreeTempoLoopStartPosition', () => {
     const practicedParts: PianoScore['parts'] = [
       {
         id: 'rh',
+        name: 'Right Hand',
+        clef: 'treble',
         hand: 'right',
         measures: [{ notes: [{ id: 'r0', pitches: [], duration: 'quarter', rest: true }] }],
       },

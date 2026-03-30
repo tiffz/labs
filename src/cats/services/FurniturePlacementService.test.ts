@@ -285,7 +285,9 @@ describe('FurniturePlacementService - Overlap Prevention', () => {
       mockWorld.renderables.set(entityId, renderable);
     }
     
-    placementService = new FurniturePlacementService(mockWorld as { transforms: Map<string, { x: number; y: number; z: number }>; renderables: Map<string, { kind: string }> });
+    placementService = new FurniturePlacementService(
+      mockWorld as unknown as import('../engine/ECS').World
+    );
   });
   
   it('should prevent furniture overlaps in a single randomization', () => {

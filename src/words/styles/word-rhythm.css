@@ -92,7 +92,7 @@ body,
   grid-template-rows: auto auto minmax(0, 1fr);
   row-gap: 8px;
   column-gap: 16px;
-  overflow-x: clip;
+  overflow-x: visible;
   overflow-y: hidden;
 }
 
@@ -157,13 +157,11 @@ body,
 }
 
 .words-sticky-controls.is-stuck {
-  margin-left: calc((100vw - 100%) / -2);
-  margin-right: calc((100vw - 100%) / -2);
-  padding-left: calc(var(--content-gutter) + var(--card-inner-pad));
-  padding-right: calc(var(--content-gutter) + var(--card-inner-pad));
-  border-radius: 0;
-  border-left: 0;
-  border-right: 0;
+  margin-left: var(--content-gutter);
+  margin-right: var(--content-gutter);
+  padding-left: var(--card-inner-pad);
+  padding-right: var(--card-inner-pad);
+  border-radius: 0.9rem;
   box-shadow: 0 10px 22px rgba(2, 132, 199, 0.16);
   background: color-mix(in srgb, var(--pastel-9) 94%, var(--pastel-4));
 }

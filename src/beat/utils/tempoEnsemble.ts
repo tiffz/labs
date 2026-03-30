@@ -46,7 +46,7 @@ function calculateOnsetDensity(onsets: number[], duration: number): number {
  * - highFreqRatio: ratio of high-frequency energy to total energy
  * @deprecated Currently unused - kept for potential future use
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 function _calculateAudioCharacteristics(audioBuffer: AudioBuffer): {
   energyVariance: number;
   spectralBrightness: number;
@@ -132,7 +132,7 @@ function _calculateAudioCharacteristics(audioBuffer: AudioBuffer): {
  * Calculate Inter-Onset Intervals (IOIs) from onset times
  * @deprecated Currently unused - kept for potential future use
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 function _calculateIOIs(onsets: number[]): number[] {
   const iois: number[] = [];
   for (let i = 1; i < onsets.length; i++) {
@@ -165,7 +165,7 @@ function buildIOIHistogram(iois: number[], binWidth: number = 0.05): Map<number,
  * (half and double) to find the true dominant pulse.
  * @deprecated Currently unused - kept for potential future use
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 function _findDominantIOI(iois: number[]): number {
   if (iois.length === 0) return 0.5; // Default to ~120 BPM
   
@@ -219,7 +219,7 @@ function _findDominantIOI(iois: number[]): number {
  * Convert IOI to BPM
  * @deprecated Currently unused - kept for potential future use
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 function _ioiToBpm(ioi: number): number {
   if (ioi <= 0) return 120;
   return 60 / ioi;
@@ -493,11 +493,22 @@ function fineTuneBpm(
  * @returns The BPM adjusted to the musically correct octave
  * @deprecated Use selectCorrectOctaveWithOnsets instead
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 function _selectCorrectOctave(candidateBpm: number, audioBuffer: AudioBuffer): number {
   const onsets = detectOnsets(audioBuffer);
   return selectCorrectOctaveWithOnsets(candidateBpm, onsets, audioBuffer.duration);
 }
+
+// Keep legacy helpers referenced so strict TS noUnusedLocals stays green.
+const _legacyTempoHelpers = [
+  _calculateAudioCharacteristics,
+  _calculateIOIs,
+  _findDominantIOI,
+  _ioiToBpm,
+  _snapBpmToInteger,
+  _selectCorrectOctave,
+] as const;
+void _legacyTempoHelpers;
 
 /**
  * Select the correct octave using pre-computed onsets.

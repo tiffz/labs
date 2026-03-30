@@ -21,11 +21,13 @@ describe('usePlayback', () => {
     measures: [
       {
         notes: [
-          { sound: 'dum', duration: 1, durationInSixteenths: 1, isDotted: false },
+          { sound: 'dum', duration: 'sixteenth', durationInSixteenths: 1, isDotted: false },
         ],
         totalDuration: 1,
       },
     ],
+    timeSignature: { numerator: 4, denominator: 4 },
+    measureMapping: [{ sourceMeasureIndex: 0, sourceStringIndex: 0 }],
     error: undefined,
   };
 
@@ -96,6 +98,8 @@ describe('usePlayback', () => {
     const invalidRhythm: ParsedRhythm = {
       isValid: false,
       measures: [],
+      timeSignature: { numerator: 4, denominator: 4 },
+      measureMapping: [],
       error: 'Invalid rhythm',
     };
 
@@ -121,6 +125,8 @@ describe('usePlayback', () => {
     const emptyRhythm: ParsedRhythm = {
       isValid: true,
       measures: [],
+      timeSignature: { numerator: 4, denominator: 4 },
+      measureMapping: [],
       error: undefined,
     };
 

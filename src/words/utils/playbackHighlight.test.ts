@@ -16,6 +16,7 @@ function createNoteSvgElement() {
 describe('syncPlaybackHighlightState', () => {
   const rhythm: ParsedRhythm = {
     isValid: true,
+    timeSignature: { numerator: 4, denominator: 4 },
     measures: [
       {
         notes: [
@@ -25,6 +26,7 @@ describe('syncPlaybackHighlightState', () => {
         totalDuration: 8,
       },
     ],
+    measureMapping: [{ sourceMeasureIndex: 0, sourceStringIndex: 0 }],
   };
 
   it('re-applies active note highlight after element map replacement', () => {

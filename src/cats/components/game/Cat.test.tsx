@@ -43,6 +43,7 @@ const getDefaultProps = (overrides: Partial<React.ComponentProps<typeof Cat>> = 
     lastHeart: null,
     wandMode: false,
     isSubtleWiggling: false,
+    pounceConfidence: 0,
   };
   return { ...defaultProps, ...overrides };
 };

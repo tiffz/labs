@@ -446,7 +446,7 @@ export async function detectGapsForResync(
  * Find all gaps in onset array that exceed the threshold
  * @deprecated Use findFermataGapsWithTimeThreshold instead for consistency
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 function _findFermataGaps(
   onsets: number[],
   expectedBeatInterval: number,
@@ -470,6 +470,9 @@ function _findFermataGaps(
 
   return gaps;
 }
+
+const _legacyGapHelpers = [_findFermataGaps] as const;
+void _legacyGapHelpers;
 
 /**
  * Find gaps using both beat and absolute time thresholds

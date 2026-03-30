@@ -197,8 +197,7 @@ function auditStoryDNA(dna: StoryDNA, genre: string): string[] {
   switch (genre) {
     case 'Monster in the House':
       if (dna.loglineElements && typeof dna.loglineElements === 'object') {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const elements = dna.loglineElements as any;
+        const elements = dna.loglineElements;
         if (!elements.monster || !elements.house || !elements.sin) {
           issues.push(`❌ Monster in the House missing required elements`);
         }
@@ -206,8 +205,7 @@ function auditStoryDNA(dna: StoryDNA, genre: string): string[] {
       break;
     case 'Golden Fleece':
       if (dna.loglineElements && typeof dna.loglineElements === 'object') {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const elements = dna.loglineElements as any;
+        const elements = dna.loglineElements;
         if (!elements.prize || !elements.journey || !elements.team) {
           issues.push(`❌ Golden Fleece missing required elements (prize: ${!!elements.prize}, journey: ${!!elements.journey}, team: ${!!elements.team})`);
         }
@@ -215,8 +213,7 @@ function auditStoryDNA(dna: StoryDNA, genre: string): string[] {
       break;
     case 'Buddy Love':
       if (dna.loglineElements && typeof dna.loglineElements === 'object') {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const elements = dna.loglineElements as any;
+        const elements = dna.loglineElements;
         if (!elements.incompleteness || !elements.completion) {
           issues.push(`❌ Buddy Love missing required elements`);
         }

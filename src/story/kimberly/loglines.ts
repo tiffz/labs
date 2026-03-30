@@ -10,6 +10,18 @@
 import * as LoglineElements from './logline-elements';
 import { his, him, he, himself } from './realistic-names';
 
+type StoryLoglineElements =
+  | LoglineElements.BuddyLoveElements
+  | LoglineElements.MonsterInTheHouseElements
+  | LoglineElements.GoldenFleeceElements
+  | LoglineElements.OutOfTheBottleElements
+  | LoglineElements.DudeWithAProblemElements
+  | LoglineElements.RitesOfPassageElements
+  | LoglineElements.WhydunitElements
+  | LoglineElements.FoolTriumphantElements
+  | LoglineElements.InstitutionalizedElements
+  | LoglineElements.SuperheroElements;
+
 /**
  * Monster in the House: Monster, House, Sin
  * A culpable hero is forced to save a trapped group of people from being killed 
@@ -177,8 +189,7 @@ export function superheroLogline(
  */
 export interface LoglineResult {
   logline: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  elements: any; // Genre-specific elements (union of all element types)
+  elements: StoryLoglineElements;
 }
 
 /**
@@ -300,7 +311,7 @@ export function generateLoglineWithElements(
     default:
       return {
         logline: `${heroName} must overcome their challenges to achieve their goal.`,
-        elements: {}
+        elements: {} as unknown as StoryLoglineElements,
       };
   }
 }

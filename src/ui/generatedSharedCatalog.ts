@@ -2782,6 +2782,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
+      "chords",
       "piano"
     ],
     "exportType": "function",
@@ -2801,6 +2802,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
+      "chords",
       "piano"
     ],
     "exportType": "const",
@@ -2820,6 +2822,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
+      "chords",
       "piano"
     ],
     "exportType": "const",
@@ -2838,6 +2841,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
+      "chords",
       "piano"
     ],
     "exportType": "function",
@@ -2857,6 +2861,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
+      "chords",
       "piano"
     ],
     "exportType": "const",
@@ -2875,6 +2880,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
+      "chords",
       "piano"
     ],
     "exportType": "function",
@@ -2894,6 +2900,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
+      "chords",
       "piano"
     ],
     "exportType": "const",
@@ -2912,6 +2919,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
+      "chords",
       "piano"
     ],
     "exportType": "function",
@@ -2930,6 +2938,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
+      "chords",
       "piano"
     ],
     "exportType": "function",
@@ -2948,6 +2957,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
+      "chords",
       "piano"
     ],
     "exportType": "function",

@@ -209,9 +209,10 @@ describe('previewRenderer', () => {
       const result = calculateInsertionLinePosition(notes, 0);
       
       expect(result).not.toBeNull();
-      expect(result?.top).toBeGreaterThan(0);
-      expect(result?.bottom).toBeGreaterThan(result?.top);
-      expect(result?.bottom - result?.top).toBeLessThanOrEqual(100); // Should fit within stave
+      const insertion = result!;
+      expect(insertion.top).toBeGreaterThan(0);
+      expect(insertion.bottom).toBeGreaterThan(insertion.top);
+      expect(insertion.bottom - insertion.top).toBeLessThanOrEqual(100); // Should fit within stave
     });
   });
 });

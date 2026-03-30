@@ -158,7 +158,6 @@ export class VariableBeatGrid {
   private regions: TempoRegion[];
   private timeSignature: TimeSignature;
   private globalBpm: number;
-  private startOffset: number;
   private sixteenthsPerMeasure: number;
   private beatsPerMeasure: number;
 
@@ -169,12 +168,12 @@ export class VariableBeatGrid {
     regions: TempoRegion[],
     timeSignature: TimeSignature,
     globalBpm: number,
-    startOffset: number = 0
+    _startOffset: number = 0
   ) {
+    void _startOffset;
     this.regions = regions;
     this.timeSignature = timeSignature;
     this.globalBpm = globalBpm;
-    this.startOffset = startOffset;
     this.sixteenthsPerMeasure = getSixteenthsPerMeasure(timeSignature);
     this.beatsPerMeasure = timeSignature.numerator;
 

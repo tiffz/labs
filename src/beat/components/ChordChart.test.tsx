@@ -9,21 +9,27 @@ beforeEach(() => {
 });
 
 // Mock chord result for testing
-const createMockChordResult = (overrides?: Partial<ChordAnalysisResult>): ChordAnalysisResult => ({
-  key: 'F',
-  scale: 'minor',
-  keyConfidence: 0.8,
-  chordChanges: [
-    { time: 0, chord: 'Fm', confidence: 0.9, duration: 2 },
-    { time: 2, chord: 'Db', confidence: 0.85, duration: 2 },
-    { time: 4, chord: 'Ab', confidence: 0.88, duration: 2 },
-    { time: 6, chord: 'Eb', confidence: 0.87, duration: 2 },
-  ],
-  simplifiedChords: [],
-  keyChanges: [],
-  warnings: [],
-  ...overrides,
-});
+const createMockChordResult = (overrides?: Partial<ChordAnalysisResult>): ChordAnalysisResult => {
+  const merged = {
+    chords: [] as ChordAnalysisResult['chords'],
+    key: 'F',
+    scale: 'minor',
+    keyConfidence: 0.8,
+    chordChanges: [
+      { time: 0, chord: 'Fm', strength: 0.9 },
+      { time: 2, chord: 'Db', strength: 0.85 },
+      { time: 4, chord: 'Ab', strength: 0.88 },
+      { time: 6, chord: 'Eb', strength: 0.87 },
+    ],
+    keyChanges: [] as ChordAnalysisResult['keyChanges'],
+    warnings: [] as string[],
+    ...overrides,
+  };
+  return {
+    ...merged,
+    chords: merged.chords ?? [],
+  };
+};
 
 describe('ChordChart', () => {
   describe('BPM-based timing calculations', () => {
@@ -50,8 +56,8 @@ describe('ChordChart', () => {
       // At 60 BPM, each beat is 1 second, so a 4-beat measure is 4 seconds
       const chordResult = createMockChordResult({
         chordChanges: [
-          { time: 0, chord: 'Fm', confidence: 0.9, duration: 4 },
-          { time: 4, chord: 'Db', confidence: 0.85, duration: 4 },
+          { time: 0, chord: 'Fm', strength: 0.9 },
+          { time: 4, chord: 'Db', strength: 0.85 },
         ],
       });
 
@@ -73,8 +79,8 @@ describe('ChordChart', () => {
     it('should respect musicStartTime for measure alignment', () => {
       const chordResult = createMockChordResult({
         chordChanges: [
-          { time: 4, chord: 'Fm', confidence: 0.9, duration: 2 },
-          { time: 6, chord: 'Ab', confidence: 0.85, duration: 2 },
+          { time: 4, chord: 'Fm', strength: 0.9 },
+          { time: 6, chord: 'Ab', strength: 0.85 },
         ],
       });
 
@@ -237,7 +243,7 @@ describe('ChordChart', () => {
     it('should simplify complex chord names', () => {
       const chordResult = createMockChordResult({
         chordChanges: [
-          { time: 0, chord: 'Fmin7', confidence: 0.9, duration: 2 },
+          { time: 0, chord: 'Fmin7', strength: 0.9 },
         ],
       });
 

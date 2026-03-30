@@ -1,11 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import { createEmptyMap } from './generation';
 import { computeFov } from './fov';
+import type { GameState } from './types';
 
-const stateFactory = () => ({
+const stateFactory = (): GameState => ({
   map: createEmptyMap(),
   rooms: [{ x: 10, y: 10, width: 6, height: 6 }],
   player: { id: 'player', pos: { x: 12, y: 12 }, emoji: '🧑‍💼', name: 'You', productivity: 200, maxProductivity: 200, happiness: 100, reputation: 100, inventory: {}, skills: { proficiency: 0, teamwork: 0 } },
+  messages: [],
+  gameOver: false,
+  floor: 1,
+  coworkerTypes: [],
+  itemTypes: [],
+  coworkers: [],
+  items: [],
+  computers: [],
+  dogs: [],
+  elevator: { id: 'elevator', pos: { x: 0, y: 0 }, emoji: '🔼' },
 });
 
 describe('computeFov', () => {

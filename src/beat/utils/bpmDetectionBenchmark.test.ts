@@ -25,6 +25,7 @@ import {
   STANDARD_BPM_TEST_CASES,
   OCTAVE_AMBIGUITY_TEST_CASES,
   type BpmTestCase,
+  type SyntheticAudioConfig,
 } from './syntheticAudioGenerator';
 import { 
   getTempoDetector, 

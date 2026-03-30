@@ -11,6 +11,11 @@ import './styles/story.css';
 const App: React.FC = () => {
   const [storyDNA, setStoryDNA] = useState<StoryDNA | null>(null);
   const [selectedGenre, setSelectedGenre] = useState('Random');
+  const asRegenerationElements = (
+    elements: Record<string, string>
+  ): Parameters<typeof regenerateLoglineFromElements>[5] => (
+    elements as unknown as Parameters<typeof regenerateLoglineFromElements>[5]
+  );
 
   const handleGenerate = (genre: string = selectedGenre) => {
     const newDNA = generateStoryDNA(genre, 'Random');
@@ -56,7 +61,7 @@ const App: React.FC = () => {
           updatedDNA.bStoryCharacterName,
           updatedDNA.hero.split(', ')[1] || '', // hero identity
           updatedDNA.theme,
-          updatedDNA.loglineElements // Use the updated elements
+          asRegenerationElements(updatedDNA.loglineElements) // Use the updated elements
         );
         
         // Clear the cached content for this element (create new object to trigger React update)
@@ -99,7 +104,7 @@ const App: React.FC = () => {
         updatedDNA.bStoryCharacterName,
         newContent.split(', ')[1] || '',
         updatedDNA.theme,
-        updatedDNA.loglineElements
+        asRegenerationElements(updatedDNA.loglineElements)
       );
       
       // Clear all generated content that uses the hero name
@@ -134,7 +139,7 @@ const App: React.FC = () => {
         updatedDNA.bStoryCharacterName,
         updatedDNA.hero.split(', ')[1] || '',
         updatedDNA.theme,
-        updatedDNA.loglineElements
+        asRegenerationElements(updatedDNA.loglineElements)
       );
     } else if (rerollId === 'nemesis') {
       updatedDNA.nemesis = newContent;
@@ -167,7 +172,7 @@ const App: React.FC = () => {
         updatedDNA.bStoryCharacterName,
         updatedDNA.hero.split(', ')[1] || '',
         updatedDNA.theme,
-        updatedDNA.loglineElements
+        asRegenerationElements(updatedDNA.loglineElements)
       );
       
       // Clear generated content that uses the nemesis name

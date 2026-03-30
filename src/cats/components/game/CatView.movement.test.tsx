@@ -1,6 +1,6 @@
 import React from 'react';
 import { render } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type MockedFunction } from 'vitest';
 import CatView from './CatView';
 import { computeShadowLayout } from '../../services/ShadowLayout';
 import { catCoordinateSystem } from '../../services/CatCoordinateSystem';
@@ -36,7 +36,9 @@ vi.mock('../../context/useWorld', () => ({
 }));
 
 describe('CatView Movement Improvements', () => {
-  const mockCatRef = { current: null } as React.RefObject<SVGSVGElement>;
+  const mockCatRef = {
+    current: document.createElementNS('http://www.w3.org/2000/svg', 'svg') as SVGSVGElement,
+  } as React.RefObject<SVGSVGElement>;
   const mockCatElement = <svg data-testid="cat-svg" />;
 
   beforeEach(() => {
@@ -52,11 +54,13 @@ describe('CatView Movement Improvements', () => {
       const mockCatScreen = { x: 100, y: 150, scale: 1.2 }; // Cat at height with scale
       const mockGroundScreen = { x: 100, y: 100, scale: 1.2 }; // Ground reference
       
-      (catCoordinateSystem.catToScreen as vi.MockedFunction<typeof catCoordinateSystem.catToScreen>)
+      (catCoordinateSystem.catToScreen as MockedFunction<typeof catCoordinateSystem.catToScreen>)
         .mockReturnValueOnce(mockCatScreen) // First call for cat position
         .mockReturnValueOnce(mockGroundScreen); // Second call for ground position
 
-      (computeShadowLayout as vi.MockedFunction<typeof computeShadowLayout>).mockReturnValue({
+      (computeShadowLayout as MockedFunction<typeof computeShadowLayout>).mockReturnValue({
+        left: 0,
+        bottom: 0,
         width: 200,
         height: 60,
       });
@@ -82,10 +86,12 @@ describe('CatView Movement Improvements', () => {
 
       const mockScreen = { x: 100, y: 100, scale: 1.0 };
       
-      (catCoordinateSystem.catToScreen as vi.MockedFunction<typeof catCoordinateSystem.catToScreen>)
+      (catCoordinateSystem.catToScreen as MockedFunction<typeof catCoordinateSystem.catToScreen>)
         .mockReturnValue(mockScreen);
 
-      (computeShadowLayout as vi.MockedFunction<typeof computeShadowLayout>).mockReturnValue({
+      (computeShadowLayout as MockedFunction<typeof computeShadowLayout>).mockReturnValue({
+        left: 0,
+        bottom: 0,
         width: 200,
         height: 60,
       });
@@ -114,13 +120,15 @@ describe('CatView Movement Improvements', () => {
       const backCatScreen = { x: 100, y: 150, scale: 0.6 };
       const backGroundScreen = { x: 100, y: 100, scale: 0.6 };
 
-      (computeShadowLayout as vi.MockedFunction<typeof computeShadowLayout>).mockReturnValue({
+      (computeShadowLayout as MockedFunction<typeof computeShadowLayout>).mockReturnValue({
+        left: 0,
+        bottom: 0,
         width: 200,
         height: 60,
       });
 
       // Test front cat
-      (catCoordinateSystem.catToScreen as vi.MockedFunction<typeof catCoordinateSystem.catToScreen>)
+      (catCoordinateSystem.catToScreen as MockedFunction<typeof catCoordinateSystem.catToScreen>)
         .mockReturnValueOnce(frontCatScreen)
         .mockReturnValueOnce(frontGroundScreen);
 
@@ -133,7 +141,7 @@ describe('CatView Movement Improvements', () => {
       );
 
       // Test back cat
-      (catCoordinateSystem.catToScreen as vi.MockedFunction<typeof catCoordinateSystem.catToScreen>)
+      (catCoordinateSystem.catToScreen as MockedFunction<typeof catCoordinateSystem.catToScreen>)
         .mockReturnValueOnce(backCatScreen)
         .mockReturnValueOnce(backGroundScreen);
 
@@ -157,9 +165,11 @@ describe('CatView Movement Improvements', () => {
       const catWorldCoords = { x: 100, y: 75, z: 600 }; // Cat at height
 
       const mockScreen = { x: 100, y: 150, scale: 1.0 };
-      (catCoordinateSystem.catToScreen as vi.MockedFunction<typeof catCoordinateSystem.catToScreen>).mockReturnValue(mockScreen);
+      (catCoordinateSystem.catToScreen as MockedFunction<typeof catCoordinateSystem.catToScreen>).mockReturnValue(mockScreen);
 
-      (computeShadowLayout as vi.MockedFunction<typeof computeShadowLayout>).mockReturnValue({
+      (computeShadowLayout as MockedFunction<typeof computeShadowLayout>).mockReturnValue({
+        left: 0,
+        bottom: 0,
         width: 200,
         height: 60,
       });
@@ -183,9 +193,11 @@ describe('CatView Movement Improvements', () => {
       const catWorldCoords = { x: 100, y: 0, z: 600 }; // On ground
 
       const mockScreen = { x: 100, y: 100, scale: 1.0 };
-      (catCoordinateSystem.catToScreen as vi.MockedFunction<typeof catCoordinateSystem.catToScreen>).mockReturnValue(mockScreen);
+      (catCoordinateSystem.catToScreen as MockedFunction<typeof catCoordinateSystem.catToScreen>).mockReturnValue(mockScreen);
 
-      (computeShadowLayout as vi.MockedFunction<typeof computeShadowLayout>).mockReturnValue({
+      (computeShadowLayout as MockedFunction<typeof computeShadowLayout>).mockReturnValue({
+        left: 0,
+        bottom: 0,
         width: 200,
         height: 60,
       });
@@ -211,9 +223,11 @@ describe('CatView Movement Improvements', () => {
 
       // Use non-integer screen position to test sub-pixel precision
       const mockScreen = { x: 100.75, y: 100.25, scale: 1.0 };
-      (catCoordinateSystem.catToScreen as vi.MockedFunction<typeof catCoordinateSystem.catToScreen>).mockReturnValue(mockScreen);
+      (catCoordinateSystem.catToScreen as MockedFunction<typeof catCoordinateSystem.catToScreen>).mockReturnValue(mockScreen);
 
-      (computeShadowLayout as vi.MockedFunction<typeof computeShadowLayout>).mockReturnValue({
+      (computeShadowLayout as MockedFunction<typeof computeShadowLayout>).mockReturnValue({
+        left: 0,
+        bottom: 0,
         width: 200.5,
         height: 60.3,
       });
@@ -239,9 +253,11 @@ describe('CatView Movement Improvements', () => {
       const catWorldCoords = { x: 100, y: 0, z: 600 };
 
       const mockScreen = { x: 100.33, y: 100, scale: 1.0 };
-      (catCoordinateSystem.catToScreen as vi.MockedFunction<typeof catCoordinateSystem.catToScreen>).mockReturnValue(mockScreen);
+      (catCoordinateSystem.catToScreen as MockedFunction<typeof catCoordinateSystem.catToScreen>).mockReturnValue(mockScreen);
 
-      (computeShadowLayout as vi.MockedFunction<typeof computeShadowLayout>).mockReturnValue({
+      (computeShadowLayout as MockedFunction<typeof computeShadowLayout>).mockReturnValue({
+        left: 0,
+        bottom: 0,
         width: 200.7,
         height: 60.1,
       });
@@ -268,9 +284,11 @@ describe('CatView Movement Improvements', () => {
       const catWorldCoords = { x: 100, y: 0, z: 600 };
 
       const mockScreen = { x: 100, y: 100, scale: 1.0 };
-      (catCoordinateSystem.catToScreen as vi.MockedFunction<typeof catCoordinateSystem.catToScreen>).mockReturnValue(mockScreen);
+      (catCoordinateSystem.catToScreen as MockedFunction<typeof catCoordinateSystem.catToScreen>).mockReturnValue(mockScreen);
 
-      (computeShadowLayout as vi.MockedFunction<typeof computeShadowLayout>).mockReturnValue({
+      (computeShadowLayout as MockedFunction<typeof computeShadowLayout>).mockReturnValue({
+        left: 0,
+        bottom: 0,
         width: 200,
         height: 60,
       });
@@ -292,9 +310,11 @@ describe('CatView Movement Improvements', () => {
       const catWorldCoords = { x: 100, y: 0, z: 600 };
 
       const mockScreen = { x: 100, y: 100, scale: 1.0 };
-      (catCoordinateSystem.catToScreen as vi.MockedFunction<typeof catCoordinateSystem.catToScreen>).mockReturnValue(mockScreen);
+      (catCoordinateSystem.catToScreen as MockedFunction<typeof catCoordinateSystem.catToScreen>).mockReturnValue(mockScreen);
 
-      (computeShadowLayout as vi.MockedFunction<typeof computeShadowLayout>).mockReturnValue({
+      (computeShadowLayout as MockedFunction<typeof computeShadowLayout>).mockReturnValue({
+        left: 0,
+        bottom: 0,
         width: 200,
         height: 60,
       });
@@ -316,9 +336,11 @@ describe('CatView Movement Improvements', () => {
       const catWorldCoords = { x: 100, y: 0, z: 600 };
 
       const mockScreen = { x: 100, y: 100, scale: 1.0 };
-      (catCoordinateSystem.catToScreen as vi.MockedFunction<typeof catCoordinateSystem.catToScreen>).mockReturnValue(mockScreen);
+      (catCoordinateSystem.catToScreen as MockedFunction<typeof catCoordinateSystem.catToScreen>).mockReturnValue(mockScreen);
 
-      (computeShadowLayout as vi.MockedFunction<typeof computeShadowLayout>).mockReturnValue({
+      (computeShadowLayout as MockedFunction<typeof computeShadowLayout>).mockReturnValue({
+        left: 0,
+        bottom: 0,
         width: 200,
         height: 60,
       });
