@@ -21,6 +21,10 @@ if [ -z "$STAGED_FILES" ]; then
   exit 0
 fi
 
+# Always run canonical import-boundary guard so local presubmit
+# matches CI behavior and catches boundary regressions early.
+npm run check:import-boundaries
+
 # Check if any TypeScript/JavaScript files are staged
 if git diff --cached --name-only --quiet -- '*.ts' '*.tsx' '*.js' '*.jsx' '*.json' 'package*.json' 'vite.config.*' 'vitest.config.*' 'tsconfig*.json' 'eslint.config.*'; then
   echo "No TypeScript/JavaScript files changed, skipping tests..."

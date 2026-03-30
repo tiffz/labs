@@ -45,7 +45,13 @@ jobs:
         npm install
         npm ci
         
-    - name: Build project (skip tests for docs/assets)
+    - name: Run linter
+      run: npm run lint
+
+    - name: Run fast tests
+      run: npm run test:fast
+
+    - name: Build project
       run: npm run build
       
     - name: Setup Pages

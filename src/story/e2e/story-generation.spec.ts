@@ -124,8 +124,12 @@ test.describe('Story Generator - Story Generation', () => {
     // Click the reroll button
     await heroChip.locator('.reroll-btn').click();
 
-    // Wait a bit for the update
-    await page.waitForTimeout(100);
+    await expect
+      .poll(
+        async () => (await heroChip.locator('.generated-chip-content').textContent())?.trim().length ?? 0,
+        { timeout: 2000 }
+      )
+      .toBeGreaterThan(0);
 
     // Get new hero text
     const newHero = await heroChip.locator('.generated-chip-content').textContent();

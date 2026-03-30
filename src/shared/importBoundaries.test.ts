@@ -47,7 +47,7 @@ function extractImportSpecifiers(source: string): string[] {
 }
 
 describe('app import boundaries', () => {
-  it('forbids cross-app imports', () => {
+  it('forbids cross-app imports and shared-to-app imports', () => {
     const thisFileDir = path.dirname(fileURLToPath(import.meta.url));
     const srcRoot = path.resolve(thisFileDir, '..');
     const files: string[] = [];
@@ -58,7 +58,7 @@ describe('app import boundaries', () => {
     for (const file of files) {
       const relFromSrc = path.relative(srcRoot, file).replaceAll(path.sep, '/');
       const sourceApp = relFromSrc.split('/')[0] ?? '';
-      if (!APP_DIRS.has(sourceApp)) continue;
+      if (!APP_DIRS.has(sourceApp) && sourceApp !== 'shared') continue;
 
       const text = fs.readFileSync(file, 'utf8');
       const specs = extractImportSpecifiers(text);
@@ -71,6 +71,12 @@ describe('app import boundaries', () => {
         if (relTarget.startsWith('..')) continue;
 
         const targetApp = relTarget.split('/')[0] ?? '';
+        if (sourceApp === 'shared') {
+          if (!APP_DIRS.has(targetApp)) continue;
+          violations.push(`${relFromSrc} -> ${spec} (shared must not import ${targetApp})`);
+          continue;
+        }
+
         if (!APP_DIRS.has(targetApp) || targetApp === sourceApp) continue;
 
         violations.push(`${relFromSrc} -> ${spec} (targets ${targetApp} from ${sourceApp})`);

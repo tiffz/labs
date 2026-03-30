@@ -152,7 +152,7 @@ Tests and linting run automatically before commits. Tests only run if TypeScript
 
 ### Continuous Integration
 
-GitHub Actions runs full test suite and builds on code changes. Documentation/asset changes deploy without tests for speed.
+GitHub Actions runs lint, tests, e2e smoke checks, and builds on code changes. Docs/assets deploys also run lint and fast tests before build.
 
 ### Testing Strategy
 
@@ -187,10 +187,12 @@ The test suite is optimized for different development scenarios:
 
 The pre-commit hook intelligently selects test mode:
 
-- **Beat files changed** → Full tests with benchmarks
+- **Beat BPM benchmark files changed** → Full tests with benchmarks
 - **Cat/regression files changed** → Standard tests
 - **Other files** → Fast tests only
 - Shared catalog is regenerated and staged automatically before these checks.
+
+For canonical docs precedence when guidance conflicts, see `docs/SOURCE_OF_TRUTH.md`.
 
 ### Pre-push Guardrail
 

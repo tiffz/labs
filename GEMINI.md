@@ -46,6 +46,7 @@ npm run build        # Production build
 - **README.md**: Human-readable overview (root and per-app)
 - **GEMINI.md**: AI-focused guide (this file and per-app)
 - **DEVELOPMENT.md**: Architecture Decision Records (root and per-app)
+- **docs/SOURCE_OF_TRUTH.md**: Documentation precedence and canonical ownership
 
 For detailed architecture, CI/CD, and development patterns, see:
 
@@ -73,7 +74,7 @@ Use deterministic tools (linters, formatters) rather than asking AI to enforce s
 
 ## Cache Busting
 
-HTML files use `NetworkFirst` strategy and cache-control headers to ensure fresh content. Static assets use content-based hashes. See `DEVELOPMENT.md` for details.
+Labs pages do not use a service worker/PWA strategy. HTML should be fetched fresh from origin, while static assets use content-hash filenames and cache headers. See `DEVELOPMENT.md` for details.
 
 ## E2E Tests
 

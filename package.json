@@ -6,6 +6,7 @@
   "scripts": {
     "generate:shared-catalog": "node scripts/generate-shared-catalog.mjs",
     "check:shared-catalog": "node scripts/generate-shared-catalog.mjs --check",
+    "check:import-boundaries": "vitest run src/shared/importBoundaries.test.ts",
     "prelint": "npm run generate:shared-catalog",
     "pretest": "npm run generate:shared-catalog",
     "prebuild": "npm run generate:shared-catalog",
@@ -18,6 +19,7 @@
     "test:fast": "FAST_TESTS=true vitest run",
     "test:full": "INCLUDE_BEAT_BENCHMARK=true vitest run",
     "test:e2e": "playwright test",
+    "test:e2e:smoke": "playwright test \"src/**/e2e/*-init.spec.ts\"",
     "test:watch": "vitest",
     "test:watch:fast": "FAST_TESTS=true vitest",
     "test:changed": "git diff --name-only HEAD~1 -- '*.ts' '*.tsx' '*.js' '*.jsx' '*.json' | head -1 > /dev/null && npm test || echo 'No TypeScript/JavaScript files changed, skipping tests'",

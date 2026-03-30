@@ -12,7 +12,7 @@ A web application for learning and practicing Darbuka drum rhythms with visual n
 
 ## Tech Stack
 
-- React 18 + TypeScript
+- React 19 + TypeScript
 - VexFlow for music notation rendering
 - Web Audio API for playback
 - Tailwind CSS for styling

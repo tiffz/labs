@@ -8,14 +8,14 @@ export default defineConfig({
     'e2e/**/*.spec.ts',
   ],
   timeout: 30_000,
-  retries: 0,
+  retries: process.env.CI ? 1 : 0,
   use: {
     headless: true,
     baseURL: 'http://localhost:5173',
     ignoreHTTPSErrors: true,
     video: 'off',
     screenshot: 'off',
-    trace: 'off',
+    trace: process.env.CI ? 'on-first-retry' : 'off',
   },
   webServer: {
     command: 'vite --host --open=false --strictPort --port=5173',

@@ -62,6 +62,7 @@ Notes:
 - Reuse `src/shared/**` before creating new app-local primitives.
 - Prefer Material/MUI interaction primitives for complex widgets.
 - Keep shared-layer boundaries clean (`src/shared/**` must not depend on app folders).
+- Follow docs precedence in `docs/SOURCE_OF_TRUTH.md` when guidance conflicts.
 
 ## Responsive Checklist (Music Apps)
 
@@ -79,6 +80,7 @@ Use this quick checklist before merging music UI changes:
 Workflows:
 
 - `.github/workflows/ci.yml`: code quality checks, tests, build, deploy.
-- `.github/workflows/deploy-docs.yml`: optimized docs/assets deployment path.
+- `.github/workflows/deploy-docs.yml`: docs/assets deployment path with lint, fast tests, and build.
 
 For ADR-level guidance and architecture rationale, see `DEVELOPMENT.md`.
+For documentation precedence and canonical sources, see `docs/SOURCE_OF_TRUTH.md`.
