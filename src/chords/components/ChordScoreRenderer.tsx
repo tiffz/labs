@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect, useRef } from 'react';
-import { Renderer, Stave, StaveNote, Voice, Formatter, StaveConnector, BarlineType, Dot, Beam } from 'vexflow';
+import { Renderer, Stave, StaveNote, Voice, Formatter, StaveConnector, BarlineType, Dot, Beam, Fraction } from 'vexflow';
 import type { ChordProgressionState } from '../types';
 import type { Key } from '../../shared/music/chordTypes';
 import { progressionToChords } from '../utils/chordTheory';
@@ -500,43 +500,23 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({
           // Add beams for eighth notes based on time signature
           // In compound time (6/8, 12/8), beam eighth notes in groups of 3
           // In simple time (3/4, 4/4), beam eighth notes in groups of 2
-          const addBeams = (notes: StaveNote[]) => {
-            const beams: Beam[] = [];
-            let currentBeamGroup: StaveNote[] = [];
-            
-            const isCompoundTime = state.timeSignature.denominator === 8;
-            const beamGroupSize = isCompoundTime ? 3 : 2; // Group of 3 for compound, 2 for simple
-            
-            notes.forEach((note, index) => {
-              // Only beam eighth notes (duration '8')
-              const duration = note.getDuration();
-              if (duration === '8' && note.getKeys().length > 0 && !note.isRest()) {
-                currentBeamGroup.push(note);
-                
-                // Create beam when group is complete or at end of measure
-                if (currentBeamGroup.length === beamGroupSize || index === notes.length - 1) {
-                  if (currentBeamGroup.length >= 2) {
-                    // Only create beam if we have at least 2 notes
-                    const beam = new Beam(currentBeamGroup);
-                    beams.push(beam);
-                  }
-                  currentBeamGroup = [];
-                }
-              } else {
-                // Non-beamable note or rest - finish current beam group if any
-                if (currentBeamGroup.length >= 2) {
-                  const beam = new Beam(currentBeamGroup);
-                  beams.push(beam);
-                }
-                currentBeamGroup = [];
-              }
+          const addBeams = (
+            notes: StaveNote[],
+            clef: 'treble' | 'bass'
+          ) => {
+            const beamGroup =
+              state.timeSignature.denominator === 8
+                ? new Fraction(3, 8)
+                : new Fraction(1, 4);
+            return Beam.generateBeams(notes, {
+              groups: [beamGroup],
+              beamRests: false,
+              stemDirection: clef === 'treble' ? 1 : -1,
             });
-            
-            return beams;
           };
-          
-          const trebleBeams = addBeams(trebleNotes);
-          const bassBeams = addBeams(bassNotes);
+
+          const trebleBeams = addBeams(trebleNotes, 'treble');
+          const bassBeams = addBeams(bassNotes, 'bass');
           
           // Format and draw voices for this measure
           // joinVoices aligns notes at the same tick position (beat position) across voices

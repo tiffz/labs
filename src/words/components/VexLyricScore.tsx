@@ -453,6 +453,10 @@ const VexLyricScore: React.FC<VexLyricScoreProps> = ({
             duration,
             clef: 'percussion',
           });
+          if (note.sound !== 'rest' && !duration.startsWith('w')) {
+            // Keep percussion stems visually consistent across mixed hits.
+            staveNote.setStemDirection(1);
+          }
           if (note.isDotted) Dot.buildAndAttach([staveNote], { all: true });
           return staveNote;
         });

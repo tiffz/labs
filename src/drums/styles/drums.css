@@ -188,23 +188,51 @@
     flex-shrink: 0;
   }
 
+  /*
+   * Mid-width safeguard:
+   * let the control bar wrap before right-side controls get clipped.
+   */
+  @media (max-width: 1280px) {
+    .playback-controls-bar {
+      flex-wrap: wrap;
+      row-gap: 0.5rem;
+    }
+
+    .timing-controls {
+      flex: 1 1 100%;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .timing-inputs {
+      flex: 1 1 auto;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .right-controls-group {
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+  }
+
   /* Medium screens - keep play button and inputs together, wrap right controls */
   @media (max-width: 1100px) {
     .playback-controls-bar {
       align-items: center; /* Center align for cleaner look */
       gap: 0.75rem;
-      flex-wrap: nowrap;
+      flex-wrap: wrap;
     }
 
     .timing-controls {
-      flex: 1;
+      flex: 1 1 auto;
       min-width: 0;
       gap: 0.5rem;
-      flex-wrap: nowrap;
+      flex-wrap: wrap;
     }
 
     .timing-inputs {
-      flex-wrap: nowrap;
+      flex-wrap: wrap;
     }
 
     .playback-buttons {
@@ -234,11 +262,11 @@
     }
 
     .right-controls-group {
-      width: auto;
-      margin-left: auto;
+      width: 100%;
+      margin-left: 0;
       margin-top: 0;
       justify-content: flex-end;
-      order: 0;
+      order: 1;
     }
   }
 
@@ -897,7 +925,7 @@
     gap: 0.75rem;
     flex: 1;
     min-width: 0; /* Allow flex items to shrink below content size */
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
   }
 
   .timing-inputs {
@@ -906,7 +934,7 @@
     gap: 0.5rem;
     flex: 1 1 auto; /* Allow growing and shrinking */
     min-width: 0; /* Allow flex items to shrink below content size */
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
   }
 
   .time-signature-control {
@@ -2166,7 +2194,8 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
+    row-gap: 0.5rem;
     padding: 0.75rem 1rem;
     background-color: #f9fafb;
     border: 2px solid var(--border-color);
@@ -3984,5 +4013,65 @@
   .repeat-notice-btn.secondary:hover {
     background-color: #f5f5f5;
     border-color: #d1d1d1;
+  }
+
+  /* Playback bar layout v2: stable responsive structure */
+  .playback-controls-bar {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 0.75rem;
+    row-gap: 0.5rem;
+  }
+
+  .timing-controls {
+    min-width: 0;
+  }
+
+  .timing-inputs {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+
+  .right-controls-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    justify-self: end;
+    margin-left: 0;
+    width: auto;
+  }
+
+  @media (max-width: 1100px) {
+    .playback-controls-bar {
+      grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .right-controls-group {
+      grid-column: 1 / -1;
+      justify-self: end;
+    }
+  }
+
+  @media (max-width: 700px) {
+    .playback-controls-bar {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .playback-buttons {
+      justify-self: start;
+    }
+
+    .timing-controls {
+      width: 100%;
+    }
+
+    .right-controls-group {
+      width: 100%;
+      justify-content: flex-end;
+    }
   }
 }

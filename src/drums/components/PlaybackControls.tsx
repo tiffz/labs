@@ -359,46 +359,46 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
             )}
           </div>
 
-          {/* Right-aligned controls group: Metronome + Settings */}
-          <div className="right-controls-group">
-            {/* Metronome Toggle */}
-            <MetronomeToggleButton
-              enabled={metronomeEnabled}
-              onToggle={() => onMetronomeToggle(!metronomeEnabled)}
-              className="metronome-button"
-              label={undefined}
-              showOnLabel={false}
-              tooltipOn="Metronome: On"
-              tooltipOff="Metronome: Off"
-              onMouseEnter={(event: React.MouseEvent<HTMLButtonElement>) =>
-                showTip(event, metronomeEnabled ? 'Metronome: On' : 'Metronome: Off')
-              }
-              onMouseLeave={hideTip}
-            />
+        </div>
+      </div>
+      {/* Right-aligned controls group: Metronome + Settings */}
+      <div className="right-controls-group">
+        {/* Metronome Toggle */}
+        <MetronomeToggleButton
+          enabled={metronomeEnabled}
+          onToggle={() => onMetronomeToggle(!metronomeEnabled)}
+          className="metronome-button"
+          label={undefined}
+          showOnLabel={false}
+          tooltipOn="Metronome: On"
+          tooltipOff="Metronome: Off"
+          onMouseEnter={(event: React.MouseEvent<HTMLButtonElement>) =>
+            showTip(event, metronomeEnabled ? 'Metronome: On' : 'Metronome: Off')
+          }
+          onMouseLeave={hideTip}
+        />
 
-            {/* Settings Button */}
-            <div className="settings-button-container">
-              <button
-                ref={settingsButtonRef}
-                className="settings-button"
-                onClick={onSettingsClick}
-                type="button"
-                aria-label="Open settings"
-                title="Playback settings"
-              >
-                <span className="material-symbols-outlined">settings</span>
-              </button>
-              {showSettings && playbackSettings && onSettingsChange && onSettingsClose && (
-                <SettingsMenu
-                  isOpen={showSettings}
-                  onClose={onSettingsClose}
-                  settings={playbackSettings}
-                  onSettingsChange={onSettingsChange}
-                  buttonRef={settingsButtonRef}
-                />
-              )}
-            </div>
-          </div>
+        {/* Settings Button */}
+        <div className="settings-button-container">
+          <button
+            ref={settingsButtonRef}
+            className="settings-button"
+            onClick={onSettingsClick}
+            type="button"
+            aria-label="Open settings"
+            title="Playback settings"
+          >
+            <span className="material-symbols-outlined">settings</span>
+          </button>
+          {showSettings && playbackSettings && onSettingsChange && onSettingsClose && (
+            <SettingsMenu
+              isOpen={showSettings}
+              onClose={onSettingsClose}
+              settings={playbackSettings}
+              onSettingsChange={onSettingsChange}
+              buttonRef={settingsButtonRef}
+            />
+          )}
         </div>
       </div>
       {tip &&
