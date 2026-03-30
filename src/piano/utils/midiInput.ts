@@ -46,6 +46,16 @@ export class MidiInput {
       this.noteCallback?.('noteon', note, velocity / 127, ts);
     } else if (command === 0x80 || (command === 0x90 && velocity === 0)) {
       this.noteCallback?.('noteoff', note, 0, ts);
+    } else if (command === 0xb0) {
+      // MIDI CC "panic" messages sent by many devices/DAWs:
+      // - 120: All Sound Off
+      // - 121: Reset All Controllers
+      // - 123: All Notes Off
+      if (note === 120 || note === 121 || note === 123) {
+        for (let midiNote = 0; midiNote < 128; midiNote += 1) {
+          this.noteCallback?.('noteoff', midiNote, 0, ts);
+        }
+      }
     }
   };
 

@@ -36,7 +36,7 @@ const InputSources: React.FC = () => {
 
   return (
     <div className="input-sources" ref={ref}>
-      <button className={`is-trigger ${hasAny ? 'connected' : ''}`} onClick={() => setOpen(v => !v)}>
+      <button className={`is-trigger ${hasAny ? 'connected' : ''} ${hasMic ? 'mic-live' : ''}`} onClick={() => setOpen(v => !v)}>
         <span className={`is-dot ${hasAny ? 'on' : ''}`} />
         <span className="is-label">{statusLabel}</span>
         {activeNotes.size > 0 && (
@@ -80,7 +80,7 @@ const InputSources: React.FC = () => {
 
           <div className="is-divider" />
 
-          <div className="is-section">
+          <div className={`is-section is-section-mic ${hasMic ? 'active' : ''}`}>
             <div className="is-row">
               <span className="material-symbols-outlined is-icon">{hasMic ? 'mic' : 'mic_off'}</span>
               <div className="is-info">
@@ -120,7 +120,10 @@ const InputSources: React.FC = () => {
               <p className="is-device">Using: {state.activeMicrophoneLabel}</p>
             )}
             {hasMic && state.detectedPitch !== null && (
-              <p className="is-device">Detected: {midiToNoteName(state.detectedPitch)}</p>
+              <p className="is-device is-detected">
+                <span className="is-detected-label">Detected</span>
+                <span className="is-pitch-pill">{midiToNoteName(state.detectedPitch)}</span>
+              </p>
             )}
           </div>
         </div>

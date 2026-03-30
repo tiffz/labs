@@ -952,8 +952,29 @@ export function PianoProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     midi.onConnection((connected, devices) => {
+      const wasConnected = stateRef.current.midiConnected;
       dispatch({ type: 'SET_MIDI_CONNECTED', connected });
       dispatch({ type: 'SET_MIDI_DEVICES', devices });
+      if (wasConnected && !connected) {
+        // Device disconnected while keys were held: immediately release any
+        // active notes so UI/practice state doesn't keep stale stuck notes.
+        stateRef.current.activeMidiNotes.forEach((note) => {
+          engine.stopMidiNote(note);
+          recordMidiNoteOff(note);
+        });
+        dispatch({ type: 'CLEAR_ACTIVE_MIDI_NOTES' });
+        midiHoldTimers.current.clear();
+        if (midiChordBuffer.current.timer !== null) {
+          clearTimeout(midiChordBuffer.current.timer);
+          midiChordBuffer.current.timer = null;
+        }
+        midiChordBuffer.current.notes = [];
+        if (midiReleaseBuffer.current.timer !== null) {
+          clearTimeout(midiReleaseBuffer.current.timer);
+          midiReleaseBuffer.current.timer = null;
+        }
+        midiReleaseBuffer.current.notes = [];
+      }
     });
     midi.onNote((type, note, velocity, timestamp) => {
       const s = stateRef.current;

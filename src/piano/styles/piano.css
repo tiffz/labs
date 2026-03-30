@@ -132,6 +132,9 @@ body {
   min-height: 100vh;
   margin: 0;
   overflow-x: hidden;
+  /* Portal content (MUI Dialog/Popover) renders under body, not .piano-app. */
+  font-family: 'Roboto', system-ui, sans-serif;
+  color: var(--piano-text);
 }
 
 #root {
@@ -3687,8 +3690,25 @@ body {
   border: 1px solid var(--piano-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
-  padding: var(--sp-2);
+  padding: var(--sp-3);
+  font-family: 'Roboto', system-ui, sans-serif;
+  color: var(--piano-text);
   animation: np-popover-in var(--transition-fast);
+}
+
+.np-pop-section {
+  margin-bottom: 0;
+  min-width: min(760px, calc(100vw - 52px));
+}
+
+.np-pop-section-sm,
+.np-pop-section-lg {
+  min-width: min(760px, calc(100vw - 52px));
+}
+
+.np-pop-section .ep-group-label {
+  margin-bottom: var(--sp-3);
+  color: var(--piano-text-secondary);
 }
 
 /* Inline progression menu should render menu content only */
@@ -3696,10 +3716,12 @@ body {
   background: transparent;
   border: 0;
   box-shadow: none;
+  width: 100%;
 }
 
 .np-chord-template-inline-menu .shared-chord-progression-inline-list {
   padding: 0;
+  gap: var(--sp-2);
 }
 
 @keyframes np-popover-in {
@@ -3713,7 +3735,14 @@ body {
   }
 }
 .np-pop-keys {
-  width: min(520px, calc(100vw - 36px));
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: var(--sp-2);
+}
+
+.np-popover .shared-chord-style-inline-list {
+  padding: 0;
 }
 .np-pop-key {
   min-width: 0;
@@ -3828,6 +3857,8 @@ body {
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-xl);
   overflow: hidden;
+  font-family: 'Roboto', system-ui, sans-serif;
+  color: var(--piano-text);
 }
 .ep-panel-inline {
   width: min(680px, calc(100vw - 32px));
@@ -3837,6 +3868,8 @@ body {
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-xl);
   overflow: hidden;
+  font-family: 'Roboto', system-ui, sans-serif;
+  color: var(--piano-text);
 }
 @keyframes ep-slide-up {
   from {
@@ -4446,6 +4479,10 @@ body {
   border-color: var(--piano-success-text);
   color: var(--piano-text);
 }
+.is-trigger.mic-live {
+  border-color: color-mix(in srgb, #d6698f 38%, var(--piano-border));
+  background: color-mix(in srgb, #fff5f8 55%, #ffffff);
+}
 .is-dot {
   width: 7px;
   height: 7px;
@@ -4493,6 +4530,25 @@ body {
   flex-direction: column;
   gap: var(--sp-2);
 }
+.is-section-mic {
+  border: 1px solid transparent;
+  border-radius: var(--radius-lg);
+  padding: var(--sp-2);
+  margin-inline: calc(-1 * var(--sp-2));
+  transition:
+    border-color var(--transition-fast),
+    background-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+.is-section-mic.active {
+  border-color: color-mix(in srgb, #d6698f 36%, var(--piano-border));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #fde7ef 44%, #ffffff),
+    color-mix(in srgb, #fff5f8 62%, #ffffff)
+  );
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #f5b7ca 30%, transparent);
+}
 .is-row {
   display: flex;
   align-items: center;
@@ -4520,6 +4576,9 @@ body {
 .is-status.ok {
   color: var(--piano-success-text);
 }
+.is-section-mic.active .is-status.ok {
+  color: color-mix(in srgb, #a03c62 78%, #5b1c37);
+}
 .is-status.off {
   color: var(--piano-text-secondary);
 }
@@ -4535,6 +4594,40 @@ body {
   color: var(--piano-text);
   margin: 0;
   padding-left: 30px;
+}
+.is-detected {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  width: fit-content;
+  border: 1px solid color-mix(in srgb, #e38ead 44%, var(--piano-border));
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, #fff0f5 66%, #ffffff);
+  padding: 4px var(--sp-2);
+}
+.is-detected-label {
+  font-size: var(--text-xs);
+  color: color-mix(in srgb, #8f4460 80%, #5f2940);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.is-pitch-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.8rem;
+  padding: 2px 10px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #e88dad 84%, #ffffff),
+    color-mix(in srgb, #cf5f88 90%, #b4416d)
+  );
+  color: #ffffff;
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 0 rgba(88, 22, 45, 0.35);
 }
 .is-select-row {
   display: grid;

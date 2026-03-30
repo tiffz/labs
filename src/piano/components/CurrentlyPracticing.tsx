@@ -619,7 +619,7 @@ const CurrentlyPracticing: React.FC<CurrentlyPracticingProps> = ({ onLoadExercis
         onClose={() => setPopover(null)}
       >
         {chordExerciseMeta ? (
-          <div className="ep-group" style={{ marginBottom: 0, minWidth: 260 }}>
+          <div className="ep-group np-pop-section np-pop-section-sm">
             <label className="ep-group-label">Style</label>
             <ChordStyleSelector
               selectedStyle={
@@ -638,7 +638,7 @@ const CurrentlyPracticing: React.FC<CurrentlyPracticingProps> = ({ onLoadExercis
         onClose={() => setPopover(null)}
       >
         {chordExerciseMeta ? (
-          <div className="ep-group" style={{ marginBottom: 0, minWidth: 260 }}>
+          <div className="ep-group np-pop-section np-pop-section-sm">
             <label className="ep-group-label">Voicing</label>
             <div className="np-pop-keys">
               {VOICING_OPTIONS.map((option) => (
@@ -666,7 +666,7 @@ const CurrentlyPracticing: React.FC<CurrentlyPracticingProps> = ({ onLoadExercis
         onClose={() => setPopover(null)}
       >
         {chordExerciseMeta ? (
-          <div className="ep-group" style={{ marginBottom: 0, minWidth: 360 }}>
+          <div className="ep-group np-pop-section np-pop-section-lg">
             <label className="ep-group-label">Progression</label>
             <ChordProgressionSelector
               value={chordTemplateInput}

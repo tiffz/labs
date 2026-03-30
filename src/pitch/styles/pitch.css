@@ -5,9 +5,9 @@
   --md-primary-container: #d2eaed;
   --md-on-primary-container: #073e46;
 
-  --md-secondary: #e58ba9;
+  --md-secondary: #df7fa0;
   --md-on-secondary: #ffffff;
-  --md-secondary-container: #fbe4ec;
+  --md-secondary-container: #f7dce7;
   --md-on-secondary-container: #5b2338;
 
   --md-tertiary: #7b5470;
@@ -15,11 +15,11 @@
   --md-tertiary-container: #e9dde6;
 
   --md-surface: #ffffff;
-  --md-surface-container: #fbf8fa;
-  --md-surface-container-high: #f5eef2;
-  --md-surface-container-highest: #eee3e9;
-  --md-outline: #dbcbd3;
-  --md-outline-variant: #e9dde3;
+  --md-surface-container: #fcf8fa;
+  --md-surface-container-high: #f8f1f5;
+  --md-surface-container-highest: #f4eaf0;
+  --md-outline: #dfcad5;
+  --md-outline-variant: #ecdee5;
   --md-on-surface: #2f2431;
   --md-on-surface-variant: #746170;
 
@@ -51,7 +51,7 @@ body,
 body {
   margin: 0;
   display: block;
-  background: #f8f5f7 !important;
+  background: #f9f2f7 !important;
   background-image: none !important;
 }
 
@@ -60,26 +60,28 @@ body {
   width: 100%;
   background:
     radial-gradient(
-      1200px 520px at 8% -18%,
-      rgba(229, 139, 169, 0.2),
-      transparent 56%
+      980px 640px at -10% -20%,
+      rgba(187, 84, 131, 0.36) 0%,
+      rgba(187, 84, 131, 0.14) 34%,
+      transparent 68%
     ),
     radial-gradient(
-      900px 420px at 96% -12%,
-      rgba(2, 95, 106, 0.16),
-      transparent 58%
+      900px 560px at 112% -12%,
+      rgba(0, 72, 88, 0.24) 0%,
+      rgba(0, 72, 88, 0.09) 40%,
+      transparent 72%
     ),
     radial-gradient(
-      1000px 460px at 50% 112%,
-      rgba(123, 84, 112, 0.05),
-      transparent 64%
+      1040px 500px at 56% 122%,
+      rgba(92, 57, 86, 0.16) 0%,
+      transparent 68%
     ),
     linear-gradient(
-      180deg,
-      color-mix(in srgb, #ffffff 93%, var(--md-secondary-container)) 0%,
-      color-mix(in srgb, #ffffff 95%, var(--md-primary-container)) 48%,
-      #ffffff 100%
-    );
+      130deg,
+      rgba(255, 255, 255, 0.34) 0%,
+      rgba(255, 255, 255, 0) 46%
+    ),
+    linear-gradient(180deg, #fbf2f7 0%, #f7edf4 42%, #fefbfd 100%);
   color: var(--md-on-surface);
   padding: 0;
   font-family: 'Roboto', 'Segoe UI', sans-serif;
@@ -122,12 +124,13 @@ body {
   font-size: clamp(1.6rem, 3vw, 2.2rem);
   line-height: 1.14;
   letter-spacing: -0.02em;
-  color: var(--md-primary);
+  color: color-mix(in srgb, var(--md-primary) 92%, #00424f);
   background: none;
   -webkit-text-fill-color: currentColor;
   background-clip: border-box;
   -webkit-background-clip: border-box;
   font-weight: 700;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 .pitch-header p {
@@ -140,12 +143,20 @@ body {
 .pitch-card {
   background: linear-gradient(
     180deg,
-    var(--md-surface) 0%,
-    var(--md-surface-container) 100%
+    color-mix(in srgb, var(--md-surface) 92%, #ffffff) 0%,
+    color-mix(in srgb, var(--md-surface-container) 94%, #ffffff) 100%
   );
-  border: 1px solid var(--md-outline-variant);
-  border-radius: 22px;
-  box-shadow: var(--md-elev-2);
+  border: 1px solid color-mix(in srgb, #c08ca8 42%, var(--md-outline-variant));
+  border-radius: 24px;
+  box-shadow:
+    0 16px 34px rgba(57, 29, 52, 0.12),
+    0 6px 16px rgba(57, 29, 52, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.82);
+}
+
+.pitch-main-card,
+.pitch-reference-card {
+  position: relative;
 }
 
 .pitch-controls {
@@ -176,21 +187,26 @@ body {
 .pitch-device select {
   min-width: 0;
   padding: 0 12px;
-  border: 1px solid var(--md-outline);
+  border: 1px solid color-mix(in srgb, var(--md-outline) 72%, #e8dde3);
   background: var(--md-surface);
   color: var(--md-on-surface);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .pitch-device select:hover {
-  border-color: color-mix(in srgb, var(--md-primary) 40%, var(--md-outline));
+  border-color: color-mix(in srgb, var(--md-secondary) 24%, var(--md-primary));
 }
 
 .pitch-listen-btn {
   cursor: pointer;
   padding: 0 18px;
-  border: 1px solid transparent;
-  background: color-mix(in srgb, var(--md-primary) 94%, black 2%);
+  border: 1px solid
+    color-mix(in srgb, var(--md-primary) 56%, var(--md-secondary));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--md-primary) 90%, #0b4f5c) 0%,
+    color-mix(in srgb, var(--md-primary) 72%, var(--md-secondary) 28%) 100%
+  );
   color: var(--md-on-primary);
   font-weight: 700;
   letter-spacing: 0.01em;
@@ -204,6 +220,9 @@ body {
 .pitch-listen-btn:hover {
   transform: translateY(-1px);
   filter: brightness(1.02);
+  box-shadow:
+    0 10px 20px rgba(2, 95, 106, 0.2),
+    0 4px 10px rgba(214, 120, 154, 0.16);
 }
 
 .pitch-listen-btn:active {
@@ -255,7 +274,7 @@ body {
   line-height: 0.88;
   font-weight: 700;
   letter-spacing: -0.015em;
-  color: var(--md-primary);
+  color: color-mix(in srgb, var(--md-primary) 84%, #015965);
   font-variant-numeric: tabular-nums;
 }
 
@@ -285,12 +304,13 @@ body {
   position: relative;
   height: 22px;
   border-radius: 999px;
-  border: 1px solid var(--md-outline-variant);
+  border: 1px solid
+    color-mix(in srgb, var(--md-outline) 66%, var(--md-outline-variant));
   background: linear-gradient(
     90deg,
-    color-mix(in srgb, var(--md-secondary-container) 72%, transparent),
+    color-mix(in srgb, var(--md-secondary-container) 38%, transparent),
     color-mix(in srgb, var(--md-primary-container) 84%, #fff) 50%,
-    color-mix(in srgb, var(--md-secondary-container) 72%, transparent)
+    color-mix(in srgb, var(--md-secondary-container) 38%, transparent)
   );
   overflow: hidden;
 }
@@ -312,7 +332,14 @@ body {
   bottom: 3px;
   width: 10px;
   border-radius: 999px;
-  background: var(--md-on-primary-container);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--md-primary) 88%, #0c4f5a),
+    color-mix(in srgb, var(--md-primary) 72%, var(--md-secondary) 28%)
+  );
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.52),
+    0 0 10px rgba(12, 79, 90, 0.18);
   transform: translateX(-50%);
   transition: left 180ms ease-out;
 }
@@ -329,7 +356,8 @@ body {
 .pitch-section-title {
   margin: var(--space-4) 0 0;
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.01em;
   color: var(--md-on-surface);
 }
 
@@ -337,7 +365,8 @@ body {
   margin-top: var(--space-2);
   height: 130px;
   border-radius: 16px;
-  border: 1px solid var(--md-outline-variant);
+  border: 1px solid
+    color-mix(in srgb, var(--md-outline) 66%, var(--md-outline-variant));
   background: linear-gradient(
     180deg,
     var(--md-surface-container-high) 0%,
@@ -359,7 +388,7 @@ body {
 
 .pitch-history-line {
   fill: none;
-  stroke: color-mix(in srgb, var(--md-primary) 82%, var(--md-secondary));
+  stroke: color-mix(in srgb, var(--md-primary) 74%, var(--md-secondary) 26%);
   stroke-width: 1.4;
   stroke-linecap: round;
   stroke-linejoin: round;
