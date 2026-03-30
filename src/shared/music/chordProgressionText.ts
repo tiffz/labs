@@ -85,6 +85,11 @@ function spellPitchClass(pitchClass: number, key: Key): string {
   return spellPitchClassForKey(pitchClass, key);
 }
 
+function buildChordSymbol(token: ParsedChordToken, key: Key): string {
+  const slashSuffix = token.bassRoot ? `/${spellRoot(token.bassRoot, key)}` : '';
+  return `${spellRoot(token.root, key)}${QUALITY_SUFFIX[token.quality] ?? ''}${slashSuffix}`;
+}
+
 export function parseChordSymbolToken(token: string): ParsedChordToken | null {
   const match = token.match(
     /^([A-G](?:#|b)?)(maj7|m7|m|7|sus|sus2|sus4|dim|aug)?(?:\/([A-G](?:#|b)?))?$/i
@@ -220,7 +225,10 @@ function transposeChordTokens(
   return tokens.map((token) => {
     const rootPc = NOTE_TO_PITCH_CLASS[token.root] ?? 0;
     const shiftedRoot = spellPitchClass(rootPc + semitoneShift, key);
-    return { ...token, root: shiftedRoot };
+    const shiftedBassRoot = token.bassRoot
+      ? spellPitchClass((NOTE_TO_PITCH_CLASS[token.bassRoot] ?? 0) + semitoneShift, key)
+      : undefined;
+    return { ...token, root: shiftedRoot, bassRoot: shiftedBassRoot };
   });
 }
 
@@ -243,9 +251,7 @@ function findBestDiatonicFit(
       const shiftedTokens = transposeChordTokens(tokens, shift, key);
       const romanNumerals = chordTokensToRoman(shiftedTokens, key);
       if (!romanNumerals || romanNumerals.length < 2) continue;
-      const chordSymbols = shiftedTokens.map(
-        (token) => `${spellRoot(token.root, key)}${QUALITY_SUFFIX[token.quality] ?? ''}`
-      );
+      const chordSymbols = shiftedTokens.map((token) => buildChordSymbol(token, key));
       const firstDegreeBonus = romanNumerals[0] === 'I' ? 1 : 0;
       const selectedKeyBonus = key === selectedKey ? 0.2 : 0;
       const shiftPenalty = Math.abs(shift) * 0.05;
@@ -337,10 +343,7 @@ function findBestRootPatternFit(
           score,
           romanNumerals,
           chordSymbols: shouldPreserveTokenQuality
-            ? shiftedTokens.map((token) => {
-              const slashSuffix = token.bassRoot ? `/${spellRoot(token.bassRoot, key)}` : '';
-              return `${spellRoot(token.root, key)}${QUALITY_SUFFIX[token.quality] ?? ''}${slashSuffix}`;
-            })
+            ? shiftedTokens.map((token) => buildChordSymbol(token, key))
             : romanToChordSymbols(romanNumerals, key),
         };
       }

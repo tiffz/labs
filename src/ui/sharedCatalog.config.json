@@ -31,9 +31,11 @@
       "path": "src/shared/music/ARCHITECTURE.md",
       "kind": "doc",
       "stability": "stable",
+      "owner": "music-core",
       "description": "Shared music ownership and dependency boundary guidance.",
       "tags": ["docs", "architecture"],
       "appsUsing": ["beat", "chords", "drums", "piano", "words"],
+      "exportType": "doc",
       "demoId": null
     }
   ]

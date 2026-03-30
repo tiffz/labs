@@ -1,4 +1,3 @@
-import React from 'react';
 import type { GameState } from '../game/types';
 import { CEO_FLOOR } from '../game/constants';
 

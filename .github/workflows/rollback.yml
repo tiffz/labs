@@ -1,0 +1,130 @@
+name: Rollback Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: "Commit SHA to redeploy (known-good target)"
+        required: true
+        type: string
+      allow_non_main:
+        description: "Allow rollback to a commit not reachable from origin/main"
+        required: false
+        default: false
+        type: boolean
+      dry_run:
+        description: "Validate only (no deployment side effects)"
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Resolve and validate rollback target
+        id: validate
+        run: |
+          set -euo pipefail
+
+          TARGET="${{ inputs.commit_sha }}"
+          if [ -z "$TARGET" ]; then
+            echo "A commit SHA is required."
+            exit 1
+          fi
+
+          git fetch origin main --depth=1
+          git rev-parse --verify "$TARGET^{commit}" >/dev/null 2>&1 || {
+            echo "Invalid commit SHA: $TARGET"
+            exit 1
+          }
+
+          RESOLVED_SHA="$(git rev-parse "$TARGET^{commit}")"
+          echo "resolved_sha=$RESOLVED_SHA" >> "$GITHUB_OUTPUT"
+
+          if [ "${{ inputs.allow_non_main }}" != "true" ]; then
+            if ! git merge-base --is-ancestor "$RESOLVED_SHA" origin/main; then
+              echo "Refusing rollback: $RESOLVED_SHA is not reachable from origin/main."
+              echo "If this is intentional, rerun with allow_non_main=true."
+              exit 1
+            fi
+          fi
+
+      - name: Checkout rollback commit
+        run: git checkout "${{ steps.validate.outputs.resolved_sha }}"
+
+      - name: Install dependencies
+        run: |
+          rm -rf node_modules package-lock.json
+          npm install
+          npm ci
+
+      - name: Build rollback artifact
+        run: npm run build
+
+      - name: Setup Pages
+        if: ${{ !inputs.dry_run }}
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        if: ${{ !inputs.dry_run }}
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+      - name: Deploy rollback artifact
+        if: ${{ !inputs.dry_run }}
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Post-rollback smoke checks
+        if: ${{ !inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          BASE_URL="${{ steps.deployment.outputs.page_url }}"
+          if [ -z "$BASE_URL" ]; then
+            echo "Deployment URL missing; cannot run smoke checks."
+            exit 1
+          fi
+
+          curl -fsSL "${BASE_URL}" >/dev/null
+          curl -fsSL "${BASE_URL}drums/" >/dev/null
+          curl -fsSL "${BASE_URL}piano/" >/dev/null
+
+      - name: Rollback summary
+        if: always()
+        run: |
+          {
+            echo "## Rollback Run Summary"
+            echo ""
+            echo "- Requested SHA: \`${{ inputs.commit_sha }}\`"
+            echo "- Resolved SHA: \`${{ steps.validate.outputs.resolved_sha }}\`"
+            echo "- Actor: \`${{ github.actor }}\`"
+            echo "- Dry run: \`${{ inputs.dry_run }}\`"
+            echo "- Allow non-main: \`${{ inputs.allow_non_main }}\`"
+            if [ "${{ inputs.dry_run }}" = "true" ]; then
+              echo "- Deployment: skipped (dry run)"
+            else
+              echo "- Deployment URL: ${{ steps.deployment.outputs.page_url }}"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -378,7 +378,7 @@ const PracticeMode: React.FC = () => {
             missedNotes.current.delete(expected.noteId);
             const relevantTimes = useMic
               ? played
-                  .filter((midi) => isPitchNearExpected(midi, expected.pitches, true))
+                  .filter((midi) => isPitchNearExpected(midi, expected.pitches, true, useMic))
                   .map((midi) => midiTimes.get(midi))
                   .filter((t): t is number => t !== undefined)
               : expected.pitches.map(p => midiTimes.get(p)).filter((t): t is number => t !== undefined);

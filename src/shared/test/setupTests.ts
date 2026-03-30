@@ -7,7 +7,7 @@ expect.extend(toHaveNoViolations);
 // Mock requestAnimationFrame and cancelAnimationFrame for test environment
 let animationFrameId = 0;
 const animationFrameCallbacks = new Map<number, FrameRequestCallback>();
-const animationFrameTimeouts = new Map<number, NodeJS.Timeout>();
+const animationFrameTimeouts = new Map<number, ReturnType<typeof setTimeout>>();
 
 global.requestAnimationFrame = (callback: FrameRequestCallback): number => {
   const id = ++animationFrameId;
@@ -124,7 +124,7 @@ Object.defineProperty(window, 'gtag', {
 // VexFlow tries to use canvas for text measurement, but JSDOM doesn't support it
 const originalGetContext = HTMLCanvasElement.prototype.getContext;
 HTMLCanvasElement.prototype.getContext = function(
-  contextId: string | RenderingContextType,
+  contextId: string,
   ...args: unknown[]
 ): RenderingContext | null {
   if (contextId === '2d' || contextId === 'webgl' || contextId === 'webgl2') {
@@ -178,5 +178,5 @@ HTMLCanvasElement.prototype.getContext = function(
     return mockContext;
   }
   // Fall back to original for other context types
-  return originalGetContext.call(this, contextId as RenderingContextType, ...args);
+  return originalGetContext.call(this, contextId as never, ...(args as []));
 };

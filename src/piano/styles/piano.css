@@ -3820,6 +3820,15 @@ body {
   display: flex;
   flex-direction: column;
 }
+/* Ensure MUI dialog paper always receives exercise picker panel chrome. */
+.MuiDialog-paper.ep-panel {
+  width: min(720px, calc(100vw - 32px));
+  max-width: none;
+  max-height: 85vh;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  overflow: hidden;
+}
 .ep-panel-inline {
   width: min(680px, calc(100vw - 32px));
   max-height: min(78vh, 700px);

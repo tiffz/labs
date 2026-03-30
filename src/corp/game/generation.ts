@@ -11,9 +11,12 @@ export function createEmptyMap(): Tile[][] {
 
 export function generateRooms(): Array<{ x: number; y: number; width: number; height: number }> {
   const rooms: Array<{ x: number; y: number; width: number; height: number }> = [];
+  type Room = { x: number; y: number; width: number; height: number };
   const numRooms = rand(MIN_ROOMS, MAX_ROOMS);
   for (let i = 0; i < numRooms; i++) {
-    let room; let overlaps; let attempt = 0;
+    let room: Room = { x: 0, y: 0, width: MIN_ROOM_SIZE, height: MIN_ROOM_SIZE };
+    let overlaps: boolean;
+    let attempt = 0;
     do {
       room = {
         width: rand(MIN_ROOM_SIZE, MAX_ROOM_SIZE),

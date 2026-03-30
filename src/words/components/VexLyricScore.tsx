@@ -469,7 +469,7 @@ const VexLyricScore: React.FC<VexLyricScoreProps> = ({
         voice.setStrict(false);
         voice.addTickables(vexNotes);
         new Formatter().joinVoices([voice]).format([voice], measureWidth - 32);
-        const beams = Beam.generateBeams(vexNotes, { beam_rests: false });
+        const beams = Beam.generateBeams(vexNotes, { beamRests: false });
         voice.draw(context, stave);
         beams.forEach((beam) => beam.setContext(context).draw());
         for (let noteIndex = 1; noteIndex < vexNotes.length; noteIndex += 1) {
@@ -619,15 +619,15 @@ const VexLyricScore: React.FC<VexLyricScoreProps> = ({
                 keys: isTrebleRest ? ['b/4'] : chordToneKeys.treble,
                 duration: `${vex.duration}${vex.isDotted ? 'd' : ''}${isTrebleRest ? 'r' : ''}`,
                 clef: 'treble',
-                auto_stem: false,
-                stem_direction: 1,
+                autoStem: false,
+                stemDirection: 1,
               });
               const bassNote = new StaveNote({
                 keys: isBassRest ? ['b/3'] : chordToneKeys.bass,
                 duration: `${vex.duration}${vex.isDotted ? 'd' : ''}${isBassRest ? 'r' : ''}`,
                 clef: 'bass',
-                auto_stem: false,
-                stem_direction: -1,
+                autoStem: false,
+                stemDirection: -1,
               });
               if (vex.isDotted) {
                 Dot.buildAndAttach([trebleNote], { all: true });

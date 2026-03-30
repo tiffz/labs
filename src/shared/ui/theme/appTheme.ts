@@ -80,7 +80,7 @@ function buildTheme(config: AppThemeConfig): Theme {
       MuiButton: {
         styleOverrides: {
           root: ({ theme }) => ({
-            borderRadius: Math.max(theme.shape.borderRadius - 2, 6),
+            borderRadius: Math.max(Number(theme.shape.borderRadius) - 2, 6),
             minHeight: 38,
             paddingInline: theme.spacing(1.5),
           }),
@@ -102,7 +102,7 @@ function buildTheme(config: AppThemeConfig): Theme {
       MuiOutlinedInput: {
         styleOverrides: {
           root: ({ theme }) => ({
-            borderRadius: Math.max(theme.shape.borderRadius - 2, 6),
+            borderRadius: Math.max(Number(theme.shape.borderRadius) - 2, 6),
           }),
         },
       },

@@ -29,7 +29,7 @@ export function drawDrumSymbol(
   scale: number = 0.85,
   yOffset: number = -40
 ): SVGGElement | null {
-  if (sound === 'rest') return null;
+  if (sound === 'rest' || sound === 'simile') return null;
 
   const symbolGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
   // Position symbol with configurable Y offset (default: -40 to place above notehead)

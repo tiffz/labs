@@ -110,7 +110,27 @@ export function generateVoicing(
   let notes = getChordNotes(chord, clef);
 
   if (clef === 'bass') {
-    const bassNote = notes[0];
+    const rootMap: Record<string, number> = {
+      C: 60,
+      'C#': 61,
+      Db: 61,
+      D: 62,
+      'D#': 63,
+      Eb: 63,
+      E: 64,
+      F: 65,
+      'F#': 66,
+      Gb: 66,
+      G: 67,
+      'G#': 68,
+      Ab: 68,
+      A: 69,
+      'A#': 70,
+      Bb: 70,
+      B: 71,
+    };
+    const requestedBass = chord.bassRoot ? rootMap[chord.bassRoot] : undefined;
+    const bassNote = requestedBass ?? notes[0];
     const minBass = 40;
     const maxBass = 62;
     let clamped = bassNote;

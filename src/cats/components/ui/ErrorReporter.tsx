@@ -35,7 +35,7 @@ export const ErrorReporter: React.FC<ErrorReporterProps> = ({ isVisible = true }
         
         // Get latest error message
         const errorLines = errorLog.split('\n');
-        const lastErrorIndex = errorLines.findLastIndex(line => line.startsWith('Message:'));
+        const lastErrorIndex = errorLines.findLastIndex((line: string) => line.startsWith('Message:'));
         if (lastErrorIndex >= 0) {
           const newLatestError = errorLines[lastErrorIndex].replace('Message: ', '');
           setLatestError(prevError => prevError !== newLatestError ? newLatestError : prevError);

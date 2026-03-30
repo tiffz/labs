@@ -41,7 +41,8 @@ function chordToSymbol(chord: Chord, key: Key): string {
     sus2: 'sus2', sus4: 'sus4', dominant7: '7', major7: 'maj7', minor7: 'm7',
   };
   const root = spellChordRoot(chord, key);
-  return `${root}${qualSuffix[chord.quality] ?? ''}`;
+  const bass = chord.bassRoot ? `/${spellRootForKey(chord.bassRoot, key)}` : '';
+  return `${root}${qualSuffix[chord.quality] ?? ''}${bass}`;
 }
 
 interface StylePattern {
@@ -270,6 +271,7 @@ export function generateChordProgressionScore(config: ChordExerciseConfig): Pian
     return {
       root: parsed.root,
       quality: parsed.quality,
+      bassRoot: parsed.bassRoot,
       inversion: 0,
       octave: 4,
     } as Chord;
@@ -296,7 +298,7 @@ export function generateChordProgressionScore(config: ChordExerciseConfig): Pian
     if (voicingStyle === 'inv1') chord.inversion = 1;
     if (voicingStyle === 'inv2') chord.inversion = 2;
 
-    const trebleNotes = voicingStyle === 'voice-leading'
+    const trebleNotes: number[] = voicingStyle === 'voice-leading'
       ? pickVoiceLedVoicing(chord, previousTrebleVoicing)
       : generateVoicing(chord, voicingOpts, 'treble');
     const bassNotes = generateVoicing(chord, voicingOpts, 'bass');

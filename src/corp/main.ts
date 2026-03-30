@@ -358,7 +358,19 @@ function generateLevel() {
   if (seeded.coworkers.length === 0 && rooms.length > 1) {
     const r = rooms[1];
     const type = state.coworkerTypes[Math.floor(Math.random() * state.coworkerTypes.length)];
-    seeded.coworkers.push({ id: `coworker-seed-${Date.now()}`, pos: { x: r.x + 1, y: r.y + 1 }, emoji: type.emoji, name: type.name, effects: type.effects, behavior: type.behavior });
+    seeded.coworkers.push({
+      id: `coworker-seed-${Date.now()}`,
+      pos: { x: r.x + 1, y: r.y + 1 },
+      emoji: type.emoji,
+      name: type.name,
+      effects: type.effects,
+      behavior: type.behavior,
+      productivity: type.base.productivity,
+      maxProductivity: type.base.maxProductivity,
+      happiness: type.base.happiness,
+      reputation: type.base.reputation,
+      ai: type.ai,
+    });
   }
   seeded.computers.push({ id: 'computer-desk', pos: deskPos, emoji: '🖥️' });
   map[deskPos.y][deskPos.x].walkable = false;

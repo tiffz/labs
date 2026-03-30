@@ -257,6 +257,25 @@ function inferTags(relPath, exportName) {
   return Array.from(tags);
 }
 
+function normalizeExtraEntry(extraEntry) {
+  const pathValue = String(extraEntry.path ?? '');
+  const kindValue = extraEntry.kind ?? inferKind(pathValue, 'doc');
+  const stabilityValue = extraEntry.stability ?? inferStability(pathValue);
+  return {
+    id: String(extraEntry.id ?? slugify(pathValue || String(extraEntry.name ?? 'extra-entry'))),
+    name: String(extraEntry.name ?? 'Untitled Entry'),
+    path: pathValue,
+    kind: kindValue,
+    stability: stabilityValue,
+    owner: String(extraEntry.owner ?? inferOwner(pathValue)),
+    description: String(extraEntry.description ?? 'No description provided.'),
+    tags: Array.isArray(extraEntry.tags) ? extraEntry.tags : [],
+    appsUsing: Array.isArray(extraEntry.appsUsing) ? extraEntry.appsUsing : [],
+    exportType: String(extraEntry.exportType ?? (kindValue === 'doc' ? 'doc' : 'named')),
+    demoId: extraEntry.demoId ?? null,
+  };
+}
+
 function resolveImportTarget(importerFile, specifier) {
   if (!specifier.startsWith('.')) return null;
   const importerDir = path.dirname(importerFile);
@@ -343,7 +362,7 @@ function buildCatalogEntries() {
   }
 
   for (const extraEntry of config.extraEntries ?? []) {
-    entries.push(extraEntry);
+    entries.push(normalizeExtraEntry(extraEntry));
   }
 
   // Ensure each demo id maps to a single canonical entry (avoid duplicate gallery cards

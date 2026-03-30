@@ -29,6 +29,7 @@ public/                  # static assets
 npm run dev
 npm test
 npm run lint
+npm run typecheck
 npm run build
 npm run knip
 ```
@@ -81,6 +82,8 @@ Workflows:
 
 - `.github/workflows/ci.yml`: code quality checks, tests, build, deploy.
 - `.github/workflows/deploy-docs.yml`: docs/assets deployment path with lint, fast tests, and build.
+- `.github/workflows/rollback.yml`: manual production rollback by known-good commit SHA.
 
 For ADR-level guidance and architecture rationale, see `DEVELOPMENT.md`.
 For documentation precedence and canonical sources, see `docs/SOURCE_OF_TRUTH.md`.
+For rollback operations, see `docs/ROLLBACK.md`.

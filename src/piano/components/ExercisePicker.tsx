@@ -731,6 +731,7 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({
       onClose={onClose}
       maxWidth={false}
       fullWidth={false}
+      PaperProps={{ className: 'ep-panel' }}
       slotProps={{ paper: { className: 'ep-panel' } }}
     >
       {content}

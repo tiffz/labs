@@ -62,6 +62,7 @@ export interface ChordProgressionConfig {
 export interface Chord {
   root: string;
   quality: ChordQuality;
+  bassRoot?: string;
   inversion?: number;
   octave?: number;
 }

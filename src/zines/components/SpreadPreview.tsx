@@ -1,6 +1,14 @@
 /* eslint-disable react/prop-types */
 import React, { useMemo, memo, useState, useRef, useEffect } from 'react';
-import type { BookletPageInfo, SpreadInfo, ValidationResult, PaperConfig, BleedConfig, ImageSizeWarning } from '../types';
+import type {
+  BookletPageInfo,
+  SpreadInfo,
+  ValidationResult,
+  PaperConfig,
+  BleedConfig,
+  ImageSizeWarning,
+  ParsedFile,
+} from '../types';
 import IconButton from './IconButton';
 import { buildPrintSpreads, type PrintSpread } from '../utils/spreadPairing';
 

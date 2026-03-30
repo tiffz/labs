@@ -370,7 +370,7 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
               showOnLabel={false}
               tooltipOn="Metronome: On"
               tooltipOff="Metronome: Off"
-              onMouseEnter={(event) =>
+              onMouseEnter={(event: React.MouseEvent<HTMLButtonElement>) =>
                 showTip(event, metronomeEnabled ? 'Metronome: On' : 'Metronome: Off')
               }
               onMouseLeave={hideTip}

@@ -147,7 +147,7 @@ function getViewportMetrics(): { width: number; height: number } {
 
 function generateRandomTemplateNotation(): string {
   const anchors: Array<'D' | 'T' | 'K'> = ['D', 'T', 'K'];
-  const notes = Array.from({ length: 16 }, () => '-');
+  const notes: string[] = Array.from({ length: 16 }, () => '-');
   notes[0] = 'D';
   notes[8] = 'D';
   for (let i = 0; i < notes.length; i += 1) {
@@ -159,7 +159,7 @@ function generateRandomTemplateNotation(): string {
       notes[i] = '_';
     }
   }
-  if (notes.every((token) => token === '-')) notes[0] = 'D';
+  if (!notes.some((token) => token !== '-')) notes[0] = 'D';
   return notes.join('');
 }
 
@@ -485,7 +485,7 @@ const App: React.FC = () => {
   const sectionSettingsMenuRef = useRef<HTMLDivElement | null>(null);
   const sectionsColumnRef = useRef<HTMLElement | null>(null);
   const notationScrollRef = useRef<HTMLElement | null>(null);
-  const notationSectionRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const notationSectionRefs = useRef<Map<string, HTMLElement>>(new Map());
   const chordAudioContextRef = useRef<AudioContext | null>(null);
   const backingAudioPlayerRef = useRef<AudioPlayer | null>(null);
   const lastBackingTriggerRef = useRef<string | null>(null);
@@ -792,7 +792,7 @@ const App: React.FC = () => {
         labels.set(plan.startMeasure + offset, symbol);
       });
     });
-    let carryChord = songKey;
+    let carryChord: string = songKey;
     for (let measureIndex = 0; measureIndex < parsedRhythm.measures.length; measureIndex += 1) {
       const chord = labels.get(measureIndex);
       if (chord && chord.trim().length > 0) {

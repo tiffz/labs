@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { MAP_HEIGHT, MAP_WIDTH } from '../game/constants';
 import type { GameState, Tile } from '../game/types';
 

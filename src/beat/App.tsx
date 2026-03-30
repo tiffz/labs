@@ -218,7 +218,7 @@ const App: React.FC = () => {
   const effectivePlaybackRate = isYouTubeMedia ? youtubePlayback.playbackRate : playbackRate;
   const exportAdapter = useMemo<ExportSourceAdapter>(() => {
     const hasAudio = Boolean(audioBuffer);
-    const baseName = (mediaFile?.name || 'beat-track')
+    const baseName = (mediaFile?.file.name || 'beat-track')
       .replace(/[^a-z0-9-_]+/gi, '-')
       .replace(/-+/g, '-')
       .replace(/^-|-$/g, '')
@@ -241,7 +241,7 @@ const App: React.FC = () => {
         return { mix: repeatAudioBuffer(audioBuffer, loopCount) };
       },
     };
-  }, [audioBuffer, mediaFile?.name]);
+  }, [audioBuffer, mediaFile?.file.name]);
 
   const getYoutubeMetronomeAudioContext = useCallback(() => {
     if (!youtubeMetronomeContextRef.current || youtubeMetronomeContextRef.current.state === 'closed') {

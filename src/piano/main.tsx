@@ -4,8 +4,8 @@ import { ThemeProvider } from '@mui/material/styles';
 import { installServerLogger } from '../shared/utils/serverLogger';
 import { getAppTheme } from '../shared/ui/theme/appTheme';
 import App from './App';
-import './styles/piano.css';
 import '../shared/components/music/appSharedThemes.css';
+import './styles/piano.css';
 
 installServerLogger('PIANO');
 

@@ -1,6 +1,10 @@
 import React from 'react';
 
-interface MetronomeToggleButtonProps {
+interface MetronomeToggleButtonProps
+  extends Omit<
+    React.ButtonHTMLAttributes<HTMLButtonElement>,
+    'onToggle' | 'onClick' | 'onFocus' | 'onBlur' | 'onMouseEnter' | 'onMouseLeave'
+  > {
   enabled: boolean;
   onToggle: () => void;
   className?: string;
@@ -20,7 +24,6 @@ interface MetronomeToggleButtonProps {
   onBlur?: React.FocusEventHandler<HTMLButtonElement>;
   includeNativeTitle?: boolean;
   includeDataTooltip?: boolean;
-  [key: string]: unknown;
 }
 
 /**

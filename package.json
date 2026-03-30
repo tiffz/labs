@@ -6,6 +6,7 @@
   "scripts": {
     "generate:shared-catalog": "node scripts/generate-shared-catalog.mjs",
     "check:shared-catalog": "node scripts/generate-shared-catalog.mjs --check",
+    "rollback:candidates": "node scripts/list-rollback-candidates.mjs --count 20",
     "check:import-boundaries": "node scripts/check-import-boundaries.mjs",
     "prelint": "npm run generate:shared-catalog",
     "pretest": "npm run generate:shared-catalog",
@@ -17,6 +18,8 @@
     "lint": "eslint . && npm run check:shared-theme-contract && npm run knip -- --no-exit-code",
     "deps:outdated": "npm outdated --long",
     "deps:update:safe": "npm update",
+    "typecheck": "tsc -p tsconfig.app.json --noEmit",
+    "typecheck:full": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "test:fast": "FAST_TESTS=true vitest run",
     "test:full": "INCLUDE_BEAT_BENCHMARK=true vitest run",

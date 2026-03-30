@@ -14,6 +14,11 @@ interface FormMeshProps {
   viewSettings: ViewSettings;
 }
 
+// R3F's intrinsic typing for this element is inconsistent across package versions.
+// Keep this local bridge permissive so app typecheck remains stable.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const ThreeLine = (props: any) => <line {...props} />;
+
 /**
  * Creates contour ellipse and edge line geometries for forms at UNIT size
  * These will be scaled by the form's scale to match the final rendered size
@@ -146,9 +151,9 @@ function FormMesh({ form, viewSettings }: FormMeshProps) {
       {/* Lines for sphere */}
       {form.type === 'sphere' && formLines.length >= 3 && (
         <>
-          <line geometry={formLines[0]} material={lineMaterial} rotation={[Math.PI / 2, 0, 0]} />
-          <line geometry={formLines[1]} material={lineMaterial} rotation={[0, 0, 0]} />
-          <line geometry={formLines[2]} material={lineMaterial} rotation={[0, Math.PI / 2, 0]} />
+          <ThreeLine geometry={formLines[0]} material={lineMaterial} rotation={[Math.PI / 2, 0, 0]} />
+          <ThreeLine geometry={formLines[1]} material={lineMaterial} rotation={[0, 0, 0]} />
+          <ThreeLine geometry={formLines[2]} material={lineMaterial} rotation={[0, Math.PI / 2, 0]} />
         </>
       )}
       
@@ -156,8 +161,8 @@ function FormMesh({ form, viewSettings }: FormMeshProps) {
       {form.type === 'cylinder' && formLines.length >= 6 && (
         <>
           {/* Top and bottom circles */}
-          <line geometry={formLines[0]} material={lineMaterial} position={[0, 0.5, 0]} rotation={[Math.PI / 2, 0, 0]} />
-          <line geometry={formLines[1]} material={lineMaterial} position={[0, -0.5, 0]} rotation={[Math.PI / 2, 0, 0]} />
+          <ThreeLine geometry={formLines[0]} material={lineMaterial} position={[0, 0.5, 0]} rotation={[Math.PI / 2, 0, 0]} />
+          <ThreeLine geometry={formLines[1]} material={lineMaterial} position={[0, -0.5, 0]} rotation={[Math.PI / 2, 0, 0]} />
           {/* Side lines */}
           <lineSegments geometry={formLines[2]} material={lineMaterial} />
           <lineSegments geometry={formLines[3]} material={lineMaterial} />
@@ -170,7 +175,7 @@ function FormMesh({ form, viewSettings }: FormMeshProps) {
       {form.type === 'cone' && formLines.length >= 5 && (
         <>
           {/* Base circle */}
-          <line geometry={formLines[0]} material={lineMaterial} position={[0, -0.5, 0]} rotation={[Math.PI / 2, 0, 0]} />
+          <ThreeLine geometry={formLines[0]} material={lineMaterial} position={[0, -0.5, 0]} rotation={[Math.PI / 2, 0, 0]} />
           {/* Edge lines to tip */}
           <lineSegments geometry={formLines[1]} material={lineMaterial} />
           <lineSegments geometry={formLines[2]} material={lineMaterial} />

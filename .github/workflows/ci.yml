@@ -93,6 +93,9 @@ jobs:
     - name: Run linter
       run: npm run lint
 
+    - name: Run app typecheck
+      run: npm run typecheck
+
     - name: Check for dead code
       run: npm run knip
       

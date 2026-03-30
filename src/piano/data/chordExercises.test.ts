@@ -108,4 +108,24 @@ describe('generateChordProgressionScore', () => {
     expect(lastChordPitches).toContain(65);
     expect(lastChordPitches).not.toContain(64);
   });
+
+  it('preserves slash bass chords in output notation and bass voice', () => {
+    const score = generateChordProgressionScore({
+      progression: ['I'],
+      chordSymbols: ['C/E'],
+      progressionName: 'I over 3',
+      key: 'C',
+      voicingStyle: 'root',
+      measuresPerChord: 1,
+      timeSignature: { numerator: 4, denominator: 4 },
+      styleId: 'simple',
+    });
+
+    const rh = score.parts.find((part) => part.id === 'rh');
+    const lh = score.parts.find((part) => part.id === 'lh');
+    expect(rh?.measures[0]?.notes[0]?.chordSymbol).toBe('C/E');
+    const bassPitch = lh?.measures[0]?.notes[0]?.pitches[0];
+    expect(typeof bassPitch).toBe('number');
+    expect((bassPitch as number) % 12).toBe(4); // E pitch class
+  });
 });

@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import Popover from '@mui/material/Popover';
 import './chordStyleInput.css';
 

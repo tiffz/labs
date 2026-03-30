@@ -19,6 +19,7 @@ const SOUND_TO_PITCH: Record<DrumSound, string> = {
   ka: 'f/4',
   slap: 'f/4',
   rest: 'f/4',
+  simile: 'f/4',
 };
 
 /**

@@ -198,7 +198,7 @@ const NotePalette = forwardRef<NotePaletteHandle, NotePaletteProps>(({
   
   // Check if pattern is an exact match for selection duration
   const isExactFit = (patternDuration: number): boolean => {
-    return hasSelection && patternDuration === selectionDuration;
+    return Boolean(hasSelection) && patternDuration === selectionDuration;
   };
 
   // Play preview of pattern sounds

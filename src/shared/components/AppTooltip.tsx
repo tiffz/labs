@@ -51,10 +51,13 @@ export default function AppTooltip({
     return children;
   }
 
-  const strippedChild = React.cloneElement(children, {
+  const strippedChild = React.cloneElement(
+    children as React.ReactElement<{ title?: string; 'data-tooltip'?: string }>,
+    {
     title: undefined,
     'data-tooltip': undefined,
-  });
+    }
+  );
 
   const childProps = strippedChild.props as {
     disabled?: boolean;

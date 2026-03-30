@@ -1052,6 +1052,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "path": "src/shared/music/ARCHITECTURE.md",
     "kind": "doc",
     "stability": "stable",
+    "owner": "music-core",
     "description": "Shared music ownership and dependency boundary guidance.",
     "tags": [
       "docs",
@@ -1064,6 +1065,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "piano",
       "words"
     ],
+    "exportType": "doc",
     "demoId": null
   },
   {

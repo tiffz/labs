@@ -70,7 +70,6 @@ const TabbedPanel: React.FC<TabbedPanelProps> = ({
   currentLove,
   currentTreats,
   gameEvents,
-  onClearEvents,
 }) => {
   const [activeTab, setActiveTab] = useState<TabId>('events');
 
@@ -109,7 +108,6 @@ const TabbedPanel: React.FC<TabbedPanelProps> = ({
         {activeTab === 'events' && (
           <EventsPanel
             events={gameEvents}
-            onClearEvents={onClearEvents}
           />
         )}
         {activeTab === 'jobs' && (

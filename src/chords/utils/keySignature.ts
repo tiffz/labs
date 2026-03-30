@@ -24,7 +24,6 @@ export function getKeySignature(key: Key): { type: 'sharp' | 'flat'; count: numb
     'Ab': { type: 'flat', count: 4 },
     'Db': { type: 'flat', count: 5 },
     'Gb': { type: 'flat', count: 6 },
-    'Cb': { type: 'flat', count: 7 },
     // Enharmonic equivalents
     'D#': { type: 'sharp', count: 6 }, // Same as Eb but prefer sharps
     'G#': { type: 'sharp', count: 8 }, // Same as Ab but prefer sharps

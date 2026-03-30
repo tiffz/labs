@@ -155,7 +155,12 @@ async function transcodeWavBlob(
   const data = await ffmpeg.readFile(outName);
   await ffmpeg.deleteFile(inName);
   await ffmpeg.deleteFile(outName);
-  const bytes = data instanceof Uint8Array ? data : new Uint8Array(data as ArrayBuffer);
+  const bytes =
+    data instanceof Uint8Array
+      ? data
+      : typeof data === 'string'
+        ? new TextEncoder().encode(data)
+        : new Uint8Array(data as ArrayBuffer);
   return new Blob([bytes], { type: target === 'ogg' ? 'audio/ogg' : 'audio/flac' });
 }
 

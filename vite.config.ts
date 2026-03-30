@@ -1,5 +1,7 @@
 /// <reference types="vitest" />
 import { defineConfig } from 'vite';
+import type { Connect, ViteDevServer } from 'vite';
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import react from '@vitejs/plugin-react';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 import { resolve } from 'path';
@@ -81,11 +83,11 @@ export default defineConfig({
       ? [{
         // Debug logging plugin for all micro-apps
         name: 'debug-logger',
-        configureServer(server) {
-          server.middlewares.use('/__debug_log', (req, res, next) => {
+        configureServer(server: ViteDevServer) {
+          server.middlewares.use('/__debug_log', (req: IncomingMessage, res: ServerResponse, next: Connect.NextFunction) => {
             if (req.method === 'POST') {
               let body = '';
-              req.on('data', chunk => {
+              req.on('data', (chunk: Buffer) => {
                 body += chunk.toString();
               });
               req.on('end', () => {
@@ -114,7 +116,7 @@ export default defineConfig({
             }
           });
           // Snapshot receiver (dev only): stores meta JSON and screenshot into a temp folder
-          server.middlewares.use('/__debug_snapshot', async (req, res, next) => {
+          server.middlewares.use('/__debug_snapshot', async (req: IncomingMessage, res: ServerResponse, next: Connect.NextFunction) => {
             if (req.method !== 'POST') return next();
             try {
               // Naive multipart parser for small dev payloads
@@ -235,10 +237,10 @@ export default defineConfig({
     // Suppress console errors from VexFlow canvas warnings
     onConsoleLog: (log, type) => {
       // Suppress VexFlow canvas errors (they're expected in JSDOM)
-      if (type === 'error' && log.includes('HTMLCanvasElement.prototype.getContext')) {
+      if (type === 'stderr' && log.includes('HTMLCanvasElement.prototype.getContext')) {
         return false; // Don't print
       }
-      if (type === 'error' && log.includes('No context for txtCanvas')) {
+      if (type === 'stderr' && log.includes('No context for txtCanvas')) {
         return false; // Don't print
       }
       return true; // Print other logs

@@ -18,7 +18,7 @@ import {
   type SharedCatalogEntry,
   type SharedCatalogKind,
 } from './generatedSharedCatalog';
-import type { ExportSourceAdapter } from '../shared/music/exportTypes';
+import type { ExportAudioRenderRequest, ExportSourceAdapter } from '../shared/music/exportTypes';
 
 const KIND_ORDER: SharedCatalogKind[] = [
   'component',
@@ -522,9 +522,7 @@ function ProgressionMultiDemo({
                   ? keys.default
                   : appearance === 'words'
                     ? keys.words
-                    : appearance === 'chords'
-                      ? keys.chords
-                      : keys.piano
+                    : keys.piano
               }
               presetColumns={2}
               dropdownClassName={getProgressionDropdownClass(appearance)}
@@ -662,7 +660,7 @@ function buildExportDemoAdapter(surface: ExportSurface): ExportSourceAdapter {
   const base = {
     defaultFormat: 'wav' as const,
     estimateDurationSeconds: (loopCount: number) => 8 * loopCount,
-    renderAudio: async (request) => {
+    renderAudio: async (request: ExportAudioRenderRequest) => {
       const { selectedStemIds } = request;
       const audioContext = new OfflineAudioContext(2, 44100, 44100);
       const makeBuffer = (gain = 0.12) => {

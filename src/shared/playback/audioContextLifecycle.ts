@@ -57,11 +57,13 @@ export function attachAudioContextLifecycle(context: AudioContext): () => void {
 }
 
 export async function ensureAudioContextRunning(context: AudioContext): Promise<boolean> {
-  if (context.state === 'running') return true;
-  if (context.state === 'closed') return false;
+  const state = context.state;
+  if (state === 'running') return true;
+  if (state === 'closed') return false;
   try {
     await context.resume();
-    return context.state === 'running';
+    const nextState = context.state;
+    return nextState === 'running';
   } catch {
     return false;
   }

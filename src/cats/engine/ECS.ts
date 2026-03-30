@@ -76,6 +76,7 @@ class ComponentStore<T extends object> {
   set(id: EntityId, value: T): void { this.data.set(id, value); }
   delete(id: EntityId): void { this.data.delete(id); }
   entries(): IterableIterator<[EntityId, T]> { return this.data.entries(); }
+  get size(): number { return this.data.size; }
 }
 
 class EntityStore {

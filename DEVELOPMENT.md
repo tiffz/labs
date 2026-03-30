@@ -153,7 +153,8 @@ Import boundaries are always validated via `npm run check:import-boundaries` so 
 
 ### Continuous Integration
 
-GitHub Actions runs lint, tests, e2e smoke checks, and builds on code changes. Docs/assets deploys also run lint and fast tests before build.
+GitHub Actions runs lint, app typechecks, tests, e2e smoke checks, and builds on code changes. Docs/assets deploys also run lint and fast tests before build.
+Production rollback is available through `.github/workflows/rollback.yml` (manual dispatch with a known-good commit SHA).
 
 ### Testing Strategy
 
@@ -194,6 +195,7 @@ The pre-commit hook intelligently selects test mode:
 - Shared catalog is regenerated and staged automatically before these checks.
 
 For canonical docs precedence when guidance conflicts, see `docs/SOURCE_OF_TRUTH.md`.
+For rollback procedures, see `docs/ROLLBACK.md`.
 
 ### Pre-push Guardrail
 

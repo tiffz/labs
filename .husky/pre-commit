@@ -29,6 +29,8 @@ npm run check:import-boundaries
 if git diff --cached --name-only --quiet -- '*.ts' '*.tsx' '*.js' '*.jsx' '*.json' 'package*.json' 'vite.config.*' 'vitest.config.*' 'tsconfig*.json' 'eslint.config.*'; then
   echo "No TypeScript/JavaScript files changed, skipping tests..."
 else
+  npm run typecheck
+
   first_match() {
     pattern="$1"
     if command -v rg >/dev/null 2>&1; then

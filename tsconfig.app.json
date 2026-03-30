@@ -1,0 +1,28 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "erasableSyntaxOnly": false,
+    "types": [
+      "vite-plugin-pwa/client",
+      "vite/client",
+      "vitest/globals",
+      "@react-three/fiber"
+    ]
+  },
+  "include": ["src/**/*", "vite.config.ts"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "src/**/*.spec.ts",
+    "src/**/*.spec.tsx",
+    "src/**/e2e/**",
+    "src/**/audits/**",
+    "src/shared/test/**",
+    "src/ui/generatedSharedCatalog.ts"
+  ]
+}

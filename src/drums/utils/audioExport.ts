@@ -14,9 +14,9 @@ import kaSound from '../assets/sounds/ka.wav';
 import slapSound from '../assets/sounds/slap2.wav';
 import clickSound from '../assets/sounds/click.mp3';
 
-type DrumSound = 'dum' | 'tak' | 'ka' | 'slap' | 'rest';
+type DrumSound = 'dum' | 'tak' | 'ka' | 'slap' | 'rest' | 'simile';
 
-const SOUND_FILES: Record<Exclude<DrumSound, 'rest'>, string> = {
+const SOUND_FILES: Record<Exclude<DrumSound, 'rest' | 'simile'>, string> = {
   dum: dumSound,
   tak: takSound,
   ka: kaSound,
