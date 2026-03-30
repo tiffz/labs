@@ -6,7 +6,7 @@
   "scripts": {
     "generate:shared-catalog": "node scripts/generate-shared-catalog.mjs",
     "check:shared-catalog": "node scripts/generate-shared-catalog.mjs --check",
-    "check:import-boundaries": "vitest run src/shared/importBoundaries.test.ts",
+    "check:import-boundaries": "node scripts/check-import-boundaries.mjs",
     "prelint": "npm run generate:shared-catalog",
     "pretest": "npm run generate:shared-catalog",
     "prebuild": "npm run generate:shared-catalog",

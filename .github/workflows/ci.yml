@@ -77,15 +77,15 @@ jobs:
           echo "No beat file changes - will skip benchmarks"
         fi
 
-    - name: Enforce shared-layer import boundaries
-      run: npm run check:import-boundaries
-        
     - name: Install dependencies
       run: |
         # Apply Rollup fix for Linux binary dependencies
         rm -rf node_modules package-lock.json
         npm install
         npm ci
+
+    - name: Enforce shared-layer import boundaries
+      run: npm run check:import-boundaries
 
     - name: Generate shared catalog
       run: npm run generate:shared-catalog
