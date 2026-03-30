@@ -1,8 +1,12 @@
-import type { ParsedRhythm } from '../types';
-import type { PlaybackSettings } from '../types/settings';
-import { audioPlayer } from './audioPlayer';
-import { getDefaultBeatGrouping, getBeatGroupInfo, getSixteenthsPerMeasure, getBeatGroupingInSixteenths } from './timeSignatureUtils';
-import { PlaybackScheduler } from '../../shared/playback/scheduler';
+import type { ParsedRhythm, PlaybackSettings } from './types';
+import { audioPlayer } from './drumAudioPlayer';
+import {
+  getDefaultBeatGrouping,
+  getBeatGroupInfo,
+  getSixteenthsPerMeasure,
+  getBeatGroupingInSixteenths,
+} from './timeSignatureUtils';
+import { PlaybackScheduler } from '../playback/scheduler';
 
 /**
  * Callback for when a note starts playing

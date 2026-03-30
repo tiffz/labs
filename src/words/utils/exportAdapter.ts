@@ -1,8 +1,8 @@
 import { buildSingleTrackMidi, type MidiNoteEvent } from '../../shared/music/midiBuilder';
 import type { ExportSourceAdapter } from '../../shared/music/exportTypes';
 import { renderMidiEventsToAudioBuffer } from '../../shared/music/midiAudioRender';
-import type { ParsedRhythm } from '../../drums/types';
-import type { ChordStyleId } from '../../piano/data/chordExercises';
+import type { ParsedRhythm } from '../../shared/rhythm/types';
+import type { ChordStyleId } from '../../shared/music/chordStyleOptions';
 import { generateVoicing } from '../../shared/music/chordVoicing';
 import type { Chord as TheoryChord, ChordQuality, Key, TimeSignature } from '../../shared/music/chordTypes';
 import { getChordHitsForStyle } from '../../shared/music/chordStyleHits';

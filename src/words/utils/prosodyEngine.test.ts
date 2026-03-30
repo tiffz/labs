@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseRhythm } from '../utils/rhythmParser';
+import { parseRhythm } from '../../shared/rhythm/rhythmParser';
 import { generateWordRhythm } from './prosodyEngine';
 
 describe('generateWordRhythm', () => {

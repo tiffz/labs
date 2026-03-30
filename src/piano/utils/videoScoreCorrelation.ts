@@ -12,9 +12,9 @@
  *   8. User fine-tunes with offset slider or "tap to align" if needed
  */
 
-import type { BeatAnalysisResult } from '../../beat/utils/beatAnalyzer';
-import { getEssentia } from '../../beat/utils/beatAnalyzer';
-import { alignBeatGridToDownbeat } from '../../beat/utils/downbeatAlignment';
+import type { BeatAnalysisResult } from '../../shared/audio/beatAnalyzer';
+import { getEssentia } from '../../shared/audio/beatAnalyzer';
+import { alignBeatGridToDownbeat } from '../../shared/audio/downbeatAlignment';
 import { computeDTW } from './dtw';
 import { buildScoreChroma } from './scoreChroma';
 import type { PianoScore, NoteDuration } from '../types';

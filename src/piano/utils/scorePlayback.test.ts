@@ -32,7 +32,6 @@ const hoisted = vi.hoisted(() => {
   };
 });
 
-vi.mock('../../drums/assets/sounds/click.mp3', () => ({ default: 'click.mp3' }));
 vi.mock('../../shared/playback/audioContextLifecycle', () => ({
   createManagedAudioContext: vi.fn(() => ({ context: hoisted.fakeAudioContext })),
   ensureAudioContextRunning: vi.fn(async () => {}),

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import SimpleVexFlowNote from './SimpleVexFlowNote';
 import { parsePatternToNotes } from '../utils/notationHelpers';
-import { audioPlayer } from '../utils/audioPlayer';
+import { audioPlayer } from '../../shared/rhythm/drumAudioPlayer';
 import { COMMON_PATTERNS } from '../data/commonPatterns';
 import { getPatternDuration } from '../utils/dragAndDrop';
 import type { TimeSignature } from '../types';

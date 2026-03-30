@@ -5,7 +5,7 @@ import BeatVisualizer from './components/BeatVisualizer';
 import VideoPlayer from './components/VideoPlayer';
 import YouTubePlayer, { type YouTubeController, type YouTubePlaybackState } from './components/YouTubePlayer';
 import PlaybackBar from './components/PlaybackBar';
-import DrumAccompaniment from './components/DrumAccompaniment';
+import DrumAccompaniment from '../shared/components/music/DrumAccompaniment';
 import UploadLanding from './components/UploadLanding';
 import { useAudioAnalysis } from './hooks/useAudioAnalysis';
 import { transposeKey } from './utils/musicTheory';

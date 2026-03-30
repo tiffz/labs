@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { syncPlaybackHighlightState } from './playbackHighlight';
-import type { ParsedRhythm } from '../../drums/types';
+import type { ParsedRhythm } from '../../shared/rhythm/types';
 
 function createNoteSvgElement() {
   const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');

@@ -2,7 +2,7 @@ import React, { useState, useRef, useMemo } from 'react';
 import Popover from '@mui/material/Popover';
 import { usePiano, type ActiveMode } from '../store';
 import { SOUND_OPTIONS, type SoundType } from '../../shared/music/soundOptions';
-import DrumAccompaniment, { type DrumScheduler } from '../../beat/components/DrumAccompaniment';
+import DrumAccompaniment, { type DrumScheduler } from '../../shared/components/music/DrumAccompaniment';
 import type { NotationStyle } from '../../shared/notation/DrumNotationMini';
 import { getScorePlaybackEngine } from '../utils/scorePlayback';
 import MetronomeToggleButton from '../../shared/components/MetronomeToggleButton';

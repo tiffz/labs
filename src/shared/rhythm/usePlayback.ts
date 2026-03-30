@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
-import { rhythmPlayer } from '../utils/rhythmPlayer';
-import type { ParsedRhythm } from '../utils/rhythmParser';
-import type { PlaybackSettings } from '../types/settings';
+import { rhythmPlayer } from './rhythmPlayer';
+import type { ParsedRhythm, PlaybackSettings } from './types';
 
 interface UsePlaybackOptions {
   parsedRhythm: ParsedRhythm;

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createWordsExportAdapter } from './exportAdapter';
-import type { ParsedRhythm } from '../../drums/types';
+import type { ParsedRhythm } from '../../shared/rhythm/types';
 
 vi.mock('../../shared/music/midiAudioRender', () => ({
   renderMidiEventsToAudioBuffer: vi.fn(async () => ({ fake: 'buffer' } as unknown as AudioBuffer)),

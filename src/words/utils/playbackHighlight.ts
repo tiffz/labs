@@ -1,4 +1,4 @@
-import type { ParsedRhythm } from '../../drums/types';
+import type { ParsedRhythm } from '../../shared/rhythm/types';
 
 export type PlaybackNotePointer = { measureIndex: number; noteIndex: number } | null;
 export type PlaybackBeatPointer = {

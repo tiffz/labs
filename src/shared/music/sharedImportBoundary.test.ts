@@ -3,8 +3,20 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-const FORBIDDEN_APP_IMPORT_RE =
-  /from\s+['"][^'"]*(\.{1,2}\/)+((beat|chords|drums|piano|words)\/)/;
+const APP_DIRS = new Set([
+  'beat',
+  'cats',
+  'chords',
+  'corp',
+  'drums',
+  'forms',
+  'piano',
+  'pitch',
+  'story',
+  'ui',
+  'words',
+  'zines',
+]);
 
 function collectTsFiles(dir: string, out: string[]): void {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -23,18 +35,27 @@ describe('shared import boundary', () => {
   it('does not import from app directories', () => {
     const thisFileDir = path.dirname(fileURLToPath(import.meta.url));
     const sharedRoot = path.resolve(thisFileDir, '..');
+    const srcRoot = path.resolve(sharedRoot, '..');
     const files: string[] = [];
     collectTsFiles(sharedRoot, files);
 
     const violations: string[] = [];
     for (const file of files) {
       const text = fs.readFileSync(file, 'utf8');
-      const rel = path.relative(path.resolve(sharedRoot, '..', '..'), file);
-      text.split(/\r?\n/).forEach((line, index) => {
-        if (FORBIDDEN_APP_IMPORT_RE.test(line)) {
-          violations.push(`${rel}:${index + 1}: ${line.trim()}`);
+      const rel = path.relative(srcRoot, file).replaceAll(path.sep, '/');
+      const importFromRe = /from\s+['"]([^'"]+)['"]/g;
+      let match: RegExpExecArray | null = null;
+      while ((match = importFromRe.exec(text)) !== null) {
+        const spec = match[1];
+        if (!spec.startsWith('.')) continue;
+        const resolved = path.resolve(path.dirname(file), spec);
+        const target = path.relative(srcRoot, resolved).replaceAll(path.sep, '/');
+        if (target.startsWith('..')) continue;
+        const firstSegment = target.split('/')[0] ?? '';
+        if (APP_DIRS.has(firstSegment)) {
+          violations.push(`${rel} -> ${spec} (targets ${firstSegment})`);
         }
-      });
+      }
     }
 
     expect(violations, `Shared layer may not import from app directories.\n${violations.join('\n')}`)

@@ -5,8 +5,8 @@ import {
   getDefaultBeatGrouping,
   getBeatGroupingInSixteenths,
 } from '../../shared/rhythm/timeSignatureUtils';
-import type { TimeSignature } from '../types';
-import { parseRhythm } from '../utils/rhythmParser';
+import type { TimeSignature } from '../../shared/rhythm/types';
+import { parseRhythm } from '../../shared/rhythm/rhythmParser';
 
 export type ProsodySource = 'dictionary' | 'heuristic' | 'unresolved';
 

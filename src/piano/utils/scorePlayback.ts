@@ -5,7 +5,7 @@ import type { Instrument } from '../../shared/playback/instruments';
 import type { SoundType } from '../../shared/music/soundOptions';
 import { recordNoteExpectedTime, clearExpectedTimes, refreshHeldNotes } from './practiceTimingStore';
 import type { SmartBeatMap } from './smartBeatMap';
-import clickSoundUrl from '../../drums/assets/sounds/click.mp3';
+import { CLICK_SAMPLE_URL } from '../../shared/audio/drumSampleUrls';
 import { createManagedAudioContext, ensureAudioContextRunning } from '../../shared/playback/audioContextLifecycle';
 import { createInstrumentForSoundType } from '../../shared/playback/instrumentFactory';
 import { loadClickSample, playClickSampleAt, type LoadedClickSample } from '../../shared/audio/clickService';
@@ -178,7 +178,7 @@ export class ScorePlaybackEngine {
     this.clickLoadingPromise = (async () => {
       try {
         const ctx = this.getAudioContext();
-        const loaded = await loadClickSample(ctx, clickSoundUrl);
+        const loaded = await loadClickSample(ctx, CLICK_SAMPLE_URL);
         this.clickSample = loaded;
       } catch (e) {
         console.error('Failed to load click sound:', e);

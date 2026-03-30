@@ -22,7 +22,7 @@ import SharedExportPopover from '../shared/components/music/SharedExportPopover'
 import type { ExportSourceAdapter } from '../shared/music/exportTypes';
 import { buildSingleTrackMidi, type MidiNoteEvent } from '../shared/music/midiBuilder';
 import { renderMidiEventsToAudioBuffer } from '../shared/music/midiAudioRender';
-import clickSound from '../drums/assets/sounds/click.mp3';
+import { CLICK_SAMPLE_URL } from '../shared/audio/drumSampleUrls';
 
 // Loading state for piano samples
 interface LoadingState {
@@ -282,7 +282,7 @@ const App: React.FC = () => {
     if (!metronomeEnabledRef.current) return;
     if (!metronomeAudioPlayerRef.current) {
       metronomeAudioPlayerRef.current = new AudioPlayer({
-        clickUrl: clickSound,
+        clickUrl: CLICK_SAMPLE_URL,
         enableReverb: false,
       });
     }

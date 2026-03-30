@@ -9,7 +9,7 @@ import AppTooltip from '../shared/components/AppTooltip';
 import MetronomeToggleButton from '../shared/components/MetronomeToggleButton';
 import DrumNotationMini, { type NotationStyle } from '../shared/notation/DrumNotationMini';
 import { COMMON_CHORD_PROGRESSIONS } from '../shared/music/commonChordProgressions';
-import { CHORD_STYLE_OPTIONS, type ChordStyleId } from '../piano/data/chordExercises';
+import { CHORD_STYLE_OPTIONS, type ChordStyleId } from '../shared/music/chordStyleOptions';
 import { ALL_KEYS, type MusicKey } from '../shared/music/musicInputConstants';
 import { parseRhythm } from '../shared/rhythm';
 import { getRhythmTemplatePresets } from '../shared/rhythm/presetDatabase';

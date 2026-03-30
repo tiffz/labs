@@ -6,8 +6,8 @@
 
 Primary implementation files:
 
-- `src/drums/wordRhythm/prosodyEngine.ts`
-- `src/drums/wordRhythm/prosodyEngine.test.ts`
+- `src/words/utils/prosodyEngine.ts`
+- `src/words/utils/prosodyEngine.test.ts`
 - `src/words/App.tsx`
 - `src/words/components/VexLyricScore.tsx`
 
@@ -76,6 +76,6 @@ Run these before shipping:
 
 - `npm run lint`
 - `npm run knip`
-- `npm run test -- src/drums/wordRhythm/prosodyEngine.test.ts`
+- `npm run test -- src/words/utils/prosodyEngine.test.ts`
 
 `npm run build` also executes `knip` as part of this repository's build pipeline.

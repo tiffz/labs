@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useRef } from 'react';
 import { Renderer, Stave, StaveNote, Voice, Formatter, Dot, BarlineType, Beam, StaveTie, StaveConnector } from 'vexflow';
-import type { ParsedRhythm, TimeSignature } from '../../drums/types';
-import { drawDrumSymbol } from '../../drums/assets/drumSymbols';
-import type { SyllableHit } from '../../drums/wordRhythm/prosodyEngine';
+import type { ParsedRhythm, TimeSignature } from '../../shared/rhythm/types';
+import { drawDrumSymbol } from '../../shared/notation/drumSymbols';
+import type { SyllableHit } from '../utils/prosodyEngine';
 import { scrollPlaybackTarget } from '../../shared/utils/playbackAutoScroll';
 import {
   syncPlaybackHighlightState,

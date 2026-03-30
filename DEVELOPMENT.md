@@ -58,6 +58,7 @@ Any logic used by more than one app must live in `src/shared/**`. App directorie
 - Promote reusable logic into `src/shared/**` as source-of-truth modules.
 - If migration is needed, keep short-lived app-local adapter/re-export shims, then remove them once imports are updated.
 - New feature work should target shared modules directly when cross-app reuse is expected.
+- Guardrail: `src/shared/importBoundaries.test.ts` enforces a strict no app-to-app import rule.
 
 ## Cache Busting Strategy
 

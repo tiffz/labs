@@ -1,17 +1,12 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import type { TimeSignature } from '../../shared/rhythm/types';
-import { parseRhythm } from '../../shared/rhythm/rhythmParser';
-import { getRhythmTemplatePresets } from '../../shared/rhythm/presetDatabase';
-import { AudioPlayer } from '../../shared/audio/audioPlayer';
-import DrumNotationMini, { type NotationStyle } from '../../shared/notation/DrumNotationMini';
-import DiceIcon from '../../shared/components/DiceIcon';
-
-// Import drum sounds
-import dumSound from '../../drums/assets/sounds/dum.wav';
-import takSound from '../../drums/assets/sounds/tak.wav';
-import kaSound from '../../drums/assets/sounds/ka.wav';
-import slapSound from '../../drums/assets/sounds/slap2.wav';
+import type { TimeSignature } from '../../rhythm/types';
+import { parseRhythm } from '../../rhythm/rhythmParser';
+import { getRhythmTemplatePresets } from '../../rhythm/presetDatabase';
+import { AudioPlayer } from '../../audio/audioPlayer';
+import DrumNotationMini, { type NotationStyle } from '../../notation/DrumNotationMini';
+import DiceIcon from '../DiceIcon';
+import { DRUM_SAMPLE_URLS } from '../../audio/drumSampleUrls';
 
 /** Precise drum scheduling via the playback engine's look-ahead scheduler */
 export interface DrumScheduler {
@@ -49,7 +44,7 @@ interface DrumAccompanimentProps {
   randomizeButtonClassName?: string;
 }
 
-const DRUM_SOUNDS = { dum: dumSound, tak: takSound, ka: kaSound, slap: slapSound } as const;
+const DRUM_SOUNDS = { ...DRUM_SAMPLE_URLS } as const;
 
 const DefaultTemplateButton: React.FC<DrumTemplateButtonProps> = ({
   isActive,

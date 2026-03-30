@@ -1,13 +1,6 @@
-import type { DrumSound } from '../types';
-import { AudioPlayer } from '../../shared/audio/audioPlayer';
-
-// Import audio files
-import dumSound from '../assets/sounds/dum.wav';
-import takSound from '../assets/sounds/tak.wav';
-import kaSound from '../assets/sounds/ka.wav';
-import slapSound from '../assets/sounds/slap2.wav';
-import clickSound from '../assets/sounds/click.mp3';
-import domesticLivingRoomIR from '../assets/sounds/domestic-living-room.mp4';
+import type { DrumSound } from './types';
+import { AudioPlayer } from '../audio/audioPlayer';
+import { CLICK_SAMPLE_URL, DRUM_SAMPLE_URLS } from '../audio/drumSampleUrls';
 
 /**
  * Drum-specific audio player that wraps the shared AudioPlayer
@@ -19,9 +12,8 @@ class DrumAudioPlayer {
 
   constructor() {
     this.player = new AudioPlayer({
-      clickUrl: clickSound,
-      reverbImpulseUrl: domesticLivingRoomIR,
-      enableReverb: true,
+      clickUrl: CLICK_SAMPLE_URL,
+      enableReverb: false,
     });
   }
 
@@ -34,12 +26,7 @@ class DrumAudioPlayer {
     await this.player.initialize();
 
     // Load drum sounds
-    const soundUrls: Record<string, string> = {
-      dum: dumSound,
-      tak: takSound,
-      ka: kaSound,
-      slap: slapSound,
-    };
+    const soundUrls: Record<string, string> = { ...DRUM_SAMPLE_URLS };
 
     await this.player.loadAdditionalSounds(soundUrls);
     this.isInitialized = true;

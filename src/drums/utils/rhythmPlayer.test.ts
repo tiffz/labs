@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { rhythmPlayer } from './rhythmPlayer';
+import { rhythmPlayer } from '../../shared/rhythm/rhythmPlayer';
 import { parseRhythm } from './rhythmParser';
-import type { TimeSignature } from '../types';
-import { audioPlayer } from './audioPlayer'; // Import for assertion
+import type { TimeSignature } from '../../shared/rhythm/types';
+import { audioPlayer } from '../../shared/rhythm/drumAudioPlayer'; // Import for assertion
 
 // Mock the audio player
-vi.mock('./audioPlayer', () => ({
+vi.mock('../../shared/rhythm/drumAudioPlayer', () => ({
   audioPlayer: {
     play: vi.fn(),
     playNowIfReady: vi.fn(),

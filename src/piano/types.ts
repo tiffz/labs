@@ -1,3 +1,5 @@
+import { midiToFrequency as sharedMidiToFrequency } from '../shared/music/noteMath';
+
 export type Key =
   | 'C' | 'C#' | 'Db' | 'D' | 'D#' | 'Eb' | 'E' | 'F'
   | 'F#' | 'Gb' | 'G' | 'G#' | 'Ab' | 'A' | 'A#' | 'Bb' | 'B';
@@ -170,5 +172,5 @@ export function midiToPitchStringForKey(midi: number, key: string): string {
 }
 
 export function midiToFrequency(midi: number): number {
-  return 440 * Math.pow(2, (midi - 69) / 12);
+  return sharedMidiToFrequency(midi);
 }

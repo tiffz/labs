@@ -24,8 +24,6 @@ vi.mock('./data/scales', () => ({
     ],
   },
 }));
-vi.mock('../drums/assets/sounds/click.mp3', () => ({ default: '' }));
-
 import { reducer, initialState } from './store';
 import type { PianoScore, PracticeNoteResult } from './types';
 

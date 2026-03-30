@@ -1,7 +1,6 @@
 import { useCallback, useRef, useEffect, useState } from 'react';
 
-// Import click sound
-import clickSound from '../../drums/assets/sounds/click.mp3';
+import { CLICK_SAMPLE_URL } from '../../shared/audio/drumSampleUrls';
 import { ensureAudioContextRunning } from '../../shared/playback/audioContextLifecycle';
 import { loadClickSample, playClickSampleAt, type LoadedClickSample } from '../../shared/audio/clickService';
 
@@ -50,7 +49,7 @@ export function useMetronome({
     loadAttemptedRef.current = true;
 
     try {
-      const loaded = await loadClickSample(audioContext, clickSound);
+      const loaded = await loadClickSample(audioContext, CLICK_SAMPLE_URL);
       clickSampleRef.current = loaded;
       setIsLoaded(Boolean(loaded));
     } catch (err) {

@@ -1,18 +1,17 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Popover from '@mui/material/Popover';
-import { usePlayback } from '../drums/hooks/usePlayback';
-import { parseRhythm } from '../drums/utils/rhythmParser';
-import { DEFAULT_SETTINGS } from '../drums/types/settings';
-import type { PlaybackSettings } from '../drums/types/settings';
-import type { TimeSignature } from '../drums/types';
+import { usePlayback } from '../shared/rhythm/usePlayback';
+import { parseRhythm } from '../shared/rhythm/rhythmParser';
+import { DEFAULT_PLAYBACK_SETTINGS } from '../shared/rhythm/types';
+import type { PlaybackSettings, TimeSignature } from '../shared/rhythm/types';
 import {
   generateWordRhythm,
   DEFAULT_WORD_RHYTHM_SETTINGS,
   type SyllableHit,
   type WordRhythmResult,
   type WordRhythmAdvancedSettings,
-} from '../drums/wordRhythm/prosodyEngine';
+} from './utils/prosodyEngine';
 import VexLyricScore from './components/VexLyricScore';
 import DrumNotationMini from '../shared/notation/DrumNotationMini';
 import { AudioPlayer } from '../shared/audio/audioPlayer';
@@ -20,11 +19,11 @@ import { SOUND_OPTIONS, type SoundType } from '../shared/music/soundOptions';
 import {
   CHORD_STYLE_OPTIONS,
   type ChordStyleId,
-} from '../piano/data/chordExercises';
+} from '../shared/music/chordStyleOptions';
 import { generateVoicing } from '../shared/music/chordVoicing';
 import type { Chord as TheoryChord, ChordQuality, Key } from '../shared/music/chordTypes';
 import { ALL_KEYS } from '../shared/music/randomization';
-import { midiToFrequency } from '../piano/types';
+import { midiToFrequency } from '../shared/music/noteMath';
 import {
   PianoSynthesizer,
   SampledPiano,
@@ -73,10 +72,7 @@ import ChordStyleInput from '../shared/components/music/ChordStyleInput';
 import SharedExportPopover from '../shared/components/music/SharedExportPopover';
 import { createWordsExportAdapter } from './utils/exportAdapter';
 import KeyInput from '../shared/components/music/KeyInput';
-import dumSound from '../drums/assets/sounds/dum.wav';
-import takSound from '../drums/assets/sounds/tak.wav';
-import kaSound from '../drums/assets/sounds/ka.wav';
-import slapSound from '../drums/assets/sounds/slap2.wav';
+import { DRUM_SAMPLE_URLS } from '../shared/audio/drumSampleUrls';
 
 const DEFAULT_LYRICS = `Sunrise on the shoreline
 Ocean wind through palm trees`;
@@ -131,12 +127,7 @@ const RANDOMIZE_MODE_OPTIONS: Array<{
   },
 ];
 const BACKING_FALLBACK_TEMPLATE = 'D---D---D---D---';
-const DRUM_SOUNDS = {
-  dum: dumSound,
-  tak: takSound,
-  ka: kaSound,
-  slap: slapSound,
-} as const;
+const DRUM_SOUNDS = { ...DRUM_SAMPLE_URLS } as const;
 
 function pickRandom<T>(items: readonly T[]): T {
   return items[Math.floor(Math.random() * items.length)] as T;
@@ -448,7 +439,7 @@ const App: React.FC = () => {
     ready: boolean;
   }>({ loading: false, loaded: 0, total: 0, ready: false });
   const [playbackSettings, setPlaybackSettings] =
-    useState<PlaybackSettings>(DEFAULT_SETTINGS);
+    useState<PlaybackSettings>(DEFAULT_PLAYBACK_SETTINGS);
   const [generationSettings, setGenerationSettings] =
     useState<WordRhythmAdvancedSettings>(APP_DEFAULT_GENERATION_SETTINGS);
   const [isStickyControlsStuck, setIsStickyControlsStuck] =

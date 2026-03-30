@@ -35,6 +35,6 @@ Words routes playback through the shared drums playback stack (audio lifecycle, 
 ## Presubmit checklist
 
 - `npm run lint`
-- `npm run test -- src/drums/wordRhythm/prosodyEngine.test.ts`
+- `npm run test -- src/words/utils/prosodyEngine.test.ts`
 - `npm run test -- src/shared/music/chordProgressionText.test.ts`
 - `npm run test -- src/shared/music/randomChordProgression.test.ts`

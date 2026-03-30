@@ -33,9 +33,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "chords",
-      "drums",
       "words"
     ],
     "exportType": "class",
@@ -54,9 +52,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "chords",
-      "drums",
       "words"
     ],
     "exportType": "interface",
@@ -74,10 +70,78 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "audio"
     ],
     "appsUsing": [
-      "beat",
       "chords",
-      "drums",
       "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-beatanalyzer-ts-analysisprogresscallback",
+    "name": "AnalysisProgressCallback",
+    "path": "src/shared/audio/beatAnalyzer.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-beatanalyzer-ts-analyzebeat",
+    "name": "analyzeBeat",
+    "path": "src/shared/audio/beatAnalyzer.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-beatanalyzer-ts-beatanalysisresult",
+    "name": "BeatAnalysisResult",
+    "path": "src/shared/audio/beatAnalyzer.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-beatanalyzer-ts-getessentia",
+    "name": "getEssentia",
+    "path": "src/shared/audio/beatAnalyzer.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [
+      "piano"
     ],
     "exportType": "function",
     "demoId": null
@@ -135,6 +199,83 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "piano"
     ],
     "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-downbeatalignment-ts-alignbeatgridtodownbeat",
+    "name": "alignBeatGridToDownbeat",
+    "path": "src/shared/audio/downbeatAlignment.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Align beat grid to the first actual downbeat. Handles songs with pickup notes by finding which onset in the opening measures is most likely to be beat 1, based on: - Onset strength (energy) - How well subsequent beats align with detected onsets",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-downbeatalignment-ts-downbeatalignmentresult",
+    "name": "DownbeatAlignmentResult",
+    "path": "src/shared/audio/downbeatAlignment.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Downbeat Alignment Handles songs with pickup notes by finding which onset in the opening measures is most likely to be beat 1, based on: - Onset strength (energy) - How well subsequent beats align with detected onsets",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-drumsampleurls-ts-click-sample-url",
+    "name": "CLICK_SAMPLE_URL",
+    "path": "src/shared/audio/drumSampleUrls.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [
+      "beat",
+      "chords",
+      "piano",
+      "words"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-drumsampleurls-ts-drum-sample-urls",
+    "name": "DRUM_SAMPLE_URLS",
+    "path": "src/shared/audio/drumSampleUrls.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [
+      "beat",
+      "chords",
+      "piano",
+      "words"
+    ],
+    "exportType": "const",
     "demoId": null
   },
   {
@@ -459,6 +600,64 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-beat-analysis-onsets-ts-detectonsets",
+    "name": "detectOnsets",
+    "path": "src/shared/beat/analysis/onsets.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Detect onsets in audio using energy-based detection.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-analysis-onsets-ts-minimalaudiobuffer",
+    "name": "MinimalAudioBuffer",
+    "path": "src/shared/beat/analysis/onsets.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared onset detection utilities. Centralizes onset detection so analysis, benchmarks, and refinement use consistent logic with preset parameter sets.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-analysis-onsets-ts-onsetdetectionoptions",
+    "name": "OnsetDetectionOptions",
+    "path": "src/shared/beat/analysis/onsets.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared onset detection utilities. Centralizes onset detection so analysis, benchmarks, and refinement use consistent logic with preset parameter sets.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-analysis-onsets-ts-onsetpreset",
+    "name": "OnsetPreset",
+    "path": "src/shared/beat/analysis/onsets.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared onset detection utilities. Centralizes onset detection so analysis, benchmarks, and refinement use consistent logic with preset parameter sets.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
     "id": "src-shared-components-appslider-tsx-appslider",
     "name": "AppSlider",
     "path": "src/shared/components/AppSlider.tsx",
@@ -521,7 +720,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "react"
     ],
     "appsUsing": [
-      "beat",
       "chords",
       "story",
       "ui",
@@ -664,6 +862,69 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "piano",
       "ui",
       "words"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-drumaccompaniment-tsx-drumaccompaniment",
+    "name": "DrumAccompaniment",
+    "path": "src/shared/components/music/DrumAccompaniment.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Precise drum scheduling via the playback engine's look-ahead scheduler",
+    "tags": [
+      "components",
+      "music",
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "beat",
+      "piano"
+    ],
+    "exportType": "default",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-drumaccompaniment-tsx-drumscheduler",
+    "name": "DrumScheduler",
+    "path": "src/shared/components/music/DrumAccompaniment.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Precise drum scheduling via the playback engine's look-ahead scheduler",
+    "tags": [
+      "components",
+      "music",
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "beat",
+      "piano"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-drumaccompaniment-tsx-drumtemplatebuttonprops",
+    "name": "DrumTemplateButtonProps",
+    "path": "src/shared/components/music/DrumAccompaniment.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Precise drum scheduling via the playback engine's look-ahead scheduler",
+    "tags": [
+      "components",
+      "music",
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "beat",
+      "piano"
     ],
     "exportType": "interface",
     "demoId": null
@@ -1040,6 +1301,66 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "words"
     ],
     "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordstyleoptions-ts-chord-style-options",
+    "name": "CHORD_STYLE_OPTIONS",
+    "path": "src/shared/music/chordStyleOptions.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordstyleoptions-ts-chordstyleid",
+    "name": "ChordStyleId",
+    "path": "src/shared/music/chordStyleOptions.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordstyleoptions-ts-chordstyleoption",
+    "name": "ChordStyleOption",
+    "path": "src/shared/music/chordStyleOptions.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "interface",
     "demoId": null
   },
   {
@@ -2033,6 +2354,24 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-music-notemath-ts-miditofrequency",
+    "name": "midiToFrequency",
+    "path": "src/shared/music/noteMath.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "piano",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-music-pitch-microphonepitchinput-ts-microphonedevice",
     "name": "MicrophoneDevice",
     "path": "src/shared/music/pitch/microphonePitchInput.ts",
@@ -2626,7 +2965,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "react"
     ],
     "appsUsing": [
-      "beat",
       "piano",
       "ui",
       "words"
@@ -2648,7 +2986,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "react"
     ],
     "appsUsing": [
-      "beat",
       "piano",
       "ui",
       "words"
@@ -2670,7 +3007,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "react"
     ],
     "appsUsing": [
-      "beat",
       "piano",
       "ui",
       "words"
@@ -2689,7 +3025,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "notation"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -2704,7 +3042,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "notation"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -3349,8 +3689,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "chords",
-      "drums"
+      "chords"
     ],
     "exportType": "class",
     "demoId": null
@@ -3368,8 +3707,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "chords",
-      "drums"
+      "chords"
     ],
     "exportType": "interface",
     "demoId": null
@@ -3443,6 +3781,23 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-rhythm-drumaudioplayer-ts-audioplayer",
+    "name": "audioPlayer",
+    "path": "src/shared/rhythm/drumAudioPlayer.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "rhythm-core",
+    "description": "Drum-specific audio player that wraps the shared AudioPlayer with pre-configured drum sounds and reverb settings",
+    "tags": [
+      "rhythm"
+    ],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
     "id": "src-shared-rhythm-index-ts-parsenotation",
     "name": "parseNotation",
     "path": "src/shared/rhythm/index.ts",
@@ -3488,7 +3843,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "rhythm"
     ],
     "appsUsing": [
-      "beat",
       "ui",
       "words"
     ],
@@ -3507,7 +3861,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "rhythm"
     ],
     "appsUsing": [
-      "beat",
       "ui",
       "words"
     ],
@@ -3527,7 +3880,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "ui",
       "words"
     ],
@@ -3547,7 +3899,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "ui",
       "words"
     ],
@@ -3567,7 +3918,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "ui",
       "words"
     ],
@@ -3587,7 +3937,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "ui",
       "words"
     ],
@@ -3607,7 +3956,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "ui",
       "words"
     ],
@@ -3626,8 +3974,8 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "rhythm"
     ],
     "appsUsing": [
-      "beat",
-      "drums"
+      "drums",
+      "words"
     ],
     "exportType": "function",
     "demoId": null
@@ -3644,8 +3992,8 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "rhythm"
     ],
     "appsUsing": [
-      "beat",
-      "drums"
+      "drums",
+      "words"
     ],
     "exportType": "function",
     "demoId": null
@@ -3662,8 +4010,8 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "rhythm"
     ],
     "appsUsing": [
-      "beat",
-      "drums"
+      "drums",
+      "words"
     ],
     "exportType": "function",
     "demoId": null
@@ -3680,8 +4028,8 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "rhythm"
     ],
     "appsUsing": [
-      "beat",
-      "drums"
+      "drums",
+      "words"
     ],
     "exportType": "function",
     "demoId": null
@@ -3698,8 +4046,8 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "rhythm"
     ],
     "appsUsing": [
-      "beat",
-      "drums"
+      "drums",
+      "words"
     ],
     "exportType": "function",
     "demoId": null
@@ -3716,8 +4064,8 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "rhythm"
     ],
     "appsUsing": [
-      "beat",
-      "drums"
+      "drums",
+      "words"
     ],
     "exportType": "function",
     "demoId": null
@@ -3734,10 +4082,57 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "rhythm"
     ],
     "appsUsing": [
-      "beat",
-      "drums"
+      "drums",
+      "words"
     ],
     "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-rhythm-rhythmplayer-ts-metronomecallback",
+    "name": "MetronomeCallback",
+    "path": "src/shared/rhythm/rhythmPlayer.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "rhythm-core",
+    "description": "Callback for when a metronome beat occurs Parameters: measureIndex, noteIndex, isDownbeat (true for first beat of measure)",
+    "tags": [
+      "rhythm",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-rhythm-rhythmplayer-ts-notehighlightcallback",
+    "name": "NoteHighlightCallback",
+    "path": "src/shared/rhythm/rhythmPlayer.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "rhythm-core",
+    "description": "Callback for when a note starts playing Parameters: measureIndex, noteIndex within that measure",
+    "tags": [
+      "rhythm",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-rhythm-rhythmplayer-ts-rhythmplayer",
+    "name": "rhythmPlayer",
+    "path": "src/shared/rhythm/rhythmPlayer.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "rhythm-core",
+    "description": "Callback for when a note starts playing Parameters: measureIndex, noteIndex within that measure",
+    "tags": [
+      "rhythm"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
     "demoId": null
   },
   {
@@ -3753,7 +4148,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
-      "drums",
       "words"
     ],
     "exportType": "function",
@@ -3772,7 +4166,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
-      "drums",
       "words"
     ],
     "exportType": "function",
@@ -3791,7 +4184,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
-      "drums",
       "words"
     ],
     "exportType": "function",
@@ -3810,7 +4202,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
-      "drums",
       "words"
     ],
     "exportType": "function",
@@ -3829,7 +4220,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
-      "drums",
       "words"
     ],
     "exportType": "function",
@@ -3848,7 +4238,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
-      "drums",
       "words"
     ],
     "exportType": "function",
@@ -3867,7 +4256,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
-      "drums",
       "words"
     ],
     "exportType": "function",
@@ -3886,7 +4274,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
-      "drums",
       "words"
     ],
     "exportType": "function",
@@ -3905,7 +4292,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
-      "drums",
       "words"
     ],
     "exportType": "function",
@@ -3925,7 +4311,8 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
-      "drums"
+      "drums",
+      "words"
     ],
     "exportType": "const",
     "demoId": null
@@ -3944,7 +4331,8 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
-      "drums"
+      "drums",
+      "words"
     ],
     "exportType": "type",
     "demoId": null
@@ -3963,7 +4351,8 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
-      "drums"
+      "drums",
+      "words"
     ],
     "exportType": "interface",
     "demoId": null
@@ -3982,7 +4371,8 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
-      "drums"
+      "drums",
+      "words"
     ],
     "exportType": "interface",
     "demoId": null
@@ -4001,7 +4391,8 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
-      "drums"
+      "drums",
+      "words"
     ],
     "exportType": "interface",
     "demoId": null
@@ -4020,7 +4411,8 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
-      "drums"
+      "drums",
+      "words"
     ],
     "exportType": "interface",
     "demoId": null
@@ -4039,7 +4431,8 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
-      "drums"
+      "drums",
+      "words"
     ],
     "exportType": "type",
     "demoId": null
@@ -4058,7 +4451,8 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
-      "drums"
+      "drums",
+      "words"
     ],
     "exportType": "interface",
     "demoId": null
@@ -4077,7 +4471,8 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
-      "drums"
+      "drums",
+      "words"
     ],
     "exportType": "interface",
     "demoId": null
@@ -4096,7 +4491,8 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
-      "drums"
+      "drums",
+      "words"
     ],
     "exportType": "type",
     "demoId": null
@@ -4115,7 +4511,8 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
-      "drums"
+      "drums",
+      "words"
     ],
     "exportType": "interface",
     "demoId": null
@@ -4134,9 +4531,28 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
-      "drums"
+      "drums",
+      "words"
     ],
     "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-rhythm-useplayback-ts-useplayback",
+    "name": "usePlayback",
+    "path": "src/shared/rhythm/usePlayback.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "rhythm-core",
+    "description": "Custom hook for managing playback state and controls",
+    "tags": [
+      "rhythm"
+    ],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "function",
     "demoId": null
   },
   {

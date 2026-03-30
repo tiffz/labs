@@ -13,7 +13,7 @@ import { parseRhythm, findMeasureIndexFromVisualTick, expandSelectionToRepeats }
 import { recognizeRhythm } from './utils/rhythmRecognition';
 import { useUrlState } from './hooks/useUrlState';
 import { useNotationHistory } from './hooks/useNotationHistory';
-import { usePlayback } from './hooks/usePlayback';
+import { usePlayback } from '../shared/rhythm/usePlayback';
 import { useRhythmSelection } from './hooks/useRhythmSelection';
 import { getDefaultBeatGrouping, getSixteenthsPerMeasure, getBeatGroupingInSixteenths } from './utils/timeSignatureUtils';
 import { calculateRemainingBeats, expandSimileMeasure } from './utils/notationUtils';

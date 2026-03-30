@@ -125,7 +125,7 @@ const VideoPlayer: React.FC = () => {
 
         setAnalysisProgress('Detecting tempo…');
         await new Promise(r => setTimeout(r, 0));
-        const { analyzeBeat } = await import('../../beat/utils/beatAnalyzer');
+        const { analyzeBeat } = await import('../../shared/audio/beatAnalyzer');
         const beatResult = await analyzeBeat(audioBuffer, (_stage, progress) => {
           const pct = Math.min(100, Math.round(progress));
           if (!cancelled) setAnalysisProgress(`Detecting tempo… ${pct}%`);

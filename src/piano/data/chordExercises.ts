@@ -2,53 +2,22 @@ import type { PianoScore, ScoreNote, ScoreMeasure, Key, NoteDuration } from '../
 import { generateNoteId } from '../types';
 import { progressionToChords } from '../../shared/music/chordTheory';
 import { generateVoicing } from '../../shared/music/chordVoicing';
-import type { Chord, ChordStylingStrategy, RomanNumeral } from '../../shared/music/chordTypes';
+import type { Chord, RomanNumeral } from '../../shared/music/chordTypes';
 import { parseChordSymbolToken } from '../../shared/music/chordProgressionText';
 import { COMMON_CHORD_PROGRESSIONS } from '../../shared/music/commonChordProgressions';
+import {
+  CHORD_STYLE_OPTIONS,
+  type ChordStyleId,
+  type ChordStyleOption,
+} from '../../shared/music/chordStyleOptions';
 import { spellRootForKey } from '../../shared/music/theory/pitchClass';
 import { CHORD_STYLING_PATTERNS, timeSignatureToKey } from '../../shared/music/chordStylingPatterns';
 
 export { COMMON_CHORD_PROGRESSIONS };
+export { CHORD_STYLE_OPTIONS };
+export type { ChordStyleId, ChordStyleOption };
 
 export type ChordVoicingStyle = 'root' | 'inv1' | 'inv2' | 'open' | 'voice-leading';
-export type ChordStyleId = ChordStylingStrategy;
-
-export interface ChordStyleOption {
-  id: ChordStyleId;
-  label: string;
-  description: string;
-  timeSignature?: { numerator: number; denominator: number };
-}
-
-const STYLE_ORDER: ChordStyleId[] = [
-  'simple',
-  'one-per-beat',
-  'half-notes',
-  'eighth-notes',
-  'oom-pahs',
-  'waltz',
-  'pop-rock-ballad',
-  'pop-rock-uptempo',
-  'tresillo',
-  'jazzy',
-];
-
-export const CHORD_STYLE_OPTIONS: ChordStyleOption[] = Object.entries(
-  CHORD_STYLING_PATTERNS
-)
-  .map(([id, config]) => ({
-    id: id as ChordStyleId,
-    label: config.name,
-    description: config.description,
-  }))
-  .sort((a, b) => {
-    const ai = STYLE_ORDER.indexOf(a.id);
-    const bi = STYLE_ORDER.indexOf(b.id);
-    if (ai === -1 && bi === -1) return a.label.localeCompare(b.label);
-    if (ai === -1) return 1;
-    if (bi === -1) return -1;
-    return ai - bi;
-  });
 
 function spellChordRoot(chord: Chord, key: Key): string {
   return spellRootForKey(chord.root, key);

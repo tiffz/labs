@@ -1,12 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { usePlayback } from './usePlayback';
-import { rhythmPlayer } from '../utils/rhythmPlayer';
-import type { ParsedRhythm } from '../utils/rhythmParser';
-import type { PlaybackSettings } from '../types/settings';
+import { usePlayback } from '../../shared/rhythm/usePlayback';
+import { rhythmPlayer } from '../../shared/rhythm/rhythmPlayer';
+import type { ParsedRhythm, PlaybackSettings } from '../../shared/rhythm/types';
 
 // Mock rhythmPlayer
-vi.mock('../utils/rhythmPlayer', () => ({
+vi.mock('../../shared/rhythm/rhythmPlayer', () => ({
   rhythmPlayer: {
     play: vi.fn(),
     stop: vi.fn(),
