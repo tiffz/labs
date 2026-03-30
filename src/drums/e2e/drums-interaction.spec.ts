@@ -9,14 +9,10 @@ test.describe('Darbuka Rhythm Trainer - User Interactions', () => {
     // Clear and enter a simple rhythm
     await input.clear();
     await input.fill('D-T-K-');
-    
-    // Wait for the rhythm to be parsed and displayed
-    await page.waitForTimeout(100);
-    
+
     // Check that notes are displayed
     const noteSymbols = page.locator('.note-symbol');
-    const count = await noteSymbols.count();
-    expect(count).toBe(3); // D, T, K
+    await expect(noteSymbols).toHaveCount(3); // D, T, K
   });
 
   test('should change time signature', async ({ page }) => {
@@ -48,10 +44,7 @@ test.describe('Darbuka Rhythm Trainer - User Interactions', () => {
     
     // Clear the input
     await input.clear();
-    
-    // Wait for the rhythm to be parsed
-    await page.waitForTimeout(100);
-    
+
     // Check that the empty state is displayed
     const emptyState = page.locator('.empty-state');
     await expect(emptyState).toBeVisible();
@@ -66,10 +59,7 @@ test.describe('Darbuka Rhythm Trainer - User Interactions', () => {
     // Enter a rhythm that's too long for one measure
     await input.clear();
     await input.fill('D---------------T-'); // 17 sixteenths in 4/4
-    
-    // Wait for the rhythm to be parsed
-    await page.waitForTimeout(100);
-    
+
     // Check that an error message is displayed
     const errorMessage = page.locator('.error-message');
     await expect(errorMessage).toBeVisible();
@@ -84,14 +74,10 @@ test.describe('Darbuka Rhythm Trainer - User Interactions', () => {
     // Enter mixed case notation
     await input.clear();
     await input.fill('d-T-k-');
-    
-    // Wait for the rhythm to be parsed
-    await page.waitForTimeout(100);
-    
+
     // Check that notes are displayed
     const noteSymbols = page.locator('.note-symbol');
-    const count = await noteSymbols.count();
-    expect(count).toBe(3); // d, T, k should all be parsed
+    await expect(noteSymbols).toHaveCount(3); // d, T, k should all be parsed
   });
 });
 

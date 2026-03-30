@@ -37,6 +37,10 @@ This audit covers testing strategy, architecture/factoring quality, dependency h
 - Added docs precedence/canonical ownership document: `docs/SOURCE_OF_TRUTH.md`.
 - Updated stale docs statements in `README.md`, `DEVELOPMENT.md`, and `GEMINI.md`.
 - Updated stale React version mention in `src/drums/GEMINI.md`.
+- Removed fixed-sleep e2e waits across cats/drums/forms/corp and replaced with condition-based assertions.
+- Added missing smoke tests for `/`, `/ui/`, `/pitch/`, and `/words`.
+- Consolidated duplicate beat downbeat/onset implementations onto shared source-of-truth modules through re-exports.
+- Standardized server logger initialization in additional app entrypoints (`story`, `piano`, `pitch`, `ui`).
 
 ## Dependency Health Snapshot (`npm outdated --long`)
 
@@ -61,6 +65,8 @@ This audit covers testing strategy, architecture/factoring quality, dependency h
    - Knip 6 and lint-staged 16 after hook verification.
 3. **Later (larger migration budget):**
    - Tailwind 4 migration, TypeScript 6 migration, jsdom 28 behavior verification.
+
+See `docs/DEPENDENCY_UPGRADE_PLAN.md` for the execution sequence and validation checklist.
 
 ## Remaining High-ROI Work
 

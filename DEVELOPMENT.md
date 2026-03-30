@@ -149,6 +149,7 @@ All music apps must ship mobile-first layouts and shared controls that remain us
 ### Pre-commit Checks
 
 Tests and linting run automatically before commits. Tests only run if TypeScript/JavaScript files are staged.
+Import boundaries are always validated via `npm run check:import-boundaries` so presubmit and CI enforce the same boundary guard.
 
 ### Continuous Integration
 

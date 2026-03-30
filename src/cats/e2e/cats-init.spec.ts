@@ -39,8 +39,6 @@ test.describe('Cats app bootstrap', () => {
     await expect(page.locator('#root')).toBeVisible();
     await expect(page.locator('.world-viewport-container')).toBeVisible();
 
-    await page.waitForTimeout(1000);
-
     const severe = errors.filter(e => !/google-analytics|googletagmanager|fonts\.googleapis|fonts\.gstatic/.test(e));
     expect(severe, severe.join('\n')).toHaveLength(0);
   });

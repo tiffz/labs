@@ -28,7 +28,6 @@ test.describe('Cats cheek pet and pounce flow', () => {
 
     await page.goto('/cats/?overlay=0');
     await expect(page.locator('#root')).toBeVisible();
-    await page.waitForTimeout(300);
 
     const vp = page.locator('.world-viewport-container');
     const box = await vp.boundingBox();
@@ -38,7 +37,6 @@ test.describe('Cats cheek pet and pounce flow', () => {
       // Burst of clicks to trigger happy jump
       for (let i = 0; i < 4; i++) {
         await page.mouse.click(cx, cy);
-        await page.waitForTimeout(120);
       }
     }
 

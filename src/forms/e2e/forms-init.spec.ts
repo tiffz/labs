@@ -40,16 +40,14 @@ test.describe('Form Intersections - Initialization', () => {
 
   test('regenerate button should update the scene', async ({ page }) => {
     await page.goto('/forms/');
-    
-    // Wait for initial render
-    await page.waitForTimeout(1000);
+    const canvas = page.locator('canvas');
+    await expect(canvas).toBeVisible({ timeout: 10000 });
     
     // Click regenerate
     const regenerateButton = page.locator('button:has-text("Regenerate")');
     await regenerateButton.click();
     
     // Canvas should still be visible after regeneration
-    const canvas = page.locator('canvas');
     await expect(canvas).toBeVisible();
   });
 });

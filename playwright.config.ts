@@ -20,7 +20,7 @@ export default defineConfig({
   webServer: {
     command: 'vite --host --open=false --strictPort --port=5173',
     url: 'http://localhost:5173',
-    reuseExistingServer: false,
+    reuseExistingServer: !process.env.CI,
     stderr: 'pipe',
     stdout: 'pipe',
     timeout: 60_000,

@@ -27,7 +27,6 @@ test.describe('Cats basic interactions', () => {
 
     // Toggle wand mode via keyboard
     await page.keyboard.press('w');
-    await page.waitForTimeout(200);
 
     // Click roughly at screen center to simulate pet
     const vp = page.locator('.world-viewport-container');

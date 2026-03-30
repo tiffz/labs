@@ -1,7 +1,7 @@
-import { test, expect, Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
 test.describe('Corporate Ladder movement', () => {
-  test('arrow keys move the player and change player position', async ({ page }: { page: Page }) => {
+  test('arrow keys move the player and change player position', async ({ page }) => {
     await page.goto('/corp/');
     await page.waitForSelector('#map-container', { state: 'attached' });
     const getPlayerPos = async () => {
@@ -11,9 +11,9 @@ test.describe('Corporate Ladder movement', () => {
     };
     const start = await getPlayerPos();
     await page.keyboard.press('ArrowRight');
-    await page.waitForTimeout(50);
-    const after = await getPlayerPos();
-    expect(after).not.toBe(start);
+    await expect
+      .poll(async () => getPlayerPos(), { timeout: 2000 })
+      .not.toBe(start);
   });
 });
 

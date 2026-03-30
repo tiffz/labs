@@ -4787,6 +4787,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "corp",
       "drums",
       "forms",
+      "piano",
+      "story",
+      "ui",
       "words",
       "zines"
     ],
@@ -4811,6 +4814,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "corp",
       "drums",
       "forms",
+      "piano",
+      "story",
+      "ui",
       "words",
       "zines"
     ],
