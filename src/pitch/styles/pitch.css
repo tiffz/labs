@@ -1,0 +1,440 @@
+:root {
+  /* Rose + teal palette (words-style restraint) */
+  --md-primary: #025f6a;
+  --md-on-primary: #ffffff;
+  --md-primary-container: #d2eaed;
+  --md-on-primary-container: #073e46;
+
+  --md-secondary: #e58ba9;
+  --md-on-secondary: #ffffff;
+  --md-secondary-container: #fbe4ec;
+  --md-on-secondary-container: #5b2338;
+
+  --md-tertiary: #7b5470;
+  --md-on-tertiary: #ffffff;
+  --md-tertiary-container: #e9dde6;
+
+  --md-surface: #ffffff;
+  --md-surface-container: #fbf8fa;
+  --md-surface-container-high: #f5eef2;
+  --md-surface-container-highest: #eee3e9;
+  --md-outline: #dbcbd3;
+  --md-outline-variant: #e9dde3;
+  --md-on-surface: #2f2431;
+  --md-on-surface-variant: #746170;
+
+  --md-elev-1:
+    0 1px 2px rgba(24, 16, 26, 0.06), 0 1px 3px rgba(24, 16, 26, 0.08);
+  --md-elev-2:
+    0 4px 10px rgba(24, 16, 26, 0.08), 0 2px 4px rgba(24, 16, 26, 0.06);
+  --md-elev-3:
+    0 10px 20px rgba(24, 16, 26, 0.1), 0 4px 8px rgba(24, 16, 26, 0.06);
+  --md-focus: 0 0 0 3px rgba(229, 139, 169, 0.28);
+
+  /* Spacing ladder */
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+
+  --content-gutter: clamp(14px, 3vw, 40px);
+  --card-pad: var(--space-4);
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  display: block;
+  background: #f8f5f7 !important;
+  background-image: none !important;
+}
+
+.pitch-app {
+  min-height: 100vh;
+  width: 100%;
+  background:
+    radial-gradient(
+      1200px 520px at 8% -18%,
+      rgba(229, 139, 169, 0.2),
+      transparent 56%
+    ),
+    radial-gradient(
+      900px 420px at 96% -12%,
+      rgba(2, 95, 106, 0.16),
+      transparent 58%
+    ),
+    radial-gradient(
+      1000px 460px at 50% 112%,
+      rgba(123, 84, 112, 0.05),
+      transparent 64%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #ffffff 93%, var(--md-secondary-container)) 0%,
+      color-mix(in srgb, #ffffff 95%, var(--md-primary-container)) 48%,
+      #ffffff 100%
+    );
+  color: var(--md-on-surface);
+  padding: 0;
+  font-family: 'Roboto', 'Segoe UI', sans-serif;
+}
+
+.pitch-shell {
+  width: min(1120px, 100%);
+  margin: 0 auto;
+  max-width: 1120px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  padding: var(--space-4) var(--content-gutter) var(--space-6);
+}
+
+.pitch-header {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: start;
+  gap: var(--space-4);
+  padding: var(--space-2) 0;
+  margin-bottom: var(--space-3);
+}
+
+.pitch-header-main {
+  min-width: 0;
+}
+
+.pitch-header-input {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) auto;
+  gap: var(--space-2);
+  align-items: end;
+  min-width: min(48vw, 560px);
+}
+
+.pitch-header h1 {
+  margin: 0;
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  line-height: 1.14;
+  letter-spacing: -0.02em;
+  color: var(--md-primary);
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  background-clip: border-box;
+  -webkit-background-clip: border-box;
+  font-weight: 700;
+}
+
+.pitch-header p {
+  margin: var(--space-2) 0 0;
+  color: var(--md-on-surface-variant);
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.pitch-card {
+  background: linear-gradient(
+    180deg,
+    var(--md-surface) 0%,
+    var(--md-surface-container) 100%
+  );
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 22px;
+  box-shadow: var(--md-elev-2);
+}
+
+.pitch-controls {
+  display: none;
+}
+
+.pitch-device {
+  display: grid;
+  gap: 6px;
+}
+
+.pitch-device span {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--md-on-surface-variant);
+}
+
+.pitch-device select,
+.pitch-listen-btn,
+.pitch-reference-toggle {
+  height: 44px;
+  border-radius: 12px;
+  font: inherit;
+}
+
+.pitch-device select {
+  min-width: 0;
+  padding: 0 12px;
+  border: 1px solid var(--md-outline);
+  background: var(--md-surface);
+  color: var(--md-on-surface);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.pitch-device select:hover {
+  border-color: color-mix(in srgb, var(--md-primary) 40%, var(--md-outline));
+}
+
+.pitch-listen-btn {
+  cursor: pointer;
+  padding: 0 18px;
+  border: 1px solid transparent;
+  background: color-mix(in srgb, var(--md-primary) 94%, black 2%);
+  color: var(--md-on-primary);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  box-shadow: var(--md-elev-1);
+  transition:
+    transform 0.14s ease,
+    box-shadow 0.14s ease,
+    filter 0.14s ease;
+}
+
+.pitch-listen-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.02);
+}
+
+.pitch-listen-btn:active {
+  transform: translateY(0);
+}
+
+.pitch-listen-btn.active {
+  background: color-mix(
+    in srgb,
+    var(--md-secondary) 68%,
+    var(--md-primary) 32%
+  );
+}
+
+.pitch-device select:focus-visible,
+.pitch-listen-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--md-focus);
+}
+
+.pitch-mic-status {
+  grid-column: 1 / -1;
+  color: var(--md-on-surface-variant);
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  opacity: 0.88;
+  margin-left: 2px;
+}
+
+.pitch-main-card,
+.pitch-reference-card {
+  margin-top: var(--space-3);
+  padding: var(--card-pad);
+  background: var(--md-surface);
+}
+
+.pitch-note-display {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: end;
+  gap: var(--space-3);
+  min-height: 104px;
+}
+
+.pitch-note {
+  width: 4.1ch;
+  font-size: clamp(3.1rem, 9vw, 4.7rem);
+  line-height: 0.88;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--md-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.pitch-frequency {
+  min-height: 1.45em;
+  display: inline-flex;
+  align-items: center;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--md-on-surface-variant);
+}
+
+.pitch-meter-wrap {
+  margin-top: var(--space-3);
+}
+
+.pitch-meter-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--md-on-surface-variant);
+}
+
+.pitch-meter {
+  position: relative;
+  height: 22px;
+  border-radius: 999px;
+  border: 1px solid var(--md-outline-variant);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--md-secondary-container) 72%, transparent),
+    color-mix(in srgb, var(--md-primary-container) 84%, #fff) 50%,
+    color-mix(in srgb, var(--md-secondary-container) 72%, transparent)
+  );
+  overflow: hidden;
+}
+
+.pitch-meter-center {
+  position: absolute;
+  left: 50%;
+  top: 3px;
+  bottom: 3px;
+  width: 2px;
+  border-radius: 999px;
+  background: var(--md-primary);
+  transform: translateX(-50%);
+}
+
+.pitch-meter-pointer {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  width: 10px;
+  border-radius: 999px;
+  background: var(--md-on-primary-container);
+  transform: translateX(-50%);
+  transition: left 180ms ease-out;
+}
+
+.pitch-meter-readout {
+  min-height: 1.45em;
+  margin-top: var(--space-2);
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--md-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.pitch-section-title {
+  margin: var(--space-4) 0 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--md-on-surface);
+}
+
+.pitch-history-graph {
+  margin-top: var(--space-2);
+  height: 130px;
+  border-radius: 16px;
+  border: 1px solid var(--md-outline-variant);
+  background: linear-gradient(
+    180deg,
+    var(--md-surface-container-high) 0%,
+    var(--md-surface-container) 100%
+  );
+  overflow: hidden;
+}
+
+.pitch-history-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.pitch-history-guide {
+  stroke: color-mix(in srgb, var(--md-on-surface-variant) 30%, transparent);
+  stroke-width: 0.7;
+}
+
+.pitch-history-line {
+  fill: none;
+  stroke: color-mix(in srgb, var(--md-primary) 82%, var(--md-secondary));
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.95;
+}
+
+.pitch-history-point {
+  fill: var(--md-primary);
+}
+
+.pitch-reference-card .shared-pk-container {
+  margin-top: var(--space-3);
+}
+
+.pitch-reference-card .shared-pk-white {
+  border-color: color-mix(in srgb, var(--md-outline) 74%, #d1d5db);
+  background: var(--md-surface);
+}
+
+.pitch-reference-card .shared-pk-white:hover {
+  background: var(--md-surface-container-high);
+}
+
+.pitch-reference-card .shared-pk-white.active,
+.pitch-reference-card .shared-pk-black.active {
+  background: var(--md-primary);
+}
+
+.pitch-reference-card .shared-pk-white-label {
+  color: var(--md-on-surface-variant);
+}
+
+.pitch-reference-card .shared-pk-black {
+  background: color-mix(in srgb, var(--md-on-primary-container) 88%, #13161a);
+  border-color: color-mix(in srgb, var(--md-on-primary-container) 90%, #000);
+}
+
+@media (max-width: 680px) {
+  .pitch-app {
+    padding: 0;
+  }
+
+  .pitch-shell {
+    border-radius: 0;
+    width: 100%;
+    max-width: none;
+    padding: var(--space-3) 10px var(--space-6);
+  }
+
+  .pitch-header {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+
+  .pitch-header-input {
+    min-width: 0;
+    grid-template-columns: 1fr;
+    gap: var(--space-2);
+  }
+
+  .pitch-listen-btn {
+    width: 100%;
+  }
+
+  .pitch-note-display {
+    grid-template-columns: 1fr;
+    min-height: 114px;
+    gap: 6px;
+  }
+
+  .pitch-note {
+    width: auto;
+  }
+
+  .pitch-history-graph {
+    height: 114px;
+  }
+}

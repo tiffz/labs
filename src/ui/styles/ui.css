@@ -852,6 +852,54 @@ body {
   overflow-x: auto;
 }
 
+.ui-rhythm-template-input {
+  display: grid;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #155e63;
+}
+
+.ui-rhythm-template-input input {
+  min-height: 34px;
+  border: 1px solid color-mix(in srgb, #22d3ee 30%, #93c5fd);
+  border-radius: 10px;
+  padding: 0 10px;
+  font: inherit;
+  font-weight: 700;
+  color: #0f172a;
+  background: #ffffff;
+}
+
+.ui-rhythm-preset-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ui-rhythm-preset-chip {
+  border: 1px solid color-mix(in srgb, #22d3ee 30%, #93c5fd);
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: #ffffff;
+  color: #0f766e;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+
+.ui-rhythm-preset-chip.is-active {
+  border-color: #0284c7;
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.16);
+}
+
+.ui-rhythm-template-error {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #b45309;
+}
+
 .ui-metronome-toggle {
   border: 1px solid #d7c8ff;
   border-radius: 10px;

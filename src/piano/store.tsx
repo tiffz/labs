@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useCallback, useRef, useEffect } from 'react';
-import type { PianoScore, MidiDevice, NoteDuration, PracticeNoteResult, PracticeRun, PracticeSession, Key } from './types';
+import type { PianoScore, MidiDevice, MicrophoneDevice, NoteDuration, PracticeNoteResult, PracticeRun, PracticeSession, Key } from './types';
 import { generateNoteId, durationToBeats } from './types';
 import type { SoundType } from '../shared/music/soundOptions';
 import { ScorePlaybackEngine, getScorePlaybackEngine } from './utils/scorePlayback';
@@ -44,7 +44,11 @@ interface PianoState {
   currentMeasureIndex: number;
   currentNoteIndices: Map<string, number>;
   midiConnected: boolean;
+  midiInputEnabled: boolean;
   midiDevices: MidiDevice[];
+  microphoneDevices: MicrophoneDevice[];
+  selectedMicrophoneDeviceId: string;
+  activeMicrophoneLabel: string | null;
   activeMidiNotes: Set<number>;
   trackMuted: Map<string, boolean>;
   trackVolume: Map<string, number>;
@@ -112,9 +116,14 @@ type Action =
   | { type: 'SET_LOOPING'; enabled: boolean }
   | { type: 'UPDATE_POSITION'; measureIndex: number; noteIndices: Map<string, number> }
   | { type: 'SET_MIDI_CONNECTED'; connected: boolean }
+  | { type: 'SET_MIDI_INPUT_ENABLED'; enabled: boolean }
   | { type: 'SET_MIDI_DEVICES'; devices: MidiDevice[] }
+  | { type: 'SET_MICROPHONE_DEVICES'; devices: MicrophoneDevice[] }
+  | { type: 'SET_SELECTED_MICROPHONE_DEVICE'; deviceId: string }
+  | { type: 'SET_ACTIVE_MICROPHONE_LABEL'; label: string | null }
   | { type: 'ADD_MIDI_NOTE'; note: number }
   | { type: 'REMOVE_MIDI_NOTE'; note: number }
+  | { type: 'CLEAR_ACTIVE_MIDI_NOTES' }
   | { type: 'SET_TRACK_MUTED'; partId: string; muted: boolean }
   | { type: 'SET_TRACK_VOLUME'; partId: string; volume: number }
   | { type: 'SET_MASTER_VOLUME'; volume: number }
@@ -194,7 +203,11 @@ export const initialState: PianoState = {
   currentMeasureIndex: 0,
   currentNoteIndices: new Map(),
   midiConnected: false,
+  midiInputEnabled: true,
   midiDevices: [],
+  microphoneDevices: [{ id: 'default', name: 'System default' }],
+  selectedMicrophoneDeviceId: 'default',
+  activeMicrophoneLabel: null,
   activeMidiNotes: new Set(),
   trackMuted: new Map(),
   trackVolume: new Map([['rh', 1], ['lh', 1], ['voice', 1]]),
@@ -327,8 +340,16 @@ export function reducer(state: PianoState, action: Action): PianoState {
       return { ...state, currentMeasureIndex: action.measureIndex, currentNoteIndices: action.noteIndices };
     case 'SET_MIDI_CONNECTED':
       return { ...state, midiConnected: action.connected };
+    case 'SET_MIDI_INPUT_ENABLED':
+      return { ...state, midiInputEnabled: action.enabled };
     case 'SET_MIDI_DEVICES':
       return { ...state, midiDevices: action.devices };
+    case 'SET_MICROPHONE_DEVICES':
+      return { ...state, microphoneDevices: action.devices };
+    case 'SET_SELECTED_MICROPHONE_DEVICE':
+      return { ...state, selectedMicrophoneDeviceId: action.deviceId };
+    case 'SET_ACTIVE_MICROPHONE_LABEL':
+      return { ...state, activeMicrophoneLabel: action.label };
     case 'ADD_MIDI_NOTE':
       return { ...state, activeMidiNotes: new Set([...state.activeMidiNotes, action.note]) };
     case 'REMOVE_MIDI_NOTE': {
@@ -336,6 +357,8 @@ export function reducer(state: PianoState, action: Action): PianoState {
       next.delete(action.note);
       return { ...state, activeMidiNotes: next };
     }
+    case 'CLEAR_ACTIVE_MIDI_NOTES':
+      return { ...state, activeMidiNotes: new Set() };
     case 'SET_TRACK_MUTED':
       return { ...state, trackMuted: new Map(state.trackMuted).set(action.partId, action.muted) };
     case 'SET_TRACK_VOLUME':
@@ -791,6 +814,8 @@ export function reducer(state: PianoState, action: Action): PianoState {
         loopingEnabled: p.loopingEnabled,
         countInEveryLoop: p.countInEveryLoop,
         soundType: p.soundType,
+        midiInputEnabled: p.midiInputEnabled ?? true,
+        selectedMicrophoneDeviceId: p.microphoneDeviceId ?? 'default',
         midiSoundEnabled: p.midiSoundEnabled ?? false,
         midiSoundVolume: p.midiSoundVolume ?? 0.7,
       };
@@ -805,6 +830,8 @@ interface PianoContextValue {
   dispatch: React.Dispatch<Action>;
   engine: ScorePlaybackEngine;
   toggleMicrophone: () => void;
+  setSelectedMicrophoneDevice: (deviceId: string) => void;
+  toggleMidiInput: () => void;
   midi: MidiInput;
   startMode: (mode: ActiveMode) => void;
   stopMode: () => void;
@@ -826,9 +853,98 @@ export function PianoProvider({ children }: { children: React.ReactNode }) {
   const engine = engineRef.current;
   const midi = midiRef.current;
 
+  const refreshMicrophoneDevices = useCallback(async (): Promise<MicrophoneDevice[]> => {
+    if (!navigator.mediaDevices?.enumerateDevices) {
+      const fallback = [{ id: 'default', name: 'System default' }];
+      dispatch({ type: 'SET_MICROPHONE_DEVICES', devices: fallback });
+      return fallback;
+    }
+
+    try {
+      const all = await navigator.mediaDevices.enumerateDevices();
+      const audioInputs = all.filter((d) => d.kind === 'audioinput');
+      const unique = new Map<string, MicrophoneDevice>();
+      for (let i = 0; i < audioInputs.length; i++) {
+        const device = audioInputs[i];
+        const id = device.deviceId || `audioinput-${i + 1}`;
+        const isDefault = id === 'default';
+        const baseName = device.label?.trim();
+        const name = isDefault
+          ? (baseName ? `System default (${baseName})` : 'System default')
+          : (baseName || `Microphone ${unique.size + 1}`);
+        unique.set(id, { id, name });
+      }
+      if (!unique.has('default')) {
+        unique.set('default', { id: 'default', name: 'System default' });
+      }
+      const devices = Array.from(unique.values());
+      dispatch({ type: 'SET_MICROPHONE_DEVICES', devices });
+
+      const selectedId = stateRef.current.selectedMicrophoneDeviceId || 'default';
+      const selectedExists = devices.some((d) => d.id === selectedId);
+      if (!selectedExists) {
+        dispatch({ type: 'SET_SELECTED_MICROPHONE_DEVICE', deviceId: 'default' });
+      }
+      return devices;
+    } catch {
+      const fallback = [{ id: 'default', name: 'System default' }];
+      dispatch({ type: 'SET_MICROPHONE_DEVICES', devices: fallback });
+      dispatch({ type: 'SET_SELECTED_MICROPHONE_DEVICE', deviceId: 'default' });
+      return fallback;
+    }
+  }, []);
+
+  const stopMicrophoneInput = useCallback(() => {
+    if (!acousticRef.current?.isRunning()) return;
+    acousticRef.current.stop();
+    acousticRef.current = null;
+    dispatch({ type: 'SET_MICROPHONE_ACTIVE', active: false });
+    dispatch({ type: 'SET_DETECTED_PITCH', pitch: null });
+    dispatch({ type: 'SET_ACTIVE_MICROPHONE_LABEL', label: null });
+  }, []);
+
+  const startMicrophoneInput = useCallback(async (deviceId?: string): Promise<boolean> => {
+    const acoustic = new AcousticInput({
+      onNoteOn: (midi) => {
+        recordMidiNoteOn(midi, performance.now());
+        dispatch({ type: 'ADD_MIDI_NOTE', note: midi });
+      },
+      onNoteOff: (midi) => {
+        recordMidiNoteOff(midi);
+        dispatch({ type: 'REMOVE_MIDI_NOTE', note: midi });
+      },
+      onPitchDetected: (midi) => {
+        dispatch({ type: 'SET_DETECTED_PITCH', pitch: midi });
+      },
+    });
+    try {
+      await acoustic.start(deviceId);
+      acousticRef.current = acoustic;
+      dispatch({ type: 'SET_MICROPHONE_ACTIVE', active: true });
+      dispatch({ type: 'SET_ACTIVE_MICROPHONE_LABEL', label: acoustic.getActiveInputLabel() });
+      void refreshMicrophoneDevices();
+      return true;
+    } catch (err) {
+      console.error('Microphone access failed:', err);
+      dispatch({ type: 'SET_MICROPHONE_ACTIVE', active: false });
+      dispatch({ type: 'SET_ACTIVE_MICROPHONE_LABEL', label: null });
+      return false;
+    }
+  }, [refreshMicrophoneDevices]);
+
   useEffect(() => {
     engine.loadClickSound();
   }, [engine]);
+
+  useEffect(() => {
+    void refreshMicrophoneDevices();
+    if (!navigator.mediaDevices?.addEventListener) return;
+    const handleDeviceChange = () => { void refreshMicrophoneDevices(); };
+    navigator.mediaDevices.addEventListener('devicechange', handleDeviceChange);
+    return () => {
+      navigator.mediaDevices.removeEventListener('devicechange', handleDeviceChange);
+    };
+  }, [refreshMicrophoneDevices]);
 
   const midiHoldTimers = useRef<Map<number, number>>(new Map());
   const midiChordBuffer = useRef<{ notes: number[]; timer: number | null }>({ notes: [], timer: null });
@@ -840,10 +956,11 @@ export function PianoProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'SET_MIDI_DEVICES', devices });
     });
     midi.onNote((type, note, velocity, timestamp) => {
+      const s = stateRef.current;
+      if (!s.midiInputEnabled) return;
       if (type === 'noteon') {
         recordMidiNoteOn(note, timestamp);
         dispatch({ type: 'ADD_MIDI_NOTE', note });
-        const s = stateRef.current;
         if (s.inputMode === 'step-input') {
           if (s.durationMode === 'auto') {
             midiHoldTimers.current.set(note, Date.now());
@@ -871,7 +988,6 @@ export function PianoProvider({ children }: { children: React.ReactNode }) {
         if (stateRef.current.midiSoundEnabled) {
           engine.stopMidiNote(note);
         }
-        const s = stateRef.current;
         if (s.inputMode === 'step-input' && s.durationMode === 'auto') {
           const startTime = midiHoldTimers.current.get(note);
           midiHoldTimers.current.delete(note);
@@ -1190,33 +1306,39 @@ export function PianoProvider({ children }: { children: React.ReactNode }) {
 
   const toggleMicrophone = useCallback(async () => {
     if (acousticRef.current?.isRunning()) {
-      acousticRef.current.stop();
-      acousticRef.current = null;
-      dispatch({ type: 'SET_MICROPHONE_ACTIVE', active: false });
-      dispatch({ type: 'SET_DETECTED_PITCH', pitch: null });
+      stopMicrophoneInput();
     } else {
-      const acoustic = new AcousticInput({
-        onNoteOn: (midi) => {
-          recordMidiNoteOn(midi, performance.now());
-          dispatch({ type: 'ADD_MIDI_NOTE', note: midi });
-        },
-        onNoteOff: (midi) => {
-          recordMidiNoteOff(midi);
-          dispatch({ type: 'REMOVE_MIDI_NOTE', note: midi });
-        },
-        onPitchDetected: (midi) => {
-          dispatch({ type: 'SET_DETECTED_PITCH', pitch: midi });
-        },
-      });
-      try {
-        await acoustic.start();
-        acousticRef.current = acoustic;
-        dispatch({ type: 'SET_MICROPHONE_ACTIVE', active: true });
-      } catch (err) {
-        console.error('Microphone access failed:', err);
-      }
+      const deviceId = stateRef.current.selectedMicrophoneDeviceId || 'default';
+      await startMicrophoneInput(deviceId);
     }
-  }, []);
+  }, [startMicrophoneInput, stopMicrophoneInput]);
+
+  const setSelectedMicrophoneDevice = useCallback(async (deviceId: string) => {
+    dispatch({ type: 'SET_SELECTED_MICROPHONE_DEVICE', deviceId });
+    if (!acousticRef.current?.isRunning()) return;
+    stopMicrophoneInput();
+    await startMicrophoneInput(deviceId);
+  }, [startMicrophoneInput, stopMicrophoneInput]);
+
+  const toggleMidiInput = useCallback(() => {
+    const nextEnabled = !stateRef.current.midiInputEnabled;
+    dispatch({ type: 'SET_MIDI_INPUT_ENABLED', enabled: nextEnabled });
+    if (!nextEnabled) {
+      midiHoldTimers.current.clear();
+      if (midiChordBuffer.current.timer !== null) {
+        clearTimeout(midiChordBuffer.current.timer);
+        midiChordBuffer.current.timer = null;
+      }
+      midiChordBuffer.current.notes = [];
+      if (midiReleaseBuffer.current.timer !== null) {
+        clearTimeout(midiReleaseBuffer.current.timer);
+        midiReleaseBuffer.current.timer = null;
+      }
+      midiReleaseBuffer.current.notes = [];
+      stateRef.current.activeMidiNotes.forEach((note) => engine.stopMidiNote(note));
+      dispatch({ type: 'CLEAR_ACTIVE_MIDI_NOTES' });
+    }
+  }, [engine]);
 
   // Load global preferences + last selection on mount
   useEffect(() => {
@@ -1225,7 +1347,8 @@ export function PianoProvider({ children }: { children: React.ReactNode }) {
       if (prefs) {
         dispatch({ type: 'RESTORE_GLOBAL_PREFERENCES', prefs });
         if (prefs.microphoneEnabled && !acousticRef.current?.isRunning()) {
-          toggleMicrophone();
+          const preferredId = prefs.microphoneDeviceId ?? 'default';
+          void startMicrophoneInput(preferredId);
         }
       }
       const last = getLastSelection();
@@ -1244,7 +1367,7 @@ export function PianoProvider({ children }: { children: React.ReactNode }) {
         engine.setTempo(last.score.tempo);
       }
     });
-  }, [dispatch, toggleMicrophone, engine]);
+  }, [dispatch, startMicrophoneInput, engine]);
 
   // Auto-save per-song practice settings (debounced)
   const songSaveTimerRef = useRef<number | null>(null);
@@ -1296,7 +1419,7 @@ export function PianoProvider({ children }: { children: React.ReactNode }) {
   const globalSaveTimerRef = useRef<number | null>(null);
   const { masterVolume, masterMuted, metronomeVolume, metronomeEnabled,
     loopingEnabled, countInEveryLoop, soundType, microphoneActive, midiSoundEnabled,
-    midiSoundVolume } = state;
+    midiSoundVolume, midiInputEnabled, selectedMicrophoneDeviceId } = state;
   useEffect(() => {
     if (globalSaveTimerRef.current) clearTimeout(globalSaveTimerRef.current);
     globalSaveTimerRef.current = window.setTimeout(() => {
@@ -1304,6 +1427,8 @@ export function PianoProvider({ children }: { children: React.ReactNode }) {
         masterVolume, masterMuted, metronomeVolume, metronomeEnabled,
         loopingEnabled, countInEveryLoop, soundType,
         microphoneEnabled: microphoneActive,
+        microphoneDeviceId: selectedMicrophoneDeviceId,
+        midiInputEnabled,
         midiSoundEnabled,
         midiSoundVolume,
       };
@@ -1314,7 +1439,7 @@ export function PianoProvider({ children }: { children: React.ReactNode }) {
     return () => { if (globalSaveTimerRef.current) clearTimeout(globalSaveTimerRef.current); };
   }, [masterVolume, masterMuted, metronomeVolume, metronomeEnabled,
       loopingEnabled, countInEveryLoop, soundType, microphoneActive, midiSoundEnabled,
-      midiSoundVolume]);
+      midiSoundVolume, midiInputEnabled, selectedMicrophoneDeviceId]);
 
   useEffect(() => {
     if (soundType !== 'piano-sampled') return;
@@ -1334,7 +1459,7 @@ export function PianoProvider({ children }: { children: React.ReactNode }) {
   }, [engine, soundType]);
 
   const value: PianoContextValue = {
-    state, dispatch, engine, midi, startMode, stopMode, loadScore, toggleMicrophone,
+    state, dispatch, engine, midi, startMode, stopMode, loadScore, toggleMicrophone, setSelectedMicrophoneDevice, toggleMidiInput,
   };
   return <PianoContext.Provider value={value}>{children}</PianoContext.Provider>;
 }

@@ -296,7 +296,6 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
               onChange={(next) => onBpmChange(Math.max(20, Math.min(300, Math.round(next))))}
               min={20}
               max={300}
-              disabled={isPlaying}
               className="drums-shared-bpm-input"
               dropdownClassName="drums-bpm-dropdown"
               sliderClassName="drums-bpm-slider"
@@ -353,7 +352,9 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
                   placeholder="e.g., 3+3+2"
                   title="Enter beat grouping (e.g., 3+3+2)"
                 />
-                <div className="input-error-message">{beatGroupingError || '\u00A0'}</div>
+                {beatGroupingError ? (
+                  <div className="input-error-message">{beatGroupingError}</div>
+                ) : null}
               </>
             )}
           </div>

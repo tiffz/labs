@@ -2,11 +2,19 @@ import React, { useEffect, useRef } from 'react';
 import { Renderer, Stave, StaveNote, Voice, Formatter, Dot, Beam } from 'vexflow';
 import { parsePatternToNotes, durationToVexFlow, isDottedDuration } from '../utils/notationHelpers';
 import { drawDrumSymbol } from '../assets/drumSymbols';
+import type { TimeSignature } from '../types';
+import {
+  getBeatGroupingInSixteenths,
+  getDefaultBeatGrouping,
+  isAsymmetricTimeSignature,
+  isCompoundTimeSignature,
+} from '../utils/timeSignatureUtils';
 
 interface SimpleVexFlowNoteProps {
   pattern: string;
   width?: number;
   height?: number;
+  timeSignature?: TimeSignature;
 }
 
 /**
@@ -17,6 +25,7 @@ const SimpleVexFlowNote: React.FC<SimpleVexFlowNoteProps> = ({
   pattern,
   width = 100,
   height = 60,
+  timeSignature = { numerator: 4, denominator: 4 },
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -71,16 +80,61 @@ const SimpleVexFlowNote: React.FC<SimpleVexFlowNoteProps> = ({
         return staveNote;
       });
 
+      const createBeamsForPreview = (): Beam[] => {
+        const beams: Beam[] = [];
+        const beatGrouping = getDefaultBeatGrouping(timeSignature);
+        const groupsInSixteenths = getBeatGroupingInSixteenths(beatGrouping, timeSignature);
+        const useSubGrouping =
+          !isCompoundTimeSignature(timeSignature) && !isAsymmetricTimeSignature(timeSignature);
+        let currentPosition = 0;
+        let currentNoteIndex = 0;
+        for (const groupSize of groupsInSixteenths) {
+          const groupEnd = currentPosition + groupSize;
+          const bucketSize = useSubGrouping ? 4 : groupSize;
+          while (currentPosition < groupEnd && currentNoteIndex < notes.length) {
+            const bucketEnd = Math.min(currentPosition + bucketSize, groupEnd);
+            const beamed: StaveNote[] = [];
+            while (currentNoteIndex < notes.length && currentPosition < bucketEnd) {
+              const note = notes[currentNoteIndex];
+              const staveNote = staveNotes[currentNoteIndex];
+              const vexDuration = staveNote?.getDuration();
+              const beamable =
+                note.sound !== 'rest' &&
+                (note.duration === 2 || note.duration === 1 || note.duration === 3) &&
+                (vexDuration === '8' || vexDuration === '8d' || vexDuration === '16' || vexDuration === '16d');
+              if (beamable && staveNote) beamed.push(staveNote);
+              else if (beamed.length > 1) {
+                try {
+                  beams.push(new Beam(beamed));
+                } catch {
+                  // noop
+                }
+                beamed.length = 0;
+              }
+              currentPosition += note.duration;
+              currentNoteIndex += 1;
+            }
+            if (beamed.length > 1) {
+              try {
+                beams.push(new Beam(beamed));
+              } catch {
+                // noop
+              }
+            }
+          }
+        }
+        return beams;
+      };
+
       // Create voice and format
-      const voice = new Voice({ numBeats: 4, beatValue: 4 });
+      const voice = new Voice({
+        numBeats: timeSignature.numerator,
+        beatValue: timeSignature.denominator,
+      });
       voice.setStrict(false);
       voice.addTickables(staveNotes);
 
-      // Auto-beam eighth and sixteenth notes BEFORE formatting
-      const beams = Beam.generateBeams(staveNotes, {
-        beamRests: false,
-        beamMiddleOnly: false, // Beam all beamable notes
-      });
+      const beams = createBeamsForPreview();
 
       // Adjust formatting width based on note count for better centering
       const formatWidth = noteCount === 1 ? staveWidth - 15 : staveWidth - 25;
@@ -99,7 +153,7 @@ const SimpleVexFlowNote: React.FC<SimpleVexFlowNoteProps> = ({
         staveNotes.forEach((staveNote, noteIndex) => {
           const note = notes[noteIndex];
           if (note && note.sound !== 'rest') {
-            const noteX = staveNote.getAbsoluteX() + 10;
+            const noteX = staveNote.getAbsoluteX() + 6;
             const noteY = stave.getYForLine(2); // Middle line of 5-line staff
             drawDrumSymbol(svgElement, noteX, noteY, note.sound);
           }
@@ -108,7 +162,7 @@ const SimpleVexFlowNote: React.FC<SimpleVexFlowNoteProps> = ({
     } catch (error) {
       console.error('Error rendering VexFlow note:', error);
     }
-  }, [pattern, width, height]);
+  }, [pattern, width, height, timeSignature]);
 
   return (
     <div 

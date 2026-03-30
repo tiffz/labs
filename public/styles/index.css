@@ -207,6 +207,18 @@ body {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
+.app-icon.pitch {
+  background: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-icon.pitch::before {
+  content: '🎤';
+}
+
 .app-icon.story {
   background-image: url('/icons/cat-android.png');
   background-size: 80% 80%;

@@ -83,6 +83,11 @@ export interface MidiDevice {
   connected: boolean;
 }
 
+export interface MicrophoneDevice {
+  id: string;
+  name: string;
+}
+
 export type TimingJudgment =
   | 'perfect'
   | 'early'

@@ -34,6 +34,8 @@ export interface GlobalPracticePreferences {
   countInEveryLoop: boolean;
   soundType: SoundType;
   microphoneEnabled?: boolean;
+  microphoneDeviceId?: string;
+  midiInputEnabled?: boolean;
   midiSoundEnabled?: boolean;
   midiSoundVolume?: number;
 }

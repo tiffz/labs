@@ -140,6 +140,20 @@ describe('PlaybackControls', () => {
     expect(onBpmChange).toHaveBeenCalledWith(140);
   });
 
+  it('allows editing BPM while playback is active', () => {
+    const onBpmChange = vi.fn();
+    render(<PlaybackControls {...defaultProps} isPlaying={true} onBpmChange={onBpmChange} />);
+
+    const bpmInput = screen.getByLabelText('Tempo in BPM') as HTMLInputElement;
+    expect(bpmInput).not.toBeDisabled();
+
+    fireEvent.focus(bpmInput);
+    fireEvent.change(bpmInput, { target: { value: '132' } });
+    fireEvent.blur(bpmInput);
+
+    expect(onBpmChange).toHaveBeenCalledWith(132);
+  });
+
   it('should show time signature dropdown when numerator input is focused', () => {
     render(<PlaybackControls {...defaultProps} />);
     

@@ -576,13 +576,12 @@ const DrumNotationMini: React.FC<DrumNotationMiniProps> = ({
 
             // Draw drum symbol just above the note
             if (showDrumSymbols && note.sound !== 'rest') {
-              const noteX = staveNote.getAbsoluteX();
-              // Center symbol above the notehead (notehead width ~10-12px, so offset by ~6px)
-              const symbolXOffset = 6;
+              // VexFlow absolute X sits near the stem; nudge to notehead center.
+              const noteX = staveNote.getAbsoluteX() + 6;
               // Position symbol above the top staff line (line 0), with a small gap
               const symbolY = stave.getYForLine(0) - 8;
               const color = isActive ? resolvedStyle.highlightColor : resolvedStyle.noteColor;
-              drawDrumSymbol(svg, noteX + symbolXOffset, symbolY, note.sound, color, drumSymbolScale, 0);
+              drawDrumSymbol(svg, noteX, symbolY, note.sound, color, drumSymbolScale, 0);
             }
           });
 

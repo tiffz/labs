@@ -4527,6 +4527,32 @@ body {
   margin: 0;
   padding-left: 30px;
 }
+.is-select-row {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  align-items: center;
+  gap: var(--sp-2);
+  padding-left: 30px;
+}
+.is-select-label {
+  font-size: var(--text-sm);
+  color: var(--piano-text-secondary);
+}
+.is-select {
+  width: 100%;
+  border: 1px solid var(--piano-border);
+  border-radius: var(--radius-sm);
+  background: white;
+  font-family: inherit;
+  font-size: var(--text-sm);
+  color: var(--piano-text);
+  padding: 6px var(--sp-2);
+}
+.is-select:focus-visible {
+  outline: none;
+  border-color: var(--piano-primary);
+  box-shadow: 0 0 0 2px var(--piano-primary-light);
+}
 .is-toggle {
   padding: var(--sp-1) var(--sp-3);
   border: 1px solid var(--piano-border);

@@ -741,6 +741,26 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-components-music-onscreenpianokeyboard-tsx-onscreenpianokeyboard",
+    "name": "OnscreenPianoKeyboard",
+    "path": "src/shared/components/music/OnscreenPianoKeyboard.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "music",
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "default",
+    "demoId": null
+  },
+  {
     "id": "src-shared-components-music-sharedexportpopover-tsx-sharedexportpopover",
     "name": "SharedExportPopover",
     "path": "src/shared/components/music/SharedExportPopover.tsx",
@@ -2010,6 +2030,166 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "ui"
     ],
     "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-pitch-microphonepitchinput-ts-microphonedevice",
+    "name": "MicrophoneDevice",
+    "path": "src/shared/music/pitch/microphonePitchInput.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-pitch-microphonepitchinput-ts-microphonepitchinput",
+    "name": "MicrophonePitchInput",
+    "path": "src/shared/music/pitch/microphonePitchInput.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "class",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-pitch-microphonepitchinput-ts-microphonepitchinputcallbacks",
+    "name": "MicrophonePitchInputCallbacks",
+    "path": "src/shared/music/pitch/microphonePitchInput.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-pitch-pitchdetection-ts-detectpitchfrequency",
+    "name": "detectPitchFrequency",
+    "path": "src/shared/music/pitch/pitchDetection.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "YIN-based monophonic pitch detection helpers shared across music apps.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-pitch-pitchdetection-ts-detectpitchinfo",
+    "name": "detectPitchInfo",
+    "path": "src/shared/music/pitch/pitchDetection.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "YIN-based monophonic pitch detection helpers shared across music apps.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-pitch-pitchdetection-ts-frequencytomidi",
+    "name": "frequencyToMidi",
+    "path": "src/shared/music/pitch/pitchDetection.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "YIN-based monophonic pitch detection helpers shared across music apps.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-pitch-pitchdetection-ts-frequencytonotename",
+    "name": "frequencyToNoteName",
+    "path": "src/shared/music/pitch/pitchDetection.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "YIN-based monophonic pitch detection helpers shared across music apps.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-pitch-pitchdetection-ts-getcentsoff",
+    "name": "getCentsOff",
+    "path": "src/shared/music/pitch/pitchDetection.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "YIN-based monophonic pitch detection helpers shared across music apps.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-pitch-pitchdetection-ts-miditonotename",
+    "name": "midiToNoteName",
+    "path": "src/shared/music/pitch/pitchDetection.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "YIN-based monophonic pitch detection helpers shared across music apps.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-pitch-pitchdetection-ts-pitchinfo",
+    "name": "PitchInfo",
+    "path": "src/shared/music/pitch/pitchDetection.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "YIN-based monophonic pitch detection helpers shared across music apps.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
     "demoId": null
   },
   {
@@ -3309,6 +3489,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
+      "ui",
       "words"
     ],
     "exportType": "function",
@@ -3327,6 +3508,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
+      "ui",
       "words"
     ],
     "exportType": "function",
@@ -3346,6 +3528,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
+      "ui",
       "words"
     ],
     "exportType": "interface",
@@ -3365,6 +3548,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
+      "ui",
       "words"
     ],
     "exportType": "const",
@@ -3384,6 +3568,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
+      "ui",
       "words"
     ],
     "exportType": "interface",
@@ -3403,6 +3588,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
+      "ui",
       "words"
     ],
     "exportType": "interface",
@@ -3422,6 +3608,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
+      "ui",
       "words"
     ],
     "exportType": "interface",

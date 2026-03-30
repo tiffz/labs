@@ -3,6 +3,7 @@ import type { TimeSignature } from './types';
 export interface RhythmVariation {
   notation: string;
   note?: string;
+  timeSignature?: TimeSignature;
 }
 
 export interface LearnMoreLink {
@@ -18,6 +19,12 @@ export interface RhythmDefinition {
   basePattern: string;
   timeSignature: TimeSignature;
   variations: RhythmVariation[];
+  relatedRhythmIds?: string[];
+  /**
+   * Optional 2/4-style pattern to use when this rhythm is requested in a 4/4 flow.
+   * Useful for keeping legacy doubled-groove behavior while using an 8/8 default.
+   */
+  fourFourMappingPattern?: string;
 }
 
 export interface RhythmTemplatePreset {
@@ -45,6 +52,7 @@ export const RHYTHM_DATABASE: Record<string, RhythmDefinition> = {
       { notation: 'D-T-K-T-D-K-T---' },
       { notation: 'D-T-K-T-D-K-T-K-' },
     ],
+    relatedRhythmIds: ['saeidi', 'baladi'],
   },
   saeidi: {
     id: 'saeidi',
@@ -60,6 +68,7 @@ export const RHYTHM_DATABASE: Record<string, RhythmDefinition> = {
       { notation: 'D-T-K-D-D-K-T---' },
       { notation: 'D-T-K-D-D-K-T-K-' },
     ],
+    relatedRhythmIds: ['maqsum', 'baladi'],
   },
   baladi: {
     id: 'baladi',
@@ -74,6 +83,7 @@ export const RHYTHM_DATABASE: Record<string, RhythmDefinition> = {
       { notation: 'D-D-K-T-D-K-T---' },
       { notation: 'D-D-K-T-D-K-T-K-' },
     ],
+    relatedRhythmIds: ['maqsum', 'saeidi'],
   },
   ayoub: {
     id: 'ayoub',
@@ -91,24 +101,37 @@ export const RHYTHM_DATABASE: Record<string, RhythmDefinition> = {
   malfuf: {
     id: 'malfuf',
     name: 'Malfuf',
-    description: 'A 2/4 rhythm with a strong dum followed by two teks.',
+    description: 'An 8/8 rhythm with a strong dum followed by two teks (3+3+2 feel).',
     learnMoreLinks: [],
-    basePattern: 'D--T--T-',
-    timeSignature: { numerator: 2, denominator: 4 },
+    basePattern: 'D-----T-----T---',
+    timeSignature: { numerator: 8, denominator: 8 },
+    fourFourMappingPattern: 'D--T--T-',
     variations: [
-      { notation: 'D--T--T-' },
-      { notation: 'D-KT-KT-' },
-      { notation: 'DKKTKKTK' },
+      { notation: 'D-----T-----T---', timeSignature: { numerator: 8, denominator: 8 } },
+      { notation: 'D-K-K-D-K-K-T-K-', note: '8/8 with ka ornaments', timeSignature: { numerator: 8, denominator: 8 } },
+      { notation: 'D---K-T---K-T---', note: '8/8 quarter-note anchors', timeSignature: { numerator: 8, denominator: 8 } },
+      { notation: 'D--T--T-', note: '2/4 variation', timeSignature: { numerator: 2, denominator: 4 } },
+      { notation: 'D-KT-KT-', note: '2/4 ornamented variation', timeSignature: { numerator: 2, denominator: 4 } },
+      { notation: 'DKKTKKTK', note: '2/4 dense variation', timeSignature: { numerator: 2, denominator: 4 } },
     ],
+    relatedRhythmIds: ['kahleegi'],
   },
   kahleegi: {
     id: 'kahleegi',
     name: 'Kahleegi',
-    description: 'A 2/4 companion rhythm to Malfuf with a double dum opening.',
+    description: 'An 8/8 companion rhythm to Malfuf with a double dum opening (3+3+2 feel).',
     learnMoreLinks: [],
-    basePattern: 'D--D--T-',
-    timeSignature: { numerator: 2, denominator: 4 },
-    variations: [{ notation: 'D--D--T-' }, { notation: 'DK-D--K-' }],
+    basePattern: 'D-----D-----T---',
+    timeSignature: { numerator: 8, denominator: 8 },
+    fourFourMappingPattern: 'D--D--T-',
+    variations: [
+      { notation: 'D-----D-----T---', timeSignature: { numerator: 8, denominator: 8 } },
+      { notation: 'D-K-K-D-K-K-T-K-', note: '8/8 with ka ornaments', timeSignature: { numerator: 8, denominator: 8 } },
+      { notation: 'D---K-D---K-T---', note: '8/8 quarter-note anchors', timeSignature: { numerator: 8, denominator: 8 } },
+      { notation: 'D--D--T-', note: '2/4 variation', timeSignature: { numerator: 2, denominator: 4 } },
+      { notation: 'DK-D--K-', note: '2/4 ornamented variation', timeSignature: { numerator: 2, denominator: 4 } },
+    ],
+    relatedRhythmIds: ['malfuf'],
   },
   rockAndRoll: {
     id: 'rockAndRoll',
@@ -153,9 +176,18 @@ function shouldDoublePatternForTimeSignature(
 }
 
 export function getPresetNotation(
-  rhythm: Pick<RhythmDefinition, 'basePattern' | 'timeSignature'>,
+  rhythm: Pick<RhythmDefinition, 'basePattern' | 'timeSignature' | 'fourFourMappingPattern'>,
   targetTimeSignature: TimeSignature
 ): string {
+  // Preserve legacy 2/4-to-4/4 preset behavior for select rhythms
+  // while allowing richer defaults (e.g., 8/8) elsewhere.
+  if (
+    targetTimeSignature.numerator === 4 &&
+    targetTimeSignature.denominator === 4 &&
+    typeof rhythm.fourFourMappingPattern === 'string'
+  ) {
+    return `${rhythm.fourFourMappingPattern}${rhythm.fourFourMappingPattern}`;
+  }
   if (shouldDoublePatternForTimeSignature(rhythm.timeSignature, targetTimeSignature)) {
     return `${rhythm.basePattern}${rhythm.basePattern}`;
   }

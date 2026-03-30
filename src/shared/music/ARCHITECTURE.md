@@ -29,6 +29,8 @@ safe and maintainable.
 - `shared/**` must not import from app directories (`beat`, `chords`, `drums`, `piano`, `words`).
 - App adapters can import `shared/**` and keep app-specific UI/state orchestration.
 - New music theory logic should be added once in `shared/music/theory` and reused.
+- If any music utility is used by more than one app, its canonical implementation must live in `src/shared/music/**`.
+- Apps must not import music logic directly from other apps (for example `piano` -> `words` or `beat` -> `piano`).
 
 ## Current Adapter Notes
 

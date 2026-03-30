@@ -35,6 +35,7 @@ export default defineConfig({
         forms: resolve(__dirname, 'src/forms/index.html'),
         beat: resolve(__dirname, 'src/beat/index.html'),
         words: resolve(__dirname, 'src/words/index.html'),
+        pitch: resolve(__dirname, 'src/pitch/index.html'),
         universal_tom: resolve(__dirname, 'src/drums/universal_tom/index.html'),
         piano: resolve(__dirname, 'src/piano/index.html'),
         ui: resolve(__dirname, 'src/ui/index.html'),

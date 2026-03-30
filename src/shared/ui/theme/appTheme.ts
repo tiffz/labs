@@ -4,6 +4,7 @@ export type AppThemeId =
   | 'beat'
   | 'chords'
   | 'drums'
+  | 'pitch'
   | 'words'
   | 'piano'
   | 'cats'
@@ -161,6 +162,12 @@ const THEMES: Record<AppThemeId, Theme> = {
     ...MUSIC_LIGHT_DEFAULT,
     primary: '#7c3aed',
     secondary: '#f59e0b',
+  }),
+  pitch: buildTheme({
+    mode: 'light',
+    ...MUSIC_LIGHT_DEFAULT,
+    primary: '#0f766e',
+    secondary: '#22c55e',
   }),
   words: buildTheme({
     mode: 'light',

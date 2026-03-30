@@ -1,23 +1,7 @@
 import React, { useCallback, useRef, useEffect } from 'react';
 import { usePiano } from '../store';
 import type { NoteDuration } from '../types';
-
-const WHITE_KEYS = [
-  { note: 'C', midi: 0 }, { note: 'D', midi: 2 }, { note: 'E', midi: 4 },
-  { note: 'F', midi: 5 }, { note: 'G', midi: 7 }, { note: 'A', midi: 9 }, { note: 'B', midi: 11 },
-];
-// Position each black key between the two white keys it sits between.
-// White key indices: C=0, D=1, E=2, F=3, G=4, A=5, B=6
-// The `afterWhite` value indicates which white key index the black key follows.
-const BLACK_KEYS = [
-  { note: 'C#', label: 'C#', midi: 1, afterWhite: 0 },
-  { note: 'D#', label: 'D#', midi: 3, afterWhite: 1 },
-  { note: 'F#', label: 'F#', midi: 6, afterWhite: 3 },
-  { note: 'G#', label: 'G#', midi: 8, afterWhite: 4 },
-  { note: 'A#', label: 'A#', midi: 10, afterWhite: 5 },
-];
-
-const OCTAVES = [3, 4, 5];
+import OnscreenPianoKeyboard from '../../shared/components/music/OnscreenPianoKeyboard';
 
 const DURATION_OPTIONS: { value: NoteDuration | 'auto'; label: string; noteSymbol: string; restSymbol: string }[] = [
   { value: 'auto',      label: 'Auto-detect (hold keys to set length)', noteSymbol: 'Auto', restSymbol: '𝄽' },
@@ -194,47 +178,22 @@ const PianoKeyboard: React.FC = () => {
         {state.durationMode === 'auto' && ' · Hold keys to set duration'}
       </span>
 
-      <div className="keyboard-container">
-        {OCTAVES.map(octave => (
-          <div key={octave} className="octave-group">
-            {WHITE_KEYS.map(k => {
-              const midi = (octave + 1) * 12 + k.midi;
-              const active = state.activeMidiNotes.has(midi);
-              const isBass = midi < 60;
-              return (
-                <button
-                  key={midi}
-                  className={`white-key ${active ? 'active' : ''} ${isBass ? 'bass-range' : ''}`}
-                  onMouseDown={() => handleNoteOn(midi)}
-                  onMouseUp={() => handleNoteOff(midi)}
-                  onMouseLeave={() => handleNoteOff(midi)}
-                >
-                  <span className="key-label">{k.note}{octave}</span>
-                </button>
-              );
-            })}
-            {BLACK_KEYS.map(k => {
-              const midi = (octave + 1) * 12 + k.midi;
-              const active = state.activeMidiNotes.has(midi);
-              // Place centered on the border between white keys at index afterWhite and afterWhite+1
-              // Each white key spans 1/7 of the octave group width
-              const leftPct = ((k.afterWhite + 1) / 7) * 100;
-              return (
-                <button
-                  key={midi}
-                  className={`black-key ${active ? 'active' : ''}`}
-                  style={{ left: `${leftPct}%` }}
-                  onMouseDown={() => handleNoteOn(midi)}
-                  onMouseUp={() => handleNoteOff(midi)}
-                  onMouseLeave={() => handleNoteOff(midi)}
-                >
-                  <span className="black-key-label">{k.label}{octave}</span>
-                </button>
-              );
-            })}
-          </div>
-        ))}
-      </div>
+      <OnscreenPianoKeyboard
+        octaves={[3, 4, 5]}
+        activeNotes={state.activeMidiNotes}
+        onNoteOn={handleNoteOn}
+        onNoteOff={handleNoteOff}
+        highlightBassBelowMidi={60}
+        classNames={{
+          container: 'keyboard-container',
+          octaveGroup: 'octave-group',
+          whiteKey: 'white-key',
+          blackKey: 'black-key',
+          whiteKeyLabel: 'key-label',
+          blackKeyLabel: 'black-key-label',
+          bassRange: 'bass-range',
+        }}
+      />
     </div>
   );
 };

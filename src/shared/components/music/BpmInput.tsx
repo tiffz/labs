@@ -54,6 +54,10 @@ const BpmInput: React.FC<BpmInputProps> = ({
   const anchorRef = React.useRef<HTMLDivElement | null>(null);
   const dropdownPaperRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const valueRef = useRef(value);
+  const holdTimeoutRef = useRef<number | null>(null);
+  const holdIntervalRef = useRef<number | null>(null);
+  const suppressNextClickRef = useRef(false);
   const presets = useMemo(() => COMMON_BPMS.filter((candidate) => candidate >= min && candidate <= max), [max, min]);
   const filteredPresets = useMemo(() => presets, [presets]);
   const sliderMarkValues = useMemo(() => {
@@ -70,6 +74,10 @@ const BpmInput: React.FC<BpmInputProps> = ({
     const important = [min, 100, 200, max];
     return Array.from(new Set(important.filter((mark) => mark >= min && mark <= max))).sort((a, b) => a - b);
   }, [max, min]);
+
+  useEffect(() => {
+    valueRef.current = value;
+  }, [value]);
 
   useEffect(() => {
     if (isEditing) return;
@@ -90,10 +98,33 @@ const BpmInput: React.FC<BpmInputProps> = ({
   };
 
   const bump = (delta: number): void => {
-    const next = clamp(value + delta, min, max);
+    const next = clamp(valueRef.current + delta, min, max);
     onChange(next);
     setDraft(String(next));
   };
+
+  const stopHold = (): void => {
+    if (holdTimeoutRef.current !== null) {
+      window.clearTimeout(holdTimeoutRef.current);
+      holdTimeoutRef.current = null;
+    }
+    if (holdIntervalRef.current !== null) {
+      window.clearInterval(holdIntervalRef.current);
+      holdIntervalRef.current = null;
+    }
+  };
+
+  const startHold = (delta: number): void => {
+    if (disabled) return;
+    stopHold();
+    suppressNextClickRef.current = true;
+    bump(delta);
+    holdTimeoutRef.current = window.setTimeout(() => {
+      holdIntervalRef.current = window.setInterval(() => bump(delta), 70);
+    }, 260);
+  };
+
+  useEffect(() => () => stopHold(), []);
 
   return (
     <div className={className}>
@@ -158,7 +189,19 @@ const BpmInput: React.FC<BpmInputProps> = ({
                 <button
                   type="button"
                   className="shared-bpm-arrow"
-                  onClick={() => bump(step)}
+                  onMouseDown={(event) => {
+                    event.preventDefault();
+                    startHold(step);
+                  }}
+                  onMouseUp={stopHold}
+                  onMouseLeave={stopHold}
+                  onClick={() => {
+                    if (suppressNextClickRef.current) {
+                      suppressNextClickRef.current = false;
+                      return;
+                    }
+                    bump(step);
+                  }}
                   aria-label="Increase BPM"
                   disabled={disabled || value >= max}
                 >
@@ -167,7 +210,19 @@ const BpmInput: React.FC<BpmInputProps> = ({
                 <button
                   type="button"
                   className="shared-bpm-arrow"
-                  onClick={() => bump(-step)}
+                  onMouseDown={(event) => {
+                    event.preventDefault();
+                    startHold(-step);
+                  }}
+                  onMouseUp={stopHold}
+                  onMouseLeave={stopHold}
+                  onClick={() => {
+                    if (suppressNextClickRef.current) {
+                      suppressNextClickRef.current = false;
+                      return;
+                    }
+                    bump(-step);
+                  }}
                   aria-label="Decrease BPM"
                   disabled={disabled || value <= min}
                 >

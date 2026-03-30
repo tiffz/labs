@@ -3,14 +3,19 @@ import { usePiano } from '../store';
 import { midiToNoteName } from '../types';
 
 const InputSources: React.FC = () => {
-  const { state, toggleMicrophone } = usePiano();
+  const { state, toggleMicrophone, setSelectedMicrophoneDevice, toggleMidiInput } = usePiano();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  const hasMidi = state.midiConnected;
+  const midiEnabled = state.midiInputEnabled;
+  const hasMidi = state.midiConnected && midiEnabled;
   const hasMic = state.microphoneActive;
   const hasAny = hasMidi || hasMic;
   const activeNotes = state.activeMidiNotes;
+  const selectedMicrophone = state.microphoneDevices.find(
+    (device) => device.id === state.selectedMicrophoneDeviceId
+  );
+  const selectedMicrophoneName = selectedMicrophone?.name ?? 'System default';
 
   const close = useCallback(() => setOpen(false), []);
 
@@ -54,16 +59,21 @@ const InputSources: React.FC = () => {
               <div className="is-info">
                 <span className="is-source-name">MIDI Controller</span>
                 <span className={`is-status ${hasMidi ? 'ok' : 'off'}`}>
-                  {hasMidi ? 'Connected' : 'Not detected'}
+                  {state.midiConnected
+                    ? (midiEnabled ? 'Connected' : 'Disabled')
+                    : 'Not detected'}
                 </span>
               </div>
+              <button className={`is-toggle ${midiEnabled ? 'active' : ''}`} onClick={toggleMidiInput}>
+                {midiEnabled ? 'Disable' : 'Enable'}
+              </button>
             </div>
-            {!hasMidi && (
+            {!state.midiConnected && (
               <p className="is-help">
                 Connect a MIDI keyboard or controller via USB, then refresh the page. Your browser will ask for permission to use MIDI devices.
               </p>
             )}
-            {hasMidi && state.midiDevices.length > 0 && (
+            {state.midiConnected && state.midiDevices.length > 0 && (
               <p className="is-device">{state.midiDevices[0].name}</p>
             )}
           </div>
@@ -87,6 +97,27 @@ const InputSources: React.FC = () => {
               <p className="is-help">
                 Enable microphone input to practice with an acoustic piano. Works best in a quiet environment with a single instrument.
               </p>
+            )}
+            {state.microphoneDevices.length > 0 && (
+              <div className="is-select-row">
+                <label className="is-select-label" htmlFor="mic-device-select">Input device</label>
+                <select
+                  id="mic-device-select"
+                  className="is-select"
+                  value={state.selectedMicrophoneDeviceId}
+                  onChange={(e) => setSelectedMicrophoneDevice(e.target.value)}
+                >
+                  {state.microphoneDevices.map((device) => (
+                    <option key={device.id} value={device.id}>{device.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            {!hasMic && (
+              <p className="is-device">Selected: {selectedMicrophoneName}</p>
+            )}
+            {hasMic && state.activeMicrophoneLabel && (
+              <p className="is-device">Using: {state.activeMicrophoneLabel}</p>
             )}
             {hasMic && state.detectedPitch !== null && (
               <p className="is-device">Detected: {midiToNoteName(state.detectedPitch)}</p>

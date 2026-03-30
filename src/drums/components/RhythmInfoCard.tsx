@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { RhythmDefinition } from '../utils/rhythmRecognition';
 import type { TimeSignature } from '../types';
 import SimpleVexFlowNote from './SimpleVexFlowNote';
+import { RHYTHM_DATABASE } from '../data/rhythmDatabase';
 
 interface RhythmInfoCardProps {
   rhythm: RhythmDefinition;
@@ -102,6 +103,9 @@ const RhythmInfoCard: React.FC<RhythmInfoCardProps> = ({
 }) => {
   const isMobile = useIsMobile();
   const [isExpanded, setIsExpanded] = useState(!isMobile);
+  const relatedRhythms = (rhythm.relatedRhythmIds ?? [])
+    .map((id) => RHYTHM_DATABASE[id])
+    .filter((candidate): candidate is RhythmDefinition => Boolean(candidate));
   
   // Reset expanded state when mobile state changes
   useEffect(() => {
@@ -148,7 +152,12 @@ const RhythmInfoCard: React.FC<RhythmInfoCardProps> = ({
                 <button
                   key={index}
                   className={`palette-button notation-button ${isCurrent ? 'rhythm-variation-current' : ''}`}
-                  onClick={() => onSelectVariation(variation.notation, inferTimeSignature(variation.notation))}
+                  onClick={() =>
+                    onSelectVariation(
+                      variation.notation,
+                      variation.timeSignature ?? inferTimeSignature(variation.notation)
+                    )
+                  }
                   type="button"
                   disabled={isCurrent}
                 >
@@ -156,6 +165,7 @@ const RhythmInfoCard: React.FC<RhythmInfoCardProps> = ({
                     pattern={variation.notation} 
                     width={120}
                     height={70}
+                    timeSignature={variation.timeSignature ?? rhythm.timeSignature}
                   />
                   {variation.note && (
                     <span className="rhythm-variation-note">{variation.note}</span>
@@ -183,6 +193,24 @@ const RhythmInfoCard: React.FC<RhythmInfoCardProps> = ({
                 {link.title}
                 <span className="material-symbols-outlined">open_in_new</span>
               </a>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {relatedRhythms.length > 0 && (
+        <div className="rhythm-info-related">
+          <strong>Related rhythms:</strong>
+          <div className="rhythm-info-related-links">
+            {relatedRhythms.map((related) => (
+              <button
+                key={related.id}
+                type="button"
+                className="rhythm-related-button"
+                onClick={() => onSelectVariation(related.basePattern, related.timeSignature)}
+              >
+                {related.name}
+              </button>
             ))}
           </div>
         </div>

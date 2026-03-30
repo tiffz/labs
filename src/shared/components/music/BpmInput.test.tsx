@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { useState } from 'react';
 import BpmInput from './BpmInput';
 import { runA11yAudit } from '../../test/a11y';
 
@@ -60,6 +61,29 @@ describe('BpmInput', () => {
     const increase = screen.getByRole('button', { name: 'Increase BPM' });
     fireEvent.click(increase);
     expect(onChange).toHaveBeenCalledWith(121);
+  });
+
+  it('continuously bumps BPM while holding an arrow button', () => {
+    vi.useFakeTimers();
+    try {
+      function Wrapper() {
+        const [value, setValue] = useState(120);
+        return <BpmInput value={value} onChange={setValue} />;
+      }
+      render(<Wrapper />);
+      const increase = screen.getByRole('button', { name: 'Increase BPM' });
+      const input = screen.getByRole('textbox') as HTMLInputElement;
+
+      fireEvent.mouseDown(increase);
+      act(() => {
+        vi.advanceTimersByTime(620);
+      });
+      fireEvent.mouseUp(increase);
+
+      expect(Number(input.value)).toBeGreaterThan(121);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('shows Common BPMs header when preset dropdown opens', async () => {

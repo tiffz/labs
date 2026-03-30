@@ -96,7 +96,8 @@ function PianoApp() {
     };
   }, [dispatch]);
 
-  const hasInputSource = state.midiConnected || state.microphoneActive;
+  const hasInputSource =
+    (state.midiConnected && state.midiInputEnabled) || state.microphoneActive;
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.code === 'Escape' && showAnalytics) {

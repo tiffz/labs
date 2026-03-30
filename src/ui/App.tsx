@@ -7,11 +7,12 @@ import SharedExportPopover from '../shared/components/music/SharedExportPopover'
 import DiceIcon from '../shared/components/DiceIcon';
 import AppTooltip from '../shared/components/AppTooltip';
 import MetronomeToggleButton from '../shared/components/MetronomeToggleButton';
-import DrumNotationMini from '../shared/notation/DrumNotationMini';
+import DrumNotationMini, { type NotationStyle } from '../shared/notation/DrumNotationMini';
 import { COMMON_CHORD_PROGRESSIONS } from '../shared/music/commonChordProgressions';
 import { CHORD_STYLE_OPTIONS, type ChordStyleId } from '../piano/data/chordExercises';
 import { ALL_KEYS, type MusicKey } from '../shared/music/musicInputConstants';
 import { parseRhythm } from '../shared/rhythm';
+import { getRhythmTemplatePresets } from '../shared/rhythm/presetDatabase';
 import {
   SHARED_CATALOG,
   type SharedCatalogEntry,
@@ -37,6 +38,8 @@ const EXPORT_SURFACES = ['piano', 'words', 'chords', 'drums', 'beat'] as const;
 type BpmSurface = (typeof BPM_SURFACES)[number];
 type KeySurface = (typeof KEY_SURFACES)[number];
 type ExportSurface = (typeof EXPORT_SURFACES)[number];
+const DRUM_NOTATION_SURFACES = ['words', 'beat'] as const;
+type DrumNotationSurface = (typeof DRUM_NOTATION_SURFACES)[number];
 type FunctionalSection =
   | 'Shared UI Components'
   | 'Music Input & Theory'
@@ -561,6 +564,100 @@ function StyleMultiDemo({
   );
 }
 
+function DrumNotationMiniPresetDemo() {
+  const signature = useMemo(() => ({ numerator: 4, denominator: 4 }), []);
+  const presets = useMemo(() => getRhythmTemplatePresets(signature), [signature]);
+  const [notationBySurface, setNotationBySurface] = useState<
+    Record<DrumNotationSurface, string>
+  >(() => ({
+    words: presets[1]?.notation ?? presets[0]?.notation ?? 'D-T-__T-D---T---',
+    beat: presets[2]?.notation ?? presets[0]?.notation ?? 'D-T-__T-D---T---',
+  }));
+
+  const getSurfaceNotationStyle = (
+    surface: DrumNotationSurface
+  ): 'light' | NotationStyle => {
+    if (surface === 'beat') {
+      return {
+        staffColor: '#c8c4d8',
+        noteColor: '#c8c4d8',
+        textColor: '#c8c4d8',
+        highlightColor: '#22c55e',
+      };
+    }
+    return 'light';
+  };
+
+  const getSurfaceNotationWrapClass = (surface: DrumNotationSurface): string =>
+    surface === 'beat'
+      ? 'ui-mini-notation-wrap vexflow-mini-container'
+      : 'ui-mini-notation-wrap words-template-preview words-section-template-preview';
+
+  return (
+    <div className="ui-variant-grid">
+      {DRUM_NOTATION_SURFACES.map((surface) => {
+        const notation = notationBySurface[surface];
+        const parsed = parseRhythm(notation, signature);
+        return (
+          <section
+            key={`drum-mini-${surface}`}
+            className={`ui-preview-card ui-theme-${surface}`}
+          >
+            <header>{surface}</header>
+            <label className="ui-rhythm-template-input">
+              Rhythm template
+              <input
+                type="text"
+                value={notation}
+                onChange={(event) =>
+                  setNotationBySurface((previous) => ({
+                    ...previous,
+                    [surface]: event.target.value,
+                  }))
+                }
+              />
+            </label>
+            <div className="ui-rhythm-preset-row">
+              {presets.map((preset) => (
+                <button
+                  key={`${surface}-${preset.id}`}
+                  type="button"
+                  className={`ui-rhythm-preset-chip${
+                    notation === preset.notation ? ' is-active' : ''
+                  }`}
+                  onClick={() =>
+                    setNotationBySurface((previous) => ({
+                      ...previous,
+                      [surface]: preset.notation,
+                    }))
+                  }
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+            <div className={getSurfaceNotationWrapClass(surface)}>
+              {parsed.isValid && parsed.measures.length > 0 ? (
+                <DrumNotationMini
+                  rhythm={parsed}
+                  width={300}
+                  height={120}
+                  style={getSurfaceNotationStyle(surface)}
+                  showDrumSymbols={true}
+                />
+              ) : (
+                <p className="ui-rhythm-template-error">
+                  Notation is invalid for 4/4.
+                </p>
+              )}
+            </div>
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
 function buildExportDemoAdapter(surface: ExportSurface): ExportSourceAdapter {
   const base = {
     defaultFormat: 'wav' as const,
@@ -795,14 +892,8 @@ function DemoPanel({
       );
     case 'shared-export-popover':
       return <SharedExportPopoverDemo />;
-    case 'drum-notation-mini': {
-      const rhythm = parseRhythm('D-T-K-T-', { numerator: 4, denominator: 4 });
-      return (
-        <div className="ui-mini-notation-wrap">
-          <DrumNotationMini rhythm={rhythm} width={280} height={120} style="light" />
-        </div>
-      );
-    }
+    case 'drum-notation-mini':
+      return <DrumNotationMiniPresetDemo />;
     default:
       return null;
   }

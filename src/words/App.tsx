@@ -59,7 +59,10 @@ import {
 import { parseOptionalNumberParam } from '../shared/utils/urlParams';
 import { LyricImportModal } from './components/LyricImportModal';
 import { getNotationScrollContainer } from './utils/scrollOwner';
-import { getRhythmTemplatePresets } from '../shared/rhythm/presetDatabase';
+import {
+  RHYTHM_DATABASE,
+  getRhythmTemplatePresets,
+} from '../shared/rhythm/presetDatabase';
 import MetronomeToggleButton from '../shared/components/MetronomeToggleButton';
 import DiceIcon from '../shared/components/DiceIcon';
 import AppTooltip from '../shared/components/AppTooltip';
@@ -89,11 +92,13 @@ const TIME_SIGNATURE_OPTIONS: Array<
 
 const TEMPLATE_PRESETS = getRhythmTemplatePresets(DEFAULT_TIME_SIGNATURE).map(
   (preset) => ({
+    id: preset.id,
     label: preset.label,
     notation: preset.notation,
   })
 );
-type RandomizeMode = 'phrasing' | 'groove' | 'chords' | 'everything';
+type TemplatePreset = (typeof TEMPLATE_PRESETS)[number];
+type RandomizeMode = 'phrasing' | 'groove' | 'rhythm' | 'chords' | 'everything';
 const RANDOMIZE_MODE_OPTIONS: Array<{
   mode: RandomizeMode;
   label: string;
@@ -107,7 +112,12 @@ const RANDOMIZE_MODE_OPTIONS: Array<{
   {
     mode: 'groove',
     label: 'Groove',
-    tooltip: 'Rerolls phrasing and also randomizes rhythm templates.',
+    tooltip: 'Randomizes rhythm templates while preserving phrasing.',
+  },
+  {
+    mode: 'rhythm',
+    label: 'Rhythm',
+    tooltip: 'Randomizes both groove templates and phrasing.',
   },
   {
     mode: 'chords',
@@ -319,6 +329,57 @@ const GENERATION_SETTING_HELP = {
     'How strongly generation follows the selected template groove. Higher values make regeneration change less.',
 } satisfies Record<string, string>;
 
+function matchesTimeSignature(
+  first: TimeSignature,
+  second: TimeSignature
+): boolean {
+  return (
+    first.numerator === second.numerator &&
+    first.denominator === second.denominator
+  );
+}
+
+function shouldDoublePatternForTimeSignature(
+  source: TimeSignature,
+  target: TimeSignature
+): boolean {
+  return (
+    source.numerator === 2 &&
+    source.denominator === 4 &&
+    target.numerator === 4 &&
+    target.denominator === 4
+  );
+}
+
+function getTemplatePresetVariations(
+  presetId: string,
+  targetTimeSignature: TimeSignature
+): Array<{ notation: string; label: string }> {
+  const rhythm = RHYTHM_DATABASE[presetId];
+  if (!rhythm) return [];
+  return rhythm.variations
+    .map((variation, index) => {
+      const sourceSignature = variation.timeSignature ?? rhythm.timeSignature;
+      if (
+        !matchesTimeSignature(sourceSignature, targetTimeSignature) &&
+        !shouldDoublePatternForTimeSignature(sourceSignature, targetTimeSignature)
+      ) {
+        return null;
+      }
+      const notation = shouldDoublePatternForTimeSignature(
+        sourceSignature,
+        targetTimeSignature
+      )
+        ? `${variation.notation}${variation.notation}`
+        : variation.notation;
+      return {
+        notation,
+        label: variation.note?.trim() || `Variation ${index + 1}`,
+      };
+    })
+    .filter((item): item is { notation: string; label: string } => item !== null);
+}
+
 const SettingHelpLabel: React.FC<{ text: string; help: string }> = ({
   text,
   help,
@@ -452,6 +513,28 @@ const App: React.FC = () => {
     () => parseRhythm(notation, timeSignature),
     [notation, timeSignature]
   );
+  const templatePresets = useMemo(
+    () =>
+      getRhythmTemplatePresets(timeSignature).map((preset) => ({
+        id: preset.id,
+        label: preset.label,
+        notation: preset.notation,
+      })),
+    [timeSignature]
+  );
+  const findTemplatePresetByNotation = useCallback(
+    (value: string): TemplatePreset | undefined => {
+      for (const preset of templatePresets) {
+        if (preset.notation === value) return preset;
+        const variations = getTemplatePresetVariations(preset.id, timeSignature);
+        if (variations.some((variation) => variation.notation === value)) {
+          return preset;
+        }
+      }
+      return undefined;
+    },
+    [templatePresets, timeSignature]
+  );
   const hitMap = useMemo(() => {
     const map = new Map<string, SyllableHit>();
     let hitIndex = 0;
@@ -486,13 +569,14 @@ const App: React.FC = () => {
         parseRhythm(
           section.templateNotation?.trim() ||
             APP_DEFAULT_GENERATION_SETTINGS.templateNotation ||
+            templatePresets[0]?.notation ||
             TEMPLATE_PRESETS[0].notation,
           timeSignature
         )
       );
     });
     return previews;
-  }, [sections, timeSignature]);
+  }, [sections, timeSignature, templatePresets]);
   useEffect(() => {
     songKeyRef.current = songKey;
   }, [songKey]);
@@ -660,6 +744,7 @@ const App: React.FC = () => {
     }
     const sourceTemplate =
       effectiveSections[0]?.effectiveTemplateNotation ||
+      templatePresets[0]?.notation ||
       TEMPLATE_PRESETS[0]?.notation ||
       BACKING_FALLBACK_TEMPLATE;
     const parsed = parseRhythm(sourceTemplate, timeSignature);
@@ -670,6 +755,7 @@ const App: React.FC = () => {
     backingBeatNotation,
     timeSignature,
     effectiveSections,
+    templatePresets,
   ]);
   const backingTemplateMeasureMap = useMemo(() => {
     const map = new Map<number, Array<{ durationInSixteenths: number; sound: string }>>();
@@ -1587,7 +1673,7 @@ const App: React.FC = () => {
     if (sections.find((section) => section.id === sectionId)?.isLocked) return;
     const notation =
       mode === 'preset'
-        ? pickRandom(TEMPLATE_PRESETS).notation
+        ? pickRandom(templateNotationPool)
         : generateRandomTemplateNotation();
     updateSectionTemplateNotation(sectionId, notation);
   };
@@ -1595,24 +1681,58 @@ const App: React.FC = () => {
   const randomizeBackingTemplate = (mode: 'preset' | 'full') => {
     const notation =
       mode === 'preset'
-        ? pickRandom(TEMPLATE_PRESETS).notation
+        ? pickRandom(templateNotationPool)
         : generateRandomTemplateNotation();
     setBackingBeatNotation(notation);
   };
 
+  const backingSelectedTemplatePreset = useMemo(
+    () => findTemplatePresetByNotation(backingBeatNotation),
+    [backingBeatNotation, findTemplatePresetByNotation]
+  );
+  const backingTemplateVariations = useMemo(
+    () =>
+      backingSelectedTemplatePreset
+        ? getTemplatePresetVariations(backingSelectedTemplatePreset.id, timeSignature)
+        : [],
+    [backingSelectedTemplatePreset, timeSignature]
+  );
+  const backingActiveVariationIndex = useMemo(() => {
+    if (backingTemplateVariations.length === 0) return -1;
+    const matchedIndex = backingTemplateVariations.findIndex(
+      (variation) => variation.notation === backingBeatNotation
+    );
+    return matchedIndex >= 0 ? matchedIndex : 0;
+  }, [backingTemplateVariations, backingBeatNotation]);
+  const templateNotationPool = useMemo(() => {
+    const allNotations: string[] = [];
+    templatePresets.forEach((preset) => {
+      const variations = getTemplatePresetVariations(preset.id, timeSignature);
+      if (variations.length > 0) {
+        variations.forEach((variation) => allNotations.push(variation.notation));
+      } else {
+        allNotations.push(preset.notation);
+      }
+    });
+    const unique = [...new Set(allNotations)];
+    return unique.length > 0
+      ? unique
+      : [templatePresets[0]?.notation ?? BACKING_FALLBACK_TEMPLATE];
+  }, [templatePresets, timeSignature]);
+
   const pickContrastingTemplate = (
-    pool: typeof TEMPLATE_PRESETS,
+    pool: string[],
     referenceNotation: string | null
   ) => {
-    if (!referenceNotation) return pickRandom(pool).notation;
+    if (!referenceNotation) return pickRandom(pool);
     const baseline = getTemplateSyncopationScore(referenceNotation);
     const scored = pool
-      .map((preset) => ({
-        notation: preset.notation,
-        score: getTemplateSyncopationScore(preset.notation),
+      .map((notation) => ({
+        notation,
+        score: getTemplateSyncopationScore(notation),
       }))
       .sort((a, b) => Math.abs(b.score - baseline) - Math.abs(a.score - baseline));
-    return scored[0]?.notation ?? pickRandom(pool).notation;
+    return scored[0]?.notation ?? pickRandom(pool);
   };
 
   const applyRandomization = (
@@ -1624,7 +1744,6 @@ const App: React.FC = () => {
     if (mode === 'everything') {
       const nextBpm = clampBpm(Math.round(80 + Math.random() * 70));
       setBpm(nextBpm);
-      setBpmInput(String(nextBpm));
       setSongKey(nextKey);
     }
     applySectionsChange((previous) => {
@@ -1651,22 +1770,23 @@ const App: React.FC = () => {
         }
         bridgeProgression = getRandomPopularChordProgressionInKey(nextKey).display;
       }
-      const verseTemplate = pickRandom(TEMPLATE_PRESETS).notation;
+      const verseTemplate = pickRandom(templateNotationPool);
       const chorusTemplate =
         Math.random() < 0.72
-          ? pickContrastingTemplate(TEMPLATE_PRESETS, verseTemplate)
+          ? pickContrastingTemplate(templateNotationPool, verseTemplate)
           : verseTemplate;
       const bridgeTemplate = pickContrastingTemplate(
-        TEMPLATE_PRESETS,
+        templateNotationPool,
         chorusTemplate
       );
       const next = previous.map((section) => {
         if (!targetIds.has(section.id)) return section;
         const shouldRerollPhrasing =
-          mode === 'phrasing' || mode === 'groove' || mode === 'everything';
+          mode === 'phrasing' || mode === 'rhythm' || mode === 'everything';
         const shouldRerollChords =
           mode === 'chords' || mode === 'everything';
-        const shouldRerollGroove = mode === 'groove' || mode === 'everything';
+        const shouldRerollGroove =
+          mode === 'groove' || mode === 'rhythm' || mode === 'everything';
         const sectionProgression =
           section.type === 'bridge'
             ? bridgeProgression
@@ -2366,7 +2486,7 @@ const App: React.FC = () => {
                 setSoundMenuOpen(false);
               }}
             >
-              randomize rhythm
+              randomize
             </button>
             <Popover
               open={randomizeMenuOpen}
@@ -3006,12 +3126,12 @@ const App: React.FC = () => {
                           </div>
                         </label>
                         <div className="words-section-template-presets">
-                          {TEMPLATE_PRESETS.map((preset) => (
+                          {templatePresets.map((preset) => (
                             <button
                               key={`backing-${preset.label}`}
                               type="button"
                               className={`words-button words-button-template${
-                                backingBeatNotation === preset.notation
+                                backingSelectedTemplatePreset?.id === preset.id
                                   ? ' is-active'
                                   : ''
                               }`}
@@ -3047,6 +3167,53 @@ const App: React.FC = () => {
                     backingPatternRhythm?.isValid &&
                     (backingPatternRhythm.measures.length ?? 0) > 0 ? (
                       <div className="words-template-preview words-section-template-preview">
+                        {backingSelectedTemplatePreset &&
+                        backingTemplateVariations.length > 0 ? (
+                          <div className="words-template-variation-carousel">
+                            <div className="words-template-variation-controls">
+                              <span className="words-template-variation-counter">
+                                {`Variation ${Math.max(1, backingActiveVariationIndex + 1)}/${backingTemplateVariations.length} · ${backingSelectedTemplatePreset.label}`}
+                              </span>
+                              <div className="words-template-variation-arrow-group">
+                                <button
+                                  type="button"
+                                  className="words-template-variation-arrow"
+                                  aria-label="Previous variation"
+                                  onClick={() => {
+                                    const current = backingActiveVariationIndex >= 0
+                                      ? backingActiveVariationIndex
+                                      : 0;
+                                    const prevIndex =
+                                      (current - 1 + backingTemplateVariations.length) %
+                                      backingTemplateVariations.length;
+                                    setBackingBeatNotation(
+                                      backingTemplateVariations[prevIndex].notation
+                                    );
+                                  }}
+                                >
+                                  <span className="material-symbols-outlined">chevron_left</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  className="words-template-variation-arrow"
+                                  aria-label="Next variation"
+                                  onClick={() => {
+                                    const current = backingActiveVariationIndex >= 0
+                                      ? backingActiveVariationIndex
+                                      : 0;
+                                    const nextIndex =
+                                      (current + 1) % backingTemplateVariations.length;
+                                    setBackingBeatNotation(
+                                      backingTemplateVariations[nextIndex].notation
+                                    );
+                                  }}
+                                >
+                                  <span className="material-symbols-outlined">chevron_right</span>
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ) : null}
                         <DrumNotationMini
                           rhythm={backingPatternRhythm}
                           width={320}
@@ -3098,6 +3265,22 @@ const App: React.FC = () => {
               };
               const effectiveLyrics = effectiveSection.effectiveLyrics;
               const sectionDisplayName = sectionDisplayNames[index] ?? 'Section';
+              const selectedTemplatePreset = findTemplatePresetByNotation(
+                section.templateNotation
+              );
+              const sectionTemplateVariations = selectedTemplatePreset
+                ? getTemplatePresetVariations(selectedTemplatePreset.id, timeSignature)
+                : [];
+              const sectionActiveVariationIndex =
+                sectionTemplateVariations.length > 0
+                  ? Math.max(
+                      0,
+                      sectionTemplateVariations.findIndex(
+                        (variation) =>
+                          variation.notation === section.templateNotation
+                      )
+                    )
+                  : -1;
               return (
                 <div
                   key={section.id}
@@ -3370,12 +3553,12 @@ const App: React.FC = () => {
                               </div>
                             </label>
                             <div className="words-section-template-presets">
-                              {TEMPLATE_PRESETS.map((preset) => (
+                              {templatePresets.map((preset) => (
                                 <button
                                   key={`${section.id}-${preset.label}`}
                                   type="button"
                                   className={`words-button words-button-template${
-                                    section.templateNotation === preset.notation
+                                    selectedTemplatePreset?.id === preset.id
                                       ? ' is-active'
                                       : ''
                                   }`}
@@ -3418,6 +3601,59 @@ const App: React.FC = () => {
                             (sectionTemplatePreviewById.get(section.id)?.measures
                               .length ?? 0) > 0 ? (
                               <div className="words-template-preview words-section-template-preview">
+                                {selectedTemplatePreset &&
+                                sectionTemplateVariations.length > 0 ? (
+                                  <div className="words-template-variation-carousel">
+                                    <div className="words-template-variation-controls">
+                                      <span className="words-template-variation-counter">
+                                        {`Variation ${Math.max(1, sectionActiveVariationIndex + 1)}/${sectionTemplateVariations.length} · ${selectedTemplatePreset.label}`}
+                                      </span>
+                                      <div className="words-template-variation-arrow-group">
+                                        <button
+                                          type="button"
+                                          className="words-template-variation-arrow"
+                                          aria-label="Previous variation"
+                                          onClick={() => {
+                                            const current = sectionActiveVariationIndex >= 0
+                                              ? sectionActiveVariationIndex
+                                              : 0;
+                                            const prevIndex =
+                                              (current - 1 + sectionTemplateVariations.length) %
+                                              sectionTemplateVariations.length;
+                                            updateSectionTemplateNotation(
+                                              section.id,
+                                              sectionTemplateVariations[prevIndex].notation
+                                            );
+                                          }}
+                                        >
+                                          <span className="material-symbols-outlined">
+                                            chevron_left
+                                          </span>
+                                        </button>
+                                        <button
+                                          type="button"
+                                          className="words-template-variation-arrow"
+                                          aria-label="Next variation"
+                                          onClick={() => {
+                                            const current = sectionActiveVariationIndex >= 0
+                                              ? sectionActiveVariationIndex
+                                              : 0;
+                                            const nextIndex =
+                                              (current + 1) % sectionTemplateVariations.length;
+                                            updateSectionTemplateNotation(
+                                              section.id,
+                                              sectionTemplateVariations[nextIndex].notation
+                                            );
+                                          }}
+                                        >
+                                          <span className="material-symbols-outlined">
+                                            chevron_right
+                                          </span>
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ) : null}
                                 <DrumNotationMini
                                   rhythm={sectionTemplatePreviewById.get(section.id)!}
                                   width={320}
@@ -3428,6 +3664,7 @@ const App: React.FC = () => {
                                     notation:
                                       section.templateNotation ||
                                       APP_DEFAULT_GENERATION_SETTINGS.templateNotation ||
+                                      templatePresets[0]?.notation ||
                                       TEMPLATE_PRESETS[0].notation,
                                     bpm,
                                     timeSignature,

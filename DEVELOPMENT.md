@@ -32,6 +32,33 @@ Use Vite multi-page configuration to support multiple independent micro-apps sha
 - Consistent build and deployment process
 - Shared utilities and test infrastructure
 
+## Cross-App Reuse Boundary
+
+### Decision
+
+Any logic used by more than one app must live in `src/shared/**`. App directories must never import from other app directories.
+
+### Rationale
+
+- App-to-app imports create hidden coupling and make refactors risky.
+- Shared modules provide one canonical implementation and reduce drift.
+- New apps should compose shared primitives rather than copy existing app logic.
+
+### Rules
+
+- Allowed:
+  - `src/<app>/** -> src/shared/**`
+  - `src/shared/** -> src/shared/**`
+- Not allowed:
+  - `src/<app-a>/** -> src/<app-b>/**`
+  - `src/shared/** -> src/<app>/**`
+
+### Implementation Pattern
+
+- Promote reusable logic into `src/shared/**` as source-of-truth modules.
+- If migration is needed, keep short-lived app-local adapter/re-export shims, then remove them once imports are updated.
+- New feature work should target shared modules directly when cross-app reuse is expected.
+
 ## Cache Busting Strategy
 
 ### Decision
@@ -200,3 +227,21 @@ npm run build        # Production build
 - Shared boundary enforcement runs in CI (`src/shared/**` must not import app directories).
 
 For detailed CI/CD troubleshooting, see `.github/workflows/ci.yml` and GitHub Actions logs.
+
+## CSS Layering for Multi-App Isolation
+
+### Decision
+
+Separate neutral global base CSS from decorative page chrome to prevent style bleed into new micro-apps.
+
+### Implementation
+
+- `public/styles/shared.css` is app-safe and intentionally minimal (box sizing + baseline document sizing only).
+- `public/styles/labs-home.css` contains decorative "home-style" visuals (background gradients, bubbles, global heading treatment).
+- New app pages should include `/styles/shared.css` by default and only include `/styles/labs-home.css` when intentionally building a landing-style page.
+- Starter template for new app entry HTML: `src/shared/templates/app-index.starter.html`.
+
+### Benefits
+
+- New app UIs no longer need brittle overrides for inherited `body`/`h1` styles.
+- Decorative site styling becomes opt-in and easier to evolve independently.

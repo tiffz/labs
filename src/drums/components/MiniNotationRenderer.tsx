@@ -257,7 +257,7 @@ const MiniNotationRenderer: React.FC<MiniNotationRendererProps> = ({
         staveNotes.forEach((staveNote, noteIndex) => {
           const note = notes[noteIndex];
           if (note && note.sound !== 'rest') {
-            const noteX = staveNote.getAbsoluteX() + 10;
+            const noteX = staveNote.getAbsoluteX() + 6;
             const noteY = stave.getYForLine(0);
             drawSymbolAboveNote(svgElement, noteX, noteY, note.sound);
           }
