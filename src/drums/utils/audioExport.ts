@@ -2,9 +2,6 @@ import type { ParsedRhythm } from '../types';
 import type { PlaybackSettings } from '../types/settings';
 import { getDefaultBeatGrouping, getBeatGroupInfo, getBeatGroupingInSixteenths, getSixteenthsPerMeasure } from './timeSignatureUtils';
 import { createReverb, convertReverbStrengthToWetLevel } from './reverb';
-// @ts-expect-error - lamejs doesn't have TypeScript definitions
-// Use patched version to fix MPEGMode error
-import * as lamejs from 'lamejsfixbug121';
 import { encodeAudioBuffer } from '../../shared/music/audioCodecs';
 
 // Import audio files
@@ -294,125 +291,6 @@ export async function renderRhythmAudio(
 
   // Start rendering
   return offlineContext.startRendering();
-}
-
-/**
- * Convert AudioBuffer to MP3 blob
- */
-export function audioBufferToMp3(buffer: AudioBuffer, bitrate: number = 128): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    try {
-      const sampleRate = buffer.sampleRate;
-      const numberOfChannels = buffer.numberOfChannels;
-      const length = buffer.length;
-
-      if (length === 0) {
-        reject(new Error('Audio buffer is empty'));
-        return;
-      }
-
-      // Get audio data
-      const leftChannel = buffer.getChannelData(0);
-      const rightChannel = numberOfChannels > 1 ? buffer.getChannelData(1) : leftChannel;
-
-      // Convert float samples to 16-bit PCM - separate arrays for left and right
-      const leftSamples = new Int16Array(length);
-      const rightSamples = new Int16Array(length);
-
-      for (let i = 0; i < length; i++) {
-        const left = Math.max(-1, Math.min(1, leftChannel[i]));
-        const right = numberOfChannels > 1
-          ? Math.max(-1, Math.min(1, rightChannel[i]))
-          : left;
-
-        leftSamples[i] = left < 0 ? left * 0x8000 : left * 0x7FFF;
-        rightSamples[i] = right < 0 ? right * 0x8000 : right * 0x7FFF;
-      }
-
-      // Create MP3 encoder - lamejsfixbug121 exports Mp3Encoder directly
-      // Define LameJs interface locally since no types are available
-      interface LameJsEncoder {
-        encodeBuffer(left: Int16Array, right: Int16Array): Int8Array | undefined;
-        flush(): Int8Array | undefined;
-      }
-
-      interface LameJsLibrary {
-        Mp3Encoder: new (channels: number, sampleRate: number, kbps: number) => LameJsEncoder;
-      }
-
-      const Mp3Encoder = (lamejs as unknown as LameJsLibrary).Mp3Encoder;
-
-      if (!Mp3Encoder || typeof Mp3Encoder !== 'function') {
-        reject(new Error('MP3 encoder not available. Please ensure lamejsfixbug121 is properly installed.'));
-        return;
-      }
-
-      try {
-        // Initialize encoder and encode
-        const mp3encoder = new Mp3Encoder(numberOfChannels, sampleRate, bitrate);
-
-        if (!mp3encoder || typeof mp3encoder.encodeBuffer !== 'function' || typeof mp3encoder.flush !== 'function') {
-          reject(new Error('MP3 encoder initialization failed or encoder methods are not available'));
-          return;
-        }
-
-        const sampleBlockSize = 1152;
-        const mp3Data: Int8Array[] = [];
-
-        // Encode in chunks - encodeBuffer expects separate left and right arrays
-        for (let i = 0; i < length; i += sampleBlockSize) {
-          const leftChunk = leftSamples.subarray(i, i + sampleBlockSize);
-          const rightChunk = rightSamples.subarray(i, i + sampleBlockSize);
-
-          try {
-            const mp3buf = mp3encoder.encodeBuffer(leftChunk, rightChunk);
-            // encodeBuffer returns Int8Array or undefined
-            if (mp3buf && (mp3buf instanceof Int8Array || Array.isArray(mp3buf)) && mp3buf.length > 0) {
-              mp3Data.push(mp3buf);
-            }
-          } catch (encodeError) {
-            console.error('Error encoding MP3 chunk:', encodeError);
-            // Continue with next chunk
-          }
-        }
-
-        // Flush remaining data
-        try {
-          const mp3buf = mp3encoder.flush();
-          // flush returns Int8Array or undefined
-          if (mp3buf && (mp3buf instanceof Int8Array || Array.isArray(mp3buf)) && mp3buf.length > 0) {
-            mp3Data.push(mp3buf);
-          }
-        } catch (flushError) {
-          console.error('Error flushing MP3 encoder:', flushError);
-          // Continue even if flush fails
-        }
-
-        // Check if we have any MP3 data
-        if (mp3Data.length === 0) {
-          reject(new Error('MP3 encoding produced no data. The encoder may not be working correctly.'));
-          return;
-        }
-
-        // Combine all MP3 data
-        const totalLength = mp3Data.reduce((acc, arr) => acc + arr.length, 0);
-        const combined = new Uint8Array(totalLength);
-        let offset = 0;
-        for (const arr of mp3Data) {
-          // Convert Int8Array to Uint8Array for blob
-          const uint8Arr = new Uint8Array(arr.buffer, arr.byteOffset, arr.byteLength);
-          combined.set(uint8Arr, offset);
-          offset += arr.length;
-        }
-
-        resolve(new Blob([combined], { type: 'audio/mp3' }));
-      } catch (encoderError) {
-        reject(new Error(`MP3 encoding failed: ${encoderError instanceof Error ? encoderError.message : String(encoderError)}`));
-      }
-    } catch (error) {
-      reject(error);
-    }
-  });
 }
 
 /**

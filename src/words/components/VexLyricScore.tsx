@@ -15,6 +15,7 @@ import {
   getSixteenthsPerMeasure,
 } from '../../shared/rhythm/timeSignatureUtils';
 import { getChordHitsForStyle } from '../../shared/music/chordStyleHits';
+import { computeMaxLineWidth, wrapMeasureIndexes } from '../utils/vexLayout';
 
 interface VexLyricScoreProps {
   rhythm: ParsedRhythm;
@@ -245,17 +246,16 @@ const VexLyricScore: React.FC<VexLyricScoreProps> = ({
     const topPad = 34;
     const lineGap = renderChordSystem ? 286 : 150;
     const clampedZoom = Math.max(0.75, Math.min(1.75, zoomLevel));
-    const containerPixelWidth = Math.max(320, containerRef.current.clientWidth || 960);
-    const availableWidth = Math.max(
-      320,
-      containerPixelWidth / clampedZoom
-    );
+    const containerPixelWidth = containerRef.current.clientWidth || 960;
     // Reserve a right-side gutter so wrapped lines never clip against the edge
     // (including cases where a vertical scrollbar appears in the parent column).
     const wrapSafetyPx = 24;
-    const maxLineWidth = Math.max(
-      180,
-      availableWidth - leftPad - rightPad - wrapSafetyPx
+    const maxLineWidth = computeMaxLineWidth(
+      containerPixelWidth,
+      clampedZoom,
+      leftPad,
+      rightPad,
+      wrapSafetyPx
     );
     const beatGrouping = getDefaultBeatGrouping(timeSignature);
     const beatGroupingInSixteenths = getBeatGroupingInSixteenths(beatGrouping, timeSignature);
@@ -292,20 +292,7 @@ const VexLyricScore: React.FC<VexLyricScoreProps> = ({
           : withTimeSigOffset;
       return Math.max(148, Math.min(336, withSectionGap));
     });
-    const lines: number[][] = [];
-    let currentLine: number[] = [];
-    let currentWidth = 0;
-    measureWidths.forEach((width, measureIndex) => {
-      if (currentLine.length > 0 && currentWidth + width > maxLineWidth) {
-        lines.push(currentLine);
-        currentLine = [measureIndex];
-        currentWidth = width;
-      } else {
-        currentLine.push(measureIndex);
-        currentWidth += width;
-      }
-    });
-    if (currentLine.length > 0) lines.push(currentLine);
+    const lines = wrapMeasureIndexes(measureWidths, maxLineWidth);
 
     const totalWidth = Math.max(320, leftPad + maxLineWidth + rightPad);
     const totalHeight = Math.max(180, topPad + lines.length * lineGap + 28);

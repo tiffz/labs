@@ -20,7 +20,3 @@ export const ALL_KEYS: Key[] = [
   'B',
 ];
 
-export function randomKey(random: () => number = Math.random): Key {
-  const index = Math.floor(random() * ALL_KEYS.length);
-  return ALL_KEYS[Math.max(0, Math.min(ALL_KEYS.length - 1, index))] as Key;
-}

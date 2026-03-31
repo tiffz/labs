@@ -11,6 +11,7 @@ npm run dev
 
 - Main index: `http://localhost:5173/`
 - Shared UI/docs workspace: `http://localhost:5173/ui/`
+- App routes are normalized to canonical trailing-slash URLs (`/words` redirects to `/words/`).
 
 ## Repo Layout
 

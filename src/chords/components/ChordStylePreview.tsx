@@ -51,8 +51,16 @@ function notesToStaveNote(notes: number[], duration: string, clef: 'bass' | 'tre
     keys: pitches,
     duration: duration,
     clef: clef,
+    autoStem: false,
   });
   
+  const normalizedDuration = duration.replace('r', '').replace('d', '');
+  const isWholeNote = normalizedDuration === 'w';
+  const isLikelyBeamed = normalizedDuration === '8' || normalizedDuration === '16';
+  if (!isWholeNote && !isLikelyBeamed) {
+    staveNote.setStemDirection(clef === 'treble' ? 1 : -1);
+  }
+
   // Add dot for dotted notes
   if (isDotted) {
     Dot.buildAndAttach([staveNote], { all: true });
@@ -176,15 +184,37 @@ const ChordStylePreview: React.FC<ChordStylePreviewProps> = ({
           timeSignature.denominator === 8
             ? new Fraction(3, 8)
             : new Fraction(1, 4);
-        return Beam.generateBeams(notes, {
+        const beams = Beam.generateBeams(notes, {
           groups: [beamGroup],
           beamRests: false,
-          stemDirection: clef === 'treble' ? 1 : -1,
+          maintainStemDirections: false,
         });
+        const groupStemDirection = clef === 'treble' ? 1 : -1;
+        beams.forEach((beam) => {
+          beam.getNotes().forEach((note) => {
+            (note as StaveNote).setStemDirection(groupStemDirection);
+          });
+        });
+        return beams;
       };
       
       const trebleBeams = addBeams(trebleNotes, 'treble');
       const bassBeams = addBeams(bassNotes, 'bass');
+
+      const suppressFlagsForBeamedNotes = (beams: Beam[]) => {
+        const beamedNotes = new Set<StaveNote>();
+        beams.forEach((beam) => {
+          beam.getNotes().forEach((note) => {
+            beamedNotes.add(note as StaveNote);
+          });
+        });
+        beamedNotes.forEach((note) => {
+          note.setFlagStyle({ fillStyle: 'transparent', strokeStyle: 'transparent' });
+        });
+      };
+
+      suppressFlagsForBeamedNotes(trebleBeams);
+      suppressFlagsForBeamedNotes(bassBeams);
       
       // Draw both voices to show complete measure
       trebleVoice.draw(context, trebleStave);
@@ -193,6 +223,12 @@ const ChordStylePreview: React.FC<ChordStylePreviewProps> = ({
       // Draw beams after notes are drawn
       trebleBeams.forEach(beam => beam.setContext(context).draw());
       bassBeams.forEach(beam => beam.setContext(context).draw());
+
+      if (strategy === 'one-per-beat' && timeSignature.numerator === 12 && timeSignature.denominator === 8) {
+        containerRef.current
+          ?.querySelectorAll('.vf-flag, [class*="vf-flag"]')
+          .forEach((node) => node.remove());
+      }
     } catch (error) {
       console.error('Error rendering chord style preview:', error);
       if (containerRef.current) {

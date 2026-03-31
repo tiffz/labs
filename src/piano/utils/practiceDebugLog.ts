@@ -37,7 +37,7 @@ const MAX_EVENTS = 50_000;
 
 let enabled = false;
 let events: DebugEvent[] = [];
-let sampleRate: number | null = null;
+const sampleRate: number | null = null;
 let startTime = 0;
 
 export function isDebugEnabled(): boolean {
@@ -48,10 +48,6 @@ export function enableDebug(): void {
   enabled = true;
   events = [];
   startTime = performance.now();
-}
-
-export function setSampleRate(rate: number): void {
-  sampleRate = rate;
 }
 
 export function logDebugEvent(event: DebugEvent): void {

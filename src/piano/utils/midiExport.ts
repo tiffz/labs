@@ -1,6 +1,6 @@
 import type { PianoScore } from '../types';
 import { durationToBeats } from '../types';
-import { buildSingleTrackMidi, downloadMidiBytes, type MidiNoteEvent } from '../../shared/music/midiBuilder';
+import { buildSingleTrackMidi, type MidiNoteEvent } from '../../shared/music/midiBuilder';
 
 export function buildScoreMidiEventMap(
   score: PianoScore,
@@ -60,13 +60,3 @@ export function buildScoreMidiBytes(score: PianoScore, loopCount = 1, selectedPa
   return buildSingleTrackMidi(events, score.tempo);
 }
 
-export function exportScoreAsMidi(score: PianoScore): void {
-  const bytes = buildScoreMidiBytes(score, 1);
-  if (bytes.length === 0) return;
-  const fileSafeTitle = (score.title || 'piano-score')
-    .replace(/[^a-z0-9-_]+/gi, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '')
-    .toLowerCase();
-  downloadMidiBytes(bytes, `${fileSafeTitle || 'piano-score'}.mid`);
-}

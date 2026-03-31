@@ -110,6 +110,22 @@ describe('PlaybackControls', () => {
     expect(settingsButton).toBeInTheDocument();
   });
 
+  it('keeps metronome/settings in dedicated right controls group', () => {
+    const { container } = render(<PlaybackControls {...defaultProps} />);
+
+    const rightControls = container.querySelector('.right-controls-group');
+    const timingInputs = container.querySelector('.timing-inputs');
+    const settingsButton = screen.getByLabelText('Open settings');
+    const metronomeButton = screen.getByLabelText('Toggle metronome');
+
+    expect(rightControls).toBeTruthy();
+    expect(timingInputs).toBeTruthy();
+    expect(rightControls?.contains(settingsButton)).toBe(true);
+    expect(rightControls?.contains(metronomeButton)).toBe(true);
+    expect(timingInputs?.contains(settingsButton)).toBe(false);
+    expect(timingInputs?.contains(metronomeButton)).toBe(false);
+  });
+
   it('should call onSettingsClick when settings button is clicked', () => {
     const onSettingsClick = vi.fn();
     render(<PlaybackControls {...defaultProps} onSettingsClick={onSettingsClick} />);

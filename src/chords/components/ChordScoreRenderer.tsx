@@ -99,13 +99,15 @@ function notesToStaveNote(
     keys: pitches,
     duration: duration,
     clef: clef,
+    autoStem: false,
   });
 
-  // Keep stem rendering stable across voicings:
-  // treble stems up, bass stems down (except whole notes/rests).
+  // Keep stem rendering stable for sustained single notes.
+  // For beamed groups (8ths/16ths), let beam layout choose group stem direction.
   const normalizedDuration = duration.replace('r', '').replace('d', '');
   const isWholeNote = normalizedDuration === 'w';
-  if (!isWholeNote) {
+  const isLikelyBeamed = normalizedDuration === '8' || normalizedDuration === '16';
+  if (!isWholeNote && !isLikelyBeamed) {
     staveNote.setStemDirection(clef === 'treble' ? 1 : -1);
   }
   
@@ -500,23 +502,42 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({
           // Add beams for eighth notes based on time signature
           // In compound time (6/8, 12/8), beam eighth notes in groups of 3
           // In simple time (3/4, 4/4), beam eighth notes in groups of 2
-          const addBeams = (
-            notes: StaveNote[],
-            clef: 'treble' | 'bass'
-          ) => {
+          const addBeams = (notes: StaveNote[], clef: 'treble' | 'bass') => {
             const beamGroup =
               state.timeSignature.denominator === 8
                 ? new Fraction(3, 8)
                 : new Fraction(1, 4);
-            return Beam.generateBeams(notes, {
+            const beams = Beam.generateBeams(notes, {
               groups: [beamGroup],
               beamRests: false,
-              stemDirection: clef === 'treble' ? 1 : -1,
+              maintainStemDirections: false,
             });
+            const groupStemDirection = clef === 'treble' ? 1 : -1;
+            beams.forEach((beam) => {
+              beam.getNotes().forEach((note) => {
+                (note as StaveNote).setStemDirection(groupStemDirection);
+              });
+            });
+            return beams;
           };
 
           const trebleBeams = addBeams(trebleNotes, 'treble');
           const bassBeams = addBeams(bassNotes, 'bass');
+
+          const suppressFlagsForBeamedNotes = (beams: Beam[]) => {
+            const beamedNotes = new Set<StaveNote>();
+            beams.forEach((beam) => {
+              beam.getNotes().forEach((note) => {
+                beamedNotes.add(note as StaveNote);
+              });
+            });
+            beamedNotes.forEach((note) => {
+              note.setFlagStyle({ fillStyle: 'transparent', strokeStyle: 'transparent' });
+            });
+          };
+
+          suppressFlagsForBeamedNotes(trebleBeams);
+          suppressFlagsForBeamedNotes(bassBeams);
           
           // Format and draw voices for this measure
           // joinVoices aligns notes at the same tick position (beat position) across voices
@@ -655,6 +676,16 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({
         const barlineConnector = new StaveConnector(lastTrebleStaveGlobal, lastBassStaveGlobal);
         barlineConnector.setType(StaveConnector.type.SINGLE_RIGHT);
         barlineConnector.setContext(context).draw();
+      }
+
+      if (
+        state.stylingStrategy === 'one-per-beat' &&
+        state.timeSignature.numerator === 12 &&
+        state.timeSignature.denominator === 8
+      ) {
+        containerRef.current
+          ?.querySelectorAll('.vf-flag, [class*="vf-flag"]')
+          .forEach((node) => node.remove());
       }
       
     } catch (error) {

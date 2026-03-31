@@ -2195,26 +2195,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
-    "id": "src-shared-music-midibuilder-ts-downloadmidibytes",
-    "name": "downloadMidiBytes",
-    "path": "src/shared/music/midiBuilder.ts",
-    "kind": "utility",
-    "stability": "stable",
-    "owner": "music-core",
-    "description": "No JSDoc summary provided.",
-    "tags": [
-      "music"
-    ],
-    "appsUsing": [
-      "chords",
-      "drums",
-      "piano",
-      "words"
-    ],
-    "exportType": "function",
-    "demoId": null
-  },
-  {
     "id": "src-shared-music-midibuilder-ts-midinoteevent",
     "name": "MidiNoteEvent",
     "path": "src/shared/music/midiBuilder.ts",
@@ -2473,21 +2453,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
-    "id": "src-shared-music-pitch-pitchdetection-ts-frequencytonotename",
-    "name": "frequencyToNoteName",
-    "path": "src/shared/music/pitch/pitchDetection.ts",
-    "kind": "utility",
-    "stability": "stable",
-    "owner": "music-core",
-    "description": "YIN-based monophonic pitch detection helpers shared across music apps.",
-    "tags": [
-      "music"
-    ],
-    "appsUsing": [],
-    "exportType": "function",
-    "demoId": null
-  },
-  {
     "id": "src-shared-music-pitch-pitchdetection-ts-getcentsoff",
     "name": "getCentsOff",
     "path": "src/shared/music/pitch/pitchDetection.ts",
@@ -2602,24 +2567,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "words"
     ],
     "exportType": "const",
-    "demoId": null
-  },
-  {
-    "id": "src-shared-music-randomization-ts-randomkey",
-    "name": "randomKey",
-    "path": "src/shared/music/randomization.ts",
-    "kind": "utility",
-    "stability": "stable",
-    "owner": "music-core",
-    "description": "No JSDoc summary provided.",
-    "tags": [
-      "music"
-    ],
-    "appsUsing": [
-      "chords",
-      "words"
-    ],
-    "exportType": "function",
     "demoId": null
   },
   {

@@ -71,10 +71,6 @@ export function frequencyToMidi(freq: number): number {
   return Math.round(69 + 12 * Math.log2(freq / 440));
 }
 
-export function frequencyToNoteName(freq: number): string {
-  return midiToNoteName(frequencyToMidi(freq));
-}
-
 export function midiToNoteName(midi: number): string {
   const octave = Math.floor(midi / 12) - 1;
   const name = NOTE_NAMES[((midi % 12) + 12) % 12];

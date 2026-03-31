@@ -1,10 +1,10 @@
 /// <reference types="vitest" />
 import { defineConfig } from 'vite';
-import type { Connect, ViteDevServer } from 'vite';
+import type { Connect, PreviewServer, ViteDevServer } from 'vite';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import react from '@vitejs/plugin-react';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
-import { resolve } from 'path';
+import { dirname, relative, resolve, sep } from 'path';
 import { visualizer } from 'rollup-plugin-visualizer';
 import { compression } from 'vite-plugin-compression2';
 
@@ -12,6 +12,62 @@ const INCLUDE_BEAT_BENCHMARK =
   process.env.INCLUDE_BEAT_BENCHMARK === 'true' && process.env.FAST_TESTS !== 'true';
 const IS_TEST = process.env.VITEST === 'true';
 const SKIP_DEPLOY_PLUGINS = IS_TEST;
+
+const MULTI_APP_INPUTS = {
+  main: resolve(__dirname, 'src/index.html'),
+  cats: resolve(__dirname, 'src/cats/index.html'),
+  zines: resolve(__dirname, 'src/zines/index.html'),
+  corp: resolve(__dirname, 'src/corp/index.html'),
+  drums: resolve(__dirname, 'src/drums/index.html'),
+  story: resolve(__dirname, 'src/story/index.html'),
+  chords: resolve(__dirname, 'src/chords/index.html'),
+  forms: resolve(__dirname, 'src/forms/index.html'),
+  beat: resolve(__dirname, 'src/beat/index.html'),
+  words: resolve(__dirname, 'src/words/index.html'),
+  pitch: resolve(__dirname, 'src/pitch/index.html'),
+  universal_tom: resolve(__dirname, 'src/drums/universal_tom/index.html'),
+  piano: resolve(__dirname, 'src/piano/index.html'),
+  ui: resolve(__dirname, 'src/ui/index.html'),
+} as const;
+
+const SRC_ROOT = resolve(__dirname, 'src');
+
+const APP_BASE_PATHS = new Set(
+  Object.values(MULTI_APP_INPUTS)
+    .map((entryPath) => {
+      const relativeDir = relative(SRC_ROOT, dirname(entryPath));
+      const normalizedDir = relativeDir.split(sep).join('/');
+      return normalizedDir === '' ? '/' : `/${normalizedDir}`;
+    })
+    .filter((route) => route !== '/')
+);
+
+function getCanonicalTrailingSlashRedirect(url?: string): string | null {
+  if (!url) return null;
+  const [pathname, queryString = ''] = url.split('?');
+  if (!pathname || pathname === '/' || pathname.endsWith('/')) return null;
+  if (!APP_BASE_PATHS.has(pathname)) return null;
+  return `${pathname}/${queryString ? `?${queryString}` : ''}`;
+}
+
+function applyTrailingSlashRedirect(
+  req: IncomingMessage,
+  res: ServerResponse,
+  next: Connect.NextFunction
+): void {
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    next();
+    return;
+  }
+  const redirectTarget = getCanonicalTrailingSlashRedirect(req.url);
+  if (!redirectTarget) {
+    next();
+    return;
+  }
+  res.statusCode = 308;
+  res.setHeader('Location', redirectTarget);
+  res.end();
+}
 
 export default defineConfig({
   root: 'src',
@@ -26,22 +82,7 @@ export default defineConfig({
     target: 'es2020',
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
-      input: {
-        main: resolve(__dirname, 'src/index.html'),
-        cats: resolve(__dirname, 'src/cats/index.html'),
-        zines: resolve(__dirname, 'src/zines/index.html'),
-        corp: resolve(__dirname, 'src/corp/index.html'),
-        drums: resolve(__dirname, 'src/drums/index.html'),
-        story: resolve(__dirname, 'src/story/index.html'),
-        chords: resolve(__dirname, 'src/chords/index.html'),
-        forms: resolve(__dirname, 'src/forms/index.html'),
-        beat: resolve(__dirname, 'src/beat/index.html'),
-        words: resolve(__dirname, 'src/words/index.html'),
-        pitch: resolve(__dirname, 'src/pitch/index.html'),
-        universal_tom: resolve(__dirname, 'src/drums/universal_tom/index.html'),
-        piano: resolve(__dirname, 'src/piano/index.html'),
-        ui: resolve(__dirname, 'src/ui/index.html'),
-      },
+      input: MULTI_APP_INPUTS,
       output: {
         manualChunks: {
           // Vendor chunk for React and related libraries
@@ -79,6 +120,15 @@ export default defineConfig({
     middlewareMode: false,
   },
   plugins: [
+    {
+      name: 'canonical-trailing-slash-redirect',
+      configureServer(server: ViteDevServer) {
+        server.middlewares.use(applyTrailingSlashRedirect);
+      },
+      configurePreviewServer(server: PreviewServer) {
+        server.middlewares.use(applyTrailingSlashRedirect);
+      },
+    },
     ...(!SKIP_DEPLOY_PLUGINS
       ? [{
         // Debug logging plugin for all micro-apps

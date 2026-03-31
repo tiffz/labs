@@ -114,14 +114,3 @@ export function buildSingleTrackMidi(
   return new Uint8Array([...header, ...trackHeader, ...trackData]);
 }
 
-export function downloadMidiBytes(bytes: Uint8Array, fileName: string): void {
-  const blob = new Blob([bytes], { type: 'audio/midi' });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = fileName;
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 2000);
-}
