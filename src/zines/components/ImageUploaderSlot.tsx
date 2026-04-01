@@ -123,6 +123,7 @@ const ImageUploaderSlot: React.FC<ImageUploadProps> = ({
   return (
     <div
       className={classNames}
+      role="presentation"
       draggable={!isPreviewMode && !!imageSrc}
       onDragStart={(e) => {
         if (!isPreviewMode && imageSrc) {
@@ -201,7 +202,7 @@ const ImageUploaderSlot: React.FC<ImageUploadProps> = ({
         </div>
       ) : (
         !isPreviewMode && (
-          <div 
+          <button
             className={`placeholder-content flex flex-col items-center text-center ${isUploading ? 'pointer-events-none opacity-50' : 'cursor-pointer'}`}
             onClick={(e) => {
               e.stopPropagation();
@@ -209,6 +210,7 @@ const ImageUploaderSlot: React.FC<ImageUploadProps> = ({
                 inputRef.current.click();
               }
             }}
+            type="button"
           >
             <span className="text-3xl mb-1 text-orange-400">🖼️</span>
             <span className="text-xs font-semibold text-amber-800">{slot.label}</span>
@@ -218,7 +220,7 @@ const ImageUploaderSlot: React.FC<ImageUploadProps> = ({
                 <span className="mr-0.5">🔄</span> Rotated {rotation}°
               </div>
             )}
-          </div>
+          </button>
         )
       )}
     </div>

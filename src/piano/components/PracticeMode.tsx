@@ -577,7 +577,7 @@ const PracticeMode: React.FC = () => {
       if (!wasEvaluated) remaining.push(passed);
     }
     recentlyPassedRef.current = remaining;
-  }, [tryEvaluateNote, state.tempo, allowChordPracticeOctaveFlex]);
+  }, [tryEvaluateNote, state.tempo, useMic]);
 
   useEffect(() => {
     if (!isPracticing || !state.score) {

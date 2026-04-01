@@ -54,7 +54,7 @@ const ThingCard: React.FC<ThingCardProps> = ({
     }
   };
 
-  const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement> | React.PointerEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const tooltipWidth = 240; // max-width of tooltip
     const tooltipHeight = 120; // reduced estimate for more accurate positioning
@@ -91,8 +91,8 @@ const ThingCard: React.FC<ThingCardProps> = ({
   return (
     <div
       className="thing-card-wrapper"
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
+      onPointerEnter={handleMouseEnter}
+      onPointerLeave={handleMouseLeave}
     >
       <button
         className={`thing-card ${canAfford ? 'affordable' : 'expensive'}`}

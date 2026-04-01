@@ -155,8 +155,8 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
             {showTooltip && (
               <div
                 className="tooltip"
-                onMouseEnter={() => setShowTooltip(true)}
-                onMouseLeave={() => setShowTooltip(false)}
+                onPointerEnter={() => setShowTooltip(true)}
+                onPointerLeave={() => setShowTooltip(false)}
               >
                 <div className="tooltip-title">Notation Guide</div>
 

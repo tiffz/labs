@@ -300,26 +300,26 @@ const VideoPlayer: React.FC = () => {
 
         <span style={{ flex: 1 }} />
 
-        <span className="vp-header-actions" onClick={e => e.stopPropagation()}>
-          <button className="vp-icon-btn" onClick={() => dispatch({ type: 'SET_MEDIA_MUTED', muted: !state.mediaMuted })}
+        <span className="vp-header-actions">
+          <button className="vp-icon-btn" onClick={(e) => { e.stopPropagation(); dispatch({ type: 'SET_MEDIA_MUTED', muted: !state.mediaMuted }); }}
             onMouseEnter={e => showTip(e, state.mediaMuted ? 'Unmute' : 'Mute')} onMouseLeave={hideTip}>
             <span className="material-symbols-outlined">
               {state.mediaMuted ? 'volume_off' : 'volume_up'}
             </span>
           </button>
           {isVideo && (
-            <button className="vp-icon-btn" onClick={() => dispatch({ type: 'SET_MEDIA_VISIBLE', visible: !state.mediaVisible })}
+            <button className="vp-icon-btn" onClick={(e) => { e.stopPropagation(); dispatch({ type: 'SET_MEDIA_VISIBLE', visible: !state.mediaVisible }); }}
               onMouseEnter={e => showTip(e, state.mediaVisible ? 'Hide video' : 'Show video')} onMouseLeave={hideTip}>
               <span className="material-symbols-outlined">
                 {state.mediaVisible ? 'visibility' : 'visibility_off'}
               </span>
             </button>
           )}
-          <button className="vp-icon-btn" onClick={() => fileInputRef.current?.click()}
+          <button className="vp-icon-btn" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
             onMouseEnter={e => showTip(e, 'Replace file')} onMouseLeave={hideTip}>
             <span className="material-symbols-outlined">swap_horiz</span>
           </button>
-          <button className="vp-icon-btn vp-icon-btn--danger" onClick={handleRemove}
+          <button className="vp-icon-btn vp-icon-btn--danger" onClick={(e) => { e.stopPropagation(); handleRemove(); }}
             onMouseEnter={e => showTip(e, 'Remove')} onMouseLeave={hideTip}>
             <span className="material-symbols-outlined">close</span>
           </button>
@@ -328,8 +328,10 @@ const VideoPlayer: React.FC = () => {
       </div>
 
       {/* ── Media elements ── */}
+      {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
       <video ref={videoRef} className="vp-video" preload="auto"
         style={{ display: showVideo ? 'block' : 'none' }} />
+      {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
       <audio ref={audioRef as React.RefObject<HTMLAudioElement>} preload="auto"
         style={{ display: 'none' }} />
 

@@ -4,9 +4,13 @@ import type { Connect, PreviewServer, ViteDevServer } from 'vite';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import react from '@vitejs/plugin-react';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
-import { dirname, relative, resolve, sep } from 'path';
+import { resolve } from 'path';
 import { visualizer } from 'rollup-plugin-visualizer';
 import { compression } from 'vite-plugin-compression2';
+import {
+  buildAppBasePathsFromEntryPaths,
+  getCanonicalTrailingSlashRedirect,
+} from './src/shared/utils/trailingSlashRouting';
 
 const INCLUDE_BEAT_BENCHMARK =
   process.env.INCLUDE_BEAT_BENCHMARK === 'true' && process.env.FAST_TESTS !== 'true';
@@ -32,23 +36,7 @@ const MULTI_APP_INPUTS = {
 
 const SRC_ROOT = resolve(__dirname, 'src');
 
-const APP_BASE_PATHS = new Set(
-  Object.values(MULTI_APP_INPUTS)
-    .map((entryPath) => {
-      const relativeDir = relative(SRC_ROOT, dirname(entryPath));
-      const normalizedDir = relativeDir.split(sep).join('/');
-      return normalizedDir === '' ? '/' : `/${normalizedDir}`;
-    })
-    .filter((route) => route !== '/')
-);
-
-function getCanonicalTrailingSlashRedirect(url?: string): string | null {
-  if (!url) return null;
-  const [pathname, queryString = ''] = url.split('?');
-  if (!pathname || pathname === '/' || pathname.endsWith('/')) return null;
-  if (!APP_BASE_PATHS.has(pathname)) return null;
-  return `${pathname}/${queryString ? `?${queryString}` : ''}`;
-}
+const APP_BASE_PATHS = buildAppBasePathsFromEntryPaths(Object.values(MULTI_APP_INPUTS), SRC_ROOT);
 
 function applyTrailingSlashRedirect(
   req: IncomingMessage,
@@ -59,7 +47,7 @@ function applyTrailingSlashRedirect(
     next();
     return;
   }
-  const redirectTarget = getCanonicalTrailingSlashRedirect(req.url);
+  const redirectTarget = getCanonicalTrailingSlashRedirect(req.url, APP_BASE_PATHS);
   if (!redirectTarget) {
     next();
     return;

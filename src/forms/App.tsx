@@ -89,6 +89,15 @@ function App() {
       <div 
         className={`sidebar-overlay ${isSidebarOpen ? 'visible' : ''}`}
         onClick={handleOverlayClick}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleOverlayClick();
+          }
+        }}
+        aria-label="Close side panel"
       />
 
       <ControlPanel

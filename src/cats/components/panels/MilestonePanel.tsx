@@ -26,7 +26,7 @@ const MilestonePanel: React.FC<MilestonePanelProps> = ({
   const [showTooltip, setShowTooltip] = useState<string | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0, arrowPosition: '140px' });
 
-  const handleMilestoneHover = (milestone: Milestone, event: React.MouseEvent) => {
+  const handleMilestoneHover = (milestone: Milestone, event: React.MouseEvent | React.PointerEvent) => {
     const rect = event.currentTarget.getBoundingClientRect();
     const tooltipWidth = 280; // fixed width
     const tooltipHeight = 100; // fixed height
@@ -132,8 +132,8 @@ const MilestonePanel: React.FC<MilestonePanelProps> = ({
                     <div 
                       key={milestone.id} 
                       className={`milestone-item-compact ${isEarned ? 'earned' : isNext ? 'next' : 'locked'}`}
-                      onMouseEnter={(e) => handleMilestoneHover(milestone, e)}
-                      onMouseLeave={handleMilestoneLeave}
+                      onPointerEnter={(e) => handleMilestoneHover(milestone, e)}
+                      onPointerLeave={handleMilestoneLeave}
                     >
                       <div 
                         className="milestone-icon-compact"

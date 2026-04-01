@@ -126,7 +126,7 @@ const MeritsPanel: React.FC<MeritsPanelProps> = ({
         <div className="merit-upgrades-section">
           <div 
             className="upgrades-available-info"
-            onMouseEnter={(e) => {
+            onPointerEnter={(e) => {
               const rect = e.currentTarget.getBoundingClientRect();
               setMeritBreakdownPosition({
                 top: rect.top - 10,
@@ -134,7 +134,7 @@ const MeritsPanel: React.FC<MeritsPanelProps> = ({
               });
               setShowMeritBreakdown(true);
             }}
-            onMouseLeave={() => setShowMeritBreakdown(false)}
+            onPointerLeave={() => setShowMeritBreakdown(false)}
           >
             <MaterialIcon icon="kid_star" className="merit-icon" />
             {availablePoints}

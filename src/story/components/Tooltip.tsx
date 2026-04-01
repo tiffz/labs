@@ -10,8 +10,8 @@ export const Tooltip: React.FC<TooltipProps> = ({ content }) => {
   return (
     <div 
       className="relative inline-flex group"
-      onMouseEnter={() => setIsVisible(true)}
-      onMouseLeave={() => setIsVisible(false)}
+      onPointerEnter={() => setIsVisible(true)}
+      onPointerLeave={() => setIsVisible(false)}
     >
       <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-slate-200 text-slate-500 cursor-help hover:bg-slate-300 hover:text-slate-700 transition-colors duration-150"
         style={{ fontSize: '9px', fontWeight: '600' }}

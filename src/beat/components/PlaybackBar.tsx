@@ -171,6 +171,16 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
     [duration, handleClick, dragging]
   );
 
+  const handleBarKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        if (duration > 0) onSeek(currentTime);
+      }
+    },
+    [currentTime, duration, onSeek]
+  );
+
   // Handle sync handle drag
   const handleSyncDragStart = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -488,6 +498,7 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
                 aria-valuemin={0}
                 aria-valuemax={duration}
                 tabIndex={0}
+                onKeyDown={handleBarKeyDown}
               >
             {/* Track background */}
                 <div className="playback-track">
@@ -598,11 +609,13 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
 
               {/* Sync start handle - simple draggable line */}
               {showSyncStartHandle && (
-                <div
+                <button
                   className={`sync-handle ${dragging ? 'dragging' : ''}`}
                   style={{ left: `${syncStartPercent}%` }}
                   onMouseDown={handleSyncDragStart}
                   title={`Beat sync starts at ${formatTime(syncStartTime)} — drag to adjust where beat 1 begins (useful if song has an intro or pickup notes)`}
+                  type="button"
+                  aria-label="Drag beat sync start marker"
                 />
               )}
 
@@ -788,19 +801,19 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
 
       {/* Section hover card */}
       {hoveredSection && (
-        <div 
+        <div
           className="section-hover-card"
           style={{ 
             left: `${Math.min(Math.max(hoverPosition.x, 190), window.innerWidth - 190)}px`,
             top: `${hoverPosition.y + 10}px`,
           }}
-          onMouseEnter={() => {
+          onPointerEnter={() => {
             if (hoverClearTimeoutRef.current !== null) {
               window.clearTimeout(hoverClearTimeoutRef.current);
               hoverClearTimeoutRef.current = null;
             }
           }}
-          onMouseLeave={scheduleHoverCardClose}
+          onPointerLeave={scheduleHoverCardClose}
         >
           {!hoveredSectionLocked && onRenameSection ? (
             <TextField

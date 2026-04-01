@@ -121,15 +121,16 @@ const PracticeDashboard: React.FC = () => {
           const isViewing = state.viewingRunIndex === i;
           return (
             <div key={i} className={`run-accordion ${isViewing ? 'open' : ''}`}>
-              <div
+              <button
                 className={`run-row ${isViewing ? 'viewing' : ''}`}
                 onClick={() => dispatch({ type: 'SET_VIEWING_RUN', index: isViewing ? null : i })}
                 title="Click to view this run's results in the score"
+                type="button"
               >
                 <span className="run-idx">#{i + 1}</span>
                 <TimingBar results={run.results} />
                 <span className="run-pct">{run.accuracy}%</span>
-              </div>
+              </button>
               {isViewing && (
                 <div className="run-detail">
                   <TimingBreakdownDetail results={run.results} label={`Run #${i + 1}`} />

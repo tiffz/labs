@@ -79,7 +79,6 @@ const UniversalTomApp: React.FC = () => {
                             onChange={(e) => setInput(e.target.value)}
                             placeholder="Paste Universal Tom font text here... (e.g. 4J alda...)"
                             spellCheck={false}
-                            autoFocus
                         />
                     </div>
 

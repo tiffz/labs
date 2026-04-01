@@ -280,10 +280,11 @@ export function TabImportWizard({ isOpen, onClose, onImport, rawTabText = '', in
                                     {activeTab === 'patterns' && patterns && (
                                         <div className="grid grid-cols-2 gap-3">
                                             {patterns.map((p: DrumPattern, idx: number) => (
-                                                <div
+                                                <button
                                                     key={idx}
                                                     onClick={() => togglePattern(p.notation)}
                                                     className={`p-3 border rounded-lg cursor-pointer transition-all ${state.selectedPatterns.has(p.notation) ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500' : 'border-gray-200 hover:border-blue-300'}`}
+                                                    type="button"
                                                 >
                                                     <div className="flex justify-between items-center mb-2">
                                                         <span className="text-[10px] font-bold text-gray-500 uppercase">{(p.frequency * 100).toFixed(0)}% of song</span>
@@ -292,7 +293,7 @@ export function TabImportWizard({ isOpen, onClose, onImport, rawTabText = '', in
                                                     <div className="font-mono text-xs text-center bg-white p-1 rounded border overflow-hidden whitespace-nowrap">
                                                         {p.notation}
                                                     </div>
-                                                </div>
+                                                </button>
                                             ))}
                                         </div>
                                     )}
@@ -307,9 +308,13 @@ export function TabImportWizard({ isOpen, onClose, onImport, rawTabText = '', in
                                         </p>
                                     )}
                                     {state.detectedType && state.detectedType !== state.selectedType && (
-                                        <p className="text-xs text-purple-600 mt-4 font-bold bg-purple-50 px-3 py-2 rounded-lg border border-purple-100 cursor-pointer hover:bg-purple-100" onClick={() => setType(state.detectedType as 'drum' | 'guitar')}>
+                                        <button
+                                            className="text-xs text-purple-600 mt-4 font-bold bg-purple-50 px-3 py-2 rounded-lg border border-purple-100 cursor-pointer hover:bg-purple-100"
+                                            onClick={() => setType(state.detectedType as 'drum' | 'guitar')}
+                                            type="button"
+                                        >
                                             ✨ We detected {state.detectedType} tab content! Switch to {state.detectedType}?
-                                        </p>
+                                        </button>
                                     )}
                                 </div>
                             )}

@@ -2229,6 +2229,8 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
   };
 
   return (
+    // Keyboard support is intentional for this canvas-like editor surface.
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
     <div
       ref={containerRef}
       className="vexflow-container"

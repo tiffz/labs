@@ -1,4 +1,3 @@
- 
 // AUTO-GENERATED FILE: scripts/generate-shared-catalog.mjs
 // Do not edit manually. Run: npm run generate:shared-catalog
 
@@ -4779,6 +4778,36 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "words",
       "zines"
     ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-trailingslashrouting-ts-buildappbasepathsfromentrypaths",
+    "name": "buildAppBasePathsFromEntryPaths",
+    "path": "src/shared/utils/trailingSlashRouting.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-trailingslashrouting-ts-getcanonicaltrailingslashredirect",
+    "name": "getCanonicalTrailingSlashRedirect",
+    "path": "src/shared/utils/trailingSlashRouting.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [],
     "exportType": "function",
     "demoId": null
   },

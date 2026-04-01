@@ -61,11 +61,17 @@ export function UIPanel({ state, onUseItem, onRestart }: Props) {
             inv.map(([name, count]) => {
               const item = state.itemTypes.find(it => it.name === name)!;
               return (
-                <div key={name} className="inventory-slot" data-item-name={name} onClick={() => onUseItem(name)}>
+                <button
+                  key={name}
+                  className="inventory-slot"
+                  data-item-name={name}
+                  onClick={() => onUseItem(name)}
+                  type="button"
+                >
                   {item.emoji}
                   <span className="tooltip">{item.name.replace('a ', '')}</span>
                   {Number(count) > 1 && <span className="item-count">{String(count)}</span>}
-                </div>
+                </button>
               );
             })
           )}

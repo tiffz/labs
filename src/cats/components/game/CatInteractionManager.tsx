@@ -980,11 +980,19 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
       })()}
 
       {wandMode && (
-        <div 
-          className="wand-click-area" 
+        <div
+          className="wand-click-area"
           onClick={handleWandClick}
           onMouseMove={(e) => {
             catActions.handleWandMovement({ x: e.clientX, y: e.clientY });
+          }}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              handleWandClick();
+            }
           }}
         />
       )}

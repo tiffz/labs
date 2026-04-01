@@ -55,6 +55,7 @@ export interface NotationStyle {
 /**
  * Predefined style presets
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export const NOTATION_STYLES = {
   light: {
     staffColor: '#333333',

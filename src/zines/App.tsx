@@ -1279,6 +1279,15 @@ const App: React.FC = () => {
       onDrop={handleFileDrop}
       onDragOver={handleFileDragOver}
       onDragLeave={handleFileDragLeave}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          fileInputRef.current?.click();
+        }
+      }}
+      aria-label="Upload zine images"
     >
       <div className={minimal ? 'text-2xl mb-1' : 'text-4xl mb-2'}>{isDraggingFiles ? '📥' : '🖼️'}</div>
       <p className={`font-heading font-bold text-teal-600 ${minimal ? 'text-base' : 'text-lg'}`}>
@@ -1341,8 +1350,22 @@ const App: React.FC = () => {
       <PlaceholderFileInput />
       
       {modalContent && (
-        <div className="modal-overlay" onClick={() => setModalContent(null)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="modal-overlay"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setModalContent(null);
+          }}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              setModalContent(null);
+            }
+          }}
+          aria-label="Close dialog"
+        >
+          <div className="modal-content">
             <h2 className="modal-title">{modalContent.title}</h2>
             <p className="modal-body">{modalContent.message}</p>
             <button className="custom-button" onClick={() => setModalContent(null)}>
@@ -1498,6 +1521,7 @@ const App: React.FC = () => {
                         '--grid-border-radius': '12px' 
                       } as React.CSSProperties} 
                       onDragLeave={handleDragLeave}
+                      role="presentation"
                     >
                       <div className="aspect-ratio-content-for-grid">
                         {PAGE_SLOTS_CONFIG.map(slot => {

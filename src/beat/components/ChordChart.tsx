@@ -321,12 +321,13 @@ const ChordChart: React.FC<ChordChartProps> = ({
               const sectionColorIndex = measure.sectionId ? sectionColorMap.get(measure.sectionId) ?? 0 : 0;
               
               return (
-                <div
+                <button
                   key={measure.measureNumber}
                   className={`chord-chart-measure ${isCurrent ? 'current' : ''} ${measure.sectionId ? `in-section section-color-${sectionColorIndex}` : ''} ${isNewSection ? 'section-start' : ''}`}
                   data-section={measure.sectionId}
                   onClick={() => handleMeasureClick(measure.startTime)}
                   title={`Click to seek to measure ${measure.measureNumber}${measure.sectionLabel ? ` (${measure.sectionLabel})` : ''}`}
+                  type="button"
                 >
                   {/* Section label if this is start of a section */}
                   {measure.sectionLabel && (
@@ -380,7 +381,7 @@ const ChordChart: React.FC<ChordChartProps> = ({
                       ))}
                     </div>
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>

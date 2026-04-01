@@ -11,7 +11,7 @@ interface WandToyProps {
 
 const WandToy: React.FC<WandToyProps> = ({ onWandClick, initialPosition, mouseState, isShaking = false }) => {
   const lastPositionRef = useRef(initialPosition);
-  const wandRef = useRef<HTMLDivElement>(null);
+  const wandRef = useRef<HTMLButtonElement>(null);
   const currentPositionRef = useRef(initialPosition);
   const shakeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isShakingRef = useRef(false);
@@ -90,10 +90,11 @@ const WandToy: React.FC<WandToyProps> = ({ onWandClick, initialPosition, mouseSt
 
   // Keep CSS transition on the wrapper for smooth decay assertions in tests
   return (
-    <div
+    <button
       ref={wandRef}
       className={`wand-toy${isShaking ? ' shaking' : ''}`}
       onClick={handleClick}
+      type="button"
       style={{
         left: `${initialPosition.x}px`,
         top: `${initialPosition.y}px`,
@@ -101,6 +102,9 @@ const WandToy: React.FC<WandToyProps> = ({ onWandClick, initialPosition, mouseSt
         transition: 'transform 0.1s ease-out',
         transform: 'translate(-50%, 0)',
         cursor: 'pointer',
+        background: 'transparent',
+        border: 'none',
+        padding: 0,
       }}
     >
       <svg
@@ -134,7 +138,7 @@ const WandToy: React.FC<WandToyProps> = ({ onWandClick, initialPosition, mouseSt
           />
         </g>
       </svg>
-    </div>
+    </button>
   );
 };
 

@@ -559,8 +559,8 @@ const CurrentlyPracticing: React.FC<CurrentlyPracticingProps> = ({ onLoadExercis
 
           {isExercise && scoreInfo.chordSymbols.length > 0 && (
             <span className="np-chord-prog"
-              onMouseEnter={scoreInfo.chordSymbols.length > MAX_CHORD_DISPLAY ? (e => showTip(e, scoreInfo.chordSymbols.join(' – '))) : undefined}
-              onMouseLeave={scoreInfo.chordSymbols.length > MAX_CHORD_DISPLAY ? hideTip : undefined}>
+              onPointerEnter={scoreInfo.chordSymbols.length > MAX_CHORD_DISPLAY ? (e => showTip(e as unknown as React.MouseEvent, scoreInfo.chordSymbols.join(' – '))) : undefined}
+              onPointerLeave={scoreInfo.chordSymbols.length > MAX_CHORD_DISPLAY ? hideTip : undefined}>
               {scoreInfo.chordSymbols.slice(0, MAX_CHORD_DISPLAY).map((c, i) => (
                 <span key={i} className="np-chord">{c}</span>
               ))}

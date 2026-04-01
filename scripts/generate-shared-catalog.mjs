@@ -405,8 +405,7 @@ function buildCatalogEntries() {
 function renderOutput(entries) {
   const serialized = JSON.stringify(entries, null, 2);
 
-  return `/* eslint-disable */
-// AUTO-GENERATED FILE: scripts/generate-shared-catalog.mjs
+  return `// AUTO-GENERATED FILE: scripts/generate-shared-catalog.mjs
 // Do not edit manually. Run: npm run generate:shared-catalog
 
 export type SharedCatalogKind = 'component' | 'hook' | 'utility' | 'model' | 'service' | 'doc';

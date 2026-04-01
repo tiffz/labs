@@ -72,7 +72,7 @@ const SharedImageLibrary: React.FC<SharedImageLibraryProps> = memo(({
             const isAssigned = assignedImageIds.has(image.id);
             
             return (
-              <div
+              <button
                 key={image.id}
                 className={`relative group rounded-lg overflow-hidden border-2 transition-all ${
                   isAssigned 
@@ -89,6 +89,7 @@ const SharedImageLibrary: React.FC<SharedImageLibraryProps> = memo(({
                   }
                 }}
                 title={`${image.name}${isAssigned ? ' (in use)' : ''}`}
+                type="button"
               >
                 <img
                   src={image.thumbnailUrl || image.dataUrl}
@@ -115,7 +116,7 @@ const SharedImageLibrary: React.FC<SharedImageLibraryProps> = memo(({
                     ✓
                   </div>
                 )}
-              </div>
+              </button>
             );
           })}
         </div>

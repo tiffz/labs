@@ -162,9 +162,14 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({
 }) => {
   const { state, dispatch, loadScore, engine } = usePiano();
 
-  const visibleSections = allowedSections && allowedSections.length > 0
-    ? allowedSections
-    : (['scales', 'progressions', 'songs'] as const);
+  const visibleSections = useMemo(
+    () => (
+      allowedSections && allowedSections.length > 0
+        ? allowedSections
+        : (['scales', 'progressions', 'songs'] as const)
+    ),
+    [allowedSections]
+  );
   const showSectionTabs = visibleSections.length > 1;
   const fallbackSection = visibleSections[0] ?? 'scales';
   const initialResolvedSection =

@@ -13,8 +13,22 @@ const KeyboardShortcutsHelp: React.FC<KeyboardShortcutsHelpProps> = ({ isOpen, o
   const modKeyText = isMac ? 'Cmd' : 'Ctrl';
 
   return (
-    <div className="keyboard-shortcuts-overlay" onClick={onClose}>
-      <div className="keyboard-shortcuts-modal" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="keyboard-shortcuts-overlay"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClose();
+        }
+      }}
+      aria-label="Close keyboard shortcuts"
+    >
+      <div className="keyboard-shortcuts-modal">
         <div className="keyboard-shortcuts-header">
           <h2>Keyboard Shortcuts</h2>
           <button

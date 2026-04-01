@@ -187,8 +187,8 @@ const CurrencyTooltip: React.FC<CurrencyTooltipProps> = ({
   return (
     <div 
       className="currency-tooltip-wrapper"
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
+      onPointerEnter={handleMouseEnter}
+      onPointerLeave={handleMouseLeave}
     >
       <div className="currency-tooltip-container">
         {children}
@@ -196,8 +196,8 @@ const CurrencyTooltip: React.FC<CurrencyTooltipProps> = ({
       {isVisible && (
         <div 
           className="currency-tooltip"
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
+          onPointerEnter={handleMouseEnter}
+          onPointerLeave={handleMouseLeave}
         >
           {renderTooltipContent()}
         </div>

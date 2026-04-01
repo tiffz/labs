@@ -111,21 +111,27 @@ const RhythmInfoCard: React.FC<RhythmInfoCardProps> = ({
   useEffect(() => {
     setIsExpanded(!isMobile);
   }, [isMobile]);
+
+  const mobileHeaderInteractions = isMobile
+    ? {
+        onClick: () => setIsExpanded(!isExpanded),
+        role: 'button' as const,
+        tabIndex: 0,
+        onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setIsExpanded(!isExpanded);
+          }
+        },
+      }
+    : {};
   
   return (
     <div className="rhythm-info-card">
       {/* Header - clickable on mobile */}
       <div 
         className={`rhythm-info-header ${isMobile ? 'rhythm-info-header-clickable' : ''}`}
-        onClick={() => isMobile && setIsExpanded(!isExpanded)}
-        role={isMobile ? 'button' : undefined}
-        tabIndex={isMobile ? 0 : undefined}
-        onKeyDown={(e) => {
-          if (isMobile && (e.key === 'Enter' || e.key === ' ')) {
-            e.preventDefault();
-            setIsExpanded(!isExpanded);
-          }
-        }}
+        {...mobileHeaderInteractions}
       >
         <h3 className="rhythm-info-title">{rhythm.name}</h3>
         {isMobile && (

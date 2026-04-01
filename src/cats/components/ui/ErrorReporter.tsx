@@ -94,12 +94,13 @@ export const ErrorReporter: React.FC<ErrorReporterProps> = ({ isVisible = true }
       boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
       maxWidth: '300px'
     }}>
-      <div 
-        style={{ cursor: 'pointer', fontWeight: 'bold' }}
+      <button
+        type="button"
+        style={{ cursor: 'pointer', fontWeight: 'bold', background: 'transparent', border: 'none', color: 'inherit', padding: 0 }}
         onClick={() => setIsExpanded(!isExpanded)}
       >
         🚨 {errorCount} Error{errorCount !== 1 ? 's' : ''} Detected {isExpanded ? '▼' : '▶'}
-      </div>
+      </button>
       
       {isExpanded && (
         <div style={{ marginTop: '8px' }}>

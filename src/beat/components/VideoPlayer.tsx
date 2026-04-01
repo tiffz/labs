@@ -153,7 +153,20 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   }, [onPlayPauseToggle]);
 
   return (
-    <div className="video-player" onClick={handleClick} style={{ cursor: 'pointer' }}>
+    <div
+      className="video-player"
+      onClick={handleClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleClick();
+        }
+      }}
+      style={{ cursor: 'pointer' }}
+      role="button"
+      tabIndex={0}
+      aria-label="Toggle playback"
+    >
       <video
         ref={videoRef}
         src={videoUrl}

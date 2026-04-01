@@ -80,15 +80,26 @@ export default function DebugPanel() {
       <div style={{
         display: 'flex', alignItems: 'center', gap: 8, padding: '4px 12px',
         background: '#16213e', cursor: 'pointer',
-      }} onClick={() => setCollapsed(!collapsed)}>
+      }} onClick={() => setCollapsed(!collapsed)} role="button" tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setCollapsed((v) => !v);
+          }
+        }}
+        aria-label="Toggle debug panel">
         <span style={{ color: '#e94560', fontWeight: 'bold' }}>DEBUG</span>
         <span style={{ color: '#94a3b8', fontSize: 10 }}>
           pitch:{counts.pitch} noteOn:{counts.noteOn} eval:{counts.eval} miss:{counts.miss}
         </span>
         <div style={{ flex: 1 }} />
-        <label style={{ fontSize: 10, display: 'flex', alignItems: 'center', gap: 4 }}
-          onClick={e => e.stopPropagation()}>
-          <input type="checkbox" checked={showPitch} onChange={e => setShowPitch(e.target.checked)} />
+        <label style={{ fontSize: 10, display: 'flex', alignItems: 'center', gap: 4 }}>
+          <input
+            type="checkbox"
+            checked={showPitch}
+            onChange={e => setShowPitch(e.target.checked)}
+            onClick={(e) => e.stopPropagation()}
+          />
           raw pitch
         </label>
         <button onClick={e => { e.stopPropagation(); downloadSnapshot(); }}

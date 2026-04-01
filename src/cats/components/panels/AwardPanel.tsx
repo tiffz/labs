@@ -23,7 +23,7 @@ const AwardPanel: React.FC<AwardPanelProps> = ({
   const [showTooltip, setShowTooltip] = useState<string | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0, arrowPosition: '140px' });
 
-  const handleAwardHover = (award: Award, event: React.MouseEvent) => {
+  const handleAwardHover = (award: Award, event: React.MouseEvent | React.PointerEvent) => {
     const rect = event.currentTarget.getBoundingClientRect();
     const tooltipWidth = 280; // fixed width
     const tooltipHeight = 100; // fixed height
@@ -93,8 +93,8 @@ const AwardPanel: React.FC<AwardPanelProps> = ({
             <div 
               key={award.id} 
               className="merit-badge-wrapper"
-              onMouseEnter={(e) => handleAwardHover(award, e)}
-              onMouseLeave={handleAwardLeave}
+              onPointerEnter={(e) => handleAwardHover(award, e)}
+              onPointerLeave={handleAwardLeave}
             >
               <div 
                 className={`merit-badge ${isEarned ? 'earned' : 'locked'}`}

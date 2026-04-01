@@ -358,8 +358,22 @@ function PianoApp() {
         </aside>
       </div>
       {showAnalytics && (
-        <div className="analytics-modal-overlay" onClick={() => setShowAnalytics(false)}>
-          <div className="analytics-modal" onClick={e => e.stopPropagation()}>
+        <div
+          className="analytics-modal-overlay"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowAnalytics(false);
+          }}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              setShowAnalytics(false);
+            }
+          }}
+          aria-label="Close analytics modal"
+        >
+          <div className="analytics-modal">
             <div className="analytics-modal-header">
               <h2>Practice Analytics</h2>
               <button className="analytics-modal-close" onClick={() => setShowAnalytics(false)} title="Close">
