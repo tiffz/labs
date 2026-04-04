@@ -40,4 +40,3 @@ export const RadioOption: React.FC<RadioOptionProps> = ({
     </div>
   );
 };
-

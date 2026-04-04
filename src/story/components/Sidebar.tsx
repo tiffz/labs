@@ -7,9 +7,18 @@ interface SidebarProps {
   selectedGenre: string;
   onGenreChange: (genre: string) => void;
   onGenerate: () => void;
+  /** Mobile drawer: when false, sidebar is off-canvas below `md`. */
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ selectedGenre, onGenreChange, onGenerate }) => {
+export const Sidebar: React.FC<SidebarProps> = ({
+  selectedGenre,
+  onGenreChange,
+  onGenerate,
+  mobileOpen = false,
+  onMobileClose,
+}) => {
   const [tipIndex, setTipIndex] = useState(0);
   
   const tips = [
@@ -24,8 +33,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ selectedGenre, onGenreChange, 
     setTipIndex((prev) => (prev + 1) % tips.length);
   };
   return (
-    <aside className="w-80 bg-gradient-to-b from-orange-50/80 via-pink-50/40 to-orange-50/80 border-r border-orange-200 h-screen overflow-y-auto fixed left-0 top-0 shadow-sm backdrop-blur-sm">
-      <div className="p-6 space-y-4">
+    <aside
+      className={`story-sidebar-drawer w-[min(100vw,20rem)] max-w-[min(100vw,20rem)] rounded-r-2xl bg-gradient-to-b from-orange-50/90 via-pink-50/50 to-orange-50/85 border-r border-orange-200/90 h-[100dvh] min-h-0 overflow-y-auto overscroll-contain fixed left-0 top-0 z-[50] shadow-[4px_0_24px_-4px_rgba(124,45,18,0.12)] backdrop-blur-md transition-transform duration-300 ease-out md:translate-x-0 md:rounded-none md:shadow-sm ${
+        mobileOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}
+    >
+      <div className="flex flex-col gap-5 p-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] md:p-6 md:pb-6 md:pt-6">
         {/* Logo and Title */}
         <div className="text-center pb-3 border-b border-orange-200">
           <img 
@@ -54,9 +67,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ selectedGenre, onGenreChange, 
           </p>
         </div>
 
-        {/* Genre Selection */}
+        {/* Genre Selection — matches production: rounded pills, flex-wrap */}
         <div>
-          <label className="block text-sm font-semibold text-slate-800 mb-2">
+          <label className="mb-2 block text-sm font-semibold text-slate-800">
             Select a Genre:
           </label>
           <div className="flex flex-wrap gap-2">
@@ -79,9 +92,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ selectedGenre, onGenreChange, 
           </div>
         </div>
 
-        {/* Generate Button */}
         <button
-          onClick={onGenerate}
+          type="button"
+          onClick={() => {
+            onGenerate();
+            onMobileClose?.();
+          }}
           className="w-full bg-gradient-to-br from-orange-500 via-orange-500 to-pink-500/80 hover:from-orange-600 hover:via-orange-600 hover:to-pink-600/80 text-white font-bold py-2.5 px-6 rounded-lg text-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2 shadow-sm hover:shadow-md"
         >
           Generate Story

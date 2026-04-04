@@ -4527,6 +4527,60 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-test-audioregression-ts-audiohashmanifest",
+    "name": "AudioHashManifest",
+    "path": "src/shared/test/audioRegression.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-audioregression-ts-hashfloat32pcm",
+    "name": "hashFloat32Pcm",
+    "path": "src/shared/test/audioRegression.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-audioregression-ts-loadhashmanifest",
+    "name": "loadHashManifest",
+    "path": "src/shared/test/audioRegression.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-audioregression-ts-savehashmanifest",
+    "name": "saveHashManifest",
+    "path": "src/shared/test/audioRegression.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-test-testutils-ts-createtesttimeout",
     "name": "createTestTimeout",
     "path": "src/shared/test/testUtils.ts",
@@ -4608,6 +4662,57 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [],
     "exportType": "class",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-ui-icons-materialiconglyphreadiness-ts-maxwidthformaterialglyph",
+    "name": "maxWidthForMaterialGlyph",
+    "path": "src/shared/ui/icons/materialIconGlyphReadiness.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Heuristic: material icon ligature names (e.g. \"directions_run\") are much wider when rendered as plain text than when shaped as a single glyph. Used to avoid removing `icons-pending` (and to gate visual baselines) before real icons have painted. Important: icons inside fixed-size flex buttons often report a **narrow** getBoundingClientRect() even while ligature plaintext is still painting (flex min-size / clipping), so we always confirm with an off-DOM measurement when the in-layout box looks \"glyph-sized\".",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-ui-icons-materialiconglyphreadiness-ts-visiblematerialiconslookready",
+    "name": "visibleMaterialIconsLookReady",
+    "path": "src/shared/ui/icons/materialIconGlyphReadiness.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Heuristic: material icon ligature names (e.g. \"directions_run\") are much wider when rendered as plain text than when shaped as a single glyph. Used to avoid removing `icons-pending` (and to gate visual baselines) before real icons have painted. Important: icons inside fixed-size flex buttons often report a **narrow** getBoundingClientRect() even while ligature plaintext is still painting (flex min-size / clipping), so we always confirm with an off-DOM measurement when the in-layout box looks \"glyph-sized\".",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-ui-icons-materialiconsbootstrap-ts-initmaterialiconruntime",
+    "name": "initMaterialIconRuntime",
+    "path": "src/shared/ui/icons/materialIconsBootstrap.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [
+      "beat",
+      "cats",
+      "chords",
+      "corp",
+      "drums",
+      "forms",
+      "piano",
+      "story",
+      "ui",
+      "words",
+      "zines"
+    ],
+    "exportType": "function",
     "demoId": null
   },
   {

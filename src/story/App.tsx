@@ -11,6 +11,8 @@ import './styles/story.css';
 const App: React.FC = () => {
   const [storyDNA, setStoryDNA] = useState<StoryDNA | null>(null);
   const [selectedGenre, setSelectedGenre] = useState('Random');
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const closeMobileNav = () => setMobileNavOpen(false);
   const asRegenerationElements = (
     elements: Record<string, string>
   ): Parameters<typeof regenerateLoglineFromElements>[5] => (
@@ -194,40 +196,67 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50/60 via-pink-50/30 to-purple-50/40">
-      {/* Sidebar */}
-      <Sidebar 
+      <header
+        className="sticky top-0 z-40 flex h-[52px] shrink-0 items-center gap-3 border-b border-orange-200/90 bg-gradient-to-r from-white via-orange-50/40 to-white px-3 shadow-[0_1px_0_rgba(251,146,60,0.12)] backdrop-blur-md md:hidden"
+        role="banner"
+      >
+        <button
+          type="button"
+          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-orange-200/80 bg-white/90 text-orange-800 shadow-sm ring-1 ring-orange-100/80 transition hover:border-orange-300 hover:bg-orange-50/90 hover:text-orange-900 active:scale-[0.98]"
+          aria-label="Open menu"
+          aria-expanded={mobileNavOpen}
+          onClick={() => setMobileNavOpen(true)}
+        >
+          <span className="material-symbols-outlined text-[22px]" aria-hidden>
+            menu
+          </span>
+        </button>
+        <span className="min-w-0 truncate font-bold tracking-tight text-slate-900">Save the Cat</span>
+      </header>
+
+      {mobileNavOpen ? (
+        <button
+          type="button"
+          className="fixed inset-0 z-[45] bg-slate-900/45 backdrop-blur-[2px] transition-opacity md:hidden"
+          aria-label="Close menu"
+          onClick={closeMobileNav}
+        />
+      ) : null}
+
+      <Sidebar
         selectedGenre={selectedGenre}
         onGenreChange={setSelectedGenre}
         onGenerate={() => handleGenerate()}
+        mobileOpen={mobileNavOpen}
+        onMobileClose={closeMobileNav}
       />
 
-      {/* Main Content Area */}
-      <div className="ml-80">
+      <div className="ml-0 md:ml-80">
         {storyDNA ? (
           <>
-            {/* Fixed Header with Story Summary */}
             <FixedStoryHeader dna={storyDNA} onReroll={handleReroll} />
 
-            {/* Beat Chart */}
-            <main className="px-6 py-6">
+            <main className="px-3 py-4 sm:px-6 sm:py-6">
               <BeatChart dna={storyDNA} onReroll={handleReroll} />
             </main>
           </>
         ) : (
-          /* Welcome Screen */
-          <div className="flex items-center justify-center h-screen">
-            <div className="text-center max-w-md px-6">
-              <img 
-                src="/icons/cat-android.png" 
-                alt="Save the Cat" 
-                className="w-32 h-32 mx-auto mb-6"
+          <div className="flex min-h-[calc(100dvh-52px)] items-center justify-center md:min-h-screen">
+            <div className="max-w-md px-4 text-center sm:px-6">
+              <img
+                src="/icons/cat-android.png"
+                alt="Save the Cat"
+                className="mx-auto mb-6 h-32 w-32"
+                width={128}
+                height={128}
+                decoding="async"
               />
-              <h2 className="text-3xl font-bold text-slate-800 mb-4">
+              <h2 className="mb-4 text-2xl font-bold text-slate-800 sm:text-3xl">
                 Welcome to Save the Cat!
               </h2>
-              <p className="text-lg text-slate-600 mb-6">
-                Select a genre from the sidebar, then click &ldquo;Generate Story&rdquo; to create a
-                random plot using the 15-beat Save the Cat! structure.
+              <p className="mb-6 text-base text-slate-600 sm:text-lg">
+                Open the menu to pick a genre, then tap &ldquo;Generate Story&rdquo; for a random plot
+                using the 15-beat Save the Cat! structure.
               </p>
             </div>
           </div>

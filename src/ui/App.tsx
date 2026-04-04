@@ -1,4 +1,4 @@
-import { useMemo, useState, type Dispatch, type SetStateAction } from 'react';
+import { useCallback, useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
 import BpmInput from '../shared/components/music/BpmInput';
 import KeyInput from '../shared/components/music/KeyInput';
 import ChordProgressionInput from '../shared/components/music/ChordProgressionInput';
@@ -19,6 +19,7 @@ import {
   type SharedCatalogKind,
 } from './generatedSharedCatalog';
 import type { ExportAudioRenderRequest, ExportSourceAdapter } from '../shared/music/exportTypes';
+import RegressionPanel from './RegressionPanel';
 
 const KIND_ORDER: SharedCatalogKind[] = [
   'component',
@@ -31,7 +32,8 @@ const KIND_ORDER: SharedCatalogKind[] = [
 
 const APPEARANCES = ['default', 'piano', 'words', 'chords'] as const;
 type Appearance = (typeof APPEARANCES)[number];
-type CatalogTab = 'gallery' | 'docs' | 'theme';
+type CatalogTab = 'gallery' | 'docs' | 'theme' | 'regression';
+type RegressionRouteSection = 'screenshots' | 'report';
 const BPM_SURFACES = ['default', 'piano', 'words', 'chords', 'beat', 'drums'] as const;
 const KEY_SURFACES = ['default', 'piano', 'words', 'chords', 'beat'] as const;
 const EXPORT_SURFACES = ['piano', 'words', 'chords', 'drums', 'beat'] as const;
@@ -58,6 +60,32 @@ const APP_LINKS: Record<string, { label: string; href: string }> = {
   words: { label: 'Words', href: '/words/' },
   ui: { label: 'UI Gallery', href: '/ui/' },
 };
+
+const UI_TABS: CatalogTab[] = ['gallery', 'docs', 'theme', 'regression'];
+const REGRESSION_SECTIONS: RegressionRouteSection[] = ['screenshots', 'report'];
+
+/** Map hash segments to current routes; legacy `failures` / `baselines` → `screenshots`. */
+function normalizeRegressionSection(sectionPart: string): RegressionRouteSection {
+  const s = sectionPart.trim().toLowerCase();
+  if (s === 'failures' || s === 'baselines' || s === 'screenshots' || s === '') return 'screenshots';
+  if (REGRESSION_SECTIONS.includes(s as RegressionRouteSection)) return s as RegressionRouteSection;
+  return 'screenshots';
+}
+
+function parseHashState(hash: string): {
+  tab: CatalogTab;
+  regressionSection: RegressionRouteSection;
+  /** `#regression/runner` — expand runner log; section is Screenshots. */
+  expandRunnerLog: boolean;
+} {
+  const normalized = hash.replace(/^#\/?/, '').trim().toLowerCase();
+  const [tabPart, sectionPart = ''] = normalized.split('/');
+  const tab = (UI_TABS.includes(tabPart as CatalogTab) ? tabPart : 'gallery') as CatalogTab;
+  const expandRunnerLog = sectionPart === 'runner';
+  const routedSection = expandRunnerLog ? 'screenshots' : sectionPart;
+  const regressionSection = normalizeRegressionSection(routedSection);
+  return { tab, regressionSection, expandRunnerLog };
+}
 
 function getBpmClass(surface: BpmSurface): string {
   switch (surface) {
@@ -897,8 +925,37 @@ function DemoPanel({
   }
 }
 
+/** Minimal shape of `GET /__regression/summary` for the header notification badge. */
+type RegressionSummaryForBadge = {
+  failures?: unknown[] | null;
+  audio?: { driftCount?: number } | null;
+  visual?: {
+    lastRun?: {
+      status?: string;
+      failedTests?: unknown[] | null;
+    } | null;
+  } | null;
+};
+
+function countRegressionAttentionNeedsReview(data: RegressionSummaryForBadge): number {
+  const failureCards = data.failures?.length ?? 0;
+  const drift = data.audio?.driftCount ?? 0;
+  const last = data.visual?.lastRun;
+  const listedFails = last?.failedTests?.length ?? 0;
+  const statusFailed = last?.status === 'failed';
+  const visualCount = Math.max(failureCards, statusFailed ? Math.max(listedFails, 1) : listedFails);
+  return visualCount + drift;
+}
+
 function App() {
-  const [activeTab, setActiveTab] = useState<CatalogTab>('gallery');
+  const [activeTab, setActiveTab] = useState<CatalogTab>(() => parseHashState(window.location.hash).tab);
+  const [regressionSection, setRegressionSection] = useState<RegressionRouteSection>(() =>
+    parseHashState(window.location.hash).regressionSection
+  );
+  const [runnerExpandNonce, setRunnerExpandNonce] = useState(() =>
+    parseHashState(window.location.hash).expandRunnerLog ? 1 : 0
+  );
+  const [regressionAttentionCount, setRegressionAttentionCount] = useState<number | null>(null);
   const [kindFilter, setKindFilter] = useState<'all' | SharedCatalogKind>('all');
   const [query, setQuery] = useState('');
   const [bpmBySurface, setBpmBySurface] = useState<Record<BpmSurface, number>>({
@@ -975,77 +1032,147 @@ function App() {
     });
   };
 
-  const componentsCount = SHARED_CATALOG.filter((entry) => entry.kind === 'component').length;
-  const utilityCount = SHARED_CATALOG.filter((entry) => entry.kind === 'utility').length;
-  const withDemoCount = SHARED_CATALOG.filter((entry) => entry.demoId).length;
   const demoEntries = filteredEntries.filter((entry) => Boolean(entry.demoId));
 
+  const setTab = useCallback((tab: CatalogTab, sectionOverride?: RegressionRouteSection) => {
+    setActiveTab(tab);
+    const nextSection = sectionOverride ?? regressionSection;
+    const nextHash = tab === 'regression' ? `#regression/${nextSection}` : `#${tab}`;
+    if (window.location.hash !== nextHash) {
+      window.history.pushState(null, '', nextHash);
+    }
+  }, [regressionSection]);
+
+  const setRegressionRoute = useCallback((section: RegressionRouteSection) => {
+    setRegressionSection(section);
+    if (activeTab !== 'regression') return;
+    const nextHash = `#regression/${section}`;
+    if (window.location.hash !== nextHash) {
+      window.history.pushState(null, '', nextHash);
+    }
+  }, [activeTab]);
+
   const jumpToDocsEntry = (entryId: string) => {
-    setActiveTab('docs');
+    setTab('docs');
     window.setTimeout(() => {
       const el = document.getElementById(`doc-${entryId}`);
       el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 0);
   };
 
+  useEffect(() => {
+    const onHashChange = () => {
+      const next = parseHashState(window.location.hash);
+      setActiveTab(next.tab);
+      setRegressionSection(next.regressionSection);
+      if (next.expandRunnerLog) {
+        setRunnerExpandNonce((n) => n + 1);
+      }
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+
+  const refreshRegressionBadge = useCallback(async () => {
+    try {
+      const res = await fetch('/__regression/summary', { cache: 'no-store' });
+      if (!res.ok) return;
+      const data = (await res.json()) as RegressionSummaryForBadge;
+      setRegressionAttentionCount(countRegressionAttentionNeedsReview(data));
+    } catch {
+      setRegressionAttentionCount(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshRegressionBadge();
+    const intervalId = window.setInterval(refreshRegressionBadge, 45_000);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void refreshRegressionBadge();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [refreshRegressionBadge]);
+
+  useEffect(() => {
+    if (activeTab === 'regression') void refreshRegressionBadge();
+  }, [activeTab, refreshRegressionBadge]);
+
+  const regressionBadgeLabel =
+    regressionAttentionCount !== null && regressionAttentionCount > 0
+      ? `${regressionAttentionCount > 99 ? '99+' : regressionAttentionCount} regression issues to review`
+      : 'Regression';
+
   return (
     <main className="ui-docs-app">
-      <header className="ui-docs-header">
-        <h1>Labs UI Components</h1>
-        <p className="ui-docs-tagline">
-          Shared UI libraries used across Tiff Zhang Labs applications.
-        </p>
-        <div className="ui-summary-row">
-          <article>
-            <strong>{SHARED_CATALOG.length}</strong>
-            <span>Exports tracked</span>
-          </article>
-          <article>
-            <strong>{componentsCount}</strong>
-            <span>Component exports</span>
-          </article>
-          <article>
-            <strong>{utilityCount}</strong>
-            <span>Utility exports</span>
-          </article>
-          <article>
-            <strong>{withDemoCount}</strong>
-            <span>Live demo-ready</span>
-          </article>
-        </div>
-        <div className="ui-tab-row" role="tablist" aria-label="Catalog views">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'gallery'}
-            className={`ui-tab-btn ${activeTab === 'gallery' ? 'active' : ''}`}
-            onClick={() => setActiveTab('gallery')}
-          >
-            Gallery
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'docs'}
-            className={`ui-tab-btn ${activeTab === 'docs' ? 'active' : ''}`}
-            onClick={() => setActiveTab('docs')}
-          >
-            Docs
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'theme'}
-            className={`ui-tab-btn ${activeTab === 'theme' ? 'active' : ''}`}
-            onClick={() => setActiveTab('theme')}
-          >
-            Theme
-          </button>
+      <header className="ui-docs-header ui-docs-header-sticky">
+        <div className="ui-header-main-row">
+          <div className="ui-header-brand">
+            <div className="ui-header-logo" aria-hidden="true">UI</div>
+            <div className="ui-header-titles">
+              <p className="ui-docs-eyebrow">Design system</p>
+              <h1>Labs UI Components</h1>
+              <p className="ui-header-tagline-sr">
+                Shared UI libraries used across Tiff Zhang Labs applications.
+              </p>
+            </div>
+          </div>
+          <div className="ui-header-nav">
+            <div className="ui-tab-row" role="tablist" aria-label="Catalog views">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === 'gallery'}
+                className={`ui-tab-btn ${activeTab === 'gallery' ? 'active' : ''}`}
+                onClick={() => setTab('gallery')}
+              >
+                Gallery
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === 'docs'}
+                className={`ui-tab-btn ${activeTab === 'docs' ? 'active' : ''}`}
+                onClick={() => setTab('docs')}
+              >
+                Docs
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === 'theme'}
+                className={`ui-tab-btn ${activeTab === 'theme' ? 'active' : ''}`}
+                onClick={() => setTab('theme')}
+              >
+                Theme
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === 'regression'}
+                className={`ui-tab-btn ui-tab-btn--with-badge ${
+                  activeTab === 'regression' ? 'active' : ''
+                }`}
+                aria-label={regressionBadgeLabel}
+                onClick={() => setTab('regression', 'screenshots')}
+              >
+                Regression
+                {regressionAttentionCount !== null && regressionAttentionCount > 0 ? (
+                  <span className="ui-regression-nav-badge" aria-hidden>
+                    {regressionAttentionCount > 99 ? '99+' : regressionAttentionCount}
+                  </span>
+                ) : null}
+              </button>
+            </div>
+          </div>
         </div>
       </header>
 
       <section className="ui-docs-card">
-        {activeTab !== 'theme' ? (
+        {activeTab === 'gallery' || activeTab === 'docs' ? (
           <div className="ui-docs-controls">
             <label>
               Kind
@@ -1215,7 +1342,7 @@ function App() {
               </article>
             ))}
           </div>
-        ) : (
+        ) : activeTab === 'theme' ? (
           <div className="ui-theme-tab">
             <section className="ui-theme-foundation" aria-label="Default theme foundation">
               <h2>Default Theme Foundation</h2>
@@ -1294,6 +1421,12 @@ function App() {
               </article>
             </section>
           </div>
+        ) : (
+          <RegressionPanel
+            routeSection={regressionSection}
+            onRouteSectionChange={setRegressionRoute}
+            runnerExpandNonce={runnerExpandNonce}
+          />
         )}
       </section>
     </main>

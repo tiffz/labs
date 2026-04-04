@@ -35,6 +35,14 @@ npm run build
 npm run knip
 ```
 
+Regression commands:
+
+```sh
+npm run test:regression
+npm run test:e2e:visual
+npm run test:audio:regression
+```
+
 ## Shared Catalog Workflow
 
 The shared catalog is generated (not hand-maintained):
@@ -88,3 +96,6 @@ Workflows:
 For ADR-level guidance and architecture rationale, see `DEVELOPMENT.md`.
 For documentation precedence and canonical sources, see `docs/SOURCE_OF_TRUTH.md`.
 For rollback operations, see `docs/ROLLBACK.md`.
+For visual/audio baseline and review workflow, see `docs/REGRESSION_WORKFLOW.md`.
+To replace all screenshot baselines at once: `npm run test:e2e:visual:update:fresh`.
+The local Regression UI lives under `http://localhost:5173/ui/#regression/screenshots` (dev server only; see that doc for actions and hashes).

@@ -32,6 +32,8 @@ tsconfig.tsbuildinfo
 # Playwright artifacts
 test-results/
 playwright-report/
+src/beat/regression/reports/
+.regression-reports/
 
 # Custom folder name for hidden files
 .hidden

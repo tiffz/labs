@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import MaterialIcon from '../../icons/MaterialIcon';
+import BottomControlSvgIcon from '../../icons/BottomControlSvgIcon';
 import { catCoordinateSystem } from '../../services/CatCoordinateSystem';
 import { ViewportProvider } from '../../context/ViewportContext';
 
@@ -22,8 +22,8 @@ const World2D: React.FC<World2DProps> = ({
   enableCameraFollow = true,
   wandMode = false,
   onWandToggle,
-  playerControlMode = false
-  , onToggleRunMode
+  playerControlMode = false,
+  onToggleRunMode,
 }) => {
   const worldWidth = 1400; // Match CatCoordinateSystem.WORLD_WIDTH
   
@@ -328,7 +328,7 @@ const World2D: React.FC<World2DProps> = ({
           onClick={recenterCamera}
           title="Center on cat"
         >
-          <MaterialIcon icon="pets" />
+          <BottomControlSvgIcon name="pets" className="bottom-control-svg" />
         </button>
         {onWandToggle && (
           <button 
@@ -336,7 +336,7 @@ const World2D: React.FC<World2DProps> = ({
             onClick={onWandToggle}
             title={wandMode ? "Put away wand" : "Play with wand"}
           >
-            <MaterialIcon icon={wandMode ? "close" : "magic_button"} />
+            <BottomControlSvgIcon name={wandMode ? 'close' : 'auto_fix_high'} className="bottom-control-svg" />
           </button>
         )}
         {onToggleRunMode && (
@@ -345,7 +345,10 @@ const World2D: React.FC<World2DProps> = ({
             onClick={onToggleRunMode}
             title={playerControlMode ? "Exit run mode" : "Enter run mode"}
           >
-            <MaterialIcon icon={playerControlMode ? "close" : "directions_run"} />
+            <BottomControlSvgIcon
+              name={playerControlMode ? 'close' : 'directions_run'}
+              className="bottom-control-svg"
+            />
           </button>
         )}
       </div>

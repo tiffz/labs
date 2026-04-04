@@ -52,76 +52,169 @@ body {
 }
 
 .ui-docs-app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 20px 20px 34px;
+  max-width: 1320px;
+  margin: 0 auto 24px;
+  padding: 0 22px 24px;
   display: grid;
-  gap: 16px;
+  gap: 12px;
 }
 
 .ui-docs-header,
 .ui-docs-card {
-  background: color-mix(in srgb, var(--ui-surface) 92%, #f8ecff);
-  border: 1px solid var(--ui-border);
-  border-radius: 18px;
-  box-shadow: var(--ui-shadow-1);
+  background: color-mix(in srgb, var(--ui-surface) 98%, #f7f4ff);
+  border: 1px solid color-mix(in srgb, var(--ui-border) 64%, #fff);
+  border-radius: 16px;
+  box-shadow: 0 6px 24px rgba(70, 52, 110, 0.08);
 }
 
 .ui-docs-header {
-  padding: 20px 22px;
+  padding: 8px 22px;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  margin-top: 0;
+  border-radius: 0;
+  border-left: 0;
+  border-right: 0;
+}
+
+.ui-docs-header-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  backdrop-filter: blur(10px);
+}
+
+.ui-header-main-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  max-width: 1320px;
+  margin: 0 auto;
+}
+
+.ui-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.ui-header-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.ui-header-logo {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  color: #fff;
+  background: linear-gradient(140deg, #6d28d9 0%, #7c3aed 45%, #a855f7 100%);
+  box-shadow: 0 6px 14px rgba(124, 58, 237, 0.22);
+}
+
+.ui-header-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .ui-docs-header h1 {
   margin: 0;
-  font-size: 2rem;
-  letter-spacing: -0.015em;
+  font-size: 1.28rem;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--ui-text);
 }
 
-.ui-docs-header p {
-  margin: 8px 0 0;
-  color: var(--ui-muted);
-  max-width: 72ch;
-}
-
-.ui-docs-tagline {
-  margin-top: 6px;
-  font-size: 0.84rem;
+.ui-header-tagline-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .ui-tab-row {
-  margin-top: 14px;
   display: inline-flex;
-  gap: 8px;
+  gap: 6px;
   padding: 4px;
-  border: 1px solid color-mix(in srgb, var(--ui-primary) 20%, #dcd7ee);
-  border-radius: 12px;
-  background: #f8f3ff;
+  border: 1px solid color-mix(in srgb, var(--ui-primary) 24%, #dcd7ee);
+  border-radius: 14px;
+  background: color-mix(in srgb, #f8f3ff 90%, #fff);
 }
 
 .ui-tab-btn {
   border: none;
   background: transparent;
   color: #5f5487;
-  border-radius: 9px;
-  min-height: 34px;
+  border-radius: 10px;
+  min-height: 32px;
   padding: 0 12px;
-  font-size: 0.84rem;
+  font-size: 0.8rem;
   font-weight: 700;
   cursor: pointer;
 }
 
 .ui-tab-btn.active {
-  background: linear-gradient(135deg, #7a4dff 0%, #b24af0 100%);
+  background: linear-gradient(135deg, #6d28d9 0%, #8b5cf6 100%);
   color: #ffffff;
+  box-shadow: 0 3px 10px rgba(109, 40, 217, 0.22);
+}
+
+.ui-tab-btn--with-badge {
+  position: relative;
+  padding-right: 16px;
+}
+
+.ui-regression-nav-badge {
+  position: absolute;
+  top: -5px;
+  right: 2px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #f87171 0%, #dc2626 100%);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 18px;
+  text-align: center;
+  box-shadow:
+    0 0 0 2px #fff,
+    0 2px 8px rgba(220, 38, 38, 0.45);
+  pointer-events: none;
 }
 
 .ui-docs-eyebrow {
-  margin: 0 0 6px;
-  font-size: 0.75rem;
+  margin: 0;
+  font-size: 0.65rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   font-weight: 700;
   color: var(--ui-primary);
+}
+
+.ui-md-icon {
+  font-size: 18px;
+  line-height: 1;
+  vertical-align: middle;
 }
 
 .ui-summary-row {
@@ -295,7 +388,7 @@ body {
 }
 
 .ui-docs-card {
-  padding: 16px;
+  padding: 14px;
 }
 
 .ui-docs-controls {
@@ -828,12 +921,44 @@ body {
 
 .ui-demo-button {
   border: 1px solid color-mix(in srgb, var(--ui-primary) 34%, #dcd3f4);
-  background: linear-gradient(135deg, #f4ecff 0%, #f9f5ff 100%);
+  background: linear-gradient(135deg, #f3ebff 0%, #faf7ff 100%);
   color: #45287e;
-  border-radius: 9px;
+  border-radius: 10px;
   padding: 8px 12px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.ui-demo-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(109, 40, 217, 0.14);
+}
+
+.ui-demo-button:disabled {
+  opacity: 0.62;
+  cursor: not-allowed;
+}
+
+.ui-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.ui-action-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--ui-primary) 34%, #dcd3f4);
+  background: #fff;
+  color: #5b36b5;
+  font-size: 0.68rem;
+  font-weight: 800;
 }
 
 .ui-dice-swatch {
@@ -995,12 +1120,708 @@ body {
   color: var(--ui-muted);
 }
 
+.ui-regression-layout {
+  display: grid;
+  gap: 14px;
+}
+
+.ui-regression-compact-status {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+}
+
+.ui-status-chip {
+  position: relative;
+  border: 1px solid color-mix(in srgb, var(--ui-border) 72%, #fff);
+  border-radius: 999px;
+  min-height: 34px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  background: #fff;
+}
+
+.ui-status-chip.passed {
+  color: #1f5133;
+  background: #edf9f1;
+}
+
+.ui-status-chip.failed {
+  color: #8a1f31;
+  background: #ffecef;
+}
+
+.ui-status-chip.neutral {
+  color: #46279e;
+  background: #f3eeff;
+}
+
+.ui-status-hover {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 8px);
+  transform: translateX(-50%);
+  min-width: 220px;
+  max-width: 320px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--ui-border) 76%, #fff);
+  background: #fff;
+  color: #3b315f;
+  font-size: 0.73rem;
+  font-weight: 600;
+  line-height: 1.35;
+  padding: 8px 10px;
+  box-shadow: 0 10px 24px rgba(30, 24, 57, 0.14);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+  z-index: 30;
+}
+
+.ui-status-chip:hover .ui-status-hover {
+  opacity: 1;
+}
+
+.ui-regression-header-card,
+.ui-regression-card {
+  border: 1px solid color-mix(in srgb, var(--ui-border) 78%, #ffffff);
+  border-radius: 12px;
+  background: #fff;
+  padding: 12px;
+}
+
+.ui-regression-header-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.ui-regression-runner-panel {
+  border: 1px solid color-mix(in srgb, var(--ui-border) 78%, #ffffff);
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.ui-regression-runner-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: none;
+  background: color-mix(in srgb, var(--ui-border) 10%, #fff);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.ui-regression-runner-toggle:hover {
+  background: color-mix(in srgb, var(--ui-border) 16%, #fff);
+}
+
+.ui-regression-runner-toggle-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ui-regression-runner-toggle-main strong {
+  font-size: 0.92rem;
+  color: #2f2a45;
+}
+
+.ui-regression-runner-toggle-meta {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--ui-muted);
+}
+
+.ui-regression-runner-chevron {
+  flex-shrink: 0;
+  font-size: 22px;
+  color: #5c5478;
+  transition: transform 0.18s ease;
+}
+
+.ui-regression-runner-chevron.is-open {
+  transform: rotate(180deg);
+}
+
+.ui-regression-runner-body {
+  padding: 0 12px 12px;
+  border-top: 1px solid color-mix(in srgb, var(--ui-border) 70%, #fff);
+}
+
+.ui-regression-runner-log-scroll {
+  margin-top: 8px;
+  height: 280px;
+  overflow: auto;
+  overflow-x: auto;
+  border: 1px solid color-mix(in srgb, var(--ui-border) 74%, #fff);
+  border-radius: 8px;
+  background: #0f172a;
+  overscroll-behavior: contain;
+}
+
+.ui-regression-runner-log-scroll:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--ui-primary) 45%, transparent);
+  outline-offset: 2px;
+}
+
+.ui-regression-log.ui-regression-log--runner {
+  margin: 0;
+  max-height: none;
+  overflow: visible;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  min-width: 100%;
+  width: max-content;
+  box-sizing: border-box;
+}
+
+.ui-regression-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.ui-regression-section-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ui-regression-failure-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.ui-regression-failure-list {
+  margin-top: 10px;
+  display: grid;
+  gap: 10px;
+}
+
+.ui-regression-failure-card {
+  border: 1px solid color-mix(in srgb, var(--ui-border) 72%, #fff);
+  border-radius: 10px;
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.ui-regression-failure-card h4 {
+  margin: 0;
+}
+
+.ui-regression-failure-card small {
+  color: var(--ui-muted);
+}
+
+.ui-regression-failure-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.ui-regression-failure-grid figure {
+  margin: 0;
+  border: 1px solid color-mix(in srgb, var(--ui-border) 72%, #fff);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.ui-regression-failure-grid figcaption {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #5b4f84;
+  padding: 6px 8px;
+  border-bottom: 1px solid color-mix(in srgb, var(--ui-border) 70%, #fff);
+}
+
+.ui-regression-failure-grid img {
+  width: 100%;
+  display: block;
+}
+
+.ui-image-open-btn {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  cursor: zoom-in;
+  background: transparent;
+}
+
+/* Gallery list: thumbnails only; full resolution opens in the lightbox */
+.ui-regression-thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 96px;
+  max-height: 200px;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+.ui-regression-thumb img {
+  width: auto !important;
+  max-width: 100%;
+  max-height: 200px;
+  height: auto;
+  object-fit: contain;
+}
+
+.ui-regression-failure-grid .ui-regression-thumb {
+  max-height: 160px;
+}
+
+.ui-regression-failure-grid .ui-regression-thumb img {
+  max-height: 160px;
+}
+
+.ui-regression-header-card h2,
+.ui-regression-card h3 {
+  margin: 0;
+}
+
+.ui-regression-header-card p {
+  margin: 6px 0 0;
+  color: var(--ui-muted);
+  max-width: 72ch;
+  font-size: 0.86rem;
+}
+
+.ui-regression-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.ui-regression-stats-grid article {
+  border: 1px solid color-mix(in srgb, var(--ui-border) 75%, #fff);
+  border-radius: 10px;
+  background: #fff;
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.ui-regression-stats-grid h3 {
+  margin: 0;
+  font-size: 0.84rem;
+}
+
+.ui-regression-pill {
+  display: inline-flex;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.ui-regression-pill-passed {
+  background: #e9f8f0;
+  color: #245d3b;
+}
+
+.ui-regression-pill-failed {
+  background: #ffe7ea;
+  color: #922436;
+}
+
+.ui-regression-pill-unknown {
+  background: #eef2ff;
+  color: #334155;
+}
+
+.ui-regression-pill-neutral {
+  background: #f4edff;
+  color: #4b2997;
+}
+
+.ui-regression-note {
+  margin: 4px 0 0;
+  color: var(--ui-muted);
+  font-size: 0.82rem;
+}
+
+.ui-regression-note strong {
+  color: #4c2f98;
+}
+
+.ui-regression-error {
+  margin: 0;
+  color: #b42318;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.ui-regression-screenshot-grid {
+  margin-top: 10px;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  align-items: start;
+}
+
+.ui-regression-filters {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 8px;
+}
+
+.ui-regression-filters label {
+  display: grid;
+  gap: 4px;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--ui-muted);
+  font-weight: 700;
+}
+
+.ui-regression-filters select {
+  min-height: 34px;
+  border: 1px solid color-mix(in srgb, var(--ui-border) 70%, #ffffff);
+  border-radius: 8px;
+  padding: 0 8px;
+  font-size: 0.84rem;
+}
+
+.ui-regression-shot {
+  margin: 0;
+  border: 1px solid color-mix(in srgb, var(--ui-border) 75%, #fff);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.ui-regression-shot img {
+  display: block;
+  width: 100%;
+  background: #f8fafc;
+}
+
+.ui-regression-shot figcaption {
+  padding: 8px;
+  display: grid;
+  gap: 4px;
+}
+
+.ui-regression-shot figcaption strong {
+  font-size: 0.78rem;
+  color: #31255f;
+}
+
+.ui-regression-shot figcaption span {
+  font-size: 0.74rem;
+  color: var(--ui-muted);
+}
+
+.ui-regression-shot figcaption small {
+  font-size: 0.72rem;
+  color: #6f6791;
+}
+
+.ui-regression-report-frame {
+  width: 100%;
+  min-height: 720px;
+  border: 1px solid color-mix(in srgb, var(--ui-border) 74%, #fff);
+  border-radius: 10px;
+  margin-top: 10px;
+  background: #fff;
+}
+
+.ui-regression-btn-danger {
+  border-color: color-mix(in srgb, #b42318 35%, var(--ui-border)) !important;
+  background: linear-gradient(180deg, #fff5f4 0%, #ffe8e6 100%) !important;
+  color: #7f1d1d !important;
+}
+
+.ui-regression-btn-danger:hover:not(:disabled) {
+  background: linear-gradient(180deg, #ffe8e6 0%, #ffd6d2 100%) !important;
+}
+
+.ui-regression-btn-primary {
+  border-color: color-mix(
+    in srgb,
+    var(--ui-primary) 42%,
+    var(--ui-border)
+  ) !important;
+  background: color-mix(in srgb, var(--ui-primary) 12%, #fff) !important;
+  color: #31255f !important;
+}
+
+.ui-regression-btn-primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ui-primary) 20%, #fff) !important;
+}
+
+.ui-regression-btn-ghost {
+  background: transparent !important;
+  border-color: color-mix(in srgb, var(--ui-border) 80%, #fff) !important;
+  color: var(--ui-muted) !important;
+}
+
+.ui-regression-inline-cmd {
+  font-size: 0.72em;
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.ui-regression-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 140;
+  background: rgba(15, 12, 28, 0.45);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+
+.ui-regression-modal {
+  max-width: 480px;
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--ui-border) 72%, #fff);
+  background: #fff;
+  padding: 16px 18px;
+  box-shadow: 0 18px 48px rgba(30, 24, 57, 0.18);
+}
+
+.ui-regression-modal h3 {
+  margin: 0 0 8px;
+  font-size: 1.05rem;
+  color: #2f2a45;
+}
+
+.ui-regression-modal p {
+  margin: 0;
+  font-size: 0.86rem;
+  color: var(--ui-muted);
+  line-height: 1.45;
+}
+
+.ui-regression-modal-actions {
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.ui-regression-chip-groups {
+  margin-top: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.ui-regression-chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.ui-regression-chip-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ui-muted);
+  min-width: 4.5rem;
+}
+
+.ui-regression-chip {
+  border: 1px solid color-mix(in srgb, var(--ui-border) 76%, #fff);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: #fff;
+  color: #4b3f78;
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.ui-regression-chip:hover {
+  border-color: color-mix(in srgb, var(--ui-primary) 35%, var(--ui-border));
+}
+
+.ui-regression-chip:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--ui-primary) 45%, transparent);
+  outline-offset: 2px;
+}
+
+.ui-regression-chip.is-selected {
+  border-color: color-mix(in srgb, var(--ui-primary) 55%, var(--ui-border));
+  background: color-mix(in srgb, var(--ui-primary) 10%, #fff);
+  color: #2f255c;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ui-primary) 22%, transparent);
+}
+
+/* Dense multi-column gallery; diff rows span full width (baseline / latest / diff) */
+.ui-regression-screenshot-grid--merged {
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+
+.ui-regression-shot--match {
+  min-width: 0;
+}
+
+.ui-regression-shot--match figcaption {
+  padding: 6px 8px;
+  gap: 2px;
+}
+
+.ui-regression-shot--diff {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 8px;
+  padding: 8px 10px;
+  min-width: 0;
+}
+
+.ui-regression-shot-diff-header {
+  margin: 0;
+}
+
+.ui-regression-shot-diff-header h4 {
+  margin: 0 0 4px;
+  font-size: 0.88rem;
+  color: #2f2a45;
+}
+
+.ui-regression-shot-diff-header small {
+  color: var(--ui-muted);
+  font-size: 0.74rem;
+}
+
+.ui-regression-ts-caption {
+  display: block;
+  font-weight: 600;
+  color: var(--ui-muted);
+  font-size: 0.68rem;
+  margin-top: 2px;
+}
+
+.ui-regression-last-verify {
+  color: #4b6b8a;
+}
+
+.ui-regression-batch-report {
+  margin-top: 14px;
+}
+
+.ui-regression-log {
+  margin: 10px 0 0;
+  border: 1px solid color-mix(in srgb, var(--ui-border) 74%, #fff);
+  border-radius: 8px;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  max-height: 260px;
+  overflow: auto;
+  padding: 10px;
+}
+
+.ui-lightbox-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 18, 0.78);
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+
+.ui-lightbox-shell {
+  position: relative;
+  max-width: min(96vw, 1400px);
+  max-height: 92vh;
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+}
+
+.ui-lightbox-shell img {
+  max-width: min(92vw, 1400px);
+  max-height: 84vh;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: #111827;
+}
+
+.ui-lightbox-close,
+.ui-lightbox-nav {
+  position: absolute;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  background: rgba(15, 23, 42, 0.66);
+  color: #fff;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.ui-lightbox-close {
+  top: -10px;
+  right: -10px;
+}
+
+.ui-lightbox-nav.left {
+  left: -10px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.ui-lightbox-nav.right {
+  right: -10px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.ui-lightbox-label {
+  margin: 0;
+  color: #f3f4f6;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
 @media (max-width: 900px) {
   .ui-docs-controls {
     grid-template-columns: 1fr;
   }
 
   .ui-docs-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .ui-regression-failure-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1012,14 +1833,14 @@ body {
 
 @media (max-width: 720px) {
   .ui-docs-app {
-    padding: 12px;
+    padding: 0 12px 20px;
   }
 
   .ui-docs-header {
-    padding: 16px;
+    padding: 8px 12px;
   }
 
   .ui-docs-header h1 {
-    font-size: 1.6rem;
+    font-size: 1.12rem;
   }
 }

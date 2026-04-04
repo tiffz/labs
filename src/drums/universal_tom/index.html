@@ -12,15 +12,6 @@
     <meta name="theme-color" content="#7c3aed" />
     <meta name="description" content="Import Universal Tom rhythms to Darbuka Trainer" />
     
-    <!-- Preconnect to external domains for better performance -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    
-    <!-- Fonts -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=optional">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Music&display=block">
-    
     <style>
         @font-face {
             font-family: 'Roboto Fallback';
@@ -43,42 +34,6 @@
     
     <link rel="stylesheet" href="../styles/drums.css">
     
-    <script>
-        if ('fonts' in document) {
-            let materialIconsLoaded = false;
-            let notoMusicLoaded = false;
-            
-            function checkAllFontsLoaded() {
-                if (materialIconsLoaded && notoMusicLoaded) {
-                    document.documentElement.classList.add('fonts-loaded');
-                }
-            }
-            
-            document.fonts.load('24px "Material Symbols Outlined"').then(() => {
-                materialIconsLoaded = true;
-                checkAllFontsLoaded();
-            }).catch(() => {
-                materialIconsLoaded = true;
-                checkAllFontsLoaded();
-            });
-            
-            document.fonts.load('24px "Noto Music"').then(() => {
-                notoMusicLoaded = true;
-                checkAllFontsLoaded();
-            }).catch(() => {
-                notoMusicLoaded = true;
-                checkAllFontsLoaded();
-            });
-            
-            setTimeout(() => {
-                document.documentElement.classList.add('fonts-loaded');
-            }, 3000);
-        } else {
-            window.addEventListener('load', () => {
-                document.documentElement.classList.add('fonts-loaded');
-            });
-        }
-    </script>
 </head>
 <body>
     <div id="root"></div>

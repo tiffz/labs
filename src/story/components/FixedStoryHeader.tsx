@@ -14,8 +14,8 @@ export const FixedStoryHeader: React.FC<FixedStoryHeaderProps> = ({ dna, onRerol
   const currentGenreElements = genreElements[dna.genre] || [];
 
   return (
-    <div className="bg-gradient-to-r from-white via-orange-50/20 to-pink-50/20 border-b border-orange-200/80 shadow-sm sticky top-0 z-10 backdrop-blur-sm">
-      <div className="px-6 py-3">
+    <div className="sticky top-[52px] z-10 border-b border-orange-200/80 bg-gradient-to-r from-white via-orange-50/20 to-pink-50/20 shadow-sm backdrop-blur-sm md:top-0">
+      <div className="px-3 py-3 sm:px-6">
         {/* Genre and Theme Row */}
         <div className="flex items-center gap-4 mb-2 pb-2 border-b border-orange-100">
           <div className="flex items-center gap-1.5">
@@ -48,7 +48,7 @@ export const FixedStoryHeader: React.FC<FixedStoryHeaderProps> = ({ dna, onRerol
         </div>
 
         {/* Two Column Layout: Core Elements & Genre Elements */}
-        <div className="flex gap-6">
+        <div className="flex flex-col gap-6 lg:flex-row">
           {/* Left Column: Core Story Elements */}
           <div className="flex-1 min-w-0">
             <div className="text-xs font-bold text-slate-800 mb-2">Core Story Elements</div>

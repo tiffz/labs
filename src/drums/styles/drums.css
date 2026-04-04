@@ -1527,15 +1527,6 @@
     height: 1.25rem;
     overflow: hidden;
     vertical-align: middle;
-
-    /* Hide text content until font loads */
-    color: transparent;
-    transition: color 0s;
-  }
-
-  /* Show icons once font is loaded */
-  .fonts-loaded .material-symbols-outlined {
-    color: inherit;
   }
 
   /* Restore font size for icons in buttons */

@@ -212,6 +212,23 @@ Complex regression tests are split into focused files for parallel execution:
 
 Shared test utilities: `src/cats/test/regressionTestUtils.tsx`
 
+### Visual and Audio Regression Policy
+
+Canonical workflow and commands: `docs/REGRESSION_WORKFLOW.md`.
+
+- Visual regression snapshots are captured by Playwright via `e2e/visual/apps.visual.spec.ts`. Incremental updates: `npm run test:e2e:visual:update`; full wipe + regenerate all PNGs: `npm run test:e2e:visual:update:fresh`.
+- Audio regression uses strict SHA-256 hashes for deterministic fixtures via `src/beat/utils/syntheticAudioGenerator.audio-regression.test.ts`.
+- Baseline updates must be explicit (use dedicated `:update` scripts) and manually reviewed before merge.
+- CI uploads visual and audio regression artifacts for browseable PR review.
+- Agent default behavior: run regressions, review diffs directly, and escalate uncertain diffs to the user instead of silently accepting them.
+
+### Micro-app UI stability (fonts, responsiveness, layout shift)
+
+- **Fonts:** Import [`src/shared/ui/fonts/appFonts.ts`](src/shared/ui/fonts/appFonts.ts) as the **first** import in each micro-app `main.tsx` so Roboto, Inter, and Caveat load from `@fontsource/*` (aligned with MUI `getAppTheme()` and Playwright font stubs). Do **not** add separate `fonts.googleapis.com` links for those families in `index.html`—mixed `display=optional` vs `swap` caused inconsistent weight and hard-refresh jitter. Keep **only** exceptions that are not bundled (e.g. **Noto Color Emoji** on the Corp app).
+- **Icons:** Call `initMaterialIconRuntime()` after logger setup; the `icons-pending` / `icons-ready` contract is documented in `src/shared/ui/icons/materialIconsBootstrap.ts`.
+- **Responsiveness:** App shells should be usable at **~390px** width—the mobile viewport used in `e2e/visual/apps.visual.spec.ts`. Avoid fixed desktop-only side margins (`ml-80` without a mobile drawer/stack pattern), horizontal overflow, and unbreakable min-widths on primary chrome.
+- **Layout shift:** Prefer reserved space for above-the-fold chrome (`min-height` on headers/toolbars, explicit `width`/`height` on decorative images where helpful). After intentional layout or font pipeline changes, update visual baselines per `docs/REGRESSION_WORKFLOW.md`.
+
 ## Development Commands
 
 ```bash

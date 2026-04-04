@@ -22,3 +22,7 @@ declare module 'jest-axe' {
   export function axe(node: Element | DocumentFragment, options?: unknown): Promise<AxeResults>;
   export function toHaveNoViolations(results: AxeResults): { pass: boolean; message: () => string };
 }
+
+declare module '@fontsource/material-icons';
+declare module '@fontsource/noto-music';
+declare module 'material-symbols/outlined.css';

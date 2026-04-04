@@ -1,6 +1,7 @@
 // NOTE: The minimal EventsPanel introduced earlier was redundant with this full implementation.
 // Keeping only the full panel below.
 import React, { useEffect, useRef } from 'react';
+import BottomControlSvgIcon from '../../icons/BottomControlSvgIcon';
 import MaterialIcon from '../../icons/MaterialIcon';
 
 export interface GameEvent {
@@ -32,7 +33,7 @@ const EventsPanel: React.FC<EventsPanelProps> = ({ events }) => {
       <div className="events-content">
         {events.length === 0 ? (
           <div className="events-empty">
-            <MaterialIcon icon="pets" />
+            <BottomControlSvgIcon name="pets" className="events-empty-svg-icon" />
             <p>your cat awaits...</p>
           </div>
         ) : (

@@ -47,3 +47,4 @@ During code review and periodic maintenance, verify:
 - Hook behavior described in docs matches `.husky/*`.
 - Shared boundary documentation matches `src/shared/importBoundaries.test.ts`.
 - App-level docs still match actual entrypoints and dependencies.
+- Micro-app font and responsive UI policy in `DEVELOPMENT.md` (Micro-app UI stability) still matches `src/shared/ui/fonts/appFonts.ts` and `e2e/visual/` practices.

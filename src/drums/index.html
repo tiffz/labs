@@ -12,19 +12,7 @@
     <meta name="theme-color" content="#7c3aed" />
     <meta name="description" content="Learn and practice Darbuka drum rhythms" />
     
-    <!-- Preconnect to external domains for better performance -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    
-    <!-- Optimized font loading with display strategies to minimize FOUC and layout shift -->
-    <!-- Roboto: Use optional to prevent layout shift (only use if cached) -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=optional">
-    
-    <!-- Icon fonts: Use block to prevent FOUC (text fallback would be jarring) -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Music&display=block">
-    
-    <!-- Fallback font with adjusted metrics to match Roboto -->
+    <!-- Fallback font metrics (Roboto from @fontsource in appFonts.ts) -->
     <style>
         /* Create fallback fonts that match Roboto's metrics and weight */
         /* Use system fonts that are closer to Roboto's weight */
@@ -78,50 +66,6 @@
     </style>
     
     <link rel="stylesheet" href="./styles/drums.css">
-    
-    <!-- Font loading detection to prevent FOUC -->
-    <script>
-        // Detect when icon fonts are loaded to prevent FOUC
-        if ('fonts' in document) {
-            // Track which fonts have loaded
-            let materialIconsLoaded = false;
-            let notoMusicLoaded = false;
-            
-            function checkAllFontsLoaded() {
-                if (materialIconsLoaded && notoMusicLoaded) {
-                    document.documentElement.classList.add('fonts-loaded');
-                }
-            }
-            
-            // Load Material Symbols
-            document.fonts.load('24px "Material Symbols Outlined"').then(() => {
-                materialIconsLoaded = true;
-                checkAllFontsLoaded();
-            }).catch(() => {
-                materialIconsLoaded = true;
-                checkAllFontsLoaded();
-            });
-            
-            // Load Noto Music
-            document.fonts.load('24px "Noto Music"').then(() => {
-                notoMusicLoaded = true;
-                checkAllFontsLoaded();
-            }).catch(() => {
-                notoMusicLoaded = true;
-                checkAllFontsLoaded();
-            });
-            
-            // Fallback: show icons after timeout even if fonts fail to load
-            setTimeout(() => {
-                document.documentElement.classList.add('fonts-loaded');
-            }, 3000);
-        } else {
-            // Fallback for browsers without Font Loading API
-            window.addEventListener('load', () => {
-                document.documentElement.classList.add('fonts-loaded');
-            });
-        }
-    </script>
     
     <!-- Analytics - Only load in production -->
     <script>

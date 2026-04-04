@@ -35,6 +35,9 @@ const MULTI_APP_INPUTS = {
 } as const;
 
 const SRC_ROOT = resolve(__dirname, 'src');
+/** Repo root (directory containing this config). Prefer over process.cwd() for baselines so dev server matches Playwright output even when cwd differs. */
+const PROJECT_ROOT = resolve(__dirname);
+const E2E_VISUAL_SNAPSHOTS_DIR = resolve(__dirname, 'e2e/visual/apps.visual.spec.ts-snapshots');
 
 const APP_BASE_PATHS = buildAppBasePathsFromEntryPaths(Object.values(MULTI_APP_INPUTS), SRC_ROOT);
 
@@ -122,6 +125,140 @@ export default defineConfig({
         // Debug logging plugin for all micro-apps
         name: 'debug-logger',
         configureServer(server: ViteDevServer) {
+          const regressionRunnerState: {
+            active: boolean;
+            target: 'visual' | 'visual-update' | 'visual-update-fresh' | 'audio' | 'all' | null;
+            startedAt: string | null;
+            finishedAt: string | null;
+            exitCode: number | null;
+            command: string | null;
+            log: string[];
+          } = {
+            active: false,
+            target: null,
+            startedAt: null,
+            finishedAt: null,
+            exitCode: null,
+            command: null,
+            log: [],
+          };
+
+          const appendRunnerLog = (line: string) => {
+            regressionRunnerState.log.push(line);
+            if (regressionRunnerState.log.length > 250) {
+              regressionRunnerState.log = regressionRunnerState.log.slice(-250);
+            }
+          };
+
+          type VisualFailure = {
+            id: string;
+            testDir: string;
+            snapshotName: string;
+            appId: string;
+            formFactor: string;
+            platform: string;
+            baselineUrl: string;
+            actualUrl: string;
+            diffUrl: string;
+            baselineAttachmentUrl: string | null;
+            baselinePath: string;
+            actualPath: string;
+            diffPath: string;
+            actualGeneratedAt: string | null;
+            diffGeneratedAt: string | null;
+          };
+
+          const getRegressionPaths = async () => {
+            const path = await import('node:path');
+            return {
+              cwd: PROJECT_ROOT,
+              path,
+              baselineDir: E2E_VISUAL_SNAPSHOTS_DIR,
+              testResultsDir: path.join(PROJECT_ROOT, 'test-results'),
+              visualLastRunPath: path.join(PROJECT_ROOT, 'test-results/visual-last-run.json'),
+              audioReportPath: path.join(
+                PROJECT_ROOT,
+                'src/beat/regression/reports/synthetic-audio.latest.json'
+              ),
+              reportIndexPath: path.join(PROJECT_ROOT, 'playwright-report/index.html'),
+              rejectReportDir: path.join(PROJECT_ROOT, '.regression-reports'),
+            };
+          };
+
+          const parseSnapshotMeta = (snapshotName: string) => {
+            const match = snapshotName.match(/^(.*?)-(desktop|mobile)(?:-([a-z0-9_-]+))?\.png$/i);
+            return {
+              appId: match?.[1] || 'unknown',
+              formFactor: match?.[2] || 'unknown',
+              platform: match?.[3] || 'default',
+            };
+          };
+
+          const collectVisualFailures = async (): Promise<VisualFailure[]> => {
+            const fs = await import('node:fs');
+            const { path, testResultsDir, baselineDir } = await getRegressionPaths();
+            if (!fs.existsSync(testResultsDir)) return [];
+            const dirs = fs.readdirSync(testResultsDir).filter((name) =>
+              name.startsWith('e2e-visual-')
+            );
+
+            const failures: VisualFailure[] = [];
+            for (const testDir of dirs) {
+              const dirPath = path.join(testResultsDir, testDir);
+              if (!fs.statSync(dirPath).isDirectory()) continue;
+              const files = fs.readdirSync(dirPath);
+              const diffFiles = files.filter((name) => name.endsWith('-diff.png'));
+              if (diffFiles.length === 0) continue;
+              const attachmentDir = path.join(dirPath, 'attachments');
+              const attachmentFiles = fs.existsSync(attachmentDir)
+                ? fs.readdirSync(attachmentDir)
+                : [];
+
+              for (const diffFile of diffFiles) {
+                const baseName = diffFile.replace(/-diff\.png$/, '');
+                const actualFile = `${baseName}-actual.png`;
+                const snapshotName = `${baseName}.png`;
+                const baselineAttachment = attachmentFiles.find((file) =>
+                  file.startsWith(`baseline-${baseName}-png-`)
+                );
+                const { appId, formFactor, platform } = parseSnapshotMeta(snapshotName);
+                const baselineFsPath = path.join(baselineDir, snapshotName);
+                const baselineV = fs.existsSync(baselineFsPath)
+                  ? fs.statSync(baselineFsPath).mtimeMs
+                  : Date.now();
+                const actualFsPath = path.join(dirPath, actualFile);
+                const diffFsPath = path.join(dirPath, diffFile);
+                const actualGeneratedAt = fs.existsSync(actualFsPath)
+                  ? new Date(fs.statSync(actualFsPath).mtimeMs).toISOString()
+                  : null;
+                const diffGeneratedAt = fs.existsSync(diffFsPath)
+                  ? new Date(fs.statSync(diffFsPath).mtimeMs).toISOString()
+                  : null;
+                failures.push({
+                  id: `${testDir}::${snapshotName}`,
+                  testDir,
+                  snapshotName,
+                  appId,
+                  formFactor,
+                  platform,
+                  baselineUrl: `/__regression/baseline?file=${encodeURIComponent(snapshotName)}&v=${baselineV}`,
+                  actualUrl: `/__regression/failure-asset?dir=${encodeURIComponent(testDir)}&file=${encodeURIComponent(actualFile)}`,
+                  diffUrl: `/__regression/failure-asset?dir=${encodeURIComponent(testDir)}&file=${encodeURIComponent(diffFile)}`,
+                  baselineAttachmentUrl: baselineAttachment
+                    ? `/__regression/failure-asset?dir=${encodeURIComponent(testDir)}&file=${encodeURIComponent(`attachments/${baselineAttachment}`)}`
+                    : null,
+                  baselinePath: path.join(baselineDir, snapshotName),
+                  actualPath: actualFsPath,
+                  diffPath: diffFsPath,
+                  actualGeneratedAt,
+                  diffGeneratedAt,
+                });
+              }
+            }
+
+            return failures.sort((a, b) => a.snapshotName.localeCompare(b.snapshotName));
+          };
+
           server.middlewares.use('/__debug_log', (req: IncomingMessage, res: ServerResponse, next: Connect.NextFunction) => {
             if (req.method === 'POST') {
               let body = '';
@@ -210,6 +347,437 @@ export default defineConfig({
               console.log('\n[LABS-DEBUG] Failed to save snapshot', error);
               res.writeHead(500, { 'Content-Type': 'application/json' });
               res.end('{"ok":false}');
+            }
+          });
+
+          // Regression inspector endpoints (local dev): expose baseline images and latest run metadata.
+          server.middlewares.use('/__regression/summary', async (_req: IncomingMessage, res: ServerResponse) => {
+            try {
+              const fs = await import('node:fs');
+              const { path, baselineDir, visualLastRunPath, audioReportPath, reportIndexPath } =
+                await getRegressionPaths();
+
+              const snapshots = fs.existsSync(baselineDir)
+                ? fs
+                  .readdirSync(baselineDir)
+                  .filter((name) => name.endsWith('.png'))
+                  .sort((a, b) => a.localeCompare(b))
+                  .map((name) => {
+                    const fullPath = path.join(baselineDir, name);
+                    const stat = fs.statSync(fullPath);
+                    const v = stat.mtimeMs;
+                    const match = name.match(/^(.*?)-(desktop|mobile)(?:-([a-z0-9_-]+))?\.png$/i);
+                    const appId = match?.[1] || 'unknown';
+                    const formFactor = match?.[2] || 'unknown';
+                    const platform = match?.[3] || 'default';
+                    return {
+                      name,
+                      sizeBytes: stat.size,
+                      updatedAt: stat.mtime.toISOString(),
+                      url: `/__regression/baseline?file=${encodeURIComponent(name)}&v=${v}`,
+                      appId,
+                      formFactor,
+                      platform,
+                    };
+                  })
+                : [];
+
+              const lastRun = fs.existsSync(visualLastRunPath)
+                ? JSON.parse(fs.readFileSync(visualLastRunPath, 'utf-8'))
+                : null;
+
+              const audioReport = fs.existsSync(audioReportPath)
+                ? JSON.parse(fs.readFileSync(audioReportPath, 'utf-8'))
+                : null;
+
+              const payload = {
+                generatedAt: new Date().toISOString(),
+                visual: {
+                  snapshotDir: 'e2e/visual/apps.visual.spec.ts-snapshots',
+                  snapshotDirAbsolute: E2E_VISUAL_SNAPSHOTS_DIR,
+                  count: snapshots.length,
+                  snapshots,
+                  lastRun,
+                },
+                audio: {
+                  reportPath: 'src/beat/regression/reports/synthetic-audio.latest.json',
+                  available: Boolean(audioReport),
+                  mode: audioReport?.mode ?? null,
+                  driftCount: Array.isArray(audioReport?.drifts) ? audioReport.drifts.length : 0,
+                  driftIds: Array.isArray(audioReport?.drifts) ? audioReport.drifts : [],
+                },
+                report: {
+                  available: fs.existsSync(reportIndexPath),
+                  url: '/__regression/report/',
+                },
+                failures: await collectVisualFailures(),
+                runner: regressionRunnerState,
+              };
+
+              res.writeHead(200, {
+                'Content-Type': 'application/json; charset=utf-8',
+                'Cache-Control': 'no-store, must-revalidate',
+              });
+              res.end(JSON.stringify(payload));
+            } catch {
+              res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
+              res.end('{"error":"Failed to load regression summary"}');
+            }
+          });
+
+          server.middlewares.use('/__regression/run', async (req: IncomingMessage, res: ServerResponse) => {
+            if (req.method !== 'POST') {
+              res.writeHead(405, { 'Content-Type': 'text/plain; charset=utf-8' });
+              res.end('Method not allowed');
+              return;
+            }
+
+            if (regressionRunnerState.active) {
+              res.writeHead(409, { 'Content-Type': 'text/plain; charset=utf-8' });
+              res.end('A regression refresh is already running');
+              return;
+            }
+
+            let body = '';
+            req.on('data', (chunk: Buffer) => {
+              body += chunk.toString();
+            });
+            req.on('end', async () => {
+              try {
+                const parsed = JSON.parse(body || '{}') as {
+                  target?: 'visual' | 'visual-update' | 'visual-update-fresh' | 'audio' | 'all';
+                };
+                const target = parsed.target;
+                if (
+                  !target ||
+                  !['visual', 'visual-update', 'visual-update-fresh', 'audio', 'all'].includes(target)
+                ) {
+                  res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
+                  res.end('Invalid target');
+                  return;
+                }
+
+                const npmScriptByTarget: Record<
+                  'visual' | 'visual-update' | 'visual-update-fresh' | 'audio' | 'all',
+                  string
+                > = {
+                  visual: 'test:e2e:visual',
+                  'visual-update': 'test:e2e:visual:update',
+                  'visual-update-fresh': 'test:e2e:visual:update:fresh',
+                  audio: 'test:audio:regression',
+                  all: 'test:regression',
+                };
+                const npmScript = npmScriptByTarget[target];
+                const command = `npm run ${npmScript}`;
+                regressionRunnerState.active = true;
+                regressionRunnerState.target = target;
+                regressionRunnerState.startedAt = new Date().toISOString();
+                regressionRunnerState.finishedAt = null;
+                regressionRunnerState.exitCode = null;
+                regressionRunnerState.command = command;
+                regressionRunnerState.log = [];
+                appendRunnerLog(`[start] ${command} (cwd=${PROJECT_ROOT})`);
+
+                const { spawn } = await import('node:child_process');
+                const runnerEnv = { ...process.env };
+                // Playwright: reuse the dev server on 5173 instead of spawning a second Vite (strictPort).
+                delete runnerEnv.CI;
+
+                const npmExecutable = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+                const child = spawn(npmExecutable, ['run', npmScript], {
+                  cwd: PROJECT_ROOT,
+                  env: runnerEnv,
+                  // Windows needs shell for npm.cmd; Unix resolves npm from PATH without a shell.
+                  shell: process.platform === 'win32',
+                  stdio: ['ignore', 'pipe', 'pipe'],
+                });
+
+                const finishRun = (code: number | null, label: string) => {
+                  if (!regressionRunnerState.active) return;
+                  regressionRunnerState.active = false;
+                  regressionRunnerState.finishedAt = new Date().toISOString();
+                  regressionRunnerState.exitCode = code ?? -1;
+                  appendRunnerLog(`[end] ${label} exit=${code ?? -1}`);
+                };
+
+                child.stdout.on('data', (chunk: Buffer) => {
+                  for (const line of chunk.toString().split('\n')) {
+                    if (line.trim()) appendRunnerLog(line);
+                  }
+                });
+                child.stderr.on('data', (chunk: Buffer) => {
+                  for (const line of chunk.toString().split('\n')) {
+                    if (line.trim()) appendRunnerLog(`[stderr] ${line}`);
+                  }
+                });
+                child.on('error', (err: Error) => {
+                  appendRunnerLog(`[spawn error] ${err.message}`);
+                  finishRun(-1, 'spawn');
+                });
+                child.on('close', (code: number | null) => {
+                  finishRun(code, 'close');
+                });
+
+                res.writeHead(202, { 'Content-Type': 'application/json; charset=utf-8' });
+                res.end(JSON.stringify({ ok: true, target, command }));
+              } catch {
+                regressionRunnerState.active = false;
+                regressionRunnerState.finishedAt = new Date().toISOString();
+                regressionRunnerState.exitCode = -1;
+                appendRunnerLog('[error] Failed to start regression refresh');
+                res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+                res.end('Failed to start regression refresh');
+              }
+            });
+          });
+
+          server.middlewares.use('/__regression/failure-asset', async (req: IncomingMessage, res: ServerResponse) => {
+            try {
+              const fs = await import('node:fs');
+              const { path, testResultsDir } = await getRegressionPaths();
+              const requestUrl = new URL(req.url || '/', 'http://localhost');
+              const dir = requestUrl.searchParams.get('dir') || '';
+              const file = requestUrl.searchParams.get('file') || '';
+              if (!/^[A-Za-z0-9._-]+$/.test(dir)) {
+                res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
+                res.end('Invalid dir');
+                return;
+              }
+              if (!/^[A-Za-z0-9._/-]+$/.test(file)) {
+                res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
+                res.end('Invalid file');
+                return;
+              }
+              const safeFile = path.normalize(file).replace(/^(\.\.[/\\])+/, '').replace(/^[/\\]+/, '');
+              const fullPath = path.join(testResultsDir, dir, safeFile);
+              if (!fullPath.startsWith(path.join(testResultsDir, dir)) || !fs.existsSync(fullPath)) {
+                res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+                res.end('Not found');
+                return;
+              }
+              const ext = path.extname(fullPath).toLowerCase();
+              const contentType = ext === '.png' ? 'image/png' : 'application/octet-stream';
+              res.writeHead(200, {
+                'Content-Type': contentType,
+                'Cache-Control': 'no-store, no-cache, must-revalidate',
+                Pragma: 'no-cache',
+                Expires: '0',
+              });
+              res.end(fs.readFileSync(fullPath));
+            } catch {
+              res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+              res.end('Failed to load failure asset');
+            }
+          });
+
+          server.middlewares.use('/__regression/failure/accept', async (req: IncomingMessage, res: ServerResponse) => {
+            if (req.method !== 'POST') {
+              res.writeHead(405, { 'Content-Type': 'text/plain; charset=utf-8' });
+              res.end('Method not allowed');
+              return;
+            }
+            let body = '';
+            req.on('data', (chunk: Buffer) => {
+              body += chunk.toString();
+            });
+            req.on('end', async () => {
+              try {
+                const fs = await import('node:fs');
+                const payload = JSON.parse(body || '{}') as { id?: string };
+                if (!payload.id) {
+                  res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
+                  res.end('Missing id');
+                  return;
+                }
+                const failures = await collectVisualFailures();
+                const failure = failures.find((item) => item.id === payload.id);
+                if (!failure) {
+                  res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+                  res.end('Failure not found');
+                  return;
+                }
+                if (!fs.existsSync(failure.actualPath)) {
+                  res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+                  res.end('Actual screenshot missing');
+                  return;
+                }
+                fs.copyFileSync(failure.actualPath, failure.baselinePath);
+                res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+                res.end(JSON.stringify({ ok: true, id: failure.id, baselineUpdated: failure.snapshotName }));
+              } catch {
+                res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+                res.end('Failed to accept screenshot');
+              }
+            });
+          });
+
+          server.middlewares.use('/__regression/failure/reject', async (req: IncomingMessage, res: ServerResponse) => {
+            if (req.method !== 'POST') {
+              res.writeHead(405, { 'Content-Type': 'text/plain; charset=utf-8' });
+              res.end('Method not allowed');
+              return;
+            }
+            let body = '';
+            req.on('data', (chunk: Buffer) => {
+              body += chunk.toString();
+            });
+            req.on('end', async () => {
+              try {
+                const fs = await import('node:fs');
+                const payload = JSON.parse(body || '{}') as { id?: string; note?: string };
+                if (!payload.id) {
+                  res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
+                  res.end('Missing id');
+                  return;
+                }
+                const failures = await collectVisualFailures();
+                const failure = failures.find((item) => item.id === payload.id);
+                if (!failure) {
+                  res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+                  res.end('Failure not found');
+                  return;
+                }
+                const { rejectReportDir, path } = await getRegressionPaths();
+                if (!fs.existsSync(rejectReportDir)) fs.mkdirSync(rejectReportDir, { recursive: true });
+                const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+                const reportPath = path.join(rejectReportDir, `rejection-${failure.snapshotName.replace('.png', '')}-${stamp}.md`);
+                const note = payload.note?.trim() || 'No extra note provided.';
+                const md = [
+                  '# Screenshot Rejection Report',
+                  '',
+                  `Generated: ${new Date().toISOString()}`,
+                  `Failure ID: ${failure.id}`,
+                  `Snapshot: ${failure.snapshotName}`,
+                  '',
+                  '## Paths',
+                  `- Baseline: ${failure.baselinePath}`,
+                  `- Actual: ${failure.actualPath}`,
+                  `- Diff: ${failure.diffPath}`,
+                  '',
+                  '## Reviewer Note',
+                  note,
+                  '',
+                ].join('\n');
+                fs.writeFileSync(reportPath, `${md}\n`, 'utf-8');
+                res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+                res.end(JSON.stringify({ ok: true, reportPath }));
+              } catch {
+                res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+                res.end('Failed to reject screenshot');
+              }
+            });
+          });
+
+          server.middlewares.use('/__regression/failure/report', async (req: IncomingMessage, res: ServerResponse) => {
+            if (req.method !== 'POST') {
+              res.writeHead(405, { 'Content-Type': 'text/plain; charset=utf-8' });
+              res.end('Method not allowed');
+              return;
+            }
+            try {
+              const fs = await import('node:fs');
+              const failures = await collectVisualFailures();
+              const { rejectReportDir, path } = await getRegressionPaths();
+              if (!fs.existsSync(rejectReportDir)) fs.mkdirSync(rejectReportDir, { recursive: true });
+              const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+              const reportPath = path.join(rejectReportDir, `rejection-batch-${stamp}.md`);
+              const lines = [
+                '# Visual Failure Batch Report',
+                '',
+                `Generated: ${new Date().toISOString()}`,
+                `Failure count: ${failures.length}`,
+                '',
+              ];
+              for (const failure of failures) {
+                lines.push(`## ${failure.snapshotName}`);
+                lines.push(`- ID: ${failure.id}`);
+                lines.push(`- Baseline: ${failure.baselinePath}`);
+                lines.push(`- Actual: ${failure.actualPath}`);
+                lines.push(`- Diff: ${failure.diffPath}`);
+                lines.push('');
+              }
+              fs.writeFileSync(reportPath, `${lines.join('\n')}\n`, 'utf-8');
+              res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+              res.end(JSON.stringify({ ok: true, reportPath, failureCount: failures.length }));
+            } catch {
+              res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+              res.end('Failed to generate failure report');
+            }
+          });
+
+          server.middlewares.use('/__regression/baseline', async (req: IncomingMessage, res: ServerResponse) => {
+            try {
+              const fs = await import('node:fs');
+              const path = await import('node:path');
+              const requestUrl = new URL(req.url || '/', 'http://localhost');
+              const file = requestUrl.searchParams.get('file') || '';
+              if (!/^[A-Za-z0-9._-]+\.png$/.test(file)) {
+                res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
+                res.end('Invalid file name');
+                return;
+              }
+              const baselinePath = path.join(E2E_VISUAL_SNAPSHOTS_DIR, file);
+              if (!fs.existsSync(baselinePath)) {
+                res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+                res.end('Not found');
+                return;
+              }
+              res.writeHead(200, {
+                'Content-Type': 'image/png',
+                'Cache-Control': 'no-store, no-cache, must-revalidate',
+                Pragma: 'no-cache',
+                Expires: '0',
+              });
+              res.end(fs.readFileSync(baselinePath));
+            } catch {
+              res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+              res.end('Failed to read baseline image');
+            }
+          });
+
+          server.middlewares.use('/__regression/report', async (req: IncomingMessage, res: ServerResponse) => {
+            try {
+              const fs = await import('node:fs');
+              const path = await import('node:path');
+              const reportDir = path.join(PROJECT_ROOT, 'playwright-report');
+              if (!fs.existsSync(reportDir)) {
+                res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+                res.end('Playwright report not found');
+                return;
+              }
+
+              const requestPath = (req.url || '/').split('?')[0] || '/';
+              const targetRelativePath = requestPath === '/' ? 'index.html' : requestPath.replace(/^\/+/, '');
+              const normalizedPath = path
+                .normalize(targetRelativePath)
+                .replace(/^(\.\.[/\\])+/, '')
+                .replace(/^[/\\]+/, '');
+              const targetPath = path.join(reportDir, normalizedPath);
+              if (!targetPath.startsWith(reportDir) || !fs.existsSync(targetPath)) {
+                res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+                res.end('Not found');
+                return;
+              }
+
+              const ext = path.extname(targetPath).toLowerCase();
+              const contentType = ext === '.html'
+                ? 'text/html; charset=utf-8'
+                : ext === '.js'
+                  ? 'application/javascript; charset=utf-8'
+                  : ext === '.css'
+                    ? 'text/css; charset=utf-8'
+                    : ext === '.json'
+                      ? 'application/json; charset=utf-8'
+                      : ext === '.png'
+                        ? 'image/png'
+                        : ext === '.svg'
+                          ? 'image/svg+xml'
+                          : 'application/octet-stream';
+              res.writeHead(200, { 'Content-Type': contentType, 'Cache-Control': 'no-store' });
+              res.end(fs.readFileSync(targetPath));
+            } catch {
+              res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+              res.end('Failed to load Playwright report');
             }
           });
         }

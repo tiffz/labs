@@ -110,6 +110,34 @@ jobs:
     - name: Run e2e smoke tests
       run: npm run test:e2e:smoke
 
+    - name: Run audio regression hashes
+      run: npm run test:audio:regression
+
+    # Experimental: still runs on every CI for signal + Playwright artifacts, but does not fail the job.
+    # Agents should run `npm run test:e2e:visual` (or update baselines locally) when touching UI/fonts.
+    - name: Run visual regression screenshots (non-blocking)
+      continue-on-error: true
+      run: npm run test:e2e:visual
+
+    - name: Upload visual regression artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: visual-regression-artifacts
+        if-no-files-found: ignore
+        path: |
+          playwright-report/**
+          test-results/**
+
+    - name: Upload audio regression report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: audio-regression-report
+        if-no-files-found: ignore
+        path: |
+          src/beat/regression/reports/**
+
     - name: Build project
       run: npm run build
 
