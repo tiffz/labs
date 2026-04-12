@@ -555,17 +555,39 @@ function selectCorrectOctaveWithOnsets(candidateBpm: number, onsets: number[], d
     label: string;
   }
   
-  // Penalty for extreme tempos - most music feels natural between 60-170 BPM
-  // This helps avoid octave errors where density matching alone picks extreme tempos
-  // Note: We're more permissive on the slow side (60-70 is common for ballads)
+  // Penalty for extreme tempos - most music feels natural between 60-170 BPM.
+  // BPMs below 55 are extremely rare in practice; most "slow" music sits at
+  // 60-75 BPM.  Halving a 90-100 BPM candidate to 45-50 is almost always wrong.
   function getTempoRangePenalty(bpm: number): number {
-    if (bpm >= 60 && bpm <= 170) return 0;        // Normal range - no penalty
-    if (bpm >= 50 && bpm < 60) return 0.15;       // Slow - somewhat unusual
-    if (bpm > 170 && bpm <= 190) return 0.2;      // Fast - somewhat unusual
-    if (bpm < 50) return 0.3;                      // Very slow - rare
-    return 0.35;                                   // Very fast (>190) - rare
+    if (bpm >= 60 && bpm <= 170) return 0;
+    if (bpm >= 55 && bpm < 60) return 0.05;
+    if (bpm >= 50 && bpm < 55) return 0.25;
+    if (bpm >= 45 && bpm < 50) return 0.4;
+    if (bpm > 170 && bpm <= 190) return 0.2;
+    if (bpm < 45) return 0.5;
+    return 0.4;
   }
   
+  // Analyze inter-onset intervals to detect "ballad feel" — when most
+  // intervals are short subdivisions (< 0.3s) the song likely has a slow
+  // pulse with dense ornamental notes (arpeggios, trills, etc.)
+  let slowBiasPenalty = 0;
+  if (onsets.length > 10) {
+    const intervals: number[] = [];
+    for (let i = 1; i < onsets.length; i++) {
+      intervals.push(onsets[i] - onsets[i - 1]);
+    }
+    intervals.sort((a, b) => a - b);
+    const medianInterval = intervals[Math.floor(intervals.length / 2)];
+    const slowBeatInterval = 60 / halfBpm;
+    // If the median onset interval is much shorter than a slow beat,
+    // the onsets are likely subdivisions, not actual beats — penalize
+    // the fast (doubled) candidate
+    if (halfBpm >= 50 && medianInterval < slowBeatInterval * 0.4) {
+      slowBiasPenalty = 0.12;
+    }
+  }
+
   const scores: OctaveScore[] = [];
   
   // Only consider reasonable tempos (40-220 BPM range)
@@ -575,14 +597,15 @@ function selectCorrectOctaveWithOnsets(candidateBpm: number, onsets: number[], d
   }
   
   if (candidateBpm >= 40 && candidateBpm <= 220) {
-    // Small preference for keeping the original detection when close
     const penalty = getTempoRangePenalty(candidateBpm);
-    scores.push({ bpm: candidateBpm, score: densityErrorCandidate - 0.05 + penalty, label: 'candidate' });
+    // Prefer the candidate when it's already in the comfortable 60-140 range
+    const bias = (candidateBpm >= 60 && candidateBpm <= 140) ? 0.1 : 0.05;
+    scores.push({ bpm: candidateBpm, score: densityErrorCandidate - bias + penalty, label: 'candidate' });
   }
   
   if (doubleBpm <= 220) {
     const penalty = getTempoRangePenalty(doubleBpm);
-    scores.push({ bpm: doubleBpm, score: densityErrorDouble + penalty, label: 'double' });
+    scores.push({ bpm: doubleBpm, score: densityErrorDouble + penalty + slowBiasPenalty, label: 'double' });
   }
   
   // Sort by score (lower is better)

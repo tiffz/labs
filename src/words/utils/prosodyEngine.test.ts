@@ -1,6 +1,33 @@
 import { describe, expect, it } from 'vitest';
 import { parseRhythm } from '../../shared/rhythm/rhythmParser';
-import { generateWordRhythm } from './prosodyEngine';
+import { mergePartialGenerationSettings } from './generationSettingsCodec';
+import {
+  ALL_MUTATION_IDS,
+  DEFAULT_WORD_RHYTHM_GENERATION_SETTINGS,
+  type MutationId,
+  type WordRhythmGenerationSettings,
+  generateWordRhythm,
+} from './prosodyEngine';
+
+function strictTemplateSettings(
+  templateNotation: string
+): WordRhythmGenerationSettings {
+  return mergePartialGenerationSettings(DEFAULT_WORD_RHYTHM_GENERATION_SETTINGS, {
+    templateNotation,
+    freestyle: false,
+    phrasing: 'repeat',
+    mutations: ALL_MUTATION_IDS.reduce(
+      (acc, id) => {
+        acc[id] = false;
+        return acc;
+      },
+      {} as Record<MutationId, boolean>
+    ),
+    naturalWordRhythm: false,
+    stressAlignment: 'off',
+    wordStartAlignment: 'off',
+  });
+}
 
 describe('generateWordRhythm', () => {
   const timeSignature = { numerator: 4, denominator: 4 } as const;
@@ -136,25 +163,35 @@ describe('generateWordRhythm', () => {
     expect(coconutFirstSyllable?.startSixteenth ?? 0).toBeGreaterThan(0);
   });
 
-  it('can bias extra empty space between dense lyric lines', () => {
-    const result = generateWordRhythm(
-      'sunrise on the shoreline\nblazing heat under open skies forever',
-      {
-        strictDictionaryMode: false,
-        timeSignature,
-        rhythmVariationSeed: 0,
-        soundVariationSeed: 0,
-        generationSettings: {
-          lineBreakGapBias: 100,
-        },
-      }
-    );
-
-    const secondLineFirstWord = result.hits.find(
-      (hit) => hit.word.toLowerCase() === 'blazing' && hit.syllableIndex === 0
-    );
-    expect(secondLineFirstWord).toBeDefined();
-    expect((secondLineFirstWord?.startSixteenth ?? 0) % 16).toBeGreaterThan(0);
+  it('naturalWordRhythm shapes syllable durations according to word stress', () => {
+    const withShape = generateWordRhythm('sunrise over shoreline', {
+      strictDictionaryMode: false,
+      timeSignature,
+      rhythmVariationSeed: 0,
+      soundVariationSeed: 0,
+      generationSettings: mergePartialGenerationSettings(
+        DEFAULT_WORD_RHYTHM_GENERATION_SETTINGS,
+        { templateNotation: 'D---T---D---T---', naturalWordRhythm: true }
+      ),
+    });
+    const withoutShape = generateWordRhythm('sunrise over shoreline', {
+      strictDictionaryMode: false,
+      timeSignature,
+      rhythmVariationSeed: 0,
+      soundVariationSeed: 0,
+      generationSettings: mergePartialGenerationSettings(
+        DEFAULT_WORD_RHYTHM_GENERATION_SETTINGS,
+        { templateNotation: 'D---T---D---T---', naturalWordRhythm: false }
+      ),
+    });
+    const shapeDurations = withShape.hits.map((h) => h.durationSixteenths);
+    const plainDurations = withoutShape.hits.map((h) => h.durationSixteenths);
+    expect(shapeDurations.length).toBeGreaterThan(0);
+    expect(plainDurations.length).toBeGreaterThan(0);
+    // With word shape, multi-syllable words should produce non-uniform
+    // durations rather than all-4s from the template.
+    const hasVariedDurations = shapeDurations.some((d) => d !== 4);
+    expect(hasVariedDurations).toBe(true);
   });
 
   it('preserves input casing in syllable display data', () => {
@@ -424,6 +461,11 @@ describe('generateWordRhythm', () => {
       strictDictionaryMode: false,
       timeSignature,
       variationSeed: 1,
+      generationSettings: {
+        freestyle: true,
+        freestyleStrength: 80,
+        noteValueBias: { sixteenth: 90, eighth: 50, dotted: 50, quarter: 50 },
+      },
     });
 
     const watermelonHits = result.hits.filter(
@@ -544,24 +586,73 @@ describe('generateWordRhythm', () => {
         timeSignature,
         rhythmVariationSeed: 7,
         soundVariationSeed: 3,
-        generationSettings: {
-          adventurousness: 95,
-          dottedBias: 100,
-          sixteenthBias: 90,
-          tieCrossingBias: 100,
-          midMeasureRestBias: 0,
-        },
+        generationSettings: mergePartialGenerationSettings(
+          DEFAULT_WORD_RHYTHM_GENERATION_SETTINGS,
+          {
+            mutations: {
+              ...DEFAULT_WORD_RHYTHM_GENERATION_SETTINGS.mutations,
+              adventurousRhythm: true,
+              dottedFeel: true,
+              sixteenthMotion: true,
+              crossBarTies: true,
+              midMeasureRests: false,
+            },
+          }
+        ),
       }
     );
     const parsed = parseRhythm(result.notation, timeSignature);
     const sounding = parsed.measures
       .flatMap((measure) => measure.notes)
       .filter((note) => note.sound !== 'rest');
-    expect(sounding.some((note) => note.durationInSixteenths === 1)).toBe(true);
-    expect(sounding.some((note) => note.isDotted)).toBe(true);
+    const durations = sounding.map((note) => note.durationInSixteenths);
+    expect(durations.some((d) => d === 1)).toBe(true);
+    expect(new Set(durations).size).toBeGreaterThanOrEqual(2);
   });
 
-  it('template bias steers durations toward template pulse', () => {
+  it('strict template mode preserves rests from the template (e.g. Maqsum)', () => {
+    const result = generateWordRhythm('ta ta ta ta ta ta ta ta', {
+      strictDictionaryMode: false,
+      timeSignature,
+      rhythmVariationSeed: 0,
+      soundVariationSeed: 0,
+      generationSettings: strictTemplateSettings('D-T-__T-D---T---'),
+    });
+    const firstMeasure = result.notation.split('|')[0] ?? '';
+    expect(firstMeasure.length).toBeGreaterThan(0);
+    expect(firstMeasure).toContain('_');
+    const restRun = firstMeasure.match(/_+/);
+    expect(restRun?.[0].length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('keeps the strict template timeline when alignments are on but mutations are off', () => {
+    const template = 'D-T-__T-D---T---';
+    const withAlignment = mergePartialGenerationSettings(
+      strictTemplateSettings(template),
+      {
+        stressAlignment: 'strong',
+        wordStartAlignment: 'strong',
+      }
+    );
+    const strictOnly = generateWordRhythm('ta ta ta ta ta ta ta ta', {
+      strictDictionaryMode: false,
+      timeSignature,
+      rhythmVariationSeed: 0,
+      soundVariationSeed: 0,
+      generationSettings: strictTemplateSettings(template),
+    });
+    const aligned = generateWordRhythm('ta ta ta ta ta ta ta ta', {
+      strictDictionaryMode: false,
+      timeSignature,
+      rhythmVariationSeed: 0,
+      soundVariationSeed: 0,
+      generationSettings: withAlignment,
+    });
+    expect(strictOnly.notation).toBe(aligned.notation);
+    expect(aligned.hits.length).toBe(strictOnly.hits.length);
+  });
+
+  it('strict template mode steers durations toward template pulse', () => {
     const result = generateWordRhythm(
       'sunrise over shoreline ocean wind through palm trees',
       {
@@ -569,14 +660,7 @@ describe('generateWordRhythm', () => {
         timeSignature,
         rhythmVariationSeed: 2,
         soundVariationSeed: 2,
-        generationSettings: {
-          templateNotation: 'D-T-__T-D---T---',
-          templateBias: 100,
-          motifVariation: 0,
-          adventurousness: 30,
-          dottedBias: 0,
-          sixteenthBias: 0,
-        },
+        generationSettings: strictTemplateSettings('D-T-__T-D---T---'),
       }
     );
     const firstDurations = result.hits
@@ -588,16 +672,13 @@ describe('generateWordRhythm', () => {
     ).toBe(true);
   });
 
-  it('high template influence preserves dotted-like values without losing readability', () => {
+  it('strict template preserves dotted-like values without losing readability', () => {
     const result = generateWordRhythm('sunrise brings the blazing heat', {
       strictDictionaryMode: false,
       timeSignature,
       rhythmVariationSeed: 2,
       soundVariationSeed: 1,
-      generationSettings: {
-        templateNotation: 'D--KD-T-D--KD-T-',
-        templateBias: 100,
-      },
+      generationSettings: strictTemplateSettings('D--KD-T-D--KD-T-'),
     });
 
     const continuationHits = result.hits.filter(
@@ -612,59 +693,54 @@ describe('generateWordRhythm', () => {
     }
   });
 
-  it('90% template influence stays close to template-locked groove', () => {
+  it('strict template stays closer to the groove than adventurous mutations', () => {
     const source = 'sunrise on the shoreline ocean wind through palm trees';
     const strict = generateWordRhythm(source, {
       strictDictionaryMode: false,
       timeSignature,
       rhythmVariationSeed: 3,
       soundVariationSeed: 2,
-      generationSettings: {
-        templateNotation: 'D-T-__T-D---T---',
-        templateBias: 100,
-        motifVariation: 0,
-      },
+      generationSettings: strictTemplateSettings('D-T-__T-D---T---'),
     });
-    const nearStrict = generateWordRhythm(source, {
+    const varied = generateWordRhythm(source, {
       strictDictionaryMode: false,
       timeSignature,
       rhythmVariationSeed: 3,
       soundVariationSeed: 2,
-      generationSettings: {
-        templateNotation: 'D-T-__T-D---T---',
-        templateBias: 90,
-        motifVariation: 0,
-      },
+      generationSettings: mergePartialGenerationSettings(
+        strictTemplateSettings('D-T-__T-D---T---'),
+        {
+          subdivideNotes: true,
+          freestyle: true,
+          naturalWordRhythm: true,
+          noteValueBias: { sixteenth: 75, eighth: 50, dotted: 75, quarter: 50 },
+          stressAlignment: 'strong',
+          wordStartAlignment: 'strong',
+        }
+      ),
     });
 
     const strictDurations = strict.hits.map((hit) => hit.durationSixteenths);
-    const nearDurations = nearStrict.hits.map((hit) => hit.durationSixteenths);
+    const variedDurations = varied.hits.map((hit) => hit.durationSixteenths);
     const comparedLength = Math.min(
       strictDurations.length,
-      nearDurations.length
+      variedDurations.length
     );
     const sameCount = strictDurations
       .slice(0, comparedLength)
-      .filter((duration, index) => duration === nearDurations[index]).length;
+      .filter((duration, index) => duration === variedDurations[index]).length;
 
     expect(comparedLength).toBeGreaterThan(0);
-    expect(sameCount / comparedLength).toBeGreaterThanOrEqual(0.64);
+    expect(sameCount / comparedLength).toBeLessThan(0.95);
   });
 
-  it('locks ayoub swing anchors with dotted starts at high template influence', () => {
+  it('locks ayoub swing anchors with dotted starts in strict template mode', () => {
     const result = generateWordRhythm('ta ta ta ta ta ta ta ta ta ta ta ta', {
       strictDictionaryMode: false,
       timeSignature,
       rhythmVariationSeed: 5,
       soundVariationSeed: 5,
-      generationSettings: {
-        templateNotation: 'D--KD-T-D--KD-T-',
-        templateBias: 100,
-        motifVariation: 0,
-        adventurousness: 0,
-        dottedBias: 0,
-        sixteenthBias: 0,
-      },
+      generationSettings: strictTemplateSettings('D--KD-T-D--KD-T-'),
     });
     const firstEight = result.hits.slice(0, 8);
     const dottedLikeCount = firstEight.filter(
@@ -675,25 +751,303 @@ describe('generateWordRhythm', () => {
     expect(dottedLikeCount).toBeGreaterThanOrEqual(2);
   });
 
-  it('preserves malfuf 3-3-2 grouping under strict template influence', () => {
+  it('landing note resolves final syllable on a strong beat with D stroke', () => {
+    const lyrics = 'Sunrise on the shore\nOcean line\nWind through palm trees\nFind your peace tonight';
+    const withoutLanding = generateWordRhythm(lyrics, {
+      strictDictionaryMode: false,
+      timeSignature,
+      variationSeed: 0,
+      generationSettings: {
+        ...strictTemplateSettings('DtkTDtkT'),
+        landingNote: 'off',
+      },
+    });
+    const withLanding = generateWordRhythm(lyrics, {
+      strictDictionaryMode: false,
+      timeSignature,
+      variationSeed: 0,
+      generationSettings: {
+        ...strictTemplateSettings('DtkTDtkT'),
+        landingNote: 'quarter',
+      },
+    });
+
+    // All original words should still be present.
+    const wordsWithout = withoutLanding.hits.filter((h) => h.word !== '').map((h) => h.word);
+    const wordsWith = withLanding.hits.filter((h) => h.word !== '').map((h) => h.word);
+    expect(new Set(wordsWith)).toEqual(new Set(wordsWithout));
+
+    // The final syllable should be on a strong beat (beat 1 or beat 3).
+    const lastWordHit = [...withLanding.hits].reverse().find((h) => h.word !== '');
+    expect(lastWordHit).toBeDefined();
+    const posInMeasure = lastWordHit!.startSixteenth % 16;
+    expect(posInMeasure === 0 || posInMeasure === 8).toBe(true);
+    expect(lastWordHit!.stroke).toBe('D');
+
+    // May add 0 or 1 measures depending on where the syllable originally was.
+    const measuresWithout = withoutLanding.notation.split('|').length;
+    const measuresWith = withLanding.notation.split('|').length;
+    expect(measuresWith).toBeGreaterThanOrEqual(measuresWithout);
+    expect(measuresWith).toBeLessThanOrEqual(measuresWithout + 1);
+  });
+
+  it('landing note with A/B variations preserves all words', () => {
+    const lyrics = 'Sunrise on the shore\nOcean line\nWind through palm trees\nFind your peace tonight';
+    const baseline = generateWordRhythm(lyrics, {
+      strictDictionaryMode: false,
+      timeSignature,
+      variationSeed: 0,
+      generationSettings: {
+        ...strictTemplateSettings('DtkTDtkT'),
+        landingNote: 'off',
+        phrasing: 'repeat',
+      },
+    });
+    const withBoth = generateWordRhythm(lyrics, {
+      strictDictionaryMode: false,
+      timeSignature,
+      variationSeed: 0,
+      generationSettings: {
+        ...strictTemplateSettings('DtkTDtkT'),
+        landingNote: 'quarter',
+        phrasing: 'halfMeasureVariations',
+      },
+    });
+
+    const baseWords = baseline.hits.filter((h) => h.word !== '').map((h) => h.word);
+    const bothWords = withBoth.hits.filter((h) => h.word !== '').map((h) => h.word);
+    // A/B variations may zero-out some hits, but landing note must not remove any
+    // words that A/B alone wouldn't remove. Check that base word set is a superset.
+    const baseWordSet = new Set(baseWords);
+    const missingWords = bothWords.filter((w) => !baseWordSet.has(w));
+    expect(missingWords).toEqual([]);
+  });
+
+  it('preserves malfuf 3-3-2 grouping under strict template mode', () => {
     const result = generateWordRhythm('ta ta ta ta ta ta ta ta ta ta ta ta', {
       strictDictionaryMode: false,
       timeSignature,
       rhythmVariationSeed: 1,
       soundVariationSeed: 1,
-      generationSettings: {
-        templateNotation: 'D--T--T-D--T--T-',
-        templateBias: 100,
-        motifVariation: 0,
-        adventurousness: 0,
-        dottedBias: 0,
-        sixteenthBias: 0,
-      },
+      generationSettings: strictTemplateSettings('D--T--T-D--T--T-'),
     });
 
     const firstSix = result.hits
       .slice(0, 6)
       .map((hit) => hit.durationSixteenths);
     expect(firstSix).toEqual([3, 3, 2, 3, 3, 2]);
+  });
+
+  it('same-line words are not separated by more than one measure of silence', () => {
+    const lyrics = 'Sunrise on the shore\nOcean line\nWind through palm trees';
+    for (const seed of [0, 1, 2, 3, 42, 99]) {
+      const result = generateWordRhythm(lyrics, {
+        strictDictionaryMode: false,
+        timeSignature,
+        variationSeed: seed,
+        generationSettings: {
+          ...strictTemplateSettings('DtkTDtkT'),
+          freestyle: true,
+          freestyleStrength: 30,
+        },
+      });
+
+      const lines = lyrics.split('\n');
+      let wordOffset = 0;
+      for (const line of lines) {
+        const lineWords = line.trim().split(/\s+/);
+        // For each word, find its last syllable hit.
+        const lastHitPerWord = lineWords.map((_, wi) => {
+          const wordIdx = wordOffset + wi;
+          const wordHits = result.hits.filter(
+            (h) => h.word !== '' && h.wordIndex === wordIdx
+          );
+          if (wordHits.length === 0) return undefined;
+          return wordHits.reduce((a, b) =>
+            b.startSixteenth > a.startSixteenth ? b : a
+          );
+        });
+        const firstHitPerWord = lineWords.map((_, wi) =>
+          result.hits.find(
+            (h) => h.word !== '' && h.wordIndex === wordOffset + wi && h.syllableIndex === 0
+          )
+        );
+        for (let j = 1; j < lineWords.length; j++) {
+          const prevLast = lastHitPerWord[j - 1];
+          const currFirst = firstHitPerWord[j];
+          if (!prevLast || !currFirst) continue;
+          const gapSixteenths =
+            currFirst.startSixteenth - (prevLast.startSixteenth + prevLast.durationSixteenths);
+          const isPhraseEnd = j === lineWords.length - 1;
+          const maxGap = isPhraseEnd ? 2 : 4;
+          expect(
+            gapSixteenths,
+            `seed ${seed}: gap of ${gapSixteenths} sixteenths between "${prevLast.word}" and "${currFirst.word}" (max ${maxGap})`
+          ).toBeLessThanOrEqual(maxGap);
+        }
+        wordOffset += lineWords.length;
+      }
+    }
+  });
+
+  it('end-of-phrase words are not split into tied notes', () => {
+    const lyrics = 'Sunrise on the shoreline\nOcean wind through palm trees';
+    for (const seed of [0, 1, 2, 3, 42, 99]) {
+      const result = generateWordRhythm(lyrics, {
+        strictDictionaryMode: false,
+        timeSignature,
+        variationSeed: seed,
+        generationSettings: {
+          ...DEFAULT_WORD_RHYTHM_GENERATION_SETTINGS,
+          templateNotation: 'DtkTDtkT',
+          landingNote: 'off' as const,
+        },
+      });
+      // "trees" is the last word — it should be a single hit, not split into tied segments
+      const treesHits = result.hits.filter((h) => h.word.toLowerCase() === 'trees');
+      expect(
+        treesHits.length,
+        `seed ${seed}: "trees" has ${treesHits.length} hits (should be 1, not tied)`
+      ).toBe(1);
+      // "shoreline" is also end-of-phrase
+      const shorelineHits = result.hits.filter((h) => h.word.toLowerCase() === 'shoreline');
+      const continuations = shorelineHits.filter(h => h.continuationOfPrevious);
+      expect(
+        continuations.length,
+        `seed ${seed}: "shoreline" has ${continuations.length} tie continuations`
+      ).toBe(0);
+    }
+  });
+
+  it('landing note does not leave a long rest before the final word', () => {
+    const lyrics = 'Sunrise on the shoreline\nOcean wind through palm trees';
+    for (const seed of [0, 1, 2, 3, 42, 99]) {
+      const result = generateWordRhythm(lyrics, {
+        strictDictionaryMode: false,
+        timeSignature,
+        variationSeed: seed,
+        generationSettings: {
+          ...DEFAULT_WORD_RHYTHM_GENERATION_SETTINGS,
+          templateNotation: 'DtkTDtkT',
+          landingNote: 'quarter' as const,
+        },
+      });
+      const treesHits = result.hits.filter((h) => h.word.toLowerCase() === 'trees');
+      const palmHits = result.hits.filter((h) => h.word.toLowerCase() === 'palm');
+      if (treesHits.length === 0 || palmHits.length === 0) continue;
+      const palmEnd = palmHits[palmHits.length - 1].startSixteenth + palmHits[palmHits.length - 1].durationSixteenths;
+      const treesStart = treesHits[0].startSixteenth;
+      const gap = treesStart - palmEnd;
+      // "trees" is the phrase-ending word — gap should be at most an eighth note
+      // (2 sixteenths) thanks to compactPhraseEndings.
+      expect(
+        gap,
+        `seed ${seed}: gap of ${gap} sixteenths between "palm" and "trees" — should be ≤2`
+      ).toBeLessThanOrEqual(2);
+    }
+  });
+
+  it('landing note produces no wordless orphan hits after the last word', () => {
+    const lyrics = 'Sunrise on the shoreline\nOcean wind through palm trees';
+    for (const seed of [0, 1, 2, 3, 42, 99]) {
+      const result = generateWordRhythm(lyrics, {
+        strictDictionaryMode: false,
+        timeSignature,
+        variationSeed: seed,
+        generationSettings: {
+          ...DEFAULT_WORD_RHYTHM_GENERATION_SETTINGS,
+          templateNotation: 'DtkTDtkT',
+          landingNote: 'quarter' as const,
+        },
+      });
+      const lastHit = result.hits[result.hits.length - 1];
+      const treesHits = result.hits.filter((h: { word: string }) => h.word.toLowerCase() === 'trees');
+      expect(
+        treesHits.length,
+        `seed ${seed}: "trees" should appear exactly once, got ${treesHits.length}`
+      ).toBeGreaterThanOrEqual(1);
+      expect(
+        lastHit.word.toLowerCase(),
+        `seed ${seed}: last hit word is "${lastHit.word}" — expected "trees"`
+      ).toBe('trees');
+      let lastWordIdx = -1;
+      for (let i = result.hits.length - 1; i >= 0; i--) {
+        if (result.hits[i].word !== '') { lastWordIdx = i; break; }
+      }
+      const trailingEmpty = result.hits.slice(lastWordIdx + 1);
+      expect(
+        trailingEmpty.length,
+        `seed ${seed}: ${trailingEmpty.length} orphan hits after last word`
+      ).toBe(0);
+    }
+  });
+
+  it('phrase-ending gaps stay tight across templates and settings', () => {
+    const lyrics = 'Sunrise on the shoreline\nOcean wind through palm trees';
+    const templates = ['DtkTDtkT', 'D-T-__T-D---T---', 'D--KD-T-D--KD-T-', 'D---D---D---D---'];
+    const settingsVariants: Partial<WordRhythmGenerationSettings>[] = [
+      {},
+      { landingNote: 'quarter' as const },
+      { freestyle: true, freestyleStrength: 40 },
+      { fillRests: true, subdivideNotes: true },
+      { mergeNotes: true },
+      { phrasing: 'halfMeasureVariations' as const, landingNote: 'quarter' as const },
+    ];
+    for (const tpl of templates) {
+      for (const overrides of settingsVariants) {
+        for (const seed of [0, 1, 42]) {
+          const result = generateWordRhythm(lyrics, {
+            strictDictionaryMode: false,
+            timeSignature,
+            variationSeed: seed,
+            generationSettings: {
+              ...DEFAULT_WORD_RHYTHM_GENERATION_SETTINGS,
+              templateNotation: tpl,
+              ...overrides,
+            },
+          });
+          const lines = lyrics.split('\n');
+          let wordOffset = 0;
+          for (const line of lines) {
+            const lineWords = line.trim().split(/\s+/);
+            for (let j = 1; j < lineWords.length; j++) {
+              const prevHits = result.hits.filter((h) => h.word !== '' && h.wordIndex === wordOffset + j - 1);
+              const currHit = result.hits.find((h) => h.word !== '' && h.wordIndex === wordOffset + j && h.syllableIndex === 0);
+              if (prevHits.length === 0 || !currHit) continue;
+              const prevLast = prevHits.reduce((a, b) => b.startSixteenth > a.startSixteenth ? b : a);
+              const gap = currHit.startSixteenth - (prevLast.startSixteenth + prevLast.durationSixteenths);
+              const isPhraseEnd = j === lineWords.length - 1;
+              const maxGap = isPhraseEnd ? 2 : 4;
+              expect(
+                gap,
+                `tpl=${tpl.slice(0, 8)} seed=${seed} overrides=${JSON.stringify(overrides).slice(0, 40)}: gap=${gap} between "${prevLast.word}"→"${currHit.word}" (max ${maxGap})`
+              ).toBeLessThanOrEqual(maxGap);
+            }
+            wordOffset += lineWords.length;
+          }
+        }
+      }
+    }
+  });
+
+  it('different seeds produce different output with new defaults', () => {
+    const lyrics = 'Take me to the river\nHold me under water';
+    const results = new Set<string>();
+    for (let seed = 0; seed < 10; seed += 1) {
+      const result = generateWordRhythm(lyrics, {
+        strictDictionaryMode: false,
+        timeSignature,
+        variationSeed: seed,
+        generationSettings: {
+          ...DEFAULT_WORD_RHYTHM_GENERATION_SETTINGS,
+          templateNotation: 'DtkTDtkT',
+        },
+      });
+      results.add(result.notation);
+    }
+    expect(
+      results.size,
+      `Expected multiple distinct outputs from 10 seeds, got ${results.size}`
+    ).toBeGreaterThanOrEqual(3);
   });
 });

@@ -1,7 +1,7 @@
 import { BEAT_ANALYSIS_VERSION } from '../utils/analysisVersion';
 import type {
   BeatLibraryEntry,
-  BeatLibraryRecord,
+
   MediaKind,
   PersistedAnalysisBundle,
   UserPracticeData,
@@ -9,7 +9,6 @@ import type {
 } from '../types/library';
 import {
   deleteLibraryEntry,
-  getAnalysisBundle,
   getFileBlob,
   getLibraryEntryByFingerprint,
   getLibraryEntryById,
@@ -136,6 +135,18 @@ export async function upsertLocalVideo(params: {
   return { entry: created };
 }
 
+async function fetchYouTubeTitle(videoId: string): Promise<string | null> {
+  try {
+    const url = `https://www.youtube.com/oembed?url=${encodeURIComponent(`https://www.youtube.com/watch?v=${videoId}`)}&format=json`;
+    const response = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    if (!response.ok) return null;
+    const data = await response.json();
+    return typeof data.title === 'string' ? data.title : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function upsertYoutubeVideo(params: {
   url: string;
   videoId: string;
@@ -149,12 +160,18 @@ export async function upsertYoutubeVideo(params: {
       lastViewedAt: now(),
       sourceUrl: params.url,
     };
+    // Backfill title if it was the placeholder
+    if (updated.title === `YouTube ${params.videoId}`) {
+      const realTitle = await fetchYouTubeTitle(params.videoId);
+      if (realTitle) updated.title = realTitle;
+    }
     await putLibraryEntry(updated);
     return { entry: updated, duplicateOf: existing };
   }
 
+  const title = await fetchYouTubeTitle(params.videoId) ?? `YouTube ${params.videoId}`;
   const created = deriveInitialEntry({
-    title: `YouTube ${params.videoId}`,
+    title,
     mediaKind: 'video',
     sourceType: 'youtube',
     fingerprint,
@@ -164,6 +181,16 @@ export async function upsertYoutubeVideo(params: {
   });
   await putLibraryEntry(created);
   return { entry: created };
+}
+
+export async function renameLibraryEntry(videoId: string, newTitle: string): Promise<void> {
+  const existing = await getLibraryEntryById(videoId);
+  if (!existing) return;
+  await putLibraryEntry({
+    ...existing,
+    title: newTitle.trim() || existing.title,
+    updatedAt: now(),
+  });
 }
 
 export async function markEntryViewed(videoId: string): Promise<void> {
@@ -192,17 +219,6 @@ export async function saveAnalysisBundle(videoId: string, bundle: PersistedAnaly
           : undefined,
     },
   });
-}
-
-export async function getLibraryRecord(videoId: string): Promise<BeatLibraryRecord | null> {
-  const entry = await getLibraryEntryById(videoId);
-  if (!entry) return null;
-  const [fileBlob, analysisBundle, userPracticeData] = await Promise.all([
-    getFileBlob(videoId),
-    getAnalysisBundle(videoId),
-    getPracticeSections(videoId),
-  ]);
-  return { entry, fileBlob, analysisBundle, userPracticeData };
 }
 
 export async function loadLibraryEntries(): Promise<BeatLibraryEntry[]> {

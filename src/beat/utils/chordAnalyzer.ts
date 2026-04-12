@@ -708,8 +708,26 @@ async function detectKey(
       scale: chordKey.scale,
       confidence: chordKey.confidence,
       profile: 'ChordBased',
-      weight: 3.0, // Triple weight for chord-based detection
+      weight: 4.0, // Chord analysis is by far the most reliable for pop/rock
     });
+
+    // First and last chord anchor: if the song starts or ends on a chord
+    // whose root matches a key candidate, that's a strong tonal signal
+    const firstChord = chordChanges[0];
+    const lastChord = chordChanges[chordChanges.length - 1];
+    const anchorRoots = new Set<string>();
+    if (firstChord) anchorRoots.add(firstChord.chord.split(/[mM ]/)[0]);
+    if (lastChord) anchorRoots.add(lastChord.chord.split(/[mM ]/)[0]);
+
+    if (anchorRoots.has(chordKey.key)) {
+      results.push({
+        key: chordKey.key,
+        scale: chordKey.scale,
+        confidence: chordKey.confidence * 0.9,
+        profile: 'AnchorBonus',
+        weight: 1.5,
+      });
+    }
   }
 
   // Method 2: Try KeyExtractor on raw audio (if available)
@@ -796,22 +814,18 @@ async function detectKey(
 
   // Weighted consensus voting
   const votes: Record<string, { weightedScore: number; bestConfidence: number }> = {};
+
+  // Canonical enharmonic mapping — always use the more common spelling
+  const enharmonicCanonical: Record<string, string> = {
+    'C#': 'Db', 'D#': 'Eb', 'F#': 'F#', 'G#': 'Ab', 'A#': 'Bb',
+    'Gb': 'F#', 'Cb': 'B', 'Fb': 'E',
+  };
+  function canonicalNote(note: string): string {
+    return enharmonicCanonical[note] ?? note;
+  }
   
   for (const result of results) {
-    // Normalize key to handle enharmonic equivalents
-    let normalizedKey = result.key;
-    // Convert sharps to flats for consistency with note names
-    const sharpToFlat: Record<string, string> = {
-      'C#': 'Db', 'D#': 'Eb', 'F#': 'Gb', 'G#': 'Ab', 'A#': 'Bb',
-    };
-    if (sharpToFlat[normalizedKey]) {
-      // Keep sharps for some keys where they're more common
-      if (result.scale === 'minor' && ['C#', 'F#'].includes(normalizedKey)) {
-        // C# minor and F# minor are more common notations
-      } else if (sharpToFlat[normalizedKey]) {
-        normalizedKey = sharpToFlat[normalizedKey];
-      }
-    }
+    const normalizedKey = canonicalNote(result.key);
     
     const keyScale = `${normalizedKey} ${result.scale}`;
     if (!votes[keyScale]) {

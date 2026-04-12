@@ -7,11 +7,19 @@ import { DEFAULT_PLAYBACK_SETTINGS } from '../shared/rhythm/types';
 import type { PlaybackSettings, TimeSignature } from '../shared/rhythm/types';
 import {
   generateWordRhythm,
-  DEFAULT_WORD_RHYTHM_SETTINGS,
+  DEFAULT_WORD_RHYTHM_GENERATION_SETTINGS,
+  type AlignmentStrength,
+  type NoteValueBias,
+  type PhrasingMode,
   type SyllableHit,
   type WordRhythmResult,
-  type WordRhythmAdvancedSettings,
+  type WordRhythmGenerationSettings,
 } from './utils/prosodyEngine';
+import {
+  decodeGenerationSettingsJson,
+  encodeGenerationSettingsJson,
+  mergePartialGenerationSettings,
+} from './utils/generationSettingsCodec';
 import VexLyricScore from './components/VexLyricScore';
 import DrumNotationMini from '../shared/notation/DrumNotationMini';
 import { AudioPlayer } from '../shared/audio/audioPlayer';
@@ -196,11 +204,15 @@ function volumeIconName(isMuted: boolean): string {
   return isMuted ? 'volume_off' : 'volume_up';
 }
 
-const APP_DEFAULT_GENERATION_SETTINGS: WordRhythmAdvancedSettings = {
-  ...DEFAULT_WORD_RHYTHM_SETTINGS,
-  templateBias: 80,
+const APP_DEFAULT_GENERATION_SETTINGS: WordRhythmGenerationSettings =
+  mergePartialGenerationSettings(DEFAULT_WORD_RHYTHM_GENERATION_SETTINGS, {
+    templateNotation: TEMPLATE_PRESETS[0].notation,
+  });
+
+const SECTION_CREATE_DEFAULTS = {
   templateNotation: TEMPLATE_PRESETS[0].notation,
 };
+
 const DEFAULT_WORD_RESULT = generateWordRhythm(DEFAULT_LYRICS, {
   strictDictionaryMode: false,
   timeSignature: DEFAULT_TIME_SIGNATURE,
@@ -211,23 +223,21 @@ const DEFAULT_WORD_RESULT = generateWordRhythm(DEFAULT_LYRICS, {
 const DEFAULT_SONG_KEY: Key = 'C';
 const DEFAULT_SECTIONS: SongSection[] = [
   {
-    ...createDefaultSection('verse', APP_DEFAULT_GENERATION_SETTINGS),
+    ...createDefaultSection('verse', SECTION_CREATE_DEFAULTS),
     id: 'default-verse-1',
     lyrics: DEFAULT_LYRICS,
     chordProgressionInput: 'G-C-Am-F',
     chordStyleId: 'simple',
     templateNotation: APP_DEFAULT_GENERATION_SETTINGS.templateNotation ?? '',
-    templateBias: APP_DEFAULT_GENERATION_SETTINGS.templateBias,
   },
   {
-    ...createDefaultSection('chorus', APP_DEFAULT_GENERATION_SETTINGS),
+    ...createDefaultSection('chorus', SECTION_CREATE_DEFAULTS),
     id: 'default-chorus-1',
     lyrics: `Find the fire burning by the sea
 So you can come and dance with me`,
     chordProgressionInput: 'G-C-Am-F',
     chordStyleId: 'one-per-beat',
     templateNotation: 'D--KD-T-D--KD-T-',
-    templateBias: APP_DEFAULT_GENERATION_SETTINGS.templateBias,
   },
 ];
 
@@ -285,8 +295,10 @@ function cloneSectionsSnapshot(sections: SongSection[]): SongSection[] {
 }
 
 function normalizeSection(section: SongSection): SongSection {
+  const raw = section as SongSection & { templateBias?: number };
+  const { templateBias: _dropLegacyTemplateBias, ...rest } = raw; // eslint-disable-line @typescript-eslint/no-unused-vars
   return {
-    ...section,
+    ...rest,
     isLocked: section.isLocked ?? false,
   };
 }
@@ -295,30 +307,75 @@ function normalizeSectionsSnapshot(sections: SongSection[]): SongSection[] {
   return sections.map(normalizeSection);
 }
 
-const GENERATION_SETTING_HELP = {
-  adventurousness:
-    'Higher values allow bolder rhythmic shapes and less predictable note lengths.',
-  dottedBias:
-    'Increases chances of dotted-like durations and swung-feel groupings.',
-  sixteenthBias:
-    'Increases fast subdivisions (16th-note motion), especially for energetic phrases.',
-  tieCrossingBias:
-    'Encourages notes to tie across barlines for longer flowing phrasing.',
-  alignWordStartsToBeats:
-    'Pushes word onsets toward beat boundaries for cleaner groove anchors.',
-  alignStressToMajorBeats:
-    'Aligns stressed syllables with stronger beats when musically possible.',
-  motifVariation:
-    'Controls how much repeated rhythmic motifs are ornamented across lines.',
-  midMeasureRestBias:
-    'Adds occasional rests within a measure to create breathing pockets.',
-  avoidIntraWordRests:
-    'Biases against inserting rests inside a single multi-syllable word.',
-  lineBreakGapBias:
-    'Biases toward leaving a small rest between lyric lines when spacing allows.',
-  templateBias:
-    'How strongly generation follows the selected template groove. Higher values make regeneration change less.',
-} satisfies Record<string, string>;
+
+// ---------------------------------------------------------------------------
+// v3 rule definitions for the generation panel
+// ---------------------------------------------------------------------------
+
+interface RuleDefinition {
+  key: keyof WordRhythmGenerationSettings;
+  label: string;
+  help: string;
+}
+
+const TEMPLATE_MUTATION_RULES: RuleDefinition[] = [
+  {
+    key: 'fillRests',
+    label: 'Fill rests',
+    help: 'Replace rests in the template with notes, adding rhythmic density.',
+  },
+  {
+    key: 'subdivideNotes',
+    label: 'Subdivide notes',
+    help: 'Break longer notes into shorter patterns derived from common darbuka patterns.',
+  },
+  {
+    key: 'mergeNotes',
+    label: 'Merge notes',
+    help: 'Collapse adjacent template hits into longer notes, preferring beat boundaries. Gives a sparser, more spacious feel.',
+  },
+];
+
+const WORD_SHAPING_RULES: RuleDefinition[] = [
+  {
+    key: 'naturalWordRhythm',
+    label: 'Natural word rhythm',
+    help: 'Shape syllable durations to match natural speech rhythm — e.g. "watermelon" = four fast notes.',
+  },
+];
+
+const NOTE_VALUE_LABELS: Array<{ key: keyof NoteValueBias; label: string }> = [
+  { key: 'sixteenth', label: '16th' },
+  { key: 'eighth', label: '8th' },
+  { key: 'dotted', label: 'Dotted' },
+  { key: 'quarter', label: 'Quarter' },
+];
+
+const BIAS_LEVELS: Array<{ label: string; value: number }> = [
+  { label: 'None', value: 0 },
+  { label: 'Some', value: 50 },
+  { label: 'A lot', value: 90 },
+];
+
+function snapBiasToLevel(raw: number): number {
+  if (raw <= 25) return 0;
+  if (raw <= 70) return 50;
+  return 90;
+}
+
+const PHRASING_OPTIONS: Array<{ value: PhrasingMode; label: string; help: string }> = [
+  { value: 'repeat', label: 'Repeat', help: 'The same rhythmic template repeats every measure, giving a steady, predictable feel.' },
+  { value: 'halfMeasureVariations', label: 'A/B variations', help: 'Splits each measure into two halves and shuffles different half-measure combos across the song for more variety.' },
+];
+
+// Landing note is now a simple checkbox (quarter only).
+
+const ALIGNMENT_HELP = {
+  stress: 'Snap stressed syllables toward stronger beats.',
+  wordStart: 'Nudge word starts toward beat anchors (can add small rests before words).',
+} as const;
+
+const ALIGNMENT_STRENGTH_OPTIONS = ['light', 'strong'] as const satisfies readonly AlignmentStrength[];
 
 function matchesTimeSignature(
   first: TimeSignature,
@@ -411,6 +468,7 @@ const App: React.FC = () => {
   const [generationMenuOpen, setGenerationMenuOpen] = useState<boolean>(false);
   const [soundMenuOpen, setSoundMenuOpen] = useState<boolean>(false);
   const [randomizeMenuOpen, setRandomizeMenuOpen] = useState<boolean>(false);
+  const [selectedRandomizeMode, setSelectedRandomizeMode] = useState<RandomizeMode>('phrasing');
   const [sectionRandomizeMenuId, setSectionRandomizeMenuId] = useState<
     string | null
   >(null);
@@ -441,7 +499,7 @@ const App: React.FC = () => {
   const [playbackSettings, setPlaybackSettings] =
     useState<PlaybackSettings>(DEFAULT_PLAYBACK_SETTINGS);
   const [generationSettings, setGenerationSettings] =
-    useState<WordRhythmAdvancedSettings>(APP_DEFAULT_GENERATION_SETTINGS);
+    useState<WordRhythmGenerationSettings>(APP_DEFAULT_GENERATION_SETTINGS);
   const [isStickyControlsStuck, setIsStickyControlsStuck] =
     useState<boolean>(false);
   const [isScoreActionsStuck, setIsScoreActionsStuck] = useState<boolean>(false);
@@ -475,7 +533,7 @@ const App: React.FC = () => {
   const generationButtonRef = useRef<HTMLButtonElement | null>(null);
   const soundMenuRef = useRef<HTMLDivElement | null>(null);
   const soundButtonRef = useRef<HTMLButtonElement | null>(null);
-  const randomizeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const randomizeButtonRef = useRef<HTMLDivElement | null>(null);
   const exportButtonRef = useRef<HTMLButtonElement | null>(null);
   const sectionRandomizeAnchorRefs = useRef<Map<string, HTMLDivElement>>(
     new Map()
@@ -1476,11 +1534,52 @@ const App: React.FC = () => {
     };
   }, [openSectionSettingsId]);
 
-  const updateSetting = <K extends keyof WordRhythmAdvancedSettings>(
-    key: K,
-    value: WordRhythmAdvancedSettings[K]
-  ) => {
+  const setRule = (key: keyof WordRhythmGenerationSettings, value: boolean) => {
     setGenerationSettings((previous) => ({ ...previous, [key]: value }));
+  };
+
+  const setNoteValueBias = (key: keyof NoteValueBias, value: number) => {
+    setGenerationSettings((previous) => ({
+      ...previous,
+      noteValueBias: { ...previous.noteValueBias, [key]: value },
+    }));
+  };
+
+  const setStressAlignment = (value: AlignmentStrength) => {
+    setGenerationSettings((previous) => ({ ...previous, stressAlignment: value }));
+  };
+
+  const setWordStartAlignment = (value: AlignmentStrength) => {
+    setGenerationSettings((previous) => ({
+      ...previous,
+      wordStartAlignment: value,
+    }));
+  };
+
+  const handleSelectAllRules = () => {
+    setGenerationSettings((previous) => ({
+      ...previous,
+      fillRests: true,
+      subdivideNotes: true,
+      mergeNotes: true,
+      freestyle: true,
+      naturalWordRhythm: true,
+      stressAlignment: 'strong',
+      wordStartAlignment: 'strong',
+    }));
+  };
+
+  const handleClearAllRules = () => {
+    setGenerationSettings((previous) => ({
+      ...previous,
+      fillRests: false,
+      subdivideNotes: false,
+      mergeNotes: false,
+      freestyle: false,
+      naturalWordRhythm: false,
+      stressAlignment: 'off',
+      wordStartAlignment: 'off',
+    }));
   };
 
   const updateSection = (
@@ -1541,7 +1640,7 @@ const App: React.FC = () => {
           : null;
       const nextSection = createDefaultSection(
         type,
-        APP_DEFAULT_GENERATION_SETTINGS,
+        SECTION_CREATE_DEFAULTS,
         previousChorus ?? undefined
       );
       if (type === 'chorus') {
@@ -1570,7 +1669,7 @@ const App: React.FC = () => {
           const previousChorus = findPreviousChorus(nextSections, nextSections.length);
           const nextSection = createDefaultSection(
             draft.type,
-            APP_DEFAULT_GENERATION_SETTINGS,
+            SECTION_CREATE_DEFAULTS,
             previousChorus ?? undefined
           );
           nextSection.type = draft.type;
@@ -2041,16 +2140,11 @@ const App: React.FC = () => {
     if (generationSettingsParam) {
       const decodedSettings = decodeBase64UrlUtf8(generationSettingsParam);
       if (decodedSettings) {
-        try {
-          const parsedSettings = JSON.parse(
-            decodedSettings
-          ) as Partial<WordRhythmAdvancedSettings>;
-          setGenerationSettings((previous) => ({
-            ...previous,
-            ...parsedSettings,
-          }));
-        } catch {
-          // Ignore malformed generation settings in URL.
+        const parsed = decodeGenerationSettingsJson(decodedSettings);
+        if (parsed) {
+          setGenerationSettings((previous) =>
+            mergePartialGenerationSettings(previous, parsed)
+          );
         }
       }
     }
@@ -2095,8 +2189,8 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!hasHydratedUrlStateRef.current) return;
     const params = new URLSearchParams();
-    const generationSettingsJson = JSON.stringify(generationSettings);
-    const defaultGenerationSettingsJson = JSON.stringify(
+    const generationSettingsJson = encodeGenerationSettingsJson(generationSettings);
+    const defaultGenerationSettingsJson = encodeGenerationSettingsJson(
       APP_DEFAULT_GENERATION_SETTINGS
     );
     const defaultSectionsJson = JSON.stringify(DEFAULT_SECTIONS);
@@ -2467,24 +2561,37 @@ const App: React.FC = () => {
       >
         <div className="words-regenerate-row">
           <div className="words-randomize-anchor">
-            <button
-              ref={randomizeButtonRef}
-              className="words-button words-button-primary"
-              type="button"
-              onClick={() => {
-                setRandomizeMenuOpen((previous) => !previous);
-                setGenerationMenuOpen(false);
-                setSoundMenuOpen(false);
-              }}
-            >
-              randomize
-            </button>
+            <div className="words-split-button" ref={randomizeButtonRef}>
+              <button
+                className="words-button words-button-primary words-split-action"
+                type="button"
+                onClick={() => {
+                  applyRandomization(selectedRandomizeMode);
+                  setRandomizeMenuOpen(false);
+                }}
+              >
+                Randomize
+              </button>
+              <button
+                className="words-button words-button-primary words-split-menu-trigger"
+                type="button"
+                onClick={() => {
+                  setRandomizeMenuOpen((previous) => !previous);
+                  setGenerationMenuOpen(false);
+                  setSoundMenuOpen(false);
+                }}
+                aria-label="Choose randomization mode"
+              >
+                {RANDOMIZE_MODE_OPTIONS.find((o) => o.mode === selectedRandomizeMode)?.label}
+                <span className="material-symbols-outlined words-split-arrow">arrow_drop_down</span>
+              </button>
+            </div>
             <Popover
               open={randomizeMenuOpen}
               anchorEl={randomizeButtonRef.current}
               onClose={() => setRandomizeMenuOpen(false)}
-              anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-              transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
               slotProps={{ paper: { className: 'words-randomize-menu' } }}
             >
               <div className="words-randomize-menu-list">
@@ -2492,9 +2599,9 @@ const App: React.FC = () => {
                   <AppTooltip key={option.mode} title={option.tooltip}>
                     <button
                       type="button"
-                      className="words-button words-randomize-option"
+                      className={`words-button words-randomize-option${option.mode === selectedRandomizeMode ? ' active' : ''}`}
                       onClick={() => {
-                        applyRandomization(option.mode);
+                        setSelectedRandomizeMode(option.mode);
                         setRandomizeMenuOpen(false);
                       }}
                     >
@@ -2505,248 +2612,304 @@ const App: React.FC = () => {
               </div>
             </Popover>
           </div>
-          <button
-            ref={generationButtonRef}
-            className={`words-button words-gear-button${generationMenuOpen ? ' is-open' : ''}`}
-            type="button"
-            aria-label="Generation settings"
-            onClick={() => {
-              setGenerationMenuOpen((previous) => !previous);
-              setSoundMenuOpen(false);
-            }}
-          >
-            <span className="material-symbols-outlined">settings</span>
-          </button>
-          {generationMenuOpen ? (
-            <div
-              ref={generationMenuRef}
-              className="words-dropdown-menu words-dropdown-generation"
+          <div className="words-generation-anchor">
+            <button
+              ref={generationButtonRef}
+              className={`words-button words-gear-button${generationMenuOpen ? ' is-open' : ''}`}
+              type="button"
+              aria-label="Generation settings"
+              onClick={() => {
+                setGenerationMenuOpen((previous) => !previous);
+                setSoundMenuOpen(false);
+              }}
             >
-              <div className="words-dropdown-header">
-                <strong>Generation settings</strong>
-                <button
-                  className="words-text-button"
-                  type="button"
-                  onClick={handleResetGenerationSettings}
-                >
-                  Reset defaults
-                </button>
+              <span className="material-symbols-outlined">settings</span>
+            </button>
+            {generationMenuOpen ? (
+              <div
+                ref={generationMenuRef}
+                className="words-dropdown-menu words-dropdown-generation"
+              >
+              <div className="words-dropdown-header words-generation-header">
+                <span className="words-generation-title">
+                  <strong>Generation settings</strong>
+                  <AppTooltip title="Rules transform the template in order. All off = syllables follow the template exactly.">
+                    <button
+                      className="words-setting-help"
+                      type="button"
+                      tabIndex={-1}
+                      aria-label="Generation settings help"
+                    >
+                      <span className="material-symbols-outlined" aria-hidden="true">
+                        info
+                      </span>
+                    </button>
+                  </AppTooltip>
+                </span>
+                <div className="words-generation-header-actions">
+                  <button
+                    className="words-text-button"
+                    type="button"
+                    onClick={handleResetGenerationSettings}
+                  >
+                    Reset defaults
+                  </button>
+                  <button
+                    className="words-text-button"
+                    type="button"
+                    onClick={handleSelectAllRules}
+                  >
+                    Select all
+                  </button>
+                  <button
+                    className="words-text-button"
+                    type="button"
+                    onClick={handleClearAllRules}
+                  >
+                    Deselect all
+                  </button>
+                </div>
               </div>
-              <div className="words-advanced-grid">
-                <div className="words-advanced-block">
-                  <h3>Song Feel</h3>
-                  <label className="words-slider-row">
-                    <SettingHelpLabel
-                      text="adventurousness"
-                      help={GENERATION_SETTING_HELP.adventurousness}
-                    />
-                    <AppSlider
-                      min={0}
-                      max={100}
-                      className="words-slider-input"
-                      value={generationSettings.adventurousness}
+
+              {/* ---- Compact two-column layout ---- */}
+              <div className="words-gs-grid">
+                {/* Left column: template rules */}
+                <div className="words-gs-col">
+                  <h3 className="words-gs-heading">Template</h3>
+                  {TEMPLATE_MUTATION_RULES.map((rule) => (
+                    <label key={rule.key} className="words-mutation-row">
+                      <input
+                        type="checkbox"
+                        className="words-mutation-checkbox"
+                        checked={Boolean(generationSettings[rule.key])}
+                        onChange={(event) =>
+                          setRule(rule.key, event.target.checked)
+                        }
+                      />
+                      <SettingHelpLabel text={rule.label} help={rule.help} />
+                    </label>
+                  ))}
+                  <label className="words-mutation-row">
+                    <input
+                      type="checkbox"
+                      className="words-mutation-checkbox"
+                      checked={generationSettings.freestyle}
                       onChange={(event) =>
-                        updateSetting(
-                          'adventurousness',
-                          Number(event.target.value)
-                        )
+                        setRule('freestyle', event.target.checked)
                       }
                     />
-                    <span>{generationSettings.adventurousness}</span>
-                  </label>
-                  <label className="words-slider-row">
                     <SettingHelpLabel
-                      text="dotted note bias"
-                      help={GENERATION_SETTING_HELP.dottedBias}
+                      text="Freestyle"
+                      help="Randomly break template constraints. Strength controls how much."
                     />
-                    <AppSlider
-                      min={0}
-                      max={100}
-                      className="words-slider-input"
-                      value={generationSettings.dottedBias}
-                      onChange={(event) =>
-                        updateSetting('dottedBias', Number(event.target.value))
-                      }
-                    />
-                    <span>{generationSettings.dottedBias}</span>
                   </label>
-                  <label className="words-slider-row">
-                    <SettingHelpLabel
-                      text="sixteenth bias"
-                      help={GENERATION_SETTING_HELP.sixteenthBias}
-                    />
-                    <AppSlider
-                      min={0}
-                      max={100}
-                      className="words-slider-input"
-                      value={generationSettings.sixteenthBias}
-                      onChange={(event) =>
-                        updateSetting(
-                          'sixteenthBias',
-                          Number(event.target.value)
-                        )
-                      }
-                    />
-                    <span>{generationSettings.sixteenthBias}</span>
-                  </label>
-                  <label className="words-slider-row">
-                    <SettingHelpLabel
-                      text="tie crossing bias"
-                      help={GENERATION_SETTING_HELP.tieCrossingBias}
-                    />
-                    <AppSlider
-                      min={0}
-                      max={100}
-                      className="words-slider-input"
-                      value={generationSettings.tieCrossingBias}
-                      onChange={(event) =>
-                        updateSetting(
-                          'tieCrossingBias',
-                          Number(event.target.value)
-                        )
-                      }
-                    />
-                    <span>{generationSettings.tieCrossingBias}</span>
-                  </label>
-                  <label className="words-slider-row">
-                    <SettingHelpLabel
-                      text="template influence"
-                      help={GENERATION_SETTING_HELP.templateBias}
-                    />
-                    <AppSlider
-                      min={0}
-                      max={100}
-                      className="words-slider-input"
-                      value={generationSettings.templateBias}
-                      onChange={(event) =>
-                        updateSetting('templateBias', Number(event.target.value))
-                      }
-                    />
-                    <span>{generationSettings.templateBias}</span>
-                  </label>
+                  {generationSettings.freestyle ? (
+                    <div className="words-freestyle-strength words-gs-indent">
+                      <span className="words-bias-label">Strength</span>
+                      <AppSlider
+                        min={5}
+                        max={100}
+                        className="words-slider-input"
+                        value={generationSettings.freestyleStrength}
+                        onChange={(event) =>
+                          setGenerationSettings((prev) => ({
+                            ...prev,
+                            freestyleStrength: Number(event.target.value),
+                          }))
+                        }
+                      />
+                      <span className="words-bias-value">
+                        {generationSettings.freestyleStrength}%
+                      </span>
+                    </div>
+                  ) : null}
+
+                  <h3 className="words-gs-heading words-gs-heading--sub">Note value bias</h3>
+                  {NOTE_VALUE_LABELS.map(({ key, label }) => (
+                    <div key={key} className="words-bias-toggle-row">
+                      <span className="words-bias-label">{label}</span>
+                      <div
+                        className="words-segmented-toggle words-bias-toggle"
+                        role="group"
+                        aria-label={`${label} note bias`}
+                      >
+                        {BIAS_LEVELS.map((level) => (
+                          <button
+                            key={`${key}-${level.value}`}
+                            type="button"
+                            className={
+                              snapBiasToLevel(generationSettings.noteValueBias[key]) === level.value
+                                ? 'is-active'
+                                : ''
+                            }
+                            onClick={() => setNoteValueBias(key, level.value)}
+                          >
+                            {level.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
                 </div>
 
-                <div className="words-advanced-block">
-                  <h3>Alignment</h3>
-                  <label className="words-slider-row">
-                    <SettingHelpLabel
-                      text="word starts to beats"
-                      help={GENERATION_SETTING_HELP.alignWordStartsToBeats}
-                    />
-                    <AppSlider
-                      min={0}
-                      max={100}
-                      className="words-slider-input"
-                      value={generationSettings.alignWordStartsToBeats}
+                {/* Right column: words + phrasing */}
+                <div className="words-gs-col">
+                  <h3 className="words-gs-heading">Words</h3>
+                  {WORD_SHAPING_RULES.map((rule) => (
+                    <label key={rule.key} className="words-mutation-row">
+                      <input
+                        type="checkbox"
+                        className="words-mutation-checkbox"
+                        checked={Boolean(generationSettings[rule.key])}
+                        onChange={(event) =>
+                          setRule(rule.key, event.target.checked)
+                        }
+                      />
+                      <SettingHelpLabel text={rule.label} help={rule.help} />
+                    </label>
+                  ))}
+                  <div className="words-alignment-block">
+                    <label className="words-mutation-row words-alignment-master-row">
+                      <input
+                        type="checkbox"
+                        className="words-mutation-checkbox"
+                        checked={generationSettings.stressAlignment !== 'off'}
+                        onChange={(event) => {
+                          if (event.target.checked) {
+                            setGenerationSettings((prev) => ({
+                              ...prev,
+                              stressAlignment:
+                                prev.stressAlignment === 'off'
+                                  ? 'strong'
+                                  : prev.stressAlignment,
+                            }));
+                          } else {
+                            setStressAlignment('off');
+                          }
+                        }}
+                      />
+                      <SettingHelpLabel
+                        text="Stress to beats"
+                        help={ALIGNMENT_HELP.stress}
+                      />
+                    </label>
+                    {generationSettings.stressAlignment !== 'off' ? (
+                      <div
+                        className="words-segmented-toggle words-alignment-subtoggle"
+                        role="group"
+                        aria-label="Stress alignment strength"
+                      >
+                        {ALIGNMENT_STRENGTH_OPTIONS.map((option) => (
+                          <button
+                            key={`stress-${option}`}
+                            type="button"
+                            className={
+                              generationSettings.stressAlignment === option
+                                ? 'is-active'
+                                : ''
+                            }
+                            onClick={() => setStressAlignment(option)}
+                          >
+                            {option}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                  <div className="words-alignment-block">
+                    <label className="words-mutation-row words-alignment-master-row">
+                      <input
+                        type="checkbox"
+                        className="words-mutation-checkbox"
+                        checked={generationSettings.wordStartAlignment !== 'off'}
+                        onChange={(event) => {
+                          if (event.target.checked) {
+                            setGenerationSettings((prev) => ({
+                              ...prev,
+                              wordStartAlignment:
+                                prev.wordStartAlignment === 'off'
+                                  ? 'strong'
+                                  : prev.wordStartAlignment,
+                            }));
+                          } else {
+                            setWordStartAlignment('off');
+                          }
+                        }}
+                      />
+                      <SettingHelpLabel
+                        text="Word starts to beats"
+                        help={ALIGNMENT_HELP.wordStart}
+                      />
+                    </label>
+                    {generationSettings.wordStartAlignment !== 'off' ? (
+                      <div
+                        className="words-segmented-toggle words-alignment-subtoggle"
+                        role="group"
+                        aria-label="Word start alignment strength"
+                      >
+                        {ALIGNMENT_STRENGTH_OPTIONS.map((option) => (
+                          <button
+                            key={`word-${option}`}
+                            type="button"
+                            className={
+                              generationSettings.wordStartAlignment === option
+                                ? 'is-active'
+                                : ''
+                            }
+                            onClick={() => setWordStartAlignment(option)}
+                          >
+                            {option}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <h3 className="words-gs-heading words-gs-heading--sub">Phrasing</h3>
+                  <div className="words-segmented-toggle" role="group" aria-label="Phrasing mode">
+                    {PHRASING_OPTIONS.map((opt) => (
+                      <AppTooltip key={opt.value} title={opt.help}>
+                        <button
+                          type="button"
+                          className={
+                            generationSettings.phrasing === opt.value
+                              ? 'is-active'
+                              : ''
+                          }
+                          onClick={() =>
+                            setGenerationSettings((prev) => ({
+                              ...prev,
+                              phrasing: opt.value,
+                            }))
+                          }
+                        >
+                          {opt.label}
+                        </button>
+                      </AppTooltip>
+                    ))}
+                  </div>
+                  <label className="words-mutation-row">
+                    <input
+                      type="checkbox"
+                      className="words-mutation-checkbox"
+                      checked={generationSettings.landingNote !== 'off'}
                       onChange={(event) =>
-                        updateSetting(
-                          'alignWordStartsToBeats',
-                          Number(event.target.value)
-                        )
+                        setGenerationSettings((prev) => ({
+                          ...prev,
+                          landingNote: event.target.checked ? 'quarter' : 'off',
+                        }))
                       }
                     />
-                    <span>{generationSettings.alignWordStartsToBeats}</span>
-                  </label>
-                  <label className="words-slider-row">
                     <SettingHelpLabel
-                      text="stress to major beats"
-                      help={GENERATION_SETTING_HELP.alignStressToMajorBeats}
+                      text="Landing note"
+                      help="End each phrase on a held quarter note for a grounded finish."
                     />
-                    <AppSlider
-                      min={0}
-                      max={100}
-                      className="words-slider-input"
-                      value={generationSettings.alignStressToMajorBeats}
-                      onChange={(event) =>
-                        updateSetting(
-                          'alignStressToMajorBeats',
-                          Number(event.target.value)
-                        )
-                      }
-                    />
-                    <span>{generationSettings.alignStressToMajorBeats}</span>
-                  </label>
-                  <label className="words-slider-row">
-                    <SettingHelpLabel
-                      text="motif variation"
-                      help={GENERATION_SETTING_HELP.motifVariation}
-                    />
-                    <AppSlider
-                      min={0}
-                      max={100}
-                      className="words-slider-input"
-                      value={generationSettings.motifVariation}
-                      onChange={(event) =>
-                        updateSetting(
-                          'motifVariation',
-                          Number(event.target.value)
-                        )
-                      }
-                    />
-                    <span>{generationSettings.motifVariation}</span>
-                  </label>
-                  <label className="words-slider-row">
-                    <SettingHelpLabel
-                      text="mid-measure rest bias"
-                      help={GENERATION_SETTING_HELP.midMeasureRestBias}
-                    />
-                    <AppSlider
-                      min={0}
-                      max={100}
-                      className="words-slider-input"
-                      value={generationSettings.midMeasureRestBias}
-                      onChange={(event) =>
-                        updateSetting(
-                          'midMeasureRestBias',
-                          Number(event.target.value)
-                        )
-                      }
-                    />
-                    <span>{generationSettings.midMeasureRestBias}</span>
-                  </label>
-                  <label className="words-slider-row">
-                    <SettingHelpLabel
-                      text="avoid splitting words w/ rests"
-                      help={GENERATION_SETTING_HELP.avoidIntraWordRests}
-                    />
-                    <AppSlider
-                      min={0}
-                      max={100}
-                      className="words-slider-input"
-                      value={generationSettings.avoidIntraWordRests}
-                      onChange={(event) =>
-                        updateSetting(
-                          'avoidIntraWordRests',
-                          Number(event.target.value)
-                        )
-                      }
-                    />
-                    <span>{generationSettings.avoidIntraWordRests}</span>
-                  </label>
-                  <label className="words-slider-row">
-                    <SettingHelpLabel
-                      text="line-break empty-space bias"
-                      help={GENERATION_SETTING_HELP.lineBreakGapBias}
-                    />
-                    <AppSlider
-                      min={0}
-                      max={100}
-                      className="words-slider-input"
-                      value={generationSettings.lineBreakGapBias}
-                      onChange={(event) =>
-                        updateSetting(
-                          'lineBreakGapBias',
-                          Number(event.target.value)
-                        )
-                      }
-                    />
-                    <span>{generationSettings.lineBreakGapBias}</span>
                   </label>
                 </div>
-
               </div>
             </div>
-          ) : null}
+            ) : null}
+          </div>
         </div>
         <div className="words-playback-row">
           <button

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FormControl, MenuItem, Select, Slider } from '@mui/material';
+import { FormControl, MenuItem, Popover, Select, Slider } from '@mui/material';
 import { type MediaFile } from './components/MediaUploader';
 import BeatVisualizer from './components/BeatVisualizer';
 import VideoPlayer from './components/VideoPlayer';
@@ -30,6 +30,8 @@ import { BEAT_ANALYSIS_VERSION } from './utils/analysisVersion';
 import { shouldHandleGlobalPlaybackSpacebar } from './utils/keyboardShortcuts';
 import {
   createUserLane,
+  loadSongSettings,
+  saveSongSettings,
   toLaneSection,
   type LaneSection,
   type PracticeEditorSnapshot,
@@ -41,20 +43,20 @@ import {
 } from './utils/laneSectionOps';
 import {
   extractYouTubeVideoId,
-  getLibraryRecord,
   getLocalFileForEntry,
   getUserPracticeSections,
   loadLibraryEntries,
   loadStaleReanalysisQueue,
   markAllStaleIfVersionChanged,
   markEntryViewed,
+  renameLibraryEntry,
   saveAnalysisBundle,
   saveUserPracticeSections,
   setEntryStaleState,
   upsertLocalVideo,
   upsertYoutubeVideo,
 } from './storage/beatLibraryService';
-import { getSchemaVersion } from './storage/beatLibraryDb';
+import { getAnalysisBundle, getSchemaVersion } from './storage/beatLibraryDb';
 import type { BeatLibraryEntry, UploadTaskState, UserPracticeData, UserPracticeLane, UserPracticeSection } from './types/library';
 import { decodeMediaToBuffer, runBeatAnalysisPipeline } from './utils/analysisPipeline';
 
@@ -77,13 +79,17 @@ const App: React.FC = () => {
   const [mediaFile, setMediaFile] = useState<MediaFile | null>(null);
   const [libraryEntries, setLibraryEntries] = useState<BeatLibraryEntry[]>([]);
   const [activeEntryId, setActiveEntryId] = useState<string | null>(null);
+  const [switchingEntry, setSwitchingEntry] = useState(false);
   const [uploadTasks, setUploadTasks] = useState<UploadTaskState[]>([]);
   const [duplicateMessage, setDuplicateMessage] = useState<string | null>(null);
   const [libraryQuery, setLibraryQuery] = useState('');
+  const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState('');
   const [reanalysisQueue, setReanalysisQueue] = useState<string[]>([]);
   const [isBackgroundReanalyzing, setIsBackgroundReanalyzing] = useState(false);
   const [analysisStaleMessage, setAnalysisStaleMessage] = useState<string | null>(null);
   const [alignLoopToMetronome, setAlignLoopToMetronome] = useState(true);
+  const [nudgeUnit, setNudgeUnit] = useState<'measure' | 'beat'>('measure');
   const [selectedAnalysisIds, setSelectedAnalysisIds] = useState<string[]>([]);
   const [practiceLanes, setPracticeLanes] = useState<UserPracticeLane[]>([]);
   const [activeLaneId, setActiveLaneId] = useState<string | null>(null);
@@ -98,6 +104,9 @@ const App: React.FC = () => {
   const [drumEnabled, setDrumEnabled] = useState(false);
   const [syncStartTime, setSyncStartTime] = useState<number | null>(null);
   const [drumVolume, setDrumVolume] = useState(70);
+  const [mixerOpen, setMixerOpen] = useState(false);
+  const mixerAnchorRef = useRef<HTMLButtonElement | null>(null);
+  const audioBufferCacheRef = useRef<Map<string, AudioBuffer>>(new Map());
   const [transposeSemitones, setTransposeSemitones] = useState(0);
   const [transposeDraft, setTransposeDraft] = useState('0');
   const [youtubePlayback, setYoutubePlayback] = useState<YouTubePlaybackState>({
@@ -165,7 +174,6 @@ const App: React.FC = () => {
     metronomeVolume,
     loopRegion,
     loopEnabled,
-    isInFermata,
     play,
     pause,
     stop,
@@ -381,6 +389,21 @@ const App: React.FC = () => {
   }, [practiceLanes, userSections, persistUserSections]);
 
   useEffect(() => {
+    if (!activeEntryId) return;
+    saveSongSettings(activeEntryId, {
+      metronomeEnabled,
+      drumEnabled,
+      audioVolume,
+      metronomeVolume,
+      drumVolume,
+      alignLoopToMetronome,
+      correctedDetectedKey: correctedDetectedKey ?? null,
+      transposeSemitones,
+      youtubeManualBpm,
+    });
+  }, [activeEntryId, metronomeEnabled, drumEnabled, audioVolume, metronomeVolume, drumVolume, alignLoopToMetronome, correctedDetectedKey, transposeSemitones, youtubeManualBpm]);
+
+  useEffect(() => {
     if (analysisResult && detectedBpmBaseline === null) {
       setDetectedBpmBaseline(analysisResult.bpm);
     }
@@ -401,12 +424,16 @@ const App: React.FC = () => {
     });
   }, [detectedKeyBaseline]);
 
+  const previewUrlsRef = useRef(libraryPreviewUrls);
+  previewUrlsRef.current = libraryPreviewUrls;
+
   useEffect(() => {
     let cancelled = false;
     const created: string[] = [];
     const loadPreviews = async () => {
+      const currentUrls = previewUrlsRef.current;
       const neededLocalEntries = libraryEntries
-        .filter((entry) => entry.sourceType === 'local' && entry.mediaKind === 'video' && !libraryPreviewUrls[entry.id])
+        .filter((entry) => entry.sourceType === 'local' && entry.mediaKind === 'video' && !currentUrls[entry.id])
         .slice(0, 12);
       if (neededLocalEntries.length === 0) return;
       const updates: Record<string, string> = {};
@@ -427,7 +454,7 @@ const App: React.FC = () => {
       cancelled = true;
       created.forEach((url) => URL.revokeObjectURL(url));
     };
-  }, [libraryEntries, libraryPreviewUrls]);
+  }, [libraryEntries]);
 
   useEffect(() => {
     if (audioBuffer && analysisResult && !isAnalyzingChords && !chordResult) {
@@ -484,8 +511,38 @@ const App: React.FC = () => {
       .catch((error) => console.error('Failed to save analysis bundle', error));
   }, [activeEntryId, analysisResult, refreshLibrary]);
 
+  // Track whether we've attempted to restore from URL params yet
+  const hasRestoredFromUrl = useRef(false);
+
+  // Sync URL params when the active entry changes
+  useEffect(() => {
+    if (!activeEntryId && !hasRestoredFromUrl.current) return;
+    const url = new URL(window.location.href);
+    if (!activeEntryId) {
+      url.searchParams.delete('v');
+      url.searchParams.delete('f');
+      if (url.search !== window.location.search) {
+        window.history.replaceState(null, '', url.toString());
+      }
+      return;
+    }
+    const entry = libraryEntries.find((e) => e.id === activeEntryId);
+    if (!entry) return;
+    if (entry.sourceType === 'youtube' && entry.youtubeVideoId) {
+      url.searchParams.set('v', entry.youtubeVideoId);
+      url.searchParams.delete('f');
+    } else {
+      url.searchParams.set('f', entry.fingerprint);
+      url.searchParams.delete('v');
+    }
+    if (url.search !== window.location.search) {
+      window.history.replaceState(null, '', url.toString());
+    }
+  }, [activeEntryId, libraryEntries]);
+
   const loadEntry = useCallback(
     async (entry: BeatLibraryEntry) => {
+      setSwitchingEntry(true);
       await markEntryViewed(entry.id);
       await refreshLibrary();
       setActiveEntryId(entry.id);
@@ -498,8 +555,6 @@ const App: React.FC = () => {
       setSelectedAnalysisIds([]);
       setDetectedBpmBaseline(null);
       setDetectedKeyBaseline(null);
-      setCorrectedDetectedKey(null);
-      setTransposeSemitones(0);
       setSeededPracticeForEntry(null);
       setPracticeLanes([]);
       setActiveLaneId(null);
@@ -510,6 +565,19 @@ const App: React.FC = () => {
       clearAnalysisSections();
       resetChordAnalysis();
       resetAnalysis();
+
+      const saved = loadSongSettings(entry.id);
+      setMetronomeEnabled(saved?.metronomeEnabled ?? true);
+      setDrumEnabled(saved?.drumEnabled ?? false);
+      setDrumVolume(saved?.drumVolume ?? 70);
+      setAudioVolume(saved?.audioVolume ?? 80);
+      setMetronomeVolume(saved?.metronomeVolume ?? 50);
+      setAlignLoopToMetronome(saved?.alignLoopToMetronome ?? true);
+      setCorrectedDetectedKey((saved?.correctedDetectedKey as MusicKey) ?? null);
+      setTransposeSemitones(saved?.transposeSemitones ?? 0);
+      if (entry.sourceType === 'youtube') {
+        setYoutubeManualBpm(saved?.youtubeManualBpm ?? 120);
+      }
 
       const savedLocal = localStorage.getItem(userSectionsStorageKey(entry.id));
       if (savedLocal) {
@@ -535,11 +603,15 @@ const App: React.FC = () => {
           youtubeVideoId: entry.youtubeVideoId,
           url: `https://www.youtube.com/embed/${entry.youtubeVideoId}?enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`,
         });
+        setSwitchingEntry(false);
         return;
       }
 
-      const file = await getLocalFileForEntry(entry.id);
-      if (!file) return;
+      const [file, analysisBundle] = await Promise.all([
+        getLocalFileForEntry(entry.id),
+        getAnalysisBundle(entry.id),
+      ]);
+      if (!file) { setSwitchingEntry(false); return; }
       const localMedia: MediaFile = {
         file,
         type: entry.mediaKind,
@@ -548,21 +620,29 @@ const App: React.FC = () => {
       };
       setMediaFile(localMedia);
 
-      const record = await getLibraryRecord(entry.id);
-      if (record?.analysisBundle?.beat) {
-        const buffer = await decodeMediaToBuffer({
-          file: localMedia.file,
-          mediaType: localMedia.type,
-          mediaUrl: localMedia.url,
-          audioContext: getAudioContext(),
-        });
-        hydrateAnalysis({ result: record.analysisBundle.beat, buffer });
+      if (analysisBundle?.beat) {
+        let buffer = audioBufferCacheRef.current.get(entry.id);
+        if (!buffer) {
+          buffer = await decodeMediaToBuffer({
+            file: localMedia.file,
+            mediaType: localMedia.type,
+            mediaUrl: localMedia.url,
+            audioContext: getAudioContext(),
+          });
+          audioBufferCacheRef.current.set(entry.id, buffer);
+          if (audioBufferCacheRef.current.size > 5) {
+            const oldest = audioBufferCacheRef.current.keys().next().value;
+            if (oldest) audioBufferCacheRef.current.delete(oldest);
+          }
+        }
+        hydrateAnalysis({ result: analysisBundle.beat, buffer });
         if (entry.analysis.stale) {
           setReanalysisQueue((prev) => [entry.id, ...prev.filter((id) => id !== entry.id)]);
         }
       } else {
         await analyzeMedia(localMedia);
       }
+      setSwitchingEntry(false);
     },
     [
       analyzeMedia,
@@ -575,8 +655,10 @@ const App: React.FC = () => {
       resetAnalysis,
       resetChordAnalysis,
       resetSelection,
+      setAudioVolume,
       setLoopEnabled,
       setLoopRegion,
+      setMetronomeVolume,
     ]
   );
 
@@ -623,6 +705,36 @@ const App: React.FC = () => {
     },
     [loadEntry, refreshLibrary]
   );
+
+  // On mount, restore the active entry from URL params
+  useEffect(() => {
+    if (hasRestoredFromUrl.current || libraryEntries.length === 0) return;
+    hasRestoredFromUrl.current = true;
+    const params = new URLSearchParams(window.location.search);
+    const ytVideoId = params.get('v');
+    const fp = params.get('f');
+    if (ytVideoId) {
+      const match = libraryEntries.find((e) => e.youtubeVideoId === ytVideoId);
+      if (match) {
+        loadEntry(match);
+        return;
+      }
+      const ytUrl = `https://www.youtube.com/watch?v=${ytVideoId}`;
+      ingestAndMaybeLoad({
+        file: new File([], `${ytVideoId}.url`, { type: 'text/uri-list' }),
+        type: 'video',
+        sourceType: 'youtube',
+        sourceUrl: ytUrl,
+        youtubeVideoId: ytVideoId,
+        url: `https://www.youtube.com/embed/${ytVideoId}?enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`,
+      }, true);
+    } else if (fp) {
+      const match = libraryEntries.find((e) => e.fingerprint === fp);
+      if (match) {
+        loadEntry(match);
+      }
+    }
+  }, [libraryEntries, loadEntry, ingestAndMaybeLoad]);
 
   const handleFileSelect = useCallback(
     async (media: MediaFile) => {
@@ -718,6 +830,22 @@ const App: React.FC = () => {
       .catch((error) => console.error('Failed to load stale queue', error));
   }, [refreshLibrary]);
 
+  const hasBackfilledTitles = useRef(false);
+  useEffect(() => {
+    if (hasBackfilledTitles.current || libraryEntries.length === 0) return;
+    const stale = libraryEntries.filter(
+      (e) => e.sourceType === 'youtube' && e.youtubeVideoId && e.title.startsWith('YouTube ')
+    );
+    if (stale.length === 0) { hasBackfilledTitles.current = true; return; }
+    hasBackfilledTitles.current = true;
+    (async () => {
+      for (const entry of stale) {
+        await upsertYoutubeVideo({ url: entry.sourceUrl ?? '', videoId: entry.youtubeVideoId! });
+      }
+      await refreshLibrary();
+    })().catch((error) => console.error('YouTube title backfill failed', error));
+  }, [libraryEntries, refreshLibrary]);
+
   useEffect(() => {
     if (isBackgroundReanalyzing || reanalysisQueue.length === 0 || isAnalyzing) return;
     const timer = window.setTimeout(async () => {
@@ -725,11 +853,19 @@ const App: React.FC = () => {
       const [nextId, ...rest] = reanalysisQueue;
       setReanalysisQueue(rest);
       try {
-        const record = await getLibraryRecord(nextId);
-        if (!record || record.entry.sourceType !== 'local') return;
+        const entry = libraryEntries.find((e) => e.id === nextId);
+        if (!entry || entry.sourceType !== 'local') {
+          return;
+        }
+        const entryTitle = entry.title;
+        setUploadTasks((prev) => {
+          const matching = prev.find((t) => t.detail === 'Queued' && t.name === entryTitle);
+          if (matching) return prev.map((t) => (t.id === matching.id ? { ...t, status: 'processing' as const, detail: 'Analyzing…' } : t));
+          return prev;
+        });
         const file = await getLocalFileForEntry(nextId);
         if (!file) return;
-        const mediaType = record.entry.mediaKind;
+        const mediaType = entry.mediaKind;
         const mediaUrl = URL.createObjectURL(file);
         const { result } = await runBeatAnalysisPipeline({
           file,
@@ -748,14 +884,35 @@ const App: React.FC = () => {
         await setEntryStaleState(nextId, false);
         URL.revokeObjectURL(mediaUrl);
         await refreshLibrary();
+        setUploadTasks((prev) => {
+          const matching = prev.find((t) => t.detail === 'Analyzing…' && t.name === entryTitle);
+          if (matching) return prev.map((t) => (t.id === matching.id ? { ...t, status: 'done' as const, detail: 'Done' } : t));
+          return prev;
+        });
       } catch (error) {
         console.error('Background reanalysis failed', error);
+        setUploadTasks((prev) =>
+          prev.map((t) => (t.detail === 'Analyzing…' ? { ...t, status: 'error' as const, detail: 'Analysis failed' } : t))
+        );
       } finally {
         setIsBackgroundReanalyzing(false);
       }
-    }, 2500);
+    }, 500);
     return () => window.clearTimeout(timer);
-  }, [getAudioContext, isAnalyzing, isBackgroundReanalyzing, reanalysisQueue, refreshLibrary]);
+  }, [getAudioContext, isAnalyzing, isBackgroundReanalyzing, libraryEntries, reanalysisQueue, refreshLibrary]);
+
+  useEffect(() => {
+    const hasTerminal = uploadTasks.some(
+      (t) => t.status === 'done' || t.status === 'error'
+    );
+    if (!hasTerminal) return;
+    const timer = window.setTimeout(() => {
+      setUploadTasks((prev) =>
+        prev.filter((t) => t.status !== 'done' && t.status !== 'error')
+      );
+    }, 4000);
+    return () => window.clearTimeout(timer);
+  }, [uploadTasks]);
 
   const handleFileRemove = useCallback(() => {
     youtubeControllerRef.current?.pause();
@@ -824,38 +981,6 @@ const App: React.FC = () => {
     else play();
   }, [isPlaying, isYouTubeMedia, pause, play, youtubePlayback.isPlaying]);
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement | null;
-      const isEditableTarget = !!target && (
-        target.tagName === 'INPUT' ||
-        target.tagName === 'TEXTAREA' ||
-        target.tagName === 'SELECT' ||
-        target.isContentEditable
-      );
-
-      if (!isEditableTarget && (event.metaKey || event.ctrlKey)) {
-        const isRedo = event.key.toLowerCase() === 'y' || (event.shiftKey && event.key.toLowerCase() === 'z');
-        const isUndo = !event.shiftKey && event.key.toLowerCase() === 'z';
-        if (isUndo) {
-          event.preventDefault();
-          undoPracticeEdit();
-          return;
-        }
-        if (isRedo) {
-          event.preventDefault();
-          redoPracticeEdit();
-          return;
-        }
-      }
-
-      if (!shouldHandleGlobalPlaybackSpacebar(event)) return;
-      event.preventDefault();
-      handlePlayPause();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handlePlayPause, redoPracticeEdit, undoPracticeEdit]);
 
   const handleSkipToStart = useCallback(() => {
     if (isYouTubeMedia) {
@@ -1068,6 +1193,45 @@ const App: React.FC = () => {
     clearAnySelection();
   }, [clearAnySelection, pushPracticeHistory, selectedSectionIds]);
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const isEditableTarget = !!target && (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.tagName === 'SELECT' ||
+        target.isContentEditable
+      );
+
+      if (!isEditableTarget && (event.metaKey || event.ctrlKey)) {
+        const isRedo = event.key.toLowerCase() === 'y' || (event.shiftKey && event.key.toLowerCase() === 'z');
+        const isUndo = !event.shiftKey && event.key.toLowerCase() === 'z';
+        if (isUndo) {
+          event.preventDefault();
+          undoPracticeEdit();
+          return;
+        }
+        if (isRedo) {
+          event.preventDefault();
+          redoPracticeEdit();
+          return;
+        }
+      }
+
+      if (!isEditableTarget && (event.key === 'Delete' || event.key === 'Backspace') && selectedSectionIds.length > 0) {
+        event.preventDefault();
+        handleDeleteSelectedPracticeSections();
+        return;
+      }
+
+      if (!shouldHandleGlobalPlaybackSpacebar(event)) return;
+      event.preventDefault();
+      handlePlayPause();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleDeleteSelectedPracticeSections, handlePlayPause, redoPracticeEdit, selectedSectionIds.length, undoPracticeEdit]);
+
   const renamePracticeSection = useCallback((sectionId: string, label: string) => {
     const trimmed = label.trim();
     if (!trimmed) return;
@@ -1076,6 +1240,46 @@ const App: React.FC = () => {
     pushPracticeHistory();
     setUserSections((prev) => prev.map((section) => (section.id === sectionId ? { ...section, label: trimmed } : section)));
   }, [pushPracticeHistory, userSections]);
+
+  const handleResizeSection = useCallback(
+    (sectionId: string, edge: 'start' | 'end', newTime: number) => {
+      const section = userSections.find((s) => s.id === sectionId);
+      if (!section) return;
+      let clampedTime = Math.max(0, Math.min(effectiveDuration, newTime));
+      if (alignLoopToMetronome && effectiveBpm > 0) {
+        const measureDur = getMeasureDuration(effectiveBpm, timeSignature.numerator);
+        clampedTime = snapToMeasureStart(clampedTime, measureDur, syncStartTime ?? 0);
+      }
+      const minDuration = 0.5;
+      if (edge === 'start' && clampedTime >= section.endTime - minDuration) return;
+      if (edge === 'end' && clampedTime <= section.startTime + minDuration) return;
+      setUserSections((prev) =>
+        prev.map((s) => {
+          if (s.id !== sectionId) return s;
+          return edge === 'start'
+            ? { ...s, startTime: clampedTime }
+            : { ...s, endTime: clampedTime };
+        })
+      );
+      if (loopRegion) {
+        const updatedSections = userSections.map((s) =>
+          s.id === sectionId
+            ? edge === 'start'
+              ? { ...s, startTime: clampedTime }
+              : { ...s, endTime: clampedTime }
+            : s
+        );
+        const selected = updatedSections.filter((s) => selectedSectionIds.includes(s.id));
+        if (selected.length > 0) {
+          setLoopRegion({
+            startTime: Math.min(...selected.map((s) => s.startTime)),
+            endTime: Math.max(...selected.map((s) => s.endTime)),
+          });
+        }
+      }
+    },
+    [alignLoopToMetronome, effectiveBpm, effectiveDuration, loopRegion, selectedSectionIds, setLoopRegion, syncStartTime, timeSignature.numerator, userSections]
+  );
 
   const handleCombineSelection = useCallback(() => {
     if (hasPracticeSelection) {
@@ -1098,7 +1302,7 @@ const App: React.FC = () => {
   }, [analysisSections, combineSelected, createManualSection, createPracticeLane, hasAnalysisSelection, hasPracticeSelection, practiceLanes.length, pushPracticeHistory, selectedAnalysisIds]);
 
   const handleNudgeLoopSelection = useCallback(
-    (direction: 'start' | 'end', deltaMeasures: number) => {
+    (direction: 'start' | 'end', delta: number) => {
       const selectedPractice = userSections.filter((section) => selectedSectionIds.includes(section.id));
       const selectedAnalysis = analysisSections.filter((section) => selectedAnalysisIds.includes(section.id));
       const selectedPool = selectedPractice.length > 0 ? selectedPractice : selectedAnalysis;
@@ -1112,17 +1316,18 @@ const App: React.FC = () => {
       if (!region) return;
 
       const measureDuration = getMeasureDuration(Math.max(1, effectiveBpm), timeSignature.numerator);
+      const stepDuration = nudgeUnit === 'beat' ? (measureDuration / timeSignature.numerator) : measureDuration;
       let nextStart = region.startTime;
       let nextEnd = region.endTime;
       if (direction === 'start') {
-        nextStart = Math.max(0, region.startTime + deltaMeasures * measureDuration);
+        nextStart = Math.max(0, region.startTime + delta * stepDuration);
       } else {
-        nextEnd = Math.min(effectiveDuration, region.endTime + deltaMeasures * measureDuration);
+        nextEnd = Math.min(effectiveDuration, region.endTime + delta * stepDuration);
       }
-      if (nextEnd - nextStart < Math.max(0.2, measureDuration * 0.5)) return;
+      if (nextEnd - nextStart < Math.max(0.2, stepDuration * 0.5)) return;
       setLoopRegion({ startTime: nextStart, endTime: nextEnd });
     },
-    [analysisSections, effectiveBpm, effectiveDuration, loopRegion, selectedAnalysisIds, selectedSectionIds, setLoopRegion, timeSignature.numerator, userSections]
+    [analysisSections, effectiveBpm, effectiveDuration, loopRegion, nudgeUnit, selectedAnalysisIds, selectedSectionIds, setLoopRegion, timeSignature.numerator, userSections]
   );
 
   const handleSelectAnalysisSection = useCallback(
@@ -1201,45 +1406,89 @@ const App: React.FC = () => {
     },
     [activeEntryId, isAnalyzing]
   );
+  const commitRename = useCallback(async (entryId: string, newTitle: string) => {
+    const trimmed = newTitle.trim();
+    if (trimmed) {
+      await renameLibraryEntry(entryId, trimmed);
+      await refreshLibrary();
+    }
+    setEditingEntryId(null);
+    setEditingTitle('');
+  }, [refreshLibrary]);
+
   const renderLibraryCard = useCallback(
     (entry: BeatLibraryEntry, highlightActive = false) => {
       const statusLabel = getEntryStatusLabel(entry);
       const isActive = highlightActive && entry.id === activeEntryId;
+      const isEditing = editingEntryId === entry.id;
       return (
-        <button
+        <div
           key={entry.id}
           className={`library-card ${isActive ? 'active' : ''}`}
-          onClick={() => loadEntry(entry)}
+          role="button"
+          tabIndex={0}
+          onClick={() => { if (!isEditing) loadEntry(entry); }}
+          onKeyDown={(e) => { if (!isEditing && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); loadEntry(entry); } }}
         >
           <div className="library-thumb">
             {entry.sourceType === 'youtube' && entry.youtubeVideoId ? (
               <img src={`https://i.ytimg.com/vi/${entry.youtubeVideoId}/hqdefault.jpg`} alt={entry.title} />
             ) : libraryPreviewUrls[entry.id] ? (
-              <video src={libraryPreviewUrls[entry.id]} muted />
+              <video src={`${libraryPreviewUrls[entry.id]}#t=0.1`} muted preload="metadata" />
             ) : (
               <span className="material-symbols-outlined">movie</span>
             )}
           </div>
           <div className="library-card-meta">
-            <span className="library-card-title">{entry.title}</span>
+            {isEditing ? (
+              <input
+                className="library-card-title-input"
+                value={editingTitle}
+                onChange={(e) => setEditingTitle(e.target.value)}
+                onBlur={() => commitRename(entry.id, editingTitle)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') { e.preventDefault(); commitRename(entry.id, editingTitle); }
+                  if (e.key === 'Escape') { setEditingEntryId(null); setEditingTitle(''); }
+                  e.stopPropagation();
+                }}
+                onClick={(e) => e.stopPropagation()}
+                autoFocus
+              />
+            ) : (
+              <span
+                className="library-card-title"
+                onDoubleClick={(e) => {
+                  e.stopPropagation();
+                  setEditingEntryId(entry.id);
+                  setEditingTitle(entry.title);
+                }}
+                title="Double-click to rename"
+              >
+                {entry.title}
+              </span>
+            )}
             {statusLabel && <span className={`library-status ${statusLabel === 'Outdated' ? 'stale' : 'fresh'}`}>{statusLabel}</span>}
           </div>
-        </button>
+        </div>
       );
     },
-    [activeEntryId, getEntryStatusLabel, libraryPreviewUrls, loadEntry]
+    [activeEntryId, commitRename, editingEntryId, editingTitle, getEntryStatusLabel, libraryPreviewUrls, loadEntry]
   );
 
   const hasAudio = audioBuffer !== null;
   const hasVideo = mediaFile?.type === 'video';
   const isYouTube = isYouTubeMedia;
   const isProcessing = isAnalyzing || isAnalyzingChords || isDetectingSections;
-  const isReady = isYouTube || (hasAudio && analysisResult !== null);
+  const isReadyNative = isYouTube || (hasAudio && analysisResult !== null);
+  const isReady = isReadyNative || switchingEntry;
   const confidenceLevel = analysisResult?.confidenceLevel ?? 'medium';
   const warnings = analysisResult?.warnings ?? [];
+  const tempoWarning = warnings.find((w) => w.includes('tempo fluctuations') || w.includes('rubato'));
+  const [tempoWarningDismissed, setTempoWarningDismissed] = useState(false);
   const keyConfidenceScore = chordResult?.keyConfidence ?? null;
   const keyConfidenceLevel =
     keyConfidenceScore === null ? null : keyConfidenceScore >= 0.68 ? 'high' : keyConfidenceScore >= 0.4 ? 'medium' : 'low';
+  const activeEntry = useMemo(() => libraryEntries.find((e) => e.id === activeEntryId) ?? null, [libraryEntries, activeEntryId]);
   const canResetSyncStart = Math.abs(effectiveSyncStart - detectedSyncStart) > 0.05;
   const youtubeBeatState = useMemo(() => {
     if (!isYouTube || effectiveCurrentTime < effectiveSyncStart) {
@@ -1366,6 +1615,15 @@ const App: React.FC = () => {
         {isReady && mediaFile && (
           <div className="player-layout">
             <div className="viz-section">
+              {tempoWarning && !tempoWarningDismissed && (
+                <div className="tempo-warning-banner">
+                  <span className="material-symbols-outlined">music_off</span>
+                  <span className="tempo-warning-text">{tempoWarning}</span>
+                  <button className="tempo-warning-dismiss" onClick={() => setTempoWarningDismissed(true)} aria-label="Dismiss">
+                    <span className="material-symbols-outlined">close</span>
+                  </button>
+                </div>
+              )}
               <div className="transport-controls transport-controls-sticky">
                 <div className="transport-row">
                   <button className={`play-btn ${effectiveIsPlaying ? 'playing' : ''}`} onClick={handlePlayPause}>
@@ -1403,15 +1661,19 @@ const App: React.FC = () => {
                       ))}
                     </Select>
                   </FormControl>
-                  <button
-                    ref={exportButtonRef}
-                    className="nav-btn"
-                    onClick={() => setExportOpen(true)}
-                    aria-label="Export audio"
-                    title="Export audio"
-                  >
-                    <span className="material-symbols-outlined">download</span>
-                  </button>
+                  <AppTooltip title={isYouTubeMedia ? 'Export not available for YouTube videos' : 'Export audio'}>
+                    <span>
+                      <button
+                        ref={exportButtonRef}
+                        className="nav-btn"
+                        onClick={() => setExportOpen(true)}
+                        aria-label="Export audio"
+                        disabled={isYouTubeMedia}
+                      >
+                        <span className="material-symbols-outlined">download</span>
+                      </button>
+                    </span>
+                  </AppTooltip>
                   <SharedExportPopover
                     open={exportOpen}
                     anchorEl={exportButtonRef.current}
@@ -1467,54 +1729,104 @@ const App: React.FC = () => {
                       </label>
                     </AppTooltip>
                   </div>
-                </div>
-                <div className="volume-mixer horizontal">
-                  <div className="mixer-row">
-                    <span className="mixer-label">
-                      <span className="material-symbols-outlined">music_note</span>
-                    </span>
-                    <Slider
-                      min={0}
-                      max={100}
-                      value={audioVolume}
-                      onChange={(_, value) => setAudioVolume(Number(value))}
-                      className="mixer-slider"
-                      disabled={isYouTube}
-                      size="small"
-                    />
-                    <span className="mixer-value">{audioVolume}%</span>
-                  </div>
-                  <div className="mixer-row">
-                    <span className="mixer-label">
-                      <span className="material-symbols-outlined">music_cast</span>
-                    </span>
-                    <Slider
-                      min={0}
-                      max={100}
-                      value={drumVolume}
-                      onChange={(_, value) => setDrumVolume(Number(value))}
-                      className="mixer-slider"
-                      size="small"
-                    />
-                    <span className="mixer-value">{drumVolume}%</span>
-                  </div>
-                  <div className="mixer-row">
-                    <span className="mixer-label">
-                      <span className="material-symbols-outlined">timer</span>
-                    </span>
-                    <Slider
-                      min={0}
-                      max={100}
-                      value={metronomeVolume}
-                      onChange={(_, value) => setMetronomeVolume(Number(value))}
-                      className="mixer-slider"
-                      disabled={!metronomeEnabled}
-                      size="small"
-                    />
-                    <span className="mixer-value">{metronomeVolume}%</span>
+                  <div className="mixer-anchor">
+                    <AppTooltip title="Volume mixer">
+                      <button
+                        ref={mixerAnchorRef}
+                        className="icon-btn subtle"
+                        onClick={() => setMixerOpen((o) => !o)}
+                        aria-label="Volume mixer"
+                      >
+                        <span className="material-symbols-outlined">tune</span>
+                      </button>
+                    </AppTooltip>
                   </div>
                 </div>
+                <Popover
+                  open={mixerOpen}
+                  anchorEl={mixerAnchorRef.current}
+                  onClose={() => setMixerOpen(false)}
+                  anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                  transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                  slotProps={{ paper: { className: 'mixer-popover' } }}
+                >
+                  <div className="volume-mixer vertical">
+                    <div className="mixer-row">
+                      <span className="mixer-label">
+                        <span className="material-symbols-outlined">movie</span>
+                        Video
+                      </span>
+                      <Slider
+                        min={0}
+                        max={100}
+                        value={audioVolume}
+                        onChange={(_, value) => setAudioVolume(Number(value))}
+                        className="mixer-slider"
+                        disabled={isYouTube}
+                        size="small"
+                      />
+                      <span className="mixer-value">{audioVolume}%</span>
+                    </div>
+                    <div className="mixer-row">
+                      <span className="mixer-label">
+                        <span className="material-symbols-outlined">music_cast</span>
+                        Drums
+                      </span>
+                      <Slider
+                        min={0}
+                        max={100}
+                        value={drumVolume}
+                        onChange={(_, value) => setDrumVolume(Number(value))}
+                        className="mixer-slider"
+                        size="small"
+                      />
+                      <span className="mixer-value">{drumVolume}%</span>
+                    </div>
+                    <div className="mixer-row">
+                      <span className="mixer-label">
+                        <span className="material-symbols-outlined">timer</span>
+                        Metronome
+                      </span>
+                      <Slider
+                        min={0}
+                        max={100}
+                        value={metronomeVolume}
+                        onChange={(_, value) => setMetronomeVolume(Number(value))}
+                        className="mixer-slider"
+                        disabled={!metronomeEnabled}
+                        size="small"
+                      />
+                      <span className="mixer-value">{metronomeVolume}%</span>
+                    </div>
+                  </div>
+                </Popover>
               </div>
+
+              {activeEntry && (
+                <div className="now-playing-title-bar">
+                  {editingEntryId === activeEntry.id ? (
+                    <input
+                      className="now-playing-title-input"
+                      value={editingTitle}
+                      onChange={(e) => setEditingTitle(e.target.value)}
+                      onBlur={() => commitRename(activeEntry.id, editingTitle)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') { e.preventDefault(); commitRename(activeEntry.id, editingTitle); }
+                        if (e.key === 'Escape') { setEditingEntryId(null); setEditingTitle(''); }
+                      }}
+                      autoFocus
+                    />
+                  ) : (
+                    <h2
+                      className="now-playing-title"
+                      onDoubleClick={() => { setEditingEntryId(activeEntry.id); setEditingTitle(activeEntry.title); }}
+                      title="Double-click to rename"
+                    >
+                      {activeEntry.title}
+                    </h2>
+                  )}
+                </div>
+              )}
 
               {hasVideo ? (
                 <div className="video-container">
@@ -1550,8 +1862,8 @@ const App: React.FC = () => {
                     musicEndTime: isYouTube ? effectiveDuration : analysisResult?.musicEndTime,
                     syncStartTime: effectiveSyncStart,
                     isInSyncRegion: effectiveCurrentTime >= effectiveSyncStart,
-                    isInFermata: isYouTube ? false : isInFermata,
-                    tempoRegions: isYouTube ? undefined : analysisResult?.tempoRegions,
+                    isInFermata: false,
+                    tempoRegions: undefined,
                   }}
                   loop={{ region: loopRegion, enabled: loopEnabled }}
                   sectionControls={{
@@ -1585,11 +1897,14 @@ const App: React.FC = () => {
                       }
                     },
                     onExtend: handleNudgeLoopSelection,
+                    onResizeSection: handleResizeSection,
                     onSaveReferenceSelection: !isYouTube ? handleCreateFromAnalysisSelection : undefined,
                     onSplitAtCurrentTime: handleSplitAtCurrentTime,
                     onDeleteSelection: selectedSectionIds.length > 0 ? handleDeleteSelectedPracticeSections : undefined,
                     snapToMeasuresEnabled: alignLoopToMetronome,
                     onToggleSnapToMeasures: setAlignLoopToMetronome,
+                    nudgeUnit,
+                    onToggleNudgeUnit: setNudgeUnit,
                     onCreateLane: () => createPracticeLane(),
                     onRenameLane: renamePracticeLane,
                     onDeleteLane: deletePracticeLane,
@@ -1936,7 +2251,7 @@ const App: React.FC = () => {
                     <DrumAccompaniment
                       bpm={effectiveBpm}
                       timeSignature={timeSignature}
-                      isPlaying={effectiveIsPlaying && effectiveCurrentTime >= effectiveSyncStart && (isYouTube || !isInFermata)}
+                      isPlaying={effectiveIsPlaying && effectiveCurrentTime >= effectiveSyncStart}
                       currentBeatTime={Math.max(0, effectiveCurrentTime - effectiveSyncStart)}
                       currentBeat={effectiveCurrentBeat}
                       metronomeEnabled={metronomeEnabled}

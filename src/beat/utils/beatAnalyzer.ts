@@ -12,15 +12,13 @@ import { detectTempoEnsemble } from './tempoEnsemble';
 import { mergeBeatGrids, snapBeatsToOnsets } from './beatRefinement';
 import type { TempoRegion } from './tempoRegions';
 import { createDefaultRegion } from './tempoRegions';
-import { buildTempoRegionsFromFermatas } from './analysis/tempoRegionsBuilder';
-import { detectFermatasFromGaps, detectGapsForResync, detectGapOnsets, type GapWithResync } from './gapFermataDetector';
+import { detectGapsForResync, detectGapOnsets, type GapWithResync } from './gapFermataDetector';
 import { runQuickBpmAccuracyTest, formatBpmAccuracyReport } from './bpmAccuracyTest';
 import { analyzeTempoVariation } from './sectionalTempoAnalyzer';
 import { detectOnsets } from './analysis/onsets';
 import { alignBeatGridToDownbeat } from './downbeatAlignment';
 // Legacy detectors - DEPRECATED, kept for API compatibility
-// Use detectFermatasFromGaps from './gapFermataDetector' instead
-/** @deprecated Use detectFermatasFromGaps from gapFermataDetector instead */
+/** @deprecated Fermata detection is disabled */
 export { detectFermatas, mergeFermataRegions } from './experimental/fermataDetector';
 /** @deprecated No longer actively maintained */
 export { detectTempoChanges, combineTempoRegions } from './experimental/tempoChangeDetector';
@@ -502,24 +500,29 @@ export async function analyzeBeat(
     console.warn('[BeatAnalyzer] Downbeat alignment failed:', err);
   }
 
-  // Analyze tempo variation across sections (diagnostic tool)
-  // This helps identify if the song has variable tempo
-  if (typeof window !== 'undefined' && import.meta.env?.DEV) {
-    try {
-      const onsets = detectOnsets(audioBuffer, { preset: 'analysis' });
-      if (onsets.length > 20) {
-        const tempoReport = analyzeTempoVariation(onsets, audioBuffer.duration, finalBpm);
-        
+  // Analyze tempo variation to warn users about rubato, fermatas, or
+  // inconsistent beat onsets that make metronome alignment difficult.
+  try {
+    const onsets = detectOnsets(audioBuffer, { preset: 'analysis' });
+    if (onsets.length > 20) {
+      const tempoReport = analyzeTempoVariation(onsets, audioBuffer.duration, finalBpm);
+
+      if (typeof window !== 'undefined' && import.meta.env?.DEV) {
         console.log('\n' + tempoReport.detailedAnalysis);
         console.log(`\n${tempoReport.recommendation}\n`);
-        
-        if (tempoReport.hasVariableTempo) {
-          warnings.push(`Tempo varies ±${tempoReport.variationPercent.toFixed(1)}% (${tempoReport.tempoRange.min}-${tempoReport.tempoRange.max} BPM)`);
-        }
       }
-    } catch (err) {
-      console.warn('[BeatAnalyzer] Onset detection failed:', err);
+
+      if (tempoReport.hasVariableTempo) {
+        warnings.push(
+          `This recording appears to have tempo fluctuations (±${tempoReport.variationPercent.toFixed(0)}%, ` +
+          `${tempoReport.tempoRange.min}–${tempoReport.tempoRange.max} BPM). ` +
+          `It may be difficult to match a steady metronome to this music — ` +
+          `the performer may be using rubato, fermatas, or an inconsistent tempo.`
+        );
+      }
     }
+  } catch (err) {
+    console.warn('[BeatAnalyzer] Onset-based tempo analysis failed:', err);
   }
 
   // Detect gaps and resync beat grid to stay aligned after pauses/fermatas
@@ -560,69 +563,17 @@ export async function analyzeBeat(
     console.warn('[analyzeBeat] Gap resync failed:', err);
   }
 
-  reportProgress('Detecting fermatas', 60);
-  await yieldToMainThread();
-  
-  // Detect fermatas using gap-based approach (shared onset detection)
-  let tempoRegions: TempoRegion[] = [];
-  let hasTempoVariance = false;
-
-  try {
-    // Pass musicEndTime to fermata detection so it can filter out end-of-track silence
-    const fermataResult = await detectFermatasFromGaps(
-      audioBuffer, 
-      finalBpm, 
-      { musicEndTime }, 
-      gapOnsets
-    );
-    warnings.push(...fermataResult.warnings);
-
-    reportProgress('Building tempo regions', 85);
-    await yieldToMainThread();
-    
-    // Use musicEndTime as the effective end of the musical content
-    const tempoRegionsResult = buildTempoRegionsFromFermatas(
-      fermataResult.fermatas,
-      finalBpm,
-      musicEndTime
-    );
-    tempoRegions = tempoRegionsResult.regions;
-    hasTempoVariance = tempoRegionsResult.hasTempoVariance;
-  } catch (err) {
-    console.warn('[analyzeBeat] Fermata detection failed:', err);
-    // Fall back to single steady region
-    tempoRegions = [createDefaultRegion(finalBpm, musicEndTime)];
-  }
-
-  // Warn about songs that likely have tempo changes (musical theater, classical, etc.)
-  // Indicators: many gaps, long duration with many fermatas, weak algorithm agreement
-  const fermataCount = tempoRegions.filter(r => r.type === 'fermata').length;
-  const songDuration = audioBuffer.duration;
-  const fermataDensity = fermataCount / (songDuration / 60); // fermatas per minute
-  
-  const likelyHasTempoChanges = 
-    fermataCount >= 6 || // Many fermatas suggest complex structure
-    (fermataCount >= 4 && songDuration > 180) || // Long song with several fermatas
-    (fermataDensity > 1.5 && songDuration > 120); // High fermata density
-  
-  if (likelyHasTempoChanges) {
-    warnings.push('Song may have tempo changes - metronome may not align with all sections');
-    confidenceLevel = 'low';
-    hasTempoVariance = true;
-  }
+  // Fermata/rubato detection is disabled — it produced too many false positives.
+  // The pipeline now always uses a single steady tempo region.
+  const tempoRegions: TempoRegion[] = [createDefaultRegion(finalBpm, musicEndTime)];
+  const hasTempoVariance = false;
   
   reportProgress('Complete', 100);
 
   // Run BPM accuracy test in background (non-blocking) - only in development
-  // This helps verify if our detected BPM is optimal
   const isDev = typeof import.meta !== 'undefined' && (import.meta as ImportMeta).env?.DEV;
   if (isDev) {
-    const fermataRanges: Array<[number, number]> = tempoRegions
-      .filter(r => r.type === 'fermata')
-      .map(r => [r.startTime, r.endTime] as [number, number]);
-    
-    // Use a lighter version that skips redundant detection
-    runQuickBpmAccuracyTest(audioBuffer, finalBpm, confidence, fermataRanges).then(result => {
+    runQuickBpmAccuracyTest(audioBuffer, finalBpm, confidence, []).then(result => {
       console.log('\n' + formatBpmAccuracyReport(result));
     }).catch(err => {
       console.warn('[BpmAccuracy] Test failed:', err);

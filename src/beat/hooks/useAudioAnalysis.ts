@@ -89,24 +89,12 @@ export function useAudioAnalysis(): UseAudioAnalysisReturn {
         newBeats = adjustBeatsForGaps(newBeats, analysisResult.detectedGaps);
       }
 
-      // Update tempo regions with new BPM
-      // IMPORTANT: Preserve fermata/rubato regions - only update steady region BPMs
-      // Fermatas are based on gap detection, not BPM, so they remain valid
-      const updatedTempoRegions = analysisResult.tempoRegions?.map(region => ({
-        ...region,
-        // Update BPM for steady regions to match the new manual BPM
-        // Keep fermata/rubato regions unchanged (they don't have a meaningful BPM)
-        bpm: region.type === 'steady' ? newBpm : region.bpm,
-      }));
-
       setAnalysisResult({
         ...analysisResult,
         bpm: newBpm,
         beats: newBeats,
         confidence: 1.0, // Manual adjustment = full confidence
-        tempoRegions: updatedTempoRegions,
-        // Keep hasTempoVariance if we have fermatas - it's needed for the VariableBeatGrid
-        hasTempoVariance: updatedTempoRegions?.some(r => r.type === 'fermata' || r.type === 'rubato') ?? false,
+        hasTempoVariance: false,
       });
     },
     [analysisResult, audioBuffer]

@@ -1,9 +1,8 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import type { TimeSignature } from '../../shared/rhythm/types';
-import { BeatGrid, VariableBeatGrid } from '../utils/beatGrid';
+import { BeatGrid } from '../utils/beatGrid';
 import { getMeasureDuration } from '../utils/measureUtils';
 import {
-  getAdjustedElapsedTime,
   getCompensatedDetune,
 } from '../utils/beatSyncMath';
 import { useMetronome } from './useMetronome';
@@ -86,7 +85,7 @@ export function useBeatSync({
   syncStartTime,
   mediaUrl,
   transposeSemitones = 0,
-  tempoRegions,
+  tempoRegions: _tempoRegions, // eslint-disable-line @typescript-eslint/no-unused-vars
   detectedOnsets,
   adaptiveResync = false,
 }: UseBeatSyncOptions): UseBeatSyncReturn {
@@ -98,8 +97,6 @@ export function useBeatSync({
   const [playbackRate, setPlaybackRate] = useState<PlaybackSpeed>(1.0);
   const [audioVolume, setAudioVolume] = useState(80);
   const [metronomeVolume, setMetronomeVolume] = useState(50);
-  const [isInFermata, setIsInFermata] = useState(false);
-  const [currentTempoRegion, setCurrentTempoRegion] = useState<TempoRegion | null>(null);
   
   // Loop region state
   const [loopRegion, setLoopRegion] = useState<LoopRegion | null>(null);
@@ -118,11 +115,8 @@ export function useBeatSync({
   const pauseTimeRef = useRef(0);
   const animationFrameRef = useRef<number | null>(null);
   const beatGridRef = useRef<BeatGrid | null>(null);
-  const variableBeatGridRef = useRef<VariableBeatGrid | null>(null);
-  const tempoRegionsRef = useRef<TempoRegion[] | undefined>(tempoRegions);
   const lastBeatRef = useRef(-1);
   const lastClickTimeRef = useRef(0); // Prevent double clicks
-  const wasInFermataPauseRef = useRef(false); // Track fermata exit for smooth re-entry
   const metronomeEnabledRef = useRef(metronomeEnabled);
   const playbackRateRef = useRef<PlaybackSpeed>(1.0);
   const audioVolumeRef = useRef(80);
@@ -226,32 +220,10 @@ export function useBeatSync({
     }
   }, [playbackRate]);
 
-  // Keep tempo regions ref in sync
-  useEffect(() => {
-    tempoRegionsRef.current = tempoRegions;
-  }, [tempoRegions]);
-
   // Update beat grid when parameters change - use sync start time for beat alignment
   useEffect(() => {
     beatGridRef.current = new BeatGrid(bpm, timeSignature, effectiveSyncStart);
-
-    // Only create VariableBeatGrid if we have actual fermata/rubato regions
-    // Don't use it for just steady tempo changes - it causes timing inconsistencies
-    const hasFermataOrRubato = tempoRegions?.some(
-      r => r.type === 'fermata' || r.type === 'rubato'
-    );
-    
-    if (hasFermataOrRubato && tempoRegions && tempoRegions.length > 0) {
-      variableBeatGridRef.current = new VariableBeatGrid(
-        tempoRegions,
-        timeSignature,
-        bpm,
-        effectiveSyncStart
-      );
-    } else {
-      variableBeatGridRef.current = null;
-    }
-  }, [bpm, timeSignature, effectiveSyncStart, tempoRegions]);
+  }, [bpm, timeSignature, effectiveSyncStart]);
 
   // Get or create AudioContext
   const getAudioContext = useCallback(() => {
@@ -392,22 +364,11 @@ export function useBeatSync({
       const elapsed = audio.currentTime;
       setCurrentTime(elapsed);
 
-      // Update beat position for UI display
-      // Use adjusted time to account for fermatas (so UI matches metronome)
       if (beatGridRef.current) {
-        const adjustedElapsed = getAdjustedElapsedTime(
-          elapsed,
-          tempoRegionsRef.current,
-          bpmRef.current,
-          syncStartRef.current,
-          beatsPerMeasureRef.current
-        );
-        const position = beatGridRef.current.getPosition(adjustedElapsed);
+        const position = beatGridRef.current.getPosition(elapsed);
         setCurrentBeat(position.beat);
         setCurrentMeasure(position.measure);
         setProgress(position.progress);
-        // Note: Metronome clicks are handled by the background interval (updateTiming)
-        // which properly checks inFermataRegion and uses adjustedElapsed
       }
 
       // Check for loop end
@@ -463,88 +424,19 @@ export function useBeatSync({
   const updateTiming = useCallback((elapsed: number, triggerMetronome: boolean) => {
     if (!beatGridRef.current) return;
 
-    // Check if we're in a fermata/rubato region
-    // KEY BEHAVIOR: Let the measure COMPLETE before pausing
-    // This means the metronome plays through beat 4, then pauses during the fermata hold
-    let inFermataRegion = false;
-    let inFermataPause = false;
-    let region: TempoRegion | null = null;
-    
-    if (tempoRegionsRef.current && tempoRegionsRef.current.length > 0) {
-      // Find if we're currently inside any fermata/rubato region
-      // Only consider significant fermatas (at least 1.5 seconds)
-      region = tempoRegionsRef.current.find(r => 
-        (r.type === 'fermata' || r.type === 'rubato') &&
-        elapsed >= r.startTime && 
-        elapsed < r.endTime &&
-        (r.endTime - r.startTime) >= 1.5
-      ) || null;
-      
-      inFermataRegion = region !== null;
-      
-      // Calculate if we should actually PAUSE the metronome
-      // We need to let the current measure complete first
-      if (inFermataRegion && region) {
-        const beatInterval = 60 / bpmRef.current;
-        const measureDuration = beatInterval * beatsPerMeasureRef.current;
-        
-        // Calculate cumulative fermata duration from previous fermatas
-        const previousFermatas = tempoRegionsRef.current
-          .filter(r => (r.type === 'fermata' || r.type === 'rubato') && r.endTime <= region!.startTime)
-          .sort((a, b) => a.startTime - b.startTime);
-        
-        let cumulativePrevDuration = 0;
-        for (const f of previousFermatas) {
-          cumulativePrevDuration += f.endTime - f.startTime;
-        }
-        
-        // Where does this fermata start in "beat grid time"?
-        const fermataStartInBeatGridTime = region.startTime - cumulativePrevDuration;
-        
-        // Find the next measure boundary after the fermata starts
-        const measuresElapsed = (fermataStartInBeatGridTime - syncStartRef.current) / measureDuration;
-        const nextMeasureNumber = Math.ceil(measuresElapsed);
-        const measureBoundaryInBeatGridTime = syncStartRef.current + nextMeasureNumber * measureDuration;
-        
-        // Convert back to audio time
-        const measureBoundaryInAudioTime = measureBoundaryInBeatGridTime + cumulativePrevDuration;
-        
-        // Only pause AFTER the measure boundary (let the measure complete)
-        inFermataPause = elapsed >= measureBoundaryInAudioTime;
-      }
-      
-      // Update fermata state (for UI display)
-      setIsInFermata(inFermataRegion);
-      setCurrentTempoRegion(region);
-    } else {
-      // No tempo regions - reset state
-      setIsInFermata(false);
-      setCurrentTempoRegion(null);
-    }
+    let adjustedElapsed = elapsed;
 
-    // ALWAYS use the simple BeatGrid for position calculation
-    // Adjust elapsed time to account for fermatas - this keeps the metronome
-    // in sync after gaps in the music
-    let adjustedElapsed = getAdjustedElapsedTime(
-      elapsed,
-      tempoRegionsRef.current,
-      bpmRef.current,
-      syncStartRef.current,
-      beatsPerMeasureRef.current
-    );
-    
     // Apply adaptive resync drift correction if enabled
     if (adaptiveResyncRef.current && driftOffsetRef.current !== 0) {
       adjustedElapsed += driftOffsetRef.current;
     }
-    
+
     const position = beatGridRef.current.getPosition(adjustedElapsed);
     
     // Adaptive resync: periodically check alignment with detected onsets
     // and apply small corrections to prevent drift
     if (adaptiveResyncRef.current && 
         detectedOnsetsRef.current.length > 0 && 
-        !inFermataPause &&
         elapsed >= syncStartRef.current) {
       
       const beatInterval = 60 / bpmRef.current;
@@ -620,38 +512,22 @@ export function useBeatSync({
       }
     }
 
-    // Play metronome click on beat change (only after sync start and NOT during fermata pause)
-    if (triggerMetronome && !inFermataPause) {
+    if (triggerMetronome) {
       const inSyncRegion = elapsed >= syncStartRef.current;
       const beatKey = position.measure * 100 + position.beat;
       const now = performance.now();
-      
-      // Check if we just exited a fermata pause
-      const justExitedFermata = wasInFermataPauseRef.current && !inFermataPause;
-      if (justExitedFermata) {
-        // Exiting fermata: sync beat tracking to current position WITHOUT clicking
-        // This prevents double-click on re-entry
+
+      const beatIntervalMs = (60 / bpmRef.current) * 1000;
+      const minClickInterval = Math.max(50, beatIntervalMs * 0.35);
+      const timeSinceLastClick = now - lastClickTimeRef.current;
+
+      if (metronomeEnabledRef.current && inSyncRegion && beatKey !== lastBeatRef.current && timeSinceLastClick >= minClickInterval) {
         lastBeatRef.current = beatKey;
         lastClickTimeRef.current = now;
-        wasInFermataPauseRef.current = false;
-      } else {
-        // Minimum interval between clicks to prevent double-clicking at beat boundaries
-        const beatIntervalMs = (60 / bpmRef.current) * 1000;
-        const minClickInterval = Math.max(50, beatIntervalMs * 0.35);
-        const timeSinceLastClick = now - lastClickTimeRef.current;
-        
-        if (metronomeEnabledRef.current && inSyncRegion && beatKey !== lastBeatRef.current && timeSinceLastClick >= minClickInterval) {
-          lastBeatRef.current = beatKey;
-          lastClickTimeRef.current = now;
-          playClick(position.beat === 0);
-        } else if (!inSyncRegion) {
-          lastBeatRef.current = -1;
-        }
+        playClick(position.beat === 0);
+      } else if (!inSyncRegion) {
+        lastBeatRef.current = -1;
       }
-    } else if (inFermataPause) {
-      // Track that we're in fermata pause for smooth exit handling
-      wasInFermataPauseRef.current = true;
-      lastBeatRef.current = -1;
     }
 
     // Check for loop end
@@ -1224,8 +1100,8 @@ export function useBeatSync({
     isInSyncRegion,
     loopRegion,
     loopEnabled,
-    isInFermata,
-    currentTempoRegion,
+    isInFermata: false,
+    currentTempoRegion: null,
     play,
     pause,
     stop,

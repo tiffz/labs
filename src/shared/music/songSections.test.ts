@@ -7,7 +7,6 @@ import {
 
 const DEFAULT_SECTION_RHYTHM_SETTINGS = {
   templateNotation: '',
-  templateBias: 50,
 };
 
 describe('songSections helpers', () => {
@@ -16,7 +15,6 @@ describe('songSections helpers', () => {
       ...createDefaultSection('chorus', DEFAULT_SECTION_RHYTHM_SETTINGS),
       lyrics: 'Shine on me',
       templateNotation: 'D---T---D-D-T---',
-      templateBias: 80,
     };
     const nextChorus = createDefaultSection(
       'chorus',
@@ -28,7 +26,6 @@ describe('songSections helpers', () => {
     expect(nextChorus.linkedToPreviousChorusTemplate).toBe(true);
     expect(nextChorus.lyrics).toBe('Shine on me');
     expect(nextChorus.templateNotation).toBe('D---T---D-D-T---');
-    expect(nextChorus.templateBias).toBe(80);
   });
 
   it('finds nearest previous chorus', () => {

@@ -43,11 +43,15 @@ export interface SectionControls {
   onCombine?: () => void;
   onSplit?: (sectionId: string, splitTime: number) => void;
   onExtend?: (direction: 'start' | 'end', delta: number) => void;
+  /** Drag-resize a section boundary to a specific time */
+  onResizeSection?: (sectionId: string, edge: 'start' | 'end', newTime: number) => void;
   onSaveReferenceSelection?: () => void;
   onSplitAtCurrentTime?: () => void;
   onDeleteSelection?: () => void;
   snapToMeasuresEnabled?: boolean;
   onToggleSnapToMeasures?: (enabled: boolean) => void;
+  nudgeUnit?: 'measure' | 'beat';
+  onToggleNudgeUnit?: (unit: 'measure' | 'beat') => void;
   onCreateLane?: () => void;
   onRenameLane?: (laneId: string, name: string) => void;
   onDeleteLane?: (laneId: string) => void;
@@ -119,11 +123,15 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
     onCloneGeneratedLane,
     onCloneLane,
     onRenameSection,
+    onResizeSection,
+    nudgeUnit = 'measure',
+    onToggleNudgeUnit,
   } = sectionControls;
   const chordChanges = useMemo(() => chordData?.chordChanges ?? [], [chordData]);
   const keyChanges = useMemo(() => chordData?.keyChanges ?? [], [chordData]);
   const barRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState<boolean>(false);
+  const dragRef = useRef<{ sectionId: string; edge: 'start' | 'end'; trackEl: HTMLElement } | null>(null);
 
   // Check if "Loop track" mode is active (loop enabled but no section selected)
   // Defined early because handleClick needs it
@@ -138,6 +146,36 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
       return percentage * duration;
     },
     [duration]
+  );
+
+  const handleEdgeDragStart = useCallback(
+    (e: React.MouseEvent, sectionId: string, edge: 'start' | 'end') => {
+      e.stopPropagation();
+      e.preventDefault();
+      const trackEl = (e.target as HTMLElement).closest('.section-labels-row') as HTMLElement | null;
+      if (!trackEl || !onResizeSection) return;
+      dragRef.current = { sectionId, edge, trackEl };
+
+      const onMove = (me: MouseEvent) => {
+        if (!dragRef.current) return;
+        const rect = dragRef.current.trackEl.getBoundingClientRect();
+        const pct = Math.max(0, Math.min(1, (me.clientX - rect.left) / rect.width));
+        const newTime = pct * duration;
+        onResizeSection(dragRef.current.sectionId, dragRef.current.edge, newTime);
+      };
+      const onUp = () => {
+        dragRef.current = null;
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      };
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    },
+    [duration, onResizeSection]
   );
 
   const handleClick = useCallback(
@@ -545,7 +583,7 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
                 </div>
               )}
 
-              {/* Dimmed region before sync start (rubato intro) */}
+              {/* Dimmed region before sync start */}
               {syncStartPercent > 0 && (
                 <div
                   className="pre-sync-region"
@@ -573,29 +611,6 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
                     width: `${loopWidthPercent}%`,
                   }}
                 />
-              )}
-
-              {/* Tempo region markers (fermatas, rubato, tempo changes) */}
-              {tempoRegions && tempoRegions.length > 0 && (
-                <div className="tempo-region-markers">
-                  {tempoRegions.map((region) => {
-                    // Only render non-steady regions
-                    if (region.type === 'steady') return null;
-                    const startPercent = (region.startTime / duration) * 100;
-                    const widthPercent = ((region.endTime - region.startTime) / duration) * 100;
-                    return (
-                      <div
-                        key={region.id}
-                        className={`tempo-region-marker tempo-${region.type}`}
-                        style={{
-                          left: `${startPercent}%`,
-                          width: `${widthPercent}%`,
-                        }}
-                        title={region.description || `${region.type}`}
-                      />
-                    );
-                  })}
-                </div>
               )}
 
               {/* Progress fill */}
@@ -731,7 +746,19 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
                           onMouseEnter={(e) => handleSectionHover(section, e, false)}
                           onMouseLeave={scheduleHoverCardClose}
                         >
+                          {onResizeSection && (
+                            <span
+                              className="section-drag-handle left"
+                              onMouseDown={(e) => handleEdgeDragStart(e, section.id, 'start')}
+                            />
+                          )}
                           <span className="section-label-text">{getShortLabel(section.label)}</span>
+                          {onResizeSection && (
+                            <span
+                              className="section-drag-handle right"
+                              onMouseDown={(e) => handleEdgeDragStart(e, section.id, 'end')}
+                            />
+                          )}
                         </button>
                       );
                     })}
@@ -903,97 +930,113 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
 
       {/* Section editing controls - row always rendered to prevent layout shift */}
       <div className="section-controls-row">
-        {hasSelection && (
-          <div className="section-actions">
-            <span className="section-actions-label">
-              {getSelectionLabel()}:
-            </span>
-            {activeSelectionIds.length >= 2 && onCombineSections && (
-              <AppTooltip title="Combine selected sections">
-                <button className="section-action-btn icon-only" onClick={onCombineSections}>
-                  <span className="material-symbols-outlined">merge</span>
-                </button>
-              </AppTooltip>
-            )}
-            {onSaveReferenceSelection && referenceSelectedIds.length > 0 && (
-              <AppTooltip title="Save selected analysis range as practice section">
-                <button className="section-action-btn icon-only" onClick={onSaveReferenceSelection}>
-                  <span className="material-symbols-outlined">save</span>
-                </button>
-              </AppTooltip>
-            )}
-            {onSplitAtCurrentTime && (
-              <AppTooltip title={`Split at current timestamp (${currentTime.toFixed(1)}s)`}>
-                <button className="section-action-btn icon-only" onClick={onSplitAtCurrentTime}>
-                  <span className="material-symbols-outlined">content_cut</span>
-                </button>
-              </AppTooltip>
-            )}
-            {onDeleteSelection && selectedSectionIds.length > 0 && (
-              <AppTooltip title="Delete selected practice sections">
-                <button className="section-action-btn icon-only danger" onClick={onDeleteSelection}>
-                  <span className="material-symbols-outlined">delete</span>
-                </button>
-              </AppTooltip>
-            )}
-            {onExtendSelection && (
-              <div className="section-nudge-controls">
-                <span className="nudge-label">Nudge selection:</span>
-                <AppTooltip title="Extend start 1 measure earlier">
-                  <button 
-                    className="nudge-btn has-tooltip"
-                    onClick={() => onExtendSelection('start', -1)}
-                  >
-                    <span className="material-symbols-outlined">first_page</span>
-                  </button>
-                </AppTooltip>
-                <AppTooltip title="Shrink start 1 measure later">
-                  <button 
-                    className="nudge-btn has-tooltip"
-                    onClick={() => onExtendSelection('start', 1)}
-                  >
-                    <span className="material-symbols-outlined">chevron_right</span>
-                  </button>
-                </AppTooltip>
-                <span className="nudge-divider">|</span>
-                <AppTooltip title="Shrink end 1 measure earlier">
-                  <button 
-                    className="nudge-btn has-tooltip"
-                    onClick={() => onExtendSelection('end', -1)}
-                  >
-                    <span className="material-symbols-outlined">chevron_left</span>
-                  </button>
-                </AppTooltip>
-                <AppTooltip title="Extend end 1 measure later">
-                  <button 
-                    className="nudge-btn has-tooltip"
-                    onClick={() => onExtendSelection('end', 1)}
-                  >
-                    <span className="material-symbols-outlined">last_page</span>
-                  </button>
-                </AppTooltip>
-              </div>
-            )}
-            {onToggleSnapToMeasures && (
-              <FormControlLabel
-                className="section-checkbox-row inline compact mui"
-                control={
-                  <Checkbox
-                    size="small"
-                    checked={snapToMeasuresEnabled}
-                    onChange={(event) => onToggleSnapToMeasures(event.target.checked)}
-                  />
-                }
-                label={<span className="section-checkbox-label">Snap to measures</span>}
-              />
-            )}
-            <AppTooltip title="Deselect all sections">
-              <button className="section-action-btn deselect icon-only" onClick={onClearSelection}>
-                <span className="material-symbols-outlined">deselect</span>
+        <div className="section-actions">
+          {onSplitAtCurrentTime && (
+            <AppTooltip title={hasSelection ? `Split at current timestamp (${currentTime.toFixed(1)}s)` : `Split song at current timestamp (${currentTime.toFixed(1)}s)`}>
+              <button className="section-action-btn icon-only" onClick={onSplitAtCurrentTime}>
+                <span className="material-symbols-outlined">content_cut</span>
               </button>
             </AppTooltip>
-          </div>
-        )}
+          )}
+          {hasSelection && (
+            <>
+              <span className="section-actions-label">
+                {getSelectionLabel()}:
+              </span>
+              {activeSelectionIds.length >= 2 && onCombineSections && (
+                <AppTooltip title="Combine selected sections">
+                  <button className="section-action-btn icon-only" onClick={onCombineSections}>
+                    <span className="material-symbols-outlined">merge</span>
+                  </button>
+                </AppTooltip>
+              )}
+              {onSaveReferenceSelection && referenceSelectedIds.length > 0 && (
+                <AppTooltip title="Save selected analysis range as practice section">
+                  <button className="section-action-btn icon-only" onClick={onSaveReferenceSelection}>
+                    <span className="material-symbols-outlined">save</span>
+                  </button>
+                </AppTooltip>
+              )}
+              {onDeleteSelection && selectedSectionIds.length > 0 && (
+                <AppTooltip title="Delete selected practice sections">
+                  <button className="section-action-btn icon-only danger" onClick={onDeleteSelection}>
+                    <span className="material-symbols-outlined">delete</span>
+                  </button>
+                </AppTooltip>
+              )}
+              {onExtendSelection && (
+                <div className="section-nudge-controls">
+                  <span className="nudge-label">Nudge:</span>
+                  {onToggleNudgeUnit && (
+                    <div className="nudge-unit-toggle">
+                      <button
+                        className={`nudge-unit-btn${nudgeUnit === 'beat' ? ' active' : ''}`}
+                        onClick={() => onToggleNudgeUnit('beat')}
+                        type="button"
+                      >Beat</button>
+                      <button
+                        className={`nudge-unit-btn${nudgeUnit === 'measure' ? ' active' : ''}`}
+                        onClick={() => onToggleNudgeUnit('measure')}
+                        type="button"
+                      >Measure</button>
+                    </div>
+                  )}
+                  <AppTooltip title={`Extend start 1 ${nudgeUnit} earlier`}>
+                    <button 
+                      className="nudge-btn has-tooltip"
+                      onClick={() => onExtendSelection('start', -1)}
+                    >
+                      <span className="material-symbols-outlined">first_page</span>
+                    </button>
+                  </AppTooltip>
+                  <AppTooltip title={`Shrink start 1 ${nudgeUnit} later`}>
+                    <button 
+                      className="nudge-btn has-tooltip"
+                      onClick={() => onExtendSelection('start', 1)}
+                    >
+                      <span className="material-symbols-outlined">chevron_right</span>
+                    </button>
+                  </AppTooltip>
+                  <span className="nudge-divider">|</span>
+                  <AppTooltip title={`Shrink end 1 ${nudgeUnit} earlier`}>
+                    <button 
+                      className="nudge-btn has-tooltip"
+                      onClick={() => onExtendSelection('end', -1)}
+                    >
+                      <span className="material-symbols-outlined">chevron_left</span>
+                    </button>
+                  </AppTooltip>
+                  <AppTooltip title={`Extend end 1 ${nudgeUnit} later`}>
+                    <button 
+                      className="nudge-btn has-tooltip"
+                      onClick={() => onExtendSelection('end', 1)}
+                    >
+                      <span className="material-symbols-outlined">last_page</span>
+                    </button>
+                  </AppTooltip>
+                </div>
+              )}
+              {onToggleSnapToMeasures && (
+                <FormControlLabel
+                  className="section-checkbox-row inline compact mui"
+                  control={
+                    <Checkbox
+                      size="small"
+                      checked={snapToMeasuresEnabled}
+                      onChange={(event) => onToggleSnapToMeasures(event.target.checked)}
+                    />
+                  }
+                  label={<span className="section-checkbox-label">Snap to measures</span>}
+                />
+              )}
+              <AppTooltip title="Deselect all sections">
+                <button className="section-action-btn deselect icon-only" onClick={onClearSelection}>
+                  <span className="material-symbols-outlined">deselect</span>
+                </button>
+              </AppTooltip>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

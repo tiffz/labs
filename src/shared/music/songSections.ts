@@ -4,7 +4,6 @@ type ChordStyleId = ChordStylingStrategy;
 
 interface SectionRhythmDefaults {
   templateNotation?: string;
-  templateBias: number;
 }
 
 export type SongSectionType = 'verse' | 'chorus' | 'bridge';
@@ -17,7 +16,6 @@ export interface SongSection {
   chordStyleId: ChordStyleId;
   isLocked: boolean;
   templateNotation: string;
-  templateBias: number;
   rhythmVariationSeed: number;
   soundVariationSeed: number;
   linkedToPreviousChorusLyrics: boolean;
@@ -47,10 +45,6 @@ export function createDefaultSection(
       isChorus && previousChorus
         ? previousChorus.templateNotation
         : (defaults.templateNotation ?? ''),
-    templateBias:
-      isChorus && previousChorus
-        ? previousChorus.templateBias
-        : defaults.templateBias,
     rhythmVariationSeed: 0,
     soundVariationSeed: 0,
     linkedToPreviousChorusLyrics: Boolean(isChorus && previousChorus),
