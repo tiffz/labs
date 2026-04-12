@@ -40,6 +40,9 @@ const LoadingFallback: React.FC<{ height?: string }> = ({ height = '200px' }) =>
   </div>
 );
 import { parseAndSortFiles, validateImageDimensions, createPDF, downloadBlob, loadImage } from './utils';
+import { createAppAnalytics } from '../shared/utils/analytics';
+
+const analytics = createAppAnalytics('zines');
 
 // Shared uploaded file with loaded image data
 interface UploadedImage {
@@ -1051,6 +1054,7 @@ const App: React.FC = () => {
   }, [images, imageFitModes, minizinePaperConfig, minizineViewMode, generateCanvasFromImages, exportOptions.jpegQuality, fileName]);
 
   const handleExportPDF = useCallback(async (format: PDFExportFormat) => {
+    analytics.trackEvent('export_pdf', { mode: zineMode, page_count: images.length });
     // For minizine mode, generate single-page PDF
     if (zineMode === 'minizine') {
       setIsGenerating(true);

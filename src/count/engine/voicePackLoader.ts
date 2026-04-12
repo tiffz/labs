@@ -1,6 +1,6 @@
 import type { VoiceManifest } from './types';
 
-const VOICE_BASE_PATH = '/pulse/voice';
+const VOICE_BASE_PATH = '/count/voice';
 
 export class VoicePackLoader {
   private buffers = new Map<string, AudioBuffer>();

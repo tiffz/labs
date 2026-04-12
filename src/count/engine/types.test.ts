@@ -27,8 +27,12 @@ describe('eighthBaseSlotsPerEighth', () => {
     expect(l4).not.toBe(l2);
   });
 
+  it('returns 1 slot per eighth for swing8', () => {
+    expect(eighthBaseSlotsPerEighth('swing8')).toBe(1);
+  });
+
   it('handles all valid SubdivisionLevel values', () => {
-    const levels: SubdivisionLevel[] = [1, 2, 3, 4];
+    const levels: SubdivisionLevel[] = [1, 2, 3, 4, 'swing8'];
     for (const level of levels) {
       const result = eighthBaseSlotsPerEighth(level);
       expect(result).toBeGreaterThanOrEqual(1);
@@ -38,20 +42,19 @@ describe('eighthBaseSlotsPerEighth', () => {
 });
 
 describe('getSubdivisionOptions', () => {
-  it('returns 4 options for /4 time signatures', () => {
+  it('returns 5 options for /4 time signatures (straight + swing8)', () => {
     const options = getSubdivisionOptions({ numerator: 4, denominator: 4 });
-    expect(options).toHaveLength(4);
-    expect(options.map((o) => o.level)).toEqual([1, 2, 3, 4]);
+    expect(options).toHaveLength(5);
+    expect(options.map((o) => o.level)).toEqual([1, 2, 'swing8', 3, 4]);
   });
 
   it('returns 2 options for asymmetric /8 time signatures', () => {
     const options = getSubdivisionOptions({ numerator: 5, denominator: 8 });
     expect(options).toHaveLength(2);
     expect(options.map((o) => o.level)).toEqual([2, 4]);
-    expect(options[1].label).toBe('÷2');
   });
 
-  it('returns same 2 options for compound /8 (levels 2 and 4)', () => {
+  it('returns same 2 options for compound /8', () => {
     const options = getSubdivisionOptions({ numerator: 12, denominator: 8 });
     expect(options).toHaveLength(2);
     expect(options.map((o) => o.level)).toEqual([2, 4]);
@@ -68,6 +71,12 @@ describe('getSubdivisionOptions', () => {
     const quarter = options.find((o) => o.level === 1);
     expect(quarter).toBeDefined();
     expect(quarter!.iconLevel).toBe(1);
+  });
+
+  it('/4 options include swing8 between ÷2 and ÷3', () => {
+    const options = getSubdivisionOptions({ numerator: 4, denominator: 4 });
+    const levels = options.map((o) => o.level);
+    expect(levels.indexOf('swing8')).toBe(2);
   });
 });
 

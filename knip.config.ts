@@ -14,7 +14,7 @@ const config: KnipConfig = {
     'src/piano/index.html',
     'src/scales/index.html',
     'src/pitch/index.html',
-    'src/pulse/index.html',
+    'src/count/index.html',
     'src/words/index.html',
     'src/ui/index.html',
     'src/drums/universal_tom/index.html',
@@ -32,7 +32,7 @@ const config: KnipConfig = {
     'src/piano/main.tsx',
     'src/scales/main.tsx',
     'src/pitch/main.tsx',
-    'src/pulse/main.tsx',
+    'src/count/main.tsx',
     'src/words/main.tsx',
     'src/ui/main.tsx',
     'src/corp/App.tsx',
@@ -82,13 +82,13 @@ const config: KnipConfig = {
     'src/beat/utils/audioBuffer.ts',
     'src/beat/utils/bpmAccuracyTest.ts',
     'src/beat/utils/tempoDetectorCore.ts',
-    // Pulse: analysis/coaching features parked for future development
-    'src/pulse/analysis/RhythmAnalyzer.ts',
-    'src/pulse/analysis/timingAnalysis.ts',
-    'src/pulse/components/QuietCount.tsx',
-    'src/pulse/components/TimingGauge.tsx',
-    'src/pulse/components/VocalFatigueGuard.tsx',
-    'src/pulse/hooks/useRhythmAnalyzer.ts',
+    // Count Me In: analysis/coaching features parked for future development
+    'src/count/analysis/RhythmAnalyzer.ts',
+    'src/count/analysis/timingAnalysis.ts',
+    'src/count/components/QuietCount.tsx',
+    'src/count/components/TimingGauge.tsx',
+    'src/count/components/VocalFatigueGuard.tsx',
+    'src/count/hooks/useRhythmAnalyzer.ts',
     // CI False Positives (Exports used in future/debugging or tests but flagged)
     'src/beat/utils/sectionalTempoAnalyzer.ts', // default export used in CLI/tests
     'src/zines/utils/imageProcessor.ts', // processFiles used in specialized flows

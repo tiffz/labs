@@ -1,3 +1,5 @@
+@layer shared-base;
+
 /* Tailwind CSS directives */
 @tailwind base;
 @tailwind components;

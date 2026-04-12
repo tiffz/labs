@@ -4,6 +4,9 @@ import { MapView } from './components/MapView';
 import { UIPanel } from './components/UIPanel';
 import type { GameState } from './game/types';
 import { createEmptyMap, generateRooms, carveRooms, connectRooms, seedEntities } from './game/generation';
+import { createAppAnalytics } from '../shared/utils/analytics';
+
+const analytics = createAppAnalytics('corp');
 
 function useResizeObserver(target: React.RefObject<HTMLDivElement | null>) {
   const [size, setSize] = useState({ width: 0, height: 0 });
@@ -160,6 +163,7 @@ function useGame() {
         state.floor++;
         if (state.floor > CEO_FLOOR) {
           state.gameOver = true;
+          analytics.trackEvent('game_over', { floor_reached: state.floor, cause: 'win' });
         } else {
           addMessage(`You take the elevator to floor ${state.floor}.`);
           generateLevel();
@@ -222,6 +226,8 @@ function useGame() {
         state.player.reputation <= 0
       ) {
         state.gameOver = true;
+        const cause = state.player.productivity <= 0 ? 'productivity' : state.player.happiness <= 0 ? 'happiness' : 'reputation';
+        analytics.trackEvent('game_over', { floor_reached: state.floor, cause });
       }
       forceRender();
     }
@@ -249,6 +255,7 @@ function useGame() {
     generateLevel();
     calculateFov();
     forceRender();
+    analytics.trackEvent('game_start');
   }, [addMessage, calculateFov, generateLevel]);
 
   useEffect(() => { restart(); }, [restart]);

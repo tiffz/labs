@@ -1,14 +1,29 @@
 User-agent: *
 Allow: /
 
-# Allow indexing of main pages
+# Public app pages
+Allow: /beat/
 Allow: /cats/
+Allow: /chords/
+Allow: /corp/
+Allow: /drums/
+Allow: /forms/
+Allow: /piano/
+Allow: /pitch/
+Allow: /count/
+Allow: /scales/
+Allow: /story/
+Allow: /words/
 Allow: /zines/
 
-# Block search engine crawling of certain files
+# Block internal/asset paths
 Disallow: /404.html
-Disallow: /*.css$
-Disallow: /*.js$
 Disallow: /icons/
 Disallow: /scripts/
 Disallow: /styles/
+Disallow: /ui/
+Disallow: /drums/universal_tom/
+Disallow: /sw.js
+Disallow: /build-version.txt
+
+Sitemap: https://labs.tiffzhang.com/sitemap.xml

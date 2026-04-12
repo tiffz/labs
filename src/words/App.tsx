@@ -81,7 +81,9 @@ import SharedExportPopover from '../shared/components/music/SharedExportPopover'
 import { createWordsExportAdapter } from './utils/exportAdapter';
 import KeyInput from '../shared/components/music/KeyInput';
 import { DRUM_SAMPLE_URLS } from '../shared/audio/drumSampleUrls';
+import { createAppAnalytics } from '../shared/utils/analytics';
 
+const wordsAnalytics = createAppAnalytics('words');
 const DEFAULT_LYRICS = `Sunrise on the shoreline
 Ocean wind through palm trees`;
 
@@ -1042,6 +1044,17 @@ const App: React.FC = () => {
     handlePlay,
     stopPlaybackImmediately,
   ]);
+
+  const wordsPlayStartRef = useRef<number>(0);
+  useEffect(() => {
+    if (isPlaying) {
+      wordsPlayStartRef.current = Date.now();
+      wordsAnalytics.trackEvent('playback_start');
+    } else if (wordsPlayStartRef.current > 0) {
+      wordsAnalytics.trackSessionEnd(wordsPlayStartRef.current);
+      wordsPlayStartRef.current = 0;
+    }
+  }, [isPlaying]);
 
   useEffect(() => {
     if (isPlaying) stopPlaybackImmediately();
@@ -4101,7 +4114,7 @@ const App: React.FC = () => {
               ref={exportButtonRef}
               className="words-button"
               type="button"
-              onClick={() => setExportMenuOpen((previous) => !previous)}
+              onClick={() => { setExportMenuOpen((previous) => !previous); wordsAnalytics.trackEvent('export_open'); }}
             >
               export song
             </button>

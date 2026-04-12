@@ -74,10 +74,12 @@ class DrumAudioPlayer {
   /**
    * Fast playback path for hot scheduling loops.
    * Caller must ensure playback has already initialized/resumed audio.
+   *
+   * @param startTime - Optional precise AudioContext time.
    */
-  playNowIfReady(sound: DrumSound, volume: number = 1.0, duration?: number): void {
+  playNowIfReady(sound: DrumSound, volume: number = 1.0, duration?: number, startTime?: number): void {
     if (sound === 'rest') return;
-    this.player.playNowIfReady(sound, volume, duration);
+    this.player.playNowIfReady(sound, volume, duration, startTime);
   }
 
   /**
@@ -89,16 +91,27 @@ class DrumAudioPlayer {
 
   /**
    * Fast click playback path for hot scheduling loops.
+   *
+   * @param startTime - Optional precise AudioContext time.
    */
-  playClickNowIfReady(volume: number = 1.0): void {
-    this.player.playClickNowIfReady(volume);
+  playClickNowIfReady(volume: number = 1.0, startTime?: number): void {
+    this.player.playClickNowIfReady(volume, startTime);
   }
 
   /**
-   * Stop all drum sounds (but not metronome)
+   * Expose the underlying AudioContext (e.g. for reading currentTime).
    */
-  stopAllDrumSounds(): void {
-    this.player.stopAllSounds();
+  getAudioContext(): AudioContext | null {
+    return this.player.getAudioContext();
+  }
+
+  /**
+   * Stop all drum sounds (but not metronome).
+   *
+   * @param atTime - Optional AudioContext time for scheduled choke.
+   */
+  stopAllDrumSounds(atTime?: number): void {
+    this.player.stopAllSounds(atTime);
   }
 
   /**

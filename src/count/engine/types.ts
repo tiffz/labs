@@ -22,10 +22,14 @@ export interface MetronomeConfig {
   quietCount?: QuietCountConfig;
   voiceGain?: number;
   clickGain?: number;
+  drumGain?: number;
   mutedChannels?: string[];
   perBeatVolumes?: number[];
   voiceMode?: VoiceMode;
   subdivisionLevel?: SubdivisionLevel;
+  channelVoiceMutes?: SubdivisionChannel[];
+  channelClickMutes?: SubdivisionChannel[];
+  channelDrumMutes?: SubdivisionChannel[];
 }
 
 export type SubdivisionType =
@@ -36,20 +40,29 @@ export type SubdivisionType =
 
 export type VoiceMode = 'counting' | 'takadimi';
 
-export type SubdivisionLevel = 1 | 2 | 3 | 4;
+export type SubdivisionLevel = 1 | 2 | 3 | 4 | 'swing8';
+
+export function isSwingLevel(level: SubdivisionLevel): boolean {
+  return level === 'swing8';
+}
 
 /**
- * Returns the number of grid slots per eighth note for asymmetric /8 meters.
- *
- * - Level 2: 1 slot per eighth (the natural eighth-note pulse)
- * - Level 3/4: 2 slots per eighth (sixteenth-note resolution)
- *
- * Level 3 and 4 produce the same grid density for /8 meters, but differ
- * in voice mode: level 3 uses triplet-style syllables while level 4
- * uses standard sixteenth syllables.
+ * Number of grid slots produced per quarter-note beat (for /4 meters).
+ * swing8 uses 3 slots per beat (triplet grid) where the middle slot is
+ * silent — this visually shows the "long-short" swing feel.
+ */
+export function slotsPerBeat(level: SubdivisionLevel): number {
+  if (level === 'swing8') return 3;
+  return level;
+}
+
+/**
+ * Grid slots per eighth note for /8 meters.
  */
 export function eighthBaseSlotsPerEighth(level: SubdivisionLevel): number {
-  return level <= 2 ? 1 : 2;
+  if (level === 'swing8') return 1;
+  const n = slotsPerBeat(level);
+  return n <= 2 ? 1 : 2;
 }
 
 export interface SubdivOption {
@@ -68,6 +81,7 @@ export function getSubdivisionOptions(ts: TimeSignature): SubdivOption[] {
   return [
     { level: 1, iconLevel: 1, label: '♩' },
     { level: 2, iconLevel: 2, label: '÷2' },
+    { level: 'swing8', iconLevel: 'swing8', label: 'Sw♪' },
     { level: 3, iconLevel: 3, label: '÷3' },
     { level: 4, iconLevel: 4, label: '÷4' },
   ];

@@ -6,13 +6,22 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
-    <title>UI Catalog (Internal) - Tiff Zhang Labs</title>
+    <title>UI Catalog - Tiff Zhang Labs</title>
     <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
     <meta name="theme-color" content="#4f46e5" />
     <meta
       name="description"
       content="Shared UI component catalog with live demos and usage documentation."
     />
+
+    <script>
+      if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+        const script = document.createElement('script');
+        script.async = true;
+        script.src = '/scripts/analytics.js';
+        document.head.appendChild(script);
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

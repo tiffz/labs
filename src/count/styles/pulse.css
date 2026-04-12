@@ -1,4 +1,4 @@
-/* Project Pulse — "Old Internet" high-contrast practice aesthetic */
+/* Count Me In — "Old Internet" high-contrast practice aesthetic */
 
 :root {
   --pulse-bg: #0a0a0a;
@@ -436,16 +436,14 @@ body {
   display: flex;
   gap: 3px;
   justify-content: center;
-  flex-wrap: nowrap;
-  overflow: hidden;
+  flex-wrap: wrap;
+  row-gap: 6px;
 }
 .pulse-beat-group {
   display: flex;
   gap: 2px;
   padding: 0 6px;
   border-left: 1px solid var(--pulse-border);
-  min-width: 0;
-  flex-shrink: 1;
 }
 .pulse-beat-group:first-child {
   border-left: none;
@@ -456,9 +454,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-width: 18px;
-  max-width: 34px;
-  flex: 1 1 34px;
+  width: 28px;
   cursor: pointer;
   user-select: none;
 }
@@ -530,6 +526,28 @@ body {
 .pulse-beat-cell.is-muted .pulse-beat-label {
   opacity: 0.4;
 }
+.pulse-beat-cell.is-swing-silent {
+  opacity: 0.5;
+  cursor: default;
+}
+.pulse-beat-cell.is-swing-silent .pulse-beat-bar-track {
+  border-style: dotted;
+  opacity: 1;
+}
+.pulse-beat-cell.is-swing-silent .pulse-beat-bar-fill {
+  opacity: 0;
+}
+.pulse-beat-cell.is-swing-silent.is-active {
+  opacity: 0.7;
+}
+.pulse-beat-cell.is-swing-silent.is-active .pulse-beat-bar-track {
+  border-color: var(--pulse-accent);
+  box-shadow: 0 0 6px var(--pulse-accent-dim);
+}
+.pulse-beat-cell.is-swing-silent.is-active .pulse-beat-bar-fill {
+  background: var(--pulse-accent);
+  opacity: 0.15;
+}
 
 .pulse-beat-cell {
   position: relative;
@@ -579,58 +597,46 @@ body {
   color: var(--pulse-text-dim);
 }
 
-.pulse-source-mixer {
-  display: flex;
-  gap: 18px;
-}
-.pulse-source-channel {
+.pulse-playback-controls {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  gap: 12px;
+  margin: 10px 0 0;
+  flex-wrap: wrap;
 }
-.pulse-source-label {
+.pulse-sound-toggles {
+  display: flex;
+  gap: 4px;
+}
+.pulse-sound-toggle {
   font-family: var(--pulse-mono);
-  font-size: 0.75rem;
-  color: var(--pulse-text-dim);
-  width: 42px;
-}
-.pulse-source-slider {
-  -webkit-appearance: none;
-  appearance: none;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  padding: 5px 12px;
   width: 90px;
-  height: 5px;
-  background: var(--pulse-border);
-  outline: none;
+  text-align: center;
+  box-sizing: border-box;
+  border: 1px solid var(--pulse-border);
+  background: transparent;
+  color: var(--pulse-text-dim);
   cursor: pointer;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
 }
-.pulse-source-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 14px;
-  height: 14px;
-  background: var(--pulse-accent);
-  border: none;
-  cursor: pointer;
-}
-.pulse-source-slider::-moz-range-thumb {
-  width: 14px;
-  height: 14px;
-  background: var(--pulse-accent);
-  border: none;
-  cursor: pointer;
-}
-.pulse-source-value {
-  font-family: var(--pulse-mono);
-  font-size: 0.75rem;
+.pulse-sound-toggle.is-active {
   color: var(--pulse-accent);
-  width: 28px;
-  text-align: right;
+  border-color: var(--pulse-accent);
+}
+.pulse-sound-toggle:hover {
+  color: var(--pulse-text);
+  border-color: var(--pulse-text);
 }
 
 .pulse-voice-mode-toggle {
   display: flex;
   gap: 0;
-  margin-left: 8px;
   border: 1px solid var(--pulse-border);
 }
 .pulse-voice-mode-btn {
@@ -726,12 +732,7 @@ body {
   color: var(--pulse-text-dim);
   text-align: center;
   white-space: nowrap;
-}
-.pulse-channel-label--has-tip {
   cursor: help;
-  text-decoration: underline dashed;
-  text-underline-offset: 3px;
-  text-decoration-thickness: 1px;
 }
 .pulse-channel-slider {
   writing-mode: vertical-lr;
@@ -764,6 +765,37 @@ body {
   font-family: var(--pulse-mono);
   font-size: 0.75rem;
   color: var(--pulse-accent);
+}
+.pulse-channel-mutes {
+  display: flex;
+  gap: 3px;
+  margin-top: 6px;
+}
+.pulse-channel-mute {
+  font-family: var(--pulse-mono);
+  font-size: 0.6rem;
+  width: 22px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid var(--pulse-border);
+  background: transparent;
+  color: var(--pulse-text-dim);
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    color 0.15s,
+    background 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pulse-channel-mute.is-on {
+  border-color: var(--pulse-accent);
+  color: var(--pulse-accent);
+}
+.pulse-channel-mute:hover {
+  border-color: var(--pulse-text);
+  color: var(--pulse-text);
 }
 
 .pulse-mute-btn {

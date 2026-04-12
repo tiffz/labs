@@ -23,6 +23,9 @@ import type { ExportSourceAdapter } from '../shared/music/exportTypes';
 import { buildSingleTrackMidi, type MidiNoteEvent } from '../shared/music/midiBuilder';
 import { renderMidiEventsToAudioBuffer } from '../shared/music/midiAudioRender';
 import { CLICK_SAMPLE_URL } from '../shared/audio/drumSampleUrls';
+import { createAppAnalytics } from '../shared/utils/analytics';
+
+const analytics = createAppAnalytics('chords');
 
 // Loading state for piano samples
 interface LoadingState {
@@ -332,6 +335,7 @@ const App: React.FC = () => {
   }, [playMetronomeClick]);
 
   const handleRandomize = () => {
+    analytics.trackEvent('randomize');
     const wasPlaying = isPlaying;
     const progressionChanged = !lockedOptions.progression;
     const playbackEngine = getPlaybackEngine();
@@ -513,6 +517,8 @@ const App: React.FC = () => {
     setLockedOptions({ ...lockedOptions, [option]: locked });
   };
 
+  const chordsPlayStartRef = useRef<number>(0);
+
   const handlePlay = useCallback(async () => {
     const playbackEngine = getPlaybackEngine();
     
@@ -521,6 +527,7 @@ const App: React.FC = () => {
       setIsPlaying(false);
       setCurrentChordIndex(null);
       setActiveNoteGroups(new Set());
+      analytics.trackSessionEnd(chordsPlayStartRef.current);
       return;
     }
 
@@ -553,6 +560,11 @@ const App: React.FC = () => {
     setCurrentChordIndex(null);
     setActiveNoteGroups(new Set());
     currentLoopIdRef.current = 0;
+    chordsPlayStartRef.current = Date.now();
+    analytics.trackEvent('playback_start', {
+      key: state.key,
+      progression_length: state.progression.progression.length,
+    });
 
     // Start playback with new engine
     await playbackEngine.start(
@@ -699,7 +711,7 @@ const App: React.FC = () => {
                 ref={exportButtonRef}
                 type="button"
                 className={`chords-settings-button ${exportOpen ? 'active' : ''}`}
-                onClick={() => setExportOpen((previous) => !previous)}
+                onClick={() => { setExportOpen((previous) => !previous); analytics.trackEvent('export_open'); }}
                 aria-label="Export progression"
               >
                 <span className="material-symbols-outlined">download</span>

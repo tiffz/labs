@@ -7,6 +7,9 @@ import { loadProgress, saveProgress, recordPractice } from './progress/store';
 import { planSession } from './curriculum/sessionPlanner';
 import { getMidiInput, MidiInput } from '../shared/midi/midiInput';
 import { recordMidiNoteOn, recordMidiNoteOff, clearAll as clearTimingStore } from '../shared/practice/practiceTimingStore';
+import { createAppAnalytics } from '../shared/utils/analytics';
+
+const analytics = createAppAnalytics('scales');
 
 type Screen = 'home' | 'session' | 'result' | 'progress';
 
@@ -237,6 +240,9 @@ export function ScalesProvider({ children }: { children: React.ReactNode }) {
   const startSession = useCallback(() => {
     const plan = planSession(state.progress);
     dispatch({ type: 'START_SESSION', plan });
+    analytics.trackEvent('session_start', {
+      exercise_count: plan.exercises.length,
+    });
   }, [state.progress]);
 
   return (

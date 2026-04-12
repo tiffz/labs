@@ -8,6 +8,9 @@ import ControlPanel from './components/ControlPanel';
 import FormMesh from './components/FormMesh';
 import IntersectionLines from './components/IntersectionLines';
 import ViewControls from './components/ViewControls';
+import { createAppAnalytics } from '../shared/utils/analytics';
+
+const analytics = createAppAnalytics('forms');
 
 function App() {
   const [placementConfig, setPlacementConfig] = useState<PlacementConfig>(DEFAULT_PLACEMENT_CONFIG);
@@ -58,6 +61,7 @@ function App() {
 
   const handleRegenerate = useCallback(() => {
     setForms(generateFormsWithIntersections(placementConfig));
+    analytics.trackEvent('regenerate');
   }, [placementConfig]);
 
   const handleConfigChange = useCallback((newConfig: Partial<PlacementConfig>) => {

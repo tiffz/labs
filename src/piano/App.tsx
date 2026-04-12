@@ -17,6 +17,9 @@ import { saveScoreToLibrary } from './utils/libraryStorage';
 import { enableDebug } from './utils/practiceDebugLog';
 import DebugPanel from './components/DebugPanel';
 import { getImportFileKind } from './utils/importFileType';
+import { createAppAnalytics } from '../shared/utils/analytics';
+
+const analytics = createAppAnalytics('piano');
 
 const debugMode = new URLSearchParams(window.location.search).has('debug');
 if (debugMode) enableDebug();
@@ -126,6 +129,17 @@ function PianoApp() {
   const isEditing = state.inputMode === 'step-input';
   const isPracticing = state.activeMode === 'practice' || state.activeMode === 'free-practice';
 
+  const pianoPracticeStartRef = useRef<number>(0);
+  useEffect(() => {
+    if (isPracticing) {
+      pianoPracticeStartRef.current = Date.now();
+      analytics.trackEvent('practice_start', { exercise_name: state.score?.title });
+    } else if (pianoPracticeStartRef.current > 0) {
+      analytics.trackSessionEnd(pianoPracticeStartRef.current);
+      pianoPracticeStartRef.current = 0;
+    }
+  }, [isPracticing]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleMeasureClick = useCallback((measureIndex: number, shiftKey: boolean) => {
     if (isEditing) return;
     if (shiftKey) {
@@ -207,6 +221,7 @@ function PianoApp() {
     }
     saveScoreToLibrary(score, 'import');
     setDropFile(null);
+    analytics.trackEvent('import_score', { title: score.title });
   }, [loadScore, dispatch]);
 
   const closeDesktopLoadMenus = useCallback(() => {

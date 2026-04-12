@@ -225,8 +225,8 @@ body {
   background-image: url('/icons/favicon-beat.svg');
 }
 
-.app-icon.pulse {
-  background-image: url('/icons/favicon-pulse.svg');
+.app-icon.count {
+  background-image: url('/icons/favicon-count.svg');
 }
 
 .app-info {

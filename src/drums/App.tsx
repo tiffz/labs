@@ -23,6 +23,9 @@ import {
   getPatternDuration,
 } from './utils/dragAndDrop';
 import type { TimeSignature } from './types';
+import { createAppAnalytics } from '../shared/utils/analytics';
+
+const analytics = createAppAnalytics('drums');
 import type { PlaybackSettings } from './types/settings';
 import { DEFAULT_SETTINGS } from './types/settings';
 
@@ -248,6 +251,17 @@ const App: React.FC = () => {
     };
   }, [bpm]);
 
+  const drumsPlayStartRef = useRef<number>(0);
+  useEffect(() => {
+    if (isPlaying) {
+      drumsPlayStartRef.current = Date.now();
+      analytics.trackEvent('playback_start', { bpm, rhythm_name: recognizedRhythm?.rhythm.name });
+    } else if (drumsPlayStartRef.current > 0) {
+      analytics.trackSessionEnd(drumsPlayStartRef.current);
+      drumsPlayStartRef.current = 0;
+    }
+  }, [isPlaying]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Centralized logic: Stop playback whenever notation changes
   // This handles all cases: note palette, loading rhythms, variations, manual edits, etc.
   useEffect(() => {
@@ -341,8 +355,8 @@ const App: React.FC = () => {
     }
 
     try {
-      // Copy current URL to clipboard
       await navigator.clipboard.writeText(window.location.href);
+      analytics.trackEvent('rhythm_share', { rhythm_name: recognizedRhythm?.rhythm.name });
       // Show feedback at button position
       if (position) {
         setShareFeedbackPosition(position);
@@ -376,7 +390,7 @@ const App: React.FC = () => {
       }
       document.body.removeChild(textArea);
     }
-  }, []);
+  }, [recognizedRhythm?.rhythm.name]);
 
   const handleRandomize = useCallback(() => {
     // Generate a random rhythm that respects beat groupings for musical coherence

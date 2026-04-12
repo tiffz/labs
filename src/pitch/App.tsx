@@ -5,6 +5,9 @@ import {
   type MicrophoneDevice,
 } from '../shared/music/pitch/microphonePitchInput';
 import type { PitchInfo } from '../shared/music/pitch/pitchDetection';
+import { createAppAnalytics } from '../shared/utils/analytics';
+
+const analytics = createAppAnalytics('pitch');
 
 interface PitchSample {
   id: number;
@@ -51,6 +54,7 @@ export default function App(): React.ReactElement {
     ));
   }, []);
 
+  const pitchListenStartRef = useRef<number>(0);
   const stopListening = useCallback(() => {
     inputRef.current?.stop();
     inputRef.current = null;
@@ -58,6 +62,7 @@ export default function App(): React.ReactElement {
     setActiveInputLabel(null);
     targetPitchRef.current = null;
     setDisplayPitch(null);
+    analytics.trackSessionEnd(pitchListenStartRef.current);
   }, []);
 
   const startListening = useCallback(async (deviceId: string) => {
@@ -86,6 +91,8 @@ export default function App(): React.ReactElement {
     setListening(true);
     setActiveInputLabel(input.getActiveInputLabel());
     void refreshDevices();
+    pitchListenStartRef.current = Date.now();
+    analytics.trackEvent('listening_start');
   }, [refreshDevices]);
 
   useEffect(() => {

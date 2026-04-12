@@ -28,7 +28,7 @@ export class AudioPlayer {
   private buffers: Map<string, AudioBuffer> = new Map();
   private clickBuffer: AudioBuffer | null = null;
   private isInitialized = false;
-  private activeSources: Set<AudioBufferSourceNode> = new Set();
+  private activeSources: Set<{ source: AudioBufferSourceNode; gain: GainNode }> = new Set();
   private reverbNodes: ReverbNodes | null = null;
   private reverbStrength: number = 0;
   private visibilityChangeHandler: (() => void) | null = null;
@@ -258,13 +258,14 @@ export class AudioPlayer {
         gainNode.connect(this.audioContext.destination);
       }
 
+      const entry = { source, gain: gainNode };
       if (trackAsActive) {
-        this.activeSources.add(source);
+        this.activeSources.add(entry);
       }
 
       source.onended = () => {
         if (trackAsActive) {
-          this.activeSources.delete(source);
+          this.activeSources.delete(entry);
         }
         source.disconnect();
         gainNode.disconnect();
@@ -304,12 +305,15 @@ export class AudioPlayer {
    * Fast path: play a loaded sound immediately if context is already running.
    * Does not call ensureResumed(), so callers should use this in hot loops only
    * after initialization/startup already succeeded.
+   *
+   * @param startTime - Optional precise AudioContext time to start playback.
+   *   When omitted the sound starts at `audioContext.currentTime`.
    */
-  playNowIfReady(soundName: string, volume: number = 1.0, duration?: number): void {
+  playNowIfReady(soundName: string, volume: number = 1.0, duration?: number, startTime?: number): void {
     if (!this.audioContext || this.audioContext.state !== 'running') return;
     const buffer = this.buffers.get(soundName);
     if (!buffer) return;
-    this.playBuffer(buffer, volume, duration);
+    this.playBuffer(buffer, volume, duration, startTime);
   }
 
   /**
@@ -324,24 +328,45 @@ export class AudioPlayer {
 
   /**
    * Fast path: play click immediately when context is already running.
+   *
+   * @param startTime - Optional precise AudioContext time.
    */
-  playClickNowIfReady(volume: number = 1.0): void {
+  playClickNowIfReady(volume: number = 1.0, startTime?: number): void {
     if (!this.audioContext || this.audioContext.state !== 'running' || !this.clickBuffer) return;
-    this.playBuffer(this.clickBuffer, volume, undefined, undefined, false);
+    this.playBuffer(this.clickBuffer, volume, undefined, startTime, false);
   }
 
   /**
-   * Stop all currently playing sounds (but not metronome clicks)
+   * Stop all currently playing sounds (but not metronome clicks).
+   *
+   * @param atTime - Optional AudioContext time at which sources should stop.
+   *   When provided, sources are scheduled to stop at that future time
+   *   (for look-ahead choke) and remain tracked so a later immediate
+   *   stop() can still cancel them. When omitted, sources stop immediately.
    */
-  stopAllSounds(): void {
-    this.activeSources.forEach(source => {
+  stopAllSounds(atTime?: number): void {
+    const ctx = this.audioContext;
+    for (const entry of this.activeSources) {
       try {
-        source.stop();
+        if (atTime !== undefined) {
+          entry.source.stop(atTime);
+        } else if (ctx) {
+          const now = ctx.currentTime;
+          const rampEnd = now + 0.015;
+          entry.gain.gain.cancelScheduledValues(now);
+          entry.gain.gain.setValueAtTime(entry.gain.gain.value, now);
+          entry.gain.gain.linearRampToValueAtTime(0, rampEnd);
+          entry.source.stop(rampEnd);
+        } else {
+          entry.source.stop();
+        }
       } catch {
         // Source may have already ended
       }
-    });
-    this.activeSources.clear();
+    }
+    if (atTime === undefined) {
+      this.activeSources.clear();
+    }
   }
 
   /**

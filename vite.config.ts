@@ -5,12 +5,15 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import react from '@vitejs/plugin-react';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 import { resolve } from 'path';
+import { randomBytes } from 'node:crypto';
 import { visualizer } from 'rollup-plugin-visualizer';
 import { compression } from 'vite-plugin-compression2';
 import {
   buildAppBasePathsFromEntryPaths,
   getCanonicalTrailingSlashRedirect,
 } from './src/shared/utils/trailingSlashRouting';
+
+const BUILD_VERSION = `${Date.now()}-${randomBytes(4).toString('hex')}`;
 
 const INCLUDE_BEAT_BENCHMARK =
   process.env.INCLUDE_BEAT_BENCHMARK === 'true' && process.env.FAST_TESTS !== 'true';
@@ -32,7 +35,7 @@ const MULTI_APP_INPUTS = {
   universal_tom: resolve(__dirname, 'src/drums/universal_tom/index.html'),
   piano: resolve(__dirname, 'src/piano/index.html'),
   scales: resolve(__dirname, 'src/scales/index.html'),
-  pulse: resolve(__dirname, 'src/pulse/index.html'),
+  count: resolve(__dirname, 'src/count/index.html'),
   ui: resolve(__dirname, 'src/ui/index.html'),
 } as const;
 
@@ -788,6 +791,13 @@ export default defineConfig({
     {
       name: 'fix-production-loading',
       enforce: 'post' as const,
+      generateBundle() {
+        this.emitFile({
+          type: 'asset',
+          fileName: 'build-version.txt',
+          source: BUILD_VERSION,
+        });
+      },
       transformIndexHtml(html: string) {
         let out = html;
 
@@ -837,12 +847,30 @@ export default defineConfig({
         }
 
         // 3. Purge stale service workers left by a previous vite-plugin-pwa deployment.
-        //    The SW files were removed from the build but old SWs stay active in
-        //    returning visitors' browsers, intercepting fetches with stale caches.
         out = out.replace(
           '</head>',
           '<script>if("serviceWorker"in navigator)navigator.serviceWorker.getRegistrations().then(function(r){r.forEach(function(s){s.unregister()})})</script>\n</head>',
         );
+
+        // 4. Stale-HTML detection: if the deployed build-version.txt doesn't match
+        //    the version baked into this HTML, the page is stale (CDN/browser cache).
+        //    Reload once per session to pick up the fresh HTML.
+        const versionScript = `<script>
+(function(){
+  if(location.hostname==='localhost'||location.hostname==='127.0.0.1')return;
+  var V='${BUILD_VERSION}',K='__buildV';
+  if(sessionStorage.getItem(K)===V)return;
+  fetch('/build-version.txt?_='+Date.now(),{cache:'no-store'})
+    .then(function(r){return r.ok?r.text():V})
+    .then(function(t){
+      t=t.trim();
+      sessionStorage.setItem(K,t);
+      if(t!==V)location.reload();
+    })
+    .catch(function(){});
+})();
+</script>`;
+        out = out.replace('</head>', versionScript + '\n</head>');
 
         return out;
       },

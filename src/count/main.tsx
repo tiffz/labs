@@ -8,7 +8,7 @@ import { initMaterialIconRuntime } from '../shared/ui/icons/materialIconsBootstr
 import App from './App';
 import './styles/pulse.css';
 
-installServerLogger('PULSE');
+installServerLogger('COUNT');
 initMaterialIconRuntime();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

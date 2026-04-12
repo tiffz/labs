@@ -1,9 +1,12 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect, useRef } from 'react';
 import { Box, Button, Typography, Paper, Chip } from '@mui/material';
 import { useScales } from '../store';
 import { findStage } from '../curriculum/tiers';
 import { getExerciseProgress } from '../progress/store';
 import { generateScoreForExercise } from '../curriculum/scoreGenerator';
+import { createAppAnalytics } from '../../shared/utils/analytics';
+
+const analytics = createAppAnalytics('scales');
 
 function Icon({ name, size = 20 }: { name: string; size?: number }) {
   return <span className="material-symbols-outlined" style={{ fontSize: size }}>{name}</span>;
@@ -20,6 +23,14 @@ export default function ResultScreen() {
   const total = results.length;
   const accuracy = total > 0 ? correct / total : 0;
   const accuracyPct = Math.round(accuracy * 100);
+
+  const trackedRef = useRef(false);
+  useEffect(() => {
+    if (!trackedRef.current && total > 0) {
+      trackedRef.current = true;
+      analytics.trackEvent('session_complete', { accuracy_pct: accuracyPct, notes_total: total });
+    }
+  }, [total, accuracyPct]);
 
   const stageInfo = activeExercise
     ? findStage(activeExercise.exerciseId, activeExercise.stageId)

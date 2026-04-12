@@ -30,6 +30,7 @@ const TAKADIMI_TABLES: Record<number, string[]> = {
   2: ['ta', 'di'],
   3: ['ta', 'ki', 'da'],
   4: ['ta', 'ka', 'di', 'mi'],
+  5: ['ta', 'ka', 'di', 'mi', 'ti'],
 };
 
 /**

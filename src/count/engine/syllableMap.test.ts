@@ -90,8 +90,11 @@ describe('takadimiLabelForPosition', () => {
     expect(takadimiLabelForPosition(6, 5)).toBe('ka');
   });
 
-  it('L=5: cycles through ta, ka, di, mi, ta', () => {
+  it('L=5: ta, ka, di, mi, ti (standard quintuplet)', () => {
     expect(takadimiLabelForPosition(5, 0)).toBe('ta');
-    expect(takadimiLabelForPosition(5, 4)).toBe('ta');
+    expect(takadimiLabelForPosition(5, 1)).toBe('ka');
+    expect(takadimiLabelForPosition(5, 2)).toBe('di');
+    expect(takadimiLabelForPosition(5, 3)).toBe('mi');
+    expect(takadimiLabelForPosition(5, 4)).toBe('ti');
   });
 });

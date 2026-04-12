@@ -3,9 +3,10 @@ import {
   getDefaultBeatGrouping,
   parseBeatGrouping,
 } from '../../shared/rhythm/timeSignatureUtils';
-import { CLICK_SAMPLE_URL } from '../../shared/audio/drumSampleUrls';
+import { CLICK_SAMPLE_URL, DRUM_SAMPLE_URLS } from '../../shared/audio/drumSampleUrls';
 import { loadClickSample } from '../../shared/audio/clickService';
 import type { LoadedClickSample } from '../../shared/audio/clickService';
+import { PreciseScheduler } from '../../shared/audio/preciseScheduler';
 import { VoicePackLoader } from './voicePackLoader';
 import type {
   MetronomeConfig,
@@ -17,26 +18,36 @@ import type {
   QuietCountConfig,
   VoiceMode,
 } from './types';
-import { eighthBaseSlotsPerEighth } from './types';
+import { eighthBaseSlotsPerEighth, slotsPerBeat } from './types';
 import { buildSubdivisionGrid, type SubdivGridEntry } from './gridBuilder';
 
 const SCHEDULE_AHEAD_SEC = 0.25;
+
+const DRUM_FOR_SUBDIVISION: Record<SubdivisionType, 'dum' | 'tak' | 'ka'> = {
+  accent: 'dum',
+  quarter: 'dum',
+  eighth: 'tak',
+  sixteenth: 'ka',
+};
 
 /**
  * Sample-accurate metronome engine using the Web Audio API look-ahead
  * scheduling pattern. Decoupled from React — communicates via callbacks.
  *
- * Supports two simultaneous sound sources: human voice samples and the
- * shared labs click.mp3, each with independent gain control.
- * Also supports per-beat volume overrides for Pro Metronome-style accenting.
+ * Supports three simultaneous sound sources: human voice samples, the
+ * shared labs click.mp3, and drum sounds (dum/tak/ka), each with
+ * independent gain control and per-channel muting.
  */
 export class MetronomeEngine {
   private ctx: AudioContext | null = null;
+  private scheduler = new PreciseScheduler();
   private voicePack = new VoicePackLoader();
   private clickSample: LoadedClickSample | null = null;
+  private drumSamples = new Map<string, AudioBuffer>();
   private subdivGainNodes = new Map<string, GainNode>();
   private voiceMasterGain: GainNode | null = null;
   private clickMasterGain: GainNode | null = null;
+  private drumMasterGain: GainNode | null = null;
 
   private startTime = 0;
   private playing = false;
@@ -52,13 +63,16 @@ export class MetronomeEngine {
   private mutedChannels = new Set<string>();
   private voiceGain = 1.0;
   private clickGain = 0.5;
+  private drumGain = 0;
+  private channelVoiceMutes = new Set<string>();
+  private channelClickMutes = new Set<string>();
+  private channelDrumMutes = new Set<string>();
   private quietCount: QuietCountConfig | undefined;
   private perBeatVolumes: number[] = [];
   private voiceMode: VoiceMode = 'counting';
   private subdivisionLevel: SubdivisionLevel = 2;
 
   private nextSubdivIndex = 0;
-  private rafId: number | null = null;
   private beatCallback: BeatCallback | null = null;
   private scheduledUpToTime = 0;
 
@@ -71,16 +85,23 @@ export class MetronomeEngine {
   }
 
   async start(config: MetronomeConfig): Promise<void> {
+    this.scheduler.stop();
+    const session = this.scheduler.beginSession();
+
     this.bpm = config.bpm;
     this.timeSignature = config.timeSignature;
     this.volumes = { ...config.volumes };
     this.quietCount = config.quietCount;
     if (config.voiceGain !== undefined) this.voiceGain = config.voiceGain;
     if (config.clickGain !== undefined) this.clickGain = config.clickGain;
+    if (config.drumGain !== undefined) this.drumGain = config.drumGain;
     if (config.mutedChannels) this.mutedChannels = new Set(config.mutedChannels);
     if (config.perBeatVolumes) this.perBeatVolumes = [...config.perBeatVolumes];
     if (config.voiceMode) this.voiceMode = config.voiceMode;
     if (config.subdivisionLevel) this.subdivisionLevel = config.subdivisionLevel;
+    if (config.channelVoiceMutes) this.channelVoiceMutes = new Set(config.channelVoiceMutes);
+    if (config.channelClickMutes) this.channelClickMutes = new Set(config.channelClickMutes);
+    if (config.channelDrumMutes) this.channelDrumMutes = new Set(config.channelDrumMutes);
 
     this.parseGrouping(config.beatGrouping);
     this.buildSubdivGrid();
@@ -96,7 +117,10 @@ export class MetronomeEngine {
     await Promise.all([
       this.voicePack.load(this.ctx),
       this.loadClickSample(),
+      this.loadDrumSamples(),
     ]);
+
+    if (!this.scheduler.isSessionValid(session)) return;
 
     this.nextSubdivIndex = 0;
     this.measuresPlayed = 0;
@@ -104,15 +128,20 @@ export class MetronomeEngine {
     this.scheduledUpToTime = this.startTime;
     this.playing = true;
 
-    this.tick();
+    this.scheduler.startLoop(this.tick);
   }
 
   stop(): void {
     this.playing = false;
-    if (this.rafId !== null) {
-      cancelAnimationFrame(this.rafId);
-      this.rafId = null;
+
+    if (this.ctx) {
+      const gains = [this.voiceMasterGain, this.clickMasterGain, this.drumMasterGain]
+        .filter((g): g is GainNode => g !== null);
+      this.scheduler.rampDown(this.ctx, gains);
     }
+
+    this.scheduler.stop();
+    this.scheduler.beginSession();
   }
 
   setTempo(bpm: number): void {
@@ -163,6 +192,25 @@ export class MetronomeEngine {
     }
   }
 
+  setDrumGain(v: number): void {
+    this.drumGain = v;
+    if (this.drumMasterGain && this.ctx) {
+      this.drumMasterGain.gain.setTargetAtTime(v, this.ctx.currentTime, 0.01);
+    }
+  }
+
+  setChannelVoiceMutes(muted: Set<string>): void {
+    this.channelVoiceMutes = muted;
+  }
+
+  setChannelClickMutes(muted: Set<string>): void {
+    this.channelClickMutes = muted;
+  }
+
+  setChannelDrumMutes(muted: Set<string>): void {
+    this.channelDrumMutes = muted;
+  }
+
   setPerBeatVolumes(vols: number[]): void {
     this.perBeatVolumes = [...vols];
   }
@@ -202,6 +250,26 @@ export class MetronomeEngine {
     this.clickSample = await loadClickSample(this.ctx, CLICK_SAMPLE_URL);
   }
 
+  private async loadDrumSamples(): Promise<void> {
+    if (!this.ctx) return;
+    const entries: Array<[string, string]> = [
+      ['dum', DRUM_SAMPLE_URLS.dum],
+      ['tak', DRUM_SAMPLE_URLS.tak],
+      ['ka', DRUM_SAMPLE_URLS.ka],
+    ];
+    await Promise.all(entries.map(async ([name, url]) => {
+      if (this.drumSamples.has(name)) return;
+      try {
+        const resp = await fetch(url);
+        const buf = await resp.arrayBuffer();
+        const decoded = await this.ctx!.decodeAudioData(buf);
+        this.drumSamples.set(name, decoded);
+      } catch {
+        // Drum sample failed to load — drum source will be silent for this sound
+      }
+    }));
+  }
+
   private parseGrouping(str?: string): void {
     if (str) {
       const parsed = parseBeatGrouping(str);
@@ -226,8 +294,10 @@ export class MetronomeEngine {
     this.subdivsPerMeasure = grid.length;
   }
 
-  /* Grid building delegated to gridBuilder.ts */
-
+  /**
+   * Duration for a single grid slot. Uniform for all levels including swing8
+   * (triplet grid: each slot = 1/3 beat, with the middle slot silent).
+   */
   private subdivDuration(bpm: number): number {
     const secsPerQuarter = 60 / bpm;
 
@@ -236,7 +306,11 @@ export class MetronomeEngine {
       return secsPerEighth / eighthBaseSlotsPerEighth(this.subdivisionLevel);
     }
 
-    return secsPerQuarter / this.subdivisionLevel;
+    if (this.subdivisionLevel === 'swing8') {
+      return secsPerQuarter / 3;
+    }
+
+    return secsPerQuarter / slotsPerBeat(this.subdivisionLevel);
   }
 
   private createGainNodes(): void {
@@ -250,6 +324,10 @@ export class MetronomeEngine {
     this.clickMasterGain = this.ctx.createGain();
     this.clickMasterGain.gain.value = this.clickGain;
     this.clickMasterGain.connect(this.ctx.destination);
+
+    this.drumMasterGain = this.ctx.createGain();
+    this.drumMasterGain.gain.value = this.drumGain;
+    this.drumMasterGain.connect(this.ctx.destination);
 
     const channels: Array<keyof SubdivisionVolumes> = [
       'accent', 'quarter', 'eighth', 'sixteenth',
@@ -280,7 +358,7 @@ export class MetronomeEngine {
 
     while (this.scheduledUpToTime < scheduleHorizon) {
       const subdivDur = this.subdivDuration(this.bpm);
-      const audioTime = this.startTime + this.nextSubdivIndex * subdivDur;
+      const audioTime = this.scheduledUpToTime;
 
       if (audioTime > scheduleHorizon) break;
 
@@ -288,17 +366,24 @@ export class MetronomeEngine {
       const entry = this.subdivGrid[measureIndex];
 
       if (entry) {
-        const isSilent = this.isInSilentBar();
+        const isSilent = this.isInSilentBar() || !!entry.silent;
         const channelVolume = this.volumes[entry.subdivision];
         const channelMuted = this.mutedChannels.has(entry.subdivision);
         const perBeatVol = this.perBeatVolumes[measureIndex] ?? 1.0;
 
         if (!isSilent && channelVolume > 0 && !channelMuted && perBeatVol > 0) {
-          const hasVoice = !!entry.sampleId;
-          if (hasVoice) {
+          const voiceMutedForChannel = this.channelVoiceMutes.has(entry.subdivision);
+          const clickMutedForChannel = this.channelClickMutes.has(entry.subdivision);
+          const drumMutedForChannel = this.channelDrumMutes.has(entry.subdivision);
+
+          if (entry.sampleId && this.voiceGain > 0 && !voiceMutedForChannel) {
             this.scheduleVoiceSample(entry.sampleId, audioTime, entry.subdivision, subdivDur, perBeatVol);
-          } else {
+          }
+          if (this.clickGain > 0 && !clickMutedForChannel) {
             this.scheduleClick(audioTime, entry.subdivision, channelVolume * perBeatVol);
+          }
+          if (this.drumGain > 0 && !drumMutedForChannel) {
+            this.scheduleDrum(audioTime, entry.subdivision, channelVolume * perBeatVol);
           }
         }
 
@@ -319,10 +404,10 @@ export class MetronomeEngine {
             isGroupStart: entry.isGroupStart,
             groupIndex: entry.groupIndex,
             audioTime,
-            isSilent: this.isInSilentBar(),
+            isSilent,
           };
           const delay = Math.max(0, (audioTime - now) * 1000);
-          setTimeout(() => this.beatCallback?.(evt), delay);
+          this.scheduler.scheduleCallback(delay, () => this.beatCallback?.(evt));
         }
       }
 
@@ -333,8 +418,6 @@ export class MetronomeEngine {
         this.measuresPlayed++;
       }
     }
-
-    this.rafId = requestAnimationFrame(this.tick);
   };
 
   private isInSilentBar(): boolean {
@@ -345,11 +428,6 @@ export class MetronomeEngine {
     return barInCycle >= playBars;
   }
 
-  /**
-   * Schedule a voice sample. Only truncate to fit the subdivision slot;
-   * cap playback rate adjustment to 1.3x to keep articulation intelligible.
-   * Below 100ms slots, voice is suppressed — the click handles these.
-   */
   private scheduleVoiceSample(
     sampleId: string,
     audioTime: number,
@@ -378,21 +456,16 @@ export class MetronomeEngine {
       perBeatGain.gain.value = perBeatVol;
       source.connect(perBeatGain);
       perBeatGain.connect(gainNode);
-      source.onended = () => { source.disconnect(); perBeatGain.disconnect(); };
     } else {
       source.connect(gainNode);
-      source.onended = () => source.disconnect();
     }
 
+    this.scheduler.trackSource(source);
     const startAt = Math.max(audioTime, this.ctx.currentTime);
     source.start(startAt);
     source.stop(startAt + maxPlayDur);
   }
 
-  /**
-   * Schedule the shared click.mp3 sample at the given time.
-   * Accent/quarter beats play at full rate; subdivisions play at 1.5x for a lighter feel.
-   */
   private scheduleClick(
     audioTime: number,
     subdivision: SubdivisionType,
@@ -414,10 +487,31 @@ export class MetronomeEngine {
 
     source.connect(gain);
     gain.connect(this.clickMasterGain);
+    this.scheduler.trackSource(source);
     source.start(t);
-    source.onended = () => {
-      source.disconnect();
-      gain.disconnect();
-    };
+  }
+
+  private scheduleDrum(
+    audioTime: number,
+    subdivision: SubdivisionType,
+    volume: number,
+  ): void {
+    if (!this.ctx || !this.drumMasterGain) return;
+
+    const drumName = DRUM_FOR_SUBDIVISION[subdivision];
+    const buffer = this.drumSamples.get(drumName);
+    if (!buffer) return;
+
+    const source = this.ctx.createBufferSource();
+    source.buffer = buffer;
+
+    const gain = this.ctx.createGain();
+    const t = Math.max(audioTime, this.ctx.currentTime);
+    gain.gain.setValueAtTime(Math.max(0, Math.min(1, volume)), t);
+
+    source.connect(gain);
+    gain.connect(this.drumMasterGain);
+    this.scheduler.trackSource(source);
+    source.start(t);
   }
 }

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 
 interface BpmControlProps {
   bpm: number;
@@ -8,7 +8,37 @@ interface BpmControlProps {
 const MIN_BPM = 20;
 const MAX_BPM = 300;
 
-const COMMON_BPMS = [60, 72, 80, 90, 100, 108, 120, 132, 140, 160, 180, 200];
+const REPEAT_DELAY = 400;
+const REPEAT_INTERVAL = 80;
+
+function useRepeatPress(callback: () => void) {
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const cbRef = useRef(callback);
+  cbRef.current = callback;
+
+  const stop = useCallback(() => {
+    if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
+    if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
+  }, []);
+
+  useEffect(() => stop, [stop]);
+
+  const start = useCallback(() => {
+    stop();
+    timerRef.current = setTimeout(() => {
+      intervalRef.current = setInterval(() => cbRef.current(), REPEAT_INTERVAL);
+    }, REPEAT_DELAY);
+  }, [stop]);
+
+  return {
+    onPointerDown: start,
+    onPointerUp: stop,
+    onPointerLeave: stop,
+  };
+}
+
+const COMMON_BPMS = [40, 50, 60, 72, 80, 90, 100, 108, 120, 132, 140, 160, 180, 200];
 
 const TEMPO_MARKINGS: Array<{ min: number; max: number; italian: string; english: string }> = [
   { min: 0,   max: 40,  italian: 'Larghissimo', english: 'Very broad' },
@@ -36,12 +66,18 @@ export function BpmControl({ bpm, onChange }: BpmControlProps) {
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState('');
 
+  const bpmRef = useRef(bpm);
+  bpmRef.current = bpm;
+
   const handleSlider = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       onChange(clamp(parseFloat(e.target.value)));
     },
     [onChange],
   );
+
+  const decRepeat = useRepeatPress(useCallback(() => onChange(clamp(bpmRef.current - 1)), [onChange]));
+  const incRepeat = useRepeatPress(useCallback(() => onChange(clamp(bpmRef.current + 1)), [onChange]));
 
   const startEdit = () => {
     setEditValue(String(Math.round(bpm)));
@@ -99,8 +135,8 @@ export function BpmControl({ bpm, onChange }: BpmControlProps) {
 
       <div className="pulse-bpm-actions">
         <button className="pulse-bpm-btn" onClick={() => onChange(clamp(bpm / 2))} type="button" title="Halve BPM">÷2</button>
-        <button className="pulse-bpm-btn" onClick={() => onChange(clamp(bpm - 1))} type="button" title="Decrease by 1">−1</button>
-        <button className="pulse-bpm-btn" onClick={() => onChange(clamp(bpm + 1))} type="button" title="Increase by 1">+1</button>
+        <button className="pulse-bpm-btn" onClick={() => onChange(clamp(bpm - 1))} {...decRepeat} type="button" title="Decrease by 1 (hold to repeat)">−1</button>
+        <button className="pulse-bpm-btn" onClick={() => onChange(clamp(bpm + 1))} {...incRepeat} type="button" title="Increase by 1 (hold to repeat)">+1</button>
         <button className="pulse-bpm-btn" onClick={() => onChange(clamp(bpm * 2))} type="button" title="Double BPM">×2</button>
       </div>
 

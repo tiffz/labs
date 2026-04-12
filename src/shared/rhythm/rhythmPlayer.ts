@@ -1,4 +1,4 @@
-import type { ParsedRhythm, PlaybackSettings } from './types';
+import type { ParsedRhythm, PlaybackSettings, DrumSound } from './types';
 import { audioPlayer } from './drumAudioPlayer';
 import {
   getDefaultBeatGrouping,
@@ -7,6 +7,7 @@ import {
   getBeatGroupingInSixteenths,
 } from './timeSignatureUtils';
 import { PlaybackScheduler } from '../playback/scheduler';
+import { PreciseScheduler } from '../audio/preciseScheduler';
 
 /**
  * Callback for when a note starts playing
@@ -25,18 +26,88 @@ export type NoteHighlightCallback = (
  */
 export type MetronomeCallback = (measureIndex: number, positionInSixteenths: number, isDownbeat: boolean) => void;
 
+interface ScheduledNoteEvent {
+  timeSec: number;
+  sound: DrumSound;
+  volume: number;
+  fadeDuration?: number;
+  isTiedFrom: boolean;
+  measureIndex: number;
+  noteIndex: number;
+  repeatIteration?: number;
+  repeatCount?: number;
+}
+
+interface ScheduledMetronomeEvent {
+  timeSec: number;
+  measureIndex: number;
+  positionInMeasure: number;
+  isDownbeat: boolean;
+  shouldClick: boolean;
+}
+
+function unrollMeasures(rhythm: ParsedRhythm) {
+  const result: Array<{
+    measure: (typeof rhythm.measures)[0];
+    originalIndex: number;
+    repeatIteration?: number;
+    repeatCount?: number;
+  }> = [];
+
+  let i = 0;
+  while (i < rhythm.measures.length) {
+    result.push({ measure: rhythm.measures[i], originalIndex: i });
+
+    const sectionRepeat = rhythm.repeats?.find(r =>
+      r.type === 'section' && r.endMeasure === i
+    ) as ({ type: 'section'; startMeasure: number; endMeasure: number; repeatCount: number } | undefined);
+
+    if (sectionRepeat && sectionRepeat.repeatCount > 1) {
+      for (let j = result.length - 1; j >= 0; j--) {
+        const m = result[j];
+        if (m.originalIndex >= sectionRepeat.startMeasure && m.originalIndex <= sectionRepeat.endMeasure) {
+          m.repeatIteration = 1;
+          m.repeatCount = sectionRepeat.repeatCount;
+        } else if (m.originalIndex < sectionRepeat.startMeasure && m.repeatIteration === undefined) {
+          break;
+        }
+      }
+
+      for (let r = 2; r <= sectionRepeat.repeatCount; r++) {
+        for (let k = sectionRepeat.startMeasure; k <= sectionRepeat.endMeasure; k++) {
+          if (k >= 0 && k < rhythm.measures.length) {
+            result.push({
+              measure: rhythm.measures[k],
+              originalIndex: k,
+              repeatIteration: r,
+              repeatCount: sectionRepeat.repeatCount,
+            });
+          }
+        }
+      }
+    }
+    i++;
+  }
+
+  return result;
+}
+
 /**
- * Rhythm player that schedules and plays notes based on BPM
- * Uses absolute timestamps to prevent timing drift during loops
- * 
+ * Rhythm player that schedules and plays notes based on BPM.
+ *
+ * Uses a requestAnimationFrame look-ahead loop combined with
+ * AudioContext-based scheduling for sample-accurate timing.
+ * UI callbacks (note highlighting, metronome beat) are still delivered
+ * via setTimeout but tracked for reliable cleanup on stop.
+ *
  * RELIABILITY FEATURES:
- * - Health checks before scheduling to detect AudioContext issues
- * - Proactive timeout cleanup to prevent memory growth during long sessions
- * - Visibility change handling for tab backgrounding scenarios
- * - Error recovery with automatic restart on detected issues
+ * - PreciseScheduler handles source tracking, timeout cleanup, and rAF loop
+ * - Generation counter protects against async start/stop races
+ * - Health checks detect AudioContext issues
+ * - Visibility change handling for tab backgrounding
  */
 class RhythmPlayer {
-  private timeoutIds: Set<number> = new Set(); // Use Set for O(1) add/delete
+  private scheduler = new PreciseScheduler();
   private isPlaying = false;
   private isLooping = false;
   private currentRhythm: ParsedRhythm | null = null;
@@ -45,27 +116,24 @@ class RhythmPlayer {
   private onPlaybackEnd: (() => void) | null = null;
   private onMetronomeBeat: MetronomeCallback | null = null;
   private metronomeEnabled = false;
-  private startTime = 0; // Absolute start time for drift-free looping
-  private loopCount = 0; // Track number of loops
+  private loopCount = 0;
   private settings: PlaybackSettings | null = null;
-  private pendingBpm: number | null = null; // BPM to apply at next measure boundary
-  private lastLoopEndTime = 0; // Track when the last loop ended for smooth BPM transitions
-  private visibilityHandler: (() => void) | null = null; // Visibility change handler
-  private healthCheckScheduler: PlaybackScheduler | null = null; // Periodic health check
-  private tickRange: { startTick: number; endTick: number } | null = null; // Optional tick range for selection-scoped playback
+  private pendingBpm: number | null = null;
+  private visibilityHandler: (() => void) | null = null;
+  private healthCheckScheduler: PlaybackScheduler | null = null;
+  private tickRange: { startTick: number; endTick: number } | null = null;
   private metronomeResolution: 'sixteenth' | 'beat' = 'sixteenth';
 
-  /**
-   * Play a rhythm at the specified BPM (loops continuously)
-   * @param rhythm - The parsed rhythm to play
-   * @param bpm - Beats per minute (quarter notes per minute)
-   * @param onNotePlay - Callback when each note starts playing
-   * @param onPlaybackEnd - Callback when playback completes (not called when looping)
-   * @param metronomeEnabled - Whether to play metronome clicks
-   * @param onMetronomeBeat - Callback when metronome beat occurs
-   * @param settings - Playback settings for accents and emphasis
-   * @param tickRange - Optional tick range to scope playback to a selection (startTick inclusive, endTick exclusive)
-   */
+  private scheduledUpToSec = 0;
+  private audioStartTimeSec = 0;
+  private noteEvents: ScheduledNoteEvent[] = [];
+  private metronomeEvents: ScheduledMetronomeEvent[] = [];
+  private noteEventIndex = 0;
+  private metronomeEventIndex = 0;
+  private loopDurationSec = 0;
+
+  private static readonly LOOK_AHEAD_SEC = 0.25;
+
   async play(
     rhythm: ParsedRhythm,
     bpm: number,
@@ -77,18 +145,18 @@ class RhythmPlayer {
     tickRange?: { startTick: number; endTick: number },
     metronomeResolution: 'sixteenth' | 'beat' = 'sixteenth',
   ): Promise<void> {
-    this.stop(); // Stop any existing playback
+    this.stop();
 
-    // Ensure AudioContext is ready before starting playback
-    // This handles browser autoplay policies and recovery from tab backgrounding
+    const session = this.scheduler.beginSession();
+
     const isAudioReady = await audioPlayer.ensureResumed();
     if (!isAudioReady) {
       console.error('Failed to initialize audio - cannot start playback');
-      if (onPlaybackEnd) {
-        onPlaybackEnd();
-      }
+      if (onPlaybackEnd) onPlaybackEnd();
       return;
     }
+
+    if (!this.scheduler.isSessionValid(session)) return;
 
     this.isPlaying = true;
     this.isLooping = true;
@@ -101,49 +169,40 @@ class RhythmPlayer {
     this.settings = settings || null;
     this.tickRange = tickRange || null;
     this.metronomeResolution = metronomeResolution;
+    this.loopCount = 0;
 
-    // Update reverb strength when starting playback
     if (settings) {
       audioPlayer.setReverbStrength(settings.reverbStrength);
     }
 
-    // Set up visibility change handler to ensure audio resumes when tab becomes visible
     this.setupVisibilityHandler();
-
-    // Start periodic health checks to detect and recover from audio issues
     this.startHealthCheck();
 
-    this.startTime = performance.now(); // Use high-precision timestamp
-    this.loopCount = 0;
-    this.lastLoopEndTime = 0; // Reset loop end time tracking
+    this.buildEventList();
 
-    this.scheduleRhythm();
+    const ctx = audioPlayer.getAudioContext();
+    if (!ctx) return;
+
+    this.audioStartTimeSec = ctx.currentTime + 0.05;
+    this.scheduledUpToSec = this.audioStartTimeSec;
+    this.noteEventIndex = 0;
+    this.metronomeEventIndex = 0;
+
+    this.scheduler.startLoop(this.tick);
   }
 
-  /**
-   * Set up visibility change handler to resume audio when tab becomes visible
-   * This prevents the silence bug when tab is backgrounded then foregrounded
-   */
   private setupVisibilityHandler(): void {
-    // Remove any existing handler first
     this.removeVisibilityHandler();
-
     this.visibilityHandler = () => {
       if (document.visibilityState === 'visible' && this.isPlaying) {
-        // Tab became visible while playback was active
-        // Ensure AudioContext is resumed
         audioPlayer.ensureResumed().catch(err => {
           console.warn('Failed to resume audio on visibility change:', err);
         });
       }
     };
-
     document.addEventListener('visibilitychange', this.visibilityHandler);
   }
 
-  /**
-   * Remove visibility change handler
-   */
   private removeVisibilityHandler(): void {
     if (this.visibilityHandler) {
       document.removeEventListener('visibilitychange', this.visibilityHandler);
@@ -151,21 +210,10 @@ class RhythmPlayer {
     }
   }
 
-  /**
-   * Start periodic health checks to detect audio issues
-   * If audio becomes unhealthy, attempt to recover
-   */
   private startHealthCheck(): void {
     this.stopHealthCheck();
-
-    // Check audio health every 2 seconds
     this.healthCheckScheduler = new PlaybackScheduler(() => {
-      if (!this.isPlaying) {
-        this.stopHealthCheck();
-        return;
-      }
-
-      // If audio is not healthy, try to recover
+      if (!this.isPlaying) { this.stopHealthCheck(); return; }
       if (!audioPlayer.isHealthy()) {
         audioPlayer.ensureResumed().catch(err => {
           console.warn('Health check: failed to resume audio:', err);
@@ -175,258 +223,93 @@ class RhythmPlayer {
     this.healthCheckScheduler.start();
   }
 
-  /**
-   * Stop periodic health checks
-   */
   private stopHealthCheck(): void {
     this.healthCheckScheduler?.stop();
     this.healthCheckScheduler = null;
   }
 
   /**
-   * Schedule a single iteration of the rhythm
-   * Will automatically loop if isLooping is true
-   * Uses absolute timestamps to prevent drift
+   * Pre-compute the flat list of note and metronome events for one loop
+   * iteration. Times are in seconds relative to the loop start.
    */
-  private scheduleRhythm(): void {
-    if (!this.currentRhythm || !this.isPlaying) return;
+  private buildEventList(): void {
+    if (!this.currentRhythm) return;
 
     const rhythm = this.currentRhythm;
     const bpm = this.currentBpm;
+    const secPerSixteenth = 60 / bpm / 4;
 
-    // Calculate milliseconds per sixteenth note
-    // BPM is quarter notes per minute
-    // 1 quarter note = 4 sixteenth notes
-    // So: sixteenth note duration = (60,000 ms / BPM) / 4
-    const msPerSixteenth = (60000 / bpm) / 4;
+    const unrolledMeasures = unrollMeasures(rhythm);
 
-    // Unroll repeats to get the actual linear sequence of measures to play
-    // This allows multi-measure repeats to work correctly in playback
-    const unrolledMeasures: Array<{
-      measure: typeof rhythm.measures[0];
-      originalIndex: number;
-      repeatIteration?: number; // 1-based iteration count
-      repeatCount?: number;     // Total repeat count
-    }> = [];
-
-    // Helper to process repeats
-    // We iterate through measures, and if we encounter a repeat end, we may jump back
-    let i = 0;
-    while (i < rhythm.measures.length) {
-      // Default: current measure is iteration 1 of 1 (unless inside a repeat block)
-      // Note: This simple logic doesn't fully capture "nested" repeats or complex state, 
-      // but works for the standard "section repeat" model used here.
-      unrolledMeasures.push({ measure: rhythm.measures[i], originalIndex: i });
-
-      // Check if this measure is the END of a repeat section
-      const sectionRepeat = rhythm.repeats?.find(r =>
-        r.type === 'section' && r.endMeasure === i
-      ) as ({ type: 'section'; startMeasure: number; endMeasure: number; repeatCount: number } | undefined);
-
-      if (sectionRepeat && sectionRepeat.repeatCount > 1) {
-        // Mark the just-pushed measure (and previous ones in the block) as iteration 1
-        // We need to look back in unrolledMeasures to find measures that belong to this section
-        for (let j = unrolledMeasures.length - 1; j >= 0; j--) {
-          const m = unrolledMeasures[j];
-          // Stop if we go back past the start of the section
-          // Determining exact index match is tricky because unrolledMeasures grows.
-          // But we know the current block is just finishing.
-          // The measures for this block are the last (end - start + 1) measures pushed.
-          // Simplified: we know originalIndex.
-          if (m.originalIndex >= sectionRepeat.startMeasure && m.originalIndex <= sectionRepeat.endMeasure) {
-            m.repeatIteration = 1;
-            m.repeatCount = sectionRepeat.repeatCount;
-          } else if (m.originalIndex < sectionRepeat.startMeasure && m.repeatIteration === undefined) {
-            // We've gone past the start of this block
-            break;
-          }
-        }
-
-        // Push subsequent iterations
-        for (let r = 2; r <= sectionRepeat.repeatCount; r++) {
-          for (let k = sectionRepeat.startMeasure; k <= sectionRepeat.endMeasure; k++) {
-            // Access strictly safely
-            if (k >= 0 && k < rhythm.measures.length) {
-              unrolledMeasures.push({
-                measure: rhythm.measures[k],
-                originalIndex: k,
-                repeatIteration: r,
-                repeatCount: sectionRepeat.repeatCount
-              });
-            }
-          }
-        }
-      }
-      i++;
-    }
-
-    // Calculate total ticks in the full rhythm (for tick tracking)
     let totalTicks = 0;
     unrolledMeasures.forEach(({ measure }) => {
-      measure.notes.forEach(note => {
-        totalTicks += note.durationInSixteenths;
-      });
+      measure.notes.forEach(note => { totalTicks += note.durationInSixteenths; });
     });
 
-    // Calculate loop duration: if tick range is set, only count ticks in the range
     const effectiveStartTick = this.tickRange ? this.tickRange.startTick : 0;
     const effectiveEndTick = this.tickRange ? Math.min(this.tickRange.endTick, totalTicks) : totalTicks;
-    const totalLoopDuration = (effectiveEndTick - effectiveStartTick) * msPerSixteenth;
+    this.loopDurationSec = (effectiveEndTick - effectiveStartTick) * secPerSixteenth;
 
-    // Calculate absolute time offset for this loop
-    // If we have a lastLoopEndTime (from a BPM change), use it to maintain continuity
-    // Otherwise, calculate normally based on loopCount
-    let loopStartOffset: number;
-    const now = performance.now();
-
-    if (this.lastLoopEndTime > 0 && this.loopCount > 0) {
-      // We're continuing from a previous loop after a BPM change
-      // The next loop should start exactly when the previous loop ended
-      // Adjust startTime to maintain absolute timing continuity
-      const timeSinceLastLoopEnd = now - this.lastLoopEndTime;
-      if (timeSinceLastLoopEnd > 0) {
-        // We're slightly past the end time - adjust startTime to compensate
-        this.startTime = this.lastLoopEndTime;
-      }
-      loopStartOffset = this.lastLoopEndTime - this.startTime;
-      // Reset lastLoopEndTime so normal calculation resumes for subsequent loops
-      this.lastLoopEndTime = 0;
-    } else {
-      // Normal case: calculate based on loop count
-      loopStartOffset = this.loopCount * totalLoopDuration;
-    }
-
-    // Get beat grouping for this time signature
     const beatGrouping = getDefaultBeatGrouping(rhythm.timeSignature);
-
-    // Convert beat grouping to sixteenths
     const beatGroupingInSixteenths = getBeatGroupingInSixteenths(beatGrouping, rhythm.timeSignature);
 
-    // Schedule metronome clicks for all beat groups
-    // Always schedule them, but check metronomeEnabled at execution time
-    const metronomeBeatPositions: Array<{ measureIndex: number; positionInMeasure: number; isDownbeat: boolean; time: number; shouldClick: boolean }> = [];
-
+    // --- Metronome events ---
+    this.metronomeEvents = [];
     let measureStartTick = 0;
 
     rhythm.measures.forEach((measure, measureIndex) => {
-      // Schedule metronome updates at configured resolution.
       const sixteenthsPerMeasure = getSixteenthsPerMeasure(rhythm.timeSignature);
-
-      // Calculate beat boundaries for metronome CLICKs
-      const beatGroupingInSixteenths = getBeatGroupingInSixteenths(
+      const metBeatGrouping = getBeatGroupingInSixteenths(
         getDefaultBeatGrouping(rhythm.timeSignature),
-        rhythm.timeSignature
+        rhythm.timeSignature,
       );
 
-      // Positions where clicks should happen: 0 (downbeat) + cumulative group sums
       const clickPositions = new Set<number>();
       clickPositions.add(0);
-
       let cumulative = 0;
-      for (const groupSize of beatGroupingInSixteenths) {
+      for (const groupSize of metBeatGrouping) {
         cumulative += groupSize;
-        if (cumulative < sixteenthsPerMeasure) {
-          clickPositions.add(cumulative);
-        }
+        if (cumulative < sixteenthsPerMeasure) clickPositions.add(cumulative);
       }
 
       const positionsToEmit = this.metronomeResolution === 'beat'
         ? Array.from(clickPositions.values()).sort((a, b) => a - b)
-        : Array.from({ length: sixteenthsPerMeasure }, (_, index) => index);
+        : Array.from({ length: sixteenthsPerMeasure }, (_, i) => i);
 
       for (const pos of positionsToEmit) {
-        const absoluteTick = measureStartTick + pos;
-        
-        // Skip metronome beats outside the tick range
-        if (this.tickRange && (absoluteTick < effectiveStartTick || absoluteTick >= effectiveEndTick)) {
-          continue;
-        }
-        
-        // Adjust time relative to range start
-        const adjustedTime = (absoluteTick - effectiveStartTick) * msPerSixteenth;
-        const isClick = clickPositions.has(pos);
-        const isDownbeat = pos === 0;
-
-        metronomeBeatPositions.push({
+        const absTick = measureStartTick + pos;
+        if (this.tickRange && (absTick < effectiveStartTick || absTick >= effectiveEndTick)) continue;
+        const timeSec = (absTick - effectiveStartTick) * secPerSixteenth;
+        this.metronomeEvents.push({
+          timeSec,
           measureIndex,
           positionInMeasure: pos,
-          isDownbeat,
-          time: adjustedTime,
-          shouldClick: isClick
+          isDownbeat: pos === 0,
+          shouldClick: clickPositions.has(pos),
         });
       }
 
-      // Calculate measure tick length from notes
       let measureTicks = 0;
-      measure.notes.forEach(note => {
-        measureTicks += note.durationInSixteenths;
-      });
+      measure.notes.forEach(note => { measureTicks += note.durationInSixteenths; });
       measureStartTick += measureTicks;
     });
 
-    // Schedule all ticks
-    metronomeBeatPositions.forEach(({ measureIndex, positionInMeasure, isDownbeat, time, shouldClick }) => {
-      const absoluteTime = loopStartOffset + time;
-      const delay = Math.max(0, this.startTime + absoluteTime - now);
-
-      const metronomeTimeoutId = window.setTimeout(() => {
-        // Clean up this timeout from tracking
-        this.timeoutIds.delete(metronomeTimeoutId);
-
-        if (!this.isPlaying) return;
-
-        // Visual tick callback
-        if (this.onMetronomeBeat) {
-          this.onMetronomeBeat(measureIndex, positionInMeasure, isDownbeat);
-        }
-
-        // Metronome Audio Click (Only on beats)
-        // Check metronomeEnabled at execution time
-        if (!this.metronomeEnabled || !shouldClick) return;
-
-        // Get settings with defaults
-        const settings = this.settings || {
-          measureAccentVolume: 90,
-          beatGroupAccentVolume: 70,
-          nonAccentVolume: 40,
-          emphasizeSimpleRhythms: false,
-          metronomeVolume: 50,
-        };
-
-        // Play click with louder volume for downbeat
-        const baseVolume = isDownbeat ? 0.8 : 0.5;
-        const clickVolume = baseVolume * (settings.metronomeVolume / 100);
-        if (typeof (audioPlayer as { playClickNowIfReady?: (volume: number) => void }).playClickNowIfReady === 'function') {
-          (audioPlayer as { playClickNowIfReady: (volume: number) => void }).playClickNowIfReady(clickVolume);
-        } else {
-          void audioPlayer.playClick(clickVolume);
-        }
-
-      }, delay);
-
-      this.timeoutIds.add(metronomeTimeoutId);
-    });
-
-    let currentTick = 0; // Track absolute tick position for tick range filtering
+    // --- Note events ---
+    this.noteEvents = [];
+    let currentTick = 0;
+    const isSimpleRhythm = rhythm.timeSignature.denominator === 4;
 
     unrolledMeasures.forEach(({ measure, originalIndex: measureIndex, repeatIteration, repeatCount }) => {
-      let positionInMeasure = 0; // Track position in sixteenths within the measure
+      let positionInMeasure = 0;
 
       measure.notes.forEach((note, noteIndex) => {
         const noteTick = currentTick;
-
-        // Check if this note falls within the tick range (if set)
         const isInRange = !this.tickRange || (noteTick >= effectiveStartTick && noteTick < effectiveEndTick);
 
         if (isInRange) {
-          // Adjust time relative to range start
-          const adjustedTime = (noteTick - effectiveStartTick) * msPerSixteenth;
+          const timeSec = (noteTick - effectiveStartTick) * secPerSixteenth;
+          const noteDurationSec = note.durationInSixteenths * secPerSixteenth;
 
-          // Calculate absolute time for this note
-          const absoluteTime = loopStartOffset + adjustedTime;
-          const delay = Math.max(0, this.startTime + absoluteTime - now);
-
-          // Get settings with defaults
           const settings = this.settings || {
             measureAccentVolume: 90,
             beatGroupAccentVolume: 70,
@@ -435,158 +318,153 @@ class RhythmPlayer {
             metronomeVolume: 50,
           };
 
-          // Check if this is a simple rhythm (/4)
-          const isSimpleRhythm = rhythm.timeSignature.denominator === 4;
-
-          // Calculate volume based on beat group position and settings
-          // Default volume for non-accented notes
           let volume = settings.nonAccentVolume / 100;
-
           if (positionInMeasure === 0) {
-            // First note of the measure - use measure accent volume
             volume = settings.measureAccentVolume / 100;
           } else {
-            // Check if this is the first note of a beat group
             const groupInfo = getBeatGroupInfo(positionInMeasure, beatGroupingInSixteenths);
             if (groupInfo.isFirstOfGroup) {
-              // For simple rhythms (/4), only accent beat groups if emphasizeSimpleRhythms is enabled
               if (!isSimpleRhythm || settings.emphasizeSimpleRhythms) {
                 volume = settings.beatGroupAccentVolume / 100;
               }
             }
           }
 
-          // Calculate duration for fade-out on very short notes
-          // Only pass duration for notes shorter than 150ms to prevent overlap
-          const noteDurationMs = note.durationInSixteenths * msPerSixteenth;
-          const noteDurationSeconds = noteDurationMs / 1000;
+          const fadeDuration = noteDurationSec < 0.15 ? noteDurationSec : undefined;
 
-          // Only apply fade-out to very short notes (< 150ms)
-          // Longer notes play naturally without clipping
-          const fadeDuration = noteDurationSeconds < 0.15 ? noteDurationSeconds : undefined;
-
-          // Schedule the note to play
-          const timeoutId = window.setTimeout(() => {
-            // Clean up this timeout from tracking
-            this.timeoutIds.delete(timeoutId);
-
-            if (!this.isPlaying) return;
-
-            // Tied notes (continuations from previous measure) should NOT play a new sound.
-            // They represent the continuation of the previous note's duration, not a new attack.
-            // Only the first note in a tie chain should trigger the sound.
-            if (!note.isTiedFrom) {
-              // If this is a real note (not a rest), stop previous sounds
-              // Rests don't clip previous sounds - they let them ring through
-              if (note.sound !== 'rest') {
-                audioPlayer.stopAllDrumSounds();
-              }
-
-              // Play the sound with dynamic volume and optional fade-out
-              if (typeof (audioPlayer as { playNowIfReady?: (sound: typeof note.sound, volume: number, duration?: number) => void }).playNowIfReady === 'function') {
-                (audioPlayer as { playNowIfReady: (sound: typeof note.sound, volume: number, duration?: number) => void }).playNowIfReady(
-                  note.sound,
-                  volume,
-                  fadeDuration,
-                );
-              } else {
-                void audioPlayer.play(note.sound, volume, fadeDuration);
-              }
-            }
-
-            // Notify listeners for visual highlighting (even for tied notes)
-            if (this.onNotePlay) {
-              // Use the original measure index so visual highlighting matches the renderer
-              // Also pass repeat iteration info
-              this.onNotePlay(measureIndex, noteIndex, repeatIteration, repeatCount);
-            }
-          }, delay);
-
-          this.timeoutIds.add(timeoutId);
+          this.noteEvents.push({
+            timeSec,
+            sound: note.sound,
+            volume,
+            fadeDuration,
+            isTiedFrom: !!note.isTiedFrom,
+            measureIndex,
+            noteIndex,
+            repeatIteration,
+            repeatCount,
+          });
         }
 
-        // Always advance tracking (even for skipped notes)
         currentTick += note.durationInSixteenths;
         positionInMeasure += note.durationInSixteenths;
       });
     });
-
-    // Schedule next loop or end callback
-    const absoluteEndTime = loopStartOffset + totalLoopDuration;
-    const endDelay = Math.max(0, this.startTime + absoluteEndTime - now);
-
-    // Store when this loop will end for smooth BPM transitions
-    const loopEndTime = this.startTime + absoluteEndTime;
-
-    const endTimeoutId = window.setTimeout(() => {
-      // Clean up this timeout from tracking
-      this.timeoutIds.delete(endTimeoutId);
-
-      if (!this.isPlaying) return;
-
-      // Check if there's a pending BPM change to apply at measure boundary (end of loop)
-      // Check the current state at the time the timeout fires, not when it was scheduled
-      if (this.pendingBpm !== null && this.pendingBpm !== this.currentBpm) {
-        const newBpm = this.pendingBpm;
-        this.pendingBpm = null;
-        this.currentBpm = newBpm;
-
-        // Maintain timing continuity: the next loop should start exactly when this one ends
-        // Store the absolute end time and use it for the next loop's scheduling
-        this.lastLoopEndTime = loopEndTime;
-        this.loopCount++;
-
-        // Schedule next loop immediately - it will use the new BPM and maintain timing
-        if (this.isPlaying) {
-          this.scheduleRhythm();
-        }
-        return;
-      }
-
-      if (this.isLooping) {
-        // Loop: schedule the rhythm again
-        // Store the end time for potential future BPM changes
-        this.lastLoopEndTime = loopEndTime;
-        this.loopCount++;
-        this.scheduleRhythm();
-      } else {
-        // Not looping: end playback
-        this.isPlaying = false;
-        if (this.onPlaybackEnd) {
-          this.onPlaybackEnd();
-        }
-      }
-    }, endDelay);
-    this.timeoutIds.add(endTimeoutId);
   }
 
   /**
-   * Stop playback and clear all scheduled notes
+   * rAF tick: schedule events whose AudioContext time falls within the
+   * look-ahead window.
    */
+  private tick = (): void => {
+    if (!this.isPlaying) return;
+
+    const ctx = audioPlayer.getAudioContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    const horizon = now + RhythmPlayer.LOOK_AHEAD_SEC;
+
+    // --- schedule note events ---
+    while (this.noteEventIndex < this.noteEvents.length) {
+      const evt = this.noteEvents[this.noteEventIndex];
+      const loopOffset = this.loopCount * this.loopDurationSec;
+      const audioTime = this.audioStartTimeSec + loopOffset + evt.timeSec;
+
+      if (audioTime > horizon) break;
+
+      if (audioTime >= this.scheduledUpToSec) {
+        if (!evt.isTiedFrom) {
+          if (evt.sound !== 'rest') {
+            audioPlayer.stopAllDrumSounds(audioTime);
+          }
+          audioPlayer.playNowIfReady(evt.sound, evt.volume, evt.fadeDuration, audioTime);
+        }
+
+        const delayMs = Math.max(0, (audioTime - now) * 1000);
+        const { measureIndex, noteIndex, repeatIteration, repeatCount } = evt;
+        this.scheduler.scheduleCallback(delayMs, () => {
+          if (!this.isPlaying) return;
+          this.onNotePlay?.(measureIndex, noteIndex, repeatIteration, repeatCount);
+        });
+      }
+
+      this.noteEventIndex++;
+    }
+
+    // --- schedule metronome events ---
+    while (this.metronomeEventIndex < this.metronomeEvents.length) {
+      const evt = this.metronomeEvents[this.metronomeEventIndex];
+      const loopOffset = this.loopCount * this.loopDurationSec;
+      const audioTime = this.audioStartTimeSec + loopOffset + evt.timeSec;
+
+      if (audioTime > horizon) break;
+
+      if (audioTime >= this.scheduledUpToSec) {
+        if (this.metronomeEnabled && evt.shouldClick) {
+          const settings = this.settings || { metronomeVolume: 50 };
+          const baseVolume = evt.isDownbeat ? 0.8 : 0.5;
+          const clickVolume = baseVolume * ((settings.metronomeVolume ?? 50) / 100);
+          audioPlayer.playClickNowIfReady(clickVolume, audioTime);
+        }
+
+        const delayMs = Math.max(0, (audioTime - now) * 1000);
+        const { measureIndex, positionInMeasure, isDownbeat } = evt;
+        this.scheduler.scheduleCallback(delayMs, () => {
+          if (!this.isPlaying) return;
+          this.onMetronomeBeat?.(measureIndex, positionInMeasure, isDownbeat);
+        });
+      }
+
+      this.metronomeEventIndex++;
+    }
+
+    // Advance the watermark before the loop-boundary check so a wrap
+    // can reset it to the new loop's start without being overwritten.
+    this.scheduledUpToSec = Math.max(this.scheduledUpToSec, now);
+
+    // --- loop boundary ---
+    const loopEndTimeSec = this.audioStartTimeSec + (this.loopCount + 1) * this.loopDurationSec;
+
+    if (now >= loopEndTimeSec - 0.01) {
+      if (this.pendingBpm !== null && this.pendingBpm !== this.currentBpm) {
+        this.currentBpm = this.pendingBpm;
+        this.pendingBpm = null;
+        this.buildEventList();
+      }
+
+      if (this.isLooping) {
+        this.loopCount++;
+        this.noteEventIndex = 0;
+        this.metronomeEventIndex = 0;
+        this.scheduledUpToSec = this.audioStartTimeSec + this.loopCount * this.loopDurationSec;
+      } else {
+        this.isPlaying = false;
+        this.scheduler.stop();
+        this.onPlaybackEnd?.();
+      }
+    }
+  };
+
   stop(): void {
     this.isPlaying = false;
     this.isLooping = false;
-    this.pendingBpm = null; // Clear any pending BPM changes
-    this.lastLoopEndTime = 0; // Reset loop end time tracking
-    this.tickRange = null; // Clear tick range
+    this.pendingBpm = null;
+    this.tickRange = null;
 
-    // Stop health checks and visibility handling
     this.stopHealthCheck();
     this.removeVisibilityHandler();
 
-    // Clear all scheduled timeouts
-    this.timeoutIds.forEach(id => window.clearTimeout(id));
-    this.timeoutIds.clear();
+    this.scheduler.stop();
+    this.scheduler.beginSession();
 
-    // Stop all currently playing sounds
     audioPlayer.stopAll();
 
-    // Clear state
     this.currentRhythm = null;
     this.onNotePlay = null;
     this.onPlaybackEnd = null;
-    this.startTime = 0;
     this.loopCount = 0;
+    this.noteEvents = [];
+    this.metronomeEvents = [];
   }
 
   /**

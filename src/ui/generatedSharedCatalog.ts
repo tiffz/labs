@@ -20,6 +20,67 @@ export interface SharedCatalogEntry {
 
 export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
   {
+    "id": "src-shared-audio-test-mockaudiocontext-ts-createmockaudiocontext",
+    "name": "createMockAudioContext",
+    "path": "src/shared/audio/__test__/mockAudioContext.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Create a fake AudioContext with controllable time. Advance time by setting `ctx._time = 1.5`.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-test-mockaudiocontext-ts-createmockgainnode",
+    "name": "createMockGainNode",
+    "path": "src/shared/audio/__test__/mockAudioContext.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Minimal mock GainNode with spied AudioParam.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-test-mockaudiocontext-ts-createmocksourcenode",
+    "name": "createMockSourceNode",
+    "path": "src/shared/audio/__test__/mockAudioContext.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Minimal mock AudioBufferSourceNode.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-test-mockaudiocontext-ts-mockaudiocontext",
+    "name": "MockAudioContext",
+    "path": "src/shared/audio/__test__/mockAudioContext.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Minimal mock GainNode with spied AudioParam.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
     "id": "src-shared-audio-audioplayer-ts-audioplayer",
     "name": "AudioPlayer",
     "path": "src/shared/audio/audioPlayer.ts",
@@ -488,6 +549,22 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [],
     "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-precisescheduler-ts-precisescheduler",
+    "name": "PreciseScheduler",
+    "path": "src/shared/audio/preciseScheduler.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "PreciseScheduler — shared utility for robust Web Audio scheduling. Provides the common infrastructure that any rAF + AudioContext look-ahead engine needs: loop management, async race protection, source/timeout tracking, and clean gain ramp-down on stop. This is a composition utility — engines hold an instance and delegate lifecycle calls rather than extending a base class.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "class",
     "demoId": null
   },
   {
@@ -5677,6 +5754,144 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "words",
       "zines"
     ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-analytics-ts-appanalytics",
+    "name": "AppAnalytics",
+    "path": "src/shared/utils/analytics.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "utils",
+      "api"
+    ],
+    "appsUsing": [
+      "beat",
+      "chords",
+      "corp",
+      "drums",
+      "forms",
+      "piano",
+      "story",
+      "words",
+      "zines"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-analytics-ts-appid",
+    "name": "AppId",
+    "path": "src/shared/utils/analytics.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "utils",
+      "api"
+    ],
+    "appsUsing": [
+      "beat",
+      "chords",
+      "corp",
+      "drums",
+      "forms",
+      "piano",
+      "story",
+      "words",
+      "zines"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-analytics-ts-createappanalytics",
+    "name": "createAppAnalytics",
+    "path": "src/shared/utils/analytics.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Create a namespaced analytics helper for a micro-app. All events are automatically tagged with `micro_app` and `content_group` so GA4 reports can be filtered by app and category. Returns a no-op implementation when `window.labsAnalytics` is absent (e.g. dev mode or ad-blockers) so callers never need null checks.",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [
+      "beat",
+      "chords",
+      "corp",
+      "drums",
+      "forms",
+      "piano",
+      "story",
+      "words",
+      "zines"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-hashstate-ts-gethashvalues",
+    "name": "getHashValues",
+    "path": "src/shared/utils/hashState.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Look up a key in parsed pairs, returning its values or undefined.",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-hashstate-ts-hashpair",
+    "name": "HashPair",
+    "path": "src/shared/utils/hashState.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Generic compact key-value encoder/decoder for URL hash fragments. Convention: pairs are separated by `.`, sub-values within a pair by `-`. Keys are a short prefix (1-3 chars) immediately followed by the first value. Example: #g100-50-0.q100-74-59-27.cv5 This format avoids characters that require URL encoding in hash fragments (%, +, /, =, &, space).",
+    "tags": [
+      "utils",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-hashstate-ts-parsehash",
+    "name": "parseHash",
+    "path": "src/shared/utils/hashState.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Parse a hash fragment (without the leading `#`) into key-value pairs.",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-hashstate-ts-serializehash",
+    "name": "serializeHash",
+    "path": "src/shared/utils/hashState.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Serialize key-value pairs into a hash fragment (without the leading `#`).",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [],
     "exportType": "function",
     "demoId": null
   },

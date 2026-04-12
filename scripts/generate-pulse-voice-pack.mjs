@@ -44,7 +44,7 @@ const OUTPUT_DIR = resolve(
   import.meta.dirname,
   '..',
   'public',
-  'pulse',
+  'count',
   'voice',
 );
 

@@ -7,6 +7,9 @@ import { Sidebar } from './components/Sidebar';
 import { FixedStoryHeader } from './components/FixedStoryHeader';
 import { BeatChart } from './components/BeatChart';
 import './styles/story.css';
+import { createAppAnalytics } from '../shared/utils/analytics';
+
+const analytics = createAppAnalytics('story');
 
 const App: React.FC = () => {
   const [storyDNA, setStoryDNA] = useState<StoryDNA | null>(null);
@@ -22,10 +25,12 @@ const App: React.FC = () => {
   const handleGenerate = (genre: string = selectedGenre) => {
     const newDNA = generateStoryDNA(genre, 'Random');
     setStoryDNA(newDNA);
+    analytics.trackEvent('generate', { genre });
   };
 
   const handleReroll = (rerollId: string) => {
     if (!storyDNA) return;
+    analytics.trackEvent('reroll', { section: rerollId });
 
     // Handle genre reroll - regenerate entire story
     if (rerollId === 'genre') {

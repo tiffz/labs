@@ -8,6 +8,9 @@ import PlaybackBar from './components/PlaybackBar';
 import DrumAccompaniment from '../shared/components/music/DrumAccompaniment';
 import UploadLanding from './components/UploadLanding';
 import { useAudioAnalysis } from './hooks/useAudioAnalysis';
+import { createAppAnalytics } from '../shared/utils/analytics';
+
+const analytics = createAppAnalytics('beat');
 import { transposeKey } from './utils/musicTheory';
 import { useBeatSync, PLAYBACK_SPEEDS, type PlaybackSpeed } from './hooks/useBeatSync';
 import { useSectionDetection } from './hooks/useSectionDetection';
@@ -664,6 +667,7 @@ const App: React.FC = () => {
 
   const ingestAndMaybeLoad = useCallback(
     async (media: MediaFile, focus: boolean) => {
+      analytics.trackEvent('analysis_start', { source: media.sourceType });
       if (media.sourceType === 'youtube') {
         const videoId = media.youtubeVideoId ?? (media.sourceUrl ? extractYouTubeVideoId(media.sourceUrl) : null);
         if (!videoId || !media.sourceUrl) return;
@@ -972,6 +976,7 @@ const App: React.FC = () => {
   );
 
   const handlePlayPause = useCallback(() => {
+    analytics.trackEvent('playback_toggle');
     if (isYouTubeMedia) {
       if (youtubePlayback.isPlaying) youtubeControllerRef.current?.pause();
       else youtubeControllerRef.current?.play();
@@ -1666,7 +1671,7 @@ const App: React.FC = () => {
                       <button
                         ref={exportButtonRef}
                         className="nav-btn"
-                        onClick={() => setExportOpen(true)}
+                        onClick={() => { setExportOpen(true); analytics.trackEvent('export_open'); }}
                         aria-label="Export audio"
                         disabled={isYouTubeMedia}
                       >
