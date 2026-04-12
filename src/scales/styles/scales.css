@@ -1,0 +1,15 @@
+.scales-app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.scales-app .main-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 16px 24px;
+}
+
+.scales-app .score-display svg {
+  max-width: 100%;
+}

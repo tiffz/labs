@@ -6,8 +6,8 @@ import { installServerLogger } from '../shared/utils/serverLogger'
 import { getAppTheme } from '../shared/ui/theme/appTheme'
 import { initMaterialIconRuntime } from '../shared/ui/icons/materialIconsBootstrap'
 import App from './App.tsx'
-import './styles/drums.css'
 import '../shared/components/music/appSharedThemes.css'
+import './styles/drums.css'
 
 // Install server logging for this app
 installServerLogger('DRUMS');

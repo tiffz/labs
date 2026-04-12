@@ -12,6 +12,7 @@ const config: KnipConfig = {
     'src/forms/index.html',
     'src/beat/index.html',
     'src/piano/index.html',
+    'src/scales/index.html',
     'src/pitch/index.html',
     'src/pulse/index.html',
     'src/words/index.html',
@@ -29,6 +30,7 @@ const config: KnipConfig = {
     'src/forms/main.tsx',
     'src/beat/main.tsx',
     'src/piano/main.tsx',
+    'src/scales/main.tsx',
     'src/pitch/main.tsx',
     'src/pulse/main.tsx',
     'src/words/main.tsx',
@@ -48,6 +50,8 @@ const config: KnipConfig = {
     // Public scripts loaded by HTML files
     'public/scripts/analytics.js',
     'public/scripts/shared.js',
+    // Kill-switch service worker deployed to purge stale vite-plugin-pwa SWs
+    'public/sw.js',
     // Test setup files and utilities
     'src/shared/test/setupTests.ts',
     'src/cats/test/regressionTestUtils.tsx',

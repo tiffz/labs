@@ -1,5 +1,5 @@
 import type { PianoScore } from '../types';
-import { findNextFreeTempoPosition } from './storeScoreEditing';
+import { findNextFreeTempoPosition } from '../../shared/practice/freeTempoNavigation';
 
 export function resolveFreeTempoLoopStartPosition(
   practicedParts: PianoScore['parts'],

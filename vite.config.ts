@@ -31,6 +31,7 @@ const MULTI_APP_INPUTS = {
   pitch: resolve(__dirname, 'src/pitch/index.html'),
   universal_tom: resolve(__dirname, 'src/drums/universal_tom/index.html'),
   piano: resolve(__dirname, 'src/piano/index.html'),
+  scales: resolve(__dirname, 'src/scales/index.html'),
   pulse: resolve(__dirname, 'src/pulse/index.html'),
   ui: resolve(__dirname, 'src/ui/index.html'),
 } as const;
@@ -784,6 +785,68 @@ export default defineConfig({
         }
       }] : []),
     react(),
+    {
+      name: 'fix-production-loading',
+      enforce: 'post' as const,
+      transformIndexHtml(html: string) {
+        let out = html;
+
+        // 1. Remove `crossorigin` from CSS <link> tags — avoids subtle CDN CORS
+        //    caching issues on GitHub Pages (Fastly doesn't Vary by Origin).
+        out = out.replace(
+          /<link rel="stylesheet" crossorigin href="/g,
+          '<link rel="stylesheet" href="',
+        );
+
+        // 2. Hoist CSS <link> tags above <script>/<link rel="modulepreload"> tags
+        //    so the browser discovers stylesheets earlier in the parse.
+        //    Also sort so shared base themes load before app-specific CSS (Vite
+        //    code-splits shared CSS chunks and appends them last, which causes
+        //    the shared defaults to override app overrides at equal specificity).
+        const headMatch = out.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
+        if (headMatch) {
+          const headContent = headMatch[1];
+          const cssLinks: string[] = [];
+          const rest: string[] = [];
+          for (const line of headContent.split('\n')) {
+            if (/^\s*<link\s[^>]*rel="stylesheet"/.test(line)) {
+              cssLinks.push(line);
+            } else {
+              rest.push(line);
+            }
+          }
+          if (cssLinks.length > 0) {
+            // Sort: shared base themes first, then component CSS, then app CSS last.
+            cssLinks.sort((a, b) => {
+              const rank = (link: string) => {
+                if (/appSharedThemes/.test(link)) return 0;    // base theme defaults
+                if (/materialIcons|AppSlider|BpmInput|KeyInput|Chord|VexFlow/.test(link)) return 1;
+                return 2; // app-specific CSS (overrides everything)
+              };
+              return rank(a) - rank(b);
+            });
+
+            const insertIdx = rest.findIndex(
+              (l) => /<script\b/.test(l) || /<link[^>]*rel="modulepreload"/.test(l),
+            );
+            if (insertIdx > 0) {
+              rest.splice(insertIdx, 0, ...cssLinks);
+              out = out.replace(headMatch[1], rest.join('\n'));
+            }
+          }
+        }
+
+        // 3. Purge stale service workers left by a previous vite-plugin-pwa deployment.
+        //    The SW files were removed from the build but old SWs stay active in
+        //    returning visitors' browsers, intercepting fetches with stale caches.
+        out = out.replace(
+          '</head>',
+          '<script>if("serviceWorker"in navigator)navigator.serviceWorker.getRegistrations().then(function(r){r.forEach(function(s){s.unregister()})})</script>\n</head>',
+        );
+
+        return out;
+      },
+    },
     ...(!SKIP_DEPLOY_PLUGINS ? [viteStaticCopy({
       targets: [
         { src: '../src/404.html', dest: '.' },

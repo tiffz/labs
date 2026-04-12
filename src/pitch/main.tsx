@@ -6,9 +6,9 @@ import { installServerLogger } from '../shared/utils/serverLogger';
 import { getAppTheme } from '../shared/ui/theme/appTheme';
 import { initMaterialIconRuntime } from '../shared/ui/icons/materialIconsBootstrap';
 import App from './App';
-import './styles/pitch.css';
 import '../shared/components/music/appSharedThemes.css';
 import '../shared/components/music/onscreenPianoKeyboard.css';
+import './styles/pitch.css';
 
 installServerLogger('PITCH');
 initMaterialIconRuntime();

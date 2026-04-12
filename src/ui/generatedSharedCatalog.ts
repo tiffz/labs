@@ -157,8 +157,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "audio"
     ],
     "appsUsing": [
-      "beat",
-      "piano"
+      "beat"
     ],
     "exportType": "function",
     "demoId": null
@@ -176,8 +175,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
-      "piano"
+      "beat"
     ],
     "exportType": "interface",
     "demoId": null
@@ -194,8 +192,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "audio"
     ],
     "appsUsing": [
-      "beat",
-      "piano"
+      "beat"
     ],
     "exportType": "function",
     "demoId": null
@@ -250,7 +247,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "appsUsing": [
       "beat",
       "chords",
-      "piano",
       "words"
     ],
     "exportType": "const",
@@ -271,7 +267,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "appsUsing": [
       "beat",
       "chords",
-      "piano",
       "words"
     ],
     "exportType": "const",
@@ -1046,6 +1041,38 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": "shared-export-popover"
   },
   {
+    "id": "src-shared-midi-midiinput-ts-getmidiinput",
+    "name": "getMidiInput",
+    "path": "src/shared/midi/midiInput.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-midi-midiinput-ts-midiinput",
+    "name": "MidiInput",
+    "path": "src/shared/midi/midiInput.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "class",
+    "demoId": null
+  },
+  {
     "id": "shared-music-architecture",
     "name": "Music Architecture",
     "path": "src/shared/music/ARCHITECTURE.md",
@@ -1116,6 +1143,58 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "drums"
     ],
     "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordmatcher-ts-matcheschord",
+    "name": "matchesChord",
+    "path": "src/shared/music/chordMatcher.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Parses chord symbols and matches user-played pitch classes against expected chords. Accepts any voicing/inversion as long as all required pitch classes are present.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordmatcher-ts-parsechordsymbol",
+    "name": "parseChordSymbol",
+    "path": "src/shared/music/chordMatcher.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Parses chord symbols and matches user-played pitch classes against expected chords. Accepts any voicing/inversion as long as all required pitch classes are present.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordmatcher-ts-parsedchord",
+    "name": "ParsedChord",
+    "path": "src/shared/music/chordMatcher.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Parses chord symbols and matches user-played pitch classes against expected chords. Accepts any voicing/inversion as long as all required pitch classes are present.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "interface",
     "demoId": null
   },
   {
@@ -2346,7 +2425,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music"
     ],
     "appsUsing": [
-      "piano",
       "words"
     ],
     "exportType": "function",
@@ -2566,6 +2644,464 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "words"
     ],
     "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-scales-ts-chromatic-notes",
+    "name": "CHROMATIC_NOTES",
+    "path": "src/shared/music/scales.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-scales-ts-default-score",
+    "name": "DEFAULT_SCORE",
+    "path": "src/shared/music/scales.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-scales-ts-direction",
+    "name": "Direction",
+    "path": "src/shared/music/scales.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-scales-ts-exercisetype",
+    "name": "ExerciseType",
+    "path": "src/shared/music/scales.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-scales-ts-generatechromaticscore",
+    "name": "generateChromaticScore",
+    "path": "src/shared/music/scales.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-scales-ts-generateexercisescore",
+    "name": "generateExerciseScore",
+    "path": "src/shared/music/scales.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-scales-ts-major-keys",
+    "name": "MAJOR_KEYS",
+    "path": "src/shared/music/scales.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-scales-ts-minor-keys",
+    "name": "MINOR_KEYS",
+    "path": "src/shared/music/scales.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-scales-ts-subdivision",
+    "name": "Subdivision",
+    "path": "src/shared/music/scales.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-scoretypes-ts-duration-beats",
+    "name": "DURATION_BEATS",
+    "path": "src/shared/music/scoreTypes.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-scoretypes-ts-duration-vexflow",
+    "name": "DURATION_VEXFLOW",
+    "path": "src/shared/music/scoreTypes.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-scoretypes-ts-durationtobeats",
+    "name": "durationToBeats",
+    "path": "src/shared/music/scoreTypes.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-scoretypes-ts-generatenoteid",
+    "name": "generateNoteId",
+    "path": "src/shared/music/scoreTypes.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-scoretypes-ts-key",
+    "name": "Key",
+    "path": "src/shared/music/scoreTypes.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-scoretypes-ts-microphonedevice",
+    "name": "MicrophoneDevice",
+    "path": "src/shared/music/scoreTypes.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-scoretypes-ts-mididevice",
+    "name": "MidiDevice",
+    "path": "src/shared/music/scoreTypes.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-scoretypes-ts-miditofrequency",
+    "name": "midiToFrequency",
+    "path": "src/shared/music/scoreTypes.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-scoretypes-ts-miditonotename",
+    "name": "midiToNoteName",
+    "path": "src/shared/music/scoreTypes.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-scoretypes-ts-miditopitchstring",
+    "name": "midiToPitchString",
+    "path": "src/shared/music/scoreTypes.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-scoretypes-ts-miditopitchstringforkey",
+    "name": "midiToPitchStringForKey",
+    "path": "src/shared/music/scoreTypes.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-scoretypes-ts-noteduration",
+    "name": "NoteDuration",
+    "path": "src/shared/music/scoreTypes.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-scoretypes-ts-pianoscore",
+    "name": "PianoScore",
+    "path": "src/shared/music/scoreTypes.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-scoretypes-ts-repeatbarline",
+    "name": "RepeatBarline",
+    "path": "src/shared/music/scoreTypes.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-scoretypes-ts-scoremeasure",
+    "name": "ScoreMeasure",
+    "path": "src/shared/music/scoreTypes.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-scoretypes-ts-scorenavigation",
+    "name": "ScoreNavigation",
+    "path": "src/shared/music/scoreTypes.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-scoretypes-ts-scorenote",
+    "name": "ScoreNote",
+    "path": "src/shared/music/scoreTypes.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-scoretypes-ts-scorepart",
+    "name": "ScorePart",
+    "path": "src/shared/music/scoreTypes.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-scoretypes-ts-voltabracket",
+    "name": "VoltaBracket",
+    "path": "src/shared/music/scoreTypes.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
     "demoId": null
   },
   {
@@ -3085,6 +3621,44 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-notation-scoredisplay-tsx-ghostnote",
+    "name": "GhostNote",
+    "path": "src/shared/notation/ScoreDisplay.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation",
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-scoredisplay-tsx-scoredisplay",
+    "name": "ScoreDisplay",
+    "path": "src/shared/notation/ScoreDisplay.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation",
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "default",
+    "demoId": null
+  },
+  {
     "id": "src-shared-playback-audiocontextlifecycle-ts-attachaudiocontextlifecycle",
     "name": "attachAudioContextLifecycle",
     "path": "src/shared/playback/audioContextLifecycle.ts",
@@ -3097,8 +3671,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
-      "chords",
-      "piano"
+      "chords"
     ],
     "exportType": "function",
     "demoId": null
@@ -3116,8 +3689,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
-      "chords",
-      "piano"
+      "chords"
     ],
     "exportType": "function",
     "demoId": null
@@ -3135,8 +3707,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
-      "chords",
-      "piano"
+      "chords"
     ],
     "exportType": "function",
     "demoId": null
@@ -3155,8 +3726,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
-      "chords",
-      "piano"
+      "chords"
     ],
     "exportType": "interface",
     "demoId": null
@@ -3173,8 +3743,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "playback"
     ],
     "appsUsing": [
-      "chords",
-      "piano"
+      "chords"
     ],
     "exportType": "function",
     "demoId": null
@@ -3192,8 +3761,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "chords",
-      "piano"
+      "chords"
     ],
     "exportType": "interface",
     "demoId": null
@@ -3211,8 +3779,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "chords",
-      "piano"
+      "chords"
     ],
     "exportType": "type",
     "demoId": null
@@ -3231,7 +3798,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "chords",
-      "piano",
       "words"
     ],
     "exportType": "named",
@@ -3251,7 +3817,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "chords",
-      "piano",
       "words"
     ],
     "exportType": "type",
@@ -3271,7 +3836,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "chords",
-      "piano",
       "words"
     ],
     "exportType": "type",
@@ -3291,7 +3855,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "chords",
-      "piano",
       "words"
     ],
     "exportType": "named",
@@ -3311,7 +3874,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "chords",
-      "piano",
       "words"
     ],
     "exportType": "type",
@@ -3331,7 +3893,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "chords",
-      "piano",
       "words"
     ],
     "exportType": "named",
@@ -3351,7 +3912,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "chords",
-      "piano",
       "words"
     ],
     "exportType": "type",
@@ -3371,7 +3931,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "chords",
-      "piano",
       "words"
     ],
     "exportType": "named",
@@ -3391,7 +3950,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "chords",
-      "piano",
       "words"
     ],
     "exportType": "type",
@@ -3671,6 +4229,76 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-playback-scoreplayback-ts-beatmap",
+    "name": "BeatMap",
+    "path": "src/shared/playback/scorePlayback.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Interface for variable-tempo beat mapping (e.g. from video sync).",
+    "tags": [
+      "playback",
+      "api"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-playback-scoreplayback-ts-getscoreplaybackengine",
+    "name": "getScorePlaybackEngine",
+    "path": "src/shared/playback/scorePlayback.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Interface for variable-tempo beat mapping (e.g. from video sync).",
+    "tags": [
+      "playback"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-playback-scoreplayback-ts-resolveplaybackorder",
+    "name": "resolvePlaybackOrder",
+    "path": "src/shared/playback/scorePlayback.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Resolve the actual playback order of measures, handling repeats, voltas, and D.S. al Coda navigation. Used by both the playback engine and the video-to-score correlation.",
+    "tags": [
+      "playback"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-playback-scoreplayback-ts-scoreplaybackengine",
+    "name": "ScorePlaybackEngine",
+    "path": "src/shared/playback/scorePlayback.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Interface for variable-tempo beat mapping (e.g. from video sync).",
+    "tags": [
+      "playback",
+      "api"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "class",
+    "demoId": null
+  },
+  {
     "id": "src-shared-playback-track-ts-track",
     "name": "Track",
     "path": "src/shared/playback/track.ts",
@@ -3736,6 +4364,291 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [],
     "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-practice-freetempoinput-ts-canadvancewhilewaitingforrelease",
+    "name": "canAdvanceWhileWaitingForRelease",
+    "path": "src/shared/practice/freeTempoInput.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-practice-freetempoinput-ts-getlatestattacktime",
+    "name": "getLatestAttackTime",
+    "path": "src/shared/practice/freeTempoInput.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-practice-freetemponavigation-ts-findnextfreetempoposition",
+    "name": "findNextFreeTempoPosition",
+    "path": "src/shared/practice/freeTempoNavigation.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Scan forward through practiced parts to find the next non-rest note position.",
+    "tags": [],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-practice-practicetimingstore-ts-clearall",
+    "name": "clearAll",
+    "path": "src/shared/practice/practiceTimingStore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared timing store that bypasses React's state/effect pipeline entirely. Both the MIDI input handler and the audio engine write timestamps here directly at event time, and practice evaluation reads them for grading. All times are in performance.now() milliseconds. Note-on times are retained after release so that evaluations running slightly after the key-up can still see what was pressed. Stale entries are pruned periodically.",
+    "tags": [],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-practice-practicetimingstore-ts-clearexpectedtimes",
+    "name": "clearExpectedTimes",
+    "path": "src/shared/practice/practiceTimingStore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared timing store that bypasses React's state/effect pipeline entirely. Both the MIDI input handler and the audio engine write timestamps here directly at event time, and practice evaluation reads them for grading. All times are in performance.now() milliseconds. Note-on times are retained after release so that evaluations running slightly after the key-up can still see what was pressed. Stale entries are pruned periodically.",
+    "tags": [],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-practice-practicetimingstore-ts-getallmidinoteontimes",
+    "name": "getAllMidiNoteOnTimes",
+    "path": "src/shared/practice/practiceTimingStore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared timing store that bypasses React's state/effect pipeline entirely. Both the MIDI input handler and the audio engine write timestamps here directly at event time, and practice evaluation reads them for grading. All times are in performance.now() milliseconds. Note-on times are retained after release so that evaluations running slightly after the key-up can still see what was pressed. Stale entries are pruned periodically.",
+    "tags": [],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-practice-practicetimingstore-ts-getmidinoteontime",
+    "name": "getMidiNoteOnTime",
+    "path": "src/shared/practice/practiceTimingStore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared timing store that bypasses React's state/effect pipeline entirely. Both the MIDI input handler and the audio engine write timestamps here directly at event time, and practice evaluation reads them for grading. All times are in performance.now() milliseconds. Note-on times are retained after release so that evaluations running slightly after the key-up can still see what was pressed. Stale entries are pruned periodically.",
+    "tags": [],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-practice-practicetimingstore-ts-getnoteexpectedtime",
+    "name": "getNoteExpectedTime",
+    "path": "src/shared/practice/practiceTimingStore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared timing store that bypasses React's state/effect pipeline entirely. Both the MIDI input handler and the audio engine write timestamps here directly at event time, and practice evaluation reads them for grading. All times are in performance.now() milliseconds. Note-on times are retained after release so that evaluations running slightly after the key-up can still see what was pressed. Stale entries are pruned periodically.",
+    "tags": [],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-practice-practicetimingstore-ts-getrecentmidipresses",
+    "name": "getRecentMidiPresses",
+    "path": "src/shared/practice/practiceTimingStore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Get all MIDI note-on times that were pressed within `windowMs` of now. Returns both currently-held AND recently-released notes.",
+    "tags": [],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-practice-practicetimingstore-ts-isnoteheld",
+    "name": "isNoteHeld",
+    "path": "src/shared/practice/practiceTimingStore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared timing store that bypasses React's state/effect pipeline entirely. Both the MIDI input handler and the audio engine write timestamps here directly at event time, and practice evaluation reads them for grading. All times are in performance.now() milliseconds. Note-on times are retained after release so that evaluations running slightly after the key-up can still see what was pressed. Stale entries are pruned periodically.",
+    "tags": [],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-practice-practicetimingstore-ts-prunestale",
+    "name": "pruneStale",
+    "path": "src/shared/practice/practiceTimingStore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Prune note-on timestamps older than STALE_MS for released notes. Held notes are always kept.",
+    "tags": [],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-practice-practicetimingstore-ts-recordmidinoteoff",
+    "name": "recordMidiNoteOff",
+    "path": "src/shared/practice/practiceTimingStore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared timing store that bypasses React's state/effect pipeline entirely. Both the MIDI input handler and the audio engine write timestamps here directly at event time, and practice evaluation reads them for grading. All times are in performance.now() milliseconds. Note-on times are retained after release so that evaluations running slightly after the key-up can still see what was pressed. Stale entries are pruned periodically.",
+    "tags": [],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-practice-practicetimingstore-ts-recordmidinoteon",
+    "name": "recordMidiNoteOn",
+    "path": "src/shared/practice/practiceTimingStore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared timing store that bypasses React's state/effect pipeline entirely. Both the MIDI input handler and the audio engine write timestamps here directly at event time, and practice evaluation reads them for grading. All times are in performance.now() milliseconds. Note-on times are retained after release so that evaluations running slightly after the key-up can still see what was pressed. Stale entries are pruned periodically.",
+    "tags": [],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-practice-practicetimingstore-ts-recordnoteexpectedtime",
+    "name": "recordNoteExpectedTime",
+    "path": "src/shared/practice/practiceTimingStore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared timing store that bypasses React's state/effect pipeline entirely. Both the MIDI input handler and the audio engine write timestamps here directly at event time, and practice evaluation reads them for grading. All times are in performance.now() milliseconds. Note-on times are retained after release so that evaluations running slightly after the key-up can still see what was pressed. Stale entries are pruned periodically.",
+    "tags": [],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-practice-practicetimingstore-ts-refreshheldnotes",
+    "name": "refreshHeldNotes",
+    "path": "src/shared/practice/practiceTimingStore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Reset press timestamps for all currently-held MIDI keys to the given time. Called at loop boundaries and practice start so that keys held across a boundary are treated as if freshly pressed at the new loop's beat 0.",
+    "tags": [],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-practice-types-ts-practicenoteresult",
+    "name": "PracticeNoteResult",
+    "path": "src/shared/practice/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-practice-types-ts-practicerun",
+    "name": "PracticeRun",
+    "path": "src/shared/practice/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-practice-types-ts-practicesession",
+    "name": "PracticeSession",
+    "path": "src/shared/practice/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-practice-types-ts-timingjudgment",
+    "name": "TimingJudgment",
+    "path": "src/shared/practice/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
     "demoId": null
   },
   {
@@ -4783,7 +5696,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "beat",
       "chords",
       "drums",
-      "piano",
       "words"
     ],
     "exportType": "interface",
@@ -4805,7 +5717,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "beat",
       "chords",
       "drums",
-      "piano",
       "words"
     ],
     "exportType": "interface",
@@ -4826,7 +5737,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "beat",
       "chords",
       "drums",
-      "piano",
       "words"
     ],
     "exportType": "function",

@@ -2,8 +2,7 @@
 # Note: GitHub Pages doesn't support _headers files, but this is useful for other platforms
 # For GitHub Pages, cache busting is handled via:
 # 1. Hash-based filenames in Vite build (already configured)
-# 2. Service worker NetworkFirst strategy for HTML (configured in vite.config.ts)
-# 3. Cache-control meta tags in HTML files
+# 2. Cache-control meta tags in HTML files
 
 # Don't cache HTML files - always fetch fresh
 /*.html
@@ -22,10 +21,7 @@
 /icons/*
   Cache-Control: public, max-age=86400
 
-# Don't cache service worker
+# Kill-switch service worker — must never be cached so browsers always fetch the latest
 /sw.js
-  Cache-Control: no-cache, no-store, must-revalidate
-
-/registerSW.js
   Cache-Control: no-cache, no-store, must-revalidate
 

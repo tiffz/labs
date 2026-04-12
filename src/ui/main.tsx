@@ -5,13 +5,13 @@ import { installServerLogger } from '../shared/utils/serverLogger';
 import { getAppTheme } from '../shared/ui/theme/appTheme';
 import { initMaterialIconRuntime } from '../shared/ui/icons/materialIconsBootstrap';
 import App from './App';
-import './styles/ui.css';
+import '../shared/components/music/appSharedThemes.css';
 import '../shared/components/appSlider.css';
 import '../shared/components/music/bpmInput.css';
 import '../shared/components/music/keyInput.css';
 import '../shared/components/music/chordProgressionInput.css';
 import '../shared/components/music/chordStyleInput.css';
-import '../shared/components/music/appSharedThemes.css';
+import './styles/ui.css';
 
 installServerLogger('UI');
 initMaterialIconRuntime();

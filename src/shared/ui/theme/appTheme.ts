@@ -7,6 +7,7 @@ export type AppThemeId =
   | 'pitch'
   | 'words'
   | 'piano'
+  | 'scales'
   | 'cats'
   | 'corp'
   | 'forms'
@@ -181,6 +182,12 @@ const THEMES: Record<AppThemeId, Theme> = {
     ...MUSIC_LIGHT_DEFAULT,
     primary: '#7c3aed',
     secondary: '#3b82f6',
+  }),
+  scales: buildTheme({
+    mode: 'light',
+    ...MUSIC_LIGHT_DEFAULT,
+    primary: '#059669',
+    secondary: '#0891b2',
   }),
   cats: buildTheme({
     mode: 'light',

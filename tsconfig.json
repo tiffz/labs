@@ -23,7 +23,7 @@
     "noUncheckedSideEffectImports": true,
 
     /* Global types and path mapping */
-    "types": ["vite-plugin-pwa/client", "vite/client", "vitest/globals"],
+    "types": ["vite/client", "vitest/globals"],
     "paths": {
       "@/*": ["./src/*"]
     }

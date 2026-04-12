@@ -1,6 +1,9 @@
 import type { NoteDuration, PianoScore } from '../types';
 import { durationToBeats, generateNoteId } from '../types';
 
+// Re-export from shared for backwards compatibility with existing callers.
+export { findNextFreeTempoPosition } from '../../shared/practice/freeTempoNavigation';
+
 export function addChordToPart(
   score: PianoScore,
   partId: string,
@@ -41,36 +44,4 @@ export function addChordToPart(
       part.id === partId ? { ...part, measures: newMeasures } : part
     ),
   };
-}
-
-export function findNextFreeTempoPosition(
-  practicedParts: PianoScore['parts'],
-  startMeasureIndex: number,
-  startNoteIndex: number
-): { measureIndex: number; noteIndex: number } | null {
-  if (practicedParts.length === 0) return null;
-  const maxMeasures = Math.max(...practicedParts.map((part) => part.measures.length), 0);
-  let measureIndex = Math.max(0, startMeasureIndex);
-  let noteIndex = Math.max(-1, startNoteIndex) + 1;
-
-  while (measureIndex < maxMeasures) {
-    const maxNotesInMeasure = Math.max(
-      ...practicedParts.map((part) => part.measures[measureIndex]?.notes.length ?? 0),
-      0
-    );
-    while (noteIndex < maxNotesInMeasure) {
-      const hasPlayableNote = practicedParts.some((part) => {
-        const note = part.measures[measureIndex]?.notes[noteIndex];
-        return Boolean(note && !note.rest);
-      });
-      if (hasPlayableNote) {
-        return { measureIndex, noteIndex };
-      }
-      noteIndex += 1;
-    }
-    measureIndex += 1;
-    noteIndex = 0;
-  }
-
-  return null;
 }

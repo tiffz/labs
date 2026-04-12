@@ -5,12 +5,7 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "erasableSyntaxOnly": false,
-    "types": [
-      "vite-plugin-pwa/client",
-      "vite/client",
-      "vitest/globals",
-      "@react-three/fiber"
-    ]
+    "types": ["vite/client", "vitest/globals", "@react-three/fiber"]
   },
   "include": ["src/**/*", "vite.config.ts"],
   "exclude": [
