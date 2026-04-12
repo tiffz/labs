@@ -225,6 +225,10 @@ body {
   background-image: url('/icons/favicon-beat.svg');
 }
 
+.app-icon.pulse {
+  background-image: url('/icons/favicon-pulse.svg');
+}
+
 .app-info {
   min-width: 0;
 }
