@@ -158,15 +158,7 @@ body {
 }
 
 .app-icon.drums {
-  background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);
-  font-size: 1.25rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.app-icon.drums::before {
-  content: '🥁';
+  background-image: url('/icons/favicon-drums.svg');
 }
 
 .app-icon.word-rhythm {

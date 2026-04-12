@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { notationToGrid, gridToNotation, type SequencerGrid } from './sequencerUtils';
+import { notationToGrid, gridToNotation, collapseRepeats, getLinkedPositions, type SequencerGrid } from './sequencerUtils';
 import type { TimeSignature } from '../types';
 
 describe('sequencerUtils', () => {
@@ -249,7 +249,6 @@ describe('sequencerUtils', () => {
 
 
 import { parseRhythm } from '../../shared/rhythm/rhythmParser';
-import { collapseRepeats, getLinkedPositions } from './sequencerUtils';
 
 describe('Sequencer Utils Debug & Regressions', () => {
   const timeSignature: TimeSignature = { numerator: 4, denominator: 4, beatGrouping: [4, 4, 4, 4] };
@@ -339,6 +338,77 @@ describe('Sequencer Utils Debug & Regressions', () => {
       expect(linked).toContain(0);
       expect(linked).toContain(32);
       expect(linked).toContain(64);
+    });
+  });
+
+  describe('autoDetectRepeats parameter', () => {
+    it('gridToNotation with autoDetectRepeats=true auto-collapses identical measures', () => {
+      const grid: SequencerGrid = {
+        cells: new Array(64).fill(null).map((_, i) => {
+          // Four identical measures of a single dum at the start
+          if (i % 16 === 0) return 'dum' as const;
+          return null;
+        }),
+        sixteenthsPerMeasure: 16,
+        actualLength: 64,
+      };
+      const notation = gridToNotation(grid, undefined, true);
+      // Auto-detection should collapse 4 identical measures into a repeat
+      expect(notation).toContain('|x');
+    });
+
+    it('gridToNotation with autoDetectRepeats=false does NOT auto-collapse identical measures', () => {
+      const grid: SequencerGrid = {
+        cells: new Array(64).fill(null).map((_, i) => {
+          if (i % 16 === 0) return 'dum' as const;
+          return null;
+        }),
+        sixteenthsPerMeasure: 16,
+        actualLength: 64,
+      };
+      const notation = gridToNotation(grid, undefined, false);
+      // Should NOT contain auto-generated repeat markers
+      expect(notation).not.toContain('|x');
+      expect(notation).not.toContain(':|');
+    });
+
+    it('gridToNotation with autoDetectRepeats=false still preserves existing repeats', () => {
+      const original = '|: D--------------- :|x2';
+      const grid = notationToGrid(original, timeSignature);
+      const notation = gridToNotation(grid, [{ type: 'section', startMeasure: 0, endMeasure: 0, repeatCount: 2 }], false);
+      expect(notation).toContain(':|x2');
+    });
+
+    it('collapseRepeats with autoDetect=false skips auto-detection of single-measure repeats', () => {
+      const slices = ['D---------------', 'D---------------', 'D---------------', 'D---------------'];
+      const result = collapseRepeats(slices, undefined, false);
+      // Should just join all measures without collapsing
+      expect(result).not.toContain('|x');
+    });
+
+    it('collapseRepeats with autoDetect=true detects single-measure repeats', () => {
+      const slices = ['D---------------', 'D---------------', 'D---------------', 'D---------------'];
+      const result = collapseRepeats(slices, undefined, true);
+      expect(result).toContain('|x');
+    });
+
+    it('adding rest measures with autoDetectRepeats=false does not create unwanted repeats', () => {
+      // Simulate adding a measure in the sequencer: one content measure + three rest measures
+      const cells = new Array(64).fill(null);
+      cells[0] = 'dum';
+      // Rest measures at positions 16, 32, 48 (leading rest marker)
+      cells[16] = 'rest';
+      cells[32] = 'rest';
+      cells[48] = 'rest';
+      const grid: SequencerGrid = {
+        cells,
+        sixteenthsPerMeasure: 16,
+        actualLength: 64,
+      };
+      const notation = gridToNotation(grid, undefined, false);
+      // Three rest measures should NOT be collapsed into a repeat
+      expect(notation).not.toContain('|x');
+      expect(notation).not.toContain(':|');
     });
   });
 });

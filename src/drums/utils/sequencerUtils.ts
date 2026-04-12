@@ -263,7 +263,7 @@ export function getLinkedPositions(
  * - A null cell BEFORE any sound (leading nulls) becomes a rest
  * - A null cell between two sounds (not extending the previous sound) becomes a rest
  */
-export function gridToNotation(grid: SequencerGrid, repeats?: RepeatMarker[]): string {
+export function gridToNotation(grid: SequencerGrid, repeats?: RepeatMarker[], autoDetectRepeats = true): string {
 
   // Use actualLength if available, otherwise use cells.length
   // actualLength represents where the last note ends (including its duration)
@@ -376,16 +376,17 @@ export function gridToNotation(grid: SequencerGrid, repeats?: RepeatMarker[]): s
     slices.push(currentSlice);
   }
 
-  // Collapse identical consecutive measures (Fix for Sequencer Expansion)
-  const collapsedString = collapseRepeats(slices, repeats);
+  const collapsedString = collapseRepeats(slices, repeats, autoDetectRepeats);
   return collapsedString.trim();
 }
 
 /**
  * Collapses consecutive identical measure slices into |xN syntax.
- * Respects existing section repeats if passed, but prioritizes collapsing identically generated content.
+ * Respects existing section repeats if passed.
+ * When autoDetect is false, only preserves existing repeats — does not
+ * create new ones from identical content (used during sequencer edits).
  */
-export function collapseRepeats(slices: string[], existingRepeats?: RepeatMarker[]): string {
+export function collapseRepeats(slices: string[], existingRepeats?: RepeatMarker[], autoDetect = true): string {
   let result = '';
   let i = 0;
 
@@ -446,34 +447,30 @@ export function collapseRepeats(slices: string[], existingRepeats?: RepeatMarker
     }
 
     const currentSlice = slices[i];
-    let duration = 1;
 
-    // 2. Look ahead for identical consecutive Single Measures (Standard Collapse)
-    let j = i + 1;
-    // We only collapse single measures if we aren't inside a detected section start?
-    // Actually, simple lookahead is fine.
-    while (j < slices.length && slices[j] === currentSlice) {
-      duration++;
-      j++;
-    }
+    if (autoDetect) {
+      let duration = 1;
 
-    // If we found repeats
-    if (duration > 1) {
-      if (result.length > 0) result += ' | ';
-      // Syntax: M1 |xN.
-      // E.g. A |x2 means A A
-      result += currentSlice;
-      result += ` |x${duration}`;
-      i = j;
-    } else {
-      // 3. (Phase 16.5) Look ahead for Multi-Measure Patterns (Auto-Detect Section Repeats)
-      // If we didn't find a single measure repeat, maybe we have a repeating SEQUENCE?
-      // A B A B -> |: A | B :|x2
+      // 2. Look ahead for identical consecutive Single Measures (Standard Collapse)
+      let j = i + 1;
+      while (j < slices.length && slices[j] === currentSlice) {
+        duration++;
+        j++;
+      }
 
+      // If we found repeats
+      if (duration > 1) {
+        if (result.length > 0) result += ' | ';
+        result += currentSlice;
+        result += ` |x${duration}`;
+        i = j;
+        continue;
+      }
+
+      // 3. Look ahead for Multi-Measure Patterns (Auto-Detect Section Repeats)
       let bestBlockLength = -1;
       let bestRepeatCount = -1;
 
-      // Try block lengths from 2 up to half remaining length
       const remainingLength = slices.length - i;
       const maxBlockLength = Math.floor(remainingLength / 2);
 
@@ -484,7 +481,6 @@ export function collapseRepeats(slices: string[], existingRepeats?: RepeatMarker
 
         while (p + k <= slices.length) {
           const candidateBlock = slices.slice(p, p + k);
-          // Deep compare
           let isMatch = true;
           for (let m = 0; m < k; m++) {
             if (candidateBlock[m] !== sourceBlock[m]) {
@@ -502,25 +498,13 @@ export function collapseRepeats(slices: string[], existingRepeats?: RepeatMarker
         }
 
         if (repeatCount > 1) {
-          // Found a pattern!
-          // We prefer longer blocks? Or shorter blocks with more repeats?
-          // E.g. A B A B A B (6).
-          // k=2 (AB) -> count=3.
-          // k=3 (ABA) -> count=1 (ABA B - no match).
-
-          // Let's take the first one found? No, usually iterating k=2 upwards finds smallest unit.
-          // AB AB AB -> detects AB.
-
-          // Should we verify if this overlaps with better options?
-          // Greedy approach (take first valid k) is usually acceptable for simple music XML.
           bestBlockLength = k;
           bestRepeatCount = repeatCount;
-          break; // Found smallest repeating unit
+          break;
         }
       }
 
       if (bestBlockLength > 1) {
-        // Output Detected Section Repeat
         const sourceSlices = slices.slice(i, i + bestBlockLength);
 
         if (result.length > 0) result += ' | ';
@@ -531,12 +515,12 @@ export function collapseRepeats(slices: string[], existingRepeats?: RepeatMarker
         i += bestBlockLength * bestRepeatCount;
         continue;
       }
-
-      // No repeat
-      if (result.length > 0) result += ' | ';
-      result += currentSlice;
-      i++;
     }
+
+    // No repeat detected (or autoDetect disabled) — emit single measure
+    if (result.length > 0) result += ' | ';
+    result += currentSlice;
+    i++;
   }
 
   return result;

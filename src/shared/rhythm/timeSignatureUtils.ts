@@ -22,7 +22,7 @@ export function isAsymmetricTimeSignature(timeSignature: TimeSignature): boolean
  * Gets the default beat grouping for a time signature
  * - Compound time signatures (6/8, 9/8, 12/8): groups of 3
  * - Asymmetric time signatures: custom grouping or defaults
- * - Regular time signatures (4/4, 2/4): groups of 4 sixteenths (quarter notes)
+ * - Regular time signatures (4/4, 2/4): one group per beat (values add up to numerator)
  */
 export function getDefaultBeatGrouping(timeSignature: TimeSignature): number[] {
   // If custom grouping is specified, use it
@@ -41,9 +41,9 @@ export function getDefaultBeatGrouping(timeSignature: TimeSignature): number[] {
     return getDefaultAsymmetricGrouping(timeSignature.numerator);
   }
 
-  // Regular time signatures (/4): groups of 4 sixteenths (quarter notes)
+  // Regular time signatures (/4): one group per beat (adds up to numerator)
   if (timeSignature.denominator === 4) {
-    return Array(timeSignature.numerator).fill(4);
+    return Array(timeSignature.numerator).fill(1);
   }
 
   // Time signatures with /16 denominator
@@ -183,22 +183,20 @@ export function getSixteenthsPerMeasure(timeSignature: TimeSignature): number {
 }
 
 /**
- * Calculate beat grouping in sixteenths for a given time signature
- * @param beatGrouping - Array of beat group sizes
- *   - For /4 time signatures: values are already in sixteenths (from getDefaultBeatGrouping)
- *   - For /8 time signatures: values are in eighth notes (from getDefaultBeatGrouping)
- * @param timeSignature - The time signature
- * @returns Array of beat group sizes in sixteenths
+ * Convert beat grouping to sixteenths.
+ * - For /4: values are in quarter-note beats → multiply by 4
+ * - For /8: values are in eighth notes → multiply by 2
+ * - For /16: values are already in sixteenths
  */
 export function getBeatGroupingInSixteenths(
   beatGrouping: number[],
   timeSignature: TimeSignature
 ): number[] {
-  if (timeSignature.denominator === 8) {
-    // For /8 time: beatGrouping is in eighth notes, convert to sixteenths (multiply by 2)
-    return beatGrouping.map(group => group * 2);
-  } else {
-    // For /4 time: beatGrouping is already in sixteenths, return as-is
-    return beatGrouping;
+  if (timeSignature.denominator === 4) {
+    return beatGrouping.map(group => group * 4);
   }
+  if (timeSignature.denominator === 8) {
+    return beatGrouping.map(group => group * 2);
+  }
+  return beatGrouping;
 }

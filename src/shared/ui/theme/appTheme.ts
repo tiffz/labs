@@ -10,6 +10,7 @@ export type AppThemeId =
   | 'cats'
   | 'corp'
   | 'forms'
+  | 'pulse'
   | 'story'
   | 'zines';
 
@@ -189,6 +190,18 @@ const THEMES: Record<AppThemeId, Theme> = {
   }),
   corp: buildTheme({ mode: 'light', ...MUSIC_LIGHT_DEFAULT }),
   forms: buildTheme({ mode: 'light', ...MUSIC_LIGHT_DEFAULT }),
+  pulse: buildTheme({
+    mode: 'dark',
+    primary: '#00ff41',
+    secondary: '#ffb000',
+    backgroundDefault: '#0a0a0a',
+    backgroundPaper: '#141414',
+    textPrimary: '#e0e0e0',
+    textSecondary: '#888888',
+    divider: 'rgba(0, 255, 65, 0.15)',
+    radius: 0,
+    spacingBase: 4,
+  }),
   story: buildTheme({ mode: 'light', ...MUSIC_LIGHT_DEFAULT }),
   zines: buildTheme({ mode: 'light', ...MUSIC_LIGHT_DEFAULT }),
 };

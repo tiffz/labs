@@ -31,6 +31,7 @@ const MULTI_APP_INPUTS = {
   pitch: resolve(__dirname, 'src/pitch/index.html'),
   universal_tom: resolve(__dirname, 'src/drums/universal_tom/index.html'),
   piano: resolve(__dirname, 'src/piano/index.html'),
+  pulse: resolve(__dirname, 'src/pulse/index.html'),
   ui: resolve(__dirname, 'src/ui/index.html'),
 } as const;
 

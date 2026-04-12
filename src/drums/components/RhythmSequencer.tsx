@@ -205,9 +205,8 @@ const RhythmSequencer: React.FC<RhythmSequencerProps> = ({
     const newDisplayMeasures = newActualMeasures + 1; // Exactly one ghost measure
     setNumMeasures(newDisplayMeasures);
 
-    // Convert to notation - gridToNotation will use actualLength to stop at the right place
-    // Pass parsedRhythm.repeats to preserve section repeats during edit
-    const newNotation = gridToNotation(gridWithLength, parsedRhythm.repeats);
+    // Preserve existing repeats but don't auto-detect new ones during edits
+    const newNotation = gridToNotation(gridWithLength, parsedRhythm.repeats, false);
     const cleanedNotation = notation.replace(/[\s\n]/g, '');
     const cleanedNewNotation = newNotation.replace(/[\s\n]/g, '');
 
@@ -403,25 +402,24 @@ const RhythmSequencer: React.FC<RhythmSequencerProps> = ({
   }, [handleMouseUp]);
 
   const handleAddMeasure = () => {
-    const newNumMeasures = numMeasures + 1;
-    const newCells = [...localGrid.cells];
+    // numMeasures includes the trailing ghost measure, so actual = numMeasures - 1
+    const currentActual = numMeasures - 1;
+    const newActual = currentActual + 1;
 
-    // Add a whole rest (16 sixteenths) for the new measure
+    // Trim cells to actual content (drop ghost padding) then add new measure
+    const newCells = localGrid.cells.slice(0, currentActual * sixteenthsPerMeasure);
+
     for (let i = 0; i < sixteenthsPerMeasure; i++) {
-      if (i === 0) {
-        newCells.push('rest'); // Start with rest
-      } else {
-        newCells.push(null); // Extend the rest
-      }
+      newCells.push(i === 0 ? 'rest' as SequencerCell : null);
     }
 
     const newGrid = {
       ...localGrid,
       cells: newCells,
-      actualLength: newNumMeasures * sixteenthsPerMeasure,
+      actualLength: newActual * sixteenthsPerMeasure,
     };
     setLocalGrid(newGrid);
-    setNumMeasures(newNumMeasures);
+    setNumMeasures(newActual + 1); // +1 for the new ghost measure
     updateNotation(newGrid);
   };
 
@@ -592,13 +590,14 @@ const RhythmSequencer: React.FC<RhythmSequencerProps> = ({
                                 onClick={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
-                                  // Handle click here
                                   if (!dragStateRef.current.isDragging || dragStateRef.current.dragStart?.position === position) {
                                     handleCellClick(position, soundIndex);
                                   }
                                 }}
+                                onFocus={(e) => e.target.blur()}
                                 onMouseEnter={() => handleCellMouseEnter(position, soundIndex)}
                                 type="button"
+                                tabIndex={-1}
                                 title={cellSound ? `${cellSound === 'rest' ? 'Rest' : cellSound.charAt(0).toUpperCase() + cellSound.slice(1)} at position ${position + 1}` : `Empty - click to add ${sound}`}
                               >
                                 {isActive && (

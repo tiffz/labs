@@ -4136,7 +4136,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "rhythm-core",
-    "description": "Calculate beat grouping in sixteenths for a given time signature",
+    "description": "Convert beat grouping to sixteenths. - For /4: values are in quarter-note beats → multiply by 4 - For /8: values are in eighth notes → multiply by 2 - For /16: values are already in sixteenths",
     "tags": [
       "rhythm"
     ],
@@ -4154,7 +4154,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "rhythm-core",
-    "description": "Gets the default beat grouping for a time signature - Compound time signatures (6/8, 9/8, 12/8): groups of 3 - Asymmetric time signatures: custom grouping or defaults - Regular time signatures (4/4, 2/4): groups of 4 sixteenths (quarter notes)",
+    "description": "Gets the default beat grouping for a time signature - Compound time signatures (6/8, 9/8, 12/8): groups of 3 - Asymmetric time signatures: custom grouping or defaults - Regular time signatures (4/4, 2/4): one group per beat (values add up to numerator)",
     "tags": [
       "rhythm"
     ],

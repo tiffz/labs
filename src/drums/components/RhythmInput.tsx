@@ -142,22 +142,21 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
             <label className="input-label" htmlFor="rhythm-notation-input">
               Rhythm Notation
             </label>
-            <button
-              className="help-button"
+            <div
+              className="help-button-wrapper"
               onMouseEnter={() => setShowTooltip(true)}
               onMouseLeave={() => setShowTooltip(false)}
-              onClick={() => setShowTooltip(!showTooltip)}
-              type="button"
-              aria-label="Show notation help"
             >
-              ?
-            </button>
-            {showTooltip && (
-              <div
-                className="tooltip"
-                onPointerEnter={() => setShowTooltip(true)}
-                onPointerLeave={() => setShowTooltip(false)}
+              <button
+                className="help-button"
+                onClick={() => setShowTooltip(!showTooltip)}
+                type="button"
+                aria-label="Show notation help"
               >
+                ?
+              </button>
+              {showTooltip && (
+                <div className="tooltip">
                 <div className="tooltip-title">Notation Guide</div>
 
                 <div className="tooltip-section">
@@ -241,6 +240,7 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
                 </div>
               </div>
             )}
+            </div>
           </div>
 
           {/* Edit Controls */}

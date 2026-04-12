@@ -51,7 +51,7 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
   const [beatGroupingInput, setBeatGroupingInput] = useState<string>('');
   const [beatGroupingError, setBeatGroupingError] = useState<string>('');
   const [showTimeSigDropdown, setShowTimeSigDropdown] = useState<boolean>(false);
-  const [tip, setTip] = useState<{ text: string; x: number; y: number } | null>(
+  const [tip, setTip] = useState<{ text: string; x: number; y: number; below?: boolean } | null>(
     null
   );
   const settingsButtonRef = useRef<HTMLButtonElement>(null);
@@ -170,7 +170,12 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
     const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const cx = r.left + r.width / 2;
     const clamped = Math.max(120, Math.min(cx, window.innerWidth - 120));
-    setTip({ text, x: clamped, y: r.top });
+    const spaceAbove = r.top;
+    if (spaceAbove < 50) {
+      setTip({ text, x: clamped, y: r.bottom, below: true });
+    } else {
+      setTip({ text, x: clamped, y: r.top, below: false });
+    }
   }, []);
 
   const hideTip = useCallback(() => setTip(null), []);
@@ -403,7 +408,7 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
       </div>
       {tip &&
         createPortal(
-          <div className="mat-tooltip" style={{ left: tip.x, top: tip.y }}>
+          <div className={`mat-tooltip ${tip.below ? 'mat-tooltip--below' : ''}`} style={{ left: tip.x, top: tip.y }}>
             {tip.text}
           </div>,
           document.body
