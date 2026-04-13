@@ -747,6 +747,7 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
                           onMouseLeave={scheduleHoverCardClose}
                         >
                           {onResizeSection && (
+                            // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- drag handle inside button
                             <span
                               className="section-drag-handle left"
                               onMouseDown={(e) => handleEdgeDragStart(e, section.id, 'start')}
@@ -754,6 +755,7 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
                           )}
                           <span className="section-label-text">{getShortLabel(section.label)}</span>
                           {onResizeSection && (
+                            // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- drag handle inside button
                             <span
                               className="section-drag-handle right"
                               onMouseDown={(e) => handleEdgeDragStart(e, section.id, 'end')}

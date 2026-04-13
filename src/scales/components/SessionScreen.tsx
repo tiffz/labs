@@ -26,6 +26,7 @@ export default function SessionScreen() {
       dispatch({ type: 'SET_ACTIVE_EXERCISE', index: state.activeExerciseIndex, score: generated });
       setLoaded(true);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only regenerate when exercise identity changes; dispatch is stable
   }, [activeExercise?.exerciseId, activeExercise?.stageId]);
 
   const finishExercise = useCallback(() => {

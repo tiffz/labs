@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { cancelPendingHistoryUpdates } from '../shared/utils/urlHistory';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import App from './App';
 import { rhythmPlayer } from '../shared/rhythm/rhythmPlayer';
@@ -14,8 +15,9 @@ vi.mock('../shared/rhythm/rhythmPlayer', () => ({
   },
 }));
 
-// Clear URL between tests to prevent state pollution
+// Clear URL and pending throttled history timers between tests
 afterEach(() => {
+  cancelPendingHistoryUpdates();
   window.history.pushState({}, '', '/');
 });
 

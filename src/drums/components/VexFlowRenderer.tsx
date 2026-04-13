@@ -2234,7 +2234,7 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
     <div
       ref={containerRef}
       className="vexflow-container"
-      // Accessibility: Make focusable and add ARIA attributes
+      // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- canvas-like editor needs focus
       tabIndex={0}
       role="application"
       aria-label="Rhythm notation editor. Use arrow keys to navigate notes, Delete to remove, Escape to clear selection."

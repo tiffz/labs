@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useUrlState } from './useUrlState';
 import type { ChordProgressionState } from '../types';
-import { flushPendingHistoryUpdates } from '../../shared/utils/urlHistory';
+import { flushPendingHistoryUpdates, cancelPendingHistoryUpdates } from '../../shared/utils/urlHistory';
 
 function makeState(overrides: Partial<ChordProgressionState> = {}): ChordProgressionState {
   return {
@@ -21,6 +21,10 @@ function makeState(overrides: Partial<ChordProgressionState> = {}): ChordProgres
 describe('useUrlState (chords)', () => {
   beforeEach(() => {
     window.history.replaceState({}, '', '/chords/');
+  });
+
+  afterEach(() => {
+    cancelPendingHistoryUpdates();
   });
 
   describe('getInitialState', () => {

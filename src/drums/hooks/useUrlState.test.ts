@@ -1,12 +1,16 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useUrlState } from './useUrlState';
-import { flushPendingHistoryUpdates } from '../../shared/utils/urlHistory';
+import { flushPendingHistoryUpdates, cancelPendingHistoryUpdates } from '../../shared/utils/urlHistory';
 
 describe('useUrlState', () => {
   beforeEach(() => {
     // Reset URL before each test
     window.history.replaceState({}, '', '/drums');
+  });
+
+  afterEach(() => {
+    cancelPendingHistoryUpdates();
   });
 
   describe('getInitialState', () => {

@@ -142,6 +142,7 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
             <label className="input-label" htmlFor="rhythm-notation-input">
               Rhythm Notation
             </label>
+            {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions -- hover wrapper; button inside is the interactive element */}
             <div
               className="help-button-wrapper"
               onMouseEnter={() => setShowTooltip(true)}

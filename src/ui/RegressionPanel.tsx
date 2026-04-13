@@ -558,6 +558,7 @@ export default function RegressionPanel({
                 <div
                   ref={runnerLogScrollRef}
                   className="ui-regression-runner-log-scroll"
+                  // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- scrollable region needs keyboard focus
                   tabIndex={0}
                   aria-label="Regression runner output"
                 >
@@ -962,7 +963,13 @@ export default function RegressionPanel({
       ) : null}
 
       {lightboxItems ? (
-        <div className="ui-lightbox-backdrop" onClick={() => setLightboxItems(null)}>
+        // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- backdrop dismiss
+        <div
+          className="ui-lightbox-backdrop"
+          onClick={() => setLightboxItems(null)}
+          onKeyDown={(e) => { if (e.key === 'Escape') setLightboxItems(null); }}
+        >
+          {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events -- stop propagation */}
           <div className="ui-lightbox-shell" onClick={(event) => event.stopPropagation()}>
             <button
               type="button"

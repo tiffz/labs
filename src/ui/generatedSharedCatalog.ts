@@ -6042,6 +6042,24 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-utils-urlhistory-ts-cancelpendinghistoryupdates",
+    "name": "cancelPendingHistoryUpdates",
+    "path": "src/shared/utils/urlHistory.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Cancel all pending throttled history timers without flushing. Call in test teardown (`afterEach`) to prevent timers from firing after the test environment is destroyed.",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [
+      "chords",
+      "drums"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-utils-urlhistory-ts-flushpendinghistoryupdates",
     "name": "flushPendingHistoryUpdates",
     "path": "src/shared/utils/urlHistory.ts",

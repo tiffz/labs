@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { subscribeToPopState, syncUrlWithHistory } from './urlRouting';
-import { flushPendingHistoryUpdates } from './urlHistory';
+import { flushPendingHistoryUpdates, cancelPendingHistoryUpdates } from './urlHistory';
 
 describe('urlRouting', () => {
   const originalPathname = window.location.pathname;
@@ -11,6 +11,7 @@ describe('urlRouting', () => {
   });
 
   afterEach(() => {
+    cancelPendingHistoryUpdates();
     window.history.replaceState({}, '', `${originalPathname}${originalSearch}`);
   });
 

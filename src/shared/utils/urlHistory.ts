@@ -63,7 +63,7 @@ let replaceTimer: ReturnType<typeof setTimeout> | null = null;
 
 function flushReplace() {
   if (pendingReplace !== null) {
-    window.history.replaceState({}, '', pendingReplace);
+    try { window.history.replaceState({}, '', pendingReplace); } catch { /* env torn down */ }
     pendingReplace = null;
   }
   replaceTimer = null;
@@ -86,7 +86,7 @@ let pushTimer: ReturnType<typeof setTimeout> | null = null;
 
 function flushPush() {
   if (pendingPush !== null) {
-    window.history.pushState({}, '', pendingPush);
+    try { window.history.pushState({}, '', pendingPush); } catch { /* env torn down */ }
     pendingPush = null;
   }
   pushTimer = null;
@@ -115,5 +115,23 @@ export function flushPendingHistoryUpdates(): void {
   if (pushTimer !== null) {
     clearTimeout(pushTimer);
     flushPush();
+  }
+}
+
+/**
+ * Cancel all pending throttled history timers without flushing.
+ * Call in test teardown (`afterEach`) to prevent timers from firing
+ * after the test environment is destroyed.
+ */
+export function cancelPendingHistoryUpdates(): void {
+  if (replaceTimer !== null) {
+    clearTimeout(replaceTimer);
+    replaceTimer = null;
+    pendingReplace = null;
+  }
+  if (pushTimer !== null) {
+    clearTimeout(pushTimer);
+    pushTimer = null;
+    pendingPush = null;
   }
 }
