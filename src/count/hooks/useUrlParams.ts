@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import type { TimeSignature } from '../../shared/rhythm/types';
 import type { SubdivisionVolumes, SubdivisionChannel, SubdivisionLevel, VoiceMode } from '../engine/types';
 import { parseHash, serializeHash, getHashValues, type HashPair } from '../../shared/utils/hashState';
+import { throttledReplaceState } from '../../shared/utils/urlHistory';
 
 /**
  * Hybrid URL format for metronome state:
@@ -247,7 +248,7 @@ function writeUrlParams(state: MetronomeFullState) {
 
   const qs = params.toString();
   const newUrl = `${window.location.pathname}${qs ? `?${qs}` : ''}${hash ? `#${hash}` : ''}`;
-  window.history.replaceState(null, '', newUrl);
+  throttledReplaceState(newUrl);
 }
 
 // ---------------------------------------------------------------------------
@@ -266,6 +267,7 @@ export function useUrlSync(state: MetronomeFullState) {
       return;
     }
     writeUrlParams(state);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- individual fields listed intentionally to avoid re-running on every object reference change
   }, [
     state.bpm,
     state.timeSignature,

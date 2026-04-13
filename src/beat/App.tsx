@@ -1457,15 +1457,25 @@ const App: React.FC = () => {
                   e.stopPropagation();
                 }}
                 onClick={(e) => e.stopPropagation()}
+                // eslint-disable-next-line jsx-a11y/no-autofocus
                 autoFocus
               />
             ) : (
               <span
                 className="library-card-title"
+                role="button"
+                tabIndex={0}
                 onDoubleClick={(e) => {
                   e.stopPropagation();
                   setEditingEntryId(entry.id);
                   setEditingTitle(entry.title);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.stopPropagation();
+                    setEditingEntryId(entry.id);
+                    setEditingTitle(entry.title);
+                  }
                 }}
                 title="Double-click to rename"
               >
@@ -1819,9 +1829,11 @@ const App: React.FC = () => {
                         if (e.key === 'Enter') { e.preventDefault(); commitRename(activeEntry.id, editingTitle); }
                         if (e.key === 'Escape') { setEditingEntryId(null); setEditingTitle(''); }
                       }}
+                      // eslint-disable-next-line jsx-a11y/no-autofocus
                       autoFocus
                     />
                   ) : (
+                    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
                     <h2
                       className="now-playing-title"
                       onDoubleClick={() => { setEditingEntryId(activeEntry.id); setEditingTitle(activeEntry.title); }}

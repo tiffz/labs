@@ -1,6 +1,6 @@
 import { useCallback, useRef } from 'react';
 import type { TimeSignature } from '../types';
-import { getHistoryUpdateStrategy } from '../../shared/utils/urlHistory';
+import { getHistoryUpdateStrategy, throttledReplaceState, throttledPushState } from '../../shared/utils/urlHistory';
 
 interface UrlState {
   notation: string;
@@ -146,9 +146,9 @@ export function useUrlState() {
 
     if (strategy === 'skip') return;
     if (strategy === 'replace') {
-      window.history.replaceState({}, '', newUrl);
+      throttledReplaceState(newUrl);
     } else {
-      window.history.pushState({}, '', newUrl);
+      throttledPushState(newUrl);
       lastPushTimeRef.current = now;
     }
   }, []);

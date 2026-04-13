@@ -6042,6 +6042,24 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-utils-urlhistory-ts-flushpendinghistoryupdates",
+    "name": "flushPendingHistoryUpdates",
+    "path": "src/shared/utils/urlHistory.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Force-flush all pending throttled history updates. Useful in tests that check URL state immediately after a sync call.",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [
+      "chords",
+      "drums"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-utils-urlhistory-ts-getchangedqueryparams",
     "name": "getChangedQueryParams",
     "path": "src/shared/utils/urlHistory.ts",
@@ -6094,6 +6112,42 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "drums"
     ],
     "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-urlhistory-ts-throttledpushstate",
+    "name": "throttledPushState",
+    "path": "src/shared/utils/urlHistory.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Throttled `history.pushState`. Same coalescing behavior as `throttledReplaceState` but creates a new history entry.",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [
+      "chords",
+      "drums"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-urlhistory-ts-throttledreplacestate",
+    "name": "throttledReplaceState",
+    "path": "src/shared/utils/urlHistory.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Throttled `history.replaceState`. Coalesces rapid calls so the browser's rate limit (100 per 10s) is never exceeded. The most recent URL is always written within `THROTTLE_MS` of the last call.",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [
+      "chords",
+      "drums"
+    ],
+    "exportType": "function",
     "demoId": null
   },
   {

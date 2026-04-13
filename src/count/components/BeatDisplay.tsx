@@ -166,6 +166,11 @@ export function BeatDisplay({
                         .filter(Boolean)
                         .join(' ')}
                       onClick={isSwingSilent ? undefined : () => handleClick(b.beatIdx)}
+                      onKeyDown={isSwingSilent ? undefined : (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClick(b.beatIdx); }
+                      }}
+                      role={isSwingSilent ? undefined : 'button'}
+                      tabIndex={isSwingSilent ? undefined : 0}
                     >
                       <div className="pulse-beat-bar-track">
                         <div className="pulse-beat-bar-fill" />

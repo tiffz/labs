@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { subscribeToPopState, syncUrlWithHistory } from './urlRouting';
+import { flushPendingHistoryUpdates } from './urlHistory';
 
 describe('urlRouting', () => {
   const originalPathname = window.location.pathname;
@@ -19,6 +20,7 @@ describe('urlRouting', () => {
       debounceMs: 900,
       replaceDebounceParams: new Set(['bpm']),
     }, 1000);
+    flushPendingHistoryUpdates();
 
     expect(strategy).toBe('push');
     expect(state.lastPushTime).toBe(1000);
@@ -32,6 +34,7 @@ describe('urlRouting', () => {
       debounceMs: 900,
       replaceDebounceParams: new Set(['bpm']),
     }, 1300);
+    flushPendingHistoryUpdates();
 
     expect(strategy).toBe('replace');
     expect(state.lastPushTime).toBe(1000);

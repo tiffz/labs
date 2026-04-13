@@ -102,6 +102,23 @@ Recommended bridge variables:
   - ensure dropdown class hooks exist for portal content
   - add at least one test validating appearance/dropdown class application
 
+## CSS `@layer` Cascade Pitfall
+
+**Critical**: `appSharedThemes.css` wraps all shared theme overrides in `@layer shared-base`. This means **any unlayered CSS always wins over layered CSS**, regardless of specificity or source order.
+
+This has caused real regressions:
+
+- Component-level CSS (`bpmInput.css`, `keyInput.css`) is unlayered, so default styles like `min-height: 38px` silently override app-specific size constraints from the layered theme.
+- Words app BPM/Key inputs became oversized because the unlayered component defaults took precedence.
+- Key dropdown lost its teal theme because unlayered purple defaults won.
+
+**Rules to prevent recurrence:**
+
+1. **App-level layout overrides that must win** (sizing, max-height, border resets) should go in the app's own unlayered stylesheet (e.g., `word-rhythm.css`), not in `appSharedThemes.css`.
+2. **Never assume layered theme variables override unlayered component defaults.** If a component CSS file sets a property directly (not via a variable), the layered theme cannot override it.
+3. **Test in Vite dev mode specifically.** Vite injects CSS via `<style>` tags in dev, which can produce a different cascade order than the production build. Both must be checked after theme changes.
+4. **Prefer CSS variable indirection.** Component CSS that uses `var(--token, fallback)` can be themed from any layer. Component CSS that uses literal values cannot.
+
 ## Recent contract updates
 
 - Default shared palette across `BpmInput`, `KeyInput`, `ChordProgressionInput`, and `ChordStyleInput` now uses a balanced indigo-violet baseline.

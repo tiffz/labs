@@ -252,6 +252,7 @@ export function ScalesProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- co-located context hook is conventional
 export function useScales(): ScalesContextValue {
   const ctx = useContext(ScalesContext);
   if (!ctx) throw new Error('useScales must be used inside ScalesProvider');

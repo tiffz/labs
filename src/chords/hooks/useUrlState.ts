@@ -12,7 +12,7 @@ import type {
 import { COMMON_CHORD_PROGRESSIONS } from '../data/chordProgressions';
 import { CHORD_STYLING_STRATEGIES } from '../data/chordStylingStrategies';
 import { ALL_KEYS } from '../utils/randomization';
-import { getHistoryUpdateStrategy } from '../../shared/utils/urlHistory';
+import { getHistoryUpdateStrategy, throttledReplaceState, throttledPushState } from '../../shared/utils/urlHistory';
 import { parseProgressionText } from '../../shared/music/chordProgressionText';
 
 /**
@@ -177,9 +177,9 @@ export function useUrlState() {
 
     if (strategy === 'skip') return;
     if (strategy === 'replace') {
-      window.history.replaceState({}, '', newUrl);
+      throttledReplaceState(newUrl);
     } else {
-      window.history.pushState({}, '', newUrl);
+      throttledPushState(newUrl);
       lastPushTimeRef.current = now;
     }
   }, []);

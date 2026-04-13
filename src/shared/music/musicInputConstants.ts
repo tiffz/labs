@@ -1,6 +1,6 @@
 export const DEFAULT_BPM_MIN = 20;
 export const DEFAULT_BPM_MAX = 300;
-export const COMMON_BPMS = [40, 50, 60, 72, 80, 90, 100, 120, 128, 140, 160];
+export const COMMON_BPMS = [40, 50, 60, 72, 80, 90, 100, 108, 120, 128, 132, 140, 160, 180, 200];
 
 export const ALL_KEYS = ['C', 'C#', 'Db', 'D', 'D#', 'Eb', 'E', 'F', 'F#', 'Gb', 'G', 'G#', 'Ab', 'A', 'A#', 'Bb', 'B'] as const;
 export type MusicKey = (typeof ALL_KEYS)[number];

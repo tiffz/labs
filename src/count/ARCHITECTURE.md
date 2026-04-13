@@ -186,6 +186,19 @@ A shared composition utility providing robust Web Audio scheduling infrastructur
 
 Used by `MetronomeEngine` (Count) and `RhythmPlayer` (Drums + Words).
 
+### Audio Stop Safety
+
+All audio stop paths must ramp gain to zero before stopping sources to prevent audible clicks/static. The two patterns in use:
+
+- **MetronomeEngine**: Calls `scheduler.rampDown(ctx, gainNodes)` on its master gain nodes before `scheduler.stop()`. Since it manages its own gain routing, the scheduler's `stopAllSources()` only cleans up after the ramp.
+- **AudioPlayer** (used by `RhythmPlayer`): The `stopAllSounds()` method performs a 15ms `linearRampToValueAtTime(0)` on each source's individual gain node before scheduling `source.stop()`. This handles both immediate stops (pause button) and scheduled chokes (look-ahead note replacement). Sources scheduled for future stop via `atTime` parameter are not ramped since they stop precisely at the next note onset.
+
+**Rule**: Never call `source.stop()` on a playing source without either (a) ramping its gain to 0 first or (b) scheduling the stop to coincide with a new note onset.
+
+### Loop Boundary Scheduling
+
+The rAF look-ahead loop uses a `scheduledUpToSec` watermark to prevent duplicate scheduling. This watermark is advanced to `ctx.currentTime` each frame. When the loop wraps (restarting from the first note), the watermark **must** be reset to the new loop's start time — otherwise the first note's `audioTime` falls below the watermark and is silently skipped.
+
 ### Timing Paradigms
 
 | Engine                | Scheduling                                         | Used By      |

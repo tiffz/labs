@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useUrlState } from './useUrlState';
+import { flushPendingHistoryUpdates } from '../../shared/utils/urlHistory';
 
 describe('useUrlState', () => {
   beforeEach(() => {
@@ -127,6 +128,7 @@ describe('useUrlState', () => {
           bpm: 140,
         });
       });
+      flushPendingHistoryUpdates();
       
       const params = new URLSearchParams(window.location.search);
       expect(params.get('rhythm')).toBe('D-T-K-');
@@ -144,6 +146,7 @@ describe('useUrlState', () => {
           bpm: 120, // default
         });
       });
+      flushPendingHistoryUpdates();
       
       expect(window.location.search).toBe('');
     });
@@ -158,6 +161,7 @@ describe('useUrlState', () => {
           bpm: 120, // default
         });
       });
+      flushPendingHistoryUpdates();
       
       const params = new URLSearchParams(window.location.search);
       expect(params.get('rhythm')).toBe('D-T-K-');
@@ -221,8 +225,8 @@ describe('useUrlState', () => {
           bpm: 120,
         });
       });
+      flushPendingHistoryUpdates();
 
-      // pushState should have been called, adding a history entry
       expect(window.history.length).toBe(initialLength + 1);
       expect(new URLSearchParams(window.location.search).get('rhythm')).toBe(
         'D-T-K-'
@@ -239,6 +243,7 @@ describe('useUrlState', () => {
           bpm: 120,
         });
       });
+      flushPendingHistoryUpdates();
 
       const lengthAfterFirst = window.history.length;
 
@@ -249,6 +254,7 @@ describe('useUrlState', () => {
           bpm: 120,
         });
       });
+      flushPendingHistoryUpdates();
 
       expect(window.history.length).toBe(lengthAfterFirst);
     });
@@ -258,22 +264,24 @@ describe('useUrlState', () => {
       const initialLength = window.history.length;
 
       act(() => {
-        // Rapid sequence simulating typing a BPM value
         result.current.syncToUrl({
           notation: 'D-T-__T-D---T---',
           timeSignature: { numerator: 4, denominator: 4 },
           bpm: 1,
         });
+        flushPendingHistoryUpdates();
         result.current.syncToUrl({
           notation: 'D-T-__T-D---T---',
           timeSignature: { numerator: 4, denominator: 4 },
           bpm: 14,
         });
+        flushPendingHistoryUpdates();
         result.current.syncToUrl({
           notation: 'D-T-__T-D---T---',
           timeSignature: { numerator: 4, denominator: 4 },
           bpm: 140,
         });
+        flushPendingHistoryUpdates();
       });
 
       // Only the first call should pushState; the rapid follow-ups should replaceState
@@ -292,11 +300,13 @@ describe('useUrlState', () => {
           timeSignature: { numerator: 4, denominator: 4 },
           bpm: 130,
         });
+        flushPendingHistoryUpdates();
         result.current.syncToUrl({
           notation: 'D-T-__T-D---T---',
           timeSignature: { numerator: 7, denominator: 8 },
           bpm: 130,
         });
+        flushPendingHistoryUpdates();
       });
 
       expect(window.history.length).toBe(initialLength + 2);
@@ -311,7 +321,6 @@ describe('useUrlState', () => {
         result.current.setupPopStateListener(callback);
       });
 
-      // Push a state change
       act(() => {
         result.current.syncToUrl({
           notation: 'D--KD-T-',
@@ -319,6 +328,7 @@ describe('useUrlState', () => {
           bpm: 160,
         });
       });
+      flushPendingHistoryUpdates();
 
       expect(new URLSearchParams(window.location.search).get('rhythm')).toBe(
         'D--KD-T-'

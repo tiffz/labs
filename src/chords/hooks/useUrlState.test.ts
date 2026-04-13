@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useUrlState } from './useUrlState';
 import type { ChordProgressionState } from '../types';
+import { flushPendingHistoryUpdates } from '../../shared/utils/urlHistory';
 
 function makeState(overrides: Partial<ChordProgressionState> = {}): ChordProgressionState {
   return {
@@ -73,6 +74,7 @@ describe('useUrlState (chords)', () => {
       act(() => {
         result.current.syncToUrl(makeState({ key: 'G', tempo: 140 }));
       });
+      flushPendingHistoryUpdates();
 
       expect(window.history.length).toBe(initialLength + 1);
       expect(window.location.search).toContain('key=G');
@@ -85,12 +87,14 @@ describe('useUrlState (chords)', () => {
       act(() => {
         result.current.syncToUrl(makeState({ key: 'G', tempo: 140 }));
       });
+      flushPendingHistoryUpdates();
 
       const afterFirst = window.history.length;
 
       act(() => {
         result.current.syncToUrl(makeState({ key: 'G', tempo: 140 }));
       });
+      flushPendingHistoryUpdates();
 
       expect(window.history.length).toBe(afterFirst);
     });
@@ -101,8 +105,11 @@ describe('useUrlState (chords)', () => {
 
       act(() => {
         result.current.syncToUrl(makeState({ tempo: 1 }));
+        flushPendingHistoryUpdates();
         result.current.syncToUrl(makeState({ tempo: 14 }));
+        flushPendingHistoryUpdates();
         result.current.syncToUrl(makeState({ tempo: 140 }));
+        flushPendingHistoryUpdates();
       });
 
       // Only one pushState, rest are replaceState
@@ -116,7 +123,9 @@ describe('useUrlState (chords)', () => {
 
       act(() => {
         result.current.syncToUrl(makeState({ tempo: 130 }));
+        flushPendingHistoryUpdates();
         result.current.syncToUrl(makeState({ tempo: 130, key: 'G' }));
+        flushPendingHistoryUpdates();
       });
 
       expect(window.history.length).toBe(initialLength + 2);

@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { COMMON_BPMS } from '../../shared/music/musicInputConstants';
 
 interface BpmControlProps {
   bpm: number;
@@ -37,8 +38,6 @@ function useRepeatPress(callback: () => void) {
     onPointerLeave: stop,
   };
 }
-
-const COMMON_BPMS = [40, 50, 60, 72, 80, 90, 100, 108, 120, 132, 140, 160, 180, 200];
 
 const TEMPO_MARKINGS: Array<{ min: number; max: number; italian: string; english: string }> = [
   { min: 0,   max: 40,  italian: 'Larghissimo', english: 'Very broad' },
@@ -106,6 +105,7 @@ export function BpmControl({ bpm, onChange }: BpmControlProps) {
             onKeyDown={(e) => e.key === 'Enter' && commitEdit()}
             min={MIN_BPM}
             max={MAX_BPM}
+            // eslint-disable-next-line jsx-a11y/no-autofocus
             autoFocus
             aria-label="BPM value"
           />

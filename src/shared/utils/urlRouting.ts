@@ -1,4 +1,4 @@
-import { getHistoryUpdateStrategy, type HistoryUpdateStrategy } from './urlHistory';
+import { getHistoryUpdateStrategy, throttledReplaceState, throttledPushState, type HistoryUpdateStrategy } from './urlHistory';
 
 export interface UrlRoutingHistoryState {
   lastPushTime: number;
@@ -26,9 +26,9 @@ export function syncUrlWithHistory(
   });
 
   if (strategy === 'replace') {
-    window.history.replaceState({}, '', newUrl);
+    throttledReplaceState(newUrl);
   } else if (strategy === 'push') {
-    window.history.pushState({}, '', newUrl);
+    throttledPushState(newUrl);
     historyState.lastPushTime = now;
   }
 
