@@ -118,13 +118,13 @@ export class PlaybackEngine {
     this.masterGain = ctx.createGain();
     this.masterGain.gain.value = 0.8;
     
-    // Compressor to prevent clipping
+    // Compressor to prevent clipping — gentle settings to avoid pumping artifacts
     this.compressor = ctx.createDynamicsCompressor();
-    this.compressor.threshold.value = -10;
-    this.compressor.knee.value = 10;
-    this.compressor.ratio.value = 4;
-    this.compressor.attack.value = 0.003;
-    this.compressor.release.value = 0.1;
+    this.compressor.threshold.value = -6;
+    this.compressor.knee.value = 18;
+    this.compressor.ratio.value = 3;
+    this.compressor.attack.value = 0.01;
+    this.compressor.release.value = 0.2;
     
     // Initialize reverb with moderate wet level for piano (0.25 = 25% wet)
     // This adds warmth, space, and helps samples sound more natural/musical
@@ -243,14 +243,8 @@ export class PlaybackEngine {
         this.onSampleLoadingProgress?.(loaded, total);
       });
       
-      // Load samples
+      // Load samples — don't connect here; Track handles routing
       const success = await this.sampledPiano.loadSamples();
-      
-      // Connect to audio chain if we have one
-      if (success && this.masterGain) {
-        this.sampledPiano.connect(this.masterGain);
-      }
-      
       return success;
     } catch (error) {
       console.error('Failed to load piano samples:', error);

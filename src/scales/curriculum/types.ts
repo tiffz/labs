@@ -12,6 +12,8 @@ export interface Stage {
   id: string;
   stageNumber: number;
   label: string;
+  /** Player-facing explanation of what to focus on in this stage. */
+  description: string;
   hand: Hand;
   useTempo: boolean;
   bpm: number;
@@ -30,6 +32,13 @@ export interface ExerciseDefinition {
   kind: ExerciseKind;
   label: string;
   stages: Stage[];
+  /**
+   * Exercise-specific intro guidance shown in the instruction panel.
+   * A string applies to all stages; an object maps per-hand guidance.
+   */
+  guidance?: string | { right?: string; left?: string; both?: string };
+  /** Optional external help link (e.g. YouTube search). */
+  helpUrl?: string;
 }
 
 /**

@@ -15,6 +15,7 @@ import {
   getLatestAttackTime,
 } from '../utils/freeTempoInput';
 import { resolveFreeTempoLoopStartPosition } from '../utils/freeTempoLoop';
+import { pitchClassDistance, deriveOctaveOffset } from '../../shared/practice/pitchMatch';
 
 const PERFECT_THRESHOLD_MS = 120;
 const GRACE_PERIOD_MS = 200;
@@ -44,11 +45,6 @@ function hasExactPitchMatch(played: number[], expectedPitches: number[]): boolea
   return expectedPitches.every(ep => played.includes(ep));
 }
 
-function pitchClassDistance(a: number, b: number): number {
-  const diff = Math.abs(((a % 12) + 12) % 12 - ((b % 12) + 12) % 12);
-  return Math.min(diff, 12 - diff);
-}
-
 function pitchClassMatchWithTolerance(
   played: number[],
   expectedPitches: number[],
@@ -70,19 +66,6 @@ function shouldAllowPitchClassMatch(
   return useMic || allowChordPracticeOctaveFlex;
 }
 
-function deriveOctaveOffset(played: number[], expectedPitches: number[]): number | null {
-  const deltas: number[] = [];
-  for (const expected of expectedPitches) {
-    for (const actual of played) {
-      if (pitchClassDistance(actual, expected) === 0) {
-        deltas.push(actual - expected);
-      }
-    }
-  }
-  if (deltas.length === 0) return null;
-  const avgDelta = deltas.reduce((sum, delta) => sum + delta, 0) / deltas.length;
-  return Math.round(avgDelta / 12) * 12;
-}
 
 function getHandSplitPoint(expectedNotes: ExpectedNote[]): number {
   const leftPitches = expectedNotes

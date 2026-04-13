@@ -9,7 +9,11 @@ const EXERCISE_LABELS: Record<ExerciseKind, string> = {
   'arpeggio-minor': 'Minor Arpeggio',
 };
 
-function exercise(key: Key, kind: ExerciseKind): ExerciseDefinition {
+function exercise(
+  key: Key,
+  kind: ExerciseKind,
+  opts?: Pick<ExerciseDefinition, 'guidance' | 'helpUrl'>,
+): ExerciseDefinition {
   const id = `${key}-${kind}`;
   return {
     id,
@@ -17,6 +21,7 @@ function exercise(key: Key, kind: ExerciseKind): ExerciseDefinition {
     kind,
     label: `${key} ${EXERCISE_LABELS[kind]}`,
     stages: buildStages(id),
+    ...opts,
   };
 }
 
@@ -32,9 +37,24 @@ export const TIERS: Tier[] = [
     label: 'Foundation',
     description: 'C, G, and F major — the three most common keys',
     exercises: [
-      exercise('C', 'major-scale'),
-      exercise('G', 'major-scale'),
-      exercise('F', 'major-scale'),
+      exercise('C', 'major-scale', {
+        guidance: {
+          right: 'Watch for the thumb crossing on the 4th note (F). Tuck your thumb smoothly under fingers 2\u20133, keeping your wrist level.',
+          left: 'The left hand uses the same finger pattern as the right hand, but reversed. The thumb crossing happens at a different point in the scale.',
+          both: 'Both hands play the same notes in different octaves. The thumb crossings happen at different points in each hand.',
+        },
+        helpUrl: 'https://www.youtube.com/results?search_query=how+to+play+C+major+scale+piano+finger+crossing',
+      }),
+      exercise('G', 'major-scale', {
+        guidance:
+          'The G major scale has one sharp: F\u266F (the black key just above F). Play F\u266F instead of F every time. The fingering is the same as the C major scale.',
+      }),
+      exercise('F', 'major-scale', {
+        guidance: {
+          right: 'The F major scale has one flat: B\u266D (the black key just below B). The fingering is slightly different from C and G major.',
+          left: 'The left hand F major fingering is different from the right hand, but similar to the left hand fingering for C and G major.',
+        },
+      }),
     ],
   },
   {

@@ -4489,6 +4489,36 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-practice-pitchmatch-ts-deriveoctaveoffset",
+    "name": "deriveOctaveOffset",
+    "path": "src/shared/practice/pitchMatch.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Detect the octave offset (multiple of 12) between played and expected pitches by matching pitch classes and averaging the deltas. Returns null if no pitch-class match is found.",
+    "tags": [],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-practice-pitchmatch-ts-pitchclassdistance",
+    "name": "pitchClassDistance",
+    "path": "src/shared/practice/pitchMatch.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Minimum semitone distance between two pitch classes (0–6). Returns 0 when both notes are the same pitch class regardless of octave.",
+    "tags": [],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-practice-practicetimingstore-ts-clearall",
     "name": "clearAll",
     "path": "src/shared/practice/practiceTimingStore.ts",

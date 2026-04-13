@@ -1,7 +1,6 @@
 import { ScalesProvider, useScales } from './store';
 import HomeScreen from './components/HomeScreen';
 import SessionScreen from './components/SessionScreen';
-import ResultScreen from './components/ResultScreen';
 import ProgressScreen from './components/ProgressScreen';
 
 function ScreenRouter() {
@@ -12,8 +11,6 @@ function ScreenRouter() {
       return <HomeScreen />;
     case 'session':
       return <SessionScreen />;
-    case 'result':
-      return <ResultScreen />;
     case 'progress':
       return <ProgressScreen />;
     default:
