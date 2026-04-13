@@ -40,3 +40,6 @@ src/beat/regression/reports/
 
 # Legacy local build artifacts
 storybook-static
+
+# Cursor IDE rules (personal agent config)
+.cursor/rules/

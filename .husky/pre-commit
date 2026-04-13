@@ -21,9 +21,19 @@ if [ -z "$STAGED_FILES" ]; then
   exit 0
 fi
 
+# ── Fast checks first (fail within seconds) ──────────────────────────
+
 # Always run canonical import-boundary guard so local presubmit
 # matches CI behavior and catches boundary regressions early.
 npm run check:import-boundaries
+
+# Lint & auto-fix staged files (eslint + prettier)
+npx lint-staged --allow-empty
+
+# Dead-code / unused-file check (fast, ~1-2s)
+npm run knip
+
+# ── Slow checks (only if code files changed) ─────────────────────────
 
 # Check if any TypeScript/JavaScript files are staged
 if git diff --cached --name-only --quiet -- '*.ts' '*.tsx' '*.js' '*.jsx' '*.json' 'package*.json' 'vite.config.*' 'vitest.config.*' 'tsconfig*.json' 'eslint.config.*'; then
@@ -55,9 +65,3 @@ else
     npm run test:fast
   fi
 fi
-
-# Run lint-staged for changed files (this is already optimized to only run on changed files)
-npx lint-staged --allow-empty
-
-# Run knip to enforce dead code check (blocking, aligned with CI)
-npm run knip

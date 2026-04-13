@@ -45,8 +45,7 @@
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
-      "eslint --fix",
-      "bash -c 'npm run knip -- --no-exit-code'"
+      "eslint --fix"
     ],
     "*.{json,css,md}": [
       "prettier --write"
