@@ -16,6 +16,7 @@ import { eighthBaseSlotsPerEighth, slotsPerBeat, getSubdivisionOptions, getDefau
 import { useSongProfiles, loadLastSession, saveLastSession } from './hooks/useSongProfiles';
 import { readUrlParams, hasUrlParams, useUrlSync } from './hooks/useUrlParams';
 import { createAppAnalytics } from '../shared/utils/analytics';
+import { requestWakeLock, releaseWakeLock } from '../shared/audio/wakeLock';
 
 const analytics = createAppAnalytics('count');
 const DEFAULT_BPM = 120;
@@ -133,6 +134,7 @@ export default function App() {
     const engine = getEngine();
     if (playing) {
       engine.stop();
+      releaseWakeLock();
       setPlaying(false);
       setCurrentBeat(null);
       analytics.trackSessionEnd(playStartRef.current);
@@ -155,6 +157,7 @@ export default function App() {
       channelDrumMutes: [...channelDrumMutes],
     });
     setPlaying(true);
+    requestWakeLock();
     playStartRef.current = Date.now();
     analytics.trackEvent('playback_start', {
       bpm,
@@ -289,6 +292,10 @@ export default function App() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handlePlay]);
+
+  useEffect(() => {
+    return () => { releaseWakeLock(); };
+  }, []);
 
   const profilesOpen = Boolean(profileAnchor);
 

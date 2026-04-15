@@ -133,6 +133,8 @@ export class MetronomeEngine {
 
   stop(): void {
     this.playing = false;
+    this.scheduler.stopLoop();
+    this.scheduler.clearAllCallbacks();
 
     if (this.ctx) {
       const gains = [this.voiceMasterGain, this.clickMasterGain, this.drumMasterGain]
@@ -140,8 +142,12 @@ export class MetronomeEngine {
       this.scheduler.rampDown(this.ctx, gains);
     }
 
-    this.scheduler.stop();
-    this.scheduler.beginSession();
+    const session = this.scheduler.beginSession();
+    setTimeout(() => {
+      if (this.scheduler.isSessionValid(session)) {
+        this.scheduler.stopAllSources();
+      }
+    }, 30);
   }
 
   setTempo(bpm: number): void {
@@ -356,6 +362,15 @@ export class MetronomeEngine {
     const now = this.ctx.currentTime;
     const scheduleHorizon = now + SCHEDULE_AHEAD_SEC;
 
+    const gap = now - this.scheduledUpToTime;
+    if (gap > SCHEDULE_AHEAD_SEC * 2) {
+      const subdivDur = this.subdivDuration(this.bpm);
+      const missedSubdivs = Math.floor(gap / subdivDur);
+      this.nextSubdivIndex += missedSubdivs;
+      this.measuresPlayed += Math.floor(missedSubdivs / this.subdivsPerMeasure);
+      this.scheduledUpToTime = now;
+    }
+
     while (this.scheduledUpToTime < scheduleHorizon) {
       const subdivDur = this.subdivDuration(this.bpm);
       const audioTime = this.scheduledUpToTime;
@@ -380,10 +395,10 @@ export class MetronomeEngine {
             this.scheduleVoiceSample(entry.sampleId, audioTime, entry.subdivision, subdivDur, perBeatVol);
           }
           if (this.clickGain > 0 && !clickMutedForChannel) {
-            this.scheduleClick(audioTime, entry.subdivision, channelVolume * perBeatVol);
+            this.scheduleClick(audioTime, entry.subdivision, channelVolume * perBeatVol, subdivDur);
           }
           if (this.drumGain > 0 && !drumMutedForChannel) {
-            this.scheduleDrum(audioTime, entry.subdivision, channelVolume * perBeatVol);
+            this.scheduleDrum(audioTime, entry.subdivision, channelVolume * perBeatVol, subdivDur);
           }
         }
 
@@ -470,6 +485,7 @@ export class MetronomeEngine {
     audioTime: number,
     subdivision: SubdivisionType,
     volume: number,
+    subdivDur: number,
   ): void {
     if (!this.ctx || !this.clickMasterGain || !this.clickSample) return;
 
@@ -485,16 +501,28 @@ export class MetronomeEngine {
     const t = Math.max(audioTime, this.ctx.currentTime);
     gain.gain.setValueAtTime(Math.max(0, Math.min(1, vol)), t);
 
+    const effectiveDur = this.clickSample.buffer.duration / rate;
+    const maxPlayDur = subdivDur * 0.92;
+    if (effectiveDur > maxPlayDur) {
+      const fadeStart = t + Math.max(0, maxPlayDur - 0.015);
+      gain.gain.setValueAtTime(vol, fadeStart);
+      gain.gain.linearRampToValueAtTime(0, t + maxPlayDur);
+    }
+
     source.connect(gain);
     gain.connect(this.clickMasterGain);
     this.scheduler.trackSource(source);
     source.start(t);
+    if (effectiveDur > maxPlayDur) {
+      source.stop(t + maxPlayDur);
+    }
   }
 
   private scheduleDrum(
     audioTime: number,
     subdivision: SubdivisionType,
     volume: number,
+    subdivDur: number,
   ): void {
     if (!this.ctx || !this.drumMasterGain) return;
 
@@ -507,11 +535,22 @@ export class MetronomeEngine {
 
     const gain = this.ctx.createGain();
     const t = Math.max(audioTime, this.ctx.currentTime);
-    gain.gain.setValueAtTime(Math.max(0, Math.min(1, volume)), t);
+    const vol = Math.max(0, Math.min(1, volume));
+    gain.gain.setValueAtTime(vol, t);
+
+    const maxPlayDur = subdivDur * 0.92;
+    if (buffer.duration > maxPlayDur) {
+      const fadeStart = t + Math.max(0, maxPlayDur - 0.015);
+      gain.gain.setValueAtTime(vol, fadeStart);
+      gain.gain.linearRampToValueAtTime(0, t + maxPlayDur);
+    }
 
     source.connect(gain);
     gain.connect(this.drumMasterGain);
     this.scheduler.trackSource(source);
     source.start(t);
+    if (buffer.duration > maxPlayDur) {
+      source.stop(t + maxPlayDur);
+    }
   }
 }

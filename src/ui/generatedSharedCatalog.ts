@@ -671,6 +671,36 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-audio-wakelock-ts-releasewakelock",
+    "name": "releaseWakeLock",
+    "path": "src/shared/audio/wakeLock.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Screen Wake Lock utility for music apps. Prevents the device screen from dimming/locking during active playback. Uses the Screen Wake Lock API where available and gracefully no-ops on unsupported browsers. The lock is automatically re-acquired when the tab regains visibility, since browsers release the sentinel when a tab is hidden.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-wakelock-ts-requestwakelock",
+    "name": "requestWakeLock",
+    "path": "src/shared/audio/wakeLock.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Screen Wake Lock utility for music apps. Prevents the device screen from dimming/locking during active playback. Uses the Screen Wake Lock API where available and gracefully no-ops on unsupported browsers. The lock is automatically re-acquired when the tab regains visibility, since browsers release the sentinel when a tab is hidden.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-beat-analysis-onsets-ts-detectonsets",
     "name": "detectOnsets",
     "path": "src/shared/beat/analysis/onsets.ts",

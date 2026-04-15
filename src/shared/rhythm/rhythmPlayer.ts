@@ -364,6 +364,22 @@ class RhythmPlayer {
     const now = ctx.currentTime;
     const horizon = now + RhythmPlayer.LOOK_AHEAD_SEC;
 
+    const gap = now - this.scheduledUpToSec;
+    if (gap > RhythmPlayer.LOOK_AHEAD_SEC * 2) {
+      const loopOffset = this.loopCount * this.loopDurationSec;
+      while (this.noteEventIndex < this.noteEvents.length) {
+        const evt = this.noteEvents[this.noteEventIndex];
+        if (this.audioStartTimeSec + loopOffset + evt.timeSec > now) break;
+        this.noteEventIndex++;
+      }
+      while (this.metronomeEventIndex < this.metronomeEvents.length) {
+        const evt = this.metronomeEvents[this.metronomeEventIndex];
+        if (this.audioStartTimeSec + loopOffset + evt.timeSec > now) break;
+        this.metronomeEventIndex++;
+      }
+      this.scheduledUpToSec = now;
+    }
+
     // --- schedule note events ---
     while (this.noteEventIndex < this.noteEvents.length) {
       const evt = this.noteEvents[this.noteEventIndex];

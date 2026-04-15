@@ -621,9 +621,6 @@ body {
   background: transparent;
   color: var(--pulse-text-dim);
   cursor: pointer;
-  transition:
-    color 0.15s,
-    border-color 0.15s;
 }
 .pulse-sound-toggle.is-active {
   color: var(--pulse-accent);
@@ -663,6 +660,7 @@ body {
 /* ---- Subdivision Level Selector ---- */
 .pulse-subdiv-selector {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   margin-bottom: 14px;
   justify-content: center;
@@ -744,6 +742,7 @@ body {
   background: var(--pulse-border);
   outline: none;
   cursor: pointer;
+  touch-action: none;
 }
 .pulse-channel-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
@@ -1085,20 +1084,94 @@ body {
 
 /* ---- Responsive ---- */
 @media (max-width: 700px) {
+  .pulse-app {
+    padding: 8px 14px;
+  }
+  .pulse-header {
+    padding: 6px 0;
+    margin-bottom: 8px;
+  }
+  .pulse-title {
+    font-size: 1.1rem;
+  }
+  .pulse-main {
+    gap: 10px;
+  }
   .pulse-top-row {
     grid-template-columns: 1fr;
-    gap: 12px;
+    gap: 8px;
+  }
+  .pulse-transport-center {
+    order: -1;
+    gap: 8px;
+  }
+  .pulse-transport-left,
+  .pulse-transport-right {
+    padding: 10px 12px;
+  }
+  .pulse-play-btn {
+    padding: 8px 24px;
+    font-size: 1rem;
+  }
+  .pulse-beat-display {
+    padding: 6px;
+    gap: 4px;
+  }
+  .pulse-beat-bar-track {
+    height: 28px;
+  }
+  .pulse-playback-controls {
+    margin: 4px 0 0;
+    gap: 8px;
+  }
+  .pulse-sound-toggle {
+    padding: 4px 8px;
+    width: auto;
+  }
+  .pulse-tempo-marking {
+    display: none;
+  }
+  .pulse-bpm {
+    gap: 6px;
+  }
+  .pulse-bpm-presets {
+    gap: 3px;
   }
   .pulse-time-sig {
-    align-items: flex-start;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
   }
-  .pulse-mixer-channels {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 14px;
+  .pulse-time-sig-controls {
+    justify-content: flex-start;
+    flex: 1;
+  }
+  .pulse-subdiv-btn {
+    padding: 6px 10px;
+  }
+  .pulse-mixer {
+    padding: 10px 12px;
   }
   .pulse-mixer-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
+    margin-bottom: 8px;
+  }
+  .pulse-mixer-channels {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 14px;
+  }
+  .pulse-channel-slider {
+    width: 8px;
+    height: 70px;
+  }
+  .pulse-channel-slider::-webkit-slider-thumb {
+    width: 28px;
+    height: 14px;
+  }
+  .pulse-channel-slider::-moz-range-thumb {
+    width: 28px;
+    height: 14px;
   }
 }

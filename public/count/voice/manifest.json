@@ -156,13 +156,6 @@
       "category": "takadimi",
       "file": "ka.wav",
       "duration": 150
-    },
-    {
-      "id": "ti",
-      "text": "Ti",
-      "category": "takadimi",
-      "file": "ti.wav",
-      "duration": 150
     }
   ]
 }

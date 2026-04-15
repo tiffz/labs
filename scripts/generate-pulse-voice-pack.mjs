@@ -80,7 +80,7 @@ const PHRASE_GROUPS = [
   },
   {
     id: 'counting',
-    words: ['One', 'Ee', 'And', 'Uh', 'Two', 'Ee', 'And', 'Uh'],
+    words: ['One', 'Ee', 'And', 'Huh', 'Two', 'Ee', 'And', 'Huh'],
     syllables: [
       { id: 'ee',  word: 1, text: 'ee',  category: 'sixteenth' },
       { id: 'and', word: 2, text: 'and', category: 'eighth' },
