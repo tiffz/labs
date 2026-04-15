@@ -30,6 +30,9 @@ export interface MetronomeConfig {
   channelVoiceMutes?: SubdivisionChannel[];
   channelClickMutes?: SubdivisionChannel[];
   channelDrumMutes?: SubdivisionChannel[];
+  countInMeasures?: number;
+  onCountInBeat?: (beatNumber: number, totalBeats: number) => void;
+  onCountInComplete?: () => void;
 }
 
 export type SubdivisionType =
@@ -55,6 +58,12 @@ export function slotsPerBeat(level: SubdivisionLevel): number {
   if (level === 'swing8') return 3;
   return level;
 }
+
+/**
+ * Minimum subdivision slot duration (seconds) for voicing subdivision
+ * syllables. Below this, only beat numbers are voiced to maintain clarity.
+ */
+export const VOICE_SUBDIV_MIN_DUR = 0.18;
 
 /**
  * Grid slots per eighth note for /8 meters.

@@ -10,9 +10,11 @@ import { SubdivisionMixer } from './components/SubdivisionMixer';
 import { TimeSignatureControl } from './components/TimeSignatureControl';
 import { BeatDisplay } from './components/BeatDisplay';
 import { SongProfileManager } from './components/SongProfileManager';
+import { CountInOverlay } from './components/CountInOverlay';
+import Tooltip from '@mui/material/Tooltip';
 import { MetronomeEngine } from './engine/MetronomeEngine';
 import type { SubdivisionVolumes, SubdivisionChannel, BeatEvent, VoiceMode, SubdivisionLevel } from './engine/types';
-import { eighthBaseSlotsPerEighth, slotsPerBeat, getSubdivisionOptions, getDefaultSubdivisionLevel } from './engine/types';
+import { eighthBaseSlotsPerEighth, slotsPerBeat, getSubdivisionOptions, getDefaultSubdivisionLevel, VOICE_SUBDIV_MIN_DUR } from './engine/types';
 import { useSongProfiles, loadLastSession, saveLastSession } from './hooks/useSongProfiles';
 import { readUrlParams, hasUrlParams, useUrlSync } from './hooks/useUrlParams';
 import { createAppAnalytics } from '../shared/utils/analytics';
@@ -65,6 +67,27 @@ function computeSubdivsPerMeasure(ts: TimeSignature, groupingStr: string | undef
   return total;
 }
 
+const TOOLTIP_SX = {
+  tooltip: {
+    sx: {
+      fontFamily: 'var(--pulse-mono)',
+      fontSize: '0.75rem',
+      bgcolor: 'var(--pulse-surface)',
+      color: 'var(--pulse-text)',
+      border: '1px solid var(--pulse-accent)',
+      borderRadius: 0,
+      padding: '8px 12px',
+      maxWidth: 240,
+      lineHeight: 1.5,
+    },
+  },
+  arrow: {
+    sx: {
+      color: 'var(--pulse-accent)',
+    },
+  },
+};
+
 const POPOVER_PAPER_SX = {
   bgcolor: 'var(--pulse-bg)',
   border: '1px solid var(--pulse-accent)',
@@ -94,11 +117,30 @@ export default function App() {
   const [voiceMode, setVoiceMode] = useState<VoiceMode>(initial.voiceMode ?? 'counting');
 
   const [profileAnchor, setProfileAnchor] = useState<HTMLElement | null>(null);
+  const [titleAnim, setTitleAnim] = useState<'' | 'is-counting-in' | 'is-resting'>('');
+  const [showCountIn, setShowCountIn] = useState(false);
+  const [countInBeat, setCountInBeat] = useState<number | null>(null);
+  const [countInExiting, setCountInExiting] = useState(false);
 
   const subdivCount = useMemo(
     () => computeSubdivsPerMeasure(timeSignature, beatGrouping, subdivisionLevel),
     [timeSignature, beatGrouping, subdivisionLevel],
   );
+
+  const voiceSubdivMuted = useMemo(() => {
+    const secsPerQuarter = 60 / bpm;
+    let slotDur: number;
+    if (timeSignature.denominator === 8) {
+      slotDur = (secsPerQuarter / 2) / eighthBaseSlotsPerEighth(subdivisionLevel);
+    } else if (subdivisionLevel === 'swing8') {
+      slotDur = secsPerQuarter / 3;
+    } else {
+      slotDur = secsPerQuarter / slotsPerBeat(subdivisionLevel);
+    }
+    const hasSubdivisions = subdivisionLevel !== 1;
+    return hasSubdivisions && voiceGain > 0 && slotDur < VOICE_SUBDIV_MIN_DUR;
+  }, [bpm, timeSignature, subdivisionLevel, voiceGain]);
+
   const [perBeatVolumes, setPerBeatVolumes] = useState<number[]>(() =>
     Array(subdivCount).fill(1.0),
   );
@@ -128,7 +170,66 @@ export default function App() {
     saveLastSession({ bpm, timeSignature, volumes, beatGrouping });
   }, [bpm, timeSignature, volumes, beatGrouping]);
 
+  const titleAnimTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const countInExitTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const playStartRef = useRef<number>(0);
+
+  const startCountIn = useCallback(async () => {
+    const engine = getEngine();
+    engine.onBeat((evt) => setCurrentBeat(evt));
+    setShowCountIn(true);
+    setCountInBeat(null);
+    setCountInExiting(false);
+
+    await engine.start({
+      bpm,
+      timeSignature,
+      volumes,
+      beatGrouping,
+      voiceGain,
+      clickGain,
+      drumGain,
+      perBeatVolumes,
+      voiceMode,
+      subdivisionLevel,
+      channelVoiceMutes: [...channelVoiceMutes],
+      channelClickMutes: [...channelClickMutes],
+      channelDrumMutes: [...channelDrumMutes],
+      countInMeasures: 1,
+      onCountInBeat: (beatNum) => setCountInBeat(beatNum),
+      onCountInComplete: () => {
+        setCountInExiting(true);
+        countInExitTimer.current = setTimeout(() => {
+          setShowCountIn(false);
+          setCountInExiting(false);
+          setTitleAnim('');
+          setCountInBeat(null);
+        }, 300);
+      },
+    });
+
+    setPlaying(true);
+    requestWakeLock();
+    playStartRef.current = Date.now();
+    analytics.trackEvent('playback_start', {
+      bpm,
+      time_signature: `${timeSignature.numerator}/${timeSignature.denominator}`,
+      subdivision_level: subdivisionLevel,
+      voice_mode: voiceMode,
+      count_in: true,
+    });
+  }, [bpm, timeSignature, volumes, beatGrouping, voiceGain, clickGain, drumGain, perBeatVolumes, voiceMode, subdivisionLevel, channelVoiceMutes, channelClickMutes, channelDrumMutes, getEngine]);
+
+  const handleTitleClick = useCallback(() => {
+    if (titleAnim) return;
+    if (!playing) {
+      setTitleAnim('is-counting-in');
+      titleAnimTimer.current = setTimeout(() => startCountIn(), 600);
+    } else {
+      setTitleAnim('is-resting');
+      titleAnimTimer.current = setTimeout(() => setTitleAnim(''), 800);
+    }
+  }, [playing, titleAnim, startCountIn]);
 
   const handlePlay = useCallback(async () => {
     const engine = getEngine();
@@ -137,6 +238,10 @@ export default function App() {
       releaseWakeLock();
       setPlaying(false);
       setCurrentBeat(null);
+      setShowCountIn(false);
+      setCountInExiting(false);
+      setTitleAnim('');
+      setCountInBeat(null);
       analytics.trackSessionEnd(playStartRef.current);
       return;
     }
@@ -166,6 +271,18 @@ export default function App() {
       voice_mode: voiceMode,
     });
   }, [playing, bpm, timeSignature, volumes, beatGrouping, voiceGain, clickGain, drumGain, perBeatVolumes, voiceMode, subdivisionLevel, channelVoiceMutes, channelClickMutes, channelDrumMutes, getEngine]);
+
+  const handleCountInClose = useCallback(() => {
+    const engine = getEngine();
+    engine.stop();
+    releaseWakeLock();
+    setShowCountIn(false);
+    setCountInExiting(false);
+    setTitleAnim('');
+    setCountInBeat(null);
+    setPlaying(false);
+    setCurrentBeat(null);
+  }, [getEngine]);
 
   const handleBpmChange = useCallback((newBpm: number) => {
     setBpm(newBpm);
@@ -294,7 +411,11 @@ export default function App() {
   }, [handlePlay]);
 
   useEffect(() => {
-    return () => { releaseWakeLock(); };
+    return () => {
+      releaseWakeLock();
+      clearTimeout(titleAnimTimer.current);
+      clearTimeout(countInExitTimer.current);
+    };
   }, []);
 
   const profilesOpen = Boolean(profileAnchor);
@@ -302,7 +423,15 @@ export default function App() {
   return (
     <div className="pulse-app">
       <header className="pulse-header">
-        <h1 className="pulse-title">COUNT ME IN</h1>
+        <h1 className={`pulse-title ${titleAnim}`}>
+          <button type="button" className="pulse-title-btn" onClick={handleTitleClick}>
+            {"COUNT ME IN".split("").map((ch, i) => (
+              <span key={i} className="pulse-title-letter" style={{ animationDelay: `${i * 50}ms` }}>
+                {ch === " " ? "\u00A0" : ch}
+              </span>
+            ))}
+          </button>
+        </h1>
         <div className="pulse-header-actions">
           <button
             className={`pulse-header-btn ${profilesOpen ? 'is-active' : ''}`}
@@ -369,6 +498,11 @@ export default function App() {
                   onClick={() => handleVoiceGain(voiceGain > 0 ? 0 : 1)}
                   aria-label={voiceGain > 0 ? 'Mute voice' : 'Unmute voice'}
                 >
+                  {voiceSubdivMuted && (
+                    <Tooltip title="Subdivision syllables auto-muted at this tempo — only beat numbers are voiced" arrow placement="top" slotProps={TOOLTIP_SX}>
+                      <span className="pulse-tempo-hint" aria-label="Voice subdivision muted">!</span>
+                    </Tooltip>
+                  )}
                   VOICE: {voiceGain > 0 ? 'ON' : 'OFF'}
                 </button>
                 <button
@@ -437,6 +571,14 @@ export default function App() {
           onSubdivisionLevelChange={handleSubdivisionLevelChange}
         />
       </main>
+
+      {showCountIn && (
+        <CountInOverlay
+          currentBeat={countInBeat}
+          exiting={countInExiting}
+          onClose={handleCountInClose}
+        />
+      )}
     </div>
   );
 }

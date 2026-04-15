@@ -18,7 +18,7 @@ import type {
   QuietCountConfig,
   VoiceMode,
 } from './types';
-import { eighthBaseSlotsPerEighth, slotsPerBeat } from './types';
+import { eighthBaseSlotsPerEighth, slotsPerBeat, VOICE_SUBDIV_MIN_DUR } from './types';
 import { buildSubdivisionGrid, type SubdivGridEntry } from './gridBuilder';
 
 const SCHEDULE_AHEAD_SEC = 0.25;
@@ -80,6 +80,11 @@ export class MetronomeEngine {
   private subdivsPerMeasure = 0;
   private measuresPlayed = 0;
 
+  private countInRemaining = 0;
+  private countInTotalBeats = 0;
+  private countInBeatCb: ((beatNumber: number, totalBeats: number) => void) | null = null;
+  private countInCompleteCb: (() => void) | null = null;
+
   onBeat(cb: BeatCallback): void {
     this.beatCallback = cb;
   }
@@ -105,6 +110,11 @@ export class MetronomeEngine {
 
     this.parseGrouping(config.beatGrouping);
     this.buildSubdivGrid();
+
+    this.countInRemaining = config.countInMeasures ?? 0;
+    this.countInBeatCb = config.onCountInBeat ?? null;
+    this.countInCompleteCb = config.onCountInComplete ?? null;
+    this.countInTotalBeats = this.grouping.length;
 
     if (!this.ctx || this.ctx.state === 'closed') {
       this.ctx = new AudioContext();
@@ -380,49 +390,68 @@ export class MetronomeEngine {
       const measureIndex = this.nextSubdivIndex % this.subdivsPerMeasure;
       const entry = this.subdivGrid[measureIndex];
 
+      const isCountIn = this.countInRemaining > 0;
+
       if (entry) {
-        const isSilent = this.isInSilentBar() || !!entry.silent;
-        const channelVolume = this.volumes[entry.subdivision];
-        const channelMuted = this.mutedChannels.has(entry.subdivision);
-        const perBeatVol = this.perBeatVolumes[measureIndex] ?? 1.0;
+        if (isCountIn) {
+          if (entry.isGroupStart) {
+            const sampleId = `beat-${entry.groupIndex + 1}`;
+            this.scheduleCountInVoice(sampleId, audioTime, subdivDur);
 
-        if (!isSilent && channelVolume > 0 && !channelMuted && perBeatVol > 0) {
-          const voiceMutedForChannel = this.channelVoiceMutes.has(entry.subdivision);
-          const clickMutedForChannel = this.channelClickMutes.has(entry.subdivision);
-          const drumMutedForChannel = this.channelDrumMutes.has(entry.subdivision);
+            const beatNum = entry.groupIndex + 1;
+            const delay = Math.max(0, (audioTime - now) * 1000);
+            this.scheduler.scheduleCallback(delay, () => {
+              this.countInBeatCb?.(beatNum, this.countInTotalBeats);
+            });
+          }
+        } else {
+          const isSilent = this.isInSilentBar() || !!entry.silent;
+          const channelVolume = this.volumes[entry.subdivision];
+          const channelMuted = this.mutedChannels.has(entry.subdivision);
+          const perBeatVol = this.perBeatVolumes[measureIndex] ?? 1.0;
 
-          if (entry.sampleId && this.voiceGain > 0 && !voiceMutedForChannel) {
-            this.scheduleVoiceSample(entry.sampleId, audioTime, entry.subdivision, subdivDur, perBeatVol);
-          }
-          if (this.clickGain > 0 && !clickMutedForChannel) {
-            this.scheduleClick(audioTime, entry.subdivision, channelVolume * perBeatVol, subdivDur);
-          }
-          if (this.drumGain > 0 && !drumMutedForChannel) {
-            this.scheduleDrum(audioTime, entry.subdivision, channelVolume * perBeatVol, subdivDur);
-          }
-        }
+          if (!isSilent && channelVolume > 0 && !channelMuted && perBeatVol > 0) {
+            const voiceMutedForChannel = this.channelVoiceMutes.has(entry.subdivision);
+            const clickMutedForChannel = this.channelClickMutes.has(entry.subdivision);
+            const drumMutedForChannel = this.channelDrumMutes.has(entry.subdivision);
 
-        if (entry.subdivision === 'accent' || entry.subdivision === 'quarter') {
-          this._scheduledBeatTimes.push(audioTime);
-          if (this._scheduledBeatTimes.length > 200) {
-            this._scheduledBeatTimes = this._scheduledBeatTimes.slice(-100);
+            if (entry.sampleId && this.voiceGain > 0 && !voiceMutedForChannel) {
+              const isBeatVoice = entry.subdivision === 'accent' || entry.subdivision === 'quarter';
+              if (isBeatVoice || subdivDur >= VOICE_SUBDIV_MIN_DUR) {
+                this.scheduleVoiceSample(entry.sampleId, audioTime, entry.subdivision, subdivDur, perBeatVol);
+              }
+            }
+            if (this.clickGain > 0 && !clickMutedForChannel) {
+              this.scheduleClick(audioTime, entry.subdivision, channelVolume * perBeatVol, subdivDur);
+            }
+            if (this.drumGain > 0 && !drumMutedForChannel) {
+              this.scheduleDrum(audioTime, entry.subdivision, channelVolume * perBeatVol, subdivDur);
+            }
           }
-        }
 
-        if (this.beatCallback) {
-          const measure = this.measuresPlayed;
-          const evt: BeatEvent = {
-            beatIndex: entry.beatIndex,
-            measureBeat: entry.measureBeat,
-            measure,
-            subdivision: entry.subdivision,
-            isGroupStart: entry.isGroupStart,
-            groupIndex: entry.groupIndex,
-            audioTime,
-            isSilent,
-          };
-          const delay = Math.max(0, (audioTime - now) * 1000);
-          this.scheduler.scheduleCallback(delay, () => this.beatCallback?.(evt));
+          if (entry.subdivision === 'accent' || entry.subdivision === 'quarter') {
+            this._scheduledBeatTimes.push(audioTime);
+            if (this._scheduledBeatTimes.length > 200) {
+              this._scheduledBeatTimes = this._scheduledBeatTimes.slice(-100);
+            }
+          }
+
+          if (this.beatCallback) {
+            const measure = this.measuresPlayed;
+            const isSilent = this.isInSilentBar() || !!entry.silent;
+            const evt: BeatEvent = {
+              beatIndex: entry.beatIndex,
+              measureBeat: entry.measureBeat,
+              measure,
+              subdivision: entry.subdivision,
+              isGroupStart: entry.isGroupStart,
+              groupIndex: entry.groupIndex,
+              audioTime,
+              isSilent,
+            };
+            const delay = Math.max(0, (audioTime - now) * 1000);
+            this.scheduler.scheduleCallback(delay, () => this.beatCallback?.(evt));
+          }
         }
       }
 
@@ -431,6 +460,15 @@ export class MetronomeEngine {
 
       if (this.nextSubdivIndex % this.subdivsPerMeasure === 0) {
         this.measuresPlayed++;
+        if (isCountIn) {
+          this.countInRemaining--;
+          if (this.countInRemaining === 0) {
+            const delay = Math.max(0, (audioTime + subdivDur - now) * 1000);
+            this.scheduler.scheduleCallback(delay, () => {
+              this.countInCompleteCb?.();
+            });
+          }
+        }
       }
     }
   };
@@ -463,22 +501,32 @@ export class MetronomeEngine {
     const sampleDur = buffer.duration;
     const maxPlayDur = subdivDur * 0.92;
     if (sampleDur > maxPlayDur && maxPlayDur > 0.03) {
-      source.playbackRate.value = Math.min(sampleDur / maxPlayDur, 1.3);
+      source.playbackRate.value = Math.min(sampleDur / maxPlayDur, 2.0);
     }
 
-    if (perBeatVol < 1.0) {
-      const perBeatGain = this.ctx.createGain();
-      perBeatGain.gain.value = perBeatVol;
-      source.connect(perBeatGain);
-      perBeatGain.connect(gainNode);
-    } else {
-      source.connect(gainNode);
+    const rate = source.playbackRate.value;
+    const rateCompensation = rate > 1.05 ? Math.min(Math.sqrt(rate), 1.5) : 1;
+    const vol = perBeatVol * rateCompensation;
+
+    const gain = this.ctx.createGain();
+    const t = Math.max(audioTime, this.ctx.currentTime);
+    gain.gain.setValueAtTime(vol, t);
+
+    const effectiveDur = sampleDur / rate;
+    if (effectiveDur > maxPlayDur) {
+      const fadeStart = t + Math.max(0, maxPlayDur - 0.015);
+      gain.gain.setValueAtTime(vol, fadeStart);
+      gain.gain.linearRampToValueAtTime(0, t + maxPlayDur);
     }
+
+    source.connect(gain);
+    gain.connect(gainNode);
 
     this.scheduler.trackSource(source);
-    const startAt = Math.max(audioTime, this.ctx.currentTime);
-    source.start(startAt);
-    source.stop(startAt + maxPlayDur);
+    source.start(t);
+    if (effectiveDur > maxPlayDur) {
+      source.stop(t + maxPlayDur);
+    }
   }
 
   private scheduleClick(
@@ -550,6 +598,46 @@ export class MetronomeEngine {
     this.scheduler.trackSource(source);
     source.start(t);
     if (buffer.duration > maxPlayDur) {
+      source.stop(t + maxPlayDur);
+    }
+  }
+
+  /**
+   * Schedule a voice sample for the count-in, connected directly to
+   * the audio destination so it plays regardless of user gain settings.
+   */
+  private scheduleCountInVoice(sampleId: string, audioTime: number, subdivDur: number): void {
+    if (!this.ctx) return;
+    const buffer = this.voicePack.getSample(sampleId);
+    if (!buffer) return;
+
+    const source = this.ctx.createBufferSource();
+    source.buffer = buffer;
+
+    const maxPlayDur = subdivDur * 0.92;
+    if (buffer.duration > maxPlayDur && maxPlayDur > 0.03) {
+      source.playbackRate.value = Math.min(buffer.duration / maxPlayDur, 2.0);
+    }
+
+    const rate = source.playbackRate.value;
+    const rateCompensation = rate > 1.05 ? Math.min(Math.sqrt(rate), 1.5) : 1;
+
+    const gain = this.ctx.createGain();
+    const t = Math.max(audioTime, this.ctx.currentTime);
+    gain.gain.setValueAtTime(rateCompensation, t);
+
+    const effectiveDur = buffer.duration / rate;
+    if (effectiveDur > maxPlayDur) {
+      const fadeStart = t + Math.max(0, maxPlayDur - 0.015);
+      gain.gain.setValueAtTime(rateCompensation, fadeStart);
+      gain.gain.linearRampToValueAtTime(0, t + maxPlayDur);
+    }
+
+    source.connect(gain);
+    gain.connect(this.ctx.destination);
+    this.scheduler.trackSource(source);
+    source.start(t);
+    if (effectiveDur > maxPlayDur) {
       source.stop(t + maxPlayDur);
     }
   }

@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useRef } from 'react';
 import Popover from '@mui/material/Popover';
+import Tooltip from '@mui/material/Tooltip';
 import type { TimeSignature } from '../../shared/rhythm/types';
 import {
   parseBeatGrouping,
@@ -28,6 +29,27 @@ const PRESETS: Array<{ num: number; den: number; label: string; grouping?: strin
 
 const NUMERATORS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15];
 const DENOMINATORS = [4, 8];
+
+const TOOLTIP_SX = {
+  tooltip: {
+    sx: {
+      fontFamily: 'var(--pulse-mono)',
+      fontSize: '0.75rem',
+      bgcolor: 'var(--pulse-surface)',
+      color: 'var(--pulse-text)',
+      border: '1px solid var(--pulse-accent)',
+      borderRadius: 0,
+      padding: '8px 12px',
+      maxWidth: 240,
+      lineHeight: 1.5,
+    },
+  },
+  arrow: {
+    sx: {
+      color: 'var(--pulse-accent)',
+    },
+  },
+};
 
 const PICKER_PAPER_SX = {
   bgcolor: 'var(--pulse-bg)',
@@ -199,14 +221,18 @@ export function TimeSignatureControl({
             onChange={(e) => handleGroupingChange(e.target.value)}
             aria-label="Beat grouping"
           />
-          <button className="pulse-info-trigger" type="button" aria-label="Grouping info">
-            ?
-            <span className="pulse-info-tooltip">
-              Split the measure into accent groups. For example, enter &quot;3+2&quot; for a 5/8 feel,
-              or &quot;3+3+2&quot; for an Afro-Cuban 8/8 pattern. The numbers must add up to the
-              time signature numerator.
-            </span>
-          </button>
+          <Tooltip
+            title={
+              `Compound rhythms (6/8, 9/8, 12/8) group into sets of 3 eighth notes by default, e.g. 12/8 = 3+3+3+3.\n` +
+              `Asymmetric rhythms (5/8, 7/8, 11/8) can have different groupings, e.g. 7/8 = 3+2+2 or 2+2+3.\n` +
+              `The numbers must add up to the time signature numerator.`
+            }
+            arrow
+            placement="top"
+            slotProps={TOOLTIP_SX}
+          >
+            <button className="pulse-info-trigger" type="button" aria-label="Grouping info">?</button>
+          </Tooltip>
         </div>
       )}
     </div>

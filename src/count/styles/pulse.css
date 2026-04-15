@@ -53,6 +53,14 @@ body {
   color: var(--pulse-accent);
   margin: 0;
 }
+.pulse-title-btn {
+  all: unset;
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+  user-select: none;
+}
 
 .pulse-header-actions {
   display: flex;
@@ -393,32 +401,10 @@ body {
   flex-shrink: 0;
   position: relative;
 }
-.pulse-info-trigger:hover {
+.pulse-info-trigger:hover,
+.pulse-info-trigger:focus {
   border-color: var(--pulse-accent);
   color: var(--pulse-accent);
-}
-.pulse-info-tooltip {
-  display: none;
-  position: absolute;
-  right: 0;
-  top: 100%;
-  margin-top: 6px;
-  background: var(--pulse-surface);
-  border: 1px solid var(--pulse-accent);
-  color: var(--pulse-text);
-  font-family: var(--pulse-mono);
-  font-size: 0.75rem;
-  font-weight: 400;
-  padding: 10px 12px;
-  width: 220px;
-  line-height: 1.4;
-  z-index: 10;
-  white-space: normal;
-  text-align: left;
-}
-.pulse-info-trigger:hover .pulse-info-tooltip,
-.pulse-info-trigger:focus .pulse-info-tooltip {
-  display: block;
 }
 
 /* ---- Beat Display (Pro Metronome-style vertical bars) ---- */
@@ -607,15 +593,19 @@ body {
 }
 .pulse-sound-toggles {
   display: flex;
+  align-items: center;
   gap: 4px;
 }
 .pulse-sound-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
   font-family: var(--pulse-mono);
   font-size: 0.7rem;
   letter-spacing: 0.1em;
-  padding: 5px 12px;
-  width: 90px;
-  text-align: center;
+  padding: 5px 10px;
+  min-width: 90px;
   box-sizing: border-box;
   border: 1px solid var(--pulse-border);
   background: transparent;
@@ -629,6 +619,25 @@ body {
 .pulse-sound-toggle:hover {
   color: var(--pulse-text);
   border-color: var(--pulse-text);
+}
+
+.pulse-tempo-hint {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1.5px solid var(--pulse-accent);
+  color: var(--pulse-accent);
+  font-size: 0.6rem;
+  font-weight: 700;
+  font-family: var(--pulse-mono);
+  line-height: 1;
+  padding: 0;
+  cursor: help;
+  flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 .pulse-voice-mode-toggle {
@@ -1080,6 +1089,118 @@ body {
   background: transparent;
   color: var(--pulse-warn);
   cursor: pointer;
+}
+
+/* ---- Count-In Easter Egg ---- */
+.pulse-title-letter {
+  display: inline-block;
+}
+.pulse-title.is-counting-in .pulse-title-letter {
+  animation: title-bounce 0.4s ease-out both;
+}
+.pulse-title.is-resting .pulse-title-letter {
+  animation: title-wobble 0.6s ease-in-out both;
+}
+@keyframes title-bounce {
+  0% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-8px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+@keyframes title-wobble {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-2px) rotate(-2deg);
+  }
+  75% {
+    transform: translateY(1px) rotate(1.5deg);
+  }
+}
+
+.pulse-countin-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: countin-fade-in 0.2s ease-out both;
+}
+.pulse-countin-overlay.is-exiting {
+  animation: countin-fade-out 0.3s ease-in both;
+}
+@keyframes countin-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes countin-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.pulse-countin-beat {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pulse-countin-number {
+  font-family: var(--pulse-mono);
+  font-size: clamp(6rem, 20vw, 14rem);
+  font-weight: 700;
+  color: var(--pulse-accent);
+  animation: countin-number-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes countin-number-pop {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.pulse-countin-ripple {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  border: 2px solid var(--pulse-accent);
+  border-radius: 50%;
+  animation: countin-ripple 0.8s ease-out both;
+  pointer-events: none;
+}
+@keyframes countin-ripple {
+  0% {
+    transform: scale(0.5);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
 }
 
 /* ---- Responsive ---- */
