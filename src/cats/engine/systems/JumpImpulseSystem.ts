@@ -56,14 +56,10 @@ export const JumpImpulseSystem: System = (world) => {
           world.jumpStates.set(id, jumpState);
           
           try {
-            const dbg = (world as unknown as { __debug?: Record<string, unknown> }).__debug || {};
             const key = String(id);
             const finalVy = world.velocities.get(id)?.vy || target;
-            (dbg as { lastImpulse?: Record<string, { vy: number; ts: number; isDoubleJump: boolean }> }).lastImpulse = {
-              ...(dbg as { lastImpulse?: Record<string, { vy: number; ts: number; isDoubleJump: boolean }> }).lastImpulse,
-              [key]: { vy: finalVy, ts: performance.now(), isDoubleJump },
-            };
-            (world as unknown as { __debug?: Record<string, unknown> }).__debug = dbg;
+            const prev = (world.debug.lastImpulse ?? {}) as Record<string, unknown>;
+            world.debug.lastImpulse = { ...prev, [key]: { vy: finalVy, ts: performance.now(), isDoubleJump } };
           } catch {
             // no-op
           }

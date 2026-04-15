@@ -3,6 +3,8 @@ import ReactDOM from 'react-dom';
 import { useStableCallback } from './hooks/useStableCallback';
 
 import { useMouseTracking } from './hooks/useMouseTracking';
+import { usePlayerControls } from './hooks/usePlayerControls';
+import { useInitialSpawn } from './hooks/useInitialSpawn';
 
 // Analytics types
 declare global {
@@ -15,7 +17,7 @@ declare global {
 // CatInteractionManager is used via Actor
 import WorldRenderer from './components/game/WorldRenderer';
 import { useWorld } from './context/useWorld';
-import { spawnCat, spawnFurniture, spawnCouch, spawnCounter, spawnDoor, spawnWindow, spawnRug, spawnLamp, spawnBookshelf, spawnPainting } from './engine/spawn';
+// spawn functions now used via useInitialSpawn hook
 
 import Heart from './components/game/Heart';
 import Zzz from './components/game/Zzz';
@@ -96,11 +98,18 @@ function App() {
   const [isResizing, setIsResizing] = useState(false);
   
   // Cat positioning for world-aware movement (new coordinate system)
-  const { renderData, jumpOnce, } = useCatPositionNew();
-  // Use ECS world coordinates for camera follow to avoid feedback jitter
+  const { renderData } = useCatPositionNew();
+  // ECS world coordinates for manual centering & debug snapshots.
+  // Throttled to ~5fps to avoid re-rendering the entire App tree every frame;
+  // the smooth camera follow in World2D reads directly from ECS.
   const [ecsCatWorldPosition, setEcsCatWorldPosition] = useState<{ x: number; y: number; z: number }>(() => renderData.worldCoordinates);
   useEffect(() => {
+    let lastUpdate = 0;
+    const THROTTLE_MS = 200;
     const onTick = () => {
+      const now = performance.now();
+      if (now - lastUpdate < THROTTLE_MS) return;
+      lastUpdate = now;
       try {
         const existing = Array.from(world.renderables.entries()).find(([, r]) => r.kind === 'cat');
         const catId = existing?.[0];
@@ -459,63 +468,7 @@ function App() {
     return () => document.removeEventListener('keydown', handleEscapeKey);
   }, [playerControlMode, wandMode]);
 
-  // Player control keyboard handler
-  useEffect(() => {
-    if (!playerControlMode) return;
-    const worldRef = { current: world };
-    const held = { left: false, right: false, up: false, down: false };
-    const onDown = (e: KeyboardEvent) => {
-      const prev = { ...held };
-      if (e.key === 'ArrowLeft') held.left = true;
-      if (e.key === 'ArrowRight') held.right = true;
-      if (e.key === 'ArrowUp') held.up = true;
-      if (e.key === 'ArrowDown') held.down = true;
-      if (e.code === 'Space' || e.key === ' ') {
-        e.preventDefault();
-        // In run mode, trigger ECS jump intent directly on the cat entity
-        const existing = Array.from(worldRef.current.renderables.entries()).find(([, r]) => r.kind === 'cat');
-        const catId = existing?.[0];
-        if (catId) {
-          const intent = worldRef.current.catIntents.get(catId) || {};
-          intent.happyJump = true;
-          intent.jumpType = 'powerful'; // Run mode uses powerful jumps
-          worldRef.current.catIntents.set(catId, intent);
-        }
-      }
-      if (prev.left !== held.left || prev.right !== held.right || prev.up !== held.up || prev.down !== held.down) {
-        // Mark activity to prevent sleep while running
-        resetInactivityTimer();
-      }
-    };
-    const onUp = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft') held.left = false;
-      if (e.key === 'ArrowRight') held.right = false;
-      if (e.key === 'ArrowUp') held.up = false;
-      if (e.key === 'ArrowDown') held.down = false;
-    };
-    // Continuous RAF-based movement
-    let raf: number | null = null;
-    // Keep a RAF loop to continuously feed input to ECS; no time integration here
-    const step = () => {
-        // Always allow lateral motion; ECS handles vertical independently
-        const dx = (held.right ? 1 : 0) - (held.left ? 1 : 0);
-        const dz = (held.down ? 1 : 0) - (held.up ? 1 : 0);
-        const existing = Array.from(worldRef.current.renderables.entries()).find(([, r]) => r.kind === 'cat');
-        const catId = existing?.[0];
-        if (catId) {
-          worldRef.current.runControls.set(catId, { moveX: dx, moveZ: dz });
-        }
-      raf = requestAnimationFrame(step);
-    };
-    raf = requestAnimationFrame(step);
-    window.addEventListener('keydown', onDown);
-    window.addEventListener('keyup', onUp);
-    return () => {
-      if (raf) cancelAnimationFrame(raf);
-      window.removeEventListener('keydown', onDown);
-      window.removeEventListener('keyup', onUp);
-    };
-  }, [playerControlMode, jumpOnce, resetInactivityTimer, world]);
+  usePlayerControls(world, playerControlMode, resetInactivityTimer);
 
   // Global key handler for wand mode toggle
   useEffect(() => {
@@ -609,6 +562,8 @@ function App() {
 
   // Notification system completely removed - replaced with Events system
 
+  useInitialSpawn(world, catPosition);
+
   const viewportProviderProps = useMemo(() => ({
     floorRatio,
     isResizing
@@ -670,42 +625,6 @@ function App() {
       )}
 
       {/* World entities (ECS-driven) */}
-      {(() => {
-        // Ensure a cat entity exists (spawn once)
-        const existing = Array.from(world.renderables.entries()).find(([, r]) => r.kind === 'cat');
-        let catId = existing?.[0];
-        if (!catId) {
-          catId = spawnCat(world, { x: catPosition.x, y: catPosition.y, z: catPosition.z });
-          // Seed demo furniture pieces once with proper placement
-          const existingFurniture = Array.from(world.renderables.entries()).find(([, r]) => r.kind === 'furniture');
-          if (!existingFurniture) {
-
-            
-            // Wall-mounted furniture (no floor space) - wall is at z=0, using 0-1400 coordinate system
-            // Y coordinates: 0-400 logical wall height, where 0=floor level, 400=ceiling
-            spawnWindow(world, { x: 600, y: 180, z: 0 }); // On back wall, mid-height (45% up wall) - spans 285 to 915
-            spawnDoor(world, { x: 850, y: 0, z: 0 }); // On back wall, at floor level - spans 730 to 970
-            spawnPainting(world, { x: 200, y: 180, z: 0 }, 'cat', 'large'); // Mid-height on wall (45% up) - spans 95 to 305
-            spawnPainting(world, { x: 1000, y: 160, z: 0 }, 'abstract', 'small'); // Slightly lower (40% up wall) - spans 925 to 1075
-            
-            // Wall-mounted floor furniture (against wall, with shadows) - using 0-1400 coordinate system
-            spawnCounter(world, { x: 1200, y: 0, z: 0 }); // Mounted to wall at z=0 - spans 1000 to 1400
-            spawnBookshelf(world, { x: 160, y: 0, z: 0 }); // Mounted to wall at z=0 - spans 0 to 320
-            
-            // Free-standing floor furniture - distributed across 0-1400 coordinate system
-            spawnFurniture(world, { x: 900, y: 0, z: 300 }); // Scratching post - mid room
-            spawnCouch(world, { x: 400, y: 0, z: 200 }); // Couch - closer to front
-            // Use fixed rug position for consistent scaling with other furniture
-            // Position rug very close to front to prevent wall collision at extreme scaling
-            // Rug visual depth (VB_H=100) extends backward in perspective view
-            // Position rug at fixed location that aligns with cat's default position
-            // This ensures consistent relative positioning during viewport scaling
-            // while allowing the cat to move freely around the world
-            spawnRug(world, { x: 700, y: 0, z: 720 }); // Fixed position matching cat's default
-            spawnLamp(world, { x: 750, y: 0, z: 250 }); // Lamp - mid room
-          }
-        }
-        return (
           <WorldRenderer
             economy={economy}
             mouseState={mouseState}
@@ -725,14 +644,11 @@ function App() {
               isSleeping,
               isDrowsy,
               onLoveGained,
-              // onCatPositionUpdate removed - Z's use direct DOM queries
               trackSpecialAction,
               heartSpawningService,
               eventLoggers: { logPetting, logPouncing, logHappy, logNoseClick, logEarClick, logCheekPet },
             }}
           />
-        );
-      })()}
         </World2D>
       </div>
 

@@ -14,26 +14,24 @@ export const RunControlSystem = (world: World, _dtMs: number): void => {
     const useBoost = ctrl.boost === true || isPounceActive;
     const speedX = (ctrl.moveX || 0) * (useBoost ? pounceBoostRunSpeedX : baseRunSpeedX);
     const speedZ = (ctrl.moveZ || 0) * 220;
-    // Drive velocities so MovementSystem integrates consistently (and other systems can modify vy/vz)
     const v = world.velocities.get(id) || { vx: 0, vy: 0, vz: 0 };
-    const nextVx = speedX;
+    // Smooth deceleration: when no input, damp vx to avoid a jarring snap-stop
+    const nextVx = speedX !== 0 ? speedX : (Math.abs(v.vx) < 10 ? 0 : v.vx * 0.75);
     let nextVz = v.vz;
     if (ctrl.moveZ && ctrl.moveZ !== 0) {
       nextVz = speedZ;
     } else if (!isPounceActive) {
-      // Damp any residual Z drift when not pouncing and no Z input
-      nextVz = Math.abs(v.vz) < 1 ? 0 : v.vz * 0.85;
+      // Aggressively damp residual Z drift to prevent scale/z-index oscillation
+      nextVz = Math.abs(v.vz) < 5 ? 0 : v.vz * 0.7;
     }
     world.velocities.set(id, { vx: nextVx, vy: v.vy, vz: nextVz });
     // Publish debug speeds for DevPanel visibility
     if (speedX !== 0 || speedZ !== 0) {
       try {
-        const dbg = (world as unknown as { __debug?: Record<string, unknown> }).__debug || {};
-        (dbg as { runSpeedX?: number }).runSpeedX = speedX;
-        (dbg as { runSpeedZ?: number }).runSpeedZ = speedZ;
-        (dbg as { runSpeed?: number }).runSpeed = Math.hypot(speedX, speedZ);
-        (dbg as { lastRunInput?: unknown }).lastRunInput = { id, moveX: ctrl.moveX || 0, moveZ: ctrl.moveZ || 0, ts: performance.now() };
-        (world as unknown as { __debug?: Record<string, unknown> }).__debug = dbg;
+        world.debug.runSpeedX = speedX;
+        world.debug.runSpeedZ = speedZ;
+        world.debug.runSpeed = Math.hypot(speedX, speedZ);
+        world.debug.lastRunInput = { id, moveX: ctrl.moveX || 0, moveZ: ctrl.moveZ || 0, ts: performance.now() };
       } catch {
         // no-op
       }

@@ -219,13 +219,19 @@ export const useCatSystem = ({
     // Create animation controller
     animationControllerRef.current = new CatAnimationController(animationEvents);
 
+    // Wire up onChange so timer-driven state changes (e.g. isHappyPlaying
+    // clearing after 1-3s) trigger a React re-read via forceUpdate.
+    animationControllerRef.current.setOnChange(() => {
+      forceUpdateRef.current?.();
+    });
+
     // Sync initial state from game state manager (trust its wandMode state)
     const initialState = catGameStateRef.current.getState();
     setCatState(initialState);
     setAnimationState(animationControllerRef.current.getReactState());
 
     return () => {
-      // Cleanup
+      animationControllerRef.current?.setOnChange(null);
       animationControllerRef.current?.cleanup();
     };
   // Clean initialization effect - we intentionally avoid isSleeping/isDrowsy/pounceToPosition

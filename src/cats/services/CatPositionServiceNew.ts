@@ -18,6 +18,7 @@ export class CatPositionServiceNew {
   private worldCoordinates: CatCoordinates;
   private isAnimating: boolean = false;
   private animationId: number | null = null;
+  lastCoords: { x: number; z: number } | null = null;
   
   constructor() {
     // Initialize cat at default position

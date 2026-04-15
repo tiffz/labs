@@ -45,14 +45,12 @@ class CatCoordinateSystem {
   public viewportHeight: number = 600; // Made public for door height calculation
   private sidePanelWidth: number = 450;
   private sidePanelHeight: number = 0;
-  // Camera is applied by the world view (World2D) via CSS transform.
-  // Keep here for backward compatibility but ignore in projection to avoid double-applying camera.
   private cameraX: number = 0;
   
-  // Event emitter for coordinate system changes
   private listeners: Set<() => void> = new Set();
   private notificationPending: boolean = false;
   private batchedUpdatePending: boolean = false;
+  private cachedFloorDimensions: FloorDimensions | null = null;
   
   constructor() {
     this.updateViewport();
@@ -87,7 +85,7 @@ class CatCoordinateSystem {
       this.viewportWidth = Math.max(0, Math.round(window.innerWidth - this.sidePanelWidth));
       this.viewportHeight = Math.max(0, Math.round(window.innerHeight - this.sidePanelHeight));
     }
-    // Only notify listeners if not in a batch (batch will notify once at the end)
+    this.cachedFloorDimensions = null;
     if (!this.batchedUpdatePending) {
       this.notifyListeners();
     }
@@ -131,8 +129,7 @@ class CatCoordinateSystem {
    */
   setSidePanelWidth(width: number): void {
     this.sidePanelWidth = width;
-    // Don't automatically call updateViewport() to avoid render loops
-    // Caller should explicitly call updateViewport() when ready
+    this.cachedFloorDimensions = null;
   }
 
   /**
@@ -140,49 +137,42 @@ class CatCoordinateSystem {
    */
   setSidePanelHeight(height: number): void {
     this.sidePanelHeight = height;
-    // Don't automatically call updateViewport() to avoid render loops
-    // Caller should explicitly call updateViewport() when ready
+    this.cachedFloorDimensions = null;
   }
   
   /**
    * Get current floor dimensions with fixed height and uniform world scaling
    */
   getFloorDimensions(): FloorDimensions {
-    // FIXED FLOOR HEIGHT: Always 40% of viewport height
+    if (this.cachedFloorDimensions) return this.cachedFloorDimensions;
+
     const FIXED_FLOOR_RATIO = 0.4;
     const floorScreenHeight = this.viewportHeight * FIXED_FLOOR_RATIO;
     
-    // INTELLIGENT WORLD SCALING: Consider both width and height constraints
-    // Base dimensions for 1.0 scale (landscape orientation)
-    const BASE_FLOOR_HEIGHT = 320; // 40% of 800px viewport
+    const BASE_FLOOR_HEIGHT = 320;
     const BASE_VIEWPORT_WIDTH = 800;
     
-    // Detect layout mode based on aspect ratio
     const aspectRatio = this.viewportWidth / this.viewportHeight;
-    const isColumnView = aspectRatio < 0.8; // Narrow, tall layout
+    const isColumnView = aspectRatio < 0.8;
     
     let worldScale: number;
     
     if (isColumnView) {
-      // In column view: Scale based on width to use vertical space efficiently
-      // Allow objects to be larger to take advantage of vertical space
       const widthScale = this.viewportWidth / BASE_VIEWPORT_WIDTH;
-      // Clamp to reasonable range - don't make things too small or too large
       worldScale = Math.max(0.6, Math.min(1.2, widthScale));
     } else {
-      // In landscape view: Scale based on floor height as before
       worldScale = floorScreenHeight / BASE_FLOOR_HEIGHT;
     }
     
-    const dimensions = {
+    this.cachedFloorDimensions = {
       screenWidth: this.viewportWidth,
       screenHeight: floorScreenHeight,
       worldWidth: CatCoordinateSystem.WORLD_WIDTH,
       worldDepth: CatCoordinateSystem.WORLD_DEPTH,
-      worldScale: worldScale // Intelligent scaling for different layouts
+      worldScale,
     };
     
-    return dimensions;
+    return this.cachedFloorDimensions;
   }
   
   /**

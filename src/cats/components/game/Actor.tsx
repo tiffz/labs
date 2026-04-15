@@ -52,17 +52,34 @@ interface ActorProps {
   };
 }
 
-// For now Actor simply looks up the transform and renders the existing CatInteractionManager.
-// This keeps behavior stable while we migrate to full ECS usage.
+const REACT_UPDATE_INTERVAL = 6; // re-render every 6th tick (~10fps) for walking detection etc.
+
 const Actor: React.FC<ActorProps> = ({ entityId, economy, mouseState, ui }) => {
   const world = useWorld();
-  // Ensure we re-read the latest transform each world tick
+  const transformRef = React.useRef<{ x: number; y: number; z: number } | null>(null);
+  const tickCountRef = React.useRef(0);
   const [, force] = React.useState(0);
+
+  // Throttle React re-renders to ~10fps. CatView's direct DOM mutation handles
+  // smooth 60fps position updates; React only needs to update for walking
+  // detection and other low-frequency state in CatInteractionManager.
+  // Z-layer changes always trigger an immediate re-render for stacking correctness.
   React.useEffect(() => {
-    const onTick = () => force((v) => (v + 1) & 0x3fffffff);
+    const onTick = () => {
+      const t = world.transforms.get(entityId);
+      if (!t) return;
+      tickCountRef.current++;
+      const prev = transformRef.current;
+      const zLayerChanged = prev && Math.floor(prev.z) !== Math.floor(t.z);
+      const shouldUpdate = !prev || zLayerChanged || tickCountRef.current % REACT_UPDATE_INTERVAL === 0;
+      if (shouldUpdate && (!prev || prev.x !== t.x || prev.y !== t.y || prev.z !== t.z)) {
+        transformRef.current = { x: t.x, y: t.y, z: t.z };
+        force((v) => (v + 1) & 0x3fffffff);
+      }
+    };
     window.addEventListener('world-tick', onTick);
     return () => window.removeEventListener('world-tick', onTick);
-  }, []);
+  }, [world, entityId]);
 
   // Bridge UI pounce start to a small upward impulse in ECS for visible hop
   const prevPouncingRef = React.useRef<boolean>(ui.isPouncing);

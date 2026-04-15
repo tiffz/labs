@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import BottomControlSvgIcon from '../../icons/BottomControlSvgIcon';
 import { catCoordinateSystem } from '../../services/CatCoordinateSystem';
 import { ViewportProvider } from '../../context/ViewportContext';
+import { useWorld } from '../../context/useWorld';
 
 interface World2DProps {
   children: React.ReactNode;
@@ -25,32 +26,26 @@ const World2D: React.FC<World2DProps> = ({
   playerControlMode = false,
   onToggleRunMode,
 }) => {
+  const world = useWorld();
   const worldWidth = 1400; // Match CatCoordinateSystem.WORLD_WIDTH
-  
-  // Camera system: Math-based approach that works for any world/viewport size
-  // Principle: Camera X can range from 0 to (worldWidth - viewportWidth) 
-  // This ensures the viewport never shows past the world edge
   
   // Viewport width calculation (for centering UI elements, not limiting camera)
   const getSidePanelWidth = () => {
-    if (typeof window === 'undefined') return 450; // Default for SSR
+    if (typeof window === 'undefined') return 450;
     const width = window.innerWidth;
-    if (width <= 768) return 0; // Column layout - panel is at bottom, doesn't affect viewport width
-    if (width <= 1024) return 350; // Small screens - side panel but narrower
-    if (width <= 1200) return 400; // Medium screens
-    return 450; // Large screens (default)
+    if (width <= 768) return 0;
+    if (width <= 1024) return 350;
+    if (width <= 1200) return 400;
+    return 450;
   };
 
-  // Viewport height calculation (for column layout when panel is at bottom)
   const getSidePanelHeight = () => {
-    if (typeof window === 'undefined') return 0; // Default for SSR
+    if (typeof window === 'undefined') return 0;
     const width = window.innerWidth;
     if (width <= 768) {
-      // Column layout - panel takes 60vh, game gets remaining 40vh
-      // So we need to subtract 60vh from total height to get game viewport
       return Math.round(window.innerHeight * 0.6);
     }
-    return 0; // Horizontal layout - panel doesn't affect viewport height
+    return 0;
   };
   
   const [sidePanelWidth, setSidePanelWidth] = useState(getSidePanelWidth);
@@ -60,75 +55,80 @@ const World2D: React.FC<World2DProps> = ({
       const currentSidePanelWidth = getSidePanelWidth();
       return window.innerWidth - currentSidePanelWidth;
     }
-    return 800; // Default for SSR
+    return 800;
   });
   const [, setViewportHeight] = useState(() => {
     if (typeof window !== 'undefined') {
       const currentSidePanelHeight = getSidePanelHeight();
       return window.innerHeight - currentSidePanelHeight;
     }
-    return 600; // Default for SSR
+    return 600;
   });
-  
-  // Start with a default camera position - will be properly centered in useEffect
-  const [cameraX, setCameraX] = useState(0);
-  
-  // Sync camera position with coordinate system
-  useEffect(() => {
-    catCoordinateSystem.setCameraX(cameraX);
-  }, [cameraX]);
+
+  // Camera position is stored as a ref (NOT React state) to allow direct DOM mutation
+  // on the same frame as cat position updates, eliminating the 1-frame desync that
+  // causes jitter when using React state for the camera transform.
+  const cameraXRef = useRef(0);
+  const worldContentRef = useRef<HTMLDivElement | null>(null);
+  const cameraTargetRef = useRef(0);
   
   // Track when manual centering is happening to prevent camera following override
   const isManualCenteringRef = useRef(false);
   const centerTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Derived value: re-render counter for button disabled state (low-frequency)
+  const [, forceButtonUpdate] = useState(0);
   
-  // Calculate camera limits dynamically based on current viewport and world scaling
-  const getMaxCameraX = () => {
+  const getMaxCameraX = useCallback(() => {
     try {
       const floor = catCoordinateSystem.getFloorDimensions();
       const scaledWorldWidth = worldWidth * floor.worldScale;
       return Math.max(0, scaledWorldWidth - viewportWidth);
     } catch {
-      // Fallback for non-DOM contexts
       return Math.max(0, worldWidth - viewportWidth);
     }
-  };
-  const maxCameraX = getMaxCameraX();
+  }, [viewportWidth]);
+
+  const maxCameraXRef = useRef(getMaxCameraX());
+  maxCameraXRef.current = getMaxCameraX();
+
+  // Apply camera position to DOM and coordinate system in a single call.
+  // This is the ONLY path that visually moves the camera.
+  const applyCameraX = useCallback((newX: number) => {
+    cameraXRef.current = newX;
+    if (worldContentRef.current) {
+      worldContentRef.current.style.transform = `translate3d(-${newX.toFixed(2)}px, 0, 0)`;
+    }
+    catCoordinateSystem.setCameraX(newX);
+  }, []);
   
   const [isResizing, setIsResizing] = useState(false);
   const resizeDebounceRef = React.useRef<number | null>(null);
   
-  // Track floor ratio for responsive scaling
   const [floorRatio, setFloorRatio] = useState(() => {
     try {
       return catCoordinateSystem.getFloorRatio();
     } catch {
-      return 0.4; // Default fallback
+      return 0.4;
     }
   });
 
-  // Single source of truth for centering the cat (defined early to avoid initialization issues)
   const centerCatOnScreen = useCallback(() => {
-    // Prevent camera following from overriding manual centering
     isManualCenteringRef.current = true;
     
-    // Use catToScreen to get the cat's screen position (this handles all scaling correctly)
     const catScreenPos = catCoordinateSystem.catToScreen({
       x: catWorldPosition.x,
       y: catWorldPosition.y ?? 0,
       z: catWorldPosition.z ?? (1200 * 0.6)
     });
     
-    // Camera position to center the cat
     const idealCameraX = catScreenPos.x - viewportWidth / 2;
-    const clampedCameraX = Math.max(0, Math.min(maxCameraX, idealCameraX));
+    const clampedCameraX = Math.max(0, Math.min(maxCameraXRef.current, idealCameraX));
     
-    // Center the cat on screen
+    applyCameraX(clampedCameraX);
+    cameraTargetRef.current = clampedCameraX;
+    forceButtonUpdate(v => (v + 1) & 0x3fffffff);
     
-    setCameraX(clampedCameraX);
-    
-    // Re-enable camera following after a short delay
-    // Clear any existing timeout to prevent multiple timers
     if (centerTimeoutRef.current) {
       clearTimeout(centerTimeoutRef.current);
     }
@@ -136,15 +136,13 @@ const World2D: React.FC<World2DProps> = ({
       isManualCenteringRef.current = false;
       centerTimeoutRef.current = null;
     }, 500);
-  }, [catWorldPosition.x, catWorldPosition.y, catWorldPosition.z, viewportWidth, maxCameraX]);
+  }, [catWorldPosition.x, catWorldPosition.y, catWorldPosition.z, viewportWidth, applyCameraX]);
   
-
 
   // Update viewport dimensions on window resize and recenter camera
   useEffect(() => {
     const handleResize = () => {
       setIsResizing(true);
-      // const prevViewportWidth = viewportWidth; // Removed unused variable
       const newSidePanelWidth = getSidePanelWidth();
       const newSidePanelHeight = getSidePanelHeight();
       const newViewportWidth = window.innerWidth - newSidePanelWidth;
@@ -154,43 +152,36 @@ const World2D: React.FC<World2DProps> = ({
       setViewportWidth(newViewportWidth);
       setViewportHeight(newViewportHeight);
       
-      // Update coordinate system and floor ratio immediately for responsive positioning
       try {
         catCoordinateSystem.batchUpdate(() => {
           catCoordinateSystem.setSidePanelWidth(newSidePanelWidth);
           catCoordinateSystem.setSidePanelHeight(newSidePanelHeight);
           catCoordinateSystem.updateViewport();
         });
-        // Update floor ratio for responsive scaling - this is crucial for floor positioning
         setFloorRatio(catCoordinateSystem.getFloorRatio());
       } catch {
         // ignore in non-DOM contexts
       }
       
-      // Always recenter camera when viewport changes to ensure consistent positioning
-      // This is necessary because world scaling can change based on height, affecting camera calculations
       if (resizeDebounceRef.current) {
         window.clearTimeout(resizeDebounceRef.current);
       }
       
       resizeDebounceRef.current = window.setTimeout(() => {
-        centerCatOnScreen(); // Always recenter to ensure consistency
+        centerCatOnScreen();
         setIsResizing(false);
         resizeDebounceRef.current = null;
       }, 200);
     };
     
     if (typeof window !== 'undefined') {
-      // Force recalculation on initial mount to ensure consistency
       handleResize();
-      // Also proactively push latest viewport to the coordinate system
       try {
         catCoordinateSystem.batchUpdate(() => {
           catCoordinateSystem.setSidePanelWidth(getSidePanelWidth());
           catCoordinateSystem.setSidePanelHeight(getSidePanelHeight());
           catCoordinateSystem.updateViewport();
         });
-        // Update floor ratio for responsive scaling
         setFloorRatio(catCoordinateSystem.getFloorRatio());
       } catch {
         // ignore in non-DOM contexts
@@ -199,71 +190,78 @@ const World2D: React.FC<World2DProps> = ({
       window.addEventListener('resize', handleResize);
       return () => window.removeEventListener('resize', handleResize);
     }
-  // Static mount effect: handles initial and window-driven resizes with its own listeners
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Center on initial mount; avoid doing it during active resize
+  // Keep a ref to centerCatOnScreen so the mount/resize effect doesn't
+  // re-fire when catWorldPosition changes (which would block the camera lerp).
+  const centerCatOnScreenRef = useRef(centerCatOnScreen);
+  centerCatOnScreenRef.current = centerCatOnScreen;
+
+  // Center on initial mount and when viewport dimensions actually change
   useEffect(() => {
     if (viewportWidth > 0 && !isResizing) {
-      centerCatOnScreen();
+      centerCatOnScreenRef.current();
     }
-  }, [viewportWidth, isResizing, centerCatOnScreen]);
+  }, [viewportWidth, isResizing]);
 
-  // Also recenter when window is resized (prevents shaking during drag-resize)
+  // Smooth camera follow via world-tick with lerp interpolation.
+  // Reads cat position directly from ECS transforms (not props) so the camera
+  // and cat DOM updates happen synchronously in the same world-tick frame.
   useEffect(() => {
-    const recenterOnResize = () => {
-      // Do nothing here; handled in handleResize to avoid X-axis jitter on height-only resizes
+    if (!enableCameraFollow) return;
+    let cachedCatId: string | null = null;
+    const onTick = () => {
+      if (isManualCenteringRef.current) return;
+
+      // Cache the cat entity ID to avoid Map scan every frame
+      if (!cachedCatId || !world.transforms.get(cachedCatId)) {
+        const existing = Array.from(world.renderables.entries()).find(([, r]) => r.kind === 'cat');
+        cachedCatId = existing?.[0] ?? null;
+      }
+      if (!cachedCatId) return;
+      const t = world.transforms.get(cachedCatId);
+      if (!t) return;
+
+      const catScreenPos = catCoordinateSystem.catToScreen({ x: t.x, y: t.y, z: t.z });
+      const maxCam = maxCameraXRef.current;
+      const vpWidth = viewportWidth;
+      cameraTargetRef.current = Math.max(0, Math.min(maxCam, catScreenPos.x - vpWidth / 2));
+
+      const LERP = 0.15;
+      const diff = cameraTargetRef.current - cameraXRef.current;
+      if (Math.abs(diff) < 0.5) {
+        if (cameraXRef.current !== cameraTargetRef.current) {
+          applyCameraX(cameraTargetRef.current);
+        }
+      } else {
+        applyCameraX(cameraXRef.current + diff * LERP);
+      }
     };
-    window.addEventListener('resize', recenterOnResize);
-    return () => window.removeEventListener('resize', recenterOnResize);
-  }, []);
+    window.addEventListener('world-tick', onTick);
+    return () => window.removeEventListener('world-tick', onTick);
+  }, [enableCameraFollow, viewportWidth, world, applyCameraX]);
 
-  // Enable camera following for shadow system to work correctly
-  useEffect(() => {
-    if (enableCameraFollow && !isManualCenteringRef.current) {
-      // Use catToScreen to get the cat's screen position (same as manual centering)
-      const catScreenPos = catCoordinateSystem.catToScreen({
-        x: catWorldPosition.x,
-        y: catWorldPosition.y ?? 0,
-        z: catWorldPosition.z ?? (1200 * 0.6)
-      });
-      
-      // Camera position to center the cat
-      const targetCameraX = Math.max(0, Math.min(maxCameraX, catScreenPos.x - viewportWidth / 2));
-      
-      console.log('[CAMERA DEBUG] Auto follow:', {
-        catWorldPos: catWorldPosition.x,
-        catScreenX: catScreenPos.x,
-        viewportWidth,
-        maxCameraX,
-        targetCameraX,
-        currentCameraX: cameraX
-      });
-      
-      setCameraX(targetCameraX); // Immediate follow for now - can add smooth interpolation later
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [catWorldPosition.x, catWorldPosition.y, catWorldPosition.z, enableCameraFollow, maxCameraX, viewportWidth]); // Intentionally omitting cameraX to prevent infinite loops
-
-  // Handle keyboard controls
+  // Handle keyboard controls (camera pan when NOT in player control mode)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (playerControlMode) return; // Disable camera hotkeys when controlling the cat
+      if (playerControlMode) return;
       const panSpeed = 60;
+      const maxCam = maxCameraXRef.current;
       if (e.key === 'ArrowLeft') {
-        setCameraX(prev => Math.max(0, prev - panSpeed));
+        applyCameraX(Math.max(0, cameraXRef.current - panSpeed));
+        forceButtonUpdate(v => (v + 1) & 0x3fffffff);
       } else if (e.key === 'ArrowRight') {
-        setCameraX(prev => Math.min(maxCameraX, prev + panSpeed));
+        applyCameraX(Math.min(maxCam, cameraXRef.current + panSpeed));
+        forceButtonUpdate(v => (v + 1) & 0x3fffffff);
       } else if (e.key === 'ArrowUp') {
-        // Center cat with Up arrow - use same logic as center button
         centerCatOnScreen();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [maxCameraX, catWorldPosition.x, viewportWidth, playerControlMode, centerCatOnScreen]);
+  }, [playerControlMode, centerCatOnScreen, applyCameraX]);
 
   // Cleanup timers on unmount
   useEffect(() => {
@@ -277,26 +275,14 @@ const World2D: React.FC<World2DProps> = ({
     };
   }, []);
 
-  // Initialize coordinate system viewport and sync camera position
-  // Note: updateViewport() is only called in useEffect when dimensions actually change
-  // Setting panel dimensions without triggering updates to prevent render loops
   catCoordinateSystem.setSidePanelWidth(sidePanelWidth);
   catCoordinateSystem.setSidePanelHeight(sidePanelHeight);
-  
 
-
-  useEffect(() => {
-    catCoordinateSystem.setCameraX(cameraX);
-  }, [cameraX]);
-  
   // Update coordinate system only when panel dimensions change
   useEffect(() => {
     catCoordinateSystem.updateViewport();
   }, [sidePanelWidth, sidePanelHeight]);
 
-  // centerCatOnScreen is defined earlier in the component to avoid initialization issues
-  
-  // Alias for the button
   const recenterCamera = centerCatOnScreen;
 
   return (
@@ -306,15 +292,21 @@ const World2D: React.FC<World2DProps> = ({
         <>
           <button 
             className="pan-button pan-left"
-            onClick={() => setCameraX(prev => Math.max(0, prev - 100))}
-            disabled={cameraX === 0}
+            onClick={() => {
+              applyCameraX(Math.max(0, cameraXRef.current - 100));
+              forceButtonUpdate(v => (v + 1) & 0x3fffffff);
+            }}
+            disabled={cameraXRef.current === 0}
           >
             ←
           </button>
           <button 
             className="pan-button pan-right"
-            onClick={() => setCameraX(prev => Math.min(maxCameraX, prev + 100))}
-            disabled={cameraX >= maxCameraX}
+            onClick={() => {
+              applyCameraX(Math.min(maxCameraXRef.current, cameraXRef.current + 100));
+              forceButtonUpdate(v => (v + 1) & 0x3fffffff);
+            }}
+            disabled={cameraXRef.current >= maxCameraXRef.current}
           >
             →
           </button>
@@ -354,15 +346,16 @@ const World2D: React.FC<World2DProps> = ({
       </div>
 
       {/* World Viewport */}
-      <div className="world-viewport" data-camera-x={cameraX}>
+      <div className="world-viewport">
         <div 
+          ref={worldContentRef}
           className="world-content" 
           style={{ 
-            transform: `translateX(-${cameraX}px)`,
+            transform: `translate3d(-${cameraXRef.current}px, 0, 0)`,
             '--floor-ratio': floorRatio.toString(),
             '--floor-height': `${Math.round(catCoordinateSystem.getFloorDimensions().screenHeight)}px`,
           } as React.CSSProperties}
-          data-resizing={isResizing ? 'true' : 'false'}
+          
         >
           {/* Sky/Background */}
           <div className="world-background">

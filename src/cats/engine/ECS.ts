@@ -86,6 +86,29 @@ class EntityStore {
   }
 }
 
+export interface WorldDebug {
+  dtMs?: number;
+  walking?: boolean;
+  walkingProp?: boolean;
+  domWalkingClass?: boolean;
+  domBobAnimating?: boolean;
+  domBobAnimationName?: string | null;
+  domBobPlayState?: string | null;
+  domBobAmpl?: string;
+  bobAmpl?: string;
+  walkSpeedInst?: number;
+  walkSpeedComp?: number;
+  walkSpeedScreen?: number;
+  cameraTx?: number;
+  runSpeedX?: number;
+  runSpeedZ?: number;
+  runSpeed?: number;
+  lastRunInput?: unknown;
+  pouncePhase?: unknown;
+  lastImpulse?: unknown;
+  [key: string]: unknown;
+}
+
 export class World {
   readonly entities = new EntityStore();
   readonly transforms = new ComponentStore<Transform3>();
@@ -98,6 +121,7 @@ export class World {
   readonly catAnims = new ComponentStore<CatAnim>();
   readonly runControls = new ComponentStore<RunControlIntent>();
   readonly jumpStates = new ComponentStore<JumpState>();
+  debug: WorldDebug = {};
 }
 
 // System runner

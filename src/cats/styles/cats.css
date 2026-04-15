@@ -4339,12 +4339,7 @@ body {
   position: relative;
   width: 1600px; /* Fixed world width */
   height: 100%;
-  transition: transform 0.2s ease-out;
-}
-
-/* During active resize, turn off transition to avoid 'shake' */
-.world-content[data-resizing='true'] {
-  transition: none !important;
+  will-change: transform;
 }
 
 /* Camera Controls */

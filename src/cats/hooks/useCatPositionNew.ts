@@ -30,12 +30,12 @@ export const useCatPositionNew = () => {
     setRenderData(newRenderData);
     try {
       const current = catPositionServiceNew.getCatCoordinates();
-      const prev = (catPositionServiceNew as unknown as { _lastCoords?: { x: number; z: number } })._lastCoords || current;
+      const prev = catPositionServiceNew.lastCoords || current;
       const vx = current.x - prev.x;
       const vz = current.z - prev.z;
       setVelocity({ vx, vz });
       setIsMoving(Math.hypot(vx, vz) > 0.1);
-      (catPositionServiceNew as unknown as { _lastCoords?: { x: number; z: number } })._lastCoords = { x: current.x, z: current.z };
+      catPositionServiceNew.lastCoords = { x: current.x, z: current.z };
     } catch {
       // ignore velocity calc errors
     }

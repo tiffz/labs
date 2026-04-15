@@ -943,5 +943,10 @@ export default defineConfig({
       }
       return true; // Print other logs
     },
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: ['src/**/e2e/**', 'src/**/*.test.{ts,tsx}', 'src/**/test/**', 'e2e/**'],
+    },
   },
 });

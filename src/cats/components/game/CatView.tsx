@@ -5,6 +5,7 @@ import { layerForZ } from '../rendering/zLayer';
 import { isOverlayEnabled } from '../debug/overlay';
 import { MassBoxOverlay } from '../debug/overlay.tsx';
 import { useWorld } from '../../context/useWorld';
+import type { EntityId } from '../../engine';
 
 type WorldCoords = { x: number; y: number; z: number };
 
@@ -14,6 +15,7 @@ interface CatViewProps {
   catRef: React.RefObject<SVGSVGElement>;
   catElement: React.ReactElement;
   walking?: boolean;
+  entityId?: EntityId;
 }
 
 // Visual constants (kept here to isolate math)
@@ -25,10 +27,11 @@ const MASS_RIGHT = 162;
 const MASS_TOP = 62;
 const MASS_BOTTOM = 182;
 
-const CatView: React.FC<CatViewProps> = ({ catWorldCoords, shadowCenterOverride, catRef, catElement, walking }) => {
+const CatView: React.FC<CatViewProps> = ({ catWorldCoords, shadowCenterOverride, catRef, catElement, walking, entityId }) => {
   const lastMassBoxVBRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
   const innerRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const shadowContainerRef = useRef<HTMLDivElement | null>(null);
   const bobberRef = useRef<HTMLDivElement | null>(null);
   const world = useWorld();
   const overlayEnabled = isOverlayEnabled();
@@ -124,6 +127,54 @@ const CatView: React.FC<CatViewProps> = ({ catWorldCoords, shadowCenterOverride,
     };
   }, [catWorldCoords, shadowCenterOverride, catRef]);
 
+  // Direct DOM mutation on every world-tick for smooth frame-by-frame updates.
+  // Uses sub-pixel precision throughout to avoid 1px snapping jitter.
+  useEffect(() => {
+    if (!entityId) return;
+    const onTick = () => {
+      const t = world.transforms.get(entityId);
+      if (!t) return;
+      const shadow = world.shadows.get(entityId);
+      const catScreen = catCoordinateSystem.catToScreen(t);
+      const ground = catCoordinateSystem.catToScreen({ x: t.x, y: 0, z: t.z });
+      const baselineY = shadow?.centerY ?? ground.y;
+      const massVB = lastMassBoxVBRef.current || { x: MASS_LEFT, y: MASS_TOP, width: MASS_RIGHT - MASS_LEFT, height: MASS_BOTTOM - MASS_TOP };
+      const shadowLayout = computeShadowLayout({ x: catScreen.x, y: baselineY, scale: ground.scale }, t.y);
+      const widthPx = 300 * ground.scale;
+      const leftPx = catScreen.x - widthPx / 2;
+      const heightPx = widthPx * (VIEWBOX_H / VIEWBOX_W);
+      const footGapPx = ((VIEWBOX_H - FEET_LINE_Y) / VIEWBOX_H) * heightPx;
+      const rawJumpDelta = Math.max(0, catScreen.y - ground.y);
+      const jumpDeltaPx = rawJumpDelta * catScreen.scale;
+      const cBottom = Math.max(0, baselineY);
+      const scaleY = heightPx / VIEWBOX_H;
+      const deltaMassFromFeetPx = (FEET_LINE_Y - (massVB.y + massVB.height)) * scaleY;
+      const massBottomOffsetPx = footGapPx + deltaMassFromFeetPx;
+      const innerTranslateY = massBottomOffsetPx - jumpDeltaPx;
+      const massCenterOffsetPx = (((massVB.x + massVB.width / 2) - VIEWBOX_W / 2) / VIEWBOX_W) * widthPx;
+      const sLeft = catScreen.x - shadowLayout.width / 2 + massCenterOffsetPx;
+      const sBottom = baselineY - shadowLayout.height / 2;
+
+      if (containerRef.current) {
+        containerRef.current.style.transform = `translate3d(${leftPx.toFixed(2)}px, 0, 0)`;
+        containerRef.current.style.bottom = `${cBottom.toFixed(2)}px`;
+        containerRef.current.style.width = `${widthPx.toFixed(2)}px`;
+        containerRef.current.style.zIndex = String(layerForZ(t.z, 'entity'));
+      }
+      if (innerRef.current) {
+        innerRef.current.style.transform = `translate3d(0, ${innerTranslateY.toFixed(2)}px, 0)`;
+      }
+      if (shadowContainerRef.current) {
+        shadowContainerRef.current.style.transform = `translate3d(${sLeft.toFixed(2)}px, 0, 0)`;
+        shadowContainerRef.current.style.bottom = `${sBottom.toFixed(2)}px`;
+        shadowContainerRef.current.style.width = `${shadowLayout.width.toFixed(2)}px`;
+        shadowContainerRef.current.style.zIndex = String(layerForZ(t.z, 'shadow'));
+      }
+    };
+    window.addEventListener('world-tick', onTick);
+    return () => window.removeEventListener('world-tick', onTick);
+  }, [entityId, world]);
+
   const shadowStyle: React.CSSProperties = {
     position: 'absolute',
     left: '0px',
@@ -146,8 +197,10 @@ const CatView: React.FC<CatViewProps> = ({ catWorldCoords, shadowCenterOverride,
     willChange: 'transform',
   };
 
-  // Publish screen-space speed for HUD (does not control visuals)
+  // Dev-only: publish screen-space speed and DOM animation state for HUD/DevPanel.
+  // Merged into a single world-tick listener (no separate RAF chain in production).
   useEffect(() => {
+    if (!import.meta.env.DEV) return;
     const onTick = () => {
       const now = performance.now();
       const rect = containerRef.current?.getBoundingClientRect?.();
@@ -155,7 +208,6 @@ const CatView: React.FC<CatViewProps> = ({ catWorldCoords, shadowCenterOverride,
       const prevX = prevScreenCenterXRef.current ?? centerX;
       const dtMs = Math.max(1, now - (lastTickTsRef.current || now));
       let dx = Math.abs(centerX - prevX);
-      // Tighten idle clamp: ignore tiny motion up to 0.99px per tick to avoid camera/layout noise
       if (dx < 0.99) dx = 0;
       const inst = (dx / dtMs) * 1000;
       const alpha = 0.25;
@@ -163,58 +215,31 @@ const CatView: React.FC<CatViewProps> = ({ catWorldCoords, shadowCenterOverride,
       prevScreenCenterXRef.current = centerX;
       lastTickTsRef.current = now;
       try {
-        const dbg = (world as unknown as { __debug?: Record<string, unknown> }).__debug || {};
-        (dbg as { walkSpeedInst?: number }).walkSpeedInst = inst;
-        (dbg as { walkSpeedScreen?: number }).walkSpeedScreen = smoothedScreenSpeedRef.current;
-        (world as unknown as { __debug?: Record<string, unknown> }).__debug = dbg;
+        world.debug.walkSpeedInst = inst;
+        world.debug.walkSpeedScreen = smoothedScreenSpeedRef.current;
+        const innerEl = innerRef.current;
+        const bobEl = bobberRef.current;
+        const cs = bobEl ? getComputedStyle(bobEl) : null;
+        const domWalking = Boolean(innerEl?.classList.contains('walking'));
+        world.debug.walkingProp = Boolean(walking);
+        world.debug.domWalkingClass = domWalking;
+        world.debug.domBobAnimating = Boolean(cs && cs.animationName && cs.animationName !== 'none');
+        world.debug.domBobAnimationName = cs?.animationName || null;
+        world.debug.domBobPlayState = cs?.animationPlayState || null;
+        const ampl = bobEl ? getComputedStyle(bobEl).getPropertyValue('--bob-ampl') : '';
+        world.debug.domBobAmpl = ampl?.trim?.() || '';
+        world.debug.walking = domWalking;
       } catch {
         // no-op
       }
     };
     window.addEventListener('world-tick', onTick);
     return () => window.removeEventListener('world-tick', onTick);
-  }, [world]);
-
-  // Debug: mirror DOM animation/class state into ECS debug for snapshot parity
-  useEffect(() => {
-    let raf: number | null = null;
-    const step = () => {
-      try {
-        const dbg = (world as unknown as { __debug?: Record<string, unknown> }).__debug || {};
-        const innerEl = innerRef.current;
-        const bobEl = bobberRef.current;
-        const cs = bobEl ? getComputedStyle(bobEl) : null;
-        const domWalking = Boolean(innerEl?.classList.contains('walking'));
-        (dbg as { walkingProp?: boolean }).walkingProp = Boolean(walking);
-        (dbg as { domWalkingClass?: boolean }).domWalkingClass = domWalking;
-        (dbg as { domBobAnimating?: boolean }).domBobAnimating = Boolean(cs && cs.animationName && cs.animationName !== 'none');
-        (dbg as { domBobAnimationName?: string | null }).domBobAnimationName = cs?.animationName || null;
-        (dbg as { domBobPlayState?: string | null }).domBobPlayState = cs?.animationPlayState || null;
-        const ampl = bobEl ? getComputedStyle(bobEl).getPropertyValue('--bob-ampl') : '';
-        (dbg as { domBobAmpl?: string }).domBobAmpl = ampl?.trim?.() || '';
-        // Prefer DOM walking as the single source of truth for HUD display
-        (dbg as { walking?: boolean }).walking = domWalking;
-        (world as unknown as { __debug?: Record<string, unknown> }).__debug = dbg;
-      } catch {
-        // no-op
-      }
-      if (typeof requestAnimationFrame !== 'undefined') {
-        raf = requestAnimationFrame(step);
-      }
-    };
-    if (typeof requestAnimationFrame !== 'undefined') {
-      raf = requestAnimationFrame(step);
-    }
-    return () => { 
-      if (raf && typeof cancelAnimationFrame !== 'undefined') {
-        cancelAnimationFrame(raf);
-      }
-    };
   }, [world, walking]);
 
   return (
     <>
-      <div className="cat-shadow-container" style={shadowStyle}>
+      <div ref={shadowContainerRef} className="cat-shadow-container" style={shadowStyle}>
         <div
           className="cat-shadow-simple"
           style={{

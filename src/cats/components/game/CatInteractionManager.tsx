@@ -267,104 +267,42 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
     return () => window.removeEventListener('world-tick', onTick);
   }, [entityId, world, animFlags]);
 
-  // Drive a lightweight re-render each world tick so position updates are reflected even when anim flags are unchanged
-  const [, forceRender] = useState(0);
+  // Position-driven re-renders are now handled by Actor's change-detection
+  // and CatView's direct DOM mutation -- no per-tick force-render needed here.
+
+  // Walking detection driven by world-tick, reading ECS transforms directly
+  // to avoid dependency on React re-render frequency.
+  const isWalkingUIRef = useRef(isWalkingUI);
+  isWalkingUIRef.current = isWalkingUI;
+  const isJumpingRef = useRef(isJumping);
+  isJumpingRef.current = isJumping;
+  const isPouncingRef = useRef(isPouncing);
+  isPouncingRef.current = isPouncing;
+
   useEffect(() => {
-    const onTick = () => forceRender((v) => (v + 1) & 0x3fffffff);
-    window.addEventListener('world-tick', onTick);
-    return () => window.removeEventListener('world-tick', onTick);
-  }, []);
-
-  // Walking UI latch based on smoothed horizontal speed to avoid hotspot jitter
-  useEffect(() => {
-    // If cat is airborne or pouncing, ensure walking anim is off
-    if (catWorldCoords.y > 1 || isPouncing) {
-      if (isWalkingUI) setIsWalkingUI(false);
-      walkingPrevWorldXRef.current = catWorldCoords.x;
-      walkingPrevWorldZRef.current = catWorldCoords.z;
-      walkingLastTsRef.current = performance.now();
-      return;
-    }
-    const now = performance.now();
-    const currentX = Math.round(catWorldCoords.x);
-    const currentZ = Math.round(catWorldCoords.z);
-    const prevX = walkingPrevWorldXRef.current ?? currentX;
-    const prevZ = walkingPrevWorldZRef.current ?? currentZ;
-    const prevTs = walkingLastTsRef.current ?? now;
-    const dt = Math.max(1, now - prevTs); // ms
-    const dx = Math.abs(currentX - prevX);
-    const dz = Math.abs(currentZ - prevZ);
-    // Calculate combined movement speed (both X and Z axes)
-    const totalDistance = Math.sqrt(dx * dx + dz * dz);
-    const instSpeed = (totalDistance / dt) * 1000; // px/sec
-    // Exponential smoothing
-    const alpha = 0.25;
-    filteredSpeedRef.current = filteredSpeedRef.current * (1 - alpha) + instSpeed * alpha;
-
-    // Thresholds with hysteresis
-    const START_SPEED = 18; // px/sec (raise to reduce false positives)
-    const STOP_SPEED = 6;   // px/sec
-    const INACTIVITY_MS = 260;
-    const WARMUP_MS = 400;
-    const NEAR_ZERO_SPEED = 0.8; // px/sec
-    const NEAR_ZERO_TIMEOUT_MS = 300;
-
-    // Warmup window: do not enable walking immediately after mount
-    const allowWalking = now - (walkingWarmupStartRef.current || now) > WARMUP_MS;
-
-    if (allowWalking && !isJumping && filteredSpeedRef.current >= START_SPEED) {
-      walkingLastActiveRef.current = now;
-      if (!isWalkingUI) setIsWalkingUI(true);
-    } else if (
-      isWalkingUI &&
-      filteredSpeedRef.current <= STOP_SPEED &&
-      now - walkingLastActiveRef.current > INACTIVITY_MS
-    ) {
-      setIsWalkingUI(false);
-      filteredSpeedRef.current = 0;
-    }
-
-    // Hard idle clamp: if instantaneous speed is near zero for a short window, force walking off
-    if (instSpeed <= NEAR_ZERO_SPEED) {
-      if (!lastNearZeroRef.current) lastNearZeroRef.current = now;
-      if (now - (lastNearZeroRef.current || now) > NEAR_ZERO_TIMEOUT_MS) {
-        if (isWalkingUI) setIsWalkingUI(false);
-        filteredSpeedRef.current = 0;
-      }
-    } else {
-      lastNearZeroRef.current = now;
-    }
-
-    // Quantize input X and Z before diff to avoid half-px flickers tripping the latch
-    walkingPrevWorldXRef.current = currentX;
-    walkingPrevWorldZRef.current = currentZ;
-    walkingLastTsRef.current = now;
-    // Debug is written from CatView to keep parity with DOM
-  }, [catWorldCoords.x, catWorldCoords.z, catWorldCoords.y, isPouncing, isJumping, isWalkingUI]);
-
-  // Ensure walking state decays even when X stops changing by ticking on world updates
-  useEffect(() => {
+    if (!entityId) return;
     const onWorldTick = () => {
-      // If cat is airborne or pouncing, ensure walking anim is off
-      if (catWorldCoords.y > 1 || isPouncing) {
-        if (isWalkingUI) setIsWalkingUI(false);
-        walkingPrevWorldXRef.current = catWorldCoords.x;
-        walkingPrevWorldZRef.current = catWorldCoords.z;
+      const t = world.transforms.get(entityId);
+      if (!t) return;
+
+      if (t.y > 1 || isPouncingRef.current) {
+        if (isWalkingUIRef.current) setIsWalkingUI(false);
+        walkingPrevWorldXRef.current = Math.round(t.x);
+        walkingPrevWorldZRef.current = Math.round(t.z);
         walkingLastTsRef.current = performance.now();
         return;
       }
       const now = performance.now();
-      const currentX = Math.round(catWorldCoords.x);
-      const currentZ = Math.round(catWorldCoords.z);
+      const currentX = Math.round(t.x);
+      const currentZ = Math.round(t.z);
       const prevX = walkingPrevWorldXRef.current ?? currentX;
       const prevZ = walkingPrevWorldZRef.current ?? currentZ;
       const prevTs = walkingLastTsRef.current ?? now;
-      const dt = Math.max(1, now - prevTs); // ms
+      const dt = Math.max(1, now - prevTs);
       const dx = Math.abs(currentX - prevX);
       const dz = Math.abs(currentZ - prevZ);
-      // Calculate combined movement speed (both X and Z axes)
       const totalDistance = Math.sqrt(dx * dx + dz * dz);
-      const instSpeed = (totalDistance / dt) * 1000; // px/sec
+      const instSpeed = (totalDistance / dt) * 1000;
       const alpha = 0.25;
       filteredSpeedRef.current = filteredSpeedRef.current * (1 - alpha) + instSpeed * alpha;
 
@@ -376,8 +314,8 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
       const NEAR_ZERO_TIMEOUT_MS = 300;
       const allowWalking = now - (walkingWarmupStartRef.current || now) > WARMUP_MS;
 
-      let nextWalking = isWalkingUI;
-      if (allowWalking && !isJumping && filteredSpeedRef.current >= START_SPEED) {
+      let nextWalking = isWalkingUIRef.current;
+      if (allowWalking && !isJumpingRef.current && filteredSpeedRef.current >= START_SPEED) {
         walkingLastActiveRef.current = now;
         nextWalking = true;
       } else if (
@@ -397,7 +335,7 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
         lastNearZeroRef.current = now;
       }
 
-      if (nextWalking !== isWalkingUI) {
+      if (nextWalking !== isWalkingUIRef.current) {
         setIsWalkingUI(nextWalking);
         if (!nextWalking) filteredSpeedRef.current = 0;
       }
@@ -405,18 +343,16 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
       walkingPrevWorldXRef.current = currentX;
       walkingPrevWorldZRef.current = currentZ;
       walkingLastTsRef.current = now;
-      // Debug is written from CatView to keep parity with DOM
     };
     window.addEventListener('world-tick', onWorldTick);
     return () => {
       window.removeEventListener('world-tick', onWorldTick);
       if (debugRafRef.current) cancelAnimationFrame(debugRafRef.current);
       debugRafRef.current = null;
-      // Clear any pending timeouts
       timeoutRefs.current.forEach(clearTimeout);
       timeoutRefs.current = [];
     };
-  }, [catWorldCoords.x, catWorldCoords.y, catWorldCoords.z, isPouncing, isJumping, isWalkingUI, world]);
+  }, [entityId, world]);
 
   const handleCatClick = (event: React.MouseEvent) => {
     // Only block clicks when actively pouncing in wand mode
@@ -931,6 +867,7 @@ const CatInteractionManager: React.FC<CatInteractionManagerProps> = ({
 
               return (
                 <CatView
+                  entityId={entityId}
                   catWorldCoords={catWorldCoords}
                   shadowCenterOverride={shadowCenterOverride}
                   catRef={catRef as React.RefObject<SVGSVGElement>}

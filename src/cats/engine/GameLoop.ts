@@ -16,22 +16,16 @@ export class GameLoop {
     const tick = (ts: number) => {
       if (this.lastTs == null) this.lastTs = ts;
       const dtMsRaw = ts - this.lastTs;
-      // Clamp overall delta for stability but allow 60fps
-      const dtClamped = Math.min(25, dtMsRaw); // Back to 25ms for smooth 60fps
+      const dtClamped = Math.min(25, dtMsRaw);
       this.lastTs = ts;
-      (this.world as unknown as { __debug?: Record<string, unknown> }).__debug = {
-        ...(this.world as unknown as { __debug?: Record<string, unknown> }).__debug,
-        dtMs: Math.round(dtClamped),
-      };
-      
-      // Run systems directly without sub-stepping for better performance
+      this.world.debug.dtMs = Math.round(dtClamped);
+
       this.systems.step(this.world, dtClamped);
-      // Publish simplified ECS debug snapshot for HUD/DevPanel
+
       if (typeof window !== 'undefined') {
         try {
-          const dbg = (this.world as unknown as { __debug?: Record<string, unknown> }).__debug || {};
+          const dbg = this.world.debug;
           const out = {
-            // Prefer DOM walking when available
             walking: typeof dbg.domWalkingClass === 'boolean' ? dbg.domWalkingClass : (typeof dbg.walking === 'boolean' ? dbg.walking : false),
             bobAmpl: typeof dbg.bobAmpl === 'string' ? dbg.bobAmpl : (typeof dbg.domBobAmpl === 'string' ? dbg.domBobAmpl : ''),
             speedCompInst: typeof dbg.walkSpeedInst === 'number' ? dbg.walkSpeedInst : (typeof dbg.walkSpeedComp === 'number' ? dbg.walkSpeedComp : 0),
@@ -46,7 +40,6 @@ export class GameLoop {
           // ignore debug publishing errors
         }
       }
-      // Notify React layer that world has advanced (for lightweight subscriptions)
       if (typeof window !== 'undefined') {
         try {
           window.dispatchEvent(new CustomEvent('world-tick'));

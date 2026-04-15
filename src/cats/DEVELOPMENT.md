@@ -34,7 +34,7 @@ Migrate from React-only state management to Entity-Component-System architecture
 
 - Smile/ear/tail animations now ECS-driven
 - Happy jump and pounce hop are ECS-driven
-- World loop uses fixed sub-steps (10ms) for smooth physics
+- World loop runs systems each frame with dt clamped to 25ms for stability
 - Cat X clamps to world width, preventing edge teleports
 
 ## 2D World Coordinate System
@@ -49,8 +49,8 @@ Creates immersive environment similar to "Night in the Woods" with proper depth 
 
 ### Implementation
 
-- `WorldCoordinateSystem.ts`: Central service managing 3D world coordinates and screen position mapping
-- Single-source projection: All projection goes through `worldToScreen()` and `getShadowPosition()`
+- `CatCoordinateSystem.ts`: Central service managing 3D world coordinates and screen position mapping
+- Single-source projection: All projection goes through `catToScreen()` and `getShadowPosition()`
 - Responsive floor: Dynamically calculates floor dimensions (40% of viewport height)
 
 ### Benefits

@@ -12,25 +12,25 @@ A 2D side-view world game where players interact with a cat to earn love and tre
 
 ## Tech Stack
 
-- React 18 + TypeScript
+- React 19 + TypeScript
 - Entity-Component-System (ECS) architecture for world state
-- Custom coordinate system for 2D world rendering
+- Custom coordinate system for 2D world rendering (`services/CatCoordinateSystem.ts`)
 - Material Design icons
 
 ## Key Files
 
 - `App.tsx` - Main application component
 - `components/game/Cat.tsx` - Cat rendering and animations
-- `components/game/World2D.tsx` - 2D world container
+- `components/game/World2D.tsx` - 2D world container with camera system
 - `hooks/useGameStateManager.ts` - Centralized state mutations
-- `systems/` - ECS systems (movement, shadows, cat behavior)
+- `engine/systems/` - ECS systems (movement, shadows, cat behavior)
 - `data/` - Pure game data (jobs, achievements, upgrades)
 
 ## Development
 
 ```bash
-npm run dev          # Start dev server
-npm test src/cats   # Run tests
+npm run dev               # Start dev server
+npx vitest run src/cats   # Run tests
 ```
 
 For detailed architecture, see `DEVELOPMENT.md`.

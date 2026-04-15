@@ -115,15 +115,11 @@ export const CatStateSystem: System = (world) => {
           nextState = 'pouncing';
           timers.set(id, { t0: performance.now(), phase: 'pounce' });
           // Pounce jump impulse is now handled by JumpImpulseSystem via Actor component
-          console.debug('[POUNCE] start', { id, vz: (world.velocities.get(id)?.vz || 0) });
+          if (import.meta.env.DEV) console.debug('[POUNCE] start', { id, vz: (world.velocities.get(id)?.vz || 0) });
           try {
-            const dbg = (world as unknown as { __debug?: Record<string, unknown> }).__debug || {};
             const key = String(id);
-            (dbg as { pouncePhase?: Record<string, string> }).pouncePhase = {
-              ...(dbg as { pouncePhase?: Record<string, string> }).pouncePhase,
-              [key]: 'pounce-start',
-            };
-            (world as unknown as { __debug?: Record<string, unknown> }).__debug = dbg;
+            const prev = (world.debug.pouncePhase ?? {}) as Record<string, string>;
+            world.debug.pouncePhase = { ...prev, [key]: 'pounce-start' };
           } catch {
             // no-op
           }
@@ -134,7 +130,7 @@ export const CatStateSystem: System = (world) => {
           nextState = 'recover';
           timers.set(id, { t0: performance.now(), phase: 'recover' });
           // No forced Z damping here; run system handles drift when not pouncing
-          console.debug('[POUNCE] recover', { id, vz: (world.velocities.get(id) || { vz: 0 }).vz });
+          if (import.meta.env.DEV) console.debug('[POUNCE] recover', { id, vz: (world.velocities.get(id) || { vz: 0 }).vz });
         }
       }
       if (cat.state === 'recover' && entry?.phase === 'recover') {
@@ -142,7 +138,7 @@ export const CatStateSystem: System = (world) => {
           nextState = 'idle';
           timers.delete(id);
           // No forced Z reset; avoid snapping
-          console.debug('[POUNCE] end', { id });
+          if (import.meta.env.DEV) console.debug('[POUNCE] end', { id });
         }
       }
 

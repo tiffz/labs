@@ -62,6 +62,7 @@ export class CatAnimationController {
   private activeTimers: Set<number> = new Set();
   private animationFrame: number | null = null;
   private heartSpawningService: HeartSpawningService;
+  private onChangeCallback: (() => void) | null = null;
 
   constructor(events: AnimationEvents) {
     this.state = {
@@ -279,10 +280,15 @@ export class CatAnimationController {
 
   // === Timer Management ===
 
+  setOnChange(callback: (() => void) | null) {
+    this.onChangeCallback = callback;
+  }
+
   private scheduleTimer(callback: () => void, delay: number): number {
     const timerId = window.setTimeout(() => {
       callback();
       this.activeTimers.delete(timerId);
+      this.onChangeCallback?.();
     }, delay);
     
     this.activeTimers.add(timerId);
