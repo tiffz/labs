@@ -1282,6 +1282,20 @@ body {
 .pulse-seo-footer {
   margin-top: 32px;
   padding-top: 20px;
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+  position: relative;
+}
+.pulse-seo-footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100vw;
+  max-width: 700px;
   border-top: 1px solid var(--pulse-border);
 }
 .pulse-seo-description {
@@ -1305,6 +1319,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  justify-content: center;
 }
 .pulse-seo-links a {
   font-family: var(--pulse-mono);

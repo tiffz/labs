@@ -539,8 +539,8 @@ export default function App() {
       >
         <div className="pulse-about-popover">
           <p>
-            A metronome that counts out loud. Instead of just clicks, you hear spoken
-            beat numbers so you can internalize the rhythm without staring at a screen.
+            A metronome that counts out loud. In addition to clicks and drum sounds,
+            Count Me In supports spoken beat numbers to help with internalizing counting.
           </p>
           <p>
             Two counting systems: <strong>1 e + a</strong> (standard Western subdivisions)
@@ -710,10 +710,8 @@ export default function App() {
       <footer className="pulse-seo-footer">
         <h2 className="pulse-sr-only">About Count Me In</h2>
         <p className="pulse-seo-description">
-          A free vocal counting metronome. Practice asymmetric rhythms like
-          the 3+3+2 (tresillo / aksak), odd meters (7/8, 5/8), swing feel, and
-          standard subdivisions with spoken beat counting, Takadimi syllables,
-          click tracks, and drum sounds.
+          Practice asymmetric rhythms and subdivisions with spoken counting,
+          Takadimi syllables, clicks, and drums.
         </p>
         <div className="pulse-seo-links-label">EXAMPLES</div>
         <nav className="pulse-seo-links" aria-label="Example configurations">

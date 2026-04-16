@@ -660,6 +660,7 @@ const App: React.FC = () => {
             />
           )}
         </div>
+
       </div>
 
       {/* Right sidebar: Note Palette (full height) */}
