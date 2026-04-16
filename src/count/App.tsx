@@ -35,12 +35,22 @@ const DEFAULT_SIXTEENTH_VOL = 0.3;
 function getInitialState() {
   const fromUrl = hasUrlParams() ? readUrlParams() : null;
   const saved = fromUrl ? null : loadLastSession();
+  const volumes = fromUrl?.volumes ?? saved?.volumes ?? { ...DEFAULT_VOLUMES };
+  const subdivisionLevel = fromUrl?.subdivisionLevel;
+
+  if (subdivisionLevel) {
+    const needsEighth = (typeof subdivisionLevel === 'number' && subdivisionLevel >= 2) || subdivisionLevel === 'swing8';
+    const needsSixteenth = subdivisionLevel === 4;
+    if (needsEighth && volumes.eighth === 0) volumes.eighth = DEFAULT_EIGHTH_VOL;
+    if (needsSixteenth && volumes.sixteenth === 0) volumes.sixteenth = DEFAULT_SIXTEENTH_VOL;
+  }
+
   return {
     bpm: fromUrl?.bpm ?? saved?.bpm ?? DEFAULT_BPM,
     timeSignature: fromUrl?.timeSignature ?? saved?.timeSignature ?? DEFAULT_TIME_SIG,
-    volumes: fromUrl?.volumes ?? saved?.volumes ?? DEFAULT_VOLUMES,
+    volumes,
     beatGrouping: fromUrl?.beatGrouping ?? saved?.beatGrouping ?? undefined,
-    subdivisionLevel: fromUrl?.subdivisionLevel,
+    subdivisionLevel,
     voiceMode: fromUrl?.voiceMode,
     voiceGain: fromUrl?.voiceGain,
     clickGain: fromUrl?.clickGain,
@@ -99,6 +109,17 @@ const POPOVER_PAPER_SX = {
   p: '14px',
 };
 
+const ABOUT_PAPER_SX = {
+  bgcolor: 'var(--pulse-bg)',
+  border: '1px solid var(--pulse-accent)',
+  borderRadius: 0,
+  boxShadow: '0 8px 24px rgba(0,0,0,0.8)',
+  maxHeight: '80vh',
+  width: 420,
+  overflowY: 'auto' as const,
+  p: '14px',
+};
+
 export default function App() {
   const initial = useRef(getInitialState()).current;
   const [bpm, setBpm] = useState(initial.bpm);
@@ -117,6 +138,9 @@ export default function App() {
   const [voiceMode, setVoiceMode] = useState<VoiceMode>(initial.voiceMode ?? 'counting');
 
   const [profileAnchor, setProfileAnchor] = useState<HTMLElement | null>(null);
+  const [aboutAnchor, setAboutAnchor] = useState<HTMLElement | null>(null);
+  const aboutHoverTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const aboutPinned = useRef(false);
   const [titleAnim, setTitleAnim] = useState<'' | 'is-counting-in' | 'is-resting'>('');
   const [showCountIn, setShowCountIn] = useState(false);
   const [countInBeat, setCountInBeat] = useState<number | null>(null);
@@ -415,23 +439,73 @@ export default function App() {
       releaseWakeLock();
       clearTimeout(titleAnimTimer.current);
       clearTimeout(countInExitTimer.current);
+      clearTimeout(aboutHoverTimer.current);
     };
   }, []);
 
+  const aboutAnchorRef = useRef(aboutAnchor);
+  aboutAnchorRef.current = aboutAnchor;
+  useEffect(() => {
+    if (!aboutAnchor || !aboutPinned.current) return;
+    const handleClickAway = (e: MouseEvent) => {
+      const target = e.target as Node;
+      const paper = document.querySelector('.pulse-about-popover');
+      if (paper?.contains(target)) return;
+      if (aboutAnchorRef.current?.contains(target)) return;
+      aboutPinned.current = false;
+      setAboutAnchor(null);
+    };
+    window.addEventListener('mousedown', handleClickAway);
+    return () => window.removeEventListener('mousedown', handleClickAway);
+  }, [aboutAnchor]);
+
   const profilesOpen = Boolean(profileAnchor);
+  const aboutOpen = Boolean(aboutAnchor);
 
   return (
     <div className="pulse-app">
       <header className="pulse-header">
-        <h1 className={`pulse-title ${titleAnim}`}>
-          <button type="button" className="pulse-title-btn" onClick={handleTitleClick}>
-            {"COUNT ME IN".split("").map((ch, i) => (
-              <span key={i} className="pulse-title-letter" style={{ animationDelay: `${i * 50}ms` }}>
-                {ch === " " ? "\u00A0" : ch}
-              </span>
-            ))}
+        <div className="pulse-title-row">
+          <h1 className={`pulse-title ${titleAnim}`}>
+            <button type="button" className="pulse-title-btn" onClick={handleTitleClick}>
+              {"COUNT ME IN".split("").map((ch, i) => (
+                <span key={i} className="pulse-title-letter" style={{ animationDelay: `${i * 50}ms` }}>
+                  {ch === " " ? "\u00A0" : ch}
+                </span>
+              ))}
+            </button>
+          </h1>
+          <button
+            className={`pulse-info-trigger ${aboutOpen ? 'is-active' : ''}`}
+            type="button"
+            aria-label="About this app"
+            aria-haspopup="true"
+            aria-expanded={aboutOpen}
+            onClick={(e) => {
+              clearTimeout(aboutHoverTimer.current);
+              if (aboutOpen) {
+                aboutPinned.current = false;
+                setAboutAnchor(null);
+              } else {
+                aboutPinned.current = true;
+                setAboutAnchor(e.currentTarget);
+              }
+            }}
+            onMouseEnter={(e) => {
+              if (aboutOpen) return;
+              const target = e.currentTarget;
+              clearTimeout(aboutHoverTimer.current);
+              aboutHoverTimer.current = setTimeout(() => setAboutAnchor(target), 200);
+            }}
+            onMouseLeave={() => {
+              if (aboutPinned.current) return;
+              clearTimeout(aboutHoverTimer.current);
+              aboutHoverTimer.current = setTimeout(() => setAboutAnchor(null), 300);
+            }}
+          >
+            ?
           </button>
-        </h1>
+        </div>
         <div className="pulse-header-actions">
           <button
             className={`pulse-header-btn ${profilesOpen ? 'is-active' : ''}`}
@@ -442,6 +516,67 @@ export default function App() {
           </button>
         </div>
       </header>
+
+      <Popover
+        open={aboutOpen}
+        anchorEl={aboutAnchor}
+        onClose={() => { aboutPinned.current = false; setAboutAnchor(null); }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        disableRestoreFocus
+        disableScrollLock
+        slotProps={{
+          root: { sx: { pointerEvents: 'none' } },
+          paper: {
+            sx: { ...ABOUT_PAPER_SX, pointerEvents: 'auto' },
+            onMouseEnter: () => clearTimeout(aboutHoverTimer.current),
+            onMouseLeave: () => {
+              if (aboutPinned.current) return;
+              aboutHoverTimer.current = setTimeout(() => setAboutAnchor(null), 300);
+            },
+          },
+        }}
+      >
+        <div className="pulse-about-popover">
+          <p>
+            A metronome that counts out loud. Instead of just clicks, you hear spoken
+            beat numbers so you can internalize the rhythm without staring at a screen.
+          </p>
+          <p>
+            Two counting systems: <strong>1 e + a</strong> (standard Western subdivisions)
+            and <strong>Takadimi</strong> (rhythmic solf&egrave;ge). Works with simple and
+            compound time signatures, custom beat groupings, and swing feel.
+          </p>
+          <div className="pulse-about-divider" />
+          <div className="pulse-about-examples-label">TRY IT</div>
+          <ul className="pulse-about-examples">
+            <li>
+              <a href="/count/?bpm=100&ts=8-8&sub=2&vm=counting&bg=3.3.2">3+3+2 in 8/8</a>
+              {' '}Afro-Cuban clave, tresillo, aksak
+            </li>
+            <li>
+              <a href="/count/?bpm=126&ts=7-8&sub=2&vm=counting&bg=2.2.3">7/8 (2+2+3)</a>
+              {' '}Balkan/Turkish, prog rock
+            </li>
+            <li>
+              <a href="/count/?bpm=80&ts=5-8&sub=2&vm=counting&bg=3.2">5/8 (3+2)</a>
+              {' '}Brubeck, Greek dance
+            </li>
+            <li>
+              <a href="/count/?bpm=80&ts=4-4&sub=4&vm=takadimi">Takadimi in 4/4</a>
+              {' '}Rhythmic solf&egrave;ge
+            </li>
+            <li>
+              <a href="/count/?bpm=108&ts=4-4&sub=swing8&vm=takadimi">Swing eighths</a>
+              {' '}Swing feel with Takadimi triplets
+            </li>
+            <li>
+              <a href="/count/?bpm=90&ts=12-8&sub=2&vm=counting">12/8 shuffle</a>
+              {' '}Blues, gospel, slow ballads
+            </li>
+          </ul>
+        </div>
+      </Popover>
 
       <Popover
         open={profilesOpen}
@@ -571,6 +706,25 @@ export default function App() {
           onSubdivisionLevelChange={handleSubdivisionLevelChange}
         />
       </main>
+
+      <footer className="pulse-seo-footer">
+        <h2 className="pulse-sr-only">About Count Me In</h2>
+        <p className="pulse-seo-description">
+          A free vocal counting metronome. Practice asymmetric rhythms like
+          the 3+3+2 (tresillo / aksak), odd meters (7/8, 5/8), swing feel, and
+          standard subdivisions with spoken beat counting, Takadimi syllables,
+          click tracks, and drum sounds.
+        </p>
+        <div className="pulse-seo-links-label">EXAMPLES</div>
+        <nav className="pulse-seo-links" aria-label="Example configurations">
+          <a href="/count/?bpm=100&ts=8-8&sub=2&vm=counting&bg=3.3.2">3+3+2 in 8/8</a>
+          <a href="/count/?bpm=126&ts=7-8&sub=2&vm=counting&bg=2.2.3">7/8 (2+2+3)</a>
+          <a href="/count/?bpm=80&ts=5-8&sub=2&vm=counting&bg=3.2">5/8 (3+2)</a>
+          <a href="/count/?bpm=80&ts=4-4&sub=4&vm=takadimi">Takadimi in 4/4</a>
+          <a href="/count/?bpm=108&ts=4-4&sub=swing8&vm=takadimi">Swing eighths</a>
+          <a href="/count/?bpm=90&ts=12-8&sub=2&vm=counting">12/8 shuffle</a>
+        </nav>
+      </footer>
 
       {showCountIn && (
         <CountInOverlay
