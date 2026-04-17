@@ -1,11 +1,14 @@
 import { detectPitchInfo, type PitchInfo } from './pitchDetection';
 
-const BUFFER_SIZE = 2048;
-const WINDOW_SIZE = 7;
-const WINDOW_QUORUM = 4;
-const NOTE_OFF_FRAMES = 8;
-const RMS_THRESHOLD = 0.0075;
-const CURRENT_NOTE_HYSTERESIS_SEMITONES = 1;
+const DEFAULT_BUFFER_SIZE = 2048;
+const DEFAULT_WINDOW_SIZE = 7;
+const DEFAULT_WINDOW_QUORUM = 4;
+const DEFAULT_NOTE_OFF_FRAMES = 12;
+const DEFAULT_RMS_THRESHOLD = 0.0075;
+const DEFAULT_HYSTERESIS_SEMITONES = 1;
+const DEFAULT_MIN_NOTE_DURATION_MS = 80;
+const DEFAULT_ONSET_THRESHOLD_MULTIPLIER = 3;
+const RMS_HISTORY_SIZE = 5;
 
 export interface MicrophoneDevice {
   id: string;
@@ -16,6 +19,19 @@ export interface MicrophonePitchInputCallbacks {
   onNoteOn?: (midi: number) => void;
   onNoteOff?: (midi: number) => void;
   onPitchDetected?: (midi: number | null, confidence: number, pitchInfo: PitchInfo | null) => void;
+}
+
+export interface MicrophonePitchInputOptions {
+  bufferSize?: number;
+  windowSize?: number;
+  windowQuorum?: number;
+  noteOffFrames?: number;
+  rmsThreshold?: number;
+  hysteresisSemitones?: number;
+  /** Minimum time (ms) a note stays active before it can be turned off or replaced */
+  minNoteDurationMs?: number;
+  /** Energy spike multiplier for onset detection (relative to recent RMS average) */
+  onsetThresholdMultiplier?: number;
 }
 
 export class MicrophonePitchInput {
@@ -29,9 +45,28 @@ export class MicrophonePitchInput {
   private silenceFrames = 0;
   private running = false;
   private activeInputLabel: string | null = null;
+  private noteOnTimestamp = 0;
+  private rmsHistory: number[] = [];
 
-  constructor(callbacks: MicrophonePitchInputCallbacks = {}) {
+  private readonly bufferSize: number;
+  private readonly windowSize: number;
+  private readonly windowQuorum: number;
+  private readonly noteOffFrames: number;
+  private readonly rmsThreshold: number;
+  private readonly hysteresisSemitones: number;
+  private readonly minNoteDurationMs: number;
+  private readonly onsetThresholdMultiplier: number;
+
+  constructor(callbacks: MicrophonePitchInputCallbacks = {}, options: MicrophonePitchInputOptions = {}) {
     this.callbacks = callbacks;
+    this.bufferSize = options.bufferSize ?? DEFAULT_BUFFER_SIZE;
+    this.windowSize = options.windowSize ?? DEFAULT_WINDOW_SIZE;
+    this.windowQuorum = options.windowQuorum ?? DEFAULT_WINDOW_QUORUM;
+    this.noteOffFrames = options.noteOffFrames ?? DEFAULT_NOTE_OFF_FRAMES;
+    this.rmsThreshold = options.rmsThreshold ?? DEFAULT_RMS_THRESHOLD;
+    this.hysteresisSemitones = options.hysteresisSemitones ?? DEFAULT_HYSTERESIS_SEMITONES;
+    this.minNoteDurationMs = options.minNoteDurationMs ?? DEFAULT_MIN_NOTE_DURATION_MS;
+    this.onsetThresholdMultiplier = options.onsetThresholdMultiplier ?? DEFAULT_ONSET_THRESHOLD_MULTIPLIER;
   }
 
   static async listDevices(): Promise<MicrophoneDevice[]> {
@@ -95,9 +130,12 @@ export class MicrophonePitchInput {
     }
 
     this.audioContext = new AudioContext();
+    if (this.audioContext.state === 'suspended') {
+      await this.audioContext.resume();
+    }
     const source = this.audioContext.createMediaStreamSource(this.stream);
     this.analyser = this.audioContext.createAnalyser();
-    this.analyser.fftSize = BUFFER_SIZE * 2;
+    this.analyser.fftSize = this.bufferSize * 2;
     source.connect(this.analyser);
 
     this.activeInputLabel = this.stream.getAudioTracks()[0]?.label ?? null;
@@ -148,53 +186,89 @@ export class MicrophonePitchInput {
         best = note;
       }
     }
-    return bestCount >= WINDOW_QUORUM ? best : null;
+    return bestCount >= this.windowQuorum ? best : null;
+  }
+
+  private isOnset(currentRms: number): boolean {
+    if (this.rmsHistory.length < 3) return false;
+    const recentAvg = this.rmsHistory.reduce((a, b) => a + b, 0) / this.rmsHistory.length;
+    return currentRms > recentAvg * this.onsetThresholdMultiplier
+      && currentRms > this.rmsThreshold * 2;
+  }
+
+  private noteMinDurationMet(): boolean {
+    return !this.currentNote || (Date.now() - this.noteOnTimestamp >= this.minNoteDurationMs);
   }
 
   private tick = () => {
     if (!this.running || !this.analyser || !this.audioContext) return;
 
-    const buffer = new Float32Array(BUFFER_SIZE);
+    const buffer = new Float32Array(this.bufferSize);
     this.analyser.getFloatTimeDomainData(buffer);
 
     let rms = 0;
     for (let i = 0; i < buffer.length; i++) rms += buffer[i] * buffer[i];
     rms = Math.sqrt(rms / buffer.length);
 
-    if (rms < RMS_THRESHOLD) {
+    const onset = this.isOnset(rms);
+
+    this.rmsHistory.push(rms);
+    if (this.rmsHistory.length > RMS_HISTORY_SIZE) this.rmsHistory.shift();
+
+    if (rms < this.rmsThreshold) {
       this.silenceFrames++;
-      this.recentPitches = [];
-      if (this.silenceFrames >= NOTE_OFF_FRAMES && this.currentNote !== null) {
+
+      if (this.silenceFrames >= this.noteOffFrames && this.currentNote !== null && this.noteMinDurationMet()) {
         this.callbacks.onNoteOff?.(this.currentNote);
         this.currentNote = null;
+        this.recentPitches = [];
       }
       this.callbacks.onPitchDetected?.(null, 0, null);
     } else {
       this.silenceFrames = 0;
-      let pitchInfo = detectPitchInfo(buffer, this.audioContext.sampleRate);
-      if (
-        pitchInfo &&
-        this.currentNote !== null &&
-        Math.abs(pitchInfo.midi - this.currentNote) <= CURRENT_NOTE_HYSTERESIS_SEMITONES
-      ) {
-        pitchInfo = { ...pitchInfo, midi: this.currentNote };
+      const pitchInfo = detectPitchInfo(buffer, this.audioContext.sampleRate);
+
+      let resolvedMidi: number | null;
+
+      if (pitchInfo !== null) {
+        if (this.currentNote !== null && Math.abs(pitchInfo.midi - this.currentNote) <= this.hysteresisSemitones) {
+          resolvedMidi = this.currentNote;
+        } else {
+          resolvedMidi = pitchInfo.midi;
+        }
+      } else if (this.currentNote !== null) {
+        resolvedMidi = this.currentNote;
+      } else {
+        resolvedMidi = null;
       }
 
-      const midi = pitchInfo?.midi ?? null;
-      this.callbacks.onPitchDetected?.(midi, rms, pitchInfo ?? null);
-      this.recentPitches.push(midi);
-      if (this.recentPitches.length > WINDOW_SIZE) {
+      this.recentPitches.push(resolvedMidi);
+      if (this.recentPitches.length > this.windowSize) {
         this.recentPitches.shift();
       }
 
-      const majority = this.getWindowMajority();
-      if (majority !== null && majority !== this.currentNote) {
-        if (this.currentNote !== null) {
-          this.callbacks.onNoteOff?.(this.currentNote);
-        }
-        this.currentNote = majority;
-        this.callbacks.onNoteOn?.(majority);
+      if (onset && this.currentNote !== null && this.noteMinDurationMet()) {
+        this.recentPitches = this.recentPitches.slice(-2);
       }
+
+      const majority = this.getWindowMajority();
+
+      if (majority !== null && majority !== this.currentNote) {
+        if (this.noteMinDurationMet()) {
+          if (this.currentNote !== null) {
+            this.callbacks.onNoteOff?.(this.currentNote);
+          }
+          this.currentNote = majority;
+          this.noteOnTimestamp = Date.now();
+          this.callbacks.onNoteOn?.(majority);
+        }
+      }
+
+      this.callbacks.onPitchDetected?.(
+        this.currentNote ?? resolvedMidi,
+        rms,
+        pitchInfo ?? null,
+      );
     }
 
     this.rafId = requestAnimationFrame(this.tick);

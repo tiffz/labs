@@ -126,7 +126,8 @@ function shouldSubdivide(
   sixteenthsPerMeasure: number,
   segOffset: number,
   bias: NoteValueBias,
-  seed: number
+  seed: number,
+  beatUnitSixteenths: number,
 ): boolean {
   if (seg.sixteenths <= 1) return false;
 
@@ -135,9 +136,8 @@ function shouldSubdivide(
   const testPattern = pickSubdivision(seg.sixteenths, 0.5, bias);
   if (!testPattern) return false;
 
-  const beatUnit = 4;
   const isStrongBeat = sixteenthsPerMeasure > 0
-    ? segOffset % beatUnit === 0 && (segOffset / beatUnit) % 2 === 0
+    ? segOffset % beatUnitSixteenths === 0 && (segOffset / beatUnitSixteenths) % 2 === 0
     : false;
 
   const baseChance = isStrongBeat ? 0.15 : 0.4;
@@ -162,6 +162,7 @@ export function mutateTemplate(
 ): TemplateSegment[] {
   if (!settings.fillRests && !settings.subdivideNotes && !settings.mergeNotes) return timeline;
   const sixteenthsPerMeasure = getSixteenthsPerMeasure(timeSignature);
+  const beatUnitSixteenths = Math.max(1, Math.round(16 / timeSignature.denominator));
 
   let segments = [...timeline];
 
@@ -188,7 +189,7 @@ export function mutateTemplate(
       const seg = segments[i];
       if (
         seg.kind === 'hit' &&
-        shouldSubdivide(seg, i, sixteenthsPerMeasure, offset, settings.noteValueBias, seed)
+        shouldSubdivide(seg, i, sixteenthsPerMeasure, offset, settings.noteValueBias, seed, beatUnitSixteenths)
       ) {
         const pattern = pickSubdivision(seg.sixteenths, seededUnit(seed, i, offset), settings.noteValueBias);
         if (pattern) {
@@ -209,7 +210,7 @@ export function mutateTemplate(
 
   // Pass 3: Merge Notes — collapse adjacent hits into longer ones
   if (settings.mergeNotes) {
-    segments = applyMergeNotes(segments, sixteenthsPerMeasure, settings.noteValueBias, seed);
+    segments = applyMergeNotes(segments, sixteenthsPerMeasure, settings.noteValueBias, seed, beatUnitSixteenths);
   }
 
   return segments;
@@ -224,10 +225,10 @@ function applyMergeNotes(
   segments: TemplateSegment[],
   sixteenthsPerMeasure: number,
   bias: NoteValueBias,
-  seed: number
+  seed: number,
+  beatUnitSixteenths: number,
 ): TemplateSegment[] {
   const result: TemplateSegment[] = [];
-  const beatUnit = 4;
   let offset = 0;
 
   const weights = normalizeNoteValueWeights(bias);
@@ -258,7 +259,7 @@ function applyMergeNotes(
         if (candidate > 8) break;
 
         const endOffset = offset + candidate;
-        const landsOnBeat = endOffset % beatUnit === 0;
+        const landsOnBeat = endOffset % beatUnitSixteenths === 0;
         const isStandard = candidate === 2 || candidate === 3 || candidate === 4 || candidate === 6 || candidate === 8;
         const crossesMeasure = Math.floor(offset / sixteenthsPerMeasure) !== Math.floor((endOffset - 1) / sixteenthsPerMeasure);
 
@@ -333,6 +334,7 @@ export function buildPhraseStructure(
   seed: number
 ): MeasurePlan[] {
   const sixteenthsPerMeasure = getSixteenthsPerMeasure(timeSignature);
+  const beatUnitSixteenths = Math.max(1, Math.round(16 / timeSignature.denominator));
 
   if (settings.phrasing === 'halfMeasureVariations' && measureTemplate.length > 0) {
     return buildHalfMeasureVariations(
@@ -348,7 +350,7 @@ export function buildPhraseStructure(
     let segments = [...measureTemplate];
 
     if (settings.landingNote !== 'off' && m === measureCount - 1) {
-      segments = applyLandingNote(segments, settings.landingNote, sixteenthsPerMeasure);
+      segments = applyLandingNote(segments, settings.landingNote, sixteenthsPerMeasure, beatUnitSixteenths);
     }
 
     plans.push({ segments });
@@ -447,14 +449,15 @@ function buildHalfMeasureVariations(
 function applyLandingNote(
   segments: TemplateSegment[],
   landingNote: 'quarter' | 'half' | 'whole',
-  sixteenthsPerMeasure: number
+  sixteenthsPerMeasure: number,
+  beatUnitSixteenths = 4,
 ): TemplateSegment[] {
   const landingSixteenths =
     landingNote === 'whole'
       ? sixteenthsPerMeasure
       : landingNote === 'half'
         ? Math.floor(sixteenthsPerMeasure / 2)
-        : 4;
+        : beatUnitSixteenths;
 
   if (landingSixteenths >= sixteenthsPerMeasure) {
     return [{ kind: 'hit', sixteenths: sixteenthsPerMeasure, stroke: 'D' }];

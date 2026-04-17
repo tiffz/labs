@@ -4,6 +4,7 @@ import { getLatestAttackTime, canAdvanceWhileWaitingForRelease } from '../../sha
 import { getAllMidiNoteOnTimes } from '../../shared/practice/practiceTimingStore';
 import { pitchClassDistance, deriveOctaveOffset } from '../../shared/practice/pitchMatch';
 import type { PracticeNoteResult } from '../../shared/practice/types';
+import { isDebugEnabled, logDebugEvent } from '../utils/practiceDebugLog';
 
 /**
  * Invisible component that evaluates MIDI input against the expected notes
@@ -102,7 +103,6 @@ export default function FreeTempoGrader() {
       matchedPitches = expectedPitches;
     }
 
-    // Record a correct result for each part's note
     for (const noteId of noteIds) {
       const result: PracticeNoteResult = {
         noteId,
@@ -112,6 +112,14 @@ export default function FreeTempoGrader() {
         pitchCorrect: true,
         timing: 'perfect',
       };
+      if (isDebugEnabled()) {
+        logDebugEvent({
+          type: 'eval_attempt', t: performance.now(), noteId,
+          played, expectedPitches, pitchCorrect: true, timing: 'perfect',
+          timingOffsetMs: 0, midiTimesSnapshot: Array.from(getAllMidiNoteOnTimes().entries()),
+          expectedTime: null,
+        });
+      }
       dispatch({ type: 'ADD_PRACTICE_RESULT', result });
     }
 

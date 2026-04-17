@@ -25,6 +25,8 @@ export interface RhythmDefinition {
    * Useful for keeping legacy doubled-groove behavior while using an 8/8 default.
    */
   fourFourMappingPattern?: string;
+  /** Optional 12-sixteenth pattern for 6/8 (compound duple). */
+  sixEightPattern?: string;
 }
 
 export interface RhythmTemplatePreset {
@@ -45,6 +47,7 @@ export const RHYTHM_DATABASE: Record<string, RhythmDefinition> = {
     ],
     basePattern: 'D-T-__T-D---T---',
     timeSignature: { numerator: 4, denominator: 4 },
+    sixEightPattern: 'D-T-__D---T-',
     variations: [
       { notation: 'D-T-__T-D---T---' },
       { notation: 'D-T-__T-D-K-T---' },
@@ -61,6 +64,7 @@ export const RHYTHM_DATABASE: Record<string, RhythmDefinition> = {
     learnMoreLinks: [],
     basePattern: 'D-T-__D-D---T---',
     timeSignature: { numerator: 4, denominator: 4 },
+    sixEightPattern: 'D-T-__D-D-T-',
     variations: [
       { notation: 'D-T-__D-D---T---' },
       { notation: 'D-T-__D-D-K-T---' },
@@ -77,6 +81,7 @@ export const RHYTHM_DATABASE: Record<string, RhythmDefinition> = {
     learnMoreLinks: [{ title: 'Wikipedia: Baladi', url: 'https://en.wikipedia.org/wiki/Baladi' }],
     basePattern: 'D-D-__T-D---T---',
     timeSignature: { numerator: 4, denominator: 4 },
+    sixEightPattern: 'D-D-__D---T-',
     variations: [
       { notation: 'D-D-__T-D---T---' },
       { notation: 'D-D-__T-D-K-T-K-' },
@@ -92,6 +97,7 @@ export const RHYTHM_DATABASE: Record<string, RhythmDefinition> = {
     learnMoreLinks: [],
     basePattern: 'D--KD-T-',
     timeSignature: { numerator: 2, denominator: 4 },
+    sixEightPattern: 'D--K--D-T---',
     variations: [
       { notation: 'D--KD-T-' },
       { notation: 'D-TKD-T-' },
@@ -106,6 +112,7 @@ export const RHYTHM_DATABASE: Record<string, RhythmDefinition> = {
     basePattern: 'D-----T-----T---',
     timeSignature: { numerator: 8, denominator: 8 },
     fourFourMappingPattern: 'D--T--T-',
+    sixEightPattern: 'D---T-D---T-',
     variations: [
       { notation: 'D-----T-----T---', timeSignature: { numerator: 8, denominator: 8 } },
       { notation: 'D-K-K-D-K-K-T-K-', note: '8/8 with ka ornaments', timeSignature: { numerator: 8, denominator: 8 } },
@@ -124,6 +131,7 @@ export const RHYTHM_DATABASE: Record<string, RhythmDefinition> = {
     basePattern: 'D-----D-----T---',
     timeSignature: { numerator: 8, denominator: 8 },
     fourFourMappingPattern: 'D--D--T-',
+    sixEightPattern: 'D---D-T-----',
     variations: [
       { notation: 'D-----D-----T---', timeSignature: { numerator: 8, denominator: 8 } },
       { notation: 'D-K-K-D-K-K-T-K-', note: '8/8 with ka ornaments', timeSignature: { numerator: 8, denominator: 8 } },
@@ -140,6 +148,7 @@ export const RHYTHM_DATABASE: Record<string, RhythmDefinition> = {
     learnMoreLinks: [],
     basePattern: 'D---T---D-D-T---',
     timeSignature: { numerator: 4, denominator: 4 },
+    sixEightPattern: 'D--T--D-D-T-',
     variations: [
       { notation: 'D---T---D-D-T---' },
       { notation: 'D---T---D---T---', note: 'Simple backbeat' },
@@ -153,12 +162,30 @@ export const RHYTHM_DATABASE: Record<string, RhythmDefinition> = {
     learnMoreLinks: [],
     basePattern: 'D---D---D---D---',
     timeSignature: { numerator: 4, denominator: 4 },
+    sixEightPattern: 'D-----D-----',
     variations: [
       { notation: 'D---D---D---D---' },
       { notation: 'D-------D-------' },
       { notation: 'D-T-D-T-D-T-D-T-' },
       { notation: 'D-D-D-D-D-D-D-D-' },
       { notation: 'T-K-T-K-T-K-T-K-' },
+    ],
+  },
+
+  // --- 6/8 native rhythms ---
+
+  simple68: {
+    id: 'simple68',
+    name: 'Simple',
+    description: 'Foundational 6/8 patterns for sketching ideas in compound meter.',
+    learnMoreLinks: [],
+    basePattern: 'D-----D-----',
+    timeSignature: { numerator: 6, denominator: 8 },
+    variations: [
+      { notation: 'D-----D-----' },
+      { notation: 'D--D--D--D--' },
+      { notation: 'D-D-D-D-D-D-' },
+      { notation: 'T-K-T-K-T-K-' },
     ],
   },
 };
@@ -176,9 +203,16 @@ function shouldDoublePatternForTimeSignature(
 }
 
 export function getPresetNotation(
-  rhythm: Pick<RhythmDefinition, 'basePattern' | 'timeSignature' | 'fourFourMappingPattern'>,
+  rhythm: Pick<RhythmDefinition, 'basePattern' | 'timeSignature' | 'fourFourMappingPattern' | 'sixEightPattern'>,
   targetTimeSignature: TimeSignature
 ): string {
+  if (
+    targetTimeSignature.numerator === 6 &&
+    targetTimeSignature.denominator === 8 &&
+    typeof rhythm.sixEightPattern === 'string'
+  ) {
+    return rhythm.sixEightPattern;
+  }
   // Preserve legacy 2/4-to-4/4 preset behavior for select rhythms
   // while allowing richer defaults (e.g., 8/8) elsewhere.
   if (
@@ -194,13 +228,35 @@ export function getPresetNotation(
   return rhythm.basePattern;
 }
 
+function isCompatibleWithTimeSignature(
+  rhythm: RhythmDefinition,
+  target: TimeSignature
+): boolean {
+  const native = rhythm.timeSignature;
+  if (native.numerator === target.numerator && native.denominator === target.denominator) {
+    return true;
+  }
+  if (shouldDoublePatternForTimeSignature(native, target)) {
+    return true;
+  }
+  if (
+    target.numerator === 4 && target.denominator === 4 &&
+    typeof rhythm.fourFourMappingPattern === 'string'
+  ) {
+    return true;
+  }
+  return false;
+}
+
 export function getRhythmTemplatePresets(
   targetTimeSignature: TimeSignature = { numerator: 4, denominator: 4 }
 ): RhythmTemplatePreset[] {
-  return Object.values(RHYTHM_DATABASE).map((rhythm) => ({
-    id: rhythm.id,
-    label: rhythm.name,
-    notation: getPresetNotation(rhythm, targetTimeSignature),
-    timeSignature: targetTimeSignature,
-  }));
+  return Object.values(RHYTHM_DATABASE)
+    .filter((rhythm) => isCompatibleWithTimeSignature(rhythm, targetTimeSignature))
+    .map((rhythm) => ({
+      id: rhythm.id,
+      label: rhythm.name,
+      notation: getPresetNotation(rhythm, targetTimeSignature),
+      timeSignature: targetTimeSignature,
+    }));
 }

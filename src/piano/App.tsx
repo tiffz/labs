@@ -335,7 +335,7 @@ function PianoApp() {
                 score={state.score}
                 currentMeasureIndex={state.currentMeasureIndex}
                 currentNoteIndices={state.currentNoteIndices}
-                activeMidiNotes={isEditing || isPracticing ? undefined : state.activeMidiNotes}
+                activeMidiNotes={isEditing ? undefined : state.activeMidiNotes}
                 practiceResultsByNoteId={viewingResults}
                 greyedOutHands={greyedOutHands}
                 hiddenHands={hiddenHands}

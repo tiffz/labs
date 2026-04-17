@@ -2,6 +2,7 @@ import { Box, Button, Typography, Paper, Chip, LinearProgress, IconButton } from
 import { useScales } from '../store';
 import { TIERS } from '../curriculum/tiers';
 import { getExerciseProgress, getExerciseProficiency } from '../progress/store';
+import ScalesInputSources from './InputSources';
 
 function Icon({ name, size = 20 }: { name: string; size?: number }) {
   return <span className="material-symbols-outlined" style={{ fontSize: size }}>{name}</span>;
@@ -19,9 +20,10 @@ export default function ProgressScreen() {
         <IconButton onClick={() => dispatch({ type: 'SET_SCREEN', screen: 'home' })}>
           <Icon name="arrow_back" />
         </IconButton>
-        <Typography variant="h2" sx={{ fontSize: '1.25rem' }}>
+        <Typography variant="h2" sx={{ fontSize: '1.25rem', flex: 1 }}>
           Progress Map
         </Typography>
+        <ScalesInputSources />
       </Box>
 
       {TIERS.map((tier, tierIdx) => {

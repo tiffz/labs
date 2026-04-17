@@ -6,10 +6,21 @@ import type { PianoScore } from '../shared/music/scoreTypes';
 import { loadProgress, saveProgress, recordPractice, getExerciseProgress } from './progress/store';
 import { planSession } from './curriculum/sessionPlanner';
 import { getMidiInput, MidiInput } from '../shared/midi/midiInput';
+import type { MidiDevice } from '../shared/music/scoreTypes';
 import { recordMidiNoteOn, recordMidiNoteOff, clearAll as clearTimingStore } from '../shared/practice/practiceTimingStore';
+import { AcousticInput } from './utils/acousticInput';
 import { createAppAnalytics } from '../shared/utils/analytics';
+import { isDebugEnabled, logDebugEvent } from './utils/practiceDebugLog';
 
 const analytics = createAppAnalytics('scales');
+
+/**
+ * Mic input pipeline latency, measured empirically at ~202ms mean (range
+ * 152–327ms) by comparing simultaneous MIDI and mic note-on timestamps.
+ * 180ms compensation centers the residual around ~22ms, well within the
+ * 200ms "perfect" threshold for mic-only grading.
+ */
+const MIC_LATENCY_COMPENSATION_MS = 180;
 
 type Screen = 'home' | 'session' | 'progress';
 
@@ -35,7 +46,11 @@ interface ScalesState {
   practiceResults: Map<string, PracticeNoteResult>;
   currentRunStartTime: number | null;
   midiConnected: boolean;
+  midiDevices: MidiDevice[];
+  /** IDs of MIDI devices the user has explicitly disabled. */
+  disabledMidiDeviceIds: Set<string>;
   inputMode: InputMode;
+  microphoneActive: boolean;
   /** Free-tempo tracking */
   freeTempoMeasureIndex: number;
   freeTempoNoteIndex: number;
@@ -65,12 +80,16 @@ type Action =
   | { type: 'NEXT_EXERCISE'; score: PianoScore }
   | { type: 'COMPLETE_SESSION' }
   | { type: 'SET_MIDI_CONNECTED'; connected: boolean }
+  | { type: 'SET_MIDI_DEVICES'; devices: MidiDevice[] }
+  | { type: 'TOGGLE_MIDI_DEVICE'; deviceId: string }
   | { type: 'SET_INPUT_MODE'; mode: InputMode }
+  | { type: 'SET_MICROPHONE_ACTIVE'; active: boolean }
   | { type: 'SET_FREE_TEMPO_POSITION'; measureIndex: number; noteIndex: number }
   | { type: 'ADVANCE_FREE_TEMPO' }
   | { type: 'FREE_TEMPO_RUN_COMPLETE' }
   | { type: 'RESTART_FREE_TEMPO' }
-  | { type: 'WRONG_NOTE_FLASH'; notes: number[] };
+  | { type: 'WRONG_NOTE_FLASH'; notes: number[] }
+  | { type: 'LOAD_STAGE'; exercise: SessionExercise; score: PianoScore };
 
 function initialState(): ScalesState {
   return {
@@ -87,7 +106,10 @@ function initialState(): ScalesState {
     practiceResults: new Map(),
     currentRunStartTime: null,
     midiConnected: false,
+    midiDevices: [],
+    disabledMidiDeviceIds: new Set(),
     inputMode: 'none',
+    microphoneActive: false,
     freeTempoMeasureIndex: 0,
     freeTempoNoteIndex: 0,
     hasCompletedRun: false,
@@ -230,10 +252,39 @@ function reducer(state: ScalesState, action: Action): ScalesState {
       return { ...state, screen: 'home', sessionComplete: true, isPlaying: false, lastExerciseResult: null };
 
     case 'SET_MIDI_CONNECTED':
-      return { ...state, midiConnected: action.connected };
+      return {
+        ...state,
+        midiConnected: action.connected,
+        inputMode: !action.connected && state.inputMode === 'midi' ? 'none' : state.inputMode,
+      };
+
+    case 'SET_MIDI_DEVICES':
+      return { ...state, midiDevices: action.devices };
+
+    case 'TOGGLE_MIDI_DEVICE': {
+      const next = new Set(state.disabledMidiDeviceIds);
+      if (next.has(action.deviceId)) {
+        next.delete(action.deviceId);
+      } else {
+        next.add(action.deviceId);
+      }
+      const hasEnabledDevice = state.midiDevices.some(d => d.connected && !next.has(d.id));
+      return {
+        ...state,
+        disabledMidiDeviceIds: next,
+        inputMode: !hasEnabledDevice && state.inputMode === 'midi'
+          ? (state.microphoneActive ? 'mic' : 'none')
+          : hasEnabledDevice && state.midiConnected
+            ? 'midi'
+            : state.inputMode,
+      };
+    }
 
     case 'SET_INPUT_MODE':
       return { ...state, inputMode: action.mode };
+
+    case 'SET_MICROPHONE_ACTIVE':
+      return { ...state, microphoneActive: action.active };
 
     case 'SET_FREE_TEMPO_POSITION': {
       const noteIndices = new Map<string, number>();
@@ -305,6 +356,23 @@ function reducer(state: ScalesState, action: Action): ScalesState {
     case 'WRONG_NOTE_FLASH':
       return { ...state, wrongNoteFlash: action.notes };
 
+    case 'LOAD_STAGE':
+      return {
+        ...state,
+        activeExercise: action.exercise,
+        score: action.score,
+        practiceResults: new Map(),
+        currentMeasureIndex: -1,
+        currentNoteIndices: new Map(),
+        currentRunStartTime: null,
+        isPlaying: false,
+        freeTempoMeasureIndex: 0,
+        freeTempoNoteIndex: 0,
+        hasCompletedRun: false,
+        freeTempoRunComplete: false,
+        lastExerciseResult: null,
+      };
+
     default:
       return state;
   }
@@ -314,6 +382,10 @@ interface ScalesContextValue {
   state: ScalesState;
   dispatch: React.Dispatch<Action>;
   startSession: () => void;
+  startMicrophoneInput: () => Promise<boolean>;
+  stopMicrophoneInput: () => void;
+  toggleMicrophone: () => void;
+  toggleMidiDevice: (deviceId: string) => void;
 }
 
 const ScalesContext = createContext<ScalesContextValue | null>(null);
@@ -321,27 +393,93 @@ const ScalesContext = createContext<ScalesContextValue | null>(null);
 export function ScalesProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(reducer, undefined, initialState);
   const midiRef = useRef<MidiInput | null>(null);
+  const acousticRef = useRef<AcousticInput | null>(null);
+  const disabledDeviceIdsRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    disabledDeviceIdsRef.current = state.disabledMidiDeviceIds;
+  }, [state.disabledMidiDeviceIds]);
 
   useEffect(() => {
     const midi = getMidiInput();
     midiRef.current = midi;
-    midi.onNote((type, note, _velocity, timestamp) => {
+    midi.onNote((type, note, _velocity, timestamp, deviceId) => {
+      if (disabledDeviceIdsRef.current.has(deviceId)) return;
       if (type === 'noteon') {
         recordMidiNoteOn(note, timestamp);
         dispatch({ type: 'MIDI_NOTE_ON', note });
+        if (isDebugEnabled()) {
+          logDebugEvent({ type: 'note_on', t: performance.now(), midi: note, source: 'midi',
+            rawTimestamp: timestamp, compensatedTimestamp: timestamp });
+        }
       } else {
         recordMidiNoteOff(note);
         dispatch({ type: 'MIDI_NOTE_OFF', note });
+        if (isDebugEnabled()) logDebugEvent({ type: 'note_off', t: performance.now(), midi: note, source: 'midi' });
       }
     });
-    midi.onConnection((connected) => {
+    midi.onConnection((connected, devices) => {
       dispatch({ type: 'SET_MIDI_CONNECTED', connected });
-      if (connected) {
+      dispatch({ type: 'SET_MIDI_DEVICES', devices });
+      const hasEnabled = devices.some(d => d.connected && !disabledDeviceIdsRef.current.has(d.id));
+      if (connected && hasEnabled) {
         dispatch({ type: 'SET_INPUT_MODE', mode: 'midi' });
       }
     });
     midi.init();
     return () => { clearTimingStore(); };
+  }, []);
+
+  const startMicrophoneInput = useCallback(async (): Promise<boolean> => {
+    if (acousticRef.current?.isRunning()) return true;
+    const acoustic = new AcousticInput({
+      onNoteOn: (midi) => {
+        const rawTime = performance.now();
+        const compensated = rawTime - MIC_LATENCY_COMPENSATION_MS;
+        recordMidiNoteOn(midi, compensated);
+        dispatch({ type: 'MIDI_NOTE_ON', note: midi });
+        if (isDebugEnabled()) {
+          logDebugEvent({ type: 'note_on', t: rawTime, midi, source: 'mic',
+            rawTimestamp: rawTime, compensatedTimestamp: compensated });
+        }
+      },
+      onNoteOff: (midi) => {
+        recordMidiNoteOff(midi);
+        dispatch({ type: 'MIDI_NOTE_OFF', note: midi });
+        if (isDebugEnabled()) logDebugEvent({ type: 'note_off', t: performance.now(), midi, source: 'mic' });
+      },
+    });
+    try {
+      await acoustic.start();
+      acousticRef.current = acoustic;
+      dispatch({ type: 'SET_MICROPHONE_ACTIVE', active: true });
+      dispatch({ type: 'SET_INPUT_MODE', mode: 'mic' });
+      return true;
+    } catch {
+      dispatch({ type: 'SET_MICROPHONE_ACTIVE', active: false });
+      return false;
+    }
+  }, []);
+
+  const stopMicrophoneInput = useCallback(() => {
+    acousticRef.current?.stop();
+    acousticRef.current = null;
+    dispatch({ type: 'SET_MICROPHONE_ACTIVE', active: false });
+    if (!midiRef.current?.isConnected()) {
+      dispatch({ type: 'SET_INPUT_MODE', mode: 'none' });
+    }
+  }, []);
+
+  const toggleMicrophone = useCallback(async () => {
+    if (acousticRef.current?.isRunning()) {
+      stopMicrophoneInput();
+    } else {
+      await startMicrophoneInput();
+    }
+  }, [startMicrophoneInput, stopMicrophoneInput]);
+
+  const toggleMidiDevice = useCallback((deviceId: string) => {
+    dispatch({ type: 'TOGGLE_MIDI_DEVICE', deviceId });
   }, []);
 
   const startSession = useCallback(() => {
@@ -353,7 +491,7 @@ export function ScalesProvider({ children }: { children: React.ReactNode }) {
   }, [state.progress]);
 
   return (
-    <ScalesContext.Provider value={{ state, dispatch, startSession }}>
+    <ScalesContext.Provider value={{ state, dispatch, startSession, startMicrophoneInput, stopMicrophoneInput, toggleMicrophone, toggleMidiDevice }}>
       {children}
     </ScalesContext.Provider>
   );
@@ -364,4 +502,9 @@ export function useScales(): ScalesContextValue {
   const ctx = useContext(ScalesContext);
   if (!ctx) throw new Error('useScales must be used inside ScalesProvider');
   return ctx;
+}
+
+// eslint-disable-next-line react-refresh/only-export-components -- utility derived from state
+export function hasEnabledMidiDevice(state: Pick<ScalesState, 'midiDevices' | 'disabledMidiDeviceIds'>): boolean {
+  return state.midiDevices.some(d => d.connected && !state.disabledMidiDeviceIds.has(d.id));
 }

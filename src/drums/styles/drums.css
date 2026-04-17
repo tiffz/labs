@@ -1044,12 +1044,28 @@
     --bpm-muted: #6b7280;
     --bpm-focus: var(--primary-purple);
     --bpm-dropdown-bg: #ffffff;
-    --bpm-dropdown-border: var(--border-color);
-    --bpm-dropdown-header-bg: #f9fafb;
-    --bpm-dropdown-header-border: #f3f4f6;
-    --bpm-dropdown-hover-bg: #f3f4f6;
-    --bpm-dropdown-active-bg: #ede9fe;
-    --bpm-dropdown-active-text: #5b21b6;
+    --bpm-dropdown-border: color-mix(
+      in srgb,
+      var(--primary-purple) 20%,
+      var(--border-color)
+    );
+    --bpm-dropdown-header-bg: color-mix(in srgb, #faf5ff 60%, #ffffff);
+    --bpm-dropdown-header-border: color-mix(
+      in srgb,
+      var(--primary-purple) 10%,
+      #f3f4f6
+    );
+    --bpm-dropdown-hover-bg: color-mix(
+      in srgb,
+      var(--primary-purple) 6%,
+      #ffffff
+    );
+    --bpm-dropdown-active-bg: color-mix(
+      in srgb,
+      var(--primary-purple) 14%,
+      #ffffff
+    );
+    --bpm-dropdown-active-text: var(--primary-purple-dark);
     --bpm-focus-ring: 0 0 0 3px rgba(124, 58, 237, 0.1);
     --bpm-dropdown-offset-y: 8px;
     --bpm-dropdown-min-width: 280px;
@@ -1120,10 +1136,10 @@
   }
 
   .drums-bpm-dropdown {
-    border-radius: var(--menu-radius);
-    border: 1px solid var(--menu-border);
-    background: var(--menu-surface);
-    box-shadow: var(--menu-shadow);
+    border-radius: 0.375rem;
+    border: 2px solid var(--border-color);
+    background: white;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   }
 
   .drums-bpm-dropdown .shared-bpm-dropdown-trigger {
@@ -1145,8 +1161,8 @@
 
   .drums-bpm-dropdown .shared-bpm-dropdown-current {
     font-size: 0.72rem;
-    color: #6b7280;
-    background: #f3f4f6;
+    color: var(--primary-purple-dark);
+    background: color-mix(in srgb, var(--primary-purple) 8%, #f9fafb);
   }
 
   .drums-bpm-dropdown .shared-bpm-slider-wrap {
@@ -1178,27 +1194,27 @@
   }
 
   .drums-bpm-dropdown .shared-bpm-preset-chip {
-    border-color: color-mix(in srgb, var(--menu-border) 84%, transparent);
-    background: color-mix(in srgb, #ffffff 93%, #f8f4ff);
+    border-color: var(--border-color);
+    background: #fff;
     color: #374151;
-    font-weight: 700;
+    font-weight: 600;
   }
 
   .drums-bpm-dropdown .shared-bpm-preset-chip:hover {
     border-color: color-mix(
       in srgb,
-      var(--primary-purple) 42%,
-      var(--menu-border)
+      var(--primary-purple) 40%,
+      var(--border-color)
     );
-    background: color-mix(in srgb, var(--primary-purple) 13%, #ffffff);
+    background: #f9fafb;
     color: var(--primary-purple);
   }
 
   .drums-bpm-dropdown .shared-bpm-preset-chip.active {
     border-color: var(--primary-purple);
-    background: color-mix(in srgb, var(--primary-purple) 18%, #ffffff);
-    color: #4c1d95;
-    box-shadow: inset 0 0 0 1px rgba(124, 58, 237, 0.2);
+    background: #fff;
+    color: var(--primary-purple);
+    font-weight: 700;
   }
 
   /* Beat Grouping Control */

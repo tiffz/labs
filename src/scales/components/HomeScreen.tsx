@@ -1,122 +1,17 @@
-import { useState, useCallback } from 'react';
-import { Box, Button, Typography, Paper, Chip, LinearProgress, Alert } from '@mui/material';
-import { useScales } from '../store';
-import type { InputMode } from '../store';
+import { Box, Button, Typography, Paper, Chip, LinearProgress } from '@mui/material';
+import { useScales, hasEnabledMidiDevice } from '../store';
 import { TIERS } from '../curriculum/tiers';
 import { getExerciseProgress, getExerciseProficiency } from '../progress/store';
+import ScalesInputSources from './InputSources';
 
 function Icon({ name, size = 20, ...props }: { name: string; size?: number } & React.HTMLAttributes<HTMLSpanElement>) {
   return <span className="material-symbols-outlined" style={{ fontSize: size }} {...props}>{name}</span>;
 }
 
-function InputSetup({ midiConnected, inputMode, onSelectMode }: {
-  midiConnected: boolean;
-  inputMode: InputMode;
-  onSelectMode: (mode: InputMode) => void;
-}) {
-  const [micRequesting, setMicRequesting] = useState(false);
-  const [micError, setMicError] = useState<string | null>(null);
-
-  const enableMic = useCallback(async () => {
-    setMicRequesting(true);
-    setMicError(null);
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach(t => t.stop());
-      onSelectMode('mic');
-    } catch {
-      setMicError('Microphone access was denied. Check your browser permissions.');
-    } finally {
-      setMicRequesting(false);
-    }
-  }, [onSelectMode]);
-
-  if (midiConnected || inputMode === 'midi') {
-    return (
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5, mb: 2 }}>
-        <Icon name="check_circle" size={14} style={{ color: 'var(--mui-palette-success-main, #16a34a)' }} />
-        <Typography variant="caption" color="text.secondary">
-          MIDI connected
-        </Typography>
-      </Box>
-    );
-  }
-
-  if (inputMode === 'mic') {
-    return (
-      <Paper
-        variant="outlined"
-        sx={{ p: 2, mb: 3, display: 'flex', alignItems: 'center', gap: 1.5, borderColor: 'warning.main' }}
-      >
-        <Icon name="mic" size={24} style={{ color: 'var(--mui-palette-warning-main, #d97706)' }} />
-        <Box sx={{ flex: 1 }}>
-          <Typography variant="body2" fontWeight={600}>
-            Using microphone input
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            Grading is less precise than MIDI. Connect a MIDI keyboard for the best experience.
-          </Typography>
-        </Box>
-        <Button size="small" variant="text" onClick={() => onSelectMode('none')}>
-          Change
-        </Button>
-      </Paper>
-    );
-  }
-
-  return (
-    <Paper
-      variant="outlined"
-      sx={{
-        p: 2.5, mb: 3,
-        borderColor: 'primary.main',
-        borderStyle: 'dashed',
-        borderWidth: 2,
-      }}
-    >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-        <Icon name="music_note" size={24} style={{ color: 'var(--mui-palette-primary-main, #059669)' }} />
-        <Typography variant="body1" fontWeight={600}>
-          Connect your keyboard
-        </Typography>
-      </Box>
-
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Plug in a MIDI keyboard or digital piano via USB for the best experience.
-        The app will detect it automatically.
-      </Typography>
-
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-        <Button
-          variant="outlined"
-          size="small"
-          onClick={enableMic}
-          disabled={micRequesting}
-          startIcon={<Icon name="mic" size={18} />}
-          sx={{ textTransform: 'none', justifyContent: 'flex-start' }}
-        >
-          {micRequesting ? 'Requesting access...' : 'No MIDI? Use microphone instead'}
-        </Button>
-
-        <Alert severity="info" variant="outlined" sx={{ py: 0.25, '& .MuiAlert-message': { py: 0.5 } }}>
-          <Typography variant="caption">
-            Microphone grading works but is less accurate than MIDI, especially for chords and fast passages.
-          </Typography>
-        </Alert>
-
-        {micError && (
-          <Alert severity="error" variant="outlined" sx={{ py: 0.25 }}>
-            <Typography variant="caption">{micError}</Typography>
-          </Alert>
-        )}
-      </Box>
-    </Paper>
-  );
-}
-
 export default function HomeScreen() {
   const { state, dispatch, startSession } = useScales();
-  const { progress, midiConnected, inputMode, sessionComplete } = state;
+  const { progress, microphoneActive, sessionComplete } = state;
+  const anyDeviceEnabled = hasEnabledMidiDevice(state);
 
   const currentTier = TIERS.find(t => t.id === progress.currentTierId) ?? TIERS[0];
 
@@ -134,14 +29,10 @@ export default function HomeScreen() {
         .reduce((sum, ep) => sum + getExerciseProficiency(ep), 0) / totalPracticed
     : 0;
 
-  const handleSelectMode = useCallback((mode: InputMode) => {
-    dispatch({ type: 'SET_INPUT_MODE', mode });
-  }, [dispatch]);
-
-  const hasInput = midiConnected || inputMode === 'midi' || inputMode === 'mic';
+  const hasInput = anyDeviceEnabled || microphoneActive;
 
   return (
-    <Box sx={{ maxWidth: 600, mx: 'auto', p: 3, pt: 5 }}>
+    <Box sx={{ maxWidth: 600, mx: 'auto', p: 3, pt: 3 }}>
       <Box sx={{ textAlign: 'center', mb: 4 }}>
         {sessionComplete ? (
           <>
@@ -159,20 +50,13 @@ export default function HomeScreen() {
             <Typography variant="h1" sx={{ fontSize: '1.75rem', fontWeight: 700, mb: 0.5 }}>
               Learn Your Scales
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
               Guided practice for piano scales &amp; arpeggios
             </Typography>
           </>
         )}
+        <ScalesInputSources />
       </Box>
-
-      {!sessionComplete && (
-        <InputSetup
-          midiConnected={midiConnected}
-          inputMode={inputMode}
-          onSelectMode={handleSelectMode}
-        />
-      )}
 
       <Button
         variant="contained"

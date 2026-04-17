@@ -94,7 +94,10 @@ const DEFAULT_TIME_SIGNATURE: TimeSignature = {
 
 const TIME_SIGNATURE_OPTIONS: Array<
   Pick<TimeSignature, 'numerator' | 'denominator'>
-> = [{ numerator: 4, denominator: 4 }];
+> = [
+  { numerator: 4, denominator: 4 },
+  { numerator: 6, denominator: 8 },
+];
 
 const TEMPLATE_PRESETS = getRhythmTemplatePresets(DEFAULT_TIME_SIGNATURE).map(
   (preset) => ({
@@ -155,11 +158,13 @@ function getViewportMetrics(): { width: number; height: number } {
   return { width: window.innerWidth, height: window.innerHeight };
 }
 
-function generateRandomTemplateNotation(): string {
+function generateRandomTemplateNotation(timeSig: TimeSignature): string {
+  const sixteenths = Math.round((timeSig.numerator * 16) / timeSig.denominator);
+  const half = Math.floor(sixteenths / 2);
   const anchors: Array<'D' | 'T' | 'K'> = ['D', 'T', 'K'];
-  const notes: string[] = Array.from({ length: 16 }, () => '-');
+  const notes: string[] = Array.from({ length: sixteenths }, () => '-');
   notes[0] = 'D';
-  notes[8] = 'D';
+  if (half > 0 && half < sixteenths) notes[half] = 'D';
   for (let i = 0; i < notes.length; i += 1) {
     if (notes[i] !== '-') continue;
     const roll = Math.random();
@@ -1061,6 +1066,27 @@ const App: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [notation, timeSignature]);
 
+  const prevTimeSignatureRef = useRef(timeSignature);
+  useEffect(() => {
+    const prev = prevTimeSignatureRef.current;
+    prevTimeSignatureRef.current = timeSignature;
+    if (
+      prev.numerator === timeSignature.numerator &&
+      prev.denominator === timeSignature.denominator
+    ) {
+      return;
+    }
+    const newDefault = templatePresets[0]?.notation ?? '';
+    if (!newDefault) return;
+    setSections((previous) =>
+      previous.map((section) => ({
+        ...section,
+        templateNotation: newDefault,
+      }))
+    );
+    setBackingBeatNotation(newDefault);
+  }, [timeSignature, templatePresets]);
+
   useEffect(() => {
     let frameId = 0;
     const checkStickyState = () => {
@@ -1777,7 +1803,7 @@ const App: React.FC = () => {
     const notation =
       mode === 'preset'
         ? pickRandom(templateNotationPool)
-        : generateRandomTemplateNotation();
+        : generateRandomTemplateNotation(timeSignature);
     updateSectionTemplateNotation(sectionId, notation);
   };
 
@@ -1785,7 +1811,7 @@ const App: React.FC = () => {
     const notation =
       mode === 'preset'
         ? pickRandom(templateNotationPool)
-        : generateRandomTemplateNotation();
+        : generateRandomTemplateNotation(timeSignature);
     setBackingBeatNotation(notation);
   };
 
@@ -2987,7 +3013,6 @@ const App: React.FC = () => {
           <label className="words-inline-control">
             meter
             <select
-              disabled={true}
               value={`${timeSignature.numerator}/${timeSignature.denominator}`}
               onChange={(event) => {
                 const [numerator, denominator] = event.target.value

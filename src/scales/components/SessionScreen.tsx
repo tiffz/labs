@@ -5,13 +5,20 @@ import { useScales } from '../store';
 import { generateScoreForExercise } from '../curriculum/scoreGenerator';
 import { getScorePlaybackEngine } from '../../shared/playback/scorePlayback';
 import type { ScorePlaybackEngine } from '../../shared/playback/scorePlayback';
-import { findStage } from '../curriculum/tiers';
+import { findStage, findExercise } from '../curriculum/tiers';
+import { getExerciseProgress } from '../progress/store';
+import type { SessionExercise } from '../curriculum/types';
 import FreeTempoGrader from './FreeTempoGrader';
 import TimedGrader from './TimedGrader';
+import ScalesInputSources from './InputSources';
+import { isDebugEnabled, logDebugEvent } from '../utils/practiceDebugLog';
 
 function Icon({ name, size = 20 }: { name: string; size?: number }) {
   return <span className="material-symbols-outlined" style={{ fontSize: size }}>{name}</span>;
 }
+
+const PASS_THRESHOLD = 0.85;
+const AUTO_RETRY_DELAY_MS = 3000;
 
 const HAND_LABELS = { right: 'Right hand', left: 'Left hand', both: 'Both hands' } as const;
 const HAND_SHORT = { right: 'RH', left: 'LH', both: 'Both' } as const;
@@ -23,6 +30,7 @@ export default function SessionScreen() {
   const { state, dispatch } = useScales();
   const { activeExercise, sessionPlan, score, practiceResults, isPlaying, lastExerciseResult } = state;
   const engineRef = useRef<ScorePlaybackEngine | null>(null);
+  const loadedStageRef = useRef<string | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [wrongNoteDisplay, setWrongNoteDisplay] = useState<string | null>(null);
   const wrongNoteKeyRef = useRef(0);
@@ -40,22 +48,39 @@ export default function SessionScreen() {
 
   useEffect(() => {
     if (!activeExercise) return;
+    // LOAD_STAGE already set the score and activeExercise — don't override
+    if (loadedStageRef.current === activeExercise.stageId) {
+      setLoaded(true);
+      return;
+    }
     const generated = generateScoreForExercise(activeExercise);
     if (generated) {
       dispatch({ type: 'SET_ACTIVE_EXERCISE', index: state.activeExerciseIndex, score: generated });
       setLoaded(true);
     }
+    loadedStageRef.current = activeExercise.stageId;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only regenerate when exercise identity changes; dispatch is stable
   }, [activeExercise?.exerciseId, activeExercise?.stageId]);
 
   const finishExercise = useCallback(() => {
     if (!activeExercise) return;
+    if (isDebugEnabled()) {
+      const total = score
+        ? score.parts.reduce((s, p) => s + p.measures.reduce((ms, m) => ms + m.notes.filter(n => !n.rest).length, 0), 0)
+        : 0;
+      const correct = Array.from(state.practiceResults.values()).filter(r => r.pitchCorrect).length;
+      logDebugEvent({
+        type: 'practice_end', t: performance.now(),
+        resultCount: state.practiceResults.size,
+        accuracy: total > 0 ? correct / total : 0,
+      });
+    }
     dispatch({
       type: 'FINISH_EXERCISE',
       exerciseId: activeExercise.exerciseId,
       stageId: activeExercise.stageId,
     });
-  }, [activeExercise, dispatch]);
+  }, [activeExercise, dispatch, score, state.practiceResults]);
 
   const advanceToNext = useCallback(() => {
     const nextIdx = state.activeExerciseIndex + 1;
@@ -79,6 +104,46 @@ export default function SessionScreen() {
     }
   }, [activeExercise?.bpm, state.freeTempoRunComplete, state.lastExerciseResult, finishExercise]);
 
+  const [retryCountdown, setRetryCountdown] = useState<number | null>(null);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const passed = lastExerciseResult ? lastExerciseResult.accuracy >= PASS_THRESHOLD : false;
+
+  // Auto-retry when the exercise wasn't passed
+  useEffect(() => {
+    if (!lastExerciseResult || passed || isPlaying) {
+      setRetryCountdown(null);
+      if (retryTimerRef.current) { clearTimeout(retryTimerRef.current); retryTimerRef.current = null; }
+      return;
+    }
+
+    const steps = Math.ceil(AUTO_RETRY_DELAY_MS / 1000);
+    setRetryCountdown(steps);
+
+    const interval = setInterval(() => {
+      setRetryCountdown(prev => (prev !== null && prev > 1 ? prev - 1 : prev));
+    }, 1000);
+
+    retryTimerRef.current = setTimeout(() => {
+      setRetryCountdown(null);
+      if (isFreeTempo) {
+        dispatch({ type: 'RESTART_FREE_TEMPO' });
+      } else {
+        startPlayback();
+      }
+    }, AUTO_RETRY_DELAY_MS);
+
+    return () => {
+      clearInterval(interval);
+      if (retryTimerRef.current) { clearTimeout(retryTimerRef.current); retryTimerRef.current = null; }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: restart timer only when result changes
+  }, [lastExerciseResult, passed]);
+
+  const cancelAutoRetry = useCallback(() => {
+    if (retryTimerRef.current) { clearTimeout(retryTimerRef.current); retryTimerRef.current = null; }
+    setRetryCountdown(null);
+  }, []);
+
   const startPlayback = useCallback(async () => {
     if (!score || !activeExercise) return;
     const engine = getScorePlaybackEngine();
@@ -91,6 +156,17 @@ export default function SessionScreen() {
     }
 
     dispatch({ type: 'START_PRACTICE_RUN' });
+    if (isDebugEnabled()) {
+      logDebugEvent({
+        type: 'practice_start', t: performance.now(),
+        mode: activeExercise.bpm ? 'timed' : 'free-tempo',
+        bpm: activeExercise.bpm || 0,
+        exerciseId: activeExercise.exerciseId,
+        hand: activeExercise.hand,
+        micActive: !!state.microphoneActive,
+        midiActive: !!state.midiConnected,
+      });
+    }
 
     if (!activeExercise.bpm) {
       dispatch({ type: 'SET_FREE_TEMPO_POSITION', measureIndex: 0, noteIndex: 0 });
@@ -127,6 +203,7 @@ export default function SessionScreen() {
       },
     );
     dispatch({ type: 'SET_PLAYING', isPlaying: true });
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- state.microphoneActive/midiConnected read at call-time for debug only
   }, [score, activeExercise, dispatch, finishExercise]);
 
   const stopPlayback = useCallback(() => {
@@ -134,6 +211,32 @@ export default function SessionScreen() {
     setCountInBeat(null);
     dispatch({ type: 'SET_PLAYING', isPlaying: false });
   }, [dispatch]);
+
+  const goToStage = useCallback((stageId: string) => {
+    if (!activeExercise) return;
+    const found = findExercise(activeExercise.exerciseId);
+    if (!found) return;
+    const stage = found.exercise.stages.find(s => s.id === stageId);
+    if (!stage) return;
+    stopPlayback();
+    const stageExercise: SessionExercise = {
+      exerciseId: activeExercise.exerciseId,
+      stageId: stage.id,
+      key: activeExercise.key,
+      kind: activeExercise.kind,
+      hand: stage.hand,
+      bpm: stage.bpm,
+      useMetronome: stage.useMetronome,
+      subdivision: stage.subdivision,
+      mutePlayback: stage.mutePlayback,
+      purpose: activeExercise.purpose,
+    };
+    const newScore = generateScoreForExercise(stageExercise);
+    if (newScore) {
+      loadedStageRef.current = stage.id;
+      dispatch({ type: 'LOAD_STAGE', exercise: stageExercise, score: newScore });
+    }
+  }, [activeExercise, stopPlayback, dispatch]);
 
   const handleFinishAndNext = useCallback(() => {
     stopPlayback();
@@ -159,6 +262,17 @@ export default function SessionScreen() {
   const exerciseNumber = state.activeExerciseIndex + 1;
   const totalExercises = sessionPlan?.exercises.length ?? 0;
   const isFreeTempo = !activeExercise.bpm;
+
+  // Stage navigation: allow revisiting earlier stages of the current exercise
+  const exerciseDef = findExercise(activeExercise.exerciseId);
+  const exerciseProgress = getExerciseProgress(state.progress, activeExercise.exerciseId);
+  const allStages = exerciseDef?.exercise.stages ?? [];
+  const currentStageIdx = allStages.findIndex(s => s.id === activeExercise.stageId);
+  // Stages the user can navigate to: all up to and including the progress-tracked current stage
+  const progressStageIdx = allStages.findIndex(s => s.id === exerciseProgress.currentStageId);
+  const maxAccessibleStageIdx = Math.max(currentStageIdx, progressStageIdx);
+  const canGoPrevStage = currentStageIdx > 0;
+  const canGoNextStage = currentStageIdx < maxAccessibleStageIdx;
   const { freeTempoRunComplete, hasCompletedRun } = state;
   const guidanceRaw = stageInfo?.exercise.guidance;
   const exerciseGuidance = typeof guidanceRaw === 'string'
@@ -167,38 +281,62 @@ export default function SessionScreen() {
   const exerciseHelpUrl = stageInfo?.exercise.helpUrl;
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       {/* Header bar */}
       <Paper
         elevation={0}
         sx={{
-          px: 2, py: 1.5,
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          px: 2, py: 1,
+          display: 'flex', alignItems: 'center', gap: 1,
           borderBottom: 1, borderColor: 'divider',
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25, flexShrink: 0 }}>
           <IconButton size="small" onClick={() => { stopPlayback(); dispatch({ type: 'SET_SCREEN', screen: 'home' }); }}>
             <Icon name="home" />
           </IconButton>
-          <Typography variant="body2" color="text.secondary">
+          <IconButton
+            size="small"
+            disabled={!canGoPrevStage}
+            onClick={() => canGoPrevStage && goToStage(allStages[currentStageIdx - 1].id)}
+            sx={{ p: 0.25 }}
+          >
+            <Icon name="chevron_left" size={18} />
+          </IconButton>
+          <Typography variant="body2" color="text.secondary" sx={{ minWidth: 28, textAlign: 'center' }}>
             {exerciseNumber}/{totalExercises}
           </Typography>
+          <IconButton
+            size="small"
+            disabled={!canGoNextStage}
+            onClick={() => canGoNextStage && goToStage(allStages[currentStageIdx + 1].id)}
+            sx={{ p: 0.25 }}
+          >
+            <Icon name="chevron_right" size={18} />
+          </IconButton>
         </Box>
-        <Typography variant="h3" sx={{ fontSize: '1rem', fontWeight: 600 }}>
-          {stageInfo?.exercise.label ?? 'Exercise'}
-        </Typography>
-        <Box sx={{ display: 'flex', gap: 0.5 }}>
-          <Chip label={HAND_SHORT[activeExercise.hand]} size="small" variant="outlined" />
-          {activeExercise.bpm > 0 && (
-            <Chip label={`${activeExercise.bpm} BPM`} size="small" variant="outlined" />
-          )}
-          {isFreeTempo && <Chip label="Free tempo" size="small" color="info" variant="outlined" />}
-          {activeExercise.purpose === 'review' && (
-            <Chip label="Review" size="small" color="warning" variant="outlined" />
-          )}
+
+        <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, minWidth: 0 }}>
+          <Typography variant="h3" sx={{ fontSize: '1rem', fontWeight: 600, whiteSpace: 'nowrap' }}>
+            {stageInfo?.exercise.label ?? 'Exercise'}
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0 }}>
+            <Chip label={HAND_SHORT[activeExercise.hand]} size="small" variant="outlined" />
+            {activeExercise.bpm > 0 && (
+              <Chip label={`${activeExercise.bpm} BPM`} size="small" variant="outlined" />
+            )}
+            {isFreeTempo && <Chip label="Free tempo" size="small" color="info" variant="outlined" />}
+            {activeExercise.purpose === 'review' && (
+              <Chip label="Review" size="small" color="warning" variant="outlined" />
+            )}
+          </Box>
+        </Box>
+
+        <Box sx={{ flexShrink: 0 }}>
+          <ScalesInputSources />
         </Box>
       </Paper>
+
 
       {/* Exercise result — shown after completing the exercise */}
       {lastExerciseResult && !isPlaying && (
@@ -234,7 +372,7 @@ export default function SessionScreen() {
               color="success"
             />
           )}
-          {lastExerciseResult.accuracy >= 0.85 && !lastExerciseResult.advanced && (
+          {passed && !lastExerciseResult.advanced && (
             <Chip
               icon={<Icon name="check_circle" />}
               label="Great work! One more at this level to advance."
@@ -242,14 +380,19 @@ export default function SessionScreen() {
               variant="outlined"
             />
           )}
-          {lastExerciseResult.accuracy < 0.85 && lastExerciseResult.accuracy >= 0.6 && (
+          {!passed && lastExerciseResult.accuracy >= 0.6 && (
             <Typography variant="body2" color="text.secondary">
-              Almost there! A bit more practice and you&apos;ll advance.
+              Almost there — need {Math.round(PASS_THRESHOLD * 100)}% to pass. Let&apos;s try again!
             </Typography>
           )}
-          {lastExerciseResult.accuracy < 0.6 && (
+          {!passed && lastExerciseResult.accuracy < 0.6 && (
             <Typography variant="body2" color="text.secondary">
-              Take it slow — focus on getting the right notes first.
+              Take it slow — focus on the right notes. Need {Math.round(PASS_THRESHOLD * 100)}% to pass.
+            </Typography>
+          )}
+          {!passed && retryCountdown !== null && (
+            <Typography variant="caption" color="text.disabled" sx={{ mt: 1, display: 'block' }}>
+              Restarting in {retryCountdown}…
             </Typography>
           )}
         </Paper>
@@ -316,7 +459,7 @@ export default function SessionScreen() {
           score={score}
           currentMeasureIndex={isFreeTempo ? state.freeTempoMeasureIndex : state.currentMeasureIndex}
           currentNoteIndices={state.currentNoteIndices}
-          activeMidiNotes={isPlaying ? undefined : state.activeMidiNotes}
+          activeMidiNotes={state.activeMidiNotes}
           practiceResultsByNoteId={practiceResults}
         />
         {wrongNoteDisplay && (
@@ -400,7 +543,7 @@ export default function SessionScreen() {
         }}
       >
         {/* Post-exercise result actions */}
-        {lastExerciseResult && !isPlaying && (
+        {lastExerciseResult && !isPlaying && passed && (
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Button
               variant="outlined"
@@ -422,6 +565,27 @@ export default function SessionScreen() {
               }}
             >
               {exerciseNumber < totalExercises ? 'Next Exercise' : 'Finish'} <Icon name="arrow_forward" size={20} />
+            </Button>
+          </Box>
+        )}
+        {lastExerciseResult && !isPlaying && !passed && (
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button
+              variant="contained"
+              size="large"
+              onClick={() => {
+                cancelAutoRetry();
+                if (isFreeTempo) handleKeepPracticing();
+                else startPlayback();
+              }}
+              sx={{
+                gap: 1,
+                textTransform: 'none',
+                fontWeight: 600,
+                boxShadow: '0 4px 14px rgba(5, 150, 105, 0.3)',
+              }}
+            >
+              <Icon name="replay" size={20} /> Try Again
             </Button>
           </Box>
         )}

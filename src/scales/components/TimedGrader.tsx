@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { useScales } from '../store';
+import { useScales, hasEnabledMidiDevice } from '../store';
 import type { PracticeNoteResult, TimingJudgment } from '../../shared/practice/types';
 import {
   getAllMidiNoteOnTimes,
@@ -8,9 +8,12 @@ import {
   pruneStale,
 } from '../../shared/practice/practiceTimingStore';
 import { pitchClassDistance, deriveOctaveOffset } from '../../shared/practice/pitchMatch';
+import { isDebugEnabled, logDebugEvent } from '../utils/practiceDebugLog';
 
 const PERFECT_THRESHOLD_MS = 120;
+const PERFECT_THRESHOLD_MIC_MS = 200;
 const GRACE_PERIOD_MS = 200;
+const GRACE_PERIOD_MIC_MS = 350;
 const EVAL_BATCH_WINDOW_MS = 40;
 const PROXIMITY_SEMITONES = 2;
 
@@ -45,7 +48,10 @@ function pickTimingReferenceTime(
  */
 export default function TimedGrader() {
   const { state, dispatch } = useScales();
-  const { score, activeMidiNotes, activeExercise, isPlaying } = state;
+  const { score, activeMidiNotes, activeExercise, isPlaying, microphoneActive } = state;
+  const micOnly = microphoneActive && !hasEnabledMidiDevice(state);
+  const perfectThreshold = micOnly ? PERFECT_THRESHOLD_MIC_MS : PERFECT_THRESHOLD_MS;
+  const gracePeriod = micOnly ? GRACE_PERIOD_MIC_MS : GRACE_PERIOD_MS;
 
   const expectedRef = useRef<Map<string, ExpectedNote>>(new Map());
   const evaluatedNoteIds = useRef<Set<string>>(new Set());
@@ -111,7 +117,7 @@ export default function TimedGrader() {
     let timing: TimingJudgment;
     if (!pitchCorrect) {
       timing = isAttempting ? 'wrong_pitch' : 'missed';
-    } else if (Math.abs(timingOffsetMs) < PERFECT_THRESHOLD_MS) {
+    } else if (Math.abs(timingOffsetMs) < perfectThreshold) {
       timing = 'perfect';
     } else if (timingOffsetMs < 0) {
       timing = 'early';
@@ -130,10 +136,20 @@ export default function TimedGrader() {
       timing,
     };
 
+    if (isDebugEnabled()) {
+      logDebugEvent({
+        type: 'eval_attempt', t: performance.now(), noteId: expected.noteId,
+        played, expectedPitches: anchored, pitchCorrect, timing,
+        timingOffsetMs,
+        midiTimesSnapshot: Array.from(midiTimes.entries()),
+        expectedTime: getNoteExpectedTime(expected.noteId) ?? null,
+      });
+    }
+
     dispatch({ type: 'ADD_PRACTICE_RESULT', result });
     evaluatedNoteIds.current.add(expected.noteId);
     return true;
-  }, [dispatch, allowOctaveFlex, getAnchoredPitches]);
+  }, [dispatch, allowOctaveFlex, getAnchoredPitches, perfectThreshold]);
 
   const evaluateTimed = useCallback((played: number[]) => {
     const midiTimes = getAllMidiNoteOnTimes();
@@ -190,6 +206,15 @@ export default function TimedGrader() {
       }
     }
 
+    if (isDebugEnabled() && newExpected.size > 0) {
+      logDebugEvent({
+        type: 'expected_change', t: performance.now(),
+        expected: [...newExpected.values()].map(e => ({
+          noteId: e.noteId, pitches: e.pitches, hand: e.hand,
+        })),
+      });
+    }
+
     expectedRef.current = newExpected;
   }, [score, isPlaying, state.currentMeasureIndex, state.currentNoteIndices]);
 
@@ -220,7 +245,11 @@ export default function TimedGrader() {
           if (wasEvaluated) continue;
         }
 
-        if (now - passed.passedAt >= GRACE_PERIOD_MS) {
+        if (now - passed.passedAt >= gracePeriod) {
+          if (isDebugEnabled()) {
+            logDebugEvent({ type: 'grace_miss', t: now, noteId: passed.noteId,
+              expectedPitches: passed.pitches, passedAt: passed.passedAt });
+          }
           dispatch({
             type: 'ADD_PRACTICE_RESULT',
             result: {
@@ -247,7 +276,7 @@ export default function TimedGrader() {
         graceTimerRef.current = null;
       }
     };
-  }, [isPlaying, dispatch, activeExercise?.bpm, tryEvaluateNote]);
+  }, [isPlaying, dispatch, activeExercise?.bpm, tryEvaluateNote, gracePeriod]);
 
   // Debounced evaluation on MIDI input changes
   useEffect(() => {

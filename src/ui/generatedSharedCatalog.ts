@@ -2592,6 +2592,24 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-music-pitch-microphonepitchinput-ts-microphonepitchinputoptions",
+    "name": "MicrophonePitchInputOptions",
+    "path": "src/shared/music/pitch/microphonePitchInput.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
     "id": "src-shared-music-pitch-pitchdetection-ts-detectpitchfrequency",
     "name": "detectPitchFrequency",
     "path": "src/shared/music/pitch/pitchDetection.ts",
@@ -2925,7 +2943,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "piano"
+    ],
     "exportType": "const",
     "demoId": null
   },
@@ -2941,7 +2961,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "piano"
+    ],
     "exportType": "const",
     "demoId": null
   },
@@ -2956,7 +2978,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "music"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "piano"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -2971,7 +2995,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "music"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "piano"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -2987,7 +3013,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "piano"
+    ],
     "exportType": "type",
     "demoId": null
   },
@@ -3003,7 +3031,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "piano"
+    ],
     "exportType": "interface",
     "demoId": null
   },
@@ -3019,7 +3049,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "piano"
+    ],
     "exportType": "interface",
     "demoId": null
   },
@@ -3034,7 +3066,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "music"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "piano"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -3049,7 +3083,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "music"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "piano"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -3064,7 +3100,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "music"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "piano"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -3079,7 +3117,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "music"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "piano"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -3095,7 +3135,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "piano"
+    ],
     "exportType": "type",
     "demoId": null
   },
@@ -3111,7 +3153,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "piano"
+    ],
     "exportType": "interface",
     "demoId": null
   },
@@ -3127,7 +3171,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "piano"
+    ],
     "exportType": "interface",
     "demoId": null
   },
@@ -3143,7 +3189,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "piano"
+    ],
     "exportType": "interface",
     "demoId": null
   },
@@ -3159,7 +3207,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "piano"
+    ],
     "exportType": "interface",
     "demoId": null
   },
@@ -3175,7 +3225,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "piano"
+    ],
     "exportType": "interface",
     "demoId": null
   },
@@ -3191,7 +3243,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "piano"
+    ],
     "exportType": "interface",
     "demoId": null
   },
@@ -3207,7 +3261,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "piano"
+    ],
     "exportType": "interface",
     "demoId": null
   },

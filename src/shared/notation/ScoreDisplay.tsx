@@ -30,8 +30,8 @@ interface ScoreDisplayProps {
 const RESULT_COLORS = {
   perfect: '#10b981',
   early: '#3b82f6',
-  late: '#ef4444',
-  wrong_pitch: '#f59e0b',
+  late: '#f59e0b',
+  wrong_pitch: '#ef4444',
   missed: '#94a3b8',
 };
 

@@ -1,6 +1,6 @@
 import type { MidiDevice } from '../music/scoreTypes';
 
-type MidiCallback = (type: 'noteon' | 'noteoff', note: number, velocity: number, timestamp: number) => void;
+type MidiCallback = (type: 'noteon' | 'noteoff', note: number, velocity: number, timestamp: number, deviceId: string) => void;
 type ConnectionCallback = (connected: boolean, devices: MidiDevice[]) => void;
 
 export class MidiInput {
@@ -31,29 +31,30 @@ export class MidiInput {
         manufacturer: input.manufacturer || 'Unknown',
         connected: input.state === 'connected',
       });
-      input.onmidimessage = this.handleMessage;
+      const id = input.id;
+      input.onmidimessage = (event) => this.handleMessage(event, id);
     });
     this.connected = devices.some(d => d.connected);
     this.connectionCallback?.(this.connected, devices);
   }
 
-  private handleMessage = (event: MIDIMessageEvent) => {
+  private handleMessage(event: MIDIMessageEvent, deviceId: string) {
     if (!event.data || event.data.length < 3) return;
     const ts = event.timeStamp || performance.now();
     const [status, note, velocity] = event.data;
     const command = status & 0xf0;
     if (command === 0x90 && velocity > 0) {
-      this.noteCallback?.('noteon', note, velocity / 127, ts);
+      this.noteCallback?.('noteon', note, velocity / 127, ts, deviceId);
     } else if (command === 0x80 || (command === 0x90 && velocity === 0)) {
-      this.noteCallback?.('noteoff', note, 0, ts);
+      this.noteCallback?.('noteoff', note, 0, ts, deviceId);
     } else if (command === 0xb0) {
       if (note === 120 || note === 121 || note === 123) {
         for (let midiNote = 0; midiNote < 128; midiNote += 1) {
-          this.noteCallback?.('noteoff', midiNote, 0, ts);
+          this.noteCallback?.('noteoff', midiNote, 0, ts, deviceId);
         }
       }
     }
-  };
+  }
 
   onNote(cb: MidiCallback) { this.noteCallback = cb; }
   onConnection(cb: ConnectionCallback) { this.connectionCallback = cb; }

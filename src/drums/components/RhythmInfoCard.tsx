@@ -30,59 +30,6 @@ function useIsMobile() {
 }
 
 /**
- * Determines the time signature for a rhythm based on its pattern length
- */
-function inferTimeSignature(notation: string): TimeSignature {
-  // Remove spaces and newlines
-  const cleanNotation = notation.replace(/[\s\n]/g, '');
-  
-  // Count the total duration in sixteenths
-  let totalSixteenths = 0;
-  let i = 0;
-  
-  while (i < cleanNotation.length) {
-    const char = cleanNotation[i];
-    
-    if (char === 'D' || char === 'T' || char === 'K' || char === '_') {
-      let duration = 1;
-      let j = i + 1;
-      
-      if (char === '_') {
-        while (j < cleanNotation.length && cleanNotation[j] === '_') {
-          duration++;
-          j++;
-        }
-      } else {
-        while (j < cleanNotation.length && cleanNotation[j] === '-') {
-          duration++;
-          j++;
-        }
-      }
-      
-      totalSixteenths += duration;
-      i = j;
-    } else {
-      i++;
-    }
-  }
-  
-  // Determine time signature based on total sixteenths
-  // 8 sixteenths = 2/4
-  // 16 sixteenths = 4/4
-  // 12 sixteenths could be 3/4 or 6/8
-  if (totalSixteenths === 8) {
-    return { numerator: 2, denominator: 4 };
-  } else if (totalSixteenths === 16) {
-    return { numerator: 4, denominator: 4 };
-  } else if (totalSixteenths === 12) {
-    return { numerator: 3, denominator: 4 };
-  }
-  
-  // Default to 4/4
-  return { numerator: 4, denominator: 4 };
-}
-
-/**
  * Normalizes notation for comparison
  */
 function normalizeNotation(notation: string): string {
@@ -161,7 +108,7 @@ const RhythmInfoCard: React.FC<RhythmInfoCardProps> = ({
                   onClick={() =>
                     onSelectVariation(
                       variation.notation,
-                      variation.timeSignature ?? inferTimeSignature(variation.notation)
+                      variation.timeSignature ?? rhythm.timeSignature
                     )
                   }
                   type="button"

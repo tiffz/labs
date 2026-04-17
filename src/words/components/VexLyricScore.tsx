@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef } from 'react';
-import { Renderer, Stave, StaveNote, Voice, Formatter, Dot, BarlineType, Beam, StaveTie, StaveConnector } from 'vexflow';
+import { Renderer, Stave, StaveNote, Voice, Formatter, Dot, BarlineType, Beam, StaveTie, StaveConnector, Fraction } from 'vexflow';
 import type { ParsedRhythm, TimeSignature } from '../../shared/rhythm/types';
 import { drawDrumSymbol } from '../../shared/notation/drumSymbols';
 import type { SyllableHit } from '../utils/prosodyEngine';
@@ -460,7 +460,11 @@ const VexLyricScore: React.FC<VexLyricScoreProps> = ({
         voice.setStrict(false);
         voice.addTickables(vexNotes);
         new Formatter().joinVoices([voice]).format([voice], measureWidth - 32);
-        const beams = Beam.generateBeams(vexNotes, { beamRests: false });
+        const beamGroups =
+          timeSignature.numerator > 3 && timeSignature.numerator % 3 === 0
+            ? [new Fraction(3, timeSignature.denominator)]
+            : [new Fraction(1, timeSignature.denominator)];
+        const beams = Beam.generateBeams(vexNotes, { beamRests: false, groups: beamGroups });
         voice.draw(context, stave);
         beams.forEach((beam) => beam.setContext(context).draw());
         for (let noteIndex = 1; noteIndex < vexNotes.length; noteIndex += 1) {
