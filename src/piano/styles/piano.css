@@ -31,8 +31,8 @@
   --piano-border: #e2e8f0;
   --piano-border-strong: #cbd5e1;
   --piano-text: #1e293b;
-  --piano-text-secondary: #64748b;
-  --piano-text-muted: #94a3b8;
+  --piano-text-secondary: #475569;
+  --piano-text-muted: #64748b;
   --piano-primary: #7c3aed;
   --piano-primary-hover: #6d28d9;
   --piano-primary-light: rgba(124, 58, 237, 0.08);
@@ -4633,5 +4633,26 @@ body {
   }
   .dashboard-stats {
     grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ==========================================================================
+   Mobile / coarse-pointer touch targets
+   Ensures iconographic and secondary controls meet the 44x44 minimum hit area
+   recommended by WCAG 2.5.5 and Apple HIG when interacted with via touch.
+   Visual layout is preserved on desktop; overrides only apply to coarse
+   pointers (touch devices).
+   ========================================================================== */
+@media (pointer: coarse) {
+  .vp-icon-btn,
+  .vp-text-btn,
+  .icon-btn,
+  .piano-icon-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .vp-toggle-btn {
+    min-height: 44px;
   }
 }

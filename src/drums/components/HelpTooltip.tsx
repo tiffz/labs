@@ -98,7 +98,7 @@ const HelpTooltip: React.FC<HelpTooltipProps> = ({ content, ariaLabel = "Show he
                 top: `${position.top}px`,
                 left: `${position.left}px`,
                 zIndex: 12000,
-                minWidth: 'min(360px, calc(100vw - 24px))',
+                width: 'min(360px, calc(100vw - 24px))',
               }}
               onMouseEnter={showNow}
               onMouseLeave={hideSoon}

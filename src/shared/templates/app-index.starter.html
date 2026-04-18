@@ -2,26 +2,71 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      color-scheme and theme-color control the browser chrome (status bar,
+      form control defaults) before CSS loads. Match this app's dominant
+      background ("light" or "dark") and its primary brand color.
+    -->
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#4f46e5" />
+
+    <!--
+      Critical CSS. Paints the html background during HTML parse so that the
+      user never sees a flash of unstyled content (FOUC) before the app's
+      theme stylesheet loads. Keep this string tiny - two declarations only.
+      The background MUST match the app's resting body background.
+    -->
+    <style>html{color-scheme:light;background:#ffffff;color:#1e293b}</style>
+
+    <!--
+      HTML shell cache-busting. Combined with the build-version.txt reload
+      hook, this keeps users from being stuck on a stale SPA shell after a
+      deploy. DO NOT add a manifest or service worker here; labs deliberately
+      opts out of PWA install prompts (see vite.config.ts).
+    -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#4f46e5" />
-    <meta name="description" content="TODO: describe this app." />
+
     <title>TODO: App Name - Tiff Zhang Labs</title>
+    <meta name="description" content="TODO: describe this app." />
+    <link rel="canonical" href="https://labs.tiffzhang.com/TODO_APP/" />
 
-    <!-- Optional fonts (keep only what the app needs). -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" />
+    <!-- Social share metadata. -->
+    <meta property="og:title" content="TODO: App Name - Tiff Zhang Labs" />
+    <meta property="og:description" content="TODO: describe this app." />
+    <meta property="og:url" content="https://labs.tiffzhang.com/TODO_APP/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Tiff Zhang Labs" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="TODO: App Name - Tiff Zhang Labs" />
+    <meta name="twitter:description" content="TODO: describe this app." />
 
-    <!-- Always include app-safe shared base. -->
+    <!-- Favicons. Every app ships a per-app SVG + Apple touch icon. -->
+    <link rel="icon" type="image/svg+xml" href="/icons/favicon-TODO_APP.svg" />
+    <link rel="apple-touch-icon" href="/icons/favicon-TODO_APP.svg" />
+
+    <!--
+      Shared CSS baseline (box-sizing reset, skip-link styles, reduced-motion
+      override). Required for every app so that <SkipToMain /> and the global
+      a11y baseline work.
+    -->
     <link rel="stylesheet" href="/styles/shared.css" />
 
-    <!-- Optional: include only for landing/marketing-style pages. -->
-    <!-- <link rel="stylesheet" href="/styles/labs-home.css" /> -->
+    <!--
+      Self-host any webfonts via @fontsource (see src/shared/ui/fonts/).
+      DO NOT add <link rel="stylesheet" href="https://fonts.googleapis.com/...">
+      in new apps: Google Fonts blocks the render, fights the critical CSS
+      above, and leaks to a third party. Pull in the font via JS (fontsource)
+      and gate rendering with font-display: swap.
+    -->
 
-    <!-- Optional analytics in non-local environments. -->
+    <!--
+      Analytics. Localhost is guarded so tests, dev servers, and e2e runs
+      never ping the analytics endpoint. Keep this block identical across
+      apps.
+    -->
     <script>
       if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
         const script = document.createElement('script');
@@ -32,6 +77,11 @@
     </script>
   </head>
   <body>
+    <noscript>
+      <p style="padding:24px;font-family:system-ui,sans-serif">
+        This app needs JavaScript to run. Please enable JavaScript in your browser.
+      </p>
+    </noscript>
     <div id="root"></div>
     <script type="module" src="/TODO_APP/main.tsx"></script>
   </body>

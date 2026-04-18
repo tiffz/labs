@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import SkipToMain from '../shared/components/SkipToMain';
 import Popover from '@mui/material/Popover';
 import Drawer from '@mui/material/Drawer';
 import IconButton from '@mui/material/IconButton';
@@ -600,6 +601,7 @@ const App: React.FC = () => {
 
   return (
     <div className="chords-app">
+      <SkipToMain />
       <header className="chords-header">
         <IconButton
           className="chords-menu-button"
@@ -614,7 +616,7 @@ const App: React.FC = () => {
         <h1>Chord Progression Generator</h1>
       </header>
       
-      <main className="chords-main">
+      <main id="main" className="chords-main">
         {isResponsiveLayout ? (
           <Drawer
             anchor="left"

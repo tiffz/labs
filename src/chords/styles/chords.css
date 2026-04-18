@@ -82,6 +82,7 @@
     text-size-adjust: 100%;
     -webkit-text-size-adjust: 100%;
     min-height: 100vh;
+    min-height: 100dvh;
     position: static !important;
     overflow-x: hidden;
   }
@@ -97,6 +98,7 @@
     padding: 0 !important;
     width: 100vw !important;
     height: 100vh !important;
+    height: 100dvh !important;
     overflow: hidden;
     display: block !important;
   }
@@ -131,6 +133,7 @@
 
 .chords-app {
   height: 100vh;
+  height: 100dvh;
   width: 100vw;
   margin: 0;
   padding: 0;
@@ -1029,6 +1032,7 @@
   .chords-app {
     height: auto;
     min-height: 100vh;
+    min-height: 100dvh;
   }
 
   .chords-main {

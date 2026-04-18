@@ -80,9 +80,28 @@ export default defineConfig({
     rollupOptions: {
       input: MULTI_APP_INPUTS,
       output: {
-        manualChunks: {
-          // Vendor chunk for React and related libraries
-          vendor: ['react', 'react-dom'],
+        manualChunks: (id: string) => {
+          if (id.includes('node_modules')) {
+            if (id.includes('react-dom') || id.includes('react/') || id.endsWith('/react')) {
+              return 'vendor';
+            }
+            if (id.includes('@mui/') || id.includes('@emotion/')) {
+              return 'mui';
+            }
+            if (id.includes('vexflow')) {
+              return 'vexflow';
+            }
+            if (id.includes('three') || id.includes('@react-three')) {
+              return 'three';
+            }
+            // Keep pdf-lib + file-saver out of the zines main chunk so that
+            // the initial load does not ship ~200 KB gzip of PDF code. These
+            // are only pulled in when the user exports a zine.
+            if (id.includes('/pdf-lib/') || id.includes('/file-saver/')) {
+              return 'pdf-lib';
+            }
+          }
+          return undefined;
         },
         // Better chunk naming
         chunkFileNames: 'js/[name]-[hash].js',
@@ -850,6 +869,14 @@ export default defineConfig({
         out = out.replace(
           '</head>',
           '<script>if("serviceWorker"in navigator)navigator.serviceWorker.getRegistrations().then(function(r){r.forEach(function(s){s.unregister()})})</script>\n</head>',
+        );
+
+        // 3a. Block PWA install prompts. No manifest is shipped, but Chrome can still
+        //     fire `beforeinstallprompt` if site heuristics change. Call preventDefault
+        //     on both events so the install banner never surfaces.
+        out = out.replace(
+          '</head>',
+          '<script>addEventListener("beforeinstallprompt",function(e){e.preventDefault()});addEventListener("appinstalled",function(e){e.preventDefault()});</script>\n</head>',
         );
 
         // 4. Stale-HTML detection: if the deployed build-version.txt doesn't match

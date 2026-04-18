@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import type { ZineMode, PDFGenerationOptions, PDFExportFormat, BookletPageInfo, SpreadInfo, PDFResult, PaperConfig } from '../types';
-import { estimateUncompressedSize, estimateCompressedSize, formatFileSize } from '../utils/pdfGenerator';
+import { estimateUncompressedSize, estimateCompressedSize, formatFileSize } from '../utils/pdfMetrics';
 import AppSlider from '../../shared/components/AppSlider';
 
 interface ExportOptionsProps {

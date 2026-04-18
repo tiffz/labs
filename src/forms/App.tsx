@@ -9,6 +9,7 @@ import FormMesh from './components/FormMesh';
 import IntersectionLines from './components/IntersectionLines';
 import ViewControls from './components/ViewControls';
 import { createAppAnalytics } from '../shared/utils/analytics';
+import SkipToMain from '../shared/components/SkipToMain';
 
 const analytics = createAppAnalytics('forms');
 
@@ -78,6 +79,7 @@ function App() {
 
   return (
     <div className="forms-app">
+      <SkipToMain />
       {/* Mobile menu button - hidden when sidebar is open */}
       {!isSidebarOpen && (
         <button 
@@ -114,7 +116,7 @@ function App() {
         onClose={handleCloseSidebar}
       />
       
-      <div className="forms-canvas-container">
+      <main id="main" className="forms-canvas-container">
         <Canvas
           gl={{ antialias: true, alpha: true }}
           style={{ background: '#fafafa' }}
@@ -171,7 +173,7 @@ function App() {
         <div className="help-text">
           Drag to rotate • Scroll to zoom • Right-drag to pan
         </div>
-      </div>
+      </main>
     </div>
   );
 }

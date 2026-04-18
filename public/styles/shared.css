@@ -18,3 +18,42 @@ body {
 #root {
   min-height: 100%;
 }
+
+/* Skip link: visually hidden until focused so keyboard / assistive-tech
+   users can jump straight to the primary <main id="main"> landmark.
+   See <SkipToMain /> in src/shared/components/SkipToMain.tsx. */
+.skip-to-main {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 10000;
+  padding: 8px 16px;
+  background: #0f172a;
+  color: #ffffff;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 6px;
+  transform: translateY(-200%);
+  transition: transform 150ms ease-out;
+}
+
+.skip-to-main:focus,
+.skip-to-main:focus-visible {
+  transform: translateY(0);
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+}
+
+/* Global reduced-motion baseline. Apps may opt individual animations back in
+   inside their own `@media (prefers-reduced-motion: reduce)` blocks when an
+   animation is critical to the UX (e.g. beat-sync indicators). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -5,6 +5,7 @@ import { UIPanel } from './components/UIPanel';
 import type { GameState } from './game/types';
 import { createEmptyMap, generateRooms, carveRooms, connectRooms, seedEntities } from './game/generation';
 import { createAppAnalytics } from '../shared/utils/analytics';
+import SkipToMain from '../shared/components/SkipToMain';
 
 const analytics = createAppAnalytics('corp');
 
@@ -309,7 +310,9 @@ export default function CorpApp() {
   const offsetTop = heightEff > mapHeightPx ? Math.floor((heightEff - mapHeightPx) / 2) : 0;
 
   return (
-    <div className="game-container" id="game-container" key={version}>
+    <>
+      <SkipToMain />
+      <main id="main" className="game-container" key={version}>
       <div className="viewport" id="viewport" ref={viewportRef}>
         {state ? (
           <MapView
@@ -338,7 +341,8 @@ export default function CorpApp() {
         )}
       </div>
       <UIPanel state={state ?? null} onUseItem={handleUseItem} onRestart={restart} />
-    </div>
+    </main>
+    </>
   );
 }
 

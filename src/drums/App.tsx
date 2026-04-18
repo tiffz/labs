@@ -24,6 +24,7 @@ import {
 } from './utils/dragAndDrop';
 import type { TimeSignature } from './types';
 import { createAppAnalytics } from '../shared/utils/analytics';
+import SkipToMain from '../shared/components/SkipToMain';
 
 const analytics = createAppAnalytics('drums');
 import type { PlaybackSettings } from './types/settings';
@@ -561,8 +562,9 @@ const App: React.FC = () => {
 
   return (
     <div className="app-layout">
+      <SkipToMain />
       {/* Main content area */}
-      <div className="main-content">
+      <main id="main" className="main-content">
         <header className="header-inline">
           <h1>Darbuka Rhythm Trainer</h1>
         </header>
@@ -661,7 +663,7 @@ const App: React.FC = () => {
           )}
         </div>
 
-      </div>
+      </main>
 
       {/* Right sidebar: Note Palette (full height) */}
       <aside className="palette-sidebar">

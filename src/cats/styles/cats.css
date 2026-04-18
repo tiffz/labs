@@ -6,6 +6,7 @@ body {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
+  min-height: 100dvh;
   margin: 0;
   padding: 1rem; /* M3 edge-to-edge padding */
   box-sizing: border-box;
@@ -4272,6 +4273,7 @@ body.wand-mode-active * {
   display: flex;
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   background: #2d3748;
   box-sizing: border-box; /* Ensure proper sizing calculations */
@@ -4289,6 +4291,7 @@ body.wand-mode-active * {
   min-width: 450px;
   max-width: 450px;
   height: 100vh;
+  height: 100dvh;
   background: #ffffff;
   border-left: 1px solid #e2e8f0;
   overflow: hidden; /* Prevent panel from scrolling, let content scroll */
@@ -5290,7 +5293,9 @@ body {
   min-width: 400px !important;
   max-width: 400px !important;
   height: calc(100vh - 40px) !important;
+  height: calc(100dvh - 40px) !important;
   max-height: calc(100vh - 40px) !important;
+  max-height: calc(100dvh - 40px) !important;
   /* Prevent size changes during tab switches */
   flex-shrink: 0;
 }
@@ -5503,6 +5508,7 @@ body {
   box-shadow: none;
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
   max-width: unset;
 }
 

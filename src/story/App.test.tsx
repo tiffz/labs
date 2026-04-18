@@ -20,14 +20,13 @@ describe('Story Generator App', () => {
     expect(generateButton).toBeInTheDocument();
   });
 
-  it('generates a story when button is clicked', () => {
+  it('generates a story when button is clicked', async () => {
     render(<App />);
     const generateButton = screen.getByRole('button', { name: /generate story/i });
 
     fireEvent.click(generateButton);
 
-    // Check that story elements appear - now in the fixed header
-    expect(screen.getByText(/Core Story Elements/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Core Story Elements/i, {}, { timeout: 5000 })).toBeInTheDocument();
     expect(screen.getByText(/Key Genre Elements/i)).toBeInTheDocument();
   });
 
@@ -36,17 +35,14 @@ describe('Story Generator App', () => {
     expect(screen.getByText(/Based on Jessica Brody/i)).toBeInTheDocument();
   });
 
-  it('allows rerolling genre and theme', () => {
+  it('allows rerolling genre and theme', async () => {
     render(<App />);
     const generateButton = screen.getByRole('button', { name: /generate story/i });
 
-    // First generate a story
     fireEvent.click(generateButton);
 
-    // Check that the fixed header appears with core elements
-    expect(screen.getByText(/Core Story Elements/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Core Story Elements/i, {}, { timeout: 5000 })).toBeInTheDocument();
 
-    // Find reroll buttons (there should be multiple)
     const rerollButtons = screen.getAllByRole('button', { name: /reroll/i });
     expect(rerollButtons.length).toBeGreaterThan(0);
   });

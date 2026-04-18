@@ -268,3 +268,112 @@ Separate neutral global base CSS from decorative page chrome to prevent style bl
 
 - New app UIs no longer need brittle overrides for inherited `body`/`h1` styles.
 - Decorative site styling becomes opt-in and easier to evolve independently.
+
+## SPA Shell Hardening
+
+### Decision
+
+Every app entry HTML must paint its resting background before any CSS loads, must not install a service worker or PWA manifest, and must short-circuit any browser install prompt.
+
+### Rationale
+
+- A flash of unstyled content (FOUC) was visible in production while `pulse.css`, `piano.css`, etc. streamed in — the browser painted the default white background before the app's theme took over.
+- Labs is an experimentation surface, not an installable product. Chrome's PWA heuristics could still fire `beforeinstallprompt` on repeat visits even though we don't ship a manifest, and a stale `vite-plugin-pwa` service worker had been observed on older deploys.
+
+### Implementation
+
+- **Critical inline CSS.** Every `src/*/index.html` ships a single `<style>html{color-scheme:X;background:#...;color:#...}</style>` block in `<head>` that matches the app's resting body background. Keep it tiny (two declarations at most).
+- **`color-scheme` meta.** Pair the inline CSS with `<meta name="color-scheme" content="light | dark" />` so native form controls, scrollbars, and the first frame of the page use the right palette.
+- **Service-worker purge + install block.** `vite.config.ts` rewrites each built `index.html` to:
+  1. Unregister any existing `ServiceWorker` registrations (legacy `vite-plugin-pwa` worker, etc.).
+  2. Attach `addEventListener("beforeinstallprompt", e => e.preventDefault())` and `"appinstalled"` listeners so Chrome never surfaces the install banner.
+- **No manifest, no SW.** Do not add `link rel="manifest"` or register a service worker in any app. The kill-switch worker in `public/sw.js` exists only to unregister old deployments and clear their caches.
+- **Cache headers.** HTML entries only set `<meta http-equiv="Cache-Control" content="no-cache" />`. The triple `no-cache, no-store, must-revalidate` was retired because `build-version.txt` polling already forces a reload on new releases, and aggressive `no-store` defeated useful HTTP caching.
+- **Canonical template.** `src/shared/templates/app-index.starter.html` encodes this contract. Start new apps by copying it verbatim.
+
+### Benefits
+
+- No FOUC on cold loads. The paint matches the final theme.
+- PWA install prompts are impossible to reach, intentionally.
+- Old service workers on returning devices self-destruct on first visit.
+
+## Accessibility Baseline
+
+### Decision
+
+Every app mounts its primary content inside a single `<main id="main">` landmark, renders a `<SkipToMain />` link as the first focusable element, and inherits a global `prefers-reduced-motion` override from `public/styles/shared.css`.
+
+### Rationale
+
+- Keyboard and screen-reader users were forced to tab through repeated header chrome to reach app content.
+- Some apps removed browser-default focus outlines without providing a replacement ring, failing WCAG 2.4.7.
+- Animations played at full speed even when the OS requested reduced motion.
+
+### Implementation
+
+- **Landmarks.** Wrap the active content area in `<main id="main">`. If the surrounding element already controls layout (flex, grid), prefer applying `display: contents;` to `<main>` so existing layout isn't disturbed.
+- **Skip link.** Import and render `src/shared/components/SkipToMain.tsx` as the first child of the app root. Styling lives in `public/styles/shared.css` (`.skip-to-main`) and every app must link that stylesheet.
+- **Focus rings.** Never use bare `outline: none`. If you must suppress the default ring, replace it with a matching `:focus-visible` rule using the theme accent.
+- **Icon-only buttons.** Provide `aria-label` on every icon-only button. `AppTooltip` uses `describeChild={true}` and therefore does _not_ become the button's accessible name.
+- **Reduced motion.** The global override in `shared.css` clamps animation, transition, and scroll durations under `@media (prefers-reduced-motion: reduce)`. Apps only need to re-enable an animation inside their own `@media` block if it is essential to the UX.
+- **Contrast.** Muted text tokens must meet WCAG AA (4.5:1 on the app's background). Piano's muted token was bumped from `#94a3b8` to `#64748b` as reference.
+
+### Benefits
+
+- Keyboard and AT users can bypass chrome and reach the app in one keystroke.
+- Focus is always visible for keyboard users.
+- Reduced-motion requests are honored automatically without per-app work.
+
+## Cross-Platform Viewport
+
+### Decision
+
+Use `100dvh` with a `100vh` fallback for fullscreen app shells, never `100vh` alone.
+
+### Rationale
+
+iOS Safari's dynamic viewport (address bar hide/show) makes `100vh` overshoot the screen and hide bottom chrome behind the toolbar. `100dvh` tracks the visible area exactly.
+
+### Implementation
+
+```css
+.app-shell {
+  height: 100vh; /* fallback for old browsers */
+  height: 100dvh; /* real answer for modern Safari/Chrome */
+}
+```
+
+All existing app shells (pitch, words, cats, forms, chords, beat, drums, scales) have been migrated. New app CSS must follow the same pattern.
+
+## Bundle Splitting
+
+### Decision
+
+Emit a deterministic vendor chunk map for `react`, `@mui`, `vexflow`, and `three` so that apps which don't use those deps don't pay for them.
+
+### Implementation
+
+`vite.config.ts` uses a function-form `manualChunks`:
+
+```ts
+manualChunks: (id) => {
+  if (!id.includes('node_modules')) return undefined;
+  if (
+    id.includes('react-dom') ||
+    id.includes('/react/') ||
+    id.endsWith('/react')
+  )
+    return 'vendor';
+  if (id.includes('@mui/') || id.includes('@emotion/')) return 'mui';
+  if (id.includes('vexflow')) return 'vexflow';
+  if (id.includes('three') || id.includes('@react-three')) return 'three';
+  return undefined;
+};
+```
+
+Combined with path imports from `@mui/material/<Component>` (not barrel imports from `@mui/material`), each app only ships the MUI/vexflow/three code it actually references.
+
+### Related rules
+
+- **No `@mui/material` barrel imports.** Import each component from its path: `import Button from '@mui/material/Button'`.
+- **Lazy-load heavy modals and optional surfaces** with `React.lazy` + `<Suspense>`. Reference implementations: `src/piano/App.tsx` (ImportModal, Analytics, VideoPlayer, DebugPanel) and `src/beat/App.tsx` (YouTubePlayer).

@@ -1,78 +1,28 @@
 import { PDFDocument, rgb } from 'pdf-lib';
 import { saveAs } from 'file-saver';
-import type { BookletPageInfo, SpreadInfo, PDFGenerationOptions, PDFResult, CompressionPreset } from '../types';
+import type { BookletPageInfo, SpreadInfo, PDFGenerationOptions, PDFResult } from '../types';
 import { convertToCMYK } from './imageProcessor';
 import { organizeIntoSpreads } from './spreadOrganizer';
 import { calculateRequiredContentPages } from './spreadPairing';
+import {
+  COMPRESSION_PRESETS,
+  getEffectiveCompressionSettings,
+  estimateUncompressedSize,
+  estimateCompressedSize,
+  getCompressionDescription,
+  formatFileSize,
+} from './pdfMetrics';
 
-/**
- * Compression preset configurations
- */
-const COMPRESSION_PRESETS: Record<CompressionPreset, { 
-  convertToJpeg: boolean; 
-  jpegQuality: number; 
-  reduceResolution: boolean; 
-  resolutionScale: number;
-  description: string;
-}> = {
-  none: {
-    convertToJpeg: false,
-    jpegQuality: 1,
-    reduceResolution: false,
-    resolutionScale: 1,
-    description: 'No compression - original quality',
-  },
-  light: {
-    convertToJpeg: true,
-    jpegQuality: 0.92,
-    reduceResolution: false,
-    resolutionScale: 1,
-    description: 'Light - JPEG 92% quality',
-  },
-  medium: {
-    convertToJpeg: true,
-    jpegQuality: 0.85,
-    reduceResolution: true,
-    resolutionScale: 0.85,
-    description: 'Medium - JPEG 85% + 85% resolution',
-  },
-  maximum: {
-    convertToJpeg: true,
-    jpegQuality: 0.7,
-    reduceResolution: true,
-    resolutionScale: 0.5,
-    description: 'Maximum - Similar to macOS "Reduce File Size"',
-  },
-  custom: {
-    convertToJpeg: false,
-    jpegQuality: 0.85,
-    reduceResolution: false,
-    resolutionScale: 1,
-    description: 'Custom settings',
-  },
+// Re-export lightweight size/compression helpers so the existing public API
+// of this module stays stable. Import from './pdfMetrics' directly when you
+// only need size math (that path does not drag in pdf-lib).
+export {
+  COMPRESSION_PRESETS,
+  estimateUncompressedSize,
+  estimateCompressedSize,
+  getCompressionDescription,
+  formatFileSize,
 };
-
-export { COMPRESSION_PRESETS };
-
-/**
- * Gets effective compression settings based on preset or custom options
- */
-function getEffectiveCompressionSettings(options: PDFGenerationOptions): {
-  convertToJpeg: boolean;
-  jpegQuality: number;
-  reduceResolution: boolean;
-  resolutionScale: number;
-} {
-  if (options.compressionPreset === 'custom') {
-    return {
-      convertToJpeg: options.convertToJpeg,
-      jpegQuality: options.jpegQuality,
-      reduceResolution: options.reduceResolution,
-      resolutionScale: options.resolutionScale,
-    };
-  }
-  return COMPRESSION_PRESETS[options.compressionPreset];
-}
 
 /**
  * Processes an image with compression options (JPEG conversion and/or resolution reduction)
@@ -783,74 +733,6 @@ export async function generatePDF(
 /**
  * Estimates file size of uncompressed PDF based on image data sizes
  */
-export function estimateUncompressedSize(pages: BookletPageInfo[], spreads: SpreadInfo[]): number {
-  let totalSize = 0;
-  
-  for (const page of pages) {
-    // Base64 data URL overhead is about 1.37x, so divide to get rough original size
-    totalSize += Math.round((page.imageData.length * 3) / 4);
-  }
-  
-  for (const spread of spreads) {
-    totalSize += Math.round((spread.imageData.length * 3) / 4);
-  }
-  
-  // Add PDF overhead (roughly 5KB for structure)
-  totalSize += 5000;
-  
-  return totalSize;
-}
-
-/**
- * Estimates file size with compression based on preset or custom settings
- */
-export function estimateCompressedSize(
-  uncompressedSize: number, 
-  options: PDFGenerationOptions
-): number {
-  const settings = getEffectiveCompressionSettings(options);
-  
-  let size = uncompressedSize;
-  
-  // Resolution reduction: size scales with the square of the resolution scale
-  // (since both width and height are reduced)
-  if (settings.reduceResolution) {
-    size *= (settings.resolutionScale * settings.resolutionScale);
-  }
-  
-  // JPEG compression
-  if (settings.convertToJpeg) {
-    // Higher quality = less compression
-    // At quality 0.85, expect about 40-60% of original size for PNG->JPEG
-    const jpegRatio = 0.3 + (settings.jpegQuality * 0.4);
-    size *= jpegRatio;
-  }
-  
-  return Math.round(size);
-}
-
-/**
- * Gets compression ratio description for UI
- */
-export function getCompressionDescription(options: PDFGenerationOptions): string {
-  if (options.compressionPreset !== 'custom') {
-    return COMPRESSION_PRESETS[options.compressionPreset].description;
-  }
-  
-  const parts: string[] = [];
-  if (options.convertToJpeg) {
-    parts.push(`JPEG ${Math.round(options.jpegQuality * 100)}%`);
-  }
-  if (options.reduceResolution) {
-    parts.push(`${Math.round(options.resolutionScale * 100)}% resolution`);
-  }
-  
-  return parts.length > 0 ? parts.join(' + ') : 'No compression';
-}
-
-/**
- * Generates a PDF and returns the result with metadata
- */
 export async function createPDF(
   pages: BookletPageInfo[],
   spreads: SpreadInfo[],
@@ -899,12 +781,22 @@ export function downloadBlob(blob: Blob, fileName: string): void {
 }
 
 /**
- * Formats file size in human-readable format
+ * Builds a single-page PDF blob from a rendered canvas. Used by minizine
+ * export where the whole zine is captured on one sheet.
  */
-export function formatFileSize(bytes: number): string {
-  if (bytes === 0) return '0 Bytes';
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+export async function createSinglePagePDFBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+  const dataURL = canvas.toDataURL('image/png');
+  const pdfDoc = await PDFDocument.create();
+  const pngImage = await pdfDoc.embedPng(dataURL);
+
+  const page = pdfDoc.addPage([canvas.width, canvas.height]);
+  page.drawImage(pngImage, {
+    x: 0,
+    y: 0,
+    width: canvas.width,
+    height: canvas.height,
+  });
+
+  const pdfBytes = await pdfDoc.save();
+  return new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' });
 }

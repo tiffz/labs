@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
+import SkipToMain from '../shared/components/SkipToMain';
 import BpmInput from '../shared/components/music/BpmInput';
 import KeyInput from '../shared/components/music/KeyInput';
 import ChordProgressionInput from '../shared/components/music/ChordProgressionInput';
@@ -1107,7 +1108,9 @@ function App() {
       : 'Regression';
 
   return (
-    <main className="ui-docs-app">
+    <>
+      <SkipToMain />
+      <main id="main" className="ui-docs-app">
       <header className="ui-docs-header ui-docs-header-sticky">
         <div className="ui-header-main-row">
           <div className="ui-header-brand">
@@ -1430,6 +1433,7 @@ function App() {
         )}
       </section>
     </main>
+    </>
   );
 }
 

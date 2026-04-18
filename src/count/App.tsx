@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import SkipToMain from '../shared/components/SkipToMain';
 import Popover from '@mui/material/Popover';
 import type { TimeSignature } from '../shared/rhythm/types';
 import {
@@ -444,6 +445,7 @@ export default function App() {
 
   return (
     <div className="pulse-app">
+      <SkipToMain />
       <header className="pulse-header">
         <div className="pulse-title-row">
           <h1 className={`pulse-title ${titleAnim}`}>
@@ -579,7 +581,7 @@ export default function App() {
         />
       </Popover>
 
-      <main className="pulse-main">
+      <main id="main" className="pulse-main">
         <div className="pulse-top-row">
           <section className="pulse-transport-left">
             <BpmControl bpm={bpm} onChange={handleBpmChange} />

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import SkipToMain from '../shared/components/SkipToMain';
 import OnscreenPianoKeyboard from '../shared/components/music/OnscreenPianoKeyboard';
 import {
   MicrophonePitchInput,
@@ -235,7 +236,8 @@ export default function App(): React.ReactElement {
 
   return (
     <div className="pitch-app">
-      <main className="pitch-shell">
+      <SkipToMain />
+      <main id="main" className="pitch-shell">
         <header className="pitch-header">
           <div className="pitch-header-main">
             <h1>Vocal Pitch Detector</h1>

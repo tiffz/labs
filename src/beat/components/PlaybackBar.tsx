@@ -1,5 +1,10 @@
 import React, { useCallback, useRef, useState, useMemo, useEffect } from 'react';
-import { Checkbox, FormControlLabel, IconButton, Menu, MenuItem, TextField } from '@mui/material';
+import Checkbox from '@mui/material/Checkbox';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import IconButton from '@mui/material/IconButton';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import TextField from '@mui/material/TextField';
 import type { Section } from '../utils/sectionDetector';
 import type { LoopRegion } from '../hooks/useBeatSync';
 import type { ChordEvent, KeyChange } from '../utils/chordAnalyzer';
@@ -674,6 +679,7 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
                       <IconButton
                         size="small"
                         className="lane-menu-trigger"
+                        aria-label="Generated lane options"
                         onClick={(event) => openLaneMenu('generated', event.currentTarget)}
                       >
                         <span className="material-symbols-outlined">more_horiz</span>
@@ -721,6 +727,7 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
                         <IconButton
                           size="small"
                           className="lane-menu-trigger"
+                          aria-label={`Options for ${lane.name} lane`}
                           onClick={(event) => openLaneMenu(lane.id, event.currentTarget)}
                         >
                           <span className="material-symbols-outlined">more_horiz</span>
@@ -935,7 +942,7 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
         <div className="section-actions">
           {onSplitAtCurrentTime && (
             <AppTooltip title={hasSelection ? `Split at current timestamp (${currentTime.toFixed(1)}s)` : `Split song at current timestamp (${currentTime.toFixed(1)}s)`}>
-              <button className="section-action-btn icon-only" onClick={onSplitAtCurrentTime}>
+              <button className="section-action-btn icon-only" aria-label="Split at current timestamp" onClick={onSplitAtCurrentTime}>
                 <span className="material-symbols-outlined">content_cut</span>
               </button>
             </AppTooltip>
@@ -947,21 +954,21 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
               </span>
               {activeSelectionIds.length >= 2 && onCombineSections && (
                 <AppTooltip title="Combine selected sections">
-                  <button className="section-action-btn icon-only" onClick={onCombineSections}>
+                  <button className="section-action-btn icon-only" aria-label="Combine selected sections" onClick={onCombineSections}>
                     <span className="material-symbols-outlined">merge</span>
                   </button>
                 </AppTooltip>
               )}
               {onSaveReferenceSelection && referenceSelectedIds.length > 0 && (
                 <AppTooltip title="Save selected analysis range as practice section">
-                  <button className="section-action-btn icon-only" onClick={onSaveReferenceSelection}>
+                  <button className="section-action-btn icon-only" aria-label="Save selection as practice section" onClick={onSaveReferenceSelection}>
                     <span className="material-symbols-outlined">save</span>
                   </button>
                 </AppTooltip>
               )}
               {onDeleteSelection && selectedSectionIds.length > 0 && (
                 <AppTooltip title="Delete selected practice sections">
-                  <button className="section-action-btn icon-only danger" onClick={onDeleteSelection}>
+                  <button className="section-action-btn icon-only danger" aria-label="Delete selected sections" onClick={onDeleteSelection}>
                     <span className="material-symbols-outlined">delete</span>
                   </button>
                 </AppTooltip>
@@ -984,16 +991,18 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
                     </div>
                   )}
                   <AppTooltip title={`Extend start 1 ${nudgeUnit} earlier`}>
-                    <button 
+                    <button
                       className="nudge-btn has-tooltip"
+                      aria-label={`Extend start 1 ${nudgeUnit} earlier`}
                       onClick={() => onExtendSelection('start', -1)}
                     >
                       <span className="material-symbols-outlined">first_page</span>
                     </button>
                   </AppTooltip>
                   <AppTooltip title={`Shrink start 1 ${nudgeUnit} later`}>
-                    <button 
+                    <button
                       className="nudge-btn has-tooltip"
+                      aria-label={`Shrink start 1 ${nudgeUnit} later`}
                       onClick={() => onExtendSelection('start', 1)}
                     >
                       <span className="material-symbols-outlined">chevron_right</span>
@@ -1001,16 +1010,18 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
                   </AppTooltip>
                   <span className="nudge-divider">|</span>
                   <AppTooltip title={`Shrink end 1 ${nudgeUnit} earlier`}>
-                    <button 
+                    <button
                       className="nudge-btn has-tooltip"
+                      aria-label={`Shrink end 1 ${nudgeUnit} earlier`}
                       onClick={() => onExtendSelection('end', -1)}
                     >
                       <span className="material-symbols-outlined">chevron_left</span>
                     </button>
                   </AppTooltip>
                   <AppTooltip title={`Extend end 1 ${nudgeUnit} later`}>
-                    <button 
+                    <button
                       className="nudge-btn has-tooltip"
+                      aria-label={`Extend end 1 ${nudgeUnit} later`}
                       onClick={() => onExtendSelection('end', 1)}
                     >
                       <span className="material-symbols-outlined">last_page</span>
@@ -1032,7 +1043,7 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
                 />
               )}
               <AppTooltip title="Deselect all sections">
-                <button className="section-action-btn deselect icon-only" onClick={onClearSelection}>
+                <button className="section-action-btn deselect icon-only" aria-label="Deselect all sections" onClick={onClearSelection}>
                   <span className="material-symbols-outlined">deselect</span>
                 </button>
               </AppTooltip>

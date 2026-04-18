@@ -1,4 +1,10 @@
-import { Box, Button, Typography, Paper, Chip, LinearProgress, IconButton } from '@mui/material';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Typography from '@mui/material/Typography';
+import Paper from '@mui/material/Paper';
+import Chip from '@mui/material/Chip';
+import LinearProgress from '@mui/material/LinearProgress';
+import IconButton from '@mui/material/IconButton';
 import { useScales } from '../store';
 import { TIERS } from '../curriculum/tiers';
 import { getExerciseProgress, getExerciseProficiency } from '../progress/store';
@@ -17,7 +23,7 @@ export default function ProgressScreen() {
   return (
     <Box sx={{ maxWidth: 700, mx: 'auto', p: 2 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
-        <IconButton onClick={() => dispatch({ type: 'SET_SCREEN', screen: 'home' })}>
+        <IconButton aria-label="Back to home" onClick={() => dispatch({ type: 'SET_SCREEN', screen: 'home' })}>
           <Icon name="arrow_back" />
         </IconButton>
         <Typography variant="h2" sx={{ fontSize: '1.25rem', flex: 1 }}>

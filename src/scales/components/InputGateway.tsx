@@ -1,5 +1,9 @@
 import { useState, useCallback } from 'react';
-import { Box, Button, Typography, Paper, Alert } from '@mui/material';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Typography from '@mui/material/Typography';
+import Paper from '@mui/material/Paper';
+import Alert from '@mui/material/Alert';
 import { useScales } from '../store';
 
 function Icon({ name, size = 20 }: { name: string; size?: number }) {

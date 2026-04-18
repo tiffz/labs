@@ -1,14 +1,16 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <meta http-equiv="Pragma" content="no-cache" />
-    <meta http-equiv="Expires" content="0" />
+    <meta name="color-scheme" content="dark" />
+    <!-- Critical CSS: paints the app background during HTML parse so there is no FOUC. -->
+    <style>html{color-scheme:dark;background:#16161e;color:#e8e6f0}</style>
+    <meta http-equiv="Cache-Control" content="no-cache" />
     <title>Find the Beat - Tiff Zhang Labs</title>
     <link rel="icon" type="image/svg+xml" href="/icons/favicon-beat.svg" />
     <link rel="apple-touch-icon" href="/icons/favicon-beat.svg" />
+    <link rel="stylesheet" href="/styles/shared.css" />
     <meta name="theme-color" content="#1e1e28" />
     <meta name="description" content="Analyze music to find the beat — automatic BPM detection and visual beat guidance" />
     <link rel="canonical" href="https://labs.tiffzhang.com/beat/" />

@@ -39,8 +39,17 @@ const LoadingFallback: React.FC<{ height?: string }> = ({ height = '200px' }) =>
     <p className="text-stone-400">Loading...</p>
   </div>
 );
-import { parseAndSortFiles, validateImageDimensions, createPDF, downloadBlob, loadImage } from './utils';
+import { parseAndSortFiles, validateImageDimensions, loadImage } from './utils';
+
+// pdf-lib is ~500 KB gzip; only load it when the user actually exports a PDF.
+const loadPdfGenerator = () =>
+  import('./utils/pdfGenerator').then((m) => ({
+    createPDF: m.createPDF,
+    downloadBlob: m.downloadBlob,
+    createSinglePagePDFBlob: m.createSinglePagePDFBlob,
+  }));
 import { createAppAnalytics } from '../shared/utils/analytics';
+import SkipToMain from '../shared/components/SkipToMain';
 
 const analytics = createAppAnalytics('zines');
 
@@ -1062,23 +1071,8 @@ const App: React.FC = () => {
       
       try {
         const canvas = await generateCanvasFromImages(images, imageFitModes, minizinePaperConfig, PAGE_SLOTS_CONFIG);
-        const dataURL = canvas.toDataURL('image/png');
-        
-        const { PDFDocument } = await import('pdf-lib');
-        const pdfDoc = await PDFDocument.create();
-        const pngImage = await pdfDoc.embedPng(dataURL);
-        
-        const page = pdfDoc.addPage([canvas.width, canvas.height]);
-        page.drawImage(pngImage, {
-          x: 0,
-          y: 0,
-          width: canvas.width,
-          height: canvas.height,
-        });
-        
-        const pdfBytes = await pdfDoc.save();
-        // Create a new ArrayBuffer copy for Blob compatibility
-        const blob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' });
+        const { createSinglePagePDFBlob, downloadBlob } = await loadPdfGenerator();
+        const blob = await createSinglePagePDFBlob(canvas);
         downloadBlob(blob, fileName.includes('.') ? fileName : `${fileName}.pdf`);
       } catch (error) {
         console.error('Error generating PDF:', error);
@@ -1101,6 +1095,7 @@ const App: React.FC = () => {
     setPdfResult(null);
     
     try {
+      const { createPDF, downloadBlob } = await loadPdfGenerator();
       const result = await createPDF(
         bookletPages, 
         bookletSpreads, 
@@ -1120,8 +1115,9 @@ const App: React.FC = () => {
     }
   }, [zineMode, bookletPages, bookletSpreads, exportOptions, bookletValidation.isValid, fileName, images, imageFitModes, minizinePaperConfig, generateCanvasFromImages, blankPageColor]);
 
-  const handleRedownloadPDF = useCallback(() => {
+  const handleRedownloadPDF = useCallback(async () => {
     if (pdfResult) {
+      const { downloadBlob } = await loadPdfGenerator();
       downloadBlob(pdfResult.blob, fileName.includes('.') ? fileName : `${fileName}.pdf`);
     }
   }, [pdfResult, fileName]);
@@ -1351,6 +1347,7 @@ const App: React.FC = () => {
 
   return (
     <>
+      <SkipToMain />
       <PlaceholderFileInput />
       
       {modalContent && (
@@ -1387,6 +1384,8 @@ const App: React.FC = () => {
           </h1>
           <p className="app-subtitle mt-1">Format zines for printing</p>
         </header>
+
+        <main id="main">
         
         {/* Main Two-Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
@@ -1676,6 +1675,8 @@ const App: React.FC = () => {
           </div>
         </div>
         
+        </main>
+
         {/* Footer */}
         <footer className="text-center mt-8 py-3 text-stone-400 text-sm">
           Zine Studio

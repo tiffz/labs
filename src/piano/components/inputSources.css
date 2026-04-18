@@ -88,7 +88,7 @@
 
 .pi-input-icon {
   font-size: 18px !important;
-  color: var(--piano-text-muted, #94a3b8);
+  color: var(--piano-text-muted, #64748b);
 }
 
 .pi-input-meta {
@@ -108,7 +108,7 @@
 .pi-input-status {
   font-size: var(--text-xs, 0.6875rem);
   font-weight: 500;
-  color: var(--piano-text-muted, #94a3b8);
+  color: var(--piano-text-muted, #64748b);
 }
 .pi-input-status.on {
   color: var(--piano-primary, #7c3aed);
@@ -144,7 +144,7 @@
 /* ── Help / detail text ── */
 .pi-input-hint {
   font-size: var(--text-xs, 0.6875rem);
-  color: var(--piano-text-muted, #94a3b8);
+  color: var(--piano-text-muted, #64748b);
   line-height: 1.4;
   margin: 0;
   padding-left: 28px;
@@ -173,7 +173,7 @@
 }
 .pi-input-select-label {
   font-size: var(--text-xs, 0.6875rem);
-  color: var(--piano-text-muted, #94a3b8);
+  color: var(--piano-text-muted, #64748b);
 }
 .pi-input-select {
   width: 100%;

@@ -1,36 +1,86 @@
-import React, { useState } from 'react';
+import React, { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import SkipToMain from '../shared/components/SkipToMain';
 import type { StoryDNA } from './types';
-import { generateStoryDNA, getNewSuggestion } from './data/storyGenerator';
-import { regenerateElement, getLoglineProperty } from './kimberly/logline-element-mapping';
-import { regenerateLoglineFromElements } from './kimberly/loglines';
 import { Sidebar } from './components/Sidebar';
-import { FixedStoryHeader } from './components/FixedStoryHeader';
-import { BeatChart } from './components/BeatChart';
 import './styles/story.css';
 import { createAppAnalytics } from '../shared/utils/analytics';
 
 const analytics = createAppAnalytics('story');
 
+// Heavy parts of the story app (generator data, logline engine, beat chart
+// visualization) are all deferred until the user asks to generate a story.
+// That keeps the initial page weight near zero for the welcome screen.
+const FixedStoryHeader = lazy(() =>
+  import('./components/FixedStoryHeader').then((m) => ({ default: m.FixedStoryHeader })),
+);
+const BeatChart = lazy(() =>
+  import('./components/BeatChart').then((m) => ({ default: m.BeatChart })),
+);
+
+type StoryGeneratorModule = typeof import('./data/storyGenerator');
+type LoglineMappingModule = typeof import('./kimberly/logline-element-mapping');
+type LoglinesModule = typeof import('./kimberly/loglines');
+
+let generatorPromise: Promise<{
+  generator: StoryGeneratorModule;
+  mapping: LoglineMappingModule;
+  loglines: LoglinesModule;
+}> | null = null;
+
+function loadGenerator() {
+  if (!generatorPromise) {
+    generatorPromise = Promise.all([
+      import('./data/storyGenerator'),
+      import('./kimberly/logline-element-mapping'),
+      import('./kimberly/loglines'),
+    ]).then(([generator, mapping, loglines]) => ({ generator, mapping, loglines }));
+  }
+  return generatorPromise;
+}
+
 const App: React.FC = () => {
   const [storyDNA, setStoryDNA] = useState<StoryDNA | null>(null);
   const [selectedGenre, setSelectedGenre] = useState('Random');
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const closeMobileNav = () => setMobileNavOpen(false);
-  const asRegenerationElements = (
-    elements: Record<string, string>
-  ): Parameters<typeof regenerateLoglineFromElements>[5] => (
-    elements as unknown as Parameters<typeof regenerateLoglineFromElements>[5]
-  );
 
-  const handleGenerate = (genre: string = selectedGenre) => {
-    const newDNA = generateStoryDNA(genre, 'Random');
-    setStoryDNA(newDNA);
-    analytics.trackEvent('generate', { genre });
+  // After first paint of the welcome screen, warm up the generator chunk so
+  // the first click on "Generate Story" feels instant.
+  const didPrefetchRef = useRef(false);
+  useEffect(() => {
+    if (didPrefetchRef.current) return;
+    didPrefetchRef.current = true;
+    const idle =
+      (window as unknown as { requestIdleCallback?: (cb: () => void) => number }).requestIdleCallback ??
+      ((cb: () => void) => window.setTimeout(cb, 300));
+    idle(() => { void loadGenerator(); });
+  }, []);
+
+  const handleGenerate = async (genre: string = selectedGenre) => {
+    setIsGenerating(true);
+    try {
+      const { generator } = await loadGenerator();
+      const newDNA = generator.generateStoryDNA(genre, 'Random');
+      setStoryDNA(newDNA);
+      analytics.trackEvent('generate', { genre });
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
-  const handleReroll = (rerollId: string) => {
+  const handleReroll = async (rerollId: string) => {
     if (!storyDNA) return;
     analytics.trackEvent('reroll', { section: rerollId });
+    const { generator, mapping, loglines } = await loadGenerator();
+    const { generateStoryDNA, getNewSuggestion } = generator;
+    const { regenerateElement, getLoglineProperty } = mapping;
+    const { regenerateLoglineFromElements } = loglines;
+    const asRegenerationElements = (
+      elements: Record<string, string>,
+    ): Parameters<typeof regenerateLoglineFromElements>[5] => (
+      elements as unknown as Parameters<typeof regenerateLoglineFromElements>[5]
+    );
 
     // Handle genre reroll - regenerate entire story
     if (rerollId === 'genre') {
@@ -201,6 +251,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50/60 via-pink-50/30 to-purple-50/40">
+      <SkipToMain />
       <header
         className="sticky top-0 z-40 flex h-[52px] shrink-0 items-center gap-3 border-b border-orange-200/90 bg-gradient-to-r from-white via-orange-50/40 to-white px-3 shadow-[0_1px_0_rgba(251,146,60,0.12)] backdrop-blur-md md:hidden"
         role="banner"
@@ -238,13 +289,23 @@ const App: React.FC = () => {
 
       <div className="ml-0 md:ml-80">
         {storyDNA ? (
-          <>
+          <Suspense
+            fallback={
+              <main id="main" className="px-3 py-4 sm:px-6 sm:py-6 text-slate-500">
+                Loading story…
+              </main>
+            }
+          >
             <FixedStoryHeader dna={storyDNA} onReroll={handleReroll} />
 
-            <main className="px-3 py-4 sm:px-6 sm:py-6">
+            <main id="main" className="px-3 py-4 sm:px-6 sm:py-6">
               <BeatChart dna={storyDNA} onReroll={handleReroll} />
             </main>
-          </>
+          </Suspense>
+        ) : isGenerating ? (
+          <main id="main" className="flex min-h-[calc(100dvh-52px)] items-center justify-center md:min-h-screen text-slate-500">
+            Generating story…
+          </main>
         ) : (
           <div className="flex min-h-[calc(100dvh-52px)] items-center justify-center md:min-h-screen">
             <div className="max-w-md px-4 text-center sm:px-6">

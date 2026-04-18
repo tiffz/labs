@@ -301,25 +301,25 @@ const VideoPlayer: React.FC = () => {
         <span style={{ flex: 1 }} />
 
         <span className="vp-header-actions">
-          <button className="vp-icon-btn" onClick={(e) => { e.stopPropagation(); dispatch({ type: 'SET_MEDIA_MUTED', muted: !state.mediaMuted }); }}
+          <button className="vp-icon-btn" aria-label={state.mediaMuted ? 'Unmute' : 'Mute'} onClick={(e) => { e.stopPropagation(); dispatch({ type: 'SET_MEDIA_MUTED', muted: !state.mediaMuted }); }}
             onMouseEnter={e => showTip(e, state.mediaMuted ? 'Unmute' : 'Mute')} onMouseLeave={hideTip}>
             <span className="material-symbols-outlined">
               {state.mediaMuted ? 'volume_off' : 'volume_up'}
             </span>
           </button>
           {isVideo && (
-            <button className="vp-icon-btn" onClick={(e) => { e.stopPropagation(); dispatch({ type: 'SET_MEDIA_VISIBLE', visible: !state.mediaVisible }); }}
+            <button className="vp-icon-btn" aria-label={state.mediaVisible ? 'Hide video' : 'Show video'} onClick={(e) => { e.stopPropagation(); dispatch({ type: 'SET_MEDIA_VISIBLE', visible: !state.mediaVisible }); }}
               onMouseEnter={e => showTip(e, state.mediaVisible ? 'Hide video' : 'Show video')} onMouseLeave={hideTip}>
               <span className="material-symbols-outlined">
                 {state.mediaVisible ? 'visibility' : 'visibility_off'}
               </span>
             </button>
           )}
-          <button className="vp-icon-btn" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+          <button className="vp-icon-btn" aria-label="Replace file" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
             onMouseEnter={e => showTip(e, 'Replace file')} onMouseLeave={hideTip}>
             <span className="material-symbols-outlined">swap_horiz</span>
           </button>
-          <button className="vp-icon-btn vp-icon-btn--danger" onClick={(e) => { e.stopPropagation(); handleRemove(); }}
+          <button className="vp-icon-btn vp-icon-btn--danger" aria-label="Remove media" onClick={(e) => { e.stopPropagation(); handleRemove(); }}
             onMouseEnter={e => showTip(e, 'Remove')} onMouseLeave={hideTip}>
             <span className="material-symbols-outlined">close</span>
           </button>
@@ -455,14 +455,14 @@ const VideoPlayer: React.FC = () => {
               onChange={e => dispatch({ type: 'SET_MEDIA_START_OFFSET', offset: parseFloat(e.target.value) || 0 })} />
             <span className="vp-unit">s</span>
             {correlation && (
-              <button className="vp-icon-btn"
+              <button className="vp-icon-btn" aria-label={`Reset offset to auto (${correlation.bestOffset.toFixed(1)}s)`}
                 onClick={() => dispatch({ type: 'SET_MEDIA_START_OFFSET', offset: correlation.bestOffset })}
                 onMouseEnter={e => showTip(e, `Reset to auto (${correlation.bestOffset.toFixed(1)}s)`)}
                 onMouseLeave={hideTip}>
                 <span className="material-symbols-outlined">auto_fix_high</span>
               </button>
             )}
-            <button className="vp-icon-btn" onClick={() => dispatch({ type: 'SET_MEDIA_START_OFFSET', offset: 0 })}
+            <button className="vp-icon-btn" aria-label="Reset offset to 0" onClick={() => dispatch({ type: 'SET_MEDIA_START_OFFSET', offset: 0 })}
               onMouseEnter={e => showTip(e, 'Reset to 0')} onMouseLeave={hideTip}>
               <span className="material-symbols-outlined">restart_alt</span>
             </button>

@@ -82,6 +82,7 @@ import { createWordsExportAdapter } from './utils/exportAdapter';
 import KeyInput from '../shared/components/music/KeyInput';
 import { DRUM_SAMPLE_URLS } from '../shared/audio/drumSampleUrls';
 import { createAppAnalytics } from '../shared/utils/analytics';
+import SkipToMain from '../shared/components/SkipToMain';
 
 const wordsAnalytics = createAppAnalytics('words');
 const DEFAULT_LYRICS = `Sunrise on the shoreline
@@ -2590,9 +2591,12 @@ const App: React.FC = () => {
 
   return (
     <div className="words-page">
+      <SkipToMain />
       <header className="words-header">
         <h1>Words in Rhythm</h1>
       </header>
+
+      <main id="main" className="words-main">
 
       <section
         ref={stickyControlsRef}
@@ -4251,6 +4255,8 @@ const App: React.FC = () => {
           </div>
         </article>
       </section>
+      </main>
+
       <LyricImportModal
         isOpen={lyricImportOpen}
         initialText={lyricImportText}

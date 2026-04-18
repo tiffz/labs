@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import ReactDOM from 'react-dom';
+import SkipToMain from '../shared/components/SkipToMain';
 import { useStableCallback } from './hooks/useStableCallback';
 
 import { useMouseTracking } from './hooks/useMouseTracking';
@@ -571,7 +572,8 @@ function App() {
 
   return (
     <ViewportProvider {...viewportProviderProps}>
-      <div className="game-layout">
+      <SkipToMain />
+      <main id="main" className="game-layout">
       {/* Currency Display - Fixed outside world */}
       <div className="currency-overlay">
         <CurrencyDisplay 
@@ -732,7 +734,7 @@ function App() {
           />
         </div>
       )}
-    </div>
+      </main>
     </ViewportProvider>
   );
 }

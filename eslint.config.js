@@ -50,16 +50,17 @@ export default [
       ...pluginReactHooks.configs.recommended.rules,
       ...pluginJsxA11y.flatConfigs.recommended.rules,
       'react/react-in-jsx-scope': 'off',
-      // Start with actionable warnings to avoid noisy first rollout.
-      'jsx-a11y/click-events-have-key-events': 'warn',
+      // Enforced after the SPA a11y audit. Keep these at 'error' so new
+      // regressions block CI instead of silently accumulating.
+      'jsx-a11y/click-events-have-key-events': 'error',
       'jsx-a11y/control-has-associated-label': 'off',
-      'jsx-a11y/interactive-supports-focus': 'warn',
+      'jsx-a11y/interactive-supports-focus': 'error',
       'jsx-a11y/label-has-associated-control': 'off',
-      'jsx-a11y/media-has-caption': 'warn',
-      'jsx-a11y/no-autofocus': 'warn',
-      'jsx-a11y/no-noninteractive-element-interactions': 'warn',
-      'jsx-a11y/no-noninteractive-tabindex': 'warn',
-      'jsx-a11y/no-static-element-interactions': 'warn',
+      'jsx-a11y/media-has-caption': 'error',
+      'jsx-a11y/no-autofocus': 'error',
+      'jsx-a11y/no-noninteractive-element-interactions': 'error',
+      'jsx-a11y/no-noninteractive-tabindex': 'error',
+      'jsx-a11y/no-static-element-interactions': 'error',
       'react-refresh/only-export-components': [
         'warn',
         { allowConstantExport: true },

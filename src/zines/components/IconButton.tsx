@@ -36,12 +36,14 @@ const IconButton: React.FC<IconButtonProps> = memo(({
 
   return (
     <button
+      type="button"
       onClick={disabled ? undefined : onClick}
       disabled={disabled}
       className={`rounded-full flex items-center justify-center transition-all ${sizeClasses} ${variantClasses} ${disabledClasses} ${className}`}
       title={title}
+      aria-label={title ?? icon}
     >
-      {ICONS[icon]}
+      <span aria-hidden="true">{ICONS[icon]}</span>
     </button>
   );
 });

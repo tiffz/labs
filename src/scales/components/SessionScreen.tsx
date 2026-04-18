@@ -1,5 +1,11 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
-import { Box, Button, Typography, Chip, IconButton, Paper, Link } from '@mui/material';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Typography from '@mui/material/Typography';
+import Chip from '@mui/material/Chip';
+import IconButton from '@mui/material/IconButton';
+import Paper from '@mui/material/Paper';
+import Link from '@mui/material/Link';
 import ScoreDisplay from '../../shared/notation/ScoreDisplay';
 import { useScales } from '../store';
 import { generateScoreForExercise } from '../curriculum/scoreGenerator';

@@ -69,7 +69,9 @@ body,
 
 .words-page {
   height: 100vh;
+  height: 100dvh;
   min-height: 100vh;
+  min-height: 100dvh;
   width: 100%;
   max-width: 100%;
   --content-gutter: 16px;
@@ -101,6 +103,10 @@ body,
     height: 100dvh;
     min-height: 100dvh;
   }
+}
+
+.words-main {
+  display: contents;
 }
 
 .words-header {
@@ -2330,6 +2336,7 @@ body,
   .words-page {
     height: auto;
     min-height: 100vh;
+    min-height: 100dvh;
     overflow-y: visible;
   }
 

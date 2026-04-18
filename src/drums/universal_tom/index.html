@@ -1,17 +1,20 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <meta http-equiv="Pragma" content="no-cache" />
-    <meta http-equiv="Expires" content="0" />
+    <meta name="color-scheme" content="light" />
+    <!-- Critical CSS: paints the app background during HTML parse so there is no FOUC. -->
+    <style>html{color-scheme:light;background:#faf5ff;color:#1f2937}</style>
+    <meta http-equiv="Cache-Control" content="no-cache" />
     <title>Universal Tom Importer - Tiff Zhang Labs</title>
     <link rel="icon" type="image/svg+xml" href="/icons/favicon-drums.svg" />
     <link rel="apple-touch-icon" href="/icons/favicon-drums.svg" />
     <meta name="theme-color" content="#7c3aed" />
     <meta name="description" content="Import Universal Tom rhythms to Darbuka Trainer" />
-    
+
+    <link rel="stylesheet" href="/styles/shared.css" />
+
     <style>
         @font-face {
             font-family: 'Roboto Fallback';

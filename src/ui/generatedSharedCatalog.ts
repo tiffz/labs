@@ -1148,6 +1148,35 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": "shared-export-popover"
   },
   {
+    "id": "src-shared-components-skiptomain-tsx-skiptomain",
+    "name": "SkipToMain",
+    "path": "src/shared/components/SkipToMain.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "A visually-hidden-until-focused skip link. Render as the first focusable element in an app so keyboard/screen-reader users can bypass repeated navigation and jump straight to the app's primary `<main id=\"main\">` landmark. Styling lives in `public/styles/shared.css` (`.skip-to-main`) so every app that links the shared baseline picks it up without additional CSS wiring.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "beat",
+      "cats",
+      "chords",
+      "corp",
+      "drums",
+      "forms",
+      "piano",
+      "story",
+      "ui",
+      "words",
+      "zines"
+    ],
+    "exportType": "default",
+    "demoId": null
+  },
+  {
     "id": "src-shared-midi-midiinput-ts-getmidiinput",
     "name": "getMidiInput",
     "path": "src/shared/midi/midiInput.ts",

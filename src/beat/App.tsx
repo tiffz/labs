@@ -1,9 +1,15 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FormControl, MenuItem, Popover, Select, Slider } from '@mui/material';
+import React, { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react';
+import SkipToMain from '../shared/components/SkipToMain';
+import FormControl from '@mui/material/FormControl';
+import MenuItem from '@mui/material/MenuItem';
+import Popover from '@mui/material/Popover';
+import Select from '@mui/material/Select';
+import Slider from '@mui/material/Slider';
 import { type MediaFile } from './components/MediaUploader';
 import BeatVisualizer from './components/BeatVisualizer';
 import VideoPlayer from './components/VideoPlayer';
-import YouTubePlayer, { type YouTubeController, type YouTubePlaybackState } from './components/YouTubePlayer';
+import type { YouTubeController, YouTubePlaybackState } from './components/YouTubePlayer';
+const YouTubePlayer = lazy(() => import('./components/YouTubePlayer'));
 import PlaybackBar from './components/PlaybackBar';
 import DrumAccompaniment from '../shared/components/music/DrumAccompaniment';
 import UploadLanding from './components/UploadLanding';
@@ -1576,11 +1582,12 @@ const App: React.FC = () => {
 
   return (
     <div className="beat-app">
+      <SkipToMain />
       <header className="beat-header">
         <h1>Find the Beat</h1>
       </header>
 
-      <main className="beat-main">
+      <main id="main" className="beat-main">
         {!isReady && (
           <div className="upload-section">
             {isProcessing ? (
@@ -1848,11 +1855,13 @@ const App: React.FC = () => {
               {hasVideo ? (
                 <div className="video-container">
                   {isYouTube ? (
-                    <YouTubePlayer
-                      embedUrl={mediaFile.url}
-                      onStateChange={setYoutubePlayback}
-                      onControllerReady={handleYouTubeControllerReady}
-                    />
+                    <Suspense fallback={<div className="video-loading">Loading YouTube player…</div>}>
+                      <YouTubePlayer
+                        embedUrl={mediaFile.url}
+                        onStateChange={setYoutubePlayback}
+                        onControllerReady={handleYouTubeControllerReady}
+                      />
+                    </Suspense>
                   ) : (
                     <VideoPlayer
                       videoUrl={mediaFile.url}

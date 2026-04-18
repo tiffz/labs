@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef, type MouseEvent as ReactMouseEvent } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense, type MouseEvent as ReactMouseEvent } from 'react';
 import Popover from '@mui/material/Popover';
 import { PianoProvider, usePiano } from './store';
 import ScoreDisplay from './components/ScoreDisplay';
@@ -7,17 +7,18 @@ import NoteInput from './components/NoteInput';
 import PracticeMode from './components/PracticeMode';
 import PianoKeyboard from './components/PianoKeyboard';
 import PracticeDashboard from './components/PracticeDashboard';
-import ImportModal from './components/ImportModal';
-import Analytics from './components/Analytics';
 import CurrentlyPracticing from './components/CurrentlyPracticing';
 import ExercisePicker from './components/ExercisePicker';
 import InputSources from './components/InputSources';
-import VideoPlayer from './components/VideoPlayer';
 import { saveScoreToLibrary } from './utils/libraryStorage';
 import { enableDebug } from './utils/practiceDebugLog';
-import DebugPanel from './components/DebugPanel';
+const ImportModal = lazy(() => import('./components/ImportModal'));
+const Analytics = lazy(() => import('./components/Analytics'));
+const VideoPlayer = lazy(() => import('./components/VideoPlayer'));
+const DebugPanel = lazy(() => import('./components/DebugPanel'));
 import { getImportFileKind } from './utils/importFileType';
 import { createAppAnalytics } from '../shared/utils/analytics';
+import SkipToMain from '../shared/components/SkipToMain';
 
 const analytics = createAppAnalytics('piano');
 
@@ -255,6 +256,7 @@ function PianoApp() {
 
   return (
     <div className="piano-app">
+      <SkipToMain />
       {showDropOverlay && (
         <div className="drop-overlay">
           <div className="drop-overlay-content">
@@ -264,13 +266,17 @@ function PianoApp() {
           </div>
         </div>
       )}
-      <ImportModal
-        open={showImportModal}
-        onClose={() => { setShowImportModal(false); setDropFile(null); }}
-        onImport={handleImport}
-        onMediaFile={(mf) => dispatch({ type: 'SET_MEDIA_FILE', file: mf })}
-        initialFile={dropFile}
-      />
+      <Suspense fallback={null}>
+        {showImportModal && (
+          <ImportModal
+            open={showImportModal}
+            onClose={() => { setShowImportModal(false); setDropFile(null); }}
+            onImport={handleImport}
+            onMediaFile={(mf) => dispatch({ type: 'SET_MEDIA_FILE', file: mf })}
+            initialFile={dropFile}
+          />
+        )}
+      </Suspense>
       <ExercisePicker
         open={showExercisePicker}
         onClose={() => setShowExercisePicker(false)}
@@ -318,7 +324,7 @@ function PianoApp() {
           title="Load Song"
         />
       </Popover>
-      <div className="piano-layout">
+      <main id="main" className="piano-layout">
         <div className="main-content">
           <CurrentlyPracticing
             onLoadExercise={(event) => openExerciseFlow(event)}
@@ -364,14 +370,16 @@ function PianoApp() {
 
         <aside className="sidebar">
           <PlaybackControls />
-          <VideoPlayer />
+          <Suspense fallback={null}>
+            <VideoPlayer />
+          </Suspense>
           <PracticeDashboard />
           <button className="analytics-sidebar-link" onClick={() => setShowAnalytics(true)}>
             <span className="material-symbols-outlined" style={{ fontSize: 16 }}>insights</span>
             Practice Analytics
           </button>
         </aside>
-      </div>
+      </main>
       {showAnalytics && (
         <div
           className="analytics-modal-overlay"
@@ -396,12 +404,18 @@ function PianoApp() {
               </button>
             </div>
             <div className="analytics-modal-body">
-              <Analytics />
+              <Suspense fallback={<div>Loading analytics…</div>}>
+                <Analytics />
+              </Suspense>
             </div>
           </div>
         </div>
       )}
-      {debugMode && <DebugPanel />}
+      {debugMode && (
+        <Suspense fallback={null}>
+          <DebugPanel />
+        </Suspense>
+      )}
     </div>
   );
 }

@@ -84,6 +84,7 @@
   #root {
     width: 100%;
     min-height: 100vh;
+    min-height: 100dvh;
   }
 
   /* Ensure all text elements use consistent metrics */
@@ -174,6 +175,7 @@
     width: 320px;
     min-width: 320px; /* Prevent width changes */
     height: 100vh;
+    height: 100dvh;
     overflow-y: auto;
     background-color: white;
     border-left: 1px solid var(--border-color);
@@ -277,6 +279,7 @@
       flex-direction: column;
       height: auto;
       min-height: 100vh;
+      min-height: 100dvh;
       overflow: visible;
     }
 
@@ -805,14 +808,19 @@
     background-color: white;
     border: 2px solid var(--primary-purple);
     border-radius: 0.5rem;
-    padding: 1.25rem;
+    padding: 1rem 1.125rem;
     box-shadow: var(--shadow-purple);
     z-index: 1000;
-    min-width: 350px;
+    /* Cap the tooltip to a readable measure so long copy wraps instead of
+       stretching across the viewport. The inline `width` set by
+       HelpTooltip.tsx (`min(360px, calc(100vw - 24px))`) drives the actual
+       width; these bounds just provide sensible fallbacks. */
+    min-width: 240px;
+    max-width: min(360px, calc(100vw - 24px));
     font-size: 0.875rem;
-    line-height: 1.6;
+    line-height: 1.55;
     /* Add padding-top to create a hover bridge between button and tooltip */
-    padding-top: calc(1.25rem + 0.25rem);
+    padding-top: calc(1rem + 0.25rem);
     margin-top: 0;
   }
 
@@ -4111,5 +4119,22 @@
       width: 100%;
       justify-content: flex-end;
     }
+  }
+}
+
+/* ==========================================================================
+   Mobile / coarse-pointer touch targets
+   Ensures iconographic and secondary drum controls meet the 44x44 minimum
+   hit area recommended by WCAG 2.5.5 when interacted with via touch.
+   ========================================================================== */
+@media (pointer: coarse) {
+  .icon-button,
+  .icon-btn,
+  .toolbar-btn,
+  .drums-btn-icon,
+  .note-palette-btn,
+  .sequencer-step-btn {
+    min-width: 44px;
+    min-height: 44px;
   }
 }

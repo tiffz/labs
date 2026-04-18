@@ -5,6 +5,7 @@ import ProgressScreen from './components/ProgressScreen';
 import InputGateway from './components/InputGateway';
 import { enableDebug } from './utils/practiceDebugLog';
 import DebugPanel from './components/DebugPanel';
+import SkipToMain from '../shared/components/SkipToMain';
 
 const debugMode = new URLSearchParams(window.location.search).has('debug');
 if (debugMode) enableDebug();
@@ -30,7 +31,10 @@ function AppContent() {
 
   return (
     <div className="scales-app">
-      <ScreenRouter />
+      <SkipToMain />
+      <main id="main" className="scales-main">
+        <ScreenRouter />
+      </main>
       {!hasInput && <InputGateway />}
       {debugMode && <DebugPanel />}
     </div>

@@ -1,4 +1,9 @@
-import { Box, Button, Typography, Paper, Chip, LinearProgress } from '@mui/material';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Typography from '@mui/material/Typography';
+import Paper from '@mui/material/Paper';
+import Chip from '@mui/material/Chip';
+import LinearProgress from '@mui/material/LinearProgress';
 import { useScales, hasEnabledMidiDevice } from '../store';
 import { TIERS } from '../curriculum/tiers';
 import { getExerciseProgress, getExerciseProficiency } from '../progress/store';

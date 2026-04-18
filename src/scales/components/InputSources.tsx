@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import { Box, Typography, Popover } from '@mui/material';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import Popover from '@mui/material/Popover';
 import { useScales, hasEnabledMidiDevice } from '../store';
 import { midiToNoteName } from '../../shared/music/scoreTypes';
 

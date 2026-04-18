@@ -2,11 +2,12 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <meta http-equiv="Pragma" content="no-cache" />
-    <meta http-equiv="Expires" content="0" />
+    <meta http-equiv="Cache-Control" content="no-cache" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
     <meta name="theme-color" content="#059669" />
+    <!-- Critical CSS: paints the app background during HTML parse so there is no FOUC. -->
+    <style>html{color-scheme:light;background:#ffffff;color:#1e293b}</style>
     <meta name="description" content="Learn your piano scales with a guided curriculum, automatic progress tracking, and smart practice sessions." />
     <title>Learn Your Scales - Tiff Zhang Labs</title>
     <link rel="canonical" href="https://labs.tiffzhang.com/scales/" />
@@ -19,6 +20,8 @@
     <meta name="twitter:title" content="Learn Your Scales - Tiff Zhang Labs" />
     <meta name="twitter:description" content="Learn your piano scales with a guided curriculum, automatic progress tracking, and smart practice sessions." />
 
+    <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
+    <link rel="apple-touch-icon" href="/icons/favicon.svg" />
     <link rel="stylesheet" href="/styles/shared.css" />
 
     <script>

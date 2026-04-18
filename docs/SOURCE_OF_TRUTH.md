@@ -11,11 +11,14 @@ When guidance conflicts, resolve in this order:
    - `.github/workflows/*.yml`
    - `.husky/*`
    - `vite.config.ts`, `playwright.config.ts`, `tsconfig.json`
-   - Test-based guardrails such as `src/shared/importBoundaries.test.ts`
+   - `eslint.config.js` (includes enforced `jsx-a11y` rules)
+   - Cursor rules in `.cursor/rules/*.mdc` (app-entry-html, spa-css-conventions, react-a11y, pre-commit-checks)
+   - Test-based guardrails: `src/shared/importBoundaries.test.ts`, `src/shared/spaGuardrails.test.ts`
 2. `DEVELOPMENT.md` (repo-level architectural decisions)
-3. Root `README.md` (onboarding and command quick reference)
-4. App-level docs (`src/<app>/README.md`, `src/<app>/DEVELOPMENT.md`)
-5. AI-assistant helper docs (for example `GEMINI.md`)
+3. `STYLE_GUIDE.md` (TypeScript + UI/A11y conventions for editing code)
+4. Root `README.md` (onboarding and command quick reference)
+5. App-level docs (`src/<app>/README.md`, `src/<app>/DEVELOPMENT.md`)
+6. AI-assistant helper docs (for example `GEMINI.md`)
 
 ## Scope by Document Type
 
@@ -48,3 +51,9 @@ During code review and periodic maintenance, verify:
 - Shared boundary documentation matches `src/shared/importBoundaries.test.ts`.
 - App-level docs still match actual entrypoints and dependencies.
 - Micro-app font and responsive UI policy in `DEVELOPMENT.md` (Micro-app UI stability) still matches `src/shared/ui/fonts/appFonts.ts` and `e2e/visual/` practices.
+- SPA shell policy in `DEVELOPMENT.md` ("SPA Shell Hardening", "Accessibility Baseline", "Cross-Platform Viewport", "Bundle Splitting") matches:
+  - `src/shared/spaGuardrails.test.ts` (asserts every `src/*/index.html` and `App.tsx` follows the policy)
+  - `src/shared/templates/app-index.starter.html` (canonical HTML starter)
+  - `.cursor/rules/app-entry-html.mdc`, `.cursor/rules/spa-css-conventions.mdc`, `.cursor/rules/react-a11y.mdc`
+  - `eslint.config.js` enforced `jsx-a11y` rule set
+  - `vite.config.ts` `manualChunks` map and `transformIndexHtml` install-block script
