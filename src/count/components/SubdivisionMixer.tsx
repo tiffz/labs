@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import Tooltip from '@mui/material/Tooltip';
+import PulseTooltip from './PulseTooltip';
 import type { SubdivisionVolumes, SubdivisionChannel, SubdivisionLevel } from '../engine/types';
 import { getSubdivisionOptions, isSwingLevel } from '../engine/types';
 import type { TimeSignature } from '../../shared/rhythm/types';
@@ -112,27 +112,6 @@ function subdivTooltip(label: string, denominator: number): string {
   return '';
 }
 
-const TOOLTIP_SX = {
-  tooltip: {
-    sx: {
-      fontFamily: 'var(--pulse-mono)',
-      fontSize: '0.75rem',
-      bgcolor: 'var(--pulse-surface)',
-      color: 'var(--pulse-text)',
-      border: '1px solid var(--pulse-accent)',
-      borderRadius: 0,
-      padding: '8px 12px',
-      maxWidth: 240,
-      lineHeight: 1.5,
-    },
-  },
-  arrow: {
-    sx: {
-      color: 'var(--pulse-accent)',
-    },
-  },
-};
-
 export function SubdivisionMixer({
   volumes,
   voiceEnabled,
@@ -172,12 +151,10 @@ export function SubdivisionMixer({
       {subdivOptions.length > 1 && (
         <div className="pulse-subdiv-selector" role="radiogroup" aria-label="Subdivision level">
           {subdivOptions.map((opt) => (
-            <Tooltip
+            <PulseTooltip
               key={String(opt.level)}
               title={subdivTooltip(opt.label, timeSignature.denominator)}
-              arrow
               placement="top"
-              slotProps={TOOLTIP_SX}
             >
               <button
                 type="button"
@@ -190,7 +167,7 @@ export function SubdivisionMixer({
                 <SubdivisionNoteIcon level={opt.iconLevel} />
                 <span className="pulse-subdiv-label">{opt.label}</span>
               </button>
-            </Tooltip>
+            </PulseTooltip>
           ))}
         </div>
       )}
@@ -213,16 +190,11 @@ export function SubdivisionMixer({
 
           return (
             <div className="pulse-channel" key={key}>
-              <Tooltip
-                title={tooltip}
-                arrow
-                placement="top"
-                slotProps={TOOLTIP_SX}
-              >
+              <PulseTooltip title={tooltip} placement="top">
                 <span className="pulse-channel-label">
                   {label} <span className="pulse-channel-sublabel">{sublabel}</span>
                 </span>
-              </Tooltip>
+              </PulseTooltip>
               <input
                 type="range"
                 className="pulse-channel-slider"
@@ -239,7 +211,7 @@ export function SubdivisionMixer({
               {showAnyMute && (
                 <div className="pulse-channel-mutes">
                   {voiceEnabled && (
-                    <Tooltip title={voiceTip} arrow placement="bottom" slotProps={TOOLTIP_SX}>
+                    <PulseTooltip title={voiceTip} placement="bottom">
                       <button
                         type="button"
                         className={`pulse-channel-mute ${voiceOn ? 'is-on' : ''}`}
@@ -248,10 +220,10 @@ export function SubdivisionMixer({
                       >
                         V
                       </button>
-                    </Tooltip>
+                    </PulseTooltip>
                   )}
                   {clickEnabled && (
-                    <Tooltip title={clickTip} arrow placement="bottom" slotProps={TOOLTIP_SX}>
+                    <PulseTooltip title={clickTip} placement="bottom">
                       <button
                         type="button"
                         className={`pulse-channel-mute ${clickOn ? 'is-on' : ''}`}
@@ -260,10 +232,10 @@ export function SubdivisionMixer({
                       >
                         C
                       </button>
-                    </Tooltip>
+                    </PulseTooltip>
                   )}
                   {drumEnabled && (
-                    <Tooltip title={drumTip} arrow placement="bottom" slotProps={TOOLTIP_SX}>
+                    <PulseTooltip title={drumTip} placement="bottom">
                       <button
                         type="button"
                         className={`pulse-channel-mute ${drumOn ? 'is-on' : ''}`}
@@ -272,7 +244,7 @@ export function SubdivisionMixer({
                       >
                         D
                       </button>
-                    </Tooltip>
+                    </PulseTooltip>
                   )}
                 </div>
               )}

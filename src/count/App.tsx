@@ -11,7 +11,7 @@ import { TimeSignatureControl } from './components/TimeSignatureControl';
 import { BeatDisplay } from './components/BeatDisplay';
 import { SongProfileManager } from './components/SongProfileManager';
 import { CountInOverlay } from './components/CountInOverlay';
-import Tooltip from '@mui/material/Tooltip';
+import PulseTooltip from './components/PulseTooltip';
 import { MetronomeEngine } from './engine/MetronomeEngine';
 import type { SubdivisionVolumes, SubdivisionChannel, BeatEvent, VoiceMode, SubdivisionLevel } from './engine/types';
 import { eighthBaseSlotsPerEighth, slotsPerBeat, getSubdivisionOptions, getDefaultSubdivisionLevel, VOICE_SUBDIV_MIN_DUR } from './engine/types';
@@ -77,47 +77,27 @@ function computeSubdivsPerMeasure(ts: TimeSignature, groupingStr: string | undef
   return total;
 }
 
-const TOOLTIP_SX = {
-  tooltip: {
-    sx: {
-      fontFamily: 'var(--pulse-mono)',
-      fontSize: '0.75rem',
-      bgcolor: 'var(--pulse-surface)',
-      color: 'var(--pulse-text)',
-      border: '1px solid var(--pulse-accent)',
-      borderRadius: 0,
-      padding: '8px 12px',
-      maxWidth: 240,
-      lineHeight: 1.5,
-    },
-  },
-  arrow: {
-    sx: {
-      color: 'var(--pulse-accent)',
-    },
-  },
+const POPOVER_PAPER_BASE_SX = {
+  bgcolor: 'var(--pulse-surface)',
+  color: 'var(--pulse-text)',
+  border: '1px solid var(--pulse-accent)',
+  borderRadius: 0,
+  boxShadow: 'none',
+  fontFamily: 'var(--pulse-mono)',
+  overflowY: 'auto' as const,
+  p: '14px',
 };
 
 const POPOVER_PAPER_SX = {
-  bgcolor: 'var(--pulse-bg)',
-  border: '1px solid var(--pulse-accent)',
-  borderRadius: 0,
-  boxShadow: '0 8px 24px rgba(0,0,0,0.8)',
+  ...POPOVER_PAPER_BASE_SX,
   maxHeight: 420,
   width: 380,
-  overflowY: 'auto' as const,
-  p: '14px',
 };
 
 const ABOUT_PAPER_SX = {
-  bgcolor: 'var(--pulse-bg)',
-  border: '1px solid var(--pulse-accent)',
-  borderRadius: 0,
-  boxShadow: '0 8px 24px rgba(0,0,0,0.8)',
+  ...POPOVER_PAPER_BASE_SX,
   maxHeight: '80vh',
   width: 420,
-  overflowY: 'auto' as const,
-  p: '14px',
 };
 
 export default function App() {
@@ -552,15 +532,15 @@ export default function App() {
           <ul className="pulse-about-examples">
             <li>
               <a href="/count/?bpm=100&ts=8-8&sub=2&vm=counting&bg=3.3.2">3+3+2 in 8/8</a>
-              {' '}Afro-Cuban clave, tresillo, aksak
+              {' '}Tresillo, son clave, habanera
             </li>
             <li>
               <a href="/count/?bpm=126&ts=7-8&sub=2&vm=counting&bg=2.2.3">7/8 (2+2+3)</a>
-              {' '}Balkan/Turkish, prog rock
+              {' '}Balkan/Turkish aksak, prog rock
             </li>
             <li>
               <a href="/count/?bpm=80&ts=5-8&sub=2&vm=counting&bg=3.2">5/8 (3+2)</a>
-              {' '}Brubeck, Greek dance
+              {' '}Bulgarian paidushko, Balkan folk
             </li>
             <li>
               <a href="/count/?bpm=80&ts=4-4&sub=4&vm=takadimi">Takadimi in 4/4</a>
@@ -634,9 +614,9 @@ export default function App() {
                   aria-label={voiceGain > 0 ? 'Mute voice' : 'Unmute voice'}
                 >
                   {voiceSubdivMuted && (
-                    <Tooltip title="Subdivision syllables auto-muted at this tempo — only beat numbers are voiced" arrow placement="top" slotProps={TOOLTIP_SX}>
+                    <PulseTooltip title="Subdivision syllables auto-muted at this tempo — only beat numbers are voiced" placement="top">
                       <span className="pulse-tempo-hint" aria-label="Voice subdivision muted">!</span>
-                    </Tooltip>
+                    </PulseTooltip>
                   )}
                   VOICE: {voiceGain > 0 ? 'ON' : 'OFF'}
                 </button>

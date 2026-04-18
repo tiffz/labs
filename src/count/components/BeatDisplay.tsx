@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import Tooltip from '@mui/material/Tooltip';
+import PulseTooltip from './PulseTooltip';
 import type { TimeSignature } from '../../shared/rhythm/types';
 import {
   getDefaultBeatGrouping,
@@ -115,22 +115,6 @@ export function BeatDisplay({
 
   const activeBeatIndex = currentBeat?.beatIndex ?? -1;
 
-  const tooltipSx = {
-    tooltip: {
-      sx: {
-        fontFamily: 'var(--pulse-mono)',
-        fontSize: '0.65rem',
-        bgcolor: 'var(--pulse-surface)',
-        color: 'var(--pulse-text)',
-        border: '1px solid var(--pulse-accent)',
-        borderRadius: 0,
-        padding: '4px 8px',
-        lineHeight: 1.4,
-      },
-    },
-    arrow: { sx: { color: 'var(--pulse-accent)' } },
-  };
-
   return (
     <div className="pulse-beat-display">
       <div className="pulse-beat-row">
@@ -148,12 +132,10 @@ export function BeatDisplay({
                     ? `${b.label} is muted. Click to unmute.`
                     : `Click to mute ${b.label}.`;
                 return (
-                  <Tooltip
+                  <PulseTooltip
                     key={b.beatIdx}
                     title={tip}
-                    arrow
                     placement="bottom"
-                    slotProps={tooltipSx}
                   >
                     <div
                       className={[
@@ -177,7 +159,7 @@ export function BeatDisplay({
                       </div>
                       <div className="pulse-beat-label">{b.label}</div>
                     </div>
-                  </Tooltip>
+                  </PulseTooltip>
                 );
               })}
           </div>

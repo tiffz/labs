@@ -75,6 +75,8 @@ export default function AppTooltip({
       enterDelay={350}
       enterNextDelay={120}
       leaveDelay={80}
+      enterTouchDelay={0}
+      leaveTouchDelay={4000}
       disableInteractive
       slotProps={{
         popper: {
