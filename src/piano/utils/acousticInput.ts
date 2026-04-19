@@ -1,54 +1,26 @@
-import { MicrophonePitchInput } from '../../shared/music/pitch/microphonePitchInput';
+import {
+  AcousticInput as SharedAcousticInput,
+  type AcousticInputCallbacks,
+} from '../../shared/music/pitch/acousticInput';
 import { isDebugEnabled, logDebugEvent } from './practiceDebugLog';
 
-export interface AcousticInputCallbacks {
-  onNoteOn: (midi: number) => void;
-  onNoteOff: (midi: number) => void;
-  onPitchDetected?: (midi: number | null, confidence: number) => void;
-}
+export type { AcousticInputCallbacks };
 
-export class AcousticInput {
-  private readonly callbacks: AcousticInputCallbacks;
-  private readonly input: MicrophonePitchInput;
-
+/**
+ * Piano-app acoustic input. Delegates to the shared implementation and
+ * supplies the piano-specific debug logger so pitch events land in the piano
+ * practice debug log.
+ */
+export class AcousticInput extends SharedAcousticInput {
   constructor(callbacks: AcousticInputCallbacks) {
-    this.callbacks = callbacks;
-    this.input = new MicrophonePitchInput({
-      onNoteOn: (midi) => {
-        if (isDebugEnabled()) logDebugEvent({ type: 'note_on', t: performance.now(), midi });
-        this.callbacks.onNoteOn(midi);
-      },
-      onNoteOff: (midi) => {
-        if (isDebugEnabled()) logDebugEvent({ type: 'note_off', t: performance.now(), midi });
-        this.callbacks.onNoteOff(midi);
-      },
-      onPitchDetected: (midi, confidence) => {
-        if (isDebugEnabled()) {
-          logDebugEvent({
-            type: 'pitch_raw',
-            t: performance.now(),
-            midi,
-            rms: confidence,
-          });
-        }
-        this.callbacks.onPitchDetected?.(midi, confidence);
+    super(callbacks, {
+      debug: {
+        isEnabled: isDebugEnabled,
+        onNoteOn: (midi) => logDebugEvent({ type: 'note_on', t: performance.now(), midi }),
+        onNoteOff: (midi) => logDebugEvent({ type: 'note_off', t: performance.now(), midi }),
+        onPitch: (midi, confidence) =>
+          logDebugEvent({ type: 'pitch_raw', t: performance.now(), midi, rms: confidence }),
       },
     });
-  }
-
-  async start(preferredDeviceId?: string): Promise<void> {
-    await this.input.start(preferredDeviceId);
-  }
-
-  stop(): void {
-    this.input.stop();
-  }
-
-  isRunning(): boolean {
-    return this.input.isRunning();
-  }
-
-  getActiveInputLabel(): string | null {
-    return this.input.getActiveInputLabel();
   }
 }

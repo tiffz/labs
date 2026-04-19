@@ -232,11 +232,36 @@ async function waitForBootstrapIconsPendingCleared(page: Page): Promise<void> {
     undefined,
     { timeout: 12_000 }
   );
-  await page.waitForTimeout(300);
+  // Let one idle frame settle before re-checking, instead of a fixed 300ms
+  // timer (which flaked on slow CI runs while wasting time on fast runs).
+  await waitForIdlePaint(page);
   await page.waitForFunction(
     () => !document.documentElement.classList.contains('icons-pending'),
     undefined,
     { timeout: 3000 }
+  );
+}
+
+/**
+ * Wait for the next paint-idle tick. Uses requestIdleCallback (with a short
+ * deadline) when available, falling back to a double requestAnimationFrame.
+ * This replaces the short fixed `page.waitForTimeout(120|150|300)` sleeps in
+ * visual stabilization helpers so we wait exactly long enough, not longer.
+ */
+async function waitForIdlePaint(page: Page): Promise<void> {
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        const finish = () => resolve();
+        const win = window as Window & typeof globalThis & {
+          requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+        };
+        if (typeof win.requestIdleCallback === 'function') {
+          win.requestIdleCallback(finish, { timeout: 250 });
+          return;
+        }
+        requestAnimationFrame(() => requestAnimationFrame(finish));
+      })
   );
 }
 
@@ -426,7 +451,7 @@ async function finalizeVisualStabilizationAfterScroll(page: Page): Promise<void>
         requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
       })
   );
-  await page.waitForTimeout(120);
+  await waitForIdlePaint(page);
 }
 
 async function clickCatsSidePanelTab(page: Page, label: string): Promise<void> {
@@ -467,7 +492,7 @@ export async function warmUpCatsTabbedPanelMaterialFonts(page: Page): Promise<vo
         requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
       })
   );
-  await page.waitForTimeout(150);
+  await waitForIdlePaint(page);
 }
 
 export async function waitForVisualReady(page: Page, spec: VisualRouteSpec): Promise<Locator> {

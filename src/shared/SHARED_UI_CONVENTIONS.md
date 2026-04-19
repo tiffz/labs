@@ -139,6 +139,24 @@ Bucket-specific values should be expressed via variables, not one-off per-compon
 - [ ] Snapshot or integration coverage added.
 - [ ] README/dev docs updated with usage notes.
 
+## Popover Primitive
+
+Apps historically re-specified MUI `Popover`'s `anchorOrigin`, `transformOrigin`, and `slotProps.paper.className` at every call site, which drifted over time. Use `AnchoredPopover` (`src/shared/components/AnchoredPopover.tsx`) for any new popover or menu surface.
+
+```tsx
+<AnchoredPopover
+  open={open}
+  anchorEl={anchorEl}
+  onClose={onClose}
+  placement="bottom-end"
+  paperClassName="mixer-popover"
+>
+  {children}
+</AnchoredPopover>
+```
+
+Migrate existing MUI `Popover` usages opportunistically (i.e. when touching the surrounding code). `SharedExportPopover` should eventually adopt this primitive as well; it remains on direct `Popover` usage for now because it carries its own theming contract.
+
 ## Related Docs
 
 - [Music Input Token Contracts](./components/music/THEMING_DECISIONS.md)

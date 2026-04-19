@@ -239,18 +239,25 @@ describe('HeartSpawningService', () => {
     });
 
     test('should clear trackable heart after delay', async () => {
-      const config: HeartConfig = {
-        position: { x: 100, y: 100 },
-        loveAmount: 3,
-        interactionType: 'petting'
-      };
+      // Use fake timers so we deterministically advance past the 1000ms
+      // trackableDuration cleanup without sleeping on real time (the real-time
+      // sleep flaked on CI when the test runner was under load).
+      vi.useFakeTimers({ toFake: ['setTimeout'] });
+      try {
+        const config: HeartConfig = {
+          position: { x: 100, y: 100 },
+          loveAmount: 3,
+          interactionType: 'petting',
+        };
 
-      heartSpawningService.spawnHearts(config);
-      
-      // Wait for cleanup timeout
-      await new Promise(resolve => setTimeout(resolve, 1100));
-      
-      expect(mockOnTrackableHeartSet).toHaveBeenCalledWith(null);
+        heartSpawningService.spawnHearts(config);
+
+        await vi.advanceTimersByTimeAsync(1050);
+
+        expect(mockOnTrackableHeartSet).toHaveBeenCalledWith(null);
+      } finally {
+        vi.useRealTimers();
+      }
     });
 
     test('should not set trackable heart when no hearts spawn', () => {

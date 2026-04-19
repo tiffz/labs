@@ -5,10 +5,14 @@ on:
     branches: [ main, master ]
     paths:
       - '**.ts'
-      - '**.tsx' 
+      - '**.tsx'
       - '**.js'
       - '**.jsx'
       - '**.json'
+      - '**.css'
+      - '**.md'
+      - '**.html'
+      - 'public/**'
       - 'package*.json'
       - '.github/workflows/**'
       - 'vite.config.*'
@@ -16,14 +20,19 @@ on:
       - 'tsconfig*.json'
       - 'eslint.config.*'
       - 'knip.config.*'
+      - 'playwright.config.*'
   pull_request:
     branches: [ main, master ]
     paths:
       - '**.ts'
       - '**.tsx'
-      - '**.js' 
+      - '**.js'
       - '**.jsx'
       - '**.json'
+      - '**.css'
+      - '**.md'
+      - '**.html'
+      - 'public/**'
       - 'package*.json'
       - '.github/workflows/**'
       - 'vite.config.*'
@@ -31,6 +40,7 @@ on:
       - 'tsconfig*.json'
       - 'eslint.config.*'
       - 'knip.config.*'
+      - 'playwright.config.*'
 
 jobs:
   test:
@@ -43,16 +53,15 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         fetch-depth: 0  # Need history to detect file changes
       
     - name: Setup Node.js
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v5
       with:
         node-version: '20'
-        # Temporarily disable cache to rule out cache issues
-        # cache: 'npm'
+        cache: 'npm'
         
     - name: Verify environment
       run: |
@@ -78,11 +87,7 @@ jobs:
         fi
 
     - name: Install dependencies
-      run: |
-        # Apply Rollup fix for Linux binary dependencies
-        rm -rf node_modules package-lock.json
-        npm install
-        npm ci
+      run: npm ci
 
     - name: Enforce shared-layer import boundaries
       run: npm run check:import-boundaries
@@ -104,19 +109,34 @@ jobs:
         INCLUDE_BEAT_BENCHMARK: ${{ steps.beat-changes.outputs.beat_changed }}
       run: npm test
 
+    # Coverage runs after the primary test pass so a crash here doesn't hide
+    # test failures. Non-blocking for now (building the floor first); flip to
+    # blocking once the thresholds in vite.config.ts are comfortable.
+    - name: Collect test coverage
+      if: always()
+      continue-on-error: true
+      run: npm run test:coverage
+
+    - name: Upload coverage report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        if-no-files-found: ignore
+        path: |
+          coverage/**
+
     - name: Install Playwright browsers
       run: npx playwright install --with-deps chromium
 
     - name: Run e2e smoke tests
       run: npm run test:e2e:smoke
 
-    - name: Run audio regression hashes
-      run: npm run test:audio:regression
+    # Audio regression hashes are already covered by `npm test` above
+    # (src/beat/utils/syntheticAudioGenerator.audio-regression.test.ts); no
+    # separate re-run needed here.
 
-    # Experimental: still runs on every CI for signal + Playwright artifacts, but does not fail the job.
-    # Agents should run `npm run test:e2e:visual` (or update baselines locally) when touching UI/fonts.
-    - name: Run visual regression screenshots (non-blocking)
-      continue-on-error: true
+    - name: Run visual regression screenshots
       run: npm run test:e2e:visual
 
     - name: Upload visual regression artifacts
@@ -157,20 +177,17 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       
     - name: Setup Node.js
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v5
       with:
         node-version: '20'
+        cache: 'npm'
         
     - name: Install dependencies
-      run: |
-        # Apply Rollup fix for Linux binary dependencies
-        rm -rf node_modules package-lock.json
-        npm install
-        npm ci
-        
+      run: npm ci
+
     - name: Build project
       run: npm run build
       

@@ -1,4 +1,6 @@
-# Engineering Audit - 2026-03
+# Engineering Audit - 2026-03 (ARCHIVED)
+
+> **Status: archived.** This audit captures the state of the repo as of March 2026. The P0/P1 items listed here have since been addressed; ongoing remediation now lives in active PRs and in the phase-based plans referenced from `AGENTS.md` / `docs/COMPONENT_DECOMPOSITION_PATTERN.md`. Kept for historical context only; do not use this file as a task list.
 
 This audit covers testing strategy, architecture/factoring quality, dependency health, and documentation quality across the Labs micro-app monorepo.
 
@@ -70,10 +72,12 @@ See `docs/DEPENDENCY_UPGRADE_PLAN.md` for the execution sequence and validation 
 
 ## Remaining High-ROI Work
 
-- Replace remaining `page.waitForTimeout(...)` calls in e2e suites with condition-based waits.
-- Add smoke e2e coverage for currently thin apps/routes (`/`, `/ui/`, `/pitch/`, `/words/`).
+- Replace remaining `page.waitForTimeout(...)` calls in e2e suites (currently only `e2e/visual/visualTestUtils.ts`) with condition-based waits.
+- Add smoke e2e coverage for the remaining uncovered app routes (`/count/`, `/scales/`) — the earlier gap for `/`, `/ui/`, `/pitch/`, `/words/` was closed in this pass; see the "Remediation Implemented" list above.
 - Refactor oversized app shells into feature slices (`App.tsx` decomposition).
 - Consolidate duplicated/shared audio-analysis code paths where shared and app-local logic diverge.
+
+> A follow-up audit with the full list of open items lives in [`labs_codebase_health_audit`](../.cursor/plans/) (Cursor plan file).
 
 ## 30/60/90 Plan
 

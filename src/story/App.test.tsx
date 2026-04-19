@@ -1,6 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { act, render, screen, fireEvent } from '@testing-library/react';
 import App from './App';
+
+// This test clicks "Generate Story", which chains five dynamic import() calls
+// (three inside loadGenerator(), plus lazy FixedStoryHeader and BeatChart).
+// On a cold CI runner those imports can take several seconds in jsdom, so we
+// give findBy* a generous ceiling. See docs/STYLE_GUIDE.md "Async tests with
+// React.lazy" for the canonical pattern.
+const LAZY_FIND_TIMEOUT_MS = 15000;
 
 describe('Story Generator App', () => {
   it('renders the main heading', () => {
@@ -24,9 +31,13 @@ describe('Story Generator App', () => {
     render(<App />);
     const generateButton = screen.getByRole('button', { name: /generate story/i });
 
-    fireEvent.click(generateButton);
+    await act(async () => {
+      fireEvent.click(generateButton);
+    });
 
-    expect(await screen.findByText(/Core Story Elements/i, {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Core Story Elements/i, {}, { timeout: LAZY_FIND_TIMEOUT_MS }),
+    ).toBeInTheDocument();
     expect(screen.getByText(/Key Genre Elements/i)).toBeInTheDocument();
   });
 
@@ -39,9 +50,13 @@ describe('Story Generator App', () => {
     render(<App />);
     const generateButton = screen.getByRole('button', { name: /generate story/i });
 
-    fireEvent.click(generateButton);
+    await act(async () => {
+      fireEvent.click(generateButton);
+    });
 
-    expect(await screen.findByText(/Core Story Elements/i, {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Core Story Elements/i, {}, { timeout: LAZY_FIND_TIMEOUT_MS }),
+    ).toBeInTheDocument();
 
     const rerollButtons = screen.getAllByRole('button', { name: /reroll/i });
     expect(rerollButtons.length).toBeGreaterThan(0);

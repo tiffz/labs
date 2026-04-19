@@ -475,6 +475,10 @@ describe('App', () => {
       expect(input.value).toContain('% |x6');
     });
 
+    // Skipped: unrolling `|: ... :|xN` section repeats when editing a ghost
+    // measure is not yet implemented in the notation-edit pipeline. Keep the
+    // test in place as an executable spec so flipping it on will land with
+    // the feature.
     it.skip('should UNROLL section repeats when editing a Ghost Measure explicitly', async () => {
       const P1 = 'D-----T-S-----TK'; const P2 = 'D-----DKTKD--DKS'; const P3 = 'DKTKT-______D-DT'; const P4 = '-K-S';
       const complexNotation = `${P1} | % |x6 | ${P2} | |: ${P3} :|x3 | ${P4}`;

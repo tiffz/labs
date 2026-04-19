@@ -13,7 +13,7 @@
 
 ## Boundary Rule
 
-`src/shared/**` must not import from app directories (`beat`, `chords`, `drums`, `piano`, `words`).
+`src/shared/**` must not import from app directories (`beat`, `cats`, `chords`, `corp`, `count`, `drums`, `forms`, `piano`, `pitch`, `scales`, `story`, `ui`, `words`, `zines`). The enforced app list lives in [`scripts/check-import-boundaries.mjs`](../../scripts/check-import-boundaries.mjs) and [`importBoundaries.test.ts`](./importBoundaries.test.ts) — keep them in sync when a new app is added.
 
 ## Server Logger
 

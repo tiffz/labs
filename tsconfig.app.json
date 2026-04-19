@@ -2,6 +2,12 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    /**
+     * noUnusedLocals/Parameters are relaxed here because the app code relies
+     * on destructured setters that TS cannot detect as used. The lint layer
+     * (`eslint.config.js`) still flags genuinely dead imports; when we adopt
+     * `eslint-plugin-unused-imports` (Phase 2) we can remove the relaxation.
+     */
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "erasableSyntaxOnly": false,

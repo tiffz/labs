@@ -256,6 +256,9 @@ describe('Sequencer Utils Debug & Regressions', () => {
   describe('Round Trip Stability', () => {
     const input = `T-K-K---S-----TK | % |x6 | DKTKD-DKTKD--DKSK-DKTDKTK| T-D---K-___TKT-D | DDKKT-ST-SSK-- | KDD--D__DD-----|: DKTKKTKTTKTKD--D :|x3`;
 
+    // Skipped: round-trip canonicalization (grid -> notation -> grid) does not
+    // yet preserve the exact input layout when section repeats and ghost
+    // expansions interact. Kept as an executable spec for the future fix.
     it.skip('should be stable on round trip', () => {
       const grid = notationToGrid(input, timeSignature);
       // Manually parse to get repeats logic simulation

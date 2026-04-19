@@ -147,3 +147,51 @@ describe('React app a11y guardrails', () => {
     });
   });
 });
+
+describe('React StrictMode policy', () => {
+  // Policy: new apps MUST wrap their root render in <React.StrictMode>. Older
+  // apps listed below have not yet been migrated (they predate StrictMode
+  // adoption and some rely on side-effecting renders that would double up).
+  // Removing an app from this opt-out list requires a manual StrictMode audit
+  // pass — do not add new apps here.
+  const STRICT_MODE_OPT_OUT = new Set<string>([
+    'beat',
+    'chords',
+    'corp',
+    'drums',
+    'forms',
+    'ui',
+    'words',
+    'zines',
+  ]);
+
+  function listMainTsxRoots(): Array<{ app: string; file: string }> {
+    const out: Array<{ app: string; file: string }> = [];
+    for (const dirent of fs.readdirSync(SRC_ROOT, { withFileTypes: true })) {
+      if (!dirent.isDirectory()) continue;
+      if (dirent.name === 'shared') continue;
+      const candidate = path.join(SRC_ROOT, dirent.name, 'main.tsx');
+      if (fs.existsSync(candidate)) {
+        out.push({ app: dirent.name, file: candidate });
+      }
+    }
+    return out;
+  }
+
+  const mains = listMainTsxRoots();
+
+  describe.each(mains.map(({ app, file }) => [app, file]))('%s/main.tsx', (app, file) => {
+    const source = fs.readFileSync(file, 'utf8');
+    const hasStrictMode = /<(React\.)?StrictMode\b/.test(source);
+
+    if (STRICT_MODE_OPT_OUT.has(app)) {
+      it('is on the StrictMode opt-out list (grandfathered)', () => {
+        expect(hasStrictMode).toBe(false);
+      });
+    } else {
+      it('wraps its root render in <React.StrictMode>', () => {
+        expect(hasStrictMode).toBe(true);
+      });
+    }
+  });
+});

@@ -759,6 +759,63 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-components-anchoredpopover-tsx-anchoredpopover",
+    "name": "AnchoredPopover",
+    "path": "src/shared/components/AnchoredPopover.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Thin wrapper around MUI `Popover` that bakes in the two most common placement patterns used across apps so each app no longer re-specifies `anchorOrigin` / `transformOrigin` / `slotProps.paper.className`. Adopt this primitive in new code; migrate existing call sites opportunistically. See `src/shared/SHARED_UI_CONVENTIONS.md` for the current adoption status.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "beat"
+    ],
+    "exportType": "default",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-anchoredpopover-tsx-anchoredpopoverplacement",
+    "name": "AnchoredPopoverPlacement",
+    "path": "src/shared/components/AnchoredPopover.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "beat"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-anchoredpopover-tsx-anchoredpopoverprops",
+    "name": "AnchoredPopoverProps",
+    "path": "src/shared/components/AnchoredPopover.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "beat"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
     "id": "src-shared-components-appslider-tsx-appslider",
     "name": "AppSlider",
     "path": "src/shared/components/AppSlider.tsx",
@@ -2567,9 +2624,27 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
-    "id": "src-shared-music-pitch-microphonepitchinput-ts-microphonedevice",
-    "name": "MicrophoneDevice",
-    "path": "src/shared/music/pitch/microphonePitchInput.ts",
+    "id": "src-shared-music-pitch-acousticinput-ts-acousticinput",
+    "name": "AcousticInput",
+    "path": "src/shared/music/pitch/acousticInput.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Thin lifecycle wrapper around . Each app used to maintain its own copy (`src/piano/utils/acousticInput.ts`, `src/scales/utils/acousticInput.ts`) which drifted subtly over time. Use this factory so both apps stay on the same semantics.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "class",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-pitch-acousticinput-ts-acousticinputcallbacks",
+    "name": "AcousticInputCallbacks",
+    "path": "src/shared/music/pitch/acousticInput.ts",
     "kind": "model",
     "stability": "stable",
     "owner": "music-core",
@@ -2581,6 +2656,58 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "appsUsing": [
       "piano"
     ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-pitch-acousticinput-ts-acousticinputdebughooks",
+    "name": "AcousticInputDebugHooks",
+    "path": "src/shared/music/pitch/acousticInput.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-pitch-acousticinput-ts-acousticinputfactoryoptions",
+    "name": "AcousticInputFactoryOptions",
+    "path": "src/shared/music/pitch/acousticInput.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-pitch-microphonepitchinput-ts-microphonedevice",
+    "name": "MicrophoneDevice",
+    "path": "src/shared/music/pitch/microphonePitchInput.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
     "exportType": "interface",
     "demoId": null
   },
@@ -2596,9 +2723,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music",
       "api"
     ],
-    "appsUsing": [
-      "piano"
-    ],
+    "appsUsing": [],
     "exportType": "class",
     "demoId": null
   },
@@ -2614,9 +2739,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music",
       "api"
     ],
-    "appsUsing": [
-      "piano"
-    ],
+    "appsUsing": [],
     "exportType": "interface",
     "demoId": null
   },
@@ -2632,9 +2755,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music",
       "api"
     ],
-    "appsUsing": [
-      "piano"
-    ],
+    "appsUsing": [],
     "exportType": "interface",
     "demoId": null
   },
@@ -5710,6 +5831,127 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "shared-core",
     "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-mocks-audio-ts-createmockaudiocontext",
+    "name": "createMockAudioContext",
+    "path": "src/shared/test/mocks/audio.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Canonical AudioContext / OfflineAudioContext mocks for tests. Re-exports the long-standing helpers in `src/shared/audio/__test__/mockAudioContext.ts` and adds an OfflineAudioContext factory used by rendering tests. Prefer these over hand-rolling per-test mocks so assertions stay stable as the real audio layer evolves.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-mocks-audio-ts-createmockgainnode",
+    "name": "createMockGainNode",
+    "path": "src/shared/test/mocks/audio.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Canonical AudioContext / OfflineAudioContext mocks for tests. Re-exports the long-standing helpers in `src/shared/audio/__test__/mockAudioContext.ts` and adds an OfflineAudioContext factory used by rendering tests. Prefer these over hand-rolling per-test mocks so assertions stay stable as the real audio layer evolves.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-mocks-audio-ts-createmockofflineaudiocontext",
+    "name": "createMockOfflineAudioContext",
+    "path": "src/shared/test/mocks/audio.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Minimal OfflineAudioContext fake. Enough for \"did rendering complete?\" style tests; do not use for numerical DSP assertions.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-mocks-audio-ts-createmocksourcenode",
+    "name": "createMockSourceNode",
+    "path": "src/shared/test/mocks/audio.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Canonical AudioContext / OfflineAudioContext mocks for tests. Re-exports the long-standing helpers in `src/shared/audio/__test__/mockAudioContext.ts` and adds an OfflineAudioContext factory used by rendering tests. Prefer these over hand-rolling per-test mocks so assertions stay stable as the real audio layer evolves.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-mocks-audio-ts-mockaudiocontext",
+    "name": "MockAudioContext",
+    "path": "src/shared/test/mocks/audio.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Canonical AudioContext / OfflineAudioContext mocks for tests. Re-exports the long-standing helpers in `src/shared/audio/__test__/mockAudioContext.ts` and adds an OfflineAudioContext factory used by rendering tests. Prefer these over hand-rolling per-test mocks so assertions stay stable as the real audio layer evolves.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-mocks-audio-ts-mockofflineaudiocontext",
+    "name": "MockOfflineAudioContext",
+    "path": "src/shared/test/mocks/audio.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Canonical AudioContext / OfflineAudioContext mocks for tests. Re-exports the long-standing helpers in `src/shared/audio/__test__/mockAudioContext.ts` and adds an OfflineAudioContext factory used by rendering tests. Prefer these over hand-rolling per-test mocks so assertions stay stable as the real audio layer evolves.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-mocks-fetch-ts-mockfetch",
+    "name": "mockFetch",
+    "path": "src/shared/test/mocks/fetch.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Install a mocked global `fetch` that resolves to a configurable JSON body. ```ts import { mockFetch } from '../../shared/test/mocks/fetch'; beforeEach(() => { mockFetch({ status: 'ok' }); }); ``` Returns the underlying mock so tests can assert on calls or override the implementation for specific URLs.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-mocks-fetch-ts-restorefetch",
+    "name": "restoreFetch",
+    "path": "src/shared/test/mocks/fetch.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Restore whatever `fetch` was present before a test mocked it. Pair with a `const original = globalThis.fetch` snapshot in `beforeEach`.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-mocks-lazy-ts-synchronouslazystub",
+    "name": "synchronousLazyStub",
+    "path": "src/shared/test/mocks/lazy.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Create a synchronous stand-in for a `React.lazy`-loaded component. Use this to neutralize the dynamic-import tax in unit tests where the lazy-load behavior is not under test. ```ts import { synchronousLazyStub } from '../../shared/test/mocks/lazy'; vi.mock('./BeatChart', () => ({ default: synchronousLazyStub<{}>('BeatChart'), })); ``` The returned component renders a minimal DOM node so presence assertions still work. Pass a custom renderer when the surrounding test needs to observe specific markup from the lazy subtree. This helper is intentionally tiny; it exists to make the pattern discoverable and uniform across apps. Long-form migration for story/App.test.tsx, piano/ImportModal.test.tsx, drums/App.test.tsx, and zines/App.test.tsx is tracked in Phase 1 of the codebase-health plan.",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
