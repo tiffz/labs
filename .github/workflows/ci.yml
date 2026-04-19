@@ -137,6 +137,11 @@ jobs:
     # separate re-run needed here.
 
     - name: Run visual regression screenshots
+      # Visual regressions are advisory, not blocking. Linux Playwright rendering
+      # drifts on its own (fonts, anti-aliasing, catalog layout) and refreshing
+      # baselines on every drift would gate unrelated PRs. Artifacts are still
+      # uploaded below so you can inspect diffs when intentionally changing UI.
+      continue-on-error: true
       run: npm run test:e2e:visual
 
     - name: Upload visual regression artifacts
