@@ -114,4 +114,18 @@ export default [
       'no-console': 'off',
     },
   },
+
+  // CLI runners / tooling scripts executed via `tsx` print diagnostic output
+  // directly to stdout by design; the serverLogger policy does not apply.
+  {
+    files: [
+      'src/beat/tests/**/*.{ts,tsx}',
+      'src/beat/utils/nodeAudio.ts',
+      'src/beat/utils/bpmAccuracyTest.ts',
+      'scripts/**/*.{ts,mjs,js}',
+    ],
+    rules: {
+      'no-console': 'off',
+    },
+  },
 ];
