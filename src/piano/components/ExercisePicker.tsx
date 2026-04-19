@@ -12,7 +12,13 @@ import {
   CHORD_STYLE_OPTIONS,
   type ChordVoicingStyle,
   type ChordStyleId,
+  type MeasuresPerChord,
 } from '../data/chordExercises';
+import type { TimeSignature } from '../../shared/music/chordTypes';
+import {
+  getAvailableChordStyleTimeSignatures,
+} from '../../shared/music/chordStylingStrategies';
+import { isStrategyCompatibleWithTimeSignature } from '../../shared/music/chordStylingCompatibility';
 import { getAllEntries, getSongSettings, type LibraryEntry } from '../utils/libraryStorage';
 import type { Key } from '../types';
 import type { RomanNumeral } from '../../shared/music/chordTypes';
@@ -193,9 +199,17 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({
   const [customProgressionError, setCustomProgressionError] = useState('');
   const [customProgressionWarning, setCustomProgressionWarning] = useState('');
   const [voicingStyle, setVoicingStyle] = useState<ChordVoicingStyle>('root');
-  const [measuresPerChord, setMeasuresPerChord] = useState<1 | 2>(1);
+  const [measuresPerChord, setMeasuresPerChord] = useState<MeasuresPerChord>(1);
   const [progKey, setProgKey] = useState<Key>('C');
   const [chordStyle, setChordStyle] = useState<ChordStyleId>('simple');
+  const [progTimeSignature, setProgTimeSignature] = useState<TimeSignature>({
+    numerator: 4,
+    denominator: 4,
+  });
+  const availableProgTimeSignatures = useMemo(
+    () => getAvailableChordStyleTimeSignatures(),
+    []
+  );
   const applyTimerRef = useRef<number | null>(null);
   const hydratedDefaultsRef = useRef(false);
 
@@ -220,8 +234,16 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({
           state.score.exerciseConfig.progressionNumerals.join('–')
       );
       setVoicingStyle((state.score.exerciseConfig.voicingStyle as ChordVoicingStyle) ?? 'root');
-      setMeasuresPerChord(((state.score.exerciseConfig.measuresPerChord as 1 | 2) ?? 1));
+      setMeasuresPerChord(
+        ((state.score.exerciseConfig.measuresPerChord as MeasuresPerChord) ?? 1)
+      );
       setChordStyle((state.score.exerciseConfig.styleId as ChordStyleId) ?? 'simple');
+      if (state.score.timeSignature) {
+        setProgTimeSignature({
+          numerator: state.score.timeSignature.numerator,
+          denominator: state.score.timeSignature.denominator,
+        });
+      }
       return;
     }
     const parsedScaleMeta = parseExerciseId(state.score.id);
@@ -257,7 +279,14 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({
     dispatch({ type: 'SET_IS_EXERCISE', isExercise: true });
   }, [dispatch, loadScore, state.score?.id]);
 
-  const loadProgression = useCallback((input: string, key: Key, voicing: ChordVoicingStyle, mpc: 1 | 2, style: ChordStyleId) => {
+  const loadProgression = useCallback((
+    input: string,
+    key: Key,
+    voicing: ChordVoicingStyle,
+    mpc: MeasuresPerChord,
+    style: ChordStyleId,
+    ts: TimeSignature,
+  ) => {
     const parsed = parseProgressionText(input, key);
     if (!parsed.isValid || parsed.tokens.length < 1) {
       setCustomProgressionError('Use I, I–V–vi–IV, or C–G–Am–F.');
@@ -293,7 +322,7 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({
       key: effectiveKey,
       voicingStyle: voicing,
       measuresPerChord: mpc,
-      timeSignature: { numerator: 4, denominator: 4 },
+      timeSignature: ts,
       styleId: style,
     });
     if (state.score?.id === score.id) {
@@ -325,7 +354,14 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({
         return;
       }
       if (section === 'progressions') {
-        loadProgression(customProgressionInput, progKey, voicingStyle, measuresPerChord, chordStyle);
+        loadProgression(
+          customProgressionInput,
+          progKey,
+          voicingStyle,
+          measuresPerChord,
+          chordStyle,
+          progTimeSignature,
+        );
       }
     }, 220);
     return () => {
@@ -347,6 +383,7 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({
     octaves,
     open,
     progKey,
+    progTimeSignature,
     quality,
     scaleType,
     section,
@@ -399,8 +436,22 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({
     }
     setProgKey(pickRandom(MAJOR_KEYS as unknown as string[]) as Key);
     setVoicingStyle(pickRandom(VOICING_OPTIONS.map(o => o.value)));
-    setMeasuresPerChord(pickRandom([1, 2, 3, 4]) as 1 | 2);
-    setChordStyle(pickRandom(CHORD_STYLE_OPTIONS.map(o => o.id)));
+    setMeasuresPerChord(pickRandom([1, 2, 3, 4] as MeasuresPerChord[]));
+    const nextTs = pickRandom(availableProgTimeSignatures);
+    setProgTimeSignature(nextTs);
+    const compatibleStyles = CHORD_STYLE_OPTIONS.filter((option) =>
+      isStrategyCompatibleWithTimeSignature(option.id, nextTs)
+    );
+    setChordStyle(
+      pickRandom((compatibleStyles.length > 0 ? compatibleStyles : CHORD_STYLE_OPTIONS).map(o => o.id))
+    );
+  }, [availableProgTimeSignatures]);
+
+  const handleProgTimeSignatureChange = useCallback((next: TimeSignature) => {
+    setProgTimeSignature(next);
+    setChordStyle((current) =>
+      isStrategyCompatibleWithTimeSignature(current, next) ? current : 'simple',
+    );
   }, []);
 
   const isTonal = scaleType !== 'chromatic';
@@ -587,6 +638,7 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({
                   keyContext={progKey}
                   appearance="piano"
                   presetColumns={2}
+                  showInputInPopover
                   error={customProgressionError}
                   warning={customProgressionWarning}
                   onInputChange={(value) => {
@@ -639,8 +691,8 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({
                 <div className="ep-group ep-group-sm">
                   <GroupLabel>Meas / Chord</GroupLabel>
                   <div className="ep-chip-row">
-                    {[1, 2, 3, 4].map(n => (
-                      <button key={n} className={`ep-chip ep-chip-num ${measuresPerChord === n ? 'active' : ''}`} onClick={() => setMeasuresPerChord(Math.min(4, n) as 1 | 2)}>
+                    {([1, 2, 3, 4] as MeasuresPerChord[]).map(n => (
+                      <button key={n} className={`ep-chip ep-chip-num ${measuresPerChord === n ? 'active' : ''}`} onClick={() => setMeasuresPerChord(n)}>
                         {n}
                       </button>
                     ))}
@@ -649,16 +701,56 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({
               </div>
 
               <div className="ep-group">
-                <GroupLabel onRandomize={() => setChordStyle(pickRandom(CHORD_STYLE_OPTIONS.map(o => o.id), chordStyle))}
-                  tipText="Randomize style. Click to pick a random accompaniment style.">Style</GroupLabel>
+                <GroupLabel
+                  onRandomize={() => {
+                    const nextTs = pickRandom(availableProgTimeSignatures);
+                    handleProgTimeSignatureChange(nextTs);
+                  }}
+                  tipText="Randomize time signature. Click to pick a random meter."
+                >
+                  Time Signature
+                </GroupLabel>
+                <div className="ep-chip-row">
+                  {availableProgTimeSignatures.map((ts) => {
+                    const label = `${ts.numerator}/${ts.denominator}`;
+                    const active =
+                      ts.numerator === progTimeSignature.numerator &&
+                      ts.denominator === progTimeSignature.denominator;
+                    return (
+                      <button
+                        key={label}
+                        className={`ep-chip ${active ? 'active' : ''}`}
+                        onClick={() => handleProgTimeSignatureChange(ts)}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="ep-group">
+                <GroupLabel
+                  onRandomize={() => {
+                    const compatible = CHORD_STYLE_OPTIONS.filter((option) =>
+                      isStrategyCompatibleWithTimeSignature(option.id, progTimeSignature)
+                    );
+                    const pool = compatible.length > 0 ? compatible : CHORD_STYLE_OPTIONS;
+                    setChordStyle(pickRandom(pool.map((o) => o.id), chordStyle));
+                  }}
+                  tipText="Randomize style. Click to pick a random accompaniment style."
+                >
+                  Style
+                </GroupLabel>
                 <ChordStyleInput
                   value={chordStyle}
                   onChange={(styleId) => setChordStyle(styleId as ChordStyleId)}
                   options={CHORD_STYLE_OPTIONS}
+                  timeSignature={progTimeSignature}
                   triggerClassName="ep-custom-prog-input"
                   dropdownClassName="ep-style-dropdown"
                   appearance="piano"
-                  menuColumns={3}
+                  menuColumns={2}
                 />
               </div>
             </div>

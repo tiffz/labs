@@ -3741,8 +3741,36 @@ body {
   gap: var(--sp-2);
 }
 
+/* Key popover grid: reuse the shared 6-column layout, just tint it with the
+   piano palette via CSS variables so the flow matches other apps while
+   keeping the piano's look and feel. */
+.np-popover:has(.np-key-grid) {
+  min-width: min(360px, calc(100vw - 32px));
+}
+
+.np-key-grid {
+  --key-chip-border: var(--piano-border, #e2e8f0);
+  --key-chip-bg: #ffffff;
+  --key-chip-hover-border: var(--piano-primary, #7c3aed);
+  --key-chip-hover-bg: var(--piano-primary-light, #f5f3ff);
+  --key-chip-active-border: var(--piano-primary, #7c3aed);
+  --key-chip-active-bg: var(--piano-primary, #7c3aed);
+  --key-chip-active-text: #ffffff;
+  --key-chip-font-size: var(--text-sm, 0.88rem);
+  --key-chip-font-weight: var(--weight-semibold, 600);
+  --key-chip-min-height: 2.2rem;
+}
+
 .np-popover .shared-chord-style-inline-list {
   padding: 0;
+}
+
+/* The inline chord style selector doesn't need the full-width popover surface;
+   constrain the hosting section so it matches the Load Exercise popover width. */
+.np-pop-section:has(.shared-chord-style-inline-content--piano),
+.np-pop-section-sm:has(.shared-chord-style-inline-content--piano) {
+  min-width: min(480px, calc(100vw - 32px));
+  max-width: min(540px, calc(100vw - 32px));
 }
 .np-pop-key {
   min-width: 0;
@@ -4124,6 +4152,27 @@ body {
   min-height: var(--ep-prog-control-height);
 }
 
+/*
+ * Chord progression picker (piano app).
+ *
+ * Visual theming — density, border, and input tinting — is defined in the
+ * shared stylesheet keyed off `appearance="piano"`, so both the popover
+ * (`.shared-chord-progression-dropdown--piano`) and inline
+ * (`.shared-chord-progression-inline-content--piano`) renders stay in sync.
+ *
+ * What remains here is the piano app's per-control sizing for the mirror
+ * input that sits inside the popover (the shared styles handle colour).
+ */
+.ep-prog-dropdown .shared-chord-progression-text.ep-custom-prog-input {
+  min-height: calc(var(--ep-control-height) - 0.2rem);
+  height: calc(var(--ep-control-height) - 0.2rem);
+  font-size: var(--ep-prog-control-font-size);
+  font-weight: var(--weight-semibold);
+  line-height: 1.25;
+  padding: 0 0.78rem;
+  margin-bottom: 0.14rem;
+}
+
 .ep-progressions .shared-chord-style-trigger.ep-custom-prog-input {
   min-height: var(--ep-prog-control-height);
   display: inline-flex;
@@ -4220,54 +4269,13 @@ body {
   line-height: 1.2;
 }
 
-/* Style grid (3 columns, equal height) */
-.ep-style-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: var(--sp-1);
-  align-items: stretch;
-}
+/* Inline chord-style menu inside np-popover: the popover already provides
+   the surface chrome, so the shared inline wrapper should be transparent. */
 .np-chord-style-inline-menu.shared-chord-style-inline-content {
   background: transparent;
   border: 0;
   box-shadow: none;
-}
-.ep-style-item {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  padding: var(--sp-1) var(--sp-2);
-  border: 1px solid var(--piano-border);
-  border-radius: var(--radius-md);
-  background: white;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  text-align: left;
-  font-family: inherit;
-}
-.ep-style-item:hover {
-  border-color: var(--piano-primary);
-}
-.ep-style-item.active {
-  background: var(--piano-primary-light);
-  border-color: var(--piano-primary);
-}
-.ep-style-name,
-.ep-style-item .shared-chord-style-name {
-  font-size: var(--text-sm);
-  font-weight: var(--weight-bold);
-  color: var(--piano-text);
-  line-height: 1.22;
-}
-.ep-style-item.active .ep-style-name,
-.ep-style-item.active .shared-chord-style-name {
-  color: var(--piano-primary);
-}
-.ep-style-desc,
-.ep-style-item .shared-chord-style-description {
-  font-size: 11px;
-  color: var(--piano-text-secondary);
-  line-height: 1.28;
+  padding: 0;
 }
 
 /* Sticky footer with preview + actions */

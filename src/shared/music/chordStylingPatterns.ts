@@ -69,7 +69,7 @@ export const CHORD_STYLING_PATTERNS: Record<string, ChordStylingPattern> = {
   'oom-pahs': {
     name: 'Oom-Pahs',
     description:
-      'Alternating root/chord pattern (LH/RH). Works well for Music Theater, Jazz Ballads, or any song in 4/4 time.',
+      'Alternating root/chord pattern (LH/RH). Great for music theater and jazz ballads.',
     patterns: {
       '4/4': { treble: '____C---____C---', bass: '1---____5---____' },
       '2/4': { treble: '____C---', bass: '1---____' },
@@ -78,7 +78,7 @@ export const CHORD_STYLING_PATTERNS: Record<string, ChordStylingPattern> = {
   },
   waltz: {
     name: 'Waltz',
-    description: '3/4 time pattern with root or root/5th in left hand',
+    description: '3/4 pattern with root or root/5th in the left hand.',
     patterns: {
       '3/4': { treble: '____C---C---', bass: '1-----------' },
       '6/8': { treble: '__C-C-__C-C-', bass: '1-----1-----' },
@@ -88,7 +88,7 @@ export const CHORD_STYLING_PATTERNS: Record<string, ChordStylingPattern> = {
   },
   'pop-rock-ballad': {
     name: 'Pop-Rock Ballad',
-    description: 'Dotted quarter note pattern in left hand with chords in right hand',
+    description: 'Dotted quarter pattern (LH) with chords (RH).',
     patterns: {
       '4/4': { treble: 'C---C---C---C---', bass: '1-----1-1-----1-' },
       '2/4': { treble: 'C---C---', bass: '1-----1-' },
@@ -106,7 +106,7 @@ export const CHORD_STYLING_PATTERNS: Record<string, ChordStylingPattern> = {
   },
   jazzy: {
     name: 'Jazzy',
-    description: 'Walking bass line (1-3-5-3) with rhythm chords in right hand. Play with a swing feel.',
+    description: 'Walking bass (1-3-5-3) with swung rhythm chords.',
     patterns: {
       '4/4': { treble: 'C-C-____________', bass: '1---3---5---3---' },
     },
@@ -115,7 +115,7 @@ export const CHORD_STYLING_PATTERNS: Record<string, ChordStylingPattern> = {
   tresillo: {
     name: 'The Tresillo',
     description:
-      'The pattern 3+3+2 (1 2 3 - 1 2 3 - 1 2). One of the most widely played grooves across many styles.',
+      '3+3+2 pattern (1 2 3 - 1 2 3 - 1 2). A widely used groove.',
     patterns: {
       '4/4': { treble: 'C-----C-----C---', bass: '1-----1-----1---' },
     },

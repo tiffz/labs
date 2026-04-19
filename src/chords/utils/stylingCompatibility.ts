@@ -1,20 +1,11 @@
 /**
- * Utilities for checking styling strategy compatibility with time signatures
+ * Utilities for checking styling strategy compatibility with time signatures.
+ *
+ * Canonical location is `src/shared/music/chordStylingCompatibility.ts`;
+ * this module re-exports for backwards compatibility.
  */
 
-import type { TimeSignature, ChordStylingStrategy } from '../types';
-import { CHORD_STYLING_STRATEGIES } from '../data/chordStylingStrategies';
-
-/**
- * Gets all styling strategies compatible with a time signature
- */
-export function getCompatibleStylingStrategies(timeSignature: TimeSignature): ChordStylingStrategy[] {
-  return Object.entries(CHORD_STYLING_STRATEGIES)
-    .filter(([, config]) => 
-      config.compatibleTimeSignatures.some(
-        ts => ts.numerator === timeSignature.numerator && ts.denominator === timeSignature.denominator
-      )
-    )
-    .map(([key]) => key as ChordStylingStrategy);
-}
-
+export {
+  getCompatibleStylingStrategies,
+  isStrategyCompatibleWithTimeSignature,
+} from '../../shared/music/chordStylingCompatibility';

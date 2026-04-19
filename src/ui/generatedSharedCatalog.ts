@@ -1637,6 +1637,40 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-music-chordstylingcompatibility-ts-getcompatiblestylingstrategies",
+    "name": "getCompatibleStylingStrategies",
+    "path": "src/shared/music/chordStylingCompatibility.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Gets all styling strategies compatible with a time signature.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordstylingcompatibility-ts-isstrategycompatiblewithtimesignature",
+    "name": "isStrategyCompatibleWithTimeSignature",
+    "path": "src/shared/music/chordStylingCompatibility.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Returns true when the given strategy has at least one pattern defined for the given time signature.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-music-chordstylingpatterns-ts-chord-styling-patterns",
     "name": "CHORD_STYLING_PATTERNS",
     "path": "src/shared/music/chordStylingPatterns.ts",
@@ -1724,6 +1758,59 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "chords",
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordstylingstrategies-ts-chord-styling-strategies",
+    "name": "CHORD_STYLING_STRATEGIES",
+    "path": "src/shared/music/chordStylingStrategies.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Time-signature-aware metadata for chord styling strategies. The underlying pattern strings live in `chordStylingPatterns.ts`; this module exposes which time signatures each strategy supports so pickers can filter options and callers can validate user choices. Credit: Strategy taxonomy inspired by the Piano for Singers course by Brenda Earle Stokes — https://pianoandvoicewithbrenda.com/piano-for-singers-the-complete-guide/",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordstylingstrategies-ts-chordstylingstrategyconfig",
+    "name": "ChordStylingStrategyConfig",
+    "path": "src/shared/music/chordStylingStrategies.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Time-signature-aware metadata for chord styling strategies. The underlying pattern strings live in `chordStylingPatterns.ts`; this module exposes which time signatures each strategy supports so pickers can filter options and callers can validate user choices. Credit: Strategy taxonomy inspired by the Piano for Singers course by Brenda Earle Stokes — https://pianoandvoicewithbrenda.com/piano-for-singers-the-complete-guide/",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordstylingstrategies-ts-getavailablechordstyletimesignatures",
+    "name": "getAvailableChordStyleTimeSignatures",
+    "path": "src/shared/music/chordStylingStrategies.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Returns the de-duplicated set of time signatures that at least one chord styling strategy supports, sorted by denominator then numerator.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
       "piano"
     ],
     "exportType": "function",

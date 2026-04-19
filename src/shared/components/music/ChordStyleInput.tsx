@@ -1,5 +1,11 @@
 import { useMemo, useRef, useState } from 'react';
 import Popover from '@mui/material/Popover';
+import type { TimeSignature } from '../../music/chordTypes';
+import {
+  getAvailableChordStyleTimeSignatures,
+  CHORD_STYLING_STRATEGIES,
+} from '../../music/chordStylingStrategies';
+import { isStrategyCompatibleWithTimeSignature } from '../../music/chordStylingCompatibility';
 import './chordStyleInput.css';
 
 /**
@@ -9,6 +15,32 @@ export interface ChordStyleOptionLike {
   id: string;
   label: string;
   description?: string;
+}
+
+function timeSignatureLabel(ts: TimeSignature): string {
+  return `${ts.numerator}/${ts.denominator}`;
+}
+
+function timeSignaturesEqual(
+  a: TimeSignature,
+  b: TimeSignature | null | undefined
+): boolean {
+  if (!b) return false;
+  return a.numerator === b.numerator && a.denominator === b.denominator;
+}
+
+function filterOptionsByTimeSignature<T extends ChordStyleOptionLike>(
+  options: ReadonlyArray<T>,
+  timeSignature: TimeSignature | null
+): ReadonlyArray<T> {
+  if (!timeSignature) return options;
+  return options.filter((option) => {
+    if (!(option.id in CHORD_STYLING_STRATEGIES)) return true;
+    return isStrategyCompatibleWithTimeSignature(
+      option.id as keyof typeof CHORD_STYLING_STRATEGIES,
+      timeSignature
+    );
+  });
 }
 
 interface ChordStyleMenuProps<TStyle extends string> {
@@ -71,6 +103,58 @@ export const ChordStyleMenu = <TStyle extends string>({
   );
 };
 
+interface TimeSignatureFilterBarProps {
+  value: TimeSignature | null;
+  onChange: (next: TimeSignature | null) => void;
+  timeSignatures: TimeSignature[];
+}
+
+/**
+ * Small chip row used inside the popover/inline menu so the user can
+ * narrow the styles to those compatible with a specific time signature.
+ */
+const TimeSignatureFilterBar = ({
+  value,
+  onChange,
+  timeSignatures,
+}: TimeSignatureFilterBarProps) => (
+  <div
+    className="shared-chord-style-ts-filter"
+    role="toolbar"
+    aria-label="Filter styles by time signature"
+  >
+    <button
+      type="button"
+      className={[
+        'shared-chord-style-ts-chip',
+        value === null ? 'active' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
+      onMouseDown={(event) => event.preventDefault()}
+      onClick={() => onChange(null)}
+    >
+      All
+    </button>
+    {timeSignatures.map((ts) => (
+      <button
+        key={timeSignatureLabel(ts)}
+        type="button"
+        className={[
+          'shared-chord-style-ts-chip',
+          timeSignaturesEqual(ts, value) ? 'active' : '',
+        ]
+          .filter(Boolean)
+          .join(' ')}
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={() => onChange(ts)}
+      >
+        {timeSignatureLabel(ts)}
+      </button>
+    ))}
+  </div>
+);
+
 interface ChordStyleInputProps<TStyle extends string> {
   value: TStyle;
   options: ReadonlyArray<ChordStyleOptionLike>;
@@ -85,6 +169,18 @@ interface ChordStyleInputProps<TStyle extends string> {
   menuColumns?: 1 | 2 | 3 | 'auto';
   menuMode?: 'popover' | 'inline';
   disabled?: boolean;
+  /**
+   * When provided, the options shown are filtered to styles that support
+   * this time signature. The in-menu time signature filter is hidden in
+   * this mode so the caller stays in full control.
+   */
+  timeSignature?: TimeSignature;
+  /**
+   * When true, renders a small time-signature chip row above the menu so
+   * the user can narrow styles themselves. Ignored when `timeSignature`
+   * is provided.
+   */
+  showTimeSignatureFilter?: boolean;
 }
 
 /**
@@ -104,12 +200,29 @@ const ChordStyleInput = <TStyle extends string>({
   menuColumns = 'auto',
   menuMode = 'popover',
   disabled = false,
+  timeSignature,
+  showTimeSignatureFilter = false,
 }: ChordStyleInputProps<TStyle>) => {
   const [open, setOpen] = useState(false);
+  const [internalTsFilter, setInternalTsFilter] = useState<TimeSignature | null>(
+    null,
+  );
   const anchorRef = useRef<HTMLDivElement | null>(null);
   const selected = useMemo(
     () => options.find((option) => option.id === value),
     [options, value],
+  );
+  const callerProvidedTs = timeSignature ?? null;
+  const internalFilterEnabled =
+    showTimeSignatureFilter && callerProvidedTs === null;
+  const activeFilter = callerProvidedTs ?? (internalFilterEnabled ? internalTsFilter : null);
+  const filteredOptions = useMemo(
+    () => filterOptionsByTimeSignature(options, activeFilter),
+    [options, activeFilter],
+  );
+  const availableTimeSignatures = useMemo(
+    () => getAvailableChordStyleTimeSignatures(),
+    [],
   );
 
   if (menuMode === 'inline') {
@@ -133,9 +246,16 @@ const ChordStyleInput = <TStyle extends string>({
             .join(' ')}
         >
           <div className="shared-chord-style-inline-list">
+            {internalFilterEnabled ? (
+              <TimeSignatureFilterBar
+                value={internalTsFilter}
+                onChange={setInternalTsFilter}
+                timeSignatures={availableTimeSignatures}
+              />
+            ) : null}
             <ChordStyleMenu
               value={value}
-              options={options}
+              options={filteredOptions}
               onSelect={onChange}
               className={menuClassName}
               itemClassName={menuItemClassName}
@@ -196,9 +316,16 @@ const ChordStyleInput = <TStyle extends string>({
         }}
       >
         <div className="shared-chord-style-dropdown-list">
+          {internalFilterEnabled ? (
+            <TimeSignatureFilterBar
+              value={internalTsFilter}
+              onChange={setInternalTsFilter}
+              timeSignatures={availableTimeSignatures}
+            />
+          ) : null}
           <ChordStyleMenu
             value={value}
-            options={options}
+            options={filteredOptions}
             onSelect={(next) => {
               onChange(next);
               setOpen(false);

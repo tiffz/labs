@@ -607,8 +607,7 @@ const CurrentlyPracticing: React.FC<CurrentlyPracticingProps> = ({ onLoadExercis
               ? reloadChordExercise({ key: next as unknown as Key })
               : reloadExercise({ key: next as unknown as Key })
           }
-          className="np-pop-keys"
-          itemClassName="np-pop-key"
+          className="np-key-grid"
         />
       </ChipPopover>
 

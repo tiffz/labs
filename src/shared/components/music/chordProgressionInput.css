@@ -31,6 +31,8 @@
   --cp-meta-color: #5b5d84;
   --cp-item-padding: 0.68rem 0.82rem;
   --cp-item-gap: 0.2rem;
+  --cp-item-min-height: 4rem;
+  --cp-item-radius: 0.68rem;
   --cp-title-size: var(--font-size-lg, 0.98rem);
   --cp-title-weight: var(--font-weight-bold, 700);
   --cp-meta-size: var(--font-size-sm, 0.8rem);
@@ -41,6 +43,14 @@
   --cp-control-line-height: 1.2;
   --cp-control-padding: calc(var(--space-2, 8px) - 1px)
     calc(var(--space-3, 12px) + 1px);
+  /* Surface-level density controls shared by popover + inline variants. */
+  --cp-surface-padding: 0.78rem 0.8rem;
+  --cp-surface-gap: 0.58rem;
+  --cp-surface-radius: 0.82rem;
+  --cp-preset-list-gap: 0.44rem;
+  /* Optional shadow + tint applied to the typed input inside the surface. */
+  --cp-text-input-shadow: none;
+  --cp-text-input-focus-shadow: var(--cp-focus-ring);
 }
 
 .shared-chord-progression-input {
@@ -66,6 +76,7 @@
   line-height: var(--cp-control-line-height);
   min-height: var(--cp-control-height);
   padding: var(--cp-control-padding);
+  box-shadow: var(--cp-text-input-shadow);
 }
 
 .shared-chord-progression-trigger {
@@ -91,7 +102,7 @@
 .shared-chord-progression-dropdown {
   min-width: min(460px, calc(100vw - 24px));
   max-width: min(560px, calc(100vw - 24px));
-  border-radius: 0.82rem;
+  border-radius: var(--cp-surface-radius);
   border: 1px solid color-mix(in srgb, var(--cp-surface-border) 92%, #e2e8f0);
   background: var(--cp-surface-bg);
   box-shadow: var(
@@ -107,20 +118,20 @@
 .shared-chord-progression-inline-list {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--cp-surface-gap);
 }
 
 .shared-chord-progression-dropdown-list {
   display: flex;
   flex-direction: column;
-  gap: 0.58rem;
-  padding: 0.78rem 0.8rem;
+  gap: var(--cp-surface-gap);
+  padding: var(--cp-surface-padding);
 }
 
 .shared-chord-progression-preset-list {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 0.44rem;
+  gap: var(--cp-preset-list-gap);
   max-height: min(58vh, 560px);
   overflow: auto;
 }
@@ -137,12 +148,12 @@
 
 .shared-chord-progression-preset {
   border: 1px solid var(--cp-chip-border);
-  border-radius: 0.68rem;
+  border-radius: var(--cp-item-radius);
   background: var(--cp-chip-bg);
   color: inherit;
   text-align: left;
   padding: var(--cp-item-padding);
-  min-height: 4rem;
+  min-height: var(--cp-item-min-height);
   display: flex;
   flex-direction: column;
   gap: var(--cp-item-gap);
@@ -201,19 +212,51 @@
 .shared-chord-progression-trigger:focus-visible {
   outline: none;
   border-color: var(--cp-focus-border);
-  box-shadow: var(--cp-focus-ring);
+  box-shadow: var(--cp-text-input-focus-shadow);
 }
 
-.shared-chord-progression-input--piano {
-  --cp-input-border: color-mix(in srgb, #7c3aed 26%, #d8b4fe);
-  --cp-focus-border: color-mix(in srgb, #7c3aed 60%, #c4b5fd);
-  --cp-focus-ring: 0 0 0 2px rgba(124, 58, 237, 0.14);
-  --cp-surface-border: color-mix(in srgb, #7c3aed 24%, #d8b4fe);
-  --cp-surface-shadow: 0 14px 30px rgba(124, 58, 237, 0.15);
+.shared-chord-progression-input--piano,
+.shared-chord-progression-dropdown--piano,
+.shared-chord-progression-inline-content--piano {
+  --cp-input-border: color-mix(in srgb, #7c3aed 24%, #e2e8f0);
+  --cp-input-bg: color-mix(in srgb, #f5f3ff 38%, #ffffff);
+  --cp-focus-border: #7c3aed;
+  --cp-focus-ring: 0 0 0 2px rgba(124, 58, 237, 0.18);
+  --cp-text-input-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  --cp-text-input-focus-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 0 0 2px rgba(124, 58, 237, 0.18);
+  --cp-surface-border: color-mix(in srgb, #7c3aed 20%, #e2e8f0);
+  --cp-surface-shadow: 0 18px 38px rgba(67, 56, 202, 0.14);
+  /* Tighter density shared between popover and inline renders. */
+  --cp-surface-padding: 0.56rem 0.6rem;
+  --cp-surface-gap: 0.44rem;
+  --cp-preset-list-gap: 0.34rem;
+  --cp-item-padding: 0.5rem 0.68rem;
+  --cp-item-min-height: auto;
+  --cp-item-radius: 0.58rem;
+  --cp-title-size: var(--font-size-sm, 0.88rem);
+  --cp-meta-size: 0.74rem;
+  --cp-meta-line-height: 1.28;
   --cp-chip-hover-border: color-mix(in srgb, #7c3aed 46%, #c4b5fd);
   --cp-chip-hover-bg: color-mix(in srgb, #f5f3ff 70%, #fff);
   --cp-chip-active-border: color-mix(in srgb, #7c3aed 62%, #c4b5fd);
   --cp-chip-active-bg: color-mix(in srgb, #ede9fe 62%, #fff);
+}
+
+.shared-chord-progression-input--piano
+  .shared-chord-progression-text:hover:not(:focus),
+.shared-chord-progression-dropdown--piano
+  .shared-chord-progression-text:hover:not(:focus),
+.shared-chord-progression-inline-content--piano
+  .shared-chord-progression-text:hover:not(:focus) {
+  border-color: color-mix(in srgb, #7c3aed 38%, #c4b5fd);
+}
+
+.shared-chord-progression-input--piano .shared-chord-progression-text:focus,
+.shared-chord-progression-dropdown--piano .shared-chord-progression-text:focus,
+.shared-chord-progression-inline-content--piano
+  .shared-chord-progression-text:focus {
+  background: #ffffff;
 }
 
 .shared-chord-progression-input--chords {
@@ -238,18 +281,6 @@
   --cp-chip-hover-bg: color-mix(in srgb, #f0fdfa 72%, #fff);
   --cp-chip-active-border: color-mix(in srgb, #0a8a8f 56%, #67e8f9);
   --cp-chip-active-bg: color-mix(in srgb, #ccfbf1 44%, #fff);
-}
-
-.shared-chord-progression-dropdown--piano,
-.shared-chord-progression-inline-content--piano {
-  --cp-surface-border: color-mix(in srgb, #7c3aed 24%, #d8b4fe);
-  --cp-surface-shadow: 0 14px 30px rgba(124, 58, 237, 0.15);
-  --cp-focus-border: color-mix(in srgb, #7c3aed 60%, #c4b5fd);
-  --cp-focus-ring: 0 0 0 2px rgba(124, 58, 237, 0.14);
-  --cp-chip-hover-border: color-mix(in srgb, #7c3aed 46%, #c4b5fd);
-  --cp-chip-hover-bg: color-mix(in srgb, #f5f3ff 70%, #fff);
-  --cp-chip-active-border: color-mix(in srgb, #7c3aed 62%, #c4b5fd);
-  --cp-chip-active-bg: color-mix(in srgb, #ede9fe 62%, #fff);
 }
 
 .shared-chord-progression-dropdown--chords,

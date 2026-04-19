@@ -31,6 +31,8 @@
   --cs-meta-color: #5b5d84;
   --cs-item-padding: 0.68rem 0.82rem;
   --cs-item-gap: 0.2rem;
+  --cs-item-min-height: 4rem;
+  --cs-item-radius: 0.68rem;
   --cs-title-size: var(--font-size-lg, 0.96rem);
   --cs-title-weight: var(--font-weight-bold, 700);
   --cs-meta-size: var(--font-size-sm, 0.8rem);
@@ -40,6 +42,12 @@
   --cs-control-font-size: var(--control-font-size, 0.9rem);
   --cs-control-padding: calc(var(--space-2, 8px) + 1px)
     calc(var(--space-3, 12px) + 2px);
+  /* Surface-level density controls shared by popover + inline variants. */
+  --cs-surface-padding: 0.78rem 0.8rem;
+  --cs-surface-radius: 0.82rem;
+  --cs-menu-gap: 0.44rem;
+  --cs-dropdown-min-width: min(460px, calc(100vw - 24px));
+  --cs-dropdown-max-width: min(560px, calc(100vw - 24px));
 }
 
 .shared-chord-style-input {
@@ -83,9 +91,9 @@
 }
 
 .shared-chord-style-dropdown {
-  min-width: min(460px, calc(100vw - 24px));
-  max-width: min(560px, calc(100vw - 24px));
-  border-radius: 0.82rem;
+  min-width: var(--cs-dropdown-min-width);
+  max-width: var(--cs-dropdown-max-width);
+  border-radius: var(--cs-surface-radius);
   border: 1px solid color-mix(in srgb, var(--cs-surface-border) 92%, #e2e8f0);
   box-shadow: var(
     --cs-surface-shadow,
@@ -95,13 +103,15 @@
 }
 
 .shared-chord-style-dropdown-list {
-  padding: 0.78rem 0.8rem;
+  padding: var(--cs-surface-padding);
 }
 
 .shared-chord-style-inline-content {
   width: 100%;
 }
-.shared-chord-style-input--piano {
+.shared-chord-style-input--piano,
+.shared-chord-style-dropdown--piano,
+.shared-chord-style-inline-content--piano {
   --cs-input-border: color-mix(in srgb, #7c3aed 26%, #d8b4fe);
   --cs-focus-border: color-mix(in srgb, #7c3aed 60%, #c4b5fd);
   --cs-focus-ring: 0 0 0 2px rgba(124, 58, 237, 0.14);
@@ -111,6 +121,21 @@
   --cs-chip-hover-bg: color-mix(in srgb, #f5f3ff 70%, #fff);
   --cs-chip-active-border: color-mix(in srgb, #7c3aed 62%, #c4b5fd);
   --cs-chip-active-bg: color-mix(in srgb, #ede9fe 62%, #fff);
+  /* Tighter density shared between popover and inline renders. */
+  --cs-surface-padding: 0.56rem 0.6rem;
+  --cs-surface-radius: 0.72rem;
+  --cs-menu-gap: 0.38rem;
+  --cs-item-padding: 0.5rem 0.68rem;
+  --cs-item-gap: 0.14rem;
+  --cs-item-min-height: auto;
+  --cs-item-radius: 0.58rem;
+  --cs-title-size: var(--font-size-sm, 0.88rem);
+  --cs-meta-size: 0.74rem;
+  --cs-meta-line-height: 1.28;
+  /* Narrower popover width for the piano app; matches the inline host
+     section width so both chord-style menus render at the same size. */
+  --cs-dropdown-min-width: min(480px, calc(100vw - 24px));
+  --cs-dropdown-max-width: min(540px, calc(100vw - 24px));
 }
 
 .shared-chord-style-input--words {
@@ -141,10 +166,48 @@
   padding: 0;
 }
 
+.shared-chord-style-ts-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.32rem;
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.2rem;
+  border-bottom: 1px dashed
+    color-mix(in srgb, var(--cs-chip-border) 60%, transparent);
+}
+
+.shared-chord-style-ts-chip {
+  border: 1px solid var(--cs-chip-border);
+  border-radius: 999px;
+  background: var(--cs-chip-bg);
+  color: var(--cs-meta-color);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.22rem 0.6rem;
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.shared-chord-style-ts-chip:hover {
+  border-color: var(--cs-chip-hover-border);
+  background: var(--cs-chip-hover-bg);
+}
+
+.shared-chord-style-ts-chip.active {
+  border-color: var(--cs-chip-active-border);
+  background: var(--cs-chip-active-bg);
+  color: var(--cs-title-color);
+}
+
 .shared-chord-style-menu {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 0.44rem;
+  grid-auto-rows: 1fr;
+  gap: var(--cs-menu-gap);
+  align-items: stretch;
 }
 
 .shared-chord-style-menu--cols-1 {
@@ -161,12 +224,13 @@
 
 .shared-chord-style-item {
   border: 1px solid var(--cs-chip-border);
-  border-radius: 0.68rem;
+  border-radius: var(--cs-item-radius);
   background: var(--cs-chip-bg);
   color: inherit;
   text-align: left;
   padding: var(--cs-item-padding);
-  min-height: 4rem;
+  min-height: var(--cs-item-min-height);
+  height: 100%;
   display: flex;
   flex-direction: column;
   gap: var(--cs-item-gap);
@@ -204,18 +268,6 @@
   color: var(--cs-meta-color);
 }
 
-.shared-chord-style-dropdown--piano,
-.shared-chord-style-inline-content--piano {
-  --cs-surface-border: color-mix(in srgb, #7c3aed 24%, #d8b4fe);
-  --cs-surface-shadow: 0 14px 30px rgba(124, 58, 237, 0.15);
-  --cs-focus-border: color-mix(in srgb, #7c3aed 60%, #c4b5fd);
-  --cs-focus-ring: 0 0 0 2px rgba(124, 58, 237, 0.14);
-  --cs-chip-hover-border: color-mix(in srgb, #7c3aed 46%, #c4b5fd);
-  --cs-chip-hover-bg: color-mix(in srgb, #f5f3ff 70%, #fff);
-  --cs-chip-active-border: color-mix(in srgb, #7c3aed 62%, #c4b5fd);
-  --cs-chip-active-bg: color-mix(in srgb, #ede9fe 62%, #fff);
-}
-
 .shared-chord-style-dropdown--words,
 .shared-chord-style-inline-content--words {
   --cs-surface-border: color-mix(in srgb, #0a8a8f 30%, #dbeafe);
@@ -240,16 +292,28 @@
 }
 
 @media (min-width: 760px) {
-  .shared-chord-style-dropdown {
-    min-width: min(760px, calc(100vw - 28px));
-    max-width: min(920px, calc(100vw - 28px));
+  .shared-chord-style-input,
+  .shared-chord-style-dropdown,
+  .shared-chord-style-inline-content {
+    --cs-dropdown-min-width: min(760px, calc(100vw - 28px));
+    --cs-dropdown-max-width: min(920px, calc(100vw - 28px));
+  }
+
+  /* Piano appearance stays narrow even on larger viewports. */
+  .shared-chord-style-input--piano,
+  .shared-chord-style-dropdown--piano,
+  .shared-chord-style-inline-content--piano {
+    --cs-dropdown-min-width: min(480px, calc(100vw - 28px));
+    --cs-dropdown-max-width: min(540px, calc(100vw - 28px));
   }
 }
 
 @media (max-width: 759px) {
-  .shared-chord-style-dropdown {
-    min-width: min(460px, calc(100vw - 16px));
-    max-width: min(560px, calc(100vw - 16px));
+  .shared-chord-style-input,
+  .shared-chord-style-dropdown,
+  .shared-chord-style-inline-content {
+    --cs-dropdown-min-width: min(460px, calc(100vw - 16px));
+    --cs-dropdown-max-width: min(560px, calc(100vw - 16px));
   }
 
   .shared-chord-style-dropdown-list {
@@ -262,9 +326,11 @@
 }
 
 @media (max-width: 480px) {
-  .shared-chord-style-dropdown {
-    min-width: min(460px, calc(100vw - 12px));
-    max-width: min(560px, calc(100vw - 12px));
+  .shared-chord-style-input,
+  .shared-chord-style-dropdown,
+  .shared-chord-style-inline-content {
+    --cs-dropdown-min-width: min(460px, calc(100vw - 12px));
+    --cs-dropdown-max-width: min(560px, calc(100vw - 12px));
   }
 
   .shared-chord-style-menu {

@@ -19,6 +19,7 @@ interface ChordProgressionSelectorProps {
   onEnter?: () => void;
   keyContext?: Key;
   inputInDropdown?: boolean;
+  showInputInPopover?: boolean;
   menuMode?: 'popover' | 'inline';
   appearance?: 'default' | 'piano' | 'words' | 'chords';
   presetColumns?: 1 | 2 | 'auto';
@@ -36,6 +37,7 @@ export const ChordProgressionSelector: React.FC<ChordProgressionSelectorProps> =
   onEnter,
   keyContext,
   inputInDropdown = false,
+  showInputInPopover = false,
   menuMode = 'popover',
   appearance = 'piano',
   presetColumns = 2,
@@ -56,6 +58,7 @@ export const ChordProgressionSelector: React.FC<ChordProgressionSelectorProps> =
         dropdownClassName="ep-prog-dropdown"
         showResolvedForKey
         inputInDropdown={inputInDropdown}
+        showInputInPopover={showInputInPopover}
         menuMode={menuMode}
         appearance={appearance}
         presetColumns={presetColumns}
@@ -84,9 +87,7 @@ export const ChordStyleSelector: React.FC<ChordStyleSelectorProps> = ({
       appearance="piano"
       menuMode="inline"
       inlineMenuClassName="np-chord-style-inline-menu"
-      menuClassName="ep-style-grid shared-chord-style-menu--cols-3"
-      menuItemClassName="ep-style-item"
-      menuColumns={3}
+      menuColumns={2}
     />
   );
 };

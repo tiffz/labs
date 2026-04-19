@@ -26,13 +26,13 @@ describe('chord progression text parsing', () => {
     expect(inferKeyFromChordSymbols(['Db', 'Ab', 'Bbm', 'Gb'])).toBe('Db');
   });
 
-  it('auto-normalizes chord qualities to nearest diatonic progression when needed', () => {
+  it('preserves typed chord qualities when the root pattern matches a key (non-diatonic chords kept)', () => {
     const parsed = parseProgressionText('Dm-A-C-F', 'C');
     expect(parsed.isValid).toBe(true);
     expect(parsed.format).toBe('chord');
     expect(parsed.inferredKey).toBe('C');
     expect(parsed.romanNumerals).toEqual(['ii', 'vi', 'I', 'IV']);
-    expect(parsed.chordSymbols).toEqual(['Dm', 'Am', 'C', 'F']);
+    expect(parsed.chordSymbols).toEqual(['Dm', 'A', 'C', 'F']);
   });
 
   it('maps Dm-G-C-F into the number system in C', () => {
@@ -70,6 +70,13 @@ describe('chord progression text parsing', () => {
     expect(parsed.romanNumerals).toEqual(['I', 'V', 'IV', 'I']);
     expect(parsed.romanNumeralDisplay).toEqual(['I', 'V', 'IV', 'Isus4']);
     expect(parsed.chordSymbols).toEqual(['C', 'G', 'F', 'Csus4']);
+  });
+
+  it('preserves typed chord qualities when roots match a diatonic pattern (e.g. Cm-Ab-Fm-G)', () => {
+    const parsed = parseProgressionText('Cm-Ab-Fm-G', 'C');
+    expect(parsed.isValid).toBe(true);
+    expect(parsed.format).toBe('chord');
+    expect(parsed.chordSymbols).toEqual(['Cm', 'Ab', 'Fm', 'G']);
   });
 
   it('supports slash chords and maps slash bass to degree display', () => {

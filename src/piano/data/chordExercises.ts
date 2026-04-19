@@ -23,6 +23,8 @@ function spellChordRoot(chord: Chord, key: Key): string {
   return spellRootForKey(chord.root, key);
 }
 
+export type MeasuresPerChord = 1 | 2 | 3 | 4;
+
 export interface ChordExerciseConfig {
   progression: RomanNumeral[];
   chordSymbols?: string[];
@@ -30,7 +32,7 @@ export interface ChordExerciseConfig {
   progressionInput?: string;
   key: Key;
   voicingStyle: ChordVoicingStyle;
-  measuresPerChord: 1 | 2;
+  measuresPerChord: MeasuresPerChord;
   timeSignature: { numerator: number; denominator: number };
   styleId?: ChordStyleId;
 }
