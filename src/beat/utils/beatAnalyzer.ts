@@ -17,6 +17,7 @@ import { runQuickBpmAccuracyTest, formatBpmAccuracyReport } from './bpmAccuracyT
 import { analyzeTempoVariation } from './sectionalTempoAnalyzer';
 import { detectOnsets } from './analysis/onsets';
 import { alignBeatGridToDownbeat } from './downbeatAlignment';
+import { devLog } from '../../shared/utils/devLog';
 // Legacy detectors - DEPRECATED, kept for API compatibility
 /** @deprecated Fermata detection is disabled */
 export { detectFermatas, mergeFermataRegions } from './experimental/fermataDetector';
@@ -405,8 +406,8 @@ export async function analyzeBeat(
     offset = beats.length > 0 ? beats[0] : 0;
 
     // Log beat grid info for debugging
-    console.log(`[BeatAnalyzer] First 5 beats: ${beats.slice(0, 5).map(b => b.toFixed(2)).join(', ')}`);
-    console.log(`[BeatAnalyzer] Beat interval: ${(60/finalBpm).toFixed(3)}s, Offset: ${offset.toFixed(3)}s`);
+    devLog(`[BeatAnalyzer] First 5 beats: ${beats.slice(0, 5).map(b => b.toFixed(2)).join(', ')}`);
+    devLog(`[BeatAnalyzer] Beat interval: ${(60/finalBpm).toFixed(3)}s, Offset: ${offset.toFixed(3)}s`);
 
     // Calculate confidence level
     confidence = ensembleResult.confidence;
@@ -483,7 +484,7 @@ export async function analyzeBeat(
       
       // If alignment changed significantly, regenerate beats from new start
       if (Math.abs(alignedMusicStartTime - musicStartTime) > 0.1) {
-        console.log(`[BeatAnalyzer] Adjusted music start from ${musicStartTime.toFixed(3)}s to ${alignedMusicStartTime.toFixed(3)}s for downbeat alignment`);
+        devLog(`[BeatAnalyzer] Adjusted music start from ${musicStartTime.toFixed(3)}s to ${alignedMusicStartTime.toFixed(3)}s for downbeat alignment`);
         
         // Regenerate beat grid from aligned start
         const beatInterval = 60 / finalBpm;
@@ -508,8 +509,8 @@ export async function analyzeBeat(
       const tempoReport = analyzeTempoVariation(onsets, audioBuffer.duration, finalBpm);
 
       if (typeof window !== 'undefined' && import.meta.env?.DEV) {
-        console.log('\n' + tempoReport.detailedAnalysis);
-        console.log(`\n${tempoReport.recommendation}\n`);
+        devLog('\n' + tempoReport.detailedAnalysis);
+        devLog(`\n${tempoReport.recommendation}\n`);
       }
 
       if (tempoReport.hasVariableTempo) {
@@ -549,7 +550,7 @@ export async function analyzeBeat(
       });
       const filteredCount = rawGaps.length - gapsBeforeEnd.length;
       if (filteredCount > 0) {
-        console.log(`[BeatAnalyzer] Filtered ${filteredCount} gap(s) at end of music (music ends at ${musicEndTime.toFixed(1)}s)`);
+        devLog(`[BeatAnalyzer] Filtered ${filteredCount} gap(s) at end of music (music ends at ${musicEndTime.toFixed(1)}s)`);
       }
       rawGaps = gapsBeforeEnd;
     }
@@ -574,7 +575,7 @@ export async function analyzeBeat(
   const isDev = typeof import.meta !== 'undefined' && (import.meta as ImportMeta).env?.DEV;
   if (isDev) {
     runQuickBpmAccuracyTest(audioBuffer, finalBpm, confidence, []).then(result => {
-      console.log('\n' + formatBpmAccuracyReport(result));
+      devLog('\n' + formatBpmAccuracyReport(result));
     }).catch(err => {
       console.warn('[BpmAccuracy] Test failed:', err);
     });
@@ -609,11 +610,11 @@ export function adjustBeatsForGaps(
   gaps: GapWithResync[]
 ): number[] {
   if (gaps.length === 0 || beats.length === 0) {
-    console.log('[BeatAdjust] No gaps or beats to adjust');
+    devLog('[BeatAdjust] No gaps or beats to adjust');
     return beats;
   }
 
-  console.log(`[BeatAdjust] Adjusting ${beats.length} beats for ${gaps.length} gap(s)`);
+  devLog(`[BeatAdjust] Adjusting ${beats.length} beats for ${gaps.length} gap(s)`);
 
   const adjusted = [...beats];
 
@@ -624,7 +625,7 @@ export function adjustBeatsForGaps(
     // Find the first beat that falls after the gap start
     const firstBeatAfterGapIdx = adjusted.findIndex(b => b > gap.gapStart);
     if (firstBeatAfterGapIdx === -1) {
-      console.log(`[BeatAdjust] No beats after gap at ${gap.gapStart.toFixed(2)}s`);
+      devLog(`[BeatAdjust] No beats after gap at ${gap.gapStart.toFixed(2)}s`);
       continue;
     }
 
@@ -637,16 +638,16 @@ export function adjustBeatsForGaps(
     // Calculate shift needed
     const shift = actualResyncTime - expectedBeatTime;
 
-    console.log(`[BeatAdjust] Gap at ${gap.gapStart.toFixed(2)}s: expected beat at ${expectedBeatTime.toFixed(2)}s, music resumes at ${actualResyncTime.toFixed(2)}s, shift=${shift.toFixed(3)}s`);
+    devLog(`[BeatAdjust] Gap at ${gap.gapStart.toFixed(2)}s: expected beat at ${expectedBeatTime.toFixed(2)}s, music resumes at ${actualResyncTime.toFixed(2)}s, shift=${shift.toFixed(3)}s`);
 
     // Only shift if the gap is significant (> 100ms)
     if (Math.abs(shift) < 0.1) {
-      console.log(`[BeatAdjust] Shift too small (${shift.toFixed(3)}s), skipping`);
+      devLog(`[BeatAdjust] Shift too small (${shift.toFixed(3)}s), skipping`);
       continue;
     }
 
     // Shift all beats from this point onward
-    console.log(`[BeatAdjust] Shifting ${adjusted.length - firstBeatAfterGapIdx} beats by ${shift.toFixed(3)}s`);
+    devLog(`[BeatAdjust] Shifting ${adjusted.length - firstBeatAfterGapIdx} beats by ${shift.toFixed(3)}s`);
     for (let i = firstBeatAfterGapIdx; i < adjusted.length; i++) {
       adjusted[i] += shift;
     }

@@ -7,6 +7,7 @@ import {
 } from '../utils/beatSyncMath';
 import { useMetronome } from './useMetronome';
 import type { TempoRegion } from '../utils/tempoRegions';
+import { devLog } from '../../shared/utils/devLog';
 
 export interface LoopRegion {
   startTime: number;
@@ -500,9 +501,9 @@ export function useBeatSync({
               // Clamp total drift offset to reasonable range (±500ms)
               driftOffsetRef.current = Math.max(-0.5, Math.min(0.5, driftOffsetRef.current));
               
-              console.log(`[AdaptiveResync] Drift: ${(avgDrift * 1000).toFixed(0)}ms, ` +
-                         `correction: ${(correction * 1000).toFixed(0)}ms, ` +
-                         `total offset: ${(driftOffsetRef.current * 1000).toFixed(0)}ms`);
+              devLog(`[AdaptiveResync] Drift: ${(avgDrift * 1000).toFixed(0)}ms, ` +
+                     `correction: ${(correction * 1000).toFixed(0)}ms, ` +
+                     `total offset: ${(driftOffsetRef.current * 1000).toFixed(0)}ms`);
               
               // Clear history after applying correction
               driftHistoryRef.current = [];

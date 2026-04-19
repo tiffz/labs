@@ -82,11 +82,20 @@ export default defineConfig({
       output: {
         manualChunks: (id: string) => {
           if (id.includes('node_modules')) {
-            if (id.includes('react-dom') || id.includes('react/') || id.endsWith('/react')) {
+            // React + MUI + Emotion all go in a single vendor chunk. Splitting
+            // them caused circular chunk imports (`vendor` -> `mui` -> `vendor`)
+            // that manifested in production as `TypeError: e is not a function`
+            // during module init, because one side tried to call a binding from
+            // the other before it was finalized. MUI + Emotion internally reach
+            // back into React APIs, so they must share the same chunk as React.
+            if (
+              id.includes('react-dom') ||
+              id.includes('react/') ||
+              id.endsWith('/react') ||
+              id.includes('@mui/') ||
+              id.includes('@emotion/')
+            ) {
               return 'vendor';
-            }
-            if (id.includes('@mui/') || id.includes('@emotion/')) {
-              return 'mui';
             }
             if (id.includes('vexflow')) {
               return 'vexflow';
