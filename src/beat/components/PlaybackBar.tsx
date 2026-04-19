@@ -1,16 +1,19 @@
 import React, { useCallback, useRef, useState, useMemo, useEffect } from 'react';
-import Checkbox from '@mui/material/Checkbox';
-import FormControlLabel from '@mui/material/FormControlLabel';
 import IconButton from '@mui/material/IconButton';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
-import TextField from '@mui/material/TextField';
 import type { Section } from '../utils/sectionDetector';
 import type { LoopRegion } from '../hooks/useBeatSync';
 import type { ChordEvent, KeyChange } from '../utils/chordAnalyzer';
 import type { TempoRegion } from '../utils/tempoRegions';
 import AppTooltip from '../../shared/components/AppTooltip';
 import type { UserPracticeLane } from '../types/library';
+import {
+  formatTime,
+  getShortSectionLabel,
+  getSelectionLabel as computeSelectionLabel,
+} from './playbackBar/playbackBarHelpers';
+import SectionHoverCard from './playbackBar/SectionHoverCard';
+import SectionControlsRow from './playbackBar/SectionControlsRow';
+import LaneMenu from './playbackBar/LaneMenu';
 
 /** Playback position and timing state */
 export interface PlaybackState {
@@ -86,12 +89,6 @@ interface PlaybackBarProps {
   onSyncStartChange: (time: number) => void;
 }
 
-function formatTime(seconds: number): string {
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
-}
-
 const PlaybackBar: React.FC<PlaybackBarProps> = ({
   playback,
   loop,
@@ -134,6 +131,7 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
   } = sectionControls;
   const chordChanges = useMemo(() => chordData?.chordChanges ?? [], [chordData]);
   const keyChanges = useMemo(() => chordData?.keyChanges ?? [], [chordData]);
+  const getShortLabel = getShortSectionLabel;
   const barRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState<boolean>(false);
   const dragRef = useRef<{ sectionId: string; edge: 'start' | 'end'; trackEl: HTMLElement } | null>(null);
@@ -313,135 +311,10 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
   const activeSelectionIds = selectedSectionIds.length > 0 ? selectedSectionIds : referenceSelectedIds;
   const activeSections = selectedSectionIds.length > 0 ? sections : referenceSections;
 
-  // Extract just the first measure number for compact labels
-  const getShortLabel = (label: string) => {
-    // "M48-59" -> "M48", "M1-8" -> "M1"
-    const match = label.match(/^(M\d+)/);
-    return match ? match[1] : label;
-  };
-
-  // Get the measure range for selected sections
-  const getSelectionLabel = () => {
-    if (activeSelectionIds.length === 0) return '';
-    
-    // Get selected sections in order
-    const selectedSections = activeSections
-      .filter(s => activeSelectionIds.includes(s.id))
-      .sort((a, b) => a.startTime - b.startTime);
-    
-    if (selectedSections.length === 0) return '';
-    
-    // Extract first measure from first section
-    const firstMatch = selectedSections[0].label.match(/M(\d+)/);
-    const firstMeasure = firstMatch ? firstMatch[1] : '?';
-    
-    // Extract last measure from last section (second number in "M48-59" format)
-    const lastSection = selectedSections[selectedSections.length - 1];
-    const lastMatch = lastSection.label.match(/M\d+-(\d+)/);
-    const lastMeasure = lastMatch ? lastMatch[1] : firstMeasure;
-
-    // Duration of selection
-    const selectionStart = selectedSections[0].startTime;
-    const selectionEnd = selectedSections[selectedSections.length - 1].endTime;
-    const selectionSeconds = Math.max(0, selectionEnd - selectionStart);
-    
-    if (firstMeasure === lastMeasure) {
-      return `M${firstMeasure} · ${selectionSeconds.toFixed(1)}s`;
-    }
-    return `M${firstMeasure}–${lastMeasure} · ${selectionSeconds.toFixed(1)}s`;
-  };
-
-  // Get chords within a section (simplified - only unique chords)
-  const getChordsForSection = useMemo(() => {
-    return (section: Section): string[] => {
-      if (chordChanges.length === 0) return [];
-      
-      const sectionChords = chordChanges.filter(
-        c => c.time >= section.startTime && c.time < section.endTime && c.chord !== 'N'
-      );
-      
-      // Get unique chords in order they appear, limiting to most prominent
-      const seen = new Set<string>();
-      const uniqueChords: string[] = [];
-      for (const c of sectionChords) {
-        if (!seen.has(c.chord)) {
-          seen.add(c.chord);
-          uniqueChords.push(c.chord);
-        }
-      }
-      
-      return uniqueChords.slice(0, 6); // Limit to 6 chords for display
-    };
-  }, [chordChanges]);
-
-  // Get key change within a section (if any)
-  const getKeyChangeForSection = useMemo(() => {
-    return (section: Section): KeyChange | null => {
-      if (keyChanges.length === 0) return null;
-
-      // Find key change that starts within this section
-      // Be lenient: if a key change is within 2 seconds of section start, consider it part of this section
-      // This handles cases where key change and section boundary were snapped to slightly different times
-      return keyChanges.find(
-        k => k.time >= section.startTime - 2 && k.time < section.endTime
-      ) ?? null;
-    };
-  }, [keyChanges]);
-
-  // Get tempo info for a section
-  const getTempoInfoForSection = useMemo(() => {
-    return (section: Section): { bpm: number | null; hasFermata: boolean; description: string | null } => {
-      if (!tempoRegions || tempoRegions.length === 0) {
-        return { bpm: null, hasFermata: false, description: null };
-      }
-
-      // Find tempo regions that overlap with this section
-      const overlappingRegions = tempoRegions.filter(
-        r => r.startTime < section.endTime && r.endTime > section.startTime
-      );
-
-      if (overlappingRegions.length === 0) {
-        return { bpm: null, hasFermata: false, description: null };
-      }
-
-      // Check for fermatas
-      const hasFermata = overlappingRegions.some(r => r.type === 'fermata');
-
-      // Find the primary BPM (from steady regions)
-      const steadyRegions = overlappingRegions.filter(r => r.type === 'steady' && r.bpm !== null);
-      const primaryBpm = steadyRegions.length > 0 ? steadyRegions[0].bpm : null;
-
-      // Build description with specific details for each tempo event
-      let description: string | null = null;
-      const tempoTypes = overlappingRegions.filter(r => r.type !== 'steady');
-      if (tempoTypes.length > 0) {
-        const typeDescriptions = tempoTypes.map(r => {
-          // Use the region's own description if available (includes timestamps)
-          if (r.description) return r.description;
-          
-          // Fallback: generate description with timestamp
-          const timeStr = formatTime(r.startTime);
-          const durationStr = `${(r.endTime - r.startTime).toFixed(1)}s`;
-          if (r.type === 'fermata') return `Fermata at ${timeStr} (${durationStr})`;
-          if (r.type === 'rubato') return `Free tempo at ${timeStr}`;
-          if (r.type === 'accelerando') return `Speeds up at ${timeStr}`;
-          if (r.type === 'ritardando') return `Slows down at ${timeStr}`;
-          return r.type;
-        });
-        description = typeDescriptions.join(' · ');
-      }
-
-      // Check for tempo change within section
-      const uniqueBpms = [...new Set(steadyRegions.map(r => r.bpm))];
-      if (uniqueBpms.length > 1) {
-        description = description 
-          ? `${description} · tempo changes`
-          : `tempo changes (${uniqueBpms.join(' → ')} BPM)`;
-      }
-
-      return { bpm: primaryBpm, hasFermata, description };
-    };
-  }, [tempoRegions]);
+  const selectionLabel = useMemo(
+    () => computeSelectionLabel(activeSelectionIds, activeSections),
+    [activeSelectionIds, activeSections],
+  );
 
   // Hovered section for tooltip
   const [hoveredSection, setHoveredSection] = useState<Section | null>(null);
@@ -799,50 +672,26 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
         </div>
       </div>
 
-      <Menu
-        anchorEl={laneMenuAnchor}
-        open={Boolean(laneMenuAnchor && laneMenuId)}
+      <LaneMenu
+        laneMenuId={laneMenuId}
+        laneMenuAnchor={laneMenuAnchor}
         onClose={closeLaneMenu}
-        PaperProps={{ className: 'lane-menu-paper' }}
-      >
-        {(laneMenuId === 'generated' ? !!onCloneGeneratedLane : !!onCloneLane) && (
-          <MenuItem
-            className="lane-menu-item"
-            onClick={() => {
-              if (laneMenuId === 'generated') {
-                onCloneGeneratedLane?.();
-              } else if (laneMenuId) {
-                onCloneLane?.(laneMenuId);
-              }
-              closeLaneMenu();
-            }}
-          >
-            <span className="material-symbols-outlined">content_copy</span>
-            Clone lane
-          </MenuItem>
-        )}
-        {laneMenuId && laneMenuId !== 'generated' && onDeleteLane && (
-          <MenuItem
-            className="lane-menu-item danger"
-            onClick={() => {
-              onDeleteLane(laneMenuId);
-              closeLaneMenu();
-            }}
-          >
-            <span className="material-symbols-outlined">delete</span>
-            Delete lane
-          </MenuItem>
-        )}
-      </Menu>
+        onCloneGeneratedLane={onCloneGeneratedLane}
+        onCloneLane={onCloneLane}
+        onDeleteLane={onDeleteLane}
+      />
 
-      {/* Section hover card */}
       {hoveredSection && (
-        <div
-          className="section-hover-card"
-          style={{ 
-            left: `${Math.min(Math.max(hoverPosition.x, 190), window.innerWidth - 190)}px`,
-            top: `${hoverPosition.y + 10}px`,
-          }}
+        <SectionHoverCard
+          section={hoveredSection}
+          locked={hoveredSectionLocked}
+          draftLabel={hoverDraftLabel}
+          onDraftLabelChange={setHoverDraftLabel}
+          position={hoverPosition}
+          chordChanges={chordChanges}
+          keyChanges={keyChanges}
+          tempoRegions={tempoRegions}
+          onRenameSection={onRenameSection}
           onPointerEnter={() => {
             if (hoverClearTimeoutRef.current !== null) {
               window.clearTimeout(hoverClearTimeoutRef.current);
@@ -850,207 +699,27 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
             }
           }}
           onPointerLeave={scheduleHoverCardClose}
-        >
-          {!hoveredSectionLocked && onRenameSection ? (
-            <TextField
-              value={hoverDraftLabel}
-              size="small"
-              className="section-hover-name-input"
-              onChange={(event) => setHoverDraftLabel(event.target.value)}
-              onBlur={() => {
-                const trimmed = hoverDraftLabel.trim();
-                if (trimmed.length > 0 && trimmed !== hoveredSection.label) {
-                  onRenameSection(hoveredSection.id, trimmed);
-                } else {
-                  setHoverDraftLabel(hoveredSection.label);
-                }
-              }}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') {
-                  const trimmed = hoverDraftLabel.trim();
-                  if (trimmed.length > 0 && trimmed !== hoveredSection.label) {
-                    onRenameSection(hoveredSection.id, trimmed);
-                  }
-                }
-                if (event.key === 'Escape') {
-                  setHoverDraftLabel(hoveredSection.label);
-                }
-              }}
-            />
-          ) : (
-            <div className="section-hover-title">{hoveredSection.label}</div>
-          )}
-          <div className="section-hover-times">
-            <span>{formatTime(hoveredSection.startTime)}</span>
-            <span className="section-hover-arrow">→</span>
-            <span>{formatTime(hoveredSection.endTime)}</span>
-          </div>
-          <div className="section-hover-duration">
-            Duration: {Math.round(hoveredSection.endTime - hoveredSection.startTime)}s
-          </div>
-          
-          {/* Analysis details only for generated/locked sections */}
-          {hoveredSectionLocked && getChordsForSection(hoveredSection).length > 0 && (
-            <div className="section-hover-chords">
-              <span className="section-hover-label">Chords (estimated):</span>
-              <span className="section-chord-list">
-                {getChordsForSection(hoveredSection).join(' → ')}
-              </span>
-            </div>
-          )}
-          
-          {/* Key change in this section */}
-          {hoveredSectionLocked && (() => {
-            const keyChange = getKeyChangeForSection(hoveredSection);
-            if (keyChange) {
-              return (
-                <div className="section-hover-key-change">
-                  <span className="material-symbols-outlined key-change-icon">change_circle</span>
-                  <span>Detected key change to <strong>{keyChange.key} {keyChange.scale}</strong></span>
-                </div>
-              );
-            }
-            return null;
-          })()}
-
-          {/* Tempo info for this section */}
-          {hoveredSectionLocked && (() => {
-            const tempoInfo = getTempoInfoForSection(hoveredSection);
-            if (tempoInfo.bpm || tempoInfo.description) {
-              return (
-                <div className="section-hover-tempo">
-                  <span className="material-symbols-outlined tempo-icon">timer</span>
-                  <span>
-                    {tempoInfo.bpm && <strong>{tempoInfo.bpm} BPM</strong>}
-                    {tempoInfo.bpm && tempoInfo.description && ' · '}
-                    {tempoInfo.description && <em>{tempoInfo.description}</em>}
-                  </span>
-                </div>
-              );
-            }
-            return null;
-          })()}
-
-          <div className="section-hover-hint">
-            Click to select · Shift+click to extend
-          </div>
-        </div>
+        />
       )}
 
-      {/* Section editing controls - row always rendered to prevent layout shift */}
-      <div className="section-controls-row">
-        <div className="section-actions">
-          {onSplitAtCurrentTime && (
-            <AppTooltip title={hasSelection ? `Split at current timestamp (${currentTime.toFixed(1)}s)` : `Split song at current timestamp (${currentTime.toFixed(1)}s)`}>
-              <button className="section-action-btn icon-only" aria-label="Split at current timestamp" onClick={onSplitAtCurrentTime}>
-                <span className="material-symbols-outlined">content_cut</span>
-              </button>
-            </AppTooltip>
-          )}
-          {hasSelection && (
-            <>
-              <span className="section-actions-label">
-                {getSelectionLabel()}:
-              </span>
-              {activeSelectionIds.length >= 2 && onCombineSections && (
-                <AppTooltip title="Combine selected sections">
-                  <button className="section-action-btn icon-only" aria-label="Combine selected sections" onClick={onCombineSections}>
-                    <span className="material-symbols-outlined">merge</span>
-                  </button>
-                </AppTooltip>
-              )}
-              {onSaveReferenceSelection && referenceSelectedIds.length > 0 && (
-                <AppTooltip title="Save selected analysis range as practice section">
-                  <button className="section-action-btn icon-only" aria-label="Save selection as practice section" onClick={onSaveReferenceSelection}>
-                    <span className="material-symbols-outlined">save</span>
-                  </button>
-                </AppTooltip>
-              )}
-              {onDeleteSelection && selectedSectionIds.length > 0 && (
-                <AppTooltip title="Delete selected practice sections">
-                  <button className="section-action-btn icon-only danger" aria-label="Delete selected sections" onClick={onDeleteSelection}>
-                    <span className="material-symbols-outlined">delete</span>
-                  </button>
-                </AppTooltip>
-              )}
-              {onExtendSelection && (
-                <div className="section-nudge-controls">
-                  <span className="nudge-label">Nudge:</span>
-                  {onToggleNudgeUnit && (
-                    <div className="nudge-unit-toggle">
-                      <button
-                        className={`nudge-unit-btn${nudgeUnit === 'beat' ? ' active' : ''}`}
-                        onClick={() => onToggleNudgeUnit('beat')}
-                        type="button"
-                      >Beat</button>
-                      <button
-                        className={`nudge-unit-btn${nudgeUnit === 'measure' ? ' active' : ''}`}
-                        onClick={() => onToggleNudgeUnit('measure')}
-                        type="button"
-                      >Measure</button>
-                    </div>
-                  )}
-                  <AppTooltip title={`Extend start 1 ${nudgeUnit} earlier`}>
-                    <button
-                      className="nudge-btn has-tooltip"
-                      aria-label={`Extend start 1 ${nudgeUnit} earlier`}
-                      onClick={() => onExtendSelection('start', -1)}
-                    >
-                      <span className="material-symbols-outlined">first_page</span>
-                    </button>
-                  </AppTooltip>
-                  <AppTooltip title={`Shrink start 1 ${nudgeUnit} later`}>
-                    <button
-                      className="nudge-btn has-tooltip"
-                      aria-label={`Shrink start 1 ${nudgeUnit} later`}
-                      onClick={() => onExtendSelection('start', 1)}
-                    >
-                      <span className="material-symbols-outlined">chevron_right</span>
-                    </button>
-                  </AppTooltip>
-                  <span className="nudge-divider">|</span>
-                  <AppTooltip title={`Shrink end 1 ${nudgeUnit} earlier`}>
-                    <button
-                      className="nudge-btn has-tooltip"
-                      aria-label={`Shrink end 1 ${nudgeUnit} earlier`}
-                      onClick={() => onExtendSelection('end', -1)}
-                    >
-                      <span className="material-symbols-outlined">chevron_left</span>
-                    </button>
-                  </AppTooltip>
-                  <AppTooltip title={`Extend end 1 ${nudgeUnit} later`}>
-                    <button
-                      className="nudge-btn has-tooltip"
-                      aria-label={`Extend end 1 ${nudgeUnit} later`}
-                      onClick={() => onExtendSelection('end', 1)}
-                    >
-                      <span className="material-symbols-outlined">last_page</span>
-                    </button>
-                  </AppTooltip>
-                </div>
-              )}
-              {onToggleSnapToMeasures && (
-                <FormControlLabel
-                  className="section-checkbox-row inline compact mui"
-                  control={
-                    <Checkbox
-                      size="small"
-                      checked={snapToMeasuresEnabled}
-                      onChange={(event) => onToggleSnapToMeasures(event.target.checked)}
-                    />
-                  }
-                  label={<span className="section-checkbox-label">Snap to measures</span>}
-                />
-              )}
-              <AppTooltip title="Deselect all sections">
-                <button className="section-action-btn deselect icon-only" aria-label="Deselect all sections" onClick={onClearSelection}>
-                  <span className="material-symbols-outlined">deselect</span>
-                </button>
-              </AppTooltip>
-            </>
-          )}
-        </div>
-      </div>
+      <SectionControlsRow
+        currentTime={currentTime}
+        hasSelection={hasSelection}
+        selectionLabel={selectionLabel}
+        activeSelectionCount={activeSelectionIds.length}
+        selectedSectionCount={selectedSectionIds.length}
+        referenceSelectedCount={referenceSelectedIds.length}
+        snapToMeasuresEnabled={snapToMeasuresEnabled}
+        nudgeUnit={nudgeUnit}
+        onSplitAtCurrentTime={onSplitAtCurrentTime}
+        onCombineSections={onCombineSections}
+        onSaveReferenceSelection={onSaveReferenceSelection}
+        onDeleteSelection={onDeleteSelection}
+        onExtendSelection={onExtendSelection}
+        onClearSelection={onClearSelection}
+        onToggleSnapToMeasures={onToggleSnapToMeasures}
+        onToggleNudgeUnit={onToggleNudgeUnit}
+      />
     </div>
   );
 };

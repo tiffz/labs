@@ -21,6 +21,12 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
+    /**
+     * TODO(phase-2): enable "noUncheckedIndexedAccess": true after the gated
+     * rollout (see docs/ENGINEERING_AUDIT — Phase 2). Turning it on globally
+     * surfaces ~hundreds of "possibly undefined" errors that require per-file
+     * review; we roll it out one app at a time via typed helpers.
+     */
 
     /* Global types and path mapping */
     "types": ["vite/client", "vitest/globals"],

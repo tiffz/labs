@@ -18,7 +18,7 @@ When guidance conflicts, resolve in this order:
 3. `STYLE_GUIDE.md` (TypeScript + UI/A11y conventions for editing code)
 4. Root `README.md` (onboarding and command quick reference)
 5. App-level docs (`src/<app>/README.md`, `src/<app>/DEVELOPMENT.md`)
-6. AI-assistant helper docs (for example `GEMINI.md`)
+6. AI-assistant helper docs — canonical: `AGENTS.md` (legacy: `GEMINI.md`, which defers to `AGENTS.md`)
 
 ## Scope by Document Type
 

@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspens
 import SkipToMain from '../shared/components/SkipToMain';
 import FormControl from '@mui/material/FormControl';
 import MenuItem from '@mui/material/MenuItem';
-import Popover from '@mui/material/Popover';
+import AnchoredPopover from '../shared/components/AnchoredPopover';
 import Select from '@mui/material/Select';
 import Slider from '@mui/material/Slider';
 import { type MediaFile } from './components/MediaUploader';
@@ -1764,13 +1764,12 @@ const App: React.FC = () => {
                     </AppTooltip>
                   </div>
                 </div>
-                <Popover
+                <AnchoredPopover
                   open={mixerOpen}
                   anchorEl={mixerAnchorRef.current}
                   onClose={() => setMixerOpen(false)}
-                  anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                  transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-                  slotProps={{ paper: { className: 'mixer-popover' } }}
+                  placement="bottom-end"
+                  paperClassName="mixer-popover"
                 >
                   <div className="volume-mixer vertical">
                     <div className="mixer-row">
@@ -1821,7 +1820,7 @@ const App: React.FC = () => {
                       <span className="mixer-value">{metronomeVolume}%</span>
                     </div>
                   </div>
-                </Popover>
+                </AnchoredPopover>
               </div>
 
               {activeEntry && (

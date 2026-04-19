@@ -18,7 +18,7 @@ export default [
 
   // Config for Node.js files (e.g., config files in root)
   {
-    files: ['eslint.config.js', 'vite.config.ts', 'vite.config.js', 'postcss.config.js', 'tailwind.config.js', 'scripts/**/*.mjs'],
+    files: ['eslint.config.js', 'vite.config.ts', 'vite.config.js', 'postcss.config.js', 'tailwind.config.cjs', 'scripts/**/*.mjs'],
     languageOptions: {
       globals: {
         ...globals.node,
@@ -90,6 +90,28 @@ export default [
       'import/no-default-export': 'off', // We'll use a custom rule or manual review
       // Enforce consistent import ordering (style guide recommends: imports, then implementation)
       'import/order': 'off', // Can be enabled with eslint-plugin-import if needed
+      // Console policy: route diagnostics through shared/utils/serverLogger.
+      // `warn` for now because ~40 call sites predate this rule — see the
+      // Phase 2 plan in docs/ENGINEERING_AUDIT. Once those are routed, flip
+      // to `error`.
+      'no-console': ['warn', { allow: ['warn', 'error'] }],
+    },
+  },
+
+  // Tests may freely use console for diagnostic output; do not warn there.
+  {
+    files: ['src/**/*.test.{ts,tsx}', 'src/**/__test__/**/*.{ts,tsx}', 'src/shared/test/**/*.{ts,tsx}'],
+    rules: {
+      'no-console': 'off',
+    },
+  },
+
+  // Shared server logger internally uses console to surface bootstrap issues
+  // (and has its own explicit comments); exempt it from the rule.
+  {
+    files: ['src/shared/utils/serverLogger.ts'],
+    rules: {
+      'no-console': 'off',
     },
   },
 ];

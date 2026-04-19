@@ -55,6 +55,8 @@ const config: KnipConfig = {
     // Test setup files and utilities
     'src/shared/test/setupTests.ts',
     'src/cats/test/regressionTestUtils.tsx',
+    // Shared test mocks (imported on demand by new tests; Phase 1 scaffold)
+    'src/shared/test/mocks/**',
     // Shared module barrel exports (may have unused exports that are part of public API)
     'src/shared/audio/index.ts',
     'src/shared/rhythm/index.ts',

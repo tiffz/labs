@@ -10,23 +10,43 @@ import { parseRhythm } from '../../shared/rhythm/rhythmParser';
 import { getWordShape, fitWordShapeToSlot } from './wordShapeTemplates';
 import { mutateTemplate, applyFreestyle, enforceMinDuration } from './generationPipeline';
 
-export type ProsodySource = 'dictionary' | 'heuristic' | 'unresolved';
+// Pure types, constants, and tiny helpers live in `./prosodyEngineTypes`.
+// Re-exported here so existing `import { ... } from '...prosodyEngine'`
+// call sites keep working unchanged. `WordRhythmGenerationSettings` is
+// defined locally because many functions below reference its fields directly
+// and the interface has evolved over time inside this file.
+export type {
+  ProsodySource,
+  WordAnalysis,
+  WordRhythmResult,
+  AlignmentStrength,
+  MutationId,
+  PhrasingMode,
+  LandingNote,
+  NoteValueBias,
+  SyllableHit,
+} from './prosodyEngineTypes';
+export {
+  ALL_MUTATION_IDS,
+  DEFAULT_NOTE_VALUE_BIAS,
+  alignmentStrengthFactor,
+} from './prosodyEngineTypes';
 
-export interface WordAnalysis {
-  word: string;
-  syllables: string[];
-  stressPattern: number[];
-  source: ProsodySource;
-}
-
-export interface WordRhythmResult {
-  notation: string;
-  analyses: WordAnalysis[];
-  hits: SyllableHit[];
-  dictionaryCount: number;
-  heuristicCount: number;
-  unresolvedCount: number;
-}
+import type {
+  AlignmentStrength,
+  LandingNote,
+  MutationId,
+  NoteValueBias,
+  PhrasingMode,
+  SyllableHit,
+  WordAnalysis,
+  WordRhythmResult,
+} from './prosodyEngineTypes';
+import {
+  ALL_MUTATION_IDS,
+  DEFAULT_NOTE_VALUE_BIAS,
+  alignmentStrengthFactor,
+} from './prosodyEngineTypes';
 
 interface GenerateOptions {
   strictDictionaryMode: boolean;
@@ -35,41 +55,6 @@ interface GenerateOptions {
   rhythmVariationSeed?: number;
   soundVariationSeed?: number;
   generationSettings?: Partial<WordRhythmGenerationSettings>;
-}
-
-export type AlignmentStrength = 'off' | 'light' | 'strong';
-
-// ---------------------------------------------------------------------------
-// Legacy v2 mutation IDs — kept for backward compat (codec migration, tests)
-// ---------------------------------------------------------------------------
-
-/** @deprecated v2 mutation IDs — use `WordRhythmGenerationSettings` rules instead. */
-export const ALL_MUTATION_IDS = [
-  'adventurousRhythm',
-  'dottedFeel',
-  'sixteenthMotion',
-  'crossBarTies',
-  'midMeasureRests',
-  'motifOrnament',
-  'lineBreakGaps',
-  'avoidIntraWordRests',
-] as const;
-
-/** @deprecated v2 mutation ID type. */
-export type MutationId = (typeof ALL_MUTATION_IDS)[number];
-
-// ---------------------------------------------------------------------------
-// v3 generation settings
-// ---------------------------------------------------------------------------
-
-export type PhrasingMode = 'repeat' | 'halfMeasureVariations';
-export type LandingNote = 'off' | 'quarter' | 'half' | 'whole';
-
-export interface NoteValueBias {
-  sixteenth: number; // 0–100
-  eighth: number; // 0–100
-  dotted: number; // 0–100
-  quarter: number; // 0–100
 }
 
 export interface WordRhythmGenerationSettings {
@@ -100,13 +85,6 @@ export interface WordRhythmGenerationSettings {
    */
   mutations: Record<MutationId, boolean>;
 }
-
-export const DEFAULT_NOTE_VALUE_BIAS: NoteValueBias = {
-  sixteenth: 50,
-  eighth: 50,
-  dotted: 50,
-  quarter: 50,
-};
 
 export const DEFAULT_WORD_RHYTHM_GENERATION_SETTINGS: WordRhythmGenerationSettings =
   {
@@ -152,12 +130,6 @@ export function noTemplateMutations(
   return !settings.freestyle;
 }
 
-export function alignmentStrengthFactor(strength: AlignmentStrength): number {
-  if (strength === 'off') return 0;
-  if (strength === 'light') return 0.48;
-  return 0.88;
-}
-
 interface PronunciationAnalysis {
   stressPattern: number[];
   syllableCount: number;
@@ -181,19 +153,6 @@ const VARIABLE_SPOKEN_SYLLABLE_COUNTS: Record<string, number> = {
   favourite: 2,
   comfortable: 3,
 };
-
-export interface SyllableHit {
-  word: string;
-  syllable: string;
-  source: ProsodySource;
-  stroke: 'D' | 'T' | 'K' | '_';
-  stress: number;
-  wordIndex: number;
-  syllableIndex: number;
-  startSixteenth: number;
-  durationSixteenths: number;
-  continuationOfPrevious?: boolean;
-}
 
 function normalizeWord(rawWord: string): string {
   return rawWord.toLowerCase().replace(/[^a-z'’]/g, '');

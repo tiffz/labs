@@ -1,18 +1,18 @@
-import { MicrophonePitchInput, type MicrophonePitchInputOptions } from '../../shared/music/pitch/microphonePitchInput';
+import {
+  AcousticInput as SharedAcousticInput,
+  type AcousticInputCallbacks,
+} from '../../shared/music/pitch/acousticInput';
+import type { MicrophonePitchInputOptions } from '../../shared/music/pitch/microphonePitchInput';
 import { isDebugEnabled, logDebugEvent } from './practiceDebugLog';
 
-export interface AcousticInputCallbacks {
-  onNoteOn: (midi: number) => void;
-  onNoteOff: (midi: number) => void;
-  onPitchDetected?: (midi: number | null, confidence: number) => void;
-}
+export type { AcousticInputCallbacks };
 
 /**
- * Tuning optimized for sequential single-note scale practice.
- * Compared to defaults: faster onset via smaller window/quorum,
- * generous sustain tolerance, and higher RMS gate to reject ambient noise.
+ * Tuning optimized for sequential single-note scale practice. Compared to
+ * defaults: faster onset via smaller window/quorum, generous sustain
+ * tolerance, and a higher RMS gate to reject ambient noise.
  */
-const SCALES_OPTIONS: MicrophonePitchInputOptions = {
+const SCALES_PITCH_OPTIONS: MicrophonePitchInputOptions = {
   bufferSize: 2048,
   windowSize: 5,
   windowQuorum: 3,
@@ -23,39 +23,25 @@ const SCALES_OPTIONS: MicrophonePitchInputOptions = {
   onsetThresholdMultiplier: 2.5,
 };
 
-export class AcousticInput {
-  private readonly input: MicrophonePitchInput;
-
+/**
+ * Scales-app acoustic input. Delegates to the shared implementation with the
+ * scales-specific pitch tuning and debug logger.
+ */
+export class AcousticInput extends SharedAcousticInput {
   constructor(callbacks: AcousticInputCallbacks) {
-    this.input = new MicrophonePitchInput(
-      {
-        onNoteOn: (midi) => callbacks.onNoteOn(midi),
-        onNoteOff: (midi) => callbacks.onNoteOff(midi),
-        onPitchDetected: (midi, confidence, pitchInfo) => {
-          if (isDebugEnabled()) {
-            logDebugEvent({ type: 'pitch_raw', t: performance.now(), midi,
-              rms: confidence, freq: pitchInfo?.frequency });
-          }
-          callbacks.onPitchDetected?.(midi, confidence);
-        },
+    super(callbacks, {
+      pitchOptions: SCALES_PITCH_OPTIONS,
+      debug: {
+        isEnabled: isDebugEnabled,
+        onPitch: (midi, confidence, frequency) =>
+          logDebugEvent({
+            type: 'pitch_raw',
+            t: performance.now(),
+            midi,
+            rms: confidence,
+            freq: frequency,
+          }),
       },
-      SCALES_OPTIONS,
-    );
-  }
-
-  async start(preferredDeviceId?: string): Promise<void> {
-    await this.input.start(preferredDeviceId);
-  }
-
-  stop(): void {
-    this.input.stop();
-  }
-
-  isRunning(): boolean {
-    return this.input.isRunning();
-  }
-
-  getActiveInputLabel(): string | null {
-    return this.input.getActiveInputLabel();
+    });
   }
 }

@@ -21,6 +21,8 @@ const ROUTE_SPECS: VisualRouteSpec[] = [
   { id: 'words', route: '/words/', title: /Words in Rhythm/i, readySelector: '#root' },
   { id: 'pitch', route: '/pitch/', title: /Vocal Pitch Detector/i, readySelector: '#root' },
   { id: 'piano', route: '/piano/', title: /Piano Practice/i, readySelector: '#root' },
+  { id: 'count', route: '/count/', title: /Count Me In/i, readySelector: '#root' },
+  { id: 'scales', route: '/scales/', title: /Learn Your Scales/i, readySelector: '#root' },
   { id: 'ui', route: '/ui/', title: /UI Catalog/i, readySelector: '#root' },
   { id: 'universal-tom', route: '/drums/universal_tom/', title: /Universal Tom Importer/i, readySelector: '#root' },
 ];

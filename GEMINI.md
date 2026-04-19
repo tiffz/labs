@@ -1,4 +1,6 @@
-# Labs Monorepo - AI Assistant Guide
+# Labs Monorepo - AI Assistant Guide (Legacy)
+
+> **New canonical entry point: see [`AGENTS.md`](./AGENTS.md).** This file is kept for backwards compatibility with Gemini-specific workflows; if `AGENTS.md` and this file disagree, `AGENTS.md` wins.
 
 This monorepo contains multiple independent micro-apps sharing a unified build system. Each app is self-contained in `src/<app>/` with its own entry point, but all share dependencies and deployment.
 
@@ -7,14 +9,15 @@ This monorepo contains multiple independent micro-apps sharing a unified build s
 ```
 src/
   index.html          # Landing page
-  shared/            # Shared utilities and test setup
-  <app>/            # Each micro-app (cats, drums, zines, story, corp)
-    index.html       # App entry point
-    main.tsx         # React entry
-    App.tsx          # Main component
-    GEMINI.md        # App-specific AI guide
-    DEVELOPMENT.md   # Architecture Decision Records
-    README.md        # Human-readable overview
+  shared/             # Shared utilities and test setup
+  <app>/              # Each micro-app (beat, cats, chords, count, drums, piano,
+                      # pitch, scales, story, words, zines, corp, ui, …)
+    index.html        # App entry point
+    main.tsx          # React entry
+    App.tsx           # Main component
+    README.md         # Human-readable overview (every app has one)
+    ARCHITECTURE.md   # Architecture notes (where applicable, e.g. beat, count, piano)
+    DEVELOPMENT.md    # Architecture Decision Records (where applicable, e.g. cats, drums, story)
 ```
 
 ## Technology Stack
@@ -43,16 +46,19 @@ npm run build        # Production build
 
 ## Documentation Structure
 
-- **README.md**: Human-readable overview (root and per-app)
-- **GEMINI.md**: AI-focused guide (this file and per-app)
-- **DEVELOPMENT.md**: Architecture Decision Records (root and per-app)
-- **docs/SOURCE_OF_TRUTH.md**: Documentation precedence and canonical ownership
+- **AGENTS.md**: Canonical AI-assistant entry point (universal convention).
+- **README.md**: Human-readable overview (root and per-app).
+- **DEVELOPMENT.md**: Architecture Decision Records (root; per-app where present).
+- **STYLE_GUIDE.md**: TypeScript + UI/a11y conventions.
+- **docs/SOURCE_OF_TRUTH.md**: Documentation precedence and canonical ownership.
+- **GEMINI.md**: Legacy Gemini-specific aliases; defers to `AGENTS.md`.
 
 For detailed architecture, CI/CD, and development patterns, see:
 
-- `DEVELOPMENT.md` - Major development patterns and ADRs
-- `src/<app>/DEVELOPMENT.md` - App-specific architecture decisions
-- `src/<app>/README.md` - App overview and features
+- `DEVELOPMENT.md` — Major development patterns and ADRs.
+- `src/<app>/DEVELOPMENT.md` — App-specific architecture decisions (where present).
+- `src/<app>/ARCHITECTURE.md` — App-specific architecture notes (where present).
+- `src/<app>/README.md` — App overview and features.
 
 ## Code Quality
 

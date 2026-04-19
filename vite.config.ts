@@ -938,9 +938,12 @@ export default defineConfig({
       'dist/**',
       // Expensive benchmark test - only run when beat files change (via INCLUDE_BEAT_BENCHMARK env)
       ...(!INCLUDE_BEAT_BENCHMARK ? ['**/bpmDetectionBenchmark.test.ts'] : []),
-      // Fast mode: exclude slow regression tests for rapid development iteration
+      // Fast mode: exclude slow regression/audit/stress tests for rapid development iteration.
+      // Match any test whose filename contains "regression", "audit", "stress", or "benchmark"
+      // (hyphenated or not) so new slow tests are excluded by convention.
       ...(process.env.FAST_TESTS === 'true' ? [
-        '**/*.regression.test.{ts,tsx}',
+        '**/*{regression,audit,stress,benchmark}*.test.{ts,tsx}',
+        '**/*{Regression,Audit,Stress,Benchmark}*.test.{ts,tsx}',
         '**/HeartSpawningService.test.ts',
       ] : []),
     ],
@@ -972,8 +975,18 @@ export default defineConfig({
     },
     coverage: {
       provider: 'v8',
+      reporter: ['text', 'json-summary', 'html', 'lcov'],
       include: ['src/**/*.{ts,tsx}'],
-      exclude: ['src/**/e2e/**', 'src/**/*.test.{ts,tsx}', 'src/**/test/**', 'e2e/**'],
+      exclude: [
+        'src/**/e2e/**',
+        'src/**/*.test.{ts,tsx}',
+        'src/**/test/**',
+        'src/ui/generatedSharedCatalog.ts',
+        'e2e/**',
+      ],
+      // Thresholds intentionally unset for now: CI runs `test:coverage` as a
+      // non-blocking signal-only step. Set a real floor once we have a
+      // measured baseline from the first coverage artifact.
     },
   },
 });

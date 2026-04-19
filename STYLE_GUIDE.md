@@ -62,6 +62,16 @@ This repo follows the [Google TypeScript Style Guide](https://google.github.io/s
 - Lazy-load heavy modals, analytics surfaces, and video players with `React.lazy` + `<Suspense fallback={…}>`.
 - If you add a new heavy dependency (>50 KB minified), also add it to the `manualChunks` map in `vite.config.ts`.
 
+## Async tests with `React.lazy`
+
+When a unit test asserts on content rendered behind `React.lazy` + `<Suspense>` (or behind a chain of dynamic `import()` calls), dynamic import resolution on a cold CI runner can take several seconds in jsdom. A 5 s `findBy*` timeout is not enough on shared runners.
+
+- Wrap the triggering interaction in `await act(async () => { ... })` so React flushes Suspense boundaries before the assertion.
+- Pass a ≥10 s `timeout` to `findBy*`. A named constant (e.g. `LAZY_FIND_TIMEOUT_MS = 15_000`) documents intent.
+- Prefer mocking the dynamic import with a synchronous module when the test is not specifically exercising the lazy-load path.
+
+See `src/story/App.test.tsx` for the canonical pattern.
+
 ## References
 
 - `DEVELOPMENT.md`
