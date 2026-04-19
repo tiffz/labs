@@ -5,7 +5,7 @@ import { genreElements, genreElementDescriptions } from '../data/genres';
 import { getContent } from '../data/storyGenerator';
 import { Tooltip } from './Tooltip';
 
-interface FixedStoryHeaderProps {
+export interface FixedStoryHeaderProps {
   dna: StoryDNA;
   onReroll: (rerollId: string) => void;
 }

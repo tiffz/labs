@@ -1,41 +1,71 @@
-import React, { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import SkipToMain from '../shared/components/SkipToMain';
 import type { StoryDNA } from './types';
 import { Sidebar } from './components/Sidebar';
 import './styles/story.css';
 import { createAppAnalytics } from '../shared/utils/analytics';
+import type { FixedStoryHeaderProps } from './components/FixedStoryHeader';
+import type { BeatChartProps } from './components/BeatChart';
 
 const analytics = createAppAnalytics('story');
 
 // Heavy parts of the story app (generator data, logline engine, beat chart
 // visualization) are all deferred until the user asks to generate a story.
 // That keeps the initial page weight near zero for the welcome screen.
-const FixedStoryHeader = lazy(() =>
-  import('./components/FixedStoryHeader').then((m) => ({ default: m.FixedStoryHeader })),
-);
-const BeatChart = lazy(() =>
-  import('./components/BeatChart').then((m) => ({ default: m.BeatChart })),
-);
+//
+// We deliberately avoid `React.lazy` + `<Suspense>` here: the first render
+// after `setStoryDNA` would briefly show a second "Loading story…" fallback
+// while the component chunks finished loading, on top of the "Generating
+// story…" indicator — a confusing double spinner. Instead we imperatively
+// import the chunks, warm them in the background after mount, and gate the
+// render on both the data AND the components being in hand. Result: one
+// loading indicator, and the result panel appears in a single frame.
 
 type StoryGeneratorModule = typeof import('./data/storyGenerator');
 type LoglineMappingModule = typeof import('./kimberly/logline-element-mapping');
 type LoglinesModule = typeof import('./kimberly/loglines');
 
-let generatorPromise: Promise<{
+type StoryEngine = {
   generator: StoryGeneratorModule;
   mapping: LoglineMappingModule;
   loglines: LoglinesModule;
-}> | null = null;
+};
 
-function loadGenerator() {
-  if (!generatorPromise) {
-    generatorPromise = Promise.all([
+type StoryComponents = {
+  FixedStoryHeader: React.FC<FixedStoryHeaderProps>;
+  BeatChart: React.FC<BeatChartProps>;
+};
+
+let enginePromise: Promise<StoryEngine> | null = null;
+function loadEngine(): Promise<StoryEngine> {
+  if (!enginePromise) {
+    enginePromise = Promise.all([
       import('./data/storyGenerator'),
       import('./kimberly/logline-element-mapping'),
       import('./kimberly/loglines'),
     ]).then(([generator, mapping, loglines]) => ({ generator, mapping, loglines }));
   }
-  return generatorPromise;
+  return enginePromise;
+}
+
+let componentsPromise: Promise<StoryComponents> | null = null;
+function loadComponents(): Promise<StoryComponents> {
+  if (!componentsPromise) {
+    componentsPromise = Promise.all([
+      import('./components/FixedStoryHeader'),
+      import('./components/BeatChart'),
+    ]).then(([headerMod, chartMod]) => ({
+      FixedStoryHeader: headerMod.FixedStoryHeader,
+      BeatChart: chartMod.BeatChart,
+    }));
+  }
+  return componentsPromise;
+}
+
+/** Kick off both downloads without waiting — safe to call multiple times. */
+function warmupStoryApp(): void {
+  void loadEngine();
+  void loadComponents();
 }
 
 const App: React.FC = () => {
@@ -43,10 +73,15 @@ const App: React.FC = () => {
   const [selectedGenre, setSelectedGenre] = useState('Random');
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [components, setComponents] = useState<StoryComponents | null>(null);
   const closeMobileNav = () => setMobileNavOpen(false);
 
-  // After first paint of the welcome screen, warm up the generator chunk so
-  // the first click on "Generate Story" feels instant.
+  // After first paint of the welcome screen, kick off both downloads in the
+  // background so that by the time the user clicks "Generate Story" the
+  // ~2.3 MB of generator data + lazy component code is already cached. This
+  // is the main reason post-lazy loading had felt slower than before: we
+  // used to ship everything in the main chunk, but deferring it without
+  // warming meant clicking generate always blocked on a cold fetch.
   const didPrefetchRef = useRef(false);
   useEffect(() => {
     if (didPrefetchRef.current) return;
@@ -54,14 +89,23 @@ const App: React.FC = () => {
     const idle =
       (window as unknown as { requestIdleCallback?: (cb: () => void) => number }).requestIdleCallback ??
       ((cb: () => void) => window.setTimeout(cb, 300));
-    idle(() => { void loadGenerator(); });
+    idle(() => { warmupStoryApp(); });
   }, []);
+
+  // Escape hatch: if the user moves toward the Generate button before the
+  // idle warmup has fired (fast click, slow idle), force the downloads to
+  // start now.
+  const handleGenerateIntent = () => { warmupStoryApp(); };
 
   const handleGenerate = async (genre: string = selectedGenre) => {
     setIsGenerating(true);
     try {
-      const { generator } = await loadGenerator();
+      const [{ generator }, comps] = await Promise.all([
+        loadEngine(),
+        loadComponents(),
+      ]);
       const newDNA = generator.generateStoryDNA(genre, 'Random');
+      setComponents(comps);
       setStoryDNA(newDNA);
       analytics.trackEvent('generate', { genre });
     } finally {
@@ -72,7 +116,7 @@ const App: React.FC = () => {
   const handleReroll = async (rerollId: string) => {
     if (!storyDNA) return;
     analytics.trackEvent('reroll', { section: rerollId });
-    const { generator, mapping, loglines } = await loadGenerator();
+    const { generator, mapping, loglines } = await loadEngine();
     const { generateStoryDNA, getNewSuggestion } = generator;
     const { regenerateElement, getLoglineProperty } = mapping;
     const { regenerateLoglineFromElements } = loglines;
@@ -283,25 +327,20 @@ const App: React.FC = () => {
         selectedGenre={selectedGenre}
         onGenreChange={setSelectedGenre}
         onGenerate={() => handleGenerate()}
+        onGenerateIntent={handleGenerateIntent}
         mobileOpen={mobileNavOpen}
         onMobileClose={closeMobileNav}
       />
 
       <div className="ml-0 md:ml-80">
-        {storyDNA ? (
-          <Suspense
-            fallback={
-              <main id="main" className="px-3 py-4 sm:px-6 sm:py-6 text-slate-500">
-                Loading story…
-              </main>
-            }
-          >
-            <FixedStoryHeader dna={storyDNA} onReroll={handleReroll} />
+        {storyDNA && components ? (
+          <>
+            <components.FixedStoryHeader dna={storyDNA} onReroll={handleReroll} />
 
             <main id="main" className="px-3 py-4 sm:px-6 sm:py-6">
-              <BeatChart dna={storyDNA} onReroll={handleReroll} />
+              <components.BeatChart dna={storyDNA} onReroll={handleReroll} />
             </main>
-          </Suspense>
+          </>
         ) : isGenerating ? (
           <main id="main" className="flex min-h-[calc(100dvh-52px)] items-center justify-center md:min-h-screen text-slate-500">
             Generating story…

@@ -5,7 +5,7 @@ import { GeneratedChip } from './GeneratedChip';
 import { Tooltip } from './Tooltip';
 import { getContent } from '../data/storyGenerator';
 
-interface BeatChartProps {
+export interface BeatChartProps {
   dna: StoryDNA;
   onReroll: (rerollId: string) => void;
 }

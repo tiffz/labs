@@ -7,6 +7,12 @@ interface SidebarProps {
   selectedGenre: string;
   onGenreChange: (genre: string) => void;
   onGenerate: () => void;
+  /**
+   * Fires on hover/focus of the Generate button so the app can warm up
+   * the generator data + component chunks before the click actually lands.
+   * Cheap to call repeatedly (downloads are memoised).
+   */
+  onGenerateIntent?: () => void;
   /** Mobile drawer: when false, sidebar is off-canvas below `md`. */
   mobileOpen?: boolean;
   onMobileClose?: () => void;
@@ -16,6 +22,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   selectedGenre,
   onGenreChange,
   onGenerate,
+  onGenerateIntent,
   mobileOpen = false,
   onMobileClose,
 }) => {
@@ -98,6 +105,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onGenerate();
             onMobileClose?.();
           }}
+          onPointerEnter={onGenerateIntent}
+          onFocus={onGenerateIntent}
           className="w-full bg-gradient-to-br from-orange-500 via-orange-500 to-pink-500/80 hover:from-orange-600 hover:via-orange-600 hover:to-pink-600/80 text-white font-bold py-2.5 px-6 rounded-lg text-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2 shadow-sm hover:shadow-md"
         >
           Generate Story

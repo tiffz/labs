@@ -2,11 +2,11 @@ import { describe, it, expect } from 'vitest';
 import { act, render, screen, fireEvent } from '@testing-library/react';
 import App from './App';
 
-// This test clicks "Generate Story", which chains five dynamic import() calls
-// (three inside loadGenerator(), plus lazy FixedStoryHeader and BeatChart).
-// On a cold CI runner those imports can take several seconds in jsdom, so we
-// give findBy* a generous ceiling. See docs/STYLE_GUIDE.md "Async tests with
-// React.lazy" for the canonical pattern.
+// Clicking "Generate Story" awaits five dynamic import() calls in parallel —
+// three for the generator data (`loadEngine`) and two for the lazy-loaded
+// view components (`loadComponents`). On a cold CI runner those imports can
+// take several seconds in jsdom, so we give findBy* a generous ceiling.
+// See docs/STYLE_GUIDE.md "Async tests with dynamic imports" for the pattern.
 const LAZY_FIND_TIMEOUT_MS = 15000;
 
 describe('Story Generator App', () => {
