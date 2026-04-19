@@ -1,0 +1,81 @@
+name: Nightly Flakiness Detector
+
+# Runs on a cold runner every night with npm cache disabled, no test retries,
+# and strict coverage reporting. Flakes surface here before they reach main.
+#
+# Also runs a single Playwright smoke pass on a cold browser install so we
+# catch browser-bootstrap flakes without blocking PR CI.
+
+on:
+  schedule:
+    # 08:15 UTC = 01:15 PT / 04:15 ET — after the main CI traffic tapers off.
+    - cron: '15 8 * * *'
+  workflow_dispatch:
+
+jobs:
+  vitest-cold:
+    name: Vitest cold-cache (test:fast, no retries)
+    runs-on: ubuntu-latest
+    env:
+      CI: true
+      NODE_ENV: test
+      HUSKY: 0
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node.js (no npm cache)
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+          # Intentionally no `cache:` key — we want a cold npm install every
+          # run so dynamic-import and module-resolution flakes surface.
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate shared catalog
+        run: npm run generate:shared-catalog
+
+      - name: Run fast test suite (no retries)
+        run: npm run test:fast -- --retry=0
+
+  playwright-cold:
+    name: Playwright smoke cold-browser
+    runs-on: ubuntu-latest
+    needs: vitest-cold
+    env:
+      CI: true
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node.js (no npm cache)
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers (fresh)
+        run: npx playwright install --with-deps chromium
+
+      - name: Run e2e smoke
+        run: npm run test:e2e:smoke
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-nightly-report
+          if-no-files-found: ignore
+          path: |
+            playwright-report/**
+            test-results/**
