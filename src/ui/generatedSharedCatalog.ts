@@ -6222,6 +6222,23 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-utils-devlog-ts-devlog",
+    "name": "devLog",
+    "path": "src/shared/utils/devLog.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Dev-only diagnostic console logger. Verbose traces (beat grid alignment, drift correction, gap filtering, etc.) are valuable while developing but should not ship to production consoles or telemetry. `devLog` writes to `console.log` in dev builds and no-ops in production — no runtime branching at each call site. Prefer this over `console.log` anywhere the `no-console` ESLint rule fires for intentional debug output. For user-visible warnings keep `console.warn` / `console.error`, which the rule already allows.",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [
+      "beat"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
     "id": "src-shared-utils-hashstate-ts-gethashvalues",
     "name": "getHashValues",
     "path": "src/shared/utils/hashState.ts",

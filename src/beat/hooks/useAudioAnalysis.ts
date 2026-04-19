@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { regenerateBeats, adjustBeatsForGaps, type BeatAnalysisResult } from '../utils/beatAnalyzer';
 import type { MediaFile } from '../components/MediaUploader';
 import { runBeatAnalysisPipeline, yieldToMainThread, type AnalysisProgress } from '../utils/analysisPipeline';
+import { devLog } from '../../shared/utils/devLog';
 
 interface UseAudioAnalysisReturn {
   isAnalyzing: boolean;
@@ -85,7 +86,7 @@ export function useAudioAnalysis(): UseAudioAnalysisReturn {
       // Re-apply gap adjustments if we have detected gaps
       // This ensures the beat grid stays aligned after fermatas even when BPM changes
       if (analysisResult.detectedGaps && analysisResult.detectedGaps.length > 0) {
-        console.log(`[setBpm] Re-applying ${analysisResult.detectedGaps.length} gap adjustment(s) for new BPM ${newBpm}`);
+        devLog(`[setBpm] Re-applying ${analysisResult.detectedGaps.length} gap adjustment(s) for new BPM ${newBpm}`);
         newBeats = adjustBeatsForGaps(newBeats, analysisResult.detectedGaps);
       }
 
