@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useCallback, useRef, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useCallback, useRef, useEffect, useState } from 'react';
 import type { SessionPlan, SessionExercise } from './curriculum/types';
 import type { ScalesProgressData, PracticeRecord } from './progress/types';
 import type { PracticeNoteResult } from '../shared/practice/types';
@@ -11,6 +11,11 @@ import { recordMidiNoteOn, recordMidiNoteOff, clearAll as clearTimingStore } fro
 import { AcousticInput } from './utils/acousticInput';
 import { createAppAnalytics } from '../shared/utils/analytics';
 import { isDebugEnabled, logDebugEvent } from './utils/practiceDebugLog';
+import {
+  loadAudioPrefs,
+  updateAudioPrefs,
+  isMicrophonePermissionGranted,
+} from './utils/audioPrefs';
 
 const analytics = createAppAnalytics('scales');
 
@@ -92,6 +97,7 @@ type Action =
   | { type: 'LOAD_STAGE'; exercise: SessionExercise; score: PianoScore };
 
 function initialState(): ScalesState {
+  const audioPrefs = loadAudioPrefs();
   return {
     screen: 'home',
     progress: loadProgress(),
@@ -107,7 +113,9 @@ function initialState(): ScalesState {
     currentRunStartTime: null,
     midiConnected: false,
     midiDevices: [],
-    disabledMidiDeviceIds: new Set(),
+    // Restore the user's previously-disabled MIDI devices so they don't
+    // reappear as "active" on every page load.
+    disabledMidiDeviceIds: new Set(audioPrefs.disabledMidiDeviceIds),
     inputMode: 'none',
     microphoneActive: false,
     freeTempoMeasureIndex: 0,
@@ -386,6 +394,12 @@ interface ScalesContextValue {
   stopMicrophoneInput: () => void;
   toggleMicrophone: () => void;
   toggleMidiDevice: (deviceId: string) => void;
+  /**
+   * True during the initial boot window while we're attempting to auto-restore
+   * the user's saved audio input. Consumers (e.g. the InputGateway) should use
+   * this to avoid flashing a "no input" state before restoration completes.
+   */
+  audioBootstrapping: boolean;
 }
 
 const ScalesContext = createContext<ScalesContextValue | null>(null);
@@ -395,9 +409,20 @@ export function ScalesProvider({ children }: { children: React.ReactNode }) {
   const midiRef = useRef<MidiInput | null>(null);
   const acousticRef = useRef<AcousticInput | null>(null);
   const disabledDeviceIdsRef = useRef<Set<string>>(new Set());
+  // Start in a "bootstrapping" state whenever the user had saved audio
+  // preferences that we're about to try to restore. This suppresses the
+  // InputGateway modal during the brief async window while we query the
+  // permission API and start the mic.
+  const [audioBootstrapping, setAudioBootstrapping] = useState(
+    () => loadAudioPrefs().microphoneRequested,
+  );
 
   useEffect(() => {
     disabledDeviceIdsRef.current = state.disabledMidiDeviceIds;
+    // Persist disabled-device choices so they stick across refreshes.
+    updateAudioPrefs({
+      disabledMidiDeviceIds: Array.from(state.disabledMidiDeviceIds),
+    });
   }, [state.disabledMidiDeviceIds]);
 
   useEffect(() => {
@@ -454,6 +479,7 @@ export function ScalesProvider({ children }: { children: React.ReactNode }) {
       acousticRef.current = acoustic;
       dispatch({ type: 'SET_MICROPHONE_ACTIVE', active: true });
       dispatch({ type: 'SET_INPUT_MODE', mode: 'mic' });
+      updateAudioPrefs({ microphoneRequested: true });
       return true;
     } catch {
       dispatch({ type: 'SET_MICROPHONE_ACTIVE', active: false });
@@ -465,6 +491,7 @@ export function ScalesProvider({ children }: { children: React.ReactNode }) {
     acousticRef.current?.stop();
     acousticRef.current = null;
     dispatch({ type: 'SET_MICROPHONE_ACTIVE', active: false });
+    updateAudioPrefs({ microphoneRequested: false });
     if (!midiRef.current?.isConnected()) {
       dispatch({ type: 'SET_INPUT_MODE', mode: 'none' });
     }
@@ -477,6 +504,33 @@ export function ScalesProvider({ children }: { children: React.ReactNode }) {
       await startMicrophoneInput();
     }
   }, [startMicrophoneInput, stopMicrophoneInput]);
+
+  // Auto-restore the microphone on boot when the user previously had it
+  // enabled AND the browser already has a persistent grant. We never call
+  // getUserMedia on mount without a granted permission, to avoid surprising
+  // the user with a prompt on an "inactive" tab.
+  useEffect(() => {
+    let cancelled = false;
+    const prefs = loadAudioPrefs();
+    if (!prefs.microphoneRequested) {
+      setAudioBootstrapping(false);
+      return;
+    }
+    (async () => {
+      try {
+        const granted = await isMicrophonePermissionGranted();
+        if (cancelled) return;
+        if (granted && !acousticRef.current?.isRunning()) {
+          await startMicrophoneInput();
+        }
+      } finally {
+        if (!cancelled) setAudioBootstrapping(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [startMicrophoneInput]);
 
   const toggleMidiDevice = useCallback((deviceId: string) => {
     dispatch({ type: 'TOGGLE_MIDI_DEVICE', deviceId });
@@ -491,7 +545,7 @@ export function ScalesProvider({ children }: { children: React.ReactNode }) {
   }, [state.progress]);
 
   return (
-    <ScalesContext.Provider value={{ state, dispatch, startSession, startMicrophoneInput, stopMicrophoneInput, toggleMicrophone, toggleMidiDevice }}>
+    <ScalesContext.Provider value={{ state, dispatch, startSession, startMicrophoneInput, stopMicrophoneInput, toggleMicrophone, toggleMidiDevice, audioBootstrapping }}>
       {children}
     </ScalesContext.Provider>
   );

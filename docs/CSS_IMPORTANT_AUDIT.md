@@ -25,7 +25,6 @@ Current counts (run with `rg '!important' src --type css -c` to refresh):
 | `src/shared/components/appSlider.css`                 |     6 |
 | `src/pitch/styles/pitch.css`                          |     2 |
 | `src/count/styles/pulse.css`                          |     1 |
-| `src/piano/components/inputSources.css`               |     1 |
 | `src/shared/ui/icons/materialIcons.css`               |     1 |
 | `src/shared/components/music/sharedExportPopover.css` |     1 |
 
@@ -67,7 +66,7 @@ Prescribed fix:
 
 ### 4. Material Symbols / icon fonts
 
-Symptom: `materialIcons.css`, `inputSources.css` single `!important` to force font loading / glyph behavior.
+Symptom: `materialIcons.css` single `!important` to force font loading / glyph behavior.
 
 Prescribed fix:
 

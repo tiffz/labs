@@ -1,7 +1,17 @@
 .scales-app {
   height: calc(100vh - var(--debug-panel-height, 0px));
+  height: calc(100dvh - var(--debug-panel-height, 0px));
   display: flex;
   flex-direction: column;
+  /* Anchor the font stack at the app root so bare <span> and <button>
+     elements (e.g. the input-source chip, MUI `Box component="span"`
+     badges) inherit Roboto instead of the browser's default serif. */
+  font-family:
+    'Roboto',
+    'Segoe UI',
+    system-ui,
+    -apple-system,
+    sans-serif;
 }
 
 .scales-main {

@@ -26,7 +26,7 @@ function ScreenRouter() {
 }
 
 function AppContent() {
-  const { state } = useScales();
+  const { state, audioBootstrapping } = useScales();
   const hasInput = hasEnabledMidiDevice(state) || state.microphoneActive;
 
   return (
@@ -35,7 +35,7 @@ function AppContent() {
       <main id="main" className="scales-main">
         <ScreenRouter />
       </main>
-      {!hasInput && <InputGateway />}
+      {!hasInput && !audioBootstrapping && <InputGateway />}
       {debugMode && <DebugPanel />}
     </div>
   );

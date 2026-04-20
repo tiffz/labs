@@ -887,6 +887,63 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": "dice-icon"
   },
   {
+    "id": "src-shared-components-inputsourcesmenu-tsx-inputsourcesmenu",
+    "name": "InputSourcesMenu",
+    "path": "src/shared/components/InputSourcesMenu.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Shared \"input sources\" menu used by the piano and scales apps. Renders a chip-shaped trigger summarizing the current MIDI + microphone state, plus a popover panel with rows for each source and (optionally) a microphone device selector. All copy, layout, spacing, typography, and state-derived labels live in this component so both apps stay visually in lockstep. Apps are expected to pass *state only* (connected devices, toggle callbacks) — they should not restate status text, hint text, or trigger labels. Visuals follow Material 3 tokens: 32dp pill trigger, 48dp rows, 36dp circular icon badges, level-2 menu elevation, labelMedium/titleSmall/ bodySmall type scale.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "default",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-inputsourcesmenu-tsx-inputsourcesmenuprops",
+    "name": "InputSourcesMenuProps",
+    "path": "src/shared/components/InputSourcesMenu.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Shared \"input sources\" menu used by the piano and scales apps. Renders a chip-shaped trigger summarizing the current MIDI + microphone state, plus a popover panel with rows for each source and (optionally) a microphone device selector. All copy, layout, spacing, typography, and state-derived labels live in this component so both apps stay visually in lockstep. Apps are expected to pass *state only* (connected devices, toggle callbacks) — they should not restate status text, hint text, or trigger labels. Visuals follow Material 3 tokens: 32dp pill trigger, 48dp rows, 36dp circular icon badges, level-2 menu elevation, labelMedium/titleSmall/ bodySmall type scale.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-inputsourcesmenu-tsx-midideviceentry",
+    "name": "MidiDeviceEntry",
+    "path": "src/shared/components/InputSourcesMenu.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "A single MIDI device entry. Rows are rendered only for connected devices.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
     "id": "src-shared-components-metronometogglebutton-tsx-metronometogglebutton",
     "name": "MetronomeToggleButton",
     "path": "src/shared/components/MetronomeToggleButton.tsx",
