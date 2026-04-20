@@ -19,6 +19,13 @@ export interface ExerciseProgress {
   history: PracticeRecord[];
   /** Whether this exercise has been flagged for review. */
   needsReview: boolean;
+  /**
+   * The specific stage that triggered the current review flag — set when a
+   * run comes in below the review threshold, cleared when that stage passes
+   * again. Lets the review dialog and session planner target the shaky
+   * stage instead of guessing from `completedStageId`.
+   */
+  reviewStageId: string | null;
   /** ISO timestamp of last practice. */
   lastPracticedAt: string | null;
 }

@@ -4884,6 +4884,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-practice-pitchmatch-ts-deriveoctaveoffsetforhand",
+    "name": "deriveOctaveOffsetForHand",
+    "path": "src/shared/practice/pitchMatch.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Like , but when both hands are playing the same pitch classes at different octaves we need to split the played bag by which octave belongs to which hand. Pass `prefer: 'highest'` to anchor the right hand to the topmost pitch-class match, or `prefer: 'lowest'` to anchor the left hand to the bottommost. Returns null when no pitch class of `played` matches any of `expectedPitches`.",
+    "tags": [],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-practice-pitchmatch-ts-pitchclassdistance",
     "name": "pitchClassDistance",
     "path": "src/shared/practice/pitchMatch.ts",

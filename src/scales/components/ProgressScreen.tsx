@@ -6,7 +6,7 @@ import LinearProgress from '@mui/material/LinearProgress';
 import IconButton from '@mui/material/IconButton';
 import { useScales } from '../store';
 import { TIERS } from '../curriculum/tiers';
-import { getExerciseProgress, getExerciseProficiency } from '../progress/store';
+import { getExerciseProgress, getExerciseProficiency, getMasteryTier } from '../progress/store';
 import ScalesInputSources from './InputSources';
 
 // M3 type-scale helpers.
@@ -97,13 +97,16 @@ export default function ProgressScreen() {
   const { progress } = state;
 
   const currentTierIdx = TIERS.findIndex(t => t.id === progress.currentTierId);
+  // Mastered is the stricter tier: final stage cleared AND not shaky/stale.
+  // Mirror how the home screen reports mastery so the two surfaces agree
+  // — a "mastered" tally on Home and Progress that disagreed would be
+  // confusing.
   const totalMastered = TIERS.reduce(
     (sum, t) =>
       sum +
       t.exercises.filter(ex => {
         const ep = getExerciseProgress(progress, ex.id);
-        const lastStage = ex.stages[ex.stages.length - 1];
-        return ep.completedStageId === lastStage?.id;
+        return getMasteryTier(ep, ex) === 'mastered';
       }).length,
     0,
   );
@@ -232,8 +235,7 @@ export default function ProgressScreen() {
 
           const completedCount = tier.exercises.filter(ex => {
             const ep = getExerciseProgress(progress, ex.id);
-            const lastStage = ex.stages[ex.stages.length - 1];
-            return ep.completedStageId === lastStage?.id;
+            return getMasteryTier(ep, ex) === 'mastered';
           }).length;
           const tierProgress =
             tier.exercises.length > 0 ? completedCount / tier.exercises.length : 0;
@@ -383,21 +385,28 @@ export default function ProgressScreen() {
                   >
                     {tier.exercises.map(ex => {
                       const ep = getExerciseProgress(progress, ex.id);
-                      const lastStage = ex.stages[ex.stages.length - 1];
-                      const isComplete = ep.completedStageId === lastStage?.id;
+                      const masteryTier = getMasteryTier(ep, ex);
+                      const isComplete = masteryTier === 'mastered';
+                      const isFluent = masteryTier === 'fluent';
                       const proficiency = getExerciseProficiency(ep);
                       const stageCount = ex.stages.length;
                       const completedStageIdx = ep.completedStageId
                         ? ex.stages.findIndex(s => s.id === ep.completedStageId)
                         : -1;
                       const stagesCompleted = completedStageIdx + 1;
-                      const inProgress = !isComplete && (stagesCompleted > 0 || proficiency > 0);
+                      const inProgress = !isComplete && !isFluent && (stagesCompleted > 0 || proficiency > 0);
 
+                      // Fluent shares the success palette with mastered but at
+                      // a lighter intensity — the filled check and solid tint
+                      // stay reserved for "Mastered" so the two tiers remain
+                      // visually distinguishable in a row of small chips.
                       const tint = isComplete
                         ? 'success'
-                        : inProgress
-                          ? 'primary'
-                          : 'neutral';
+                        : isFluent
+                          ? 'success-soft'
+                          : inProgress
+                            ? 'primary'
+                            : 'neutral';
 
                       return (
                         <Box
@@ -411,18 +420,28 @@ export default function ProgressScreen() {
                             borderRadius: '10px',
                             bgcolor: tint === 'success'
                               ? theme => `${theme.palette.success.main}14`
-                              : tint === 'primary'
-                                ? theme => `${theme.palette.primary.main}0D`
-                                : 'action.hover',
+                              : tint === 'success-soft'
+                                ? theme => `${theme.palette.success.main}08`
+                                : tint === 'primary'
+                                  ? theme => `${theme.palette.primary.main}0D`
+                                  : 'action.hover',
                             color: tint === 'success'
                               ? 'success.main'
-                              : tint === 'primary'
-                                ? 'primary.main'
-                                : 'text.secondary',
+                              : tint === 'success-soft'
+                                ? 'success.dark'
+                                : tint === 'primary'
+                                  ? 'primary.main'
+                                  : 'text.secondary',
                           }}
                         >
                           <Icon
-                            name={isComplete ? 'check_circle' : 'radio_button_unchecked'}
+                            name={
+                              isComplete
+                                ? 'check_circle'
+                                : isFluent
+                                  ? 'task_alt'
+                                  : 'radio_button_unchecked'
+                            }
                             size={16}
                           />
                           <Typography

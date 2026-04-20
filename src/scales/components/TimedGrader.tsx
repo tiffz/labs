@@ -7,13 +7,22 @@ import {
   getRecentMidiPresses,
   pruneStale,
 } from '../../shared/practice/practiceTimingStore';
-import { pitchClassDistance, deriveOctaveOffset } from '../../shared/practice/pitchMatch';
+import {
+  pitchClassDistance,
+  deriveOctaveOffset,
+  deriveOctaveOffsetForHand,
+} from '../../shared/practice/pitchMatch';
 import { isDebugEnabled, logDebugEvent } from '../utils/practiceDebugLog';
 
-const PERFECT_THRESHOLD_MS = 120;
-const PERFECT_THRESHOLD_MIC_MS = 200;
-const GRACE_PERIOD_MS = 200;
-const GRACE_PERIOD_MIC_MS = 350;
+// Scales practice is about precision; we use tighter timing windows than
+// the piano app (which uses 120ms / 200ms grace) so that "perfect" actually
+// means on the beat. With the prior 120ms window at slower tempos, notes
+// played a tenth of a beat early/late were still tallied as perfect, which
+// felt much too lenient given the visual feedback (blue/amber colouring).
+const PERFECT_THRESHOLD_MS = 80;
+const PERFECT_THRESHOLD_MIC_MS = 140;
+const GRACE_PERIOD_MS = 160;
+const GRACE_PERIOD_MIC_MS = 280;
 const EVAL_BATCH_WINDOW_MS = 40;
 const PROXIMITY_SEMITONES = 2;
 
@@ -21,6 +30,13 @@ interface ExpectedNote {
   pitches: number[];
   noteId: string;
   hand: string;
+  partId: string;
+  /**
+   * Written pitches of the *other* hand at this same beat, if this is a
+   * both-hand exercise. Used to validate the LH-below-RH invariant when
+   * granting octave flex to the left hand.
+   */
+  siblingPitches?: number[];
 }
 
 interface PassedNote extends ExpectedNote {
@@ -58,29 +74,87 @@ export default function TimedGrader() {
   const recentlyPassedRef = useRef<PassedNote[]>([]);
   const graceTimerRef = useRef<number | null>(null);
   const evalTimerRef = useRef<number | null>(null);
-  const octaveOffsetRef = useRef<number | null>(null);
+  /**
+   * Per-part octave anchor (multiple of 12). Each hand anchors once on its
+   * first successful match and reuses that offset for the rest of the run.
+   * Per-part (rather than a single shared offset) so that in both-hand
+   * exercises the left hand can choose any lower octave independently of
+   * where the right hand sits.
+   */
+  const octaveOffsetsRef = useRef<Map<string, number>>(new Map());
 
-  const allowOctaveFlex = activeExercise?.hand !== 'both';
+  const isBothHandsExercise = activeExercise?.hand === 'both';
 
   useEffect(() => {
     evaluatedNoteIds.current = new Set();
     recentlyPassedRef.current = [];
-    octaveOffsetRef.current = null;
+    octaveOffsetsRef.current = new Map();
   }, [state.currentRunStartTime]);
 
-  const getAnchoredPitches = useCallback((pitches: number[], played: number[]): number[] => {
-    if (!allowOctaveFlex) return pitches;
-
-    if (octaveOffsetRef.current !== null) {
-      return pitches.map(p => p + octaveOffsetRef.current!);
+  /**
+   * Decide an octave anchor for `expected`, or return null if no candidate
+   * pitch class in `played` matches. In both-hand exercises:
+   *   • RH anchors to the highest matching played pitch — if the user is
+   *     playing both hands, that's the RH octave.
+   *   • LH anchors to the lowest matching played pitch, provided the
+   *     resulting LH register stays strictly below the RH register
+   *     (either the already-anchored RH, or the written RH as a fallback
+   *     when RH hasn't anchored yet). This prevents a single played RH
+   *     note from "counting" as the LH too.
+   * In single-hand exercises we fall back to the averaging-based
+   * `deriveOctaveOffset`, unchanged.
+   */
+  const deriveOffsetForPart = useCallback((
+    expected: ExpectedNote,
+    played: number[],
+  ): number | null => {
+    if (!isBothHandsExercise) {
+      return deriveOctaveOffset(played, expected.pitches);
     }
+    if (expected.hand === 'right') {
+      return deriveOctaveOffsetForHand(played, expected.pitches, 'highest');
+    }
+    if (expected.hand === 'left') {
+      const candidate = deriveOctaveOffsetForHand(played, expected.pitches, 'lowest');
+      if (candidate === null) return null;
+      const lhAnchoredLow = Math.min(...expected.pitches.map(p => p + candidate));
+      // Find a reference RH pitch: prefer the anchored RH if available,
+      // otherwise fall back to the written sibling pitch so a first-note
+      // LH attempt can still be placed relative to the scale's register.
+      let rhReferenceLow: number | null = null;
+      for (const [otherPartId, other] of expectedRef.current) {
+        if (other.hand !== 'right') continue;
+        const rhOffset = octaveOffsetsRef.current.get(otherPartId);
+        const rhPitches = rhOffset !== undefined
+          ? other.pitches.map(p => p + rhOffset)
+          : other.pitches;
+        rhReferenceLow = Math.min(...rhPitches);
+        break;
+      }
+      if (rhReferenceLow === null && expected.siblingPitches) {
+        rhReferenceLow = Math.min(...expected.siblingPitches);
+      }
+      if (rhReferenceLow !== null && lhAnchoredLow >= rhReferenceLow) {
+        return null;
+      }
+      return candidate;
+    }
+    return deriveOctaveOffset(played, expected.pitches);
+  }, [isBothHandsExercise]);
 
-    const offset = deriveOctaveOffset(played, pitches);
-    if (offset === null) return pitches;
-
-    octaveOffsetRef.current = offset;
-    return pitches.map(p => p + offset);
-  }, [allowOctaveFlex]);
+  const getAnchoredPitches = useCallback((
+    expected: ExpectedNote,
+    played: number[],
+  ): number[] => {
+    const cached = octaveOffsetsRef.current.get(expected.partId);
+    if (cached !== undefined) {
+      return expected.pitches.map(p => p + cached);
+    }
+    const derived = deriveOffsetForPart(expected, played);
+    if (derived === null) return expected.pitches;
+    octaveOffsetsRef.current.set(expected.partId, derived);
+    return expected.pitches.map(p => p + derived);
+  }, [deriveOffsetForPart]);
 
   const tryEvaluateNote = useCallback((
     expected: ExpectedNote,
@@ -91,7 +165,7 @@ export default function TimedGrader() {
     if (played.length === 0) return false;
 
     const expectedTime = getNoteExpectedTime(expected.noteId) ?? performance.now();
-    const anchored = getAnchoredPitches(expected.pitches, played);
+    const anchored = getAnchoredPitches(expected, played);
 
     const isAttempting = played.some(p =>
       anchored.some(ep =>
@@ -100,9 +174,7 @@ export default function TimedGrader() {
     );
     if (!isAttempting) return false;
 
-    const pitchCorrect = anchored.every(ep =>
-      played.some(p => p === ep || (allowOctaveFlex && pitchClassDistance(p, ep) === 0))
-    );
+    const pitchCorrect = anchored.every(ep => played.some(p => p === ep));
 
     const relevantTimes = played
       .filter(p => anchored.some(ep =>
@@ -149,7 +221,7 @@ export default function TimedGrader() {
     dispatch({ type: 'ADD_PRACTICE_RESULT', result });
     evaluatedNoteIds.current.add(expected.noteId);
     return true;
-  }, [dispatch, allowOctaveFlex, getAnchoredPitches, perfectThreshold]);
+  }, [dispatch, getAnchoredPitches, perfectThreshold]);
 
   const evaluateTimed = useCallback((played: number[]) => {
     const midiTimes = getAllMidiNoteOnTimes();
@@ -186,7 +258,23 @@ export default function TimedGrader() {
             pitches: note.pitches,
             noteId: note.id,
             hand: part.hand ?? 'right',
+            partId: part.id,
           });
+        }
+      }
+    }
+
+    // In both-hand mode, surface each hand's sibling pitches so the LH
+    // anchor logic can fall back to the *written* RH register before the
+    // RH has had a chance to anchor itself.
+    if (newExpected.size > 1) {
+      const entries = [...newExpected.entries()];
+      for (const [partId, note] of entries) {
+        const sibling = entries.find(([otherId, other]) =>
+          otherId !== partId && other.hand !== note.hand,
+        );
+        if (sibling) {
+          newExpected.set(partId, { ...note, siblingPitches: sibling[1].pitches });
         }
       }
     }

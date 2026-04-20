@@ -1,7 +1,7 @@
 import type { SessionPlan, SessionExercise } from './types';
 import { TIERS, findExercise } from './tiers';
 import type { ScalesProgressData } from '../progress/types';
-import { getExerciseProgress, getReviewExercises } from '../progress/store';
+import { getReviewExercises, getExerciseProgress } from '../progress/store';
 
 const MAX_SESSION_EXERCISES = 5;
 const REVIEW_SLOTS = 1;
@@ -34,26 +34,34 @@ export function planSession(data: ScalesProgressData): SessionPlan {
       useMetronome: stage.useMetronome,
       subdivision: stage.subdivision,
       mutePlayback: stage.mutePlayback,
+      octaves: stage.octaves,
       purpose: 'new',
     });
   }
 
-  const reviewIds = getReviewExercises(data);
+  // Review slots now target the exact stage returned by getReviewExercises
+  // — for shaky runs that's the stage that scored low, for stale entries
+  // it's the last-completed stage as a refresher. Previously we always
+  // pulled completedStageId, which could serve a different stage than the
+  // one flagged in the review UI.
+  const reviewEntries = getReviewExercises(data);
   const reviewExercises: SessionExercise[] = [];
-  for (const exerciseId of reviewIds) {
+  for (const entry of reviewEntries) {
     if (reviewExercises.length >= REVIEW_SLOTS) break;
-    if (newExercises.some(e => e.exerciseId === exerciseId)) continue;
+    if (newExercises.some(e => e.exerciseId === entry.exerciseId)) continue;
 
-    const found = findExercise(exerciseId);
+    const found = findExercise(entry.exerciseId);
     if (!found) continue;
-    const progress = getExerciseProgress(data, exerciseId);
 
-    const reviewStage = found.exercise.stages.find(s => s.id === progress.completedStageId)
+    const reviewStage = found.exercise.stages.find(s => s.id === entry.stageId)
+      ?? found.exercise.stages.find(
+        s => s.id === getExerciseProgress(data, entry.exerciseId).completedStageId,
+      )
       ?? found.exercise.stages[0];
     if (!reviewStage) continue;
 
     reviewExercises.push({
-      exerciseId,
+      exerciseId: entry.exerciseId,
       stageId: reviewStage.id,
       key: found.exercise.key,
       kind: found.exercise.kind,
@@ -62,6 +70,7 @@ export function planSession(data: ScalesProgressData): SessionPlan {
       useMetronome: reviewStage.useMetronome,
       subdivision: reviewStage.subdivision,
       mutePlayback: reviewStage.mutePlayback,
+      octaves: reviewStage.octaves,
       purpose: 'review',
     });
   }
@@ -82,6 +91,7 @@ export function planSession(data: ScalesProgressData): SessionPlan {
       useMetronome: firstStage.useMetronome,
       subdivision: firstStage.subdivision,
       mutePlayback: firstStage.mutePlayback,
+      octaves: firstStage.octaves,
       purpose: 'new',
     });
   }

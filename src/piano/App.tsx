@@ -351,6 +351,10 @@ function PianoApp() {
                 onMeasureClick={handleMeasureClick}
                 showVocalPart={state.showVocalPart}
                 showChords={state.showChords}
+                // Live exploration tint is only safe outside of practice
+                // mode — during scored practice it would conflict with the
+                // per-note timing colours produced by PracticeMode.
+                highlightActiveMatches={!isEditing && !isPracticing}
               />
             ) : (
               <div className="empty-score">

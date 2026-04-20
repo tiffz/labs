@@ -6,12 +6,14 @@ import Chip from '@mui/material/Chip';
 import IconButton from '@mui/material/IconButton';
 import Paper from '@mui/material/Paper';
 import Link from '@mui/material/Link';
+import Tooltip from '@mui/material/Tooltip';
 import ScoreDisplay from '../../shared/notation/ScoreDisplay';
 import { useScales } from '../store';
 import { generateScoreForExercise } from '../curriculum/scoreGenerator';
 import { getScorePlaybackEngine } from '../../shared/playback/scorePlayback';
 import type { ScorePlaybackEngine } from '../../shared/playback/scorePlayback';
 import { findStage, findExercise } from '../curriculum/tiers';
+import { formatStageSummary } from '../curriculum/stageSummary';
 import { getExerciseProgress } from '../progress/store';
 import type { SessionExercise } from '../curriculum/types';
 import FreeTempoGrader from './FreeTempoGrader';
@@ -20,11 +22,28 @@ import ScalesInputSources from './InputSources';
 import { isDebugEnabled, logDebugEvent } from '../utils/practiceDebugLog';
 
 function Icon({ name, size = 20 }: { name: string; size?: number }) {
-  return <span className="material-symbols-outlined" style={{ fontSize: size }}>{name}</span>;
+  return (
+    <span
+      className="material-symbols-outlined"
+      style={{
+        fontSize: size,
+        lineHeight: 1,
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      {name}
+    </span>
+  );
 }
 
 const PASS_THRESHOLD = 0.85;
 const AUTO_RETRY_DELAY_MS = 3000;
+// Dwell time between "practice until perfect" attempts. Long enough for
+// the player to read a pass/fail verdict and percentage (~2 seconds),
+// then the next count-in kicks in and provides the audible lead-in.
+const PERFECT_LOOP_DELAY_MS = 2000;
 
 const HAND_LABELS = { right: 'Right hand', left: 'Left hand', both: 'Both hands' } as const;
 const HAND_SHORT = { right: 'RH', left: 'LH', both: 'Both' } as const;
@@ -36,6 +55,13 @@ export default function SessionScreen() {
   const { state, dispatch } = useScales();
   const { activeExercise, sessionPlan, score, practiceResults, isPlaying, lastExerciseResult } = state;
   const engineRef = useRef<ScorePlaybackEngine | null>(null);
+  // Distinguishes a user-initiated Stop from natural engine completion. The
+  // engine fires its finish callbacks regardless of how playback ended, so
+  // without this flag a manual Stop would still call `finishExercise` →
+  // populate `lastExerciseResult` → satisfy the auto-retry effect →
+  // immediately restart the exercise. Set before `engine.stop()`, checked by
+  // the finish callback, cleared by `startPlayback`.
+  const manuallyStoppedRef = useRef(false);
   const loadedStageRef = useRef<string | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [wrongNoteDisplay, setWrongNoteDisplay] = useState<string | null>(null);
@@ -74,7 +100,10 @@ export default function SessionScreen() {
       const total = score
         ? score.parts.reduce((s, p) => s + p.measures.reduce((ms, m) => ms + m.notes.filter(n => !n.rest).length, 0), 0)
         : 0;
-      const correct = Array.from(state.practiceResults.values()).filter(r => r.pitchCorrect).length;
+      // Match the canonical scoring rule: pitch AND perfect timing.
+      const correct = Array.from(state.practiceResults.values()).filter(
+        r => r.pitchCorrect && r.timing === 'perfect'
+      ).length;
       logDebugEvent({
         type: 'practice_end', t: performance.now(),
         resultCount: state.practiceResults.size,
@@ -113,10 +142,18 @@ export default function SessionScreen() {
   const [retryCountdown, setRetryCountdown] = useState<number | null>(null);
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const passed = lastExerciseResult ? lastExerciseResult.accuracy >= PASS_THRESHOLD : false;
+  // Declared up front so the failure auto-retry effect below can suppress
+  // itself while the perfect-loop is active. The rest of the perfect-loop
+  // wiring (callbacks, scheduler effect) is set up further down where its
+  // dependencies (`startPlayback`, `handleKeepPracticing`) are available.
+  const [practiceUntilPerfect, setPracticeUntilPerfect] = useState(false);
+  const [perfectLoopCountdown, setPerfectLoopCountdown] = useState<number | null>(null);
+  const perfectLoopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Auto-retry when the exercise wasn't passed
+  // Auto-retry when the exercise wasn't passed. Suppressed while the
+  // "practice until perfect" loop owns the retry cadence.
   useEffect(() => {
-    if (!lastExerciseResult || passed || isPlaying) {
+    if (!lastExerciseResult || passed || isPlaying || practiceUntilPerfect) {
       setRetryCountdown(null);
       if (retryTimerRef.current) { clearTimeout(retryTimerRef.current); retryTimerRef.current = null; }
       return;
@@ -142,8 +179,8 @@ export default function SessionScreen() {
       clearInterval(interval);
       if (retryTimerRef.current) { clearTimeout(retryTimerRef.current); retryTimerRef.current = null; }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: restart timer only when result changes
-  }, [lastExerciseResult, passed]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: restart timer only when result/mode changes
+  }, [lastExerciseResult, passed, practiceUntilPerfect]);
 
   const cancelAutoRetry = useCallback(() => {
     if (retryTimerRef.current) { clearTimeout(retryTimerRef.current); retryTimerRef.current = null; }
@@ -152,6 +189,9 @@ export default function SessionScreen() {
 
   const startPlayback = useCallback(async () => {
     if (!score || !activeExercise) return;
+    // Reset the manual-stop flag on every fresh start so the engine's
+    // finish callback behaves normally unless the user explicitly stops.
+    manuallyStoppedRef.current = false;
     const engine = getScorePlaybackEngine();
     engineRef.current = engine;
     engine.setTempo(activeExercise.bpm || 80);
@@ -200,12 +240,15 @@ export default function SessionScreen() {
         dispatch({ type: 'UPDATE_POSITION', measureIndex, noteIndices });
         if (!playing) {
           dispatch({ type: 'SET_PLAYING', isPlaying: false });
-          finishExercise();
+          // Skip finalization when the user manually stopped — otherwise
+          // the partial run would populate `lastExerciseResult` and the
+          // auto-retry effect would immediately restart the exercise.
+          if (!manuallyStoppedRef.current) finishExercise();
         }
       },
       () => {
         dispatch({ type: 'SET_PLAYING', isPlaying: false });
-        finishExercise();
+        if (!manuallyStoppedRef.current) finishExercise();
       },
     );
     dispatch({ type: 'SET_PLAYING', isPlaying: true });
@@ -213,9 +256,17 @@ export default function SessionScreen() {
   }, [score, activeExercise, dispatch, finishExercise]);
 
   const stopPlayback = useCallback(() => {
+    // Flag before stopping so the engine's finish callback (fired
+    // synchronously from `stop()`) can tell this apart from natural
+    // completion and skip the FINISH_EXERCISE dispatch.
+    manuallyStoppedRef.current = true;
     engineRef.current?.stop();
     setCountInBeat(null);
-    dispatch({ type: 'SET_PLAYING', isPlaying: false });
+    // STOP_PRACTICE_RUN (rather than just SET_PLAYING: false) wipes the
+    // partial run state — per-note colors, playhead, free-tempo cursor —
+    // so a manually-stopped exercise returns to a clean pre-run view
+    // instead of leaving "ghost" grading on the score.
+    dispatch({ type: 'STOP_PRACTICE_RUN' });
   }, [dispatch]);
 
   const goToStage = useCallback((stageId: string) => {
@@ -235,6 +286,7 @@ export default function SessionScreen() {
       useMetronome: stage.useMetronome,
       subdivision: stage.subdivision,
       mutePlayback: stage.mutePlayback,
+      octaves: stage.octaves,
       purpose: activeExercise.purpose,
     };
     const newScore = generateScoreForExercise(stageExercise);
@@ -253,6 +305,73 @@ export default function SessionScreen() {
     dispatch({ type: 'RESTART_FREE_TEMPO' });
   }, [dispatch]);
 
+  // "Practice until perfect": auto-loop the exercise until the user lands a
+  // 100% run. Each completion that's < 100% schedules another attempt; the
+  // mode auto-clears once perfect is achieved or the user opts out. State
+  // for this is declared up top so the failure auto-retry effect can read it.
+  const stopPracticeUntilPerfect = useCallback(() => {
+    setPracticeUntilPerfect(false);
+    setPerfectLoopCountdown(null);
+    if (perfectLoopTimerRef.current) {
+      clearTimeout(perfectLoopTimerRef.current);
+      perfectLoopTimerRef.current = null;
+    }
+  }, []);
+
+  // Reset the loop whenever the user changes exercise/stage so a stale loop
+  // doesn't restart on a different exercise.
+  useEffect(() => {
+    stopPracticeUntilPerfect();
+  }, [activeExercise?.exerciseId, activeExercise?.stageId, stopPracticeUntilPerfect]);
+
+  const startPracticeUntilPerfect = useCallback(() => {
+    if (!activeExercise) return;
+    setPracticeUntilPerfect(true);
+    if (!activeExercise.bpm) {
+      dispatch({ type: 'RESTART_FREE_TEMPO' });
+    } else {
+      void startPlayback();
+    }
+  }, [activeExercise, dispatch, startPlayback]);
+
+  // Auto-loop driver: when the mode is on and the latest result wasn't a
+  // perfect run, schedule the next attempt. We deliberately skip the
+  // existing failure auto-retry effect while this is active so the two
+  // timers don't fight.
+  useEffect(() => {
+    if (!practiceUntilPerfect || !lastExerciseResult || isPlaying) return;
+    if (lastExerciseResult.accuracy >= 1) {
+      setPracticeUntilPerfect(false);
+      setPerfectLoopCountdown(null);
+      return;
+    }
+
+    const steps = Math.ceil(PERFECT_LOOP_DELAY_MS / 1000);
+    setPerfectLoopCountdown(steps);
+    const interval = setInterval(() => {
+      setPerfectLoopCountdown(prev => (prev !== null && prev > 1 ? prev - 1 : prev));
+    }, 1000);
+
+    perfectLoopTimerRef.current = setTimeout(() => {
+      setPerfectLoopCountdown(null);
+      perfectLoopTimerRef.current = null;
+      if (!activeExercise?.bpm) {
+        dispatch({ type: 'RESTART_FREE_TEMPO' });
+      } else {
+        void startPlayback();
+      }
+    }, PERFECT_LOOP_DELAY_MS);
+
+    return () => {
+      clearInterval(interval);
+      if (perfectLoopTimerRef.current) {
+        clearTimeout(perfectLoopTimerRef.current);
+        perfectLoopTimerRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: schedule only when result/mode changes, not on every startPlayback identity churn
+  }, [lastExerciseResult, practiceUntilPerfect, isPlaying]);
+
   const stageInfo = activeExercise
     ? findStage(activeExercise.exerciseId, activeExercise.stageId)
     : null;
@@ -268,6 +387,19 @@ export default function SessionScreen() {
   const exerciseNumber = state.activeExerciseIndex + 1;
   const totalExercises = sessionPlan?.exercises.length ?? 0;
   const isFreeTempo = !activeExercise.bpm;
+  /**
+   * True in the tiny window between a sub-100% attempt finishing and the
+   * next perfect-loop attempt starting. In this state we deliberately
+   * suppress the full results Paper and the post-exercise action bar —
+   * showing them would read as an "intermediate screen" between rounds.
+   * Instead, a compact toast overlays the score so the user can glance
+   * at their last attempt's breakdown while the count-in begins.
+   */
+  const isPerfectLoopFlash =
+    practiceUntilPerfect &&
+    !!lastExerciseResult &&
+    !isPlaying &&
+    lastExerciseResult.accuracy < 1;
 
   // Stage navigation: allow revisiting earlier stages of the current exercise
   const exerciseDef = findExercise(activeExercise.exerciseId);
@@ -345,7 +477,7 @@ export default function SessionScreen() {
 
 
       {/* Exercise result — shown after completing the exercise */}
-      {lastExerciseResult && !isPlaying && (
+      {lastExerciseResult && !isPlaying && !isPerfectLoopFlash && (
         <Paper
           elevation={0}
           sx={{
@@ -368,23 +500,147 @@ export default function SessionScreen() {
           >
             {Math.round(lastExerciseResult.accuracy * 100)}%
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-            {lastExerciseResult.correct} of {lastExerciseResult.total} notes correct
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            {lastExerciseResult.correct} of {lastExerciseResult.total} notes hit on time
           </Typography>
+          {/*
+            Breakdown matches the note colors in the score (perfect/early/
+            late/wrong/missed) so the user can see where their score came
+            from rather than just a single percentage. Only non-zero
+            categories render to avoid noise.
+          */}
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              flexWrap: 'wrap',
+              columnGap: 2,
+              rowGap: 0.5,
+              mb: 1.5,
+            }}
+          >
+            {([
+              ['Perfect',  lastExerciseResult.breakdown.perfect,    '#10b981'],
+              ['Early',    lastExerciseResult.breakdown.early,      '#3b82f6'],
+              ['Late',     lastExerciseResult.breakdown.late,       '#f59e0b'],
+              ['Wrong',    lastExerciseResult.breakdown.wrongPitch, '#ef4444'],
+              ['Missed',   lastExerciseResult.breakdown.missed,     '#94a3b8'],
+            ] as const)
+              .filter(([, count]) => count > 0)
+              .map(([label, count, color]) => (
+                <Box
+                  key={label}
+                  sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}
+                >
+                  <Box
+                    aria-hidden="true"
+                    sx={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      bgcolor: color,
+                      flexShrink: 0,
+                    }}
+                  />
+                  <Typography variant="caption" color="text.secondary">
+                    {count} {label.toLowerCase()}
+                  </Typography>
+                </Box>
+              ))}
+          </Box>
           {lastExerciseResult.advanced && (
-            <Chip
-              icon={<Icon name="trending_up" />}
-              label="Stage complete! Moving to the next stage."
-              color="success"
-            />
+            <Box
+              role="status"
+              sx={{
+                mt: 0.5,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 1.25,
+                pl: 0.75,
+                pr: 2,
+                py: 0.75,
+                borderRadius: 999,
+                bgcolor: theme => `${theme.palette.success.main}14`,
+                border: 1,
+                borderColor: theme => `${theme.palette.success.main}40`,
+                textAlign: 'left',
+              }}
+            >
+              <Box
+                aria-hidden="true"
+                sx={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: '50%',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  bgcolor: 'success.main',
+                  color: 'success.contrastText',
+                }}
+              >
+                <Icon name="emoji_events" size={18} />
+              </Box>
+              <Box sx={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                <Typography sx={{ fontSize: '0.875rem', fontWeight: 700, color: 'success.dark', lineHeight: 1.2 }}>
+                  {allStages[currentStageIdx]
+                    ? `Level ${allStages[currentStageIdx].stageNumber} cleared`
+                    : 'Level complete'}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.25 }}>
+                  {allStages[currentStageIdx]
+                    ? `${formatStageSummary(allStages[currentStageIdx])} · next level unlocked`
+                    : 'You unlocked the next level.'}
+                </Typography>
+              </Box>
+            </Box>
           )}
           {passed && !lastExerciseResult.advanced && (
-            <Chip
-              icon={<Icon name="check_circle" />}
-              label="Great work! One more at this level to advance."
-              color="success"
-              variant="outlined"
-            />
+            <Box
+              role="status"
+              sx={{
+                mt: 0.5,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 1.25,
+                pl: 0.75,
+                pr: 2,
+                py: 0.75,
+                borderRadius: 999,
+                bgcolor: theme => `${theme.palette.success.main}0D`,
+                border: 1,
+                borderColor: theme => `${theme.palette.success.main}40`,
+                textAlign: 'left',
+              }}
+            >
+              <Box
+                aria-hidden="true"
+                sx={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: '50%',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  bgcolor: theme => `${theme.palette.success.main}1F`,
+                  color: 'success.main',
+                }}
+              >
+                <Icon name="check_circle" size={20} />
+              </Box>
+              <Box sx={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                <Typography sx={{ fontSize: '0.875rem', fontWeight: 700, color: 'success.dark', lineHeight: 1.2 }}>
+                  Great work
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.25 }}>
+                  {allStages[currentStageIdx]
+                    ? `${formatStageSummary(allStages[currentStageIdx])} · need 3 clean runs to advance`
+                    : 'A few more clean runs at this level to advance.'}
+                </Typography>
+              </Box>
+            </Box>
           )}
           {!passed && lastExerciseResult.accuracy >= 0.6 && (
             <Typography variant="body2" color="text.secondary">
@@ -400,6 +656,27 @@ export default function SessionScreen() {
             <Typography variant="caption" color="text.disabled" sx={{ mt: 1, display: 'block' }}>
               Restarting in {retryCountdown}…
             </Typography>
+          )}
+          {practiceUntilPerfect && lastExerciseResult.accuracy < 1 && (
+            <Box
+              sx={{
+                mt: 1,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 0.75,
+                px: 1.5,
+                py: 0.5,
+                borderRadius: 999,
+                bgcolor: passed ? 'success.main' : 'primary.main',
+                color: passed ? 'success.contrastText' : 'primary.contrastText',
+              }}
+            >
+              <Icon name="autorenew" size={16} />
+              <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                {passed ? 'Chasing 100%' : 'Going for 100%'}
+                {perfectLoopCountdown !== null ? ` — restarting in ${perfectLoopCountdown}…` : '…'}
+              </Typography>
+            </Box>
           )}
         </Paper>
       )}
@@ -467,6 +744,10 @@ export default function SessionScreen() {
           currentNoteIndices={state.currentNoteIndices}
           activeMidiNotes={state.activeMidiNotes}
           practiceResultsByNoteId={practiceResults}
+          // Live "you played a matching note" green only when the user
+          // isn't actively being graded — otherwise the live tint conflicts
+          // with per-note timing colours and lights up upcoming notes.
+          highlightActiveMatches={!isPlaying && !lastExerciseResult}
         />
         {wrongNoteDisplay && (
           <Box
@@ -498,6 +779,124 @@ export default function SessionScreen() {
             {wrongNoteDisplay}
           </Box>
         )}
+        {isPerfectLoopFlash && lastExerciseResult && (() => {
+          // Three-state verdict for the perfect-loop flash:
+          //   - 'fail'   : below pass threshold, still learning the exercise
+          //   - 'passed' : already cleared the level this round, now chasing 100%
+          //   - 'perfect': 100% (loop has already exited, so never reaches here)
+          const didPass = lastExerciseResult.accuracy >= PASS_THRESHOLD;
+          const statusColor = didPass ? 'success.main' : 'error.main';
+          const statusBg = didPass ? 'success.light' : 'error.light';
+          const percent = Math.round(lastExerciseResult.accuracy * 100);
+          const headline = didPass ? 'Level cleared' : 'Keep going';
+          const subline = didPass
+            ? `Chasing 100% · currently ${percent}%`
+            : `${percent}% · ${lastExerciseResult.correct}/${lastExerciseResult.total}`;
+          // `perfectLoopCountdown` counts down from ceil(delay/1000) to 1
+          // and then the timer fires. Show the live value so the player
+          // knows how many seconds they still have to read the verdict.
+          const secondsLeft = perfectLoopCountdown ?? Math.ceil(PERFECT_LOOP_DELAY_MS / 1000);
+          return (
+            <Box
+              sx={{
+                position: 'absolute',
+                top: 16,
+                left: 16,
+                right: 16,
+                display: 'flex',
+                justifyContent: 'center',
+                pointerEvents: 'none',
+                zIndex: 5,
+              }}
+            >
+              <Box
+                sx={{
+                  pointerEvents: 'auto',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 2,
+                  pl: 1,
+                  pr: 1.5,
+                  py: 1,
+                  borderRadius: 999,
+                  bgcolor: 'background.paper',
+                  border: 1,
+                  borderColor: 'divider',
+                  boxShadow: '0 6px 20px rgba(0,0,0,0.12)',
+                  '@keyframes perfectFlashIn': {
+                    '0%': { opacity: 0, transform: 'translateY(-6px) scale(0.98)' },
+                    '100%': { opacity: 1, transform: 'translateY(0) scale(1)' },
+                  },
+                  animation: 'perfectFlashIn 0.22s ease-out',
+                }}
+              >
+                {/*
+                  Pass/fail badge. A filled color-coded circle with a
+                  large icon is the strongest single visual cue and is
+                  the first thing the eye should hit on this pill.
+                */}
+                <Box
+                  aria-hidden="true"
+                  sx={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: '50%',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    bgcolor: statusBg,
+                    color: statusColor,
+                  }}
+                >
+                  <Icon name={didPass ? 'check_circle' : 'cancel'} size={28} />
+                </Box>
+                <Box sx={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                  <Typography
+                    sx={{
+                      fontSize: '1.125rem',
+                      fontWeight: 700,
+                      lineHeight: 1.15,
+                      color: statusColor,
+                    }}
+                  >
+                    {headline}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ fontVariantNumeric: 'tabular-nums', lineHeight: 1.25 }}
+                  >
+                    {subline}
+                  </Typography>
+                </Box>
+                <Box sx={{ width: '1px', alignSelf: 'stretch', bgcolor: 'divider', mx: 0.5 }} />
+                <Box
+                  sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 0.75,
+                    color: 'primary.main',
+                  }}
+                >
+                  <Icon name="autorenew" size={16} />
+                  <Typography variant="caption" sx={{ fontWeight: 600, color: 'primary.main', fontVariantNumeric: 'tabular-nums' }}>
+                    Next round in {secondsLeft}s
+                  </Typography>
+                </Box>
+                <Tooltip title="Stop the auto-loop">
+                  <IconButton
+                    size="small"
+                    onClick={stopPracticeUntilPerfect}
+                    aria-label="Stop practice-until-perfect loop"
+                  >
+                    <Icon name="stop_circle" size={20} />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            </Box>
+          );
+        })()}
         {countInBeat !== null && (
           <Box
             sx={{
@@ -549,20 +948,57 @@ export default function SessionScreen() {
         }}
       >
         {/* Post-exercise result actions */}
-        {lastExerciseResult && !isPlaying && passed && (
-          <Box sx={{ display: 'flex', gap: 2 }}>
+        {lastExerciseResult && !isPlaying && passed && !isPerfectLoopFlash && (
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
             <Button
               variant="outlined"
               size="large"
-              onClick={isFreeTempo ? handleKeepPracticing : startPlayback}
+              onClick={() => {
+                stopPracticeUntilPerfect();
+                if (isFreeTempo) handleKeepPracticing();
+                else void startPlayback();
+              }}
               sx={{ gap: 1, textTransform: 'none' }}
             >
               <Icon name="replay" size={20} /> Practice Again
             </Button>
+            {lastExerciseResult.accuracy < 1 && (
+              practiceUntilPerfect ? (
+                <Tooltip title="Stop the auto-loop and keep your current result.">
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    size="large"
+                    onClick={stopPracticeUntilPerfect}
+                    sx={{ gap: 1, textTransform: 'none' }}
+                  >
+                    <Icon name="stop_circle" size={20} /> Stop Loop
+                  </Button>
+                </Tooltip>
+              ) : (
+                <Tooltip
+                  title="Repeats this exercise automatically after each attempt until you land a 100% run. Stop any time."
+                  enterDelay={300}
+                >
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    size="large"
+                    onClick={startPracticeUntilPerfect}
+                    sx={{ gap: 1, textTransform: 'none' }}
+                  >
+                    <Icon name="autorenew" size={20} /> Practice Until Perfect
+                  </Button>
+                </Tooltip>
+              )
+            )}
             <Button
               variant="contained"
               size="large"
-              onClick={advanceToNext}
+              onClick={() => {
+                stopPracticeUntilPerfect();
+                advanceToNext();
+              }}
               sx={{
                 gap: 1,
                 textTransform: 'none',
@@ -574,15 +1010,16 @@ export default function SessionScreen() {
             </Button>
           </Box>
         )}
-        {lastExerciseResult && !isPlaying && !passed && (
-          <Box sx={{ display: 'flex', gap: 2 }}>
+        {lastExerciseResult && !isPlaying && !passed && !isPerfectLoopFlash && (
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
             <Button
               variant="contained"
               size="large"
               onClick={() => {
                 cancelAutoRetry();
+                stopPracticeUntilPerfect();
                 if (isFreeTempo) handleKeepPracticing();
-                else startPlayback();
+                else void startPlayback();
               }}
               sx={{
                 gap: 1,
@@ -593,6 +1030,34 @@ export default function SessionScreen() {
             >
               <Icon name="replay" size={20} /> Try Again
             </Button>
+            {practiceUntilPerfect ? (
+              <Tooltip title="Stop the auto-loop and keep your current result.">
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  size="large"
+                  onClick={stopPracticeUntilPerfect}
+                  sx={{ gap: 1, textTransform: 'none' }}
+                >
+                  <Icon name="stop_circle" size={20} /> Stop Loop
+                </Button>
+              </Tooltip>
+            ) : (
+              <Tooltip
+                title="Repeats this exercise automatically after each attempt until you land a 100% run. Stop any time."
+                enterDelay={300}
+              >
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  size="large"
+                  onClick={startPracticeUntilPerfect}
+                  sx={{ gap: 1, textTransform: 'none' }}
+                >
+                  <Icon name="autorenew" size={20} /> Practice Until Perfect
+                </Button>
+              </Tooltip>
+            )}
           </Box>
         )}
 
@@ -622,7 +1087,13 @@ export default function SessionScreen() {
           <Button
             variant="outlined"
             size="large"
-            onClick={stopPlayback}
+            onClick={() => {
+              // Manually stopping mid-run should also exit the
+              // practice-until-perfect loop; otherwise the partial
+              // result would auto-trigger another attempt.
+              stopPracticeUntilPerfect();
+              stopPlayback();
+            }}
             color="error"
             sx={{ minWidth: 200, py: 1, gap: 1 }}
           >

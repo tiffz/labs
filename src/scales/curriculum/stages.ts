@@ -2,7 +2,16 @@ import type { Stage } from './types';
 
 /**
  * The canonical stage progression for every exercise.
- * Each stage builds on the previous one pedagogically.
+ *
+ * Ordering roughly tracks RCM / Faber-style scale pedagogy:
+ *   - 1-8:  single-octave fluency (free tempo → hands-together at tempo)
+ *           stage 8 is the Fluent checkpoint
+ *   - 9-10: eighth-note subdivision, 1 octave (two notes per beat)
+ *   - 11-12: triplet subdivision, 1 octave (three notes per beat; sits
+ *           pedagogically between eighths and sixteenths in difficulty)
+ *   - 13-14: sixteenth-note subdivision, 1 octave (four notes per beat)
+ *   - 15-18: 2-octave work — the baseline definition of "knowing a scale"
+ *           in mainstream piano pedagogy. Stage 18 is the mastery gate.
  */
 export function buildStages(exerciseId: string): Stage[] {
   return [
@@ -17,6 +26,7 @@ export function buildStages(exerciseId: string): Stage[] {
       useMetronome: false,
       subdivision: 'none',
       mutePlayback: false,
+      octaves: 1,
     },
     {
       id: `${exerciseId}-s2`,
@@ -29,6 +39,7 @@ export function buildStages(exerciseId: string): Stage[] {
       useMetronome: false,
       subdivision: 'none',
       mutePlayback: false,
+      octaves: 1,
     },
     {
       id: `${exerciseId}-s3`,
@@ -41,6 +52,7 @@ export function buildStages(exerciseId: string): Stage[] {
       useMetronome: true,
       subdivision: 'none',
       mutePlayback: false,
+      octaves: 1,
     },
     {
       id: `${exerciseId}-s4`,
@@ -53,6 +65,7 @@ export function buildStages(exerciseId: string): Stage[] {
       useMetronome: true,
       subdivision: 'none',
       mutePlayback: false,
+      octaves: 1,
     },
     {
       id: `${exerciseId}-s5`,
@@ -65,6 +78,7 @@ export function buildStages(exerciseId: string): Stage[] {
       useMetronome: true,
       subdivision: 'none',
       mutePlayback: false,
+      octaves: 1,
     },
     {
       id: `${exerciseId}-s6`,
@@ -77,6 +91,7 @@ export function buildStages(exerciseId: string): Stage[] {
       useMetronome: true,
       subdivision: 'none',
       mutePlayback: false,
+      octaves: 1,
     },
     {
       id: `${exerciseId}-s7`,
@@ -89,6 +104,7 @@ export function buildStages(exerciseId: string): Stage[] {
       useMetronome: true,
       subdivision: 'none',
       mutePlayback: true,
+      octaves: 1,
     },
     {
       id: `${exerciseId}-s8`,
@@ -101,30 +117,141 @@ export function buildStages(exerciseId: string): Stage[] {
       useMetronome: true,
       subdivision: 'none',
       mutePlayback: true,
+      octaves: 1,
+      // Passing this level means the learner can hold the scale in time at
+      // a real tempo — that's the "Fluent" bar. Everything after this
+      // (subdivisions, 2-octave work) is on the road to "Mastered".
+      kind: 'fluent-checkpoint',
     },
     {
       id: `${exerciseId}-s9`,
       stageNumber: 9,
+      label: 'Both hands — eighth notes (slow)',
+      description: 'Two notes per beat at a relaxed tempo. Focus on the feel of the subdivision — landing exactly between the clicks — before we push the speed.',
+      hand: 'both',
+      useTempo: true,
+      bpm: 52,
+      useMetronome: true,
+      subdivision: 'eighth',
+      mutePlayback: true,
+      octaves: 1,
+    },
+    {
+      id: `${exerciseId}-s10`,
+      stageNumber: 10,
       label: 'Both hands — eighth note subdivision',
-      description: 'Play two notes per beat (eighth notes). This trains your inner sense of rhythm. Feel the subdivision between each metronome click.',
+      description: 'Same two-notes-per-beat feel, now at the target tempo. Keep the subdivision steady — evenness matters more than speed.',
       hand: 'both',
       useTempo: true,
       bpm: 72,
       useMetronome: true,
       subdivision: 'eighth',
       mutePlayback: true,
+      octaves: 1,
     },
     {
-      id: `${exerciseId}-s10`,
-      stageNumber: 10,
+      id: `${exerciseId}-s11`,
+      stageNumber: 11,
+      label: 'Both hands — triplets (slow)',
+      description: 'Three notes per beat at a relaxed tempo. Count "tri-pl-et" in your head — it\'s a very different rhythmic feel from eighths, even at the same note speed.',
+      hand: 'both',
+      useTempo: true,
+      bpm: 52,
+      useMetronome: true,
+      subdivision: 'triplet',
+      mutePlayback: true,
+      octaves: 1,
+    },
+    {
+      id: `${exerciseId}-s12`,
+      stageNumber: 12,
+      label: 'Both hands — triplet subdivision',
+      description: 'Triplets at target tempo. Keep the three-against-one feel clean — the first note of each triplet should line up exactly with the click.',
+      hand: 'both',
+      useTempo: true,
+      bpm: 72,
+      useMetronome: true,
+      subdivision: 'triplet',
+      mutePlayback: true,
+      octaves: 1,
+    },
+    {
+      id: `${exerciseId}-s13`,
+      stageNumber: 13,
+      label: 'Both hands — sixteenth notes (slow)',
+      description: 'Four notes per beat at an easy pace. Get comfortable with the finer subdivision first — the absolute note speed is only a touch faster than the last level.',
+      hand: 'both',
+      useTempo: true,
+      bpm: 44,
+      useMetronome: true,
+      subdivision: 'sixteenth',
+      mutePlayback: true,
+      octaves: 1,
+    },
+    {
+      id: `${exerciseId}-s14`,
+      stageNumber: 14,
       label: 'Both hands — sixteenth note subdivision',
-      description: 'Four notes per beat! This is advanced rhythmic control. Stay relaxed and let the notes flow evenly between the clicks.',
+      description: 'Full speed sixteenth notes! This is advanced rhythmic control. Stay relaxed and let the notes flow evenly between the clicks.',
       hand: 'both',
       useTempo: true,
       bpm: 60,
       useMetronome: true,
       subdivision: 'sixteenth',
       mutePlayback: true,
+      octaves: 1,
+    },
+    {
+      id: `${exerciseId}-s15`,
+      stageNumber: 15,
+      label: 'Both hands — 2 octaves, moderate tempo',
+      description: 'Now play the scale across two octaves with both hands. Watch the thumb-under crossings — you\'ll get two of them on the way up and two on the way down.',
+      hand: 'both',
+      useTempo: true,
+      bpm: 72,
+      useMetronome: true,
+      subdivision: 'none',
+      mutePlayback: true,
+      octaves: 2,
+    },
+    {
+      id: `${exerciseId}-s16`,
+      stageNumber: 16,
+      label: 'Both hands — 2 octaves, eighths',
+      description: 'Two octaves, two notes per beat. At this density you have to stay ahead of your fingers — think the next group while your hand plays the current one.',
+      hand: 'both',
+      useTempo: true,
+      bpm: 72,
+      useMetronome: true,
+      subdivision: 'eighth',
+      mutePlayback: true,
+      octaves: 2,
+    },
+    {
+      id: `${exerciseId}-s17`,
+      stageNumber: 17,
+      label: 'Both hands — 2 octaves, triplets',
+      description: 'Two octaves, three notes per beat. This is where scales really start to sound like music — the triplet groupings pull the ear across the whole range.',
+      hand: 'both',
+      useTempo: true,
+      bpm: 72,
+      useMetronome: true,
+      subdivision: 'triplet',
+      mutePlayback: true,
+      octaves: 2,
+    },
+    {
+      id: `${exerciseId}-s18`,
+      stageNumber: 18,
+      label: 'Both hands — 2 octaves, sixteenths',
+      description: 'The mastery gate: two octaves, four notes per beat, both hands, from memory. If you can hold this for a full run, the scale is yours.',
+      hand: 'both',
+      useTempo: true,
+      bpm: 60,
+      useMetronome: true,
+      subdivision: 'sixteenth',
+      mutePlayback: true,
+      octaves: 2,
     },
   ];
 }

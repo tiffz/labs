@@ -30,10 +30,25 @@ const MIC_LATENCY_COMPENSATION_MS = 180;
 type Screen = 'home' | 'session' | 'progress';
 
 export interface ExerciseResult {
+  /** Ratio of fully-correct hits (pitch + perfect timing) to total notes. */
   accuracy: number;
+  /** Count of notes played with correct pitch AND "perfect" timing. */
   correct: number;
+  /** Total note count in the exercise score (non-rest notes). */
   total: number;
+  /** Whether this result advanced the user to the next stage. */
   advanced: boolean;
+  /**
+   * Breakdown by timing judgment, summing to {@link total}. Notes the user
+   * never attempted are counted under `missed`.
+   */
+  breakdown: {
+    perfect: number;
+    early: number;
+    late: number;
+    wrongPitch: number;
+    missed: number;
+  };
 }
 export type InputMode = 'midi' | 'mic' | 'none';
 
@@ -81,6 +96,13 @@ type Action =
   | { type: 'MIDI_NOTE_OFF'; note: number }
   | { type: 'ADD_PRACTICE_RESULT'; result: PracticeNoteResult }
   | { type: 'START_PRACTICE_RUN' }
+  /**
+   * User manually stopped mid-run. Abandons the in-progress attempt and
+   * wipes any partial grading state (per-note colors, playhead position,
+   * free-tempo cursor) without producing an ExerciseResult, so the score
+   * view returns to a clean pre-run state.
+   */
+  | { type: 'STOP_PRACTICE_RUN' }
   | { type: 'FINISH_EXERCISE'; exerciseId: string; stageId: string }
   | { type: 'NEXT_EXERCISE'; score: PianoScore }
   | { type: 'COMPLETE_SESSION' }
@@ -200,12 +222,47 @@ function reducer(state: ScalesState, action: Action): ScalesState {
         lastExerciseResult: null,
       };
 
+    case 'STOP_PRACTICE_RUN':
+      return {
+        ...state,
+        isPlaying: false,
+        practiceResults: new Map(),
+        currentMeasureIndex: -1,
+        currentNoteIndices: new Map(),
+        currentRunStartTime: null,
+        freeTempoMeasureIndex: 0,
+        freeTempoNoteIndex: 0,
+        freeTempoRunComplete: false,
+        wrongNoteFlash: null,
+      };
+
     case 'FINISH_EXERCISE': {
       const total = state.score
         ? state.score.parts.reduce(
             (sum, p) => sum + p.measures.reduce((ms, m) => ms + m.notes.filter(n => !n.rest).length, 0), 0)
         : 0;
-      const correct = Array.from(state.practiceResults.values()).filter(r => r.pitchCorrect).length;
+
+      // A note counts as fully "correct" only when both pitch and timing
+      // are right — matching the piano app's rule. Previously the scales
+      // app counted any pitch-correct note as correct, so early/late notes
+      // (colored blue/amber in the score) were silently tallied as 100%.
+      const results = Array.from(state.practiceResults.values());
+      const perfect = results.filter(r => r.pitchCorrect && r.timing === 'perfect').length;
+      const early = results.filter(r => r.pitchCorrect && r.timing === 'early').length;
+      const late = results.filter(r => r.pitchCorrect && r.timing === 'late').length;
+      const wrongPitch = results.filter(r => r.timing === 'wrong_pitch').length;
+      const explicitMissed = results.filter(r => r.timing === 'missed').length;
+      // Notes we never evaluated at all (e.g. user stopped early) are
+      // implicit misses so the breakdown always sums to `total`.
+      const implicitMissed = Math.max(0, total - results.length);
+      const breakdown = {
+        perfect,
+        early,
+        late,
+        wrongPitch,
+        missed: explicitMissed + implicitMissed,
+      };
+      const correct = perfect;
       const accuracy = total > 0 ? correct / total : 0;
 
       const record: PracticeRecord = {
@@ -227,7 +284,9 @@ function reducer(state: ScalesState, action: Action): ScalesState {
         ...state,
         progress: newProgress,
         isPlaying: false,
-        lastExerciseResult: { accuracy, correct, total, advanced },
+        currentMeasureIndex: -1,
+        currentNoteIndices: new Map(),
+        lastExerciseResult: { accuracy, correct, total, advanced, breakdown },
       };
     }
 
@@ -342,11 +401,25 @@ function reducer(state: ScalesState, action: Action): ScalesState {
         mi++;
         ni = 0;
       }
-      return { ...state, freeTempoRunComplete: true, hasCompletedRun: true, isPlaying: false };
+      return {
+        ...state,
+        freeTempoRunComplete: true,
+        hasCompletedRun: true,
+        isPlaying: false,
+        currentMeasureIndex: -1,
+        currentNoteIndices: new Map(),
+      };
     }
 
     case 'FREE_TEMPO_RUN_COMPLETE':
-      return { ...state, freeTempoRunComplete: true, hasCompletedRun: true, isPlaying: false };
+      return {
+        ...state,
+        freeTempoRunComplete: true,
+        hasCompletedRun: true,
+        isPlaying: false,
+        currentMeasureIndex: -1,
+        currentNoteIndices: new Map(),
+      };
 
     case 'RESTART_FREE_TEMPO':
       return {

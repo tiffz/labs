@@ -73,9 +73,18 @@ const BODY_SMALL = {
 } as const;
 
 /**
- * How many note-chip slots we reserve on the trigger pill. Chosen to cover
- * the common chord shapes (triads + one tension) without reflowing the pill
- * when the user's note count changes. Anything beyond this is truncated.
+ * How many note-chip slots we reserve on the trigger pill *while at least
+ * one note is held*. Chosen to cover the common chord shapes (triads + one
+ * tension) so chord changes don't reflow the pill once the user is playing.
+ * Anything beyond this is truncated.
+ *
+ * Layout-shift policy: we deliberately do NOT reserve label or extension
+ * width in the idle state. Reservation only kicks in for the high-frequency
+ * cases (note count changing while a chord is held). Low-frequency
+ * transitions — toggling Keyboard/Mic/Both, or pressing the very first key
+ * after silence — are explicit user actions where a one-shot reflow reads
+ * as responsiveness rather than flicker, and an always-on reservation made
+ * the idle pill look uncomfortably padded.
  */
 const MAX_NOTE_SLOTS = 4;
 
@@ -234,7 +243,6 @@ export default function InputSourcesMenu({
   const hasMidi = midi.devices.some(d => d.enabled);
   const hasMic = microphone.active;
   const hasAny = hasMidi || hasMic;
-  const micOnly = hasMic && !hasMidi;
 
   const summaryLabel = hasMidi && hasMic
     ? COPY.triggerKeyboardAndMic
@@ -303,6 +311,12 @@ export default function InputSourcesMenu({
             bgcolor: hasAny ? 'primary.main' : 'action.disabled',
           }}
         />
+        {/*
+         * Label sits at its natural width. Switching between
+         * Mic/Keyboard/Both is a deliberate user toggle, so the one-shot
+         * reflow reads fine; previously reserving width for the longest
+         * label left a wide empty gap inside the idle pill.
+         */}
         <Typography
           sx={{
             ...LABEL_MEDIUM,
@@ -311,28 +325,17 @@ export default function InputSourcesMenu({
         >
           {summaryLabel}
         </Typography>
-        {micOnly && (
-          <>
-            <Box
-              aria-hidden="true"
-              sx={{ width: 3, height: 3, borderRadius: '50%', bgcolor: 'text.disabled' }}
-            />
-            <Typography sx={{ ...LABEL_MEDIUM, fontWeight: 400, color: 'text.disabled' }}>
-              {COPY.triggerLowerAccuracy}
-            </Typography>
-          </>
-        )}
         {/*
-         * Note-chip strip.
+         * Trailing extension zone.
          *
-         * We reserve a fixed row of MAX_NOTE_SLOTS whenever MIDI is active
-         * (not only when notes are currently held). Each slot has a fixed
-         * minWidth, tabular-nums, and center alignment so swapping content
-         * never reflows the pill. Empty slots are transparent placeholders
-         * that preserve height and width. The only remaining layout shift
-         * is on MIDI connect/disconnect itself, which is rare.
+         * Renders only when there's actual content to show: the
+         * note-chip strip while MIDI keys are held, or the "· lower
+         * accuracy" tail in mic-only mode. The pill expands once on the
+         * first key press (rather than on every note change), and while
+         * keys are held the strip reserves {@link MAX_NOTE_SLOTS} slots so
+         * chord additions/removals stay shift-free.
          */}
-        {hasMidi && (
+        {hasMidi && notes.length > 0 && (
           <Box
             aria-hidden="true"
             sx={{ display: 'flex', gap: '2px', ml: 0.5, flexShrink: 0 }}
@@ -364,6 +367,27 @@ export default function InputSourcesMenu({
                 </Box>
               );
             })}
+          </Box>
+        )}
+        {!hasMidi && hasMic && (
+          <Box
+            aria-hidden="true"
+            sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 0.5, flexShrink: 0 }}
+          >
+            <Box
+              sx={{
+                width: 3,
+                height: 3,
+                borderRadius: '50%',
+                bgcolor: 'text.disabled',
+                flexShrink: 0,
+              }}
+            />
+            <Typography
+              sx={{ ...LABEL_MEDIUM, fontWeight: 400, color: 'text.disabled' }}
+            >
+              {COPY.triggerLowerAccuracy}
+            </Typography>
           </Box>
         )}
         <MenuIcon name={open ? 'expand_less' : 'expand_more'} size={18} />

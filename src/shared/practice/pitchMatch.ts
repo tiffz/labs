@@ -32,3 +32,35 @@ export function deriveOctaveOffset(played: number[], expectedPitches: number[]):
   const avgDelta = deltas.reduce((sum, delta) => sum + delta, 0) / deltas.length;
   return Math.round(avgDelta / 12) * 12;
 }
+
+/**
+ * Like {@link deriveOctaveOffset}, but when both hands are playing the same
+ * pitch classes at different octaves we need to split the played bag by
+ * which octave belongs to which hand. Pass `prefer: 'highest'` to anchor
+ * the right hand to the topmost pitch-class match, or `prefer: 'lowest'`
+ * to anchor the left hand to the bottommost. Returns null when no pitch
+ * class of `played` matches any of `expectedPitches`.
+ */
+export function deriveOctaveOffsetForHand(
+  played: number[],
+  expectedPitches: number[],
+  prefer: 'highest' | 'lowest',
+): number | null {
+  let pickedPlayed: number | null = null;
+  let pickedExpected: number | null = null;
+  for (const expected of expectedPitches) {
+    for (const actual of played) {
+      if (pitchClassDistance(actual, expected) !== 0) continue;
+      if (
+        pickedPlayed === null ||
+        (prefer === 'highest' && actual > pickedPlayed) ||
+        (prefer === 'lowest' && actual < pickedPlayed)
+      ) {
+        pickedPlayed = actual;
+        pickedExpected = expected;
+      }
+    }
+  }
+  if (pickedPlayed === null || pickedExpected === null) return null;
+  return Math.round((pickedPlayed - pickedExpected) / 12) * 12;
+}

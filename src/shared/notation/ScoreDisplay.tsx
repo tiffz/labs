@@ -25,6 +25,13 @@ interface ScoreDisplayProps {
   onMeasureClick?: (measureIndex: number, shiftKey: boolean) => void;
   showVocalPart?: boolean;
   showChords?: boolean;
+  /**
+   * When true, notes whose pitch class matches a currently-held MIDI key
+   * tint green as live exploration feedback. Should be left off during
+   * scored practice so it doesn't conflict with per-note timing colours
+   * (a held C would otherwise also light up every upcoming C in the score).
+   */
+  highlightActiveMatches?: boolean;
 }
 
 const RESULT_COLORS = {
@@ -77,6 +84,7 @@ function applyNoteStyle(
     isCurrent: boolean;
     activeMidiNotes?: Set<number>;
     practiceResult?: PracticeNoteResult;
+    highlightActiveMatches?: boolean;
   },
 ) {
   if (opts.isGreyed) {
@@ -97,7 +105,16 @@ function applyNoteStyle(
     staveNote.setStyle({ fillStyle: color, strokeStyle: color });
     return;
   }
-  if (opts.activeMidiNotes && opts.activeMidiNotes.size > 0 && !note.rest) {
+  // Live exploration feedback — only enabled outside of scored practice
+  // (gated by `highlightActiveMatches`). During scored practice this same
+  // pitch-class match would also tint upcoming notes the user hasn't
+  // reached yet, making them look like successful hits.
+  if (
+    opts.highlightActiveMatches
+    && opts.activeMidiNotes
+    && opts.activeMidiNotes.size > 0
+    && !note.rest
+  ) {
     const played = Array.from(opts.activeMidiNotes);
     const strictMatched = note.pitches.length > 0 && note.pitches.every((expectedPitch) =>
       played.some((playedPitch) => {
@@ -420,6 +437,7 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
   practiceResultsByNoteId, greyedOutHands, hiddenHands, ghostNotes,
   zoomLevel = 1.0, selectedMeasureRange, onMeasureClick,
   showVocalPart = false, showChords = true,
+  highlightActiveMatches = false,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const stateKeyRef = useRef('');
@@ -1026,6 +1044,7 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
                 isCurrent: isCurrentMeasure && noteIdx === rhNoteIdx,
                 activeMidiNotes,
                 practiceResult: practiceResultsByNoteId?.get(note.id),
+                highlightActiveMatches,
               });
               if (note.finger && !note.rest) {
                 const ann = new Annotation(String(note.finger));
@@ -1107,6 +1126,7 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
                 isCurrent: isCurrentMeasure && noteIdx === lhNoteIdx,
                 activeMidiNotes,
                 practiceResult: practiceResultsByNoteId?.get(note.id),
+                highlightActiveMatches,
               });
               if (note.finger && !note.rest) {
                 const ann = new Annotation(String(note.finger));
@@ -1188,6 +1208,7 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
                   isCurrent: isCurrentMeasure && noteIdx === voiceNoteIdx,
                   activeMidiNotes,
                   practiceResult: practiceResultsByNoteId?.get(note.id),
+                  highlightActiveMatches,
                 });
                 if (note.lyric && !note.rest && note.id) {
                   vocalLyrics.push({ noteId: note.id, lyric: note.lyric, isCurrent: isCurrentMeasure && noteIdx === voiceNoteIdx });
@@ -1675,7 +1696,7 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
         containerRef.current.innerHTML = `<p style="color: red; padding: 1rem;">Error rendering score. Please try again.</p>`;
       }
     }
-  }, [score, currentMeasureIndex, currentNoteIndices, activeMidiNotes, practiceResultsByNoteId, greyedOutHands, hiddenHands, ghostNotes, zoomLevel, selectedMeasureRange, showVocalPart, showChords, containerWidth]);
+  }, [score, currentMeasureIndex, currentNoteIndices, activeMidiNotes, practiceResultsByNoteId, greyedOutHands, hiddenHands, ghostNotes, zoomLevel, selectedMeasureRange, showVocalPart, showChords, highlightActiveMatches, containerWidth]);
 
   // Auto-scroll during playback to keep current measure visible
   useEffect(() => {
