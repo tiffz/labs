@@ -4,6 +4,9 @@ import DialogContent from '@mui/material/DialogContent';
 import IconButton from '@mui/material/IconButton';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
+import type { ReactNode } from 'react';
+import { useTheme, alpha } from '@mui/material/styles';
+import type { Theme } from '@mui/material/styles';
 import { TIERS } from '../curriculum/tiers';
 import type { ExerciseKind } from '../curriculum/types';
 import { getExerciseProgress, getMasteryTier, type MasteryTier } from '../progress/store';
@@ -11,29 +14,6 @@ import type { ScalesProgressData } from '../progress/types';
 
 const SCALE_KINDS: ExerciseKind[] = ['major-scale', 'natural-minor-scale'];
 const ARPEGGIO_KINDS: ExerciseKind[] = ['arpeggio-major', 'arpeggio-minor'];
-
-function Icon({
-  name,
-  size = 20,
-  filled = false,
-  color,
-}: { name: string; size?: number; filled?: boolean; color?: string }) {
-  return (
-    <Box
-      component="span"
-      aria-hidden="true"
-      className="material-symbols-outlined"
-      sx={{
-        fontSize: size,
-        lineHeight: 1,
-        color,
-        fontVariationSettings: filled ? '"FILL" 1' : undefined,
-      }}
-    >
-      {name}
-    </Box>
-  );
-}
 
 export type MasteryCategory = 'scale' | 'arpeggio';
 
@@ -47,150 +27,288 @@ export interface MasteryDetailsDialogProps {
 interface Row {
   id: string;
   label: string;
+  root: string;
   tier: MasteryTier;
   started: boolean;
   levelsDone: number;
   totalLevels: number;
-  needsReview: boolean;
 }
 
-/**
- * One row in the bar chart: leading mastered-check slot, fixed-width name,
- * progress bar filling the middle, trailing stage fraction + optional
- * review dot. Entire row lives on one 36px line so the dialog can show
- * all 22 scales with minimal scroll.
- */
-function BarRow({ row, noun }: { row: Row; noun: string }) {
-  const isMastered = row.tier === 'mastered';
-  const isFluent = row.tier === 'fluent';
-  const pct = row.totalLevels > 0 ? (row.levelsDone / row.totalLevels) * 100 : 0;
-  const barColor = isMastered || isFluent ? 'success.main' : 'primary.main';
+function Icon({
+  name,
+  size = 20,
+  color,
+}: { name: string; size?: number; color?: string }) {
+  return (
+    <Box
+      component="span"
+      aria-hidden="true"
+      className="material-symbols-outlined"
+      sx={{
+        fontSize: size,
+        lineHeight: 1,
+        color,
+      }}
+    >
+      {name}
+    </Box>
+  );
+}
 
-  const tierWord: string = isMastered
+function parseScaleName(label: string): { root: string; quality: string } {
+  const match = label.match(/^([A-G][#b]?)\s+(.+)$/);
+  if (!match) return { root: label, quality: '' };
+  return { root: match[1], quality: match[2] };
+}
+
+function prettifyRoot(root: string): string {
+  return root.replace('#', '\u266F').replace('b', '\u266D');
+}
+
+function prettifyLabel(label: string): string {
+  const { root, quality } = parseScaleName(label);
+  if (!quality) return label;
+  return `${prettifyRoot(root)} ${quality}`;
+}
+
+function ariaFor(row: Row, noun: string): string {
+  const tierWord = row.tier === 'mastered'
     ? 'mastered'
-    : isFluent
+    : row.tier === 'fluent'
       ? 'fluent'
       : row.started
         ? 'in progress'
         : 'not started';
-  const ariaParts = [`${row.label} ${noun}`];
-  if (row.started) {
-    ariaParts.push(`${row.levelsDone} of ${row.totalLevels} levels`);
-  }
-  ariaParts.push(tierWord);
-  if (row.needsReview) ariaParts.push('due for review');
-  const rowAria = ariaParts.join(', ');
+  const parts = [`${row.label} ${noun}`, tierWord];
+  if (row.started) parts.push(`${row.levelsDone} of ${row.totalLevels} levels`);
+  return parts.join(', ');
+}
 
+// Per-tier visual tokens. We differentiate tiers via card chrome
+// (background tint + border color + border style) rather than
+// swapping icons in the ring — the root letter stays inside every
+// badge so the grid reads at a glance. The ring's arc length is
+// always tied to `levelsDone / totalLevels`, so it matches the
+// fraction shown in the status text.
+interface TierVisual {
+  ringAccent: string;
+  ringTrack: string;
+  ringProgress: number;
+  rootColor: string;
+  cardBg: string;
+  cardBorderColor: string;
+  cardBorderStyle: 'solid' | 'dashed';
+  nameColor: string;
+  statusColor: string;
+  statusText: string;
+}
+
+function tierVisual(row: Row, theme: Theme): TierVisual {
+  const success = theme.palette.success.main;
+  const successDark = theme.palette.success.dark;
+  const primary = theme.palette.primary.main;
+  const progress = row.totalLevels > 0 ? row.levelsDone / row.totalLevels : 0;
+
+  if (row.tier === 'mastered') {
+    return {
+      ringAccent: success,
+      ringTrack: alpha(success, 0.22),
+      ringProgress: 1,
+      rootColor: successDark,
+      cardBg: alpha(success, 0.16),
+      cardBorderColor: success,
+      cardBorderStyle: 'solid',
+      nameColor: successDark,
+      statusColor: successDark,
+      statusText: 'Mastered',
+    };
+  }
+
+  if (row.tier === 'fluent') {
+    return {
+      ringAccent: success,
+      ringTrack: alpha(success, 0.16),
+      ringProgress: progress,
+      rootColor: successDark,
+      cardBg: alpha(success, 0.06),
+      cardBorderColor: alpha(success, 0.75),
+      cardBorderStyle: 'solid',
+      nameColor: successDark,
+      statusColor: successDark,
+      statusText: `Fluent \u00b7 ${row.levelsDone}/${row.totalLevels}`,
+    };
+  }
+
+  if (row.started) {
+    return {
+      ringAccent: primary,
+      ringTrack: alpha(primary, 0.16),
+      ringProgress: progress,
+      rootColor: theme.palette.text.primary,
+      cardBg: 'transparent',
+      cardBorderColor: alpha(theme.palette.text.primary, 0.22),
+      cardBorderStyle: 'solid',
+      nameColor: theme.palette.text.primary,
+      statusColor: theme.palette.text.secondary,
+      statusText: `${row.levelsDone}/${row.totalLevels}`,
+    };
+  }
+
+  return {
+    ringAccent: theme.palette.text.disabled,
+    ringTrack: theme.palette.divider,
+    ringProgress: 0,
+    rootColor: theme.palette.text.disabled,
+    cardBg: 'transparent',
+    cardBorderColor: alpha(theme.palette.text.primary, 0.18),
+    cardBorderStyle: 'dashed',
+    nameColor: theme.palette.text.secondary,
+    statusColor: theme.palette.text.disabled,
+    statusText: 'Not started',
+  };
+}
+
+interface BadgeRingProps {
+  size: number;
+  stroke: number;
+  progress: number;
+  accent: string;
+  track: string;
+  children?: ReactNode;
+}
+
+function BadgeRing({ size, stroke, progress, accent, track, children }: BadgeRingProps) {
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const offset = c * (1 - progress);
   return (
-    <Box
-      role="listitem"
-      aria-label={rowAria}
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 1.25,
-        height: 32,
-      }}
-    >
-      {/* Leading check slot reserved for mastered rows; keeps all labels
-          aligned whether a row is mastered or not. */}
-      <Box sx={{ width: 14, flexShrink: 0, display: 'flex', alignItems: 'center' }}>
-        {isMastered && (
-          <Icon name="check_circle" size={14} filled color="success.main" />
-        )}
-      </Box>
-      <Typography
-        sx={{
-          width: 96,
-          flexShrink: 0,
-          fontSize: '0.875rem',
-          fontWeight: row.started ? 500 : 400,
-          color: row.started ? 'text.primary' : 'text.secondary',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        {row.label}
-      </Typography>
-      {/* Progress track + fill. Thin (3px) and capped in width so the bar
-          reads as a quiet indicator rather than dominating the row. A
-          single rounded pill with an absolutely positioned inner fill
-          keeps the end caps flush. */}
+    <Box sx={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
       <Box
-        sx={{
-          flex: 1,
-          maxWidth: 140,
-          height: 3,
-          borderRadius: '999px',
-          bgcolor: theme => `${theme.palette.primary.main}14`,
-          position: 'relative',
-          overflow: 'hidden',
-        }}
+        component="svg"
+        aria-hidden="true"
+        width={size}
+        height={size}
+        sx={{ position: 'absolute', inset: 0, display: 'block' }}
       >
-        {row.levelsDone > 0 && (
-          <Box
-            sx={{
-              position: 'absolute',
-              inset: 0,
-              width: `${pct}%`,
-              borderRadius: '999px',
-              bgcolor: barColor,
-            }}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke={track}
+          strokeWidth={stroke}
+        />
+        {progress > 0 && (
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={r}
+            fill="none"
+            stroke={accent}
+            strokeWidth={stroke}
+            strokeDasharray={c}
+            strokeDashoffset={offset}
+            strokeLinecap="round"
+            transform={`rotate(-90 ${size / 2} ${size / 2})`}
           />
         )}
       </Box>
       <Box
         sx={{
-          width: 48,
-          flexShrink: 0,
+          position: 'absolute',
+          inset: 0,
           display: 'flex',
-          justifyContent: 'flex-end',
           alignItems: 'center',
-          gap: 0.5,
+          justifyContent: 'center',
         }}
       >
-        <Typography
-          sx={{
-            fontSize: '0.75rem',
-            fontVariantNumeric: 'tabular-nums',
-            color: row.started ? 'text.secondary' : 'text.disabled',
-          }}
-        >
-          {row.started ? `${row.levelsDone}/${row.totalLevels}` : '—'}
-        </Typography>
-        {/* A single warning dot communicates review faster than a text
-            label would — an orange pip in a field of green/blue bars is
-            immediately scannable. Hidden from SR since the row's
-            aria-label already encodes "due for review". */}
-        {row.needsReview && (
-          <Box
-            aria-hidden="true"
-            sx={{
-              width: 5,
-              height: 5,
-              borderRadius: '50%',
-              bgcolor: 'warning.main',
-              flexShrink: 0,
-            }}
-          />
-        )}
+        {children}
       </Box>
     </Box>
   );
 }
 
+function MasteryCard({ row, noun }: { row: Row; noun: string }) {
+  const theme = useTheme();
+  const v = tierVisual(row, theme);
+
+  return (
+    <Box
+      role="listitem"
+      aria-label={ariaFor(row, noun)}
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 1,
+        px: 1.25,
+        py: 1.5,
+        borderRadius: '12px',
+        bgcolor: v.cardBg,
+        border: `1px ${v.cardBorderStyle} ${v.cardBorderColor}`,
+      }}
+    >
+      <BadgeRing
+        size={48}
+        stroke={3}
+        progress={v.ringProgress}
+        accent={v.ringAccent}
+        track={v.ringTrack}
+      >
+        <Typography
+          sx={{
+            fontSize: '1.125rem',
+            fontWeight: 500,
+            lineHeight: 1,
+            letterSpacing: '-0.01em',
+            color: v.rootColor,
+          }}
+        >
+          {prettifyRoot(row.root)}
+        </Typography>
+      </BadgeRing>
+
+      <Typography
+        sx={{
+          fontSize: '0.8125rem',
+          fontWeight: 500,
+          lineHeight: 1.25,
+          color: v.nameColor,
+          textAlign: 'center',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          maxWidth: '100%',
+          mt: 0.25,
+        }}
+      >
+        {prettifyLabel(row.label)}
+      </Typography>
+
+      <Typography
+        sx={{
+          fontSize: '0.6875rem',
+          fontWeight: 500,
+          letterSpacing: '0.04em',
+          lineHeight: 1,
+          color: v.statusColor,
+          fontVariantNumeric: 'tabular-nums',
+        }}
+      >
+        {v.statusText}
+      </Typography>
+    </Box>
+  );
+}
+
 /**
- * Modal showing per-exercise mastery for an entire category (scales or
- * arpeggios). Opens when the user taps the matching big-stat card on the
- * home screen.
- *
- * Layout: a single-column horizontal bar chart. Each row is one scale,
- * with the progress bar carrying tier (color), progress (length), and
- * review state (trailing dot). This is intentionally sparser than an
- * M3 list item because the bar itself replaces the tier label, supporting
- * text line, and per-row mini-bar that earlier iterations composed, while
- * keeping information density high enough to show all 22 scales at once.
+ * Minimalist M3-outlined card grid of per-scale mastery. Each card
+ * shows the scale root inside a circular progress ring whose arc
+ * tracks `levelsDone / totalLevels`. Tier (mastered / fluent /
+ * learning / not started) is conveyed by the card's background and
+ * border treatment — tinted + solid for mastered, solid success
+ * border for fluent, solid divider for learning, dashed divider for
+ * not started — not by swapping icons inside the ring.
  */
 export default function MasteryDetailsDialog({
   open,
@@ -202,11 +320,8 @@ export default function MasteryDetailsDialog({
   const title = category === 'scale' ? 'Your scales' : 'Your arpeggios';
   const noun = category === 'scale' ? 'scale' : 'arpeggio';
   const nounPlural = category === 'scale' ? 'scales' : 'arpeggios';
-
-  // Strip the trailing kind suffix because the dialog title already
-  // supplies it: "G Major Scale" -> "G Major" reads cleaner in the 120px
-  // name column.
   const suffix = category === 'scale' ? /\s+Scale$/ : /\s+Arpeggio$/;
+
   const rows: Row[] = TIERS.flatMap(t =>
     t.exercises
       .filter(ex => kinds.includes(ex.kind))
@@ -218,14 +333,16 @@ export default function MasteryDetailsDialog({
           : -1;
         const levelsDone = completedIdx + 1;
         const totalLevels = ex.stages.length;
+        const label = ex.label.replace(suffix, '');
+        const { root } = parseScaleName(label);
         return {
           id: ex.id,
-          label: ex.label.replace(suffix, ''),
+          label,
+          root,
           tier,
           started: levelsDone > 0,
           levelsDone,
           totalLevels,
-          needsReview: ep.needsReview,
         };
       }),
   );
@@ -233,10 +350,6 @@ export default function MasteryDetailsDialog({
   const totalMastered = rows.filter(r => r.tier === 'mastered').length;
   const totalFluent = rows.filter(r => r.tier === 'fluent' || r.tier === 'mastered').length;
 
-  // Sort: active (progress > 0) to the top, mastered before fluent before
-  // learning; within a tier, more progress first. Not-started rows follow
-  // in curriculum order. The visual transition from colored bars to empty
-  // tracks is self-evident, so no section headers are needed.
   const tierRank: Record<MasteryTier, number> = { mastered: 0, fluent: 1, learning: 2 };
   const sortedRows: Row[] = [
     ...rows
@@ -256,12 +369,7 @@ export default function MasteryDetailsDialog({
       onClose={onClose}
       maxWidth="md"
       fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: '28px',
-          maxHeight: '85vh',
-        },
-      }}
+      PaperProps={{ sx: { borderRadius: '28px', maxHeight: '90vh' } }}
     >
       <DialogTitle
         sx={{
@@ -269,22 +377,24 @@ export default function MasteryDetailsDialog({
           alignItems: 'flex-start',
           justifyContent: 'space-between',
           gap: 2,
-          px: 3,
-          pt: 3,
-          pb: 2,
+          px: { xs: 2.5, sm: 3 },
+          pt: { xs: 2.5, sm: 3 },
+          pb: 1,
         }}
       >
         <Box>
           <Typography
             component="h2"
-            sx={{ fontSize: '1.5rem', fontWeight: 400, lineHeight: 1.33 }}
+            sx={{
+              fontSize: '1.5rem',
+              fontWeight: 500,
+              letterSpacing: '-0.01em',
+              lineHeight: 1.25,
+            }}
           >
             {title}
           </Typography>
-          <Typography sx={{ fontSize: '0.875rem', color: 'text.secondary', mt: 0.5 }}>
-            {/* Fluent leads because it is the realistic near-term tier and
-                matches the home-screen big-stat framing. Mastered is only
-                mentioned once the learner has at least one. */}
+          <Typography sx={{ fontSize: '0.8125rem', color: 'text.secondary', mt: 0.5 }}>
             {totalFluent} fluent
             {totalMastered > 0 ? `, ${totalMastered} mastered` : ''}
             {' '}of {rows.length} {nounPlural}
@@ -294,23 +404,29 @@ export default function MasteryDetailsDialog({
           <Icon name="close" size={20} />
         </IconButton>
       </DialogTitle>
-      <DialogContent sx={{ px: 3, pt: 0, pb: 3 }}>
-        {/* Two-column grid on sm+ so 22 rows render as ~11 visible rows,
-            further de-emphasizing the bar as a primary visual element
-            (narrower cells = shorter bars). Collapses to a single column
-            on xs where columns would be too cramped. */}
+      <DialogContent
+        sx={{
+          px: { xs: 2.5, sm: 3 },
+          pt: 1.5,
+          pb: { xs: 2.5, sm: 3 },
+        }}
+      >
         <Box
           role="list"
           aria-label={title}
           sx={{
             display: 'grid',
-            gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' },
-            columnGap: 4,
-            rowGap: 0,
+            gridTemplateColumns: {
+              xs: 'repeat(3, 1fr)',
+              sm: 'repeat(4, 1fr)',
+              md: 'repeat(5, 1fr)',
+              lg: 'repeat(6, 1fr)',
+            },
+            gap: { xs: 1, sm: 1.25 },
           }}
         >
           {sortedRows.map(row => (
-            <BarRow key={row.id} row={row} noun={noun} />
+            <MasteryCard key={row.id} row={row} noun={noun} />
           ))}
         </Box>
       </DialogContent>
