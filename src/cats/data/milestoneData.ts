@@ -162,7 +162,7 @@ const treatsMilestones: Milestone[] = [
   {
     id: 'treats_1000',
     title: 'Treat Empire',
-    description: 'Build up 1,000 treats',
+    description: 'Reach 1,000 treats',
     target: {
       currencyType: 'treats',
       amount: 1000
@@ -177,7 +177,7 @@ const treatsMilestones: Milestone[] = [
   {
     id: 'treats_10000',
     title: 'Treat Tycoon',
-    description: 'Amass 10,000 treats',
+    description: 'Reach 10,000 treats',
     target: {
       currencyType: 'treats',
       amount: 10000
@@ -192,7 +192,7 @@ const treatsMilestones: Milestone[] = [
   {
     id: 'treats_100000',
     title: 'Treat Fortune',
-    description: 'Accumulate 100,000 treats',
+    description: 'Reach 100,000 treats',
     target: {
       currencyType: 'treats',
       amount: 100000

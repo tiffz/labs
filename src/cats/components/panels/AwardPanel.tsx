@@ -21,25 +21,25 @@ const AwardPanel: React.FC<AwardPanelProps> = ({
   specialActions,
 }) => {
   const [showTooltip, setShowTooltip] = useState<string | null>(null);
-  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0, arrowPosition: '140px' });
+  const [tooltipPosition, setTooltipPosition] = useState({ bottom: 0, left: 0, arrowPosition: '140px' });
 
   const handleAwardHover = (award: Award, event: React.MouseEvent | React.PointerEvent) => {
     const rect = event.currentTarget.getBoundingClientRect();
     const tooltipWidth = 280; // fixed width
-    const tooltipHeight = 100; // fixed height
-    
-    // Position tooltip above, ensuring it doesn't go off screen
-    const topPosition = Math.max(10, rect.top - tooltipHeight - 24);
+
+    // Anchor the tooltip's bottom 24px above the hovered element so the
+    // tooltip can grow upward as content wraps without clipping.
+    const bottomPosition = window.innerHeight - rect.top + 24;
     const leftPosition = Math.max(10, Math.min(window.innerWidth - tooltipWidth - 10, rect.left + rect.width / 2 - tooltipWidth / 2));
-    
+
     // Calculate arrow position relative to tooltip (in pixels)
     const elementCenter = rect.left + rect.width / 2;
     const tooltipLeft = leftPosition;
     const relativeArrowPos = elementCenter - tooltipLeft;
     const clampedArrowPos = Math.max(16, Math.min(tooltipWidth - 16, relativeArrowPos));
-    
+
     setTooltipPosition({
-      top: topPosition,
+      bottom: bottomPosition,
       left: leftPosition,
       arrowPosition: `${clampedArrowPos}px`
     });
@@ -161,7 +161,7 @@ const AwardPanel: React.FC<AwardPanelProps> = ({
               className="award-tooltip left-side"
               style={{
                 position: 'fixed',
-                top: `${tooltipPosition.top}px`,
+                bottom: `${tooltipPosition.bottom}px`,
                 left: `${tooltipPosition.left}px`,
                 '--arrow-position': tooltipPosition.arrowPosition,
               } as React.CSSProperties}
@@ -174,30 +174,8 @@ const AwardPanel: React.FC<AwardPanelProps> = ({
                 </div>
               </div>
               <p className="award-tooltip-description">{isEarned ? award.description : 'A mysterious secret awaits discovery...'}</p>
-              <div className="award-tooltip-details">
-                {isEarned && award.target && (
-                  <div className="award-tooltip-requirement">
-                    <strong>Requirement:</strong> {(() => {
-                      const target = award.target;
-                      const requiredCount = target.count || 1;
-                      
-                      switch (target.actionType) {
-                        case 'nose_click':
-                          return requiredCount === 1 ? 'Click your cat\'s nose' : `Click your cat's nose ${requiredCount} times`;
-                        case 'happy_jump':
-                          return requiredCount === 1 ? 'Make your cat happy jump' : `Make your cat happy jump ${requiredCount} times`;
-                        case 'ear_wiggle':
-                          return requiredCount === 1 ? 'Click your cat\'s ear' : `Click your cat's ears ${requiredCount} times`;
-                        case 'cheek_pet':
-                          return requiredCount === 1 ? 'Pet your cat\'s cheek' : `Pet your cat's cheeks ${requiredCount} times`;
-                        default:
-                          return 'Secret requirement';
-                      }
-                    })()}
-                  </div>
-                )}
-
-                {award.reward && (
+              {isEarned && (award.reward?.love || award.reward?.treats) && (
+                <div className="award-tooltip-details">
                   <div className="award-tooltip-rewards">
                     <strong>Rewards:</strong>
                     {award.reward.love && (
@@ -210,10 +188,9 @@ const AwardPanel: React.FC<AwardPanelProps> = ({
                         +{award.reward.treats} <FishIcon className="tooltip-breakdown-icon treats-icon" />
                       </span>
                     )}
-
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           );
         })(),

@@ -98,9 +98,11 @@ const MeritsPanel: React.FC<MeritsPanelProps> = ({
             className={`merit-subtab ${activeTab === 'upgrades' ? 'active' : ''}`}
             onClick={() => setActiveTab('upgrades')}
           >
-            <MaterialIcon icon="kid_star" className="subtab-icon" />
+            <span className="subtab-icon-wrap">
+              <MaterialIcon icon="kid_star" className="subtab-icon" />
+              {availablePoints > 0 && <span className="available-badge">{availablePoints}</span>}
+            </span>
             <span>Upgrades</span>
-            {availablePoints > 0 && <span className="available-badge">{availablePoints}</span>}
           </button>
           <button
             className={`merit-subtab ${activeTab === 'milestones' ? 'active' : ''}`}

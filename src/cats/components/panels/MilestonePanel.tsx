@@ -24,26 +24,26 @@ const MilestonePanel: React.FC<MilestonePanelProps> = ({
 }) => {
 
   const [showTooltip, setShowTooltip] = useState<string | null>(null);
-  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0, arrowPosition: '140px' });
+  const [tooltipPosition, setTooltipPosition] = useState({ bottom: 0, left: 0, arrowPosition: '140px' });
 
   const handleMilestoneHover = (milestone: Milestone, event: React.MouseEvent | React.PointerEvent) => {
     const rect = event.currentTarget.getBoundingClientRect();
     const tooltipWidth = 280; // fixed width
-    const tooltipHeight = 100; // fixed height
-    
-    // Position tooltip above, ensuring it doesn't go off screen
-    const topPosition = Math.max(10, rect.top - tooltipHeight - 24);
+
+    // Anchor the tooltip's bottom 24px above the hovered element so the
+    // tooltip can grow upward as content wraps without clipping.
+    const bottomPosition = window.innerHeight - rect.top + 24;
     const leftPosition = Math.max(10, Math.min(window.innerWidth - tooltipWidth - 10, rect.left + rect.width / 2 - tooltipWidth / 2));
-    
+
     // Calculate arrow position relative to tooltip (in pixels)
     // Add small offset for milestone icons to center better (milestone icons are smaller than award badges)
     const elementCenter = rect.left + rect.width / 2;
     const tooltipLeft = leftPosition;
     const relativeArrowPos = elementCenter - tooltipLeft - 8; // Small adjustment for milestone icon visual center
     const clampedArrowPos = Math.max(16, Math.min(tooltipWidth - 16, relativeArrowPos));
-    
+
     setTooltipPosition({
-      top: topPosition,
+      bottom: bottomPosition,
       left: leftPosition,
       arrowPosition: `${clampedArrowPos}px`
     });
@@ -128,10 +128,11 @@ const MilestonePanel: React.FC<MilestonePanelProps> = ({
                   const currentProg = getCurrentProgress(milestone);
                   const isNext = !isEarned && progress.nextMilestone?.id === milestone.id;
                   
+                  const showProgressRing = isNext && currentProg > 0;
                   return (
                     <div 
                       key={milestone.id} 
-                      className={`milestone-item-compact ${isEarned ? 'earned' : isNext ? 'next' : 'locked'}`}
+                      className={`milestone-item-compact ${isEarned ? 'earned' : isNext ? 'next' : 'locked'}${showProgressRing ? ' has-progress' : ''}`}
                       onPointerEnter={(e) => handleMilestoneHover(milestone, e)}
                       onPointerLeave={handleMilestoneLeave}
                     >
@@ -139,44 +140,19 @@ const MilestonePanel: React.FC<MilestonePanelProps> = ({
                         className="milestone-icon-compact"
                         style={{ 
                           '--milestone-color': group.color,
-                          '--milestone-rgb': group.color.replace('#', '').match(/.{2}/g)?.map(hex => parseInt(hex, 16)).join(', ')
+                          '--milestone-rgb': group.color.replace('#', '').match(/.{2}/g)?.map(hex => parseInt(hex, 16)).join(', '),
+                          // The progress ring is drawn entirely via CSS
+                          // (conic-gradient background), which renders on the
+                          // same pixel grid as the border so the in-progress
+                          // circle stays exactly the same visual size as its
+                          // locked siblings.
+                          ...(showProgressRing ? { '--milestone-progress': `${currentProg}%` } : {}),
                         } as React.CSSProperties}
                       >
                         <MaterialIcon 
                           icon={isEarned ? 'check' : milestone.icon} 
                           className="milestone-icon-small"
                         />
-                        
-                        {/* Progress indicator for next milestone */}
-                        {isNext && currentProg > 0 && (
-                          <div className="milestone-progress-ring">
-                            <svg width="32" height="32">
-                              <circle
-                                cx="16"
-                                cy="16"
-                                r="14"
-                                fill="none"
-                                stroke="#e7e0ec"
-                                strokeWidth="2"
-                              />
-                              <circle
-                                cx="16"
-                                cy="16"
-                                r="14"
-                                fill="none"
-                                stroke={group.color}
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeDasharray={`${currentProg * 0.88} 88`}
-                                transform="rotate(-90 16 16)"
-                                className="milestone-progress-fill"
-                                style={{
-                                  transition: 'stroke-dasharray 0.3s ease'
-                                }}
-                              />
-                            </svg>
-                          </div>
-                        )}
                       </div>
                       
                       {/* Connector line */}
@@ -210,7 +186,7 @@ const MilestonePanel: React.FC<MilestonePanelProps> = ({
               className="milestone-tooltip left-side"
               style={{
                 position: 'fixed',
-                top: `${tooltipPosition.top}px`,
+                bottom: `${tooltipPosition.bottom}px`,
                 left: `${tooltipPosition.left}px`,
                 '--arrow-position': tooltipPosition.arrowPosition,
               } as React.CSSProperties}
@@ -223,18 +199,8 @@ const MilestonePanel: React.FC<MilestonePanelProps> = ({
                 </div>
               </div>
               <p className="milestone-tooltip-description">{milestone.description}</p>
-              <div className="milestone-tooltip-details">
-                <div className="milestone-tooltip-requirement">
-                  <strong>Target:</strong> {(() => {
-                    const target = milestone.target;
-                    if (target.currencyType === 'love') return `${target.amount} love`;
-                    if (target.currencyType === 'treats') return `${target.amount} treats`;
-                    if (target.jobLevel) return `Level ${target.jobLevel} in any job`;
-                    if (target.thingId) return 'Purchase required item';
-                    return milestone.description;
-                  })()}
-                </div>
-                {milestone.reward && (
+              {(milestone.reward?.love || milestone.reward?.treats) && (
+                <div className="milestone-tooltip-details">
                   <div className="milestone-tooltip-rewards">
                     <strong>Rewards:</strong>
                     {milestone.reward.love && (
@@ -247,10 +213,9 @@ const MilestonePanel: React.FC<MilestonePanelProps> = ({
                         +{milestone.reward.treats} <FishIcon className="tooltip-breakdown-icon treats-icon" />
                       </span>
                     )}
-
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           );
         })(),
