@@ -9,10 +9,21 @@ import { useTheme, alpha } from '@mui/material/styles';
 import type { Theme } from '@mui/material/styles';
 import { TIERS } from '../curriculum/tiers';
 import type { ExerciseKind } from '../curriculum/types';
-import { getExerciseProgress, getMasteryTier, type MasteryTier } from '../progress/store';
+import {
+  getExerciseProgress,
+  getMasteryTier,
+  getCombinedMajorScaleMastery,
+  type MasteryTier,
+} from '../progress/store';
 import type { ScalesProgressData } from '../progress/types';
+import MasteryTierLegend from './MasteryTierLegend';
 
-const SCALE_KINDS: ExerciseKind[] = ['major-scale', 'natural-minor-scale'];
+const SCALE_KINDS: ExerciseKind[] = [
+  'major-scale',
+  'natural-minor-scale',
+  'harmonic-minor-scale',
+  'melodic-minor-scale',
+];
 const ARPEGGIO_KINDS: ExerciseKind[] = ['arpeggio-major', 'arpeggio-minor'];
 
 export type MasteryCategory = 'scale' | 'arpeggio';
@@ -327,12 +338,25 @@ export default function MasteryDetailsDialog({
       .filter(ex => kinds.includes(ex.kind))
       .map(ex => {
         const ep = getExerciseProgress(progress, ex.id);
-        const tier: MasteryTier = getMasteryTier(ep, ex);
-        const completedIdx = ep.completedStageId
-          ? ex.stages.findIndex(s => s.id === ep.completedStageId)
-          : -1;
-        const levelsDone = completedIdx + 1;
-        const totalLevels = ex.stages.length;
+        let tier: MasteryTier;
+        let levelsDone: number;
+        let totalLevels: number;
+        let started: boolean;
+        if (ex.kind === 'major-scale') {
+          const c = getCombinedMajorScaleMastery(progress, ex);
+          tier = c.tier;
+          levelsDone = c.levelsDone;
+          totalLevels = c.totalLevels;
+          started = c.started;
+        } else {
+          tier = getMasteryTier(ep, ex);
+          const completedIdx = ep.completedStageId
+            ? ex.stages.findIndex(s => s.id === ep.completedStageId)
+            : -1;
+          levelsDone = completedIdx + 1;
+          totalLevels = ex.stages.length;
+          started = levelsDone > 0;
+        }
         const label = ex.label.replace(suffix, '');
         const { root } = parseScaleName(label);
         return {
@@ -340,7 +364,7 @@ export default function MasteryDetailsDialog({
           label,
           root,
           tier,
-          started: levelsDone > 0,
+          started,
           levelsDone,
           totalLevels,
         };
@@ -383,17 +407,20 @@ export default function MasteryDetailsDialog({
         }}
       >
         <Box>
-          <Typography
-            component="h2"
-            sx={{
-              fontSize: '1.5rem',
-              fontWeight: 500,
-              letterSpacing: '-0.01em',
-              lineHeight: 1.25,
-            }}
-          >
-            {title}
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+            <Typography
+              component="h2"
+              sx={{
+                fontSize: '1.5rem',
+                fontWeight: 500,
+                letterSpacing: '-0.01em',
+                lineHeight: 1.25,
+              }}
+            >
+              {title}
+            </Typography>
+            <MasteryTierLegend ariaLabel={`What does fluent or mastered mean for ${nounPlural}?`} />
+          </Box>
           <Typography sx={{ fontSize: '0.8125rem', color: 'text.secondary', mt: 0.5 }}>
             {totalFluent} fluent
             {totalMastered > 0 ? `, ${totalMastered} mastered` : ''}

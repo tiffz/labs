@@ -13,10 +13,11 @@ const REVIEW_SLOTS = 1;
  */
 export function planSession(data: ScalesProgressData): SessionPlan {
   const currentTier = TIERS.find(t => t.id === data.currentTierId) ?? TIERS[0];
-  const newExercises: SessionExercise[] = [];
+  type NewSlot = { exercise: SessionExercise; lastPlayed: string };
+  const candidateSlots: NewSlot[] = [];
 
   for (const ex of currentTier.exercises) {
-    if (newExercises.length >= MAX_SESSION_EXERCISES - REVIEW_SLOTS) break;
+    if (candidateSlots.length >= MAX_SESSION_EXERCISES - REVIEW_SLOTS) break;
     const progress = getExerciseProgress(data, ex.id);
     const stage = ex.stages.find(s => s.id === progress.currentStageId) ?? ex.stages[0];
     if (!stage) continue;
@@ -24,20 +25,27 @@ export function planSession(data: ScalesProgressData): SessionPlan {
     const lastStage = ex.stages[ex.stages.length - 1];
     if (progress.completedStageId === lastStage?.id) continue;
 
-    newExercises.push({
-      exerciseId: ex.id,
-      stageId: stage.id,
-      key: ex.key,
-      kind: ex.kind,
-      hand: stage.hand,
-      bpm: stage.bpm,
-      useMetronome: stage.useMetronome,
-      subdivision: stage.subdivision,
-      mutePlayback: stage.mutePlayback,
-      octaves: stage.octaves,
-      purpose: 'new',
+    candidateSlots.push({
+      exercise: {
+        exerciseId: ex.id,
+        stageId: stage.id,
+        key: ex.key,
+        kind: ex.kind,
+        hand: stage.hand,
+        bpm: stage.bpm,
+        useMetronome: stage.useMetronome,
+        subdivision: stage.subdivision,
+        mutePlayback: stage.mutePlayback,
+        octaves: stage.octaves,
+        purpose: 'new',
+      },
+      // ISO timestamps sort lexicographically; never-practiced sorts last.
+      lastPlayed: progress.lastPracticedAt ?? '1970-01-01T00:00:00.000Z',
     });
   }
+
+  candidateSlots.sort((a, b) => b.lastPlayed.localeCompare(a.lastPlayed));
+  const newExercises = candidateSlots.map(s => s.exercise);
 
   // Review slots now target the exact stage returned by getReviewExercises
   // — for shaky runs that's the stage that scored low, for stale entries

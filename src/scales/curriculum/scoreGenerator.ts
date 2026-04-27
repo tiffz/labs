@@ -1,16 +1,37 @@
 import type { PianoScore } from '../../shared/music/scoreTypes';
 import type { SessionExercise, ExerciseKind } from './types';
-import type { Subdivision, ExerciseType } from '../../shared/music/scales';
+import type { Subdivision, ExerciseType, ScaleVariant } from '../../shared/music/scales';
 import { generateExerciseScore } from '../../shared/music/scales';
 
 function kindToQuality(kind: ExerciseKind): 'major' | 'minor' {
-  if (kind === 'natural-minor-scale' || kind === 'arpeggio-minor') return 'minor';
+  if (
+    kind === 'pentascale-minor' ||
+    kind === 'natural-minor-scale' ||
+    kind === 'harmonic-minor-scale' ||
+    kind === 'melodic-minor-scale' ||
+    kind === 'arpeggio-minor'
+  ) {
+    return 'minor';
+  }
   return 'major';
 }
 
 function kindToExerciseType(kind: ExerciseKind): ExerciseType {
   if (kind === 'arpeggio-major' || kind === 'arpeggio-minor') return 'arpeggio';
+  if (kind === 'pentascale-major' || kind === 'pentascale-minor') return 'pentascale';
   return 'scale';
+}
+
+/**
+ * Map an ExerciseKind onto its scale variant. Only the minor scales
+ * carry meaningful variants; arpeggios and major scales always use
+ * `'natural'` (which collapses to the standard interval set inside
+ * `generateExerciseScore`).
+ */
+function kindToScaleVariant(kind: ExerciseKind): ScaleVariant {
+  if (kind === 'harmonic-minor-scale') return 'harmonic';
+  if (kind === 'melodic-minor-scale')  return 'melodic';
+  return 'natural';
 }
 
 function subdivisionToNumber(sub: SessionExercise['subdivision']): Subdivision {
@@ -34,8 +55,17 @@ export function generateScoreForExercise(exercise: SessionExercise): PianoScore 
   const quality = kindToQuality(exercise.kind);
   const exType = kindToExerciseType(exercise.kind);
   const sub = subdivisionToNumber(exercise.subdivision);
+  const variant = kindToScaleVariant(exercise.kind);
 
-  const score = generateExerciseScore(quality, exType, exercise.key, 'both', exercise.octaves, sub);
+  const score = generateExerciseScore(
+    quality,
+    exType,
+    exercise.key,
+    'both',
+    exercise.octaves,
+    sub,
+    variant,
+  );
   if (!score) return null;
 
   const effectiveTempo = exercise.bpm || 80;

@@ -16,22 +16,31 @@ const SUBDIVISION_LABEL: Record<string, string> = {
 };
 
 /**
+ * Stable label for an octave count, e.g. "1 octave" / "2 octaves".
+ * Pulled out so chips, headers, and stage summaries all read identically.
+ */
+export function formatOctaveLabel(octaves: 1 | 2): string {
+  return octaves === 1 ? '1 octave' : '2 octaves';
+}
+
+/**
  * Short human-readable summary of what a stage actually practices. Used by
- * the review dialog ("Sixteenth notes at 60 BPM, both hands") and the
- * session-complete chip so the celebratory moment carries real content
- * instead of a generic "stage complete" line.
+ * the review dialog ("Sixteenth notes at 60 BPM, both hands, 2 octaves")
+ * and the session-complete chip so the celebratory moment carries real
+ * content instead of a generic "stage complete" line.
  *
  * Deliberately terse — the stage's full label already appears elsewhere;
  * this is a sentence-fragment suitable for secondary text.
  */
 export function formatStageSummary(stage: Stage): string {
   const hand = HAND_LABEL[stage.hand];
+  const octaves = formatOctaveLabel(stage.octaves);
   // Free-tempo stages don't have a meaningful BPM. Subdivisions aren't
   // relevant when the metronome is off either — the grader counts notes,
   // not subdivisions.
   if (!stage.useTempo) {
-    return `${hand}, free tempo`;
+    return `${hand}, free tempo, ${octaves}`;
   }
   const subdivision = SUBDIVISION_LABEL[stage.subdivision] ?? 'quarter notes';
-  return `${subdivision} at ${stage.bpm} BPM, ${hand}`;
+  return `${subdivision} at ${stage.bpm} BPM, ${hand}, ${octaves}`;
 }

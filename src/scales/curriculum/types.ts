@@ -1,7 +1,34 @@
 import type { Key } from '../../shared/music/scoreTypes';
 
 export type Hand = 'right' | 'left' | 'both';
-export type ExerciseKind = 'major-scale' | 'natural-minor-scale' | 'arpeggio-major' | 'arpeggio-minor';
+/**
+ * Pedagogically distinct exercise types. The minor scale is split into
+ * three variants because they sound and behave differently:
+ *
+ *  - `pentascale-major` / `pentascale-minor` — five-finger patterns
+ *    (C-D-E-F-G in C major, C-D-E\u266D-F-G in C minor). One finger
+ *    per note, no thumb-unders, no horizontal travel. The universal
+ *    onboarding rung in mainstream piano method (Faber/Alfred/Bastien
+ *    book 1, RCM Preparatory, ABRSM Initial). Sits before full scales.
+ *  - `natural-minor-scale` — the "white-key minor" (relative to its
+ *    parallel major). Same notes ascending and descending.
+ *  - `harmonic-minor-scale` — natural minor with a raised 7th. The
+ *    augmented second between scale degrees 6 and 7 is the harmonic-
+ *    minor signature; same notes ascending and descending.
+ *  - `melodic-minor-scale` — direction-dependent. Ascending uses raised
+ *    6 + raised 7 (a major scale with a flat 3); descending reverts to
+ *    natural minor. The asymmetry is intentional and historically
+ *    motivated by the leading-tone resolution at the top of the scale.
+ */
+export type ExerciseKind =
+  | 'pentascale-major'
+  | 'pentascale-minor'
+  | 'major-scale'
+  | 'natural-minor-scale'
+  | 'harmonic-minor-scale'
+  | 'melodic-minor-scale'
+  | 'arpeggio-major'
+  | 'arpeggio-minor';
 /**
  * How many notes-per-beat the stage practices. 'triplet' is three notes
  * per beat (eighth-note triplets) and sits between `eighth` and `sixteenth`

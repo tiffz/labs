@@ -113,8 +113,8 @@ export default function DueForReviewDialog({
             {rows.length === 0
               ? 'Nothing is due right now.'
               : rows.length === 1
-                ? '1 exercise will show up in your next practice session.'
-                : `${rows.length} exercises will show up in your next practice session.`}
+                ? '1 exercise will come back in your next session.'
+                : `${rows.length} exercises will come back in your next session.`}
           </Typography>
         </Box>
         <IconButton onClick={onClose} aria-label="Close" size="small" sx={{ mt: -0.5 }}>
@@ -122,6 +122,22 @@ export default function DueForReviewDialog({
         </IconButton>
       </DialogTitle>
       <DialogContent>
+        {/* Spaced retrieval explainer. Sits above the rows so users
+            understand *why* certain exercises come back — exposing the
+            underlying pedagogy keeps "Due for review" from feeling
+            arbitrary or punitive. */}
+        {rows.length > 0 && (
+          <Typography
+            sx={{
+              fontSize: '0.8125rem',
+              color: 'text.secondary',
+              lineHeight: 1.5,
+              mb: 2,
+            }}
+          >
+            Coming back to a scale a few days later is what locks it into long-term memory. These ones either scored shaky last time or haven&rsquo;t been touched in five days.
+          </Typography>
+        )}
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, py: 1 }}>
           {rows.map(row => {
             const accent = row.reason === 'shaky' ? 'warning.main' : 'primary.main';

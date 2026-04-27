@@ -1,16 +1,154 @@
-import type { ScalesProgressData, ExerciseProgress, PracticeRecord } from './types';
-import { TIERS, findExercise } from '../curriculum/tiers';
-import type { ExerciseDefinition } from '../curriculum/types';
+import type {
+  ScalesProgressData,
+  ExerciseProgress,
+  PracticeRecord,
+  IntroducedConcepts,
+  IntroducedHands,
+} from './types';
+import { TIERS, findExercise, isPentascaleKind } from '../curriculum/tiers';
+import type { ExerciseDefinition, ExerciseKind, Stage } from '../curriculum/types';
+import { triggerConcepts } from '../curriculum/concepts';
 
 const STORAGE_KEY = 'scales-progress';
 const MAX_HISTORY_PER_EXERCISE = 20;
-// Raised from 0.85/2 to match RCM-style "3 clean runs in a row" gating and
-// to keep advancement honest now that mastery is a two-tier concept
-// (learning → fluent → mastered). See the scales-mastery rework plan.
-const ADVANCEMENT_THRESHOLD = 0.90;
-const ADVANCEMENT_RUNS = 3;
 const REVIEW_ACCURACY_THRESHOLD = 0.7;
 const STALE_DAYS = 5;
+
+/**
+ * Per-stage advancement criteria. Replaces a single global "3 runs at 90%"
+ * rule with thresholds tuned to the pedagogical demands of each stage type:
+ *
+ *   - Free-tempo stages have no timing grading, so we require pitch-perfect
+ *     runs but only 2 in a row to keep onboarding from dragging.
+ *   - Standard tempo stages (hands-separate / hands-together intro through
+ *     the Fluent checkpoint) hold the RCM/ABRSM-style "3 clean runs in a
+ *     row at ≥90%" gate.
+ *   - Subdivisions and most 2-octave stages loosen the threshold to 85%.
+ *     These are meaningfully harder than 1-octave straight notes, and
+ *     holding 90% on full-speed sixteenths is unrealistic for most
+ *     learners; 85% still demands a real streak.
+ *   - The very last stage of every exercise is the mastery gate and snaps
+ *     back to the strict 90% bar — reaching "Mastered" should mean
+ *     something.
+ */
+export interface AdvancementCriteria {
+  threshold: number;
+  runs: number;
+}
+
+export function getAdvancementCriteria(
+  stage: Stage,
+  isFinalStage: boolean = false,
+): AdvancementCriteria {
+  if (!stage.useTempo) return { threshold: 1.0, runs: 2 };
+  if (isFinalStage) return { threshold: 0.90, runs: 3 };
+  if (stage.subdivision !== 'none') return { threshold: 0.85, runs: 3 };
+  if (stage.octaves === 2) return { threshold: 0.85, runs: 3 };
+  return { threshold: 0.90, runs: 3 };
+}
+
+/**
+ * Whether a finished run counts toward the stage clean streak and
+ * advancement window. Pentascale metronome stages use pitch vs timing
+ * nuance when {@link PracticeRecord.breakdown} is present; otherwise
+ * and for all other exercises this is `accuracy >= threshold`.
+ */
+export function runMeetsCleanBar(
+  record: PracticeRecord,
+  exerciseKind: ExerciseKind,
+  stage: Stage,
+  isFinalStage: boolean,
+): boolean {
+  const { threshold } = getAdvancementCriteria(stage, isFinalStage);
+  if (
+    isPentascaleKind(exerciseKind)
+    && record.breakdown
+    && stage.useTempo
+  ) {
+    const { wrongPitch, missed, early, late } = record.breakdown;
+    if (wrongPitch + missed > 0) return false;
+    return early + late <= 1;
+  }
+  return record.accuracy + 1e-9 >= threshold;
+}
+
+export type RunOutcomeTier = 'clean' | 'near' | 'rough';
+
+/**
+ * UI tier for a non-drill run: {@link runMeetsCleanBar}, else "near miss"
+ * heuristics (pentascale: two timing slips with clean pitch; general:
+ * accuracy within 5pp of threshold and at least 80%).
+ */
+export function runOutcomeTier(
+  record: PracticeRecord,
+  exerciseKind: ExerciseKind,
+  stage: Stage,
+  isFinalStage: boolean,
+): RunOutcomeTier {
+  if (runMeetsCleanBar(record, exerciseKind, stage, isFinalStage)) return 'clean';
+  const { threshold } = getAdvancementCriteria(stage, isFinalStage);
+  if (
+    isPentascaleKind(exerciseKind)
+    && record.breakdown
+    && stage.useTempo
+  ) {
+    const { wrongPitch, missed, early, late } = record.breakdown;
+    if (wrongPitch + missed === 0 && early + late === 2) return 'near';
+  }
+  if (record.accuracy + 1e-9 >= Math.max(0.8, threshold - 0.05)) return 'near';
+  return 'rough';
+}
+
+/**
+ * Walks {@link ExerciseProgress.history} (newest first) for rows on
+ * {@link stageId}, skipping drill-only rows, and counts how many consecutive
+ * runs rate as {@link RunOutcomeTier} `'rough'` from the most recent attempt.
+ */
+export function consecutiveRoughRunsOnStage(
+  history: readonly PracticeRecord[],
+  stageId: string,
+  exerciseKind: ExerciseKind,
+  stage: Stage,
+  isFinalStage: boolean,
+): number {
+  let n = 0;
+  for (const r of history) {
+    if (r.stageId !== stageId) continue;
+    if (r.purpose === 'drill') break;
+    if (runOutcomeTier(r, exerciseKind, stage, isFinalStage) === 'rough') n += 1;
+    else break;
+  }
+  return n;
+}
+
+/**
+ * Count of consecutive runs that {@link runMeetsCleanBar} accepts on the
+ * given stage, walking backwards from the most recent attempt. Skips
+ * history rows for other stages without breaking the streak (matches
+ * {@link recordPractice} advancement filtering).
+ */
+export function getCleanRunStreak(
+  progress: ExerciseProgress,
+  stageId: string,
+): number {
+  const found = findExercise(progress.exerciseId);
+  const stages = found?.exercise.stages ?? [];
+  const stage = stages.find(s => s.id === stageId);
+  if (!found || !stage) return 0;
+  const stageIndex = stages.findIndex(s => s.id === stageId);
+  const isFinalStage = stageIndex >= 0 && stageIndex === stages.length - 1;
+
+  let streak = 0;
+  for (const record of progress.history) {
+    if (record.stageId !== stageId) continue;
+    if (runMeetsCleanBar(record, found.exercise.kind, stage, isFinalStage)) {
+      streak += 1;
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
 
 /**
  * Structured review entry returned from {@link getReviewExercises}. Includes
@@ -26,22 +164,197 @@ export interface ReviewEntry {
 
 function defaultProgress(): ScalesProgressData {
   return {
-    version: 1,
+    version: 3,
     exercises: {},
     currentTierId: TIERS[0].id,
+    seenOnboarding: false,
+    introducedConcepts: {},
+    introducedExerciseHands: {},
   };
+}
+
+/**
+ * Walk every history record on the supplied `exercises` map and
+ * derive the concept and per-exercise per-hand introduction flags.
+ * Used by the v2 → v3 migration so returning users don't see callouts
+ * for content they've already worked through.
+ *
+ * Records on stages or exercises that no longer exist are skipped —
+ * this is forward-compat against curriculum churn.
+ */
+function backfillIntroductions(
+  exercises: Record<string, ExerciseProgress>,
+): {
+  introducedConcepts: IntroducedConcepts;
+  introducedExerciseHands: Record<string, IntroducedHands>;
+} {
+  const concepts: IntroducedConcepts = {};
+  const exerciseHands: Record<string, IntroducedHands> = {};
+
+  for (const [exerciseId, progress] of Object.entries(exercises)) {
+    if (!progress || !Array.isArray(progress.history)) continue;
+    const found = findExercise(exerciseId);
+    if (!found) continue;
+    const exercise = found.exercise;
+
+    for (const record of progress.history) {
+      const stage = exercise.stages.find(s => s.id === record.stageId);
+      if (!stage) continue;
+
+      for (const concept of triggerConcepts(stage, exercise)) {
+        concepts[concept] = true;
+      }
+      const hands = exerciseHands[exerciseId] ?? {};
+      hands[stage.hand] = true;
+      exerciseHands[exerciseId] = hands;
+    }
+  }
+
+  return { introducedConcepts: concepts, introducedExerciseHands: exerciseHands };
+}
+
+/**
+ * Forward-compat migration of older `ScalesProgressData` shapes. Each step
+ * is responsible for transforming version N into version N+1; new versions
+ * append a step here rather than rewriting the loader.
+ *
+ * Why migrate rather than wipe:
+ *   - Practice history is the single most valuable thing on this app.
+ *     Wiping it on a schema bump (the previous behavior, where any
+ *     unknown version returned a fresh blank) silently destroyed the
+ *     user's streak across rolls.
+ *   - Any new field added to `ScalesProgressData` should default to a
+ *     value that preserves the prior behavior for returning users.
+ *
+ * Returns null only when the input is unrecognizable (corrupted JSON,
+ * missing required fields, or a version newer than this build knows about).
+ */
+function migrateProgress(raw: unknown): ScalesProgressData | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const data = raw as {
+    version?: unknown;
+    currentTierId?: unknown;
+    exercises?: unknown;
+    seenOnboarding?: unknown;
+    introducedConcepts?: unknown;
+    introducedExerciseHands?: unknown;
+  };
+  if (typeof data.version !== 'number') return null;
+  if (typeof data.currentTierId !== 'string') return null;
+  if (!data.exercises || typeof data.exercises !== 'object') return null;
+
+  const exercises = data.exercises as Record<string, ExerciseProgress>;
+  const currentTierId = data.currentTierId;
+
+  // v1 had no onboarding flag and no introduction flags — fold both
+  // forward through the v2 step so the v3 backfill below sees the
+  // same shape regardless of starting version.
+  if (data.version === 1) {
+    const v2: ScalesProgressData = {
+      ...defaultProgress(),
+      exercises,
+      currentTierId,
+      // seenOnboarding stays false: v1 users predate the onboarding
+      // overlay, so they should see it once on their next session.
+      seenOnboarding: false,
+    };
+    const { introducedConcepts, introducedExerciseHands } = backfillIntroductions(exercises);
+    return { ...v2, introducedConcepts, introducedExerciseHands };
+  }
+  if (data.version === 2) {
+    const { introducedConcepts, introducedExerciseHands } = backfillIntroductions(exercises);
+    return {
+      version: 3,
+      exercises,
+      currentTierId,
+      seenOnboarding: data.seenOnboarding === true,
+      introducedConcepts,
+      introducedExerciseHands,
+    };
+  }
+  if (data.version === 3) {
+    // Already current. Re-validate the introduction maps so a corrupted
+    // or partial v3 blob doesn't leak `undefined` into the runtime.
+    const introducedConcepts =
+      data.introducedConcepts && typeof data.introducedConcepts === 'object'
+        ? (data.introducedConcepts as IntroducedConcepts)
+        : {};
+    const introducedExerciseHands =
+      data.introducedExerciseHands && typeof data.introducedExerciseHands === 'object'
+        ? (data.introducedExerciseHands as Record<string, IntroducedHands>)
+        : {};
+    return {
+      version: 3,
+      exercises,
+      currentTierId,
+      seenOnboarding: data.seenOnboarding === true,
+      introducedConcepts,
+      introducedExerciseHands,
+    };
+  }
+  return null;
 }
 
 export function loadProgress(): ScalesProgressData {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return defaultProgress();
-    const data = JSON.parse(raw) as ScalesProgressData;
-    if (data.version !== 1) return defaultProgress();
-    return data;
+    const parsed = JSON.parse(raw);
+    const migrated = migrateProgress(parsed);
+    return migrated ?? defaultProgress();
   } catch {
     return defaultProgress();
   }
+}
+
+/**
+ * Mark the practice onboarding as seen. Idempotent — repeated calls are
+ * cheap. Persists immediately so a refresh after dismiss doesn't re-open
+ * the modal.
+ */
+export function markOnboardingSeen(data: ScalesProgressData): ScalesProgressData {
+  if (data.seenOnboarding) return data;
+  return { ...data, seenOnboarding: true };
+}
+
+/**
+ * Persist the contextual-guidance flags for the supplied stage and
+ * exercise. Idempotent — repeated calls return the same data reference
+ * when nothing changed, so dispatching this on every render or both
+ * the dismiss and run-start paths is cheap.
+ *
+ * The session screen calls this:
+ *   - When the user clicks "Got it" on the GuidanceCallout.
+ *   - On run start, regardless of whether the callout was dismissed —
+ *     a user who just hits Play should still have their flags
+ *     advanced, otherwise the callout would re-appear on the next
+ *     render.
+ *
+ * Only **concept** flags are flipped (modal one-shots). Fingering and
+ * video links are not tracked here — they stay beside the score.
+ */
+export function markGuidanceIntroduced(
+  data: ScalesProgressData,
+  stage: Stage,
+  exercise: ExerciseDefinition,
+): ScalesProgressData {
+  const triggered = triggerConcepts(stage, exercise);
+
+  let conceptsChanged = false;
+  const newConcepts: IntroducedConcepts = { ...data.introducedConcepts };
+  for (const key of triggered) {
+    if (!newConcepts[key]) {
+      newConcepts[key] = true;
+      conceptsChanged = true;
+    }
+  }
+
+  if (!conceptsChanged) return data;
+
+  return {
+    ...data,
+    introducedConcepts: newConcepts,
+  };
 }
 
 export function saveProgress(data: ScalesProgressData): void {
@@ -121,6 +434,89 @@ export function getMasteryTier(
   return 'mastered';
 }
 
+function levelsDoneFromCompletedStage(
+  ep: ExerciseProgress,
+  ex: ExerciseDefinition,
+): number {
+  const completedIdx = ep.completedStageId
+    ? ex.stages.findIndex(s => s.id === ep.completedStageId)
+    : -1;
+  return completedIdx + 1;
+}
+
+/**
+ * Tier-0 major pentascale for the same key as a full major-scale exercise,
+ * when it exists in the curriculum.
+ */
+export function findPentascaleMajorSibling(
+  majorExercise: ExerciseDefinition,
+): ExerciseDefinition | null {
+  if (majorExercise.kind !== 'major-scale') return null;
+  const id = `${majorExercise.key}-pentascale-major`;
+  const found = findExercise(id);
+  return found?.exercise ?? null;
+}
+
+/**
+ * Pentascale major is the first leg of learning that key's major scale.
+ * Combines cleared levels and tier for progress surfaces (home fluency,
+ * mastery dialog, progress chips).
+ *
+ * - `levelsDone` / `totalLevels` sum pentascale + full-scale stages (capped).
+ * - `tier`: full-scale fluent/mastered wins; otherwise pentascale fluent or
+ *   mastered surfaces as **fluent** on the combined card (pentascale alone
+ *   never shows as **mastered** until the full scale is mastered).
+ */
+export function getCombinedMajorScaleMastery(
+  data: ScalesProgressData,
+  majorExercise: ExerciseDefinition,
+): {
+  tier: MasteryTier;
+  levelsDone: number;
+  totalLevels: number;
+  started: boolean;
+} {
+  const majorEp = getExerciseProgress(data, majorExercise.id);
+  const majorLd = levelsDoneFromCompletedStage(majorEp, majorExercise);
+  const pentaEx = findPentascaleMajorSibling(majorExercise);
+  if (!pentaEx) {
+    return {
+      tier: getMasteryTier(majorEp, majorExercise),
+      levelsDone: majorLd,
+      totalLevels: majorExercise.stages.length,
+      started: majorLd > 0,
+    };
+  }
+  const pentaEp = getExerciseProgress(data, pentaEx.id);
+  const pentaLd = levelsDoneFromCompletedStage(pentaEp, pentaEx);
+  const totalLevels = pentaEx.stages.length + majorExercise.stages.length;
+  const levelsDone = Math.min(totalLevels, pentaLd + majorLd);
+  const majorTier = getMasteryTier(majorEp, majorExercise);
+  let tier: MasteryTier;
+  if (majorTier === 'mastered') tier = 'mastered';
+  else if (majorTier === 'fluent') tier = 'fluent';
+  else {
+    const pentaTier = getMasteryTier(pentaEp, pentaEx);
+    tier = pentaTier === 'mastered' || pentaTier === 'fluent' ? 'fluent' : 'learning';
+  }
+  const started = pentaLd > 0
+    || majorLd > 0
+    || pentaEp.history.length > 0
+    || majorEp.history.length > 0;
+  return { tier, levelsDone, totalLevels, started };
+}
+
+/**
+ * Major pentascales are folded into their key's major-scale mastery row;
+ * skip them in whole-library mastered counts so we do not double-count.
+ */
+export function exerciseContributesToGlobalMasteryTotals(
+  ex: ExerciseDefinition,
+): boolean {
+  if (ex.kind !== 'pentascale-major') return true;
+  return findExercise(`${ex.key}-major-scale`) == null;
+}
+
 /**
  * Record a practice result and evaluate whether the user should advance.
  */
@@ -136,20 +532,29 @@ export function recordPractice(
   let newCurrentStageId = progress.currentStageId;
 
   if (found && record.stageId === progress.currentStageId) {
-    const recentForStage = updatedHistory
-      .filter(r => r.stageId === record.stageId)
-      .slice(0, ADVANCEMENT_RUNS);
+    const stages = found.exercise.stages;
+    const currentIdx = stages.findIndex(s => s.id === record.stageId);
+    const stage = currentIdx >= 0 ? stages[currentIdx] : null;
 
-    const shouldAdvance =
-      recentForStage.length >= ADVANCEMENT_RUNS &&
-      recentForStage.every(r => r.accuracy >= ADVANCEMENT_THRESHOLD);
+    if (stage) {
+      const isFinalStage = currentIdx === stages.length - 1;
+      const { runs } = getAdvancementCriteria(stage, isFinalStage);
 
-    if (shouldAdvance) {
-      newCompletedStageId = record.stageId;
-      const stages = found.exercise.stages;
-      const currentIdx = stages.findIndex(s => s.id === record.stageId);
-      if (currentIdx >= 0 && currentIdx < stages.length - 1) {
-        newCurrentStageId = stages[currentIdx + 1].id;
+      const recentForStage = updatedHistory
+        .filter(r => r.stageId === record.stageId)
+        .slice(0, runs);
+
+      const shouldAdvance =
+        recentForStage.length >= runs &&
+        recentForStage.every(r =>
+          runMeetsCleanBar(r, found.exercise.kind, stage, isFinalStage),
+        );
+
+      if (shouldAdvance) {
+        newCompletedStageId = record.stageId;
+        if (currentIdx >= 0 && currentIdx < stages.length - 1) {
+          newCurrentStageId = stages[currentIdx + 1].id;
+        }
       }
     }
   }
@@ -162,10 +567,18 @@ export function recordPractice(
   //     user's refreshed it successfully. Runs on *other* stages leave the
   //     flag alone so the reminder sticks until the shaky stage itself is
   //     re-played.
+  //   - Drill records sidestep both directions: a shaky drill run does not
+  //     queue a review (voluntary polishing must never demote mastery on a
+  //     single off run), and a clean drill run does not clear an existing
+  //     review flag (review is about regular practice). Drill records still
+  //     get appended to history so getExerciseProficiency keeps working.
   const isShaky = record.accuracy < REVIEW_ACCURACY_THRESHOLD;
   let needsReview: boolean;
   let reviewStageId: string | null;
-  if (isShaky) {
+  if (record.purpose === 'drill') {
+    needsReview = progress.needsReview;
+    reviewStageId = progress.reviewStageId;
+  } else if (isShaky) {
     needsReview = true;
     reviewStageId = record.stageId;
   } else if (progress.reviewStageId && progress.reviewStageId === record.stageId) {

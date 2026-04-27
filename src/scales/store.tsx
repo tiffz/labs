@@ -1,10 +1,18 @@
 import React, { createContext, useContext, useReducer, useCallback, useRef, useEffect, useState } from 'react';
-import type { SessionPlan, SessionExercise } from './curriculum/types';
+import type { SessionPlan, SessionExercise, ExerciseDefinition, Stage } from './curriculum/types';
 import type { ScalesProgressData, PracticeRecord } from './progress/types';
 import type { PracticeNoteResult } from '../shared/practice/types';
 import type { PianoScore } from '../shared/music/scoreTypes';
-import { loadProgress, saveProgress, recordPractice, getExerciseProgress } from './progress/store';
+import {
+  loadProgress,
+  saveProgress,
+  recordPractice,
+  getExerciseProgress,
+  markOnboardingSeen,
+  markGuidanceIntroduced,
+} from './progress/store';
 import { planSession } from './curriculum/sessionPlanner';
+import { findExercise } from './curriculum/tiers';
 import { getMidiInput, MidiInput } from '../shared/midi/midiInput';
 import type { MidiDevice } from '../shared/music/scoreTypes';
 import { recordMidiNoteOn, recordMidiNoteOff, clearAll as clearTimingStore } from '../shared/practice/practiceTimingStore';
@@ -16,6 +24,7 @@ import {
   updateAudioPrefs,
   isMicrophonePermissionGranted,
 } from './utils/audioPrefs';
+import { advanceFreeTempoCursor } from './utils/freeTempoCursorStep';
 
 const analytics = createAppAnalytics('scales');
 
@@ -52,6 +61,40 @@ export interface ExerciseResult {
 }
 export type InputMode = 'midi' | 'mic' | 'none';
 
+/**
+ * Per-exercise rollup of how a completed session went, surfaced on the
+ * post-session Home screen. Built from `currentSessionRuns` at
+ * COMPLETE_SESSION time so we can show "what you cleared / drilled / are
+ * still working on" without consumers re-deriving it from history.
+ */
+export interface SessionExerciseSummary {
+  exerciseId: string;
+  /** "C Major Scale" — read off the exercise definition. */
+  exerciseLabel: string;
+  /**
+   * - `cleared`: at least one normal-purpose run advanced the user to a new stage
+   *   in this session.
+   * - `drilled`: the user opted into Drill it for this exercise (the stage was
+   *   already cleared coming into the session, or cleared during it).
+   * - `shaky`: practiced but no advancement and no drilling — still working on
+   *   the same stage.
+   */
+  status: 'cleared' | 'drilled' | 'shaky';
+  /** Highest accuracy across all runs of this exercise in the session. */
+  bestAccuracy: number;
+  /** Total run count for this exercise within the session. */
+  runs: number;
+}
+
+/** Internal accumulator entry for `currentSessionRuns`. Exported for tests. */
+export interface SessionRunRecord {
+  exerciseId: string;
+  stageId: string;
+  advanced: boolean;
+  accuracy: number;
+  purpose?: 'drill';
+}
+
 interface ScalesState {
   screen: Screen;
   progress: ScalesProgressData;
@@ -82,6 +125,18 @@ interface ScalesState {
   lastExerciseResult: ExerciseResult | null;
   /** True when the user just finished a full session (controls home screen CTA). */
   sessionComplete: boolean;
+  /**
+   * Per-FINISH_EXERCISE run records for the *currently active* session.
+   * Reset on START_SESSION; consumed and cleared on COMPLETE_SESSION
+   * (where it gets aggregated into `lastSessionSummary`).
+   */
+  currentSessionRuns: SessionRunRecord[];
+  /**
+   * Snapshot of the most recently completed session, persisted in memory
+   * until the next session starts. Drives the post-session summary card
+   * on the Home screen. Null until at least one session completes.
+   */
+  lastSessionSummary: SessionExerciseSummary[] | null;
   /** MIDI notes from a wrong-note attempt (brief flash, not recorded). */
   wrongNoteFlash: number[] | null;
 }
@@ -103,7 +158,14 @@ type Action =
    * view returns to a clean pre-run state.
    */
   | { type: 'STOP_PRACTICE_RUN' }
-  | { type: 'FINISH_EXERCISE'; exerciseId: string; stageId: string }
+  | { type: 'FINISH_EXERCISE'; exerciseId: string; stageId: string; purpose?: 'drill' }
+  /**
+   * Free-tempo only: after a perfect silent dry run ("Nice" overlay), record a
+   * full-accuracy history row so the streak matches what the learner just
+   * proved, before the scored engine pass. Does not touch session run
+   * summaries or `lastExerciseResult`.
+   */
+  | { type: 'RECORD_FREE_TEMPO_WARMUP_HIT'; exerciseId: string; stageId: string; noteCount: number }
   | { type: 'NEXT_EXERCISE'; score: PianoScore }
   | { type: 'COMPLETE_SESSION' }
   | { type: 'SET_MIDI_CONNECTED'; connected: boolean }
@@ -116,7 +178,9 @@ type Action =
   | { type: 'FREE_TEMPO_RUN_COMPLETE' }
   | { type: 'RESTART_FREE_TEMPO' }
   | { type: 'WRONG_NOTE_FLASH'; notes: number[] }
-  | { type: 'LOAD_STAGE'; exercise: SessionExercise; score: PianoScore };
+  | { type: 'LOAD_STAGE'; exercise: SessionExercise; score: PianoScore }
+  | { type: 'MARK_ONBOARDING_SEEN' }
+  | { type: 'MARK_GUIDANCE_INTRODUCED'; stage: Stage; exercise: ExerciseDefinition };
 
 function initialState(): ScalesState {
   const audioPrefs = loadAudioPrefs();
@@ -146,8 +210,56 @@ function initialState(): ScalesState {
     freeTempoRunComplete: false,
     lastExerciseResult: null,
     sessionComplete: false,
+    currentSessionRuns: [],
+    lastSessionSummary: null,
     wrongNoteFlash: null,
   };
+}
+
+/**
+ * Aggregate a flat list of per-run records (one per FINISH_EXERCISE) into
+ * a per-exercise rollup for the post-session summary card. Order matches
+ * the order each exercise was *first practiced* in the session, so the
+ * card reads in playback order.
+ *
+ * Status precedence: a single drill run flips status to `drilled` (the
+ * user opted in deliberately, so it's the most informative label).
+ * Otherwise any advancement makes it `cleared`. The fallback is `shaky`
+ * — practiced but no progression and no deliberate drilling.
+ */
+// eslint-disable-next-line react-refresh/only-export-components -- pure helper, exported for tests
+export function buildSessionSummary(runs: SessionRunRecord[]): SessionExerciseSummary[] {
+  const order: string[] = [];
+  const grouped = new Map<string, SessionRunRecord[]>();
+  for (const run of runs) {
+    if (!grouped.has(run.exerciseId)) {
+      order.push(run.exerciseId);
+      grouped.set(run.exerciseId, []);
+    }
+    grouped.get(run.exerciseId)!.push(run);
+  }
+
+  const out: SessionExerciseSummary[] = [];
+  for (const exerciseId of order) {
+    const exRuns = grouped.get(exerciseId)!;
+    const drilled = exRuns.some(r => r.purpose === 'drill');
+    const cleared = !drilled && exRuns.some(r => r.advanced);
+    const status: SessionExerciseSummary['status'] = drilled
+      ? 'drilled'
+      : cleared
+      ? 'cleared'
+      : 'shaky';
+    const bestAccuracy = exRuns.reduce((m, r) => Math.max(m, r.accuracy), 0);
+    const found = findExercise(exerciseId);
+    out.push({
+      exerciseId,
+      exerciseLabel: found?.exercise.label ?? exerciseId,
+      status,
+      bestAccuracy,
+      runs: exRuns.length,
+    });
+  }
+  return out;
 }
 
 function reducer(state: ScalesState, action: Action): ScalesState {
@@ -166,6 +278,7 @@ function reducer(state: ScalesState, action: Action): ScalesState {
         currentRunStartTime: null,
         lastExerciseResult: null,
         sessionComplete: false,
+        currentSessionRuns: [],
       };
 
     case 'SET_ACTIVE_EXERCISE':
@@ -236,6 +349,22 @@ function reducer(state: ScalesState, action: Action): ScalesState {
         wrongNoteFlash: null,
       };
 
+    case 'RECORD_FREE_TEMPO_WARMUP_HIT': {
+      const n = action.noteCount;
+      if (n < 1) return state;
+      const record: PracticeRecord = {
+        exerciseId: action.exerciseId,
+        stageId: action.stageId,
+        timestamp: Date.now(),
+        accuracy: 1,
+        noteCount: n,
+        correctCount: n,
+      };
+      const newProgress = recordPractice(state.progress, record);
+      saveProgress(newProgress);
+      return { ...state, progress: newProgress };
+    }
+
     case 'FINISH_EXERCISE': {
       const total = state.score
         ? state.score.parts.reduce(
@@ -272,6 +401,8 @@ function reducer(state: ScalesState, action: Action): ScalesState {
         accuracy,
         noteCount: total,
         correctCount: correct,
+        breakdown,
+        purpose: action.purpose,
       };
 
       const newProgress = recordPractice(state.progress, record);
@@ -280,13 +411,23 @@ function reducer(state: ScalesState, action: Action): ScalesState {
       const afterStageId = getExerciseProgress(newProgress, action.exerciseId).currentStageId;
       const advanced = afterStageId !== action.stageId;
 
+      const runRecord: SessionRunRecord = {
+        exerciseId: action.exerciseId,
+        stageId: action.stageId,
+        advanced,
+        accuracy,
+        purpose: action.purpose,
+      };
+
       return {
         ...state,
         progress: newProgress,
         isPlaying: false,
         currentMeasureIndex: -1,
         currentNoteIndices: new Map(),
+        freeTempoRunComplete: false,
         lastExerciseResult: { accuracy, correct, total, advanced, breakdown },
+        currentSessionRuns: [...state.currentSessionRuns, runRecord],
       };
     }
 
@@ -315,8 +456,18 @@ function reducer(state: ScalesState, action: Action): ScalesState {
       };
     }
 
-    case 'COMPLETE_SESSION':
-      return { ...state, screen: 'home', sessionComplete: true, isPlaying: false, lastExerciseResult: null };
+    case 'COMPLETE_SESSION': {
+      const summary = buildSessionSummary(state.currentSessionRuns);
+      return {
+        ...state,
+        screen: 'home',
+        sessionComplete: true,
+        isPlaying: false,
+        lastExerciseResult: null,
+        currentSessionRuns: [],
+        lastSessionSummary: summary,
+      };
+    }
 
     case 'SET_MIDI_CONNECTED':
       return {
@@ -371,35 +522,19 @@ function reducer(state: ScalesState, action: Action): ScalesState {
 
     case 'ADVANCE_FREE_TEMPO': {
       if (!state.score) return state;
-      const parts = state.score.parts;
-      const maxMeasures = Math.max(...parts.map(p => p.measures.length), 0);
-      let mi = state.freeTempoMeasureIndex;
-      let ni = state.freeTempoNoteIndex + 1;
-      while (mi < maxMeasures) {
-        const maxNotes = Math.max(...parts.map(p => p.measures[mi]?.notes.length ?? 0), 0);
-        while (ni < maxNotes) {
-          const hasPlayable = parts.some(p => {
-            const note = p.measures[mi]?.notes[ni];
-            return note && !note.rest;
-          });
-          if (hasPlayable) {
-            const advNoteIndices = new Map<string, number>();
-            for (const part of parts) {
-              const key = part.hand === 'right' ? 'rh' : part.hand === 'left' ? 'lh' : 'voice';
-              advNoteIndices.set(key, ni);
-            }
-            return {
-              ...state,
-              freeTempoMeasureIndex: mi,
-              freeTempoNoteIndex: ni,
-              currentNoteIndices: advNoteIndices,
-              wrongNoteFlash: null,
-            };
-          }
-          ni++;
-        }
-        mi++;
-        ni = 0;
+      const stepped = advanceFreeTempoCursor(
+        state.score,
+        state.freeTempoMeasureIndex,
+        state.freeTempoNoteIndex,
+      );
+      if (stepped.kind === 'next') {
+        return {
+          ...state,
+          freeTempoMeasureIndex: stepped.measureIndex,
+          freeTempoNoteIndex: stepped.noteIndex,
+          currentNoteIndices: stepped.currentNoteIndices,
+          wrongNoteFlash: null,
+        };
       }
       return {
         ...state,
@@ -454,6 +589,24 @@ function reducer(state: ScalesState, action: Action): ScalesState {
         lastExerciseResult: null,
       };
 
+    case 'MARK_ONBOARDING_SEEN': {
+      const next = markOnboardingSeen(state.progress);
+      if (next === state.progress) return state;
+      saveProgress(next);
+      return { ...state, progress: next };
+    }
+
+    case 'MARK_GUIDANCE_INTRODUCED': {
+      const next = markGuidanceIntroduced(
+        state.progress,
+        action.stage,
+        action.exercise,
+      );
+      if (next === state.progress) return state;
+      saveProgress(next);
+      return { ...state, progress: next };
+    }
+
     default:
       return state;
   }
@@ -473,6 +626,13 @@ interface ScalesContextValue {
    * this to avoid flashing a "no input" state before restoration completes.
    */
   audioBootstrapping: boolean;
+  /**
+   * False until the first Web MIDI `requestMIDIAccess` + device enumeration
+   * finishes. Keeps {@link InputGateway} hidden until we know whether a
+   * keyboard is already connected (avoids a one-frame "connect your piano"
+   * flash for MIDI users).
+   */
+  midiReady: boolean;
 }
 
 const ScalesContext = createContext<ScalesContextValue | null>(null);
@@ -489,6 +649,7 @@ export function ScalesProvider({ children }: { children: React.ReactNode }) {
   const [audioBootstrapping, setAudioBootstrapping] = useState(
     () => loadAudioPrefs().microphoneRequested,
   );
+  const [midiReady, setMidiReady] = useState(false);
 
   useEffect(() => {
     disabledDeviceIdsRef.current = state.disabledMidiDeviceIds;
@@ -499,6 +660,7 @@ export function ScalesProvider({ children }: { children: React.ReactNode }) {
   }, [state.disabledMidiDeviceIds]);
 
   useEffect(() => {
+    let cancelled = false;
     const midi = getMidiInput();
     midiRef.current = midi;
     midi.onNote((type, note, _velocity, timestamp, deviceId) => {
@@ -524,8 +686,13 @@ export function ScalesProvider({ children }: { children: React.ReactNode }) {
         dispatch({ type: 'SET_INPUT_MODE', mode: 'midi' });
       }
     });
-    midi.init();
-    return () => { clearTimingStore(); };
+    void midi.init().finally(() => {
+      if (!cancelled) setMidiReady(true);
+    });
+    return () => {
+      cancelled = true;
+      clearTimingStore();
+    };
   }, []);
 
   const startMicrophoneInput = useCallback(async (): Promise<boolean> => {
@@ -618,7 +785,7 @@ export function ScalesProvider({ children }: { children: React.ReactNode }) {
   }, [state.progress]);
 
   return (
-    <ScalesContext.Provider value={{ state, dispatch, startSession, startMicrophoneInput, stopMicrophoneInput, toggleMicrophone, toggleMidiDevice, audioBootstrapping }}>
+    <ScalesContext.Provider value={{ state, dispatch, startSession, startMicrophoneInput, stopMicrophoneInput, toggleMicrophone, toggleMidiDevice, audioBootstrapping, midiReady }}>
       {children}
     </ScalesContext.Provider>
   );

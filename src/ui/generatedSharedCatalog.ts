@@ -3208,6 +3208,24 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-music-scales-ts-scalevariant",
+    "name": "ScaleVariant",
+    "path": "src/shared/music/scales.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Variant of a minor scale. `natural` is the default (and the only variant that applies when `quality === 'major'`); `harmonic` and `melodic` are minor-only. Direction asymmetry of melodic minor: The melodic minor scale is *direction-dependent* by historical convention. Ascending uses raised 6 + raised 7 (like a major scale with a flat 3rd); descending reverts to natural minor. This means a single `melodic-minor` scale plays *different note sets* on the way up versus the way down — the only built-in scale form in this codebase that does so. Future contributors: do NOT collapse this into a single interval array. The asymmetry is musical, not a bug.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
     "id": "src-shared-music-scales-ts-subdivision",
     "name": "Subdivision",
     "path": "src/shared/music/scales.ts",

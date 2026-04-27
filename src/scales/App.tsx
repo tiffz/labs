@@ -26,8 +26,12 @@ function ScreenRouter() {
 }
 
 function AppContent() {
-  const { state, audioBootstrapping } = useScales();
+  const { state, audioBootstrapping, midiReady } = useScales();
   const hasInput = hasEnabledMidiDevice(state) || state.microphoneActive;
+  // Wait out mic permission restore AND the first Web MIDI enumeration so
+  // "Connect your piano" does not flash for users whose keyboard is
+  // already plugged in (midiDevices is empty until requestMIDIAccess resolves).
+  const suppressConnectModal = audioBootstrapping || !midiReady;
 
   return (
     <div className="scales-app">
@@ -35,7 +39,7 @@ function AppContent() {
       <main id="main" className="scales-main">
         <ScreenRouter />
       </main>
-      {!hasInput && !audioBootstrapping && <InputGateway />}
+      {!hasInput && !suppressConnectModal && <InputGateway />}
       {debugMode && <DebugPanel />}
     </div>
   );

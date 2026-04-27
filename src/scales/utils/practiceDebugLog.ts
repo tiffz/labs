@@ -10,10 +10,22 @@ export type DebugEvent =
   | { type: 'pitch_raw'; t: number; midi: number | null; rms: number; freq?: number }
   | { type: 'note_on'; t: number; midi: number; source: InputSource; rawTimestamp: number; compensatedTimestamp: number }
   | { type: 'note_off'; t: number; midi: number; source: InputSource }
-  | { type: 'expected_change'; t: number; expected: { noteId: string; pitches: number[]; hand: string }[] }
+  | { type: 'expected_change'; t: number; expected: { noteId: string; pitches: number[]; hand: string; partId: string; siblingAnchored?: boolean }[] }
   | { type: 'eval_attempt'; t: number; noteId: string; played: number[]; expectedPitches: number[];
       pitchCorrect: boolean; timing: string; timingOffsetMs: number;
-      midiTimesSnapshot: [number, number][]; expectedTime: number | null }
+      midiTimesSnapshot: [number, number][]; expectedTime: number | null;
+      // Per-hand grading instrumentation. Populated only in both-hand
+      // exercises; the values let us reconstruct exactly which anchoring
+      // path produced a given pass/fail decision so we can diagnose
+      // wrong-pitch false positives without rebuilding the whole pipeline.
+      hand?: string;
+      partId?: string;
+      cachedOffset?: number | null;
+      derivedOffset?: number | null;
+      anchorRejected?: boolean;
+      rhReferenceLow?: number | null;
+      siblingFallbackUsed?: boolean;
+      siblingAnchored?: boolean }
   | { type: 'grace_miss'; t: number; noteId: string; expectedPitches: number[]; passedAt: number }
   | { type: 'active_notes_change'; t: number; activeNotes: number[] }
   | { type: 'practice_start'; t: number; mode: string; bpm: number; exerciseId: string;

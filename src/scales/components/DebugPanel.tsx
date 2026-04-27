@@ -61,7 +61,7 @@ function noteOnColor(e: DebugEvent): string {
 export default function DebugPanel() {
   const [events, setEvents] = useState<DebugEvent[]>([]);
   const [counts, setCounts] = useState({ pitch: 0, midiOn: 0, micOn: 0, noteOff: 0, eval: 0, miss: 0 });
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const [showPitch, setShowPitch] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
 

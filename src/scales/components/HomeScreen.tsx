@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import ButtonBase from '@mui/material/ButtonBase';
@@ -8,10 +8,19 @@ import LinearProgress from '@mui/material/LinearProgress';
 import { useScales, hasEnabledMidiDevice } from '../store';
 import { TIERS } from '../curriculum/tiers';
 import type { ExerciseKind } from '../curriculum/types';
-import { getExerciseProgress, getMasteryTier, getReviewExercises } from '../progress/store';
+import {
+  getExerciseProgress,
+  getMasteryTier,
+  getReviewExercises,
+  getCombinedMajorScaleMastery,
+} from '../progress/store';
 import ScalesInputSources from './InputSources';
 import MasteryDetailsDialog, { type MasteryCategory } from './MasteryDetailsDialog';
 import DueForReviewDialog from './DueForReviewDialog';
+import MasteryTierLegend from './MasteryTierLegend';
+import SessionSummaryCard from './SessionSummaryCard';
+import PracticeOnboarding from './PracticeOnboarding';
+import { planSession } from '../curriculum/sessionPlanner';
 
 // Material 3 reference:
 //   https://m3.material.io/styles/typography/type-scale-tokens
@@ -186,8 +195,11 @@ function BigStat({
 
 export default function HomeScreen() {
   const { state, dispatch, startSession } = useScales();
-  const { progress, microphoneActive, sessionComplete } = state;
+  const { progress, microphoneActive, sessionComplete, lastSessionSummary } = state;
   const anyDeviceEnabled = hasEnabledMidiDevice(state);
+  // Pre-compute the next session plan for the post-session "Up next"
+  // tip. Cheap synchronous call — same shape we'd run on Practice now.
+  const upcomingPlan = sessionComplete && lastSessionSummary ? planSession(progress) : null;
 
   const currentTier = TIERS.find(t => t.id === progress.currentTierId) ?? TIERS[0];
 
@@ -197,12 +209,19 @@ export default function HomeScreen() {
   // session.
   const tierExerciseProgress = currentTier.exercises.map(ex => {
     const ep = getExerciseProgress(progress, ex.id);
-    const tier = getMasteryTier(ep, ex);
-    const completedIdx = ep.completedStageId
-      ? ex.stages.findIndex(s => s.id === ep.completedStageId)
-      : -1;
-    const levelsDone = completedIdx + 1;
-    const totalLevels = ex.stages.length;
+    const combined = ex.kind === 'major-scale'
+      ? getCombinedMajorScaleMastery(progress, ex)
+      : null;
+    const tier = combined ? combined.tier : getMasteryTier(ep, ex);
+    const levelsDone = combined
+      ? combined.levelsDone
+      : (() => {
+        const completedIdx = ep.completedStageId
+          ? ex.stages.findIndex(s => s.id === ep.completedStageId)
+          : -1;
+        return completedIdx + 1;
+      })();
+    const totalLevels = combined ? combined.totalLevels : ex.stages.length;
     return { ex, tier, levelsDone, totalLevels };
   });
 
@@ -214,7 +233,10 @@ export default function HomeScreen() {
   // (Internally these difficulty steps are still called "stages" in the
   // type system and progress store; only the user-facing copy uses "level".)
   const isScaleKind = (k: ExerciseKind) =>
-    k === 'major-scale' || k === 'natural-minor-scale';
+    k === 'major-scale' ||
+    k === 'natural-minor-scale' ||
+    k === 'harmonic-minor-scale' ||
+    k === 'melodic-minor-scale';
   let levelsCleared = 0;
   let totalLevels = 0;
   let scalesTotal = 0;
@@ -231,7 +253,9 @@ export default function HomeScreen() {
     for (const ex of t.exercises) {
       totalLevels += ex.stages.length;
       const ep = getExerciseProgress(progress, ex.id);
-      const tier = getMasteryTier(ep, ex);
+      const tier = ex.kind === 'major-scale'
+        ? getCombinedMajorScaleMastery(progress, ex).tier
+        : getMasteryTier(ep, ex);
       if (ep.completedStageId) {
         const idx = ex.stages.findIndex(s => s.id === ep.completedStageId);
         if (idx >= 0) levelsCleared += idx + 1;
@@ -260,6 +284,28 @@ export default function HomeScreen() {
   const hasHistory = totalPracticed > 0;
 
   const hasInput = anyDeviceEnabled || microphoneActive;
+  const homeMidiPrevDownRef = useRef(false);
+
+  useEffect(() => {
+    const size = state.activeMidiNotes.size;
+    const wasDown = homeMidiPrevDownRef.current;
+    if (state.screen !== 'home') {
+      homeMidiPrevDownRef.current = size > 0;
+      return;
+    }
+    if (document.querySelector('.MuiDialog-root')) {
+      homeMidiPrevDownRef.current = size > 0;
+      return;
+    }
+    homeMidiPrevDownRef.current = size > 0;
+    if (size === 0 || wasDown || !hasInput) return;
+    startSession();
+  }, [state.screen, state.activeMidiNotes, hasInput, startSession]);
+
+  const sessionRecapRows =
+    sessionComplete && lastSessionSummary && lastSessionSummary.length > 0
+      ? lastSessionSummary
+      : null;
 
   const openProgressMap = () => dispatch({ type: 'SET_SCREEN', screen: 'progress' });
 
@@ -269,6 +315,31 @@ export default function HomeScreen() {
   // the standalone Due-for-review card below the stats row.
   const [masteryDialog, setMasteryDialog] = useState<MasteryCategory | null>(null);
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+  // Manual re-entry into the practice-onboarding modal. The auto-open
+  // path lives in SessionScreen (first-ever practice); this link gives
+  // returning users a way to revisit the principles without having to
+  // start a session.
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
+
+  const primaryCtaButton = (
+    <Button
+      variant="contained"
+      onClick={startSession}
+      disabled={!hasInput}
+      disableElevation
+      startIcon={<Icon name={sessionComplete ? 'skip_next' : 'play_arrow'} size={20} />}
+      sx={{
+        height: sessionComplete ? 48 : 52,
+        px: sessionComplete ? 5 : 7,
+        minWidth: { sm: 260 },
+        borderRadius: '999px',
+        ...TYPE.labelLarge,
+        fontSize: '1rem',
+      }}
+    >
+      {sessionComplete ? 'Next lesson' : 'Practice now'}
+    </Button>
+  );
 
   return (
     <Box
@@ -276,16 +347,16 @@ export default function HomeScreen() {
         width: '100%',
         maxWidth: 1120,
         mx: 'auto',
-        px: { xs: 4, sm: 6, md: 10 },
-        py: { xs: 6, md: 10 },
+        px: sessionComplete ? { xs: 3, sm: 4, md: 6 } : { xs: 4, sm: 6, md: 10 },
+        py: sessionComplete ? { xs: 3, md: 4 } : { xs: 6, md: 10 },
       }}
     >
       {/* Hero */}
-      <Box sx={{ textAlign: 'center', mb: { xs: 8, md: 10 } }}>
-        <Box sx={{ mb: 4 }}>
+      <Box sx={{ textAlign: 'center', mb: sessionComplete ? { xs: 3, md: 4 } : { xs: 8, md: 10 } }}>
+        <Box sx={{ mb: sessionComplete ? 1.5 : 4 }}>
           <Icon
             name={sessionComplete ? 'check_circle' : 'piano'}
-            size={40}
+            size={sessionComplete ? 36 : 40}
             style={{
               color: sessionComplete
                 ? 'var(--mui-palette-success-main, #16a34a)'
@@ -293,11 +364,24 @@ export default function HomeScreen() {
             }}
           />
         </Box>
-        <Typography component="h1" sx={{ ...TYPE.displaySmall, color: 'text.primary', mb: 2 }}>
+        <Typography
+          component="h1"
+          sx={{
+            ...TYPE.displaySmall,
+            color: 'text.primary',
+            mb: sessionComplete ? 1 : 2,
+          }}
+        >
           {sessionComplete ? 'Lesson complete' : 'Learn Your Scales'}
         </Typography>
         <Typography
-          sx={{ ...TYPE.bodyLarge, color: 'text.secondary', mb: 5, maxWidth: 560, mx: 'auto' }}
+          sx={{
+            ...TYPE.bodyLarge,
+            color: 'text.secondary',
+            mb: sessionComplete ? 2 : 5,
+            maxWidth: 560,
+            mx: 'auto',
+          }}
         >
           {sessionComplete
             ? 'Nice work. Ready for the next one?'
@@ -306,28 +390,57 @@ export default function HomeScreen() {
         <Box sx={{ display: 'flex', justifyContent: 'center' }}>
           <ScalesInputSources />
         </Box>
+        {/* Subtle re-entry into the practice-onboarding cards. Sits
+            under the input sources so the hero hierarchy stays
+            CTA-first; the link only matters to users curious enough
+            to seek it out. */}
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: sessionComplete ? 1 : 2 }}>
+          <Button
+            variant="text"
+            onClick={() => setOnboardingOpen(true)}
+            startIcon={<Icon name="info" size={16} />}
+            sx={{
+              ...TYPE.labelLarge,
+              color: 'text.secondary',
+              textTransform: 'none',
+              fontWeight: 500,
+              '&:hover': {
+                bgcolor: 'transparent',
+                color: 'primary.main',
+              },
+            }}
+          >
+            How to practice
+          </Button>
+        </Box>
       </Box>
 
-      {/* Primary CTA */}
-      <Box sx={{ display: 'flex', justifyContent: 'center', mb: { xs: 8, md: 10 } }}>
-        <Button
-          variant="contained"
-          onClick={startSession}
-          disabled={!hasInput}
-          disableElevation
-          startIcon={<Icon name={sessionComplete ? 'skip_next' : 'play_arrow'} size={20} />}
+      {/* After a finished lesson, CTA comes first so "Next lesson" stays in
+          view; the recap card follows for users who want the detail. */}
+      {sessionRecapRows ? (
+        <>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              mb: { xs: 2, md: 2.5 },
+            }}
+          >
+            {primaryCtaButton}
+          </Box>
+          <SessionSummaryCard summary={sessionRecapRows} upcomingPlan={upcomingPlan} compact />
+        </>
+      ) : (
+        <Box
           sx={{
-            height: 52,
-            px: 7,
-            minWidth: { sm: 260 },
-            borderRadius: '999px',
-            ...TYPE.labelLarge,
-            fontSize: '1rem',
+            display: 'flex',
+            justifyContent: 'center',
+            mb: sessionComplete ? { xs: 4, md: 5 } : { xs: 8, md: 10 },
           }}
         >
-          {sessionComplete ? 'Next lesson' : 'Practice now'}
-        </Button>
-      </Box>
+          {primaryCtaButton}
+        </Box>
+      )}
 
       {/* Progress + stats grid */}
       <Box
@@ -514,9 +627,12 @@ export default function HomeScreen() {
               >
                 Your practice
               </Typography>
-              <Typography component="h2" sx={{ ...TYPE.titleLarge, color: 'text.primary' }}>
-                Mastery at a glance
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography component="h2" sx={{ ...TYPE.titleLarge, color: 'text.primary' }}>
+                  Mastery at a glance
+                </Typography>
+                <MasteryTierLegend ariaLabel="What does fluent or mastered mean?" />
+              </Box>
             </Box>
 
             {/* Hero stats row — every stat uses the same big-number treatment
@@ -685,6 +801,16 @@ export default function HomeScreen() {
         onClose={() => setReviewDialogOpen(false)}
         entries={reviewEntries}
         progress={progress}
+      />
+      <PracticeOnboarding
+        open={onboardingOpen}
+        onDismiss={() => {
+          setOnboardingOpen(false);
+          // Manual reopens still flip the seen flag — once a user has
+          // opened the cards from Home they certainly count as
+          // "have seen onboarding".
+          dispatch({ type: 'MARK_ONBOARDING_SEEN' });
+        }}
       />
     </Box>
   );

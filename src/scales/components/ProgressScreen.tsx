@@ -6,8 +6,15 @@ import LinearProgress from '@mui/material/LinearProgress';
 import IconButton from '@mui/material/IconButton';
 import { useScales } from '../store';
 import { TIERS } from '../curriculum/tiers';
-import { getExerciseProgress, getExerciseProficiency, getMasteryTier } from '../progress/store';
+import {
+  getExerciseProgress,
+  getExerciseProficiency,
+  getMasteryTier,
+  getCombinedMajorScaleMastery,
+  exerciseContributesToGlobalMasteryTotals,
+} from '../progress/store';
 import ScalesInputSources from './InputSources';
+import MasteryTierLegend from './MasteryTierLegend';
 
 // M3 type-scale helpers.
 const TYPE = {
@@ -86,10 +93,30 @@ function statusIcon(status: TierStatus): string {
 }
 
 function kindAbbrev(kind: string): string {
+  if (kind.includes('pentascale-major')) return 'Maj 5-fin';
+  if (kind.includes('pentascale-minor')) return 'min 5-fin';
   if (kind.includes('arpeggio-major')) return 'Maj Arp';
   if (kind.includes('arpeggio-minor')) return 'min Arp';
+  // The three minor variants share a common "min" stem, with a
+  // mode-specific suffix tucked at the end so the abbreviation stays
+  // alphabetised and the eye picks out the variant at a glance:
+  //   "A min"      — natural minor (default; the suffix-less form)
+  //   "A min har"  — harmonic minor
+  //   "A min mel"  — melodic minor
+  if (kind.includes('harmonic-minor')) return 'min har';
+  if (kind.includes('melodic-minor'))  return 'min mel';
   if (kind.includes('minor')) return 'min';
   return 'Maj';
+}
+
+function displayMasteryTier(
+  data: Parameters<typeof getCombinedMajorScaleMastery>[0],
+  ex: Parameters<typeof getCombinedMajorScaleMastery>[1],
+): ReturnType<typeof getMasteryTier> {
+  if (ex.kind === 'major-scale') {
+    return getCombinedMajorScaleMastery(data, ex).tier;
+  }
+  return getMasteryTier(getExerciseProgress(data, ex.id), ex);
 }
 
 export default function ProgressScreen() {
@@ -101,16 +128,13 @@ export default function ProgressScreen() {
   // Mirror how the home screen reports mastery so the two surfaces agree
   // — a "mastered" tally on Home and Progress that disagreed would be
   // confusing.
-  const totalMastered = TIERS.reduce(
-    (sum, t) =>
-      sum +
-      t.exercises.filter(ex => {
-        const ep = getExerciseProgress(progress, ex.id);
-        return getMasteryTier(ep, ex) === 'mastered';
-      }).length,
-    0,
+  const contributing = TIERS.flatMap(t =>
+    t.exercises.filter(ex => exerciseContributesToGlobalMasteryTotals(ex)),
   );
-  const totalExercises = TIERS.reduce((sum, t) => sum + t.exercises.length, 0);
+  const totalMastered = contributing.filter(
+    ex => displayMasteryTier(progress, ex) === 'mastered',
+  ).length;
+  const totalExercises = contributing.length;
   const overallProgress = totalExercises > 0 ? totalMastered / totalExercises : 0;
 
   return (
@@ -177,9 +201,12 @@ export default function ProgressScreen() {
           >
             Overall mastery
           </Typography>
-          <Typography component="h2" sx={{ ...TYPE.titleLarge, color: 'text.primary', mb: 3 }}>
-            {totalMastered} of {totalExercises} exercises mastered
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+            <Typography component="h2" sx={{ ...TYPE.titleLarge, color: 'text.primary' }}>
+              {totalMastered} of {totalExercises} exercises mastered
+            </Typography>
+            <MasteryTierLegend ariaLabel="What counts as mastered?" />
+          </Box>
           <LinearProgress
             variant="determinate"
             value={overallProgress * 100}
@@ -233,12 +260,14 @@ export default function ProgressScreen() {
           const isCurrent = status === 'current';
           const isPast = status === 'past';
 
-          const completedCount = tier.exercises.filter(ex => {
-            const ep = getExerciseProgress(progress, ex.id);
-            return getMasteryTier(ep, ex) === 'mastered';
-          }).length;
+          const tierContributing = tier.exercises.filter(ex =>
+            exerciseContributesToGlobalMasteryTotals(ex),
+          );
+          const completedCount = tierContributing.filter(
+            ex => displayMasteryTier(progress, ex) === 'mastered',
+          ).length;
           const tierProgress =
-            tier.exercises.length > 0 ? completedCount / tier.exercises.length : 0;
+            tierContributing.length > 0 ? completedCount / tierContributing.length : 0;
 
           return (
             <Paper
@@ -367,7 +396,7 @@ export default function ProgressScreen() {
                       }}
                     >
                       <Typography sx={{ ...TYPE.bodySmall, color: 'text.secondary' }}>
-                        {completedCount}/{tier.exercises.length} mastered
+                        {completedCount}/{tierContributing.length} mastered
                       </Typography>
                       <Typography sx={{ ...TYPE.labelMedium, color: 'primary.main' }}>
                         {Math.round(tierProgress * 100)}%
@@ -385,16 +414,31 @@ export default function ProgressScreen() {
                   >
                     {tier.exercises.map(ex => {
                       const ep = getExerciseProgress(progress, ex.id);
-                      const masteryTier = getMasteryTier(ep, ex);
+                      const combined = ex.kind === 'major-scale'
+                        ? getCombinedMajorScaleMastery(progress, ex)
+                        : null;
+                      const masteryTier = combined
+                        ? combined.tier
+                        : getMasteryTier(ep, ex);
                       const isComplete = masteryTier === 'mastered';
                       const isFluent = masteryTier === 'fluent';
                       const proficiency = getExerciseProficiency(ep);
-                      const stageCount = ex.stages.length;
-                      const completedStageIdx = ep.completedStageId
-                        ? ex.stages.findIndex(s => s.id === ep.completedStageId)
-                        : -1;
-                      const stagesCompleted = completedStageIdx + 1;
-                      const inProgress = !isComplete && !isFluent && (stagesCompleted > 0 || proficiency > 0);
+                      const stageCount = combined
+                        ? combined.totalLevels
+                        : ex.stages.length;
+                      const stagesCompleted = combined
+                        ? combined.levelsDone
+                        : (() => {
+                          const completedStageIdx = ep.completedStageId
+                            ? ex.stages.findIndex(s => s.id === ep.completedStageId)
+                            : -1;
+                          return completedStageIdx + 1;
+                        })();
+                      const inProgress = !isComplete && !isFluent && (
+                        combined
+                          ? combined.started
+                          : (stagesCompleted > 0 || proficiency > 0)
+                      );
 
                       // Fluent shares the success palette with mastered but at
                       // a lighter intensity — the filled check and solid tint

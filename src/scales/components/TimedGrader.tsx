@@ -103,25 +103,42 @@ export default function TimedGrader() {
    *     note from "counting" as the LH too.
    * In single-hand exercises we fall back to the averaging-based
    * `deriveOctaveOffset`, unchanged.
+   *
+   * Returns a structured result so the caller can log the exact decision
+   * path (anchored / rejected / no-candidate) for debugging. `rejected`
+   * is specific to the LH strict-below check; "no-candidate" means no
+   * pitch class match was found at all.
    */
+  type AnchorDecision =
+    | { kind: 'anchored'; offset: number; rhReferenceLow: number | null; siblingFallbackUsed: boolean }
+    | { kind: 'rejected'; candidate: number; rhReferenceLow: number; siblingFallbackUsed: boolean }
+    | { kind: 'no-candidate' };
+
   const deriveOffsetForPart = useCallback((
     expected: ExpectedNote,
     played: number[],
-  ): number | null => {
+  ): AnchorDecision => {
     if (!isBothHandsExercise) {
-      return deriveOctaveOffset(played, expected.pitches);
+      const off = deriveOctaveOffset(played, expected.pitches);
+      return off === null
+        ? { kind: 'no-candidate' }
+        : { kind: 'anchored', offset: off, rhReferenceLow: null, siblingFallbackUsed: false };
     }
     if (expected.hand === 'right') {
-      return deriveOctaveOffsetForHand(played, expected.pitches, 'highest');
+      const off = deriveOctaveOffsetForHand(played, expected.pitches, 'highest');
+      return off === null
+        ? { kind: 'no-candidate' }
+        : { kind: 'anchored', offset: off, rhReferenceLow: null, siblingFallbackUsed: false };
     }
     if (expected.hand === 'left') {
       const candidate = deriveOctaveOffsetForHand(played, expected.pitches, 'lowest');
-      if (candidate === null) return null;
+      if (candidate === null) return { kind: 'no-candidate' };
       const lhAnchoredLow = Math.min(...expected.pitches.map(p => p + candidate));
       // Find a reference RH pitch: prefer the anchored RH if available,
       // otherwise fall back to the written sibling pitch so a first-note
       // LH attempt can still be placed relative to the scale's register.
       let rhReferenceLow: number | null = null;
+      let siblingFallbackUsed = false;
       for (const [otherPartId, other] of expectedRef.current) {
         if (other.hand !== 'right') continue;
         const rhOffset = octaveOffsetsRef.current.get(otherPartId);
@@ -133,27 +150,78 @@ export default function TimedGrader() {
       }
       if (rhReferenceLow === null && expected.siblingPitches) {
         rhReferenceLow = Math.min(...expected.siblingPitches);
+        siblingFallbackUsed = true;
       }
       if (rhReferenceLow !== null && lhAnchoredLow >= rhReferenceLow) {
-        return null;
+        return { kind: 'rejected', candidate, rhReferenceLow, siblingFallbackUsed };
       }
-      return candidate;
+      return { kind: 'anchored', offset: candidate, rhReferenceLow, siblingFallbackUsed };
     }
-    return deriveOctaveOffset(played, expected.pitches);
+    const off = deriveOctaveOffset(played, expected.pitches);
+    return off === null
+      ? { kind: 'no-candidate' }
+      : { kind: 'anchored', offset: off, rhReferenceLow: null, siblingFallbackUsed: false };
   }, [isBothHandsExercise]);
 
-  const getAnchoredPitches = useCallback((
+  /**
+   * Resolve the pitch set we'll grade `expected` against, plus the decision
+   * intermediates needed for the debug log. We deliberately keep the
+   * existing "fall back to written pitches" behavior on rejection — see
+   * the lh-fix-deferred plan item: changing that path needs reproduction
+   * logs from a real session before we touch it.
+   */
+  const getAnchorOutcome = useCallback((
     expected: ExpectedNote,
     played: number[],
-  ): number[] => {
+  ): {
+    pitches: number[];
+    cachedOffset: number | null;
+    derivedOffset: number | null;
+    anchorRejected: boolean;
+    rhReferenceLow: number | null;
+    siblingFallbackUsed: boolean;
+  } => {
     const cached = octaveOffsetsRef.current.get(expected.partId);
     if (cached !== undefined) {
-      return expected.pitches.map(p => p + cached);
+      return {
+        pitches: expected.pitches.map(p => p + cached),
+        cachedOffset: cached,
+        derivedOffset: null,
+        anchorRejected: false,
+        rhReferenceLow: null,
+        siblingFallbackUsed: false,
+      };
     }
-    const derived = deriveOffsetForPart(expected, played);
-    if (derived === null) return expected.pitches;
-    octaveOffsetsRef.current.set(expected.partId, derived);
-    return expected.pitches.map(p => p + derived);
+    const decision = deriveOffsetForPart(expected, played);
+    if (decision.kind === 'anchored') {
+      octaveOffsetsRef.current.set(expected.partId, decision.offset);
+      return {
+        pitches: expected.pitches.map(p => p + decision.offset),
+        cachedOffset: null,
+        derivedOffset: decision.offset,
+        anchorRejected: false,
+        rhReferenceLow: decision.rhReferenceLow,
+        siblingFallbackUsed: decision.siblingFallbackUsed,
+      };
+    }
+    if (decision.kind === 'rejected') {
+      return {
+        pitches: expected.pitches,
+        cachedOffset: null,
+        derivedOffset: decision.candidate,
+        anchorRejected: true,
+        rhReferenceLow: decision.rhReferenceLow,
+        siblingFallbackUsed: decision.siblingFallbackUsed,
+      };
+    }
+    return {
+      pitches: expected.pitches,
+      cachedOffset: null,
+      derivedOffset: null,
+      anchorRejected: false,
+      rhReferenceLow: null,
+      siblingFallbackUsed: false,
+    };
   }, [deriveOffsetForPart]);
 
   const tryEvaluateNote = useCallback((
@@ -165,7 +233,8 @@ export default function TimedGrader() {
     if (played.length === 0) return false;
 
     const expectedTime = getNoteExpectedTime(expected.noteId) ?? performance.now();
-    const anchored = getAnchoredPitches(expected, played);
+    const outcome = getAnchorOutcome(expected, played);
+    const anchored = outcome.pitches;
 
     const isAttempting = played.some(p =>
       anchored.some(ep =>
@@ -209,19 +278,43 @@ export default function TimedGrader() {
     };
 
     if (isDebugEnabled()) {
+      // Find whether the sibling part has anchored at the moment of this
+      // evaluation — useful when diagnosing asymmetric anchor races
+      // (e.g., LH evaluates first, anchors below the *written* RH, then
+      // RH anchors over the same played MIDI without any "above LH"
+      // check on its side).
+      let siblingAnchored: boolean | undefined;
+      if (isBothHandsExercise) {
+        siblingAnchored = false;
+        for (const [otherPartId, other] of expectedRef.current) {
+          if (other.hand === expected.hand) continue;
+          if (octaveOffsetsRef.current.has(otherPartId)) {
+            siblingAnchored = true;
+            break;
+          }
+        }
+      }
       logDebugEvent({
         type: 'eval_attempt', t: performance.now(), noteId: expected.noteId,
         played, expectedPitches: anchored, pitchCorrect, timing,
         timingOffsetMs,
         midiTimesSnapshot: Array.from(midiTimes.entries()),
         expectedTime: getNoteExpectedTime(expected.noteId) ?? null,
+        hand: expected.hand,
+        partId: expected.partId,
+        cachedOffset: outcome.cachedOffset,
+        derivedOffset: outcome.derivedOffset,
+        anchorRejected: outcome.anchorRejected,
+        rhReferenceLow: outcome.rhReferenceLow,
+        siblingFallbackUsed: outcome.siblingFallbackUsed,
+        siblingAnchored,
       });
     }
 
     dispatch({ type: 'ADD_PRACTICE_RESULT', result });
     evaluatedNoteIds.current.add(expected.noteId);
     return true;
-  }, [dispatch, getAnchoredPitches, perfectThreshold]);
+  }, [dispatch, getAnchorOutcome, perfectThreshold, isBothHandsExercise]);
 
   const evaluateTimed = useCallback((played: number[]) => {
     const midiTimes = getAllMidiNoteOnTimes();
@@ -297,13 +390,35 @@ export default function TimedGrader() {
     if (isDebugEnabled() && newExpected.size > 0) {
       logDebugEvent({
         type: 'expected_change', t: performance.now(),
-        expected: [...newExpected.values()].map(e => ({
-          noteId: e.noteId, pitches: e.pitches, hand: e.hand,
-        })),
+        expected: [...newExpected.values()].map(e => {
+          // For both-hand exercises, surface whether each part's *sibling*
+          // has already anchored. This is what diagnoses the asymmetric
+          // race (LH anchored before RH locks in).
+          let siblingAnchored: boolean | undefined;
+          if (isBothHandsExercise) {
+            siblingAnchored = false;
+            for (const [otherPartId, other] of newExpected) {
+              if (otherPartId === e.partId) continue;
+              if (other.hand === e.hand) continue;
+              if (octaveOffsetsRef.current.has(otherPartId)) {
+                siblingAnchored = true;
+                break;
+              }
+            }
+          }
+          return {
+            noteId: e.noteId,
+            pitches: e.pitches,
+            hand: e.hand,
+            partId: e.partId,
+            siblingAnchored,
+          };
+        }),
       });
     }
 
     expectedRef.current = newExpected;
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- isBothHandsExercise only feeds debug logging branches; no behavior changes when its identity flips after mount.
   }, [score, isPlaying, state.currentMeasureIndex, state.currentNoteIndices]);
 
   // Grace period: try late evaluation, then mark missed
