@@ -16,6 +16,7 @@ Instructions for AI coding assistants working in this repo (Cursor, Claude, Code
 - **SPA guardrails** (`src/shared/spaGuardrails.test.ts`): every app in `src/*/` must follow the shared shell template (`src/shared/templates/app-index.starter.html`), render under `React.StrictMode`, and expose `SkipToMain`. Tests will fail the build if you add a new app that skips these.
 - **Import boundaries** (`src/shared/importBoundaries.test.ts` + `scripts/check-import-boundaries.mjs`): apps may import from `src/shared/**` but not from each other. Keep cross-app reuse in `src/shared/` and register new app directories in both files.
 - **Shared UI first** (`src/shared/SHARED_UI_CONVENTIONS.md`): reach for `src/shared/components/` primitives before writing a new popover/tooltip/menu. MUI is the underlying primitive library for complex widgets.
+- **Rhythm preset integrity** (`src/shared/rhythm/presetIntegrity.ts` + `presetIntegrity.test.ts`): when editing `RHYTHM_DATABASE` or related presets, run `npx vitest run src/shared/rhythm/presetIntegrity.test.ts`. The checks parse every pattern, flag copy/pasted variations across related rhythms with different bases, and verify labeled 8/8 ornament/anchor lines match the reference attack skeleton (prevents Malfuf/Kahleegi-style encoding mistakes).
 
 ## Repo Map
 

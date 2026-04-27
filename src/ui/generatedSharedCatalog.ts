@@ -5354,6 +5354,51 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-rhythm-presetintegrity-ts-collectrhythmpresetintegrityissues",
+    "name": "collectRhythmPresetIntegrityIssues",
+    "path": "src/shared/rhythm/presetIntegrity.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "rhythm-core",
+    "description": "Returns human-readable issues (empty when the database passes all checks).",
+    "tags": [
+      "rhythm"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-rhythm-presetintegrity-ts-getpresetreferencenotation",
+    "name": "getPresetReferenceNotation",
+    "path": "src/shared/rhythm/presetIntegrity.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "rhythm-core",
+    "description": "Reference skeleton for a variation: native base, 2/4 mapping, doubled 4/4 mapping, or 6/8 pattern.",
+    "tags": [
+      "rhythm"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-rhythm-presetintegrity-ts-referenceattackskeletonmatches",
+    "name": "referenceAttackSkeletonMatches",
+    "path": "src/shared/rhythm/presetIntegrity.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "rhythm-core",
+    "description": "True if every reference stroke onset (dum/tak/ka/slap) lines up with the same stroke at that tick in the variant. Extra ornamental attacks between reference onsets are allowed (e.g. ka inside a long dum in the ASCII notation).",
+    "tags": [
+      "rhythm"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-rhythm-rhythmparser-ts-detectidenticalmeasures",
     "name": "detectIdenticalMeasures",
     "path": "src/shared/rhythm/rhythmParser.ts",

@@ -174,3 +174,13 @@ To maintain backward compatibility and align with user expectations (where `x2` 
 
 - **Single Repeat Markers**: We MUST preserve Section Repeat markers even if `count=1` (`|: A :|x1`), otherwise the Sequencer loses structural intent and collapses them destructively.
 - **Ghost Measures**: Editing a "Ghost Measure" (a repetition) implicitly targets the Source Measure. The Drag-Drop logic must handle this redirection.
+
+## Rhythm library data (`RHYTHM_DATABASE`)
+
+Hand-authored patterns in `src/shared/rhythm/presetDatabase.ts` are validated by `src/shared/rhythm/presetIntegrity.ts` (see `presetIntegrity.test.ts`). Before merging preset edits, run:
+
+```bash
+npx vitest run src/shared/rhythm/presetIntegrity.test.ts
+```
+
+Checks include: every `basePattern` / `fourFourMappingPattern` / `sixEightPattern` / variation parses for its time signature; related rhythms with different bases cannot share the same labeled variation (notation + note + meter); 8/8 lines whose `note` mentions ornaments or quarter-note anchors must keep the same attack onsets (D/T/K) as the reference skeleton for that rhythm. When adding a new “ornament” row, prefer explicit `note` text that starts with `8/8` and mentions `ornament` or `anchor` so the guardrail applies.

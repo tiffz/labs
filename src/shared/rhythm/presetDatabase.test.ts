@@ -11,7 +11,7 @@ describe('presetDatabase malfuf/kahleegi defaults', () => {
       denominator: 8,
     });
     expect(
-      RHYTHM_DATABASE.malfuf.variations.some((variation) => variation.notation === 'D-K-K-D-K-K-T-K-')
+      RHYTHM_DATABASE.malfuf.variations.some((variation) => variation.notation === 'D-K-K-T-K-K-T-K-')
     ).toBe(true);
 
     expect(RHYTHM_DATABASE.kahleegi.timeSignature).toEqual({ numerator: 8, denominator: 8 });
