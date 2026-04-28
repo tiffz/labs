@@ -14,7 +14,8 @@ export type AppThemeId =
   | 'melodia'
   | 'pulse'
   | 'story'
-  | 'zines';
+  | 'zines'
+  | 'agility';
 
 interface AppThemeConfig {
   mode: 'light' | 'dark';
@@ -257,6 +258,20 @@ const THEMES: Record<AppThemeId, Theme> = {
   }),
   story: buildTheme({ mode: 'light', ...MUSIC_LIGHT_DEFAULT }),
   zines: buildTheme({ mode: 'light', ...MUSIC_LIGHT_DEFAULT }),
+  agility: buildTheme({
+    mode: 'light',
+    fontFamily: "'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace",
+    primary: '#059669',
+    secondary: '#292524',
+    backgroundDefault: '#f7fee7',
+    backgroundPaper: '#fffefb',
+    textPrimary: '#1c1917',
+    textSecondary: '#57534e',
+    divider: 'rgba(41, 37, 36, 0.14)',
+    radius: 4,
+    spacingBase: 5,
+    readable: true,
+  }),
 };
 
 export function getAppTheme(app: AppThemeId): Theme {

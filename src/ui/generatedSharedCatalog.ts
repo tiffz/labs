@@ -504,6 +504,67 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-audio-latencycalibration-ts-calibrationpipschedule",
+    "name": "CalibrationPipSchedule",
+    "path": "src/shared/audio/latencyCalibration.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Play a calibration pip and estimate round-trip delay (ms) from pip to mic onset via the same energy detection family as the pitch loop.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-latencycalibration-ts-findonsetindexinpcm",
+    "name": "findOnsetIndexInPcm",
+    "path": "src/shared/audio/latencyCalibration.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Used by tests: find onset sample index in offline PCM after warmup.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-latencycalibration-ts-measureroundtriplatencyms",
+    "name": "measureRoundTripLatencyMs",
+    "path": "src/shared/audio/latencyCalibration.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Measure round-trip style delay: ms from expected pip audibility to first strong onset on mic. Headphones prevent acoustic coupling — caller should use manual latency instead.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-latencycalibration-ts-schedulecalibrationpip",
+    "name": "scheduleCalibrationPip",
+    "path": "src/shared/audio/latencyCalibration.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Play a short sine pip starting at ctx.currentTime + delaySec.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-audio-metronomeplayer-ts-metronomecallback",
     "name": "MetronomeCallback",
     "path": "src/shared/audio/metronomePlayer.ts",
@@ -565,6 +626,37 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [],
     "exportType": "class",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-precisionscore-ts-computeprecisionscore",
+    "name": "computePrecisionScore",
+    "path": "src/shared/audio/precisionScore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Combine rhythmic delta (ms) and pitch cents into a single 0–100 precision score.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-precisionscore-ts-precisionsample",
+    "name": "PrecisionSample",
+    "path": "src/shared/audio/precisionScore.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Combine rhythmic delta (ms) and pitch cents into a single 0–100 precision score.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
     "demoId": null
   },
   {
@@ -668,6 +760,269 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "chords"
     ],
     "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-rhythmguard-ts-applylatencycompensation",
+    "name": "applyLatencyCompensation",
+    "path": "src/shared/audio/rhythmGuard.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Nearest grid subdivision instant to a vocal onset, in session-relative seconds, and signed delta in milliseconds (positive = late vs target). `latencyCompensationMs` is subtracted from the raw onset offset so measured microphone delay does not inflate \"late\" judgements (see scales mic pipeline).",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-rhythmguard-ts-beats-per-measure",
+    "name": "BEATS_PER_MEASURE",
+    "path": "src/shared/audio/rhythmGuard.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Nearest grid subdivision instant to a vocal onset, in session-relative seconds, and signed delta in milliseconds (positive = late vs target). `latencyCompensationMs` is subtracted from the raw onset offset so measured microphone delay does not inflate \"late\" judgements (see scales mic pipeline).",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-rhythmguard-ts-expectednotecountforexercise",
+    "name": "expectedNoteCountForExercise",
+    "path": "src/shared/audio/rhythmGuard.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Nearest grid subdivision instant to a vocal onset, in session-relative seconds, and signed delta in milliseconds (positive = late vs target). `latencyCompensationMs` is subtracted from the raw onset offset so measured microphone delay does not inflate \"late\" judgements (see scales mic pipeline).",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-rhythmguard-ts-nearestgridtargetsec",
+    "name": "nearestGridTargetSec",
+    "path": "src/shared/audio/rhythmGuard.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Absolute session time → nearest click target within [0, totalDuration].",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-rhythmguard-ts-nearestrhythmhit",
+    "name": "NearestRhythmHit",
+    "path": "src/shared/audio/rhythmGuard.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Nearest grid subdivision instant to a vocal onset, in session-relative seconds, and signed delta in milliseconds (positive = late vs target). `latencyCompensationMs` is subtracted from the raw onset offset so measured microphone delay does not inflate \"late\" judgements (see scales mic pipeline).",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-singintimeclock-ts-beats-per-measure",
+    "name": "BEATS_PER_MEASURE",
+    "path": "src/shared/audio/singInTimeClock.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "4/4 subdivision clock: binary (quarter/eighth/sixteenth) and triplet eighth grids. Uses AudioContext.currentTime for scheduling oscillator clicks.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-singintimeclock-ts-buildclickschedule",
+    "name": "buildClickSchedule",
+    "path": "src/shared/audio/singInTimeClock.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Schedule click times (seconds from session start) for metronome playback.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-singintimeclock-ts-clampbpm",
+    "name": "clampBpm",
+    "path": "src/shared/audio/singInTimeClock.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "4/4 subdivision clock: binary (quarter/eighth/sixteenth) and triplet eighth grids. Uses AudioContext.currentTime for scheduling oscillator clicks.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-singintimeclock-ts-clickschedule",
+    "name": "ClickSchedule",
+    "path": "src/shared/audio/singInTimeClock.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "4/4 subdivision clock: binary (quarter/eighth/sixteenth) and triplet eighth grids. Uses AudioContext.currentTime for scheduling oscillator clicks.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-singintimeclock-ts-runmetronomeloopoptions",
+    "name": "RunMetronomeLoopOptions",
+    "path": "src/shared/audio/singInTimeClock.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "4/4 subdivision clock: binary (quarter/eighth/sixteenth) and triplet eighth grids. Uses AudioContext.currentTime for scheduling oscillator clicks.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-singintimeclock-ts-schedulemetronomeclicks",
+    "name": "scheduleMetronomeClicks",
+    "path": "src/shared/audio/singInTimeClock.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Schedule clicks starting at `startAudioTime`. Returns cancel function.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-singintimeclock-ts-slotdurationsec",
+    "name": "slotDurationSec",
+    "path": "src/shared/audio/singInTimeClock.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Duration of one subdivision slot in seconds.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-singintimeclock-ts-slotspermeasure",
+    "name": "slotsPerMeasure",
+    "path": "src/shared/audio/singInTimeClock.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Number of metronome pulses per measure for a uniform grid.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-singintimeclock-ts-subdivisiongrid",
+    "name": "SubdivisionGrid",
+    "path": "src/shared/audio/singInTimeClock.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "4/4 subdivision clock: binary (quarter/eighth/sixteenth) and triplet eighth grids. Uses AudioContext.currentTime for scheduling oscillator clicks.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-vocalduetplayback-ts-guidetone",
+    "name": "GuideTone",
+    "path": "src/shared/audio/vocalDuetPlayback.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Vocal duet playback: user recording on left, sine tones on right (parity with Melodia duet helper).",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-vocalduetplayback-ts-playvocalwithsineguide",
+    "name": "playVocalWithSineGuide",
+    "path": "src/shared/audio/vocalDuetPlayback.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Vocal duet playback: user recording on left, sine tones on right (parity with Melodia duet helper).",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-vocalduetplayback-ts-vocalduethandle",
+    "name": "VocalDuetHandle",
+    "path": "src/shared/audio/vocalDuetPlayback.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Vocal duet playback: user recording on left, sine tones on right (parity with Melodia duet helper).",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
     "demoId": null
   },
   {
@@ -1589,6 +1944,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "appsUsing": [
       "piano"
     ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drawing-catmullrombezier-ts-catmullrompath",
+    "name": "catmullRomPath",
+    "path": "src/shared/drawing/catmullRomBezier.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Catmull-Rom spline as SVG path (same algorithm as MelodiaInkTrace.utils).",
+    "tags": [],
+    "appsUsing": [],
     "exportType": "function",
     "demoId": null
   },

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#f7fee7" />
+    <meta http-equiv="Cache-Control" content="no-cache" />
+    <style>
+      html {
+        color-scheme: light;
+        background: #f7fee7;
+        color: #1c1917;
+      }
+    </style>
+    <link rel="icon" type="image/svg+xml" href="/icons/favicon-agility.svg" />
+    <link rel="apple-touch-icon" href="/icons/favicon-agility.svg" />
+    <meta
+      name="description"
+      content="Vocal agility trainer: subdivisions, metronome, latency-aware timing feedback, and pitch trace practice."
+    />
+    <title>Vocal Agility Trainer - Tiff Zhang Labs</title>
+    <link rel="canonical" href="https://labs.tiffzhang.com/agility/" />
+    <meta property="og:title" content="Vocal Agility Trainer - Tiff Zhang Labs" />
+    <meta
+      property="og:description"
+      content="Practice singing in time: subdivisions from quarters to triplets with playful, precise feedback."
+    />
+    <meta property="og:url" content="https://labs.tiffzhang.com/agility/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Tiff Zhang Labs" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Vocal Agility Trainer - Tiff Zhang Labs" />
+    <meta
+      name="twitter:description"
+      content="Practice singing in time: subdivisions from quarters to triplets with playful, precise feedback."
+    />
+    <link rel="stylesheet" href="/styles/shared.css" />
+    <script>
+      if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+        const script = document.createElement('script');
+        script.async = true;
+        script.src = '/scripts/analytics.js';
+        document.head.appendChild(script);
+      }
+    </script>
+  </head>
+  <body>
+    <noscript>
+      <p style="padding:24px;font-family:system-ui,sans-serif">
+        This app needs JavaScript to run. Please enable JavaScript in your browser.
+      </p>
+    </noscript>
+    <div id="root"></div>
+    <script type="module" src="/agility/main.tsx"></script>
+  </body>
+</html>

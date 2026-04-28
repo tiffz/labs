@@ -42,6 +42,7 @@ const MULTI_APP_INPUTS = {
   melodia: resolve(__dirname, 'src/melodia/index.html'),
   count: resolve(__dirname, 'src/count/index.html'),
   ui: resolve(__dirname, 'src/ui/index.html'),
+  agility: resolve(__dirname, 'src/agility/index.html'),
 } as const;
 
 const SRC_ROOT = resolve(__dirname, 'src');

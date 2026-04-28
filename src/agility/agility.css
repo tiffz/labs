@@ -1,0 +1,270 @@
+/**
+ * Vocal Agility Trainer — Proof Grid (single surface).
+ * Subtle orchard stripes, notebook grid overlay, tombstone panels, stone typography.
+ */
+
+.agility-root {
+  --ag-text: #1c1917;
+  --ag-text-muted: #57534e;
+  --ag-accent: #dc2626;
+  --ag-accent-2: #059669;
+  --ag-font-display: 'JetBrains Mono', ui-monospace, monospace;
+  --ag-font-body: 'JetBrains Mono', ui-monospace, monospace;
+  /* Soft vertical bands — low contrast stripe deltas */
+  --ag-shell-bg:
+    repeating-linear-gradient(
+      90deg,
+      rgba(250, 252, 250, 0.99) 0px,
+      rgba(250, 252, 250, 0.99) 80px,
+      rgba(243, 250, 245, 0.88) 80px,
+      rgba(243, 250, 245, 0.88) 156px,
+      rgba(255, 252, 244, 0.9) 156px,
+      rgba(255, 252, 244, 0.9) 228px
+    ),
+    linear-gradient(to bottom, #fffefb 0%, #f7fee7 100%);
+  --ag-shell-solid: transparent;
+  --ag-panel-bg: #fffefb;
+  --ag-panel-border: #292524;
+  --ag-panel-border-width: 3px;
+  --ag-panel-radius: 4px;
+  --ag-panel-padding: 1.5rem 1.75rem;
+  /* Hard dark slab + proof margin inset (matches earlier Graph Rise panels) */
+  --ag-panel-shadow: inset 10px 0 0 rgba(74, 222, 128, 0.52), 8px 9px 0 #020617;
+  --ag-panel-blur: none;
+  --ag-shell-noise-opacity: 0;
+  --ag-trail-strong: #b91c1c;
+  --ag-trail-soft: rgba(185, 28, 28, 0.22);
+  --ag-rush: #ea580c;
+  --ag-drag: #0d9488;
+  --ag-staff-line: rgba(41, 37, 36, 0.16);
+  --ag-staff-paper: #fffef5;
+}
+
+.agility-shell {
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding-bottom: max(2rem, env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  background: var(--ag-shell-bg);
+  background-color: var(--ag-shell-solid, transparent);
+  color: var(--ag-text);
+  font-family: var(--ag-font-body);
+}
+
+.agility-shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.42;
+  background-image:
+    linear-gradient(rgba(41, 37, 36, 0.032) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(41, 37, 36, 0.032) 1px, transparent 1px);
+  background-size:
+    18px 18px,
+    18px 18px;
+}
+
+.agility-shell > * {
+  position: relative;
+  z-index: 1;
+}
+
+.agility-shell .MuiTypography-root {
+  color: inherit;
+}
+
+.agility-page {
+  width: 100%;
+  max-width: 45rem;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: max(1.25rem, env(safe-area-inset-left, 0px));
+  padding-right: max(1.25rem, env(safe-area-inset-right, 0px));
+}
+
+.agility-header {
+  border-bottom: none;
+  margin-bottom: 1.35rem;
+}
+
+.agility-hero-title {
+  margin: 0;
+  line-height: 1.12;
+}
+
+.agility-hero-title-badge {
+  display: inline-block;
+  font-family: var(--ag-font-display);
+  font-size: clamp(1.2rem, 0.92rem + 1.05vw, 1.82rem);
+  font-weight: 800;
+  letter-spacing: -0.055em;
+  color: var(--ag-accent);
+  padding: 0.62rem 0.92rem 0.68rem;
+  border: 2.5px solid var(--ag-accent);
+  border-radius: 4px;
+  background: rgba(254, 242, 242, 0.7);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    3px 4px 0 rgba(153, 27, 27, 0.18);
+}
+
+/* Motion: rest is untilted; tilt only on hover. Click adds .--shake (JS) for a quick wiggle. */
+.agility-hero-title-badge--motion {
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transform: none;
+  transform-origin: center center;
+  transition:
+    transform 0.28s ease,
+    box-shadow 0.26s ease;
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .agility-hero-title-badge--motion:hover:not(
+      .agility-hero-title-badge--shake
+    ) {
+    transform: rotate(-1.75deg) translate3d(0, -2px, 0);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.93),
+      3px 5px 0 rgba(153, 27, 27, 0.2),
+      5px 7px 12px rgba(220, 38, 38, 0.08);
+  }
+}
+
+.agility-hero-title-badge--motion.agility-hero-title-badge--shake {
+  animation: agility-title-shake 0.42s cubic-bezier(0.33, 1.1, 0.45, 1) both;
+}
+
+@keyframes agility-title-shake {
+  0% {
+    transform: rotate(0deg) translateX(0);
+  }
+  16% {
+    transform: rotate(-3.1deg) translateX(-2px);
+  }
+  32% {
+    transform: rotate(3.1deg) translateX(2px);
+  }
+  48% {
+    transform: rotate(-2.2deg) translateX(-1.5px);
+  }
+  64% {
+    transform: rotate(2.2deg) translateX(1.5px);
+  }
+  80% {
+    transform: rotate(-1.1deg) translateX(-0.75px);
+  }
+  100% {
+    transform: rotate(0deg) translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agility-hero-title-badge--motion {
+    cursor: default;
+    transition: none;
+  }
+
+  .agility-hero-title-badge--motion:hover {
+    transform: none;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      3px 4px 0 rgba(153, 27, 27, 0.18);
+  }
+
+  .agility-hero-title-badge--motion.agility-hero-title-badge--shake {
+    animation: none;
+  }
+}
+
+.agility-hero-sub {
+  font-family: var(--ag-font-body);
+  font-size: clamp(0.875rem, 0.82rem + 0.35vw, 1rem);
+  line-height: 1.6;
+  color: var(--ag-text-muted);
+  max-width: 38rem;
+}
+
+.agility-main {
+  flex: 1;
+  min-height: 0;
+  padding-bottom: 2.25rem;
+}
+
+.agility-panel-dense {
+  --ag-panel-padding: 1.15rem 1.35rem;
+}
+
+.agility-panel {
+  background: var(--ag-panel-bg);
+  border-radius: var(--ag-panel-radius);
+  border: var(--ag-panel-border-width) solid var(--ag-panel-border);
+  padding: var(--ag-panel-padding);
+  box-shadow: var(--ag-panel-shadow);
+  backdrop-filter: var(--ag-panel-blur, blur(0));
+}
+
+.agility-section-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ag-text-muted);
+}
+
+.agility-field-select {
+  font-family: inherit;
+  font-size: 0.875rem;
+  color: var(--ag-text);
+  background: #ffffff;
+  border: 2px solid var(--ag-panel-border);
+  border-radius: 4px;
+  padding: 0.5rem 0.65rem;
+  min-width: 0;
+  flex: 1;
+  max-width: 100%;
+}
+
+.agility-field-select:focus-visible {
+  outline: 2px solid var(--ag-accent-2);
+  outline-offset: 2px;
+}
+
+.agility-trail-strong {
+  stroke: var(--ag-trail-strong);
+  stroke-width: 3;
+  fill: none;
+}
+
+.agility-trail-soft {
+  stroke: var(--ag-trail-soft);
+  stroke-width: 2;
+  fill: none;
+}
+
+.agility-svg-staff-border {
+  border: var(--ag-staff-border-width, 1px) solid var(--ag-panel-border);
+  border-radius: var(--ag-staff-radius, 14px);
+  background: var(--ag-staff-paper);
+  box-shadow: var(--ag-panel-shadow);
+}
+
+.agility-marker-rush {
+  fill: var(--ag-rush);
+}
+
+.agility-marker-drag {
+  fill: var(--ag-drag);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agility-shell::before {
+    opacity: 0.35;
+  }
+}

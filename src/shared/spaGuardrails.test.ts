@@ -126,6 +126,9 @@ describe('React app a11y guardrails', () => {
     // Intentionally empty — if you need to add to this list, document why.
   ]);
 
+  /** Dense single-task apps may omit <SkipToMain />; still require `<main id="main">`. */
+  const SKIP_TO_MAIN_OPT_OUT = new Set<string>(['agility']);
+
   describe.each(apps.map(({ app, file }) => [app, file]))('%s/App.tsx', (app, file) => {
     const source = fs.readFileSync(file, 'utf8');
 
@@ -134,9 +137,11 @@ describe('React app a11y guardrails', () => {
         expect(source).toMatch(/<main[^>]*id=["']main["']/);
       });
 
-      it('renders <SkipToMain /> from shared components', () => {
-        expect(source).toMatch(/SkipToMain/);
-      });
+      if (!SKIP_TO_MAIN_OPT_OUT.has(app)) {
+        it('renders <SkipToMain /> from shared components', () => {
+          expect(source).toMatch(/SkipToMain/);
+        });
+      }
     }
 
     it('does not import from the @mui/material barrel', () => {
