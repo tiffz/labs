@@ -1,0 +1,30 @@
+{
+  "id": "melodia-b1-001",
+  "book": 1,
+  "number": 1,
+  "title": "Do on the tonic (whole note)",
+  "melodiaLevel": 1,
+  "key": "C",
+  "timeSignature": { "numerator": 4, "denominator": 4 },
+  "tempoSuggestion": 60,
+  "score": {
+    "id": "melodia-b1-001-score",
+    "title": "Do on the tonic (whole note)",
+    "key": "C",
+    "timeSignature": { "numerator": 4, "denominator": 4 },
+    "tempo": 60,
+    "parts": [
+      {
+        "id": "melody",
+        "name": "Melody",
+        "clef": "treble",
+        "hand": "voice",
+        "measures": [
+          {
+            "notes": [{ "id": "n1", "pitches": [60], "duration": "whole" }]
+          }
+        ]
+      }
+    ]
+  }
+}

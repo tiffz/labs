@@ -1,0 +1,35 @@
+{
+  "id": "melodia-b1-003",
+  "book": 1,
+  "number": 3,
+  "title": "Echo: stepwise pattern and return",
+  "melodiaLevel": 1,
+  "key": "C",
+  "timeSignature": { "numerator": 4, "denominator": 4 },
+  "tempoSuggestion": 66,
+  "score": {
+    "id": "melodia-b1-003-score",
+    "title": "Echo: stepwise pattern and return",
+    "key": "C",
+    "timeSignature": { "numerator": 4, "denominator": 4 },
+    "tempo": 66,
+    "parts": [
+      {
+        "id": "melody",
+        "name": "Melody",
+        "clef": "treble",
+        "hand": "voice",
+        "measures": [
+          {
+            "notes": [
+              { "id": "n1", "pitches": [60], "duration": "quarter" },
+              { "id": "n2", "pitches": [62], "duration": "quarter" },
+              { "id": "n3", "pitches": [64], "duration": "quarter" },
+              { "id": "n4", "pitches": [62], "duration": "quarter" }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

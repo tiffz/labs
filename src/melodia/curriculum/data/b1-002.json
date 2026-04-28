@@ -1,0 +1,35 @@
+{
+  "id": "melodia-b1-002",
+  "book": 1,
+  "number": 2,
+  "title": "Echo: stepwise quarters (Do–Re–Mi–Fa)",
+  "melodiaLevel": 1,
+  "key": "C",
+  "timeSignature": { "numerator": 4, "denominator": 4 },
+  "tempoSuggestion": 72,
+  "score": {
+    "id": "melodia-b1-002-score",
+    "title": "Echo: stepwise quarters (Do–Re–Mi–Fa)",
+    "key": "C",
+    "timeSignature": { "numerator": 4, "denominator": 4 },
+    "tempo": 72,
+    "parts": [
+      {
+        "id": "melody",
+        "name": "Melody",
+        "clef": "treble",
+        "hand": "voice",
+        "measures": [
+          {
+            "notes": [
+              { "id": "n1", "pitches": [60], "duration": "quarter" },
+              { "id": "n2", "pitches": [62], "duration": "quarter" },
+              { "id": "n3", "pitches": [64], "duration": "quarter" },
+              { "id": "n4", "pitches": [65], "duration": "quarter" }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

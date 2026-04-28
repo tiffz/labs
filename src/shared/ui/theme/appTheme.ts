@@ -11,6 +11,7 @@ export type AppThemeId =
   | 'cats'
   | 'corp'
   | 'forms'
+  | 'melodia'
   | 'pulse'
   | 'story'
   | 'zines';
@@ -26,9 +27,51 @@ interface AppThemeConfig {
   divider: string;
   radius: number;
   spacingBase: number;
+  /** When set, overrides the default Roboto-based UI stack (e.g. journal serif apps). */
+  fontFamily?: string;
+  /** Larger type, line heights, and buttons for reading-heavy flows (e.g. Melodia). */
+  readable?: boolean;
+}
+
+function buildTypography(config: AppThemeConfig) {
+  const fontFamily =
+    config.fontFamily ?? "'Roboto', 'Segoe UI', system-ui, -apple-system, sans-serif";
+  const shared = {
+    fontFamily,
+    fontWeightRegular: 400,
+    fontWeightMedium: 500,
+    fontWeightBold: 700,
+    button: { textTransform: 'none' as const, fontWeight: 600 },
+  };
+  if (config.readable) {
+    return {
+      ...shared,
+      fontSize: 17,
+      h1: { fontSize: '2.35rem', fontWeight: 700, lineHeight: 1.22 },
+      h2: { fontSize: '1.75rem', fontWeight: 700, lineHeight: 1.28 },
+      h3: { fontSize: '1.45rem', fontWeight: 600, lineHeight: 1.34 },
+      body1: { fontSize: '1.0625rem', lineHeight: 1.62 },
+      body2: { fontSize: '1rem', lineHeight: 1.55 },
+      subtitle1: { fontSize: '1.125rem', lineHeight: 1.52, fontWeight: 600 },
+      subtitle2: { fontSize: '1.03rem', lineHeight: 1.48, fontWeight: 600 },
+      caption: { fontSize: '0.9375rem', lineHeight: 1.45 },
+      button: { textTransform: 'none' as const, fontWeight: 600, fontSize: '1rem' },
+    };
+  }
+  return {
+    ...shared,
+    fontSize: 14,
+    h1: { fontSize: '1.875rem', fontWeight: 700, lineHeight: 1.2 },
+    h2: { fontSize: '1.5rem', fontWeight: 700, lineHeight: 1.25 },
+    h3: { fontSize: '1.25rem', fontWeight: 600, lineHeight: 1.3 },
+    body1: { fontSize: '0.875rem', lineHeight: 1.5 },
+    body2: { fontSize: '0.8125rem', lineHeight: 1.45 },
+    button: { textTransform: 'none' as const, fontWeight: 600 },
+  };
 }
 
 function buildTheme(config: AppThemeConfig): Theme {
+  const readable = Boolean(config.readable);
   return createTheme({
     palette: {
       mode: config.mode,
@@ -46,19 +89,7 @@ function buildTheme(config: AppThemeConfig): Theme {
     },
     spacing: config.spacingBase,
     shape: { borderRadius: config.radius },
-    typography: {
-      fontFamily: "'Roboto', 'Segoe UI', system-ui, -apple-system, sans-serif",
-      fontSize: 14,
-      fontWeightRegular: 400,
-      fontWeightMedium: 500,
-      fontWeightBold: 700,
-      h1: { fontSize: '1.875rem', fontWeight: 700, lineHeight: 1.2 },
-      h2: { fontSize: '1.5rem', fontWeight: 700, lineHeight: 1.25 },
-      h3: { fontSize: '1.25rem', fontWeight: 600, lineHeight: 1.3 },
-      body1: { fontSize: '0.875rem', lineHeight: 1.5 },
-      body2: { fontSize: '0.8125rem', lineHeight: 1.45 },
-      button: { textTransform: 'none', fontWeight: 600 },
-    },
+    typography: buildTypography(config),
     zIndex: {
       appBar: 1100,
       drawer: 1200,
@@ -83,22 +114,23 @@ function buildTheme(config: AppThemeConfig): Theme {
         styleOverrides: {
           root: ({ theme }) => ({
             borderRadius: Math.max(Number(theme.shape.borderRadius) - 2, 6),
-            minHeight: 38,
-            paddingInline: theme.spacing(1.5),
+            minHeight: readable ? 44 : 38,
+            paddingInline: theme.spacing(readable ? 1.75 : 1.5),
+            ...(readable ? { fontSize: '1rem' } : {}),
           }),
           sizeSmall: ({ theme }) => ({
-            minHeight: 32,
+            minHeight: readable ? 36 : 32,
             paddingInline: theme.spacing(1.25),
           }),
           sizeLarge: ({ theme }) => ({
-            minHeight: 44,
-            paddingInline: theme.spacing(2),
+            minHeight: readable ? 52 : 44,
+            paddingInline: theme.spacing(readable ? 2.25 : 2),
           }),
         },
       },
       MuiTextField: {
         defaultProps: {
-          size: 'small',
+          size: readable ? 'medium' : 'small',
         },
       },
       MuiOutlinedInput: {
@@ -197,6 +229,20 @@ const THEMES: Record<AppThemeId, Theme> = {
   }),
   corp: buildTheme({ mode: 'light', ...MUSIC_LIGHT_DEFAULT }),
   forms: buildTheme({ mode: 'light', ...MUSIC_LIGHT_DEFAULT }),
+  melodia: buildTheme({
+    mode: 'light',
+    fontFamily: "'Cormorant Garamond', Georgia, 'Times New Roman', serif",
+    primary: '#1c2840',
+    secondary: '#e91e8c',
+    backgroundDefault: '#faf8f5',
+    backgroundPaper: '#fffef9',
+    textPrimary: '#1c2840',
+    textSecondary: '#334155',
+    divider: 'rgba(28, 40, 64, 0.14)',
+    radius: 12,
+    spacingBase: 5,
+    readable: true,
+  }),
   pulse: buildTheme({
     mode: 'dark',
     primary: '#00ff41',

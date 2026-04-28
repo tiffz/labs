@@ -1,7 +1,7 @@
 /**
  * Scales practice debug logger — captures a detailed timeline of note/evaluation
  * events during a practice session, with input-source tracking (MIDI vs mic)
- * for side-by-side comparison. Activated by ?debug URL param.
+ * for side-by-side comparison. Activated by `?debug` or `?dev` URL params (see `readLabsDebugParams`).
  */
 
 export type InputSource = 'midi' | 'mic';

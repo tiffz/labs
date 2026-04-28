@@ -1,6 +1,6 @@
 /**
  * Practice debug logger — captures a detailed timeline of all mic/pitch/evaluation
- * events during a practice session. Activated by ?debug=1 URL param.
+ * events during a practice session. Activated by `?debug` or `?dev` URL params (see `readLabsDebugParams`).
  * The snapshot is designed to be sent for offline analysis.
  */
 

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import LabsDebugDock from '../../shared/components/LabsDebugDock';
 import {
   getRecentEvents,
   getEventCounts,
@@ -48,10 +49,11 @@ const EVENT_COLORS: Record<string, string> = {
   practice_end: '#06b6d4',
 };
 
+const ACCENT = '#e94560';
+
 export default function DebugPanel() {
   const [events, setEvents] = useState<DebugEvent[]>([]);
   const [counts, setCounts] = useState({ pitch: 0, noteOn: 0, noteOff: 0, eval: 0, miss: 0 });
-  const [collapsed, setCollapsed] = useState(false);
   const [showPitch, setShowPitch] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
 
@@ -72,57 +74,88 @@ export default function DebugPanel() {
   const filtered = showPitch ? events : events.filter(e => e.type !== 'pitch_raw');
 
   return (
-    <div style={{
-      position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 9999,
-      background: '#1a1a2e', color: '#e0e0e0', fontFamily: 'monospace', fontSize: 11,
-      borderTop: '2px solid #e94560',
-    }}>
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 8, padding: '4px 12px',
-        background: '#16213e', cursor: 'pointer',
-      }} onClick={() => setCollapsed(!collapsed)} role="button" tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            setCollapsed((v) => !v);
-          }
+    <LabsDebugDock
+      appId="piano"
+      title="Practice debug"
+      accentColor={ACCENT}
+      defaultCollapsed={false}
+      toolbar={
+        <>
+          <span style={{ color: '#94a3b8', fontSize: 10 }}>
+            pitch:{counts.pitch} noteOn:{counts.noteOn} eval:{counts.eval} miss:{counts.miss}
+          </span>
+          <label style={{ fontSize: 10, display: 'flex', alignItems: 'center', gap: 4 }}>
+            <input
+              type="checkbox"
+              checked={showPitch}
+              onChange={(e) => setShowPitch(e.target.checked)}
+              onClick={(e) => e.stopPropagation()}
+            />
+            raw pitch
+          </label>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              downloadSnapshot();
+            }}
+            style={{
+              background: ACCENT,
+              color: '#fff',
+              border: 'none',
+              borderRadius: 3,
+              padding: '2px 8px',
+              cursor: 'pointer',
+              fontSize: 10,
+              fontWeight: 'bold',
+            }}
+          >
+            Download snapshot
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              clearDebugLog();
+              setEvents([]);
+              setCounts({ pitch: 0, noteOn: 0, noteOff: 0, eval: 0, miss: 0 });
+            }}
+            style={{
+              background: '#334155',
+              color: '#94a3b8',
+              border: 'none',
+              borderRadius: 3,
+              padding: '2px 8px',
+              cursor: 'pointer',
+              fontSize: 10,
+            }}
+          >
+            Clear
+          </button>
+        </>
+      }
+    >
+      <div
+        ref={logRef}
+        style={{
+          maxHeight: 180,
+          overflowY: 'auto',
+          padding: '4px 12px',
+          fontSize: 11,
+          color: '#e0e0e0',
+          background: '#1a1a2e',
         }}
-        aria-label="Toggle debug panel">
-        <span style={{ color: '#e94560', fontWeight: 'bold' }}>DEBUG</span>
-        <span style={{ color: '#94a3b8', fontSize: 10 }}>
-          pitch:{counts.pitch} noteOn:{counts.noteOn} eval:{counts.eval} miss:{counts.miss}
-        </span>
-        <div style={{ flex: 1 }} />
-        <label style={{ fontSize: 10, display: 'flex', alignItems: 'center', gap: 4 }}>
-          <input
-            type="checkbox"
-            checked={showPitch}
-            onChange={e => setShowPitch(e.target.checked)}
-            onClick={(e) => e.stopPropagation()}
-          />
-          raw pitch
-        </label>
-        <button onClick={e => { e.stopPropagation(); downloadSnapshot(); }}
-          style={{ background: '#e94560', color: '#fff', border: 'none', borderRadius: 3, padding: '2px 8px', cursor: 'pointer', fontSize: 10, fontWeight: 'bold' }}>
-          Download Snapshot
-        </button>
-        <button onClick={e => { e.stopPropagation(); clearDebugLog(); setEvents([]); setCounts({ pitch: 0, noteOn: 0, noteOff: 0, eval: 0, miss: 0 }); }}
-          style={{ background: '#334155', color: '#94a3b8', border: 'none', borderRadius: 3, padding: '2px 8px', cursor: 'pointer', fontSize: 10 }}>
-          Clear
-        </button>
-        <span style={{ color: '#94a3b8' }}>{collapsed ? '▲' : '▼'}</span>
+      >
+        {filtered.map((e, i) => (
+          <div key={i} style={{ color: EVENT_COLORS[e.type] || '#ccc', whiteSpace: 'nowrap', lineHeight: 1.4 }}>
+            <span style={{ color: '#475569', marginRight: 6 }}>{e.t.toFixed(0)}</span>
+            {formatEvent(e)}
+          </div>
+        ))}
+        {filtered.length === 0 && (
+          <div style={{ color: '#475569' }}>No events yet. Start practicing to see debug output.</div>
+        )}
       </div>
-      {!collapsed && (
-        <div ref={logRef} style={{ maxHeight: 180, overflowY: 'auto', padding: '4px 12px' }}>
-          {filtered.map((e, i) => (
-            <div key={i} style={{ color: EVENT_COLORS[e.type] || '#ccc', whiteSpace: 'nowrap', lineHeight: 1.4 }}>
-              <span style={{ color: '#475569', marginRight: 6 }}>{e.t.toFixed(0)}</span>
-              {formatEvent(e)}
-            </div>
-          ))}
-          {filtered.length === 0 && <div style={{ color: '#475569' }}>No events yet. Start practicing to see debug output.</div>}
-        </div>
-      )}
-    </div>
+    </LabsDebugDock>
   );
 }

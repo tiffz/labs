@@ -1,5 +1,5 @@
-import type { PianoScore, ScorePart, ScoreMeasure, ScoreNote, NoteDuration, Key } from '../types';
-import { generateNoteId } from '../types';
+import type { PianoScore, ScorePart, ScoreMeasure, ScoreNote, NoteDuration, Key } from './scoreTypes';
+import { generateNoteId } from './scoreTypes';
 
 /**
  * Minimal types mirroring midi-json-parser-worker's output,

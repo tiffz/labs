@@ -17,6 +17,7 @@ Instructions for AI coding assistants working in this repo (Cursor, Claude, Code
 - **Import boundaries** (`src/shared/importBoundaries.test.ts` + `scripts/check-import-boundaries.mjs`): apps may import from `src/shared/**` but not from each other. Keep cross-app reuse in `src/shared/` and register new app directories in both files.
 - **Shared UI first** (`src/shared/SHARED_UI_CONVENTIONS.md`): reach for `src/shared/components/` primitives before writing a new popover/tooltip/menu. MUI is the underlying primitive library for complex widgets.
 - **Rhythm preset integrity** (`src/shared/rhythm/presetIntegrity.ts` + `presetIntegrity.test.ts`): when editing `RHYTHM_DATABASE` or related presets, run `npx vitest run src/shared/rhythm/presetIntegrity.test.ts`. The checks parse every pattern, flag copy/pasted variations across related rhythms with different bases, and verify labeled 8/8 ornament/anchor lines match the reference attack skeleton (prevents Malfuf/Kahleegi-style encoding mistakes).
+- **Labs debug mode** (`src/shared/debug/readLabsDebugParams.ts`, `labsDebugLog.ts`, `LabsDebugDock.tsx`): `?debug` and `?dev` are equivalent. `ServerLogger` info/debug only POST to `/__debug_log` when that flag is set; errors/warnings still post in dev. See root [DEVELOPMENT.md](DEVELOPMENT.md) § Labs debug mode. Use **Copy bundle** in the dock or `.debug-snapshots/` for assistant-friendly artifacts (no automatic browser→LLM pipe exists).
 
 ## Repo Map
 

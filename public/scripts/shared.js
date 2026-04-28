@@ -13,6 +13,22 @@ setTimeout(function() {
 document.addEventListener('DOMContentLoaded', function() {
   const bubbles = document.querySelectorAll('.bubble');
 
+  function isLabsCatalogLocalHost() {
+    const h = window.location.hostname;
+    return h === 'localhost' || h === '127.0.0.1';
+  }
+
+  // Unlisted apps: show in the catalog on local dev only. Production still serves /app/ URLs;
+  // they are just omitted from this directory page.
+  if (!isLabsCatalogLocalHost()) {
+    document.querySelectorAll('.app-card[data-stage="unlisted"]').forEach(function (el) {
+      el.remove();
+    });
+    document.querySelectorAll('[data-filter-stage="unlisted"]').forEach(function (el) {
+      el.remove();
+    });
+  }
+
   // Catalog filtering (used on homepage).
   const filterChips = document.querySelectorAll('[data-filter-stage]');
   const appCards = document.querySelectorAll('.app-card[data-stage]');

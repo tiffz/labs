@@ -944,6 +944,66 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-components-labsdebugdock-tsx-labsdebugdock",
+    "name": "LabsDebugDock",
+    "path": "src/shared/components/LabsDebugDock.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Shared chrome for URL-gated debug UIs: collapse, copy JSON bundle for LLM/IDE paste, app label.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "drums",
+      "piano"
+    ],
+    "exportType": "default",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-labsdebugdock-tsx-labsdebugdocklayout",
+    "name": "LabsDebugDockLayout",
+    "path": "src/shared/components/LabsDebugDock.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "drums",
+      "piano"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-labsdebugdock-tsx-labsdebugdockprops",
+    "name": "LabsDebugDockProps",
+    "path": "src/shared/components/LabsDebugDock.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "drums",
+      "piano"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
     "id": "src-shared-components-metronometogglebutton-tsx-metronometogglebutton",
     "name": "MetronomeToggleButton",
     "path": "src/shared/components/MetronomeToggleButton.tsx",
@@ -1288,6 +1348,152 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "zines"
     ],
     "exportType": "default",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-debug-copylabsdebugbundle-ts-buildlabsdebugbundle",
+    "name": "buildLabsDebugBundle",
+    "path": "src/shared/debug/copyLabsDebugBundle.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-debug-copylabsdebugbundle-ts-copylabsdebugbundletoclipboard",
+    "name": "copyLabsDebugBundleToClipboard",
+    "path": "src/shared/debug/copyLabsDebugBundle.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Serializes a small JSON bundle for pasting into an IDE or LLM session.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-debug-copylabsdebugbundle-ts-labsdebugbundle",
+    "name": "LabsDebugBundle",
+    "path": "src/shared/debug/copyLabsDebugBundle.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-debug-debuglogpostbody-ts-debuglogpostentry",
+    "name": "DebugLogPostEntry",
+    "path": "src/shared/debug/debugLogPostBody.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Normalizes POST bodies sent to Vite's `/__debug_log` middleware. Supports: - Batched `{ logs: [...] }` from ../utils/serverLogger.ts ServerLogger - Single-object payloads (e.g. cats index.html early error hook)",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-debug-debuglogpostbody-ts-parsedebuglogpostbody",
+    "name": "parseDebugLogPostBody",
+    "path": "src/shared/debug/debugLogPostBody.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Parses JSON body from `/__debug_log` into zero or more log lines to print.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-debug-debuglogpostbody-ts-printdebuglogentriestoconsole",
+    "name": "printDebugLogEntriesToConsole",
+    "path": "src/shared/debug/debugLogPostBody.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Prints one batch of entries to the Node console (used by Vite dev middleware).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-debug-labsdebuglog-ts-labsdebug",
+    "name": "labsDebug",
+    "path": "src/shared/debug/labsDebugLog.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Structured debug logging for labs apps. When `?debug` or `?dev` is enabled in dev, messages go to the browser console and to ../utils/serverLogger.ts ServerLogger (Vite `/__debug_log`). Use for non-hot-path diagnostics; keep payloads small.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-debug-readlabsdebugparams-ts-islabsdebugenabled",
+    "name": "isLabsDebugEnabled",
+    "path": "src/shared/debug/readLabsDebugParams.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "True when `debug` and/or `dev` is set in a way that enables labs debug tooling. - `?debug`, `?debug=`, `?debug=1`, `?debug=true`, … → on - `?dev=1` (cats legacy) → on - `?debug=false`, `?debug=0`, … → off",
+    "tags": [],
+    "appsUsing": [
+      "cats",
+      "drums",
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-debug-readlabsdebugparams-ts-islabsoverlayenabled",
+    "name": "isLabsOverlayEnabled",
+    "path": "src/shared/debug/readLabsDebugParams.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Cats-style overlay flag (`?overlay=1` / `?overlay=true`).",
+    "tags": [],
+    "appsUsing": [
+      "cats",
+      "drums",
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-debug-readlabsdebugparams-ts-readlabsdebugfromlocation",
+    "name": "readLabsDebugFromLocation",
+    "path": "src/shared/debug/readLabsDebugParams.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Read from the browser location; safe to call when `window` is undefined (SSR/tests).",
+    "tags": [],
+    "appsUsing": [
+      "cats",
+      "drums",
+      "piano"
+    ],
+    "exportType": "function",
     "demoId": null
   },
   {
@@ -2519,6 +2725,77 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-music-importscore-ts-importformat",
+    "name": "ImportFormat",
+    "path": "src/shared/music/importScore.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-importscore-ts-importprogress",
+    "name": "ImportProgress",
+    "path": "src/shared/music/importScore.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-importscore-ts-importresult",
+    "name": "ImportResult",
+    "path": "src/shared/music/importScore.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-importscore-ts-importscore",
+    "name": "importScore",
+    "path": "src/shared/music/importScore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-music-lyricsectionparser-ts-lookslikefullsonglyrics",
     "name": "looksLikeFullSongLyrics",
     "path": "src/shared/music/lyricSectionParser.ts",
@@ -2566,6 +2843,423 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-melodiapipeline-categorize-ts-bucketformaxinterval",
+    "name": "bucketForMaxInterval",
+    "path": "src/shared/music/melodiaPipeline/categorize.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-melodiapipeline-categorize-ts-categorizecorpus",
+    "name": "categorizeCorpus",
+    "path": "src/shared/music/melodiaPipeline/categorize.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Categorize a list of exercises into difficulty buckets and produce a `linearPath.json`-shaped output. Exercises flagged for manual review are **excluded** from `exerciseIds`/`buckets` (still preserved in `categorized` for diagnostics). Default ordering: stepwise → thirds → fourths → mixed; within a bucket, preserve incoming order (which the caller can pre-sort by id, level, etc.).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-melodiapipeline-categorize-ts-categorizedentry",
+    "name": "CategorizedEntry",
+    "path": "src/shared/music/melodiaPipeline/categorize.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-melodiapipeline-categorize-ts-categorizeexercise",
+    "name": "categorizeExercise",
+    "path": "src/shared/music/melodiaPipeline/categorize.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-melodiapipeline-categorize-ts-difficultybucket",
+    "name": "DifficultyBucket",
+    "path": "src/shared/music/melodiaPipeline/categorize.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-melodiapipeline-categorize-ts-linearpathoutput",
+    "name": "LinearPathOutput",
+    "path": "src/shared/music/melodiaPipeline/categorize.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-melodiapipeline-categorize-ts-maxmelodicintervalsemitones",
+    "name": "maxMelodicIntervalSemitones",
+    "path": "src/shared/music/melodiaPipeline/categorize.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Returns the largest absolute melodic interval (semitones) between consecutive sounded notes in the melody part. Rests reset the previous pitch so jumps across rests do not inflate the bucket.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-melodiapipeline-hrmf-ts-collectpitchsequence",
+    "name": "collectPitchSequence",
+    "path": "src/shared/music/melodiaPipeline/hrmf.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Duration token for profile, e.g. `quarter`, `eighth+dotted`",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-melodiapipeline-hrmf-ts-collectrhythmicprofile",
+    "name": "collectRhythmicProfile",
+    "path": "src/shared/music/melodiaPipeline/hrmf.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Duration token for profile, e.g. `quarter`, `eighth+dotted`",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-melodiapipeline-hrmf-ts-durationtoken",
+    "name": "durationToken",
+    "path": "src/shared/music/melodiaPipeline/hrmf.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Duration token for profile, e.g. `quarter`, `eighth+dotted`",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-melodiapipeline-hrmf-ts-pianoscoretohrmf",
+    "name": "pianoScoreToHrmf",
+    "path": "src/shared/music/melodiaPipeline/hrmf.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Human-readable music format: `{num}/{den}|m1|m2|...` where each measure is space-separated `{pitches}({beats})` events; beats are in quarter-note units.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-melodiapipeline-normalize-ts-decomposedeficittorests",
+    "name": "decomposeDeficitToRests",
+    "path": "src/shared/music/melodiaPipeline/normalize.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Greedily decompose `deficit` quarter-beats into a list of rest tokens drawn from `REST_DURATIONS` (largest-first). Always terminates because the smallest token is `sixteenth` (0.25 beats); deficits not divisible by 0.25 are floored — but those typically only come from validator-reported errors and we'd rather emit a slightly-shorter measure than spin forever.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "ui"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-melodiapipeline-normalize-ts-normalizeoptions",
+    "name": "NormalizeOptions",
+    "path": "src/shared/music/melodiaPipeline/normalize.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "ui"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-melodiapipeline-normalize-ts-normalizepianoscore",
+    "name": "normalizePianoScore",
+    "path": "src/shared/music/melodiaPipeline/normalize.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "ui"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-melodiapipeline-partutils-ts-pickmelodypart",
+    "name": "pickMelodyPart",
+    "path": "src/shared/music/melodiaPipeline/partUtils.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-melodiapipeline-types-ts-melodiacurriculumexercise",
+    "name": "MelodiaCurriculumExercise",
+    "path": "src/shared/music/melodiaPipeline/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "One row in the shipped Melodia curriculum (learner app).",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "ui"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-melodiapipeline-types-ts-normalizedmelodiaexercise",
+    "name": "NormalizedMelodiaExercise",
+    "path": "src/shared/music/melodiaPipeline/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Output of the MusicXML ingest / normalization step (pipeline + JSON on disk).",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "ui"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-melodiapipeline-types-ts-pedagogicalflag",
+    "name": "PedagogicalFlag",
+    "path": "src/shared/music/melodiaPipeline/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "ui"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-melodiapipeline-types-ts-pedagogicalflagcode",
+    "name": "PedagogicalFlagCode",
+    "path": "src/shared/music/melodiaPipeline/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "ui"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-melodiapipeline-types-ts-pedagogicalseverity",
+    "name": "PedagogicalSeverity",
+    "path": "src/shared/music/melodiaPipeline/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "ui"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-melodiapipeline-validators-ts-comparetwonormalizations",
+    "name": "compareTwoNormalizations",
+    "path": "src/shared/music/melodiaPipeline/validators.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-melodiapipeline-validators-ts-detectintervaloutliers",
+    "name": "detectIntervalOutliers",
+    "path": "src/shared/music/melodiaPipeline/validators.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-melodiapipeline-validators-ts-infersuspiciousaccidentals",
+    "name": "inferSuspiciousAccidentals",
+    "path": "src/shared/music/melodiaPipeline/validators.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-melodiapipeline-validators-ts-runallmelodiavalidators",
+    "name": "runAllMelodiaValidators",
+    "path": "src/shared/music/melodiaPipeline/validators.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-melodiapipeline-validators-ts-validatemeasureintegrity",
+    "name": "validateMeasureIntegrity",
+    "path": "src/shared/music/melodiaPipeline/validators.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-melodiavexfirstmeasure-ts-drawmelodiafirstmeasurepreview",
+    "name": "drawMelodiaFirstMeasurePreview",
+    "path": "src/shared/music/melodiaVexFirstMeasure.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Renders the first measure of the melody part into `container` (replaces inner HTML).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "ui"
     ],
     "exportType": "function",
     "demoId": null
@@ -2763,6 +3457,217 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-parsemidi-ts-midiendoftrackevent",
+    "name": "MidiEndOfTrackEvent",
+    "path": "src/shared/music/parseMidi.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Minimal types mirroring midi-json-parser-worker's output, so the core logic can be tested without the web-worker dependency.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-parsemidi-ts-midievent",
+    "name": "MidiEvent",
+    "path": "src/shared/music/parseMidi.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Minimal types mirroring midi-json-parser-worker's output, so the core logic can be tested without the web-worker dependency.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-parsemidi-ts-midifile",
+    "name": "MidiFile",
+    "path": "src/shared/music/parseMidi.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Minimal types mirroring midi-json-parser-worker's output, so the core logic can be tested without the web-worker dependency.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-parsemidi-ts-midikeysignatureevent",
+    "name": "MidiKeySignatureEvent",
+    "path": "src/shared/music/parseMidi.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Minimal types mirroring midi-json-parser-worker's output, so the core logic can be tested without the web-worker dependency.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-parsemidi-ts-midinoteoffevent",
+    "name": "MidiNoteOffEvent",
+    "path": "src/shared/music/parseMidi.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Minimal types mirroring midi-json-parser-worker's output, so the core logic can be tested without the web-worker dependency.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-parsemidi-ts-midinoteonevent",
+    "name": "MidiNoteOnEvent",
+    "path": "src/shared/music/parseMidi.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Minimal types mirroring midi-json-parser-worker's output, so the core logic can be tested without the web-worker dependency.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-parsemidi-ts-midisettempoevent",
+    "name": "MidiSetTempoEvent",
+    "path": "src/shared/music/parseMidi.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Minimal types mirroring midi-json-parser-worker's output, so the core logic can be tested without the web-worker dependency.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-parsemidi-ts-miditimesignatureevent",
+    "name": "MidiTimeSignatureEvent",
+    "path": "src/shared/music/parseMidi.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Minimal types mirroring midi-json-parser-worker's output, so the core logic can be tested without the web-worker dependency.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-parsemidi-ts-miditracknameevent",
+    "name": "MidiTrackNameEvent",
+    "path": "src/shared/music/parseMidi.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Minimal types mirroring midi-json-parser-worker's output, so the core logic can be tested without the web-worker dependency.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-parsemidi-ts-parsemidi",
+    "name": "parseMidi",
+    "path": "src/shared/music/parseMidi.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Minimal types mirroring midi-json-parser-worker's output, so the core logic can be tested without the web-worker dependency.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-parsemusicxml-ts-parsedsections",
+    "name": "ParsedSections",
+    "path": "src/shared/music/parseMusicXml.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "ui"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-parsemusicxml-ts-parsemusicxml",
+    "name": "parseMusicXml",
+    "path": "src/shared/music/parseMusicXml.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "ui"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-parsemusicxml-ts-parsemusicxmlfromdocument",
+    "name": "parseMusicXmlFromDocument",
+    "path": "src/shared/music/parseMusicXml.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Parse partwise MusicXML from an existing (browser DOM or Node linkedom/happy-dom).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "ui"
     ],
     "exportType": "function",
     "demoId": null

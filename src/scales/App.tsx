@@ -6,8 +6,9 @@ import InputGateway from './components/InputGateway';
 import { enableDebug } from './utils/practiceDebugLog';
 import DebugPanel from './components/DebugPanel';
 import SkipToMain from '../shared/components/SkipToMain';
+import { readLabsDebugFromLocation } from '../shared/debug/readLabsDebugParams';
 
-const debugMode = new URLSearchParams(window.location.search).has('debug');
+const debugMode = readLabsDebugFromLocation().debug;
 if (debugMode) enableDebug();
 
 function ScreenRouter() {

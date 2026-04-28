@@ -19,10 +19,11 @@ const DebugPanel = lazy(() => import('./components/DebugPanel'));
 import { getImportFileKind } from './utils/importFileType';
 import { createAppAnalytics } from '../shared/utils/analytics';
 import SkipToMain from '../shared/components/SkipToMain';
+import { readLabsDebugFromLocation } from '../shared/debug/readLabsDebugParams';
 
 const analytics = createAppAnalytics('piano');
 
-const debugMode = new URLSearchParams(window.location.search).has('debug');
+const debugMode = readLabsDebugFromLocation().debug;
 if (debugMode) enableDebug();
 
 function PianoApp() {

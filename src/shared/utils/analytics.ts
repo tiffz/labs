@@ -5,6 +5,7 @@ export type AppId =
   | 'corp'
   | 'drums'
   | 'forms'
+  | 'melodia'
   | 'piano'
   | 'pitch'
   | 'count'
@@ -22,6 +23,7 @@ const APP_CONTENT_GROUP: Record<AppId, ContentGroup> = {
   corp: 'Games',
   drums: 'Music',
   forms: 'Art & Writing',
+  melodia: 'Music',
   piano: 'Music',
   pitch: 'Music',
   count: 'Music',

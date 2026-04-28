@@ -2,6 +2,8 @@
  * Server Logger - Sends console logs to Vite dev server terminal
  * Shared utility for all micro-apps in the labs project
  */
+import { isLabsDebugEnabled } from '../debug/readLabsDebugParams';
+
 class ServerLogger {
   private static instance: ServerLogger;
   private isEnabled = false;
@@ -75,8 +77,16 @@ class ServerLogger {
     }
   }
 
+  /** Errors/warnings always stream in dev; info/debug only when `?debug` or `?dev` is on. */
+  private shouldSendLevelToServer(level: string): boolean {
+    if (level === 'error' || level === 'warn') return true;
+    if (typeof window === 'undefined') return false;
+    return isLabsDebugEnabled(window.location.search);
+  }
+
   private async sendToServer(level: string, message: string, data?: unknown) {
     if (!this.isEnabled || this.handlingError) return;
+    if (!this.shouldSendLevelToServer(level)) return;
 
     // Add to queue instead of sending immediately (prevent memory leak from too many requests)
     const logData = {
@@ -166,6 +176,19 @@ export function installServerLogger(appName: string) {
 
 // Test helper to reset singleton (only for testing)
 export function resetServerLoggerForTesting() {
+  // @ts-expect-error - accessing private static property for testing
+  const inst = ServerLogger.instance as Record<string, unknown> | undefined;
+  if (inst) {
+    const timer = inst.flushTimer;
+    if (typeof timer === 'number') {
+      clearTimeout(timer);
+      inst.flushTimer = null;
+    }
+    const queue = inst.logQueue;
+    if (Array.isArray(queue)) {
+      queue.length = 0;
+    }
+  }
   // @ts-expect-error - accessing private static property for testing
   ServerLogger.instance = undefined;
 }

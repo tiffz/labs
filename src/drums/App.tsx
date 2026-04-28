@@ -25,8 +25,12 @@ import {
 import type { TimeSignature } from './types';
 import { createAppAnalytics } from '../shared/utils/analytics';
 import SkipToMain from '../shared/components/SkipToMain';
+import LabsDebugDock from '../shared/components/LabsDebugDock';
+import { readLabsDebugFromLocation } from '../shared/debug/readLabsDebugParams';
 
 const analytics = createAppAnalytics('drums');
+
+const drumsDebugMode = readLabsDebugFromLocation().debug;
 import type { PlaybackSettings } from './types/settings';
 import { DEFAULT_SETTINGS } from './types/settings';
 
@@ -684,6 +688,22 @@ const App: React.FC = () => {
       />
 
       {/* Share feedback toast */}
+      {drumsDebugMode && (
+        <LabsDebugDock appId="drums" accentColor="#a855f7" title="Darbuka" defaultCollapsed>
+          <div style={{ padding: '10px 12px', color: '#94a3b8', lineHeight: 1.55, fontSize: 11 }}>
+            <p style={{ margin: '0 0 8px' }}>
+              Add <code style={{ color: '#e2e8f0' }}>?debug</code> or <code style={{ color: '#e2e8f0' }}>?dev</code>{' '}
+              to mirror <code style={{ color: '#e2e8f0' }}>ServerLogger</code> <strong>info/debug</strong> lines to the
+              Vite dev terminal. Errors and warnings still stream without these flags.
+            </p>
+            <p style={{ margin: 0 }}>
+              Use <strong>Copy bundle</strong> above to capture URL, user agent, and optional{' '}
+              <code style={{ color: '#e2e8f0' }}>window.__LABS_DEBUG__</code> for an LLM or bug report.
+            </p>
+          </div>
+        </LabsDebugDock>
+      )}
+
       {showShareFeedback && shareFeedbackPosition && (
         <div
           className="share-feedback-toast"

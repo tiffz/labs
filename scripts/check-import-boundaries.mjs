@@ -10,6 +10,7 @@ const APP_DIRS = new Set([
   'count',
   'drums',
   'forms',
+  'melodia',
   'piano',
   'pitch',
   'scales',

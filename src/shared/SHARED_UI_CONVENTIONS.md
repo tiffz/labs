@@ -157,6 +157,10 @@ Apps historically re-specified MUI `Popover`'s `anchorOrigin`, `transformOrigin`
 
 Migrate existing MUI `Popover` usages opportunistically (i.e. when touching the surrounding code). `SharedExportPopover` should eventually adopt this primitive as well; it remains on direct `Popover` usage for now because it carries its own theming contract.
 
+## LabsDebugDock (URL-gated debug chrome)
+
+For local-only debug surfaces (e.g. practice timelines), wrap app-specific content in `LabsDebugDock` from [`src/shared/components/LabsDebugDock.tsx`](./components/LabsDebugDock.tsx). It provides a consistent bottom dock, collapse affordance, optional **Copy bundle** (JSON for bug reports / LLM paste), and an optional `reportOuterHeightCssVar` hook when the main app layout must subtract dock height (see scales `--debug-panel-height`).
+
 ## Related Docs
 
 - [Music Input Token Contracts](./components/music/THEMING_DECISIONS.md)

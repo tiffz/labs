@@ -21,6 +21,7 @@ import {
 } from './generatedSharedCatalog';
 import type { ExportAudioRenderRequest, ExportSourceAdapter } from '../shared/music/exportTypes';
 import RegressionPanel from './RegressionPanel';
+import MelodiaCorpusReview from './melodia/MelodiaCorpusReview';
 
 const KIND_ORDER: SharedCatalogKind[] = [
   'component',
@@ -33,7 +34,7 @@ const KIND_ORDER: SharedCatalogKind[] = [
 
 const APPEARANCES = ['default', 'piano', 'words', 'chords'] as const;
 type Appearance = (typeof APPEARANCES)[number];
-type CatalogTab = 'gallery' | 'docs' | 'theme' | 'regression';
+type CatalogTab = 'gallery' | 'docs' | 'theme' | 'regression' | 'melodia';
 type RegressionRouteSection = 'screenshots' | 'report';
 const BPM_SURFACES = ['default', 'piano', 'words', 'chords', 'beat', 'drums'] as const;
 const KEY_SURFACES = ['default', 'piano', 'words', 'chords', 'beat'] as const;
@@ -62,7 +63,7 @@ const APP_LINKS: Record<string, { label: string; href: string }> = {
   ui: { label: 'UI Gallery', href: '/ui/' },
 };
 
-const UI_TABS: CatalogTab[] = ['gallery', 'docs', 'theme', 'regression'];
+const UI_TABS: CatalogTab[] = ['gallery', 'docs', 'theme', 'regression', 'melodia'];
 const REGRESSION_SECTIONS: RegressionRouteSection[] = ['screenshots', 'report'];
 
 /** Map hash segments to current routes; legacy `failures` / `baselines` → `screenshots`. */
@@ -1169,6 +1170,15 @@ function App() {
                   </span>
                 ) : null}
               </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === 'melodia'}
+                className={`ui-tab-btn ${activeTab === 'melodia' ? 'active' : ''}`}
+                onClick={() => setTab('melodia')}
+              >
+                Melodia
+              </button>
             </div>
           </div>
         </div>
@@ -1345,6 +1355,8 @@ function App() {
               </article>
             ))}
           </div>
+        ) : activeTab === 'melodia' ? (
+          <MelodiaCorpusReview />
         ) : activeTab === 'theme' ? (
           <div className="ui-theme-tab">
             <section className="ui-theme-foundation" aria-label="Default theme foundation">

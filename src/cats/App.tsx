@@ -41,6 +41,7 @@ import type { GameState } from './game/types';
 import { ErrorReporter } from './components/ui/ErrorReporter';
 import { catCoordinateSystem } from './services/CatCoordinateSystem';
 import { ViewportProvider } from './context/ViewportContext';
+import { readLabsDebugFromLocation } from '../shared/debug/readLabsDebugParams';
 
 import './styles/cats.css';
 
@@ -291,14 +292,11 @@ function App() {
   catActionsRef.current = catActions;
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const devParam = params.get('dev');
-    if (devParam === 'true' || devParam === '1') {
+    const { debug, overlay } = readLabsDebugFromLocation();
+    if (debug) {
       setIsDevMode(true);
     }
-    // Also allow overlay to be toggled globally here for non-cat overlays
-    const overlayParam = params.get('overlay');
-    if (overlayParam === 'true' || overlayParam === '1') {
+    if (overlay) {
       (window as unknown as { __CAT_OVERLAY__?: boolean }).__CAT_OVERLAY__ = true;
     }
   }, []);
@@ -327,6 +325,7 @@ function App() {
             })], { type: 'application/json' }), 'meta.json');
             if (blob) form.append('screenshot', blob, 'screenshot.png');
             await fetch('/__debug_snapshot', { method: 'POST', body: form });
+            // eslint-disable-next-line no-console -- dev-only confirmation in terminal workflow
             console.debug('[CAT-DEBUG] Snapshot sent (hotkey)');
           } catch (e) {
             console.error('Snapshot failed (hotkey)', e);
@@ -720,6 +719,7 @@ function App() {
                 })], { type: 'application/json' }), 'meta.json');
                 if (blob) form.append('screenshot', blob, 'screenshot.png');
                 await fetch('/__debug_snapshot', { method: 'POST', body: form });
+                // eslint-disable-next-line no-console -- dev-only confirmation in terminal workflow
                 console.debug('[CAT-DEBUG] Snapshot sent');
               } catch (e) {
                 console.error('Snapshot failed', e);

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { parseMusicXml } from './parseMusicXml';
+import { DOMParser } from 'linkedom';
+import { parseMusicXml, parseMusicXmlFromDocument } from './parseMusicXml';
 
 function wrap(measures: string, attrs = '', partListExtra = ''): string {
   return `<?xml version="1.0" encoding="UTF-8"?>
@@ -478,5 +479,17 @@ describe('parseMusicXml', () => {
     const score = parseMusicXml(xml);
     expect(score.parts.length).toBe(2);
     expect(score.parts.every(p => p.hand !== 'voice')).toBe(true);
+  });
+
+  it('parseMusicXmlFromDocument matches parseMusicXml for linkedom Document', () => {
+    const xml = wrap(
+      `<note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><type>whole</type></note>`,
+    );
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xml, 'text/xml');
+    const a = parseMusicXml(xml);
+    const b = parseMusicXmlFromDocument(doc as unknown as Document);
+    expect(b.parts[0].measures[0].notes.length).toBe(a.parts[0].measures[0].notes.length);
+    expect(b.parts[0].measures[0].notes[0].pitches[0]).toBe(60);
   });
 });

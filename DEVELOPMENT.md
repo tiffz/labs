@@ -60,6 +60,24 @@ Any logic used by more than one app must live in `src/shared/**`. App directorie
 - New feature work should target shared modules directly when cross-app reuse is expected.
 - Guardrail: `src/shared/importBoundaries.test.ts` enforces a strict no app-to-app import rule.
 
+## Labs debug mode (local development)
+
+### Decision
+
+Use a single URL contract for “extra diagnostics on”: either `?debug` or `?dev` (same semantics). Gate **info/debug** traffic to the Vite `POST /__debug_log` endpoint on that flag; keep **errors and warnings** streaming in dev without the flag so import-time failures still surface in the terminal.
+
+### Implementation
+
+- URL parsing: [`src/shared/debug/readLabsDebugParams.ts`](src/shared/debug/readLabsDebugParams.ts) (`isLabsDebugEnabled`, `isLabsOverlayEnabled` for cats-style overlays).
+- Optional structured logs from app code: [`src/shared/debug/labsDebugLog.ts`](src/shared/debug/labsDebugLog.ts) (`labsDebug.info` / `labsDebug.debug` respect the same URL gate; `labsDebug.warn` always forwards in dev).
+- Shared debug chrome: [`src/shared/components/LabsDebugDock.tsx`](src/shared/components/LabsDebugDock.tsx) (collapse, **Copy bundle** → [`copyLabsDebugBundleToClipboard`](src/shared/debug/copyLabsDebugBundle.ts) for LLM/bug-report paste).
+- Vite middleware normalizes batched `{ logs: [...] }` and single-object bodies: [`src/shared/debug/debugLogPostBody.ts`](src/shared/debug/debugLogPostBody.ts).
+- Cats dev snapshots: `POST /__debug_snapshot` writes under [`.debug-snapshots/`](.debug-snapshots/) (gitignored). Optional Cursor hook: watch that folder to attach artifacts to a chat.
+
+### Agentic debugging (recommended)
+
+Prefer **structured repro** (URL with flags, steps, expected vs actual), **automated tests** (Vitest) for logic, and **Playwright traces or screenshots** for UI over long console-only threads. Use **Copy bundle** or `.debug-snapshots/` output as a single pasteable artifact for assistants.
+
 ## Cache Busting Strategy
 
 ### Decision

@@ -23,6 +23,13 @@ describe('ServerLogger', () => {
     
     // Reset singleton instance to allow fresh instances in each test
     resetServerLoggerForTesting();
+
+    // Info/debug only POST to /__debug_log when labs URL debug is on
+    window.history.replaceState({}, '', `${window.location.pathname}?debug=1`);
+  });
+
+  afterEach(() => {
+    window.history.replaceState({}, '', window.location.pathname);
   });
 
   describe('installServerLogger', () => {
@@ -144,6 +151,28 @@ describe('ServerLogger', () => {
         logger.log('test message');
         await flushLogs();
       }).not.toThrow();
+    });
+
+    describe('labs URL debug gating', () => {
+      it('does not POST info logs when debug URL flags are off', async () => {
+        window.history.replaceState({}, '', window.location.pathname);
+        resetServerLoggerForTesting();
+        mockFetch.mockClear();
+        const logger = installServerLogger('GATED');
+        logger.log('silent');
+        await flushLogs();
+        expect(mockFetch).not.toHaveBeenCalled();
+      });
+
+      it('still POSTs error logs when debug URL flags are off', async () => {
+        window.history.replaceState({}, '', window.location.pathname);
+        resetServerLoggerForTesting();
+        mockFetch.mockClear();
+        const logger = installServerLogger('GATED2');
+        logger.error('boom');
+        await flushLogs();
+        expect(mockFetch).toHaveBeenCalled();
+      });
     });
   });
 

@@ -13,6 +13,7 @@ const config: KnipConfig = {
     'src/beat/index.html',
     'src/piano/index.html',
     'src/scales/index.html',
+    'src/melodia/index.html',
     'src/pitch/index.html',
     'src/count/index.html',
     'src/words/index.html',
@@ -31,6 +32,7 @@ const config: KnipConfig = {
     'src/beat/main.tsx',
     'src/piano/main.tsx',
     'src/scales/main.tsx',
+    'src/melodia/main.tsx',
     'src/pitch/main.tsx',
     'src/count/main.tsx',
     'src/words/main.tsx',
@@ -41,6 +43,7 @@ const config: KnipConfig = {
     'src/beat/tests/tempoAnalysisRunner.ts',
     'src/beat/utils/nodeAudio.ts',
     'scripts/analyze-tempo.ts',
+    'scripts/melodia/ingest-folder.mts',
   ],
   project: [
     'src/**/*.{ts,tsx}',

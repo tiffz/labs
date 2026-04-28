@@ -13,6 +13,7 @@ const ROUTE_SPECS: Array<{
   { route: '/count/', title: /Count Me In/i, visibleSelector: '#root' },
   { route: '/drums/', title: /Darbuka Rhythm Trainer/i, visibleSelector: '#root' },
   { route: '/forms/', title: /Form Intersections/i, visibleSelector: '#root' },
+  { route: '/melodia/', title: /Melodia Online/i, visibleSelector: '#root' },
   { route: '/piano/', title: /Piano Practice/i, visibleSelector: '#root' },
   { route: '/pitch/', title: /Vocal Pitch Detector/i, visibleSelector: '#root' },
   { route: '/scales/', title: /Learn Your Scales/i, visibleSelector: '#root' },

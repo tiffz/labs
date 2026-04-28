@@ -211,6 +211,19 @@ body {
   content: '🎤';
 }
 
+.app-icon.melodia {
+  background: linear-gradient(135deg, #faf8f5 0%, #e8e4dc 100%);
+  border: 2px solid #1c2840;
+  font-size: 1.15rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-icon.melodia::before {
+  content: '🎼';
+}
+
 .app-icon.story {
   background-image: url('/icons/cat-android.png');
   background-size: 80% 80%;
@@ -272,6 +285,12 @@ body {
   color: #92400e;
   background: rgba(245, 158, 11, 0.2);
   border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.status-unlisted {
+  color: #475569;
+  background: rgba(100, 116, 139, 0.14);
+  border: 1px solid rgba(71, 85, 105, 0.28);
 }
 
 @media (max-width: 1120px) {

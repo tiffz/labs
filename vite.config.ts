@@ -12,6 +12,10 @@ import {
   buildAppBasePathsFromEntryPaths,
   getCanonicalTrailingSlashRedirect,
 } from './src/shared/utils/trailingSlashRouting';
+import {
+  parseDebugLogPostBody,
+  printDebugLogEntriesToConsole,
+} from './src/shared/debug/debugLogPostBody';
 
 const BUILD_VERSION = `${Date.now()}-${randomBytes(4).toString('hex')}`;
 
@@ -35,6 +39,7 @@ const MULTI_APP_INPUTS = {
   universal_tom: resolve(__dirname, 'src/drums/universal_tom/index.html'),
   piano: resolve(__dirname, 'src/piano/index.html'),
   scales: resolve(__dirname, 'src/scales/index.html'),
+  melodia: resolve(__dirname, 'src/melodia/index.html'),
   count: resolve(__dirname, 'src/count/index.html'),
   ui: resolve(__dirname, 'src/ui/index.html'),
 } as const;
@@ -300,19 +305,11 @@ export default defineConfig({
               });
               req.on('end', () => {
                 try {
-                  const logData = JSON.parse(body);
-                  const timestamp = new Date(logData.timestamp).toLocaleTimeString();
-                  const level = (logData.level || 'info').toUpperCase();
-                  const app = logData.app || 'APP';
-                  const line = `\n[${app}-DEBUG ${timestamp}] [${level}] ${logData.message}`;
-                  const method = String(level || 'info').toLowerCase();
-                  const out: (...args: unknown[]) => void =
-                    method === 'error' ? console.error :
-                      method === 'warn' ? console.warn :
-                        method === 'debug' ? console.debug :
-                          method === 'info' ? console.info : console.log;
-                  out(line);
-                  if (logData.data) out(logData.data);
+                  const parsed = JSON.parse(body) as unknown;
+                  const entries = parseDebugLogPostBody(parsed);
+                  if (entries.length > 0) {
+                    printDebugLogEntriesToConsole(entries);
+                  }
                 } catch (error) {
                   console.log('\n[LABS-DEBUG] Failed to parse log data', error);
                 }

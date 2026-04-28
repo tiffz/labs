@@ -168,6 +168,14 @@ export class MicrophonePitchInput {
     return this.running;
   }
 
+  /**
+   * While {@link start} is active, returns the same live mic stream used for analysis
+   * so callers can attach {@link MediaRecorder} without opening a second capture session.
+   */
+  getMediaStream(): MediaStream | null {
+    return this.stream;
+  }
+
   getActiveInputLabel(): string | null {
     return this.activeInputLabel;
   }

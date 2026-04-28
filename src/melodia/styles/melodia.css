@@ -1,0 +1,169 @@
+.melodia-app {
+  min-height: 100vh;
+  background: var(--melodia-ivory, #faf8f5);
+  color: var(--melodia-navy, #1c2840);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.melodia-app .melodia-main {
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 1rem clamp(0.65rem, 2.5vw, 1.15rem) 5rem;
+}
+
+.melodia-dropzone {
+  border: 2px dashed rgba(28, 40, 64, 0.28);
+  border-radius: 16px;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  background: rgba(255, 254, 249, 0.85);
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.melodia-dropzone:hover,
+.melodia-dropzone.is-drag {
+  border-color: #e91e8c;
+  background: rgba(233, 30, 140, 0.06);
+}
+
+.melodia-ink-pink {
+  color: #e91e8c;
+}
+
+.melodia-pulse-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #e91e8c;
+  display: inline-block;
+  animation: melodia-pulse 0.85s ease-in-out infinite;
+}
+
+@keyframes melodia-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.25);
+    opacity: 0.65;
+  }
+}
+
+.melodia-journal-card {
+  border-radius: 12px;
+  border: 1px solid rgba(28, 40, 64, 0.12);
+  background: #fffef9;
+  padding: 0.85rem 1rem;
+  margin-bottom: 0;
+  box-shadow: 0 1px 2px rgba(28, 40, 64, 0.04);
+}
+
+/* Stack the staff and the ink-trace overlay perfectly. The wrapper sets the
+   coordinate system; the overlay matches its dimensions exactly. */
+.melodia-staff-stack {
+  position: relative;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* VexFlow outputs into a div host; scale the notation SVG like a responsive figure. */
+.melodia-staff-stack > div svg.melodia-staff-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Overlays share the VF viewBox coords but must stretch with the SAME box as the staff SVG
+   (explicit pixel width attrs + `inset:0` desync scaled vs intrinsic staff size). */
+.melodia-staff-stack svg.melodia-overlay-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  pointer-events: none;
+}
+
+/* Navy stems/beams — do NOT blanket-style every path under `.vf-stavenote`.
+   VexFlow 5 SMuFL noteheads include helper paths (bbox/mask) that must keep
+   `stroke: none`; forcing `stroke` on `.vf-stavenote path` draws a grey box
+   around the glyph instead of a note head. See drums.css vexflow rules. */
+.melodia-staff-svg .vf-stem path,
+.melodia-staff-svg .vf-stem line,
+.melodia-staff-svg path[class*='vf-stem']:not([class*='notehead']),
+.melodia-staff-svg line[class*='vf-stem'],
+.melodia-staff-svg path[class*='beam'],
+.melodia-staff-svg line[class*='beam'] {
+  stroke: var(--melodia-stem, #1a2e44);
+}
+
+/* Noteheads: Vex 5 often uses SMuFL `text` under `g.vf-notehead`; path/ellipse may appear for
+   some glyphs — match `vf-notehead*` without matching unrelated “notehead” substrings. */
+.melodia-staff-svg path[class*='vf-notehead'],
+.melodia-staff-svg ellipse[class*='vf-notehead'],
+.melodia-staff-svg circle[class*='vf-notehead'],
+.melodia-staff-svg .vf-notehead text {
+  fill: var(--melodia-stem, #1a2e44);
+  stroke: none;
+}
+
+.melodia-staff-svg path[class*='accidental'],
+.melodia-staff-svg path[class*='vf-accidental'] {
+  fill: var(--melodia-stem, #1a2e44);
+  stroke: var(--melodia-stem, #1a2e44);
+}
+
+.melodia-staff-svg .vf-annotation text {
+  fill: rgba(28, 40, 64, 0.78);
+  font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+}
+
+/* Note-head glow when the singer's most-recent pitch matches within ±0.5 st. */
+.melodia-staff-svg .melodia-note-glow path[class*='vf-notehead'],
+.melodia-staff-svg .melodia-note-glow ellipse[class*='vf-notehead'],
+.melodia-staff-svg .melodia-note-glow circle[class*='vf-notehead'],
+.melodia-staff-svg .melodia-note-glow .vf-notehead text {
+  stroke: none;
+  fill: #e91e8c;
+  filter: drop-shadow(0 0 4px rgba(233, 30, 140, 0.55));
+  animation: melodia-glow 0.55s ease-in-out;
+}
+
+@keyframes melodia-glow {
+  from {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.melodia-ink-path {
+  fill: none;
+  stroke: #e91e8c;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.melodia-ink-path.is-trail {
+  stroke-opacity: 0.45;
+}
+
+.melodia-heat-rect {
+  fill: #e91e8c;
+}
+
+.melodia-playhead {
+  stroke: rgba(233, 30, 140, 0.55);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 4;
+}
