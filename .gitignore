@@ -48,3 +48,4 @@ storybook-static
 .audit-state.json
 .audit-reports/
 .audit-tmp/
+AUDIT_REPORT.md
