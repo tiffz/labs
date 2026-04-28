@@ -48,6 +48,18 @@ describe('pentascale advance chain (pre-start probe sanity)', () => {
     expect(at00.length).toBe(2);
   });
 
+  it('generates D pentascale eighth subdivision metronome score', () => {
+    const score = generateScoreForExercise(sessionEx({
+      exerciseId: 'D-pentascale-major',
+      stageId: 'D-pentascale-major-p4',
+      key: 'D',
+      hand: 'right',
+      subdivision: 'eighth',
+    }));
+    expect(score).not.toBeNull();
+    expect(score!.parts.length).toBeGreaterThan(0);
+  });
+
   it('counts playable LH C pentascale slots (sanity for probe length)', () => {
     const score = generateScoreForExercise(sessionEx({ stageId: 'C-pentascale-major-p2', hand: 'left' }));
     expect(score).not.toBeNull();

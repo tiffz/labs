@@ -2,6 +2,11 @@ import type { Key } from '../../shared/music/scoreTypes';
 import type { ExerciseKind, Tier, ExerciseDefinition } from './types';
 import { buildStages, buildPentascaleStages } from './stages';
 
+/** Builder-only: passed into `buildPentascaleStages` for Tier 0 majors; stripped before `ExerciseDefinition`. */
+type ExerciseBuilderOpts = Pick<ExerciseDefinition, 'guidance' | 'helpUrl'> & {
+  tier0PentascaleIndex?: number;
+};
+
 const EXERCISE_LABELS: Record<ExerciseKind, string> = {
   'pentascale-major': 'Major Pentascale',
   'pentascale-minor': 'Minor Pentascale',
@@ -20,16 +25,19 @@ export function isPentascaleKind(kind: ExerciseKind): boolean {
 function exercise(
   key: Key,
   kind: ExerciseKind,
-  opts?: Pick<ExerciseDefinition, 'guidance' | 'helpUrl'>,
+  opts?: ExerciseBuilderOpts,
 ): ExerciseDefinition {
   const id = `${key}-${kind}`;
+  const { tier0PentascaleIndex, ...rest } = opts ?? {};
   return {
     id,
     key,
     kind,
     label: `${key} ${EXERCISE_LABELS[kind]}`,
-    stages: isPentascaleKind(kind) ? buildPentascaleStages(id) : buildStages(id),
-    ...opts,
+    stages: isPentascaleKind(kind)
+      ? buildPentascaleStages(id, tier0PentascaleIndex ?? 0)
+      : buildStages(id),
+    ...rest,
   };
 }
 
@@ -53,35 +61,40 @@ export const TIERS: Tier[] = [
     tierNumber: 0,
     label: 'Five-finger warmups',
     description:
-      "Five notes, five fingers, all in one hand span. This is where you build evenness and control before the range widens in full scales.",
+      'Five-finger patterns in C, G, F, D, and A, each in one span. Eighth notes, triplets, and sixteenth notes are gradually introduced.',
     exercises: [
       exercise('C', 'pentascale-major', {
+        tier0PentascaleIndex: 0,
         guidance: {
           right:
             'C-D-E-F-G: RH 1-5 from middle C. One finger per note; keep tone even.',
           left:
-            'Same five pitches as the right-hand C major pentascale you played first (C–G)—even if G, F, or D came in between—now an octave lower. LH 5-1; pinky up, thumb back. Balance the pinky.',
+            'Same notes as your first RH C pentascale (up to G), now an octave lower. LH 5-1, pinky on low C, thumb on G. The pinky is softer than the thumb; that is normal.',
           both:
-            'Same shape an octave apart (RH 1-5 / LH 5-1). Start and end with thumbs on C together.',
+            'Same five notes in both hands, octave apart (RH 1-5, LH 5-1). Match the low Cs, then the high Gs. Outside fingers on the outsides, not two thumbs on one key.',
         },
         helpUrl: ytSearch('C major five finger pattern piano'),
       }),
       exercise('G', 'pentascale-major', {
+        tier0PentascaleIndex: 1,
         guidance:
           'G-A-B-C-D, all white keys (F\u266F is above the pattern). Same 1-5 shape as C, shifted.',
         helpUrl: ytSearch('G major five finger pattern piano'),
       }),
       exercise('F', 'pentascale-major', {
+        tier0PentascaleIndex: 2,
         guidance:
           'F-G-A-B\u266D-C: finger 4 on B\u266D. Same five-finger frame as C; only the 4th note is black.',
         helpUrl: ytSearch('F major five finger pattern piano'),
       }),
       exercise('D', 'pentascale-major', {
+        tier0PentascaleIndex: 3,
         guidance:
           'D-E-F\u266F-G-A: finger 3 on F\u266F. Black key mid-pattern - same shape as C.',
         helpUrl: ytSearch('D major five finger pattern piano'),
       }),
       exercise('A', 'pentascale-major', {
+        tier0PentascaleIndex: 4,
         guidance:
           'A-B-C\u266F-D-E: finger 3 on C\u266F. Same mid-black layout as D.',
         helpUrl: ytSearch('A major five finger pattern piano'),
@@ -93,7 +106,7 @@ export const TIERS: Tier[] = [
     tierNumber: 1,
     label: 'Foundation',
     description:
-      'White-key fingerings: C, G, and F major. The 3-2-1 thumb-under pattern you learn here sits underneath almost every other scale.',
+      'White-key majors: C, G, F. The thumb-under shape you build here shows up again and again in later keys.',
     exercises: [
       exercise('C', 'major-scale', {
         guidance: {
@@ -127,7 +140,7 @@ export const TIERS: Tier[] = [
     tierNumber: 2,
     label: 'Expanding Range',
     description:
-      'D and B\u266D major scales (B\u266D is your first non-thumb start), plus the C, G, and F arpeggios. Arpeggios use the same notes as the scales, just spread wider.',
+      'D and B\u266D majors (first non-thumb start on B\u266D), plus C, G, and F arpeggios. Same three chord tones, wider leaps.',
     exercises: [
       exercise('D', 'major-scale', {
         guidance:
@@ -165,7 +178,7 @@ export const TIERS: Tier[] = [
     tierNumber: 3,
     label: 'Minor Keys Begin',
     description:
-      'Your first minor keys: A and D in all three forms (natural, harmonic, melodic), alongside E\u266D and A major. Minor scales look harder than they are. The fingerings come from scales you already know.',
+      'A and E\u266D majors; A and D minors in natural, harmonic, and melodic forms. Fingerings stay familiar; the sound shifts to minor.',
     exercises: [
       exercise('A', 'major-scale', {
         guidance:
@@ -232,7 +245,7 @@ export const TIERS: Tier[] = [
     tierNumber: 4,
     label: 'Sharps & Flats',
     description:
-      'E and A\u266D major, the E and G minors, and your first minor arpeggios. Long fingers (2, 3, 4) start landing on black keys here. Once you trust the layout, it\'s physically easier than C major.',
+      'E and A\u266D majors; E and G minors; first minor arpeggios. More black keys, same calm hand setup.',
     exercises: [
       exercise('E', 'major-scale', {
         guidance:
@@ -313,7 +326,7 @@ export const TIERS: Tier[] = [
     tierNumber: 5,
     label: 'Advanced Keys',
     description:
-      'B, D\u266D, and F\u266F major, plus the next batch of minors and the harder arpeggios. Black-root scales feel scarier than they are. Let the keyboard geometry do the work.',
+      'B, D\u266D, and F\u266F majors, the next minors, and harder arpeggios. Black-key roots reward slow, clear mapping.',
     exercises: [
       exercise('B', 'major-scale', {
         guidance: {
@@ -426,7 +439,7 @@ export const TIERS: Tier[] = [
     tierNumber: 6,
     label: 'All Keys Mastery',
     description:
-      'The remaining minor scales and arpeggios, closing out all twelve keys. By the end of this tier you\'ll have played every standard fingering pattern in piano technique.',
+      'Remaining minor scales and arpeggios to round out all twelve keys. Take one key at a time.',
     exercises: [
       exercise('Bb', 'natural-minor-scale', {
         guidance: {

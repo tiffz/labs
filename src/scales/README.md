@@ -12,6 +12,10 @@ Route: `/scales/`.
 - **MIDI + acoustic input** — same grading pipeline as Piano; see "Shared Dependencies" below.
 - **Visual + audio feedback** — highlights the target note and flags incorrect notes in real time.
 
+## Copy and tone
+
+Learner-facing strings should follow **`COPY_STYLE.md`** in this folder (warm, concise, no em-dash essay voice). Update it when you add new UI surfaces that show prose.
+
 ## File Layout
 
 ```text

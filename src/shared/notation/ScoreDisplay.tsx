@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useCallback, useState } from 'react';
-import { Renderer, Stave, StaveNote, Voice, Formatter, StaveConnector, Beam, Dot, Annotation, Accidental, Fraction, StaveTie, Tuplet, BarlineType } from 'vexflow';
+import { Renderer, Stave, StaveNote, Voice, Formatter, StaveConnector, Beam, Dot, Accidental, Fraction, StaveTie, Tuplet, BarlineType, StringNumber } from 'vexflow';
 import type { PianoScore, ScoreNote } from '../music/scoreTypes';
 import type { PracticeNoteResult } from '../practice/types';
 import { DURATION_VEXFLOW, midiToPitchStringForKey, durationToBeats } from '../music/scoreTypes';
@@ -54,6 +54,41 @@ const DURATION_COMPLEXITY_WEIGHT: Record<string, number> = {
   eighth: 1.8,
   sixteenth: 2.8,
 };
+
+/**
+ * Piano fingerings: `StringNumber` uses stem/beam extents for above (stem up) and below (stem down),
+ * so beamed triplets align on a row instead of stair-stepping with each notehead (`FretHandFinger` / `Annotation`).
+ *
+ * `StringNumber.draw()` recomputes Y from stem extents and **does not** apply `setOffsetY` for ABOVE/BELOW,
+ * so clearance vs dense beams is tuned via `radius` (still no visible circle when `setDrawCircle(false)`).
+ */
+function attachPianoFingering(
+  staveNote: StaveNote,
+  finger: number,
+  placement: 'above' | 'below',
+  opts?: { note?: ScoreNote; lhGrandStaffTupletNudge?: boolean },
+) {
+  const sn = new StringNumber(String(finger));
+  sn.setPosition(placement);
+  sn.setDrawCircle(false);
+  sn.setDashed(false);
+  sn.setFont('Roboto', 11, 'normal');
+
+  const note = opts?.note;
+  let radius = 8;
+  if (note?.duration === 'sixteenth') {
+    radius = 13;
+  } else if (note?.tuplet && note.duration === 'eighth') {
+    radius = 10;
+  }
+  if (opts?.lhGrandStaffTupletNudge && placement === 'below') {
+    radius = Math.max(6, radius - 2);
+  }
+  (sn as StringNumber & { radius: number }).radius = radius;
+  sn.setWidth(radius * 2 + 4);
+
+  staveNote.addModifier(sn, 0);
+}
 
 function closestWrongPitchDelta(
   expectedPitches: number[],
@@ -1047,10 +1082,7 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
                 highlightActiveMatches,
               });
               if (note.finger && !note.rest) {
-                const ann = new Annotation(String(note.finger));
-                ann.setVerticalJustification(Annotation.VerticalJustify.TOP);
-                ann.setFont('Roboto', 11, 'normal');
-                staveNote.addModifier(ann, 0);
+                attachPianoFingering(staveNote, note.finger, 'above', { note });
               }
               if (note.id) noteIdToStaveNote.set(note.id, staveNote);
 
@@ -1129,10 +1161,10 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
                 highlightActiveMatches,
               });
               if (note.finger && !note.rest) {
-                const ann = new Annotation(String(note.finger));
-                ann.setVerticalJustification(Annotation.VerticalJustify.BOTTOM);
-                ann.setFont('Roboto', 11, 'normal');
-                staveNote.addModifier(ann, 0);
+                attachPianoFingering(staveNote, note.finger, 'below', {
+                  note,
+                  lhGrandStaffTupletNudge: showTreble && showBass,
+                });
               }
               if (note.id) noteIdToStaveNote.set(note.id, staveNote);
 
@@ -1591,14 +1623,25 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
         } catch { /* tie rendering can fail for edge cases */ }
       }
 
-      // Draw tuplet brackets
+      // Draw tuplet brackets. Beamed groups default to unbracketed VexFlow
+      // tuplets squeezed between outer stems, which collides with beams—use
+      // a bracket. Place tuplets **below** each voice: RH stem-up tuplets sit
+      // under the beam (not sky-high above the staff); LH stem-down tuplets
+      // sit under the bass beam so they do not reach up into the treble staff.
       for (const tg of tupletGroups) {
         // Only draw complete tuplets (e.g. 3 notes for triplet).
         if (tg.notes.length < tg.actual) continue;
         try {
+          const first = tg.notes[0];
+          const stemUp = first.getStemDirection() === 1;
           const tuplet = new Tuplet(tg.notes, {
             numNotes: tg.actual,
             notesOccupied: tg.normal,
+            bracketed: true,
+            location: Tuplet.LOCATION_BOTTOM,
+            // Small nudge under RH beams; slightly larger under LH so the
+            // bracket clears the treble staff when both hands are shown.
+            yOffset: stemUp ? 3 : (showTreble && showBass ? 14 : 6),
           });
           tuplet.setContext(context).draw();
         } catch { /* tuplet rendering is non-critical */ }

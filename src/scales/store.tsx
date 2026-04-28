@@ -106,6 +106,12 @@ interface ScalesState {
   currentMeasureIndex: number;
   currentNoteIndices: Map<string, number>;
   activeMidiNotes: Set<number>;
+  /**
+   * Increments on every physical note-on (MIDI or mic). Unlike
+   * `activeMidiNotes`, survives batched on+off in one React update so UI
+   * can edge-detect a tap without requiring the key to stay down.
+   */
+  midiNoteOnPulse: number;
   practiceResults: Map<string, PracticeNoteResult>;
   currentRunStartTime: number | null;
   midiConnected: boolean;
@@ -195,6 +201,7 @@ function initialState(): ScalesState {
     currentMeasureIndex: -1,
     currentNoteIndices: new Map(),
     activeMidiNotes: new Set(),
+    midiNoteOnPulse: 0,
     practiceResults: new Map(),
     currentRunStartTime: null,
     midiConnected: false,
@@ -311,7 +318,11 @@ function reducer(state: ScalesState, action: Action): ScalesState {
     case 'MIDI_NOTE_ON': {
       const next = new Set(state.activeMidiNotes);
       next.add(action.note);
-      return { ...state, activeMidiNotes: next };
+      return {
+        ...state,
+        activeMidiNotes: next,
+        midiNoteOnPulse: state.midiNoteOnPulse + 1,
+      };
     }
 
     case 'MIDI_NOTE_OFF': {
@@ -405,11 +416,18 @@ function reducer(state: ScalesState, action: Action): ScalesState {
         purpose: action.purpose,
       };
 
+      const beforeProgress = getExerciseProgress(state.progress, action.exerciseId);
       const newProgress = recordPractice(state.progress, record);
       saveProgress(newProgress);
 
-      const afterStageId = getExerciseProgress(newProgress, action.exerciseId).currentStageId;
-      const advanced = afterStageId !== action.stageId;
+      const afterProgress = getExerciseProgress(newProgress, action.exerciseId);
+      // Final-stage clears bump `completedStageId` to the last stage id but
+      // intentionally leave `currentStageId` there (no "next" stage). The old
+      // `currentStageId !== stageId` check therefore missed fluent-gate / last-
+      // level completions and kept the auto-loop + boundary UI stuck off.
+      const advanced =
+        afterProgress.currentStageId !== beforeProgress.currentStageId
+        || (afterProgress.completedStageId ?? null) !== (beforeProgress.completedStageId ?? null);
 
       const runRecord: SessionRunRecord = {
         exerciseId: action.exerciseId,

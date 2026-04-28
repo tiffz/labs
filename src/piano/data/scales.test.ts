@@ -123,10 +123,24 @@ describe('scales', () => {
         }
         const finalMeasure = part.measures[part.measures.length - 1];
         const finalRests = finalMeasure.notes.filter((n) => n.rest);
-        expect(finalRests.length).toBeLessThanOrEqual(2);
-        expect(finalMeasure.notes.length % 3).toBe(0);
+        expect(finalRests.length).toBeGreaterThan(0);
+        const plainRests = finalRests.filter((n) => !n.tuplet);
+        expect(plainRests.some((n) => n.duration === 'quarter')).toBe(true);
       }
-      assertMeasuresFitTimeSignature(score, true);
+      assertMeasuresFitTimeSignature(score);
+    });
+
+    it('fills pentascale both triplet bars to 4/4 with a trailing quarter rest', () => {
+      const score = generateExerciseScore('major', 'pentascale', 'A', 'both', 1, 3)!;
+      expect(score).not.toBeNull();
+      assertMeasuresFitTimeSignature(score);
+      for (const part of score!.parts) {
+        const m0 = part.measures[0];
+        expect(m0.notes.filter((n) => !n.rest)).toHaveLength(9);
+        const trailing = m0.notes.filter((n) => n.rest && !n.tuplet);
+        expect(trailing.length).toBeGreaterThanOrEqual(1);
+        expect(trailing.some((n) => n.duration === 'quarter')).toBe(true);
+      }
     });
 
     it('returns null for an unknown key', () => {

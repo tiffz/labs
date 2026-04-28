@@ -39,8 +39,17 @@ export interface AdvancementCriteria {
 export function getAdvancementCriteria(
   stage: Stage,
   isFinalStage: boolean = false,
+  exerciseKind?: ExerciseKind,
 ): AdvancementCriteria {
   if (!stage.useTempo) return { threshold: 1.0, runs: 2 };
+  if (
+    exerciseKind != null
+    && isPentascaleKind(exerciseKind)
+    && stage.hand === 'both'
+    && stage.useTempo
+  ) {
+    return { threshold: 0.85, runs: 3 };
+  }
   if (isFinalStage) return { threshold: 0.90, runs: 3 };
   if (stage.subdivision !== 'none') return { threshold: 0.85, runs: 3 };
   if (stage.octaves === 2) return { threshold: 0.85, runs: 3 };
@@ -49,9 +58,11 @@ export function getAdvancementCriteria(
 
 /**
  * Whether a finished run counts toward the stage clean streak and
- * advancement window. Pentascale metronome stages use pitch vs timing
- * nuance when {@link PracticeRecord.breakdown} is present; otherwise
- * and for all other exercises this is `accuracy >= threshold`.
+ * advancement window. **Both-hand** pentascale metronome stages use the
+ * same {@link PracticeRecord.accuracy} as the results UI (≥85%).
+ * **Single-hand** pentascale metronome stages use pitch vs timing nuance
+ * when {@link PracticeRecord.breakdown} is present (`early+late<=1`
+ * with no wrong pitch / misses). Otherwise this is `accuracy >= threshold`.
  */
 export function runMeetsCleanBar(
   record: PracticeRecord,
@@ -59,7 +70,14 @@ export function runMeetsCleanBar(
   stage: Stage,
   isFinalStage: boolean,
 ): boolean {
-  const { threshold } = getAdvancementCriteria(stage, isFinalStage);
+  if (
+    isPentascaleKind(exerciseKind)
+    && record.breakdown
+    && stage.useTempo
+    && stage.hand === 'both'
+  ) {
+    return record.accuracy + 1e-9 >= 0.85;
+  }
   if (
     isPentascaleKind(exerciseKind)
     && record.breakdown
@@ -69,6 +87,7 @@ export function runMeetsCleanBar(
     if (wrongPitch + missed > 0) return false;
     return early + late <= 1;
   }
+  const { threshold } = getAdvancementCriteria(stage, isFinalStage, exerciseKind);
   return record.accuracy + 1e-9 >= threshold;
 }
 
@@ -86,11 +105,12 @@ export function runOutcomeTier(
   isFinalStage: boolean,
 ): RunOutcomeTier {
   if (runMeetsCleanBar(record, exerciseKind, stage, isFinalStage)) return 'clean';
-  const { threshold } = getAdvancementCriteria(stage, isFinalStage);
+  const { threshold } = getAdvancementCriteria(stage, isFinalStage, exerciseKind);
   if (
     isPentascaleKind(exerciseKind)
     && record.breakdown
     && stage.useTempo
+    && stage.hand !== 'both'
   ) {
     const { wrongPitch, missed, early, late } = record.breakdown;
     if (wrongPitch + missed === 0 && early + late === 2) return 'near';
@@ -122,10 +142,30 @@ export function consecutiveRoughRunsOnStage(
 }
 
 /**
+ * Newest-first history prefix of attempts on {@link stageId} until the
+ * learner practiced a different stage (session order). Matches how a
+ * "streak on this level" should behave when they dip into another stage
+ * between tries — older same-stage rows after that gap do not count.
+ */
+export function consecutiveStageRecords(
+  history: readonly PracticeRecord[],
+  stageId: string,
+): PracticeRecord[] {
+  const out: PracticeRecord[] = [];
+  for (const r of history) {
+    if (r.stageId !== stageId) {
+      if (out.length > 0) break;
+      continue;
+    }
+    out.push(r);
+  }
+  return out;
+}
+
+/**
  * Count of consecutive runs that {@link runMeetsCleanBar} accepts on the
- * given stage, walking backwards from the most recent attempt. Skips
- * history rows for other stages without breaking the streak (matches
- * {@link recordPractice} advancement filtering).
+ * given stage, walking backwards from the most recent attempt on that
+ * stage only (see {@link consecutiveStageRecords}).
  */
 export function getCleanRunStreak(
   progress: ExerciseProgress,
@@ -139,8 +179,7 @@ export function getCleanRunStreak(
   const isFinalStage = stageIndex >= 0 && stageIndex === stages.length - 1;
 
   let streak = 0;
-  for (const record of progress.history) {
-    if (record.stageId !== stageId) continue;
+  for (const record of consecutiveStageRecords(progress.history, stageId)) {
     if (runMeetsCleanBar(record, found.exercise.kind, stage, isFinalStage)) {
       streak += 1;
     } else {
@@ -295,18 +334,6 @@ function migrateProgress(raw: unknown): ScalesProgressData | null {
   return null;
 }
 
-export function loadProgress(): ScalesProgressData {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return defaultProgress();
-    const parsed = JSON.parse(raw);
-    const migrated = migrateProgress(parsed);
-    return migrated ?? defaultProgress();
-  } catch {
-    return defaultProgress();
-  }
-}
-
 /**
  * Mark the practice onboarding as seen. Idempotent — repeated calls are
  * cheap. Persists immediately so a refresh after dismiss doesn't re-open
@@ -359,6 +386,78 @@ export function markGuidanceIntroduced(
 
 export function saveProgress(data: ScalesProgressData): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+/**
+ * When new stages are **appended** after a former final stage, returning
+ * users can still have `currentStageId === completedStageId` on the old
+ * final row. Bump `currentStageId` to the first new stage so `planSession`
+ * and the UI surface catch-up work. Invalid ids (removed curriculum rows)
+ * are repaired conservatively. Persists when anything changes so the
+ * nudge survives refresh without waiting for the next `recordPractice`.
+ */
+export function reconcileProgressToCurriculum(data: ScalesProgressData): ScalesProgressData {
+  const nextExercises = { ...data.exercises };
+  let dirty = false;
+
+  for (const [exerciseId, progress] of Object.entries(nextExercises)) {
+    const found = findExercise(exerciseId);
+    if (!found) continue;
+    const stages = found.exercise.stages;
+    if (stages.length === 0) continue;
+
+    const idValid = (id: string | null) =>
+      id != null && stages.some(s => s.id === id);
+
+    let completedStageId = progress.completedStageId;
+    let currentStageId = progress.currentStageId;
+
+    if (!idValid(completedStageId)) {
+      if (completedStageId != null) dirty = true;
+      completedStageId = null;
+    }
+    if (!idValid(currentStageId)) {
+      dirty = true;
+      currentStageId = stages[0].id;
+    }
+
+    const compIdx = completedStageId != null
+      ? stages.findIndex(s => s.id === completedStageId)
+      : -1;
+    if (
+      completedStageId != null
+      && currentStageId === completedStageId
+      && compIdx >= 0
+      && compIdx < stages.length - 1
+    ) {
+      currentStageId = stages[compIdx + 1]!.id;
+      dirty = true;
+    }
+
+    nextExercises[exerciseId] = {
+      ...progress,
+      completedStageId,
+      currentStageId,
+    };
+  }
+
+  const out = { ...data, exercises: nextExercises };
+  if (dirty) {
+    saveProgress(out);
+  }
+  return out;
+}
+
+export function loadProgress(): ScalesProgressData {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return reconcileProgressToCurriculum(defaultProgress());
+    const parsed = JSON.parse(raw);
+    const migrated = migrateProgress(parsed);
+    return reconcileProgressToCurriculum(migrated ?? defaultProgress());
+  } catch {
+    return reconcileProgressToCurriculum(defaultProgress());
+  }
 }
 
 export function getExerciseProgress(
@@ -538,11 +637,9 @@ export function recordPractice(
 
     if (stage) {
       const isFinalStage = currentIdx === stages.length - 1;
-      const { runs } = getAdvancementCriteria(stage, isFinalStage);
+      const { runs } = getAdvancementCriteria(stage, isFinalStage, found.exercise.kind);
 
-      const recentForStage = updatedHistory
-        .filter(r => r.stageId === record.stageId)
-        .slice(0, runs);
+      const recentForStage = consecutiveStageRecords(updatedHistory, record.stageId).slice(0, runs);
 
       const shouldAdvance =
         recentForStage.length >= runs &&

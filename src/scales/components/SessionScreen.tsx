@@ -23,6 +23,7 @@ import type { ScorePlaybackEngine } from '../../shared/playback/scorePlayback';
 import { findStage, findExercise, isPentascaleKind } from '../curriculum/tiers';
 import { formatStageSummary, formatOctaveLabel } from '../curriculum/stageSummary';
 import { pickPracticeTip } from '../curriculum/practiceTips';
+import { getNewCliffConceptKeys, stuckJumpCoachingModalTip } from '../curriculum/concepts';
 import { pickShakyHint } from './shakyHint';
 import type { PracticeRecord } from '../progress/types';
 import {
@@ -61,8 +62,12 @@ const DRILL_STUCK_AT = 8;
 const DRILL_SNOOZE_BY = 4;
 // Regular auto-loop "Try going back?" — requires this many consecutive
 // rough (red-tier) runs on the same stage; snooze bumps that bar.
-const REGULAR_STUCK_AT = 6;
+const REGULAR_STUCK_AT = 8;
 const REGULAR_SNOOZE_BY = 4;
+/** Extra snooze when stuck on a pedagogical jump — fewer interruptions while the new skill maps. */
+const REGULAR_JUMP_EXTRA_SNOOZE = 4;
+/** Jump-coaching modal only after this many finished attempts on the stage (consecutive-rough gate can still be high from history). */
+const REGULAR_STUCK_MIN_ATTEMPTS_FOR_JUMP = 4;
 /** How long the free-tempo "Nice — ready to start" overlay stays before scored playback. */
 const FREE_TEMPO_WARMUP_UI_MS = 2200;
 
@@ -75,7 +80,6 @@ type DwellBadgeSnapshot = {
   requiredRuns: number;
   lastWasClean: boolean;
   lastRunOutcomeTier: RunOutcomeTier;
-  shakyHintText: string | null;
 };
 
 function Icon({ name, size = 20 }: { name: string; size?: number }) {
@@ -125,8 +129,10 @@ export default function SessionScreen() {
   // fresh `startPlayback`, on each `restartFreeTempoRun`, and set on the
   // first finish dispatch for that run.
   const finishedRef = useRef(false);
-  /** Edge-detect MIDI note-ons for pre-start autostart (timed) / guidance dismiss. */
-  const sessionMidiPrevDownRef = useRef(false);
+  /** Last `midiNoteOnPulse` consumed for session piano shortcuts (advance / pre-start / guidance). */
+  const sessionMidiLastProcessedPulseRef = useRef(0);
+  const guidanceMidiPulseSeededRef = useRef(false);
+  const guidanceMidiPulseBaselineRef = useRef(0);
   const loadedStageRef = useRef<string | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [wrongNoteDisplay, setWrongNoteDisplay] = useState<string | null>(null);
@@ -143,6 +149,9 @@ export default function SessionScreen() {
    * directly. Mic-only / no MIDI skips this gate.
    */
   const [timedDryRunReady, setTimedDryRunReady] = useState(false);
+  /** Brief UI when user advances via piano key or keyboard (not mouse). */
+  const [advanceAck, setAdvanceAck] = useState<'midi' | 'keyboard' | null>(null);
+  const advanceCooldownUntilRef = useRef(0);
   const cancelWarmupCountdown = useCallback(() => {
     if (warmupTimerRef.current != null) {
       window.clearTimeout(warmupTimerRef.current);
@@ -152,6 +161,16 @@ export default function SessionScreen() {
   }, []);
 
   useEffect(() => () => cancelWarmupCountdown(), [cancelWarmupCountdown]);
+
+  useEffect(() => {
+    if (!advanceAck) return;
+    const id = window.setTimeout(() => setAdvanceAck(null), 2200);
+    return () => window.clearTimeout(id);
+  }, [advanceAck]);
+
+  const armAdvanceCooldown = useCallback(() => {
+    advanceCooldownUntilRef.current = Date.now() + 550;
+  }, []);
 
   useEffect(() => {
     if (state.wrongNoteFlash && state.wrongNoteFlash.length > 0) {
@@ -554,7 +573,7 @@ export default function SessionScreen() {
   const _isFinalStageSch =
     _curStageSch != null && _currentStageIdxForScheduler === _allStagesForScheduler.length - 1;
   const _advCritSch = _curStageSch
-    ? getAdvancementCriteria(_curStageSch, !!_isFinalStageSch)
+    ? getAdvancementCriteria(_curStageSch, !!_isFinalStageSch, _exerciseDefForScheduler?.exercise.kind)
     : { threshold: 0.9, runs: 3 };
   const _exerciseProgressSch = activeExercise && loaded
     ? getExerciseProgress(state.progress, activeExercise.exerciseId)
@@ -580,7 +599,23 @@ export default function SessionScreen() {
       )
       : 0;
 
-  const isRegularStuckGatedForScheduler =
+  const _stuckFallbackStageSch =
+    _hasFallbackStageForScheduler && _currentStageIdxForScheduler > 0
+      ? _allStagesForScheduler[_currentStageIdxForScheduler - 1]
+      : null;
+  const _jumpCoachingSch =
+    Boolean(
+      _curStageSch
+        && _stuckFallbackStageSch
+        && _exerciseDefForScheduler
+        && getNewCliffConceptKeys(
+          _curStageSch,
+          _stuckFallbackStageSch,
+          _exerciseDefForScheduler.exercise,
+        ).length > 0,
+    );
+
+  const _baseRegularStuckSch =
     Boolean(
       activeExercise
         && loaded
@@ -600,6 +635,11 @@ export default function SessionScreen() {
           history: _exerciseProgressSch.history,
         }),
     );
+
+  const isRegularStuckGatedForScheduler = Boolean(
+    _baseRegularStuckSch
+      && (!_jumpCoachingSch || attemptsThisStage >= REGULAR_STUCK_MIN_ATTEMPTS_FOR_JUMP),
+  );
 
   // The scheduler treats a non-advancing result as "keep looping". Sticky
   // boundary, drill completion, and stuck prompts are all "user must
@@ -734,6 +774,8 @@ export default function SessionScreen() {
           return;
         }
         e.preventDefault();
+        armAdvanceCooldown();
+        setAdvanceAck('keyboard');
         cancelAutoLoop();
         advanceToNext();
         return;
@@ -763,8 +805,8 @@ export default function SessionScreen() {
       e.preventDefault();
       void startPlayback();
     };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    window.addEventListener('keydown', onKeyDown, true);
+    return () => window.removeEventListener('keydown', onKeyDown, true);
   }, [
     activeExercise,
     loaded,
@@ -780,27 +822,52 @@ export default function SessionScreen() {
     advanceToNext,
     timedMidiDryRunRequired,
     timedDryRunEffectiveReady,
+    armAdvanceCooldown,
   ]);
 
   const canHearUserInput =
     (state.inputMode === 'midi' && hasEnabledMidiDevice(state)) || state.microphoneActive;
 
+  // Absorb the current pulse when the active exercise changes so entering a
+  // new item (or the screen) does not treat prior key activity as "Continue".
+  useEffect(() => {
+    sessionMidiLastProcessedPulseRef.current = state.midiNoteOnPulse;
+    guidanceMidiPulseSeededRef.current = false;
+    // Intentionally not keyed on `midiNoteOnPulse` — that would reset after every tap.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-arm only when the active exercise row changes.
+  }, [activeExercise?.exerciseId, activeExercise?.stageId, state.activeExerciseIndex]);
+
   // Piano note-on mirrors Enter/Space for timed pre-start; free-tempo uses
   // PreStartFreeTempoProbe instead so a dry run does not jump straight into
   // the scored attempt.
   useEffect(() => {
-    const size = state.activeMidiNotes.size;
-    const wasDown = sessionMidiPrevDownRef.current;
+    const p = state.midiNoteOnPulse;
     if (showGuidanceCallout) {
-      if (size > 0 && !wasDown) dismissGuidance();
-      sessionMidiPrevDownRef.current = size > 0;
+      if (!guidanceMidiPulseSeededRef.current) {
+        guidanceMidiPulseBaselineRef.current = p;
+        guidanceMidiPulseSeededRef.current = true;
+        sessionMidiLastProcessedPulseRef.current = p;
+        return;
+      }
+      if (p > guidanceMidiPulseBaselineRef.current) {
+        sessionMidiLastProcessedPulseRef.current = p;
+        dismissGuidance();
+      }
       return;
     }
-    sessionMidiPrevDownRef.current = size > 0;
-    if (size === 0 || wasDown) return;
-    if (document.querySelector('.MuiDialog-root')) return;
+    guidanceMidiPulseSeededRef.current = false;
+
+    if (document.querySelector('.MuiDialog-root')) {
+      sessionMidiLastProcessedPulseRef.current = p;
+      return;
+    }
+
+    if (p <= sessionMidiLastProcessedPulseRef.current) return;
+    sessionMidiLastProcessedPulseRef.current = p;
 
     if (!activeExercise || !loaded || !score) return;
+
+    if (Date.now() < advanceCooldownUntilRef.current) return;
 
     const hasResMidi = !!state.lastExerciseResult && !state.isPlaying;
     const boundaryMidi = hasResMidi
@@ -811,6 +878,8 @@ export default function SessionScreen() {
         || drillState === 'completed'
       );
     if (boundaryMidi) {
+      armAdvanceCooldown();
+      setAdvanceAck('midi');
       cancelAutoLoop();
       advanceToNext();
       return;
@@ -826,7 +895,7 @@ export default function SessionScreen() {
     activeExercise,
     loaded,
     score,
-    state.activeMidiNotes,
+    state.midiNoteOnPulse,
     state.isPlaying,
     state.freeTempoRunComplete,
     state.lastExerciseResult,
@@ -838,6 +907,7 @@ export default function SessionScreen() {
     passedThisExercise,
     cancelAutoLoop,
     advanceToNext,
+    armAdvanceCooldown,
   ]);
 
   if (!activeExercise || !loaded || !score) {
@@ -873,7 +943,7 @@ export default function SessionScreen() {
   const currentStage = stageInfo?.stage ?? null;
   const isFinalStage = currentStage ? currentStageIdx === allStages.length - 1 : false;
   const advancementCriteria = currentStage
-    ? getAdvancementCriteria(currentStage, isFinalStage)
+    ? getAdvancementCriteria(currentStage, isFinalStage, exerciseDef?.exercise.kind)
     : { threshold: 0.9, runs: 3 };
   const cleanStreak = currentStage
     ? getCleanRunStreak(exerciseProgress, currentStage.id)
@@ -886,7 +956,6 @@ export default function SessionScreen() {
     ? `How to play (${HAND_SHORT[activeExercise.hand]})`
     : '';
 
-  const showSubdivisionChipPreStart = activeExercise.subdivision !== 'none';
   const showCleanStreakChipPreStart = !isFreeTempo
     && !!currentStage
     && cleanStreak > 0
@@ -894,7 +963,6 @@ export default function SessionScreen() {
   const competingPreStartScore = (stageInfo?.stage.description?.trim() ? 1 : 0)
     + (scaleHowToText ? 1 : 0)
     + (stageInfo?.exercise.helpUrl ? 1 : 0)
-    + (showSubdivisionChipPreStart ? 1 : 0)
     + (showCleanStreakChipPreStart ? 1 : 0);
 
   const practiceTip = stageInfo
@@ -931,7 +999,7 @@ export default function SessionScreen() {
   // scores, so we only need to additionally suppress it during drill
   // mode (which has its own stuck path) and at the boundary panel
   // (which celebrates the pass).
-  const shakyHint = lastExerciseResult && currentStage && drillState !== 'active'
+  const shakyHint = lastExerciseResult && currentStage && drillState !== 'active' && exerciseDef
     ? pickShakyHint(lastExerciseResult, currentStage)
     : null;
 
@@ -941,6 +1009,14 @@ export default function SessionScreen() {
   // after they've cleared the stage. `hasFallbackStage` defends against
   // the very first stage of an exercise where there's nowhere to drop to.
   const hasFallbackStage = currentStageIdx > 0;
+  const stuckFallbackStage = hasFallbackStage ? allStages[currentStageIdx - 1] : null;
+  const stuckFallbackLabel = stuckFallbackStage
+    ? `Level ${stuckFallbackStage.stageNumber}`
+    : 'an earlier level';
+  const newCliffConceptKeysForStuck = exerciseDef && currentStage && stuckFallbackStage
+    ? getNewCliffConceptKeys(currentStage, stuckFallbackStage, exerciseDef.exercise)
+    : [];
+  const regularStuckJumpCoaching = newCliffConceptKeysForStuck.length > 0;
   const isDrillStuck = computeIsDrillStuck({
     drillState,
     drillAttempts,
@@ -956,7 +1032,7 @@ export default function SessionScreen() {
       isFinalStage,
     )
     : 0;
-  const regularStuckGated = computeIsRegularStuckGated({
+  const baseRegularStuckGated = computeIsRegularStuckGated({
     drillState,
     passedThisExercise,
     attemptsThisStage,
@@ -969,11 +1045,14 @@ export default function SessionScreen() {
     threshold: advancementCriteria.threshold,
     history: exerciseProgress.history,
   });
+  const regularStuckGated = Boolean(
+    baseRegularStuckGated
+      && (!regularStuckJumpCoaching || attemptsThisStage >= REGULAR_STUCK_MIN_ATTEMPTS_FOR_JUMP),
+  );
   const stuckVisible = isDrillStuck || regularStuckGated;
-  const stuckFallbackStage = currentStageIdx > 0 ? allStages[currentStageIdx - 1] : null;
-  const stuckFallbackLabel = stuckFallbackStage
-    ? `Level ${stuckFallbackStage.stageNumber}`
-    : 'an earlier level';
+  const attemptsOnLevelLabel = attemptsThisStage === 1
+    ? '1 attempt on this level'
+    : `${attemptsThisStage} attempts on this level`;
 
   /**
    * Five post-attempt UI modes once an attempt has finished:
@@ -1023,9 +1102,6 @@ export default function SessionScreen() {
       currentStage,
       isFinalStage,
     );
-    const snapHint = drillState !== 'active'
-      ? pickShakyHint(lastExerciseResult, currentStage)
-      : null;
     dwellBadgeSnapshotRef.current = {
       result: { ...lastExerciseResult },
       inDrill: drillState === 'active',
@@ -1034,7 +1110,6 @@ export default function SessionScreen() {
       requiredRuns: advancementCriteria.runs,
       lastWasClean: snapTier === 'clean',
       lastRunOutcomeTier: snapTier,
-      shakyHintText: snapHint?.text ?? null,
     };
   }
 
@@ -1094,6 +1169,15 @@ export default function SessionScreen() {
             />
             {activeExercise.bpm > 0 && (
               <Chip label={`${activeExercise.bpm} BPM`} size="small" variant="outlined" />
+            )}
+            {activeExercise.subdivision === 'eighth' && (
+              <Chip label="Eighths" size="small" variant="outlined" />
+            )}
+            {activeExercise.subdivision === 'triplet' && (
+              <Chip label="Triplets" size="small" variant="outlined" />
+            )}
+            {activeExercise.subdivision === 'sixteenth' && (
+              <Chip label="Sixteenths" size="small" variant="outlined" />
             )}
             {isFreeTempo && <Chip label="Free tempo" size="small" color="info" variant="outlined" />}
             {activeExercise.purpose === 'review' && (
@@ -1424,21 +1508,6 @@ export default function SessionScreen() {
             </Box>
           )}
 
-          {activeExercise.subdivision !== 'none' && (
-            <Chip
-              label={
-                activeExercise.subdivision === 'eighth'
-                  ? 'Eighth note subdivision'
-                  : activeExercise.subdivision === 'triplet'
-                  ? 'Triplet subdivision'
-                  : 'Sixteenth note subdivision'
-              }
-              size="small"
-              variant="outlined"
-              sx={{ mt: hasExerciseHistory ? 0.75 : 1 }}
-            />
-          )}
-
           {/* Cross-session streak carry-over. The advancement rule
               walks history newest-first regardless of when each record
               was made (see store.recordPractice's slice(0, runs)). When
@@ -1550,7 +1619,6 @@ export default function SessionScreen() {
             : (inDrill ? DRILL_TARGET_PERFECT_RUNS : snap!.requiredRuns);
           const wasClean = live ? lastWasClean : snap!.lastWasClean;
           const outcomeTier = live ? lastRunOutcomeTier : snap!.lastRunOutcomeTier;
-          const hintText = live ? (shakyHint?.text ?? null) : snap!.shakyHintText;
 
           const isPerfect = result.accuracy >= 1;
           const statusOk = inDrill ? isPerfect : wasClean;
@@ -1645,22 +1713,6 @@ export default function SessionScreen() {
                   >
                     {subline}
                   </Typography>
-                  {/* Adaptive coaching hint, dwell-toast variant. Same
-                      shakyHint as the paused-results panel — surfacing
-                      it inline gives the user a course-correction to
-                      think about during the dwell rather than
-                      reflexively repeating the same mistake. Drill
-                      mode is excluded upstream because drill has its
-                      own stuck path. */}
-                  {!inDrill && hintText && (
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ lineHeight: 1.3, mt: 0.5, fontStyle: 'italic' }}
-                    >
-                      {hintText}
-                    </Typography>
-                  )}
                 </Box>
                 {showLoopChrome && (
                   <>
@@ -1703,7 +1755,10 @@ export default function SessionScreen() {
               setDrillState('inactive');
               setLoopPaused(true);
             } else {
-              setRegularSnoozedUntil(consecutiveRoughOnStage + REGULAR_SNOOZE_BY);
+              const snooze = !isDrillStuck && regularStuckJumpCoaching
+                ? REGULAR_SNOOZE_BY + REGULAR_JUMP_EXTRA_SNOOZE
+                : REGULAR_SNOOZE_BY;
+              setRegularSnoozedUntil(consecutiveRoughOnStage + snooze);
             }
           }}
           aria-labelledby="stuck-prompt-title"
@@ -1728,46 +1783,68 @@ export default function SessionScreen() {
             },
           }}
         >
-          <DialogContent sx={{ p: { xs: 5, sm: 6 } }}>
-            <Box sx={{ textAlign: 'center', mb: 4 }}>
+          <DialogContent sx={{ px: { xs: 3, sm: 4 }, py: { xs: 3, sm: 3.5 } }}>
+            <Box sx={{ textAlign: 'center', mb: 2.5 }}>
               <Box
                 aria-hidden="true"
                 sx={{
-                  width: 56,
-                  height: 56,
+                  width: 52,
+                  height: 52,
                   borderRadius: '50%',
                   bgcolor: theme => `${theme.palette.primary.main}1F`,
                   color: 'primary.main',
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  mb: 3,
+                  mb: 2,
                 }}
               >
-                <Icon name={isDrillStuck ? 'self_improvement' : 'undo'} size={28} />
+                <Icon
+                  name={isDrillStuck ? 'self_improvement' : (regularStuckJumpCoaching ? 'lightbulb' : 'undo')}
+                  size={26}
+                />
               </Box>
               <Typography
                 id="stuck-prompt-title"
                 component="h2"
                 sx={{
-                  fontSize: '1.5rem',
-                  fontWeight: 500,
-                  lineHeight: '2rem',
+                  fontSize: '1.25rem',
+                  fontWeight: 600,
+                  lineHeight: 1.35,
                   color: 'text.primary',
+                  letterSpacing: '-0.01em',
                 }}
               >
-                {isDrillStuck ? 'Take a breather?' : 'Try going back?'}
+                {isDrillStuck
+                  ? 'Pause for a moment?'
+                  : (regularStuckJumpCoaching ? 'Tip' : 'Want a stepping-stone?')}
               </Typography>
             </Box>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ textAlign: 'left', lineHeight: 1.5, mb: 1 }}
-            >
-              {isDrillStuck
-                ? `${drillAttempts} drill rounds without a perfect score. A short rest does more for muscle memory than another rep right now.`
-                : `${consecutiveRoughOnStage} rough runs in a row (${attemptsThisStage} attempts on this level). Going back to ${stuckFallbackLabel} for a round often unblocks this one faster than another try.`}
-            </Typography>
+            {isDrillStuck ? (
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ textAlign: 'left', lineHeight: 1.55 }}
+              >
+                {`You have put in ${drillAttempts} drill rounds. Thank you for sticking with it. A short pause before the next round often helps more than pushing when your hands feel tired.`}
+              </Typography>
+            ) : regularStuckJumpCoaching ? (
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ textAlign: 'left', lineHeight: 1.6 }}
+              >
+                {stuckJumpCoachingModalTip(newCliffConceptKeysForStuck)}
+              </Typography>
+            ) : (
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ textAlign: 'left', lineHeight: 1.55 }}
+              >
+                {`You have been on this level (${attemptsOnLevelLabel}). If you want steadier footing, ${stuckFallbackLabel} is there. Staying here is fine too.`}
+              </Typography>
+            )}
           </DialogContent>
           <Divider />
           <DialogActions sx={{ px: 3, py: 2, flexWrap: 'wrap', gap: 1, justifyContent: 'flex-end' }}>
@@ -1790,6 +1867,28 @@ export default function SessionScreen() {
                   sx={{ textTransform: 'none', borderRadius: '999px', order: { sm: 2 } }}
                 >
                   Move on
+                </Button>
+              </Stack>
+            ) : regularStuckJumpCoaching ? (
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ width: '100%' }}>
+                {stuckFallbackStage && (
+                  <Button
+                    variant="text"
+                    onClick={() => goToStage(stuckFallbackStage.id)}
+                    sx={{ textTransform: 'none', order: { sm: 1 } }}
+                  >
+                    Review previous level
+                  </Button>
+                )}
+                <Button
+                  variant="contained"
+                  disableElevation
+                  onClick={() => setRegularSnoozedUntil(
+                    consecutiveRoughOnStage + REGULAR_SNOOZE_BY + REGULAR_JUMP_EXTRA_SNOOZE,
+                  )}
+                  sx={{ textTransform: 'none', borderRadius: '999px', order: { sm: 2 } }}
+                >
+                  Got it
                 </Button>
               </Stack>
             ) : (
@@ -1911,7 +2010,7 @@ export default function SessionScreen() {
                     color: 'success.main',
                   }}
                 >
-                  Nice — shape is clean
+                  Nice. Right notes, ready to go
                 </Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.35, mt: 0.25 }}>
                   {activeExercise.bpm
@@ -1973,6 +2072,34 @@ export default function SessionScreen() {
           borderTop: 1, borderColor: 'divider',
         }}
       >
+        {advanceAck && (
+          <Box
+            role="status"
+            aria-live="polite"
+            sx={{
+              width: '100%',
+              maxWidth: 440,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
+              px: 2,
+              py: 1.25,
+              borderRadius: 2,
+              bgcolor: theme => `${theme.palette.primary.main}12`,
+              border: 1,
+              borderColor: 'primary.light',
+            }}
+          >
+            <Icon name={advanceAck === 'midi' ? 'piano' : 'keyboard'} size={22} />
+            <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
+              {advanceAck === 'midi' ? 'Piano key heard' : 'Keyboard shortcut'}
+              {'. '}
+              <Box component="span" sx={{ fontWeight: 500, color: 'text.secondary' }}>
+                Loading the next exercise…
+              </Box>
+            </Typography>
+          </Box>
+        )}
         {/* Active drill: single CTA to break out. The auto-loop keeps
             firing rounds; the user just needs an out. */}
         {drillState === 'active' && hasResult && (
@@ -1995,6 +2122,7 @@ export default function SessionScreen() {
                 variant="contained"
                 size="large"
                 onClick={() => {
+                  armAdvanceCooldown();
                   cancelAutoLoop();
                   advanceToNext();
                 }}
@@ -2091,6 +2219,7 @@ export default function SessionScreen() {
                 variant="outlined"
                 size="large"
                 onClick={() => {
+                  armAdvanceCooldown();
                   cancelAutoLoop();
                   advanceToNext();
                 }}
@@ -2117,9 +2246,9 @@ export default function SessionScreen() {
             }
             title={
               isFreeTempo
-                ? 'Space or Enter to start. With MIDI, play the whole shape cleanly in free time to begin after a 1s cue.'
+                ? 'Space or Enter to start. With MIDI, play the shape cleanly in free time; a short cue plays, then scoring begins.'
                 : timedMidiDryRunRequired && !timedDryRunReady
-                  ? 'Click to start anytime. Optional: play the shape cleanly in free time first — Space/Enter stay off until then so keys do not accidentally start a run.'
+                  ? 'Click to start anytime. Optional: run the shape once in free time first. Space and Enter stay off until you press Start so keys do not launch a run by accident.'
                   : 'Space, Enter, or play your first note to start'
             }
             sx={{

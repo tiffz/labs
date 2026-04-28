@@ -45,4 +45,47 @@ describe('planSession', () => {
     expect(plan.exercises[0]?.exerciseId).toBe(gId);
     expect(plan.exercises.some(e => e.exerciseId === cId)).toBe(true);
   });
+
+  it('includes A pentascale catch-up slot when currentStage is appended spiral row', () => {
+    const aId = 'A-pentascale-major';
+    const aStages = findExercise(aId)!.exercise.stages;
+    const p8 = aStages.find(s => s.id.endsWith('-p8'))!;
+    const p7 = aStages.find(s => s.id.endsWith('-p7'))!;
+    const done = (exerciseId: string) => {
+      const last = findExercise(exerciseId)!.exercise.stages.at(-1)!.id;
+      return {
+        exerciseId,
+        completedStageId: last,
+        currentStageId: last,
+        history: [],
+        needsReview: false,
+        reviewStageId: null,
+        lastPracticedAt: iso(1_000_000),
+      };
+    };
+    const data: ScalesProgressData = {
+      version: 3,
+      currentTierId: 'tier-0',
+      exercises: {
+        'C-pentascale-major': done('C-pentascale-major'),
+        'G-pentascale-major': done('G-pentascale-major'),
+        'F-pentascale-major': done('F-pentascale-major'),
+        'D-pentascale-major': done('D-pentascale-major'),
+        [aId]: {
+          exerciseId: aId,
+          completedStageId: p7.id,
+          currentStageId: p8.id,
+          history: [],
+          needsReview: false,
+          reviewStageId: null,
+          lastPracticedAt: iso(3_000_000),
+        },
+      },
+      seenOnboarding: true,
+      introducedConcepts: {},
+      introducedExerciseHands: {},
+    };
+    const plan = planSession(data);
+    expect(plan.exercises.some(e => e.exerciseId === aId && e.stageId === p8.id)).toBe(true);
+  });
 });

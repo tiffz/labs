@@ -7,7 +7,7 @@ function makeStage(overrides: Partial<Stage> = {}): Stage {
   return {
     id: 'C-major-scale-s5',
     stageNumber: 5,
-    label: 'Both hands — slow tempo',
+    label: 'Both hands, slow tempo',
     description: '',
     hand: 'both',
     useTempo: true,
@@ -62,8 +62,19 @@ describe('pickShakyHint', () => {
     expect(pickShakyHint(result, stage)).toBeNull();
   });
 
+  it('returns null on a mostly-clean run with only a slip or two', () => {
+    const stage = makeStage({ useTempo: true, bpm: 72 });
+    const result = makeResult({
+      accuracy: 0.94,
+      total: 16,
+      perfect: 15,
+      early: 1,
+    });
+    expect(pickShakyHint(result, stage)).toBeNull();
+  });
+
   it('returns the timing branch when timing errors dominate on a tempo stage', () => {
-    const stage = makeStage({ useTempo: true });
+    const stage = makeStage({ useTempo: true, bpm: 72 });
     const result = makeResult({
       accuracy: 0.7,
       total: 16,
@@ -74,14 +85,26 @@ describe('pickShakyHint', () => {
     });
     const hint = pickShakyHint(result, stage);
     expect(hint?.id).toBe('timing');
-    expect(hint?.text).toContain('timing');
+    expect(hint?.text).toMatch(/rhythm|click/i);
+  });
+
+  it('uses gentler timing copy when the metronome is already slow', () => {
+    const stage = makeStage({ useTempo: true, bpm: 52 });
+    const result = makeResult({
+      accuracy: 0.7,
+      total: 16,
+      perfect: 11,
+      early: 3,
+      late: 1,
+      wrongPitch: 1,
+    });
+    const hint = pickShakyHint(result, stage);
+    expect(hint?.id).toBe('timing');
+    expect(hint?.text).toMatch(/slow tempo|subdivide/i);
   });
 
   it('does NOT return the timing branch on a free-tempo stage even when timing errors are logged', () => {
     const stage = makeStage({ useTempo: false });
-    // On free tempo this configuration shouldn't really happen, but we
-    // still guard against it: we don't tell users to "drop BPM" when
-    // there is no BPM to drop.
     const result = makeResult({
       accuracy: 0.5,
       total: 16,
@@ -107,7 +130,7 @@ describe('pickShakyHint', () => {
     });
     const hint = pickShakyHint(result, stage);
     expect(hint?.id).toBe('pitch');
-    expect(hint?.text).toContain('wrong notes');
+    expect(hint?.text).toMatch(/wrong notes|hands-separately/i);
   });
 
   it('returns the few-notes branch when most notes were never attempted', () => {
@@ -121,7 +144,7 @@ describe('pickShakyHint', () => {
     });
     const hint = pickShakyHint(result, stage);
     expect(hint?.id).toBe('few-notes');
-    expect(hint?.text).toContain('got away from you');
+    expect(hint?.text).toMatch(/fragmented|reset/i);
   });
 
   it('falls back to the mixed/few-notes branch when timing and pitch are tied', () => {

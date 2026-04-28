@@ -99,6 +99,12 @@ describe('getAdvancementCriteria', () => {
     const finalStage = stages[stages.length - 1];
     expect(getAdvancementCriteria(finalStage, true)).toEqual({ threshold: 0.9, runs: 3 });
   });
+
+  it('uses 3 @ 85% for both-hand pentascale metronome including final fluent gate', () => {
+    const p7 = findExercise('C-pentascale-major')!.exercise.stages.find(s => s.id.endsWith('-p7'))!;
+    expect(p7.hand).toBe('both');
+    expect(getAdvancementCriteria(p7, true, 'pentascale-major')).toEqual({ threshold: 0.85, runs: 3 });
+  });
 });
 
 describe('getCleanRunStreak', () => {
@@ -125,10 +131,9 @@ describe('getCleanRunStreak', () => {
     expect(getCleanRunStreak(progress, stageId)).toBe(2);
   });
 
-  it('skips records on other stages without breaking the streak', () => {
-    // History is newest first. A different-stage record between two
-    // clean runs on this stage should not reset the streak — matches
-    // how recordPractice filters before checking advancement.
+  it('breaks the streak when another stage appears between same-stage runs', () => {
+    // Newest-first: after a clean s3 run, practicing s4 breaks the s3 prefix;
+    // the older s3 clean no longer counts toward "consecutive on this stage".
     const a = `${EXERCISE_ID}-s3`;
     const b = `${EXERCISE_ID}-s4`;
     const progress = makeProgress([
@@ -136,7 +141,7 @@ describe('getCleanRunStreak', () => {
       record(b, 0.5,  90),
       record(a, 0.92, 80),
     ]);
-    expect(getCleanRunStreak(progress, a)).toBe(2);
+    expect(getCleanRunStreak(progress, a)).toBe(1);
   });
 
   it('returns 0 when the most recent run on this stage was below the bar', () => {
@@ -207,6 +212,33 @@ describe('recordPractice advancement', () => {
     data = recordPractice(data, record(stages[2].id, 0.95, 300));
     const after = getExerciseProgress(data, EXERCISE_ID);
     expect(after.completedStageId).toBe(stages[2].id);
+    expect(after.currentStageId).toBe(stages[3].id);
+  });
+
+  it('does not advance when a different stage breaks the same-stage prefix (even with older clean runs)', () => {
+    let data = fresh();
+    const stages = exerciseStages();
+    const s2 = stages[1];
+    const s3 = stages[2];
+    data.exercises[EXERCISE_ID] = {
+      exerciseId: EXERCISE_ID,
+      completedStageId: s2.id,
+      currentStageId: s3.id,
+      history: [],
+      needsReview: false,
+      reviewStageId: null,
+      lastPracticedAt: null,
+    };
+
+    data = recordPractice(data, record(s3.id, 0.95, 100));
+    data = recordPractice(data, record(s2.id, 0.95, 200));
+    data = recordPractice(data, record(s3.id, 0.95, 300));
+    data = recordPractice(data, record(s3.id, 0.95, 400));
+    expect(getExerciseProgress(data, EXERCISE_ID).completedStageId).toBe(s2.id);
+
+    data = recordPractice(data, record(s3.id, 0.95, 500));
+    const after = getExerciseProgress(data, EXERCISE_ID);
+    expect(after.completedStageId).toBe(s3.id);
     expect(after.currentStageId).toBe(stages[3].id);
   });
 
@@ -518,6 +550,115 @@ describe('pentascale tempo clean bar', () => {
     const after = getExerciseProgress(data, PENTA_ID);
     expect(after.completedStageId).toBe(p4.id);
     expect(after.currentStageId).toBe(stages[p4Idx + 1].id);
+  });
+
+  it('clears pentascale final stage (p7) while currentStageId stays on p7', () => {
+    let data = fresh();
+    const stages = penta.exercise.stages;
+    const p6 = stages[5];
+    const p7 = stages[6];
+    expect(p7.id.endsWith('-p7')).toBe(true);
+    data.exercises[PENTA_ID] = {
+      exerciseId: PENTA_ID,
+      completedStageId: p6.id,
+      currentStageId: p7.id,
+      history: [],
+      needsReview: false,
+      reviewStageId: null,
+      lastPracticedAt: null,
+    };
+    data = recordPractice(data, pentascaleTimedRecord(p7.id, { perfect: 10, early: 1, t: 100 }));
+    data = recordPractice(data, pentascaleTimedRecord(p7.id, { perfect: 10, late: 1, t: 200 }));
+    let ep = getExerciseProgress(data, PENTA_ID);
+    expect(ep.completedStageId).toBe(p6.id);
+    expect(ep.currentStageId).toBe(p7.id);
+
+    data = recordPractice(data, pentascaleTimedRecord(p7.id, { perfect: 10, early: 1, t: 300 }));
+    ep = getExerciseProgress(data, PENTA_ID);
+    expect(ep.completedStageId).toBe(p7.id);
+    expect(ep.currentStageId).toBe(p7.id);
+  });
+});
+
+describe('pentascale both-hand metronome accuracy gate', () => {
+  it('runMeetsCleanBar passes at 86% with multiple timing slips on BH stage', () => {
+    const p7 = findExercise('D-pentascale-major')!.exercise.stages.find(s => s.id.endsWith('-p7'))!;
+    expect(p7.hand).toBe('both');
+    const r: PracticeRecord = {
+      exerciseId: 'D-pentascale-major',
+      stageId: p7.id,
+      timestamp: 1,
+      accuracy: 0.86,
+      noteCount: 50,
+      correctCount: 43,
+      breakdown: { perfect: 43, early: 4, late: 3, wrongPitch: 0, missed: 0 },
+    };
+    expect(runMeetsCleanBar(r, 'pentascale-major', p7, true)).toBe(true);
+  });
+
+  it('runMeetsCleanBar fails below 85% on BH pentascale metronome', () => {
+    const p7 = findExercise('D-pentascale-major')!.exercise.stages.find(s => s.id.endsWith('-p7'))!;
+    const r: PracticeRecord = {
+      exerciseId: 'D-pentascale-major',
+      stageId: p7.id,
+      timestamp: 1,
+      accuracy: 0.84,
+      noteCount: 50,
+      correctCount: 42,
+      breakdown: { perfect: 42, early: 4, late: 4, wrongPitch: 0, missed: 0 },
+    };
+    expect(runMeetsCleanBar(r, 'pentascale-major', p7, true)).toBe(false);
+  });
+});
+
+describe('Tier-0 pentascale spiral stage shapes', () => {
+  it('keeps quarter clicks on early keys and introduces eighths on D', () => {
+    const c = findExercise('C-pentascale-major')!;
+    const d = findExercise('D-pentascale-major')!;
+    expect(c.exercise.stages.find(s => s.id.endsWith('-p4'))?.subdivision).toBe('none');
+    expect(d.exercise.stages.find(s => s.id.endsWith('-p4'))?.subdivision).toBe('eighth');
+    expect(d.exercise.stages.find(s => s.id.endsWith('-p7'))?.subdivision).toBe('eighth');
+  });
+
+  it('appends triplet and sixteenth both-hands stages on A', () => {
+    const a = findExercise('A-pentascale-major')!;
+    expect(a.exercise.stages.some(s => s.id.endsWith('-p8'))).toBe(true);
+    expect(a.exercise.stages.some(s => s.id.endsWith('-p9'))).toBe(true);
+    expect(a.exercise.stages.find(s => s.id.endsWith('-p8'))?.subdivision).toBe('triplet');
+    expect(a.exercise.stages.find(s => s.id.endsWith('-p9'))?.subdivision).toBe('sixteenth');
+  });
+});
+
+describe('reconcileProgressToCurriculum via loadProgress', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it('moves veterans resting on old A pentascale final onto first appended stage', () => {
+    const aPenta = findExercise('A-pentascale-major')!;
+    const p7 = aPenta.exercise.stages.find(s => s.id.endsWith('-p7'))!;
+    const p8 = aPenta.exercise.stages.find(s => s.id.endsWith('-p8'))!;
+    localStorage.setItem('scales-progress', JSON.stringify({
+      version: 3,
+      currentTierId: 'tier-0',
+      exercises: {
+        'A-pentascale-major': {
+          exerciseId: 'A-pentascale-major',
+          completedStageId: p7.id,
+          currentStageId: p7.id,
+          history: [],
+          needsReview: false,
+          reviewStageId: null,
+          lastPracticedAt: '2020-01-01T00:00:00.000Z',
+        },
+      },
+      seenOnboarding: true,
+      introducedConcepts: {},
+      introducedExerciseHands: {},
+    }));
+    const loaded = loadProgress();
+    expect(loaded.exercises['A-pentascale-major']!.currentStageId).toBe(p8.id);
+    expect(loaded.exercises['A-pentascale-major']!.completedStageId).toBe(p7.id);
   });
 });
 

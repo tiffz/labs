@@ -6,7 +6,7 @@ function makeStage(overrides: Partial<Stage> = {}): Stage {
   return {
     id: 'C-major-scale-s5',
     stageNumber: 5,
-    label: 'Both hands — slow tempo',
+    label: 'Both hands, slow tempo',
     description: 'Both hands together at the same slow tempo.',
     hand: 'both',
     useTempo: true,

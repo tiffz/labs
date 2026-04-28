@@ -135,7 +135,7 @@ export default function DueForReviewDialog({
               mb: 2,
             }}
           >
-            Coming back to a scale a few days later is what locks it into long-term memory. These ones either scored shaky last time or haven&rsquo;t been touched in five days.
+            A short revisit after a few days helps things stick. These items either had a shaky last run or have been quiet for five days.
           </Typography>
         )}
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, py: 1 }}>

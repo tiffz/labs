@@ -1,5 +1,5 @@
 import type { PianoScore, Key, ScoreMeasure, ScoreNote, NoteDuration } from './scoreTypes';
-import { generateNoteId, DURATION_BEATS } from './scoreTypes';
+import { generateNoteId, DURATION_BEATS, durationToBeats } from './scoreTypes';
 
 export type Direction = 'ascending' | 'descending' | 'both';
 export type ExerciseType = 'scale' | 'arpeggio' | 'pentascale' | 'chromatic';
@@ -356,7 +356,7 @@ function buildMeasures(
       if (cfg.tuplet && isLastChunk) {
         const missingToCompleteTuplet =
           (cfg.tuplet.actual - (chunk.length % cfg.tuplet.actual)) % cfg.tuplet.actual;
-        for (let i = 0; i < missingToCompleteTuplet; i++) {
+        for (let r = 0; r < missingToCompleteTuplet; r++) {
           scoreNotes.push({
             id: generateNoteId(),
             pitches: [],
@@ -364,6 +364,19 @@ function buildMeasures(
             rest: true,
             tuplet: cfg.tuplet,
           });
+        }
+        // Full bar in 4/4: after tuplets are closed, any leftover beat(s)
+        // are plain-meter rests (e.g. pentascale both = 9 triplet eighths
+        // = 3 beats → one quarter rest), not tuplet eighths.
+        let usedAfterTuplets = 0;
+        for (const sn of scoreNotes) {
+          let b = durationToBeats(sn.duration, sn.dotted);
+          if (sn.tuplet) b *= sn.tuplet.normal / sn.tuplet.actual;
+          usedAfterTuplets += b;
+        }
+        const remainderPlain = beatsPerMeasure - usedAfterTuplets;
+        if (remainderPlain > 0.001) {
+          scoreNotes.push(...fillWithRests(remainderPlain));
         }
       } else if (cfg.tuplet) {
         const tupletRestCount = Math.round(remaining / beatsPerNote);

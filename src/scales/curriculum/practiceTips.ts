@@ -49,7 +49,7 @@ export interface PracticeTip {
 export const PRACTICE_TIPS: PracticeTip[] = [
   {
     id: 'slow-is-fast',
-    text: 'Most misses are planning misses — slow down until each note feels inevitable.',
+    text: 'Most misses are planning misses. Slow down until each note feels inevitable.',
   },
   {
     id: 'evenness-over-speed',
@@ -65,7 +65,7 @@ export const PRACTICE_TIPS: PracticeTip[] = [
   },
   {
     id: 'fatigue-second-pass',
-    text: 'Pass two often feels harder — a short break is allowed.',
+    text: 'Pass two often feels harder. A short break is allowed.',
   },
   {
     id: 'eyes-ahead',
@@ -74,17 +74,17 @@ export const PRACTICE_TIPS: PracticeTip[] = [
   },
   {
     id: 'rh-thumb-tuck',
-    text: 'Let the thumb tuck under 3 — don’t reach across with a locked wrist.',
+    text: 'Let the thumb tuck under 3. Do not reach across with a locked wrist.',
     match: { hand: 'right' },
   },
   {
     id: 'lh-mirror',
-    text: 'LH thumb-under lands in a different place than RH — mark it and go slow once.',
+    text: 'LH thumb-under lands in a different spot than RH. Mark it once, then go slow.',
     match: { hand: 'left' },
   },
   {
     id: 'two-octave-boundary',
-    text: 'The octave seam is the usual slip — watch it until it’s boring.',
+    text: 'The octave seam is the usual slip. Watch it until it feels boring.',
     match: { octaves: 2 },
   },
   {
@@ -94,7 +94,7 @@ export const PRACTICE_TIPS: PracticeTip[] = [
   },
   {
     id: 'memory-no-playback',
-    text: 'No guide audio — trust wrong notes when you hear them, then replay slowly.',
+    text: 'No guide audio. When you hear a wrong note, stop, replay that spot slowly.',
     match: { mutePlayback: true },
   },
   {
@@ -104,7 +104,7 @@ export const PRACTICE_TIPS: PracticeTip[] = [
   },
   {
     id: 'triplet-grouping',
-    text: 'Triplets: three even hits per click; let beat one lead.',
+    text: 'Triplets: “1 + a, 2 + a…” with the click on each “1,” then even out “+” and “a.”',
     match: { subdivision: 'triplet' },
   },
   {
@@ -114,7 +114,7 @@ export const PRACTICE_TIPS: PracticeTip[] = [
   },
   {
     id: 'listen-to-tonic',
-    text: 'Listen for the tonic each cycle — it should feel like home.',
+    text: 'Listen for the tonic each time through. It should feel like home.',
     match: { mutePlayback: false },
   },
 ];

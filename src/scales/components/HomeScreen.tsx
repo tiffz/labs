@@ -284,23 +284,58 @@ export default function HomeScreen() {
   const hasHistory = totalPracticed > 0;
 
   const hasInput = anyDeviceEnabled || microphoneActive;
-  const homeMidiPrevDownRef = useRef(false);
+  const homeMidiArmedRef = useRef(false);
+  const homeLastHandledPulseRef = useRef(0);
+  const [lessonContinueAck, setLessonContinueAck] = useState<'midi' | 'keyboard' | null>(null);
 
   useEffect(() => {
-    const size = state.activeMidiNotes.size;
-    const wasDown = homeMidiPrevDownRef.current;
+    if (!lessonContinueAck) return;
+    const id = window.setTimeout(() => setLessonContinueAck(null), 2300);
+    return () => window.clearTimeout(id);
+  }, [lessonContinueAck]);
+
+  useEffect(() => {
+    if (state.screen !== 'home' || !sessionComplete || !hasInput) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.defaultPrevented) return;
+      const el = e.target as HTMLElement | null;
+      if (el?.closest('input, textarea, select, [contenteditable="true"]')) return;
+      if (el?.closest('.MuiDialog-root')) return;
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      e.preventDefault();
+      setLessonContinueAck('keyboard');
+      startSession();
+    };
+    window.addEventListener('keydown', onKeyDown, true);
+    return () => window.removeEventListener('keydown', onKeyDown, true);
+  }, [state.screen, sessionComplete, hasInput, startSession]);
+
+  useEffect(() => {
     if (state.screen !== 'home') {
-      homeMidiPrevDownRef.current = size > 0;
+      homeMidiArmedRef.current = false;
       return;
     }
     if (document.querySelector('.MuiDialog-root')) {
-      homeMidiPrevDownRef.current = size > 0;
+      if (homeMidiArmedRef.current) {
+        homeLastHandledPulseRef.current = state.midiNoteOnPulse;
+      }
       return;
     }
-    homeMidiPrevDownRef.current = size > 0;
-    if (size === 0 || wasDown || !hasInput) return;
+    if (!hasInput) return;
+
+    const p = state.midiNoteOnPulse;
+    if (!homeMidiArmedRef.current) {
+      homeLastHandledPulseRef.current = p;
+      homeMidiArmedRef.current = true;
+      return;
+    }
+    if (p === homeLastHandledPulseRef.current) return;
+    homeLastHandledPulseRef.current = p;
+    if (sessionComplete) {
+      setLessonContinueAck('midi');
+    }
     startSession();
-  }, [state.screen, state.activeMidiNotes, hasInput, startSession]);
+  }, [state.screen, state.midiNoteOnPulse, hasInput, startSession, sessionComplete]);
 
   const sessionRecapRows =
     sessionComplete && lastSessionSummary && lastSessionSummary.length > 0
@@ -340,6 +375,40 @@ export default function HomeScreen() {
       {sessionComplete ? 'Next lesson' : 'Practice now'}
     </Button>
   );
+
+  const lessonContinueAckBanner = lessonContinueAck ? (
+    <Box
+      role="status"
+      aria-live="polite"
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1.25,
+        px: 2,
+        py: 1.25,
+        borderRadius: 2,
+        bgcolor: theme => `${theme.palette.primary.main}12`,
+        border: 1,
+        borderColor: 'primary.light',
+        maxWidth: 440,
+      }}
+    >
+      <Icon name={lessonContinueAck === 'midi' ? 'piano' : 'keyboard'} size={22} />
+      <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
+        {lessonContinueAck === 'midi' ? 'Piano key heard' : 'Keyboard shortcut'}
+        {'. '}
+        <Box component="span" sx={{ fontWeight: 500, color: 'text.secondary' }}>
+          Opening your next lesson…
+        </Box>
+      </Typography>
+    </Box>
+  ) : null;
+
+  const nextLessonShortcutCaption = sessionComplete && hasInput ? (
+    <Typography variant="caption" color="text.secondary" sx={{ maxWidth: 400, textAlign: 'center' }}>
+      Pressing any Piano Key, Space, or Enter also starts the next lesson.
+    </Typography>
+  ) : null;
 
   return (
     <Box
@@ -422,11 +491,15 @@ export default function HomeScreen() {
           <Box
             sx={{
               display: 'flex',
-              justifyContent: 'center',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 1.5,
               mb: { xs: 2, md: 2.5 },
             }}
           >
             {primaryCtaButton}
+            {nextLessonShortcutCaption}
+            {lessonContinueAckBanner}
           </Box>
           <SessionSummaryCard summary={sessionRecapRows} upcomingPlan={upcomingPlan} compact />
         </>
@@ -434,11 +507,16 @@ export default function HomeScreen() {
         <Box
           sx={{
             display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 1.5,
             justifyContent: 'center',
             mb: sessionComplete ? { xs: 4, md: 5 } : { xs: 8, md: 10 },
           }}
         >
           {primaryCtaButton}
+          {nextLessonShortcutCaption}
+          {lessonContinueAckBanner}
         </Box>
       )}
 
@@ -779,9 +857,9 @@ export default function HomeScreen() {
               ) : (
                 <Typography sx={{ ...TYPE.bodyMedium, color: 'text.secondary' }}>
                   {totalMasteredExercises > 0
-                    ? 'Everything is fresh — keep going to master more.'
+                    ? 'All caught up for now. Pick any exercise to keep growing.'
                     : levelsCleared > 0
-                      ? `You've cleared ${levelsCleared} level${levelsCleared === 1 ? '' : 's'} — keep going to fully master your first exercise.`
+                      ? `You have cleared ${levelsCleared} level${levelsCleared === 1 ? '' : 's'}. Next step: polish one exercise all the way to mastered.`
                       : 'Clear your first level to start building mastery.'}
                 </Typography>
               )}

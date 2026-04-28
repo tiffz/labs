@@ -50,14 +50,17 @@ export function pickShakyHint(
   if (missedMost) {
     return {
       id: 'few-notes',
-      text: 'The run got away from you a bit. Restart and aim for evenness over speed.',
+      text: 'That run skipped a lot of notes. Reset with a calm restart and favor evenness over speed.',
     };
   }
 
   if (timing > pitch && timing > 0 && stage.useTempo) {
+    const alreadySlow = stage.bpm <= 52;
     return {
       id: 'timing',
-      text: 'Most of those misses were timing, not notes. Try one round 10 BPM slower before pushing again.',
+      text: alreadySlow
+        ? 'Those were mostly timing slips at a slow tempo. Subdivide: keep the click in your ear and space the notes evenly around it.'
+        : 'Most of those misses were about rhythm with the click, not wrong notes. Try one round about 10 BPM slower, then see how it feels.',
     };
   }
 
