@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, type CSSProperties } from 'react';
 import LabsDebugDock from '../../shared/components/LabsDebugDock';
 import {
   PRACTICE_DEBUG_CLEAR_BUTTON_STYLE,
@@ -14,6 +14,8 @@ import {
   clearDebugLog,
   type DebugEvent,
 } from '../utils/practiceDebugLog';
+import { useScalesSessionDebugBridge } from '../context/scalesSessionDebugBridge';
+import type { ScalesDebugHelpSurface, ScalesSessionDebugApi } from '../context/scalesSessionDebugTypes';
 
 function formatEvent(e: DebugEvent): string {
   const n = practiceDebugMidiToName;
@@ -47,12 +49,80 @@ function formatEvent(e: DebugEvent): string {
 const ACCENT = '#059669';
 const LOG_HEIGHT = 180;
 
+const DEBUG_BTN: CSSProperties = {
+  background: 'transparent',
+  color: '#e2e8f0',
+  border: '1px solid #334155',
+  borderRadius: 3,
+  padding: '2px 6px',
+  fontSize: 10,
+  cursor: 'pointer',
+};
+
+const DEBUG_BTN_PRIMARY: CSSProperties = {
+  ...DEBUG_BTN,
+  background: ACCENT,
+  color: '#fff',
+  border: 'none',
+  fontWeight: 700,
+};
+
 function noteOnColor(e: DebugEvent): string {
   if (e.type !== 'note_on') return PRACTICE_DEBUG_EVENT_COLORS[e.type] || '#ccc';
   return e.source === 'midi' ? '#22c55e' : '#38bdf8';
 }
 
+function SessionGodModeStrip({ sessionApi }: { sessionApi: ScalesSessionDebugApi }) {
+  const fire = (surface: ScalesDebugHelpSurface) => {
+    sessionApi.setHelpPreview(surface);
+  };
+
+  return (
+    <div
+      role="toolbar"
+      aria-label="Session QA controls"
+      style={{
+        padding: '6px 12px 8px',
+        borderBottom: '1px solid #1e293b',
+        background: '#0f172a',
+        maxHeight: 200,
+        overflowY: 'auto',
+      }}
+      onMouseDown={(e) => e.stopPropagation()}
+    >
+      <div style={{ color: '#94a3b8', fontSize: 10, marginBottom: 6, fontWeight: 700 }}>
+        Session QA (Escape closes overlays)
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center', marginBottom: 6 }}>
+        <button type="button" style={DEBUG_BTN} onClick={() => sessionApi.clearHelpPreview()}>
+          Close overlay
+        </button>
+      </div>
+      <div style={{ color: '#64748b', fontSize: 9, marginBottom: 4 }}>Guidance & tips</div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 6 }}>
+        <button type="button" style={DEBUG_BTN} onClick={() => fire('guidance')}>Onboarding modal</button>
+        <button type="button" style={DEBUG_BTN} onClick={() => fire('practice_tip')}>Practice tip</button>
+        <button type="button" style={DEBUG_BTN} onClick={() => fire('shaky_timing')}>Shaky · timing</button>
+        <button type="button" style={DEBUG_BTN} onClick={() => fire('shaky_pitch')}>Shaky · pitch</button>
+        <button type="button" style={DEBUG_BTN} onClick={() => fire('shaky_few_notes')}>Shaky · few notes</button>
+      </div>
+      <div style={{ color: '#64748b', fontSize: 9, marginBottom: 4 }}>Stuck dialogs</div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 6 }}>
+        <button type="button" style={DEBUG_BTN} onClick={() => fire('stuck_drill')}>Drill pause</button>
+        <button type="button" style={DEBUG_BTN} onClick={() => fire('stuck_regular')}>Stepping-stone</button>
+        <button type="button" style={DEBUG_BTN} onClick={() => fire('stuck_tip')}>Jump-coaching tip</button>
+      </div>
+      <div style={{ color: '#64748b', fontSize: 9, marginBottom: 4 }}>Other</div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+        <button type="button" style={DEBUG_BTN} onClick={() => fire('wrong_note')}>Wrong-note flash</button>
+        <button type="button" style={DEBUG_BTN} onClick={() => fire('drill_how_it_works')}>Drill tooltip copy</button>
+      </div>
+    </div>
+  );
+}
+
 export default function DebugPanel() {
+  const { sessionApi } = useScalesSessionDebugBridge();
   const [events, setEvents] = useState<DebugEvent[]>([]);
   const [counts, setCounts] = useState({ pitch: 0, midiOn: 0, micOn: 0, noteOff: 0, eval: 0, miss: 0 });
   const [showPitch, setShowPitch] = useState(false);
@@ -78,6 +148,21 @@ export default function DebugPanel() {
       reportOuterHeightCssVar="--debug-panel-height"
       toolbar={
         <>
+          {sessionApi ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                sessionApi.completeExercisePerfect();
+              }}
+              style={{
+                ...DEBUG_BTN_PRIMARY,
+                padding: '3px 10px',
+              }}
+            >
+              Complete exercise
+            </button>
+          ) : null}
           <span style={{ color: '#94a3b8', fontSize: 10 }}>
             pitch:{counts.pitch}
             {' '}
@@ -130,6 +215,7 @@ export default function DebugPanel() {
         </>
       }
     >
+      {sessionApi ? <SessionGodModeStrip sessionApi={sessionApi} /> : null}
       <div
         ref={logRef}
         style={{

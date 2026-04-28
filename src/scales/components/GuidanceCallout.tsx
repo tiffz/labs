@@ -7,6 +7,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import type { Theme } from '@mui/material/styles';
 import type { GuidancePayload } from '../guidance/computeGuidance';
+import { PIANO_ADVANCE_BUTTON_TOOLTIP } from '../utils/pianoAdvanceDoubleTap';
 
 // Typography and shape tokens align with the input gateway (`InputGateway.tsx`)
 // and Material 3 dialog spacing (8dp rhythm: spacing n -> 4n px).
@@ -156,6 +157,21 @@ export default function GuidanceCallout({ payload, onDismiss }: GuidanceCalloutP
           ))}
         </Stack>
 
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          component="p"
+          sx={{
+            mt: 5,
+            mb: 0,
+            textAlign: 'center',
+            lineHeight: 1.45,
+            letterSpacing: '0.025rem',
+          }}
+        >
+          {PIANO_ADVANCE_BUTTON_TOOLTIP}
+        </Typography>
+
         <Button
           variant="contained"
           color="primary"
@@ -163,7 +179,7 @@ export default function GuidanceCallout({ payload, onDismiss }: GuidanceCalloutP
           onClick={handleDialogClose}
           disableElevation
           sx={{
-            mt: 6,
+            mt: 2,
             height: 40,
             borderRadius: '999px',
             fontSize: '0.875rem',

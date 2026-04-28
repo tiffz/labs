@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import ButtonBase from '@mui/material/ButtonBase';
 import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
 import LinearProgress from '@mui/material/LinearProgress';
+import Tooltip from '@mui/material/Tooltip';
 import { useScales, hasEnabledMidiDevice } from '../store';
 import { TIERS } from '../curriculum/tiers';
 import type { ExerciseKind } from '../curriculum/types';
@@ -21,6 +22,7 @@ import MasteryTierLegend from './MasteryTierLegend';
 import SessionSummaryCard from './SessionSummaryCard';
 import PracticeOnboarding from './PracticeOnboarding';
 import { planSession } from '../curriculum/sessionPlanner';
+import { PIANO_ADVANCE_BUTTON_TOOLTIP } from '../utils/pianoAdvanceDoubleTap';
 
 // Material 3 reference:
 //   https://m3.material.io/styles/typography/type-scale-tokens
@@ -201,27 +203,49 @@ export default function HomeScreen() {
   // tip. Cheap synchronous call — same shape we'd run on Practice now.
   const upcomingPlan = sessionComplete && lastSessionSummary ? planSession(progress) : null;
 
-  const currentTier = TIERS.find(t => t.id === progress.currentTierId) ?? TIERS[0];
+  const curriculumTier = TIERS.find(t => t.id === progress.currentTierId) ?? TIERS[0];
+
+  /**
+   * For Tier 1 onward, major-scale rows show progress through **full-scale stages
+   * only**. Pentascale clears from Tier 0 still lift Fluent/Mastered (via
+   * `getCombinedMajorScaleMastery` for `tier`) but were confusing when folded
+   * into X/Y levels on the tier card.
+   */
+  const majorLevelsSeparateFromPentascale = curriculumTier.tierNumber >= 1;
 
   // Per-exercise progress for the Current Tier card. Each row shows how many
   // levels within an exercise the user has cleared — a finer-grained view
   // than "N of M exercises mastered" that actually moves every practice
   // session.
-  const tierExerciseProgress = currentTier.exercises.map(ex => {
+  const tierExerciseProgress = curriculumTier.exercises.map(ex => {
     const ep = getExerciseProgress(progress, ex.id);
     const combined = ex.kind === 'major-scale'
       ? getCombinedMajorScaleMastery(progress, ex)
       : null;
     const tier = combined ? combined.tier : getMasteryTier(ep, ex);
-    const levelsDone = combined
-      ? combined.levelsDone
-      : (() => {
-        const completedIdx = ep.completedStageId
-          ? ex.stages.findIndex(s => s.id === ep.completedStageId)
-          : -1;
-        return completedIdx + 1;
-      })();
-    const totalLevels = combined ? combined.totalLevels : ex.stages.length;
+
+    let levelsDone: number;
+    let totalLevels: number;
+
+    if (majorLevelsSeparateFromPentascale && ex.kind === 'major-scale') {
+      const idx = ep.completedStageId
+        ? ex.stages.findIndex(s => s.id === ep.completedStageId)
+        : -1;
+      levelsDone = idx + 1;
+      totalLevels = ex.stages.length;
+    }
+    else if (combined) {
+      levelsDone = combined.levelsDone;
+      totalLevels = combined.totalLevels;
+    }
+    else {
+      const completedIdx = ep.completedStageId
+        ? ex.stages.findIndex(s => s.id === ep.completedStageId)
+        : -1;
+      levelsDone = completedIdx + 1;
+      totalLevels = ex.stages.length;
+    }
+
     return { ex, tier, levelsDone, totalLevels };
   });
 
@@ -276,7 +300,7 @@ export default function HomeScreen() {
   // Arpeggios don't appear in the curriculum until Tier 2, so hide that
   // milestone line for Tier 1 users to keep the card uncluttered and avoid
   // teasing content they haven't been introduced to yet.
-  const showArpeggios = currentTier.tierNumber >= 2;
+  const showArpeggios = curriculumTier.tierNumber >= 2;
   const totalMasteredExercises = scalesMastered + arpeggiosMastered;
   const reviewEntries = getReviewExercises(progress);
   const dueForReview = reviewEntries.length;
@@ -284,18 +308,28 @@ export default function HomeScreen() {
   const hasHistory = totalPracticed > 0;
 
   const hasInput = anyDeviceEnabled || microphoneActive;
-  const homeMidiArmedRef = useRef(false);
-  const homeLastHandledPulseRef = useRef(0);
-  const [lessonContinueAck, setLessonContinueAck] = useState<'midi' | 'keyboard' | null>(null);
+
+  // Dialogs driven by the mastery card — declared before effects that sync
+  // blocking flags to the store so hook order stays stable.
+  const [masteryDialog, setMasteryDialog] = useState<MasteryCategory | null>(null);
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
 
   useEffect(() => {
-    if (!lessonContinueAck) return;
-    const id = window.setTimeout(() => setLessonContinueAck(null), 2300);
-    return () => window.clearTimeout(id);
-  }, [lessonContinueAck]);
+    const blocked =
+      masteryDialog !== null || reviewDialogOpen || onboardingOpen;
+    dispatch({ type: 'SET_HOME_START_BLOCKED', blocked });
+    dispatch({ type: 'ABSORB_HOME_NOTE_GATE' });
+  }, [masteryDialog, reviewDialogOpen, onboardingOpen, dispatch]);
 
   useEffect(() => {
-    if (state.screen !== 'home' || !sessionComplete || !hasInput) return;
+    if (state.homePracticeCue === 'midi_continue') {
+      dispatch({ type: 'CLEAR_HOME_PRACTICE_CUE' });
+    }
+  }, [state.homePracticeCue, dispatch]);
+
+  useEffect(() => {
+    if (state.screen !== 'home' || !hasInput || state.homeStartBlocked) return;
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.defaultPrevented) return;
       const el = e.target as HTMLElement | null;
@@ -303,39 +337,11 @@ export default function HomeScreen() {
       if (el?.closest('.MuiDialog-root')) return;
       if (e.key !== 'Enter' && e.key !== ' ') return;
       e.preventDefault();
-      setLessonContinueAck('keyboard');
       startSession();
     };
     window.addEventListener('keydown', onKeyDown, true);
     return () => window.removeEventListener('keydown', onKeyDown, true);
-  }, [state.screen, sessionComplete, hasInput, startSession]);
-
-  useEffect(() => {
-    if (state.screen !== 'home') {
-      homeMidiArmedRef.current = false;
-      return;
-    }
-    if (document.querySelector('.MuiDialog-root')) {
-      if (homeMidiArmedRef.current) {
-        homeLastHandledPulseRef.current = state.midiNoteOnPulse;
-      }
-      return;
-    }
-    if (!hasInput) return;
-
-    const p = state.midiNoteOnPulse;
-    if (!homeMidiArmedRef.current) {
-      homeLastHandledPulseRef.current = p;
-      homeMidiArmedRef.current = true;
-      return;
-    }
-    if (p === homeLastHandledPulseRef.current) return;
-    homeLastHandledPulseRef.current = p;
-    if (sessionComplete) {
-      setLessonContinueAck('midi');
-    }
-    startSession();
-  }, [state.screen, state.midiNoteOnPulse, hasInput, startSession, sessionComplete]);
+  }, [state.screen, state.homeStartBlocked, hasInput, startSession]);
 
   const sessionRecapRows =
     sessionComplete && lastSessionSummary && lastSessionSummary.length > 0
@@ -344,71 +350,42 @@ export default function HomeScreen() {
 
   const openProgressMap = () => dispatch({ type: 'SET_SCREEN', screen: 'progress' });
 
-  // Dialogs driven by the mastery card. `masteryDialog` holds the category
-  // being viewed (scales vs arpeggios) so a single dialog component can
-  // serve both clickable stats; `reviewDialogOpen` is a plain boolean for
-  // the standalone Due-for-review card below the stats row.
-  const [masteryDialog, setMasteryDialog] = useState<MasteryCategory | null>(null);
-  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
-  // Manual re-entry into the practice-onboarding modal. The auto-open
-  // path lives in SessionScreen (first-ever practice); this link gives
-  // returning users a way to revisit the principles without having to
-  // start a session.
-  const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const ctaTooltipTitle = hasInput
+    ? PIANO_ADVANCE_BUTTON_TOOLTIP
+    : 'Connect MIDI or a microphone above to unlock keyboard shortcuts.';
+
 
   const primaryCtaButton = (
-    <Button
-      variant="contained"
-      onClick={startSession}
-      disabled={!hasInput}
-      disableElevation
-      startIcon={<Icon name={sessionComplete ? 'skip_next' : 'play_arrow'} size={20} />}
-      sx={{
-        height: sessionComplete ? 48 : 52,
-        px: sessionComplete ? 5 : 7,
-        minWidth: { sm: 260 },
-        borderRadius: '999px',
-        ...TYPE.labelLarge,
-        fontSize: '1rem',
-      }}
-    >
-      {sessionComplete ? 'Next lesson' : 'Practice now'}
-    </Button>
+    <Tooltip arrow enterDelay={300} placement="top" disableInteractive describeChild title={ctaTooltipTitle}>
+      <Box
+        component="span"
+        sx={{
+          display: 'inline-flex',
+          justifyContent: 'center',
+          maxWidth: '100%',
+          ...(!hasInput ? { cursor: 'not-allowed' } : {}),
+        }}
+      >
+        <Button
+          variant="contained"
+          onClick={startSession}
+          disabled={!hasInput}
+          disableElevation
+          startIcon={<Icon name={sessionComplete ? 'skip_next' : 'play_arrow'} size={20} />}
+          sx={{
+            height: sessionComplete ? 48 : 52,
+            px: sessionComplete ? 5 : 7,
+            minWidth: { sm: 260 },
+            borderRadius: '999px',
+            ...TYPE.labelLarge,
+            fontSize: '1rem',
+          }}
+        >
+          {sessionComplete ? 'Next lesson' : 'Practice now'}
+        </Button>
+      </Box>
+    </Tooltip>
   );
-
-  const lessonContinueAckBanner = lessonContinueAck ? (
-    <Box
-      role="status"
-      aria-live="polite"
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 1.25,
-        px: 2,
-        py: 1.25,
-        borderRadius: 2,
-        bgcolor: theme => `${theme.palette.primary.main}12`,
-        border: 1,
-        borderColor: 'primary.light',
-        maxWidth: 440,
-      }}
-    >
-      <Icon name={lessonContinueAck === 'midi' ? 'piano' : 'keyboard'} size={22} />
-      <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
-        {lessonContinueAck === 'midi' ? 'Piano key heard' : 'Keyboard shortcut'}
-        {'. '}
-        <Box component="span" sx={{ fontWeight: 500, color: 'text.secondary' }}>
-          Opening your next lesson…
-        </Box>
-      </Typography>
-    </Box>
-  ) : null;
-
-  const nextLessonShortcutCaption = sessionComplete && hasInput ? (
-    <Typography variant="caption" color="text.secondary" sx={{ maxWidth: 400, textAlign: 'center' }}>
-      Pressing any Piano Key, Space, or Enter also starts the next lesson.
-    </Typography>
-  ) : null;
 
   return (
     <Box
@@ -498,8 +475,6 @@ export default function HomeScreen() {
             }}
           >
             {primaryCtaButton}
-            {nextLessonShortcutCaption}
-            {lessonContinueAckBanner}
           </Box>
           <SessionSummaryCard summary={sessionRecapRows} upcomingPlan={upcomingPlan} compact />
         </>
@@ -515,8 +490,6 @@ export default function HomeScreen() {
           }}
         >
           {primaryCtaButton}
-          {nextLessonShortcutCaption}
-          {lessonContinueAckBanner}
         </Box>
       )}
 
@@ -526,7 +499,10 @@ export default function HomeScreen() {
           display: 'grid',
           gridTemplateColumns: hasHistory ? { xs: '1fr', md: '1fr 1fr' } : '1fr',
           gap: { xs: 4, md: 5 },
-          alignItems: 'stretch',
+          // Top-align cards so the tier card is not stretched to the practice
+          // card’s height (stretch + flex:1 spacer had left a large gap above
+          // “View progress map”).
+          alignItems: 'start',
         }}
       >
         {/* Current tier card */}
@@ -538,7 +514,6 @@ export default function HomeScreen() {
             borderColor: 'divider',
             display: 'flex',
             flexDirection: 'column',
-            minHeight: { md: 260 },
           }}
         >
           <Box
@@ -562,7 +537,7 @@ export default function HomeScreen() {
                 Current tier
               </Typography>
               <Typography component="h2" sx={{ ...TYPE.titleLarge, color: 'text.primary' }}>
-                {currentTier.label}
+                {curriculumTier.label}
               </Typography>
             </Box>
             <Box
@@ -580,11 +555,11 @@ export default function HomeScreen() {
                 flexShrink: 0,
               }}
             >
-              Tier {currentTier.tierNumber} of {TIERS.length}
+              Tier {curriculumTier.tierNumber} of {TIERS.length}
             </Box>
           </Box>
           <Typography sx={{ ...TYPE.bodyMedium, color: 'text.secondary', mb: 4 }}>
-            {currentTier.description}
+            {curriculumTier.description}
           </Typography>
 
           {/* Per-exercise level progress. Replaces a single aggregate bar so
@@ -651,13 +626,11 @@ export default function HomeScreen() {
             })}
           </Box>
 
-          <Box sx={{ flex: 1 }} />
-
           {/* Thematic link: progress map belongs with the tier */}
           <Box
             sx={{
-              mt: 5,
-              pt: 4,
+              mt: 4,
+              pt: 3,
               borderTop: 1,
               borderColor: 'divider',
               display: 'flex',

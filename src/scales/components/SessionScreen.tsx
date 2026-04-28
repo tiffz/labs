@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useRef, useCallback, useState, useMemo, type ReactNode } from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
@@ -7,9 +7,8 @@ import IconButton from '@mui/material/IconButton';
 import Paper from '@mui/material/Paper';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
+import Popover from '@mui/material/Popover';
 import Stack from '@mui/material/Stack';
-import Divider from '@mui/material/Divider';
 import Tooltip from '@mui/material/Tooltip';
 import Link from '@mui/material/Link';
 import Alert from '@mui/material/Alert';
@@ -20,10 +19,14 @@ import { useScales, hasEnabledMidiDevice, type ExerciseResult } from '../store';
 import { generateScoreForExercise } from '../curriculum/scoreGenerator';
 import { getScorePlaybackEngine } from '../../shared/playback/scorePlayback';
 import type { ScorePlaybackEngine } from '../../shared/playback/scorePlayback';
-import { findStage, findExercise, isPentascaleKind } from '../curriculum/tiers';
+import { TIERS, findStage, findExercise, isPentascaleKind } from '../curriculum/tiers';
 import { formatStageSummary, formatOctaveLabel } from '../curriculum/stageSummary';
 import { pickPracticeTip } from '../curriculum/practiceTips';
-import { getNewCliffConceptKeys, stuckJumpCoachingModalTip } from '../curriculum/concepts';
+import {
+  getNewCliffConceptKeys,
+  stuckJumpCoachingModalTip,
+  type ConceptKey,
+} from '../curriculum/concepts';
 import { pickShakyHint } from './shakyHint';
 import type { PracticeRecord } from '../progress/types';
 import {
@@ -44,6 +47,15 @@ import {
   DEFAULT_AUTO_LOOP_DWELL_MS as AUTO_LOOP_DWELL_MS,
 } from './useAutoLoopScheduler';
 import { isDebugEnabled, logDebugEvent } from '../utils/practiceDebugLog';
+import { readLabsDebugFromLocation } from '../../shared/debug/readLabsDebugParams';
+import { useScalesSessionDebugBridge } from '../context/scalesSessionDebugBridge';
+import type { ScalesDebugHelpSurface } from '../context/scalesSessionDebugTypes';
+import {
+  collectGradedScoreNotes,
+  perfectPracticeResultForNote,
+} from '../utils/debugPerfectPracticeResults';
+import { collectFingerCrossingRegions } from '../utils/fingerCrossingHighlights';
+import { canAdvanceToNextInSessionPlan } from '../curriculum/exerciseUnlock';
 import {
   nextDrillStreak as computeNextDrillStreak,
   isDrillStuck as computeIsDrillStuck,
@@ -52,6 +64,11 @@ import {
 } from './drillState';
 import GuidanceCallout from './GuidanceCallout';
 import { computeGuidance, isGuidancePayloadEmpty, resolveHandGuidance } from '../guidance/computeGuidance';
+import {
+  applyPianoDoubleTapStep,
+  PIANO_ADVANCE_BUTTON_TOOLTIP,
+  type PianoDoubleTapArm,
+} from '../utils/pianoAdvanceDoubleTap';
 
 // Drill = voluntary polish loop. Strict 100% required to keep the streak,
 // 3 perfect-in-a-row to complete. Stuck threshold is generous enough to
@@ -70,6 +87,33 @@ const REGULAR_JUMP_EXTRA_SNOOZE = 4;
 const REGULAR_STUCK_MIN_ATTEMPTS_FOR_JUMP = 4;
 /** How long the free-tempo "Nice — ready to start" overlay stays before scored playback. */
 const FREE_TEMPO_WARMUP_UI_MS = 2200;
+
+/** Sample cliff keys for debug preview of jump-coaching stuck copy. */
+const DEBUG_PREVIEW_JUMP_CONCEPT_KEYS: ConceptKey[] = ['thumbUnder'];
+
+const DEBUG_SHAKY_MOCK_TIMING: ExerciseResult = {
+  accuracy: 0.5,
+  correct: 5,
+  total: 20,
+  advanced: false,
+  breakdown: { perfect: 5, early: 8, late: 5, wrongPitch: 0, missed: 2 },
+};
+
+const DEBUG_SHAKY_MOCK_PITCH: ExerciseResult = {
+  accuracy: 0.55,
+  correct: 6,
+  total: 20,
+  advanced: false,
+  breakdown: { perfect: 6, early: 1, late: 1, wrongPitch: 10, missed: 2 },
+};
+
+const DEBUG_SHAKY_MOCK_FEW_NOTES: ExerciseResult = {
+  accuracy: 0.2,
+  correct: 2,
+  total: 20,
+  advanced: false,
+  breakdown: { perfect: 2, early: 0, late: 0, wrongPitch: 0, missed: 18 },
+};
 
 /** Cached last auto-loop verdict so the chip can stay visible through metronome count-in. */
 type DwellBadgeSnapshot = {
@@ -108,7 +152,28 @@ const HAND_SHORT = { right: 'RH', left: 'LH', both: 'Both' } as const;
 const NOTE_NAMES = ['C', 'C\u266F', 'D', 'D\u266F', 'E', 'F', 'F\u266F', 'G', 'G\u266F', 'A', 'A\u266F', 'B'];
 function midiToNoteName(midi: number): string { return NOTE_NAMES[midi % 12]; }
 
+function AdvanceActionTooltip({ children }: { children: ReactNode }) {
+  return (
+    <Tooltip
+      arrow
+      describeChild
+      enterDelay={300}
+      placement="top"
+      disableInteractive
+      title={PIANO_ADVANCE_BUTTON_TOOLTIP}
+    >
+      <Box component="span" sx={{ display: 'inline-flex', justifyContent: 'center', maxWidth: '100%' }}>
+        {children}
+      </Box>
+    </Tooltip>
+  );
+}
+
 export default function SessionScreen() {
+  const labsDebug = readLabsDebugFromLocation().debug;
+  const { setSessionApi } = useScalesSessionDebugBridge();
+  const [helpPreview, setHelpPreview] = useState<ScalesDebugHelpSurface | null>(null);
+
   const { state, dispatch } = useScales();
   const { activeExercise, sessionPlan, score, practiceResults, isPlaying, lastExerciseResult } = state;
   const engineRef = useRef<ScorePlaybackEngine | null>(null);
@@ -131,8 +196,17 @@ export default function SessionScreen() {
   const finishedRef = useRef(false);
   /** Last `midiNoteOnPulse` consumed for session piano shortcuts (advance / pre-start / guidance). */
   const sessionMidiLastProcessedPulseRef = useRef(0);
-  const guidanceMidiPulseSeededRef = useRef(false);
-  const guidanceMidiPulseBaselineRef = useRef(0);
+  /** Guidance modal dismiss: same double-tap arm as session advance (MIDI/mic shortcut stream). */
+  const guidancePianoDoubleTapArmRef = useRef<PianoDoubleTapArm>(null);
+  /** Session "Continue" / stuck-dismiss: same double-tap semantics as home Practice now. */
+  const sessionAdvancePianoArmRef = useRef<PianoDoubleTapArm>(null);
+  /** Mirrors `open={hasResult && stuckVisible}` so MIDI advance does not rely on DOM probes. */
+  const stuckDialogOpenForMidiRef = useRef(false);
+  /** When true, piano "dismiss stuck" should only clear debug stuck preview (no real stuck state). */
+  const stuckPreviewPianoDismissRef = useRef(false);
+  const handleStuckDialogCloseRef = useRef<
+    (reason: 'backdropClick' | 'escapeKeyDown') => void
+  >(() => {});
   const loadedStageRef = useRef<string | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [wrongNoteDisplay, setWrongNoteDisplay] = useState<string | null>(null);
@@ -149,8 +223,6 @@ export default function SessionScreen() {
    * directly. Mic-only / no MIDI skips this gate.
    */
   const [timedDryRunReady, setTimedDryRunReady] = useState(false);
-  /** Brief UI when user advances via piano key or keyboard (not mouse). */
-  const [advanceAck, setAdvanceAck] = useState<'midi' | 'keyboard' | null>(null);
   const advanceCooldownUntilRef = useRef(0);
   const cancelWarmupCountdown = useCallback(() => {
     if (warmupTimerRef.current != null) {
@@ -161,12 +233,6 @@ export default function SessionScreen() {
   }, []);
 
   useEffect(() => () => cancelWarmupCountdown(), [cancelWarmupCountdown]);
-
-  useEffect(() => {
-    if (!advanceAck) return;
-    const id = window.setTimeout(() => setAdvanceAck(null), 2200);
-    return () => window.clearTimeout(id);
-  }, [advanceAck]);
 
   const armAdvanceCooldown = useCallback(() => {
     advanceCooldownUntilRef.current = Date.now() + 550;
@@ -231,6 +297,10 @@ export default function SessionScreen() {
   const advanceToNext = useCallback(() => {
     const nextIdx = state.activeExerciseIndex + 1;
     if (sessionPlan && nextIdx < sessionPlan.exercises.length) {
+      if (!canAdvanceToNextInSessionPlan(state.progress, sessionPlan, state.activeExerciseIndex)) {
+        dispatch({ type: 'COMPLETE_SESSION' });
+        return;
+      }
       const nextExercise = sessionPlan.exercises[nextIdx];
       const nextScore = generateScoreForExercise(nextExercise);
       if (nextScore) {
@@ -241,7 +311,7 @@ export default function SessionScreen() {
     } else {
       dispatch({ type: 'COMPLETE_SESSION' });
     }
-  }, [state.activeExerciseIndex, sessionPlan, dispatch]);
+  }, [state.activeExerciseIndex, state.progress, sessionPlan, dispatch]);
 
   // Auto-save progress when a free-tempo run completes
   useEffect(() => {
@@ -449,6 +519,74 @@ export default function SessionScreen() {
     if (activeExercise?.bpm) setTimedDryRunReady(false);
     dispatch({ type: 'STOP_PRACTICE_RUN' });
   }, [dispatch, activeExercise?.bpm]);
+
+  const completeExercisePerfectDebug = useCallback(() => {
+    if (!labsDebug || !score || !activeExercise) return;
+    if (state.isPlaying) stopPlayback();
+    finishedRef.current = false;
+    manuallyStoppedRef.current = false;
+    dispatch({ type: 'START_PRACTICE_RUN' });
+    for (const n of collectGradedScoreNotes(score)) {
+      dispatch({ type: 'ADD_PRACTICE_RESULT', result: perfectPracticeResultForNote(n) });
+    }
+    setHelpPreview(null);
+    finishExercise();
+    // Same as breaking out of the auto-loop after a natural finish: stay on
+    // the results / boundary interstitial instead of scheduling another run.
+    setLoopPaused(true);
+  }, [
+    labsDebug,
+    score,
+    activeExercise,
+    state.isPlaying,
+    stopPlayback,
+    dispatch,
+    finishExercise,
+    setLoopPaused,
+  ]);
+
+  const sessionDebugApi = useMemo(
+    () => (
+      labsDebug && activeExercise && loaded && score
+        ? {
+            completeExercisePerfect: completeExercisePerfectDebug,
+            setHelpPreview: (s: ScalesDebugHelpSurface | null) => setHelpPreview(s),
+            clearHelpPreview: () => setHelpPreview(null),
+          }
+        : null
+    ),
+    [labsDebug, activeExercise, loaded, score, completeExercisePerfectDebug],
+  );
+
+  useEffect(() => {
+    if (!labsDebug) {
+      setSessionApi(null);
+      return;
+    }
+    if (!sessionDebugApi) {
+      setSessionApi(null);
+      return;
+    }
+    setSessionApi(sessionDebugApi);
+    return () => {
+      setHelpPreview(null);
+      setSessionApi(null);
+    };
+  }, [labsDebug, sessionDebugApi, setSessionApi]);
+
+  useEffect(() => {
+    if (!labsDebug || !helpPreview) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setHelpPreview(null);
+    };
+    window.addEventListener('keydown', onKeyDown, true);
+    return () => window.removeEventListener('keydown', onKeyDown, true);
+  }, [labsDebug, helpPreview]);
+
+  useEffect(() => {
+    if (!labsDebug || helpPreview !== 'wrong_note') return;
+    dispatch({ type: 'WRONG_NOTE_FLASH', notes: [60, 64] });
+  }, [labsDebug, helpPreview, dispatch]);
 
   const goToStage = useCallback((stageId: string) => {
     if (!activeExercise) return;
@@ -739,9 +877,22 @@ export default function SessionScreen() {
     && !freeTempoCompleteForGuidance
     && !lastResultForGuidance
     && !isGuidancePayloadEmpty(guidancePayload);
+  const showGuidanceDebug = labsDebug && helpPreview === 'guidance' && !!stageInfo && !isGuidancePayloadEmpty(guidancePayload);
   const guidanceModal = showGuidanceCallout ? (
     <GuidanceCallout payload={guidancePayload} onDismiss={dismissGuidance} />
   ) : null;
+  const guidanceModalDebug = showGuidanceDebug ? (
+    <GuidanceCallout
+      payload={guidancePayload}
+      onDismiss={() => setHelpPreview(null)}
+    />
+  ) : null;
+
+  useEffect(() => {
+    if (showGuidanceCallout || showGuidanceDebug) {
+      guidancePianoDoubleTapArmRef.current = null;
+    }
+  }, [showGuidanceCallout, showGuidanceDebug]);
 
   // Simple session shortcuts (see AGENTS / WCAG: avoid single printable keys
   // for destructive actions; Enter/Space here mirror the primary Start path).
@@ -750,7 +901,25 @@ export default function SessionScreen() {
       if (e.defaultPrevented) return;
       const target = e.target as HTMLElement | null;
       if (target?.closest('input, textarea, select, [contenteditable="true"]')) return;
-      if (target?.closest('.MuiDialog-root')) return;
+      if ((e.key === 'Enter' || e.key === ' ') && (showGuidanceCallout || showGuidanceDebug)) {
+        e.preventDefault();
+        if (showGuidanceDebug) setHelpPreview(null);
+        else dismissGuidance();
+        return;
+      }
+      if (target?.closest('.MuiDialog-root')) {
+        const stuckOpen = document.getElementById('stuck-prompt-title');
+        if (
+          stuckOpen
+          && (e.key === 'Enter' || e.key === ' ')
+          && !!state.lastExerciseResult
+          && !state.isPlaying
+        ) {
+          e.preventDefault();
+          handleStuckDialogCloseRef.current('backdropClick');
+        }
+        return;
+      }
 
       const hasResult = !!state.lastExerciseResult && !state.isPlaying;
       // Use `lastExerciseResult.advanced` here, not only `passedThisExercise`:
@@ -775,7 +944,6 @@ export default function SessionScreen() {
         }
         e.preventDefault();
         armAdvanceCooldown();
-        setAdvanceAck('keyboard');
         cancelAutoLoop();
         advanceToNext();
         return;
@@ -790,12 +958,6 @@ export default function SessionScreen() {
       }
 
       if (e.key !== 'Enter' && e.key !== ' ') return;
-
-      if (showGuidanceCallout) {
-        e.preventDefault();
-        dismissGuidance();
-        return;
-      }
 
       const { isPlaying, freeTempoRunComplete, lastExerciseResult } = state;
       if (isPlaying || freeTempoRunComplete || lastExerciseResult) return;
@@ -813,7 +975,9 @@ export default function SessionScreen() {
     score,
     state,
     showGuidanceCallout,
+    showGuidanceDebug,
     dismissGuidance,
+    setHelpPreview,
     startPlayback,
     stopPlayback,
     passedThisExercise,
@@ -828,11 +992,15 @@ export default function SessionScreen() {
   const canHearUserInput =
     (state.inputMode === 'midi' && hasEnabledMidiDevice(state)) || state.microphoneActive;
 
+  useEffect(() => {
+    sessionAdvancePianoArmRef.current = null;
+  }, [activeExercise?.exerciseId, activeExercise?.stageId, state.activeExerciseIndex, state.lastExerciseResult, loopPaused]);
+
   // Absorb the current pulse when the active exercise changes so entering a
   // new item (or the screen) does not treat prior key activity as "Continue".
   useEffect(() => {
     sessionMidiLastProcessedPulseRef.current = state.midiNoteOnPulse;
-    guidanceMidiPulseSeededRef.current = false;
+    guidancePianoDoubleTapArmRef.current = null;
     // Intentionally not keyed on `midiNoteOnPulse` — that would reset after every tap.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- re-arm only when the active exercise row changes.
   }, [activeExercise?.exerciseId, activeExercise?.stageId, state.activeExerciseIndex]);
@@ -842,20 +1010,26 @@ export default function SessionScreen() {
   // the scored attempt.
   useEffect(() => {
     const p = state.midiNoteOnPulse;
-    if (showGuidanceCallout) {
-      if (!guidanceMidiPulseSeededRef.current) {
-        guidanceMidiPulseBaselineRef.current = p;
-        guidanceMidiPulseSeededRef.current = true;
-        sessionMidiLastProcessedPulseRef.current = p;
-        return;
-      }
-      if (p > guidanceMidiPulseBaselineRef.current) {
-        sessionMidiLastProcessedPulseRef.current = p;
-        dismissGuidance();
-      }
+    const guidanceModalOpen = showGuidanceCallout || showGuidanceDebug;
+    if (guidanceModalOpen) {
+      if (!canHearUserInput) return;
+      const last = state.midiShortcutLast;
+      if (!last) return;
+      const { complete, next } = applyPianoDoubleTapStep(
+        guidancePianoDoubleTapArmRef.current,
+        last.kind,
+        last.note,
+        last.perfMs,
+      );
+      guidancePianoDoubleTapArmRef.current = next;
+      if (!complete) return;
+      guidancePianoDoubleTapArmRef.current = null;
+      sessionMidiLastProcessedPulseRef.current = p;
+      if (showGuidanceDebug) setHelpPreview(null);
+      else dismissGuidance();
       return;
     }
-    guidanceMidiPulseSeededRef.current = false;
+    guidancePianoDoubleTapArmRef.current = null;
 
     if (document.querySelector('.MuiDialog-root')) {
       sessionMidiLastProcessedPulseRef.current = p;
@@ -869,22 +1043,6 @@ export default function SessionScreen() {
 
     if (Date.now() < advanceCooldownUntilRef.current) return;
 
-    const hasResMidi = !!state.lastExerciseResult && !state.isPlaying;
-    const boundaryMidi = hasResMidi
-      && drillState !== 'active'
-      && (
-        Boolean(state.lastExerciseResult?.advanced)
-        || passedThisExercise
-        || drillState === 'completed'
-      );
-    if (boundaryMidi) {
-      armAdvanceCooldown();
-      setAdvanceAck('midi');
-      cancelAutoLoop();
-      advanceToNext();
-      return;
-    }
-
     if (state.isPlaying || state.freeTempoRunComplete || state.lastExerciseResult) return;
     if (!canHearUserInput) return;
 
@@ -896,24 +1054,151 @@ export default function SessionScreen() {
     loaded,
     score,
     state.midiNoteOnPulse,
+    state.midiShortcutWave,
+    state.midiShortcutLast,
     state.isPlaying,
     state.freeTempoRunComplete,
     state.lastExerciseResult,
     showGuidanceCallout,
+    showGuidanceDebug,
     dismissGuidance,
+    setHelpPreview,
     startPlayback,
     canHearUserInput,
-    drillState,
-    passedThisExercise,
-    cancelAutoLoop,
-    advanceToNext,
-    armAdvanceCooldown,
   ]);
 
+  const hasAnotherSessionExercise = state.sessionPlan
+    ? state.activeExerciseIndex + 1 < state.sessionPlan.exercises.length
+    : false;
+  const canAdvanceToNextExercise = useMemo(
+    () => canAdvanceToNextInSessionPlan(state.progress, state.sessionPlan, state.activeExerciseIndex),
+    [state.progress, state.sessionPlan, state.activeExerciseIndex],
+  );
+  const continueOrFinishLabel = !hasAnotherSessionExercise
+    ? 'Finish session'
+    : canAdvanceToNextExercise
+      ? 'Continue'
+      : 'Finish session';
+
+  /**
+   * Piano double-tap: (1) level-cleared Continue, (2) Move on from the paused
+   * full-results bar (Practice Again / Move on), (3) dismiss stuck prompt.
+   */
+  useEffect(() => {
+    if (!activeExercise || !loaded || !score) return;
+    if (!canHearUserInput) {
+      sessionAdvancePianoArmRef.current = null;
+      return;
+    }
+    const last = state.midiShortcutLast;
+    if (!last) return;
+
+    const hasRes = !!state.lastExerciseResult && !state.isPlaying;
+    const boundaryPiano = hasRes
+      && drillState !== 'active'
+      && (
+        Boolean(state.lastExerciseResult?.advanced)
+        || passedThisExercise
+        || drillState === 'completed'
+      );
+
+    const stuckDialogOpen = stuckDialogOpenForMidiRef.current;
+
+    const moveOnPianoEligible = hasRes
+      && drillState !== 'active'
+      && loopPaused
+      && !boundaryPiano
+      && !stuckDialogOpen
+      && (!hasAnotherSessionExercise || canAdvanceToNextExercise);
+
+    if (!boundaryPiano && !stuckDialogOpen && !moveOnPianoEligible) {
+      sessionAdvancePianoArmRef.current = null;
+      return;
+    }
+
+    if (Date.now() < advanceCooldownUntilRef.current) return;
+
+    if (boundaryPiano) {
+      const { complete, next } = applyPianoDoubleTapStep(
+        sessionAdvancePianoArmRef.current,
+        last.kind,
+        last.note,
+        last.perfMs,
+      );
+      sessionAdvancePianoArmRef.current = next;
+      if (!complete) return;
+      armAdvanceCooldown();
+      cancelAutoLoop();
+      advanceToNext();
+      sessionAdvancePianoArmRef.current = null;
+      return;
+    }
+
+    if (moveOnPianoEligible) {
+      const { complete, next } = applyPianoDoubleTapStep(
+        sessionAdvancePianoArmRef.current,
+        last.kind,
+        last.note,
+        last.perfMs,
+      );
+      sessionAdvancePianoArmRef.current = next;
+      if (!complete) return;
+      armAdvanceCooldown();
+      cancelAutoLoop();
+      advanceToNext();
+      sessionAdvancePianoArmRef.current = null;
+      return;
+    }
+
+    if (stuckDialogOpen) {
+      const { complete, next } = applyPianoDoubleTapStep(
+        sessionAdvancePianoArmRef.current,
+        last.kind,
+        last.note,
+        last.perfMs,
+      );
+      sessionAdvancePianoArmRef.current = next;
+      if (!complete) return;
+      if (stuckPreviewPianoDismissRef.current) setHelpPreview(null);
+      else handleStuckDialogCloseRef.current('backdropClick');
+      sessionAdvancePianoArmRef.current = null;
+    }
+  }, [
+    activeExercise,
+    loaded,
+    score,
+    canHearUserInput,
+    state.midiShortcutWave,
+    state.midiShortcutLast,
+    state.lastExerciseResult,
+    state.isPlaying,
+    drillState,
+    passedThisExercise,
+    loopPaused,
+    hasAnotherSessionExercise,
+    canAdvanceToNextExercise,
+    advanceToNext,
+    cancelAutoLoop,
+    armAdvanceCooldown,
+    setHelpPreview,
+  ]);
+
+  const fingerCrossingRegions = useMemo(() => {
+    if (!activeExercise || !loaded || !score) return undefined;
+    if (activeExercise.bpm) return undefined;
+    if (isPentascaleKind(activeExercise.kind)) return undefined;
+    if (!String(activeExercise.kind).includes('-scale')) return undefined;
+    if (state.hasCompletedRun) return undefined;
+    const regions = collectFingerCrossingRegions(score);
+    return regions.length > 0 ? regions : undefined;
+  }, [activeExercise, loaded, score, state.hasCompletedRun]);
+
   if (!activeExercise || !loaded || !score) {
+    stuckDialogOpenForMidiRef.current = false;
     return (
       <>
         {guidanceModal}
+        {guidanceModalDebug}
         <Box sx={{ p: 3, textAlign: 'center' }}>
           <Typography>Loading exercise...</Typography>
         </Box>
@@ -933,6 +1218,9 @@ export default function SessionScreen() {
   const maxAccessibleStageIdx = Math.max(currentStageIdx, progressStageIdx);
   const canGoPrevStage = currentStageIdx > 0;
   const canGoNextStage = currentStageIdx < maxAccessibleStageIdx;
+  const curriculumTierIdx = TIERS.findIndex(t => t.id === state.progress.currentTierId);
+  const safeCurriculumTierIdx = curriculumTierIdx >= 0 ? curriculumTierIdx : 0;
+  const showEarlierTiersOnProgressMap = state.activeExerciseIndex === 0 && !canGoPrevStage && safeCurriculumTierIdx > 0;
   const { freeTempoRunComplete, hasCompletedRun } = state;
   // "Has the user practiced this exercise before?" — drives the
   // pre-start panel's compact mode (tighter padding, lighter font
@@ -1054,6 +1342,21 @@ export default function SessionScreen() {
     ? '1 attempt on this level'
     : `${attemptsThisStage} attempts on this level`;
 
+  const dismissStuckSessionDialog = (reason: 'backdropClick' | 'escapeKeyDown') => {
+    if (reason !== 'backdropClick' && reason !== 'escapeKeyDown') return;
+    if (isDrillStuck) {
+      setDrillState('inactive');
+      setLoopPaused(true);
+    } else {
+      const snooze =
+        !isDrillStuck && regularStuckJumpCoaching
+          ? REGULAR_SNOOZE_BY + REGULAR_JUMP_EXTRA_SNOOZE
+          : REGULAR_SNOOZE_BY;
+      setRegularSnoozedUntil(consecutiveRoughOnStage + snooze);
+    }
+  };
+  handleStuckDialogCloseRef.current = dismissStuckSessionDialog;
+
   /**
    * Five post-attempt UI modes once an attempt has finished:
    *   - inDwell  : auto-loop is active; show only the compact toast over the
@@ -1072,6 +1375,13 @@ export default function SessionScreen() {
    *                      Paper + manual action buttons.
    */
   const hasResult = !!lastExerciseResult && !isPlaying;
+  const stuckDialogDebugOnly = labsDebug && (
+    helpPreview === 'stuck_drill'
+    || helpPreview === 'stuck_regular'
+    || helpPreview === 'stuck_tip'
+  );
+  stuckDialogOpenForMidiRef.current = (hasResult && stuckVisible) || stuckDialogDebugOnly;
+  stuckPreviewPianoDismissRef.current = stuckDialogDebugOnly && !(hasResult && stuckVisible);
   // The sticky boundary takes precedence over inDwell so the level-
   // cleared banner doesn't disappear if the user keeps playing after
   // passing — or, in drill mode, after the drill completes. Include
@@ -1119,8 +1429,17 @@ export default function SessionScreen() {
     && countInBeat !== null
     && dwellBadgeSnapshotRef.current !== null;
 
+  const stuckDialogOpen = Boolean((hasResult && stuckVisible) || stuckDialogDebugOnly);
+  const stuckShowDrillCopy = stuckDialogDebugOnly
+    ? helpPreview === 'stuck_drill'
+    : isDrillStuck;
+  const stuckShowJumpCopy = stuckDialogDebugOnly
+    ? helpPreview === 'stuck_tip'
+    : (!isDrillStuck && regularStuckJumpCoaching);
+  const stuckPreviewDrillRounds = stuckDialogDebugOnly && helpPreview === 'stuck_drill' ? 6 : drillAttempts;
+
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, position: 'relative' }}>
       {/* Header bar */}
       <Paper
         elevation={0}
@@ -1128,12 +1447,30 @@ export default function SessionScreen() {
           px: 2, py: 1,
           display: 'flex', alignItems: 'center', gap: 1,
           borderBottom: 1, borderColor: 'divider',
+          position: 'relative',
+          zIndex: 0,
+          bgcolor: 'background.paper',
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25, flexShrink: 0 }}>
           <IconButton size="small" onClick={() => { stopPlayback(); dispatch({ type: 'SET_SCREEN', screen: 'home' }); }}>
             <Icon name="home" />
           </IconButton>
+          {showEarlierTiersOnProgressMap && (
+            <Tooltip title="Open progress map for earlier tiers or a tier-wide session">
+              <IconButton
+                size="small"
+                aria-label="Open progress map for earlier tiers"
+                onClick={() => {
+                  stopPlayback();
+                  dispatch({ type: 'SET_SCREEN', screen: 'progress' });
+                }}
+                sx={{ p: 0.25 }}
+              >
+                <Icon name="map" size={18} />
+              </IconButton>
+            </Tooltip>
+          )}
           <IconButton
             size="small"
             disabled={!canGoPrevStage}
@@ -1438,6 +1775,7 @@ export default function SessionScreen() {
           (also shown over the loading screen so tips are not skipped while
           the score generates). See guidance/computeGuidance.ts for triggers. */}
       {guidanceModal}
+      {guidanceModalDebug}
 
       {/* Instruction panel — visible before starting.
           Stage description leads (it's level-specific and changes
@@ -1560,6 +1898,7 @@ export default function SessionScreen() {
           py: 2,
           px: 1,
           position: 'relative',
+          zIndex: 1,
         }}
       >
         <ScoreDisplay
@@ -1568,6 +1907,7 @@ export default function SessionScreen() {
           currentNoteIndices={state.currentNoteIndices}
           activeMidiNotes={state.activeMidiNotes}
           practiceResultsByNoteId={practiceResults}
+          crossingHighlightRegions={fingerCrossingRegions}
           // Live "you played a matching note" green only when the user
           // isn't actively being graded — otherwise the live tint conflicts
           // with per-note timing colours and lights up upcoming notes.
@@ -1650,7 +1990,7 @@ export default function SessionScreen() {
                 display: 'flex',
                 justifyContent: 'center',
                 pointerEvents: 'none',
-                zIndex: 5,
+                zIndex: 8,
               }}
             >
               <Box
@@ -1748,18 +2088,14 @@ export default function SessionScreen() {
         {/* Stuck prompts: modal (same visual language as GuidanceCallout).
             Scheduler pauses while open so the user can respond before any restart. */}
         <Dialog
-          open={hasResult && stuckVisible}
+          open={stuckDialogOpen}
           onClose={(_event, reason) => {
             if (reason !== 'backdropClick' && reason !== 'escapeKeyDown') return;
-            if (isDrillStuck) {
-              setDrillState('inactive');
-              setLoopPaused(true);
-            } else {
-              const snooze = !isDrillStuck && regularStuckJumpCoaching
-                ? REGULAR_SNOOZE_BY + REGULAR_JUMP_EXTRA_SNOOZE
-                : REGULAR_SNOOZE_BY;
-              setRegularSnoozedUntil(consecutiveRoughOnStage + snooze);
+            if (stuckDialogDebugOnly) {
+              setHelpPreview(null);
+              return;
             }
+            dismissStuckSessionDialog(reason);
           }}
           aria-labelledby="stuck-prompt-title"
           maxWidth={false}
@@ -1783,136 +2119,238 @@ export default function SessionScreen() {
             },
           }}
         >
-          <DialogContent sx={{ px: { xs: 3, sm: 4 }, py: { xs: 3, sm: 3.5 } }}>
-            <Box sx={{ textAlign: 'center', mb: 2.5 }}>
+          <DialogContent
+            sx={{
+              p: { xs: 6, sm: 8 },
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <Box sx={{ textAlign: 'center', mb: 6 }}>
               <Box
                 aria-hidden="true"
                 sx={{
-                  width: 52,
-                  height: 52,
+                  width: 56,
+                  height: 56,
                   borderRadius: '50%',
                   bgcolor: theme => `${theme.palette.primary.main}1F`,
                   color: 'primary.main',
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  mb: 2,
+                  mb: 4,
                 }}
               >
                 <Icon
-                  name={isDrillStuck ? 'self_improvement' : (regularStuckJumpCoaching ? 'lightbulb' : 'undo')}
-                  size={26}
+                  name={stuckShowDrillCopy ? 'self_improvement' : (stuckShowJumpCopy ? 'lightbulb' : 'undo')}
+                  size={28}
                 />
               </Box>
               <Typography
                 id="stuck-prompt-title"
                 component="h2"
                 sx={{
-                  fontSize: '1.25rem',
-                  fontWeight: 600,
-                  lineHeight: 1.35,
+                  fontSize: '1.5rem',
+                  fontWeight: 500,
+                  lineHeight: '2rem',
+                  letterSpacing: 0,
                   color: 'text.primary',
-                  letterSpacing: '-0.01em',
                 }}
               >
-                {isDrillStuck
+                {stuckShowDrillCopy
                   ? 'Pause for a moment?'
-                  : (regularStuckJumpCoaching ? 'Tip' : 'Want a stepping-stone?')}
+                  : (stuckShowJumpCopy ? 'Tip' : 'Want a stepping-stone?')}
               </Typography>
             </Box>
-            {isDrillStuck ? (
+            {stuckShowDrillCopy ? (
               <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ textAlign: 'left', lineHeight: 1.55 }}
+                sx={{
+                  fontSize: '0.875rem',
+                  lineHeight: '1.25rem',
+                  letterSpacing: '0.015625rem',
+                  color: 'text.secondary',
+                  textAlign: 'left',
+                }}
               >
-                {`You have put in ${drillAttempts} drill rounds. Thank you for sticking with it. A short pause before the next round often helps more than pushing when your hands feel tired.`}
+                {`You have put in ${stuckPreviewDrillRounds} drill rounds. Thank you for sticking with it. A short pause before the next round often helps more than pushing when your hands feel tired.`}
               </Typography>
-            ) : regularStuckJumpCoaching ? (
+            ) : stuckShowJumpCopy ? (
               <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ textAlign: 'left', lineHeight: 1.6 }}
+                sx={{
+                  fontSize: '0.875rem',
+                  lineHeight: 1.6,
+                  letterSpacing: '0.015625rem',
+                  color: 'text.secondary',
+                  textAlign: 'left',
+                }}
               >
-                {stuckJumpCoachingModalTip(newCliffConceptKeysForStuck)}
+                {stuckJumpCoachingModalTip(
+                  stuckDialogDebugOnly ? DEBUG_PREVIEW_JUMP_CONCEPT_KEYS : newCliffConceptKeysForStuck,
+                )}
               </Typography>
             ) : (
               <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ textAlign: 'left', lineHeight: 1.55 }}
+                sx={{
+                  fontSize: '0.875rem',
+                  lineHeight: 1.55,
+                  letterSpacing: '0.015625rem',
+                  color: 'text.secondary',
+                  textAlign: 'left',
+                }}
               >
                 {`You have been on this level (${attemptsOnLevelLabel}). If you want steadier footing, ${stuckFallbackLabel} is there. Staying here is fine too.`}
               </Typography>
             )}
-          </DialogContent>
-          <Divider />
-          <DialogActions sx={{ px: 3, py: 2, flexWrap: 'wrap', gap: 1, justifyContent: 'flex-end' }}>
-            {isDrillStuck ? (
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ width: '100%' }}>
-                <Button
-                  variant="text"
-                  onClick={() => setDrillSnoozedUntil(drillAttempts + DRILL_SNOOZE_BY)}
-                  sx={{ textTransform: 'none', order: { sm: 1 } }}
-                >
-                  Keep drilling
-                </Button>
-                <Button
-                  variant="contained"
-                  disableElevation
-                  onClick={() => {
-                    setDrillState('inactive');
-                    setLoopPaused(true);
-                  }}
-                  sx={{ textTransform: 'none', borderRadius: '999px', order: { sm: 2 } }}
-                >
-                  Move on
-                </Button>
-              </Stack>
-            ) : regularStuckJumpCoaching ? (
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ width: '100%' }}>
-                {stuckFallbackStage && (
-                  <Button
-                    variant="text"
-                    onClick={() => goToStage(stuckFallbackStage.id)}
-                    sx={{ textTransform: 'none', order: { sm: 1 } }}
-                  >
-                    Review previous level
-                  </Button>
-                )}
-                <Button
-                  variant="contained"
-                  disableElevation
-                  onClick={() => setRegularSnoozedUntil(
-                    consecutiveRoughOnStage + REGULAR_SNOOZE_BY + REGULAR_JUMP_EXTRA_SNOOZE,
+            <Box
+              sx={{
+                mt: 6,
+                pt: 2,
+                borderTop: 1,
+                borderColor: 'divider',
+              }}
+            >
+              {stuckShowDrillCopy ? (
+                <Stack direction={{ xs: 'column-reverse', sm: 'row' }} spacing={1} sx={{ width: '100%' }}>
+                  <AdvanceActionTooltip>
+                    <Button
+                      variant="text"
+                      onClick={() => {
+                        if (stuckDialogDebugOnly) {
+                          setHelpPreview(null);
+                          return;
+                        }
+                        setDrillSnoozedUntil(drillAttempts + DRILL_SNOOZE_BY);
+                      }}
+                      sx={{
+                        textTransform: 'none',
+                        borderRadius: '999px',
+                        flex: { sm: '0 0 auto' },
+                      }}
+                    >
+                      Keep drilling
+                    </Button>
+                  </AdvanceActionTooltip>
+                  <AdvanceActionTooltip>
+                    <Button
+                      variant="contained"
+                      disableElevation
+                      fullWidth
+                      onClick={() => {
+                        if (stuckDialogDebugOnly) {
+                          setHelpPreview(null);
+                          return;
+                        }
+                        setDrillState('inactive');
+                        setLoopPaused(true);
+                      }}
+                      sx={{
+                        textTransform: 'none',
+                        borderRadius: '999px',
+                        height: 40,
+                        fontSize: '0.875rem',
+                        fontWeight: 500,
+                      }}
+                    >
+                      Move on
+                    </Button>
+                  </AdvanceActionTooltip>
+                </Stack>
+              ) : stuckShowJumpCopy ? (
+                <Stack direction={{ xs: 'column-reverse', sm: 'row' }} spacing={1} sx={{ width: '100%' }}>
+                  {stuckFallbackStage && (
+                    <AdvanceActionTooltip>
+                      <Button
+                        variant="text"
+                        onClick={() => {
+                          if (stuckDialogDebugOnly) {
+                            setHelpPreview(null);
+                            return;
+                          }
+                          goToStage(stuckFallbackStage.id);
+                        }}
+                        sx={{ textTransform: 'none', borderRadius: '999px', flex: { sm: '0 0 auto' } }}
+                      >
+                        Review previous level
+                      </Button>
+                    </AdvanceActionTooltip>
                   )}
-                  sx={{ textTransform: 'none', borderRadius: '999px', order: { sm: 2 } }}
-                >
-                  Got it
-                </Button>
-              </Stack>
-            ) : (
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ width: '100%' }}>
-                <Button
-                  variant="text"
-                  onClick={() => setRegularSnoozedUntil(consecutiveRoughOnStage + REGULAR_SNOOZE_BY)}
-                  sx={{ textTransform: 'none' }}
-                >
-                  Stay here
-                </Button>
-                {stuckFallbackStage && (
-                  <Button
-                    variant="contained"
-                    disableElevation
-                    onClick={() => goToStage(stuckFallbackStage.id)}
-                    sx={{ textTransform: 'none', borderRadius: '999px' }}
-                  >
-                    {`Drop to ${stuckFallbackLabel}`}
-                  </Button>
-                )}
-              </Stack>
-            )}
-          </DialogActions>
+                  <AdvanceActionTooltip>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      disableElevation
+                      fullWidth
+                      onClick={() => {
+                        if (stuckDialogDebugOnly) {
+                          setHelpPreview(null);
+                          return;
+                        }
+                        setRegularSnoozedUntil(
+                          consecutiveRoughOnStage + REGULAR_SNOOZE_BY + REGULAR_JUMP_EXTRA_SNOOZE,
+                        );
+                      }}
+                      sx={{
+                        textTransform: 'none',
+                        borderRadius: '999px',
+                        height: 40,
+                        fontSize: '0.875rem',
+                        fontWeight: 500,
+                      }}
+                    >
+                      Got it
+                    </Button>
+                  </AdvanceActionTooltip>
+                </Stack>
+              ) : (
+                <Stack direction={{ xs: 'column-reverse', sm: 'row' }} spacing={1} sx={{ width: '100%' }}>
+                  <AdvanceActionTooltip>
+                    <Button
+                      variant="text"
+                      onClick={() => {
+                        if (stuckDialogDebugOnly) {
+                          setHelpPreview(null);
+                          return;
+                        }
+                        setRegularSnoozedUntil(consecutiveRoughOnStage + REGULAR_SNOOZE_BY);
+                      }}
+                      sx={{
+                        textTransform: 'none',
+                        borderRadius: '999px',
+                        flex: { sm: '0 0 auto' },
+                      }}
+                    >
+                      Stay here
+                    </Button>
+                  </AdvanceActionTooltip>
+                  {stuckFallbackStage && (
+                    <AdvanceActionTooltip>
+                      <Button
+                        variant="contained"
+                        disableElevation
+                        fullWidth
+                        onClick={() => {
+                          if (stuckDialogDebugOnly) {
+                            setHelpPreview(null);
+                            return;
+                          }
+                          goToStage(stuckFallbackStage.id);
+                        }}
+                        sx={{
+                          textTransform: 'none',
+                          borderRadius: '999px',
+                          height: 40,
+                          fontSize: '0.875rem',
+                          fontWeight: 500,
+                        }}
+                      >
+                        {`Drop to ${stuckFallbackLabel}`}
+                      </Button>
+                    </AdvanceActionTooltip>
+                  )}
+                </Stack>
+              )}
+            </Box>
+          </DialogContent>
         </Dialog>
         {countInBeat !== null && (
           <Box
@@ -2070,36 +2508,11 @@ export default function SessionScreen() {
           px: 2, py: 2,
           display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5,
           borderTop: 1, borderColor: 'divider',
+          position: 'relative',
+          zIndex: 2,
+          bgcolor: 'background.paper',
         }}
       >
-        {advanceAck && (
-          <Box
-            role="status"
-            aria-live="polite"
-            sx={{
-              width: '100%',
-              maxWidth: 440,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1.5,
-              px: 2,
-              py: 1.25,
-              borderRadius: 2,
-              bgcolor: theme => `${theme.palette.primary.main}12`,
-              border: 1,
-              borderColor: 'primary.light',
-            }}
-          >
-            <Icon name={advanceAck === 'midi' ? 'piano' : 'keyboard'} size={22} />
-            <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
-              {advanceAck === 'midi' ? 'Piano key heard' : 'Keyboard shortcut'}
-              {'. '}
-              <Box component="span" sx={{ fontWeight: 500, color: 'text.secondary' }}>
-                Loading the next exercise…
-              </Box>
-            </Typography>
-          </Box>
-        )}
         {/* Active drill: single CTA to break out. The auto-loop keeps
             firing rounds; the user just needs an out. */}
         {drillState === 'active' && hasResult && (
@@ -2118,27 +2531,29 @@ export default function SessionScreen() {
         {boundary && drillState !== 'active' && (
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
             <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
-              <Button
-                variant="contained"
-                size="large"
-                onClick={() => {
-                  armAdvanceCooldown();
-                  cancelAutoLoop();
-                  advanceToNext();
-                }}
-                sx={{
-                  gap: 1,
-                  minWidth: 240,
-                  py: 1.5,
-                  fontSize: '1.05rem',
-                  fontWeight: 700,
-                  boxShadow: '0 4px 14px rgba(5, 150, 105, 0.3)',
-                  textTransform: 'none',
-                }}
-              >
-                {exerciseNumber < totalExercises ? 'Continue' : 'Finish session'}
-                <Icon name="arrow_forward" size={22} />
-              </Button>
+              <AdvanceActionTooltip>
+                <Button
+                  variant="contained"
+                  size="large"
+                  onClick={() => {
+                    armAdvanceCooldown();
+                    cancelAutoLoop();
+                    advanceToNext();
+                  }}
+                  sx={{
+                    gap: 1,
+                    minWidth: 240,
+                    py: 1.5,
+                    fontSize: '1.05rem',
+                    fontWeight: 700,
+                    boxShadow: '0 4px 14px rgba(5, 150, 105, 0.3)',
+                    textTransform: 'none',
+                  }}
+                >
+                  {continueOrFinishLabel}
+                  <Icon name="arrow_forward" size={22} />
+                </Button>
+              </AdvanceActionTooltip>
               {!isFreeTempo && drillState !== 'completed' && (
                 <Tooltip
                   describeChild
@@ -2214,20 +2629,22 @@ export default function SessionScreen() {
             >
               <Icon name="replay" size={20} /> Practice Again
             </Button>
-            <Tooltip title="Skip ahead without clearing this stage.">
-              <Button
-                variant="outlined"
-                size="large"
-                onClick={() => {
-                  armAdvanceCooldown();
-                  cancelAutoLoop();
-                  advanceToNext();
-                }}
-                sx={{ gap: 1, textTransform: 'none' }}
-              >
-                <Icon name="skip_next" size={20} /> Move On
-              </Button>
-            </Tooltip>
+            {(!hasAnotherSessionExercise || canAdvanceToNextExercise) && (
+              <AdvanceActionTooltip>
+                <Button
+                  variant="outlined"
+                  size="large"
+                  onClick={() => {
+                    armAdvanceCooldown();
+                    cancelAutoLoop();
+                    advanceToNext();
+                  }}
+                  sx={{ gap: 1, textTransform: 'none' }}
+                >
+                  <Icon name="skip_next" size={20} /> Move On
+                </Button>
+              </AdvanceActionTooltip>
+            )}
           </Box>
         )}
 
@@ -2297,6 +2714,82 @@ export default function SessionScreen() {
           </Button>
         )}
       </Paper>
+
+      {labsDebug && helpPreview === 'practice_tip' && (
+        <Box
+          sx={{
+            position: 'fixed',
+            bottom: 96,
+            left: 16,
+            right: 16,
+            zIndex: 2400,
+            maxWidth: 560,
+            mx: 'auto',
+          }}
+        >
+          <Alert severity="info" variant="outlined" onClose={() => setHelpPreview(null)}>
+            <AlertTitle sx={{ fontWeight: 700 }}>Practice tip (debug)</AlertTitle>
+            <Typography variant="body2" color="text.secondary">
+              {practiceTip?.text ?? 'No tip for this stage (suppressed when the pre-start panel is dense, or pool empty).'}
+            </Typography>
+          </Alert>
+        </Box>
+      )}
+
+      {labsDebug && helpPreview?.startsWith('shaky_') && currentStage && (() => {
+        const mock =
+          helpPreview === 'shaky_timing' ? DEBUG_SHAKY_MOCK_TIMING
+            : helpPreview === 'shaky_pitch' ? DEBUG_SHAKY_MOCK_PITCH
+              : DEBUG_SHAKY_MOCK_FEW_NOTES;
+        const hint = pickShakyHint(mock, currentStage);
+        return (
+          <Box
+            sx={{
+              position: 'fixed',
+              bottom: 96,
+              left: 16,
+              right: 16,
+              zIndex: 2400,
+              maxWidth: 560,
+              mx: 'auto',
+            }}
+          >
+            <Alert severity="warning" variant="outlined" onClose={() => setHelpPreview(null)}>
+              <AlertTitle sx={{ fontWeight: 700 }}>
+                Shaky-run hint (debug)
+                {hint ? ` · ${hint.id}` : ''}
+              </AlertTitle>
+              <Typography variant="body2" color="text.secondary">
+                {hint?.text ?? 'This mock run plus stage did not produce a hint (e.g. tempo-off stage + timing branch).'}
+              </Typography>
+            </Alert>
+          </Box>
+        );
+      })()}
+
+      <Popover
+        open={labsDebug && helpPreview === 'drill_how_it_works'}
+        onClose={() => setHelpPreview(null)}
+        anchorReference="anchorPosition"
+        anchorPosition={{ top: typeof window !== 'undefined' ? window.innerHeight / 2 : 400, left: typeof window !== 'undefined' ? window.innerWidth / 2 : 400 }}
+        transformOrigin={{ vertical: 'center', horizontal: 'center' }}
+        slotProps={{
+          paper: {
+            sx: { maxWidth: 380, p: 2, borderRadius: 2 },
+          },
+        }}
+      >
+        <Typography variant="subtitle2" component="p" sx={{ mt: 0, mb: 1, fontWeight: 700 }}>
+          How it works (Practice until perfect)
+        </Typography>
+        <Typography variant="body2" color="text.secondary" component="p" sx={{ m: 0, lineHeight: 1.5 }}>
+          Repeats this stage in a tight loop until you play
+          {' '}
+          {DRILL_TARGET_PERFECT_RUNS}
+          {' '}
+          perfect runs in a row (literal 100% each time). Useful when you want to lock in an exercise before moving on.
+        </Typography>
+      </Popover>
     </Box>
   );
 }

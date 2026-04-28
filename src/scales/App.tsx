@@ -5,6 +5,7 @@ import ProgressScreen from './components/ProgressScreen';
 import InputGateway from './components/InputGateway';
 import { enableDebug } from './utils/practiceDebugLog';
 import DebugPanel from './components/DebugPanel';
+import { ScalesSessionDebugBridgeProvider } from './context/scalesSessionDebugBridge';
 import SkipToMain from '../shared/components/SkipToMain';
 import { readLabsDebugFromLocation } from '../shared/debug/readLabsDebugParams';
 
@@ -49,7 +50,9 @@ function AppContent() {
 export default function App() {
   return (
     <ScalesProvider>
-      <AppContent />
+      <ScalesSessionDebugBridgeProvider>
+        <AppContent />
+      </ScalesSessionDebugBridgeProvider>
     </ScalesProvider>
   );
 }

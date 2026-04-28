@@ -30,3 +30,18 @@
 .scales-app .score-display svg {
   max-width: 100%;
 }
+
+/* Thumb-crossing callout labels: thin white halo for staff overlap, then fill. */
+.scales-app .score-display svg text.finger-crossing-label {
+  paint-order: stroke fill;
+  stroke: #ffffff;
+  stroke-width: 2.25px;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  fill: #0f766e;
+  fill-opacity: 1;
+  font-weight: 700;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

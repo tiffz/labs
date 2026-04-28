@@ -355,10 +355,10 @@ export function buildStages(exerciseId: string): Stage[] {
  *
  *   - **0–2:** p1–p7 as quarter-note metronome work (`subdivision: 'none'`
  *     on tempo stages) — same onboarding shape as the original app.
- *   - **3 (D):** p4–p7 use **eighth** subdivision (two notes per beat) so
- *     subdivision lands after three keys of straight clicks.
- *   - **4 (A):** same as 0–2 through the fluent gate **p7**, then **p8–p9**
- *     append triplet and sixteenth both-hands passes at the slow click.
+ *   - **3–4 (D, A):** p4–p7 use **eighth** subdivision (two notes per beat) on
+ *     metronome stages.
+ *   - **All keys:** after the fluent gate **p7**, **p8–p9** append triplet and
+ *     sixteenth both-hands passes at the slow click.
  *
  * New stages use **append-only** ids so localStorage history and migrations
  * stay stable when the spiral grows.
@@ -462,38 +462,40 @@ export function buildPentascaleStages(exerciseId: string, tier0PentascaleIndex: 
     },
   ];
 
-  if (tier0PentascaleIndex >= 4) {
-    core.push(
-      {
-        id: `${exerciseId}-p8`,
-        stageNumber: 8,
-        label: 'Both hands,  slow tempo (triplets)',
-        description:
-          'Same slow click, three notes per beat. First note of each triplet on the click. Counting “1 + a, 2 + a…” out loud helps. Same notes as before.',
-        hand: 'both',
-        useTempo: true,
-        bpm: 52,
-        useMetronome: true,
-        subdivision: 'triplet',
-        mutePlayback: false,
-        octaves: 1,
-      },
-      {
-        id: `${exerciseId}-p9`,
-        stageNumber: 9,
-        label: 'Both hands,  slow tempo (sixteenths)',
-        description:
-          'Four notes per click at a slow tempo. Keep the four taps inside each beat even; add speed only when that feels easy.',
-        hand: 'both',
-        useTempo: true,
-        bpm: 52,
-        useMetronome: true,
-        subdivision: 'sixteenth',
-        mutePlayback: false,
-        octaves: 1,
-      },
-    );
-  }
+  /**
+   * Triplet/sixteenth both-hands append **for every Tier 0 pentascale** so subdivision
+   * practice is consistent across keys (not only the last spiral row).
+   */
+  core.push(
+    {
+      id: `${exerciseId}-p8`,
+      stageNumber: 8,
+      label: 'Both hands,  slow tempo (triplets)',
+      description:
+        'Same slow click, three notes per beat. First note of each triplet on the click. Counting “1 + a, 2 + a…” out loud helps. Same notes as before.',
+      hand: 'both',
+      useTempo: true,
+      bpm: 52,
+      useMetronome: true,
+      subdivision: 'triplet',
+      mutePlayback: false,
+      octaves: 1,
+    },
+    {
+      id: `${exerciseId}-p9`,
+      stageNumber: 9,
+      label: 'Both hands,  slow tempo (sixteenths)',
+      description:
+        'Four notes per click at a slow tempo. Keep the four taps inside each beat even; add speed only when that feels easy.',
+      hand: 'both',
+      useTempo: true,
+      bpm: 52,
+      useMetronome: true,
+      subdivision: 'sixteenth',
+      mutePlayback: false,
+      octaves: 1,
+    },
+  );
 
   return core;
 }

@@ -25,6 +25,7 @@ import {
   isMicrophonePermissionGranted,
 } from './utils/audioPrefs';
 import { advanceFreeTempoCursor } from './utils/freeTempoCursorStep';
+import { applyPianoDoubleTapStep } from './utils/pianoAdvanceDoubleTap';
 
 const analytics = createAppAnalytics('scales');
 
@@ -112,6 +113,35 @@ interface ScalesState {
    * can edge-detect a tap without requiring the key to stay down.
    */
   midiNoteOnPulse: number;
+  /**
+   * On Home, the last pulse value that was used to "arm" or absorb the
+   * practice-from-key tap. The next note-on with a higher pulse can start
+   * a session (mirrors edge detection without racing React effects).
+   */
+  homeMidiGatePulse: number;
+  /**
+   * True when HomeScreen modal overlays are open (mastery, review, onboarding).
+   * Blocks starting practice from the first piano key until closed.
+   */
+  homeStartBlocked: boolean;
+  /**
+   * One-shot for Home UI: session started from home via key while "Next lesson"
+   * was showing (powers the brief "Piano key heard" acknowledgement).
+   */
+  homePracticeCue: null | 'midi_continue';
+  /**
+   * On Home only: first step of a piano "double tap" (press → release → press).
+   * `released` flips true on MIDI note-off for that pitch so duplicate note-on
+   * spam from one physical strike cannot start a session.
+   */
+  homeNoteDoubleTapAwait: null | { note: number; perfMs: number; released: boolean };
+  /**
+   * Incremented on every MIDI/mic note on/off so SessionScreen can subscribe
+   * without duplicating the global MidiInput callback.
+   */
+  midiShortcutWave: number;
+  /** Latest pitch event for session piano shortcut double-tap logic. */
+  midiShortcutLast: { kind: 'on' | 'off'; note: number; perfMs: number } | null;
   practiceResults: Map<string, PracticeNoteResult>;
   currentRunStartTime: number | null;
   midiConnected: boolean;
@@ -149,12 +179,15 @@ interface ScalesState {
 
 type Action =
   | { type: 'SET_SCREEN'; screen: Screen }
+  | { type: 'SET_HOME_START_BLOCKED'; blocked: boolean }
+  | { type: 'ABSORB_HOME_NOTE_GATE' }
+  | { type: 'CLEAR_HOME_PRACTICE_CUE' }
   | { type: 'START_SESSION'; plan: SessionPlan }
   | { type: 'SET_ACTIVE_EXERCISE'; index: number; score: PianoScore }
   | { type: 'SET_PLAYING'; isPlaying: boolean }
   | { type: 'UPDATE_POSITION'; measureIndex: number; noteIndices: Map<string, number> }
-  | { type: 'MIDI_NOTE_ON'; note: number }
-  | { type: 'MIDI_NOTE_OFF'; note: number }
+  | { type: 'MIDI_NOTE_ON'; note: number; perfMs: number }
+  | { type: 'MIDI_NOTE_OFF'; note: number; perfMs: number }
   | { type: 'ADD_PRACTICE_RESULT'; result: PracticeNoteResult }
   | { type: 'START_PRACTICE_RUN' }
   /**
@@ -202,6 +235,12 @@ function initialState(): ScalesState {
     currentNoteIndices: new Map(),
     activeMidiNotes: new Set(),
     midiNoteOnPulse: 0,
+    homeMidiGatePulse: 0,
+    homeStartBlocked: false,
+    homePracticeCue: null,
+    homeNoteDoubleTapAwait: null,
+    midiShortcutWave: 0,
+    midiShortcutLast: null,
     practiceResults: new Map(),
     currentRunStartTime: null,
     midiConnected: false,
@@ -234,6 +273,46 @@ function initialState(): ScalesState {
  * Otherwise any advancement makes it `cleared`. The fallback is `shaky`
  * — practiced but no progression and no deliberate drilling.
  */
+function hasPracticeInput(state: ScalesState): boolean {
+  return (
+    state.midiDevices.some(d => d.connected && !state.disabledMidiDeviceIds.has(d.id))
+    || state.microphoneActive
+  );
+}
+
+function bumpMidiShortcut(
+  state: ScalesState,
+  kind: 'on' | 'off',
+  note: number,
+  perfMs: number,
+): Pick<ScalesState, 'midiShortcutWave' | 'midiShortcutLast'> {
+  return {
+    midiShortcutWave: state.midiShortcutWave + 1,
+    midiShortcutLast: { kind, note, perfMs },
+  };
+}
+
+function transitionStartSession(state: ScalesState, plan: SessionPlan): ScalesState {
+  return {
+    ...state,
+    screen: 'session',
+    sessionPlan: plan,
+    activeExerciseIndex: 0,
+    activeExercise: plan.exercises[0] ?? null,
+    practiceResults: new Map(),
+    currentRunStartTime: null,
+    lastExerciseResult: null,
+    sessionComplete: false,
+    currentSessionRuns: [],
+    homePracticeCue: null,
+    homeNoteDoubleTapAwait: null,
+    hasCompletedRun: false,
+    freeTempoRunComplete: false,
+    freeTempoMeasureIndex: 0,
+    freeTempoNoteIndex: 0,
+  };
+}
+
 // eslint-disable-next-line react-refresh/only-export-components -- pure helper, exported for tests
 export function buildSessionSummary(runs: SessionRunRecord[]): SessionExerciseSummary[] {
   const order: string[] = [];
@@ -271,22 +350,39 @@ export function buildSessionSummary(runs: SessionRunRecord[]): SessionExerciseSu
 
 function reducer(state: ScalesState, action: Action): ScalesState {
   switch (action.type) {
-    case 'SET_SCREEN':
-      return { ...state, screen: action.screen };
-
-    case 'START_SESSION':
+    case 'SET_SCREEN': {
+      if (action.screen === 'home') {
+        return {
+          ...state,
+          screen: 'home',
+          homeMidiGatePulse: state.midiNoteOnPulse,
+          homeStartBlocked: false,
+          homeNoteDoubleTapAwait: null,
+        };
+      }
       return {
         ...state,
-        screen: 'session',
-        sessionPlan: action.plan,
-        activeExerciseIndex: 0,
-        activeExercise: action.plan.exercises[0] ?? null,
-        practiceResults: new Map(),
-        currentRunStartTime: null,
-        lastExerciseResult: null,
-        sessionComplete: false,
-        currentSessionRuns: [],
+        screen: action.screen,
+        homeStartBlocked: false,
+        homeNoteDoubleTapAwait: null,
       };
+    }
+
+    case 'SET_HOME_START_BLOCKED':
+      return action.blocked === state.homeStartBlocked ? state : { ...state, homeStartBlocked: action.blocked };
+
+    case 'ABSORB_HOME_NOTE_GATE':
+      return {
+        ...state,
+        homeMidiGatePulse: state.midiNoteOnPulse,
+        homeNoteDoubleTapAwait: null,
+      };
+
+    case 'CLEAR_HOME_PRACTICE_CUE':
+      return state.homePracticeCue === null ? state : { ...state, homePracticeCue: null };
+
+    case 'START_SESSION':
+      return transitionStartSession(state, action.plan);
 
     case 'SET_ACTIVE_EXERCISE':
       return {
@@ -316,19 +412,89 @@ function reducer(state: ScalesState, action: Action): ScalesState {
       };
 
     case 'MIDI_NOTE_ON': {
+      const perfMs = action.perfMs;
+      const nextPulse = state.midiNoteOnPulse + 1;
       const next = new Set(state.activeMidiNotes);
       next.add(action.note);
+      const shortcut = bumpMidiShortcut(state, 'on', action.note, perfMs);
+
+      if (state.screen !== 'home') {
+        return {
+          ...state,
+          activeMidiNotes: next,
+          midiNoteOnPulse: nextPulse,
+          homeNoteDoubleTapAwait: null,
+          ...shortcut,
+        };
+      }
+
+      if (!hasPracticeInput(state) || state.homeStartBlocked || nextPulse <= state.homeMidiGatePulse) {
+        return {
+          ...state,
+          activeMidiNotes: next,
+          midiNoteOnPulse: nextPulse,
+          homeNoteDoubleTapAwait: null,
+          ...shortcut,
+        };
+      }
+
+      const { complete, next: homeNext } = applyPianoDoubleTapStep(
+        state.homeNoteDoubleTapAwait,
+        'on',
+        action.note,
+        perfMs,
+      );
+
+      if (complete) {
+        const plan = planSession(state.progress);
+        const started = transitionStartSession(state, plan);
+        analytics.trackEvent('session_start', {
+          exercise_count: plan.exercises.length,
+          source: 'home_double_note',
+        });
+        return {
+          ...started,
+          activeMidiNotes: next,
+          midiNoteOnPulse: nextPulse,
+          homeMidiGatePulse: nextPulse,
+          homePracticeCue: state.sessionComplete ? 'midi_continue' : null,
+          ...shortcut,
+        };
+      }
+
       return {
         ...state,
         activeMidiNotes: next,
-        midiNoteOnPulse: state.midiNoteOnPulse + 1,
+        midiNoteOnPulse: nextPulse,
+        homeNoteDoubleTapAwait: homeNext,
+        ...shortcut,
       };
     }
 
     case 'MIDI_NOTE_OFF': {
       const next = new Set(state.activeMidiNotes);
       next.delete(action.note);
-      return { ...state, activeMidiNotes: next };
+      const shortcut = bumpMidiShortcut(state, 'off', action.note, action.perfMs);
+      if (state.screen !== 'home') {
+        return {
+          ...state,
+          activeMidiNotes: next,
+          homeNoteDoubleTapAwait: null,
+          ...shortcut,
+        };
+      }
+      const { next: homeAwait } = applyPianoDoubleTapStep(
+        state.homeNoteDoubleTapAwait,
+        'off',
+        action.note,
+        action.perfMs,
+      );
+      return {
+        ...state,
+        activeMidiNotes: next,
+        homeNoteDoubleTapAwait: homeAwait,
+        ...shortcut,
+      };
     }
 
     case 'ADD_PRACTICE_RESULT': {
@@ -453,7 +619,12 @@ function reducer(state: ScalesState, action: Action): ScalesState {
       const nextIdx = state.activeExerciseIndex + 1;
       const nextExercise = state.sessionPlan?.exercises[nextIdx] ?? null;
       if (!nextExercise) {
-        return { ...state, screen: 'home' };
+        return {
+          ...state,
+          screen: 'home',
+          homeMidiGatePulse: state.midiNoteOnPulse,
+          homeNoteDoubleTapAwait: null,
+        };
       }
       return {
         ...state,
@@ -484,6 +655,8 @@ function reducer(state: ScalesState, action: Action): ScalesState {
         lastExerciseResult: null,
         currentSessionRuns: [],
         lastSessionSummary: summary,
+        homeMidiGatePulse: state.midiNoteOnPulse,
+        homeNoteDoubleTapAwait: null,
       };
     }
 
@@ -580,6 +753,7 @@ function reducer(state: ScalesState, action: Action): ScalesState {
         freeTempoMeasureIndex: 0,
         freeTempoNoteIndex: 0,
         freeTempoRunComplete: false,
+        hasCompletedRun: false,
         practiceResults: new Map(),
         currentRunStartTime: Date.now(),
         isPlaying: true,
@@ -685,14 +859,14 @@ export function ScalesProvider({ children }: { children: React.ReactNode }) {
       if (disabledDeviceIdsRef.current.has(deviceId)) return;
       if (type === 'noteon') {
         recordMidiNoteOn(note, timestamp);
-        dispatch({ type: 'MIDI_NOTE_ON', note });
+        dispatch({ type: 'MIDI_NOTE_ON', note, perfMs: performance.now() });
         if (isDebugEnabled()) {
           logDebugEvent({ type: 'note_on', t: performance.now(), midi: note, source: 'midi',
             rawTimestamp: timestamp, compensatedTimestamp: timestamp });
         }
       } else {
         recordMidiNoteOff(note);
-        dispatch({ type: 'MIDI_NOTE_OFF', note });
+        dispatch({ type: 'MIDI_NOTE_OFF', note, perfMs: performance.now() });
         if (isDebugEnabled()) logDebugEvent({ type: 'note_off', t: performance.now(), midi: note, source: 'midi' });
       }
     });
@@ -720,7 +894,7 @@ export function ScalesProvider({ children }: { children: React.ReactNode }) {
         const rawTime = performance.now();
         const compensated = rawTime - MIC_LATENCY_COMPENSATION_MS;
         recordMidiNoteOn(midi, compensated);
-        dispatch({ type: 'MIDI_NOTE_ON', note: midi });
+        dispatch({ type: 'MIDI_NOTE_ON', note: midi, perfMs: performance.now() });
         if (isDebugEnabled()) {
           logDebugEvent({ type: 'note_on', t: rawTime, midi, source: 'mic',
             rawTimestamp: rawTime, compensatedTimestamp: compensated });
@@ -728,7 +902,7 @@ export function ScalesProvider({ children }: { children: React.ReactNode }) {
       },
       onNoteOff: (midi) => {
         recordMidiNoteOff(midi);
-        dispatch({ type: 'MIDI_NOTE_OFF', note: midi });
+        dispatch({ type: 'MIDI_NOTE_OFF', note: midi, perfMs: performance.now() });
         if (isDebugEnabled()) logDebugEvent({ type: 'note_off', t: performance.now(), midi, source: 'mic' });
       },
     });

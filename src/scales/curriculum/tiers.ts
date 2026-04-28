@@ -106,7 +106,7 @@ export const TIERS: Tier[] = [
     tierNumber: 1,
     label: 'Foundation',
     description:
-      'White-key majors: C, G, F. The thumb-under shape you build here shows up again and again in later keys.',
+      'C first, then G, then F. Focuses on white keys while you lock in thumb-unders and crossings.',
     exercises: [
       exercise('C', 'major-scale', {
         guidance: {
@@ -121,7 +121,7 @@ export const TIERS: Tier[] = [
       }),
       exercise('G', 'major-scale', {
         guidance:
-          'One sharp (F\u266F). Same fingering as C major; only the 7th degree changes.',
+          'One sharp (F\u266F). Same fingering as C major; 7th degree is a black key.',
         helpUrl: ytSearch('how to play G major scale piano fingering'),
       }),
       exercise('F', 'major-scale', {
@@ -129,7 +129,7 @@ export const TIERS: Tier[] = [
           right:
             'RH: one flat (B\u266D); ends on 4 at top - thumb-under after 4 going up.',
           left:
-            'LH: same shape as C major with B\u266D; drill RH crossing alone if needed.',
+            'LH: B\u266D where C major uses B-natural; thumb-under landmarks match the LH C drill from earlier in Tier 1.',
         },
         helpUrl: ytSearch('how to play F major scale piano fingering'),
       }),

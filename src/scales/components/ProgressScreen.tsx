@@ -1,11 +1,15 @@
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import ButtonBase from '@mui/material/ButtonBase';
 import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
 import LinearProgress from '@mui/material/LinearProgress';
 import IconButton from '@mui/material/IconButton';
-import { useScales } from '../store';
+import Tooltip from '@mui/material/Tooltip';
+import { useScales, hasEnabledMidiDevice } from '../store';
 import { TIERS } from '../curriculum/tiers';
+import { planSession, planSingleExerciseSession } from '../curriculum/sessionPlanner';
+import { isCurriculumExerciseUnlocked } from '../curriculum/exerciseUnlock';
 import {
   getExerciseProgress,
   getExerciseProficiency,
@@ -121,7 +125,8 @@ function displayMasteryTier(
 
 export default function ProgressScreen() {
   const { state, dispatch } = useScales();
-  const { progress } = state;
+  const { progress, microphoneActive } = state;
+  const canStartPractice = hasEnabledMidiDevice(state) || microphoneActive;
 
   const currentTierIdx = TIERS.findIndex(t => t.id === progress.currentTierId);
   // Mastered is the stricter tier: final stage cleared AND not shaky/stale.
@@ -376,6 +381,24 @@ export default function ProgressScreen() {
 
               {!isLocked && (
                 <>
+                  <Tooltip
+                    title={canStartPractice ? 'Fill a session from this tier’s curriculum order' : 'Connect MIDI or a microphone to practice'}
+                  >
+                    <span>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        disabled={!canStartPractice}
+                        onClick={() => {
+                          const plan = planSession(progress, { tierId: tier.id });
+                          dispatch({ type: 'START_SESSION', plan });
+                        }}
+                        sx={{ ...TYPE.labelLarge, textTransform: 'none' }}
+                      >
+                        Practice this tier
+                      </Button>
+                    </span>
+                  </Tooltip>
                   <Box>
                     <LinearProgress
                       variant="determinate"
@@ -452,66 +475,113 @@ export default function ProgressScreen() {
                             ? 'primary'
                             : 'neutral';
 
+                      const curriculumUnlocked = isCurriculumExerciseUnlocked(progress, ex.id);
+                      const startThisExercise = () => {
+                        const plan = planSingleExerciseSession(progress, ex.id);
+                        if (!plan) return;
+                        dispatch({ type: 'START_SESSION', plan });
+                      };
+                      const canPracticeHere = canStartPractice && curriculumUnlocked;
+
                       return (
-                        <Box
+                        <Tooltip
                           key={ex.id}
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 1.5,
-                            minHeight: 40,
-                            px: 2.5,
-                            borderRadius: '10px',
-                            bgcolor: tint === 'success'
-                              ? theme => `${theme.palette.success.main}14`
-                              : tint === 'success-soft'
-                                ? theme => `${theme.palette.success.main}08`
-                                : tint === 'primary'
-                                  ? theme => `${theme.palette.primary.main}0D`
-                                  : 'action.hover',
-                            color: tint === 'success'
-                              ? 'success.main'
-                              : tint === 'success-soft'
-                                ? 'success.dark'
-                                : tint === 'primary'
-                                  ? 'primary.main'
-                                  : 'text.secondary',
-                          }}
+                          title={
+                            !curriculumUnlocked
+                              ? 'Finish the previous exercise in this tier first'
+                              : canStartPractice
+                                ? `Practice ${ex.key} ${kindAbbrev(ex.kind)}`
+                                : 'Connect MIDI or a microphone to practice'
+                          }
                         >
-                          <Icon
-                            name={
-                              isComplete
-                                ? 'check_circle'
-                                : isFluent
-                                  ? 'task_alt'
-                                  : 'radio_button_unchecked'
+                          <ButtonBase
+                            onClick={canPracticeHere ? startThisExercise : undefined}
+                            disabled={!canPracticeHere}
+                            focusRipple={canPracticeHere}
+                            aria-label={
+                              !curriculumUnlocked
+                                ? `${ex.key} ${kindAbbrev(ex.kind)} — finish the previous exercise in this tier first`
+                                : canStartPractice
+                                  ? `Practice ${ex.key} ${kindAbbrev(ex.kind)}`
+                                  : `${ex.key} ${kindAbbrev(ex.kind)} — connect input to practice`
                             }
-                            size={16}
-                          />
-                          <Typography
                             sx={{
-                              ...TYPE.labelLarge,
-                              fontSize: '0.8125rem',
-                              whiteSpace: 'nowrap',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              flex: 1,
-                              color: 'inherit',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 1.5,
+                              minHeight: 40,
+                              px: 2.5,
+                              borderRadius: '10px',
+                              width: '100%',
+                              textAlign: 'left',
+                              transition: 'background-color 120ms ease',
+                              bgcolor: tint === 'success'
+                                ? theme => `${theme.palette.success.main}14`
+                                : tint === 'success-soft'
+                                  ? theme => `${theme.palette.success.main}08`
+                                  : tint === 'primary'
+                                    ? theme => `${theme.palette.primary.main}0D`
+                                    : 'action.hover',
+                              color: tint === 'success'
+                                ? 'success.main'
+                                : tint === 'success-soft'
+                                  ? 'success.dark'
+                                  : tint === 'primary'
+                                    ? 'primary.main'
+                                    : 'text.secondary',
+                              '&.Mui-disabled': {
+                                opacity: canPracticeHere ? 1 : 0.55,
+                              },
+                              ...(canPracticeHere
+                                ? {
+                                  '&:hover': {
+                                    bgcolor: tint === 'success'
+                                      ? theme => `${theme.palette.success.main}22`
+                                      : tint === 'success-soft'
+                                        ? theme => `${theme.palette.success.main}14`
+                                        : tint === 'primary'
+                                          ? theme => `${theme.palette.primary.main}18`
+                                          : 'action.selected',
+                                  },
+                                }
+                                : {}),
                             }}
                           >
-                            {ex.key} {kindAbbrev(ex.kind)}
-                          </Typography>
-                          <Typography
-                            sx={{
-                              ...TYPE.bodySmall,
-                              color: 'inherit',
-                              opacity: 0.75,
-                              flexShrink: 0,
-                            }}
-                          >
-                            {stagesCompleted}/{stageCount}
-                          </Typography>
-                        </Box>
+                            <Icon
+                              name={
+                                isComplete
+                                  ? 'check_circle'
+                                  : isFluent
+                                    ? 'task_alt'
+                                    : 'radio_button_unchecked'
+                              }
+                              size={16}
+                            />
+                            <Typography
+                              sx={{
+                                ...TYPE.labelLarge,
+                                fontSize: '0.8125rem',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                flex: 1,
+                                color: 'inherit',
+                              }}
+                            >
+                              {ex.key} {kindAbbrev(ex.kind)}
+                            </Typography>
+                            <Typography
+                              sx={{
+                                ...TYPE.bodySmall,
+                                color: 'inherit',
+                                opacity: 0.75,
+                                flexShrink: 0,
+                              }}
+                            >
+                              {stagesCompleted}/{stageCount}
+                            </Typography>
+                          </ButtonBase>
+                        </Tooltip>
                       );
                     })}
                   </Box>

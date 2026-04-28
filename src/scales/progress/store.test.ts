@@ -552,31 +552,31 @@ describe('pentascale tempo clean bar', () => {
     expect(after.currentStageId).toBe(stages[p4Idx + 1].id);
   });
 
-  it('clears pentascale final stage (p7) while currentStageId stays on p7', () => {
+  it('clears pentascale final stage (last level) while currentStageId stays there', () => {
     let data = fresh();
     const stages = penta.exercise.stages;
-    const p6 = stages[5];
-    const p7 = stages[6];
-    expect(p7.id.endsWith('-p7')).toBe(true);
+    const prev = stages.at(-2)!;
+    const last = stages.at(-1)!;
+    expect(last.id.endsWith('-p9')).toBe(true);
     data.exercises[PENTA_ID] = {
       exerciseId: PENTA_ID,
-      completedStageId: p6.id,
-      currentStageId: p7.id,
+      completedStageId: prev.id,
+      currentStageId: last.id,
       history: [],
       needsReview: false,
       reviewStageId: null,
       lastPracticedAt: null,
     };
-    data = recordPractice(data, pentascaleTimedRecord(p7.id, { perfect: 10, early: 1, t: 100 }));
-    data = recordPractice(data, pentascaleTimedRecord(p7.id, { perfect: 10, late: 1, t: 200 }));
+    data = recordPractice(data, pentascaleTimedRecord(last.id, { perfect: 10, early: 1, t: 100 }));
+    data = recordPractice(data, pentascaleTimedRecord(last.id, { perfect: 10, late: 1, t: 200 }));
     let ep = getExerciseProgress(data, PENTA_ID);
-    expect(ep.completedStageId).toBe(p6.id);
-    expect(ep.currentStageId).toBe(p7.id);
+    expect(ep.completedStageId).toBe(prev.id);
+    expect(ep.currentStageId).toBe(last.id);
 
-    data = recordPractice(data, pentascaleTimedRecord(p7.id, { perfect: 10, early: 1, t: 300 }));
+    data = recordPractice(data, pentascaleTimedRecord(last.id, { perfect: 10, early: 1, t: 300 }));
     ep = getExerciseProgress(data, PENTA_ID);
-    expect(ep.completedStageId).toBe(p7.id);
-    expect(ep.currentStageId).toBe(p7.id);
+    expect(ep.completedStageId).toBe(last.id);
+    expect(ep.currentStageId).toBe(last.id);
   });
 });
 

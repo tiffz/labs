@@ -32,7 +32,15 @@ interface ScoreDisplayProps {
    * (a held C would otherwise also light up every upcoming C in the score).
    */
   highlightActiveMatches?: boolean;
+  /**
+   * When set, draws a light box + label around each adjacent note pair where a
+   * thumb-under / thumb-over is expected (e.g. first free-tempo scale pass).
+   */
+  crossingHighlightRegions?: ReadonlyArray<{ readonly noteIds: readonly [string, string] }>;
 }
+
+const FINGER_CROSSING_BOX_STROKE = '#0f766e';
+const FINGER_CROSSING_BOX_FILL = 'rgba(200, 240, 228, 0.22)';
 
 const RESULT_COLORS = {
   perfect: '#10b981',
@@ -109,6 +117,38 @@ function closestWrongPitchDelta(
   }
   if (bestDelta === null || bestAbs > WRONG_PITCH_GHOST_MAX_DISTANCE) return null;
   return bestDelta;
+}
+
+/**
+ * Union of each VexFlow `NoteHead` bbox only (no stems, flags, or modifiers).
+ * DOM-based mapping was flaky (`getSVGElement` / `getScreenCTM` edge cases);
+ * this uses the same layout numbers VexFlow already computed after `draw()`.
+ */
+function unionNoteheadBoundsVexFlow(sn: StaveNote): { x: number; y: number; w: number; h: number } | null {
+  const heads = sn.noteHeads;
+  if (!heads || heads.length === 0) return null;
+  let x1 = Number.POSITIVE_INFINITY;
+  let y1 = Number.POSITIVE_INFINITY;
+  let x2 = Number.NEGATIVE_INFINITY;
+  let y2 = Number.NEGATIVE_INFINITY;
+  for (const nh of heads) {
+    try {
+      const bb = nh.getBoundingBox();
+      if (!bb) continue;
+      const nx = bb.getX();
+      const ny = bb.getY();
+      const rw = bb.getW();
+      const rh = bb.getH();
+      x1 = Math.min(x1, nx);
+      y1 = Math.min(y1, ny);
+      x2 = Math.max(x2, nx + rw);
+      y2 = Math.max(y2, ny + rh);
+    } catch {
+      /* layout */
+    }
+  }
+  if (x1 === Number.POSITIVE_INFINITY) return null;
+  return { x: x1, y: y1, w: Math.max(x2 - x1, 1), h: Math.max(y2 - y1, 1) };
 }
 
 function applyNoteStyle(
@@ -473,6 +513,7 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
   zoomLevel = 1.0, selectedMeasureRange, onMeasureClick,
   showVocalPart = false, showChords = true,
   highlightActiveMatches = false,
+  crossingHighlightRegions,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const stateKeyRef = useRef('');
@@ -567,6 +608,9 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
       sv: showVocalPart,
       sc: showChords,
       cw: containerWidth,
+      xh: crossingHighlightRegions
+        ? crossingHighlightRegions.map((r) => `${r.noteIds[0]}|${r.noteIds[1]}`).sort()
+        : [],
     });
     if (stateKey === stateKeyRef.current) return;
     stateKeyRef.current = stateKey;
@@ -689,6 +733,8 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
       const showMeasureNumbers = maxMeasures > 5;
 
       const noteIdToStaveNote = new Map<string, StaveNote>();
+      /** Same score line as `lineIdx` in the outer layout loop — detects system breaks. */
+      const noteIdToScoreLineIdx = new Map<string, number>();
       const repeatStartMeasures = new Set<number>();
       const repeatEndMeasures = new Map<number, number | undefined>();
       for (const repeat of score.navigation?.repeats ?? []) {
@@ -1084,7 +1130,10 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
               if (note.finger && !note.rest) {
                 attachPianoFingering(staveNote, note.finger, 'above', { note });
               }
-              if (note.id) noteIdToStaveNote.set(note.id, staveNote);
+              if (note.id) {
+                noteIdToStaveNote.set(note.id, staveNote);
+                noteIdToScoreLineIdx.set(note.id, lineIdx);
+              }
 
               // Tie tracking
               if (!note.rest) {
@@ -1166,7 +1215,10 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
                   lhGrandStaffTupletNudge: showTreble && showBass,
                 });
               }
-              if (note.id) noteIdToStaveNote.set(note.id, staveNote);
+              if (note.id) {
+                noteIdToStaveNote.set(note.id, staveNote);
+                noteIdToScoreLineIdx.set(note.id, lineIdx);
+              }
 
               // Tie tracking for bass
               if (!note.rest) {
@@ -1245,7 +1297,10 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
                 if (note.lyric && !note.rest && note.id) {
                   vocalLyrics.push({ noteId: note.id, lyric: note.lyric, isCurrent: isCurrentMeasure && noteIdx === voiceNoteIdx });
                 }
-                if (note.id) noteIdToStaveNote.set(note.id, staveNote);
+                if (note.id) {
+                  noteIdToStaveNote.set(note.id, staveNote);
+                  noteIdToScoreLineIdx.set(note.id, lineIdx);
+                }
 
                 // Tie tracking for vocal
                 if (!note.rest) {
@@ -1647,6 +1702,134 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
         } catch { /* tuplet rendering is non-critical */ }
       }
 
+      // Thumb-crossing callouts (adjacent note pairs). Use VexFlow notehead
+      // bboxes only. **Rects** go first in the SVG (behind staves + notes);
+      // **labels** go last so text + stroke halo paint above staff lines.
+      if (crossingHighlightRegions && crossingHighlightRegions.length > 0) {
+        const svgEl = containerRef.current!.querySelector('svg') as SVGSVGElement | null;
+        if (svgEl) {
+          const gBoxes = document.createElementNS('http://www.w3.org/2000/svg', 'g') as SVGGElement;
+          gBoxes.setAttribute('class', 'finger-crossing-overlays finger-crossing-boxes');
+          gBoxes.setAttribute('aria-hidden', 'true');
+          gBoxes.setAttribute('pointer-events', 'none');
+          const gLabels = document.createElementNS('http://www.w3.org/2000/svg', 'g') as SVGGElement;
+          gLabels.setAttribute('class', 'finger-crossing-overlays finger-crossing-labels');
+          gLabels.setAttribute('aria-hidden', 'true');
+          gLabels.setAttribute('pointer-events', 'none');
+
+          const LABEL_GAP_BELOW_BOX = 5;
+
+          const appendThumbCrossingCapsule = (
+            rectParent: SVGGElement,
+            labelParent: SVGGElement,
+            box: { x: number; y: number; w: number; h: number },
+            withLabel: boolean,
+            /** When set, pad each half using the **joined pair** span (same cushion as unsplit), without stretching width to the staff edge. */
+            splitPairDims?: { rawW: number; rawH: number },
+          ) => {
+            let rx: number;
+            let ry: number;
+            let rw: number;
+            let rh: number;
+            if (splitPairDims) {
+              const { rawW, rawH } = splitPairDims;
+              const pairPad = Math.min(4, Math.max(2, rawW * 0.12));
+              const pairPadV = Math.min(4, Math.max(2, rawH * 0.12));
+              rx = box.x - pairPad;
+              ry = box.y - pairPadV;
+              rw = Math.max(box.w + pairPad * 2, 16);
+              rh = Math.max(box.h + pairPadV * 2, 12);
+            }
+            else {
+              const pad = Math.min(4, Math.max(2, box.w * 0.12));
+              rx = box.x - pad;
+              ry = box.y - pad;
+              rw = Math.max(box.w + pad * 2, 16);
+              rh = Math.max(box.h + pad * 2, 12);
+            }
+            const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            rect.setAttribute('x', String(rx));
+            rect.setAttribute('y', String(ry));
+            rect.setAttribute('width', String(rw));
+            rect.setAttribute('height', String(rh));
+            rect.setAttribute('rx', '5');
+            rect.setAttribute('ry', '5');
+            rect.setAttribute('fill', FINGER_CROSSING_BOX_FILL);
+            rect.setAttribute('stroke', FINGER_CROSSING_BOX_STROKE);
+            rect.setAttribute('stroke-width', '1.75');
+            rectParent.appendChild(rect);
+            if (withLabel) {
+              const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+              const cx = Math.round((rx + rw / 2) * 2) / 2;
+              const ly = Math.round((ry + rh + LABEL_GAP_BELOW_BOX) * 2) / 2;
+              label.setAttribute('x', String(cx));
+              label.setAttribute('y', String(ly));
+              label.setAttribute('text-anchor', 'middle');
+              label.setAttribute('dominant-baseline', 'hanging');
+              label.setAttribute('class', 'finger-crossing-label');
+              label.setAttribute('font-family', 'Roboto, system-ui, sans-serif');
+              label.setAttribute('font-size', '10px');
+              label.setAttribute('font-weight', '700');
+              label.setAttribute('fill', FINGER_CROSSING_BOX_STROKE);
+              label.setAttribute('fill-opacity', '1');
+              // Inline paint beats inherited VexFlow / host CSS so the white halo
+              // and paint-order survive inside the nested SVG.
+              label.setAttribute(
+                'style',
+                'paint-order:stroke fill;stroke:#fff;stroke-width:2.25px;stroke-linejoin:round;stroke-linecap:round;',
+              );
+              label.setAttribute('text-rendering', 'optimizeLegibility');
+              label.textContent = 'Thumb crossing';
+              labelParent.appendChild(label);
+            }
+          };
+
+          for (const region of crossingHighlightRegions) {
+            const [idA, idB] = region.noteIds;
+            const snA = noteIdToStaveNote.get(idA);
+            const snB = noteIdToStaveNote.get(idB);
+            if (!snA || !snB) continue;
+            try {
+              const ba = unionNoteheadBoundsVexFlow(snA);
+              const bb = unionNoteheadBoundsVexFlow(snB);
+              if (!ba || !bb) continue;
+              const x1 = Math.min(ba.x, bb.x);
+              const y1 = Math.min(ba.y, bb.y);
+              const x2 = Math.max(ba.x + ba.w, bb.x + bb.w);
+              const y2 = Math.max(ba.y + ba.h, bb.y + bb.h);
+              const rawW = x2 - x1;
+              const rawH = y2 - y1;
+              if (!Number.isFinite(rawW) || !Number.isFinite(rawH) || rawW <= 0 || rawH <= 0) continue;
+
+              const lineA = noteIdToScoreLineIdx.get(idA);
+              const lineB = noteIdToScoreLineIdx.get(idB);
+              const spansSystemLine =
+                lineA !== undefined && lineB !== undefined && lineA !== lineB;
+              // Fallback when line index missing: joined bbox “teleports” across a break.
+              const spansLikeLineBreak = rawW > 118 || rawH > 46;
+              const splitPair = spansSystemLine || spansLikeLineBreak;
+
+              const pairDims = { rawW, rawH };
+              if (splitPair) {
+                appendThumbCrossingCapsule(gBoxes, gLabels, ba, true, pairDims);
+                appendThumbCrossingCapsule(gBoxes, gLabels, bb, false, pairDims);
+              }
+              else {
+                appendThumbCrossingCapsule(gBoxes, gLabels, { x: x1, y: y1, w: rawW, h: rawH }, true);
+              }
+            } catch { /* layout / CTM can fail for edge-case notes */ }
+          }
+
+          if (gBoxes.childNodes.length > 0) {
+            if (svgEl.firstChild) svgEl.insertBefore(gBoxes, svgEl.firstChild);
+            else svgEl.appendChild(gBoxes);
+          }
+          if (gLabels.childNodes.length > 0) {
+            svgEl.appendChild(gLabels);
+          }
+        }
+      }
+
       // Practice result overlays
       if (practiceResultsByNoteId && practiceResultsByNoteId.size > 0) {
         const svgEl = containerRef.current!.querySelector('svg');
@@ -1739,7 +1922,7 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
         containerRef.current.innerHTML = `<p style="color: red; padding: 1rem;">Error rendering score. Please try again.</p>`;
       }
     }
-  }, [score, currentMeasureIndex, currentNoteIndices, activeMidiNotes, practiceResultsByNoteId, greyedOutHands, hiddenHands, ghostNotes, zoomLevel, selectedMeasureRange, showVocalPart, showChords, highlightActiveMatches, containerWidth]);
+  }, [score, currentMeasureIndex, currentNoteIndices, activeMidiNotes, practiceResultsByNoteId, greyedOutHands, hiddenHands, ghostNotes, zoomLevel, selectedMeasureRange, showVocalPart, showChords, highlightActiveMatches, crossingHighlightRegions, containerWidth]);
 
   // Auto-scroll during playback to keep current measure visible
   useEffect(() => {
