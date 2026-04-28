@@ -1,8 +1,10 @@
-# Pitch
+# Find Your Pitch (`/pitch/`)
 
-A real-time pitch-detection playground that surfaces the microphone's detected pitch, frequency, and cents-off-from-nearest-note, with visual indicators for musicians to practice intonation.
+A real-time pitch-detection playground (branded **Find Your Pitch**) that surfaces the microphone's detected pitch, frequency, and cents-off-from-nearest-note, with visual indicators for musicians to practice intonation.
 
 Route: `/pitch/`.
+
+**Visual system:** [`DESIGN.md`](./DESIGN.md) (palette, shadows, halftone, anti-patterns). Follow it so future changes do not drift from the single shipped layout.
 
 ## Features
 
@@ -17,6 +19,7 @@ Route: `/pitch/`.
 src/pitch/
 ├── App.tsx              # Shell, state, mic lifecycle
 ├── App.test.tsx         # Unit tests (mocks `listDevices` for JSDOM)
+├── DESIGN.md            # Visual design spec (Find Your Pitch)
 ├── e2e/                 # Playwright specs specific to /pitch/
 └── styles/              # Pitch-specific CSS
 ```

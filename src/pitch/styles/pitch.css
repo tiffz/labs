@@ -1,35 +1,33 @@
 :root {
-  /* Rose + teal palette (words-style restraint) */
-  --md-primary: #025f6a;
-  --md-on-primary: #ffffff;
-  --md-primary-container: #d2eaed;
-  --md-on-primary-container: #073e46;
+  /* Find Your Pitch — Fountain Proof (sodaRisoFusion), single shipped layout; see DESIGN.md */
+  --md-primary: #0f766e;
+  --md-on-primary: #ecfdf5;
+  --md-primary-container: #ccfbf1;
+  --md-on-primary-container: #115e59;
 
-  --md-secondary: #df7fa0;
-  --md-on-secondary: #ffffff;
-  --md-secondary-container: #f7dce7;
-  --md-on-secondary-container: #5b2338;
+  --md-secondary: #db2777;
+  --md-on-secondary: #fff1f2;
+  --md-secondary-container: #fce7f3;
+  --md-on-secondary-container: #831843;
 
-  --md-tertiary: #7b5470;
-  --md-on-tertiary: #ffffff;
-  --md-tertiary-container: #e9dde6;
+  --md-tertiary: #7c3aed;
+  --md-on-tertiary: #faf5ff;
+  --md-tertiary-container: #ede9fe;
+  --md-on-tertiary-container: #4c1d95;
 
   --md-surface: #ffffff;
-  --md-surface-container: #fcf8fa;
-  --md-surface-container-high: #f8f1f5;
-  --md-surface-container-highest: #f4eaf0;
-  --md-outline: #dfcad5;
-  --md-outline-variant: #ecdee5;
-  --md-on-surface: #2f2431;
-  --md-on-surface-variant: #746170;
+  --md-surface-container: #ffe4e6;
+  --md-surface-container-high: #fecdd3;
+  --md-surface-container-highest: #fda4af;
+  --md-outline: #f472b6;
+  --md-outline-variant: #fecdd3;
+  --md-on-surface: #1e1033;
+  --md-on-surface-variant: #5b21b6;
 
-  --md-elev-1:
-    0 1px 2px rgba(24, 16, 26, 0.06), 0 1px 3px rgba(24, 16, 26, 0.08);
-  --md-elev-2:
-    0 4px 10px rgba(24, 16, 26, 0.08), 0 2px 4px rgba(24, 16, 26, 0.06);
-  --md-elev-3:
-    0 10px 20px rgba(24, 16, 26, 0.1), 0 4px 8px rgba(24, 16, 26, 0.06);
-  --md-focus: 0 0 0 3px rgba(229, 139, 169, 0.28);
+  --md-elev-1: 4px 6px 0 rgba(15, 118, 110, 0.22);
+  --md-elev-2: 8px 12px 0 rgba(219, 39, 119, 0.16);
+  --md-elev-3: 12px 18px 0 rgba(91, 33, 182, 0.12);
+  --md-focus: 0 0 0 3px rgba(219, 39, 119, 0.35);
 
   /* Spacing ladder */
   --space-2: 8px;
@@ -37,8 +35,24 @@
   --space-4: 16px;
   --space-6: 24px;
 
-  --content-gutter: clamp(14px, 3vw, 40px);
-  --card-pad: var(--space-4);
+  --content-gutter: clamp(16px, 3.5vw, 48px);
+  --card-pad: 1.5rem;
+
+  --pitch-card-radius: 4px;
+  --pitch-history-radius: 3px;
+  --pitch-control-radius: 6px;
+  --pitch-font-body: system-ui, sans-serif;
+  --pitch-font-display: system-ui, sans-serif;
+  --pitch-h1-letter-spacing: -0.03em;
+  /* Light halo keeps letterforms crisp; softer pink offset than full-opacity slab */
+  --pitch-h1-text-shadow:
+    0 0 1px rgba(255, 255, 255, 0.95), 0 1px 0 rgba(255, 255, 255, 0.75),
+    2px 2px 0 rgba(251, 113, 133, 0.55), 3px 3px 0 rgba(219, 39, 119, 0.22);
+  --pitch-h1-color: #0f766e;
+  --pitch-card-border-mix-color: #db2777;
+  --pitch-listen-hover-shadow-a: rgba(15, 118, 110, 0.28);
+  --pitch-listen-hover-shadow-b: rgba(219, 39, 119, 0.22);
+  --pitch-meter-height: 22px;
 }
 
 html,
@@ -51,7 +65,8 @@ body,
 body {
   margin: 0;
   display: block;
-  background: #f9f2f7 !important;
+  /* Flat paper outside the app chrome; halftone lives on `.pitch-app` only */
+  background: #fce7f3 !important;
   background-image: none !important;
 }
 
@@ -59,33 +74,51 @@ body {
   min-height: 100vh;
   min-height: 100dvh;
   width: 100%;
+  /* Riso-style halftone (pink + teal + violet) over soda-counter gradient */
   background:
     radial-gradient(
-      980px 640px at -10% -20%,
-      rgba(187, 84, 131, 0.36) 0%,
-      rgba(187, 84, 131, 0.14) 34%,
-      transparent 68%
+      circle at 1px 1px,
+      rgba(219, 39, 119, 0.16) 1px,
+      transparent 1px
     ),
     radial-gradient(
-      900px 560px at 112% -12%,
-      rgba(0, 72, 88, 0.24) 0%,
-      rgba(0, 72, 88, 0.09) 40%,
-      transparent 72%
+      circle at 1px 1px,
+      rgba(15, 118, 110, 0.13) 1px,
+      transparent 1px
     ),
     radial-gradient(
-      1040px 500px at 56% 122%,
-      rgba(92, 57, 86, 0.16) 0%,
-      transparent 68%
+      circle at 1px 1px,
+      rgba(124, 58, 237, 0.1) 1px,
+      transparent 1px
     ),
-    linear-gradient(
-      130deg,
-      rgba(255, 255, 255, 0.34) 0%,
-      rgba(255, 255, 255, 0) 46%
-    ),
-    linear-gradient(180deg, #fbf2f7 0%, #f7edf4 42%, #fefbfd 100%);
+    linear-gradient(145deg, #fff5f7 0%, #fdf4ff 32%, #ecfeff 62%, #ffe4e6 100%);
+  background-size:
+    8px 8px,
+    8px 8px,
+    10px 10px,
+    auto;
+  background-position:
+    0 0,
+    4px 4px,
+    2px 5px,
+    0 0;
   color: var(--md-on-surface);
   padding: 0;
-  font-family: 'Roboto', 'Segoe UI', sans-serif;
+  font-family: var(--pitch-font-body);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pitch-app {
+    background: linear-gradient(
+      145deg,
+      #fff5f7 0%,
+      #fdf4ff 32%,
+      #ecfeff 62%,
+      #ffe4e6 100%
+    );
+    background-size: auto;
+    background-position: 0 0;
+  }
 }
 
 .pitch-shell {
@@ -96,7 +129,8 @@ body {
   border: 0;
   border-radius: 0;
   box-shadow: none;
-  padding: var(--space-4) var(--content-gutter) var(--space-6);
+  padding: var(--space-4) var(--content-gutter)
+    calc(var(--space-6) + env(safe-area-inset-bottom, 0px));
 }
 
 .pitch-header {
@@ -105,7 +139,7 @@ body {
   align-items: start;
   gap: var(--space-4);
   padding: var(--space-2) 0;
-  margin-bottom: var(--space-3);
+  margin-bottom: var(--space-6);
 }
 
 .pitch-header-main {
@@ -124,35 +158,31 @@ body {
   margin: 0;
   font-size: clamp(1.6rem, 3vw, 2.2rem);
   line-height: 1.14;
-  letter-spacing: -0.02em;
-  color: color-mix(in srgb, var(--md-primary) 92%, #00424f);
+  letter-spacing: var(--pitch-h1-letter-spacing);
+  font-family: var(--pitch-font-display);
+  color: var(--pitch-h1-color, var(--md-primary));
   background: none;
   -webkit-text-fill-color: currentColor;
   background-clip: border-box;
   -webkit-background-clip: border-box;
   font-weight: 700;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+  text-shadow: var(--pitch-h1-text-shadow);
 }
 
 .pitch-header p {
   margin: var(--space-2) 0 0;
-  color: var(--md-on-surface-variant);
+  color: #553c8c;
   font-size: 0.95rem;
   font-weight: 500;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.85);
 }
 
 .pitch-card {
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--md-surface) 92%, #ffffff) 0%,
-    color-mix(in srgb, var(--md-surface-container) 94%, #ffffff) 100%
-  );
-  border: 1px solid color-mix(in srgb, #c08ca8 42%, var(--md-outline-variant));
-  border-radius: 24px;
-  box-shadow:
-    0 16px 34px rgba(57, 29, 52, 0.12),
-    0 6px 16px rgba(57, 29, 52, 0.07),
-    inset 0 1px 0 rgba(255, 255, 255, 0.82);
+  background: #ffffff;
+  border: 2px solid #0f766e;
+  border-radius: var(--pitch-card-radius);
+  /* One riso slab only (no soft + hard “double shadow”) */
+  box-shadow: 6px 8px 0 #db2777;
 }
 
 .pitch-main-card,
@@ -174,14 +204,15 @@ body {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--md-on-surface-variant);
+  color: #5b21b6;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.82);
 }
 
 .pitch-device select,
 .pitch-listen-btn,
 .pitch-reference-toggle {
   height: 44px;
-  border-radius: 12px;
+  border-radius: var(--pitch-control-radius);
   font: inherit;
 }
 
@@ -222,8 +253,8 @@ body {
   transform: translateY(-1px);
   filter: brightness(1.02);
   box-shadow:
-    0 10px 20px rgba(2, 95, 106, 0.2),
-    0 4px 10px rgba(214, 120, 154, 0.16);
+    0 10px 20px var(--pitch-listen-hover-shadow-a),
+    0 4px 10px var(--pitch-listen-hover-shadow-b);
 }
 
 .pitch-listen-btn:active {
@@ -246,12 +277,12 @@ body {
 
 .pitch-mic-status {
   grid-column: 1 / -1;
-  color: var(--md-on-surface-variant);
+  color: #553c8c;
   font-size: 0.78rem;
   font-weight: 500;
   letter-spacing: 0.01em;
-  opacity: 0.88;
   margin-left: 2px;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.82);
 }
 
 .pitch-main-card,
@@ -259,6 +290,10 @@ body {
   margin-top: var(--space-3);
   padding: var(--card-pad);
   background: var(--md-surface);
+}
+
+.pitch-reference-card.pitch-card {
+  margin-top: 2rem;
 }
 
 .pitch-note-display {
@@ -298,15 +333,14 @@ body {
   margin-bottom: var(--space-2);
   font-size: 0.78rem;
   font-weight: 600;
-  color: var(--md-on-surface-variant);
+  color: #5b21b6;
 }
 
 .pitch-meter {
   position: relative;
-  height: 22px;
-  border-radius: 999px;
-  border: 1px solid
-    color-mix(in srgb, var(--md-outline) 66%, var(--md-outline-variant));
+  height: var(--pitch-meter-height);
+  border-radius: var(--pitch-card-radius);
+  border: 2px solid #0f766e;
   background: linear-gradient(
     90deg,
     color-mix(in srgb, var(--md-secondary-container) 38%, transparent),
@@ -322,7 +356,7 @@ body {
   top: 3px;
   bottom: 3px;
   width: 2px;
-  border-radius: 999px;
+  border-radius: 1px;
   background: var(--md-primary);
   transform: translateX(-50%);
 }
@@ -332,7 +366,7 @@ body {
   top: 3px;
   bottom: 3px;
   width: 10px;
-  border-radius: 999px;
+  border-radius: 3px;
   background: linear-gradient(
     180deg,
     color-mix(in srgb, var(--md-primary) 88%, #0c4f5a),
@@ -365,14 +399,9 @@ body {
 .pitch-history-graph {
   margin-top: var(--space-2);
   height: 130px;
-  border-radius: 16px;
-  border: 1px solid
-    color-mix(in srgb, var(--md-outline) 66%, var(--md-outline-variant));
-  background: linear-gradient(
-    180deg,
-    var(--md-surface-container-high) 0%,
-    var(--md-surface-container) 100%
-  );
+  border-radius: var(--pitch-history-radius);
+  border: 2px solid #0f766e;
+  background: #ffffff;
   overflow: hidden;
 }
 
@@ -405,7 +434,9 @@ body {
 }
 
 .pitch-reference-card .shared-pk-white {
-  border-color: color-mix(in srgb, var(--md-outline) 74%, #d1d5db);
+  border-width: 2px;
+  border-style: solid;
+  border-color: #0f766e;
   background: var(--md-surface);
 }
 
@@ -423,8 +454,10 @@ body {
 }
 
 .pitch-reference-card .shared-pk-black {
+  border-width: 2px;
+  border-style: solid;
   background: color-mix(in srgb, var(--md-on-primary-container) 88%, #13161a);
-  border-color: color-mix(in srgb, var(--md-on-primary-container) 90%, #000);
+  border-color: #1e1033;
 }
 
 @media (max-width: 680px) {
@@ -436,7 +469,8 @@ body {
     border-radius: 0;
     width: 100%;
     max-width: none;
-    padding: var(--space-3) 10px var(--space-6);
+    padding: var(--space-3) 10px
+      calc(var(--space-6) + env(safe-area-inset-bottom, 0px));
   }
 
   .pitch-header {

@@ -15,7 +15,7 @@ const ROUTE_SPECS: Array<{
   { route: '/forms/', title: /Form Intersections/i, visibleSelector: '#root' },
   { route: '/melodia/', title: /Melodia Online/i, visibleSelector: '#root' },
   { route: '/piano/', title: /Piano Practice/i, visibleSelector: '#root' },
-  { route: '/pitch/', title: /Vocal Pitch Detector/i, visibleSelector: '#root' },
+  { route: '/pitch/', title: /Find Your Pitch|Tiff Zhang Labs/i, visibleSelector: '#root' },
   { route: '/scales/', title: /Learn Your Scales/i, visibleSelector: '#root' },
   { route: '/story/', title: /Save the Cat/i, visibleSelector: '#root' },
   { route: '/ui/', title: /UI Catalog/i, visibleSelector: '#root' },

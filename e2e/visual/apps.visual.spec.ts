@@ -19,7 +19,7 @@ const ROUTE_SPECS: VisualRouteSpec[] = [
   { id: 'forms', route: '/forms/', title: /Form Intersections/i, readySelector: '#root' },
   { id: 'beat', route: '/beat/', title: /Find the Beat/i, readySelector: '#root' },
   { id: 'words', route: '/words/', title: /Words in Rhythm/i, readySelector: '#root' },
-  { id: 'pitch', route: '/pitch/', title: /Vocal Pitch Detector/i, readySelector: '#root' },
+  { id: 'pitch', route: '/pitch/', title: /Find Your Pitch|Tiff Zhang Labs/i, readySelector: '#root' },
   { id: 'piano', route: '/piano/', title: /Piano Practice/i, readySelector: '#root' },
   { id: 'count', route: '/count/', title: /Count Me In/i, readySelector: '#root' },
   { id: 'scales', route: '/scales/', title: /Learn Your Scales/i, readySelector: '#root' },

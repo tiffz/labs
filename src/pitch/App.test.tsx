@@ -24,7 +24,7 @@ vi.mock('../shared/music/pitch/microphonePitchInput', async () => {
   };
 });
 
-describe('Vocal Pitch Detector App', () => {
+describe('Find Your Pitch App', () => {
   it('renders the main shell without throwing', async () => {
     render(<App />);
     // The app lives behind a SkipToMain landmark; assert on the skip link as
@@ -41,5 +41,11 @@ describe('Vocal Pitch Detector App', () => {
       return /listen|start|stop|mic/.test(text);
     });
     expect(startStop).toBeDefined();
+  });
+
+  it('shows the Find Your Pitch title', async () => {
+    render(<App />);
+    await screen.findByText(/skip to main content/i);
+    expect(screen.getByRole('heading', { level: 1, name: /^find your pitch$/i })).toBeInTheDocument();
   });
 });

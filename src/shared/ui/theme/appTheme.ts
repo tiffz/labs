@@ -201,7 +201,7 @@ const THEMES: Record<AppThemeId, Theme> = {
     mode: 'light',
     ...MUSIC_LIGHT_DEFAULT,
     primary: '#0f766e',
-    secondary: '#22c55e',
+    secondary: '#db2777',
   }),
   words: buildTheme({
     mode: 'light',

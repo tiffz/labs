@@ -7,8 +7,10 @@ import {
 } from '../shared/music/pitch/microphonePitchInput';
 import type { PitchInfo } from '../shared/music/pitch/pitchDetection';
 import { createAppAnalytics } from '../shared/utils/analytics';
-
 const analytics = createAppAnalytics('pitch');
+
+const PITCH_TITLE = 'Find Your Pitch';
+const PITCH_TAGLINE = 'A simple free online voice tuner';
 
 interface PitchSample {
   id: number;
@@ -240,8 +242,8 @@ export default function App(): React.ReactElement {
       <main id="main" className="pitch-shell">
         <header className="pitch-header">
           <div className="pitch-header-main">
-            <h1>Vocal Pitch Detector</h1>
-            <p>Simple live pitch feedback for singers.</p>
+            <h1>{PITCH_TITLE}</h1>
+            <p>{PITCH_TAGLINE}</p>
           </div>
           <div className="pitch-header-input">
             <label className="pitch-device">
