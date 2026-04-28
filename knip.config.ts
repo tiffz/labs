@@ -5,7 +5,6 @@ const config: KnipConfig = {
     'src/index.html',
     'src/cats/index.html',
     'src/zines/index.html',
-    'src/corp/index.html',
     'src/drums/index.html',
     'src/story/index.html',
     'src/chords/index.html',
@@ -45,6 +44,9 @@ const config: KnipConfig = {
     'scripts/analyze-tempo.ts',
     'scripts/melodia/ingest-folder.mts',
     'scripts/audit-pipeline.js',
+    // Story app: loaded only via import() in App.tsx; treat as entries so Knip does not flag exports.
+    'src/story/components/BeatChart.tsx',
+    'src/story/components/FixedStoryHeader.tsx',
   ],
   project: [
     'src/**/*.{ts,tsx}',
@@ -58,14 +60,11 @@ const config: KnipConfig = {
     'public/sw.js',
     // Test setup files and utilities
     'src/shared/test/setupTests.ts',
-    'src/cats/test/regressionTestUtils.tsx',
     // Shared test mocks (imported on demand by new tests; Phase 1 scaffold)
     'src/shared/test/mocks/**',
     // Shared module barrel exports (may have unused exports that are part of public API)
     'src/shared/audio/index.ts',
-    'src/shared/rhythm/index.ts',
     // Shared audio utilities (standalone metronome player for future use)
-    'src/shared/audio/metronomePlayer.ts',
     'src/shared/audio/audioPlayer.ts',
     // Shared notation components
     'src/shared/notation/index.ts',
@@ -75,9 +74,6 @@ const config: KnipConfig = {
     'src/cats/components/ui/NotificationQueue.tsx',
     'src/cats/hooks/useNotificationSystem.ts',
     'src/cats/data/notificationData.ts',
-    'src/cats/services/CatPositionService.ts',
-    // Legacy inline script references in corp index.html may reference constants shadowing TS exports
-    'src/corp/index.html',
     // Parked legacy bootstrap kept for reference
     'src/corp/main.ts',
     // Kimberly System: Content generation library with many unused exports (intentional API)
@@ -87,7 +83,6 @@ const config: KnipConfig = {
     'src/beat/utils/experimental/tempoChangeDetector.ts',
     'src/beat/utils/audioBuffer.ts',
     'src/beat/utils/bpmAccuracyTest.ts',
-    'src/beat/utils/tempoDetectorCore.ts',
     // Count Me In: analysis/coaching features parked for future development
     'src/count/analysis/RhythmAnalyzer.ts',
     'src/count/analysis/timingAnalysis.ts',
@@ -102,8 +97,6 @@ const config: KnipConfig = {
     'src/zines/utils/spreadOrganizer.ts', // estimateDPI, etc. helper utils
   ],
   ignoreDependencies: [
-    // lint-staged is used by husky pre-commit hook (not imported in TS)
-    'lint-staged',
     // Spawned from scripts/audit-pipeline.js (not part of the import graph)
     'jscpd',
     'code-auditor-mcp',

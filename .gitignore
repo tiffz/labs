@@ -43,3 +43,8 @@ storybook-static
 
 # Cursor IDE rules (personal agent config)
 .cursor/rules/
+
+# Local audit pipeline state and raw tool output
+.audit-state.json
+.audit-reports/
+.audit-tmp/

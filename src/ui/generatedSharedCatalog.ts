@@ -1446,6 +1446,72 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-debug-practicedebugpanelshared-ts-practice-debug-clear-button-style",
+    "name": "PRACTICE_DEBUG_CLEAR_BUTTON_STYLE",
+    "path": "src/shared/debug/practiceDebugPanelShared.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared UI bits for piano/scales practice debug docks (jscpd dedupe target).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-debug-practicedebugpanelshared-ts-practice-debug-empty-message",
+    "name": "PRACTICE_DEBUG_EMPTY_MESSAGE",
+    "path": "src/shared/debug/practiceDebugPanelShared.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared UI bits for piano/scales practice debug docks (jscpd dedupe target).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-debug-practicedebugpanelshared-ts-practice-debug-event-colors",
+    "name": "PRACTICE_DEBUG_EVENT_COLORS",
+    "path": "src/shared/debug/practiceDebugPanelShared.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared UI bits for piano/scales practice debug docks (jscpd dedupe target).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-debug-practicedebugpanelshared-ts-practicedebugmiditoname",
+    "name": "practiceDebugMidiToName",
+    "path": "src/shared/debug/practiceDebugPanelShared.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared UI bits for piano/scales practice debug docks (jscpd dedupe target).",
+    "tags": [],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-debug-readlabsdebugparams-ts-islabsdebugenabled",
     "name": "isLabsDebugEnabled",
     "path": "src/shared/debug/readLabsDebugParams.ts",
@@ -1491,6 +1557,36 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "appsUsing": [
       "cats",
       "drums",
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-debug-usepracticedebuglogeffects-ts-usepracticedebuglogpoll",
+    "name": "usePracticeDebugLogPoll",
+    "path": "src/shared/debug/usePracticeDebugLogEffects.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Poll practice debug log at 200ms (piano + scales debug docks). Pass a `useCallback` tick.",
+    "tags": [],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-debug-usepracticedebuglogeffects-ts-usepracticedebuglogscrolltoend",
+    "name": "usePracticeDebugLogScrollToEnd",
+    "path": "src/shared/debug/usePracticeDebugLogEffects.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Keep a fixed-height log scrolled to the latest line.",
+    "tags": [],
+    "appsUsing": [
       "piano"
     ],
     "exportType": "function",
@@ -2347,6 +2443,24 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "ui"
     ],
     "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-drumrhythmmidievents-ts-builddrummidieventsfromparsedrhythm",
+    "name": "buildDrumMidiEventsFromParsedRhythm",
+    "path": "src/shared/music/drumRhythmMidiEvents.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "GM drum-map MIDI events (channel 9) for a parsed rhythm, repeated `loopCount` times. Used by drums and words export adapters (same layout as legacy per-app copies).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "function",
     "demoId": null
   },
   {

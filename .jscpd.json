@@ -1,0 +1,30 @@
+{
+  "threshold": 999,
+  "minLines": 5,
+  "minTokens": 50,
+  "ignore": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/coverage/**",
+    "**/.vite/**",
+    "**/playwright-report/**",
+    "**/test-results/**",
+    "**/*.min.js",
+    "**/*.snap",
+    "**/package-lock.json"
+  ],
+  "path": ["./src"],
+  "gitignore": true,
+  "absolute": false,
+  "reporters": ["console", "json"],
+  "format": [
+    "typescript",
+    "javascript",
+    "tsx",
+    "jsx",
+    "json",
+    "css",
+    "markdown"
+  ]
+}

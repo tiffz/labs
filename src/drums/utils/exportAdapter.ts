@@ -2,7 +2,8 @@ import type { ParsedRhythm } from '../types';
 import type { PlaybackSettings } from '../types/settings';
 import type { ExportSourceAdapter } from '../../shared/music/exportTypes';
 import { calculateRhythmDuration, renderRhythmAudio } from './audioExport';
-import { buildSingleTrackMidi, type MidiNoteEvent } from '../../shared/music/midiBuilder';
+import { buildDrumMidiEventsFromParsedRhythm } from '../../shared/music/drumRhythmMidiEvents';
+import { buildSingleTrackMidi } from '../../shared/music/midiBuilder';
 
 interface CreateDrumsExportAdapterOptions {
   rhythm: ParsedRhythm;
@@ -42,43 +43,7 @@ export function createDrumsExportAdapter({
       return { mix };
     },
     renderMidi: async ({ loopCount }) => {
-      const ticksPerSixteenth = 120;
-      const drumPitchBySound: Record<string, number> = {
-        dum: 36,
-        tak: 38,
-        ka: 42,
-        slap: 39,
-      };
-      const events: MidiNoteEvent[] = [];
-      let loopTickOffset = 0;
-      const singleLoopTicks = rhythm.measures.reduce((total, measure) => total + measure.notes.reduce(
-        (sum, note) => sum + Math.max(ticksPerSixteenth, Math.round(note.durationInSixteenths * ticksPerSixteenth)),
-        0
-      ), 0);
-
-      for (let loop = 0; loop < loopCount; loop += 1) {
-        let tickCursor = loopTickOffset;
-        rhythm.measures.forEach((measure) => {
-          measure.notes.forEach((note) => {
-            const pitch = drumPitchBySound[note.sound];
-            const durationTicks = Math.max(
-              ticksPerSixteenth,
-              Math.round(note.durationInSixteenths * ticksPerSixteenth)
-            );
-            if (pitch !== undefined) {
-              events.push({
-                midi: pitch,
-                startTick: tickCursor,
-                durationTicks: Math.max(30, Math.round(durationTicks * 0.8)),
-                velocity: 100,
-                channel: 9,
-              });
-            }
-            tickCursor += durationTicks;
-          });
-        });
-        loopTickOffset += singleLoopTicks;
-      }
+      const events = buildDrumMidiEventsFromParsedRhythm(rhythm, loopCount);
       return buildSingleTrackMidi(events, bpm);
     },
   };

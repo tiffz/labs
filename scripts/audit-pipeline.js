@@ -136,7 +136,12 @@ function runCommand(command, commandArgs, options = {}) {
       cwd,
       shell: false,
       stdio: ['ignore', 'pipe', 'pipe'],
-      env: { ...process.env, CI: process.env.CI || '1' },
+      env: {
+        ...process.env,
+        CI: process.env.CI || '1',
+        // Prefer quiet diagnostics when supported (see code-auditor-mcp mcpDiagnostics).
+        CODE_AUDITOR_DEBUG: process.env.CODE_AUDITOR_DEBUG ?? '0',
+      },
     });
     let timedOut = false;
     const timer =
@@ -173,6 +178,68 @@ function runCommand(command, commandArgs, options = {}) {
 function truncate(s, max = 24_000) {
   if (s.length <= max) return s;
   return `${s.slice(0, max)}\n\n… (truncated, ${s.length} chars total)`;
+}
+
+/** Keep the end of a long string (code-audit prints its summary last). */
+function truncateTail(s, max = 16_000) {
+  if (!s || s.length <= max) return s;
+  return `… (omitted ${s.length - max} characters from the start)\n\n${s.slice(-max)}`;
+}
+
+/** Strip ANSI color codes (e.g. knip stderr on some terminals). */
+function stripAnsi(s) {
+  // eslint-disable-next-line no-control-regex -- intentional: strip terminal ANSI SGR sequences
+  return s.replace(/\u001b\[[0-9;]*m/g, '');
+}
+
+function isCodeAuditNoiseLine(trimmedLine) {
+  const t = trimmedLine;
+  if (t.startsWith('[DEBUG]')) return true;
+  if (t.startsWith('[LanguageRegistry]')) return true;
+  if (t.includes('Found function node:')) return true;
+  if (t.includes('Extracted function:')) return true;
+  if (/^type:\s*'/.test(t)) return true;
+  if (/^isFunction:\s*/.test(t)) return true;
+  if (/^isMethod:\s*/.test(t)) return true;
+  if (/^line:\s*\d+/.test(t)) return true;
+  if (t === '{' || t === '}' || t === '},') return true;
+  return false;
+}
+
+/**
+ * code-auditor-mcp prints very verbose traces; keep the report readable.
+ */
+function sanitizeCodeAuditLog(raw) {
+  if (!raw) return '';
+  return stripAnsi(raw)
+    .split('\n')
+    .map((line) => line.trimEnd())
+    .filter((line) => {
+      const t = line.trim();
+      if (!t) return false;
+      return !isCodeAuditNoiseLine(t);
+    })
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+/** Lines printed at the end of `code-audit audit` (see code-auditor-mcp dist/cli.js). */
+function extractCodeAuditSummary(raw) {
+  const lines = [];
+  for (const line of stripAnsi(raw || '').split('\n')) {
+    const t = line.trim();
+    if (/^Found \d+ violations\b/.test(t)) lines.push(t);
+    if (/^Critical:\s*\d/.test(t)) lines.push(t);
+    if (/^Warnings:\s*\d/.test(t)) lines.push(t);
+    if (/^Suggestions:\s*\d/.test(t)) lines.push(t);
+    if (/^Error:/i.test(t)) lines.push(t);
+  }
+  return [...new Set(lines)].join('\n');
+}
+
+function formatKnipReportText(raw) {
+  return stripAnsi(raw || '').trim();
 }
 
 function parseJscpdSummary(jsonPath) {
@@ -248,11 +315,33 @@ Raw JSON: \`${jscpd.jsonPath}\`
   const codeAuditStatus = codeAudit.skipped
     ? 'skipped'
     : `exit **${codeAudit.code}**${codeAudit.timedOut ? ' (timed out)' : ''}`;
+  const rawCodeAudit = `${codeAudit.stdout || ''}\n${codeAudit.stderr || ''}`;
+  const codeAuditSummary = extractCodeAuditSummary(rawCodeAudit);
+  const codeAuditTail = truncateTail(sanitizeCodeAuditLog(rawCodeAudit), 14_000);
   const codeBlock = codeAudit.skipped
     ? '_Skipped (`--skip-code-audit` or `AUDIT_SKIP_CODE_AUDIT=1`). Re-run without that flag for SOLID/DRY output._'
-    : `\`\`\`text\n${truncate(codeAudit.stdout + (codeAudit.stderr ? `\n--- stderr ---\n${codeAudit.stderr}` : ''))}\n\`\`\`\n\nExit code: **${codeAudit.code}**${codeAudit.timedOut ? ' (timed out)' : ''}`;
+    : [
+      '### Result',
+      '',
+      '```text',
+      codeAuditSummary || '(no summary lines matched; see tail below)',
+      '```',
+      '',
+      '_Debug / extractor noise was stripped; the block below is the **tail** of remaining output._',
+      '',
+      '```text',
+      codeAuditTail || '(empty after filtering)',
+      '```',
+      '',
+      `Exit code: **${codeAudit.code}**${codeAudit.timedOut ? ' (timed out)' : ''}`,
+    ].join('\n');
 
-  const knipBlock = `\`\`\`text\n${truncate(knip.stdout + (knip.stderr ? `\n--- stderr ---\n${knip.stderr}` : ''))}\n\`\`\`\n\nExit code: **${knip.code}**`;
+  const knipText = formatKnipReportText(
+    `${knip.stdout || ''}\n${knip.stderr || ''}`,
+  );
+  const knipBlock = knipText
+    ? `\`\`\`text\n${truncate(knipText)}\n\`\`\`\n\nExit code: **${knip.code}**`
+    : `_Knip reported no issues (no stdout/stderr text)._\n\nExit code: **${knip.code}**`;
 
   return `# Audit report
 

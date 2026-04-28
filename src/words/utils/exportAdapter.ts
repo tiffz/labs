@@ -1,3 +1,4 @@
+import { buildDrumMidiEventsFromParsedRhythm } from '../../shared/music/drumRhythmMidiEvents';
 import { buildSingleTrackMidi, type MidiNoteEvent } from '../../shared/music/midiBuilder';
 import type { ExportSourceAdapter } from '../../shared/music/exportTypes';
 import { renderMidiEventsToAudioBuffer } from '../../shared/music/midiAudioRender';
@@ -16,46 +17,6 @@ interface CreateWordsExportAdapterOptions {
   timeSignature: TimeSignature;
   chordLabelsByMeasure: Map<number, string>;
   chordStyleByMeasure: Map<number, ChordStyleId>;
-}
-
-function buildDrumMidiEvents(parsedRhythm: ParsedRhythm, loopCount: number): MidiNoteEvent[] {
-  const ticksPerSixteenth = 120;
-  const drumPitchBySound: Record<string, number> = {
-    dum: 36,
-    tak: 38,
-    ka: 42,
-    slap: 39,
-  };
-  const singleLoopTicks = parsedRhythm.measures.reduce((total, measure) => total + measure.notes.reduce(
-    (sum, note) => sum + Math.max(ticksPerSixteenth, Math.round(note.durationInSixteenths * ticksPerSixteenth)),
-    0
-  ), 0);
-  const events: MidiNoteEvent[] = [];
-  let loopOffset = 0;
-  for (let loopIndex = 0; loopIndex < loopCount; loopIndex += 1) {
-    let tickCursor = loopOffset;
-    parsedRhythm.measures.forEach((measure) => {
-      measure.notes.forEach((note) => {
-        const pitch = drumPitchBySound[note.sound];
-        const durationTicks = Math.max(
-          ticksPerSixteenth,
-          Math.round(note.durationInSixteenths * ticksPerSixteenth)
-        );
-        if (pitch !== undefined) {
-          events.push({
-            midi: pitch,
-            startTick: tickCursor,
-            durationTicks: Math.max(30, Math.round(durationTicks * 0.8)),
-            velocity: 100,
-            channel: 9,
-          });
-        }
-        tickCursor += durationTicks;
-      });
-    });
-    loopOffset += singleLoopTicks;
-  }
-  return events;
 }
 
 function buildPianoMidiEvents(
@@ -178,7 +139,7 @@ export function createWordsExportAdapter({
       const stems = selectedStemIds.length > 0 ? new Set(selectedStemIds) : new Set(['piano', 'drums']);
       const events: MidiNoteEvent[] = [];
       if (stems.has('drums')) {
-        events.push(...buildDrumMidiEvents(parsedRhythm, loopCount));
+        events.push(...buildDrumMidiEventsFromParsedRhythm(parsedRhythm, loopCount));
       }
       if (stems.has('piano')) {
         events.push(...buildPianoMidiEvents(
@@ -196,7 +157,7 @@ export function createWordsExportAdapter({
       const selected = selectedStemIds.length > 0 ? new Set(selectedStemIds) : new Set(['piano', 'drums']);
       const stemEvents: Record<string, MidiNoteEvent[]> = {};
       if (selected.has('drums')) {
-        stemEvents.drums = buildDrumMidiEvents(parsedRhythm, loopCount);
+        stemEvents.drums = buildDrumMidiEventsFromParsedRhythm(parsedRhythm, loopCount);
       }
       if (selected.has('piano')) {
         stemEvents.piano = buildPianoMidiEvents(
