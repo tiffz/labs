@@ -44,6 +44,7 @@ const config: KnipConfig = {
     'src/beat/utils/nodeAudio.ts',
     'scripts/analyze-tempo.ts',
     'scripts/melodia/ingest-folder.mts',
+    'scripts/audit-pipeline.js',
   ],
   project: [
     'src/**/*.{ts,tsx}',
@@ -103,6 +104,9 @@ const config: KnipConfig = {
   ignoreDependencies: [
     // lint-staged is used by husky pre-commit hook (not imported in TS)
     'lint-staged',
+    // Spawned from scripts/audit-pipeline.js (not part of the import graph)
+    'jscpd',
+    'code-auditor-mcp',
   ],
   // Ignore exported types that are part of the public API or used in data structures
   ignoreExportsUsedInFile: true,
