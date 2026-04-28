@@ -811,11 +811,14 @@
     padding: 1rem 1.125rem;
     box-shadow: var(--shadow-purple);
     z-index: 1000;
-    /* Cap the tooltip to a readable measure so long copy wraps instead of
-       stretching across the viewport. The inline `width` set by
-       HelpTooltip.tsx (`min(360px, calc(100vw - 24px))`) drives the actual
-       width; these bounds just provide sensible fallbacks. */
-    min-width: 240px;
+    /*
+     * Explicit width: in-flow tooltips (e.g. RhythmInput) sit inside a narrow
+     * `position: relative` wrapper (~help button). `width: auto` uses
+     * shrink-to-fit against that tiny containing block, so copy wraps in a
+     * sliver. Match HelpTooltip.tsx’s fixed/portal tooltips.
+     */
+    width: min(360px, calc(100vw - 24px));
+    min-width: min(240px, calc(100vw - 24px));
     max-width: min(360px, calc(100vw - 24px));
     font-size: 0.875rem;
     line-height: 1.55;

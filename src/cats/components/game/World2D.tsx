@@ -75,6 +75,9 @@ const World2D: React.FC<World2DProps> = ({
   // Track when manual centering is happening to prevent camera following override
   const isManualCenteringRef = useRef(false);
   const centerTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  /** After keyboard/button pan, skip smooth follow until idle so follow does not erase pan next tick. */
+  const suppressCameraFollowUntilRef = useRef(0);
+  const MANUAL_PAN_SUPPRESS_MS = 1200;
 
   // Derived value: re-render counter for button disabled state (low-frequency)
   const [, forceButtonUpdate] = useState(0);
@@ -115,7 +118,8 @@ const World2D: React.FC<World2DProps> = ({
 
   const centerCatOnScreen = useCallback(() => {
     isManualCenteringRef.current = true;
-    
+    suppressCameraFollowUntilRef.current = 0;
+
     const catScreenPos = catCoordinateSystem.catToScreen({
       x: catWorldPosition.x,
       y: catWorldPosition.y ?? 0,
@@ -213,6 +217,7 @@ const World2D: React.FC<World2DProps> = ({
     let cachedCatId: string | null = null;
     const onTick = () => {
       if (isManualCenteringRef.current) return;
+      if (performance.now() < suppressCameraFollowUntilRef.current) return;
 
       // Cache the cat entity ID to avoid Map scan every frame
       if (!cachedCatId || !world.transforms.get(cachedCatId)) {
@@ -249,9 +254,11 @@ const World2D: React.FC<World2DProps> = ({
       const panSpeed = 60;
       const maxCam = maxCameraXRef.current;
       if (e.key === 'ArrowLeft') {
+        suppressCameraFollowUntilRef.current = performance.now() + MANUAL_PAN_SUPPRESS_MS;
         applyCameraX(Math.max(0, cameraXRef.current - panSpeed));
         forceButtonUpdate(v => (v + 1) & 0x3fffffff);
       } else if (e.key === 'ArrowRight') {
+        suppressCameraFollowUntilRef.current = performance.now() + MANUAL_PAN_SUPPRESS_MS;
         applyCameraX(Math.min(maxCam, cameraXRef.current + panSpeed));
         forceButtonUpdate(v => (v + 1) & 0x3fffffff);
       } else if (e.key === 'ArrowUp') {
@@ -293,6 +300,7 @@ const World2D: React.FC<World2DProps> = ({
           <button 
             className="pan-button pan-left"
             onClick={() => {
+              suppressCameraFollowUntilRef.current = performance.now() + MANUAL_PAN_SUPPRESS_MS;
               applyCameraX(Math.max(0, cameraXRef.current - 100));
               forceButtonUpdate(v => (v + 1) & 0x3fffffff);
             }}
@@ -303,6 +311,7 @@ const World2D: React.FC<World2DProps> = ({
           <button 
             className="pan-button pan-right"
             onClick={() => {
+              suppressCameraFollowUntilRef.current = performance.now() + MANUAL_PAN_SUPPRESS_MS;
               applyCameraX(Math.min(maxCameraXRef.current, cameraXRef.current + 100));
               forceButtonUpdate(v => (v + 1) & 0x3fffffff);
             }}
