@@ -98,15 +98,10 @@
     </script>
 
     <link rel="stylesheet" href="/styles/shared.css" />
-
-    <script>
-      if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-        const script = document.createElement('script');
-        script.async = true;
-        script.src = '/scripts/analytics.js';
-        document.head.appendChild(script);
-      }
-    </script>
+    <link rel="stylesheet" href="/styles/labs-cookie-consent.css" />
+    <!-- Match pulse theme primary (see getAppTheme('pulse') in shared/ui/theme/appTheme.ts). -->
+    <style>:root { --labs-cc-accent: #00ff41; --labs-cc-on-accent: #0a0a0a; }</style>
+    <script defer src="/scripts/labs-cookie-consent.js"></script>
   </head>
   <body>
     <div id="root"></div>

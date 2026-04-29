@@ -43,6 +43,7 @@ const MULTI_APP_INPUTS = {
   count: resolve(__dirname, 'src/count/index.html'),
   ui: resolve(__dirname, 'src/ui/index.html'),
   agility: resolve(__dirname, 'src/agility/index.html'),
+  encore: resolve(__dirname, 'src/encore/index.html'),
 } as const;
 
 const SRC_ROOT = resolve(__dirname, 'src');

@@ -9,17 +9,21 @@
   var GA4_ID = 'G-25C3B5B84M';
 
   var APP_MAP = {
+    '/agility/': { name: 'agility', group: 'Music' },
     '/beat/':    { name: 'beat',    group: 'Music' },
     '/cats/':    { name: 'cats',    group: 'Games' },
     '/chords/':  { name: 'chords',  group: 'Music' },
     '/corp/':    { name: 'corp',    group: 'Games' },
+    '/count/':   { name: 'count',   group: 'Music' },
     '/drums/':   { name: 'drums',   group: 'Music' },
+    '/encore/':  { name: 'encore',  group: 'Music' },
     '/forms/':   { name: 'forms',   group: 'Art & Writing' },
+    '/melodia/': { name: 'melodia', group: 'Music' },
     '/piano/':   { name: 'piano',   group: 'Music' },
     '/pitch/':   { name: 'pitch',   group: 'Music' },
-    '/count/':   { name: 'count',   group: 'Music' },
     '/scales/':  { name: 'scales',  group: 'Music' },
     '/story/':   { name: 'story',   group: 'Art & Writing' },
+    '/ui/':      { name: 'ui',      group: 'Internal' },
     '/words/':   { name: 'words',   group: 'Music' },
     '/zines/':   { name: 'zines',   group: 'Art & Writing' },
   };

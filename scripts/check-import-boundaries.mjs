@@ -19,6 +19,7 @@ const APP_DIRS = new Set([
   'words',
   'zines',
   'agility',
+  'encore',
 ]);
 
 function collectTsFiles(dir, out) {

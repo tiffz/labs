@@ -25,6 +25,7 @@ const ROUTE_SPECS: VisualRouteSpec[] = [
   { id: 'scales', route: '/scales/', title: /Learn Your Scales/i, readySelector: '#root' },
   { id: 'ui', route: '/ui/', title: /UI Catalog/i, readySelector: '#root' },
   { id: 'universal-tom', route: '/drums/universal_tom/', title: /Universal Tom Importer/i, readySelector: '#root' },
+  { id: 'encore', route: '/encore/', title: /Encore|Tiff Zhang Labs/i, readySelector: '#root' },
 ];
 
 test.describe('Visual regression baselines for app routes', () => {

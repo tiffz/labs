@@ -43,12 +43,13 @@
             font-family: var(--font-heading);
         }
         
-        /* Hide body until fonts are ready to prevent FOUC */
+        /* Hide body until fonts/icons are ready to prevent FOUC.
+           `initMaterialIconRuntime()` (main.tsx) adds `fonts-loaded` on <html>, same as other apps. */
         body {
             visibility: hidden;
         }
-        
-        body.fonts-loaded {
+
+        html.fonts-loaded body {
             visibility: visible;
         }
     </style>
@@ -57,32 +58,9 @@
     <script src="https://unpkg.com/page-flip@2.0.7/dist/js/page-flip.browser.js"></script>
     
     <!-- Font loading detection script -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Use FontFace API if available to detect when fonts are loaded
-            if (document.fonts && document.fonts.ready) {
-                document.fonts.ready.then(function() {
-                    document.body.classList.add('fonts-loaded');
-                });
-            } else {
-                // Fallback: show content after short delay
-                setTimeout(function() {
-                    document.body.classList.add('fonts-loaded');
-                }, 100);
-            }
-        });
-    </script>
-    
-    <!-- Analytics - Only load in production -->
-    <script>
-        // Only load analytics when not on localhost
-        if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-            const script = document.createElement('script');
-            script.async = true;
-            script.src = '/scripts/analytics.js';
-            document.head.appendChild(script);
-        }
-    </script>
+    <link rel="stylesheet" href="/styles/labs-cookie-consent.css" />
+    <style>:root { --labs-cc-accent: #f97316; --labs-cc-on-accent: #ffffff; }</style>
+    <script defer src="/scripts/labs-cookie-consent.js"></script>
 </head>
 <body>
     <div id="root"></div>

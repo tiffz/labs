@@ -22,16 +22,9 @@
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content="Cat Clicker - Tiff Zhang Labs" />
     <meta name="twitter:description" content="Click a cat for the greater good — an idle clicker game with achievements and furniture" />
-    
-    <!-- Analytics - Only load in production -->
-    <script>
-        if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-            const script = document.createElement('script');
-            script.async = true;
-            script.src = '/scripts/analytics.js';
-            document.head.appendChild(script);
-        }
-    </script>
+    <link rel="stylesheet" href="/styles/labs-cookie-consent.css" />
+    <style>:root { --labs-cc-accent: #f0f0f0; --labs-cc-on-accent: #0f172a; }</style>
+    <script defer src="/scripts/labs-cookie-consent.js"></script>
 
     <!-- Dev-only early error/logger hook (captures errors before module load) -->
     <script>

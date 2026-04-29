@@ -104,8 +104,9 @@ describe('SPA shell guardrails', () => {
         expect(html).not.toMatch(/http-equiv="Expires"/i);
       });
 
-      it('guards analytics behind a non-localhost check', () => {
-        if (!/analytics\.js/.test(html)) return; // not every entry opts in
+      it('loads analytics only via consent script or localhost-guarded injection', () => {
+        if (!/labs-cookie-consent\.js/.test(html) && !/analytics\.js/.test(html)) return;
+        if (/labs-cookie-consent\.js/.test(html)) return;
         expect(html).toMatch(/localhost/);
         expect(html).toMatch(/127\.0\.0\.1/);
       });

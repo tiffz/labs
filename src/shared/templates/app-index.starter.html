@@ -23,11 +23,10 @@
       HTML shell cache-busting. Combined with the build-version.txt reload
       hook, this keeps users from being stuck on a stale SPA shell after a
       deploy. DO NOT add a manifest or service worker here; labs deliberately
-      opts out of PWA install prompts (see vite.config.ts).
+      opts out of PWA install prompts (see vite.config.ts). Use a single
+      Cache-Control meta only (see spaGuardrails + .cursor/rules/app-entry-html).
     -->
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <meta http-equiv="Pragma" content="no-cache" />
-    <meta http-equiv="Expires" content="0" />
+    <meta http-equiv="Cache-Control" content="no-cache" />
 
     <title>TODO: App Name - Tiff Zhang Labs</title>
     <meta name="description" content="TODO: describe this app." />
@@ -61,20 +60,17 @@
       above, and leaks to a third party. Pull in the font via JS (fontsource)
       and gate rendering with font-display: swap.
     -->
-
     <!--
-      Analytics. Localhost is guarded so tests, dev servers, and e2e runs
-      never ping the analytics endpoint. Keep this block identical across
-      apps.
+      Cookie / analytics consent (GA4) + theming. Keep this trio together:
+      1) labs-cookie-consent.css — layout and tokens (--labs-cc-*).
+      2) Tiny :root style — set --labs-cc-accent (and --labs-cc-on-accent if needed)
+         to match meta theme-color / your brand. Defaults are in the CSS file.
+      3) labs-cookie-consent.js — defer; localhost skips banner + analytics.
+      Preview banner locally: ?labs_preview_cookie_banner=1
     -->
-    <script>
-      if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-        const script = document.createElement('script');
-        script.async = true;
-        script.src = '/scripts/analytics.js';
-        document.head.appendChild(script);
-      }
-    </script>
+    <link rel="stylesheet" href="/styles/labs-cookie-consent.css" />
+    <style>:root { --labs-cc-accent: #4f46e5; --labs-cc-on-accent: #ffffff; }</style>
+    <script defer src="/scripts/labs-cookie-consent.js"></script>
   </head>
   <body>
     <noscript>

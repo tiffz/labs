@@ -16,15 +16,9 @@
       name="description"
       content="Shared UI component catalog with live demos and usage documentation."
     />
-
-    <script>
-      if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-        const script = document.createElement('script');
-        script.async = true;
-        script.src = '/scripts/analytics.js';
-        document.head.appendChild(script);
-      }
-    </script>
+    <link rel="stylesheet" href="/styles/labs-cookie-consent.css" />
+    <style>:root { --labs-cc-accent: #4f46e5; --labs-cc-on-accent: #ffffff; }</style>
+    <script defer src="/scripts/labs-cookie-consent.js"></script>
   </head>
   <body>
     <div id="root"></div>

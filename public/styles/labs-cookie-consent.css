@@ -1,0 +1,92 @@
+/**
+ * Cookie / analytics consent strip for Labs micro-apps.
+ * Each app shell sets --labs-cc-accent (usually = meta theme-color) in a tiny <style> after this link.
+ * Override other tokens only if you need a closer match to your UI.
+ */
+:root {
+  --labs-cc-surface: rgba(15, 23, 42, 0.94);
+  --labs-cc-text: #f8fafc;
+  --labs-cc-muted: #cbd5e1;
+  --labs-cc-border: #64748b;
+  --labs-cc-accent: #a855f7;
+  --labs-cc-on-accent: #ffffff;
+  --labs-cc-link: #93c5fd;
+  --labs-cc-reject-bg: transparent;
+  --labs-cc-reject-text: #e2e8f0;
+  --labs-cc-reject-border: #64748b;
+}
+
+#labs-cookie-consent-root {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 99999;
+  padding: 12px 16px;
+  background: var(--labs-cc-surface);
+  color: var(--labs-cc-text);
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.2);
+  border-top: 3px solid var(--labs-cc-accent);
+}
+
+#labs-cookie-consent-root .labs-cc-inner {
+  max-width: 52rem;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+#labs-cookie-consent-root p {
+  margin: 0;
+  flex: 1 1 16rem;
+}
+
+#labs-cookie-consent-root a {
+  color: var(--labs-cc-link);
+}
+
+#labs-cookie-consent-root .labs-cc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+#labs-cookie-consent-root button {
+  font: inherit;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 0;
+}
+
+#labs-cookie-consent-root .labs-cc-accept {
+  background: var(--labs-cc-accent);
+  color: var(--labs-cc-on-accent);
+  font-weight: 600;
+}
+
+#labs-cookie-consent-root .labs-cc-accept:focus-visible {
+  outline: 2px solid var(--labs-cc-link);
+  outline-offset: 2px;
+}
+
+#labs-cookie-consent-root .labs-cc-reject {
+  background: var(--labs-cc-reject-bg);
+  color: var(--labs-cc-reject-text);
+  border: 1px solid var(--labs-cc-reject-border);
+}
+
+#labs-cookie-consent-root .labs-cc-reject:focus-visible {
+  outline: 2px solid var(--labs-cc-link);
+  outline-offset: 2px;
+}

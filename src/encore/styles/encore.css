@@ -1,0 +1,77 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.encore-app-shell {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background:
+    radial-gradient(
+      120% 80% at 100% 0%,
+      rgba(192, 38, 211, 0.07) 0%,
+      transparent 55%
+    ),
+    radial-gradient(
+      90% 60% at 0% 100%,
+      rgba(124, 58, 237, 0.06) 0%,
+      transparent 50%
+    ),
+    linear-gradient(168deg, #fdf4ff 0%, #faf5ff 38%, #fff1f2 100%);
+}
+
+/* Desktop: calmer page chrome (tabs replace bottom bar at md+). */
+@media (min-width: 900px) {
+  .encore-app-shell {
+    background:
+      radial-gradient(
+        100% 55% at 100% 0%,
+        rgba(192, 38, 211, 0.045) 0%,
+        transparent 50%
+      ),
+      radial-gradient(
+        80% 45% at 0% 100%,
+        rgba(124, 58, 237, 0.04) 0%,
+        transparent 45%
+      ),
+      linear-gradient(180deg, #faf8fc 0%, #fdf4ff 55%, #fff5f7 100%);
+  }
+}
+
+.encore-markdown-preview {
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+
+.encore-markdown-preview h1,
+.encore-markdown-preview h2,
+.encore-markdown-preview h3 {
+  margin-top: 0.75rem;
+  margin-bottom: 0.35rem;
+  font-weight: 600;
+}
+
+.encore-markdown-preview ul {
+  padding-left: 1.25rem;
+  margin: 0.35rem 0;
+}
+
+.encore-markdown-preview p {
+  margin: 0.35rem 0;
+}
+
+.encore-markdown-preview a {
+  color: #7c3aed;
+  text-decoration: underline;
+}
+
+.encore-markdown-preview a:focus-visible {
+  outline: 2px solid #c026d3;
+  outline-offset: 2px;
+}
+
+@media (pointer: coarse) {
+  .encore-touch-target {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}

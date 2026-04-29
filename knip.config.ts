@@ -14,6 +14,7 @@ const config: KnipConfig = {
     'src/scales/index.html',
     'src/melodia/index.html',
     'src/agility/index.html',
+    'src/encore/index.html',
     'src/pitch/index.html',
     'src/count/index.html',
     'src/words/index.html',
@@ -37,6 +38,7 @@ const config: KnipConfig = {
     'src/count/main.tsx',
     'src/words/main.tsx',
     'src/agility/main.tsx',
+    'src/encore/main.tsx',
     'src/ui/main.tsx',
     'src/corp/App.tsx',
     'src/**/*.test.{ts,tsx}',
@@ -57,6 +59,7 @@ const config: KnipConfig = {
   ignore: [
     // Public scripts loaded by HTML files
     'public/scripts/analytics.js',
+    'public/scripts/labs-cookie-consent.js',
     'public/scripts/shared.js',
     // Kill-switch service worker deployed to purge stale vite-plugin-pwa SWs
     'public/sw.js',

@@ -25,15 +25,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap" rel="stylesheet">
-    <!-- Analytics - Only load in production -->
-    <script>
-        if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-            const script = document.createElement('script');
-            script.async = true;
-            script.src = '/scripts/analytics.js';
-            document.head.appendChild(script);
-        }
-    </script>
+    <link rel="stylesheet" href="/styles/labs-cookie-consent.css" />
+    <style>:root { --labs-cc-accent: #3f3f46; --labs-cc-on-accent: #ffffff; }</style>
+    <script defer src="/scripts/labs-cookie-consent.js"></script>
 </head>
 <body>
 

@@ -22,15 +22,9 @@
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content="Form Intersections - Tiff Zhang Labs" />
     <meta name="twitter:description" content="3D visualization tool for practicing Drawabox form intersections exercise" />
-    <!-- Analytics - Only load in production -->
-    <script>
-        if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-            const script = document.createElement('script');
-            script.async = true;
-            script.src = '/scripts/analytics.js';
-            document.head.appendChild(script);
-        }
-    </script>
+    <link rel="stylesheet" href="/styles/labs-cookie-consent.css" />
+    <style>:root { --labs-cc-accent: #1e293b; --labs-cc-on-accent: #ffffff; }</style>
+    <script defer src="/scripts/labs-cookie-consent.js"></script>
 </head>
 <body>
     <div id="root"></div>

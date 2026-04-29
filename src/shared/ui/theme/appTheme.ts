@@ -1,4 +1,4 @@
-import { createTheme, type Theme } from '@mui/material/styles';
+import { alpha, createTheme, type Theme } from '@mui/material/styles';
 
 export type AppThemeId =
   | 'beat'
@@ -15,7 +15,8 @@ export type AppThemeId =
   | 'pulse'
   | 'story'
   | 'zines'
-  | 'agility';
+  | 'agility'
+  | 'encore';
 
 interface AppThemeConfig {
   mode: 'light' | 'dark';
@@ -32,9 +33,14 @@ interface AppThemeConfig {
   fontFamily?: string;
   /** Larger type, line heights, and buttons for reading-heavy flows (e.g. Melodia). */
   readable?: boolean;
+  /**
+   * M3-inspired surfaces, type rhythm, and smoothing (Encore). Keeps other apps unchanged.
+   */
+  materialPolish?: boolean;
 }
 
 function buildTypography(config: AppThemeConfig) {
+  const polish = Boolean(config.materialPolish);
   const fontFamily =
     config.fontFamily ?? "'Roboto', 'Segoe UI', system-ui, -apple-system, sans-serif";
   const shared = {
@@ -48,14 +54,59 @@ function buildTypography(config: AppThemeConfig) {
     return {
       ...shared,
       fontSize: 17,
-      h1: { fontSize: '2.35rem', fontWeight: 700, lineHeight: 1.22 },
-      h2: { fontSize: '1.75rem', fontWeight: 700, lineHeight: 1.28 },
-      h3: { fontSize: '1.45rem', fontWeight: 600, lineHeight: 1.34 },
-      body1: { fontSize: '1.0625rem', lineHeight: 1.62 },
-      body2: { fontSize: '1rem', lineHeight: 1.55 },
-      subtitle1: { fontSize: '1.125rem', lineHeight: 1.52, fontWeight: 600 },
-      subtitle2: { fontSize: '1.03rem', lineHeight: 1.48, fontWeight: 600 },
-      caption: { fontSize: '0.9375rem', lineHeight: 1.45 },
+      h1: {
+        fontSize: '2.35rem',
+        fontWeight: 700,
+        lineHeight: 1.22,
+        ...(polish ? { letterSpacing: '-0.03em' } : {}),
+      },
+      h2: {
+        fontSize: '1.75rem',
+        fontWeight: 700,
+        lineHeight: 1.28,
+        ...(polish ? { letterSpacing: '-0.022em' } : {}),
+      },
+      h3: {
+        fontSize: '1.45rem',
+        fontWeight: 600,
+        lineHeight: 1.34,
+        ...(polish ? { letterSpacing: '-0.015em' } : {}),
+      },
+      ...(polish
+        ? {
+            h4: { fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.28 },
+            h5: { fontWeight: 700, letterSpacing: '-0.018em', lineHeight: 1.3 },
+            h6: { fontWeight: 700, letterSpacing: '-0.012em', lineHeight: 1.35 },
+            overline: { letterSpacing: '0.12em', fontWeight: 700, lineHeight: 1.6, fontSize: '0.7rem' },
+          }
+        : {}),
+      body1: {
+        fontSize: '1.0625rem',
+        lineHeight: 1.62,
+        ...(polish ? { letterSpacing: '0.01em' } : {}),
+      },
+      body2: {
+        fontSize: '1rem',
+        lineHeight: 1.55,
+        ...(polish ? { letterSpacing: '0.008em' } : {}),
+      },
+      subtitle1: {
+        fontSize: '1.125rem',
+        lineHeight: 1.52,
+        fontWeight: 600,
+        ...(polish ? { letterSpacing: '0.006em' } : {}),
+      },
+      subtitle2: {
+        fontSize: '1.03rem',
+        lineHeight: 1.48,
+        fontWeight: 600,
+        ...(polish ? { letterSpacing: '0.04em', fontWeight: 700 } : {}),
+      },
+      caption: {
+        fontSize: '0.9375rem',
+        lineHeight: 1.45,
+        ...(polish ? { letterSpacing: '0.02em', fontWeight: 500 } : {}),
+      },
       button: { textTransform: 'none' as const, fontWeight: 600, fontSize: '1rem' },
     };
   }
@@ -73,6 +124,8 @@ function buildTypography(config: AppThemeConfig) {
 
 function buildTheme(config: AppThemeConfig): Theme {
   const readable = Boolean(config.readable);
+  const polish = Boolean(config.materialPolish);
+
   return createTheme({
     palette: {
       mode: config.mode,
@@ -108,6 +161,12 @@ function buildTheme(config: AppThemeConfig): Theme {
         styleOverrides: {
           root: ({ theme }) => ({
             borderRadius: theme.shape.borderRadius,
+            ...(polish
+              ? {
+                  boxShadow: `0 1px 2px ${alpha(theme.palette.common.black, 0.05)}`,
+                  border: `1px solid ${alpha(theme.palette.divider as string, 0.55)}`,
+                }
+              : {}),
           }),
         },
       },
@@ -118,6 +177,7 @@ function buildTheme(config: AppThemeConfig): Theme {
             minHeight: readable ? 44 : 38,
             paddingInline: theme.spacing(readable ? 1.75 : 1.5),
             ...(readable ? { fontSize: '1rem' } : {}),
+            ...(polish ? { letterSpacing: '0.02em' } : {}),
           }),
           sizeSmall: ({ theme }) => ({
             minHeight: readable ? 36 : 32,
@@ -127,6 +187,16 @@ function buildTheme(config: AppThemeConfig): Theme {
             minHeight: readable ? 52 : 44,
             paddingInline: theme.spacing(readable ? 2.25 : 2),
           }),
+          ...(polish
+            ? {
+                containedPrimary: ({ theme }) => ({
+                  boxShadow: `0 1px 3px ${alpha(theme.palette.primary.main, 0.32)}`,
+                  '&:hover': {
+                    boxShadow: `0 4px 14px ${alpha(theme.palette.primary.main, 0.36)}`,
+                  },
+                }),
+              }
+            : {}),
         },
       },
       MuiTextField: {
@@ -138,6 +208,20 @@ function buildTheme(config: AppThemeConfig): Theme {
         styleOverrides: {
           root: ({ theme }) => ({
             borderRadius: Math.max(Number(theme.shape.borderRadius) - 2, 6),
+            ...(polish
+              ? {
+                  transition: theme.transitions.create(['border-color', 'box-shadow'], {
+                    duration: theme.transitions.duration.shorter,
+                  }),
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: alpha(theme.palette.primary.main, 0.35),
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderWidth: 2,
+                    borderColor: theme.palette.primary.main,
+                  },
+                }
+              : {}),
           }),
         },
       },
@@ -151,6 +235,34 @@ function buildTheme(config: AppThemeConfig): Theme {
           disableScrollLock: true,
         },
       },
+      ...(polish
+        ? {
+            MuiCssBaseline: {
+              styleOverrides: {
+                body: {
+                  WebkitFontSmoothing: 'antialiased',
+                  MozOsxFontSmoothing: 'grayscale',
+                  textRendering: 'optimizeLegibility',
+                },
+              },
+            },
+            MuiCard: {
+              styleOverrides: {
+                root: ({ theme }) => ({
+                  borderRadius: Math.min(Number(theme.shape.borderRadius) + 2, 16),
+                  overflow: 'hidden',
+                }),
+              },
+            },
+            MuiBottomNavigation: {
+              styleOverrides: {
+                root: ({ theme }) => ({
+                  boxShadow: `0 -1px 0 ${alpha(theme.palette.divider as string, 0.85)}`,
+                }),
+              },
+            },
+          }
+        : {}),
     },
   });
 }
@@ -271,6 +383,20 @@ const THEMES: Record<AppThemeId, Theme> = {
     radius: 4,
     spacingBase: 5,
     readable: true,
+  }),
+  encore: buildTheme({
+    mode: 'light',
+    ...MUSIC_LIGHT_DEFAULT,
+    primary: '#c026d3',
+    secondary: '#7c3aed',
+    backgroundDefault: '#fdf4ff',
+    backgroundPaper: '#ffffff',
+    textPrimary: '#4c1d95',
+    textSecondary: '#64748b',
+    radius: 12,
+    spacingBase: 5,
+    readable: true,
+    materialPolish: true,
   }),
 };
 

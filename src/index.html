@@ -21,19 +21,12 @@
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content="Tiff Zhang Labs" />
     <meta name="twitter:description" content="A collection of experimental music, art, and game apps by Tiff Zhang" />
-    
-    <!-- Analytics - Only load in production -->
-    <script>
-        if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-            const script = document.createElement('script');
-            script.async = true;
-            script.src = '/scripts/analytics.js';
-            document.head.appendChild(script);
-        }
-    </script>
-    
+
     <!-- Styles -->
     <link rel="stylesheet" href="/styles/shared.css" />
+    <link rel="stylesheet" href="/styles/labs-cookie-consent.css" />
+    <style>:root { --labs-cc-accent: #8b5cf6; --labs-cc-on-accent: #ffffff; }</style>
+    <script defer src="/scripts/labs-cookie-consent.js"></script>
     <link rel="stylesheet" href="/styles/labs-home.css" />
     <link rel="stylesheet" href="/styles/index.css" />
   </head>
@@ -154,6 +147,15 @@
               </div>
               <span class="status-badge status-unlisted">Unlisted</span>
             </a>
+
+            <a href="/encore/" class="app-card" data-stage="unlisted" data-name="Encore" data-description="Track repertoire, practice notes, and performance history with local-first storage and Google Drive sync">
+              <div class="app-icon encore"></div>
+              <div class="app-info">
+                <h3 class="app-title">Encore</h3>
+                <p class="app-description">Personal repertoire companion: songs, journals, performances, and Drive backup</p>
+              </div>
+              <span class="status-badge status-unlisted">Unlisted</span>
+            </a>
           </div>
         </section>
 
@@ -217,6 +219,12 @@
           </div>
         </section>
       </div>
+
+      <footer class="labs-site-footer" aria-label="Site">
+        <a href="/legal/terms.html">Terms</a>
+        <span class="labs-site-footer-sep" aria-hidden="true">·</span>
+        <a href="/legal/privacy.html">Privacy</a>
+      </footer>
     </div>
 
     <!-- Scripts -->
