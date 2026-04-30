@@ -349,23 +349,18 @@ export function buildStages(exerciseId: string): Stage[] {
 }
 
 /**
- * Pentascale (Tier 0) stage progression.
+ * Pentascale (Tier 0) stage progression — same shape for every key (C, G, F, D, A).
  *
- * Spiral by `tier0PentascaleIndex` (order in Tier 0: C, G, F, D, A):
+ *   - **p1–p7:** free tempo → metronome fluency on **quarter** subdivisions
+ *     only (`subdivision: 'none'` on tempo stages), ending at the fluent gate.
+ *   - **p8e:** first metronome **subdivision** pass: both-hands **eighth** notes
+ *     at the slow click (two notes per beat).
+ *   - **p8–p9:** both-hands **triplet** then **sixteenth** at the slow click.
  *
- *   - **0–2:** p1–p7 as quarter-note metronome work (`subdivision: 'none'`
- *     on tempo stages) — same onboarding shape as the original app.
- *   - **3–4 (D, A):** p4–p7 use **eighth** subdivision (two notes per beat) on
- *     metronome stages.
- *   - **All keys:** after the fluent gate **p7**, **p8–p9** append triplet and
- *     sixteenth both-hands passes at the slow click.
- *
- * New stages use **append-only** ids so localStorage history and migrations
- * stay stable when the spiral grows.
+ * Stage id **`p8e`** is used (not reusing `p8`) so saved progress that already
+ * points at triplet work on `…-p8` stays valid.
  */
-export function buildPentascaleStages(exerciseId: string, tier0PentascaleIndex: number = 0): Stage[] {
-  const metSubdivision = tier0PentascaleIndex >= 3 ? 'eighth' : 'none';
-
+export function buildPentascaleStages(exerciseId: string): Stage[] {
   const core: Stage[] = [
     {
       id: `${exerciseId}-p1`,
@@ -415,7 +410,7 @@ export function buildPentascaleStages(exerciseId: string, tier0PentascaleIndex: 
       useTempo: true,
       bpm: 52,
       useMetronome: true,
-      subdivision: metSubdivision,
+      subdivision: 'none',
       mutePlayback: false,
       octaves: 1,
     },
@@ -428,7 +423,7 @@ export function buildPentascaleStages(exerciseId: string, tier0PentascaleIndex: 
       useTempo: true,
       bpm: 52,
       useMetronome: true,
-      subdivision: metSubdivision,
+      subdivision: 'none',
       mutePlayback: false,
       octaves: 1,
     },
@@ -442,7 +437,7 @@ export function buildPentascaleStages(exerciseId: string, tier0PentascaleIndex: 
       useTempo: true,
       bpm: 52,
       useMetronome: true,
-      subdivision: metSubdivision,
+      subdivision: 'none',
       mutePlayback: false,
       octaves: 1,
     },
@@ -455,21 +450,31 @@ export function buildPentascaleStages(exerciseId: string, tier0PentascaleIndex: 
       useTempo: true,
       bpm: 72,
       useMetronome: true,
-      subdivision: metSubdivision,
+      subdivision: 'none',
       mutePlayback: false,
       octaves: 1,
       kind: 'fluent-checkpoint',
     },
   ];
 
-  /**
-   * Triplet/sixteenth both-hands append **for every Tier 0 pentascale** so subdivision
-   * practice is consistent across keys (not only the last spiral row).
-   */
   core.push(
     {
-      id: `${exerciseId}-p8`,
+      id: `${exerciseId}-p8e`,
       stageNumber: 8,
+      label: 'Both hands,  eighth notes (slow)',
+      description:
+        'Two notes per beat at the same slow click. Aim for an even “and” between beats; triplets come next.',
+      hand: 'both',
+      useTempo: true,
+      bpm: 52,
+      useMetronome: true,
+      subdivision: 'eighth',
+      mutePlayback: false,
+      octaves: 1,
+    },
+    {
+      id: `${exerciseId}-p8`,
+      stageNumber: 9,
       label: 'Both hands,  slow tempo (triplets)',
       description:
         'Same slow click, three notes per beat. First note of each triplet on the click. Counting “1 + a, 2 + a…” out loud helps. Same notes as before.',
@@ -483,7 +488,7 @@ export function buildPentascaleStages(exerciseId: string, tier0PentascaleIndex: 
     },
     {
       id: `${exerciseId}-p9`,
-      stageNumber: 9,
+      stageNumber: 10,
       label: 'Both hands,  slow tempo (sixteenths)',
       description:
         'Four notes per click at a slow tempo. Keep the four taps inside each beat even; add speed only when that feels easy.',

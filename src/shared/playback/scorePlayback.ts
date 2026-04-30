@@ -339,6 +339,8 @@ export class ScorePlaybackEngine {
     const ctx = this.getAudioContext();
     await ensureAudioContextRunning(ctx);
     await this.loadClickSound();
+    // Context can suspend again while fetch/decode runs; re-arm before scheduling.
+    await ensureAudioContextRunning(ctx);
 
     const startBuffer = 0.15;
     const msPerBeat = 60000 / tempo;
@@ -358,11 +360,13 @@ export class ScorePlaybackEngine {
     const ctx = this.audioContext;
     if (!ctx) return;
 
+    const at = Math.max(time, ctx.currentTime + 0.002);
+
     if (this.clickSample) {
       playClickSampleAt(
         ctx,
         this.clickSample,
-        time,
+        at,
         (isDownbeat ? 0.8 : 0.4) * this.metronomeVolume * this.masterVolume,
         isDownbeat ? 1.3 : 1.0,
       );
@@ -373,9 +377,9 @@ export class ScorePlaybackEngine {
       gain.gain.value = 0.15 * this.metronomeVolume * this.masterVolume;
       osc.connect(gain);
       gain.connect(ctx.destination);
-      osc.start(time);
-      gain.gain.setTargetAtTime(0, time + 0.03, 0.01);
-      osc.stop(time + 0.08);
+      osc.start(at);
+      gain.gain.setTargetAtTime(0, at + 0.03, 0.01);
+      osc.stop(at + 0.08);
     }
   }
 
@@ -404,6 +408,9 @@ export class ScorePlaybackEngine {
       await this.sampledPiano.loadSamples();
       if (this.generation !== myGen) return;
     }
+
+    await ensureAudioContextRunning(ctx);
+    if (this.generation !== myGen) return;
 
     this.events = this.buildEvents(score);
     this.positionCallback = callback;

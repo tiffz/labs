@@ -75,6 +75,10 @@ export function planSingleExerciseSession(
  *
  * Pass {@link PlanSessionOptions.tierId} to rebuild a session from an earlier
  * tier the learner has already reached (remedial / review pass).
+ *
+ * New-material slots skip exercises that `isCurriculumExerciseUnlocked`
+ * still gates (e.g. no G slot while C is still in progress), so the plan
+ * does not list unreachable neighbors ahead of the learner.
  */
 export function planSession(data: ScalesProgressData, options?: PlanSessionOptions): SessionPlan {
   const sessionTier = sessionTierForPlanning(data, options);
@@ -88,6 +92,7 @@ export function planSession(data: ScalesProgressData, options?: PlanSessionOptio
 
   for (let curriculumIndex = 0; curriculumIndex < sessionTier.exercises.length; curriculumIndex++) {
     const ex = sessionTier.exercises[curriculumIndex];
+    if (!isCurriculumExerciseUnlocked(data, ex.id)) continue;
     if (candidateSlots.length >= MAX_SESSION_EXERCISES - REVIEW_SLOTS) break;
     const progress = getExerciseProgress(data, ex.id);
     const stage = ex.stages.find(s => s.id === progress.currentStageId) ?? ex.stages[0];

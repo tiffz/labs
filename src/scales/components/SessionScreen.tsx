@@ -1,4 +1,12 @@
-import { useEffect, useRef, useCallback, useState, useMemo, type ReactNode } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useCallback,
+  useState,
+  useMemo,
+  type ReactNode,
+} from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
@@ -55,7 +63,10 @@ import {
   perfectPracticeResultForNote,
 } from '../utils/debugPerfectPracticeResults';
 import { collectFingerCrossingRegions } from '../utils/fingerCrossingHighlights';
-import { canAdvanceToNextInSessionPlan } from '../curriculum/exerciseUnlock';
+import {
+  canAdvanceToNextInSessionPlan,
+  findNextUnlockedSessionIndex,
+} from '../curriculum/exerciseUnlock';
 import {
   nextDrillStreak as computeNextDrillStreak,
   isDrillStuck as computeIsDrillStuck,
@@ -200,6 +211,10 @@ export default function SessionScreen() {
   const guidancePianoDoubleTapArmRef = useRef<PianoDoubleTapArm>(null);
   /** Session "Continue" / stuck-dismiss: same double-tap semantics as home Practice now. */
   const sessionAdvancePianoArmRef = useRef<PianoDoubleTapArm>(null);
+  /** Timed metronome pre-start: same key twice (release between) as Continue / home Practice now. */
+  const timedPreStartPianoArmRef = useRef<PianoDoubleTapArm>(null);
+  /** Free-tempo pre-start: double-tap starts like the Start button (bypasses silent dry run). */
+  const freeTempoPreStartPianoArmRef = useRef<PianoDoubleTapArm>(null);
   /** Mirrors `open={hasResult && stuckVisible}` so MIDI advance does not rely on DOM probes. */
   const stuckDialogOpenForMidiRef = useRef(false);
   /** When true, piano "dismiss stuck" should only clear debug stuck preview (no real stuck state). */
@@ -295,19 +310,19 @@ export default function SessionScreen() {
   }, [activeExercise, dispatch, score, state.practiceResults]);
 
   const advanceToNext = useCallback(() => {
-    const nextIdx = state.activeExerciseIndex + 1;
-    if (sessionPlan && nextIdx < sessionPlan.exercises.length) {
-      if (!canAdvanceToNextInSessionPlan(state.progress, sessionPlan, state.activeExerciseIndex)) {
-        dispatch({ type: 'COMPLETE_SESSION' });
-        return;
-      }
-      const nextExercise = sessionPlan.exercises[nextIdx];
-      const nextScore = generateScoreForExercise(nextExercise);
-      if (nextScore) {
-        dispatch({ type: 'NEXT_EXERCISE', score: nextScore });
-      } else {
-        dispatch({ type: 'COMPLETE_SESSION' });
-      }
+    if (!sessionPlan) {
+      dispatch({ type: 'COMPLETE_SESSION' });
+      return;
+    }
+    const nextIdx = findNextUnlockedSessionIndex(state.progress, sessionPlan, state.activeExerciseIndex);
+    if (nextIdx === null) {
+      dispatch({ type: 'COMPLETE_SESSION' });
+      return;
+    }
+    const nextExercise = sessionPlan.exercises[nextIdx];
+    const nextScore = generateScoreForExercise(nextExercise);
+    if (nextScore) {
+      dispatch({ type: 'NEXT_EXERCISE', score: nextScore, targetIndex: nextIdx });
     } else {
       dispatch({ type: 'COMPLETE_SESSION' });
     }
@@ -632,10 +647,7 @@ export default function SessionScreen() {
   // Reset the loop pause state whenever the user changes exercise/stage
   // so a stale Stop click doesn't carry forward into the next exercise.
   // Drill + stuck state belong to a single (exercise, stage) pair too —
-  // moving on or stepping back wipes them clean. `passedThisExercise`
-  // only resets on exerciseId change (not stageId), because finishing
-  // one stage of an exercise doesn't unmark the exercise as "passed in
-  // this session"; only navigating to a different exercise should.
+  // moving on or stepping back wipes them clean.
   useEffect(() => {
     setLoopPaused(false);
     setDrillState('inactive');
@@ -649,9 +661,13 @@ export default function SessionScreen() {
     dwellBadgeSnapshotRef.current = null;
   }, [activeExercise?.exerciseId, activeExercise?.stageId]);
 
+  // Sticky boundary / "level cleared" must not carry across stages: after
+  // advancing within the same exercise (LOAD_STAGE), the next level still
+  // needs its own streak — otherwise auto-loop stops and the UI reads as
+  // "ready to progress" after the first clean run on the new stage.
   useEffect(() => {
     setPassedThisExercise(false);
-  }, [activeExercise?.exerciseId]);
+  }, [activeExercise?.exerciseId, activeExercise?.stageId]);
 
   useEffect(() => {
     cancelWarmupCountdown();
@@ -891,6 +907,8 @@ export default function SessionScreen() {
   useEffect(() => {
     if (showGuidanceCallout || showGuidanceDebug) {
       guidancePianoDoubleTapArmRef.current = null;
+      timedPreStartPianoArmRef.current = null;
+      freeTempoPreStartPianoArmRef.current = null;
     }
   }, [showGuidanceCallout, showGuidanceDebug]);
 
@@ -989,11 +1007,20 @@ export default function SessionScreen() {
     armAdvanceCooldown,
   ]);
 
-  const canHearUserInput =
-    (state.inputMode === 'midi' && hasEnabledMidiDevice(state)) || state.microphoneActive;
+  /**
+   * True when the store will emit `midiShortcutLast` from hardware (enabled
+   * MIDI port or active mic). This does not require `inputMode === 'midi'` —
+   * the Web MIDI callback dispatches while a device is enabled even if
+   * `inputMode` has not flipped yet, which blocked "New for you" double-tap
+   * dismiss.
+   */
+  const midiShortcutStreamActive =
+    hasEnabledMidiDevice(state) || state.microphoneActive;
 
   useEffect(() => {
     sessionAdvancePianoArmRef.current = null;
+    timedPreStartPianoArmRef.current = null;
+    freeTempoPreStartPianoArmRef.current = null;
   }, [activeExercise?.exerciseId, activeExercise?.stageId, state.activeExerciseIndex, state.lastExerciseResult, loopPaused]);
 
   // Absorb the current pulse when the active exercise changes so entering a
@@ -1005,14 +1032,12 @@ export default function SessionScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- re-arm only when the active exercise row changes.
   }, [activeExercise?.exerciseId, activeExercise?.stageId, state.activeExerciseIndex]);
 
-  // Piano note-on mirrors Enter/Space for timed pre-start; free-tempo uses
-  // PreStartFreeTempoProbe instead so a dry run does not jump straight into
-  // the scored attempt.
+  // Guidance modal: piano double-tap dismiss (MIDI/mic shortcut stream).
   useEffect(() => {
     const p = state.midiNoteOnPulse;
     const guidanceModalOpen = showGuidanceCallout || showGuidanceDebug;
     if (guidanceModalOpen) {
-      if (!canHearUserInput) return;
+      if (!midiShortcutStreamActive) return;
       const last = state.midiShortcutLast;
       if (!last) return;
       const { complete, next } = applyPianoDoubleTapStep(
@@ -1031,29 +1056,81 @@ export default function SessionScreen() {
     }
     guidancePianoDoubleTapArmRef.current = null;
 
-    if (document.querySelector('.MuiDialog-root')) {
+    // Match pre-start gates: only absorb when the stuck-session dialog is
+    // actually open — not any `.MuiDialog-root` (e.g. portaled menus), which
+    // would clear the double-tap arm and block Start.
+    if (stuckDialogOpenForMidiRef.current) {
       sessionMidiLastProcessedPulseRef.current = p;
+      timedPreStartPianoArmRef.current = null;
+      freeTempoPreStartPianoArmRef.current = null;
+      return;
+    }
+  }, [
+    state.midiNoteOnPulse,
+    state.midiShortcutWave,
+    state.midiShortcutLast,
+    showGuidanceCallout,
+    showGuidanceDebug,
+    dismissGuidance,
+    setHelpPreview,
+    midiShortcutStreamActive,
+  ]);
+
+  // Free-tempo pre-start: double-tap matches Start Playing (bypasses silent
+  // dry run). useLayoutEffect runs before PreStartFreeTempoProbe's useEffect so
+  // the probe does not reset local dry-run state before we see a completed
+  // double-tap on the same commit.
+  useLayoutEffect(() => {
+    if (showGuidanceCallout || showGuidanceDebug) return;
+    if (!activeExercise || !loaded || !score) return;
+    // Do not use a broad `.MuiDialog-root` probe: MUI menus/popovers can leave a
+    // modal subtree in the document and would silence double-tap start forever.
+    if (stuckDialogOpenForMidiRef.current) {
+      freeTempoPreStartPianoArmRef.current = null;
+      return;
+    }
+    if (activeExercise.bpm) {
+      freeTempoPreStartPianoArmRef.current = null;
+      return;
+    }
+    if (perfectWarmupUi) {
+      freeTempoPreStartPianoArmRef.current = null;
+      return;
+    }
+    if (Date.now() < advanceCooldownUntilRef.current) {
+      freeTempoPreStartPianoArmRef.current = null;
+      return;
+    }
+    if (state.isPlaying || state.freeTempoRunComplete || state.lastExerciseResult) {
+      freeTempoPreStartPianoArmRef.current = null;
+      return;
+    }
+    if (!midiShortcutStreamActive) {
+      freeTempoPreStartPianoArmRef.current = null;
       return;
     }
 
-    if (p <= sessionMidiLastProcessedPulseRef.current) return;
-    sessionMidiLastProcessedPulseRef.current = p;
+    const last = state.midiShortcutLast;
+    if (!last) return;
 
-    if (!activeExercise || !loaded || !score) return;
-
-    if (Date.now() < advanceCooldownUntilRef.current) return;
-
-    if (state.isPlaying || state.freeTempoRunComplete || state.lastExerciseResult) return;
-    if (!canHearUserInput) return;
-
-    const isFreeTempoExercise = !activeExercise.bpm;
-    if (isFreeTempoExercise) return;
-    void startPlayback();
+    const { complete, next } = applyPianoDoubleTapStep(
+      freeTempoPreStartPianoArmRef.current,
+      last.kind,
+      last.note,
+      last.perfMs,
+    );
+    freeTempoPreStartPianoArmRef.current = next;
+    if (!complete) return;
+    freeTempoPreStartPianoArmRef.current = null;
+    // Defer past this layout pass so PreStartFreeTempoProbe's useEffect (same
+    // commit) cannot race START_PRACTICE_RUN / SET_PLAYING.
+    queueMicrotask(() => {
+      void startPlayback();
+    });
   }, [
     activeExercise,
     loaded,
     score,
-    state.midiNoteOnPulse,
     state.midiShortcutWave,
     state.midiShortcutLast,
     state.isPlaying,
@@ -1061,24 +1138,86 @@ export default function SessionScreen() {
     state.lastExerciseResult,
     showGuidanceCallout,
     showGuidanceDebug,
-    dismissGuidance,
-    setHelpPreview,
     startPlayback,
-    canHearUserInput,
+    midiShortcutStreamActive,
+    perfectWarmupUi,
   ]);
 
-  const hasAnotherSessionExercise = state.sessionPlan
-    ? state.activeExerciseIndex + 1 < state.sessionPlan.exercises.length
-    : false;
+  // Timed metronome pre-start: double-tap the same key (mic or MIDI). Same
+  // layout timing as free-tempo so PreStartFreeTempoProbe runs after this.
+  useLayoutEffect(() => {
+    if (showGuidanceCallout || showGuidanceDebug) return;
+    if (!activeExercise || !loaded || !score) return;
+    if (stuckDialogOpenForMidiRef.current) {
+      timedPreStartPianoArmRef.current = null;
+      freeTempoPreStartPianoArmRef.current = null;
+      return;
+    }
+    if (!activeExercise.bpm) {
+      timedPreStartPianoArmRef.current = null;
+      return;
+    }
+    freeTempoPreStartPianoArmRef.current = null;
+    if (Date.now() < advanceCooldownUntilRef.current) {
+      timedPreStartPianoArmRef.current = null;
+      return;
+    }
+    if (state.isPlaying || state.freeTempoRunComplete || state.lastExerciseResult) {
+      timedPreStartPianoArmRef.current = null;
+      return;
+    }
+    if (!midiShortcutStreamActive) {
+      timedPreStartPianoArmRef.current = null;
+      return;
+    }
+    // Deliberately do **not** gate double-tap on `timedDryRunReady`. The dry
+    // run is optional safety (Space/Enter stay off until Start or a tap —
+    // see keydown handler); the Start button already calls `startPlayback`
+    // without completing the probe. Double-tap must match that affordance.
+
+    const last = state.midiShortcutLast;
+    if (!last) return;
+
+    const { complete, next } = applyPianoDoubleTapStep(
+      timedPreStartPianoArmRef.current,
+      last.kind,
+      last.note,
+      last.perfMs,
+    );
+    timedPreStartPianoArmRef.current = next;
+    if (!complete) return;
+    timedPreStartPianoArmRef.current = null;
+    queueMicrotask(() => {
+      void startPlayback();
+    });
+  }, [
+    activeExercise,
+    loaded,
+    score,
+    state.midiShortcutWave,
+    state.midiShortcutLast,
+    state.isPlaying,
+    state.freeTempoRunComplete,
+    state.lastExerciseResult,
+    showGuidanceCallout,
+    showGuidanceDebug,
+    startPlayback,
+    midiShortcutStreamActive,
+  ]);
+
   const canAdvanceToNextExercise = useMemo(
     () => canAdvanceToNextInSessionPlan(state.progress, state.sessionPlan, state.activeExerciseIndex),
     [state.progress, state.sessionPlan, state.activeExerciseIndex],
   );
-  const continueOrFinishLabel = !hasAnotherSessionExercise
+  const isLastSessionExercise = Boolean(
+    state.sessionPlan
+    && state.activeExerciseIndex >= state.sessionPlan.exercises.length - 1,
+  );
+  /** Move on / piano shortcut: jump to next unlockable, or finish session from the last slot. */
+  const showMoveOnFromPausedFullResults = canAdvanceToNextExercise || isLastSessionExercise;
+  const continueOrFinishLabel = !canAdvanceToNextExercise
     ? 'Finish session'
-    : canAdvanceToNextExercise
-      ? 'Continue'
-      : 'Finish session';
+    : 'Continue';
 
   /**
    * Piano double-tap: (1) level-cleared Continue, (2) Move on from the paused
@@ -1086,7 +1225,7 @@ export default function SessionScreen() {
    */
   useEffect(() => {
     if (!activeExercise || !loaded || !score) return;
-    if (!canHearUserInput) {
+    if (!midiShortcutStreamActive) {
       sessionAdvancePianoArmRef.current = null;
       return;
     }
@@ -1109,7 +1248,7 @@ export default function SessionScreen() {
       && loopPaused
       && !boundaryPiano
       && !stuckDialogOpen
-      && (!hasAnotherSessionExercise || canAdvanceToNextExercise);
+      && showMoveOnFromPausedFullResults;
 
     if (!boundaryPiano && !stuckDialogOpen && !moveOnPianoEligible) {
       sessionAdvancePianoArmRef.current = null;
@@ -1167,7 +1306,6 @@ export default function SessionScreen() {
     activeExercise,
     loaded,
     score,
-    canHearUserInput,
     state.midiShortcutWave,
     state.midiShortcutLast,
     state.lastExerciseResult,
@@ -1175,12 +1313,13 @@ export default function SessionScreen() {
     drillState,
     passedThisExercise,
     loopPaused,
-    hasAnotherSessionExercise,
+    showMoveOnFromPausedFullResults,
     canAdvanceToNextExercise,
     advanceToNext,
     cancelAutoLoop,
     armAdvanceCooldown,
     setHelpPreview,
+    midiShortcutStreamActive,
   ]);
 
   const fingerCrossingRegions = useMemo(() => {
@@ -1520,12 +1659,9 @@ export default function SessionScreen() {
             {activeExercise.purpose === 'review' && (
               <Chip label="Review" size="small" color="warning" variant="outlined" />
             )}
-            {/* Advancement-rule chip. Shown only in the pre-start state so
-                it doesn't compete with mid-run UI; this is the single
-                source of truth for "what does it take to clear this
-                level", replacing the inline free-tempo explainer
-                paragraph that used to sit in the panel body. */}
-            {!isPlaying && !freeTempoRunComplete && !lastExerciseResult && currentStage && (
+            {/* Advancement-rule chip: stays in layout during play so the
+                header row does not jump; hidden visually while running. */}
+            {currentStage && (
               <Chip
                 label={
                   isFreeTempo
@@ -1535,6 +1671,13 @@ export default function SessionScreen() {
                 size="small"
                 color="success"
                 variant="outlined"
+                sx={{
+                  flexShrink: 0,
+                  opacity: !isPlaying && !freeTempoRunComplete && !lastExerciseResult ? 1 : 0,
+                  pointerEvents:
+                    !isPlaying && !freeTempoRunComplete && !lastExerciseResult ? undefined : 'none',
+                }}
+                aria-hidden={Boolean(isPlaying || freeTempoRunComplete || lastExerciseResult)}
               />
             )}
           </Box>
@@ -1912,6 +2055,14 @@ export default function SessionScreen() {
           // isn't actively being graded — otherwise the live tint conflicts
           // with per-note timing colours and lights up upcoming notes.
           highlightActiveMatches={!isPlaying && !lastExerciseResult}
+          // Mic is monophonic: match written MIDI octaves so RH-only C4 does
+          // not light LH C3 (pitch-class mode would light both).
+          highlightActiveMatchMode="writtenMidi"
+          // ±1 semitone slack is for YIN mic rounding only; hardware MIDI must
+          // be exact so F does not tint E.
+          highlightActiveMatchSemitoneSlack={
+            state.microphoneActive && !hasEnabledMidiDevice(state) ? 1 : 0
+          }
         />
         {wrongNoteDisplay && (
           <Box
@@ -2629,7 +2780,7 @@ export default function SessionScreen() {
             >
               <Icon name="replay" size={20} /> Practice Again
             </Button>
-            {(!hasAnotherSessionExercise || canAdvanceToNextExercise) && (
+            {showMoveOnFromPausedFullResults && (
               <AdvanceActionTooltip>
                 <Button
                   variant="outlined"
@@ -2656,17 +2807,17 @@ export default function SessionScreen() {
             onClick={startPlayback}
             aria-label={
               isFreeTempo
-                ? 'Start playing'
+                ? 'Start playing. Space, Enter, or double-tap the same key.'
                 : timedMidiDryRunRequired && !timedDryRunReady
-                  ? 'Start with metronome. Shape check optional; use this button so keys do not start by accident.'
-                  : 'Start with metronome'
+                  ? 'Start with metronome. Optional shape check first; double-tap the same key or click here to start anytime.'
+                  : 'Start with metronome. Space, Enter, or double-tap the same key.'
             }
             title={
               isFreeTempo
-                ? 'Space or Enter to start. With MIDI, play the shape cleanly in free time; a short cue plays, then scoring begins.'
+                ? 'Space or Enter to start. Optional: play the shape cleanly in free time first, then a short cue and scoring. Double-tap the same key (press, release, press) to start anytime, same as Start Playing.'
                 : timedMidiDryRunRequired && !timedDryRunReady
-                  ? 'Click to start anytime. Optional: run the shape once in free time first. Space and Enter stay off until you press Start so keys do not launch a run by accident.'
-                  : 'Space, Enter, or play your first note to start'
+                  ? 'Click or double-tap the same key to start anytime. Optional: run the shape once first. Space and Enter stay off until you use this button or a double-tap so keys do not start by accident.'
+                  : 'Space, Enter, or double-tap the same piano key (press, release, press within a moment) to start'
             }
             sx={{
               minWidth: 240,

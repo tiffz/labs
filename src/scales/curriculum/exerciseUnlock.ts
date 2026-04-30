@@ -36,16 +36,32 @@ export function isCurriculumExerciseUnlocked(data: ScalesProgressData, exerciseI
 }
 
 /**
- * True if advancing from `activeIndex` to the following slot in `plan` is
- * allowed. Always true when there is no following slot (session end).
+ * Next session index after `activeIndex` that the learner may open, or
+ * `null` if none (session complete from here). Skips curriculum-locked
+ * `purpose: 'new'` slots so a plan like [C, G, …] does not trap Continue on
+ * C when G is still gated on C's final stage.
+ */
+export function findNextUnlockedSessionIndex(
+  data: ScalesProgressData,
+  plan: { exercises: SessionExercise[] } | null | undefined,
+  activeIndex: number,
+): number | null {
+  if (!plan || plan.exercises.length === 0) return null;
+  for (let i = activeIndex + 1; i < plan.exercises.length; i++) {
+    if (isSessionExerciseUnlocked(data, plan.exercises[i]!)) return i;
+  }
+  return null;
+}
+
+/**
+ * True if there is any unlockable exercise after `activeIndex` in `plan`.
+ * (Reaching the end of the list is handled by the session screen: Finish /
+ * complete session.)
  */
 export function canAdvanceToNextInSessionPlan(
   data: ScalesProgressData,
   plan: { exercises: SessionExercise[] } | null | undefined,
   activeIndex: number,
 ): boolean {
-  if (!plan || plan.exercises.length === 0) return true;
-  const nextIdx = activeIndex + 1;
-  if (nextIdx >= plan.exercises.length) return true;
-  return isSessionExerciseUnlocked(data, plan.exercises[nextIdx]!);
+  return findNextUnlockedSessionIndex(data, plan, activeIndex) !== null;
 }

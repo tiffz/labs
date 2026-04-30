@@ -3,6 +3,7 @@ import { findExercise } from './tiers';
 import type { ScalesProgressData } from '../progress/types';
 import {
   canAdvanceToNextInSessionPlan,
+  findNextUnlockedSessionIndex,
   isCurriculumExerciseUnlocked,
   isSessionExerciseUnlocked,
 } from './exerciseUnlock';
@@ -134,6 +135,70 @@ describe('canAdvanceToNextInSessionPlan', () => {
         lastPracticedAt: null,
       },
     });
+    expect(findNextUnlockedSessionIndex(data, plan, 0)).toBe(null);
     expect(canAdvanceToNextInSessionPlan(data, plan, 0)).toBe(false);
+  });
+});
+
+describe('findNextUnlockedSessionIndex', () => {
+  it('skips a locked new slot to reach a later review slot', () => {
+    const cStages = findExercise(cMajorId)!.exercise.stages;
+    const gStages = findExercise(gMajorId)!.exercise.stages;
+    const data = baseProgress({
+      [cMajorId]: {
+        exerciseId: cMajorId,
+        completedStageId: null,
+        currentStageId: cStages[0]!.id,
+        history: [],
+        needsReview: false,
+        reviewStageId: null,
+        lastPracticedAt: null,
+      },
+    });
+    const plan = {
+      exercises: [
+        {
+          exerciseId: cMajorId,
+          stageId: cStages[0]!.id,
+          key: 'C',
+          kind: 'major-scale' as const,
+          hand: 'right' as const,
+          bpm: 0,
+          useMetronome: false,
+          subdivision: 'none' as const,
+          mutePlayback: false,
+          octaves: 1 as const,
+          purpose: 'new' as const,
+        },
+        {
+          exerciseId: gMajorId,
+          stageId: gStages[0]!.id,
+          key: 'G',
+          kind: 'major-scale' as const,
+          hand: 'right' as const,
+          bpm: 0,
+          useMetronome: false,
+          subdivision: 'none' as const,
+          mutePlayback: false,
+          octaves: 1 as const,
+          purpose: 'new' as const,
+        },
+        {
+          exerciseId: gMajorId,
+          stageId: gStages[0]!.id,
+          key: 'G',
+          kind: 'major-scale' as const,
+          hand: 'right' as const,
+          bpm: 0,
+          useMetronome: false,
+          subdivision: 'none' as const,
+          mutePlayback: false,
+          octaves: 1 as const,
+          purpose: 'review' as const,
+        },
+      ],
+    };
+    expect(findNextUnlockedSessionIndex(data, plan, 0)).toBe(2);
+    expect(canAdvanceToNextInSessionPlan(data, plan, 0)).toBe(true);
   });
 });

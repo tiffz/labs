@@ -33,6 +33,23 @@ interface ScoreDisplayProps {
    */
   highlightActiveMatches?: boolean;
   /**
+   * How held keys map to written pitches for that live tint.
+   * - `pitchClass`: any held note shares a pitch class with the written note
+   *   (piano free-play; one C can light every C on the page when exploring).
+   * - `writtenMidi`: each written MIDI pitch must match a held key (see
+   *   {@link highlightActiveMatchSemitoneSlack} for optional mic-only slack).
+   * @default 'pitchClass'
+   */
+  highlightActiveMatchMode?: 'pitchClass' | 'writtenMidi';
+  /**
+   * Max |played MIDI − written MIDI| allowed per pitch when
+   * {@link highlightActiveMatchMode} is `writtenMidi`. Use **0** for hardware
+   * MIDI (F must not light E). Use **1** for mic-only input so YIN rounding
+   * can still tint the intended note.
+   * @default 0
+   */
+  highlightActiveMatchSemitoneSlack?: number;
+  /**
    * When set, draws a light box + label around each adjacent note pair where a
    * thumb-under / thumb-over is expected (e.g. first free-tempo scale pass).
    */
@@ -151,6 +168,30 @@ function unionNoteheadBoundsVexFlow(sn: StaveNote): { x: number; y: number; w: n
   return { x: x1, y: y1, w: Math.max(x2 - x1, 1), h: Math.max(y2 - y1, 1) };
 }
 
+function liveActiveNoteMatched(
+  note: ScoreNote,
+  played: number[],
+  mode: 'pitchClass' | 'writtenMidi',
+  writtenMidiSemitoneSlack: number,
+): boolean {
+  if (note.pitches.length === 0 || played.length === 0) return false;
+  if (mode === 'pitchClass') {
+    return note.pitches.every((expectedPitch) =>
+      played.some((playedPitch) => {
+        const expectedPc = ((expectedPitch % 12) + 12) % 12;
+        const playedPc = ((playedPitch % 12) + 12) % 12;
+        return expectedPc === playedPc;
+      }),
+    );
+  }
+  const slack = Math.max(0, writtenMidiSemitoneSlack);
+  return note.pitches.every((expectedPitch) =>
+    played.some(
+      (playedPitch) => Math.abs(playedPitch - expectedPitch) <= slack,
+    ),
+  );
+}
+
 function applyNoteStyle(
   staveNote: StaveNote,
   note: ScoreNote,
@@ -160,6 +201,8 @@ function applyNoteStyle(
     activeMidiNotes?: Set<number>;
     practiceResult?: PracticeNoteResult;
     highlightActiveMatches?: boolean;
+    highlightActiveMatchMode?: 'pitchClass' | 'writtenMidi';
+    highlightActiveMatchSemitoneSlack?: number;
   },
 ) {
   if (opts.isGreyed) {
@@ -191,14 +234,9 @@ function applyNoteStyle(
     && !note.rest
   ) {
     const played = Array.from(opts.activeMidiNotes);
-    const strictMatched = note.pitches.length > 0 && note.pitches.every((expectedPitch) =>
-      played.some((playedPitch) => {
-        const expectedPc = ((expectedPitch % 12) + 12) % 12;
-        const playedPc = ((playedPitch % 12) + 12) % 12;
-        return expectedPc === playedPc;
-      })
-    );
-    if (strictMatched) {
+    const mode = opts.highlightActiveMatchMode ?? 'pitchClass';
+    const slack = opts.highlightActiveMatchSemitoneSlack ?? 0;
+    if (liveActiveNoteMatched(note, played, mode, slack)) {
       staveNote.setStyle({ fillStyle: '#10b981', strokeStyle: '#10b981' });
     }
   }
@@ -513,6 +551,8 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
   zoomLevel = 1.0, selectedMeasureRange, onMeasureClick,
   showVocalPart = false, showChords = true,
   highlightActiveMatches = false,
+  highlightActiveMatchMode = 'pitchClass',
+  highlightActiveMatchSemitoneSlack = 0,
   crossingHighlightRegions,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -607,6 +647,9 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
       sel: selectedMeasureRange ? `${selectedMeasureRange.start}-${selectedMeasureRange.end}` : '',
       sv: showVocalPart,
       sc: showChords,
+      ham: highlightActiveMatchMode,
+      hms: highlightActiveMatchSemitoneSlack,
+      ha: highlightActiveMatches ? 1 : 0,
       cw: containerWidth,
       xh: crossingHighlightRegions
         ? crossingHighlightRegions.map((r) => `${r.noteIds[0]}|${r.noteIds[1]}`).sort()
@@ -1126,6 +1169,8 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
                 activeMidiNotes,
                 practiceResult: practiceResultsByNoteId?.get(note.id),
                 highlightActiveMatches,
+                highlightActiveMatchMode,
+                highlightActiveMatchSemitoneSlack,
               });
               if (note.finger && !note.rest) {
                 attachPianoFingering(staveNote, note.finger, 'above', { note });
@@ -1208,6 +1253,8 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
                 activeMidiNotes,
                 practiceResult: practiceResultsByNoteId?.get(note.id),
                 highlightActiveMatches,
+                highlightActiveMatchMode,
+                highlightActiveMatchSemitoneSlack,
               });
               if (note.finger && !note.rest) {
                 attachPianoFingering(staveNote, note.finger, 'below', {
@@ -1293,6 +1340,8 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
                   activeMidiNotes,
                   practiceResult: practiceResultsByNoteId?.get(note.id),
                   highlightActiveMatches,
+                  highlightActiveMatchMode,
+                  highlightActiveMatchSemitoneSlack,
                 });
                 if (note.lyric && !note.rest && note.id) {
                   vocalLyrics.push({ noteId: note.id, lyric: note.lyric, isCurrent: isCurrentMeasure && noteIdx === voiceNoteIdx });
@@ -1922,7 +1971,7 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
         containerRef.current.innerHTML = `<p style="color: red; padding: 1rem;">Error rendering score. Please try again.</p>`;
       }
     }
-  }, [score, currentMeasureIndex, currentNoteIndices, activeMidiNotes, practiceResultsByNoteId, greyedOutHands, hiddenHands, ghostNotes, zoomLevel, selectedMeasureRange, showVocalPart, showChords, highlightActiveMatches, crossingHighlightRegions, containerWidth]);
+  }, [score, currentMeasureIndex, currentNoteIndices, activeMidiNotes, practiceResultsByNoteId, greyedOutHands, hiddenHands, ghostNotes, zoomLevel, selectedMeasureRange, showVocalPart, showChords, highlightActiveMatches, highlightActiveMatchMode, highlightActiveMatchSemitoneSlack, crossingHighlightRegions, containerWidth]);
 
   // Auto-scroll during playback to keep current measure visible
   useEffect(() => {

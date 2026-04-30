@@ -12,7 +12,7 @@ import {
   markGuidanceIntroduced,
 } from './progress/store';
 import { planSession } from './curriculum/sessionPlanner';
-import { findExercise } from './curriculum/tiers';
+import { generateScoreForExercise } from './curriculum/scoreGenerator';
 import { getMidiInput, MidiInput } from '../shared/midi/midiInput';
 import type { MidiDevice } from '../shared/music/scoreTypes';
 import { recordMidiNoteOn, recordMidiNoteOff, clearAll as clearTimingStore } from '../shared/practice/practiceTimingStore';
@@ -26,6 +26,13 @@ import {
 } from './utils/audioPrefs';
 import { advanceFreeTempoCursor } from './utils/freeTempoCursorStep';
 import { applyPianoDoubleTapStep } from './utils/pianoAdvanceDoubleTap';
+import {
+  buildSessionSummary,
+  type SessionExerciseSummary,
+  type SessionRunRecord,
+} from './sessionRunSummary';
+
+export type { SessionExerciseSummary, SessionRunRecord } from './sessionRunSummary';
 
 const analytics = createAppAnalytics('scales');
 
@@ -61,40 +68,6 @@ export interface ExerciseResult {
   };
 }
 export type InputMode = 'midi' | 'mic' | 'none';
-
-/**
- * Per-exercise rollup of how a completed session went, surfaced on the
- * post-session Home screen. Built from `currentSessionRuns` at
- * COMPLETE_SESSION time so we can show "what you cleared / drilled / are
- * still working on" without consumers re-deriving it from history.
- */
-export interface SessionExerciseSummary {
-  exerciseId: string;
-  /** "C Major Scale" — read off the exercise definition. */
-  exerciseLabel: string;
-  /**
-   * - `cleared`: at least one normal-purpose run advanced the user to a new stage
-   *   in this session.
-   * - `drilled`: the user opted into Drill it for this exercise (the stage was
-   *   already cleared coming into the session, or cleared during it).
-   * - `shaky`: practiced but no advancement and no drilling — still working on
-   *   the same stage.
-   */
-  status: 'cleared' | 'drilled' | 'shaky';
-  /** Highest accuracy across all runs of this exercise in the session. */
-  bestAccuracy: number;
-  /** Total run count for this exercise within the session. */
-  runs: number;
-}
-
-/** Internal accumulator entry for `currentSessionRuns`. Exported for tests. */
-export interface SessionRunRecord {
-  exerciseId: string;
-  stageId: string;
-  advanced: boolean;
-  accuracy: number;
-  purpose?: 'drill';
-}
 
 interface ScalesState {
   screen: Screen;
@@ -162,6 +135,13 @@ interface ScalesState {
   /** True when the user just finished a full session (controls home screen CTA). */
   sessionComplete: boolean;
   /**
+   * `progress.currentTierId` when the current practice session began. At
+   * COMPLETE_SESSION, if this differs from the current tier, the learner
+   * graduated a tier and we show the home celebration; otherwise we chain
+   * straight into the next planned session.
+   */
+  sessionTierIdAtStart: string | null;
+  /**
    * Per-FINISH_EXERCISE run records for the *currently active* session.
    * Reset on START_SESSION; consumed and cleared on COMPLETE_SESSION
    * (where it gets aggregated into `lastSessionSummary`).
@@ -205,7 +185,7 @@ type Action =
    * summaries or `lastExerciseResult`.
    */
   | { type: 'RECORD_FREE_TEMPO_WARMUP_HIT'; exerciseId: string; stageId: string; noteCount: number }
-  | { type: 'NEXT_EXERCISE'; score: PianoScore }
+  | { type: 'NEXT_EXERCISE'; score: PianoScore; targetIndex?: number }
   | { type: 'COMPLETE_SESSION' }
   | { type: 'SET_MIDI_CONNECTED'; connected: boolean }
   | { type: 'SET_MIDI_DEVICES'; devices: MidiDevice[] }
@@ -256,6 +236,7 @@ function initialState(): ScalesState {
     freeTempoRunComplete: false,
     lastExerciseResult: null,
     sessionComplete: false,
+    sessionTierIdAtStart: null,
     currentSessionRuns: [],
     lastSessionSummary: null,
     wrongNoteFlash: null,
@@ -293,12 +274,15 @@ function bumpMidiShortcut(
 }
 
 function transitionStartSession(state: ScalesState, plan: SessionPlan): ScalesState {
+  const first = plan.exercises[0] ?? null;
+  const score = first ? generateScoreForExercise(first) : null;
   return {
     ...state,
     screen: 'session',
     sessionPlan: plan,
     activeExerciseIndex: 0,
-    activeExercise: plan.exercises[0] ?? null,
+    activeExercise: first,
+    score,
     practiceResults: new Map(),
     currentRunStartTime: null,
     lastExerciseResult: null,
@@ -310,42 +294,11 @@ function transitionStartSession(state: ScalesState, plan: SessionPlan): ScalesSt
     freeTempoRunComplete: false,
     freeTempoMeasureIndex: 0,
     freeTempoNoteIndex: 0,
+    isPlaying: false,
+    currentMeasureIndex: -1,
+    currentNoteIndices: new Map(),
+    sessionTierIdAtStart: state.progress.currentTierId,
   };
-}
-
-// eslint-disable-next-line react-refresh/only-export-components -- pure helper, exported for tests
-export function buildSessionSummary(runs: SessionRunRecord[]): SessionExerciseSummary[] {
-  const order: string[] = [];
-  const grouped = new Map<string, SessionRunRecord[]>();
-  for (const run of runs) {
-    if (!grouped.has(run.exerciseId)) {
-      order.push(run.exerciseId);
-      grouped.set(run.exerciseId, []);
-    }
-    grouped.get(run.exerciseId)!.push(run);
-  }
-
-  const out: SessionExerciseSummary[] = [];
-  for (const exerciseId of order) {
-    const exRuns = grouped.get(exerciseId)!;
-    const drilled = exRuns.some(r => r.purpose === 'drill');
-    const cleared = !drilled && exRuns.some(r => r.advanced);
-    const status: SessionExerciseSummary['status'] = drilled
-      ? 'drilled'
-      : cleared
-      ? 'cleared'
-      : 'shaky';
-    const bestAccuracy = exRuns.reduce((m, r) => Math.max(m, r.accuracy), 0);
-    const found = findExercise(exerciseId);
-    out.push({
-      exerciseId,
-      exerciseLabel: found?.exercise.label ?? exerciseId,
-      status,
-      bestAccuracy,
-      runs: exRuns.length,
-    });
-  }
-  return out;
 }
 
 function reducer(state: ScalesState, action: Action): ScalesState {
@@ -358,6 +311,7 @@ function reducer(state: ScalesState, action: Action): ScalesState {
           homeMidiGatePulse: state.midiNoteOnPulse,
           homeStartBlocked: false,
           homeNoteDoubleTapAwait: null,
+          sessionTierIdAtStart: null,
         };
       }
       return {
@@ -536,6 +490,7 @@ function reducer(state: ScalesState, action: Action): ScalesState {
         accuracy: 1,
         noteCount: n,
         correctCount: n,
+        purpose: 'warmup',
       };
       const newProgress = recordPractice(state.progress, record);
       saveProgress(newProgress);
@@ -616,7 +571,7 @@ function reducer(state: ScalesState, action: Action): ScalesState {
     }
 
     case 'NEXT_EXERCISE': {
-      const nextIdx = state.activeExerciseIndex + 1;
+      const nextIdx = action.targetIndex ?? state.activeExerciseIndex + 1;
       const nextExercise = state.sessionPlan?.exercises[nextIdx] ?? null;
       if (!nextExercise) {
         return {
@@ -624,6 +579,7 @@ function reducer(state: ScalesState, action: Action): ScalesState {
           screen: 'home',
           homeMidiGatePulse: state.midiNoteOnPulse,
           homeNoteDoubleTapAwait: null,
+          sessionTierIdAtStart: null,
         };
       }
       return {
@@ -647,17 +603,60 @@ function reducer(state: ScalesState, action: Action): ScalesState {
 
     case 'COMPLETE_SESSION': {
       const summary = buildSessionSummary(state.currentSessionRuns);
-      return {
+      const tierAtStart = state.sessionTierIdAtStart;
+      const tierGraduated =
+        tierAtStart !== null && tierAtStart !== state.progress.currentTierId;
+
+      const afterClearingRuns = {
         ...state,
-        screen: 'home',
-        sessionComplete: true,
         isPlaying: false,
         lastExerciseResult: null,
         currentSessionRuns: [],
-        lastSessionSummary: summary,
         homeMidiGatePulse: state.midiNoteOnPulse,
         homeNoteDoubleTapAwait: null,
       };
+
+      if (tierGraduated) {
+        return {
+          ...afterClearingRuns,
+          screen: 'home',
+          sessionComplete: true,
+          lastSessionSummary: summary,
+          sessionPlan: null,
+          activeExercise: null,
+          activeExerciseIndex: 0,
+          score: null,
+          sessionTierIdAtStart: null,
+        };
+      }
+
+      const nextPlan = planSession(afterClearingRuns.progress);
+      if (nextPlan.exercises.length === 0) {
+        return {
+          ...afterClearingRuns,
+          screen: 'home',
+          sessionComplete: false,
+          lastSessionSummary: null,
+          sessionPlan: null,
+          activeExercise: null,
+          activeExerciseIndex: 0,
+          score: null,
+          sessionTierIdAtStart: null,
+        };
+      }
+
+      analytics.trackEvent('session_start', {
+        exercise_count: nextPlan.exercises.length,
+        chain_after_session: true,
+      });
+
+      return transitionStartSession(
+        {
+          ...afterClearingRuns,
+          lastSessionSummary: null,
+        },
+        nextPlan,
+      );
     }
 
     case 'SET_MIDI_CONNECTED':

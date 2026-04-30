@@ -28,17 +28,18 @@ export function playClickSampleAt(
   volume: number,
   playbackRate: number = 1,
 ): void {
+  const startAt = Math.max(time, context.currentTime + 0.002);
   const source = context.createBufferSource();
   source.buffer = sample.buffer;
   source.playbackRate.value = playbackRate;
   const gain = context.createGain();
-  gain.gain.setValueAtTime(Math.max(0, Math.min(1, volume)), time);
+  gain.gain.setValueAtTime(Math.max(0, Math.min(1, volume)), startAt);
   source.connect(gain);
   gain.connect(context.destination);
   source.onended = () => {
     source.disconnect();
     gain.disconnect();
   };
-  source.start(time);
+  source.start(startAt);
 }
 

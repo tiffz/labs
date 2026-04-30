@@ -9,9 +9,9 @@ import type { ExerciseDefinition } from './types';
 import { buildPentascaleStages } from './stages';
 
 describe('stuck jump vs incremental (concept diffs)', () => {
-  const pentascaleAStages = buildPentascaleStages('A-major-pentascale', 4);
+  const pentascaleAStages = buildPentascaleStages('A-pentascale-major');
   const pentExercise: ExerciseDefinition = {
-    id: 'A-major-pentascale',
+    id: 'A-pentascale-major',
     key: 'A',
     kind: 'pentascale-major',
     label: 'A Major Pentascale',
@@ -24,10 +24,19 @@ describe('stuck jump vs incremental (concept diffs)', () => {
     expect(isCliffConceptKey('metronome')).toBe(false);
   });
 
-  it('treats p7 → p8 as a jump (triplets newly active)', () => {
+  it('treats p7 → p8e as a jump (eighth subdivision newly active)', () => {
     const p7 = pentascaleAStages.find(s => s.stageNumber === 7)!;
-    const p8 = pentascaleAStages.find(s => s.stageNumber === 8)!;
-    const added = getNewCliffConceptKeys(p8, p7, pentExercise);
+    const p8e = pentascaleAStages.find(s => s.id.endsWith('-p8e'))!;
+    const added = getNewCliffConceptKeys(p8e, p7, pentExercise);
+    expect(added).toContain('eighthSubdivision');
+    expect(added).not.toContain('triplets');
+    expect(added).not.toContain('moderateTempo');
+  });
+
+  it('treats p8e → p8 as a jump (triplets newly active)', () => {
+    const p8e = pentascaleAStages.find(s => s.id.endsWith('-p8e'))!;
+    const p8 = pentascaleAStages.find(s => s.id.endsWith('-p8') && !s.id.endsWith('-p8e'))!;
+    const added = getNewCliffConceptKeys(p8, p8e, pentExercise);
     expect(added).toContain('triplets');
     expect(added).not.toContain('moderateTempo');
   });

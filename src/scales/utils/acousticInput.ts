@@ -9,18 +9,25 @@ export type { AcousticInputCallbacks };
 
 /**
  * Tuning optimized for sequential single-note scale practice. Compared to
- * defaults: faster onset via smaller window/quorum, generous sustain
- * tolerance, and a higher RMS gate to reject ambient noise.
+ * defaults: slightly smaller vote window, generous sustain tolerance, and
+ * an RMS gate tuned for laptop mics (was missing quiet or mid-register
+ * notes like D4 when set too high — see debug `pitch_raw` stuck at rms 0).
+ *
+ * `clearWindowOnLoudOnset: false` avoids wiping the YIN vote buffer on RMS
+ * spikes so quorum can still form on the same frame as a soft attack.
  */
 const SCALES_PITCH_OPTIONS: MicrophonePitchInputOptions = {
   bufferSize: 2048,
-  windowSize: 5,
+  windowSize: 6,
   windowQuorum: 3,
-  noteOffFrames: 10,
-  rmsThreshold: 0.008,
+  noteOffFrames: 12,
+  rmsThreshold: 0.0055,
   hysteresisSemitones: 1,
-  minNoteDurationMs: 60,
-  onsetThresholdMultiplier: 2.5,
+  minNoteDurationMs: 55,
+  onsetThresholdMultiplier: 2.2,
+  clearWindowOnLoudOnset: false,
+  /** Lets mic "double tap same key" emit off→on between strikes (see MicrophonePitchInput). */
+  samePitchRearticulation: 'offThenOn',
 };
 
 /**

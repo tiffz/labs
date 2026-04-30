@@ -94,8 +94,10 @@ describe('ScorePlaybackEngine metronome scheduling', () => {
     (engine as unknown as { tick: () => void }).tick();
 
     const scheduledTimes = hoisted.playClickSpy.mock.calls.map((call) => call[2] as number);
-    expect(scheduledTimes.some((time) => Math.abs(time - 3) < 0.001)).toBe(true);
-    expect(scheduledTimes.some((time) => Math.abs(time - 4) < 0.001)).toBe(false);
+    // Nominal beat-3 click would be at t=3, but clickService clamps to currentTime+ε
+    // when the clock has already passed that instant (real tab-throttle behavior).
+    expect(scheduledTimes.some((time) => time >= 3 && time < 4)).toBe(true);
+    expect(scheduledTimes.some((time) => time >= 4)).toBe(false);
 
     engine.stop();
   });

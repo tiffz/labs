@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildSessionSummary, type SessionRunRecord } from './store';
+import { buildSessionSummary, type SessionRunRecord } from './sessionRunSummary';
 
 describe('buildSessionSummary', () => {
   it('returns an empty array for no runs', () => {

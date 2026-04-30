@@ -36,6 +36,15 @@ export interface AdvancementCriteria {
   runs: number;
 }
 
+/**
+ * Practice rows that count toward "N clean runs in a row" for stage
+ * advancement and {@link getCleanRunStreak}. Warmup and drill rows stay
+ * in history for proficiency / migrations but must not satisfy the gate.
+ */
+function recordCountsTowardAdvancementStreak(record: PracticeRecord): boolean {
+  return record.purpose !== 'drill' && record.purpose !== 'warmup';
+}
+
 export function getAdvancementCriteria(
   stage: Stage,
   isFinalStage: boolean = false,
@@ -180,6 +189,7 @@ export function getCleanRunStreak(
 
   let streak = 0;
   for (const record of consecutiveStageRecords(progress.history, stageId)) {
+    if (!recordCountsTowardAdvancementStreak(record)) continue;
     if (runMeetsCleanBar(record, found.exercise.kind, stage, isFinalStage)) {
       streak += 1;
     } else {
@@ -639,7 +649,9 @@ export function recordPractice(
       const isFinalStage = currentIdx === stages.length - 1;
       const { runs } = getAdvancementCriteria(stage, isFinalStage, found.exercise.kind);
 
-      const recentForStage = consecutiveStageRecords(updatedHistory, record.stageId).slice(0, runs);
+      const meaningfulOnStage = consecutiveStageRecords(updatedHistory, record.stageId)
+        .filter(recordCountsTowardAdvancementStreak);
+      const recentForStage = meaningfulOnStage.slice(0, runs);
 
       const shouldAdvance =
         recentForStage.length >= runs &&

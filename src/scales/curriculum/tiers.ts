@@ -2,10 +2,7 @@ import type { Key } from '../../shared/music/scoreTypes';
 import type { ExerciseKind, Tier, ExerciseDefinition } from './types';
 import { buildStages, buildPentascaleStages } from './stages';
 
-/** Builder-only: passed into `buildPentascaleStages` for Tier 0 majors; stripped before `ExerciseDefinition`. */
-type ExerciseBuilderOpts = Pick<ExerciseDefinition, 'guidance' | 'helpUrl'> & {
-  tier0PentascaleIndex?: number;
-};
+type ExerciseBuilderOpts = Pick<ExerciseDefinition, 'guidance' | 'helpUrl'>;
 
 const EXERCISE_LABELS: Record<ExerciseKind, string> = {
   'pentascale-major': 'Major Pentascale',
@@ -28,16 +25,15 @@ function exercise(
   opts?: ExerciseBuilderOpts,
 ): ExerciseDefinition {
   const id = `${key}-${kind}`;
-  const { tier0PentascaleIndex, ...rest } = opts ?? {};
   return {
     id,
     key,
     kind,
     label: `${key} ${EXERCISE_LABELS[kind]}`,
     stages: isPentascaleKind(kind)
-      ? buildPentascaleStages(id, tier0PentascaleIndex ?? 0)
+      ? buildPentascaleStages(id)
       : buildStages(id),
-    ...rest,
+    ...(opts ?? {}),
   };
 }
 
@@ -61,10 +57,9 @@ export const TIERS: Tier[] = [
     tierNumber: 0,
     label: 'Five-finger warmups',
     description:
-      'Five-finger patterns in C, G, F, D, and A, each in one span. Eighth notes, triplets, and sixteenth notes are gradually introduced.',
+      'Five-finger patterns in C, G, F, D, and A, each in one span. After quarter-note fluency, each key adds eighth notes, then triplets, then sixteenths.',
     exercises: [
       exercise('C', 'pentascale-major', {
-        tier0PentascaleIndex: 0,
         guidance: {
           right:
             'C-D-E-F-G: RH 1-5 from middle C. One finger per note; keep tone even.',
@@ -76,25 +71,21 @@ export const TIERS: Tier[] = [
         helpUrl: ytSearch('C major five finger pattern piano'),
       }),
       exercise('G', 'pentascale-major', {
-        tier0PentascaleIndex: 1,
         guidance:
           'G-A-B-C-D, all white keys (F\u266F is above the pattern). Same 1-5 shape as C, shifted.',
         helpUrl: ytSearch('G major five finger pattern piano'),
       }),
       exercise('F', 'pentascale-major', {
-        tier0PentascaleIndex: 2,
         guidance:
           'F-G-A-B\u266D-C: finger 4 on B\u266D. Same five-finger frame as C; only the 4th note is black.',
         helpUrl: ytSearch('F major five finger pattern piano'),
       }),
       exercise('D', 'pentascale-major', {
-        tier0PentascaleIndex: 3,
         guidance:
           'D-E-F\u266F-G-A: finger 3 on F\u266F. Black key mid-pattern - same shape as C.',
         helpUrl: ytSearch('D major five finger pattern piano'),
       }),
       exercise('A', 'pentascale-major', {
-        tier0PentascaleIndex: 4,
         guidance:
           'A-B-C\u266F-D-E: finger 3 on C\u266F. Same mid-black layout as D.',
         helpUrl: ytSearch('A major five finger pattern piano'),

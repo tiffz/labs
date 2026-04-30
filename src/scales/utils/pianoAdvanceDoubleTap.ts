@@ -3,7 +3,8 @@
  * boundary, stuck modal dismiss, etc.). Matches home "Practice now" behavior:
  * same pitch twice with a note-off between taps, within a fixed window.
  */
-export const PIANO_ADVANCE_DOUBLE_MS = 500;
+/** Mic note-off can trail the second strike; keep the pair inside one window. */
+export const PIANO_ADVANCE_DOUBLE_MS = 620;
 
 /** Tooltip for primary advance CTAs (Space/Enter once; piano double-tap). */
 export const PIANO_ADVANCE_BUTTON_TOOLTIP =

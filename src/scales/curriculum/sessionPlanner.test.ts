@@ -43,7 +43,8 @@ describe('planSession', () => {
 
     const plan = planSession(data);
     expect(plan.exercises[0]?.exerciseId).toBe(cId);
-    expect(plan.exercises.some(e => e.exerciseId === gId)).toBe(true);
+    // G stays out of the plan until C's final stage is cleared (curriculum order).
+    expect(plan.exercises.some(e => e.exerciseId === gId)).toBe(false);
   });
 
   it('includes A pentascale catch-up slot when currentStage is appended spiral row', () => {

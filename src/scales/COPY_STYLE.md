@@ -31,13 +31,12 @@ Use this file for **every learner-facing string** in `src/scales/` (tier blurbs,
 
 ### Tier 0 pentascale (copy must match code)
 
-Spiral order in [`curriculum/tiers.ts`](curriculum/tiers.ts) is **C, G, F, D, A**. Stage shape comes from [`buildPentascaleStages`](curriculum/stages.ts) (`tier0PentascaleIndex`):
+Spiral order in [`curriculum/tiers.ts`](curriculum/tiers.ts) is **C, G, F, D, A**. Stage shape comes from [`buildPentascaleStages`](curriculum/stages.ts):
 
-- **C, G, F:** metronome stages use **quarter** subdivisions only (`subdivision: none` on tempo stages).
-- **D and A:** metronome stages use **eighth** subdivisions from the fourth index onward.
-- **A only:** after the fluent gate, **triplet** then **sixteenth** both-hands stages are appended.
+- **All keys:** p1–p7 use **quarter** subdivisions on metronome stages (`subdivision: none`), through the fluent gate.
+- **After p7:** **eighth** notes both hands (`…-p8e`), then **triplet** (`…-p8`), then **sixteenth** (`…-p9`) at the slow click.
 
-Tier blurbs and UI hints should **not** imply “all subdivisions only on A” or “eighths only on A.” That would misstate when eighths begin (D). A fuller “spiral every subdivision across every key” layout is a **curriculum product decision**, not what the app does today; if you change `buildPentascaleStages`, update this section and the tier text together.
+If you change `buildPentascaleStages`, update this section and the tier `description` in `tiers.ts` together.
 
 ## When you edit copy
 

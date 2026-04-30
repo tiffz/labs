@@ -32,6 +32,20 @@ export interface MicrophonePitchInputOptions {
   minNoteDurationMs?: number;
   /** Energy spike multiplier for onset detection (relative to recent RMS average) */
   onsetThresholdMultiplier?: number;
+  /**
+   * When true (default), a loud RMS onset trims the pitch vote window so a
+   * new attack is recognized quickly. Set false for scale-style playing where
+   * short transients were clearing the window before quorum formed (missed
+   * weak or mid-register notes).
+   */
+  clearWindowOnLoudOnset?: boolean;
+  /**
+   * `offThenOn`: on a loud RMS onset while the stable pitch is unchanged,
+   * emit a synthetic note-off then note-on so upstream gesture code can see a
+   * release between two physical strikes (mic double-tap to start) even when
+   * room noise prevents a clean silence-based note-off.
+   */
+  samePitchRearticulation?: 'ignore' | 'offThenOn';
 }
 
 export class MicrophonePitchInput {
@@ -56,6 +70,10 @@ export class MicrophonePitchInput {
   private readonly hysteresisSemitones: number;
   private readonly minNoteDurationMs: number;
   private readonly onsetThresholdMultiplier: number;
+  private readonly clearWindowOnLoudOnset: boolean;
+  private readonly samePitchRearticulation: 'ignore' | 'offThenOn';
+  /** Cooldown so sustained fortissimo onsets do not spam synthetic off/on. */
+  private lastSameNoteRearticMs = 0;
 
   constructor(callbacks: MicrophonePitchInputCallbacks = {}, options: MicrophonePitchInputOptions = {}) {
     this.callbacks = callbacks;
@@ -67,6 +85,8 @@ export class MicrophonePitchInput {
     this.hysteresisSemitones = options.hysteresisSemitones ?? DEFAULT_HYSTERESIS_SEMITONES;
     this.minNoteDurationMs = options.minNoteDurationMs ?? DEFAULT_MIN_NOTE_DURATION_MS;
     this.onsetThresholdMultiplier = options.onsetThresholdMultiplier ?? DEFAULT_ONSET_THRESHOLD_MULTIPLIER;
+    this.clearWindowOnLoudOnset = options.clearWindowOnLoudOnset ?? true;
+    this.samePitchRearticulation = options.samePitchRearticulation ?? 'ignore';
   }
 
   static async listDevices(): Promise<MicrophoneDevice[]> {
@@ -153,6 +173,7 @@ export class MicrophonePitchInput {
       this.callbacks.onNoteOff?.(this.currentNote);
       this.currentNote = null;
     }
+    this.lastSameNoteRearticMs = 0;
     if (this.stream) {
       this.stream.getTracks().forEach((track) => track.stop());
       this.stream = null;
@@ -255,13 +276,36 @@ export class MicrophonePitchInput {
         this.recentPitches.shift();
       }
 
-      if (onset && this.currentNote !== null && this.noteMinDurationMet()) {
+      if (
+        this.clearWindowOnLoudOnset
+        && onset
+        && this.currentNote !== null
+        && this.noteMinDurationMet()
+      ) {
         this.recentPitches = this.recentPitches.slice(-2);
       }
 
       const majority = this.getWindowMajority();
 
-      if (majority !== null && majority !== this.currentNote) {
+      const reartic = this.samePitchRearticulation === 'offThenOn';
+      if (
+        reartic
+        && onset
+        && this.currentNote !== null
+        && majority === this.currentNote
+        && pitchInfo !== null
+        && Math.abs(pitchInfo.midi - this.currentNote) <= this.hysteresisSemitones
+        && this.noteMinDurationMet()
+      ) {
+        const now = performance.now();
+        if (now - this.lastSameNoteRearticMs >= 220) {
+          this.lastSameNoteRearticMs = now;
+          const n = this.currentNote;
+          this.callbacks.onNoteOff?.(n);
+          this.callbacks.onNoteOn?.(n);
+          this.noteOnTimestamp = Date.now();
+        }
+      } else if (majority !== null && majority !== this.currentNote) {
         if (this.noteMinDurationMet()) {
           if (this.currentNote !== null) {
             this.callbacks.onNoteOff?.(this.currentNote);

@@ -29,7 +29,6 @@ const COPY = {
   triggerKeyboard: 'Keyboard',
   triggerMic: 'Mic',
   triggerNone: 'No input',
-  triggerLowerAccuracy: 'lower accuracy',
 
   sectionKeyboard: 'Keyboard',
   sectionMicrophone: 'Microphone',
@@ -78,13 +77,12 @@ const BODY_SMALL = {
  * tension) so chord changes don't reflow the pill once the user is playing.
  * Anything beyond this is truncated.
  *
- * Layout-shift policy: we deliberately do NOT reserve label or extension
- * width in the idle state. Reservation only kicks in for the high-frequency
- * cases (note count changing while a chord is held). Low-frequency
- * transitions — toggling Keyboard/Mic/Both, or pressing the very first key
- * after silence — are explicit user actions where a one-shot reflow reads
- * as responsiveness rather than flicker, and an always-on reservation made
- * the idle pill look uncomfortably padded.
+ * Layout-shift policy: when MIDI **or** microphone input is active we
+ * always reserve the trailing {@link MAX_NOTE_SLOTS} note-chip strip
+ * (empty slots are transparent) so the header row does not jump on the
+ * first detected note vs silence. Both paths feed the same
+ * `activeMidiNotes` set in the apps. Chord changes stay shift-free within
+ * the reserved strip.
  */
 const MAX_NOTE_SLOTS = 4;
 
@@ -326,16 +324,10 @@ export default function InputSourcesMenu({
           {summaryLabel}
         </Typography>
         {/*
-         * Trailing extension zone.
-         *
-         * Renders only when there's actual content to show: the
-         * note-chip strip while MIDI keys are held, or the "· lower
-         * accuracy" tail in mic-only mode. The pill expands once on the
-         * first key press (rather than on every note change), and while
-         * keys are held the strip reserves {@link MAX_NOTE_SLOTS} slots so
-         * chord additions/removals stay shift-free.
+         * Trailing note-chip strip whenever keyboard and/or mic input is on
+         * (see MAX_NOTE_SLOTS / layout-shift policy above).
          */}
-        {hasMidi && notes.length > 0 && (
+        {(hasMidi || hasMic) && (
           <Box
             aria-hidden="true"
             sx={{ display: 'flex', gap: '2px', ml: 0.5, flexShrink: 0 }}
@@ -367,27 +359,6 @@ export default function InputSourcesMenu({
                 </Box>
               );
             })}
-          </Box>
-        )}
-        {!hasMidi && hasMic && (
-          <Box
-            aria-hidden="true"
-            sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 0.5, flexShrink: 0 }}
-          >
-            <Box
-              sx={{
-                width: 3,
-                height: 3,
-                borderRadius: '50%',
-                bgcolor: 'text.disabled',
-                flexShrink: 0,
-              }}
-            />
-            <Typography
-              sx={{ ...LABEL_MEDIUM, fontWeight: 400, color: 'text.disabled' }}
-            >
-              {COPY.triggerLowerAccuracy}
-            </Typography>
           </Box>
         )}
         <MenuIcon name={open ? 'expand_less' : 'expand_more'} size={18} />

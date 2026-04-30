@@ -27,10 +27,13 @@ export interface PracticeRecord {
    * (see SessionScreen drill mode). Drill records still feed into
    * proficiency averaging via getExerciseProficiency, but skip the
    * shaky -> needsReview demotion path so a single off run during
-   * polishing doesn't knock the user out of "Mastered". Default
+   * polishing doesn't knock the user out of "Mastered". 'warmup' is
+   * the free-tempo pre-start pitch check — it must not count toward
+   * advancement streaks (otherwise two silent warmups + one scored run
+   * can clear a "3 in a row" gate). Default
    * 'normal' (or undefined for backwards-compat with older history).
    */
-  purpose?: 'normal' | 'drill';
+  purpose?: 'normal' | 'drill' | 'warmup';
 }
 
 export interface ExerciseProgress {
