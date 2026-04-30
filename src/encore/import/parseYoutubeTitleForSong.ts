@@ -41,7 +41,14 @@ export function stripKaraokeTrailingPhrases(s: string): string {
       .replace(/\s*karaoke\s*$/i, '')
       .replace(/\s*\(instrumental\)\s*$/i, '')
       .replace(/\s*\[Instrumental\]\s*$/i, '')
-      .replace(/\s*\(Official Video\)\s*$/i, '');
+      .replace(/\s*\(Official Video\)\s*$/i, '')
+      .replace(/\s*\(Official Audio\)\s*$/i, '')
+      .replace(/\s*\(Official Music Video\)\s*$/i, '')
+      .replace(/\s*\(Lyrics\)\s*$/i, '')
+      .replace(/\s*\[Lyrics\]\s*$/i, '')
+      .replace(/\s*\(Lyric Video\)\s*$/i, '')
+      .replace(/\s*-\s*KaraFun\s*$/i, '')
+      .replace(/\s*-\s*Karaoke Version\s*$/i, '');
     t = collapseWhitespace(t);
   }
   return t;

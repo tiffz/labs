@@ -13,7 +13,11 @@ import Typography from '@mui/material/Typography';
 import { useCallback, useMemo, useState } from 'react';
 import type { EncoreMilestoneDefinition } from '../types';
 import { useEncore } from '../context/EncoreContext';
-import { encoreMaxWidthNarrowPage } from '../theme/encoreUiTokens';
+import {
+  encoreMaxWidthNarrowPage,
+  encoreRadius,
+  encoreShadowSurface,
+} from '../theme/encoreUiTokens';
 import { encorePagePaddingTop, encoreScreenPaddingX } from '../theme/encoreM3Layout';
 import { EncorePageHeader } from '../ui/EncorePageHeader';
 
@@ -100,11 +104,20 @@ export function RepertoireSettingsScreen(): React.ReactElement {
     >
       <EncorePageHeader
         kicker="Library"
-        title="Venues & milestones"
-        description="Venues feed autocomplete and bulk import matching. Milestones are your shared checklist on every song (voice-first; add keys or staging steps you care about)."
+        title="Library settings"
+        description="Venues feed autocomplete and bulk import matching. Milestones are your shared checklist on every song — voice-first; add keys or staging steps you care about."
       />
 
-      <Paper variant="outlined" sx={{ borderRadius: 2, p: 2.5, mb: 3 }}>
+      <Paper
+        elevation={0}
+        sx={{
+          borderRadius: encoreRadius,
+          p: { xs: 2.5, sm: 3 },
+          mb: { xs: 3, sm: 4 },
+          boxShadow: encoreShadowSurface,
+          border: 'none',
+        }}
+      >
         <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
           Saved venues
         </Typography>
@@ -144,7 +157,15 @@ export function RepertoireSettingsScreen(): React.ReactElement {
         )}
       </Paper>
 
-      <Paper variant="outlined" sx={{ borderRadius: 2, p: 2.5 }}>
+      <Paper
+        elevation={0}
+        sx={{
+          borderRadius: encoreRadius,
+          p: { xs: 2.5, sm: 3 },
+          boxShadow: encoreShadowSurface,
+          border: 'none',
+        }}
+      >
         <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
           Global milestones
         </Typography>

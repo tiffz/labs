@@ -17,6 +17,18 @@ export function isEncoreBulkImportVideoFile(f: { name?: string; mimeType?: strin
   return /\.(mp4|mov|m4v|webm|mkv|mpeg|mpg|avi)$/i.test(n);
 }
 
+/** True when a Drive row should be treated as a chart / score for bulk import. */
+export function isEncoreBulkImportScoreFile(f: { name?: string; mimeType?: string }): boolean {
+  const mt = (f.mimeType ?? '').toLowerCase();
+  const n = (f.name ?? '').toLowerCase();
+  if (mt === FOLDER_MIME) return false;
+  if (mt === 'application/pdf') return true;
+  if (mt === 'application/vnd.recordare.musicxml+xml') return true;
+  if (mt === 'application/vnd.recordare.musicxml') return true;
+  if (mt === 'audio/midi' || mt === 'audio/x-midi') return true;
+  return /\.(pdf|musicxml|mxl|mid|midi|xml)$/i.test(n);
+}
+
 function escapeDriveQueryString(id: string): string {
   return id.replace(/'/g, "\\'");
 }
@@ -112,4 +124,58 @@ export async function driveCollectVideoFilesRecursive(
   }
 
   return videos;
+}
+
+/** Same as `driveCollectVideoFilesRecursive` but for chart / score files. */
+export async function driveCollectScoreFilesRecursive(
+  accessToken: string,
+  rootFolderId: string,
+  opts: DriveCollectVideosOptions = {},
+): Promise<DriveVideoImportCandidate[]> {
+  const maxFolders = opts.maxFolders ?? 500;
+  const maxListRows = opts.maxListRows ?? 50_000;
+
+  const scores: DriveVideoImportCandidate[] = [];
+  let rootLabel = '';
+  try {
+    rootLabel = await driveFileNameOnly(accessToken, rootFolderId);
+  } catch {
+    /* non-fatal: path hints still work for nested folders */
+  }
+  const rootPrefix = rootLabel ? `${rootLabel} / ` : '';
+
+  const folderQueue: FolderQueueItem[] = [{ id: rootFolderId, pathHint: rootPrefix }];
+  const seenFolders = new Set<string>([rootFolderId]);
+  let foldersOpened = 0;
+  let rowsRead = 0;
+
+  while (folderQueue.length > 0 && foldersOpened < maxFolders && rowsRead < maxListRows) {
+    const { id: folderId, pathHint } = folderQueue.shift()!;
+    foldersOpened += 1;
+
+    const children = await driveListAllChildrenInFolder(accessToken, folderId);
+    rowsRead += children.length;
+
+    for (const f of children) {
+      const mt = (f.mimeType ?? '').toLowerCase();
+      if (mt === FOLDER_MIME) {
+        const id = f.id;
+        const seg = (f.name ?? '').trim();
+        if (id && !seenFolders.has(id)) {
+          seenFolders.add(id);
+          const nextPath = seg ? `${pathHint}${seg} / ` : pathHint;
+          folderQueue.push({ id, pathHint: nextPath });
+        }
+        continue;
+      }
+      if (isEncoreBulkImportScoreFile(f)) {
+        scores.push({
+          ...f,
+          parentPathHint: pathHint.trim() || undefined,
+        });
+      }
+    }
+  }
+
+  return scores;
 }

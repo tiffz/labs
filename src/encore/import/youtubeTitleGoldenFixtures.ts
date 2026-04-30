@@ -116,4 +116,59 @@ export const YOUTUBE_TITLE_GOLDEN_FIXTURES: YoutubeTitleGoldenFixture[] = [
     encoreArtist: '',
     encoreSong: 'Karaoke Memory YouTube 2',
   },
+
+  // ────────────────────────────────────────────────────────────────────────
+  // Additional fixtures for popular karaoke channels and export tools.
+  // Add new entries here when a real upload demonstrates a parser miss; the
+  // shared parser test enforces stable behavior against this table.
+  // ────────────────────────────────────────────────────────────────────────
+  {
+    id: 'karafun-pop-track',
+    raw: 'Adele - Hello (Karaoke Version) - KaraFun',
+    channel: 'KaraFun Karaoke - Sing Along',
+    encoreArtist: 'Adele',
+    encoreSong: 'Hello',
+  },
+  {
+    id: 'karaoke-version-ed-sheeran',
+    raw: 'Ed Sheeran - Perfect (Karaoke Version) [Karaoke Version]',
+    channel: 'Karaoke Version',
+    encoreArtist: 'Ed Sheeran',
+    encoreSong: 'Perfect',
+  },
+  {
+    id: 'sing-king-billie-eilish',
+    raw: 'Billie Eilish - What Was I Made For (Karaoke Version)',
+    channel: 'Sing King',
+    encoreArtist: 'Billie Eilish',
+    encoreSong: 'What Was I Made For',
+  },
+  {
+    id: 'official-audio-uploader',
+    raw: 'Olivia Rodrigo - drivers license (Official Audio)',
+    channel: 'Olivia Rodrigo',
+    encoreArtist: 'Olivia Rodrigo',
+    encoreSong: 'drivers license',
+  },
+  {
+    id: 'official-video-uploader',
+    raw: 'Taylor Swift - Blank Space (Official Video)',
+    channel: 'TaylorSwiftVEVO',
+    encoreArtist: 'Taylor Swift',
+    encoreSong: 'Blank Space',
+  },
+  {
+    id: 'lyrics-video',
+    raw: 'Sara Bareilles - She Used to Be Mine (Lyrics)',
+    channel: 'Lyric Vault',
+    encoreArtist: 'Sara Bareilles',
+    encoreSong: 'She Used to Be Mine',
+  },
+  {
+    id: 'broadway-show-quoted-from',
+    raw: '"Don\'t Cry for Me Argentina" from Evita - Karaoke Track with Lyrics on Screen',
+    channel: 'CurtainUp Karaoke',
+    encoreArtist: 'Evita',
+    encoreSong: "Don't Cry for Me Argentina",
+  },
 ];

@@ -10,7 +10,8 @@ import {
 } from '../theme/encoreUiTokens';
 
 export type EncorePageHeaderProps = {
-  kicker: string;
+  /** Optional overline above the title; omit to lead straight with the title. */
+  kicker?: string;
   title: string;
   /** Semantic heading level (landings use h1). */
   titleComponent?: React.ElementType;
@@ -22,7 +23,7 @@ export type EncorePageHeaderProps = {
 };
 
 /**
- * Consistent page chrome: kicker (overline), primary title, optional supporting copy and actions.
+ * Consistent page chrome: optional kicker (overline), primary title, supporting copy, actions.
  */
 export function EncorePageHeader(props: EncorePageHeaderProps): React.ReactElement {
   const { kicker, title, titleComponent = 'h2', titleVariant = 'h6', description, actions, sx } = props;
@@ -32,12 +33,14 @@ export function EncorePageHeader(props: EncorePageHeaderProps): React.ReactEleme
       spacing={2}
       justifyContent="space-between"
       alignItems={{ xs: 'stretch', sm: 'flex-start' }}
-      sx={{ mb: 3, ...sx }}
+      sx={{ mb: { xs: 3, sm: 4 }, ...sx }}
     >
       <Box sx={{ minWidth: 0, pr: { sm: 2 } }}>
-        <Typography variant="overline" color="primary" sx={encorePageKickerSx}>
-          {kicker}
-        </Typography>
+        {kicker ? (
+          <Typography variant="overline" color="primary" sx={encorePageKickerSx}>
+            {kicker}
+          </Typography>
+        ) : null}
         <Typography
           variant={titleVariant}
           component={titleComponent}

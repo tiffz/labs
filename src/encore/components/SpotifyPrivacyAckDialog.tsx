@@ -6,9 +6,11 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Link from '@mui/material/Link';
+import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { encoreDialogActionsSx, encoreDialogContentSx, encoreDialogTitleSx } from '../theme/encoreUiTokens';
 import { useEffect, useState, type ReactElement } from 'react';
+import { SpotifyBrandIcon } from './EncoreBrandIcon';
 
 export function SpotifyPrivacyAckDialog(props: {
   open: boolean;
@@ -24,7 +26,10 @@ export function SpotifyPrivacyAckDialog(props: {
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" aria-labelledby="spotify-privacy-title">
       <DialogTitle id="spotify-privacy-title" sx={encoreDialogTitleSx}>
-        Connect Spotify
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <SpotifyBrandIcon sx={{ fontSize: 24 }} aria-hidden />
+          <span>Connect Spotify</span>
+        </Stack>
       </DialogTitle>
       <DialogContent sx={encoreDialogContentSx}>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2, lineHeight: 1.6 }}>

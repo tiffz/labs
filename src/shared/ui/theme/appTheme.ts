@@ -384,20 +384,80 @@ const THEMES: Record<AppThemeId, Theme> = {
     spacingBase: 5,
     readable: true,
   }),
-  encore: buildTheme({
-    mode: 'light',
-    ...MUSIC_LIGHT_DEFAULT,
-    primary: '#c026d3',
-    secondary: '#7c3aed',
-    backgroundDefault: '#fdf4ff',
-    backgroundPaper: '#ffffff',
-    textPrimary: '#4c1d95',
-    textSecondary: '#64748b',
-    radius: 12,
-    spacingBase: 5,
-    readable: true,
-    materialPolish: true,
-  }),
+  encore: createTheme(
+    buildTheme({
+      mode: 'light',
+      ...MUSIC_LIGHT_DEFAULT,
+      fontFamily: "'Inter', 'SF Pro Text', 'Roboto', system-ui, -apple-system, sans-serif",
+      primary: '#c026d3',
+      secondary: '#7c3aed',
+      backgroundDefault: '#fbf7fb',
+      backgroundPaper: '#ffffff',
+      textPrimary: '#4c1d95',
+      textSecondary: '#64748b',
+      divider: 'rgba(76, 29, 149, 0.04)',
+      radius: 12,
+      spacingBase: 5,
+      readable: true,
+      materialPolish: true,
+    }),
+    {
+      components: {
+        /** Tall dialogs no longer clip off the top of the viewport: scroll inside paper + max height. */
+        MuiDialog: {
+          defaultProps: {
+            keepMounted: true,
+            scroll: 'paper',
+          },
+          styleOverrides: {
+            paper: ({ theme }: { theme: Theme }) => ({
+              maxHeight: `calc(100dvh - ${theme.spacing(2)} - ${theme.spacing(2)} - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))`,
+              margin: theme.spacing(2),
+              display: 'flex',
+              flexDirection: 'column',
+            }),
+          },
+        },
+        MuiDialogTitle: {
+          styleOverrides: {
+            root: { flexShrink: 0 },
+          },
+        },
+        MuiDialogContent: {
+          styleOverrides: {
+            root: {
+              flex: '1 1 auto',
+              minHeight: 0,
+              overflowY: 'auto',
+            },
+          },
+        },
+        MuiDialogActions: {
+          styleOverrides: {
+            root: { flexShrink: 0 },
+          },
+        },
+        MuiChip: {
+          styleOverrides: {
+            icon: {
+              fontSize: 18,
+            },
+          },
+        },
+        MuiAppBar: {
+          styleOverrides: {
+            root: {
+              backdropFilter: 'saturate(180%) blur(20px)',
+              WebkitBackdropFilter: 'saturate(180%) blur(20px)',
+              borderRadius: 0,
+              border: 'none',
+              boxShadow: 'none',
+            },
+          },
+        },
+      },
+    },
+  ),
 };
 
 export function getAppTheme(app: AppThemeId): Theme {

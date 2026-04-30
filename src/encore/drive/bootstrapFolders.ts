@@ -108,13 +108,105 @@ export async function ensureEncoreDriveLayout(accessToken: string): Promise<Enco
   };
 }
 
-/** Fetch public file bytes using API key (guest, no user token). */
-export async function fetchPublicDriveJson(fileId: string, apiKey: string): Promise<unknown> {
-  const url = `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media&key=${encodeURIComponent(apiKey)}`;
-  const res = await fetch(url);
+function isLocalhostOrigin(): boolean {
+  if (typeof window === 'undefined') return false;
+  const h = window.location.hostname;
+  return h === 'localhost' || h === '127.0.0.1' || h.endsWith('.local');
+}
+
+/** In Vite dev, use same-origin proxy (see root vite.config) so API-key referrer + CORS checks do not break guest reads. */
+function buildPublicDriveJsonUrl(fileId: string, apiKey: string): string {
+  const useDevProxy =
+    import.meta.env.DEV &&
+    import.meta.env.MODE !== 'test' &&
+    typeof window !== 'undefined' &&
+    typeof window.location?.origin === 'string';
+  if (useDevProxy) {
+    return `${window.location.origin}/__encore/drive-public/${encodeURIComponent(fileId)}`;
+  }
+  return `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media&supportsAllDrives=true&key=${encodeURIComponent(apiKey)}`;
+}
+
+/**
+ * Fetch one URL once. Translates 4xx → typed error so the caller can decide whether
+ * a retry is warranted (transient 5xx/network → yes; 403/404 → no, stop early).
+ */
+async function attemptFetchPublicDriveJson(url: string): Promise<unknown> {
+  let res: Response;
+  try {
+    res = await fetch(url, { cache: 'no-store', mode: 'cors', credentials: 'omit' });
+  } catch {
+    // CORS rejection or genuine network failure — both surface as TypeError.
+    const err = new Error('NETWORK_OR_CORS') as Error & { code?: string };
+    err.code = 'NETWORK_OR_CORS';
+    throw err;
+  }
   const text = await res.text();
   if (!res.ok) {
-    throw new Error(`Public fetch failed: ${res.status}`);
+    const err = new Error(`HTTP_${res.status}`) as Error & { code?: string; status?: number };
+    err.code = `HTTP_${res.status}`;
+    err.status = res.status;
+    throw err;
   }
-  return JSON.parse(text) as unknown;
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    const err = new Error('INVALID_JSON') as Error & { code?: string };
+    err.code = 'INVALID_JSON';
+    throw err;
+  }
+}
+
+/**
+ * Fetch public file bytes using a Drive API key (guest path; no user OAuth token).
+ *
+ * The file must be shared with `anyone:reader` and the API key must allow the caller.
+ * In local dev, requests go through a same-origin Vite proxy (see `vite.config.ts`) that
+ * forwards to Drive with a matching Referer so HTTP-referrer–restricted keys work; in
+ * production, the browser calls Google directly with `key=` in the query string.
+ */
+export async function fetchPublicDriveJson(fileId: string, apiKey: string): Promise<unknown> {
+  const url = buildPublicDriveJsonUrl(fileId, apiKey);
+
+  const attempts = [0, 600, 1800];
+  let lastError: (Error & { code?: string; status?: number }) | null = null;
+  for (let i = 0; i < attempts.length; i += 1) {
+    if (attempts[i] > 0) {
+      await new Promise((resolve) => setTimeout(resolve, attempts[i]));
+    }
+    try {
+      return await attemptFetchPublicDriveJson(url);
+    } catch (e) {
+      const err = e as Error & { code?: string; status?: number };
+      lastError = err;
+      // Don't retry definitive failures (file gone, file private, malformed JSON).
+      if (err.code === 'INVALID_JSON' || err.status === 403 || err.status === 404) break;
+    }
+  }
+
+  if (lastError) {
+    if (lastError.code === 'INVALID_JSON') {
+      throw new Error('Snapshot contents are not valid JSON.');
+    }
+    if (lastError.status === 403) {
+      throw new Error('This snapshot is no longer public. The owner needs to update it from Encore.');
+    }
+    if (lastError.status === 404) {
+      throw new Error('Snapshot not found. The owner may have deleted or replaced it.');
+    }
+    if (typeof lastError.status === 'number') {
+      throw new Error(`Could not load this snapshot (HTTP ${lastError.status}).`);
+    }
+    if (lastError.code === 'NETWORK_OR_CORS') {
+      if (isLocalhostOrigin()) {
+        throw new Error(
+          'Could not reach this snapshot from a local dev origin. If you are not running `npm run dev`, start it (Encore uses a dev-only proxy for Drive reads). Otherwise add your dev URL to the API key’s HTTP referrer list (e.g. `http://127.0.0.1:5173/*`), or set `VITE_GOOGLE_DRIVE_DEV_PROXY_REFERER` in `.env.local` to a referrer that **is** listed (often your production Encore URL with `/encore/`). See Encore README → Browser API key.',
+        );
+      }
+      throw new Error(
+        'Could not reach this snapshot. Check your network connection, or ask the owner to publish it again from Encore.',
+      );
+    }
+  }
+  throw new Error('Could not load this snapshot.');
 }

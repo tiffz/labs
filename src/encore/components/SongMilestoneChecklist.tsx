@@ -1,12 +1,15 @@
 import AddIcon from '@mui/icons-material/Add';
+import CloseIcon from '@mui/icons-material/Close';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-import MenuItem from '@mui/material/MenuItem';
-import Select from '@mui/material/Select';
+import Checkbox from '@mui/material/Checkbox';
+import Chip from '@mui/material/Chip';
+import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { useCallback, useMemo, useState } from 'react';
 import type { EncoreMilestoneDefinition, EncoreMilestoneState, EncoreSong, EncoreSongOnlyMilestone } from '../types';
@@ -16,12 +19,110 @@ function sortTemplate(template: readonly EncoreMilestoneDefinition[]): EncoreMil
   return [...template].filter((m) => !m.archived).sort((a, b) => a.sortOrder - b.sortOrder || a.label.localeCompare(b.label));
 }
 
+/**
+ * Single milestone row: a primary checkbox cycles `todo` ↔ `done`; a low-key
+ * "N/A" affordance toggles between `todo` and `na` so it stays out of the way
+ * of normal practice progress.
+ */
+function MilestoneRow(props: {
+  label: string;
+  state: EncoreMilestoneState;
+  onSetState: (state: EncoreMilestoneState) => void;
+  onRemove?: () => void;
+  onLabelChange?: (label: string) => void;
+}): React.ReactElement {
+  const { label, state, onSetState, onRemove, onLabelChange } = props;
+  const isNa = state === 'na';
+  const isDone = state === 'done';
+
+  return (
+    <Stack
+      direction="row"
+      spacing={1}
+      alignItems="center"
+      sx={{
+        py: 0.25,
+        opacity: isNa ? 0.55 : 1,
+        transition: 'opacity 160ms ease',
+      }}
+    >
+      <Checkbox
+        size="small"
+        checked={isDone}
+        disabled={isNa}
+        onChange={(e) => onSetState(e.target.checked ? 'done' : 'todo')}
+        inputProps={{ 'aria-label': `Mark "${label}" as done` }}
+      />
+      {onLabelChange ? (
+        <TextField
+          variant="standard"
+          size="small"
+          fullWidth
+          value={label}
+          onChange={(e) => onLabelChange(e.target.value)}
+          inputProps={{ 'aria-label': 'Milestone label' }}
+          sx={{
+            flex: 1,
+            minWidth: 0,
+            '& .MuiInput-underline:before': { borderBottom: 'none' },
+            '& .MuiInput-underline:hover:not(.Mui-disabled):before': { borderBottom: 1, borderColor: 'divider' },
+            '& input': {
+              fontSize: '0.875rem',
+              fontWeight: 500,
+              textDecoration: isDone ? 'line-through' : 'none',
+              color: isDone ? 'text.secondary' : 'text.primary',
+            },
+          }}
+        />
+      ) : (
+        <Typography
+          variant="body2"
+          sx={{
+            flex: 1,
+            minWidth: 0,
+            fontWeight: 500,
+            textDecoration: isDone ? 'line-through' : 'none',
+            color: isDone ? 'text.secondary' : 'text.primary',
+          }}
+        >
+          {label}
+        </Typography>
+      )}
+      <Tooltip title={isNa ? 'Mark as a real milestone again' : 'Mark as not applicable for this song'}>
+        <Button
+          size="small"
+          variant="text"
+          startIcon={<RemoveCircleOutlineIcon sx={{ fontSize: 16 }} />}
+          onClick={() => onSetState(isNa ? 'todo' : 'na')}
+          sx={{
+            color: 'text.secondary',
+            fontSize: '0.7rem',
+            textTransform: 'none',
+            fontWeight: isNa ? 700 : 500,
+            minWidth: 0,
+            px: 0.75,
+            '&:hover': { color: 'text.primary', bgcolor: 'transparent' },
+          }}
+        >
+          {isNa ? 'N/A' : 'Mark N/A'}
+        </Button>
+      </Tooltip>
+      {onRemove ? (
+        <IconButton size="small" aria-label="Remove milestone" onClick={onRemove} sx={{ color: 'text.disabled' }}>
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      ) : null}
+    </Stack>
+  );
+}
+
 export function SongMilestoneChecklist(props: {
   song: EncoreSong;
   milestoneTemplate: readonly EncoreMilestoneDefinition[];
   onChange: (next: EncoreSong) => void;
+  onOpenGlobalMilestoneSettings?: () => void;
 }): React.ReactElement {
-  const { song, milestoneTemplate, onChange } = props;
+  const { song, milestoneTemplate, onChange, onOpenGlobalMilestoneSettings } = props;
   const [localLabel, setLocalLabel] = useState('');
 
   const defs = useMemo(() => sortTemplate(milestoneTemplate), [milestoneTemplate]);
@@ -98,33 +199,38 @@ export function SongMilestoneChecklist(props: {
   );
 
   return (
-    <Stack spacing={2}>
+    <Stack spacing={3}>
       {defs.length === 0 ? (
         <Typography variant="body2" color="text.secondary">
-          No global milestones yet. Add them under Setup, or track nuance in your practice journal above.
+          No global milestones yet. Add them in Library settings, or track nuance in your practice journal above.
         </Typography>
       ) : (
-        <Stack spacing={1.5}>
+        <Stack spacing={0.5}>
           {defs.map((m) => {
             const st = synced.milestoneProgress?.[m.id]?.state ?? 'todo';
             return (
-              <Stack key={m.id} direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }}>
-                <Typography variant="body2" sx={{ flex: 1, minWidth: 0, fontWeight: 600 }}>
-                  {m.label}
-                </Typography>
-                <FormControl size="small" sx={{ minWidth: 160 }}>
-                  <InputLabel id={`ms-${m.id}`}>Status</InputLabel>
-                  <Select
-                    labelId={`ms-${m.id}`}
-                    label="Status"
-                    value={st}
-                    onChange={(e) => setTemplateState(m.id, e.target.value as EncoreMilestoneState)}
-                  >
-                    <MenuItem value="todo">To do</MenuItem>
-                    <MenuItem value="done">Done</MenuItem>
-                    <MenuItem value="na">N/A</MenuItem>
-                  </Select>
-                </FormControl>
+              <Stack key={m.id} direction="row" spacing={1} alignItems="flex-start" sx={{ width: 1 }}>
+                <Tooltip title="Applies to every song · Click to open Library settings">
+                  <Chip
+                    size="small"
+                    label="Global"
+                    variant="outlined"
+                    onClick={() => onOpenGlobalMilestoneSettings?.()}
+                    sx={{
+                      mt: 0.5,
+                      flexShrink: 0,
+                      fontWeight: 700,
+                      cursor: onOpenGlobalMilestoneSettings ? 'pointer' : 'default',
+                    }}
+                  />
+                </Tooltip>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <MilestoneRow
+                    label={m.label}
+                    state={st}
+                    onSetState={(s) => setTemplateState(m.id, s)}
+                  />
+                </Box>
               </Stack>
             );
           })}
@@ -132,40 +238,30 @@ export function SongMilestoneChecklist(props: {
       )}
 
       <Box>
-        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
-          This song only
-        </Typography>
-        {(synced.songOnlyMilestones ?? []).length === 0 ? (
-          <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
-            Add one-off steps (e.g. “Learn the 8-bar modulate”).
+        <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 1.25 }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+            Song-only milestones
           </Typography>
-        ) : (
-          <Stack spacing={1.5} sx={{ mb: 1.5 }}>
+          <Tooltip title="Global milestones come from Library settings and apply to every song. Song-only steps are extra checklist items for this title only.">
+            <IconButton size="small" aria-label="About global vs song-only milestones" sx={{ p: 0.25 }}>
+              <InfoOutlinedIcon sx={{ fontSize: 18 }} />
+            </IconButton>
+          </Tooltip>
+        </Stack>
+        {(synced.songOnlyMilestones ?? []).length === 0 ? null : (
+          <Stack spacing={0.5} sx={{ mb: 1.5 }}>
             {(synced.songOnlyMilestones ?? []).map((row) => (
-              <Stack key={row.id} direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }}>
-                <TextField
-                  size="small"
-                  fullWidth
-                  label="Milestone"
-                  value={row.label}
-                  onChange={(e) => setSongOnlyLabel(row.id, e.target.value)}
-                />
-                <FormControl size="small" sx={{ minWidth: 160 }}>
-                  <InputLabel id={`so-${row.id}`}>Status</InputLabel>
-                  <Select
-                    labelId={`so-${row.id}`}
-                    label="Status"
-                    value={row.state}
-                    onChange={(e) => setSongOnlyState(row.id, e.target.value as EncoreMilestoneState)}
-                  >
-                    <MenuItem value="todo">To do</MenuItem>
-                    <MenuItem value="done">Done</MenuItem>
-                    <MenuItem value="na">N/A</MenuItem>
-                  </Select>
-                </FormControl>
-                <Button size="small" color="inherit" onClick={() => removeSongOnly(row.id)}>
-                  Remove
-                </Button>
+              <Stack key={row.id} direction="row" spacing={1} alignItems="flex-start" sx={{ width: 1 }}>
+                <Chip size="small" label="Song" variant="outlined" sx={{ mt: 0.5, flexShrink: 0, fontWeight: 700 }} />
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <MilestoneRow
+                    label={row.label}
+                    state={row.state}
+                    onSetState={(s) => setSongOnlyState(row.id, s)}
+                    onLabelChange={(l) => setSongOnlyLabel(row.id, l)}
+                    onRemove={() => removeSongOnly(row.id)}
+                  />
+                </Box>
               </Stack>
             ))}
           </Stack>
@@ -174,7 +270,8 @@ export function SongMilestoneChecklist(props: {
           <TextField
             size="small"
             fullWidth
-            label="Add milestone for this song"
+            label="Add a song-only milestone"
+            placeholder="e.g. Learn the 8-bar modulate"
             value={localLabel}
             onChange={(e) => setLocalLabel(e.target.value)}
           />

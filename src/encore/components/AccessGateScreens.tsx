@@ -2,8 +2,35 @@ import Button from '@mui/material/Button';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import { useTheme } from '@mui/material/styles';
 import { EncoreAppShell } from '../ui/EncoreAppShell';
-import { EncorePageHeader } from '../ui/EncorePageHeader';
+import {
+  encorePageKickerSx,
+  encoreRadius,
+  encoreShadowLift,
+} from '../theme/encoreUiTokens';
+
+function EncoreWordmark({ size = 'lg' }: { size?: 'md' | 'lg' }): React.ReactElement {
+  const theme = useTheme();
+  return (
+    <Typography
+      component="span"
+      sx={{
+        fontSize: size === 'lg' ? { xs: '2.75rem', sm: '3.25rem' } : { xs: '2rem', sm: '2.25rem' },
+        fontWeight: 800,
+        letterSpacing: '-0.045em',
+        lineHeight: 1,
+        background: `linear-gradient(120deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+        WebkitBackgroundClip: 'text',
+        WebkitTextFillColor: 'transparent',
+        backgroundClip: 'text',
+        display: 'inline-block',
+      }}
+    >
+      Encore
+    </Typography>
+  );
+}
 
 export function AccessRestrictedScreen(props: { message: string | null; onRetry: () => void }): React.ReactElement {
   const { message, onRetry } = props;
@@ -16,21 +43,32 @@ export function AccessRestrictedScreen(props: { message: string | null; onRetry:
           p: { xs: 3, sm: 4 },
           width: 1,
           bgcolor: 'background.paper',
-          borderRadius: 2,
+          borderRadius: encoreRadius,
           border: 1,
           borderColor: 'divider',
+          boxShadow: encoreShadowLift,
         }}
       >
-        <EncorePageHeader
-          sx={{ mb: 2 }}
-          kicker="Encore"
-          title="Access restricted"
-          titleComponent="h1"
-          titleVariant="h4"
-          description="Invite only. This Google account is not on the allowlist (hashed in config, not stored as email here)."
-        />
+        <Typography variant="overline" color="primary" sx={encorePageKickerSx}>
+          Encore
+        </Typography>
+        <Typography
+          component="h1"
+          sx={{
+            fontSize: { xs: '1.5rem', sm: '1.625rem' },
+            fontWeight: 700,
+            letterSpacing: '-0.025em',
+            lineHeight: 1.15,
+            mb: 1.5,
+          }}
+        >
+          Invite only
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5, lineHeight: 1.6 }}>
+          This Google account is not on the allowlist for this build of Encore.
+        </Typography>
         {message ? (
-          <Typography variant="body2" color="text.secondary" display="block" sx={{ mb: 2.5, lineHeight: 1.55 }}>
+          <Typography variant="body2" color="text.secondary" display="block" sx={{ mb: 2.5, lineHeight: 1.6 }}>
             {message}
           </Typography>
         ) : null}
@@ -56,32 +94,43 @@ export function SignInLanding(props: {
         sx={{
           maxWidth: 480,
           width: 1,
-          p: { xs: 3, sm: 4 },
+          p: { xs: 3.5, sm: 5 },
           bgcolor: 'background.paper',
-          borderRadius: 2,
+          borderRadius: encoreRadius,
           border: 1,
           borderColor: 'divider',
+          boxShadow: encoreShadowLift,
         }}
       >
-        <EncorePageHeader
-          sx={{ mb: 2 }}
-          kicker="Encore"
-          title="Organize and track your repertoire"
-          titleComponent="h1"
-          titleVariant="h3"
-          description="Your library loads in this browser and works offline. Sign in to Google for Drive backup, sync, and YouTube playlist import. You can stay local-only and add Google later from Account. Spotify is optional there too."
-        />
+        <EncoreWordmark />
+        <Typography
+          component="h1"
+          sx={{
+            mt: 2,
+            fontSize: { xs: '1.5rem', sm: '1.75rem' },
+            fontWeight: 700,
+            letterSpacing: '-0.025em',
+            lineHeight: 1.2,
+            mb: 1.25,
+          }}
+        >
+          Repertoire tracker for singers
+        </Typography>
+        <Typography variant="body1" color="text.secondary" sx={{ mb: 3, lineHeight: 1.55 }}>
+          Songs, performances, and milestones in one place. Saves locally first; sign in to back up to Google Drive
+          and import from YouTube.
+        </Typography>
         {!clientConfigured ? (
-          <Typography color="error" variant="body2" sx={{ mb: 2, lineHeight: 1.5 }}>
-            Set <code>VITE_GOOGLE_CLIENT_ID</code> to enable Google sign-in, or use this build without it (library only).
+          <Typography color="error" variant="body2" sx={{ mb: 2, lineHeight: 1.55 }}>
+            Google sign-in is not configured for this build. You can still use Encore locally below.
           </Typography>
         ) : null}
-        <Stack spacing={1.5}>
+        <Stack spacing={1.25}>
           <Button variant="contained" size="large" fullWidth disabled={!clientConfigured} onClick={() => void onSignIn()}>
             Sign in with Google
           </Button>
           {onContinueLocalOnly ? (
-            <Button variant="outlined" size="large" fullWidth onClick={onContinueLocalOnly}>
+            <Button variant="text" size="large" fullWidth onClick={onContinueLocalOnly}>
               Continue without Google
             </Button>
           ) : null}

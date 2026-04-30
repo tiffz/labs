@@ -1,28 +1,36 @@
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
+import Alert from '@mui/material/Alert';
 import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-import MenuItem from '@mui/material/MenuItem';
-import Select from '@mui/material/Select';
+import Divider from '@mui/material/Divider';
+import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { createPerformanceVideoShortcut } from '../drive/performanceShortcut';
 import { driveGetFileMetadata, driveUploadFileResumable } from '../drive/driveFetch';
 import { ensureEncoreDriveLayout } from '../drive/bootstrapFolders';
 import { driveFileWebUrl } from '../drive/driveWebUrls';
 import { ENCORE_DRIVE_VIDEO_MIME_TYPES, openEncoreGoogleDrivePicker } from '../drive/googlePicker';
 import { parseDriveFileIdFromUrlOrId } from '../drive/parseDriveFileUrl';
-import { encoreDialogActionsSx, encoreDialogContentSx, encoreDialogTitleSx } from '../theme/encoreUiTokens';
-import type { EncoreAccompanimentKind, EncorePerformance } from '../types';
-import { ACCOMPANIMENT_LABELS } from '../repertoire/accompanimentLabels';
+import { buildPerformanceVideoName, splitFileNameExtension } from '../drive/performanceVideoNaming';
+import {
+  encoreDialogActionsSx,
+  encoreDialogContentSx,
+  encoreDialogTitleSx,
+  encoreHairline,
+  encoreMutedCaptionSx,
+} from '../theme/encoreUiTokens';
+import { SongPageSubheading } from '../ui/SongPageSection';
+import { useEncore } from '../context/EncoreContext';
+import type { EncorePerformance } from '../types';
+import { ENCORE_ACCOMPANIMENT_TAGS } from '../types';
 import { parsePerformanceVideoInput } from '../utils/parsePerformanceVideoInput';
 
 function newPerformance(songId: string): EncorePerformance {
@@ -33,7 +41,6 @@ function newPerformance(songId: string): EncorePerformance {
     songId,
     date: day,
     venueTag: '',
-    accompanimentKind: 'unknown',
     createdAt: now,
     updatedAt: now,
   };
@@ -64,6 +71,8 @@ export function PerformanceEditorDialog(props: {
   onSave: (p: EncorePerformance) => Promise<void>;
 }): React.ReactElement {
   const { open, performance, songId, googleAccessToken, venueOptions, onClose, onSave } = props;
+  const { songs } = useEncore();
+  const songForPerformance = useMemo(() => songs.find((s) => s.id === songId) ?? null, [songs, songId]);
   const [draft, setDraft] = useState<EncorePerformance>(newPerformance(songId));
   const [videoInput, setVideoInput] = useState('');
   const [shortcutMsg, setShortcutMsg] = useState<string | null>(null);
@@ -153,31 +162,21 @@ export function PerformanceEditorDialog(props: {
 
   const handleSave = async () => {
     const now = new Date().toISOString();
-    let videoShortcutDriveFileId = draft.videoShortcutDriveFileId;
     const target = draft.videoTargetDriveFileId?.trim();
-    if (target && googleAccessToken && !videoShortcutDriveFileId) {
-      try {
-        const name = `Performance ${draft.date} ${draft.venueTag || 'video'}`.slice(0, 120);
-        videoShortcutDriveFileId = await createPerformanceVideoShortcut(googleAccessToken, target, name);
-        setShortcutMsg('Created a shortcut in your Encore_App/Performances folder.');
-      } catch (e) {
-        setShortcutMsg(
-          `Shortcut not created (${e instanceof Error ? e.message : String(e)}). Performance will still be saved.`,
-        );
-      }
-    }
-    await onSave({
+    const finalDraft: EncorePerformance = {
       ...draft,
       venueTag: draft.venueTag.trim() || 'Venue',
       date: draft.date,
-      accompanimentKind: draft.accompanimentKind ?? 'unknown',
-      videoTargetDriveFileId: target || undefined,
-      videoShortcutDriveFileId,
+      accompanimentTags: draft.accompanimentTags && draft.accompanimentTags.length > 0 ? draft.accompanimentTags : undefined,
       externalVideoUrl: draft.externalVideoUrl?.trim() || undefined,
       notes: draft.notes?.trim() || undefined,
+      videoTargetDriveFileId: target || undefined,
       updatedAt: now,
       createdAt: draft.createdAt || now,
-    });
+    };
+    // savePerformance() in EncoreContext takes care of creating any missing shortcut
+    // (for picked-from-Drive files) and renaming Drive files to the canonical name.
+    await onSave(finalDraft);
     onClose();
   };
 
@@ -187,13 +186,25 @@ export function PerformanceEditorDialog(props: {
     setShortcutMsg(null);
     try {
       const layout = await ensureEncoreDriveLayout(googleAccessToken);
-      const created = await driveUploadFileResumable(googleAccessToken, file, [layout.performancesFolderId]);
+      const date = isoDateFromFileLastModified(file);
+      const { extension } = splitFileNameExtension(file.name);
+      const desiredName = buildPerformanceVideoName(
+        { date, venueTag: draft.venueTag },
+        songForPerformance,
+        extension,
+      );
+      const created = await driveUploadFileResumable(
+        googleAccessToken,
+        file,
+        [layout.performancesFolderId],
+        desiredName,
+      );
       setVideoInput(created.id);
       setDraft((d) => ({
         ...d,
         videoTargetDriveFileId: created.id,
         externalVideoUrl: undefined,
-        date: isoDateFromFileLastModified(file),
+        date,
       }));
       setShortcutMsg('Uploaded to your Performances folder in Drive.');
     } catch (e) {
@@ -203,131 +214,190 @@ export function PerformanceEditorDialog(props: {
     }
   };
 
+  const shortcutSeverity = shortcutMsg?.startsWith('Upload failed:') ? 'error' : 'info';
+
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" aria-labelledby="perf-editor-title">
       <DialogTitle id="perf-editor-title" sx={encoreDialogTitleSx}>
         {performance ? 'Edit performance' : 'Log performance'}
+        {songForPerformance ? (
+          <Typography component="div" variant="body2" color="text.secondary" sx={{ mt: 0.75, fontWeight: 600, lineHeight: 1.45 }}>
+            {songForPerformance.title}
+            {songForPerformance.artist ? (
+              <>
+                {' '}
+                <Box component="span" sx={{ fontWeight: 500 }}>
+                  · {songForPerformance.artist}
+                </Box>
+              </>
+            ) : null}
+          </Typography>
+        ) : null}
       </DialogTitle>
       <DialogContent sx={encoreDialogContentSx}>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <TextField
-            label="Video (YouTube link, Drive link, other URL, or Drive file id)"
-            value={videoInput}
-            onChange={(e) => setVideoInput(e.target.value)}
-            onBlur={() => void syncVideoFromInput()}
-            fullWidth
-            multiline
-            minRows={2}
-            helperText="Paste a link or id, or upload a file from your device."
-          />
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
-            {browseDriveVideoFileId ? (
-              <Button
-                size="small"
-                variant="outlined"
-                component="a"
-                href={driveFileWebUrl(browseDriveVideoFileId)}
-                target="_blank"
-                rel="noreferrer"
-                startIcon={<OpenInNewIcon />}
-              >
-                Open Drive file
-              </Button>
-            ) : null}
-            <Button
-              size="small"
-              variant="outlined"
-              disabled={!googleAccessToken}
-              onClick={() => {
-                if (!googleAccessToken) return;
-                void openEncoreGoogleDrivePicker({
-                  accessToken: googleAccessToken,
-                  title: performancesFolderId ? 'Performances folder' : 'Google Drive',
-                  parentFolderId: performancesFolderId,
-                  mimeTypes: ENCORE_DRIVE_VIDEO_MIME_TYPES,
-                  onPicked: (files) => {
-                    const id = files[0]?.id;
-                    if (!id) return;
-                    setVideoInput(id);
-                    setDraft((d) => ({ ...d, videoTargetDriveFileId: id, externalVideoUrl: undefined }));
-                    void (async () => {
-                      try {
-                        const meta = await driveGetFileMetadata(googleAccessToken, id);
-                        const day = isoDateFromDriveModified(meta.modifiedTime);
-                        if (day) setDraft((d) => ({ ...d, date: day }));
-                      } catch {
-                        /* ignore */
-                      }
-                    })();
-                    setShortcutMsg('Selected video from Google Drive.');
-                  },
-                  onError: (m) => setShortcutMsg(m),
-                });
-              }}
-            >
-              {performancesFolderId ? 'Browse Performances in Drive' : 'Browse My Drive'}
-            </Button>
-          </Box>
-          <Button variant="outlined" component="label" startIcon={<UploadFileIcon />} disabled={!googleAccessToken || uploading}>
-            {uploading ? 'Uploading…' : 'Upload video file'}
-            <input
-              type="file"
-              hidden
-              accept="video/*,.mp4,.mov,.m4v,.webm,.mkv"
-              onChange={(e) => void onPickVideoFile(e.target.files?.[0] ?? null)}
+        <Stack spacing={2.5}>
+          <Box>
+            <SongPageSubheading sx={{ mt: 0, mb: 1.25 }}>
+              Video
+            </SongPageSubheading>
+            <TextField
+              label="Link or file id"
+              value={videoInput}
+              onChange={(e) => setVideoInput(e.target.value)}
+              onBlur={() => void syncVideoFromInput()}
+              fullWidth
+              multiline
+              minRows={2}
+              placeholder="https://… or paste a Drive id"
+              helperText="YouTube, Drive, another URL, or a Drive file id. Browse or upload below if you like."
             />
-          </Button>
-          <TextField
-            label="Date"
-            type="date"
-            value={draft.date}
-            onChange={(e) => setDraft((d) => ({ ...d, date: e.target.value }))}
-            InputLabelProps={{ shrink: true }}
-            fullWidth
-          />
-          <FormControl fullWidth size="small">
-            <InputLabel id="perf-accompaniment-label">Accompaniment</InputLabel>
-            <Select<EncoreAccompanimentKind>
-              labelId="perf-accompaniment-label"
-              label="Accompaniment"
-              value={draft.accompanimentKind ?? 'unknown'}
-              onChange={(e) =>
-                setDraft((d) => ({ ...d, accompanimentKind: e.target.value as EncoreAccompanimentKind }))
-              }
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mt: 1.5 }}>
+              {browseDriveVideoFileId ? (
+                <Button
+                  size="medium"
+                  variant="outlined"
+                  component="a"
+                  href={driveFileWebUrl(browseDriveVideoFileId)}
+                  target="_blank"
+                  rel="noreferrer"
+                  startIcon={<OpenInNewIcon />}
+                  sx={{ flex: { sm: '1 1 0' }, minWidth: 0 }}
+                >
+                  Open in Drive
+                </Button>
+              ) : null}
+              <Button
+                size="medium"
+                variant="outlined"
+                disabled={!googleAccessToken}
+                fullWidth={!browseDriveVideoFileId}
+                onClick={() => {
+                  if (!googleAccessToken) return;
+                  void openEncoreGoogleDrivePicker({
+                    accessToken: googleAccessToken,
+                    title: performancesFolderId ? 'Performances folder' : 'Google Drive',
+                    parentFolderId: performancesFolderId,
+                    mimeTypes: ENCORE_DRIVE_VIDEO_MIME_TYPES,
+                    onPicked: (files) => {
+                      const id = files[0]?.id;
+                      if (!id) return;
+                      setVideoInput(id);
+                      setDraft((d) => ({ ...d, videoTargetDriveFileId: id, externalVideoUrl: undefined }));
+                      void (async () => {
+                        try {
+                          const meta = await driveGetFileMetadata(googleAccessToken, id);
+                          const day = isoDateFromDriveModified(meta.modifiedTime);
+                          if (day) setDraft((d) => ({ ...d, date: day }));
+                        } catch {
+                          /* ignore */
+                        }
+                      })();
+                      setShortcutMsg('Selected video from Google Drive.');
+                    },
+                    onError: (m) => setShortcutMsg(m),
+                  });
+                }}
+                sx={{ flex: browseDriveVideoFileId ? { sm: '1 1 0' } : undefined, minWidth: 0 }}
+              >
+                {performancesFolderId ? 'Browse Performances' : 'Browse Drive'}
+              </Button>
+            </Stack>
+            <Button
+              variant="outlined"
+              component="label"
+              fullWidth
+              size="medium"
+              startIcon={<UploadFileIcon />}
+              disabled={!googleAccessToken || uploading}
+              sx={{ mt: 1 }}
             >
-              {(Object.keys(ACCOMPANIMENT_LABELS) as EncoreAccompanimentKind[]).map((k) => (
-                <MenuItem key={k} value={k}>
-                  {ACCOMPANIMENT_LABELS[k]}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <Autocomplete
-            freeSolo
-            options={venueList}
-            inputValue={draft.venueTag}
-            onInputChange={(_, v) => setDraft((d) => ({ ...d, venueTag: v }))}
-            renderInput={(params) => (
-              <TextField {...params} label="Venue" placeholder="Start typing or pick a past venue" fullWidth />
-            )}
-          />
-          <TextField
-            label="Notes"
-            value={draft.notes ?? ''}
-            onChange={(e) => setDraft((d) => ({ ...d, notes: e.target.value || undefined }))}
-            fullWidth
-            multiline
-            minRows={2}
-          />
-          {shortcutMsg && (
-            <Typography variant="caption" color="text.secondary">
-              {shortcutMsg}
-            </Typography>
-          )}
-        </Box>
+              {uploading ? 'Uploading…' : 'Upload video from device'}
+              <input
+                type="file"
+                hidden
+                accept="video/*,.mp4,.mov,.m4v,.webm,.mkv"
+                onChange={(e) => void onPickVideoFile(e.target.files?.[0] ?? null)}
+              />
+            </Button>
+            {!googleAccessToken ? (
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.75, lineHeight: 1.45 }}>
+                Sign in with Google to browse Drive or upload into your Performances folder.
+              </Typography>
+            ) : null}
+          </Box>
+
+          <Divider sx={{ borderColor: encoreHairline }} />
+
+          <Stack spacing={2}>
+            <TextField
+              label="Date"
+              type="date"
+              value={draft.date}
+              onChange={(e) => setDraft((d) => ({ ...d, date: e.target.value }))}
+              InputLabelProps={{ shrink: true }}
+              fullWidth
+            />
+            <Box>
+              <Typography component="p" variant="caption" sx={{ ...encoreMutedCaptionSx, mb: 1, m: 0 }}>
+                Accompaniment
+              </Typography>
+              <Stack direction="row" gap={1} flexWrap="wrap" useFlexGap>
+                {ENCORE_ACCOMPANIMENT_TAGS.map((tag) => {
+                  const active = (draft.accompanimentTags ?? []).includes(tag);
+                  return (
+                    <Chip
+                      key={tag}
+                      size="small"
+                      label={tag}
+                      clickable
+                      color={active ? 'primary' : 'default'}
+                      variant={active ? 'filled' : 'outlined'}
+                      sx={{ height: 30, fontWeight: 600 }}
+                      onClick={() => {
+                        setDraft((d) => {
+                          const cur = new Set(d.accompanimentTags ?? []);
+                          if (cur.has(tag)) cur.delete(tag);
+                          else cur.add(tag);
+                          const next = ENCORE_ACCOMPANIMENT_TAGS.filter((t) => cur.has(t));
+                          return { ...d, accompanimentTags: next.length ? next : undefined };
+                        });
+                      }}
+                    />
+                  );
+                })}
+              </Stack>
+            </Box>
+            <Autocomplete
+              freeSolo
+              options={venueList}
+              inputValue={draft.venueTag}
+              onInputChange={(_, v) => setDraft((d) => ({ ...d, venueTag: v }))}
+              renderInput={(params) => (
+                <TextField {...params} label="Venue" placeholder="Start typing or pick a past venue" fullWidth />
+              )}
+            />
+            <TextField
+              label="Notes"
+              value={draft.notes ?? ''}
+              onChange={(e) => setDraft((d) => ({ ...d, notes: e.target.value || undefined }))}
+              fullWidth
+              multiline
+              minRows={2}
+              placeholder="Optional"
+            />
+          </Stack>
+
+          {shortcutMsg ? (
+            <Alert severity={shortcutSeverity} variant="outlined" sx={{ borderColor: encoreHairline }}>
+              {shortcutSeverity === 'error' ? shortcutMsg.replace(/^Upload failed:\s*/i, '') : shortcutMsg}
+            </Alert>
+          ) : null}
+        </Stack>
       </DialogContent>
       <DialogActions sx={encoreDialogActionsSx}>
-        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={onClose} color="inherit">
+          Cancel
+        </Button>
         <Button onClick={() => void handleSave()} variant="contained">
           Save
         </Button>

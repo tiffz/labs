@@ -120,19 +120,6 @@ export const ENCORE_DRIVE_CHART_MIME_TYPES = [
   'audio/flac',
 ].join(',');
 
-export const ENCORE_DRIVE_RECORDING_MIME_TYPES = [
-  'audio/mpeg',
-  'audio/wav',
-  'audio/x-wav',
-  'audio/mp4',
-  'audio/aac',
-  'audio/ogg',
-  'audio/flac',
-  'application/pdf',
-  'application/xml',
-  'application/vnd.recordare.musicxml+xml',
-].join(',');
-
 export const ENCORE_DRIVE_VIDEO_MIME_TYPES = [
   'video/mp4',
   'video/quicktime',

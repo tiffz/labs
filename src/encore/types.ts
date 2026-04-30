@@ -1,7 +1,16 @@
 export type EncoreSongAttachmentKind = 'chart' | 'backing' | 'recording';
 
-/** How the performer accompanied themselves at this show (singer-first product; keys are common). */
-export type EncoreAccompanimentKind = 'vocal_only' | 'self_accompanied_keys' | 'other' | 'unknown';
+/** How the performer accompanied themselves at this show. Free-form multi-select. */
+export const ENCORE_ACCOMPANIMENT_TAGS = [
+  'Guitar',
+  'Violin',
+  'Piano',
+  'Backing Track',
+  'Backing Vocals',
+  'Duet partner',
+  'Self-accompany',
+] as const;
+export type EncoreAccompanimentTag = (typeof ENCORE_ACCOMPANIMENT_TAGS)[number];
 
 export type EncoreMilestoneState = 'todo' | 'done' | 'na';
 
@@ -40,17 +49,10 @@ export interface EncoreSong {
   artist: string;
   albumArtUrl?: string;
   spotifyTrackId?: string;
-  /**
-   * Genres from Spotify’s **artist** metadata (union of credited artists), not a separate per-track genre.
-   * Filled on playlist import, “Refresh from Spotify”, or when resolving a track link.
-   */
-  spotifyGenres?: string[];
   /** Reference performance / recording on YouTube (from playlist import or manual). */
   youtubeVideoId?: string;
-  originalKey?: string;
-  originalBpm?: number;
+  /** The key you actually perform this song in (manual entry; no auto-fill). */
   performanceKey?: string;
-  performanceBpm?: number;
   journalMarkdown: string;
   /** @deprecated Prefer {@link attachments} with kind `chart`; kept for sync and older data. */
   sheetMusicDriveFileId?: string;
@@ -66,6 +68,12 @@ export interface EncoreSong {
   milestoneProgress?: Record<string, EncoreSongMilestoneProgress>;
   /** Extra checklist rows for this song only. */
   songOnlyMilestones?: EncoreSongOnlyMilestone[];
+  /**
+   * User-defined free-text tags (e.g. "Pop", "Duet", "Wedding-friendly").
+   * Trimmed, deduped case-insensitively at save time. Surfaces in the
+   * repertoire table/grid and in the public snapshot.
+   */
+  tags?: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -83,16 +91,32 @@ export interface EncorePerformance {
   /** External URL if not using Drive */
   externalVideoUrl?: string;
   notes?: string;
-  /** How you accompanied yourself at this performance (for filtering and history). */
-  accompanimentKind?: EncoreAccompanimentKind;
+  /** Multi-select accompaniment chips (e.g. ["Piano", "Self-accompany"]). */
+  accompanimentTags?: EncoreAccompanimentTag[];
   createdAt: string;
   updatedAt: string;
+}
+
+/** Public-snapshot performance row: only fields safe to share read-only. */
+export interface PublicSnapshotPerformance
+  extends Pick<EncorePerformance, 'id' | 'songId' | 'date' | 'venueTag' | 'externalVideoUrl' | 'notes'> {
+  /**
+   * Direct viewer URL to open the performance video. Set ONLY when the underlying
+   * video is publicly readable (external links pass through; Drive videos are
+   * verified to have an `anyone:reader` permission at publish time).
+   */
+  videoOpenUrl?: string;
 }
 
 /** Subset written to public_snapshot.json */
 export interface PublicSnapshot {
   version: 1;
   generatedAt: string;
+  /**
+   * Display name for the snapshot owner — populates "{name}'s repertoire" in the
+   * guest header. Mirrors `RepertoireExtrasRow.ownerDisplayName` at publish time.
+   */
+  ownerDisplayName?: string;
   songs: Array<
     Pick<
       EncoreSong,
@@ -101,17 +125,12 @@ export interface PublicSnapshot {
       | 'artist'
       | 'albumArtUrl'
       | 'spotifyTrackId'
-      | 'spotifyGenres'
       | 'youtubeVideoId'
-      | 'originalKey'
-      | 'originalBpm'
       | 'performanceKey'
-      | 'performanceBpm'
+      | 'tags'
     >
   >;
-  performances: Array<
-    Pick<EncorePerformance, 'id' | 'songId' | 'date' | 'venueTag' | 'externalVideoUrl' | 'notes'>
-  >;
+  performances: PublicSnapshotPerformance[];
 }
 
 export interface RepertoireWirePayload {
@@ -123,4 +142,6 @@ export interface RepertoireWirePayload {
   venueCatalog?: string[];
   /** Global milestone definitions applied to every song (checklist template). */
   milestoneTemplate?: EncoreMilestoneDefinition[];
+  /** Owner display name override — surfaces in app header and shared snapshot. */
+  ownerDisplayName?: string;
 }

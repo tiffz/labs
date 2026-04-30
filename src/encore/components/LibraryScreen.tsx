@@ -1,6 +1,8 @@
 /* eslint-disable react/prop-types -- MRT Cell render props are typed via MRT_ColumnDef, not PropTypes */
 import AddIcon from '@mui/icons-material/Add';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import QueueMusicIcon from '@mui/icons-material/QueueMusic';
@@ -16,9 +18,10 @@ import CardContent from '@mui/material/CardContent';
 import Chip from '@mui/material/Chip';
 import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
@@ -32,14 +35,26 @@ import type { EncorePerformance, EncoreSong } from '../types';
 import { navigateEncore } from '../routes/encoreAppHash';
 import { encoreNoAlbumArtIconSx, encoreNoAlbumArtSurfaceSx } from '../utils/encoreNoAlbumArtSurface';
 import { useEncore } from '../context/EncoreContext';
-import { encoreMutedCaptionSx, encoreMaxWidthPage } from '../theme/encoreUiTokens';
+import {
+  encoreMutedCaptionSx,
+  encoreMaxWidthPage,
+  encoreRadius,
+  encoreShadowSurface,
+} from '../theme/encoreUiTokens';
 import { encorePagePaddingTop, encoreScreenPaddingX } from '../theme/encoreM3Layout';
 import { EncorePageHeader } from '../ui/EncorePageHeader';
 import { EncoreToolbarRow } from '../ui/EncoreToolbarRow';
+import { AddSongDialog } from './AddSongDialog';
 import { PerformanceEditorDialog } from './PerformanceEditorDialog';
 import { PlaylistImportDialog } from './PlaylistImportDialog';
 import { BulkPerformanceImportDialog } from './BulkPerformanceImportDialog';
+import { BulkScoreImportDialog } from './BulkScoreImportDialog';
+import { SpotifyBrandIcon, YouTubeBrandIcon } from './EncoreBrandIcon';
 import { milestoneProgressSummary } from '../repertoire/repertoireMilestoneSummary';
+import { ENCORE_PERFORMANCE_KEY_OPTIONS } from '../repertoire/performanceKeys';
+import { collectAllSongTags } from '../repertoire/songTags';
+import { InlineChipSelect } from '../ui/InlineEditChip';
+import { InlineSongTagsCell } from '../ui/InlineSongTagsCell';
 import { encoreMrtRepertoireTableOptions } from './encoreMrtTableDefaults';
 
 const REPERTOIRE_VIEW_STORAGE_KEY = 'encore.library.repertoireView';
@@ -66,47 +81,52 @@ type EncoreRepertoireMrtRow = {
   title: string;
   artist: string;
   keyDisplay: string;
-  bpmValue: number | null;
-  bpmDisplay: string;
   perfCount: number;
   venues: string;
   lastIso: string;
   lastDisplay: string;
-  genresDisplay: string;
   milestoneShort: string;
   milestoneDetail: string;
+  tags: string[];
+  tagsLabel: string;
 };
 
 function songMatchesSearch(song: EncoreSong, query: string, perfs: EncorePerformance[]): boolean {
   const t = query.trim().toLowerCase();
   if (!t) return true;
   if (song.title.toLowerCase().includes(t) || song.artist.toLowerCase().includes(t)) return true;
-  for (const g of song.spotifyGenres ?? []) {
-    if (g.toLowerCase().includes(t)) return true;
-  }
   const songPerfs = perfs.filter((p) => p.songId === song.id);
   for (const p of songPerfs) {
     if (normalizeVenueTag(p.venueTag).toLowerCase().includes(t)) return true;
     if (p.date.toLowerCase().includes(t)) return true;
   }
-  const keyBits = [song.performanceKey, song.originalKey].filter(Boolean).join(' ').toLowerCase();
-  if (keyBits.includes(t)) return true;
-  const bpm = song.performanceBpm ?? song.originalBpm;
-  if (bpm != null && Number.isFinite(bpm) && String(Math.round(bpm)).includes(t)) return true;
+  if ((song.performanceKey ?? '').toLowerCase().includes(t)) return true;
+  if (song.tags && song.tags.some((tag) => tag.toLowerCase().includes(t))) return true;
   return false;
 }
 
 export function LibraryScreen(): React.ReactElement {
   const theme = useTheme();
-  const { songs, performances, repertoireExtras, saveSong, deleteSong, savePerformance, googleAccessToken, spotifyLinked } =
-    useEncore();
+  const {
+    songs,
+    performances,
+    repertoireExtras,
+    saveSong,
+    deleteSong,
+    savePerformance,
+    googleAccessToken,
+    spotifyLinked,
+    effectiveDisplayName,
+  } = useEncore();
   const [importOpen, setImportOpen] = useState(false);
+  const [addSongOpen, setAddSongOpen] = useState(false);
   const [bulkPerfOpen, setBulkPerfOpen] = useState(false);
+  const [bulkScoreOpen, setBulkScoreOpen] = useState(false);
   const [perfOpen, setPerfOpen] = useState(false);
   const [perfEditing, setPerfEditing] = useState<EncorePerformance | null>(null);
   const [perfSongId, setPerfSongId] = useState<string | null>(null);
   const [menuAnchor, setMenuAnchor] = useState<null | { el: HTMLElement; song: EncoreSong }>(null);
-  const [genreFilter, setGenreFilter] = useState('');
+  const [importMenuAnchor, setImportMenuAnchor] = useState<HTMLElement | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [perfPresence, setPerfPresence] = useState<PerfPresenceFilter>('all');
   const [practicingFilter, setPracticingFilter] = useState<PracticingFilter>('all');
@@ -143,17 +163,6 @@ export function LibraryScreen(): React.ReactElement {
     return [...s];
   }, [repertoireExtras.venueCatalog, performances]);
 
-  const genreOptions = useMemo(() => {
-    const s = new Set<string>();
-    for (const song of songs) {
-      for (const g of song.spotifyGenres ?? []) {
-        const t = g.trim();
-        if (t) s.add(t);
-      }
-    }
-    return [...s].sort((a, b) => a.localeCompare(b));
-  }, [songs]);
-
   const venueChipOptions = useMemo(() => {
     const venueMap = new Map<string, number>();
     for (const p of performances) {
@@ -178,9 +187,6 @@ export function LibraryScreen(): React.ReactElement {
 
   const repertoireSongs = useMemo(() => {
     let list = songs;
-    if (genreFilter) {
-      list = list.filter((x) => x.spotifyGenres?.includes(genreFilter));
-    }
     if (perfPresence === 'with') {
       list = list.filter((s) => (perfBySong.get(s.id) ?? []).length > 0);
     } else if (perfPresence === 'none') {
@@ -198,15 +204,14 @@ export function LibraryScreen(): React.ReactElement {
       list = list.filter((s) => songMatchesSearch(s, searchQuery, performances));
     }
     return list;
-  }, [songs, genreFilter, perfPresence, practicingFilter, venueFilter, searchQuery, performances, perfBySong]);
+  }, [songs, perfPresence, practicingFilter, venueFilter, searchQuery, performances, perfBySong]);
 
   const hasActiveFilters = Boolean(
-    searchQuery.trim() || genreFilter || perfPresence !== 'all' || practicingFilter !== 'all' || venueFilter,
+    searchQuery.trim() || perfPresence !== 'all' || practicingFilter !== 'all' || venueFilter,
   );
 
   const clearAllFilters = useCallback(() => {
     setSearchQuery('');
-    setGenreFilter('');
     setPerfPresence('all');
     setPracticingFilter('all');
     setVenueFilter(null);
@@ -220,29 +225,27 @@ export function LibraryScreen(): React.ReactElement {
       const venues = [...venueSet].sort((a, b) => a.localeCompare(b)).join(', ') || '—';
       const last =
         perfList.length === 0 ? null : perfList.reduce((best, p) => (p.date >= best.date ? p : best), perfList[0]!).date;
-      const keyBits = [s.performanceKey, s.originalKey].filter(Boolean);
-      const keyDisplay = keyBits.length ? keyBits.join(' · ') : '—';
-      const bpmVal = s.performanceBpm ?? s.originalBpm;
-      const bpmDisplay = bpmVal != null && Number.isFinite(bpmVal) ? String(Math.round(bpmVal)) : '—';
-      const genresDisplay = (s.spotifyGenres ?? []).length ? (s.spotifyGenres ?? []).join(', ') : '—';
+      const keyDisplay = s.performanceKey?.trim() || '—';
       const ms = milestoneProgressSummary(s, repertoireExtras.milestoneTemplate);
+      const tags = s.tags ?? [];
       return {
         song: s,
         title: s.title,
         artist: s.artist,
         keyDisplay,
-        bpmValue: bpmVal != null && Number.isFinite(bpmVal) ? Math.round(bpmVal) : null,
-        bpmDisplay,
         perfCount,
         venues,
         lastIso: last ?? '',
         lastDisplay: formatShortDate(last),
-        genresDisplay,
         milestoneShort: ms.labelShort,
         milestoneDetail: ms.tooltip,
+        tags,
+        tagsLabel: tags.join(', '),
       };
     });
   }, [repertoireSongs, performances, repertoireExtras.milestoneTemplate]);
+
+  const tagFilterOptions = useMemo(() => collectAllSongTags(songs), [songs]);
 
   const openSong = useCallback((s: EncoreSong) => {
     navigateEncore({ kind: 'song', id: s.id });
@@ -283,12 +286,17 @@ export function LibraryScreen(): React.ReactElement {
       {
         accessorKey: 'title',
         header: 'Title',
-        size: 200,
+        size: 220,
         Cell: ({ renderedCellValue }) => (
           <Typography
             variant="body2"
-            fontWeight={700}
-            sx={{ lineHeight: 1.3, color: 'text.primary', wordBreak: 'break-word', overflowWrap: 'anywhere' }}
+            sx={{
+              fontWeight: 600,
+              lineHeight: 1.35,
+              color: 'text.primary',
+              wordBreak: 'break-word',
+              overflowWrap: 'anywhere',
+            }}
           >
             {renderedCellValue}
           </Typography>
@@ -309,57 +317,84 @@ export function LibraryScreen(): React.ReactElement {
         ),
       },
       {
-        accessorKey: 'keyDisplay',
-        header: 'Key',
-        size: 120,
-        Cell: ({ row, renderedCellValue }) => (
-          <Typography variant="body2" sx={{ fontWeight: row.original.keyDisplay === '—' ? 400 : 600 }}>
-            {renderedCellValue}
-          </Typography>
-        ),
+        accessorKey: 'tagsLabel',
+        header: 'Tags',
+        size: 200,
+        enableSorting: false,
+        filterVariant: 'multi-select',
+        filterSelectOptions: tagFilterOptions,
+        filterFn: (row, _columnId, filterValue: unknown) => {
+          if (!Array.isArray(filterValue) || filterValue.length === 0) return true;
+          const cellTags = row.original.tags;
+          if (cellTags.length === 0) return false;
+          const lc = cellTags.map((t) => t.toLowerCase());
+          return (filterValue as string[]).some((v) => lc.includes(String(v).toLowerCase()));
+        },
+        Cell: ({ row }) => {
+          const song = row.original.song;
+          const tags = row.original.tags;
+          return (
+            <InlineSongTagsCell
+              tags={tags}
+              suggestions={tagFilterOptions}
+              onCommit={(next) => {
+                void saveSong({
+                  ...song,
+                  tags: next.length ? next : undefined,
+                  updatedAt: new Date().toISOString(),
+                });
+              }}
+            />
+          );
+        },
       },
       {
-        accessorKey: 'bpmDisplay',
-        header: 'BPM',
-        sortingFn: 'alphanumeric',
-        size: 88,
-        Cell: ({ row }) => (
-          <Typography
-            variant="body2"
-            sx={{ fontVariantNumeric: 'tabular-nums', fontWeight: row.original.bpmDisplay === '—' ? 400 : 600 }}
-          >
-            {row.original.bpmDisplay}
-          </Typography>
-        ),
+        accessorKey: 'keyDisplay',
+        header: 'Key',
+        size: 132,
+        Cell: ({ row }) => {
+          const song = row.original.song;
+          return (
+            <InlineChipSelect<string>
+              value={song.performanceKey ?? null}
+              options={ENCORE_PERFORMANCE_KEY_OPTIONS}
+              freeSolo
+              clearable
+              placeholder="Set key"
+              onChange={(v) => {
+                void saveSong({
+                  ...song,
+                  performanceKey: v ?? undefined,
+                  updatedAt: new Date().toISOString(),
+                });
+              }}
+            />
+          );
+        },
       },
       {
         accessorKey: 'perfCount',
-        header: 'Shows',
+        header: 'Performances',
         filterVariant: 'range',
-        size: 96,
+        size: 132,
         Cell: ({ row }) =>
           row.original.perfCount > 0 ? (
-            <Chip
-              size="small"
-              label={row.original.perfCount}
-              variant="filled"
-              sx={{
-                fontWeight: 800,
-                minWidth: 36,
-                height: 26,
-                bgcolor: 'action.selected',
-                color: 'text.primary',
-                '& .MuiChip-label': { px: 1 },
-              }}
-            />
+            <Typography
+              variant="body2"
+              sx={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: 'text.primary' }}
+            >
+              {row.original.perfCount}
+            </Typography>
           ) : (
-            <Chip size="small" label="—" variant="outlined" sx={{ opacity: 0.55, height: 26, minWidth: 36 }} />
+            <Typography variant="body2" sx={{ color: 'text.disabled' }}>
+              —
+            </Typography>
           ),
       },
       {
         id: 'practicing',
         header: 'Working on',
-        size: 96,
+        size: 104,
         enableColumnFilter: false,
         enableSorting: false,
         Cell: ({ row }) => {
@@ -374,6 +409,7 @@ export function LibraryScreen(): React.ReactElement {
                 void saveSong({ ...s, practicing: e.target.checked, updatedAt: now });
               }}
               inputProps={{ 'aria-label': `Working on ${s.title}` }}
+              sx={{ p: 0.5, ml: -0.5 }}
             />
           );
         },
@@ -381,12 +417,19 @@ export function LibraryScreen(): React.ReactElement {
       {
         id: 'milestones',
         header: 'Milestones',
-        size: 120,
+        size: 112,
         enableColumnFilter: false,
         enableSorting: false,
         Cell: ({ row }) => (
           <Tooltip title={row.original.milestoneDetail} enterDelay={400}>
-            <Typography variant="body2" color="text.secondary" sx={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
+            <Typography
+              variant="body2"
+              sx={{
+                fontVariantNumeric: 'tabular-nums',
+                fontWeight: 500,
+                color: 'text.secondary',
+              }}
+            >
               {row.original.milestoneShort}
             </Typography>
           </Tooltip>
@@ -396,43 +439,51 @@ export function LibraryScreen(): React.ReactElement {
         accessorKey: 'venues',
         header: 'Venues',
         size: 200,
-        Cell: ({ renderedCellValue }) => (
-          <Typography variant="body2" color="text.secondary" noWrap title={String(renderedCellValue)}>
-            {renderedCellValue}
-          </Typography>
-        ),
+        Cell: ({ renderedCellValue }) => {
+          const value = String(renderedCellValue ?? '').trim();
+          const display = value || '—';
+          const body = (
+            <Typography
+              variant="body2"
+              sx={{
+                lineHeight: 1.35,
+                wordBreak: 'break-word',
+                overflowWrap: 'anywhere',
+                color: value === '—' || !value ? 'text.disabled' : 'text.secondary',
+              }}
+            >
+              {display}
+            </Typography>
+          );
+          return value && value !== '—' ? (
+            <Tooltip title={value} enterDelay={400}>
+              {body}
+            </Tooltip>
+          ) : (
+            body
+          );
+        },
       },
       {
         accessorKey: 'lastIso',
         header: 'Last performed',
         sortingFn: 'alphanumeric',
-        size: 140,
+        size: 144,
         Cell: ({ row }) => (
           <Typography
             variant="body2"
             sx={{
-              fontWeight: row.original.lastIso ? 600 : 400,
-              color: row.original.lastIso ? 'text.primary' : 'text.secondary',
+              fontVariantNumeric: 'tabular-nums',
+              fontWeight: 500,
+              color: row.original.lastIso ? 'text.primary' : 'text.disabled',
             }}
           >
             {row.original.lastDisplay}
           </Typography>
         ),
       },
-      {
-        accessorKey: 'genresDisplay',
-        header: 'Genres',
-        size: 180,
-        muiTableHeadCellProps: { sx: { display: { xs: 'none', lg: 'table-cell' } } },
-        muiTableBodyCellProps: { sx: { display: { xs: 'none', lg: 'table-cell' } } },
-        Cell: ({ renderedCellValue }) => (
-          <Typography variant="caption" color="text.secondary" noWrap title={String(renderedCellValue)}>
-            {renderedCellValue}
-          </Typography>
-        ),
-      },
     ],
-    [theme, saveSong],
+    [theme, saveSong, tagFilterOptions],
   );
 
   const table = useMaterialReactTable({
@@ -487,86 +538,120 @@ export function LibraryScreen(): React.ReactElement {
       }}
     >
       <EncorePageHeader
-        kicker="Library"
-        title="Repertoire"
+        title={effectiveDisplayName ? `${effectiveDisplayName}'s repertoire` : 'Your repertoire'}
+        description={
+          songs.length === 0
+            ? 'Add a song or import a playlist to start.'
+            : libraryStats.totalPerf === 0
+              ? `${songs.length} ${songs.length === 1 ? 'song' : 'songs'}. No performances logged yet.`
+              : `${songs.length} ${songs.length === 1 ? 'song' : 'songs'} · ${libraryStats.totalPerf} ${libraryStats.totalPerf === 1 ? 'performance' : 'performances'}${libraryStats.topVenues.length > 0 ? ` · top venue ${libraryStats.topVenues[0]?.[0] ?? ''}` : ''}`
+        }
         actions={
           <>
             <Button
               size="small"
-              variant="outlined"
-              startIcon={<QueueMusicIcon />}
-              onClick={() => setImportOpen(true)}
-              sx={{ flexShrink: 0 }}
-            >
-              Import playlists
-            </Button>
-            <Button
-              size="small"
-              variant="outlined"
-              startIcon={<CloudUploadIcon />}
-              onClick={() => setBulkPerfOpen(true)}
-              sx={{ flexShrink: 0 }}
-            >
-              Bulk import videos
-            </Button>
-            <Button size="small" variant="text" onClick={() => navigateEncore({ kind: 'repertoireSettings' })} sx={{ flexShrink: 0 }}>
-              Venues & milestones
-            </Button>
-            <Button
-              size="small"
               variant="contained"
               startIcon={<AddIcon />}
-              onClick={() => navigateEncore({ kind: 'songNew' })}
+              onClick={() => setAddSongOpen(true)}
               sx={{ flexShrink: 0 }}
             >
               Add song
             </Button>
+            <Button
+              id="encore-library-import-button"
+              size="small"
+              variant="outlined"
+              startIcon={<CloudUploadIcon />}
+              endIcon={<ExpandMoreIcon sx={{ fontSize: 18, opacity: 0.85 }} />}
+              aria-controls={importMenuAnchor ? 'encore-library-import-menu' : undefined}
+              aria-haspopup="true"
+              aria-expanded={importMenuAnchor ? 'true' : undefined}
+              onClick={(e) => setImportMenuAnchor(e.currentTarget)}
+              sx={{ flexShrink: 0, textTransform: 'none', fontWeight: 600 }}
+            >
+              Import
+            </Button>
+            <Menu
+              id="encore-library-import-menu"
+              anchorEl={importMenuAnchor}
+              open={Boolean(importMenuAnchor)}
+              onClose={() => setImportMenuAnchor(null)}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+              slotProps={{
+                list: { 'aria-labelledby': 'encore-library-import-button' },
+              }}
+            >
+              <MenuItem
+                onClick={() => {
+                  setImportMenuAnchor(null);
+                  setImportOpen(true);
+                }}
+              >
+                <ListItemIcon>
+                  <QueueMusicIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText
+                  primary="Import playlists"
+                  secondaryTypographyProps={{ component: 'div' }}
+                  secondary={
+                    <Stack component="span" direction="row" alignItems="center" spacing={0.75} sx={{ mt: 0.25 }}>
+                      <Box
+                        component="span"
+                        sx={{ display: 'inline-flex', alignItems: 'center', gap: '0.22em', verticalAlign: 'middle' }}
+                      >
+                        <SpotifyBrandIcon sx={{ fontSize: 14, position: 'relative', top: '0.08em' }} aria-hidden />
+                        Spotify
+                      </Box>
+                      <Typography component="span" variant="caption" color="text.secondary" sx={{ px: 0.25 }}>
+                        ·
+                      </Typography>
+                      <Box
+                        component="span"
+                        sx={{ display: 'inline-flex', alignItems: 'center', gap: '0.22em', verticalAlign: 'middle' }}
+                      >
+                        <YouTubeBrandIcon sx={{ fontSize: 14, position: 'relative', top: '0.08em' }} aria-hidden />
+                        YouTube
+                      </Box>
+                    </Stack>
+                  }
+                />
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  setImportMenuAnchor(null);
+                  setBulkPerfOpen(true);
+                }}
+              >
+                <ListItemIcon>
+                  <CloudUploadIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText primary="Bulk import videos" secondary="Drive folder or files" />
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  setImportMenuAnchor(null);
+                  setBulkScoreOpen(true);
+                }}
+              >
+                <ListItemIcon>
+                  <DescriptionOutlinedIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText primary="Bulk import scores" secondary="PDF, MusicXML, MIDI" />
+              </MenuItem>
+            </Menu>
           </>
         }
       />
 
-      <Paper
-        variant="outlined"
-        sx={{
-          mb: 3,
-          borderRadius: 2,
-          p: 2.5,
-          bgcolor: (t) => alpha(t.palette.primary.main, 0.04),
-          borderColor: 'divider',
-        }}
-      >
-        <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 700, mb: 1.25, letterSpacing: '0.04em' }}>
-          At a glance
-        </Typography>
-        <Stack direction="row" flexWrap="wrap" gap={1} alignItems="center" sx={{ mb: 1.5 }}>
-          <Chip size="small" variant="filled" color="primary" label={`${songs.length} songs`} sx={{ fontWeight: 700 }} />
-          <Chip size="small" variant="outlined" label={`${libraryStats.totalPerf} performances`} sx={{ fontWeight: 600 }} />
-        </Stack>
-        {libraryStats.topVenues.length > 0 ? (
-          <Typography variant="caption" color="text.secondary" component="div">
-            Top venues:{' '}
-            {libraryStats.topVenues.map(([v, n], i) => (
-              <span key={v}>
-                {i > 0 ? ' · ' : ''}
-                <strong>{v}</strong> ({n})
-              </span>
-            ))}
-          </Typography>
-        ) : (
-          <Typography variant="caption" color="text.secondary">
-            Log a performance from a song to see venue stats here.
-          </Typography>
-        )}
-      </Paper>
-
       {songs.length > 0 ? (
-        <Paper variant="outlined" sx={{ borderRadius: 2, p: 2, mb: 2 }}>
-          <Stack spacing={2}>
+        <Box sx={{ mb: { xs: 4, sm: 5 } }}>
+          <Stack spacing={2.5}>
             <EncoreToolbarRow sx={{ mb: 0 }}>
               <TextField
                 size="small"
                 fullWidth
-                placeholder="Search title, artist, venue, genre, key…"
+                placeholder="Search title, artist, venue, key…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 inputProps={{ 'aria-label': 'Search repertoire' }}
@@ -579,6 +664,7 @@ export function LibraryScreen(): React.ReactElement {
                 }}
                 sx={{ maxWidth: { sm: 420 } }}
               />
+              <Box sx={{ flexGrow: 1 }} aria-hidden />
               <ToggleButtonGroup
                 exclusive
                 size="small"
@@ -589,35 +675,33 @@ export function LibraryScreen(): React.ReactElement {
                 aria-label="Repertoire layout"
                 sx={{ flexShrink: 0, alignSelf: { xs: 'flex-end', sm: 'center' } }}
               >
-                <ToggleButton value="table" aria-label="Table view">
-                  <ViewListIcon fontSize="small" sx={{ mr: 0.75 }} />
-                  Table
-                </ToggleButton>
-                <ToggleButton value="grid" aria-label="Grid view">
-                  <ViewModuleIcon fontSize="small" sx={{ mr: 0.75 }} />
-                  Grid
-                </ToggleButton>
+                <Tooltip title="Table view">
+                  <ToggleButton value="table" aria-label="Table view">
+                    <ViewListIcon fontSize="small" />
+                  </ToggleButton>
+                </Tooltip>
+                <Tooltip title="Grid view">
+                  <ToggleButton value="grid" aria-label="Grid view">
+                    <ViewModuleIcon fontSize="small" />
+                  </ToggleButton>
+                </Tooltip>
               </ToggleButtonGroup>
             </EncoreToolbarRow>
 
             <Box>
-              <Typography variant="caption" sx={{ ...encoreMutedCaptionSx, display: 'block', mb: 1 }}>
-                Quick filters
-              </Typography>
-              <Stack spacing={1.25}>
+              <Stack spacing={1.5}>
                 <Stack direction="row" flexWrap="wrap" gap={1} alignItems="center">
                   <Typography
                     variant="caption"
-                    color="text.secondary"
-                    sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 72 }, fontWeight: 600 }}
+                    sx={{ ...encoreMutedCaptionSx, width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 96 } }}
                   >
-                    Shows
+                    Performances
                   </Typography>
                   {(
                     [
                       { id: 'all' as const, label: 'All songs' },
-                      { id: 'with' as const, label: 'With shows' },
-                      { id: 'none' as const, label: 'No shows yet' },
+                      { id: 'with' as const, label: 'With performances' },
+                      { id: 'none' as const, label: 'None yet' },
                     ] as const
                   ).map(({ id, label }) => (
                     <Chip
@@ -635,10 +719,9 @@ export function LibraryScreen(): React.ReactElement {
                 <Stack direction="row" flexWrap="wrap" gap={1} alignItems="center">
                   <Typography
                     variant="caption"
-                    color="text.secondary"
-                    sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 72 }, fontWeight: 600 }}
+                    sx={{ ...encoreMutedCaptionSx, width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 96 } }}
                   >
-                    Practice
+                    Status
                   </Typography>
                   {(
                     [
@@ -660,7 +743,10 @@ export function LibraryScreen(): React.ReactElement {
 
                 {venueChipOptions.length > 0 ? (
                   <Stack direction="row" flexWrap="wrap" gap={1} alignItems="center">
-                    <Typography variant="caption" color="text.secondary" sx={{ width: '100%', sm: { width: 'auto', minWidth: 72 }, fontWeight: 600 }}>
+                    <Typography
+                      variant="caption"
+                      sx={{ ...encoreMutedCaptionSx, width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 96 } }}
+                    >
                       Venue
                     </Typography>
                     {venueChipOptions.map((v) => (
@@ -669,7 +755,7 @@ export function LibraryScreen(): React.ReactElement {
                         size="small"
                         label={v}
                         clickable
-                        color={venueFilter === v ? 'secondary' : 'default'}
+                        color={venueFilter === v ? 'primary' : 'default'}
                         variant={venueFilter === v ? 'filled' : 'outlined'}
                         onClick={() => setVenueFilter((cur) => (cur === v ? null : v))}
                       />
@@ -677,64 +763,17 @@ export function LibraryScreen(): React.ReactElement {
                   </Stack>
                 ) : null}
 
-                {genreOptions.length > 0 ? (
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.75 }}>
-                      Spotify genre
-                    </Typography>
-                    <Stack
-                      direction="row"
-                      spacing={1}
-                      sx={{
-                        overflowX: 'auto',
-                        flexWrap: 'nowrap',
-                        pb: 0.5,
-                        mx: -0.25,
-                        px: 0.25,
-                        WebkitOverflowScrolling: 'touch',
-                      }}
-                    >
-                      <Chip
-                        size="small"
-                        label="Any genre"
-                        clickable
-                        color={!genreFilter ? 'primary' : 'default'}
-                        variant={!genreFilter ? 'filled' : 'outlined'}
-                        onClick={() => setGenreFilter('')}
-                        sx={{ flexShrink: 0 }}
-                      />
-                      {genreOptions.map((g) => (
-                        <Chip
-                          key={g}
-                          size="small"
-                          label={g}
-                          clickable
-                          color={genreFilter === g ? 'primary' : 'default'}
-                          variant={genreFilter === g ? 'filled' : 'outlined'}
-                          onClick={() => setGenreFilter((cur) => (cur === g ? '' : g))}
-                          sx={{ flexShrink: 0, maxWidth: 220 }}
-                        />
-                      ))}
-                    </Stack>
-                  </Box>
-                ) : null}
-
-                <Stack direction="row" flexWrap="wrap" gap={1} alignItems="center" sx={{ alignSelf: 'flex-start' }}>
-                  {hasActiveFilters ? (
+                {hasActiveFilters ? (
+                  <Stack direction="row" gap={1} alignItems="center" sx={{ alignSelf: 'flex-start' }}>
                     <Button size="small" variant="text" onClick={clearAllFilters}>
                       Clear all filters
                     </Button>
-                  ) : null}
-                  {viewMode === 'table' ? (
-                    <Button size="small" variant="text" onClick={() => table.setShowColumnFilters((v) => !v)}>
-                      {table.getState().showColumnFilters ? 'Hide column filters' : 'Show column filters'}
-                    </Button>
-                  ) : null}
-                </Stack>
+                  </Stack>
+                ) : null}
               </Stack>
             </Box>
           </Stack>
-        </Paper>
+        </Box>
       ) : null}
 
       {songs.length === 0 && (
@@ -759,20 +798,32 @@ export function LibraryScreen(): React.ReactElement {
           sx={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))',
-            gap: 2,
+            gap: { xs: 2, sm: 2.5 },
           }}
         >
           {repertoireSongs.map((s) => {
             const perfs = perfBySong.get(s.id) ?? [];
             const ms = milestoneProgressSummary(s, repertoireExtras.milestoneTemplate);
-            const keyBits = [s.performanceKey, s.originalKey].filter(Boolean);
-            const keyDisplay = keyBits.length ? keyBits.join(' · ') : '';
-            const bpmVal = s.performanceBpm ?? s.originalBpm;
-            const bpmPart =
-              bpmVal != null && Number.isFinite(bpmVal) ? `${Math.round(bpmVal)} BPM` : '';
-            const metaLine = [keyDisplay, bpmPart].filter(Boolean).join(' · ');
+            const keyDisplay = s.performanceKey?.trim() || '';
+            const metaLine = keyDisplay;
             return (
-              <Card key={s.id} variant="outlined" sx={{ display: 'flex', flexDirection: 'column', borderRadius: 2 }}>
+              <Card
+                key={s.id}
+                elevation={0}
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  borderRadius: encoreRadius,
+                  bgcolor: 'background.paper',
+                  border: 'none',
+                  boxShadow: encoreShadowSurface,
+                  transition: (t) => t.transitions.create(['box-shadow', 'transform'], { duration: 200 }),
+                  '&:hover': {
+                    boxShadow: '0 8px 24px rgba(76, 29, 149, 0.08)',
+                    transform: 'translateY(-1px)',
+                  },
+                }}
+              >
                 <CardActionArea onClick={() => openSong(s)} sx={{ flex: 1, alignItems: 'stretch' }}>
                   <CardContent sx={{ display: 'flex', gap: 2, alignItems: 'flex-start', pb: 1 }}>
                     {s.albumArtUrl ? (
@@ -781,45 +832,73 @@ export function LibraryScreen(): React.ReactElement {
                         src={s.albumArtUrl}
                         alt=""
                         sx={{
-                          width: 64,
-                          height: 64,
-                          borderRadius: 1.5,
+                          width: 72,
+                          height: 72,
+                          borderRadius: encoreRadius,
                           objectFit: 'cover',
                           flexShrink: 0,
-                          boxShadow: (t) => `0 1px 3px ${alpha(t.palette.common.black, 0.12)}`,
                         }}
                       />
                     ) : (
                       <Box
                         sx={{
                           ...encoreNoAlbumArtSurfaceSx(theme),
-                          width: 64,
-                          height: 64,
-                          borderRadius: 1.5,
+                          width: 72,
+                          height: 72,
+                          borderRadius: encoreRadius,
                           flexShrink: 0,
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                         }}
                       >
-                        <MusicNoteIcon sx={{ ...encoreNoAlbumArtIconSx(theme), fontSize: 28 }} aria-hidden />
+                        <MusicNoteIcon sx={{ ...encoreNoAlbumArtIconSx(theme), fontSize: 30 }} aria-hidden />
                       </Box>
                     )}
                     <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Typography variant="subtitle1" fontWeight={800} noWrap>
+                      <Typography
+                        variant="subtitle1"
+                        sx={{ fontWeight: 700, letterSpacing: '-0.01em' }}
+                        noWrap
+                      >
                         {s.title}
                       </Typography>
                       <Typography variant="body2" color="text.secondary" noWrap>
                         {s.artist}
                       </Typography>
                       {metaLine ? (
-                        <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }} noWrap>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          display="block"
+                          sx={{ mt: 0.5, fontVariantNumeric: 'tabular-nums' }}
+                          noWrap
+                        >
                           {metaLine}
                         </Typography>
                       ) : null}
                       {s.practicing ? (
-                        <Chip size="small" color="secondary" label="Working on" sx={{ mt: 0.75, height: 22, fontWeight: 700 }} />
+                        <Chip
+                          size="small"
+                          color="primary"
+                          variant="outlined"
+                          label="Working on"
+                          sx={{ mt: 0.75, height: 22, fontWeight: 600 }}
+                        />
                       ) : null}
+                      <InlineSongTagsCell
+                        compact
+                        sx={{ mt: 0.75, maxWidth: '100%' }}
+                        tags={s.tags ?? []}
+                        suggestions={tagFilterOptions}
+                        onCommit={(next) => {
+                          void saveSong({
+                            ...s,
+                            tags: next.length ? next : undefined,
+                            updatedAt: new Date().toISOString(),
+                          });
+                        }}
+                      />
                       {ms.total > 0 ? (
                         <Tooltip title={ms.tooltip}>
                           <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.35 }} noWrap>
@@ -880,7 +959,7 @@ export function LibraryScreen(): React.ReactElement {
             setPerfOpen(true);
           }}
         >
-          Log show
+          Add performance
         </MenuItem>
         <MenuItem
           onClick={() => {
@@ -895,6 +974,7 @@ export function LibraryScreen(): React.ReactElement {
         </MenuItem>
       </Menu>
 
+      <AddSongDialog open={addSongOpen} onClose={() => setAddSongOpen(false)} />
       <PlaylistImportDialog
         open={importOpen}
         onClose={() => setImportOpen(false)}
@@ -915,6 +995,12 @@ export function LibraryScreen(): React.ReactElement {
             await savePerformance(p);
           }
         }}
+      />
+      <BulkScoreImportDialog
+        open={bulkScoreOpen}
+        onClose={() => setBulkScoreOpen(false)}
+        songs={songs}
+        onSaveSong={saveSong}
       />
       {perfSongId && (
         <PerformanceEditorDialog

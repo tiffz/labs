@@ -143,71 +143,6 @@ export interface SpotifyPlaylistTrackRow {
   title: string;
   artist: string;
   albumArtUrl?: string;
-  /** Union of Spotify artist `genres` for credited artists (see `EncoreSong.spotifyGenres`). */
-  spotifyGenres?: string[];
-}
-
-function extractSpotifyArtistIds(track: Pick<SpotifySearchTrack, 'artists'>): string[] {
-  return (track.artists ?? [])
-    .map((a) => (typeof a.id === 'string' && a.id.trim() ? a.id.trim() : ''))
-    .filter(Boolean);
-}
-
-/** Dedupe + stable sort for persisted genre lists. */
-export function normalizeSpotifyGenreList(genres: string[]): string[] {
-  const s = new Set<string>();
-  for (const g of genres) {
-    const t = g.trim();
-    if (t) s.add(t);
-  }
-  return [...s].sort((a, b) => a.localeCompare(b));
-}
-
-/**
- * Spotify assigns genres to **artists**, not tracks. Pass track (or search) payload with `artists[].id`.
- * Batches `GET /artists?ids=` (50 ids per request).
- */
-export async function fetchSpotifyArtistsGenresBatched(
-  token: string,
-  artistIds: string[],
-): Promise<Map<string, string[]>> {
-  const out = new Map<string, string[]>();
-  const uniq = [...new Set(artistIds.filter(Boolean))];
-  for (let i = 0; i < uniq.length; i += 50) {
-    const slice = uniq.slice(i, i + 50);
-    const q = slice.map(encodeURIComponent).join(',');
-    const data = await spotifyGet<{ artists?: Array<{ id?: string; genres?: string[] }> }>(
-      `/artists?ids=${q}`,
-      token,
-    );
-    for (const a of data.artists ?? []) {
-      if (typeof a.id === 'string' && a.id) {
-        out.set(a.id, Array.isArray(a.genres) ? a.genres : []);
-      }
-    }
-  }
-  return out;
-}
-
-export function collectGenresForArtistIds(artistIds: string[], genresById: Map<string, string[]>): string[] {
-  const g = new Set<string>();
-  for (const id of artistIds) {
-    for (const genre of genresById.get(id) ?? []) {
-      const t = genre.trim();
-      if (t) g.add(t);
-    }
-  }
-  return normalizeSpotifyGenreList([...g]);
-}
-
-export async function fetchSpotifyGenresForTrack(
-  token: string,
-  track: Pick<SpotifySearchTrack, 'artists'>,
-): Promise<string[]> {
-  const ids = extractSpotifyArtistIds(track);
-  if (!ids.length) return [];
-  const map = await fetchSpotifyArtistsGenresBatched(token, ids);
-  return collectGenresForArtistIds(ids, map);
 }
 
 /** Resolves track from a playlist row (`track` on legacy responses, `item` on Get Playlist Items). */
@@ -248,13 +183,7 @@ export async function fetchSpotifyPlaylistTracks(
       ? `&market=${encodeURIComponent(linkedUser.country)}`
       : '';
 
-  const acc: Array<{
-    trackId: string;
-    title: string;
-    artist: string;
-    albumArtUrl?: string;
-    artistIds: string[];
-  }> = [];
+  const acc: SpotifyPlaylistTrackRow[] = [];
   /** Use [Get Playlist Items](https://developer.spotify.com/documentation/web-api/reference/get-playlists-items) (`/items`), not legacy `/tracks`, which can return 403 for the same user. */
   let url: string | null = `https://api.spotify.com/v1/playlists/${encodeURIComponent(playlistId)}/items?limit=50&additional_types=track%2Cepisode${marketQs}`;
   while (url) {
@@ -278,24 +207,11 @@ export async function fetchSpotifyPlaylistTracks(
         title: tr.name?.trim() || 'Untitled',
         artist: tr.artists?.map((a) => a.name).join(', ').trim() || 'Unknown artist',
         albumArtUrl: tr.album?.images?.[0]?.url,
-        artistIds: extractSpotifyArtistIds(tr),
       });
     }
     url = data.next ?? null;
   }
-  const allArtistIds = [...new Set(acc.flatMap((r) => r.artistIds))];
-  let genreMap = new Map<string, string[]>();
-  if (allArtistIds.length > 0) {
-    try {
-      genreMap = await fetchSpotifyArtistsGenresBatched(token, allArtistIds);
-    } catch {
-      /* Genre tags are optional; large id batches or network errors should not block playlist import. */
-    }
-  }
-  return acc.map(({ artistIds, ...row }) => {
-    const spotifyGenres = collectGenresForArtistIds(artistIds, genreMap);
-    return spotifyGenres.length > 0 ? { ...row, spotifyGenres } : { ...row };
-  });
+  return acc;
 }
 
 export async function fetchSpotifyTrack(token: string, trackId: string): Promise<SpotifySearchTrack> {

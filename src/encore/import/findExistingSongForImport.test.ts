@@ -3,7 +3,6 @@ import type { EncoreSong } from '../types';
 import {
   findExistingSongForImport,
   importRowHasLibraryMerge,
-  mergeSongWithImport,
   scoreSongSimilarityForImport,
 } from './findExistingSongForImport';
 import { normalizeForMatch, type PlaylistImportRow } from './matchPlaylists';
@@ -190,23 +189,6 @@ describe('findExistingSongForImport', () => {
     const existing = [song({ id: 'e1', title: 'Song A', artist: 'Artist One' })];
     const incoming = song({ id: 'i', title: 'Completely Different', artist: 'Other Band', spotifyTrackId: 'z' });
     expect(findExistingSongForImport(existing, incoming)).toBeNull();
-  });
-
-  it('mergeSongWithImport unions Spotify genre tags', () => {
-    const existing = song({
-      id: 'e',
-      title: 'Same',
-      artist: 'A',
-      spotifyGenres: ['pop'],
-    });
-    const incoming = song({
-      id: 'i',
-      title: 'Same',
-      artist: 'A',
-      spotifyGenres: ['show tunes', 'pop'],
-    });
-    const merged = mergeSongWithImport(existing, incoming);
-    expect(merged.spotifyGenres).toEqual(['pop', 'show tunes']);
   });
 });
 

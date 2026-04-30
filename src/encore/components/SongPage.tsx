@@ -1,14 +1,10 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import EditIcon from '@mui/icons-material/Edit';
 import EventNoteIcon from '@mui/icons-material/EventNote';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import VideocamIcon from '@mui/icons-material/Videocam';
-import Accordion from '@mui/material/Accordion';
-import AccordionDetails from '@mui/material/AccordionDetails';
-import AccordionSummary from '@mui/material/AccordionSummary';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import Alert from '@mui/material/Alert';
 import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
@@ -20,44 +16,48 @@ import Container from '@mui/material/Container';
 import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
 import Switch from '@mui/material/Switch';
+import Tab from '@mui/material/Tab';
+import Tabs from '@mui/material/Tabs';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
-import JSZip from 'jszip';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { EncoreAppRoute } from '../routes/encoreAppHash';
 import { navigateEncore } from '../routes/encoreAppHash';
 import { ensureSpotifyAccessToken } from '../spotify/pkce';
-import { fetchSpotifyGenresForTrack, fetchSpotifyTrack, searchTracks, type SpotifySearchTrack } from '../spotify/spotifyApi';
+import { fetchSpotifyTrack, searchTracks, type SpotifySearchTrack } from '../spotify/spotifyApi';
 import { parseSpotifyTrackId } from '../spotify/parseSpotifyTrackUrl';
 import type { EncorePerformance, EncoreSong } from '../types';
 import { parseYoutubeVideoId } from '../youtube/parseYoutubeVideoUrl';
 import { encoreNoAlbumArtIconSx, encoreNoAlbumArtSurfaceSx } from '../utils/encoreNoAlbumArtSurface';
 import { useEncore } from '../context/EncoreContext';
-import { encoreMaxWidthPage, encoreSectionStackGap } from '../theme/encoreUiTokens';
+import {
+  encoreFrostedSurfaceSx,
+  encoreHairline,
+  encoreMaxWidthPage,
+  encoreRadius,
+  encoreShadowLift,
+} from '../theme/encoreUiTokens';
 import { encorePagePaddingTop, encoreScreenPaddingX } from '../theme/encoreM3Layout';
-import { EncoreSection } from '../ui/EncoreSection';
 import { driveUploadFileResumable } from '../drive/driveFetch';
 import { ensureEncoreDriveLayout } from '../drive/bootstrapFolders';
 import { driveFileWebUrl } from '../drive/driveWebUrls';
-import {
-  ENCORE_DRIVE_CHART_MIME_TYPES,
-  ENCORE_DRIVE_RECORDING_MIME_TYPES,
-  openEncoreGoogleDrivePicker,
-} from '../drive/googlePicker';
-import { parseDriveFileIdFromUrlOrId } from '../drive/parseDriveFileUrl';
+import { ENCORE_DRIVE_CHART_MIME_TYPES } from '../drive/googlePicker';
 import { MarkdownPreview } from './MarkdownPreview';
 import { PerformanceEditorDialog } from './PerformanceEditorDialog';
 import { PerformanceVideoThumb } from './PerformanceVideoThumb';
 import { SongMilestoneChecklist } from './SongMilestoneChecklist';
 import { DriveFilePickerDialog } from './DriveFilePickerDialog';
-import { GoogleBrandIcon, SpotifyBrandIcon, YouTubeBrandIcon } from './EncoreBrandIcon';
+import { SpotifyBrandIcon, YouTubeBrandIcon } from './EncoreBrandIcon';
 import { encoreGeniusSearchUrl, encoreUltimateGuitarSearchUrl, encoreYouTubeSearchUrl } from './encoreSongResourceLinks';
 import { performanceVideoOpenUrl } from '../utils/performanceVideoUrl';
 import { addSongAttachment, effectiveSongAttachments, songWithSyncedLegacyDriveIds } from '../utils/songAttachments';
-import { parseMidiKeyBpm } from '../utils/parseMidiKeyBpm';
-import { parseMusicXmlKeyBpm } from '../utils/parseMusicXmlKeyBpm';
 import { applyTemplateProgressToSong } from '../repertoire/repertoireMilestones';
+import { ENCORE_PERFORMANCE_KEY_OPTIONS } from '../repertoire/performanceKeys';
+import { collectAllSongTags, normalizeSongTags } from '../repertoire/songTags';
+import { InlineChipSelect } from '../ui/InlineEditChip';
+import { InlineSongTagsCell } from '../ui/InlineSongTagsCell';
+import { EncoreSpotifyConnectionChip } from '../ui/EncoreSpotifyConnectionChip';
 
 function newSong(): EncoreSong {
   const now = new Date().toISOString();
@@ -76,6 +76,25 @@ function trackLabel(t: SpotifySearchTrack): string {
   return `${t.name} — ${artists}`;
 }
 
+/** Stable snapshot for debounced autosave (avoids loops from updatedAt-only writes). */
+function songAutosaveSignature(s: EncoreSong): string {
+  return JSON.stringify({
+    id: s.id,
+    title: s.title,
+    artist: s.artist,
+    journalMarkdown: s.journalMarkdown,
+    spotifyTrackId: s.spotifyTrackId,
+    youtubeVideoId: s.youtubeVideoId,
+    performanceKey: s.performanceKey,
+    practicing: s.practicing,
+    tags: s.tags,
+    milestoneProgress: s.milestoneProgress,
+    songOnlyMilestones: s.songOnlyMilestones,
+    attachments: s.attachments,
+    albumArtUrl: s.albumArtUrl,
+  });
+}
+
 export function SongPage(props: { route: Extract<EncoreAppRoute, { kind: 'song' } | { kind: 'songNew' }> }): React.ReactElement {
   const { route } = props;
   const theme = useTheme();
@@ -89,7 +108,6 @@ export function SongPage(props: { route: Extract<EncoreAppRoute, { kind: 'song' 
     repertoireExtras,
     googleAccessToken,
     spotifyLinked,
-    connectSpotify,
   } = useEncore();
   const clientId = (import.meta.env.VITE_SPOTIFY_CLIENT_ID as string | undefined)?.trim() ?? '';
 
@@ -97,26 +115,25 @@ export function SongPage(props: { route: Extract<EncoreAppRoute, { kind: 'song' 
     route.kind === 'songNew' ? 'ok' : 'pending',
   );
   const [draft, setDraft] = useState<EncoreSong | null>(() => (route.kind === 'songNew' ? newSong() : null));
-  const [journalTab, setJournalTab] = useState<'edit' | 'preview'>('edit');
-  const [saving, setSaving] = useState(false);
+  const [committedJournal, setCommittedJournal] = useState('');
+  const [journalLocal, setJournalLocal] = useState('');
+  const [journalSaving, setJournalSaving] = useState(false);
+  const [songTab, setSongTab] = useState(0);
   const [spotifyQuery, setSpotifyQuery] = useState('');
   const [spotifyOptions, setSpotifyOptions] = useState<SpotifySearchTrack[]>([]);
   const [spotifyLoading, setSpotifyLoading] = useState(false);
   const [spotifyError, setSpotifyError] = useState<string | null>(null);
   const [spotifyMetaLoading, setSpotifyMetaLoading] = useState(false);
   const [spotifyMetaMessage, setSpotifyMetaMessage] = useState<string | null>(null);
+  const [showSpotifySearch, setShowSpotifySearch] = useState(false);
   const [perfOpen, setPerfOpen] = useState(false);
   const [perfEditing, setPerfEditing] = useState<EncorePerformance | null>(null);
-  const [showEmbeds, setShowEmbeds] = useState(false);
-  const [driveFolders, setDriveFolders] = useState<{ charts: string | null; recordings: string | null }>({
-    charts: null,
-    recordings: null,
-  });
+  const [chartsFolderId, setChartsFolderId] = useState<string | null>(null);
   const [chartPickerOpen, setChartPickerOpen] = useState(false);
-  const [backingPickerOpen, setBackingPickerOpen] = useState(false);
-  const [recordingPickerOpen, setRecordingPickerOpen] = useState(false);
   const [driveAttachMsg, setDriveAttachMsg] = useState<string | null>(null);
   const [driveUploading, setDriveUploading] = useState(false);
+
+  const lastAutosaveSigRef = useRef<string>('');
 
   const venueOptions = useMemo(() => {
     const s = new Set<string>();
@@ -131,54 +148,6 @@ export function SongPage(props: { route: Extract<EncoreAppRoute, { kind: 'song' 
     return [...s];
   }, [repertoireExtras.venueCatalog, performances]);
 
-  const openChartsFolderPicker = useCallback(() => {
-    if (!googleAccessToken) return;
-    void openEncoreGoogleDrivePicker({
-      accessToken: googleAccessToken,
-      title: 'Charts folder',
-      parentFolderId: driveFolders.charts,
-      mimeTypes: ENCORE_DRIVE_CHART_MIME_TYPES,
-      onPicked: (files) => {
-        const f = files[0];
-        if (!f?.id) return;
-        setDraft((d) => (d ? addSongAttachment(d, { kind: 'chart', driveFileId: f.id, label: f.name }) : d));
-      },
-      onError: (m) => setDriveAttachMsg(m),
-    });
-  }, [googleAccessToken, driveFolders.charts]);
-
-  const openRecordingsFolderPicker = useCallback(() => {
-    if (!googleAccessToken) return;
-    void openEncoreGoogleDrivePicker({
-      accessToken: googleAccessToken,
-      title: 'Recordings folder',
-      parentFolderId: driveFolders.recordings,
-      mimeTypes: ENCORE_DRIVE_RECORDING_MIME_TYPES,
-      onPicked: (files) => {
-        const f = files[0];
-        if (!f?.id) return;
-        setDraft((d) => (d ? addSongAttachment(d, { kind: 'recording', driveFileId: f.id, label: f.name }) : d));
-      },
-      onError: (m) => setDriveAttachMsg(m),
-    });
-  }, [googleAccessToken, driveFolders.recordings]);
-
-  const openMyDrivePicker = useCallback(() => {
-    if (!googleAccessToken) return;
-    void openEncoreGoogleDrivePicker({
-      accessToken: googleAccessToken,
-      title: 'Google Drive',
-      onPicked: (files) => {
-        const f = files[0];
-        if (!f?.id) return;
-        setDriveAttachMsg(
-          `Picked “${f.name}” (${f.id}). Paste that id into a field above, or use Pick … from Drive in an Encore folder.`,
-        );
-      },
-      onError: (m) => setDriveAttachMsg(m),
-    });
-  }, [googleAccessToken]);
-
   const isNew = route.kind === 'songNew';
 
   const songPerformances = useMemo(() => {
@@ -186,17 +155,22 @@ export function SongPage(props: { route: Extract<EncoreAppRoute, { kind: 'song' 
     return performances.filter((p) => p.songId === draft.id).sort((a, b) => b.date.localeCompare(a.date));
   }, [draft, isNew, performances]);
 
+  const milestoneSong = useMemo(
+    () => (draft ? { ...draft, journalMarkdown: committedJournal } : null),
+    [draft, committedJournal],
+  );
+
   useEffect(() => {
     if (!googleAccessToken) {
-      setDriveFolders({ charts: null, recordings: null });
+      setChartsFolderId(null);
       return;
     }
     void (async () => {
       try {
         const layout = await ensureEncoreDriveLayout(googleAccessToken);
-        setDriveFolders({ charts: layout.sheetMusicFolderId, recordings: layout.recordingsFolderId });
+        setChartsFolderId(layout.sheetMusicFolderId);
       } catch {
-        setDriveFolders({ charts: null, recordings: null });
+        setChartsFolderId(null);
       }
     })();
   }, [googleAccessToken]);
@@ -204,10 +178,15 @@ export function SongPage(props: { route: Extract<EncoreAppRoute, { kind: 'song' 
   useEffect(() => {
     setSpotifyError(null);
     setSpotifyMetaMessage(null);
+    setShowSpotifySearch(false);
     if (route.kind === 'songNew') {
-      setDraft(newSong());
+      const s = newSong();
+      setDraft(s);
+      setCommittedJournal('');
+      setJournalLocal('');
       setSpotifyQuery('');
-      setJournalTab('edit');
+      setSongTab(0);
+      lastAutosaveSigRef.current = songAutosaveSignature(s);
       setLoadState('ok');
       return;
     }
@@ -218,8 +197,11 @@ export function SongPage(props: { route: Extract<EncoreAppRoute, { kind: 'song' 
     const s = songs.find((x) => x.id === route.id);
     if (s) {
       setDraft({ ...s });
+      setCommittedJournal(s.journalMarkdown);
+      setJournalLocal(s.journalMarkdown);
       setSpotifyQuery(`${s.title} ${s.artist}`.trim());
-      setJournalTab('edit');
+      setSongTab(0);
+      lastAutosaveSigRef.current = songAutosaveSignature({ ...s, journalMarkdown: s.journalMarkdown });
       setLoadState('ok');
     } else {
       setDraft(null);
@@ -269,7 +251,6 @@ export function SongPage(props: { route: Extract<EncoreAppRoute, { kind: 'song' 
     };
   }, [spotifySearchListQuery, spotifyLinked, clientId]);
 
-  /** One-shot search when a saved song loads so results appear without typing. */
   const bootstrappedSearchRef = useRef<string | null>(null);
   useEffect(() => {
     if (isNew || !spotifyLinked || !clientId || route.kind !== 'song') return;
@@ -295,6 +276,46 @@ export function SongPage(props: { route: Extract<EncoreAppRoute, { kind: 'song' 
     })();
   }, [route, songs, isNew, spotifyLinked, clientId]);
 
+  const persistSongNow = useCallback(
+    async (raw: EncoreSong) => {
+      const now = new Date().toISOString();
+      const withMilestones = applyTemplateProgressToSong(raw, repertoireExtras.milestoneTemplate);
+      const cleanedTags = normalizeSongTags(withMilestones.tags);
+      const normalized = songWithSyncedLegacyDriveIds({
+        ...withMilestones,
+        title: withMilestones.title.trim() || 'Untitled',
+        artist: withMilestones.artist.trim() || 'Unknown artist',
+        tags: cleanedTags.length > 0 ? cleanedTags : undefined,
+        updatedAt: now,
+        createdAt: withMilestones.createdAt || now,
+      });
+      await saveSong(normalized);
+      if (isNew) {
+        navigateEncore({ kind: 'song', id: normalized.id });
+      }
+      lastAutosaveSigRef.current = songAutosaveSignature(normalized);
+    },
+    [isNew, repertoireExtras.milestoneTemplate, saveSong],
+  );
+
+  useEffect(() => {
+    if (!draft || loadState !== 'ok') return;
+    if (isNew && !draft.title.trim()) return;
+    const payload = { ...draft, journalMarkdown: committedJournal };
+    const sig = songAutosaveSignature(payload);
+    if (sig === lastAutosaveSigRef.current) return;
+    const t = setTimeout(() => {
+      void (async () => {
+        try {
+          await persistSongNow(payload);
+        } catch {
+          /* ignore */
+        }
+      })();
+    }, 550);
+    return () => clearTimeout(t);
+  }, [draft, committedJournal, loadState, isNew, persistSongNow]);
+
   const applySpotifyTrack = useCallback((t: SpotifySearchTrack) => {
     setDraft((d) => {
       if (!d) return d;
@@ -308,21 +329,8 @@ export function SongPage(props: { route: Extract<EncoreAppRoute, { kind: 'song' 
       };
     });
     setSpotifyQuery(trackLabel(t));
-    void (async () => {
-      if (!clientId) return;
-      const token = await ensureSpotifyAccessToken(clientId);
-      if (!token) return;
-      try {
-        const genres = await fetchSpotifyGenresForTrack(token, t);
-        if (!genres.length) return;
-        setDraft((d) =>
-          d && d.spotifyTrackId === t.id ? { ...d, spotifyGenres: genres, updatedAt: new Date().toISOString() } : d,
-        );
-      } catch {
-        /* genres are optional */
-      }
-    })();
-  }, [clientId]);
+    setShowSpotifySearch(false);
+  }, []);
 
   const resolveSpotifyPaste = useCallback(
     async (rawOverride?: string) => {
@@ -349,98 +357,52 @@ export function SongPage(props: { route: Extract<EncoreAppRoute, { kind: 'song' 
     [applySpotifyTrack, clientId, draft, spotifyLinked, spotifyQuery],
   );
 
-  const fillFromSpotify = useCallback(
-    async (mode: 'emptyOnly' | 'overwrite') => {
-      if (!draft?.spotifyTrackId || !clientId || !spotifyLinked) return;
-      setSpotifyMetaLoading(true);
-      setSpotifyMetaMessage(null);
-      setSpotifyError(null);
-      try {
-        const token = await ensureSpotifyAccessToken(clientId);
-        if (!token) {
-          setSpotifyMetaMessage('Connect Spotify first.');
-          return;
-        }
-        const track = await fetchSpotifyTrack(token, draft.spotifyTrackId);
-        let genres: string[] = [];
-        try {
-          genres = await fetchSpotifyGenresForTrack(token, track);
-        } catch {
-          genres = [];
-        }
-        setDraft((d) => {
-          if (!d) return d;
-          const next = { ...d, updatedAt: new Date().toISOString() };
-          next.title = track.name?.trim() || next.title;
-          next.artist = track.artists?.map((a) => a.name).join(', ').trim() || next.artist;
-          next.albumArtUrl = track.album?.images?.[0]?.url ?? next.albumArtUrl;
-          if (genres.length > 0) {
-            next.spotifyGenres = genres;
-          } else if (mode === 'overwrite') {
-            next.spotifyGenres = undefined;
-          }
-          return next;
-        });
-        setSpotifyMetaMessage(
-          genres.length > 0
-            ? `Updated from Spotify: title, artist, artwork, and ${genres.length} genre tag(s) from artist metadata.`
-            : 'Updated from Spotify: title, artist, and artwork.',
-        );
-      } catch (e) {
-        setSpotifyError(e instanceof Error ? e.message : String(e));
-      } finally {
-        setSpotifyMetaLoading(false);
+  const fillFromSpotify = useCallback(async () => {
+    if (!draft?.spotifyTrackId || !clientId || !spotifyLinked) return;
+    setSpotifyMetaLoading(true);
+    setSpotifyMetaMessage(null);
+    setSpotifyError(null);
+    try {
+      const token = await ensureSpotifyAccessToken(clientId);
+      if (!token) {
+        setSpotifyMetaMessage('Connect Spotify first.');
+        return;
       }
-    },
-    [clientId, draft?.spotifyTrackId, spotifyLinked],
-  );
-
-  const readMusicXmlText = async (file: File): Promise<string | null> => {
-    const lower = file.name.toLowerCase();
-    if (lower.endsWith('.mxl')) {
-      const zip = await JSZip.loadAsync(await file.arrayBuffer());
-      const name = Object.keys(zip.files).find((n) => /\.(xml|musicxml)$/i.test(n) && !zip.files[n]!.dir);
-      if (!name) return null;
-      return zip.files[name]?.async('string') ?? null;
+      const track = await fetchSpotifyTrack(token, draft.spotifyTrackId);
+      setDraft((d) => {
+        if (!d) return d;
+        return {
+          ...d,
+          title: track.name?.trim() || d.title,
+          artist: track.artists?.map((a) => a.name).join(', ').trim() || d.artist,
+          albumArtUrl: track.album?.images?.[0]?.url ?? d.albumArtUrl,
+          updatedAt: new Date().toISOString(),
+        };
+      });
+      setSpotifyMetaMessage('Updated from Spotify: title, artist, and artwork.');
+    } catch (e) {
+      setSpotifyError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSpotifyMetaLoading(false);
     }
-    if (lower.endsWith('.xml') || lower.endsWith('.musicxml')) return file.text();
-    return null;
-  };
+  }, [clientId, draft?.spotifyTrackId, spotifyLinked]);
 
-  const applyNotationHints = (hints: { key?: string; bpm?: number }) => {
-    setDraft((d) => {
-      if (!d) return d;
-      const next = { ...d, updatedAt: new Date().toISOString() };
-      if (hints.bpm != null && next.originalBpm == null) next.originalBpm = hints.bpm;
-      if (hints.key && !next.originalKey?.trim()) next.originalKey = hints.key;
-      return next;
-    });
-  };
-
-  const handleDriveUpload = async (kind: 'chart' | 'backing' | 'recording', file: File | undefined) => {
+  const handleDriveChartUpload = async (file: File | undefined) => {
     if (!file) return;
     if (!googleAccessToken) {
       setDriveAttachMsg('Sign in to Google to upload files to Drive.');
       return;
     }
-    const parent = kind === 'recording' ? driveFolders.recordings : driveFolders.charts;
-    if (!parent) {
-      setDriveAttachMsg('Drive folders are not ready yet. Try again after sync completes.');
+    if (!chartsFolderId) {
+      setDriveAttachMsg('Drive folders are not ready yet. Try again after the first backup completes.');
       return;
     }
     setDriveUploading(true);
     setDriveAttachMsg(null);
     try {
-      const created = await driveUploadFileResumable(googleAccessToken, file, [parent]);
-      setDraft((d) => (d ? addSongAttachment(d, { kind, driveFileId: created.id, label: file.name }) : d));
-      const lower = file.name.toLowerCase();
-      if (lower.endsWith('.mid') || lower.endsWith('.midi')) {
-        applyNotationHints(parseMidiKeyBpm(await file.arrayBuffer()));
-      } else if (lower.match(/\.(xml|musicxml|mxl)$/)) {
-        const xml = await readMusicXmlText(file);
-        if (xml) applyNotationHints(parseMusicXmlKeyBpm(xml));
-      }
-      setDriveAttachMsg(`Uploaded to Drive (${kind}).`);
+      const created = await driveUploadFileResumable(googleAccessToken, file, [chartsFolderId]);
+      setDraft((d) => (d ? addSongAttachment(d, { kind: 'chart', driveFileId: created.id, label: file.name }) : d));
+      setDriveAttachMsg('Chart linked.');
     } catch (e) {
       setDriveAttachMsg(e instanceof Error ? e.message : String(e));
     } finally {
@@ -448,25 +410,32 @@ export function SongPage(props: { route: Extract<EncoreAppRoute, { kind: 'song' 
     }
   };
 
-  const handleSave = async () => {
+  const handleSaveJournal = async () => {
     if (!draft) return;
-    setSaving(true);
+    setJournalSaving(true);
     try {
-      const now = new Date().toISOString();
-      const withMilestones = applyTemplateProgressToSong(draft, repertoireExtras.milestoneTemplate);
-      const normalized = songWithSyncedLegacyDriveIds({
-        ...withMilestones,
-        title: withMilestones.title.trim() || 'Untitled',
-        artist: withMilestones.artist.trim() || 'Unknown artist',
-        updatedAt: now,
-        createdAt: withMilestones.createdAt || now,
-      });
-      await saveSong(normalized);
-      if (isNew) navigateEncore({ kind: 'song', id: draft.id });
+      const next = { ...draft, journalMarkdown: journalLocal, updatedAt: new Date().toISOString() };
+      setCommittedJournal(journalLocal);
+      await persistSongNow(next);
+      setDraft(next);
     } finally {
-      setSaving(false);
+      setJournalSaving(false);
     }
   };
+
+  const onMilestoneSongChange = useCallback(
+    (next: EncoreSong) => {
+      setDraft(next);
+      void (async () => {
+        try {
+          await persistSongNow(next);
+        } catch {
+          /* ignore */
+        }
+      })();
+    },
+    [persistSongNow],
+  );
 
   const handleBack = () => {
     navigateEncore({ kind: 'library' });
@@ -478,6 +447,8 @@ export function SongPage(props: { route: Extract<EncoreAppRoute, { kind: 'song' 
     await deleteSong(draft.id);
     navigateEncore({ kind: 'library' });
   };
+
+  const tagSuggestions = collectAllSongTags(songs);
 
   if (loadState === 'pending') {
     return (
@@ -496,12 +467,12 @@ export function SongPage(props: { route: Extract<EncoreAppRoute, { kind: 'song' 
         <Typography variant="h6" gutterBottom>
           Song not found
         </Typography>
-        <Typography color="text.secondary">This id is not in your library. It may have been removed or the link is wrong.</Typography>
+        <Typography color="text.secondary">This id is not in your library. It may have been removed, or the link is wrong.</Typography>
       </Container>
     );
   }
 
-  if (!draft) {
+  if (!draft || !milestoneSong) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
         <CircularProgress />
@@ -512,18 +483,19 @@ export function SongPage(props: { route: Extract<EncoreAppRoute, { kind: 'song' 
   const ytId = draft.youtubeVideoId ? parseYoutubeVideoId(draft.youtubeVideoId) : null;
   const resourceTitle = draft.title.trim() || 'song';
   const resourceArtist = draft.artist.trim() || 'artist';
+  const chartAttachments = effectiveSongAttachments(draft).filter((a) => a.kind === 'chart');
 
   return (
     <>
       <Container
         maxWidth={false}
-        sx={{ px: encoreScreenPaddingX, pt: encorePagePaddingTop, pb: { xs: 14, sm: 6 }, ...encoreMaxWidthPage }}
+        sx={{ px: encoreScreenPaddingX, pt: encorePagePaddingTop, pb: { xs: 10, sm: 6 }, ...encoreMaxWidthPage }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
           <IconButton aria-label="Back to library" onClick={handleBack} edge="start" size="small" sx={{ ml: -0.5 }}>
             <ArrowBackIcon />
           </IconButton>
-          <Typography variant="overline" color="primary" sx={{ fontWeight: 800, letterSpacing: '0.12em', lineHeight: 1.2 }}>
+          <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: '0.18em', lineHeight: 1.2 }}>
             {isNew ? 'New song' : 'Song'}
           </Typography>
         </Box>
@@ -532,8 +504,8 @@ export function SongPage(props: { route: Extract<EncoreAppRoute, { kind: 'song' 
           sx={{
             display: 'flex',
             flexDirection: { xs: 'column', sm: 'row' },
-            gap: { xs: 2, sm: encoreSectionStackGap },
-            alignItems: { sm: 'flex-start' },
+            gap: { xs: 3, sm: 4 },
+            alignItems: { xs: 'center', sm: 'flex-start' },
             mb: 3,
           }}
         >
@@ -543,34 +515,33 @@ export function SongPage(props: { route: Extract<EncoreAppRoute, { kind: 'song' 
               src={draft.albumArtUrl}
               alt=""
               sx={{
-                width: { xs: '100%', sm: 160 },
-                maxWidth: 220,
-                aspectRatio: '1',
+                width: { xs: 220, sm: 240 },
+                height: { xs: 220, sm: 240 },
                 objectFit: 'cover',
-                borderRadius: 2,
-                alignSelf: { xs: 'center', sm: 'flex-start' },
-                boxShadow: '0 4px 20px rgba(15, 23, 42, 0.12)',
+                borderRadius: encoreRadius,
+                boxShadow: encoreShadowLift,
+                flexShrink: 0,
               }}
             />
           ) : (
             <Box
               sx={{
-                width: { xs: '100%', sm: 160 },
-                maxWidth: 220,
-                aspectRatio: '1',
-                alignSelf: { xs: 'center', sm: 'flex-start' },
-                borderRadius: 2,
+                width: { xs: 220, sm: 240 },
+                height: { xs: 220, sm: 240 },
+                borderRadius: encoreRadius,
+                boxShadow: encoreShadowLift,
+                flexShrink: 0,
                 ...encoreNoAlbumArtSurfaceSx(theme),
               }}
             >
-              <MusicNoteIcon sx={{ ...encoreNoAlbumArtIconSx(theme), fontSize: 48 }} aria-hidden />
+              <MusicNoteIcon sx={{ ...encoreNoAlbumArtIconSx(theme), fontSize: 60 }} aria-hidden />
             </Box>
           )}
-          <Box sx={{ flex: 1, minWidth: 0, width: 1 }}>
+          <Box sx={{ flex: 1, minWidth: 0, width: 1, alignSelf: { xs: 'stretch', sm: 'flex-start' } }}>
             {isNew && spotifyLinked && clientId ? (
               <Autocomplete
                 freeSolo
-                sx={{ mb: 1.5 }}
+                sx={{ mb: 2 }}
                 options={spotifyOptions}
                 loading={spotifyLoading}
                 getOptionLabel={(o) => (typeof o === 'string' ? o : trackLabel(o))}
@@ -591,7 +562,7 @@ export function SongPage(props: { route: Extract<EncoreAppRoute, { kind: 'song' 
                     label="Title"
                     required
                     variant="standard"
-                    helperText="Search Spotify as you type, pick a match, or enter a title manually. Paste a track link and leave the field to import it."
+                    helperText="Search Spotify as you type, pick a match, or type a title manually. Paste a track link to import it."
                     onBlur={() => void resolveSpotifyPaste(draft.title)}
                     InputProps={{
                       ...params.InputProps,
@@ -619,7 +590,8 @@ export function SongPage(props: { route: Extract<EncoreAppRoute, { kind: 'song' 
                 fullWidth
                 required
                 variant="standard"
-                sx={{ mb: 1.5 }}
+                sx={{ mb: 2 }}
+                InputProps={{ sx: { fontSize: { xs: '1.5rem', sm: '1.75rem' }, fontWeight: 700, letterSpacing: '-0.02em' } }}
               />
             )}
             <TextField
@@ -630,186 +602,334 @@ export function SongPage(props: { route: Extract<EncoreAppRoute, { kind: 'song' 
               variant="standard"
               sx={{ mb: 2 }}
             />
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.75, fontWeight: 700 }}>
-              Key and tempo
+
+            <Stack direction="row" flexWrap="wrap" gap={1} alignItems="center" useFlexGap sx={{ mb: 1.5 }}>
+              <InlineSongTagsCell
+                tags={draft.tags ?? []}
+                suggestions={tagSuggestions}
+                onCommit={(next) =>
+                  setDraft((d) => (d ? { ...d, tags: next.length > 0 ? next : undefined } : d))
+                }
+              />
+              <InlineChipSelect<string>
+                value={draft.performanceKey ?? null}
+                options={ENCORE_PERFORMANCE_KEY_OPTIONS}
+                freeSolo
+                clearable
+                placeholder="Key"
+                onChange={(v) =>
+                  setDraft((d) => (d ? { ...d, performanceKey: v ?? undefined } : d))
+                }
+              />
+              <FormControlLabel
+                sx={{ alignItems: 'center', m: 0 }}
+                control={
+                  <Switch
+                    checked={Boolean(draft.practicing)}
+                    onChange={(e) => {
+                      const ts = new Date().toISOString();
+                      setDraft((d) => (d ? { ...d, practicing: e.target.checked, updatedAt: ts } : d));
+                    }}
+                    inputProps={{ 'aria-label': 'Working on this song' }}
+                  />
+                }
+                label={
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    In rotation
+                  </Typography>
+                }
+              />
+            </Stack>
+
+            {!clientId ? (
+              <Alert severity="info" sx={{ mb: 1 }}>
+                Set <code>VITE_SPOTIFY_CLIENT_ID</code> to link Spotify tracks.
+              </Alert>
+            ) : null}
+            {clientId && !spotifyLinked ? (
+              <EncoreSpotifyConnectionChip sx={{ mb: 1.5 }} description="Connect Spotify to search tracks and refresh metadata." />
+            ) : null}
+            {spotifyError ? <Alert severity="error" sx={{ mb: 1 }}>{spotifyError}</Alert> : null}
+            {spotifyMetaMessage ? <Alert severity="success" sx={{ mb: 1 }}>{spotifyMetaMessage}</Alert> : null}
+
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, letterSpacing: '0.06em', display: 'block', mb: 0.75 }}>
+              Spotify & YouTube
             </Typography>
-            <Stack direction="row" flexWrap="wrap" gap={1.5} sx={{ mb: 2 }}>
-              <TextField
-                size="small"
-                label="Original key"
-                value={draft.originalKey ?? ''}
-                onChange={(e) => setDraft((d) => (d ? { ...d, originalKey: e.target.value || undefined } : d))}
-                sx={{ width: 140 }}
-              />
-              <TextField
-                size="small"
-                label="Original BPM"
-                type="number"
-                value={draft.originalBpm ?? ''}
-                onChange={(e) =>
-                  setDraft((d) =>
-                    d
-                      ? {
-                          ...d,
-                          originalBpm: e.target.value === '' ? undefined : Number(e.target.value),
-                        }
-                      : d,
-                  )
-                }
-                sx={{ width: 120 }}
-              />
-              <TextField
-                size="small"
-                label="Performance key"
-                value={draft.performanceKey ?? ''}
-                onChange={(e) => setDraft((d) => (d ? { ...d, performanceKey: e.target.value || undefined } : d))}
-                sx={{ width: 140 }}
-              />
-              <TextField
-                size="small"
-                label="Performance BPM"
-                type="number"
-                value={draft.performanceBpm ?? ''}
-                onChange={(e) =>
-                  setDraft((d) =>
-                    d
-                      ? {
-                          ...d,
-                          performanceBpm: e.target.value === '' ? undefined : Number(e.target.value),
-                        }
-                      : d,
-                  )
-                }
-                sx={{ width: 140 }}
-              />
-            </Stack>
-            <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mb: 1 }}>
-              {draft.spotifyTrackId ? (
-                <Chip
-                  size="small"
-                  icon={<SpotifyBrandIcon sx={{ fontSize: '18px !important' }} />}
-                  label="Spotify"
-                  component="a"
-                  href={`https://open.spotify.com/track/${encodeURIComponent(draft.spotifyTrackId)}`}
-                  clickable
-                  target="_blank"
-                  rel="noreferrer"
+            <Stack spacing={1.25} sx={{ mb: 2 }}>
+              {spotifyLinked && clientId && draft.spotifyTrackId && !showSpotifySearch ? (
+                <Stack direction="row" flexWrap="wrap" gap={1} alignItems="center">
+                  <Chip
+                    size="small"
+                    icon={<SpotifyBrandIcon />}
+                    label="Open in Spotify"
+                    component="a"
+                    href={`https://open.spotify.com/track/${encodeURIComponent(draft.spotifyTrackId)}`}
+                    clickable
+                    target="_blank"
+                    rel="noreferrer"
+                  />
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={spotifyMetaLoading ? <CircularProgress size={16} color="inherit" /> : <RefreshIcon />}
+                    disabled={spotifyMetaLoading}
+                    onClick={() => void fillFromSpotify()}
+                  >
+                    Refresh from Spotify
+                  </Button>
+                  <Button size="small" variant="text" startIcon={<SwapHorizIcon />} onClick={() => setShowSpotifySearch(true)}>
+                    Change track
+                  </Button>
+                </Stack>
+              ) : null}
+              {spotifyLinked && clientId && (showSpotifySearch || !draft.spotifyTrackId) && !isNew ? (
+                <Autocomplete
+                  options={spotifyOptions}
+                  loading={spotifyLoading}
+                  getOptionLabel={(o) => trackLabel(o)}
+                  isOptionEqualToValue={(a, b) => a.id === b.id}
+                  value={null}
+                  inputValue={spotifyQuery}
+                  onInputChange={(_, v) => setSpotifyQuery(v)}
+                  onChange={(_, v) => {
+                    if (v && typeof v === 'object' && 'id' in v) applySpotifyTrack(v as SpotifySearchTrack);
+                  }}
+                  filterOptions={(x) => x}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      size="small"
+                      label={draft.spotifyTrackId ? 'Search Spotify for a replacement' : 'Find on Spotify'}
+                      placeholder="Title, artist, or paste a track URL"
+                      onBlur={() => void resolveSpotifyPaste()}
+                      InputProps={{
+                        ...params.InputProps,
+                        startAdornment: (
+                          <>
+                            <SpotifyBrandIcon sx={{ mr: 0.75, fontSize: 20, alignSelf: 'center' }} />
+                            {params.InputProps.startAdornment}
+                          </>
+                        ),
+                        endAdornment: (
+                          <>
+                            {spotifyLoading ? <CircularProgress color="inherit" size={18} /> : null}
+                            {params.InputProps.endAdornment}
+                          </>
+                        ),
+                      }}
+                    />
+                  )}
                 />
               ) : null}
-              {ytId ? (
-                <Chip
-                  size="small"
-                  icon={<YouTubeBrandIcon sx={{ fontSize: '18px !important' }} />}
-                  label="YouTube"
-                  component="a"
-                  href={`https://www.youtube.com/watch?v=${encodeURIComponent(ytId)}`}
-                  clickable
-                  target="_blank"
-                  rel="noreferrer"
-                />
-              ) : null}
-            </Stack>
-            {(draft.spotifyGenres ?? []).length > 0 ? (
-              <Stack direction="row" flexWrap="wrap" gap={0.5} alignItems="center" sx={{ mb: 1 }}>
-                <Typography variant="caption" color="text.secondary" sx={{ mr: 0.25 }}>
-                  Spotify genres
+              {spotifyLinked && clientId && !draft.spotifyTrackId && !isNew ? (
+                <Typography variant="caption" color="text.secondary">
+                  No Spotify track linked — use the search field above.
                 </Typography>
-                {(draft.spotifyGenres ?? []).map((g) => (
-                  <Chip key={g} size="small" variant="outlined" label={g} />
-                ))}
+              ) : null}
+
+              <Stack direction="row" alignItems="center" gap={1} flexWrap="wrap">
+                <YouTubeBrandIcon sx={{ fontSize: 20, opacity: 0.9 }} />
+                <TextField
+                  label="YouTube URL or id"
+                  value={draft.youtubeVideoId ?? ''}
+                  onChange={(e) =>
+                    setDraft((d) => (d ? { ...d, youtubeVideoId: e.target.value.trim() || undefined } : d))
+                  }
+                  onBlur={() => {
+                    const raw = draft.youtubeVideoId ?? '';
+                    const parsed = parseYoutubeVideoId(raw);
+                    if (parsed && parsed !== raw.trim()) {
+                      setDraft((d) => (d ? { ...d, youtubeVideoId: parsed } : d));
+                    }
+                  }}
+                  size="small"
+                  sx={{ flex: 1, minWidth: 200 }}
+                  placeholder="Watch link or video id"
+                  helperText={ytId ? `youtube.com/watch?v=${encodeURIComponent(ytId)}` : undefined}
+                />
+                {ytId ? (
+                  <Chip
+                    size="small"
+                    icon={<YouTubeBrandIcon />}
+                    label="Open"
+                    component="a"
+                    href={`https://www.youtube.com/watch?v=${encodeURIComponent(ytId)}`}
+                    clickable
+                    target="_blank"
+                    rel="noreferrer"
+                  />
+                ) : null}
+              </Stack>
+            </Stack>
+
+            {draft.title.trim().length > 0 ? (
+              <Stack direction="row" flexWrap="wrap" gap={0.75} useFlexGap sx={{ mb: 2 }}>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  endIcon={<OpenInNewIcon sx={{ fontSize: 14 }} />}
+                  href={encoreUltimateGuitarSearchUrl(resourceTitle, resourceArtist)}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Ultimate Guitar
+                </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  endIcon={<OpenInNewIcon sx={{ fontSize: 14 }} />}
+                  href={encoreGeniusSearchUrl(resourceTitle, resourceArtist)}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Genius
+                </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  endIcon={<OpenInNewIcon sx={{ fontSize: 14 }} />}
+                  href={encoreYouTubeSearchUrl(resourceTitle, resourceArtist)}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  YouTube search
+                </Button>
               </Stack>
             ) : null}
-            <FormControlLabel
-              sx={{ alignItems: 'center', mb: 1 }}
-              control={
-                <Switch
+
+            <Stack direction="row" flexWrap="wrap" gap={1} alignItems="center" useFlexGap sx={{ mb: 1 }}>
+              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, letterSpacing: '0.06em' }}>
+                Charts
+              </Typography>
+              {chartAttachments.map((a) => (
+                <Chip
+                  key={a.driveFileId}
                   size="small"
-                  checked={Boolean(draft.practicing)}
-                  onChange={(e) => {
-                    const ts = new Date().toISOString();
-                    setDraft((d) => (d ? { ...d, practicing: e.target.checked, updatedAt: ts } : d));
-                  }}
-                  inputProps={{ 'aria-label': 'Working on this song' }}
+                  label={a.label ?? a.driveFileId.slice(0, 8)}
+                  component="a"
+                  href={driveFileWebUrl(a.driveFileId)}
+                  target="_blank"
+                  rel="noreferrer"
+                  clickable
+                  variant="outlined"
                 />
-              }
-              label={<Typography variant="body2">Working on this song</Typography>}
-            />
+              ))}
+              <Button
+                size="small"
+                variant="text"
+                disabled={!googleAccessToken || driveUploading}
+                component="label"
+              >
+                Upload
+                <input
+                  type="file"
+                  hidden
+                  accept=".pdf,.xml,.musicxml,.mxl,image/*"
+                  onChange={(e) => void handleDriveChartUpload(e.target.files?.[0])}
+                />
+              </Button>
+              <Button size="small" variant="text" onClick={() => setChartPickerOpen(true)} disabled={!googleAccessToken}>
+                Pick from Drive
+              </Button>
+            </Stack>
+            {driveAttachMsg ? (
+              <Typography variant="caption" color="text.secondary" display="block">
+                {driveAttachMsg}
+              </Typography>
+            ) : null}
           </Box>
         </Box>
 
-        <Accordion
-          defaultExpanded
-          disableGutters
-          elevation={0}
-          sx={{ border: 1, borderColor: 'divider', borderRadius: 2, mb: 2, '&:before': { display: 'none' } }}
-        >
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Box>
-              <Typography fontWeight={700}>Practice journal</Typography>
-              <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.25 }}>
-                Long-form notes, context, and why a milestone is N/A live here. Markdown supported.
-              </Typography>
-            </Box>
-          </AccordionSummary>
-          <AccordionDetails>
-            <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
-              <Button size="small" variant={journalTab === 'edit' ? 'contained' : 'outlined'} onClick={() => setJournalTab('edit')}>
-                Edit
-              </Button>
-              <Button size="small" variant={journalTab === 'preview' ? 'contained' : 'outlined'} onClick={() => setJournalTab('preview')}>
-                Preview
-              </Button>
-            </Box>
-            {journalTab === 'edit' ? (
-              <TextField
-                value={draft.journalMarkdown}
-                onChange={(e) => setDraft((d) => (d ? { ...d, journalMarkdown: e.target.value } : d))}
-                fullWidth
-                multiline
-                minRows={6}
-                inputProps={{ 'aria-label': 'Journal markdown' }}
-              />
-            ) : (
-              <MarkdownPreview markdown={draft.journalMarkdown} />
-            )}
-          </AccordionDetails>
-        </Accordion>
+        {!isNew ? (
+          <Tabs
+            value={songTab}
+            onChange={(_, v) => setSongTab(v)}
+            sx={{ borderBottom: 1, borderColor: encoreHairline, mb: 2.5, '& .MuiTab-root': { textTransform: 'none', fontWeight: 600 } }}
+          >
+            <Tab label="Practice" id="encore-song-tab-practice" aria-controls="encore-song-panel-practice" />
+            <Tab label="Performances" id="encore-song-tab-performances" aria-controls="encore-song-panel-performances" />
+          </Tabs>
+        ) : null}
 
-        <Accordion
-          defaultExpanded={false}
-          disableGutters
-          elevation={0}
-          sx={{ border: 1, borderColor: 'divider', borderRadius: 2, mb: 2, '&:before': { display: 'none' } }}
+        <Box
+          role="tabpanel"
+          id={!isNew ? (songTab === 0 ? 'encore-song-panel-practice' : 'encore-song-panel-performances') : undefined}
+          hidden={!isNew && songTab !== 0}
+          sx={{ display: !isNew && songTab !== 0 ? 'none' : 'block' }}
         >
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography fontWeight={700}>Milestones</Typography>
-          </AccordionSummary>
-          <AccordionDetails>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, lineHeight: 1.55 }}>
-              Checklist for this title. Edit the shared template and venue list under Setup.
-            </Typography>
-            <Button size="small" variant="outlined" onClick={() => navigateEncore({ kind: 'repertoireSettings' })} sx={{ mb: 2 }}>
-              Venues & milestones setup
-            </Button>
+          <Stack spacing={3}>
             <SongMilestoneChecklist
-              song={draft}
+              song={milestoneSong}
               milestoneTemplate={repertoireExtras.milestoneTemplate}
-              onChange={(next) => setDraft(next)}
+              onChange={onMilestoneSongChange}
+              onOpenGlobalMilestoneSettings={() => navigateEncore({ kind: 'repertoireSettings' })}
             />
-          </AccordionDetails>
-        </Accordion>
+
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+                Practice journal
+              </Typography>
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1.5 }}>
+                Markdown. Saves only when you click <strong>Save notes</strong>.
+              </Typography>
+              <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="flex-start">
+                <TextField
+                  value={journalLocal}
+                  onChange={(e) => setJournalLocal(e.target.value)}
+                  fullWidth
+                  multiline
+                  minRows={8}
+                  inputProps={{ 'aria-label': 'Practice journal markdown' }}
+                  sx={{ flex: 1 }}
+                />
+                <Box
+                  sx={{
+                    flex: 1,
+                    width: 1,
+                    minHeight: 200,
+                    p: 2,
+                    borderRadius: 2,
+                    border: 1,
+                    borderColor: 'divider',
+                    bgcolor: (t) => alpha(t.palette.primary.main, 0.03),
+                  }}
+                >
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, letterSpacing: '0.06em' }}>
+                    Preview
+                  </Typography>
+                  <MarkdownPreview markdown={journalLocal} />
+                </Box>
+              </Stack>
+              <Stack direction="row" alignItems="center" gap={2} sx={{ mt: 2 }}>
+                <Button variant="contained" size="small" onClick={() => void handleSaveJournal()} disabled={journalSaving}>
+                  {journalSaving ? 'Saving…' : 'Save notes'}
+                </Button>
+                {journalLocal !== committedJournal ? (
+                  <Typography variant="caption" color="warning.main">
+                    Unsaved journal changes
+                  </Typography>
+                ) : null}
+              </Stack>
+            </Box>
+          </Stack>
+        </Box>
 
         {!isNew ? (
-          <EncoreSection>
-            <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1} sx={{ mb: 1.5 }}>
-              <Stack direction="row" alignItems="center" gap={1} flexWrap="wrap">
-                <VideocamIcon color="primary" fontSize="small" aria-hidden />
-                <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
-                  Performance gallery
-                </Typography>
+          <Box
+            role="tabpanel"
+            id="encore-song-panel-performances"
+            hidden={songTab !== 1}
+            sx={{ display: songTab === 1 ? 'block' : 'none', pt: 1 }}
+          >
+            <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1} sx={{ mb: 2 }}>
+              <Stack direction="row" alignItems="center" gap={1}>
                 {songPerformances.length > 0 ? (
-                  <Chip size="small" label={songPerformances.length} color="primary" variant="outlined" sx={{ fontWeight: 700 }} />
-                ) : null}
+                  <Chip size="small" label={`${songPerformances.length} logged`} variant="outlined" sx={{ fontWeight: 600 }} />
+                ) : (
+                  <Typography variant="body2" color="text.secondary">
+                    No performances yet for this song.
+                  </Typography>
+                )}
               </Stack>
               <Button
                 size="small"
@@ -823,16 +943,12 @@ export function SongPage(props: { route: Extract<EncoreAppRoute, { kind: 'song' 
                 Add performance
               </Button>
             </Stack>
-            {songPerformances.length === 0 ? (
-              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.55 }}>
-                No performances yet. Add one to store venue, date, and a video link or Drive file.
-              </Typography>
-            ) : (
+            {songPerformances.length > 0 ? (
               <Box
                 sx={{
                   display: 'grid',
                   gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
-                  gap: 1.5,
+                  gap: 2,
                 }}
               >
                 {songPerformances.map((p) => {
@@ -841,33 +957,38 @@ export function SongPage(props: { route: Extract<EncoreAppRoute, { kind: 'song' 
                     <Box
                       key={p.id}
                       sx={{
-                        border: 1,
+                        border: '1px solid',
                         borderColor: 'divider',
-                        borderRadius: 2,
+                        borderRadius: encoreRadius,
                         p: 1.5,
-                        bgcolor: (t) => alpha(t.palette.primary.main, 0.06),
                         display: 'flex',
                         flexDirection: 'column',
                         gap: 1,
                         minHeight: 120,
                         overflow: 'hidden',
+                        transition: (t) => t.transitions.create(['box-shadow', 'border-color'], { duration: 200 }),
+                        '&:hover': {
+                          boxShadow: '0 4px 16px rgba(76, 29, 149, 0.06)',
+                          borderColor: alpha(theme.palette.primary.main, 0.25),
+                        },
                       }}
                     >
                       <PerformanceVideoThumb
                         performance={p}
                         fluid
                         alt={url ? `Video thumbnail for performance on ${p.date}` : `Performance on ${p.date}`}
+                        googleAccessToken={googleAccessToken}
                       />
-                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 800, letterSpacing: '0.08em' }}>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ fontWeight: 700, letterSpacing: '0.08em', fontVariantNumeric: 'tabular-nums' }}
+                      >
                         {p.date}
                       </Typography>
-                      <Chip
-                        size="small"
-                        label={p.venueTag?.trim() || 'Venue'}
-                        sx={{ alignSelf: 'flex-start', fontWeight: 700 }}
-                        color="primary"
-                        variant="filled"
-                      />
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {p.venueTag?.trim() || 'Venue'}
+                      </Typography>
                       {p.notes ? (
                         <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.45 }}>
                           {p.notes.length > 140 ? `${p.notes.slice(0, 140)}…` : p.notes}
@@ -877,22 +998,18 @@ export function SongPage(props: { route: Extract<EncoreAppRoute, { kind: 'song' 
                         {url ? (
                           <Button
                             size="small"
-                            variant="contained"
+                            variant="outlined"
                             href={url}
                             target="_blank"
                             rel="noreferrer"
                             startIcon={<OpenInNewIcon sx={{ fontSize: 16 }} />}
                           >
-                            Open video
+                            Open
                           </Button>
-                        ) : (
-                          <Typography variant="caption" color="text.secondary">
-                            No video link
-                          </Typography>
-                        )}
+                        ) : null}
                         <Button
                           size="small"
-                          variant="outlined"
+                          variant="text"
                           startIcon={<EditIcon sx={{ fontSize: 16 }} />}
                           onClick={() => {
                             setPerfEditing(p);
@@ -906,401 +1023,25 @@ export function SongPage(props: { route: Extract<EncoreAppRoute, { kind: 'song' 
                   );
                 })}
               </Box>
-            )}
-          </EncoreSection>
+            ) : null}
+          </Box>
         ) : (
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
-            Save the song first to add performances and videos.
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            Save this song (add a title — it saves automatically) to log performances.
           </Typography>
         )}
-
-        {draft.title.trim().length > 0 && (
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
-              Look up this song
-            </Typography>
-            <Stack direction="row" flexWrap="wrap" gap={1} useFlexGap>
-              <Button
-                size="small"
-                variant="outlined"
-                endIcon={<OpenInNewIcon sx={{ fontSize: 16 }} />}
-                href={encoreUltimateGuitarSearchUrl(resourceTitle, resourceArtist)}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Ultimate Guitar
-              </Button>
-              <Button
-                size="small"
-                variant="outlined"
-                endIcon={<OpenInNewIcon sx={{ fontSize: 16 }} />}
-                href={encoreGeniusSearchUrl(resourceTitle, resourceArtist)}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Genius
-              </Button>
-              <Button
-                size="small"
-                variant="outlined"
-                endIcon={<OpenInNewIcon sx={{ fontSize: 16 }} />}
-                href={encoreYouTubeSearchUrl(resourceTitle, resourceArtist)}
-                target="_blank"
-                rel="noreferrer"
-              >
-                YouTube search
-              </Button>
-            </Stack>
-          </Box>
-        )}
-
-        {(draft.spotifyTrackId || ytId) && (
-          <Box sx={{ mb: 2 }}>
-            <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1} sx={{ mb: 1 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                Listen here
-              </Typography>
-              <Button size="small" onClick={() => setShowEmbeds((v) => !v)}>
-                {showEmbeds ? 'Hide players' : 'Show players'}
-              </Button>
-            </Stack>
-            {showEmbeds ? (
-              <Stack spacing={2}>
-                {ytId ? (
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
-                      <YouTubeBrandIcon fontSize="inherit" /> YouTube
-                    </Typography>
-                    <Box
-                      sx={{
-                        position: 'relative',
-                        pb: '56.25%',
-                        height: 0,
-                        overflow: 'hidden',
-                        borderRadius: 2,
-                        bgcolor: 'action.hover',
-                      }}
-                    >
-                      <Box
-                        component="iframe"
-                        title="YouTube preview"
-                        src={`https://www.youtube.com/embed/${encodeURIComponent(ytId)}`}
-                        sx={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 0 }}
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                        allowFullScreen
-                      />
-                    </Box>
-                  </Box>
-                ) : null}
-                {draft.spotifyTrackId ? (
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
-                      <SpotifyBrandIcon fontSize="inherit" /> Spotify
-                    </Typography>
-                    <Box
-                      component="iframe"
-                      title="Spotify preview"
-                      src={`https://open.spotify.com/embed/track/${encodeURIComponent(draft.spotifyTrackId)}?utm_source=generator`}
-                      width="100%"
-                      height="152"
-                      style={{ border: 0, borderRadius: 12, maxWidth: '100%' }}
-                      allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                      loading="lazy"
-                    />
-                  </Box>
-                ) : null}
-              </Stack>
-            ) : (
-              <Typography variant="caption" color="text.secondary">
-                Players load only when you expand them (saves bandwidth).
-              </Typography>
-            )}
-          </Box>
-        )}
-
-        <EncoreSection title="Recording links">
-          {!clientId && <Alert severity="info">Set VITE_SPOTIFY_CLIENT_ID to search Spotify from this screen.</Alert>}
-          {clientId && !spotifyLinked && (
-            <Alert severity="info" action={<Button onClick={() => void connectSpotify()}>Connect Spotify</Button>}>
-              Connect Spotify in the Account menu to search tracks and paste Spotify links.
-            </Alert>
-          )}
-          {spotifyError && <Alert severity="error">{spotifyError}</Alert>}
-          {spotifyMetaMessage && <Alert severity="success">{spotifyMetaMessage}</Alert>}
-          {spotifyLinked && clientId && draft.spotifyTrackId && (
-            <Box sx={{ mb: 1.5 }}>
-              <Stack direction="row" flexWrap="wrap" gap={1}>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  startIcon={spotifyMetaLoading ? <CircularProgress size={16} color="inherit" /> : <RefreshIcon />}
-                  disabled={spotifyMetaLoading}
-                  onClick={() => void fillFromSpotify('emptyOnly')}
-                >
-                  Refresh from Spotify
-                </Button>
-                <Button
-                  size="small"
-                  variant="text"
-                  disabled={spotifyMetaLoading}
-                  onClick={() => void fillFromSpotify('overwrite')}
-                >
-                  Overwrite from Spotify
-                </Button>
-              </Stack>
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.75, lineHeight: 1.45 }}>
-                Updates title, artist, cover art, and genre tags from Spotify. Key and tempo stay as you set them here (or from MusicXML / MIDI when you attach charts).
-              </Typography>
-            </Box>
-          )}
-          {spotifyLinked && clientId && !isNew && (
-            <Autocomplete
-              sx={{ mb: 1.5 }}
-              options={spotifyOptions}
-              loading={spotifyLoading}
-              getOptionLabel={(o) => trackLabel(o)}
-              isOptionEqualToValue={(a, b) => a.id === b.id}
-              value={null}
-              inputValue={spotifyQuery}
-              onInputChange={(_, v) => setSpotifyQuery(v)}
-              onChange={(_, v) => {
-                if (v && typeof v === 'object' && 'id' in v) applySpotifyTrack(v as SpotifySearchTrack);
-              }}
-              filterOptions={(x) => x}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Find on Spotify"
-                  helperText="Type title and artist, or paste a track URL and blur the field."
-                  onBlur={() => void resolveSpotifyPaste()}
-                  InputProps={{
-                    ...params.InputProps,
-                    endAdornment: (
-                      <>
-                        {spotifyLoading ? <CircularProgress color="inherit" size={18} /> : null}
-                        {params.InputProps.endAdornment}
-                      </>
-                    ),
-                  }}
-                />
-              )}
-            />
-          )}
-          <TextField
-            label="YouTube (video URL or id)"
-            value={draft.youtubeVideoId ?? ''}
-            onChange={(e) => setDraft((d) => (d ? { ...d, youtubeVideoId: e.target.value.trim() || undefined } : d))}
-            onBlur={() => {
-              const raw = draft.youtubeVideoId ?? '';
-              const parsed = parseYoutubeVideoId(raw);
-              if (parsed && parsed !== raw.trim()) {
-                setDraft((d) => (d ? { ...d, youtubeVideoId: parsed } : d));
-              }
-            }}
-            fullWidth
-            InputProps={{
-              startAdornment: <YouTubeBrandIcon sx={{ mr: 1, opacity: 0.85, fontSize: 22, alignSelf: 'center' }} />,
-            }}
-            helperText={
-              ytId ? `Canonical: https://www.youtube.com/watch?v=${encodeURIComponent(ytId)}` : 'Watch URL, youtu.be, shorts, or 11-character id.'
-            }
-          />
-        </EncoreSection>
-
-        <EncoreSection title="Charts and tracks (Google Drive)">
-          <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1.5 }}>
-            Upload PDFs, MusicXML, MIDI, or audio. MusicXML and MIDI can suggest key and tempo when those fields are
-            empty. You can also pick files already in your Encore Drive folders.
-          </Typography>
-          {driveAttachMsg ? (
-            <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
-              {driveAttachMsg}
-            </Typography>
-          ) : null}
-          <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mb: 1.5 }}>
-            <Button
-              size="small"
-              variant="outlined"
-              component="label"
-              disabled={!googleAccessToken || driveUploading}
-            >
-              Upload chart
-              <input
-                type="file"
-                hidden
-                accept=".pdf,.xml,.musicxml,.mxl,image/*"
-                onChange={(e) => void handleDriveUpload('chart', e.target.files?.[0])}
-              />
-            </Button>
-            <Button size="small" variant="outlined" onClick={() => setChartPickerOpen(true)} disabled={!googleAccessToken}>
-              Pick chart from Drive
-            </Button>
-            <Button
-              size="small"
-              variant="outlined"
-              component="label"
-              disabled={!googleAccessToken || driveUploading}
-            >
-              Upload backing
-              <input
-                type="file"
-                hidden
-                accept="audio/*,.mp3,.wav,.m4a,.ogg"
-                onChange={(e) => void handleDriveUpload('backing', e.target.files?.[0])}
-              />
-            </Button>
-            <Button size="small" variant="outlined" onClick={() => setBackingPickerOpen(true)} disabled={!googleAccessToken}>
-              Pick backing from Drive
-            </Button>
-            <Button
-              size="small"
-              variant="outlined"
-              component="label"
-              disabled={!googleAccessToken || driveUploading}
-            >
-              Upload recording
-              <input
-                type="file"
-                hidden
-                accept="audio/*,.mp3,.wav,.mid,.midi,.mxl,.xml,.musicxml,.pdf"
-                onChange={(e) => void handleDriveUpload('recording', e.target.files?.[0])}
-              />
-            </Button>
-            <Button size="small" variant="outlined" onClick={() => setRecordingPickerOpen(true)} disabled={!googleAccessToken}>
-              Pick recording from Drive
-            </Button>
-          </Stack>
-          {googleAccessToken ? (
-            <Stack direction="row" flexWrap="wrap" gap={1} alignItems="center" sx={{ mb: 1.5 }}>
-              <Typography variant="caption" color="text.secondary" component="span">
-                Browse in Google Drive:
-              </Typography>
-              {driveFolders.charts ? (
-                <Button size="small" variant="text" onClick={openChartsFolderPicker}>
-                  Charts folder
-                </Button>
-              ) : null}
-              {driveFolders.recordings ? (
-                <Button size="small" variant="text" onClick={openRecordingsFolderPicker}>
-                  Recordings folder
-                </Button>
-              ) : null}
-              <Button size="small" variant="text" onClick={openMyDrivePicker}>
-                My Drive
-              </Button>
-            </Stack>
-          ) : null}
-          <TextField
-            label="Lead sheet or chart (Drive file id)"
-            value={draft.sheetMusicDriveFileId ?? ''}
-            onChange={(e) => setDraft((d) => (d ? { ...d, sheetMusicDriveFileId: e.target.value || undefined } : d))}
-            fullWidth
-            size="small"
-            sx={{ mb: 1.5 }}
-            InputProps={{ startAdornment: <GoogleBrandIcon sx={{ mr: 1, fontSize: 22, alignSelf: 'center' }} /> }}
-            helperText={(() => {
-              const fid = parseDriveFileIdFromUrlOrId((draft.sheetMusicDriveFileId ?? '').trim());
-              return googleAccessToken && fid ? (
-                <Button
-                  size="small"
-                  variant="text"
-                  component="a"
-                  href={driveFileWebUrl(fid)}
-                  target="_blank"
-                  rel="noreferrer"
-                  startIcon={<OpenInNewIcon fontSize="small" />}
-                  sx={{ p: 0, minWidth: 0, verticalAlign: 'baseline' }}
-                >
-                  Open this file in Drive
-                </Button>
-              ) : undefined;
-            })()}
-          />
-          <TextField
-            label="Backing track (Drive file id)"
-            value={draft.backingTrackDriveFileId ?? ''}
-            onChange={(e) => setDraft((d) => (d ? { ...d, backingTrackDriveFileId: e.target.value || undefined } : d))}
-            fullWidth
-            size="small"
-            InputProps={{ startAdornment: <GoogleBrandIcon sx={{ mr: 1, fontSize: 22, alignSelf: 'center' }} /> }}
-            helperText={(() => {
-              const fid = parseDriveFileIdFromUrlOrId((draft.backingTrackDriveFileId ?? '').trim());
-              return googleAccessToken && fid ? (
-                <Button
-                  size="small"
-                  variant="text"
-                  component="a"
-                  href={driveFileWebUrl(fid)}
-                  target="_blank"
-                  rel="noreferrer"
-                  startIcon={<OpenInNewIcon fontSize="small" />}
-                  sx={{ p: 0, minWidth: 0, verticalAlign: 'baseline' }}
-                >
-                  Open this file in Drive
-                </Button>
-              ) : undefined;
-            })()}
-          />
-          {effectiveSongAttachments(draft).length > 0 ? (
-            <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
-              Linked files:{' '}
-              {effectiveSongAttachments(draft)
-                .map((a) => `${a.kind} ${a.label ?? a.driveFileId.slice(0, 8)}…`)
-                .join(' · ')}
-            </Typography>
-          ) : null}
-        </EncoreSection>
-
-        <DriveFilePickerDialog
-          open={chartPickerOpen}
-          title="Pick a chart file"
-          folderId={driveFolders.charts}
-          googleAccessToken={googleAccessToken}
-          pickerMimeTypes={ENCORE_DRIVE_CHART_MIME_TYPES}
-          onClose={() => setChartPickerOpen(false)}
-          onPick={(id, name) => {
-            setDraft((d) => (d ? addSongAttachment(d, { kind: 'chart', driveFileId: id, label: name }) : d));
-            setChartPickerOpen(false);
-          }}
-        />
-        <DriveFilePickerDialog
-          open={backingPickerOpen}
-          title="Pick a backing track"
-          folderId={driveFolders.charts}
-          googleAccessToken={googleAccessToken}
-          pickerMimeTypes={ENCORE_DRIVE_RECORDING_MIME_TYPES}
-          onClose={() => setBackingPickerOpen(false)}
-          onPick={(id, name) => {
-            setDraft((d) => (d ? addSongAttachment(d, { kind: 'backing', driveFileId: id, label: name }) : d));
-            setBackingPickerOpen(false);
-          }}
-        />
-        <DriveFilePickerDialog
-          open={recordingPickerOpen}
-          title="Pick a recording"
-          folderId={driveFolders.recordings}
-          googleAccessToken={googleAccessToken}
-          pickerMimeTypes={ENCORE_DRIVE_RECORDING_MIME_TYPES}
-          onClose={() => setRecordingPickerOpen(false)}
-          onPick={(id, name) => {
-            setDraft((d) => (d ? addSongAttachment(d, { kind: 'recording', driveFileId: id, label: name }) : d));
-            setRecordingPickerOpen(false);
-          }}
-        />
       </Container>
 
       <Box
         sx={{
+          ...encoreFrostedSurfaceSx,
           position: 'sticky',
           bottom: 0,
           left: 0,
           right: 0,
           zIndex: 8,
-          borderTop: 1,
+          borderTop: '1px solid',
           borderColor: 'divider',
-          bgcolor: (t) => alpha(t.palette.background.paper, 0.92),
-          backdropFilter: 'saturate(160%) blur(12px)',
-          WebkitBackdropFilter: 'saturate(160%) blur(12px)',
           px: encoreScreenPaddingX,
           py: 2,
           display: 'flex',
@@ -1315,11 +1056,21 @@ export function SongPage(props: { route: Extract<EncoreAppRoute, { kind: 'song' 
             Delete
           </Button>
         )}
-        <Button onClick={handleBack}>Cancel</Button>
-        <Button variant="contained" onClick={() => void handleSave()} disabled={saving}>
-          {saving ? 'Saving…' : 'Save'}
-        </Button>
+        <Button onClick={handleBack}>Back</Button>
       </Box>
+
+      <DriveFilePickerDialog
+        open={chartPickerOpen}
+        title="Pick a chart"
+        folderId={chartsFolderId}
+        googleAccessToken={googleAccessToken}
+        pickerMimeTypes={ENCORE_DRIVE_CHART_MIME_TYPES}
+        onClose={() => setChartPickerOpen(false)}
+        onPick={(id, name) => {
+          setDraft((d) => (d ? addSongAttachment(d, { kind: 'chart', driveFileId: id, label: name }) : d));
+          setChartPickerOpen(false);
+        }}
+      />
 
       {!isNew && (
         <PerformanceEditorDialog

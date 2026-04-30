@@ -67,8 +67,10 @@ import {
 } from '../import/findExistingSongForImport';
 import { useEncore } from '../context/EncoreContext';
 import { encoreDialogActionsSx, encoreDialogContentSx, encoreDialogTitleSx } from '../theme/encoreUiTokens';
+import { EncoreSpotifyConnectionChip } from '../ui/EncoreSpotifyConnectionChip';
 import { encoreImportReviewTableSx } from './encoreImportReviewTableSx';
 import { LibrarySongPickerDialog } from './LibrarySongPickerDialog';
+import { SpotifyBrandIcon, YouTubeBrandIcon } from './EncoreBrandIcon';
 
 type Step = 'urls' | 'review';
 
@@ -336,7 +338,7 @@ export function PlaylistImportDialog(props: {
   onSaveSong: (song: EncoreSong) => Promise<void>;
 }): ReactElement {
   const { open, onClose, googleAccessToken, spotifyLinked, existingSongs, onSaveSong } = props;
-  const { connectSpotify, spotifyConnectError, clearSpotifyConnectError } = useEncore();
+  const { spotifyConnectError, clearSpotifyConnectError } = useEncore();
   const clientId = (import.meta.env.VITE_SPOTIFY_CLIENT_ID as string | undefined)?.trim() ?? '';
 
   const [step, setStep] = useState<Step>('urls');
@@ -876,10 +878,53 @@ export function PlaylistImportDialog(props: {
       >
         {step === 'urls' && (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-            <Typography variant="body2" color="text.secondary">
-              Paste Spotify or YouTube playlist links or ids (one per line or comma-separated). Encore picks the
-              platform from each URL. When both sides have tracks, we suggest title matches; you can adjust pairings
-              before saving.
+            <Typography variant="body2" color="text.secondary" component="div" sx={{ lineHeight: 1.55 }}>
+              Paste{' '}
+              <Box
+                component="span"
+                sx={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.22em',
+                  verticalAlign: 'middle',
+                  marginInline: '0.06em',
+                }}
+              >
+                <SpotifyBrandIcon
+                  sx={{
+                    fontSize: '1.15em',
+                    flexShrink: 0,
+                    position: 'relative',
+                    top: '0.08em',
+                  }}
+                  aria-hidden
+                />
+                Spotify
+              </Box>{' '}
+              or{' '}
+              <Box
+                component="span"
+                sx={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.22em',
+                  verticalAlign: 'middle',
+                  marginInline: '0.06em',
+                }}
+              >
+                <YouTubeBrandIcon
+                  sx={{
+                    fontSize: '1.15em',
+                    flexShrink: 0,
+                    position: 'relative',
+                    top: '0.08em',
+                  }}
+                  aria-hidden
+                />
+                YouTube
+              </Box>{' '}
+              playlist links or ids (one per line or comma-separated). Encore picks the platform from each URL. When
+              both sides have tracks, we suggest title matches; you can adjust pairings before saving.
             </Typography>
             <TextField
               label="Playlist URLs or ids"
@@ -894,40 +939,14 @@ export function PlaylistImportDialog(props: {
               helperText="Mix Spotify and YouTube in any order. Duplicate tracks or videos across lists are merged once. Bare 22-character ids are treated as Spotify."
             />
             {clientId ? (
-              spotifyLinked ? (
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: 1, columnGap: 1.5 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Spotify is connected. Paste playlist URLs to load them, including private lists in your account.
-                  </Typography>
-                  <Button
-                    variant="text"
-                    size="small"
-                    onClick={() => {
-                      clearSpotifyConnectError();
-                      void connectSpotify();
-                    }}
-                    sx={{ fontWeight: 600 }}
-                  >
-                    Sign in to Spotify again
-                  </Button>
-                </Box>
-              ) : (
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1 }}>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    onClick={() => {
-                      clearSpotifyConnectError();
-                      void connectSpotify();
-                    }}
-                  >
-                    Connect Spotify
-                  </Button>
-                  <Typography variant="caption" color="text.secondary">
-                    Sign in here to load Spotify playlists (including private ones you can open in Spotify).
-                  </Typography>
-                </Box>
-              )
+              <EncoreSpotifyConnectionChip
+                onBeforeOAuth={clearSpotifyConnectError}
+                description={
+                  spotifyLinked
+                    ? 'Spotify is connected. Paste playlist URLs to load them, including private lists in your account.'
+                    : 'Connect Spotify from the chip menu to load playlists from URLs, including private lists in your account.'
+                }
+              />
             ) : null}
             {loopbackHref ? (
               <Alert severity="warning">
@@ -1106,7 +1125,9 @@ export function PlaylistImportDialog(props: {
                 flex: reviewFullscreen ? '1 1 auto' : undefined,
                 minHeight: reviewFullscreen ? 0 : undefined,
                 minWidth: 0,
-                overflow: 'auto',
+                maxWidth: '100%',
+                overflowX: 'hidden',
+                overflowY: 'auto',
                 border: 1,
                 borderColor: 'divider',
                 borderRadius: 1,

@@ -1242,6 +1242,40 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": "dice-icon"
   },
   {
+    "id": "src-shared-components-dragdropfileupload-tsx-dragdropfileupload",
+    "name": "DragDropFileUpload",
+    "path": "src/shared/components/DragDropFileUpload.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Shared drag-and-drop file uploader. - Click anywhere on the zone (or focus + Enter / Space) opens the OS picker. - Drag-over highlights the zone; drop calls `onFiles` with the dropped files filtered against `accept` (mime + extension). - Keyboard accessible; renders a hidden `<input type=\"file\">` so the click / keyboard fallbacks both work. Reused across Encore's bulk-score and bulk-performance-video imports; extracted here so other apps can adopt the same UX in one line. Surfaces use the theme primary/secondary palette so Encore’s fuchsia/violet tokens read as one calm drop target (not a generic grey slab).",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-dragdropfileupload-tsx-dragdropfileuploadprops",
+    "name": "DragDropFileUploadProps",
+    "path": "src/shared/components/DragDropFileUpload.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Shared drag-and-drop file uploader. - Click anywhere on the zone (or focus + Enter / Space) opens the OS picker. - Drag-over highlights the zone; drop calls `onFiles` with the dropped files filtered against `accept` (mime + extension). - Keyboard accessible; renders a hidden `<input type=\"file\">` so the click / keyboard fallbacks both work. Reused across Encore's bulk-score and bulk-performance-video imports; extracted here so other apps can adopt the same UX in one line. Surfaces use the theme primary/secondary palette so Encore’s fuchsia/violet tokens read as one calm drop target (not a generic grey slab).",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
     "id": "src-shared-components-inputsourcesmenu-tsx-inputsourcesmenu",
     "name": "InputSourcesMenu",
     "path": "src/shared/components/InputSourcesMenu.tsx",

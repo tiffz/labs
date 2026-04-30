@@ -1,21 +1,46 @@
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CheckIcon from '@mui/icons-material/Check';
+import CloseIcon from '@mui/icons-material/Close';
+import EditIcon from '@mui/icons-material/Edit';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import FolderIcon from '@mui/icons-material/Folder';
+import LogoutIcon from '@mui/icons-material/Logout';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Chip from '@mui/material/Chip';
-import Divider from '@mui/material/Divider';
+import IconButton from '@mui/material/IconButton';
+import InputAdornment from '@mui/material/InputAdornment';
 import Link from '@mui/material/Link';
 import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
 import Stack from '@mui/material/Stack';
+import TextField from '@mui/material/TextField';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import { useEffect, useMemo, useState, type ReactElement } from 'react';
+import { alpha } from '@mui/material/styles';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 import { getSyncMeta } from '../db/encoreDb';
-import { driveFolderWebUrl, driveMyDriveWebUrl } from '../drive/driveWebUrls';
+import { driveFolderWebUrl } from '../drive/driveWebUrls';
 import { ENCORE_ROOT_FOLDER } from '../drive/constants';
 import { useEncore, type SyncUiState } from '../context/EncoreContext';
-import { SpotifyBrandIcon } from './EncoreBrandIcon';
+import { encoreHairline, encoreShadowLift } from '../theme/encoreUiTokens';
+import { EncoreSpotifyConnectionChip } from '../ui/EncoreSpotifyConnectionChip';
+import { EncoreStatusPill } from '../ui/EncoreStatusPill';
+import { GoogleBrandIcon, SpotifyBrandIcon } from './EncoreBrandIcon';
 
 function formatDriveInstant(iso: string): string {
   try {
@@ -25,6 +50,44 @@ function formatDriveInstant(iso: string): string {
   }
 }
 
+/** Privacy policy URL (separate static page; opens in a new tab). */
+const PRIVACY_POLICY_URL = '/legal/privacy.html';
+
+/** Section card used inside the account menu — title row + body content. */
+function MenuSection(props: {
+  icon: ReactNode;
+  title: string;
+  status?: ReactNode;
+  children?: ReactNode;
+}): ReactElement {
+  const { icon, title, status, children } = props;
+  return (
+    <Box sx={{ px: 3, py: 2.5 }}>
+      <Stack direction="row" alignItems="flex-start" spacing={1.25} sx={{ mb: 1.25 }}>
+        <Box sx={{ color: 'text.secondary', display: 'inline-flex', mt: 0.125 }}>{icon}</Box>
+        <Typography
+          variant="caption"
+          sx={{
+            fontWeight: 700,
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+            color: 'text.secondary',
+            fontSize: '0.6875rem',
+            lineHeight: 1.35,
+            pt: 0.125,
+          }}
+        >
+          {title}
+        </Typography>
+        {status ? (
+          <Box sx={{ ml: 'auto', display: 'inline-flex', alignItems: 'center', flexShrink: 0, mt: -0.25 }}>{status}</Box>
+        ) : null}
+      </Stack>
+      {children ? <Box sx={{ pl: { xs: 0, sm: 0.25 } }}>{children}</Box> : null}
+    </Box>
+  );
+}
+
 export function EncoreAccountMenu(props: {
   syncState: SyncUiState;
   syncMessage: string | null;
@@ -32,18 +95,93 @@ export function EncoreAccountMenu(props: {
   const { syncState, syncMessage } = props;
   const {
     displayName,
+    effectiveDisplayName,
+    setOwnerDisplayName,
     googleAccessToken,
     signOut,
     signInWithGoogle,
-    spotifyLinked,
-    disconnectSpotify,
-    connectSpotify,
     spotifyConnectError,
     spotifyConnectLoopbackUrl,
     clearSpotifyConnectError,
+    reorganizePerformanceVideos,
   } = useEncore();
+
+  const [reorganizing, setReorganizing] = useState(false);
+  const [reorganizeMsg, setReorganizeMsg] = useState<string | null>(null);
+  const handleReorganize = useCallback(async () => {
+    setReorganizing(true);
+    setReorganizeMsg(null);
+    try {
+      const result = await reorganizePerformanceVideos();
+      const created = result.shortcutsCreated;
+      if (result.renamed === 0 && result.errors === 0 && created === 0) {
+        setReorganizeMsg('Already organized.');
+      } else if (result.errors > 0) {
+        setReorganizeMsg(
+          `Renamed ${result.renamed}, created ${created} shortcut${created === 1 ? '' : 's'}; ${result.errors} could not be touched.`,
+        );
+      } else {
+        const parts = [
+          result.renamed > 0 ? `renamed ${result.renamed}` : null,
+          created > 0 ? `created ${created} shortcut${created === 1 ? '' : 's'}` : null,
+        ].filter(Boolean);
+        setReorganizeMsg(`Drive is up to date — ${parts.join(', ') || 'nothing to do'}.`);
+      }
+    } catch (e) {
+      setReorganizeMsg(`Could not reorganize: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setReorganizing(false);
+    }
+  }, [reorganizePerformanceVideos]);
+
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
+  const [nameEditing, setNameEditing] = useState(false);
+  const [nameDraft, setNameDraft] = useState('');
+  const [nameSaving, setNameSaving] = useState(false);
+  const nameInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (!open) {
+      setNameEditing(false);
+    }
+  }, [open]);
+
+  const startNameEdit = useCallback(() => {
+    setNameDraft(effectiveDisplayName ?? '');
+    setNameEditing(true);
+    requestAnimationFrame(() => {
+      nameInputRef.current?.focus();
+      nameInputRef.current?.select();
+    });
+  }, [effectiveDisplayName]);
+
+  const commitNameEdit = useCallback(async () => {
+    if (nameSaving) return;
+    setNameSaving(true);
+    try {
+      await setOwnerDisplayName(nameDraft);
+      setNameEditing(false);
+    } finally {
+      setNameSaving(false);
+    }
+  }, [nameDraft, nameSaving, setOwnerDisplayName]);
+
+  const cancelNameEdit = useCallback(() => setNameEditing(false), []);
+
+  const onNameKeyDown = useCallback(
+    (e: KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        void commitNameEdit();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        cancelNameEdit();
+      }
+    },
+    [commitNameEdit, cancelNameEdit],
+  );
+
   const [driveBanner, setDriveBanner] = useState<{
     rootFolderId: string | null;
     lastSuccessfulPushAt: string | null;
@@ -78,17 +216,26 @@ export function EncoreAccountMenu(props: {
     [],
   );
 
-  const syncLabel = !googleAccessToken
-    ? 'Not signed in (local library only)'
-    : syncState === 'syncing'
-      ? 'Syncing…'
-      : syncState === 'conflict'
-        ? 'Merge conflict: choose in the dialog'
-        : syncState === 'error'
-          ? 'Sync error'
-          : 'Drive backup on';
-
   const close = () => setAnchorEl(null);
+
+  // Status pill colors / labels
+  const driveStatus = !googleAccessToken
+    ? { tone: 'idle' as const, label: 'Not connected' }
+    : syncState === 'syncing'
+      ? { tone: 'info' as const, label: 'Syncing…' }
+      : syncState === 'error'
+        ? { tone: 'error' as const, label: 'Sync error' }
+        : syncState === 'conflict'
+          ? { tone: 'warning' as const, label: 'Conflict' }
+          : driveBanner.lastSuccessfulPushAt
+            ? { tone: 'ok' as const, label: 'Backed up' }
+            : { tone: 'idle' as const, label: 'Setting up' };
+
+  const driveStatusIcon = (() => {
+    if (driveStatus.tone === 'ok') return <CheckCircleIcon sx={{ fontSize: 14 }} />;
+    if (driveStatus.tone === 'error') return <ErrorOutlineIcon sx={{ fontSize: 14 }} />;
+    return null;
+  })();
 
   return (
     <>
@@ -104,23 +251,23 @@ export function EncoreAccountMenu(props: {
           fontWeight: 600,
           textTransform: 'none',
           borderRadius: 2,
-          px: 1.5,
-          py: 1,
-          minHeight: 40,
-          maxWidth: { xs: '100%', sm: 280 },
+          px: 1.75,
+          py: 1.125,
+          minHeight: 44,
+          maxWidth: { xs: '100%', sm: 300 },
         }}
         endIcon={<ExpandMoreIcon sx={{ opacity: 0.75, fontSize: 20 }} />}
       >
-        <Stack direction="row" alignItems="center" spacing={0.75} sx={{ minWidth: 0 }}>
-          <AccountCircleIcon sx={{ opacity: 0.85, flexShrink: 0, fontSize: 22 }} />
-          <Stack alignItems="flex-start" sx={{ minWidth: 0, textAlign: 'left' }}>
-            {displayName ? (
-              <Typography variant="body2" noWrap sx={{ fontWeight: 600, lineHeight: 1.2 }}>
-                Hi, {displayName}
+        <Stack direction="row" alignItems="center" spacing={1} sx={{ minWidth: 0 }}>
+          <AccountCircleIcon sx={{ opacity: 0.85, flexShrink: 0, fontSize: 24 }} />
+          <Stack alignItems="flex-start" spacing={0.375} sx={{ minWidth: 0, textAlign: 'left' }}>
+            {effectiveDisplayName ? (
+              <Typography variant="body2" noWrap sx={{ fontWeight: 600, lineHeight: 1.35, letterSpacing: '-0.01em' }}>
+                Hi, {effectiveDisplayName}
               </Typography>
             ) : null}
-            <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.2 }}>
-              Account and connections
+            <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.35, fontWeight: 500 }}>
+              Account
             </Typography>
           </Stack>
         </Stack>
@@ -132,211 +279,216 @@ export function EncoreAccountMenu(props: {
         onClose={close}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-        slotProps={{ paper: { sx: { maxWidth: 360, mt: 1 } } }}
-        MenuListProps={{ 'aria-labelledby': 'encore-account-menu-button' }}
+        slotProps={{
+          paper: {
+            sx: {
+              width: 400,
+              maxWidth: 'calc(100vw - 24px)',
+              mt: 1.25,
+              borderRadius: 3,
+              overflow: 'hidden',
+              border: `1px solid ${encoreHairline}`,
+              boxShadow: encoreShadowLift,
+            },
+          },
+        }}
+        MenuListProps={{ 'aria-labelledby': 'encore-account-menu-button', sx: { p: 0 } }}
       >
-        <Box sx={{ px: 2.5, py: 1.75 }}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 700, lineHeight: 1.3 }}>
-            Privacy
-          </Typography>
-          <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.75, lineHeight: 1.45 }}>
-            Your library stays in this browser. Google handles Drive backup and YouTube playlist import. Encore does not
-            host your library on its servers.
-          </Typography>
-        </Box>
-        <Divider />
-        <Typography variant="overline" color="text.secondary" sx={{ px: 2, pt: 1.25, display: 'block', fontWeight: 700 }}>
-          Google
-        </Typography>
-        <MenuItem
-          disabled
-          sx={{
-            opacity: 1,
-            whiteSpace: 'normal',
-            alignItems: 'flex-start',
-            py: 1.25,
-            pointerEvents: 'none',
-          }}
-        >
-          <Box>
-            <Typography variant="caption" color="text.secondary" display="block">
-              Drive backup
-            </Typography>
-            <Typography variant="body2" sx={{ fontWeight: 600 }}>
-              {syncLabel}
-            </Typography>
-          </Box>
-        </MenuItem>
-        {googleAccessToken ? (
-          <>
-            {driveBanner.rootFolderId ? (
-              <>
-                <Box sx={{ px: 2, py: 1 }}>
-                  <Stack spacing={0.75}>
-                    <Stack direction="row" alignItems="center" gap={1} flexWrap="wrap">
-                      <Chip
-                        size="small"
-                        color={
-                          syncState === 'error'
-                            ? 'error'
-                            : syncState === 'conflict'
-                              ? 'warning'
-                              : syncState === 'syncing'
-                                ? 'info'
-                                : 'success'
-                        }
-                        variant="filled"
-                        label={
-                          syncState === 'syncing'
-                            ? 'Syncing…'
-                            : syncState === 'error'
-                              ? 'Sync error'
-                              : syncState === 'conflict'
-                                ? 'Conflict'
-                                : 'On My Drive'
-                        }
-                      />
-                      {driveBanner.lastSuccessfulPushAt && syncState !== 'syncing' ? (
-                        <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.4 }}>
-                          Last backup {formatDriveInstant(driveBanner.lastSuccessfulPushAt)}
-                        </Typography>
-                      ) : null}
-                    </Stack>
-                    <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.45 }}>
-                      Your <strong>{ENCORE_ROOT_FOLDER}</strong> folder is in Google Drive.
-                    </Typography>
-                    {syncState === 'error' && syncMessage ? (
-                      <Typography variant="caption" color="error" sx={{ lineHeight: 1.45, display: 'block' }}>
-                        {syncMessage}
-                      </Typography>
-                    ) : null}
-                  </Stack>
-                </Box>
-                <MenuItem
-                  component="a"
-                  href={driveFolderWebUrl(driveBanner.rootFolderId)}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={close}
-                  dense
-                >
-                  Open {ENCORE_ROOT_FOLDER} in Drive
-                </MenuItem>
-                <MenuItem
-                  component="a"
-                  href={driveMyDriveWebUrl()}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={close}
-                  dense
-                >
-                  Open My Drive
-                </MenuItem>
-              </>
-            ) : (
-              <Box sx={{ px: 2, py: 1 }}>
-                <Stack spacing={0.75}>
-                  <Stack direction="row" alignItems="center" gap={1} flexWrap="wrap">
-                    <Chip
-                      size="small"
-                      color={
-                        syncState === 'error'
-                          ? 'error'
-                          : syncState === 'conflict'
-                            ? 'warning'
-                            : syncState === 'syncing'
-                              ? 'info'
-                              : 'default'
-                      }
-                      variant={syncState === 'idle' ? 'outlined' : 'filled'}
-                      label={
-                        syncState === 'syncing'
-                          ? 'Setting up…'
-                          : syncState === 'error'
-                            ? 'Sync error'
-                            : syncState === 'conflict'
-                              ? 'Conflict'
-                              : 'Not on Drive yet'
-                      }
-                    />
-                  </Stack>
-                  <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.45, display: 'block' }}>
-                    {syncState === 'syncing'
-                      ? `Encore is creating the ${ENCORE_ROOT_FOLDER} folder and running your first backup.`
-                      : syncState === 'error'
-                        ? (syncMessage ?? 'Drive backup hit an error. Try again in a moment, or sign out and back in.')
-                        : syncState === 'conflict'
-                          ? 'Resolve the merge dialog on screen, then the folder will finish setting up.'
-                          : `The ${ENCORE_ROOT_FOLDER} folder appears in My Drive after your first successful backup.`}
-                  </Typography>
-                  <Link href={driveMyDriveWebUrl()} target="_blank" rel="noreferrer" variant="body2" onClick={close}>
-                    Open My Drive
-                  </Link>
-                  <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.45, display: 'block' }}>
-                    After sync, look for a folder named <strong>{ENCORE_ROOT_FOLDER}</strong>. This link opens Google
-                    Drive in a new tab.
-                  </Typography>
-                </Stack>
-              </Box>
-            )}
-            <MenuItem
-              onClick={() => {
-                close();
-                signOut();
+        {/* Identity card */}
+        <Box sx={{ px: 3, pt: 3, pb: 2 }}>
+          {nameEditing ? (
+            <TextField
+              size="small"
+              fullWidth
+              value={nameDraft}
+              onChange={(e) => setNameDraft(e.target.value)}
+              onKeyDown={onNameKeyDown}
+              inputRef={(el: HTMLInputElement | null) => {
+                nameInputRef.current = el;
               }}
-            >
-              Disconnect Google
-            </MenuItem>
-          </>
-        ) : googleClientConfigured ? (
-          <MenuItem
-            onClick={() => {
-              close();
-              void signInWithGoogle();
-            }}
-          >
-            Sign in to Google…
-          </MenuItem>
-        ) : (
-          <MenuItem disabled>Google sign-in not configured for this site</MenuItem>
-        )}
-        <Divider sx={{ my: 0.5 }} />
-        <Typography
-          variant="overline"
-          color="text.secondary"
-          sx={{ px: 2, pt: 1, display: 'flex', alignItems: 'center', gap: 0.75, fontWeight: 700 }}
-        >
-          <SpotifyBrandIcon sx={{ fontSize: 18 }} />
-          Spotify (optional)
-        </Typography>
-        <Box sx={{ px: 2, pb: 0.75 }}>
-          <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.45, display: 'block' }}>
-            Playlist import and Spotify search on song pages. Skip if you do not use Spotify.
-          </Typography>
+              placeholder={displayName ?? 'Your name'}
+              disabled={nameSaving}
+              label="Display name"
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton size="small" aria-label="Save display name" onClick={() => void commitNameEdit()} disabled={nameSaving}>
+                      <CheckIcon fontSize="small" />
+                    </IconButton>
+                    <IconButton size="small" aria-label="Cancel" onClick={cancelNameEdit} disabled={nameSaving}>
+                      <CloseIcon fontSize="small" />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+              helperText={
+                displayName && nameDraft.trim() !== displayName
+                  ? `Leave blank to use “${displayName}” from Google.`
+                  : 'Used in the app header and on shared snapshots.'
+              }
+            />
+          ) : (
+            <Stack direction="row" alignItems="center" spacing={1.5}>
+              <AccountCircleIcon sx={{ fontSize: 40, color: 'text.disabled' }} />
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: 'block', lineHeight: 1.4, fontWeight: 600, letterSpacing: '0.06em', mb: 0.5 }}
+                >
+                  Display name
+                </Typography>
+                <Typography
+                  variant="h6"
+                  component="p"
+                  noWrap
+                  sx={{
+                    fontWeight: 700,
+                    color: effectiveDisplayName ? 'text.primary' : 'text.secondary',
+                    lineHeight: 1.35,
+                    letterSpacing: '-0.02em',
+                    m: 0,
+                  }}
+                >
+                  {effectiveDisplayName ?? 'Not set'}
+                </Typography>
+              </Box>
+              <Tooltip title="Edit display name">
+                <IconButton size="small" aria-label="Edit display name" onClick={startNameEdit}>
+                  <EditIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Stack>
+          )}
         </Box>
-        {spotifyLinked ? (
-          <MenuItem
-            onClick={() => {
-              close();
-              disconnectSpotify();
-            }}
-          >
-            Disconnect Spotify
-          </MenuItem>
-        ) : spotifyClientConfigured ? (
-          <MenuItem
-            onClick={() => {
-              void connectSpotify();
-            }}
-          >
-            Connect Spotify…
-          </MenuItem>
-        ) : (
-          <MenuItem disabled>Spotify not configured for this site</MenuItem>
-        )}
-        {spotifyConnectError ? (
-          <Box sx={{ px: 1.5, pb: 1.5, pt: 0.5 }}>
-            <Alert severity="error" onClose={clearSpotifyConnectError} sx={{ '& .MuiAlert-message': { width: 1 } }}>
+
+        <Box sx={{ borderTop: 1, borderColor: encoreHairline }} />
+
+        {/* Google card */}
+        <MenuSection
+          icon={<GoogleBrandIcon sx={{ fontSize: 18 }} />}
+          title="Google"
+          status={
+            <EncoreStatusPill
+              tone={driveStatus.tone}
+              label={driveStatus.label}
+              icon={driveStatusIcon ?? undefined}
+            />
+          }
+        >
+          {googleAccessToken ? (
+            <Stack spacing={1.5}>
+              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7, letterSpacing: '-0.01em' }}>
+                Drive backup runs in the background. Your library lives in the{' '}
+                <strong>{ENCORE_ROOT_FOLDER}</strong> folder.
+                {driveBanner.lastSuccessfulPushAt ? (
+                  <>
+                    {' '}Last backup {formatDriveInstant(driveBanner.lastSuccessfulPushAt)}.
+                  </>
+                ) : null}
+              </Typography>
+              {syncState === 'error' && syncMessage ? (
+                <Typography variant="caption" color="error" sx={{ lineHeight: 1.45 }}>
+                  {syncMessage}
+                </Typography>
+              ) : null}
+              <Stack direction="row" gap={1} flexWrap="wrap" alignItems="center" sx={{ mt: 0.5, pt: 0.25 }}>
+                {driveBanner.rootFolderId ? (
+                  <Tooltip title="Open Encore folder in Drive">
+                    <IconButton
+                      size="small"
+                      component="a"
+                      href={driveFolderWebUrl(driveBanner.rootFolderId)}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={close}
+                      aria-label="Open Encore folder in Drive"
+                    >
+                      <FolderIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                ) : null}
+                <Tooltip title={reorganizing ? 'Reorganizing…' : 'Reorganize performance videos'}>
+                  <span>
+                    <IconButton
+                      size="small"
+                      onClick={() => void handleReorganize()}
+                      disabled={reorganizing}
+                      aria-label="Reorganize performance videos"
+                    >
+                      {reorganizing ? <RefreshIcon className="spin" fontSize="small" /> : <AutoFixHighIcon fontSize="small" />}
+                    </IconButton>
+                  </span>
+                </Tooltip>
+                <Box sx={{ flex: 1 }} />
+                <Button
+                  size="small"
+                  variant="text"
+                  color="inherit"
+                  startIcon={<LogoutIcon fontSize="small" />}
+                  onClick={() => {
+                    close();
+                    signOut();
+                  }}
+                  sx={{ textTransform: 'none' }}
+                >
+                  Disconnect
+                </Button>
+              </Stack>
+              {reorganizeMsg ? (
+                <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.6, display: 'block', pt: 0.25 }}>
+                  {reorganizeMsg}
+                </Typography>
+              ) : null}
+            </Stack>
+          ) : googleClientConfigured ? (
+            <Stack spacing={1.5}>
+              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7, letterSpacing: '-0.01em' }}>
+                Connect Google to back up your library to Drive and share read-only snapshots.
+              </Typography>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => {
+                  close();
+                  void signInWithGoogle();
+                }}
+                sx={{ alignSelf: 'flex-start', textTransform: 'none' }}
+              >
+                Sign in with Google
+              </Button>
+            </Stack>
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              Google sign-in is not configured for this site.
+            </Typography>
+          )}
+        </MenuSection>
+
+        <Box sx={{ borderTop: 1, borderColor: encoreHairline }} />
+
+        {/* Spotify card */}
+        <MenuSection
+          icon={<SpotifyBrandIcon sx={{ fontSize: 18 }} />}
+          title="Spotify"
+          status={<EncoreSpotifyConnectionChip size="compact" onMenuAction={close} />}
+        >
+          <Stack spacing={1.5}>
+            <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7, letterSpacing: '-0.01em' }}>
+              Powers playlist import and song search. Skip if you don’t use Spotify.
+            </Typography>
+            {!spotifyClientConfigured ? (
+              <Typography variant="caption" color="text.secondary">
+                Spotify is not configured for this site.
+              </Typography>
+            ) : null}
+          </Stack>
+          {spotifyConnectError ? (
+            <Alert
+              severity="error"
+              onClose={clearSpotifyConnectError}
+              sx={{ mt: 1.5, '& .MuiAlert-message': { width: 1 } }}
+            >
               <Typography variant="body2" component="span" display="block">
                 {spotifyConnectError}
               </Typography>
@@ -346,8 +498,31 @@ export function EncoreAccountMenu(props: {
                 </Link>
               ) : null}
             </Alert>
-          </Box>
-        ) : null}
+          ) : null}
+        </MenuSection>
+
+        <Box sx={{ borderTop: 1, borderColor: encoreHairline }} />
+
+        {/* Privacy footer (one-liner with a link) */}
+        <Box sx={{ px: 3, py: 2.25, bgcolor: (t) => alpha(t.palette.primary.main, 0.03) }}>
+          <Stack direction="row" alignItems="flex-start" spacing={1.25}>
+            <ShieldOutlinedIcon sx={{ fontSize: 18, color: 'text.secondary', mt: 0.125 }} aria-hidden />
+            <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.65, letterSpacing: '-0.008em' }}>
+              Your library stays in this browser; Encore doesn’t host it.{' '}
+              <Link
+                href={PRIVACY_POLICY_URL}
+                target="_blank"
+                rel="noreferrer"
+                underline="hover"
+                sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.25, fontWeight: 600 }}
+              >
+                Privacy policy
+                <OpenInNewIcon sx={{ fontSize: 12 }} />
+              </Link>
+              .
+            </Typography>
+          </Stack>
+        </Box>
       </Menu>
     </>
   );

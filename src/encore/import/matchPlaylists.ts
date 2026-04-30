@@ -211,7 +211,6 @@ export function encoreSongFromImportRow(row: PlaylistImportRow): EncoreSong | nu
       artist: row.spotify.artist,
       spotifyTrackId: row.spotify.trackId,
       albumArtUrl: row.spotify.albumArtUrl,
-      spotifyGenres: row.spotify.spotifyGenres,
       youtubeVideoId: row.youtubeVideoId ?? undefined,
       journalMarkdown: '',
       createdAt: now,

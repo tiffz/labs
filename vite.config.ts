@@ -1,6 +1,6 @@
 /// <reference types="vitest" />
 import { build as esbuildBuild } from 'esbuild';
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import type { Connect, Plugin, PreviewServer, ViteDevServer } from 'vite';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import react from '@vitejs/plugin-react';
@@ -71,6 +71,80 @@ async function rebuildLabsCookieConsentBundle(): Promise<void> {
     outfile: LABS_COOKIE_CONSENT_OUTFILE,
     legalComments: 'inline',
   });
+}
+
+/**
+ * Local dev only: same-origin proxy for Drive `files.get` alt=media reads used by guest snapshots.
+ * Browser calls to googleapis with HTTP-referrer–restricted keys often fail CORS; the dev server
+ * forwards the request and sets Referer from the incoming Host (or `VITE_GOOGLE_DRIVE_DEV_PROXY_REFERER`).
+ */
+function encoreDrivePublicDevProxyPlugin(): Plugin {
+  return {
+    name: 'encore-drive-public-dev-proxy',
+    configureServer(server: ViteDevServer) {
+      if (IS_TEST) return;
+      server.middlewares.use(async (req, res, next) => {
+        if (req.method !== 'GET' || !req.url?.startsWith('/__encore/drive-public/')) {
+          next();
+          return;
+        }
+        const prefix = '/__encore/drive-public/';
+        const q = req.url.indexOf('?');
+        const pathPart = q === -1 ? req.url.slice(prefix.length) : req.url.slice(prefix.length, q);
+        let fileId: string;
+        try {
+          fileId = decodeURIComponent(pathPart);
+        } catch {
+          res.statusCode = 400;
+          res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+          res.end('Bad file id');
+          return;
+        }
+        if (!/^[A-Za-z0-9_-]+$/.test(fileId)) {
+          res.statusCode = 400;
+          res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+          res.end('Bad file id');
+          return;
+        }
+        // `root` is `src/` — Vite loads `.env*` from `envDir` (defaults to `root`), not the repo root.
+        const env = loadEnv(server.config.mode, server.config.envDir, '');
+        const apiKey = (env.VITE_GOOGLE_API_KEY as string | undefined)?.trim();
+        if (!apiKey) {
+          res.statusCode = 503;
+          res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+          res.end('VITE_GOOGLE_API_KEY is not set');
+          return;
+        }
+        const port = server.config.server.port ?? 5173;
+        const host =
+          (typeof req.headers['x-forwarded-host'] === 'string'
+            ? req.headers['x-forwarded-host'].split(',')[0]?.trim()
+            : undefined) ||
+          req.headers.host ||
+          `127.0.0.1:${port}`;
+        const referer =
+          (env.VITE_GOOGLE_DRIVE_DEV_PROXY_REFERER as string | undefined)?.trim() ||
+          `http://${host}/encore/`;
+        const googleUrl = `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media&supportsAllDrives=true&key=${encodeURIComponent(apiKey)}`;
+        try {
+          const r = await fetch(googleUrl, {
+            cache: 'no-store',
+            headers: { Referer: referer },
+          });
+          const buf = Buffer.from(await r.arrayBuffer());
+          res.statusCode = r.status;
+          const ct = r.headers.get('content-type');
+          if (ct) res.setHeader('Content-Type', ct);
+          res.setHeader('Cache-Control', 'no-store');
+          res.end(buf);
+        } catch {
+          res.statusCode = 502;
+          res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+          res.end('Drive proxy fetch failed');
+        }
+      });
+    },
+  };
 }
 
 /** Keeps `public/scripts/labs-cookie-consent.js` in sync with TS sources (edit copy in `labsCookieConsentPolicy.ts` only). */
@@ -201,6 +275,7 @@ export default defineConfig({
     middlewareMode: false,
   },
   plugins: [
+    encoreDrivePublicDevProxyPlugin(),
     labsCookieConsentVitePlugin(),
     {
       name: 'canonical-trailing-slash-redirect',

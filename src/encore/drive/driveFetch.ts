@@ -28,6 +28,12 @@ export function summarizeDriveApiErrorBody(body: string, maxLen = 320): string {
   return t.length > maxLen ? `${t.slice(0, maxLen)}…` : t;
 }
 
+function isTransientDriveHttpStatus(status: number): boolean {
+  return status === 408 || status === 429 || status === 500 || status === 502 || status === 503 || status === 504;
+}
+
+const TRANSIENT_RETRY_DELAYS_MS = [0, 500, 1500] as const;
+
 export function formatDriveRequestFailure(method: string, path: string, status: number, body: string): string {
   const detail = summarizeDriveApiErrorBody(body);
   const head = `Drive ${method} ${path} (${status})`;
@@ -275,7 +281,8 @@ export async function driveCreateAnyoneReaderPermission(
   accessToken: string,
   fileId: string
 ): Promise<void> {
-  const res = await fetch(`${DRIVE_BASE}/files/${encodeURIComponent(fileId)}/permissions`, {
+  const url = `${DRIVE_BASE}/files/${encodeURIComponent(fileId)}/permissions`;
+  const init: RequestInit = {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -285,26 +292,176 @@ export async function driveCreateAnyoneReaderPermission(
       role: 'reader',
       type: 'anyone',
     }),
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new DriveHttpError(formatDriveRequestFailure('POST', 'files/permissions', res.status, text), res.status, text);
+  };
+  let lastStatus = 0;
+  let lastText = '';
+  for (let attempt = 0; attempt < TRANSIENT_RETRY_DELAYS_MS.length; attempt += 1) {
+    if (TRANSIENT_RETRY_DELAYS_MS[attempt] > 0) {
+      await new Promise((r) => setTimeout(r, TRANSIENT_RETRY_DELAYS_MS[attempt]));
+    }
+    const res = await fetch(url, init);
+    if (res.ok) return;
+    lastStatus = res.status;
+    lastText = await res.text();
+    if (!isTransientDriveHttpStatus(lastStatus)) break;
   }
+  throw new DriveHttpError(formatDriveRequestFailure('POST', 'files/permissions', lastStatus, lastText), lastStatus, lastText);
 }
 
 export async function driveGetFileMetadata(
   accessToken: string,
   fileId: string
-): Promise<{ id: string; modifiedTime?: string; etag?: string; mimeType?: string; name?: string }> {
+): Promise<{
+  id: string;
+  modifiedTime?: string;
+  etag?: string;
+  mimeType?: string;
+  name?: string;
+  parents?: string[];
+  /** Populated for `application/vnd.google-apps.shortcut` files. */
+  shortcutDetails?: { targetId?: string; targetMimeType?: string };
+}> {
   const path = `/files/${encodeURIComponent(fileId)}`;
-  const qs = `?${new URLSearchParams({ fields: 'id,modifiedTime,mimeType,name' }).toString()}`;
-  const res = await fetch(`${DRIVE_BASE}${path}${qs}`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-  const text = await res.text();
-  if (!res.ok) {
-    throw new DriveHttpError(formatDriveRequestFailure('GET', path, res.status, text), res.status, text);
+  const qs = `?${new URLSearchParams({
+    fields: 'id,modifiedTime,mimeType,name,parents,shortcutDetails',
+    supportsAllDrives: 'true',
+  }).toString()}`;
+  let lastStatus = 0;
+  let lastText = '';
+  let res: Response | null = null;
+  for (let attempt = 0; attempt < TRANSIENT_RETRY_DELAYS_MS.length; attempt += 1) {
+    if (TRANSIENT_RETRY_DELAYS_MS[attempt] > 0) {
+      await new Promise((r) => setTimeout(r, TRANSIENT_RETRY_DELAYS_MS[attempt]));
+    }
+    res = await fetch(`${DRIVE_BASE}${path}${qs}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (res.ok) break;
+    lastStatus = res.status;
+    lastText = await res.text();
+    if (!isTransientDriveHttpStatus(lastStatus)) {
+      throw new DriveHttpError(formatDriveRequestFailure('GET', path, lastStatus, lastText), lastStatus, lastText);
+    }
   }
-  const data = JSON.parse(text) as { id: string; modifiedTime?: string; mimeType?: string; name?: string };
+  if (!res?.ok) {
+    throw new DriveHttpError(formatDriveRequestFailure('GET', path, lastStatus, lastText), lastStatus, lastText);
+  }
+  const text = await res.text();
+  const data = JSON.parse(text) as {
+    id: string;
+    modifiedTime?: string;
+    mimeType?: string;
+    name?: string;
+    parents?: string[];
+    shortcutDetails?: { targetId?: string; targetMimeType?: string };
+  };
   return { ...data, etag: etagFromDriveResponse(res) };
+}
+
+const SHORTCUT_MIME = 'application/vnd.google-apps.shortcut';
+
+/**
+ * OAuth-backed thumbnail URL for a Drive file (or shortcut → target). Returns null when
+ * Drive does not expose `thumbnailLink`, on permission errors, or after transient retries fail.
+ */
+export async function driveResolveThumbnailLink(accessToken: string, fileId: string, depth = 0): Promise<string | null> {
+  if (depth > 4) return null;
+  const path = `/files/${encodeURIComponent(fileId)}`;
+  const qs = `?${new URLSearchParams({
+    fields: 'mimeType,thumbnailLink,shortcutDetails',
+    supportsAllDrives: 'true',
+  }).toString()}`;
+  let lastStatus = 0;
+  let res: Response | null = null;
+  for (let attempt = 0; attempt < TRANSIENT_RETRY_DELAYS_MS.length; attempt += 1) {
+    if (TRANSIENT_RETRY_DELAYS_MS[attempt] > 0) {
+      await new Promise((r) => setTimeout(r, TRANSIENT_RETRY_DELAYS_MS[attempt]));
+    }
+    res = await fetch(`${DRIVE_BASE}${path}${qs}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (res.ok) break;
+    lastStatus = res.status;
+    await res.text();
+    if (!isTransientDriveHttpStatus(lastStatus)) {
+      return null;
+    }
+  }
+  if (!res?.ok) return null;
+  const text = await res.text();
+  try {
+    const data = JSON.parse(text) as {
+      mimeType?: string;
+      thumbnailLink?: string;
+      shortcutDetails?: { targetId?: string };
+    };
+    if (data.mimeType === SHORTCUT_MIME && data.shortcutDetails?.targetId?.trim()) {
+      return driveResolveThumbnailLink(accessToken, data.shortcutDetails.targetId.trim(), depth + 1);
+    }
+    return data.thumbnailLink?.trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+/** Rename a file (does not move parents). */
+export async function driveRenameFile(
+  accessToken: string,
+  fileId: string,
+  newName: string,
+): Promise<void> {
+  const res = await fetch(
+    `${DRIVE_BASE}/files/${encodeURIComponent(fileId)}?fields=id&supportsAllDrives=true`,
+    {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name: newName }),
+    },
+  );
+  if (!res.ok) {
+    const text = await res.text();
+    throw new DriveHttpError(formatDriveRequestFailure('PATCH', 'files (rename)', res.status, text), res.status, text);
+  }
+}
+
+/**
+ * Returns true when the file has at least one `type:'anyone'` reader permission.
+ * Caller must hold a token with `drive.metadata.readonly` (or `drive` / `drive.file` if owned/shared with app).
+ */
+export async function driveFileHasAnyoneReader(
+  accessToken: string,
+  fileId: string,
+): Promise<boolean> {
+  const path = `/files/${encodeURIComponent(fileId)}/permissions`;
+  const qs = `?${new URLSearchParams({
+    fields: 'permissions(id,type,role)',
+    supportsAllDrives: 'true',
+  }).toString()}`;
+  let lastStatus = 0;
+  let lastText = '';
+  for (let attempt = 0; attempt < TRANSIENT_RETRY_DELAYS_MS.length; attempt += 1) {
+    if (TRANSIENT_RETRY_DELAYS_MS[attempt] > 0) {
+      await new Promise((r) => setTimeout(r, TRANSIENT_RETRY_DELAYS_MS[attempt]));
+    }
+    const res = await fetch(`${DRIVE_BASE}${path}${qs}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const text = await res.text();
+    if (res.ok) {
+      const data = JSON.parse(text) as { permissions?: Array<{ type?: string; role?: string }> };
+      return (data.permissions ?? []).some(
+        (p) => p.type === 'anyone' && (p.role === 'reader' || p.role === 'writer' || p.role === 'commenter'),
+      );
+    }
+    if (res.status === 404 || res.status === 403) return false;
+    lastStatus = res.status;
+    lastText = text;
+    if (!isTransientDriveHttpStatus(res.status)) {
+      throw new DriveHttpError(formatDriveRequestFailure('GET', path, res.status, text), res.status, text);
+    }
+  }
+  throw new DriveHttpError(formatDriveRequestFailure('GET', path, lastStatus, lastText), lastStatus, lastText);
 }

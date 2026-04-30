@@ -35,6 +35,13 @@ describe('performanceVideoThumbnailUrl', () => {
     expect(u).toBe('https://drive.google.com/thumbnail?id=abcXYZ&sz=w480');
   });
 
+  it('prefers target Drive id over shortcut for thumbnail', () => {
+    const u = performanceVideoThumbnailUrl(
+      perf({ videoShortcutDriveFileId: 'shortcut1', videoTargetDriveFileId: 'target99' }),
+    );
+    expect(u).toBe('https://drive.google.com/thumbnail?id=target99&sz=w480');
+  });
+
   it('prefers YouTube thumb when external is YouTube even if Drive id exists', () => {
     const u = performanceVideoThumbnailUrl(
       perf({
@@ -54,6 +61,24 @@ describe('performanceVideoThumbnailUrl', () => {
       }),
     );
     expect(u).toBe('https://drive.google.com/thumbnail?id=driveFallback&sz=w480');
+  });
+
+  it('returns Drive thumb when only external URL is a raw Drive file id', () => {
+    const u = performanceVideoThumbnailUrl(
+      perf({ externalVideoUrl: '1l5KrBq55l4JKqcT16oCwoU5S_Evxt5HO' }),
+    );
+    expect(u).toBe(
+      'https://drive.google.com/thumbnail?id=1l5KrBq55l4JKqcT16oCwoU5S_Evxt5HO&sz=w480',
+    );
+  });
+
+  it('returns Drive thumb when external URL is a drive.google.com file link without target fields', () => {
+    const u = performanceVideoThumbnailUrl(
+      perf({
+        externalVideoUrl: 'https://drive.google.com/file/d/1ABCd_xyz123FOOBAR/view?usp=drive_link',
+      }),
+    );
+    expect(u).toBe('https://drive.google.com/thumbnail?id=1ABCd_xyz123FOOBAR&sz=w480');
   });
 
   it('returns null when no video fields', () => {

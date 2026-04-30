@@ -10,6 +10,8 @@ export interface SyncMetaRow {
   recordingsFolderId?: string;
   repertoireFileId?: string;
   snapshotFileId?: string;
+  /** ISO timestamp — updated when owner publishes `public_snapshot.json` (guest link content). */
+  lastPublishedSnapshotAt?: string;
   lastRemoteModified?: string;
   lastRemoteEtag?: string;
   /** Max song/performance `updatedAt` last successfully pushed */
@@ -23,6 +25,12 @@ export interface RepertoireExtrasRow {
   id: 'default';
   venueCatalog: string[];
   milestoneTemplate: EncoreMilestoneDefinition[];
+  /**
+   * Optional owner display name override. Defaults to Google profile name when present.
+   * Persists locally and syncs through `repertoire_data.json`; mirrored into the public snapshot
+   * on publish so guests see "{name}'s repertoire".
+   */
+  ownerDisplayName?: string;
   updatedAt: string;
 }
 

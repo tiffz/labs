@@ -188,20 +188,6 @@ export function findExistingSongForImport(existing: EncoreSong[], incoming: Enco
   return bestScore >= FUZZY_THRESHOLD ? best : null;
 }
 
-function mergeSpotifyGenreLists(a?: string[], b?: string[]): string[] | undefined {
-  const out = new Set<string>();
-  for (const x of a ?? []) {
-    const t = x.trim();
-    if (t) out.add(t);
-  }
-  for (const x of b ?? []) {
-    const t = x.trim();
-    if (t) out.add(t);
-  }
-  if (out.size === 0) return undefined;
-  return [...out].sort((p, q) => p.localeCompare(q));
-}
-
 /** Merge playlist-import fields into an existing song; preserves journal, attachments, and user performance fields unless empty strategy says otherwise. */
 export function mergeSongWithImport(existing: EncoreSong, incoming: EncoreSong): EncoreSong {
   const now = new Date().toISOString();
@@ -212,7 +198,6 @@ export function mergeSongWithImport(existing: EncoreSong, incoming: EncoreSong):
     spotifyTrackId: incoming.spotifyTrackId ?? existing.spotifyTrackId,
     youtubeVideoId: incoming.youtubeVideoId ?? existing.youtubeVideoId,
     albumArtUrl: incoming.albumArtUrl ?? existing.albumArtUrl,
-    spotifyGenres: mergeSpotifyGenreLists(existing.spotifyGenres, incoming.spotifyGenres),
     attachments: existing.attachments,
     recordingDriveFileIds: existing.recordingDriveFileIds,
     updatedAt: now,

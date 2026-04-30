@@ -1,8 +1,12 @@
 import VideocamIcon from '@mui/icons-material/Videocam';
 import Box from '@mui/material/Box';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactElement } from 'react';
+import { useDriveFileThumbnailSrc } from '../drive/useDriveFileThumbnailSrc';
 import type { EncorePerformance } from '../types';
-import { performanceVideoThumbnailUrl } from '../utils/performanceVideoThumbnailUrl';
+import {
+  performanceDriveVideoFileIdForThumbnail,
+  performanceVideoThumbnailUrl,
+} from '../utils/performanceVideoThumbnailUrl';
 
 export type PerformanceVideoThumbProps = {
   performance: EncorePerformance;
@@ -12,18 +16,30 @@ export type PerformanceVideoThumbProps = {
   fluid?: boolean;
   /** Optional accessible name for the image. */
   alt?: string;
+  /**
+   * When set, Drive-backed videos resolve `thumbnailLink` via OAuth (cached), then fall back to the
+   * unauthenticated `drive.google.com/thumbnail` URL if needed.
+   */
+  googleAccessToken?: string | null;
 };
 
 /** 16:9 performance video thumbnail or a neutral placeholder when none / load error. */
-export function PerformanceVideoThumb(props: PerformanceVideoThumbProps) {
-  const { performance, width = 120, fluid = false, alt = '' } = props;
+export function PerformanceVideoThumb(props: PerformanceVideoThumbProps): ReactElement {
+  const { performance, width = 120, fluid = false, alt = '', googleAccessToken = null } = props;
   const height = Math.round((width * 9) / 16);
-  const src = performanceVideoThumbnailUrl(performance);
+  const driveId = performanceDriveVideoFileIdForThumbnail(performance);
+  const fallback = performanceVideoThumbnailUrl(performance);
+  const { src, swallowErrorTryFallback } = useDriveFileThumbnailSrc(driveId, googleAccessToken, fallback);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     setFailed(false);
   }, [performance.id, performance.externalVideoUrl, performance.videoShortcutDriveFileId, performance.videoTargetDriveFileId]);
+
+  const onImgError = () => {
+    if (swallowErrorTryFallback()) return;
+    setFailed(true);
+  };
 
   if (fluid) {
     const showPlaceholder = !src || failed;
@@ -31,20 +47,30 @@ export function PerformanceVideoThumb(props: PerformanceVideoThumbProps) {
       <Box
         sx={{
           position: 'relative',
-          width: 1,
+          width: '100%',
+          minWidth: 0,
+          alignSelf: 'stretch',
           aspectRatio: '16 / 9',
           borderRadius: 1,
           overflow: 'hidden',
           bgcolor: showPlaceholder ? 'action.hover' : 'common.black',
           border: 1,
           borderColor: 'divider',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
         }}
       >
         {showPlaceholder ? (
-          <VideocamIcon color="action" sx={{ fontSize: 28 }} aria-hidden />
+          <VideocamIcon
+            sx={{
+              position: 'absolute',
+              left: '50%',
+              top: '50%',
+              transform: 'translate(-50%, -50%)',
+              fontSize: 32,
+              color: 'action.active',
+              opacity: 0.85,
+            }}
+            aria-hidden
+          />
         ) : (
           <Box
             component="img"
@@ -52,12 +78,12 @@ export function PerformanceVideoThumb(props: PerformanceVideoThumbProps) {
             alt={alt}
             loading="lazy"
             decoding="async"
-            onError={() => setFailed(true)}
+            onError={onImgError}
             sx={{
               position: 'absolute',
               inset: 0,
-              width: 1,
-              height: 1,
+              width: '100%',
+              height: '100%',
               objectFit: 'cover',
               display: 'block',
             }}
@@ -74,17 +100,25 @@ export function PerformanceVideoThumb(props: PerformanceVideoThumbProps) {
           width,
           height,
           borderRadius: 1,
+          position: 'relative',
           bgcolor: 'action.hover',
           border: 1,
           borderColor: 'divider',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
           flexShrink: 0,
         }}
         aria-hidden
       >
-        <VideocamIcon color="action" sx={{ fontSize: Math.min(28, height * 0.45) }} />
+        <VideocamIcon
+          sx={{
+            position: 'absolute',
+            left: '50%',
+            top: '50%',
+            transform: 'translate(-50%, -50%)',
+            fontSize: Math.min(32, height * 0.5),
+            color: 'action.active',
+            opacity: 0.85,
+          }}
+        />
       </Box>
     );
   }
@@ -96,7 +130,7 @@ export function PerformanceVideoThumb(props: PerformanceVideoThumbProps) {
       alt={alt}
       loading="lazy"
       decoding="async"
-      onError={() => setFailed(true)}
+      onError={onImgError}
       sx={{
         width,
         height,

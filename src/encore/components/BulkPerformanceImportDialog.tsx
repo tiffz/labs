@@ -1,5 +1,5 @@
 /* eslint-disable react/prop-types -- MRT Cell / row props are typed via MRT_ColumnDef and TanStack Row, not PropTypes */
-import CloseIcon from '@mui/icons-material/Close';
+import HighlightOffOutlinedIcon from '@mui/icons-material/HighlightOffOutlined';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import LibraryMusicOutlinedIcon from '@mui/icons-material/LibraryMusicOutlined';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
@@ -29,11 +29,20 @@ import { alpha, useTheme } from '@mui/material/styles';
 import { MaterialReactTable, useMaterialReactTable, type MRT_ColumnDef } from 'material-react-table';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { useEncore } from '../context/EncoreContext';
+import { ensureEncoreDriveLayout } from '../drive/bootstrapFolders';
+import { driveUploadFileResumable } from '../drive/driveFetch';
 import { driveCollectVideoFilesRecursive } from '../drive/driveFolderWalk';
 import { driveFolderWebUrl } from '../drive/driveWebUrls';
 import { openEncoreGoogleDrivePicker } from '../drive/googlePicker';
 import { parseDriveFileIdFromUrlOrId, parseDriveFolderIdFromUrlOrId } from '../drive/parseDriveFileUrl';
+import { DragDropFileUpload } from '../../shared/components/DragDropFileUpload';
 import { bestVenueFromCatalog } from '../import/venueCatalogMatch';
+import {
+  bulkImportEffectiveSkip,
+  bulkPerfDuplicateIdsInBatch,
+  bulkPerfDuplicateKind,
+  bulkPerfLibraryDuplicateIds,
+} from '../import/bulkImportDuplicateDetection';
 import { findEncorePerformanceLinkingDriveFile } from '../import/bulkPerformanceDriveLinks';
 import { performanceCalendarDateForBulkRow } from '../import/bulkPerformanceImportGuesses';
 import {
@@ -54,6 +63,8 @@ import type { EncorePerformance, EncoreSong } from '../types';
 import { encoreMrtBulkImportReviewOptions } from './encoreMrtTableDefaults';
 import { BulkVideoSongMatchDialog } from './BulkVideoSongMatchDialog';
 import { LibrarySongPickerDialog } from './LibrarySongPickerDialog';
+import { useDriveFileThumbnailSrc } from '../drive/useDriveFileThumbnailSrc';
+import { driveFileThumbnailWebUrl } from '../utils/performanceVideoThumbnailUrl';
 
 type Step = 'folder' | 'review';
 
@@ -89,13 +100,42 @@ export interface BulkPerfRow {
    * instead of creating another performance for the same video.
    */
   linkedPerformanceId?: string;
-}
-
-function driveVideoThumbUrl(fileId: string): string {
-  return `https://drive.google.com/thumbnail?id=${encodeURIComponent(fileId)}&sz=w320`;
+  /**
+   * Pending direct upload (drag-and-drop). Save uploads to Drive Performances folder first,
+   * then creates the EncorePerformance with the resulting Drive file id.
+   */
+  pendingUploadFile?: File;
 }
 
 const libraryPickerNeverOtherLinked: (song: EncoreSong) => boolean = () => false;
+
+function BulkImportDriveThumbCell({
+  driveFileId,
+  googleAccessToken,
+}: {
+  driveFileId: string;
+  googleAccessToken: string | null;
+}): ReactElement {
+  const fallback = useMemo(() => driveFileThumbnailWebUrl(driveFileId, 320), [driveFileId]);
+  const { src, swallowErrorTryFallback } = useDriveFileThumbnailSrc(driveFileId, googleAccessToken, fallback);
+  const [dead, setDead] = useState(false);
+  if (dead || !src) {
+    return <Box sx={{ width: '100%', height: '100%', minHeight: 48, bgcolor: 'action.hover' }} aria-hidden />;
+  }
+  return (
+    <Box
+      component="img"
+      src={src}
+      alt=""
+      sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+      loading="lazy"
+      decoding="async"
+      onError={() => {
+        if (!swallowErrorTryFallback()) setDead(true);
+      }}
+    />
+  );
+}
 
 function effectiveSong(r: BulkPerfRow, songs: EncoreSong[]) {
   if (r.newSongFromSpotify) {
@@ -180,6 +220,7 @@ export function BulkPerformanceImportDialog(props: {
   const [msg, setMsg] = useState<string | null>(null);
   const [scanNote, setScanNote] = useState<string | null>(null);
   const [rows, setRows] = useState<BulkPerfRow[]>([]);
+  const [performancesFolderId, setPerformancesFolderId] = useState<string | null>(null);
   const [libraryPickerRowId, setLibraryPickerRowId] = useState<string | null>(null);
   const [libraryPickQuery, setLibraryPickQuery] = useState('');
   const [songMatchRowId, setSongMatchRowId] = useState<string | null>(null);
@@ -225,6 +266,66 @@ export function BulkPerformanceImportDialog(props: {
     if (libraryPickerRowId) setLibraryPickQuery('');
   }, [libraryPickerRowId]);
 
+  /* Lazy-resolve the Drive Performances folder id so direct uploads have a target. */
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!open || !googleAccessToken || performancesFolderId) return;
+      try {
+        const layout = await ensureEncoreDriveLayout(googleAccessToken);
+        if (!cancelled) setPerformancesFolderId(layout.performancesFolderId);
+      } catch {
+        /* non-fatal — surfaces as an error on save if the user attempts a direct upload. */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, googleAccessToken, performancesFolderId]);
+
+  const buildLocalUploadRow = useCallback(
+    (file: File): BulkPerfRow => {
+      const matchHaystack = buildBulkVideoMatchText({ fileName: file.name });
+      const best = pickBestLibrarySongForBulkVideo(songs, { fileName: file.name });
+      const catalogVenue = bestVenueFromCatalog(repertoireExtras.venueCatalog, { fileName: file.name });
+      const dateGuess = performanceCalendarDateForBulkRow({ fileName: file.name, matchHaystack });
+      return {
+        id: crypto.randomUUID(),
+        driveFileId: '',
+        name: file.name,
+        modifiedTime: undefined,
+        guessedSongId: best?.id ?? '',
+        venue: catalogVenue || guessVenueFromName(matchHaystack),
+        date: dateGuess,
+        skipRow: undefined,
+        pendingUploadFile: file,
+      };
+    },
+    [songs, repertoireExtras.venueCatalog],
+  );
+
+  const handleLocalFiles = useCallback(
+    (files: File[]) => {
+      if (files.length === 0) return;
+      const newRows = files.map(buildLocalUploadRow);
+      setRows((prev) => {
+        /* Dedupe by name + size against existing pending uploads (avoid double-add). */
+        const seen = new Set(
+          prev
+            .filter((r) => r.pendingUploadFile)
+            .map((r) => `${r.name}::${r.pendingUploadFile?.size ?? 0}::${r.pendingUploadFile?.lastModified ?? 0}`),
+        );
+        const filtered = newRows.filter(
+          (r) => !seen.has(`${r.name}::${r.pendingUploadFile?.size ?? 0}::${r.pendingUploadFile?.lastModified ?? 0}`),
+        );
+        return [...prev, ...filtered];
+      });
+      setMsg(null);
+      setStep('review');
+    },
+    [buildLocalUploadRow],
+  );
+
   const venueOptions = useMemo(() => {
     const s = new Set<string>();
     for (const v of repertoireExtras.venueCatalog) {
@@ -260,19 +361,39 @@ export function BulkPerformanceImportDialog(props: {
     });
   }, [songMatchRowId, rows]);
 
-  const importActiveCount = useMemo(() => rows.filter((r) => !r.skipRow).length, [rows]);
+  const perfBatchDupIds = useMemo(() => bulkPerfDuplicateIdsInBatch(rows), [rows]);
+  const perfLibraryDupIds = useMemo(() => bulkPerfLibraryDuplicateIds(rows, performances), [rows, performances]);
+
+  const perfRowExcluded = useCallback(
+    (r: BulkPerfRow) => {
+      const isDup = perfBatchDupIds.has(r.id) || perfLibraryDupIds.has(r.id);
+      return bulkImportEffectiveSkip(r.skipRow, isDup);
+    },
+    [perfBatchDupIds, perfLibraryDupIds],
+  );
+
+  const perfDuplicateSkippedCount = useMemo(
+    () =>
+      rows.filter(
+        (r) =>
+          perfRowExcluded(r) && (perfBatchDupIds.has(r.id) || perfLibraryDupIds.has(r.id)),
+      ).length,
+    [rows, perfRowExcluded, perfBatchDupIds, perfLibraryDupIds],
+  );
+
+  const importActiveCount = useMemo(() => rows.filter((r) => !perfRowExcluded(r)).length, [rows, perfRowExcluded]);
   const importBlockedReason = useMemo(() => {
-    const active = rows.filter((r) => !r.skipRow);
+    const active = rows.filter((r) => !perfRowExcluded(r));
     if (!active.length) return null;
     const unresolved = active.filter((r) => !rowHasSongResolution(r, songs, performances));
     if (unresolved.length)
       return `${unresolved.length} included row(s) need a library song, Spotify match, or manual title and artist.`;
     return null;
-  }, [rows, songs, performances]);
+  }, [rows, songs, performances, perfRowExcluded]);
 
   const linkedIncludedCount = useMemo(
-    () => rows.filter((r) => !r.skipRow && r.linkedPerformanceId).length,
-    [rows],
+    () => rows.filter((r) => !perfRowExcluded(r) && r.linkedPerformanceId).length,
+    [rows, perfRowExcluded],
   );
 
   const pairedCount = useMemo(
@@ -427,7 +548,7 @@ export function BulkPerformanceImportDialog(props: {
       const now = new Date().toISOString();
       const perf: EncorePerformance[] = [];
       for (const r of rows) {
-        if (r.skipRow) continue;
+        if (perfRowExcluded(r)) continue;
         let songId = r.guessedSongId;
         if (r.newSongFromSpotify) {
           const ns = r.newSongFromSpotify;
@@ -454,6 +575,25 @@ export function BulkPerformanceImportDialog(props: {
         }
         if (!songId) continue;
 
+        /* Direct-upload row: push the bytes to the Drive Performances folder
+           first; the resulting Drive id then plays the same role as a scanned
+           video for the rest of the save logic. */
+        let videoFileId = r.driveFileId;
+        if (r.pendingUploadFile) {
+          if (!googleAccessToken) {
+            throw new Error('Sign in to Google to upload videos.');
+          }
+          if (!performancesFolderId) {
+            throw new Error('Drive Performances folder is not ready yet — try again in a moment.');
+          }
+          const created = await driveUploadFileResumable(
+            googleAccessToken,
+            r.pendingUploadFile,
+            [performancesFolderId],
+          );
+          videoFileId = created.id;
+        }
+
         if (r.linkedPerformanceId) {
           const prev = performances.find((p) => p.id === r.linkedPerformanceId);
           if (!prev) continue;
@@ -467,8 +607,7 @@ export function BulkPerformanceImportDialog(props: {
             date: r.date,
             venueTag: r.venue.trim() || 'Venue',
             notes: nextNotes,
-            videoTargetDriveFileId: r.driveFileId || prev.videoTargetDriveFileId,
-            accompanimentKind: prev.accompanimentKind ?? 'unknown',
+            videoTargetDriveFileId: videoFileId || prev.videoTargetDriveFileId,
             updatedAt: now,
           });
           continue;
@@ -479,10 +618,9 @@ export function BulkPerformanceImportDialog(props: {
           songId,
           date: r.date,
           venueTag: r.venue.trim() || 'Venue',
-          videoTargetDriveFileId: r.driveFileId,
+          videoTargetDriveFileId: videoFileId || undefined,
           externalVideoUrl: undefined,
           notes: `Imported: ${r.name}`,
-          accompanimentKind: 'unknown',
           createdAt: now,
           updatedAt: now,
         });
@@ -494,7 +632,7 @@ export function BulkPerformanceImportDialog(props: {
     } finally {
       setBusy(false);
     }
-  }, [rows, performances, onSavePerformances, onSaveSong, handleClose]);
+  }, [rows, performances, onSavePerformances, onSaveSong, handleClose, googleAccessToken, performancesFolderId, perfRowExcluded]);
 
   const columns = useMemo<MRT_ColumnDef<BulkPerfRow>[]>(
     () => [
@@ -506,17 +644,24 @@ export function BulkPerformanceImportDialog(props: {
         enableSorting: false,
         Cell: ({ row }) => {
           const r = row.original;
+          const excluded = perfRowExcluded(r);
           return (
             <Checkbox
               size="small"
-              checked={!r.skipRow}
-              onChange={(e) =>
+              checked={!excluded}
+              onChange={(e) => {
+                const wantIncluded = e.target.checked;
                 setRows((prev) =>
-                  prev.map((row) =>
-                    row.id === r.id ? { ...row, skipRow: e.target.checked ? undefined : true } : row,
-                  ),
-                )
-              }
+                  prev.map((row) => {
+                    if (row.id !== r.id) return row;
+                    const isDup = perfBatchDupIds.has(row.id) || perfLibraryDupIds.has(row.id);
+                    if (wantIncluded) {
+                      return { ...row, skipRow: isDup ? false : undefined };
+                    }
+                    return { ...row, skipRow: true };
+                  }),
+                );
+              }}
               inputProps={{ 'aria-label': `Include ${r.name} when saving` }}
             />
           );
@@ -539,13 +684,7 @@ export function BulkPerformanceImportDialog(props: {
               flexShrink: 0,
             }}
           >
-            <Box
-              component="img"
-              src={driveVideoThumbUrl(row.original.driveFileId)}
-              alt=""
-              sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-              loading="lazy"
-            />
+            <BulkImportDriveThumbCell driveFileId={row.original.driveFileId} googleAccessToken={googleAccessToken} />
           </Box>
         ),
       },
@@ -564,6 +703,21 @@ export function BulkPerformanceImportDialog(props: {
                 {r.linkedPerformanceId ? (
                   <Chip size="small" color="info" variant="outlined" label="Already in Encore" sx={{ height: 22 }} />
                 ) : null}
+                {(() => {
+                  const kind = bulkPerfDuplicateKind(r.id, perfBatchDupIds, perfLibraryDupIds);
+                  if (!kind) return null;
+                  const label =
+                    kind === 'both'
+                      ? 'Dup + in library'
+                      : kind === 'batch'
+                        ? 'Duplicate in list'
+                        : 'Already imported';
+                  return (
+                    <Tooltip title="Excluded from save by default. Check the row to include anyway.">
+                      <Chip size="small" label={label} color="warning" variant="outlined" sx={{ height: 22, fontWeight: 600 }} />
+                    </Tooltip>
+                  );
+                })()}
                 <Tooltip title="Open in Google Drive">
                   <IconButton
                     component={Link}
@@ -622,7 +776,7 @@ export function BulkPerformanceImportDialog(props: {
                   </IconButton>
                 </Tooltip>
                 {(r.newSongFromSpotify || r.newSongManual || r.guessedSongId) && (
-                  <Tooltip title="Clear song">
+                  <Tooltip title="Clear song match">
                     <IconButton
                       size="small"
                       aria-label="Clear song match"
@@ -641,7 +795,7 @@ export function BulkPerformanceImportDialog(props: {
                         )
                       }
                     >
-                      <CloseIcon sx={{ fontSize: 20 }} />
+                      <HighlightOffOutlinedIcon sx={{ fontSize: 20 }} />
                     </IconButton>
                   </Tooltip>
                 )}
@@ -728,7 +882,7 @@ export function BulkPerformanceImportDialog(props: {
         },
       },
     ],
-    [songs, venueOptions, beginEditStabilize, scheduleEndEditStabilize],
+    [perfRowExcluded, perfBatchDupIds, perfLibraryDupIds, songs, venueOptions, beginEditStabilize, scheduleEndEditStabilize, googleAccessToken],
   );
 
   const table = useMaterialReactTable({
@@ -736,8 +890,6 @@ export function BulkPerformanceImportDialog(props: {
     data: displayData,
     getRowId: (row) => row.id,
     ...encoreMrtBulkImportReviewOptions<BulkPerfRow>(),
-    /** Keeps the grid within the dialog width; semantic table + min cell content was widening the dialog paper. */
-    layoutMode: 'grid-no-grow',
     manualSorting: true,
     onSortingChange: (updater) => {
       setTableSorting((prev) => (typeof updater === 'function' ? updater(prev) : updater));
@@ -758,20 +910,30 @@ export function BulkPerformanceImportDialog(props: {
         color: 'text.secondary',
         py: 0.45,
         px: 1,
+        minWidth: 0,
         borderBottom: 1,
         borderBottomColor: 'divider',
       },
     },
     muiTableBodyCellProps: {
-      sx: { verticalAlign: 'middle', py: 0.5, px: 1 },
+      sx: {
+        verticalAlign: 'middle',
+        py: 0.5,
+        px: 1,
+        minWidth: 0,
+        overflow: 'hidden',
+        wordBreak: 'break-word',
+        overflowWrap: 'anywhere',
+      },
     },
     muiTableBodyRowProps: ({ row }) => {
       const r = row.original;
       const paired = rowPairedToLibrary(r, songs, performances);
+      const ex = perfRowExcluded(r);
       return {
         sx: (t) => ({
-          opacity: r.skipRow ? 0.5 : 1,
-          ...(!paired && !r.skipRow ? { boxShadow: `inset 3px 0 0 ${alpha(t.palette.primary.main, 0.42)}` } : {}),
+          opacity: ex ? 0.5 : 1,
+          ...(!paired && !ex ? { boxShadow: `inset 3px 0 0 ${alpha(t.palette.primary.main, 0.42)}` } : {}),
         }),
       };
     },
@@ -779,6 +941,7 @@ export function BulkPerformanceImportDialog(props: {
       sx: {
         tableLayout: 'fixed',
         width: '100%',
+        minWidth: 0,
       },
     },
     muiTablePaperProps: {
@@ -804,7 +967,8 @@ export function BulkPerformanceImportDialog(props: {
         minHeight: 0,
         minWidth: 0,
         maxWidth: '100%',
-        overflow: 'auto',
+        overflowX: 'hidden',
+        overflowY: 'auto',
       },
     },
     muiBottomToolbarProps: {
@@ -891,6 +1055,23 @@ export function BulkPerformanceImportDialog(props: {
         >
           {step === 'folder' && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, pt: 1, maxWidth: '100%' }}>
+              <DragDropFileUpload
+                label="Drop performance videos here or click to choose"
+                helperText="We'll guess song, venue, and date from the file name, then upload to your Drive Performances folder on save."
+                accept="video/*,.mp4,.mov,.m4v,.webm,.mkv,.mpeg,.mpg,.avi"
+                onFiles={handleLocalFiles}
+                disabled={busy}
+                minHeight={140}
+              />
+
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, my: 0.5 }}>
+                <Box sx={{ flex: 1, height: 1, bgcolor: 'divider' }} />
+                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                  OR
+                </Typography>
+                <Box sx={{ flex: 1, height: 1, bgcolor: 'divider' }} />
+              </Box>
+
               <Stack direction="row" alignItems="flex-start" gap={0.5}>
                 <Typography variant="body2" color="text.secondary" sx={{ flex: 1, lineHeight: 1.45 }}>
                   Paste a Drive folder link or id. We scan subfolders for videos and guess song, venue, and date from the
@@ -1037,6 +1218,16 @@ export function BulkPerformanceImportDialog(props: {
               {linkedIncludedCount > 0 ? (
                 <Typography variant="caption" color="info.main" sx={{ display: 'block', mb: 0.25, flexShrink: 0, lineHeight: 1.35 }}>
                   {linkedIncludedCount} row{linkedIncludedCount === 1 ? '' : 's'} already in Encore (save updates them).
+                </Typography>
+              ) : null}
+              {perfDuplicateSkippedCount > 0 ? (
+                <Typography
+                  variant="caption"
+                  color="warning.main"
+                  sx={{ display: 'block', mb: 0.25, flexShrink: 0, lineHeight: 1.35 }}
+                >
+                  {perfDuplicateSkippedCount} duplicate row{perfDuplicateSkippedCount === 1 ? '' : 's'} skipped — enable the
+                  checkbox on a row to import it anyway.
                 </Typography>
               ) : null}
               <Stack spacing={0.5} sx={{ mb: 0.5, flexShrink: 0 }}>

@@ -10,8 +10,8 @@ export type EncoreAppShellProps = Omit<BoxProps, 'sx'> & {
 };
 
 /**
- * Root layout wrapper for Encore: applies `.encore-app-shell` (CSS gradient) and MUI flex column.
- * Prefer this over Tailwind utilities on the shell.
+ * Root layout wrapper for Encore: applies `.encore-app-shell` (warm off-white canvas)
+ * and MUI flex column.
  */
 export function EncoreAppShell(props: EncoreAppShellProps): React.ReactElement {
   const { children, centered, sx, ...rest } = props;

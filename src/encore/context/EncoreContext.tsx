@@ -38,7 +38,8 @@ import {
   hasUsableSpotifyTokenBundle,
 } from '../spotify/pkce';
 import type { SyncCheckResult } from '../drive/repertoireSync';
-import { publishSnapshotToDrive } from '../drive/publicSnapshot';
+import { publishSnapshotToDrive, type BuildPublicSnapshotOptions } from '../drive/publicSnapshot';
+import { reorganizeAllPerformanceVideos, syncPerformanceVideo, syncPerformanceVideoFileName } from '../drive/performanceShortcut';
 import { SpotifyPrivacyAckDialog } from '../components/SpotifyPrivacyAckDialog';
 import { hasSpotifyPrivacyAck, setSpotifyPrivacyAck } from '../spotify/spotifyPrivacyAck';
 import { startSpotifyOAuthFlow } from '../spotify/startSpotifyOAuthFlow';
@@ -84,7 +85,12 @@ interface EncoreContextValue {
   googleAccessToken: string | null;
   /** True when the user skipped Google sign-in or disconnected Google but stayed in the app (local library only). */
   googleGateBypassed: boolean;
+  /** Raw Google profile name (read-only; sourced from `userinfo`). */
   displayName: string | null;
+  /** Owner display name shown in app + share view: user override (synced) wins; falls back to Google profile. */
+  effectiveDisplayName: string | null;
+  /** Persist a user-edited display name; pass empty string to clear back to Google profile name. */
+  setOwnerDisplayName: (name: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   /** Use Encore with the local library only (no Drive sync or YouTube import until you sign in to Google). */
   continueWithoutGoogle: () => void;
@@ -121,7 +127,17 @@ interface EncoreContextValue {
   resolveConflictRemote: () => Promise<void>;
   resolveConflictLocal: () => Promise<void>;
   dismissConflict: () => void;
-  publishPublicSnapshot: () => Promise<{ fileId: string }>;
+  publishPublicSnapshot: (options?: BuildPublicSnapshotOptions) => Promise<{
+    fileId: string;
+    generatedAt: string;
+    driveModifiedTime?: string;
+    publiclyReadable: boolean;
+    warning?: string;
+    publicVideoCount: number;
+    privateVideoCount: number;
+  }>;
+  /** Re-name every Encore-managed performance video file and create any missing shortcuts. */
+  reorganizePerformanceVideos: () => Promise<{ renamed: number; skipped: number; errors: number; shortcutsCreated: number }>;
 }
 
 const EncoreContext = createContext<EncoreContextValue | null>(null);
@@ -306,32 +322,28 @@ export function EncoreProvider({ children }: { children: React.ReactNode }): Rea
         const clientId = getGoogleClientId();
         if (!clientId) return;
 
+        /* No automatic GIS calls on first paint — even prompt: 'none' can
+           surface a popup or iframe overlay in some browsers, and the
+           README documents that "Sign in with Google" must be explicit.
+           If the locally-stored token is still within its saved expiry
+           window, verify it silently against Google; otherwise clear it
+           and let the user click sign-in. */
         const stored = readPersistedGoogleSession();
-        if (stored) {
-          if (isPersistedSessionStillFresh(stored)) {
-            try {
-              const ok = await promiseWithTimeout(
-                finalizeGoogleSession(stored.accessToken, undefined, { persist: false, silent: true }),
-                15_000,
-                'Restoring Google session',
-              );
-              if (cancelled) return;
-              if (ok) return;
-            } catch {
-              if (!cancelled) clearPersistedGoogleSession();
-            }
-          }
-
-          if (cancelled) return;
-          const renewed = await requestGoogleSilentToken(clientId, GOOGLE_SCOPES);
-          if (!cancelled && renewed) {
-            const ok = await finalizeGoogleSession(renewed.access_token, renewed.expires_in, {
-              persist: true,
-              silent: true,
-            });
+        if (stored && isPersistedSessionStillFresh(stored)) {
+          try {
+            const ok = await promiseWithTimeout(
+              finalizeGoogleSession(stored.accessToken, undefined, { persist: false, silent: true }),
+              15_000,
+              'Restoring Google session',
+            );
+            if (cancelled) return;
             if (ok) return;
+          } catch {
+            /* fall through to clear */
           }
           if (!cancelled) clearPersistedGoogleSession();
+        } else if (stored) {
+          clearPersistedGoogleSession();
         }
       } finally {
         if (!cancelled) setGoogleAuthReady(true);
@@ -492,11 +504,26 @@ export function EncoreProvider({ children }: { children: React.ReactNode }): Rea
 
   const saveSong = useCallback(
     async (song: EncoreSong) => {
+      const previous = await encoreDb.songs.get(song.id);
       await encoreDb.songs.put(song);
       await refreshLibrary();
       scheduleBackgroundSync();
+      if (googleAccessToken && previous && previous.title !== song.title) {
+        void (async () => {
+          try {
+            const songPerformances = await encoreDb.performances.where('songId').equals(song.id).toArray();
+            await Promise.all(
+              songPerformances
+                .filter((p) => p.videoShortcutDriveFileId || p.videoTargetDriveFileId)
+                .map((p) => syncPerformanceVideoFileName(googleAccessToken, p, song).catch(() => undefined)),
+            );
+          } catch {
+            /* best-effort rename; ignore */
+          }
+        })();
+      }
     },
-    [refreshLibrary, scheduleBackgroundSync]
+    [googleAccessToken, refreshLibrary, scheduleBackgroundSync]
   );
 
   const deleteSong = useCallback(
@@ -514,8 +541,29 @@ export function EncoreProvider({ children }: { children: React.ReactNode }): Rea
       await encoreDb.performances.put(p);
       await refreshLibrary();
       scheduleBackgroundSync();
+      // Best-effort: ensure Drive footprint matches (create missing shortcut for picked
+      // files, rename to canonical naming when relevant metadata changed).
+      if (googleAccessToken && p.videoTargetDriveFileId) {
+        void (async () => {
+          try {
+            const song = (await encoreDb.songs.get(p.songId)) ?? null;
+            const result = await syncPerformanceVideo(googleAccessToken, p, song);
+            if (result.shortcutCreatedId && result.shortcutCreatedId !== p.videoShortcutDriveFileId) {
+              await encoreDb.performances.put({
+                ...p,
+                videoShortcutDriveFileId: result.shortcutCreatedId,
+                updatedAt: new Date().toISOString(),
+              });
+              await refreshLibrary();
+              scheduleBackgroundSync();
+            }
+          } catch {
+            /* best-effort */
+          }
+        })();
+      }
     },
-    [refreshLibrary, scheduleBackgroundSync]
+    [googleAccessToken, refreshLibrary, scheduleBackgroundSync]
   );
 
   const deletePerformance = useCallback(
@@ -560,10 +608,40 @@ export function EncoreProvider({ children }: { children: React.ReactNode }): Rea
     setSyncState('idle');
   }, []);
 
-  const publishPublicSnapshot = useCallback(async () => {
+  const publishPublicSnapshot = useCallback(async (options?: BuildPublicSnapshotOptions) => {
     if (!googleAccessToken) throw new Error('Not signed in');
-    return publishSnapshotToDrive(googleAccessToken);
+    return publishSnapshotToDrive(googleAccessToken, options);
   }, [googleAccessToken]);
+
+  const reorganizePerformanceVideos = useCallback(async () => {
+    if (!googleAccessToken) throw new Error('Not signed in');
+    return reorganizeAllPerformanceVideos(googleAccessToken);
+  }, [googleAccessToken]);
+
+  const setOwnerDisplayName = useCallback(
+    async (name: string) => {
+      const trimmed = name.trim();
+      const now = new Date().toISOString();
+      const cur =
+        (await encoreDb.repertoireExtras.get('default')) ?? defaultRepertoireExtrasRow(now);
+      const next: RepertoireExtrasRow = {
+        ...cur,
+        id: 'default',
+        ownerDisplayName: trimmed || undefined,
+        updatedAt: now,
+      };
+      await encoreDb.repertoireExtras.put(next);
+      setRepertoireExtras(next);
+      scheduleBackgroundSync();
+    },
+    [scheduleBackgroundSync],
+  );
+
+  const effectiveDisplayName = useMemo<string | null>(() => {
+    const override = repertoireExtras.ownerDisplayName?.trim();
+    if (override) return override;
+    return displayName?.trim() || null;
+  }, [repertoireExtras.ownerDisplayName, displayName]);
 
   const value = useMemo<EncoreContextValue>(
     () => ({
@@ -571,6 +649,8 @@ export function EncoreProvider({ children }: { children: React.ReactNode }): Rea
       googleAccessToken,
       googleGateBypassed,
       displayName,
+      effectiveDisplayName,
+      setOwnerDisplayName,
       signInWithGoogle,
       continueWithoutGoogle,
       signOut,
@@ -601,12 +681,15 @@ export function EncoreProvider({ children }: { children: React.ReactNode }): Rea
       resolveConflictLocal,
       dismissConflict,
       publishPublicSnapshot,
+      reorganizePerformanceVideos,
     }),
     [
       googleAuthReady,
       googleAccessToken,
       googleGateBypassed,
       displayName,
+      effectiveDisplayName,
+      setOwnerDisplayName,
       signInWithGoogle,
       continueWithoutGoogle,
       signOut,
@@ -637,6 +720,7 @@ export function EncoreProvider({ children }: { children: React.ReactNode }): Rea
       resolveConflictLocal,
       dismissConflict,
       publishPublicSnapshot,
+      reorganizePerformanceVideos,
     ]
   );
 

@@ -44,7 +44,7 @@ export function milestoneProgressSummary(
       todo: 0,
       total: 0,
       labelShort: '—',
-      tooltip: 'Add milestone steps under Setup to track progress here.',
+      tooltip: 'Add milestone steps in Library settings to track progress here.',
     };
   }
   let labelShort = `${done}/${total}`;

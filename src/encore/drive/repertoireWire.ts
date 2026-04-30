@@ -17,6 +17,7 @@ export function parseRepertoireWire(json: string): RepertoireWirePayload {
     performances: data.performances as EncorePerformance[],
     venueCatalog: Array.isArray(data.venueCatalog) ? data.venueCatalog : undefined,
     milestoneTemplate: Array.isArray(data.milestoneTemplate) ? data.milestoneTemplate : undefined,
+    ownerDisplayName: typeof data.ownerDisplayName === 'string' ? data.ownerDisplayName : undefined,
   };
 }
 
@@ -36,6 +37,7 @@ export function buildWireFromTables(
     performances,
     venueCatalog: extras.venueCatalog,
     milestoneTemplate: extras.milestoneTemplate,
+    ownerDisplayName: extras.ownerDisplayName,
   };
 }
 
@@ -52,6 +54,7 @@ export function repertoireExtrasFromWire(wire: RepertoireWirePayload): Repertoir
     id: 'default',
     venueCatalog,
     milestoneTemplate: wire.milestoneTemplate ?? [],
+    ownerDisplayName: wire.ownerDisplayName?.trim() || undefined,
     updatedAt: wire.exportedAt,
   };
 }
