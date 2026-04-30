@@ -1,6 +1,7 @@
 /* eslint-disable react/prop-types */
 import React, { useState, useRef, useEffect, useMemo, useCallback, memo } from 'react';
 import type { PaperConfig, StPageFlipInstance, StPageFlipEvent, StPageFlipInitEvent } from '../types';
+import { loadStPageFlip } from '../utils/loadStPageFlip';
 
 interface BookPage {
   id: string;
@@ -330,13 +331,9 @@ const BookReader: React.FC<BookReaderProps> = memo(({
     };
   }, [cleanup]);
 
-  // Initialize PageFlip when processed pages are ready
+  // Initialize PageFlip when processed pages are ready (library loads on demand)
   useEffect(() => {
     if (!bookRef.current) return;
-    if (!window.St?.PageFlip) {
-      setError('Book preview library not loaded');
-      return;
-    }
     if (processedPages.length === 0) return;
     if (processedPages.filter(p => !p.isBlank).length === 0) {
       setIsReady(false);
@@ -344,9 +341,18 @@ const BookReader: React.FC<BookReaderProps> = memo(({
       return;
     }
 
+    let cancelled = false;
+
     setIsReady(false);
     setError(null);
     cleanup();
+
+    const runInit = () => {
+      if (cancelled || !isMountedRef.current || !bookRef.current) return;
+      if (!window.St?.PageFlip) {
+        setError('Book preview library not loaded');
+        return;
+      }
 
     // Build page elements
     const pagesWithPadding = [...processedPages];
@@ -452,7 +458,23 @@ const BookReader: React.FC<BookReaderProps> = memo(({
       }, 30);
     });
 
-    return cleanup;
+    };
+
+    void loadStPageFlip()
+      .then(() => {
+        if (cancelled || !isMountedRef.current) return;
+        runInit();
+      })
+      .catch(() => {
+        if (!cancelled && isMountedRef.current) {
+          setError('Book preview library not loaded');
+        }
+      });
+
+    return () => {
+      cancelled = true;
+      cleanup();
+    };
   }, [processedPages, pageWidth, pageHeight, cleanup, blankPageColor]);
 
   const goToPrev = useCallback(() => pageFlipRef.current?.flipPrev(), []);

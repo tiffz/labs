@@ -1,3 +1,12 @@
+export type EncoreSongAttachmentKind = 'chart' | 'backing' | 'recording';
+
+/** Optional Drive file attached to a song (charts, backing, practice recordings). */
+export interface EncoreSongAttachment {
+  kind: EncoreSongAttachmentKind;
+  driveFileId: string;
+  label?: string;
+}
+
 /** Song stored locally and in repertoire_data.json */
 export interface EncoreSong {
   id: string;
@@ -5,6 +14,11 @@ export interface EncoreSong {
   artist: string;
   albumArtUrl?: string;
   spotifyTrackId?: string;
+  /**
+   * Genres from Spotify’s **artist** metadata (union of credited artists), not a separate per-track genre.
+   * Filled on playlist import, “Refresh from Spotify”, or when resolving a track link.
+   */
+  spotifyGenres?: string[];
   /** Reference performance / recording on YouTube (from playlist import or manual). */
   youtubeVideoId?: string;
   originalKey?: string;
@@ -12,8 +26,14 @@ export interface EncoreSong {
   performanceKey?: string;
   performanceBpm?: number;
   journalMarkdown: string;
+  /** @deprecated Prefer {@link attachments} with kind `chart`; kept for sync and older data. */
   sheetMusicDriveFileId?: string;
+  /** @deprecated Prefer {@link attachments} with kind `backing`. */
   backingTrackDriveFileId?: string;
+  /** Practice or reference audio files on Drive (ids only). */
+  recordingDriveFileIds?: string[];
+  /** Structured Drive attachments; legacy id fields are synced on save via {@link songWithSyncedLegacyDriveIds}. */
+  attachments?: EncoreSongAttachment[];
   createdAt: string;
   updatedAt: string;
 }
@@ -47,6 +67,7 @@ export interface PublicSnapshot {
       | 'artist'
       | 'albumArtUrl'
       | 'spotifyTrackId'
+      | 'spotifyGenres'
       | 'youtubeVideoId'
       | 'originalKey'
       | 'originalBpm'

@@ -7,6 +7,9 @@ export { parseYoutubeTitleForSong, parseYoutubeTitleForSongWithContext };
 
 export type ImportRowKind = 'paired' | 'spotify_only' | 'youtube_only';
 
+/** Present on both rows after splitting a paired Spotify–YouTube row so they can be merged again. */
+export type SplitPairRef = { spotifyTrackId: string; youtubeVideoId: string };
+
 export interface PlaylistImportRow {
   id: string;
   spotify?: SpotifyPlaylistTrackRow;
@@ -15,6 +18,8 @@ export interface PlaylistImportRow {
   youtubeVideoId: string | null;
   matchScore: number;
   kind: ImportRowKind;
+  /** When this row came from {@link splitPairedImportRow}, use with sibling to restore a paired row. */
+  splitPairRef?: SplitPairRef;
   /** Optional Spotify track chosen in import review (e.g. YouTube-only rows). */
   spotifyEnrichment?: {
     spotifyTrackId: string;
@@ -22,6 +27,12 @@ export interface PlaylistImportRow {
     artist: string;
     albumArtUrl?: string;
   };
+  /** User override: merge this import row into this library song id (skips auto-match). */
+  linkedLibrarySongId?: string;
+  /** When true, this row is not saved on Import. */
+  skipRow?: boolean;
+  /** When true, do not merge into an auto-detected library song (still honors {@link linkedLibrarySongId}). */
+  ignoreAutoMatch?: boolean;
 }
 
 export function normalizeForMatch(s: string): string {
@@ -72,17 +83,42 @@ function spotifyLabel(sp: SpotifyPlaylistTrackRow): string {
   return `${sp.artist} ${sp.title}`;
 }
 
+/** First billing name before comma (cast / composer lists dilute bigram overlap with short YouTube parses). */
+function spotifyPrimaryArtist(artist: string): string {
+  const t = artist.trim();
+  if (!t) return '';
+  return t.split(',')[0]?.trim() ?? t;
+}
+
+function spotifyLabelCompact(sp: SpotifyPlaylistTrackRow): string {
+  return `${spotifyPrimaryArtist(sp.artist)} ${sp.title}`.trim();
+}
+
 function youtubeLabel(yt: YouTubePlaylistItemRow): string {
   const parsed = parseYoutubeTitleForSongWithContext(yt.title, { description: yt.description });
   const artist = parsed.artist || yt.channelTitle;
   return `${artist} ${parsed.songTitle}`.trim();
 }
 
+/**
+ * Spotify↔YouTube pairing score. Uses the max of several views so long multi-artist Spotify lines
+ * still match concise karaoke titles ("For Good", "Reflection", etc.).
+ */
 export function scoreSpotifyYoutube(sp: SpotifyPlaylistTrackRow, yt: YouTubePlaylistItemRow): number {
-  return diceCoefficient(spotifyLabel(sp), youtubeLabel(yt));
+  const ytFull = youtubeLabel(yt);
+  const parsed = parseYoutubeTitleForSongWithContext(yt.title, { description: yt.description });
+  const ytSong = parsed.songTitle.trim();
+
+  const full = diceCoefficient(spotifyLabel(sp), ytFull);
+  const compact = diceCoefficient(spotifyLabelCompact(sp), ytFull);
+  const titleVsFull = diceCoefficient(sp.title, ytFull);
+  const titleVsSong = ytSong.length >= 2 ? diceCoefficient(sp.title, ytSong) : 0;
+
+  return Math.max(full, compact, titleVsFull, titleVsSong);
 }
 
-const MATCH_THRESHOLD = 0.34;
+/** Minimum pair score to auto-merge a Spotify row with a YouTube row (greedy one-to-one matching). */
+const MATCH_THRESHOLD = 0.32;
 
 export function buildPlaylistImportRows(
   spotify: SpotifyPlaylistTrackRow[] | null,
@@ -175,6 +211,7 @@ export function encoreSongFromImportRow(row: PlaylistImportRow): EncoreSong | nu
       artist: row.spotify.artist,
       spotifyTrackId: row.spotify.trackId,
       albumArtUrl: row.spotify.albumArtUrl,
+      spotifyGenres: row.spotify.spotifyGenres,
       youtubeVideoId: row.youtubeVideoId ?? undefined,
       journalMarkdown: '',
       createdAt: now,

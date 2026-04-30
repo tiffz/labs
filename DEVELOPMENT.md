@@ -6,6 +6,8 @@ This document records major architectural decisions and development patterns for
 
 This project follows the [Google TypeScript Style Guide](https://google.github.io/styleguide/tsguide.html) for consistent code formatting and patterns.
 
+User-visible product copy (dialogs, errors, landings) should follow [`docs/USER_COPY_STYLE.md`](docs/USER_COPY_STYLE.md); app-specific voice notes may live in `src/<app>/COPY_STYLE.md` where present.
+
 ## Monorepo Architecture
 
 ### Decision

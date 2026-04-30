@@ -7,8 +7,9 @@ Instructions for AI coding assistants working in this repo (Cursor, Claude, Code
 1. `README.md` — repo layout and quick start.
 2. `DEVELOPMENT.md` — architecture decisions, guardrails, and policy. **This is the authoritative policy document.**
 3. `STYLE_GUIDE.md` — TypeScript + UI/a11y conventions.
-4. `docs/SOURCE_OF_TRUTH.md` — precedence map when docs disagree.
-5. `.cursor/rules/*.mdc` — machine-enforced rules (pre-commit checks, app-entry-html, spa-css-conventions, react-a11y).
+4. `docs/USER_COPY_STYLE.md` — default voice for user-visible copy across apps.
+5. `docs/SOURCE_OF_TRUTH.md` — precedence map when docs disagree.
+6. `.cursor/rules/*.mdc` — machine-enforced rules (pre-commit checks, app-entry-html, spa-css-conventions, react-a11y).
 
 ## Canonical Rules
 
@@ -16,7 +17,7 @@ Instructions for AI coding assistants working in this repo (Cursor, Claude, Code
 - **SPA guardrails** (`src/shared/spaGuardrails.test.ts`): every app in `src/*/` must follow the shared shell template (`src/shared/templates/app-index.starter.html`), render under `React.StrictMode`, and expose `SkipToMain`. Tests will fail the build if you add a new app that skips these.
 - **Import boundaries** (`src/shared/importBoundaries.test.ts` + `scripts/check-import-boundaries.mjs`): apps may import from `src/shared/**` but not from each other. Keep cross-app reuse in `src/shared/` and register new app directories in both files.
 - **Shared UI first** (`src/shared/SHARED_UI_CONVENTIONS.md`): reach for `src/shared/components/` primitives before writing a new popover/tooltip/menu. MUI is the underlying primitive library for complex widgets.
-- **Scales learner copy** (`src/scales/COPY_STYLE.md`): user-facing prose in `src/scales/` (tiers, stages, tips, dialogs) should follow that voice guide (warm, concise, no em-dash essay tone).
+- **User-facing copy** ([`docs/USER_COPY_STYLE.md`](docs/USER_COPY_STYLE.md)): default Labs voice for UI strings (landings, dialogs, errors, empty states). App-specific rules live in `src/<app>/COPY_STYLE.md` where present (for example Learn Your Scales extends the default in [`src/scales/COPY_STYLE.md`](src/scales/COPY_STYLE.md) with curriculum and file-location notes).
 - **Find Your Pitch visuals** (`src/pitch/DESIGN.md`): the pitch app ships one layout (teal/pink, white panels, halftone field). Do not reintroduce theme switchers or `data-pitch-concept` skins; extend `pitch.css` per that spec.
 - **Rhythm preset integrity** (`src/shared/rhythm/presetIntegrity.ts` + `presetIntegrity.test.ts`): when editing `RHYTHM_DATABASE` or related presets, run `npx vitest run src/shared/rhythm/presetIntegrity.test.ts`. The checks parse every pattern, flag copy/pasted variations across related rhythms with different bases, and verify labeled 8/8 ornament/anchor lines match the reference attack skeleton (prevents Malfuf/Kahleegi-style encoding mistakes).
 - **Labs debug mode** (`src/shared/debug/readLabsDebugParams.ts`, `labsDebugLog.ts`, `LabsDebugDock.tsx`): `?debug` and `?dev` are equivalent. `ServerLogger` info/debug only POST to `/__debug_log` when that flag is set; errors/warnings still post in dev. See root [DEVELOPMENT.md](DEVELOPMENT.md) § Labs debug mode. Use **Copy bundle** in the dock or `.debug-snapshots/` for assistant-friendly artifacts (no automatic browser→LLM pipe exists).

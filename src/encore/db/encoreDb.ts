@@ -6,6 +6,8 @@ export interface SyncMetaRow {
   rootFolderId?: string;
   performancesFolderId?: string;
   sheetMusicFolderId?: string;
+  /** Optional folder for uploaded song recordings (MP3, MIDI, etc.). */
+  recordingsFolderId?: string;
   repertoireFileId?: string;
   snapshotFileId?: string;
   lastRemoteModified?: string;
@@ -24,6 +26,11 @@ export class EncoreDB extends Dexie {
   constructor() {
     super('encore-repertoire');
     this.version(1).stores({
+      songs: 'id, updatedAt, title, artist',
+      performances: 'id, songId, date, updatedAt, venueTag',
+      syncMeta: 'id',
+    });
+    this.version(2).stores({
       songs: 'id, updatedAt, title, artist',
       performances: 'id, songId, date, updatedAt, venueTag',
       syncMeta: 'id',

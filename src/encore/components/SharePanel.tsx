@@ -1,20 +1,24 @@
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useState } from 'react';
 import { useEncore } from '../context/EncoreContext';
+import { driveFileWebUrl } from '../drive/driveWebUrls';
 
 export function SharePanel(): React.ReactElement {
   const { publishPublicSnapshot, googleAccessToken } = useEncore();
   const [link, setLink] = useState<string | null>(null);
+  const [snapshotDriveFileId, setSnapshotDriveFileId] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
 
   const handlePublish = async () => {
     setMsg(null);
     try {
       const { fileId } = await publishPublicSnapshot();
+      setSnapshotDriveFileId(fileId);
       const url = `${window.location.origin}/encore/#/share/${fileId}`;
       setLink(url);
       setMsg('Snapshot updated on Drive with link sharing. Copy the URL for guests.');
@@ -24,18 +28,7 @@ export function SharePanel(): React.ReactElement {
   };
 
   return (
-    <Box
-      sx={{
-        p: { xs: 2, md: 3 },
-        pb: { xs: 10, md: 3 },
-        maxWidth: { xs: 1, md: 960, lg: 1200 },
-        mx: 'auto',
-        width: 1,
-      }}
-    >
-      <Typography variant="h6" component="h2" gutterBottom>
-        Secret link
-      </Typography>
+    <Box sx={{ width: 1 }}>
       <Typography variant="body2" color="text.secondary" paragraph>
         Writes a read-only <code>public_snapshot.json</code> next to your repertoire file and opens it to anyone with
         the link. Guests use <code>VITE_GOOGLE_API_KEY</code> (Drive API, referrer-restricted) to read the file in the
@@ -65,6 +58,18 @@ export function SharePanel(): React.ReactElement {
           >
             Copy
           </Button>
+          {snapshotDriveFileId ? (
+            <Button
+              variant="outlined"
+              component="a"
+              href={driveFileWebUrl(snapshotDriveFileId)}
+              target="_blank"
+              rel="noreferrer"
+              startIcon={<OpenInNewIcon />}
+            >
+              Open snapshot in Drive
+            </Button>
+          ) : null}
         </Box>
       )}
     </Box>

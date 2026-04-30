@@ -28,7 +28,7 @@ export function ConflictResolutionDialog(props: {
           </Typography>
         )}
       </DialogContent>
-      <DialogActions sx={{ flexWrap: 'wrap', gap: 1 }}>
+      <DialogActions sx={{ flexWrap: 'wrap', gap: 1, px: 2, py: 1.5 }}>
         <Button onClick={onDismiss} color="inherit">
           Decide later
         </Button>

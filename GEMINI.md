@@ -31,7 +31,7 @@ src/
 ## Development Commands
 
 ```bash
-npm run dev          # Start dev server (http://localhost:5173)
+npm run dev          # Start dev server (http://127.0.0.1:5173)
 npm test             # Run all tests
 npm run lint         # Check code quality
 npm run build        # Production build

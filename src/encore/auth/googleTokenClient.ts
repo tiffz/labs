@@ -1,5 +1,6 @@
 import { googleEncoreOAuthRedirectUri } from './googleEncoreOAuthRedirectUri';
 import { loadGoogleIdentityScript } from './loadGisScript';
+import { promiseWithTimeout } from './promiseWithTimeout';
 
 /** Override when your Cloud client uses a different string (e.g. `.../encore/` with slash). */
 function resolveGoogleOAuthRedirectUri(): string {
@@ -16,7 +17,7 @@ export async function requestGoogleAccessToken(
   const g = window.google?.accounts?.oauth2;
   if (!g) throw new Error('Google sign-in could not load.');
   const redirectUri = resolveGoogleOAuthRedirectUri();
-  return new Promise((resolve, reject) => {
+  const inner = new Promise<{ access_token: string; expires_in?: number }>((resolve, reject) => {
     const client = g.initTokenClient({
       client_id: clientId,
       scope,
@@ -32,6 +33,8 @@ export async function requestGoogleAccessToken(
     if (options?.prompt === 'none') client.requestAccessToken({ prompt: 'none' });
     else client.requestAccessToken();
   });
+  const timeoutMs = options?.prompt === 'none' ? 12_000 : 90_000;
+  return promiseWithTimeout(inner, timeoutMs, 'Google sign-in');
 }
 
 export function revokeGoogleAccessTokenBestEffort(accessToken: string): void {

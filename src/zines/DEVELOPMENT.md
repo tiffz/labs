@@ -89,15 +89,13 @@ Text would appear unstyled before fonts loaded, creating jarring visual flash.
 
 ### Implementation
 
-- Inline font CSS with `@import` and `display=block`
-- Visibility control: Body hidden until fonts ready, JavaScript font detection reveals content
-- FontFace API with graceful fallbacks
+- Inline `index.html` sets `--font-heading` / `--font-body` with system fallbacks; Caveat + Inter load from `@fontsource` in `main.tsx`.
+- No body-level `visibility: hidden` (that blocked first paint on material icon bootstrap); rely on fallbacks + shared icon readiness on `<html>`.
 
 ### Benefits
 
-- No visual flashing during font load
-- Stable layout without shifts
-- Better Core Web Vitals scores
+- Readable type immediately; webfonts swap in when ready.
+- Faster perceived load than gating the entire page on icon font probes.
 
 ## StPageFlip Library Integration
 
@@ -111,7 +109,7 @@ Provides engaging preview mode that helps users understand final zine layout.
 
 ### Implementation Challenges
 
-- CDN loading (not npm package) - required global type definitions
+- `page-flip` ships as a browser bundle: loaded on demand via `loadStPageFlip()` (Vite `?url` asset from the `page-flip` npm dependency), not a parser-blocking CDN script in `index.html`.
 - React integration - proper cleanup and memory management
 - React 18 compatibility - updated from deprecated APIs
 

@@ -22,42 +22,25 @@
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content="Zine Studio - Tiff Zhang Labs" />
     <meta name="twitter:description" content="Format image files into printable zines — supports minizine and booklet layouts" />
-    <!-- Caveat + Inter from @fontsource (see shared/ui/fonts/appFonts.ts) -->
+    <!-- Caveat + Inter from @fontsource (see zines/main.tsx + shared/ui/fonts/appFontsCore) -->
     <style>
-        
-        /* Font variables with strong fallbacks */
         :root {
             --font-heading: 'Caveat', 'Brush Script MT', 'Lucida Handwriting', cursive;
             --font-body: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
-        
-        /* Immediate font application to prevent flash */
+
         body {
             font-family: var(--font-body);
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
             text-rendering: optimizeLegibility;
         }
-        
+
         .font-heading {
             font-family: var(--font-heading);
         }
-        
-        /* Hide body until fonts/icons are ready to prevent FOUC.
-           `initMaterialIconRuntime()` (main.tsx) adds `fonts-loaded` on <html>, same as other apps. */
-        body {
-            visibility: hidden;
-        }
-
-        html.fonts-loaded body {
-            visibility: visible;
-        }
     </style>
-    
-    <!-- StPageFlip library for realistic page turning -->
-    <script src="https://unpkg.com/page-flip@2.0.7/dist/js/page-flip.browser.js"></script>
-    
-    <!-- Font loading detection script -->
+
     <link rel="stylesheet" href="/styles/labs-cookie-consent.css" />
     <style>:root { --labs-cc-accent: #f97316; --labs-cc-on-accent: #ffffff; }</style>
     <script defer src="/scripts/labs-cookie-consent.js"></script>

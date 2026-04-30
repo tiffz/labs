@@ -293,6 +293,18 @@
   background-color: #fafafa !important;
 }
 
+.forms-canvas-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}
+
+.forms-canvas-loading-text {
+  color: var(--text-muted);
+  margin: 0;
+}
+
 /* View controls overlay */
 .view-controls-overlay {
   position: absolute;

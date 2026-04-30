@@ -1,6 +1,7 @@
 import { driveCreateFolder, driveCreateJsonFile, driveListFiles } from './driveFetch';
 import {
   ENCORE_PERFORMANCES_FOLDER,
+  ENCORE_RECORDINGS_FOLDER,
   ENCORE_ROOT_FOLDER,
   ENCORE_SHEET_MUSIC_FOLDER,
   REPERTOIRE_FILE_NAME,
@@ -20,6 +21,7 @@ export interface EncoreDriveBootstrap {
   rootFolderId: string;
   performancesFolderId: string;
   sheetMusicFolderId: string;
+  recordingsFolderId: string;
   repertoireFileId: string;
   snapshotFileId?: string;
 }
@@ -30,12 +32,14 @@ export async function ensureEncoreDriveLayout(accessToken: string): Promise<Enco
     meta.rootFolderId &&
     meta.performancesFolderId &&
     meta.sheetMusicFolderId &&
+    meta.recordingsFolderId &&
     meta.repertoireFileId
   ) {
     return {
       rootFolderId: meta.rootFolderId,
       performancesFolderId: meta.performancesFolderId,
       sheetMusicFolderId: meta.sheetMusicFolderId,
+      recordingsFolderId: meta.recordingsFolderId,
       repertoireFileId: meta.repertoireFileId,
       snapshotFileId: meta.snapshotFileId,
     };
@@ -61,6 +65,12 @@ export async function ensureEncoreDriveLayout(accessToken: string): Promise<Enco
     sheetMusicFolderId = (await driveCreateFolder(accessToken, ENCORE_SHEET_MUSIC_FOLDER, rootFolderId)).id;
   }
 
+  const recList = await driveListFiles(accessToken, qFolderInParent(ENCORE_RECORDINGS_FOLDER, rootFolderId));
+  let recordingsFolderId = (recList.files?.[0] as { id?: string } | undefined)?.id;
+  if (!recordingsFolderId) {
+    recordingsFolderId = (await driveCreateFolder(accessToken, ENCORE_RECORDINGS_FOLDER, rootFolderId)).id;
+  }
+
   const repList = await driveListFiles(accessToken, qJsonInParent(REPERTOIRE_FILE_NAME, rootFolderId));
   let repertoireFileId = (repList.files?.[0] as { id?: string } | undefined)?.id;
   if (!repertoireFileId) {
@@ -81,6 +91,7 @@ export async function ensureEncoreDriveLayout(accessToken: string): Promise<Enco
     rootFolderId,
     performancesFolderId,
     sheetMusicFolderId,
+    recordingsFolderId,
     repertoireFileId,
     snapshotFileId,
   });
@@ -89,6 +100,7 @@ export async function ensureEncoreDriveLayout(accessToken: string): Promise<Enco
     rootFolderId,
     performancesFolderId,
     sheetMusicFolderId,
+    recordingsFolderId,
     repertoireFileId,
     snapshotFileId,
   };

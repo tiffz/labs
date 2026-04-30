@@ -23,7 +23,7 @@ export default defineConfig({
   },
   use: {
     headless: true,
-    baseURL: 'http://localhost:5173',
+    baseURL: 'http://127.0.0.1:5173',
     ignoreHTTPSErrors: true,
     video: 'off',
     screenshot: 'off',
@@ -69,8 +69,8 @@ export default defineConfig({
   ],
   snapshotPathTemplate: '{testDir}/{testFilePath}-snapshots/{arg}{ext}',
   webServer: {
-    command: 'vite --host --open=false --strictPort --port=5173',
-    url: 'http://localhost:5173',
+    command: 'vite --open=false --strictPort --port=5173',
+    url: 'http://127.0.0.1:5173',
     reuseExistingServer: !process.env.CI,
     stderr: 'pipe',
     stdout: 'pipe',

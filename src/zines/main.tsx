@@ -1,4 +1,6 @@
-import '../shared/ui/fonts/appFonts'
+import '../shared/ui/fonts/appFonts';
+import '@fontsource/caveat/400.css';
+import '@fontsource/caveat/700.css';
 import ReactDOM from 'react-dom/client'
 import { ThemeProvider } from '@mui/material/styles'
 // Initialize server logger BEFORE any app modules so import-time errors are captured

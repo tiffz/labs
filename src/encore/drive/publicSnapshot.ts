@@ -17,6 +17,7 @@ export function buildPublicSnapshot(songs: EncoreSong[], performances: EncorePer
       artist: s.artist,
       albumArtUrl: s.albumArtUrl,
       spotifyTrackId: s.spotifyTrackId,
+      spotifyGenres: s.spotifyGenres,
       youtubeVideoId: s.youtubeVideoId,
       originalKey: s.originalKey,
       originalBpm: s.originalBpm,

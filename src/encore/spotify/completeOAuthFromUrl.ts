@@ -1,15 +1,21 @@
 import { consumePkceVerifier, exchangeSpotifyCode, storeSpotifyToken } from './pkce';
-import { getSpotifyRedirectUri } from './spotifyRedirectUri';
+import { encoreLoopbackUrlFromCurrent, getSpotifyRedirectUri } from './spotifyRedirectUri';
 
 const OAUTH_FLASH_ERROR_KEY = 'encore_spotify_oauth_flash_error';
+const OAUTH_FLASH_LOOPBACK_KEY = 'encore_spotify_oauth_flash_loopback';
 
-/** One-time message after a failed Spotify redirect (shown in import / Spotify UI, then cleared). */
-export function readAndClearSpotifyOAuthFlashError(): string | null {
+export type SpotifyOAuthFlashPayload = { message: string; loopbackUrl?: string };
+
+/** One-time message (and optional 127.0.0.1 link) after a failed Spotify redirect; shown in import UI then cleared. */
+export function readAndClearSpotifyOAuthFlash(): SpotifyOAuthFlashPayload | null {
   if (typeof window === 'undefined') return null;
   try {
     const msg = sessionStorage.getItem(OAUTH_FLASH_ERROR_KEY);
+    const loop = sessionStorage.getItem(OAUTH_FLASH_LOOPBACK_KEY);
     sessionStorage.removeItem(OAUTH_FLASH_ERROR_KEY);
-    return msg;
+    sessionStorage.removeItem(OAUTH_FLASH_LOOPBACK_KEY);
+    if (!msg) return null;
+    return loop ? { message: msg, loopbackUrl: loop } : { message: msg };
   } catch {
     return null;
   }
@@ -42,8 +48,10 @@ export async function tryCompleteSpotifyOAuthFromUrl(): Promise<void> {
     try {
       sessionStorage.setItem(
         OAUTH_FLASH_ERROR_KEY,
-        'Spotify sign-in could not be verified (missing or mismatched session). Use Connect Spotify on the same browser tab and origin you started from (e.g. 127.0.0.1 vs localhost).',
+        'Spotify sign-in could not be verified (missing or mismatched session). Use Connect Spotify on the same browser tab and origin you started from.',
       );
+      const loop = typeof window !== 'undefined' ? encoreLoopbackUrlFromCurrent() : '';
+      if (loop) sessionStorage.setItem(OAUTH_FLASH_LOOPBACK_KEY, loop);
     } catch {
       /* ignore */
     }

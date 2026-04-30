@@ -6,7 +6,7 @@ import PaperConfiguration from './components/PaperConfiguration';
 import { DEFAULT_PAPER_CONFIG, DEFAULT_BOOKLET_PAPER_CONFIG } from './constants';
 import { DEFAULT_BLEED_CONFIG } from './types';
 
-// Mock the StPageFlip library since it's loaded via CDN
+// Mock the StPageFlip library (production loads it on demand via loadStPageFlip)
 beforeEach(() => {
   global.window.St = {
     PageFlip: vi.fn().mockImplementation(() => ({

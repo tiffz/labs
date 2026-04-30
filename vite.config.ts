@@ -148,6 +148,8 @@ export default defineConfig({
     include: ['jszip', 'midi-json-parser', 'webmscore'],
   },
   server: {
+    /** Spotify OAuth redirect URIs cannot use `localhost`; default dev URL is loopback. */
+    host: '127.0.0.1',
     middlewareMode: false,
   },
   plugins: [

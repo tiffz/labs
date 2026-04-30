@@ -75,3 +75,15 @@
     min-height: 44px;
   }
 }
+
+/* Material React Table (repertoire): quieter sort icons; top toolbar is off in code. */
+.encore-mrt-repertoire .MuiTableSortLabel-icon {
+  opacity: 0.35;
+  font-size: 1.05rem;
+}
+
+.encore-mrt-repertoire
+  .MuiTableSortLabel-root.Mui-active
+  .MuiTableSortLabel-icon {
+  opacity: 0.9;
+}

@@ -66,7 +66,7 @@ This document defines the canonical workflow for screenshot and audio regression
 
 ## UI Dashboard (Local)
 
-Open `http://localhost:5173/ui/` and select the **Regression** tab to browse:
+Open `http://127.0.0.1:5173/ui/` and select the **Regression** tab to browse:
 
 - **Screenshots** — one gallery for every baseline route: matching routes show the committed baseline only; when Playwright reports a diff, the same card shows **Baseline**, **Latest**, and **Diff** with timestamps.
 - Multi-select **filter chips** for app, form factor (desktop/mobile), and platform suffix.
@@ -86,13 +86,13 @@ Incremental baseline updates (without deleting the snapshot folder) are **CLI-on
 
 Tab subroutes are hash-addressable for quick navigation:
 
-- `http://localhost:5173/ui/#gallery`
-- `http://localhost:5173/ui/#docs`
-- `http://localhost:5173/ui/#theme`
-- `http://localhost:5173/ui/#regression`
-- `http://localhost:5173/ui/#regression/screenshots` (default when opening Regression)
-- `http://localhost:5173/ui/#regression/report`
-- `http://localhost:5173/ui/#regression/runner` — expands the runner log; section stays **Screenshots**
+- `http://127.0.0.1:5173/ui/#gallery`
+- `http://127.0.0.1:5173/ui/#docs`
+- `http://127.0.0.1:5173/ui/#theme`
+- `http://127.0.0.1:5173/ui/#regression`
+- `http://127.0.0.1:5173/ui/#regression/screenshots` (default when opening Regression)
+- `http://127.0.0.1:5173/ui/#regression/report`
+- `http://127.0.0.1:5173/ui/#regression/runner` — expands the runner log; section stays **Screenshots**
 
 Legacy hashes `#regression/failures` and `#regression/baselines` are treated as **Screenshots** for backwards compatibility.
 

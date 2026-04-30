@@ -1,7 +1,11 @@
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import SkipToMain from '../shared/components/SkipToMain';
+import {
+  replaceLocalhostWithLoopbackOrigin,
+  shouldRedirectLocalhostToLoopbackInDev,
+} from './devLocalhostToLoopbackRedirect';
 import { EncoreProvider, useEncore } from './context/EncoreContext';
 import { AccessRestrictedScreen, SignInLanding } from './components/AccessGateScreens';
 import { EncoreMainShell } from './components/EncoreMainShell';
@@ -15,9 +19,19 @@ function parseShareFileIdFromHash(): string | null {
 }
 
 function EncoreSignedInRouter(): React.ReactElement {
-  const { googleAuthReady, googleAccessToken, accessDenied, accessDeniedMessage, signInWithGoogle, retryAccessGate } =
-    useEncore();
+  const {
+    googleAuthReady,
+    googleAccessToken,
+    googleGateBypassed,
+    accessDenied,
+    accessDeniedMessage,
+    signInWithGoogle,
+    continueWithoutGoogle,
+    retryAccessGate,
+  } = useEncore();
   const clientConfigured = Boolean((import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined)?.trim());
+  const canUseMainShell =
+    Boolean(googleAccessToken) || googleGateBypassed || !clientConfigured;
 
   return (
     <>
@@ -36,18 +50,19 @@ function EncoreSignedInRouter(): React.ReactElement {
           <Box
             className="encore-app-shell flex flex-col items-center justify-center min-h-screen min-h-[100dvh] p-8"
             aria-busy="true"
-            aria-label="Restoring session"
+            aria-label="Checking saved Google sign-in"
           >
             <CircularProgress color="primary" />
           </Box>
         </main>
-      ) : !googleAccessToken ? (
+      ) : !canUseMainShell ? (
         <main id="main">
           <SignInLanding
             clientConfigured={clientConfigured}
             onSignIn={() => {
               void signInWithGoogle();
             }}
+            onContinueLocalOnly={clientConfigured ? continueWithoutGoogle : undefined}
           />
         </main>
       ) : (
@@ -59,10 +74,28 @@ function EncoreSignedInRouter(): React.ReactElement {
 
 export default function App(): React.ReactElement {
   const shareFileId = useMemo(() => parseShareFileIdFromHash(), []);
+  const [localhostDevRedirect] = useState(shouldRedirectLocalhostToLoopbackInDev);
+
+  useLayoutEffect(() => {
+    if (!localhostDevRedirect) return;
+    replaceLocalhostWithLoopbackOrigin();
+  }, [localhostDevRedirect]);
 
   useEffect(() => {
     void tryCompleteSpotifyOAuthFromUrl();
   }, []);
+
+  if (localhostDevRedirect) {
+    return (
+      <Box
+        className="encore-app-shell flex flex-col items-center justify-center min-h-screen min-h-[100dvh] p-8"
+        aria-busy="true"
+        aria-label="Switching to 127.0.0.1 for Encore development"
+      >
+        <CircularProgress color="primary" />
+      </Box>
+    );
+  }
 
   if (shareFileId) {
     return (

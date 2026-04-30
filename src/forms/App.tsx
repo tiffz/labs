@@ -1,15 +1,12 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
-import { Canvas } from '@react-three/fiber';
-import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
+import { useState, useCallback, useEffect, useMemo, lazy, Suspense } from 'react';
 import type { FormConfig, PlacementConfig, ViewSettings } from './types';
 import { DEFAULT_PLACEMENT_CONFIG, DEFAULT_VIEW_SETTINGS } from './types';
 import { generateFormsWithIntersections } from './utils/randomPlacer';
 import ControlPanel from './components/ControlPanel';
-import FormMesh from './components/FormMesh';
-import IntersectionLines from './components/IntersectionLines';
-import ViewControls from './components/ViewControls';
 import { createAppAnalytics } from '../shared/utils/analytics';
 import SkipToMain from '../shared/components/SkipToMain';
+
+const FormsThreeScene = lazy(() => import('./components/FormsThreeScene'));
 
 const analytics = createAppAnalytics('forms');
 
@@ -115,64 +112,24 @@ function App() {
         isOpen={isSidebarOpen}
         onClose={handleCloseSidebar}
       />
-      
+
       <main id="main" className="forms-canvas-container">
-        <Canvas
-          gl={{ antialias: true, alpha: true }}
-          style={{ background: '#fafafa' }}
+        <Suspense
+          fallback={
+            <div className="forms-canvas-loading" role="status" aria-live="polite">
+              <p className="forms-canvas-loading-text">Loading 3D scene…</p>
+            </div>
+          }
         >
-          <PerspectiveCamera
-            makeDefault
-            position={cameraSettings.position}
-            fov={cameraSettings.fov}
-          />
-          
-          <ambientLight intensity={0.4} />
-          <directionalLight position={[10, 10, 5]} intensity={0.6} />
-          <directionalLight position={[-10, -10, -5]} intensity={0.3} />
-          
-          {forms.map((form) => (
-            <FormMesh
-              key={form.id}
-              form={form}
-              viewSettings={viewSettings}
-            />
-          ))}
-          
-          <IntersectionLines
+          <FormsThreeScene
             forms={forms}
             viewSettings={viewSettings}
+            cameraSettings={cameraSettings}
+            isMobileView={isMobileView}
+            onRegenerate={handleRegenerate}
+            onViewChange={handleViewChange}
           />
-          
-          <OrbitControls
-            enableDamping
-            dampingFactor={0.05}
-            minDistance={3}
-            maxDistance={30}
-          />
-          
-          {/* No grid - clean paper-like background */}
-        </Canvas>
-
-        {/* Mobile floating regenerate button */}
-        {isMobileView && (
-          <button 
-            className="mobile-regenerate-btn"
-            onClick={handleRegenerate}
-            aria-label="Generate new scene"
-          >
-            <span className="material-symbols-outlined">refresh</span>
-          </button>
-        )}
-        
-        <ViewControls
-          viewSettings={viewSettings}
-          onViewChange={handleViewChange}
-        />
-        
-        <div className="help-text">
-          Drag to rotate • Scroll to zoom • Right-drag to pan
-        </div>
+        </Suspense>
       </main>
     </div>
   );

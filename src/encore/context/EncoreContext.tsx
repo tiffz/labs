@@ -11,7 +11,7 @@ import React, {
 } from 'react';
 import { encoreDb, getSyncMeta } from '../db/encoreDb';
 import type { EncorePerformance, EncoreSong } from '../types';
-import { fetchGoogleUserEmail } from '../auth/loadGisScript';
+import { fetchGoogleUserProfile, friendlyGoogleDisplayName } from '../auth/loadGisScript';
 import {
   clearPersistedGoogleSession,
   isPersistedSessionStillFresh,
@@ -24,6 +24,7 @@ import {
   parseAllowedEmailHashesFromEnv,
   sha256HexOfEmail,
 } from '../auth/hashEmail';
+import { promiseWithTimeout } from '../auth/promiseWithTimeout';
 import {
   runInitialSyncIfPossible,
   pushRepertoireToDrive,
@@ -37,12 +38,38 @@ import {
 } from '../spotify/pkce';
 import type { SyncCheckResult } from '../drive/repertoireSync';
 import { publishSnapshotToDrive } from '../drive/publicSnapshot';
+import { SpotifyPrivacyAckDialog } from '../components/SpotifyPrivacyAckDialog';
+import { hasSpotifyPrivacyAck, setSpotifyPrivacyAck } from '../spotify/spotifyPrivacyAck';
+import { startSpotifyOAuthFlow } from '../spotify/startSpotifyOAuthFlow';
 
 const GOOGLE_SCOPES = [
   'https://www.googleapis.com/auth/drive.file',
+  // Pasted-folder bulk import + subfolder walk (names only; see drive.metadata.readonly).
+  'https://www.googleapis.com/auth/drive.metadata.readonly',
   'https://www.googleapis.com/auth/userinfo.email',
+  'https://www.googleapis.com/auth/userinfo.profile',
   'https://www.googleapis.com/auth/youtube.readonly',
 ].join(' ');
+
+/** User chose local-only mode (no Google session); persisted so reloads stay in the app. */
+const GOOGLE_GATE_BYPASS_STORAGE_KEY = 'encore_continue_without_google';
+
+function readGoogleGateBypassed(): boolean {
+  try {
+    return window.localStorage.getItem(GOOGLE_GATE_BYPASS_STORAGE_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function writeGoogleGateBypassed(value: boolean): void {
+  try {
+    if (value) window.localStorage.setItem(GOOGLE_GATE_BYPASS_STORAGE_KEY, '1');
+    else window.localStorage.removeItem(GOOGLE_GATE_BYPASS_STORAGE_KEY);
+  } catch {
+    /* ignore quota / private mode */
+  }
+}
 
 function allowedHashes(): ReturnType<typeof parseAllowedEmailHashesFromEnv> {
   return parseAllowedEmailHashesFromEnv(import.meta.env.VITE_ALLOWED_EMAIL_HASHES as string | undefined);
@@ -54,18 +81,30 @@ interface EncoreContextValue {
   /** False until the first Google session restore attempt finishes (avoids sign-in UI flash). */
   googleAuthReady: boolean;
   googleAccessToken: string | null;
+  /** True when the user skipped Google sign-in or disconnected Google but stayed in the app (local library only). */
+  googleGateBypassed: boolean;
   displayName: string | null;
   signInWithGoogle: () => Promise<void>;
+  /** Use Encore with the local library only (no Drive sync or YouTube import until you sign in to Google). */
+  continueWithoutGoogle: () => void;
   /** Disconnect Google (Drive sync, YouTube import). Local library remains; Spotify stays linked unless you disconnect it. */
   signOut: () => void;
   /** Spotify metadata / playlist import only. */
   spotifyLinked: boolean;
   disconnectSpotify: () => void;
+  /** Starts Spotify OAuth (full-page redirect). Sets `spotifyConnectError` if blocked or misconfigured. */
+  connectSpotify: () => Promise<void>;
+  spotifyConnectError: string | null;
+  /** When set with `spotifyConnectError`, same-tab link to open Encore on 127.0.0.1 (Spotify localhost block). */
+  spotifyConnectLoopbackUrl: string | null;
+  clearSpotifyConnectError: () => void;
   accessDenied: boolean;
   accessDeniedMessage: string | null;
   retryAccessGate: () => void;
   songs: EncoreSong[];
   performances: EncorePerformance[];
+  /** True after the first local Dexie library read finishes (avoids treating an empty in-memory list as definitive). */
+  libraryReady: boolean;
   refreshLibrary: () => Promise<void>;
   saveSong: (song: EncoreSong) => Promise<void>;
   deleteSong: (id: string) => Promise<void>;
@@ -91,15 +130,22 @@ function getGoogleClientId(): string {
 export function EncoreProvider({ children }: { children: React.ReactNode }): React.ReactElement {
   const [googleAuthReady, setGoogleAuthReady] = useState(false);
   const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(null);
+  const [googleGateBypassed, setGoogleGateBypassed] = useState(() =>
+    typeof window !== 'undefined' ? readGoogleGateBypassed() : false,
+  );
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [accessDenied, setAccessDenied] = useState(false);
   const [accessDeniedMessage, setAccessDeniedMessage] = useState<string | null>(null);
   const [songs, setSongs] = useState<EncoreSong[]>([]);
   const [performances, setPerformances] = useState<EncorePerformance[]>([]);
+  const [libraryReady, setLibraryReady] = useState(false);
   const [syncState, setSyncState] = useState<SyncUiState>('idle');
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [conflict, setConflict] = useState<SyncCheckResult | null>(null);
   const [spotifyLinked, setSpotifyLinked] = useState(() => hasUsableSpotifyTokenBundle());
+  const [spotifyConnectError, setSpotifyConnectError] = useState<string | null>(null);
+  const [spotifyConnectLoopbackUrl, setSpotifyConnectLoopbackUrl] = useState<string | null>(null);
+  const [spotifyPrivacyOpen, setSpotifyPrivacyOpen] = useState(false);
 
   const refreshSpotifyLinked = useCallback(() => {
     setSpotifyLinked(hasUsableSpotifyTokenBundle());
@@ -123,10 +169,52 @@ export function EncoreProvider({ children }: { children: React.ReactNode }): Rea
     clearSpotifyToken();
   }, []);
 
+  const clearSpotifyConnectError = useCallback(() => {
+    setSpotifyConnectError(null);
+    setSpotifyConnectLoopbackUrl(null);
+  }, []);
+
+  const runSpotifyOAuthFlowInner = useCallback(async () => {
+    setSpotifyConnectError(null);
+    setSpotifyConnectLoopbackUrl(null);
+    const clientId = (import.meta.env.VITE_SPOTIFY_CLIENT_ID as string | undefined)?.trim() ?? '';
+    if (!clientId) {
+      setSpotifyConnectError('Spotify is not configured for this build (missing VITE_SPOTIFY_CLIENT_ID).');
+      return;
+    }
+    const result = await startSpotifyOAuthFlow(clientId);
+    if (!result.ok) {
+      setSpotifyConnectError(result.message);
+      setSpotifyConnectLoopbackUrl(result.openOnLoopbackUrl ?? null);
+    }
+  }, []);
+
+  const connectSpotify = useCallback(async () => {
+    setSpotifyConnectError(null);
+    setSpotifyConnectLoopbackUrl(null);
+    const clientId = (import.meta.env.VITE_SPOTIFY_CLIENT_ID as string | undefined)?.trim() ?? '';
+    if (!clientId) {
+      setSpotifyConnectError('Spotify is not configured for this build (missing VITE_SPOTIFY_CLIENT_ID).');
+      return;
+    }
+    if (!hasSpotifyPrivacyAck()) {
+      setSpotifyPrivacyOpen(true);
+      return;
+    }
+    await runSpotifyOAuthFlowInner();
+  }, [runSpotifyOAuthFlowInner]);
+
+  const confirmSpotifyPrivacyAndConnect = useCallback(() => {
+    setSpotifyPrivacyAck();
+    setSpotifyPrivacyOpen(false);
+    void runSpotifyOAuthFlowInner();
+  }, [runSpotifyOAuthFlowInner]);
+
   const refreshLibrary = useCallback(async () => {
     const [s, p] = await Promise.all([encoreDb.songs.orderBy('title').toArray(), encoreDb.performances.toArray()]);
     setSongs(s);
     setPerformances(p);
+    setLibraryReady(true);
   }, []);
 
   useEffect(() => {
@@ -141,7 +229,8 @@ export function EncoreProvider({ children }: { children: React.ReactNode }): Rea
     ): Promise<boolean> => {
       const allowed = allowedHashes();
       try {
-        const email = await fetchGoogleUserEmail(accessToken);
+        const profile = await fetchGoogleUserProfile(accessToken);
+        const email = profile.email;
         const hash = await sha256HexOfEmail(email);
         if (!isEmailHashAllowed(hash, allowed)) {
           clearPersistedGoogleSession();
@@ -155,9 +244,11 @@ export function EncoreProvider({ children }: { children: React.ReactNode }): Rea
         }
         if (options.persist) writePersistedGoogleSession(accessToken, expiresIn);
         setGoogleAccessToken(accessToken);
-        setDisplayName(email.split('@')[0] ?? 'Musician');
+        setDisplayName(friendlyGoogleDisplayName(profile));
         setAccessDenied(false);
         setAccessDeniedMessage(null);
+        writeGoogleGateBypassed(false);
+        setGoogleGateBypassed(false);
         return true;
       } catch (e) {
         clearPersistedGoogleSession();
@@ -180,20 +271,22 @@ export function EncoreProvider({ children }: { children: React.ReactNode }): Rea
 
         const stored = readPersistedGoogleSession();
         if (stored && isPersistedSessionStillFresh(stored)) {
-          const ok = await finalizeGoogleSession(stored.accessToken, undefined, { persist: false, silent: true });
-          if (cancelled) return;
-          if (ok) return;
+          try {
+            const ok = await promiseWithTimeout(
+              finalizeGoogleSession(stored.accessToken, undefined, { persist: false, silent: true }),
+              15_000,
+              'Restoring Google session',
+            );
+            if (cancelled) return;
+            if (ok) return;
+          } catch {
+            clearPersistedGoogleSession();
+          }
         }
 
-        try {
-          const { access_token, expires_in } = await requestGoogleAccessToken(clientId, GOOGLE_SCOPES, {
-            prompt: 'none',
-          });
-          if (cancelled) return;
-          await finalizeGoogleSession(access_token, expires_in, { persist: true, silent: true });
-        } catch {
-          /* No Google session yet — user signs in with the button */
-        }
+        // Intentionally no `prompt: 'none'` here: it can surface GIS UI that pop-up blockers intercept, and if the
+        // token callback never runs the Promise never settled so `googleAuthReady` stayed false forever.
+        // Returning users with a still-fresh persisted token are restored above; everyone else uses the button.
       } finally {
         if (!cancelled) setGoogleAuthReady(true);
       }
@@ -223,6 +316,11 @@ export function EncoreProvider({ children }: { children: React.ReactNode }): Rea
     }
   }, [finalizeGoogleSession]);
 
+  const continueWithoutGoogle = useCallback(() => {
+    writeGoogleGateBypassed(true);
+    setGoogleGateBypassed(true);
+  }, []);
+
   const signOut = useCallback(() => {
     const token = googleAccessToken;
     setGoogleAccessToken(null);
@@ -230,6 +328,8 @@ export function EncoreProvider({ children }: { children: React.ReactNode }): Rea
     setConflict(null);
     clearPersistedGoogleSession();
     if (token) revokeGoogleAccessTokenBestEffort(token);
+    writeGoogleGateBypassed(true);
+    setGoogleGateBypassed(true);
   }, [googleAccessToken]);
 
   const retryAccessGate = useCallback(() => {
@@ -365,16 +465,23 @@ export function EncoreProvider({ children }: { children: React.ReactNode }): Rea
     () => ({
       googleAuthReady,
       googleAccessToken,
+      googleGateBypassed,
       displayName,
       signInWithGoogle,
+      continueWithoutGoogle,
       signOut,
       spotifyLinked,
       disconnectSpotify,
+      connectSpotify,
+      spotifyConnectError,
+      spotifyConnectLoopbackUrl,
+      clearSpotifyConnectError,
       accessDenied,
       accessDeniedMessage,
       retryAccessGate,
       songs,
       performances,
+      libraryReady,
       refreshLibrary,
       saveSong,
       deleteSong,
@@ -392,16 +499,23 @@ export function EncoreProvider({ children }: { children: React.ReactNode }): Rea
     [
       googleAuthReady,
       googleAccessToken,
+      googleGateBypassed,
       displayName,
       signInWithGoogle,
+      continueWithoutGoogle,
       signOut,
       spotifyLinked,
       disconnectSpotify,
+      connectSpotify,
+      spotifyConnectError,
+      spotifyConnectLoopbackUrl,
+      clearSpotifyConnectError,
       accessDenied,
       accessDeniedMessage,
       retryAccessGate,
       songs,
       performances,
+      libraryReady,
       refreshLibrary,
       saveSong,
       deleteSong,
@@ -418,7 +532,16 @@ export function EncoreProvider({ children }: { children: React.ReactNode }): Rea
     ]
   );
 
-  return <EncoreContext.Provider value={value}>{children}</EncoreContext.Provider>;
+  return (
+    <>
+      <EncoreContext.Provider value={value}>{children}</EncoreContext.Provider>
+      <SpotifyPrivacyAckDialog
+        open={spotifyPrivacyOpen}
+        onClose={() => setSpotifyPrivacyOpen(false)}
+        onConfirm={confirmSpotifyPrivacyAndConnect}
+      />
+    </>
+  );
 }
 
 export function useEncore(): EncoreContextValue {

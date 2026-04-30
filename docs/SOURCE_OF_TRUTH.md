@@ -16,9 +16,10 @@ When guidance conflicts, resolve in this order:
    - Test-based guardrails: `src/shared/importBoundaries.test.ts`, `src/shared/spaGuardrails.test.ts`
 2. `DEVELOPMENT.md` (repo-level architectural decisions)
 3. `STYLE_GUIDE.md` (TypeScript + UI/A11y conventions for editing code)
-4. Root `README.md` (onboarding and command quick reference)
-5. App-level docs (`src/<app>/README.md`, `src/<app>/DEVELOPMENT.md`)
-6. AI-assistant helper docs — canonical: `AGENTS.md` (legacy: `GEMINI.md`, which defers to `AGENTS.md`)
+4. `docs/USER_COPY_STYLE.md` (default voice and patterns for user-visible copy; app `COPY_STYLE.md` files add domain-only rules)
+5. Root `README.md` (onboarding and command quick reference)
+6. App-level docs (`src/<app>/README.md`, `src/<app>/DEVELOPMENT.md`)
+7. AI-assistant helper docs — canonical: `AGENTS.md` (legacy: `GEMINI.md`, which defers to `AGENTS.md`)
 
 ## Scope by Document Type
 
@@ -28,6 +29,10 @@ When guidance conflicts, resolve in this order:
 - `DEVELOPMENT.md`
   - Architecture decisions, guardrails, policy, and rationale.
   - Must match enforced automation in CI/hooks/config.
+- `STYLE_GUIDE.md`
+  - TypeScript + UI/A11y conventions for editing code.
+- `docs/USER_COPY_STYLE.md`
+  - Default Labs voice for user-facing copy; app `src/<app>/COPY_STYLE.md` files add domain-only rules and must not redefine global policy.
 - App docs under `src/<app>/`
   - Feature behavior, app-specific architecture, known constraints.
   - Must not redefine global policy.

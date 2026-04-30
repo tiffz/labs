@@ -1,4 +1,5 @@
 import '../shared/ui/fonts/appFonts';
+import '../shared/ui/fonts/appFontsJetBrainsMono';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { ThemeProvider } from '@mui/material/styles';

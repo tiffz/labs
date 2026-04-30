@@ -177,6 +177,7 @@ export async function refreshSpotifyToken(
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: body.toString(),
+    signal: AbortSignal.timeout(25_000),
   });
   if (!res.ok) {
     const t = await res.text();
@@ -215,6 +216,7 @@ export async function exchangeSpotifyCode(params: {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: body.toString(),
+    signal: AbortSignal.timeout(25_000),
   });
   if (!res.ok) {
     const t = await res.text();

@@ -1,3 +1,4 @@
+// Text families (Roboto/Inter/Caveat/…) ship from each app’s `main.tsx`; this module is icons + Noto Music only.
 import 'material-symbols/outlined.css';
 import '@fontsource/material-icons';
 // Ensures `document.fonts` can satisfy the Noto Music check on every micro-app entrypoint.

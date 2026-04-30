@@ -43,6 +43,56 @@ describe('matchPlaylists', () => {
     expect(rows.some((r) => r.kind === 'paired' && r.youtubeVideoId === 'v1')).toBe(true);
   });
 
+  it('scoreSpotifyYoutube is strong for cast-recording Spotify vs CurtainUp-style karaoke title', () => {
+    const sp: SpotifyPlaylistTrackRow = {
+      trackId: 'fg',
+      title: 'For Good',
+      artist: 'Stephen Schwartz, Kristin Chenoweth, Idina Menzel, Stephen Oremus',
+    };
+    const yt: YouTubePlaylistItemRow = {
+      videoId: 'vfg',
+      title: '"For Good" (Karaoke) – Wicked | Lyrics on Screen',
+      channelTitle: 'CurtainUp Karaoke',
+    };
+    expect(scoreSpotifyYoutube(sp, yt)).toBeGreaterThan(0.45);
+  });
+
+  it('buildPlaylistImportRows pairs For Good cast track with Wicked karaoke row', () => {
+    const sp: SpotifyPlaylistTrackRow[] = [
+      { trackId: 'other', title: 'Drivers License', artist: 'Olivia Rodrigo' },
+      {
+        trackId: 'fg',
+        title: 'For Good',
+        artist: 'Stephen Schwartz, Kristin Chenoweth, Idina Menzel, Stephen Oremus',
+      },
+    ];
+    const yt: YouTubePlaylistItemRow[] = [
+      {
+        videoId: 'vfg',
+        title: '"For Good" (Karaoke) – Wicked | Lyrics on Screen',
+        channelTitle: 'CurtainUp Karaoke',
+      },
+      { videoId: 'vd', title: 'drivers license', channelTitle: 'Covers' },
+    ];
+    const rows = buildPlaylistImportRows(sp, yt);
+    const pair = rows.find((r) => r.kind === 'paired' && r.spotify?.trackId === 'fg');
+    expect(pair?.youtubeVideoId).toBe('vfg');
+  });
+
+  it('scoreSpotifyYoutube handles bracket-heavy Reflection instrumental title', () => {
+    const sp: SpotifyPlaylistTrackRow = {
+      trackId: 'ref',
+      title: 'Reflection',
+      artist: 'Lea Salonga, Disney',
+    };
+    const yt: YouTubePlaylistItemRow = {
+      videoId: 'vref',
+      title: '[Original Key/ Instrumental] Reflection (From the movie "Mulan") Piano Instrumental/ with ENG lyrics',
+      channelTitle: 'Musical Theater Accompanist',
+    };
+    expect(scoreSpotifyYoutube(sp, yt)).toBeGreaterThan(0.32);
+  });
+
   it('encoreSongFromImportRow returns null for youtube-only with no video', () => {
     const row = {
       id: 'x',

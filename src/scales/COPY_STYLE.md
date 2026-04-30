@@ -1,6 +1,8 @@
 # Scales app copy style
 
-Use this for **every learner-facing string** in `src/scales/` (tier blurbs, stage labels/descriptions, concept intros, practice tips, dialogs, empty states). Code comments are not covered unless they ship to the UI.
+**First:** follow the Labs default in [`docs/USER_COPY_STYLE.md`](../../docs/USER_COPY_STYLE.md) for voice, length, and Do/Avoid patterns.
+
+Use this file for **every learner-facing string** in `src/scales/` (tier blurbs, stage labels/descriptions, concept intros, practice tips, dialogs, empty states). It adds **Learn Your Scales-specific** rules and file tables below. Code comments are not covered unless they ship to the UI.
 
 ## Voice
 
