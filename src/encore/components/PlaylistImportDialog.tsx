@@ -66,6 +66,7 @@ import {
   scoreSongSimilarityForImport,
 } from '../import/findExistingSongForImport';
 import { useEncore } from '../context/EncoreContext';
+import { encoreDialogActionsSx, encoreDialogContentSx, encoreDialogTitleSx } from '../theme/encoreUiTokens';
 import { encoreImportReviewTableSx } from './encoreImportReviewTableSx';
 import { LibrarySongPickerDialog } from './LibrarySongPickerDialog';
 
@@ -853,13 +854,14 @@ export function PlaylistImportDialog(props: {
         },
       }}
     >
-      <DialogTitle id="playlist-import-title" sx={{ flexShrink: 0 }}>
+      <DialogTitle id="playlist-import-title" sx={{ ...encoreDialogTitleSx, flexShrink: 0 }}>
         {reviewFullscreen ? 'Review import' : 'Import playlists'}
       </DialogTitle>
       <DialogContent
         sx={
           reviewFullscreen
             ? {
+                ...encoreDialogContentSx,
                 flex: '1 1 auto',
                 minHeight: 0,
                 display: 'flex',
@@ -869,15 +871,15 @@ export function PlaylistImportDialog(props: {
                 pb: 0,
                 px: { xs: 1.5, sm: 2 },
               }
-            : {}
+            : { ...encoreDialogContentSx }
         }
       >
         {step === 'urls' && (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
             <Typography variant="body2" color="text.secondary">
-              Paste Spotify and/or YouTube playlist links or ids together (one per line, or comma-separated). Encore
-              detects the platform from each URL. If both sides have tracks, Encore suggests matches from titles; you
-              can fix links in the next step before saving.
+              Paste Spotify or YouTube playlist links or ids (one per line or comma-separated). Encore picks the
+              platform from each URL. When both sides have tracks, we suggest title matches; you can adjust pairings
+              before saving.
             </Typography>
             <TextField
               label="Playlist URLs or ids"
@@ -895,8 +897,7 @@ export function PlaylistImportDialog(props: {
               spotifyLinked ? (
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: 1, columnGap: 1.5 }}>
                   <Typography variant="body2" color="text.secondary">
-                    Spotify is connected. Paste Spotify playlist URLs to load them (including private playlists in your
-                    account).
+                    Spotify is connected. Paste playlist URLs to load them, including private lists in your account.
                   </Typography>
                   <Button
                     variant="text"
@@ -1517,7 +1518,13 @@ export function PlaylistImportDialog(props: {
           </Box>
         )}
       </DialogContent>
-      <DialogActions sx={{ flexShrink: 0, px: reviewFullscreen ? 2 : undefined }}>
+      <DialogActions
+        sx={{
+          ...encoreDialogActionsSx,
+          flexShrink: 0,
+          ...(reviewFullscreen ? { px: 2 } : {}),
+        }}
+      >
         {step === 'review' && (
           <Button onClick={() => setStep('urls')} disabled={busy}>
             Back
@@ -1571,14 +1578,15 @@ export function PlaylistImportDialog(props: {
       fullWidth
       aria-labelledby="video-picker-title"
     >
-      <DialogTitle id="video-picker-title">Choose video</DialogTitle>
+      <DialogTitle id="video-picker-title" sx={encoreDialogTitleSx}>
+        Choose video
+      </DialogTitle>
       <DialogContent
         sx={{
+          ...encoreDialogContentSx,
           display: 'flex',
           flexDirection: 'column',
           gap: 2,
-          pt: 2.5,
-          px: 3,
           overflow: 'visible',
         }}
       >
@@ -1646,7 +1654,7 @@ export function PlaylistImportDialog(props: {
           )}
         </List>
       </DialogContent>
-      <DialogActions>
+      <DialogActions sx={encoreDialogActionsSx}>
         <Button onClick={closeVideoPicker}>Cancel</Button>
       </DialogActions>
     </Dialog>
@@ -1658,15 +1666,15 @@ export function PlaylistImportDialog(props: {
       fullWidth
       aria-labelledby="spotify-picker-title"
     >
-      <DialogTitle id="spotify-picker-title">Link Spotify song</DialogTitle>
+      <DialogTitle id="spotify-picker-title" sx={encoreDialogTitleSx}>
+        Link Spotify song
+      </DialogTitle>
       <DialogContent
         sx={{
+          ...encoreDialogContentSx,
           display: 'flex',
           flexDirection: 'column',
           gap: 3,
-          pt: 2.5,
-          px: 3,
-          pb: 2,
           overflow: 'visible',
         }}
       >
@@ -1782,7 +1790,7 @@ export function PlaylistImportDialog(props: {
           </>
         ) : null}
       </DialogContent>
-      <DialogActions>
+      <DialogActions sx={encoreDialogActionsSx}>
         <Button onClick={closeSpotifyPicker}>Cancel</Button>
       </DialogActions>
     </Dialog>

@@ -17,6 +17,7 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useCallback, useEffect, useState, type ReactElement } from 'react';
 import { ensureSpotifyAccessToken } from '../spotify/pkce';
+import { encoreDialogActionsSx, encoreDialogContentSx, encoreDialogTitleSx } from '../theme/encoreUiTokens';
 import { searchTracks, type SpotifySearchTrack } from '../spotify/spotifyApi';
 
 export type BulkVideoSongMatchDialogProps = {
@@ -85,11 +86,21 @@ export function BulkVideoSongMatchDialog(props: BulkVideoSongMatchDialogProps): 
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth aria-labelledby="bulk-video-song-match-title">
-      <DialogTitle id="bulk-video-song-match-title">Match song</DialogTitle>
-      <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: 2.5, px: 3, pb: 1, overflow: 'visible' }}>
+      <DialogTitle id="bulk-video-song-match-title" sx={encoreDialogTitleSx}>
+        Match song
+      </DialogTitle>
+      <DialogContent
+        sx={{
+          ...encoreDialogContentSx,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2.5,
+          pb: 1,
+          overflow: 'visible',
+        }}
+      >
         <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5 }}>
-          Search Spotify for a track to create as a new library song for this performance, or enter a title and artist
-          manually.
+          Search Spotify to add a new library song for this row, or type title and artist yourself.
         </Typography>
         {err ? (
           <Alert severity="error" onClose={() => setErr(null)}>
@@ -197,7 +208,7 @@ export function BulkVideoSongMatchDialog(props: BulkVideoSongMatchDialogProps): 
           </Stack>
         </Box>
       </DialogContent>
-      <DialogActions>
+      <DialogActions sx={encoreDialogActionsSx}>
         <Button onClick={onClose}>Cancel</Button>
       </DialogActions>
     </Dialog>

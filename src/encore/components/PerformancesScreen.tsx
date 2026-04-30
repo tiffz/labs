@@ -4,6 +4,7 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
@@ -19,12 +20,23 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import TableSortLabel from '@mui/material/TableSortLabel';
 import TextField from '@mui/material/TextField';
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Typography from '@mui/material/Typography';
 import { useMemo, useState } from 'react';
-import type { EncorePerformance, EncoreSong } from '../types';
+import type { EncoreAccompanimentKind, EncorePerformance, EncoreSong } from '../types';
+import { ACCOMPANIMENT_LABELS } from '../repertoire/accompanimentLabels';
 import { navigateEncore } from '../routes/encoreAppHash';
 import { useEncore } from '../context/EncoreContext';
+import {
+  encoreDialogActionsSx,
+  encoreDialogContentSx,
+  encoreDialogTitleSx,
+  encoreMaxWidthPage,
+  encoreMutedCaptionSx,
+} from '../theme/encoreUiTokens';
 import { encorePagePaddingTop, encoreScreenPaddingX } from '../theme/encoreM3Layout';
+import { EncorePageHeader } from '../ui/EncorePageHeader';
 import { performanceVideoOpenUrl } from '../utils/performanceVideoUrl';
 import { encorePerformancesTableSx } from './encoreImportReviewTableSx';
 import { PerformanceEditorDialog } from './PerformanceEditorDialog';
@@ -42,17 +54,29 @@ function formatPerformanceNotesLine(notes: string, maxLen = 72): string {
 }
 
 export function PerformancesScreen(): React.ReactElement {
-  const { songs, performances, savePerformance, googleAccessToken } = useEncore();
+  const { songs, performances, savePerformance, googleAccessToken, repertoireExtras } = useEncore();
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [query, setQuery] = useState('');
+  const [accompanimentFilter, setAccompanimentFilter] = useState<EncoreAccompanimentKind | 'all'>('all');
   const [pickSongOpen, setPickSongOpen] = useState(false);
   const [pickedSong, setPickedSong] = useState<EncoreSong | null>(null);
   const [perfOpen, setPerfOpen] = useState(false);
   const [perfEditing, setPerfEditing] = useState<EncorePerformance | null>(null);
   const [perfSongId, setPerfSongId] = useState<string | null>(null);
 
-  const venueOptions = useMemo(() => performances.map((p) => p.venueTag), [performances]);
+  const venueOptions = useMemo(() => {
+    const s = new Set<string>();
+    for (const v of repertoireExtras.venueCatalog) {
+      const t = v.trim();
+      if (t) s.add(t);
+    }
+    for (const p of performances) {
+      const t = p.venueTag.trim();
+      if (t) s.add(t);
+    }
+    return [...s];
+  }, [repertoireExtras.venueCatalog, performances]);
 
   const songById = useMemo(() => new Map(songs.map((s) => [s.id, s] as const)), [songs]);
 
@@ -64,6 +88,10 @@ export function PerformancesScreen(): React.ReactElement {
         return { p, song };
       })
       .filter(({ p, song }) => {
+        if (accompanimentFilter !== 'all') {
+          const k = p.accompanimentKind ?? 'unknown';
+          if (k !== accompanimentFilter) return false;
+        }
         if (!q) return true;
         const hay = [song?.title, song?.artist, p.venueTag, p.date, p.notes ?? '']
           .join(' ')
@@ -87,7 +115,7 @@ export function PerformancesScreen(): React.ReactElement {
       return c * dir;
     });
     return list;
-  }, [performances, songById, query, sortKey, sortDir]);
+  }, [performances, songById, query, sortKey, sortDir, accompanimentFilter]);
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -118,46 +146,58 @@ export function PerformancesScreen(): React.ReactElement {
       sx={{
         px: encoreScreenPaddingX,
         pt: encorePagePaddingTop,
-        pb: { xs: 10, md: 4 },
-        maxWidth: { xs: 720, md: 1100, lg: 1280 },
-        mx: 'auto',
-        width: 1,
+        pb: { xs: 10, md: 5 },
+        ...encoreMaxWidthPage,
       }}
     >
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} justifyContent="space-between" alignItems={{ sm: 'center' }} sx={{ mb: 3 }}>
-        <Box>
-          <Typography
-            variant="overline"
-            color="primary"
-            sx={{ fontWeight: 800, letterSpacing: '0.14em', lineHeight: 1.2, display: 'block', mb: 0.5 }}
-          >
-            Library
-          </Typography>
-          <Typography variant="h6" component="h2" sx={{ fontWeight: 800, letterSpacing: '-0.02em', m: 0, lineHeight: 1.25 }}>
-            Performances
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, maxWidth: 560 }}>
-            Every logged show with venue, date, and video link. Open a song to edit details or attach charts.
-          </Typography>
-        </Box>
-        <Button variant="contained" size="small" startIcon={<AddIcon />} onClick={() => setPickSongOpen(true)} sx={{ alignSelf: { xs: 'stretch', sm: 'center' } }}>
-          Add performance
-        </Button>
-      </Stack>
-
-      <TextField
-        size="small"
-        label="Search performances"
-        placeholder="Song, artist, venue, date…"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        fullWidth
-        sx={{ mb: 2, maxWidth: 420 }}
+      <EncorePageHeader
+        kicker="Library"
+        title="Performances"
+        description="Shows you have logged: venue, date, and video. Open a song for full detail or charts."
+        actions={
+          <Button variant="contained" size="small" startIcon={<AddIcon />} onClick={() => setPickSongOpen(true)}>
+            Add performance
+          </Button>
+        }
       />
 
+      <Stack spacing={2} sx={{ mb: 2 }}>
+        <TextField
+          size="small"
+          placeholder="Search song, artist, venue, date…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          fullWidth
+          sx={{ maxWidth: { sm: 440 } }}
+          inputProps={{ 'aria-label': 'Search performances' }}
+        />
+        <Box>
+          <Typography variant="caption" sx={{ ...encoreMutedCaptionSx, display: 'block', mb: 0.75 }}>
+            Accompaniment
+          </Typography>
+          <ToggleButtonGroup
+            size="small"
+            exclusive
+            value={accompanimentFilter}
+            onChange={(_, v: EncoreAccompanimentKind | 'all' | null) => {
+              if (v != null) setAccompanimentFilter(v);
+            }}
+            sx={{ flexWrap: 'wrap' }}
+            aria-label="Filter by accompaniment"
+          >
+        <ToggleButton value="all">All</ToggleButton>
+        {(Object.keys(ACCOMPANIMENT_LABELS) as EncoreAccompanimentKind[]).map((k) => (
+          <ToggleButton key={k} value={k}>
+            {ACCOMPANIMENT_LABELS[k]}
+          </ToggleButton>
+        ))}
+          </ToggleButtonGroup>
+        </Box>
+      </Stack>
+
       {performances.length === 0 ? (
-        <Typography color="text.secondary" sx={{ py: 4 }}>
-          No performances yet. Add one from a song page or use <strong>Add performance</strong> here.
+        <Typography color="text.secondary" sx={{ py: 4, lineHeight: 1.6 }}>
+          No performances yet. Add one from a song, or tap <strong>Add performance</strong> above.
         </Typography>
       ) : (
         <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2, bgcolor: 'background.paper' }}>
@@ -180,6 +220,7 @@ export function PerformancesScreen(): React.ReactElement {
                     Venue
                   </TableSortLabel>
                 </TableCell>
+                <TableCell sx={{ minWidth: 120 }}>Accompaniment</TableCell>
                 <TableCell align="right" sx={{ width: 100 }}>
                   Actions
                 </TableCell>
@@ -267,6 +308,14 @@ export function PerformancesScreen(): React.ReactElement {
                         </Typography>
                       ) : null}
                     </TableCell>
+                    <TableCell>
+                      <Chip
+                        size="small"
+                        variant="outlined"
+                        label={ACCOMPANIMENT_LABELS[p.accompanimentKind ?? 'unknown']}
+                        sx={{ fontWeight: 600 }}
+                      />
+                    </TableCell>
                     <TableCell align="right">
                       <IconButton size="small" aria-label="Edit performance" onClick={() => openEdit(p)}>
                         <EditIcon fontSize="small" />
@@ -280,11 +329,18 @@ export function PerformancesScreen(): React.ReactElement {
         </TableContainer>
       )}
 
-      <Dialog open={pickSongOpen} onClose={() => setPickSongOpen(false)} fullWidth maxWidth="xs">
-        <DialogTitle>Choose song</DialogTitle>
-        <DialogContent>
+      <Dialog
+        open={pickSongOpen}
+        onClose={() => setPickSongOpen(false)}
+        fullWidth
+        maxWidth="xs"
+        aria-labelledby="encore-perf-pick-song-title"
+      >
+        <DialogTitle id="encore-perf-pick-song-title" sx={encoreDialogTitleSx}>
+          Choose song
+        </DialogTitle>
+        <DialogContent sx={encoreDialogContentSx}>
           <Autocomplete
-            sx={{ mt: 1 }}
             options={songs}
             value={pickedSong}
             onChange={(_, v) => setPickedSong(v)}
@@ -292,7 +348,7 @@ export function PerformancesScreen(): React.ReactElement {
             renderInput={(params) => <TextField {...params} label="Song" placeholder="Type to search" />}
           />
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={encoreDialogActionsSx}>
           <Button onClick={() => setPickSongOpen(false)}>Cancel</Button>
           <Button variant="contained" onClick={() => openAddAfterPick()} disabled={!pickedSong}>
             Continue

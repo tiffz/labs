@@ -9,6 +9,7 @@ import ViewListIcon from '@mui/icons-material/ViewList';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Checkbox from '@mui/material/Checkbox';
 import Card from '@mui/material/Card';
 import CardActionArea from '@mui/material/CardActionArea';
 import CardContent from '@mui/material/CardContent';
@@ -20,6 +21,7 @@ import MenuItem from '@mui/material/MenuItem';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
+import Tooltip from '@mui/material/Tooltip';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Typography from '@mui/material/Typography';
@@ -30,16 +32,21 @@ import type { EncorePerformance, EncoreSong } from '../types';
 import { navigateEncore } from '../routes/encoreAppHash';
 import { encoreNoAlbumArtIconSx, encoreNoAlbumArtSurfaceSx } from '../utils/encoreNoAlbumArtSurface';
 import { useEncore } from '../context/EncoreContext';
+import { encoreMutedCaptionSx, encoreMaxWidthPage } from '../theme/encoreUiTokens';
 import { encorePagePaddingTop, encoreScreenPaddingX } from '../theme/encoreM3Layout';
+import { EncorePageHeader } from '../ui/EncorePageHeader';
+import { EncoreToolbarRow } from '../ui/EncoreToolbarRow';
 import { PerformanceEditorDialog } from './PerformanceEditorDialog';
 import { PlaylistImportDialog } from './PlaylistImportDialog';
 import { BulkPerformanceImportDialog } from './BulkPerformanceImportDialog';
-import { encoreMrtClientListOptions } from './encoreMrtTableDefaults';
+import { milestoneProgressSummary } from '../repertoire/repertoireMilestoneSummary';
+import { encoreMrtRepertoireTableOptions } from './encoreMrtTableDefaults';
 
 const REPERTOIRE_VIEW_STORAGE_KEY = 'encore.library.repertoireView';
 
 type RepertoireViewMode = 'table' | 'grid';
 type PerfPresenceFilter = 'all' | 'with' | 'none';
+type PracticingFilter = 'all' | 'practicing';
 
 function normalizeVenueTag(tag: string): string {
   return tag.trim() || 'Venue';
@@ -66,6 +73,8 @@ type EncoreRepertoireMrtRow = {
   lastIso: string;
   lastDisplay: string;
   genresDisplay: string;
+  milestoneShort: string;
+  milestoneDetail: string;
 };
 
 function songMatchesSearch(song: EncoreSong, query: string, perfs: EncorePerformance[]): boolean {
@@ -89,7 +98,8 @@ function songMatchesSearch(song: EncoreSong, query: string, perfs: EncorePerform
 
 export function LibraryScreen(): React.ReactElement {
   const theme = useTheme();
-  const { songs, performances, saveSong, deleteSong, savePerformance, googleAccessToken, spotifyLinked } = useEncore();
+  const { songs, performances, repertoireExtras, saveSong, deleteSong, savePerformance, googleAccessToken, spotifyLinked } =
+    useEncore();
   const [importOpen, setImportOpen] = useState(false);
   const [bulkPerfOpen, setBulkPerfOpen] = useState(false);
   const [perfOpen, setPerfOpen] = useState(false);
@@ -99,6 +109,7 @@ export function LibraryScreen(): React.ReactElement {
   const [genreFilter, setGenreFilter] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [perfPresence, setPerfPresence] = useState<PerfPresenceFilter>('all');
+  const [practicingFilter, setPracticingFilter] = useState<PracticingFilter>('all');
   const [venueFilter, setVenueFilter] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<RepertoireViewMode>(() => {
     if (typeof window === 'undefined') return 'table';
@@ -119,7 +130,18 @@ export function LibraryScreen(): React.ReactElement {
     return { topVenues, totalPerf: performances.length };
   }, [performances]);
 
-  const venueOptions = useMemo(() => performances.map((p) => p.venueTag), [performances]);
+  const venueOptions = useMemo(() => {
+    const s = new Set<string>();
+    for (const v of repertoireExtras.venueCatalog) {
+      const t = v.trim();
+      if (t) s.add(t);
+    }
+    for (const p of performances) {
+      const t = p.venueTag.trim();
+      if (t) s.add(t);
+    }
+    return [...s];
+  }, [repertoireExtras.venueCatalog, performances]);
 
   const genreOptions = useMemo(() => {
     const s = new Set<string>();
@@ -169,20 +191,24 @@ export function LibraryScreen(): React.ReactElement {
         performances.some((p) => p.songId === s.id && normalizeVenueTag(p.venueTag) === venueFilter),
       );
     }
+    if (practicingFilter === 'practicing') {
+      list = list.filter((s) => Boolean(s.practicing));
+    }
     if (searchQuery.trim()) {
       list = list.filter((s) => songMatchesSearch(s, searchQuery, performances));
     }
     return list;
-  }, [songs, genreFilter, perfPresence, venueFilter, searchQuery, performances, perfBySong]);
+  }, [songs, genreFilter, perfPresence, practicingFilter, venueFilter, searchQuery, performances, perfBySong]);
 
   const hasActiveFilters = Boolean(
-    searchQuery.trim() || genreFilter || perfPresence !== 'all' || venueFilter,
+    searchQuery.trim() || genreFilter || perfPresence !== 'all' || practicingFilter !== 'all' || venueFilter,
   );
 
   const clearAllFilters = useCallback(() => {
     setSearchQuery('');
     setGenreFilter('');
     setPerfPresence('all');
+    setPracticingFilter('all');
     setVenueFilter(null);
   }, []);
 
@@ -199,6 +225,7 @@ export function LibraryScreen(): React.ReactElement {
       const bpmVal = s.performanceBpm ?? s.originalBpm;
       const bpmDisplay = bpmVal != null && Number.isFinite(bpmVal) ? String(Math.round(bpmVal)) : '—';
       const genresDisplay = (s.spotifyGenres ?? []).length ? (s.spotifyGenres ?? []).join(', ') : '—';
+      const ms = milestoneProgressSummary(s, repertoireExtras.milestoneTemplate);
       return {
         song: s,
         title: s.title,
@@ -211,9 +238,11 @@ export function LibraryScreen(): React.ReactElement {
         lastIso: last ?? '',
         lastDisplay: formatShortDate(last),
         genresDisplay,
+        milestoneShort: ms.labelShort,
+        milestoneDetail: ms.tooltip,
       };
     });
-  }, [repertoireSongs, performances]);
+  }, [repertoireSongs, performances, repertoireExtras.milestoneTemplate]);
 
   const openSong = useCallback((s: EncoreSong) => {
     navigateEncore({ kind: 'song', id: s.id });
@@ -256,7 +285,11 @@ export function LibraryScreen(): React.ReactElement {
         header: 'Title',
         size: 200,
         Cell: ({ renderedCellValue }) => (
-          <Typography variant="body2" fontWeight={700} sx={{ lineHeight: 1.3, color: 'text.primary' }}>
+          <Typography
+            variant="body2"
+            fontWeight={700}
+            sx={{ lineHeight: 1.3, color: 'text.primary', wordBreak: 'break-word', overflowWrap: 'anywhere' }}
+          >
             {renderedCellValue}
           </Typography>
         ),
@@ -266,7 +299,11 @@ export function LibraryScreen(): React.ReactElement {
         header: 'Artist',
         size: 180,
         Cell: ({ renderedCellValue }) => (
-          <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.35 }}>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ lineHeight: 1.35, wordBreak: 'break-word', overflowWrap: 'anywhere' }}
+          >
             {renderedCellValue}
           </Typography>
         ),
@@ -320,6 +357,42 @@ export function LibraryScreen(): React.ReactElement {
           ),
       },
       {
+        id: 'practicing',
+        header: 'Working on',
+        size: 96,
+        enableColumnFilter: false,
+        enableSorting: false,
+        Cell: ({ row }) => {
+          const s = row.original.song;
+          return (
+            <Checkbox
+              size="small"
+              checked={Boolean(s.practicing)}
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) => {
+                const now = new Date().toISOString();
+                void saveSong({ ...s, practicing: e.target.checked, updatedAt: now });
+              }}
+              inputProps={{ 'aria-label': `Working on ${s.title}` }}
+            />
+          );
+        },
+      },
+      {
+        id: 'milestones',
+        header: 'Milestones',
+        size: 120,
+        enableColumnFilter: false,
+        enableSorting: false,
+        Cell: ({ row }) => (
+          <Tooltip title={row.original.milestoneDetail} enterDelay={400}>
+            <Typography variant="body2" color="text.secondary" sx={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
+              {row.original.milestoneShort}
+            </Typography>
+          </Tooltip>
+        ),
+      },
+      {
         accessorKey: 'venues',
         header: 'Venues',
         size: 200,
@@ -359,14 +432,14 @@ export function LibraryScreen(): React.ReactElement {
         ),
       },
     ],
-    [theme],
+    [theme, saveSong],
   );
 
   const table = useMaterialReactTable({
     columns,
     data: tableData,
     getRowId: (row) => row.song.id,
-    ...encoreMrtClientListOptions<EncoreRepertoireMrtRow>(),
+    ...encoreMrtRepertoireTableOptions<EncoreRepertoireMrtRow>(),
     enableGlobalFilter: false,
     mrtTheme: {
       baseBackgroundColor: theme.palette.background.paper,
@@ -409,72 +482,48 @@ export function LibraryScreen(): React.ReactElement {
       sx={{
         px: encoreScreenPaddingX,
         pt: encorePagePaddingTop,
-        pb: { xs: 10, md: 4 },
-        maxWidth: { xs: '100%', lg: 1400 },
-        mx: 'auto',
-        width: 1,
+        pb: { xs: 10, md: 5 },
+        ...encoreMaxWidthPage,
       }}
     >
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: { xs: 'stretch', sm: 'center' },
-          justifyContent: 'space-between',
-          gap: 2,
-          mb: 3,
-          flexDirection: { xs: 'column', sm: 'row' },
-        }}
-      >
-        <Box sx={{ minWidth: 0, pr: { sm: 2 } }}>
-          <Typography
-            variant="overline"
-            color="primary"
-            sx={{ fontWeight: 800, letterSpacing: '0.14em', lineHeight: 1.2, display: 'block', mb: 0.5 }}
-          >
-            Library
-          </Typography>
-          <Typography variant="h6" component="h2" sx={{ fontWeight: 800, letterSpacing: '-0.02em', m: 0, lineHeight: 1.25 }}>
-            Repertoire
-          </Typography>
-        </Box>
-        <Box
-          sx={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: 1,
-            alignSelf: { xs: 'stretch', sm: 'center' },
-            justifyContent: { xs: 'stretch', sm: 'flex-end' },
-          }}
-        >
-          <Button
-            size="small"
-            variant="outlined"
-            startIcon={<QueueMusicIcon />}
-            onClick={() => setImportOpen(true)}
-            sx={{ flexShrink: 0 }}
-          >
-            Import playlists
-          </Button>
-          <Button
-            size="small"
-            variant="outlined"
-            startIcon={<CloudUploadIcon />}
-            onClick={() => setBulkPerfOpen(true)}
-            sx={{ flexShrink: 0 }}
-          >
-            Bulk import videos
-          </Button>
-          <Button
-            size="small"
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => navigateEncore({ kind: 'songNew' })}
-            sx={{ flexShrink: 0 }}
-          >
-            Add song
-          </Button>
-        </Box>
-      </Box>
+      <EncorePageHeader
+        kicker="Library"
+        title="Repertoire"
+        actions={
+          <>
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<QueueMusicIcon />}
+              onClick={() => setImportOpen(true)}
+              sx={{ flexShrink: 0 }}
+            >
+              Import playlists
+            </Button>
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<CloudUploadIcon />}
+              onClick={() => setBulkPerfOpen(true)}
+              sx={{ flexShrink: 0 }}
+            >
+              Bulk import videos
+            </Button>
+            <Button size="small" variant="text" onClick={() => navigateEncore({ kind: 'repertoireSettings' })} sx={{ flexShrink: 0 }}>
+              Venues & milestones
+            </Button>
+            <Button
+              size="small"
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => navigateEncore({ kind: 'songNew' })}
+              sx={{ flexShrink: 0 }}
+            >
+              Add song
+            </Button>
+          </>
+        }
+      />
 
       <Paper
         variant="outlined"
@@ -482,11 +531,11 @@ export function LibraryScreen(): React.ReactElement {
           mb: 3,
           borderRadius: 2,
           p: 2.5,
-          background: (t) => `linear-gradient(135deg, ${alpha(t.palette.primary.main, 0.06)} 0%, ${alpha(t.palette.secondary.main, 0.04)} 100%)`,
+          bgcolor: (t) => alpha(t.palette.primary.main, 0.04),
           borderColor: 'divider',
         }}
       >
-        <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1.25, letterSpacing: '0.02em' }}>
+        <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 700, mb: 1.25, letterSpacing: '0.04em' }}>
           At a glance
         </Typography>
         <Stack direction="row" flexWrap="wrap" gap={1} alignItems="center" sx={{ mb: 1.5 }}>
@@ -513,12 +562,7 @@ export function LibraryScreen(): React.ReactElement {
       {songs.length > 0 ? (
         <Paper variant="outlined" sx={{ borderRadius: 2, p: 2, mb: 2 }}>
           <Stack spacing={2}>
-            <Stack
-              direction={{ xs: 'column', sm: 'row' }}
-              spacing={1.5}
-              alignItems={{ xs: 'stretch', sm: 'center' }}
-              justifyContent="space-between"
-            >
+            <EncoreToolbarRow sx={{ mb: 0 }}>
               <TextField
                 size="small"
                 fullWidth
@@ -554,15 +598,19 @@ export function LibraryScreen(): React.ReactElement {
                   Grid
                 </ToggleButton>
               </ToggleButtonGroup>
-            </Stack>
+            </EncoreToolbarRow>
 
             <Box>
-              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, letterSpacing: '0.06em', display: 'block', mb: 1 }}>
+              <Typography variant="caption" sx={{ ...encoreMutedCaptionSx, display: 'block', mb: 1 }}>
                 Quick filters
               </Typography>
               <Stack spacing={1.25}>
                 <Stack direction="row" flexWrap="wrap" gap={1} alignItems="center">
-                  <Typography variant="caption" color="text.secondary" sx={{ width: '100%', sm: { width: 'auto', minWidth: 72 }, fontWeight: 600 }}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 72 }, fontWeight: 600 }}
+                  >
                     Shows
                   </Typography>
                   {(
@@ -580,6 +628,32 @@ export function LibraryScreen(): React.ReactElement {
                       color={perfPresence === id ? 'primary' : 'default'}
                       variant={perfPresence === id ? 'filled' : 'outlined'}
                       onClick={() => setPerfPresence(id)}
+                    />
+                  ))}
+                </Stack>
+
+                <Stack direction="row" flexWrap="wrap" gap={1} alignItems="center">
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 72 }, fontWeight: 600 }}
+                  >
+                    Practice
+                  </Typography>
+                  {(
+                    [
+                      { id: 'all' as const, label: 'All songs' },
+                      { id: 'practicing' as const, label: 'Working on' },
+                    ] as const
+                  ).map(({ id, label }) => (
+                    <Chip
+                      key={id}
+                      size="small"
+                      label={label}
+                      clickable
+                      color={practicingFilter === id ? 'primary' : 'default'}
+                      variant={practicingFilter === id ? 'filled' : 'outlined'}
+                      onClick={() => setPracticingFilter(id)}
                     />
                   ))}
                 </Stack>
@@ -664,19 +738,19 @@ export function LibraryScreen(): React.ReactElement {
       ) : null}
 
       {songs.length === 0 && (
-        <Typography color="text.secondary" sx={{ py: 5, textAlign: 'center', px: 2, lineHeight: 1.65 }}>
-          No songs yet. Add one to start your library. Songs stay on this device; Drive sync uses Google from the
-          Account menu.
+        <Typography color="text.secondary" sx={{ py: 5, textAlign: 'center', px: 2, lineHeight: 1.65, maxWidth: 520, mx: 'auto' }}>
+          No songs yet. Add one to start. Data stays on this device until you sign in to Google for Drive sync (Account
+          menu).
         </Typography>
       )}
       {songs.length > 0 && repertoireSongs.length === 0 ? (
-        <Typography color="text.secondary" sx={{ mb: 2 }}>
-          No songs match your search or filters. Try clearing filters or broadening your search.
+        <Typography color="text.secondary" sx={{ mb: 2, lineHeight: 1.55 }}>
+          No matches. Clear filters or try a shorter search.
         </Typography>
       ) : null}
 
       {repertoireSongs.length > 0 && viewMode === 'table' ? (
-        <Box className="encore-mrt-repertoire">
+        <Box className="encore-mrt-repertoire" sx={{ width: '100%', minWidth: 0, maxWidth: '100%', overflow: 'hidden' }}>
           <MaterialReactTable table={table} />
         </Box>
       ) : null}
@@ -690,6 +764,7 @@ export function LibraryScreen(): React.ReactElement {
         >
           {repertoireSongs.map((s) => {
             const perfs = perfBySong.get(s.id) ?? [];
+            const ms = milestoneProgressSummary(s, repertoireExtras.milestoneTemplate);
             const keyBits = [s.performanceKey, s.originalKey].filter(Boolean);
             const keyDisplay = keyBits.length ? keyBits.join(' · ') : '';
             const bpmVal = s.performanceBpm ?? s.originalBpm;
@@ -741,6 +816,16 @@ export function LibraryScreen(): React.ReactElement {
                         <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }} noWrap>
                           {metaLine}
                         </Typography>
+                      ) : null}
+                      {s.practicing ? (
+                        <Chip size="small" color="secondary" label="Working on" sx={{ mt: 0.75, height: 22, fontWeight: 700 }} />
+                      ) : null}
+                      {ms.total > 0 ? (
+                        <Tooltip title={ms.tooltip}>
+                          <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.35 }} noWrap>
+                            Milestones {ms.labelShort}
+                          </Typography>
+                        </Tooltip>
                       ) : null}
                       {perfs.slice(0, 2).map((p) => (
                         <Typography key={p.id} variant="caption" display="block" color="text.secondary" noWrap>

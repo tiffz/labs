@@ -1,4 +1,9 @@
+import type { RepertoireExtrasRow } from '../db/encoreDb';
 import type { EncorePerformance, EncoreSong, RepertoireWirePayload } from '../types';
+
+export function defaultRepertoireExtrasRow(iso: string): RepertoireExtrasRow {
+  return { id: 'default', venueCatalog: [], milestoneTemplate: [], updatedAt: iso };
+}
 
 export function parseRepertoireWire(json: string): RepertoireWirePayload {
   const data = JSON.parse(json) as Partial<RepertoireWirePayload>;
@@ -10,6 +15,8 @@ export function parseRepertoireWire(json: string): RepertoireWirePayload {
     exportedAt: data.exportedAt ?? new Date().toISOString(),
     songs: data.songs as EncoreSong[],
     performances: data.performances as EncorePerformance[],
+    venueCatalog: Array.isArray(data.venueCatalog) ? data.venueCatalog : undefined,
+    milestoneTemplate: Array.isArray(data.milestoneTemplate) ? data.milestoneTemplate : undefined,
   };
 }
 
@@ -17,12 +24,35 @@ export function serializeRepertoireWire(payload: RepertoireWirePayload): string 
   return JSON.stringify(payload, null, 0);
 }
 
-export function buildWireFromTables(songs: EncoreSong[], performances: EncorePerformance[]): RepertoireWirePayload {
+export function buildWireFromTables(
+  songs: EncoreSong[],
+  performances: EncorePerformance[],
+  extras: RepertoireExtrasRow,
+): RepertoireWirePayload {
   return {
     version: 1,
     exportedAt: new Date().toISOString(),
     songs,
     performances,
+    venueCatalog: extras.venueCatalog,
+    milestoneTemplate: extras.milestoneTemplate,
+  };
+}
+
+/** Derive `repertoireExtras` row from a parsed wire payload (used after pull). */
+export function repertoireExtrasFromWire(wire: RepertoireWirePayload): RepertoireExtrasRow {
+  const fromPerformances = [...new Set(wire.performances.map((p) => p.venueTag.trim()).filter(Boolean))].sort(
+    (a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }),
+  );
+  const venueCatalog =
+    wire.venueCatalog && wire.venueCatalog.length > 0
+      ? [...wire.venueCatalog]
+      : fromPerformances;
+  return {
+    id: 'default',
+    venueCatalog,
+    milestoneTemplate: wire.milestoneTemplate ?? [],
+    updatedAt: wire.exportedAt,
   };
 }
 
@@ -35,6 +65,13 @@ export function maxUpdatedAt(songs: EncoreSong[], performances: EncorePerformanc
     if (p.updatedAt > max) max = p.updatedAt;
   }
   return max;
+}
+
+/** Include repertoire extras clock so venue/milestone-only edits trigger sync. */
+export function maxRepertoireClock(songs: EncoreSong[], performances: EncorePerformance[], extrasUpdatedAt?: string): string {
+  const base = maxUpdatedAt(songs, performances);
+  if (extrasUpdatedAt && extrasUpdatedAt > base) return extrasUpdatedAt;
+  return base;
 }
 
 /** Merge remote records into local by id using latest `updatedAt`. */

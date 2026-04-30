@@ -77,6 +77,8 @@ export type DriveFileListRow = {
   id?: string;
   name?: string;
   mimeType?: string;
+  /** When the file was first created in Drive (often first upload). Prefer over {@link modifiedTime} for “when did this file land here?”. */
+  createdTime?: string;
   modifiedTime?: string;
   parents?: string[];
   /** User or app description; sometimes richer than the file name (not the same as Drive UI “AI summary”). */

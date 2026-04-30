@@ -9,7 +9,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { encoreDb, getSyncMeta } from '../db/encoreDb';
+import { encoreDb, getSyncMeta, type RepertoireExtrasRow } from '../db/encoreDb';
 import type { EncorePerformance, EncoreSong } from '../types';
 import { fetchGoogleUserProfile, friendlyGoogleDisplayName } from '../auth/loadGisScript';
 import {
@@ -25,6 +25,7 @@ import {
   sha256HexOfEmail,
 } from '../auth/hashEmail';
 import { promiseWithTimeout } from '../auth/promiseWithTimeout';
+import { defaultRepertoireExtrasRow } from '../drive/repertoireWire';
 import {
   runInitialSyncIfPossible,
   pushRepertoireToDrive,
@@ -103,9 +104,12 @@ interface EncoreContextValue {
   retryAccessGate: () => void;
   songs: EncoreSong[];
   performances: EncorePerformance[];
+  /** Venue catalog + global milestone template (synced in `repertoire_data.json`). */
+  repertoireExtras: RepertoireExtrasRow;
   /** True after the first local Dexie library read finishes (avoids treating an empty in-memory list as definitive). */
   libraryReady: boolean;
   refreshLibrary: () => Promise<void>;
+  saveRepertoireExtras: (patch: Partial<Omit<RepertoireExtrasRow, 'id'>>) => Promise<void>;
   saveSong: (song: EncoreSong) => Promise<void>;
   deleteSong: (id: string) => Promise<void>;
   savePerformance: (p: EncorePerformance) => Promise<void>;
@@ -127,6 +131,22 @@ function getGoogleClientId(): string {
   return id?.trim() ?? '';
 }
 
+/**
+ * Ask Google for a new access token without showing the account picker, when the user
+ * has already granted Encore’s scopes in this browser. Fails (null) if consent is needed again.
+ */
+async function requestGoogleSilentToken(clientId: string, scope: string): Promise<{ access_token: string; expires_in?: number } | null> {
+  try {
+    return await promiseWithTimeout(
+      requestGoogleAccessToken(clientId, scope, { prompt: 'none' }),
+      12_000,
+      'Google silent refresh',
+    );
+  } catch {
+    return null;
+  }
+}
+
 export function EncoreProvider({ children }: { children: React.ReactNode }): React.ReactElement {
   const [googleAuthReady, setGoogleAuthReady] = useState(false);
   const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(null);
@@ -138,6 +158,9 @@ export function EncoreProvider({ children }: { children: React.ReactNode }): Rea
   const [accessDeniedMessage, setAccessDeniedMessage] = useState<string | null>(null);
   const [songs, setSongs] = useState<EncoreSong[]>([]);
   const [performances, setPerformances] = useState<EncorePerformance[]>([]);
+  const [repertoireExtras, setRepertoireExtras] = useState<RepertoireExtrasRow>(() =>
+    defaultRepertoireExtrasRow(new Date().toISOString()),
+  );
   const [libraryReady, setLibraryReady] = useState(false);
   const [syncState, setSyncState] = useState<SyncUiState>('idle');
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
@@ -211,9 +234,23 @@ export function EncoreProvider({ children }: { children: React.ReactNode }): Rea
   }, [runSpotifyOAuthFlowInner]);
 
   const refreshLibrary = useCallback(async () => {
-    const [s, p] = await Promise.all([encoreDb.songs.orderBy('title').toArray(), encoreDb.performances.toArray()]);
+    const [s, p, x] = await Promise.all([
+      encoreDb.songs.orderBy('title').toArray(),
+      encoreDb.performances.toArray(),
+      encoreDb.repertoireExtras.get('default'),
+    ]);
     setSongs(s);
     setPerformances(p);
+    const now = new Date().toISOString();
+    let extras = x;
+    if (!extras) {
+      const fromPerf = [...new Set(p.map((r) => r.venueTag.trim()).filter(Boolean))].sort((a, b) =>
+        a.localeCompare(b, undefined, { sensitivity: 'base' }),
+      );
+      extras = { id: 'default', venueCatalog: fromPerf, milestoneTemplate: [], updatedAt: now };
+      await encoreDb.repertoireExtras.put(extras);
+    }
+    setRepertoireExtras(extras);
     setLibraryReady(true);
   }, []);
 
@@ -270,23 +307,32 @@ export function EncoreProvider({ children }: { children: React.ReactNode }): Rea
         if (!clientId) return;
 
         const stored = readPersistedGoogleSession();
-        if (stored && isPersistedSessionStillFresh(stored)) {
-          try {
-            const ok = await promiseWithTimeout(
-              finalizeGoogleSession(stored.accessToken, undefined, { persist: false, silent: true }),
-              15_000,
-              'Restoring Google session',
-            );
-            if (cancelled) return;
-            if (ok) return;
-          } catch {
-            clearPersistedGoogleSession();
+        if (stored) {
+          if (isPersistedSessionStillFresh(stored)) {
+            try {
+              const ok = await promiseWithTimeout(
+                finalizeGoogleSession(stored.accessToken, undefined, { persist: false, silent: true }),
+                15_000,
+                'Restoring Google session',
+              );
+              if (cancelled) return;
+              if (ok) return;
+            } catch {
+              if (!cancelled) clearPersistedGoogleSession();
+            }
           }
-        }
 
-        // Intentionally no `prompt: 'none'` here: it can surface GIS UI that pop-up blockers intercept, and if the
-        // token callback never runs the Promise never settled so `googleAuthReady` stayed false forever.
-        // Returning users with a still-fresh persisted token are restored above; everyone else uses the button.
+          if (cancelled) return;
+          const renewed = await requestGoogleSilentToken(clientId, GOOGLE_SCOPES);
+          if (!cancelled && renewed) {
+            const ok = await finalizeGoogleSession(renewed.access_token, renewed.expires_in, {
+              persist: true,
+              silent: true,
+            });
+            if (ok) return;
+          }
+          if (!cancelled) clearPersistedGoogleSession();
+        }
       } finally {
         if (!cancelled) setGoogleAuthReady(true);
       }
@@ -295,6 +341,52 @@ export function EncoreProvider({ children }: { children: React.ReactNode }): Rea
       cancelled = true;
     };
   }, [finalizeGoogleSession]);
+
+  /** Proactively renew the short-lived GIS access token before local expiry (and when returning to the tab). */
+  useEffect(() => {
+    if (!googleAccessToken) return;
+    const clientId = getGoogleClientId();
+    if (!clientId) return;
+
+    let timeoutId: number | undefined;
+
+    const armTimer = () => {
+      if (timeoutId != null) window.clearTimeout(timeoutId);
+      const s = readPersistedGoogleSession();
+      if (!s) return;
+      const wakeAt = s.expiresAtMs - 3 * 60 * 1000;
+      const delay = Math.max(25_000, Math.min(wakeAt - Date.now(), 55 * 60 * 1000));
+      timeoutId = window.setTimeout(() => {
+        void (async () => {
+          const next = await requestGoogleSilentToken(clientId, GOOGLE_SCOPES);
+          if (next) {
+            const ok = await finalizeGoogleSession(next.access_token, next.expires_in, { persist: true, silent: true });
+            if (ok) armTimer();
+          }
+        })();
+      }, delay);
+    };
+
+    armTimer();
+
+    const onVisibility = () => {
+      if (document.visibilityState !== 'visible') return;
+      const s = readPersistedGoogleSession();
+      if (!s || s.expiresAtMs > Date.now() + 120_000) return;
+      void (async () => {
+        const next = await requestGoogleSilentToken(clientId, GOOGLE_SCOPES);
+        if (next) {
+          await finalizeGoogleSession(next.access_token, next.expires_in, { persist: true, silent: true });
+        }
+      })();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      if (timeoutId != null) window.clearTimeout(timeoutId);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [googleAccessToken, finalizeGoogleSession]);
 
   const signInWithGoogle = useCallback(async () => {
     const clientId = getGoogleClientId();
@@ -385,6 +477,18 @@ export function EncoreProvider({ children }: { children: React.ReactNode }): Rea
       }
     })();
   }, [googleAccessToken]);
+
+  const saveRepertoireExtras = useCallback(
+    async (patch: Partial<Omit<RepertoireExtrasRow, 'id'>>) => {
+      const now = new Date().toISOString();
+      const cur = (await encoreDb.repertoireExtras.get('default')) ?? defaultRepertoireExtrasRow(now);
+      const next: RepertoireExtrasRow = { ...cur, ...patch, id: 'default', updatedAt: now };
+      await encoreDb.repertoireExtras.put(next);
+      setRepertoireExtras(next);
+      scheduleBackgroundSync();
+    },
+    [scheduleBackgroundSync],
+  );
 
   const saveSong = useCallback(
     async (song: EncoreSong) => {
@@ -481,8 +585,10 @@ export function EncoreProvider({ children }: { children: React.ReactNode }): Rea
       retryAccessGate,
       songs,
       performances,
+      repertoireExtras,
       libraryReady,
       refreshLibrary,
+      saveRepertoireExtras,
       saveSong,
       deleteSong,
       savePerformance,
@@ -515,8 +621,10 @@ export function EncoreProvider({ children }: { children: React.ReactNode }): Rea
       retryAccessGate,
       songs,
       performances,
+      repertoireExtras,
       libraryReady,
       refreshLibrary,
+      saveRepertoireExtras,
       saveSong,
       deleteSong,
       savePerformance,

@@ -4,6 +4,7 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import Typography from '@mui/material/Typography';
+import { encoreDialogActionsSx, encoreDialogContentSx, encoreDialogTitleSx } from '../theme/encoreUiTokens';
 import type { SyncCheckResult } from '../drive/repertoireSync';
 
 export function ConflictResolutionDialog(props: {
@@ -16,11 +17,12 @@ export function ConflictResolutionDialog(props: {
   const { open, conflict, onUseRemote, onKeepLocal, onDismiss } = props;
   return (
     <Dialog open={open} onClose={onDismiss} aria-labelledby="encore-conflict-title">
-      <DialogTitle id="encore-conflict-title">Sync conflict</DialogTitle>
-      <DialogContent>
+      <DialogTitle id="encore-conflict-title" sx={encoreDialogTitleSx}>
+        Sync conflict
+      </DialogTitle>
+      <DialogContent sx={encoreDialogContentSx}>
         <Typography variant="body2" color="text.secondary" paragraph>
-          Encore found changes both on this device and in your Google Drive file. Pick how to resolve this one-time
-          merge.
+          Changes exist on this device and in your Drive file. Pick how to merge this time.
         </Typography>
         {conflict?.remoteModified && (
           <Typography variant="caption" color="text.secondary" display="block">
@@ -28,7 +30,7 @@ export function ConflictResolutionDialog(props: {
           </Typography>
         )}
       </DialogContent>
-      <DialogActions sx={{ flexWrap: 'wrap', gap: 1, px: 2, py: 1.5 }}>
+      <DialogActions sx={encoreDialogActionsSx}>
         <Button onClick={onDismiss} color="inherit">
           Decide later
         </Button>

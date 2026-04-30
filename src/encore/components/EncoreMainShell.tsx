@@ -18,10 +18,13 @@ import type { EncoreAppRoute } from '../routes/encoreAppHash';
 import { navigateEncore, parseEncoreAppHash } from '../routes/encoreAppHash';
 import { useEncore } from '../context/EncoreContext';
 import { encoreScreenPaddingX } from '../theme/encoreM3Layout';
+import { encoreDialogActionsSx, encoreDialogContentSx, encoreDialogTitleSx } from '../theme/encoreUiTokens';
+import { EncoreAppShell } from '../ui/EncoreAppShell';
 import { EncoreAccountMenu } from './EncoreAccountMenu';
 import { ConflictResolutionDialog } from './ConflictResolutionDialog';
 import { LibraryScreen } from './LibraryScreen';
 import { PerformancesScreen } from './PerformancesScreen';
+import { RepertoireSettingsScreen } from './RepertoireSettingsScreen';
 import { SharePanel } from './SharePanel';
 import { SongPage } from './SongPage';
 
@@ -66,9 +69,11 @@ export function EncoreMainShell(): React.ReactElement {
 
   const onSongRoute = route.kind === 'song' || route.kind === 'songNew';
   const songPageKey = route.kind === 'songNew' ? 'new' : route.kind === 'song' ? route.id : 'main';
+  const librarySectionTab =
+    route.kind === 'performances' ? 1 : route.kind === 'repertoireSettings' ? 2 : 0;
 
   return (
-    <div className="encore-app-shell flex flex-col min-h-screen min-h-[100dvh]">
+    <EncoreAppShell>
       <AppBar
         position="sticky"
         color="transparent"
@@ -190,21 +195,24 @@ export function EncoreMainShell(): React.ReactElement {
               }}
             >
               <Tabs
-                value={route.kind === 'performances' ? 1 : 0}
+                value={librarySectionTab}
                 onChange={(_, v) => {
-                  navigateEncore(v === 1 ? { kind: 'performances' } : { kind: 'library' });
+                  if (v === 0) navigateEncore({ kind: 'library' });
+                  else if (v === 1) navigateEncore({ kind: 'performances' });
+                  else navigateEncore({ kind: 'repertoireSettings' });
                 }}
                 aria-label="Encore library sections"
                 variant={compactHeaderTabs ? 'fullWidth' : 'standard'}
                 sx={{
                   minHeight: 44,
                   width: { md: 'auto' },
-                  maxWidth: { md: 400 },
+                  maxWidth: { md: 520 },
                   '& .MuiTab-root': { minHeight: 44, textTransform: 'none', fontWeight: 700 },
                 }}
               >
                 <Tab label="Repertoire" id="encore-tab-repertoire" aria-controls="encore-panel-repertoire" />
                 <Tab label="Performances" id="encore-tab-performances" aria-controls="encore-panel-performances" />
+                <Tab label="Setup" id="encore-tab-setup" aria-controls="encore-panel-setup" />
               </Tabs>
             </Box>
           ) : null}
@@ -216,11 +224,29 @@ export function EncoreMainShell(): React.ReactElement {
         ) : (
           <Box
             role="tabpanel"
-            id={route.kind === 'performances' ? 'encore-panel-performances' : 'encore-panel-repertoire'}
-            aria-labelledby={route.kind === 'performances' ? 'encore-tab-performances' : 'encore-tab-repertoire'}
+            id={
+              route.kind === 'performances'
+                ? 'encore-panel-performances'
+                : route.kind === 'repertoireSettings'
+                  ? 'encore-panel-setup'
+                  : 'encore-panel-repertoire'
+            }
+            aria-labelledby={
+              route.kind === 'performances'
+                ? 'encore-tab-performances'
+                : route.kind === 'repertoireSettings'
+                  ? 'encore-tab-setup'
+                  : 'encore-tab-repertoire'
+            }
             sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}
           >
-            {route.kind === 'performances' ? <PerformancesScreen /> : <LibraryScreen />}
+            {route.kind === 'performances' ? (
+              <PerformancesScreen />
+            ) : route.kind === 'repertoireSettings' ? (
+              <RepertoireSettingsScreen />
+            ) : (
+              <LibraryScreen />
+            )}
           </Box>
         )}
       </Box>
@@ -237,13 +263,13 @@ export function EncoreMainShell(): React.ReactElement {
           },
         }}
       >
-        <DialogTitle id="encore-share-dialog-title" sx={{ pb: 1 }}>
+        <DialogTitle id="encore-share-dialog-title" sx={encoreDialogTitleSx}>
           Secret guest link
         </DialogTitle>
-        <DialogContent dividers sx={{ px: 3, py: 2 }}>
+        <DialogContent dividers sx={encoreDialogContentSx}>
           <SharePanel />
         </DialogContent>
-        <DialogActions sx={{ px: 2, py: 1.5, gap: 1 }}>
+        <DialogActions sx={encoreDialogActionsSx}>
           <Button onClick={() => setShareDialogOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
@@ -254,6 +280,6 @@ export function EncoreMainShell(): React.ReactElement {
         onKeepLocal={() => void resolveConflictLocal()}
         onDismiss={dismissConflict}
       />
-    </div>
+    </EncoreAppShell>
   );
 }

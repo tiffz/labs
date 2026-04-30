@@ -1,4 +1,3 @@
-import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import SkipToMain from '../shared/components/SkipToMain';
@@ -11,6 +10,7 @@ import { AccessRestrictedScreen, SignInLanding } from './components/AccessGateSc
 import { EncoreMainShell } from './components/EncoreMainShell';
 import { GuestShareView } from './components/GuestShareView';
 import { tryCompleteSpotifyOAuthFromUrl } from './spotify/completeOAuthFromUrl';
+import { EncoreAppShell } from './ui/EncoreAppShell';
 
 function parseShareFileIdFromHash(): string | null {
   const raw = window.location.hash.replace(/^#/, '');
@@ -47,13 +47,9 @@ function EncoreSignedInRouter(): React.ReactElement {
         </main>
       ) : !googleAuthReady ? (
         <main id="main">
-          <Box
-            className="encore-app-shell flex flex-col items-center justify-center min-h-screen min-h-[100dvh] p-8"
-            aria-busy="true"
-            aria-label="Checking saved Google sign-in"
-          >
+          <EncoreAppShell centered aria-busy="true" aria-label="Checking saved Google sign-in">
             <CircularProgress color="primary" />
-          </Box>
+          </EncoreAppShell>
         </main>
       ) : !canUseMainShell ? (
         <main id="main">
@@ -87,24 +83,20 @@ export default function App(): React.ReactElement {
 
   if (localhostDevRedirect) {
     return (
-      <Box
-        className="encore-app-shell flex flex-col items-center justify-center min-h-screen min-h-[100dvh] p-8"
-        aria-busy="true"
-        aria-label="Switching to 127.0.0.1 for Encore development"
-      >
+      <EncoreAppShell centered aria-busy="true" aria-label="Switching to 127.0.0.1 for Encore development">
         <CircularProgress color="primary" />
-      </Box>
+      </EncoreAppShell>
     );
   }
 
   if (shareFileId) {
     return (
-      <Box className="encore-app-shell">
+      <EncoreAppShell>
         <SkipToMain />
         <main id="main">
           <GuestShareView fileId={shareFileId} />
         </main>
-      </Box>
+      </EncoreAppShell>
     );
   }
 

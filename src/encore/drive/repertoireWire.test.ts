@@ -1,13 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import type { EncoreSong } from '../types';
-import { mergeRecordsByUpdatedAt, parseRepertoireWire, serializeRepertoireWire, buildWireFromTables } from './repertoireWire';
+import {
+  buildWireFromTables,
+  defaultRepertoireExtrasRow,
+  mergeRecordsByUpdatedAt,
+  parseRepertoireWire,
+  serializeRepertoireWire,
+} from './repertoireWire';
 
 describe('parseRepertoireWire', () => {
   it('parses valid payload', () => {
-    const wire = buildWireFromTables([], []);
+    const extras = defaultRepertoireExtrasRow(new Date().toISOString());
+    const wire = buildWireFromTables([], [], extras);
     const round = parseRepertoireWire(serializeRepertoireWire(wire));
     expect(round.songs).toEqual([]);
     expect(round.performances).toEqual([]);
+    expect(round.venueCatalog).toEqual([]);
+    expect(round.milestoneTemplate).toEqual([]);
   });
 
   it('rejects invalid', () => {

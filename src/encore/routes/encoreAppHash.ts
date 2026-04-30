@@ -4,6 +4,7 @@
 export type EncoreAppRoute =
   | { kind: 'library' }
   | { kind: 'performances' }
+  | { kind: 'repertoireSettings' }
   | { kind: 'song'; id: string }
   | { kind: 'songNew' };
 
@@ -18,12 +19,14 @@ export function parseEncoreAppHash(hash: string): EncoreAppRoute {
   if (segs[0] === 'share' && !segs[1]) return { kind: 'library' };
   if (segs[0] === 'library') return { kind: 'library' };
   if (segs[0] === 'performances') return { kind: 'performances' };
+  if (segs[0] === 'settings' && segs[1] === 'repertoire') return { kind: 'repertoireSettings' };
   return { kind: 'library' };
 }
 
 export function navigateEncore(route: EncoreAppRoute): void {
   let h = '#/library';
   if (route.kind === 'performances') h = '#/performances';
+  else if (route.kind === 'repertoireSettings') h = '#/settings/repertoire';
   else if (route.kind === 'songNew') h = '#/song/new';
   else if (route.kind === 'song') h = `#/song/${encodeURIComponent(route.id)}`;
   if (window.location.hash !== h) window.location.hash = h;

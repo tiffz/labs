@@ -13,6 +13,7 @@ import ListSubheader from '@mui/material/ListSubheader';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useMemo, type ReactElement } from 'react';
+import { encoreDialogActionsSx, encoreDialogContentSx, encoreDialogTitleSx } from '../theme/encoreUiTokens';
 import type { EncoreSong } from '../types';
 import { scoreSongSimilarityForImport } from '../import/findExistingSongForImport';
 
@@ -73,14 +74,15 @@ export function LibrarySongPickerDialog(props: LibrarySongPickerDialogProps): Re
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth aria-labelledby="library-song-picker-title">
-      <DialogTitle id="library-song-picker-title">Library</DialogTitle>
+      <DialogTitle id="library-song-picker-title" sx={encoreDialogTitleSx}>
+        Pick from library
+      </DialogTitle>
       <DialogContent
         sx={{
+          ...encoreDialogContentSx,
           display: 'flex',
           flexDirection: 'column',
           gap: 2,
-          pt: 2.5,
-          px: 3,
           overflow: 'visible',
         }}
       >
@@ -145,7 +147,7 @@ export function LibrarySongPickerDialog(props: LibrarySongPickerDialogProps): Re
           )}
         </List>
       </DialogContent>
-      <DialogActions>
+      <DialogActions sx={encoreDialogActionsSx}>
         <Button onClick={onClose}>Cancel</Button>
       </DialogActions>
     </Dialog>

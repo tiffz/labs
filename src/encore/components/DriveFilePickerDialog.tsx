@@ -18,6 +18,7 @@ import { useCallback, useEffect, useRef, useState, type ReactElement } from 'rea
 import { driveListFiles, type DriveFileListRow } from '../drive/driveFetch';
 import { driveFolderWebUrl } from '../drive/driveWebUrls';
 import { openEncoreGoogleDrivePicker } from '../drive/googlePicker';
+import { encoreDialogActionsSx, encoreDialogContentSx, encoreDialogTitleSx } from '../theme/encoreUiTokens';
 
 function qFilesInFolder(folderId: string, nameContains: string): string {
   const esc = nameContains.replace(/'/g, "\\'");
@@ -97,7 +98,17 @@ export function DriveFilePickerDialog(props: {
       aria-labelledby="drive-picker-title"
       disableEnforceFocus
     >
-      <DialogTitle id="drive-picker-title" sx={{ display: 'flex', alignItems: 'center', pr: 1, gap: 1, flexWrap: 'wrap' }}>
+      <DialogTitle
+        id="drive-picker-title"
+        sx={{
+          ...encoreDialogTitleSx,
+          display: 'flex',
+          alignItems: 'center',
+          pr: 1,
+          gap: 1,
+          flexWrap: 'wrap',
+        }}
+      >
         <Typography component="span" variant="h6" sx={{ flex: '1 1 auto', minWidth: 0 }}>
           {title}
         </Typography>
@@ -141,7 +152,7 @@ export function DriveFilePickerDialog(props: {
           <CloseIcon />
         </IconButton>
       </DialogTitle>
-      <DialogContent>
+      <DialogContent sx={encoreDialogContentSx}>
         {!googleAccessToken || !folderId ? (
           <Typography color="text.secondary">Sign in to Google and sync Drive first.</Typography>
         ) : (
@@ -205,7 +216,7 @@ export function DriveFilePickerDialog(props: {
           </>
         )}
       </DialogContent>
-      <DialogActions>
+      <DialogActions sx={encoreDialogActionsSx}>
         <Button onClick={onClose}>Cancel</Button>
       </DialogActions>
     </Dialog>

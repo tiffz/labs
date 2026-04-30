@@ -83,7 +83,7 @@ export function EncoreAccountMenu(props: {
     : syncState === 'syncing'
       ? 'Syncing…'
       : syncState === 'conflict'
-        ? 'Merge conflict — choose in the dialog'
+        ? 'Merge conflict: choose in the dialog'
         : syncState === 'error'
           ? 'Sync error'
           : 'Drive backup on';

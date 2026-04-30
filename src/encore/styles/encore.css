@@ -37,11 +37,6 @@
   }
 }
 
-.encore-markdown-preview {
-  font-size: 0.9375rem;
-  line-height: 1.55;
-}
-
 .encore-markdown-preview h1,
 .encore-markdown-preview h2,
 .encore-markdown-preview h3 {
@@ -57,16 +52,6 @@
 
 .encore-markdown-preview p {
   margin: 0.35rem 0;
-}
-
-.encore-markdown-preview a {
-  color: #7c3aed;
-  text-decoration: underline;
-}
-
-.encore-markdown-preview a:focus-visible {
-  outline: 2px solid #c026d3;
-  outline-offset: 2px;
 }
 
 @media (pointer: coarse) {

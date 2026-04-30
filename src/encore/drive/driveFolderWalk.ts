@@ -38,7 +38,7 @@ async function driveListAllChildrenInFolder(
   let pageToken: string | undefined;
   const q = `'${escapeDriveQueryString(folderId)}' in parents and trashed=false`;
   const fields =
-    'nextPageToken,files(id,name,mimeType,modifiedTime,parents,description,contentHints)';
+    'nextPageToken,files(id,name,mimeType,createdTime,modifiedTime,parents,description,contentHints)';
   do {
     const res = await driveListFiles(accessToken, q, fields, pageSize, pageToken);
     out.push(...(res.files ?? []));

@@ -14,10 +14,12 @@ import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import CircularProgress from '@mui/material/CircularProgress';
 import Container from '@mui/material/Container';
 import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
+import Switch from '@mui/material/Switch';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
@@ -32,7 +34,9 @@ import type { EncorePerformance, EncoreSong } from '../types';
 import { parseYoutubeVideoId } from '../youtube/parseYoutubeVideoUrl';
 import { encoreNoAlbumArtIconSx, encoreNoAlbumArtSurfaceSx } from '../utils/encoreNoAlbumArtSurface';
 import { useEncore } from '../context/EncoreContext';
-import { encorePagePaddingTop, encoreScreenPaddingX, encoreSurfaceSectionSx } from '../theme/encoreM3Layout';
+import { encoreMaxWidthPage, encoreSectionStackGap } from '../theme/encoreUiTokens';
+import { encorePagePaddingTop, encoreScreenPaddingX } from '../theme/encoreM3Layout';
+import { EncoreSection } from '../ui/EncoreSection';
 import { driveUploadFileResumable } from '../drive/driveFetch';
 import { ensureEncoreDriveLayout } from '../drive/bootstrapFolders';
 import { driveFileWebUrl } from '../drive/driveWebUrls';
@@ -45,6 +49,7 @@ import { parseDriveFileIdFromUrlOrId } from '../drive/parseDriveFileUrl';
 import { MarkdownPreview } from './MarkdownPreview';
 import { PerformanceEditorDialog } from './PerformanceEditorDialog';
 import { PerformanceVideoThumb } from './PerformanceVideoThumb';
+import { SongMilestoneChecklist } from './SongMilestoneChecklist';
 import { DriveFilePickerDialog } from './DriveFilePickerDialog';
 import { GoogleBrandIcon, SpotifyBrandIcon, YouTubeBrandIcon } from './EncoreBrandIcon';
 import { encoreGeniusSearchUrl, encoreUltimateGuitarSearchUrl, encoreYouTubeSearchUrl } from './encoreSongResourceLinks';
@@ -52,6 +57,7 @@ import { performanceVideoOpenUrl } from '../utils/performanceVideoUrl';
 import { addSongAttachment, effectiveSongAttachments, songWithSyncedLegacyDriveIds } from '../utils/songAttachments';
 import { parseMidiKeyBpm } from '../utils/parseMidiKeyBpm';
 import { parseMusicXmlKeyBpm } from '../utils/parseMusicXmlKeyBpm';
+import { applyTemplateProgressToSong } from '../repertoire/repertoireMilestones';
 
 function newSong(): EncoreSong {
   const now = new Date().toISOString();
@@ -80,6 +86,7 @@ export function SongPage(props: { route: Extract<EncoreAppRoute, { kind: 'song' 
     deleteSong,
     savePerformance,
     performances,
+    repertoireExtras,
     googleAccessToken,
     spotifyLinked,
     connectSpotify,
@@ -111,7 +118,18 @@ export function SongPage(props: { route: Extract<EncoreAppRoute, { kind: 'song' 
   const [driveAttachMsg, setDriveAttachMsg] = useState<string | null>(null);
   const [driveUploading, setDriveUploading] = useState(false);
 
-  const venueOptions = performances.map((p) => p.venueTag);
+  const venueOptions = useMemo(() => {
+    const s = new Set<string>();
+    for (const v of repertoireExtras.venueCatalog) {
+      const t = v.trim();
+      if (t) s.add(t);
+    }
+    for (const p of performances) {
+      const t = p.venueTag.trim();
+      if (t) s.add(t);
+    }
+    return [...s];
+  }, [repertoireExtras.venueCatalog, performances]);
 
   const openChartsFolderPicker = useCallback(() => {
     if (!googleAccessToken) return;
@@ -435,12 +453,13 @@ export function SongPage(props: { route: Extract<EncoreAppRoute, { kind: 'song' 
     setSaving(true);
     try {
       const now = new Date().toISOString();
+      const withMilestones = applyTemplateProgressToSong(draft, repertoireExtras.milestoneTemplate);
       const normalized = songWithSyncedLegacyDriveIds({
-        ...draft,
-        title: draft.title.trim() || 'Untitled',
-        artist: draft.artist.trim() || 'Unknown artist',
+        ...withMilestones,
+        title: withMilestones.title.trim() || 'Untitled',
+        artist: withMilestones.artist.trim() || 'Unknown artist',
         updatedAt: now,
-        createdAt: draft.createdAt || now,
+        createdAt: withMilestones.createdAt || now,
       });
       await saveSong(normalized);
       if (isNew) navigateEncore({ kind: 'song', id: draft.id });
@@ -497,8 +516,8 @@ export function SongPage(props: { route: Extract<EncoreAppRoute, { kind: 'song' 
   return (
     <>
       <Container
-        maxWidth="md"
-        sx={{ px: encoreScreenPaddingX, pt: encorePagePaddingTop, pb: { xs: 14, sm: 6 } }}
+        maxWidth={false}
+        sx={{ px: encoreScreenPaddingX, pt: encorePagePaddingTop, pb: { xs: 14, sm: 6 }, ...encoreMaxWidthPage }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
           <IconButton aria-label="Back to library" onClick={handleBack} edge="start" size="small" sx={{ ml: -0.5 }}>
@@ -513,7 +532,7 @@ export function SongPage(props: { route: Extract<EncoreAppRoute, { kind: 'song' 
           sx={{
             display: 'flex',
             flexDirection: { xs: 'column', sm: 'row' },
-            gap: { xs: 2, sm: 3 },
+            gap: { xs: 2, sm: encoreSectionStackGap },
             alignItems: { sm: 'flex-start' },
             mb: 3,
           }}
@@ -700,11 +719,88 @@ export function SongPage(props: { route: Extract<EncoreAppRoute, { kind: 'song' 
                 ))}
               </Stack>
             ) : null}
+            <FormControlLabel
+              sx={{ alignItems: 'center', mb: 1 }}
+              control={
+                <Switch
+                  size="small"
+                  checked={Boolean(draft.practicing)}
+                  onChange={(e) => {
+                    const ts = new Date().toISOString();
+                    setDraft((d) => (d ? { ...d, practicing: e.target.checked, updatedAt: ts } : d));
+                  }}
+                  inputProps={{ 'aria-label': 'Working on this song' }}
+                />
+              }
+              label={<Typography variant="body2">Working on this song</Typography>}
+            />
           </Box>
         </Box>
 
+        <Accordion
+          defaultExpanded
+          disableGutters
+          elevation={0}
+          sx={{ border: 1, borderColor: 'divider', borderRadius: 2, mb: 2, '&:before': { display: 'none' } }}
+        >
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Box>
+              <Typography fontWeight={700}>Practice journal</Typography>
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.25 }}>
+                Long-form notes, context, and why a milestone is N/A live here. Markdown supported.
+              </Typography>
+            </Box>
+          </AccordionSummary>
+          <AccordionDetails>
+            <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
+              <Button size="small" variant={journalTab === 'edit' ? 'contained' : 'outlined'} onClick={() => setJournalTab('edit')}>
+                Edit
+              </Button>
+              <Button size="small" variant={journalTab === 'preview' ? 'contained' : 'outlined'} onClick={() => setJournalTab('preview')}>
+                Preview
+              </Button>
+            </Box>
+            {journalTab === 'edit' ? (
+              <TextField
+                value={draft.journalMarkdown}
+                onChange={(e) => setDraft((d) => (d ? { ...d, journalMarkdown: e.target.value } : d))}
+                fullWidth
+                multiline
+                minRows={6}
+                inputProps={{ 'aria-label': 'Journal markdown' }}
+              />
+            ) : (
+              <MarkdownPreview markdown={draft.journalMarkdown} />
+            )}
+          </AccordionDetails>
+        </Accordion>
+
+        <Accordion
+          defaultExpanded={false}
+          disableGutters
+          elevation={0}
+          sx={{ border: 1, borderColor: 'divider', borderRadius: 2, mb: 2, '&:before': { display: 'none' } }}
+        >
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Typography fontWeight={700}>Milestones</Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, lineHeight: 1.55 }}>
+              Checklist for this title. Edit the shared template and venue list under Setup.
+            </Typography>
+            <Button size="small" variant="outlined" onClick={() => navigateEncore({ kind: 'repertoireSettings' })} sx={{ mb: 2 }}>
+              Venues & milestones setup
+            </Button>
+            <SongMilestoneChecklist
+              song={draft}
+              milestoneTemplate={repertoireExtras.milestoneTemplate}
+              onChange={(next) => setDraft(next)}
+            />
+          </AccordionDetails>
+        </Accordion>
+
         {!isNew ? (
-          <Box sx={{ ...encoreSurfaceSectionSx }}>
+          <EncoreSection>
             <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1} sx={{ mb: 1.5 }}>
               <Stack direction="row" alignItems="center" gap={1} flexWrap="wrap">
                 <VideocamIcon color="primary" fontSize="small" aria-hidden />
@@ -729,7 +825,7 @@ export function SongPage(props: { route: Extract<EncoreAppRoute, { kind: 'song' 
             </Stack>
             {songPerformances.length === 0 ? (
               <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.55 }}>
-                No performances yet. Add one to save the venue, date, and a link or Drive file for your performance video.
+                No performances yet. Add one to store venue, date, and a video link or Drive file.
               </Typography>
             ) : (
               <Box
@@ -811,10 +907,10 @@ export function SongPage(props: { route: Extract<EncoreAppRoute, { kind: 'song' 
                 })}
               </Box>
             )}
-          </Box>
+          </EncoreSection>
         ) : (
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
-            Save the song first to add performances and attach videos.
+            Save the song first to add performances and videos.
           </Typography>
         )}
 
@@ -922,10 +1018,7 @@ export function SongPage(props: { route: Extract<EncoreAppRoute, { kind: 'song' 
           </Box>
         )}
 
-        <Box sx={{ ...encoreSurfaceSectionSx }}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>
-            Recording links
-          </Typography>
+        <EncoreSection title="Recording links">
           {!clientId && <Alert severity="info">Set VITE_SPOTIFY_CLIENT_ID to search Spotify from this screen.</Alert>}
           {clientId && !spotifyLinked && (
             <Alert severity="info" action={<Button onClick={() => void connectSpotify()}>Connect Spotify</Button>}>
@@ -1012,12 +1105,9 @@ export function SongPage(props: { route: Extract<EncoreAppRoute, { kind: 'song' 
               ytId ? `Canonical: https://www.youtube.com/watch?v=${encodeURIComponent(ytId)}` : 'Watch URL, youtu.be, shorts, or 11-character id.'
             }
           />
-        </Box>
+        </EncoreSection>
 
-        <Box sx={{ ...encoreSurfaceSectionSx }}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>
-            Charts and tracks (Google Drive)
-          </Typography>
+        <EncoreSection title="Charts and tracks (Google Drive)">
           <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1.5 }}>
             Upload PDFs, MusicXML, MIDI, or audio. MusicXML and MIDI can suggest key and tempo when those fields are
             empty. You can also pick files already in your Encore Drive folders.
@@ -1159,7 +1249,7 @@ export function SongPage(props: { route: Extract<EncoreAppRoute, { kind: 'song' 
                 .join(' · ')}
             </Typography>
           ) : null}
-        </Box>
+        </EncoreSection>
 
         <DriveFilePickerDialog
           open={chartPickerOpen}
@@ -1197,39 +1287,6 @@ export function SongPage(props: { route: Extract<EncoreAppRoute, { kind: 'song' 
             setRecordingPickerOpen(false);
           }}
         />
-
-        <Accordion
-          defaultExpanded
-          disableGutters
-          elevation={0}
-          sx={{ border: 1, borderColor: 'divider', borderRadius: 2, mb: 0, '&:before': { display: 'none' } }}
-        >
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography fontWeight={700}>Practice journal (Markdown)</Typography>
-          </AccordionSummary>
-          <AccordionDetails>
-            <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
-              <Button size="small" variant={journalTab === 'edit' ? 'contained' : 'outlined'} onClick={() => setJournalTab('edit')}>
-                Edit
-              </Button>
-              <Button size="small" variant={journalTab === 'preview' ? 'contained' : 'outlined'} onClick={() => setJournalTab('preview')}>
-                Preview
-              </Button>
-            </Box>
-            {journalTab === 'edit' ? (
-              <TextField
-                value={draft.journalMarkdown}
-                onChange={(e) => setDraft((d) => (d ? { ...d, journalMarkdown: e.target.value } : d))}
-                fullWidth
-                multiline
-                minRows={5}
-                inputProps={{ 'aria-label': 'Journal markdown' }}
-              />
-            ) : (
-              <MarkdownPreview markdown={draft.journalMarkdown} />
-            )}
-          </AccordionDetails>
-        </Accordion>
       </Container>
 
       <Box

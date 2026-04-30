@@ -7,6 +7,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Link from '@mui/material/Link';
 import Typography from '@mui/material/Typography';
+import { encoreDialogActionsSx, encoreDialogContentSx, encoreDialogTitleSx } from '../theme/encoreUiTokens';
 import { useEffect, useState, type ReactElement } from 'react';
 
 export function SpotifyPrivacyAckDialog(props: {
@@ -22,11 +23,13 @@ export function SpotifyPrivacyAckDialog(props: {
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" aria-labelledby="spotify-privacy-title">
-      <DialogTitle id="spotify-privacy-title">Connect Spotify</DialogTitle>
-      <DialogContent>
+      <DialogTitle id="spotify-privacy-title" sx={encoreDialogTitleSx}>
+        Connect Spotify
+      </DialogTitle>
+      <DialogContent sx={encoreDialogContentSx}>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2, lineHeight: 1.6 }}>
-          Spotify is optional. If you connect, Encore uses Spotify only for features you trigger (playlist import, track
-          search, and optional tempo/key estimates). Spotify processes data under its own terms.
+          Spotify is optional. Encore only uses it for features you start (playlist import, track search). Spotify
+          processes data under its own terms.
         </Typography>
         <FormControlLabel
           control={<Checkbox checked={checked} onChange={(e) => setChecked(e.target.checked)} color="primary" />}
@@ -41,7 +44,7 @@ export function SpotifyPrivacyAckDialog(props: {
           }
         />
       </DialogContent>
-      <DialogActions>
+      <DialogActions sx={encoreDialogActionsSx}>
         <Button onClick={onClose}>Cancel</Button>
         <Button variant="contained" disabled={!checked} onClick={onConfirm}>
           Continue to Spotify

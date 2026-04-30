@@ -2,9 +2,11 @@ import { encoreDb, getSyncMeta, patchSyncMeta } from '../db/encoreDb';
 import type { EncorePerformance, EncoreSong } from '../types';
 import {
   buildWireFromTables,
-  maxUpdatedAt,
+  defaultRepertoireExtrasRow,
+  maxRepertoireClock,
   mergeRecordsByUpdatedAt,
   parseRepertoireWire,
+  repertoireExtrasFromWire,
   serializeRepertoireWire,
 } from './repertoireWire';
 import { driveGetFileMetadata, driveGetMedia, drivePatchJsonMedia } from './driveFetch';
@@ -30,11 +32,13 @@ export async function pullRepertoireFromDrive(
   const localPerf = await encoreDb.performances.toArray();
   const mergedSongs = mergeRecordsByUpdatedAt<EncoreSong>(localSongs, wire.songs);
   const mergedPerf = mergeRecordsByUpdatedAt<EncorePerformance>(localPerf, wire.performances);
-  await encoreDb.transaction('rw', encoreDb.songs, encoreDb.performances, async () => {
+  const extrasRow = repertoireExtrasFromWire(wire);
+  await encoreDb.transaction('rw', encoreDb.songs, encoreDb.performances, encoreDb.repertoireExtras, async () => {
     await encoreDb.songs.clear();
     await encoreDb.performances.clear();
     await encoreDb.songs.bulkPut(mergedSongs);
     await encoreDb.performances.bulkPut(mergedPerf);
+    await encoreDb.repertoireExtras.put(extrasRow);
   });
   const meta = await driveGetFileMetadata(accessToken, repertoireFileId);
   const songs = await encoreDb.songs.toArray();
@@ -43,7 +47,7 @@ export async function pullRepertoireFromDrive(
     lastRemoteModified: meta.modifiedTime,
     lastRemoteEtag: meta.etag ?? remoteEtag,
     lastSuccessfulPullAt: new Date().toISOString(),
-    lastSyncedLocalMaxUpdatedAt: maxUpdatedAt(songs, performances),
+    lastSyncedLocalMaxUpdatedAt: maxRepertoireClock(songs, performances, extrasRow.updatedAt),
   });
 }
 
@@ -54,7 +58,9 @@ export async function pushRepertoireToDrive(
 ): Promise<void> {
   const songs = await encoreDb.songs.toArray();
   const performances = await encoreDb.performances.toArray();
-  const wire = buildWireFromTables(songs, performances);
+  const now = new Date().toISOString();
+  const extrasRow = (await encoreDb.repertoireExtras.get('default')) ?? defaultRepertoireExtrasRow(now);
+  const wire = buildWireFromTables(songs, performances, extrasRow);
   const body = serializeRepertoireWire(wire);
   const result = await drivePatchJsonMedia(accessToken, repertoireFileId, body, ifMatch);
   const meta = await driveGetFileMetadata(accessToken, repertoireFileId);
@@ -62,7 +68,7 @@ export async function pushRepertoireToDrive(
     lastRemoteModified: meta.modifiedTime ?? result.modifiedTime,
     lastRemoteEtag: meta.etag ?? result.etag,
     lastSuccessfulPushAt: new Date().toISOString(),
-    lastSyncedLocalMaxUpdatedAt: maxUpdatedAt(songs, performances),
+    lastSyncedLocalMaxUpdatedAt: maxRepertoireClock(songs, performances, extrasRow.updatedAt),
   });
 }
 
@@ -79,7 +85,8 @@ export async function runInitialSyncIfPossible(accessToken: string): Promise<{
 
     const songs = await encoreDb.songs.toArray();
     const performances = await encoreDb.performances.toArray();
-    const localMax = maxUpdatedAt(songs, performances);
+    const extras = await encoreDb.repertoireExtras.get('default');
+    const localMax = maxRepertoireClock(songs, performances, extras?.updatedAt);
 
     const lastSynced = meta.lastSyncedLocalMaxUpdatedAt ?? '';
     const lastRemote = meta.lastRemoteModified ?? '';

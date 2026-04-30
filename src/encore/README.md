@@ -2,6 +2,15 @@
 
 Personal musical repertoire companion: **local-first** (Dexie / IndexedDB) with optional **Google Drive** sync for `repertoire_data.json`, plus an optional **public snapshot** for read-only sharing.
 
+**Who it is for:** Encore is **singer-first**. Voice and repertoire are the primary focus; **piano or self-accompaniment** are supported as secondary detail (for example performance history and filters), not as a separate instrument-learning app.
+
+## Repertoire depth (how the pieces fit)
+
+- **Milestones** are the main **structured** progress layer: a shared template on every song, per-row **To do / Done / N/A** (N/A is explicit and reversible), plus **song-only** rows for one-off goals. They answer “what done means” for this title in a scannable way.
+- **Practice journal** (Markdown on each song) stays **first-class** for long-form nuance: arrangement notes, staging, or why a milestone does not apply. Use milestones for the checklist and the journal for everything that does not fit a checkbox.
+- **Practicing** is a single boolean (“on my desk” / rotation). It does **not** auto-sync with milestone completion.
+- **Performances** store **accompaniment** (vocal-only vs self-accompanied keys, etc.) for each logged show. That is gig history and filtering, separate from milestone rows.
+
 ## What sign-in enables (plain language)
 
 - **Without Google:** Your library stays in this browser and works offline.

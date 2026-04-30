@@ -79,6 +79,8 @@ export async function ensureEncoreDriveLayout(accessToken: string): Promise<Enco
       exportedAt: new Date().toISOString(),
       songs: [],
       performances: [],
+      venueCatalog: [],
+      milestoneTemplate: [],
     });
     const created = await driveCreateJsonFile(accessToken, emptyPayload, REPERTOIRE_FILE_NAME, [rootFolderId]);
     repertoireFileId = created.id;

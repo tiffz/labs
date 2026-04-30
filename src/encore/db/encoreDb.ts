@@ -1,5 +1,5 @@
 import Dexie, { type Table } from 'dexie';
-import type { EncorePerformance, EncoreSong } from '../types';
+import type { EncoreMilestoneDefinition, EncorePerformance, EncoreSong } from '../types';
 
 export interface SyncMetaRow {
   id: 'default';
@@ -18,10 +18,19 @@ export interface SyncMetaRow {
   lastSuccessfulPushAt?: string;
 }
 
+/** Single-row table: venue catalog + global milestone template (mirrors `repertoire_data.json` extras). */
+export interface RepertoireExtrasRow {
+  id: 'default';
+  venueCatalog: string[];
+  milestoneTemplate: EncoreMilestoneDefinition[];
+  updatedAt: string;
+}
+
 export class EncoreDB extends Dexie {
   songs!: Table<EncoreSong, string>;
   performances!: Table<EncorePerformance, string>;
   syncMeta!: Table<SyncMetaRow, string>;
+  repertoireExtras!: Table<RepertoireExtrasRow, string>;
 
   constructor() {
     super('encore-repertoire');
@@ -34,6 +43,12 @@ export class EncoreDB extends Dexie {
       songs: 'id, updatedAt, title, artist',
       performances: 'id, songId, date, updatedAt, venueTag',
       syncMeta: 'id',
+    });
+    this.version(3).stores({
+      songs: 'id, updatedAt, title, artist, practicing',
+      performances: 'id, songId, date, updatedAt, venueTag',
+      syncMeta: 'id',
+      repertoireExtras: 'id',
     });
   }
 }

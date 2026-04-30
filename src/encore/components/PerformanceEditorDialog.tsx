@@ -7,6 +7,10 @@ import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
+import MenuItem from '@mui/material/MenuItem';
+import Select from '@mui/material/Select';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -16,7 +20,9 @@ import { ensureEncoreDriveLayout } from '../drive/bootstrapFolders';
 import { driveFileWebUrl } from '../drive/driveWebUrls';
 import { ENCORE_DRIVE_VIDEO_MIME_TYPES, openEncoreGoogleDrivePicker } from '../drive/googlePicker';
 import { parseDriveFileIdFromUrlOrId } from '../drive/parseDriveFileUrl';
-import type { EncorePerformance } from '../types';
+import { encoreDialogActionsSx, encoreDialogContentSx, encoreDialogTitleSx } from '../theme/encoreUiTokens';
+import type { EncoreAccompanimentKind, EncorePerformance } from '../types';
+import { ACCOMPANIMENT_LABELS } from '../repertoire/accompanimentLabels';
 import { parsePerformanceVideoInput } from '../utils/parsePerformanceVideoInput';
 
 function newPerformance(songId: string): EncorePerformance {
@@ -27,6 +33,7 @@ function newPerformance(songId: string): EncorePerformance {
     songId,
     date: day,
     venueTag: '',
+    accompanimentKind: 'unknown',
     createdAt: now,
     updatedAt: now,
   };
@@ -163,6 +170,7 @@ export function PerformanceEditorDialog(props: {
       ...draft,
       venueTag: draft.venueTag.trim() || 'Venue',
       date: draft.date,
+      accompanimentKind: draft.accompanimentKind ?? 'unknown',
       videoTargetDriveFileId: target || undefined,
       videoShortcutDriveFileId,
       externalVideoUrl: draft.externalVideoUrl?.trim() || undefined,
@@ -197,9 +205,11 @@ export function PerformanceEditorDialog(props: {
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" aria-labelledby="perf-editor-title">
-      <DialogTitle id="perf-editor-title">{performance ? 'Edit performance' : 'Log performance'}</DialogTitle>
-      <DialogContent>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+      <DialogTitle id="perf-editor-title" sx={encoreDialogTitleSx}>
+        {performance ? 'Edit performance' : 'Log performance'}
+      </DialogTitle>
+      <DialogContent sx={encoreDialogContentSx}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <TextField
             label="Video (YouTube link, Drive link, other URL, or Drive file id)"
             value={videoInput}
@@ -275,6 +285,23 @@ export function PerformanceEditorDialog(props: {
             InputLabelProps={{ shrink: true }}
             fullWidth
           />
+          <FormControl fullWidth size="small">
+            <InputLabel id="perf-accompaniment-label">Accompaniment</InputLabel>
+            <Select<EncoreAccompanimentKind>
+              labelId="perf-accompaniment-label"
+              label="Accompaniment"
+              value={draft.accompanimentKind ?? 'unknown'}
+              onChange={(e) =>
+                setDraft((d) => ({ ...d, accompanimentKind: e.target.value as EncoreAccompanimentKind }))
+              }
+            >
+              {(Object.keys(ACCOMPANIMENT_LABELS) as EncoreAccompanimentKind[]).map((k) => (
+                <MenuItem key={k} value={k}>
+                  {ACCOMPANIMENT_LABELS[k]}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
           <Autocomplete
             freeSolo
             options={venueList}
@@ -299,7 +326,7 @@ export function PerformanceEditorDialog(props: {
           )}
         </Box>
       </DialogContent>
-      <DialogActions>
+      <DialogActions sx={encoreDialogActionsSx}>
         <Button onClick={onClose}>Cancel</Button>
         <Button onClick={() => void handleSave()} variant="contained">
           Save
