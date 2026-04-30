@@ -40,15 +40,17 @@
   max-width: 52rem;
   margin: 0 auto;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 12px;
   align-items: center;
   justify-content: space-between;
 }
 
+/* Let copy use remaining width so Reject/Accept stay on the right (same row). */
 #labs-cookie-consent-root p {
   margin: 0;
-  flex: 1 1 16rem;
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 #labs-cookie-consent-root a {
@@ -57,8 +59,21 @@
 
 #labs-cookie-consent-root .labs-cc-actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
   gap: 8px;
+}
+
+/* Only when the strip is extremely narrow, stack buttons under copy. */
+@media (max-width: 22rem) {
+  #labs-cookie-consent-root .labs-cc-inner {
+    flex-wrap: wrap;
+  }
+
+  #labs-cookie-consent-root .labs-cc-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
 }
 
 #labs-cookie-consent-root button {

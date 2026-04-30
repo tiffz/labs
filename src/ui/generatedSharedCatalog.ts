@@ -1961,6 +1961,157 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-legal-labscookieconsentpolicy-ts-islabslocalhost",
+    "name": "isLabsLocalHost",
+    "path": "src/shared/legal/labsCookieConsentPolicy.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Cookie / analytics consent rules for Labs (GA4 via /scripts/analytics.js). **Banner copy lives only here** (`labsCookieBannerCopy`). Do not edit `public/scripts/labs-cookie-consent.js` — it is generated (esbuild) and gitignored. The Vite dev server and `vite build` rebuild it automatically when this file or `labsCookieConsentBrowser.ts` changes (reload the page after edits). For a one-off build without Vite: `npm run build:labs-cookie-consent`.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-legal-labscookieconsentpolicy-ts-labs-analytics-consent-accepted",
+    "name": "LABS_ANALYTICS_CONSENT_ACCEPTED",
+    "path": "src/shared/legal/labsCookieConsentPolicy.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Cookie / analytics consent rules for Labs (GA4 via /scripts/analytics.js). **Banner copy lives only here** (`labsCookieBannerCopy`). Do not edit `public/scripts/labs-cookie-consent.js` — it is generated (esbuild) and gitignored. The Vite dev server and `vite build` rebuild it automatically when this file or `labsCookieConsentBrowser.ts` changes (reload the page after edits). For a one-off build without Vite: `npm run build:labs-cookie-consent`.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-legal-labscookieconsentpolicy-ts-labs-analytics-consent-declined",
+    "name": "LABS_ANALYTICS_CONSENT_DECLINED",
+    "path": "src/shared/legal/labsCookieConsentPolicy.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Cookie / analytics consent rules for Labs (GA4 via /scripts/analytics.js). **Banner copy lives only here** (`labsCookieBannerCopy`). Do not edit `public/scripts/labs-cookie-consent.js` — it is generated (esbuild) and gitignored. The Vite dev server and `vite build` rebuild it automatically when this file or `labsCookieConsentBrowser.ts` changes (reload the page after edits). For a one-off build without Vite: `npm run build:labs-cookie-consent`.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-legal-labscookieconsentpolicy-ts-labs-analytics-consent-storage-key",
+    "name": "LABS_ANALYTICS_CONSENT_STORAGE_KEY",
+    "path": "src/shared/legal/labsCookieConsentPolicy.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Cookie / analytics consent rules for Labs (GA4 via /scripts/analytics.js). **Banner copy lives only here** (`labsCookieBannerCopy`). Do not edit `public/scripts/labs-cookie-consent.js` — it is generated (esbuild) and gitignored. The Vite dev server and `vite build` rebuild it automatically when this file or `labsCookieConsentBrowser.ts` changes (reload the page after edits). For a one-off build without Vite: `npm run build:labs-cookie-consent`.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-legal-labscookieconsentpolicy-ts-labs-analytics-script-path",
+    "name": "LABS_ANALYTICS_SCRIPT_PATH",
+    "path": "src/shared/legal/labsCookieConsentPolicy.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "GA loader script (only injected after consent).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-legal-labscookieconsentpolicy-ts-labscookiebannercopy",
+    "name": "labsCookieBannerCopy",
+    "path": "src/shared/legal/labsCookieConsentPolicy.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Cookie / analytics consent rules for Labs (GA4 via /scripts/analytics.js). **Banner copy lives only here** (`labsCookieBannerCopy`). Do not edit `public/scripts/labs-cookie-consent.js` — it is generated (esbuild) and gitignored. The Vite dev server and `vite build` rebuild it automatically when this file or `labsCookieConsentBrowser.ts` changes (reload the page after edits). For a one-off build without Vite: `npm run build:labs-cookie-consent`.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-legal-labscookieconsentpolicy-ts-labscookiebannerpreviewrequested",
+    "name": "labsCookieBannerPreviewRequested",
+    "path": "src/shared/legal/labsCookieConsentPolicy.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "True when the URL search string includes the preview flag (leading ? optional).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-legal-labscookieconsentpolicy-ts-shoulddeferbanneruntildomcontentloaded",
+    "name": "shouldDeferBannerUntilDomContentLoaded",
+    "path": "src/shared/legal/labsCookieConsentPolicy.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Cookie / analytics consent rules for Labs (GA4 via /scripts/analytics.js). **Banner copy lives only here** (`labsCookieBannerCopy`). Do not edit `public/scripts/labs-cookie-consent.js` — it is generated (esbuild) and gitignored. The Vite dev server and `vite build` rebuild it automatically when this file or `labsCookieConsentBrowser.ts` changes (reload the page after edits). For a one-off build without Vite: `npm run build:labs-cookie-consent`.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-legal-labscookieconsentpolicy-ts-shouldexitcookiescriptbeforestorage",
+    "name": "shouldExitCookieScriptBeforeStorage",
+    "path": "src/shared/legal/labsCookieConsentPolicy.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "First gate in the browser script: on localhost/127 without preview, exit before reading storage (no banner, no GA — dev default).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-legal-labscookieconsentpolicy-ts-shouldloadanalyticsforstoredchoice",
+    "name": "shouldLoadAnalyticsForStoredChoice",
+    "path": "src/shared/legal/labsCookieConsentPolicy.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Cookie / analytics consent rules for Labs (GA4 via /scripts/analytics.js). **Banner copy lives only here** (`labsCookieBannerCopy`). Do not edit `public/scripts/labs-cookie-consent.js` — it is generated (esbuild) and gitignored. The Vite dev server and `vite build` rebuild it automatically when this file or `labsCookieConsentBrowser.ts` changes (reload the page after edits). For a one-off build without Vite: `npm run build:labs-cookie-consent`.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-legal-labscookieconsentpolicy-ts-shouldstopwithoutanalyticsforstoredchoice",
+    "name": "shouldStopWithoutAnalyticsForStoredChoice",
+    "path": "src/shared/legal/labsCookieConsentPolicy.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Cookie / analytics consent rules for Labs (GA4 via /scripts/analytics.js). **Banner copy lives only here** (`labsCookieBannerCopy`). Do not edit `public/scripts/labs-cookie-consent.js` — it is generated (esbuild) and gitignored. The Vite dev server and `vite build` rebuild it automatically when this file or `labsCookieConsentBrowser.ts` changes (reload the page after edits). For a one-off build without Vite: `npm run build:labs-cookie-consent`.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-midi-midiinput-ts-getmidiinput",
     "name": "getMidiInput",
     "path": "src/shared/midi/midiInput.ts",

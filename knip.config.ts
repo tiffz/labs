@@ -59,7 +59,6 @@ const config: KnipConfig = {
   ignore: [
     // Public scripts loaded by HTML files
     'public/scripts/analytics.js',
-    'public/scripts/labs-cookie-consent.js',
     'public/scripts/shared.js',
     // Kill-switch service worker deployed to purge stale vite-plugin-pwa SWs
     'public/sw.js',

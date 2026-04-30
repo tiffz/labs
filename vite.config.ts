@@ -1,6 +1,7 @@
 /// <reference types="vitest" />
+import { build as esbuildBuild } from 'esbuild';
 import { defineConfig } from 'vite';
-import type { Connect, PreviewServer, ViteDevServer } from 'vite';
+import type { Connect, Plugin, PreviewServer, ViteDevServer } from 'vite';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import react from '@vitejs/plugin-react';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
@@ -52,6 +53,53 @@ const PROJECT_ROOT = resolve(__dirname);
 const E2E_VISUAL_SNAPSHOTS_DIR = resolve(__dirname, 'e2e/visual/apps.visual.spec.ts-snapshots');
 
 const APP_BASE_PATHS = buildAppBasePathsFromEntryPaths(Object.values(MULTI_APP_INPUTS), SRC_ROOT);
+
+const LABS_COOKIE_CONSENT_ENTRY = resolve(
+  PROJECT_ROOT,
+  'src/shared/legal/labsCookieConsentBrowser.ts',
+);
+const LABS_COOKIE_CONSENT_OUTFILE = resolve(PROJECT_ROOT, 'public/scripts/labs-cookie-consent.js');
+
+async function rebuildLabsCookieConsentBundle(): Promise<void> {
+  await esbuildBuild({
+    absWorkingDir: PROJECT_ROOT,
+    entryPoints: [LABS_COOKIE_CONSENT_ENTRY],
+    bundle: true,
+    format: 'iife',
+    platform: 'browser',
+    target: 'es2018',
+    outfile: LABS_COOKIE_CONSENT_OUTFILE,
+    legalComments: 'inline',
+  });
+}
+
+/** Keeps `public/scripts/labs-cookie-consent.js` in sync with TS sources (edit copy in `labsCookieConsentPolicy.ts` only). */
+function labsCookieConsentVitePlugin(): Plugin {
+  const watchSuffixes = [
+    'src/shared/legal/labsCookieConsentPolicy.ts',
+    'src/shared/legal/labsCookieConsentBrowser.ts',
+  ];
+
+  return {
+    name: 'labs-cookie-consent-bundle',
+    enforce: 'pre',
+    async buildStart() {
+      if (IS_TEST) return;
+      await rebuildLabsCookieConsentBundle();
+    },
+    configureServer(server) {
+      if (IS_TEST) return;
+      server.watcher.on('change', async (file) => {
+        const norm = file.replaceAll('\\', '/');
+        if (!watchSuffixes.some((suffix) => norm.endsWith(suffix))) return;
+        await rebuildLabsCookieConsentBundle();
+        server.config.logger.info(
+          '\n[labs-cookie-consent] Bundle updated — reload the page to refresh the banner.\n',
+        );
+      });
+    },
+  };
+}
 
 function applyTrailingSlashRedirect(
   req: IncomingMessage,
@@ -153,6 +201,7 @@ export default defineConfig({
     middlewareMode: false,
   },
   plugins: [
+    labsCookieConsentVitePlugin(),
     {
       name: 'canonical-trailing-slash-redirect',
       configureServer(server: ViteDevServer) {

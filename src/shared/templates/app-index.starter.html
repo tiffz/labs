@@ -65,8 +65,8 @@
       1) labs-cookie-consent.css — layout and tokens (--labs-cc-*).
       2) Tiny :root style — set --labs-cc-accent (and --labs-cc-on-accent if needed)
          to match meta theme-color / your brand. Defaults are in the CSS file.
-      3) labs-cookie-consent.js — defer; localhost skips banner + analytics.
-      Preview banner locally: ?labs_preview_cookie_banner=1
+      3) labs-cookie-consent.js — built from src/shared/legal (npm run build:labs-cookie-consent); defer;
+         localhost skips banner + analytics. Preview banner: ?labs_preview_cookie_banner=1
     -->
     <link rel="stylesheet" href="/styles/labs-cookie-consent.css" />
     <style>:root { --labs-cc-accent: #4f46e5; --labs-cc-on-accent: #ffffff; }</style>
