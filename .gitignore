@@ -26,6 +26,9 @@ node_modules
 # Vite
 dist
 
+# Generated from src/shared/legal (single source: labsCookieConsentPolicy.ts)
+public/scripts/labs-cookie-consent.js
+
 # TypeScript
 tsconfig.tsbuildinfo
 
