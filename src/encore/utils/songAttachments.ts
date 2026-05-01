@@ -17,23 +17,56 @@ export function effectiveSongAttachments(s: EncoreSong): EncoreSongAttachment[] 
   return out;
 }
 
+/** Default chart for quick links (primary flag, else first chart). */
+export function primaryChartAttachment(s: EncoreSong): EncoreSongAttachment | undefined {
+  const charts = effectiveSongAttachments(s).filter((a) => a.kind === 'chart');
+  return charts.find((a) => a.isPrimaryChart) ?? charts[0];
+}
+
 /** Persist legacy single-id fields from attachment kinds for older clients and simple queries. */
 export function songWithSyncedLegacyDriveIds(s: EncoreSong): EncoreSong {
   const charts = (s.attachments ?? []).filter((a) => a.kind === 'chart');
   const backings = (s.attachments ?? []).filter((a) => a.kind === 'backing');
   const recordings = (s.attachments ?? []).filter((a) => a.kind === 'recording');
+  const primaryChart = charts.find((c) => c.isPrimaryChart) ?? charts[0];
   return {
     ...s,
-    sheetMusicDriveFileId: charts[0]?.driveFileId ?? s.sheetMusicDriveFileId,
+    sheetMusicDriveFileId: primaryChart?.driveFileId ?? s.sheetMusicDriveFileId,
     backingTrackDriveFileId: backings[0]?.driveFileId ?? s.backingTrackDriveFileId,
     recordingDriveFileIds: recordings.length ? recordings.map((r) => r.driveFileId) : s.recordingDriveFileIds,
   };
 }
 
+export function setPrimaryChartByDriveFileId(s: EncoreSong, driveFileId: string): EncoreSong {
+  const id = driveFileId.trim();
+  if (!id) return s;
+  const cur = [...(s.attachments ?? [])];
+  let found = false;
+  const next = cur.map((a) => {
+    if (a.kind !== 'chart') return a;
+    const isPrimary = a.driveFileId === id;
+    if (isPrimary) found = true;
+    return { ...a, isPrimaryChart: isPrimary };
+  });
+  if (!found) return s;
+  return songWithSyncedLegacyDriveIds({
+    ...s,
+    attachments: next,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
 export function addSongAttachment(s: EncoreSong, att: EncoreSongAttachment): EncoreSong {
   const cur = [...(s.attachments ?? [])];
   if (!cur.some((a) => a.driveFileId === att.driveFileId)) {
-    cur.push(att);
+    let nextAtt: EncoreSongAttachment = { ...att };
+    if (att.kind === 'chart') {
+      const charts = cur.filter((a) => a.kind === 'chart');
+      if (charts.length === 0) {
+        nextAtt = { ...nextAtt, isPrimaryChart: true };
+      }
+    }
+    cur.push(nextAtt);
   }
   return songWithSyncedLegacyDriveIds({ ...s, attachments: cur, updatedAt: new Date().toISOString() });
 }

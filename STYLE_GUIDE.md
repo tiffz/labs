@@ -51,6 +51,13 @@ This repo follows the [Google TypeScript Style Guide](https://google.github.io/s
 - Every icon-only `<button>` or `<IconButton>` needs an `aria-label`. `AppTooltip` uses `describeChild` and does _not_ supply the accessible name.
 - Coarse-pointer (touch) interactions need ≥44×44 px hit areas. Use `@media (pointer: coarse)` overrides on dense icon clusters.
 
+### Information density (modern surfaces)
+
+- Prefer a **quiet default UI**: primary labels stay short; long explanations belong in **tooltips**, not stacked paragraph copy above every control group.
+- **Section context:** pair a concise heading with an **`InfoOutlined` icon** (`IconButton` + MUI `Tooltip`) for definitions, constraints, and “how this relates to the rest of the form.” Match the pattern in `SongMilestoneChecklist` and Encore song media sections.
+- **Actions:** bias toward **icon buttons with tooltips** for secondary actions and external links (open in Spotify/YouTube, refresh, compact pickups). Keep text `Button`s for strong primary CTAs (Save, Add when it commits a form row) when the label disambiguates better than an icon.
+- **Empty states:** one short line is enough; fold setup steps into the section info tooltip when they would clutter the layout.
+
 ### Layout
 
 - Fullscreen app shells: `height: 100vh; height: 100dvh;` (or `min-height` variants). Never `100vh` alone.

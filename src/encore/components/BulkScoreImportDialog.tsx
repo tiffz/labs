@@ -27,6 +27,8 @@ import Typography from '@mui/material/Typography';
 import { alpha, useTheme, type SxProps, type Theme } from '@mui/material/styles';
 import { MaterialReactTable, useMaterialReactTable, type MRT_ColumnDef } from 'material-react-table';
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
+import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
+import { useEncoreBlockingJobs } from '../context/EncoreBlockingJobContext';
 import { useEncore } from '../context/EncoreContext';
 import { ensureEncoreDriveLayout } from '../drive/bootstrapFolders';
 import { driveCollectScoreFilesRecursive } from '../drive/driveFolderWalk';
@@ -34,6 +36,8 @@ import { driveUploadFileResumable } from '../drive/driveFetch';
 import { driveFolderWebUrl, driveFileWebUrl } from '../drive/driveWebUrls';
 import { openEncoreGoogleDrivePicker } from '../drive/googlePicker';
 import { parseDriveFileIdFromUrlOrId, parseDriveFolderIdFromUrlOrId } from '../drive/parseDriveFileUrl';
+import { navigateEncore } from '../routes/encoreAppHash';
+import { parseEncoreFolderMetadata } from '../import/encoreFolderMetadata';
 import { parseScoreFilename, type ParsedScoreFilename } from '../import/parseScoreFilename';
 import { pickLibrarySongForScore } from '../import/pickLibrarySongForScore';
 import { readScoreFileMetadata } from '../import/readScoreFileMetadata';
@@ -43,7 +47,11 @@ import {
   bulkScoreDuplicateKind,
   bulkScoreLibraryDuplicateIds,
 } from '../import/bulkImportDuplicateDetection';
-import { encoreDialogActionsSx, encoreDialogTitleSx } from '../theme/encoreUiTokens';
+import {
+  encoreDialogActionsSx,
+  encoreDialogContentSx,
+  encoreDialogTitleSx,
+} from '../theme/encoreUiTokens';
 import type { EncoreSong } from '../types';
 import { addSongAttachment } from '../utils/songAttachments';
 import { encoreMrtBulkImportReviewOptions } from './encoreMrtTableDefaults';
@@ -144,6 +152,8 @@ export function BulkScoreImportDialog(props: BulkScoreImportDialogProps): ReactE
   const { open, onClose, songs, onSaveSong } = props;
   const theme = useTheme();
   const { googleAccessToken } = useEncore();
+  const { withBlockingJob } = useEncoreBlockingJobs();
+  const { withBatch } = useLabsUndo();
 
   const [step, setStep] = useState<'source' | 'review'>('source');
   const [folderInput, setFolderInput] = useState('');
@@ -215,7 +225,13 @@ export function BulkScoreImportDialog(props: BulkScoreImportDialogProps): ReactE
   const buildRowFromDriveFile = useCallback(
     (f: { id?: string; name?: string; parentPathHint?: string; webViewLink?: string }): BulkScoreRow => {
       const name = f.name ?? 'score';
-      const parsed = parseScoreFilename(name);
+      const folderMeta = parseEncoreFolderMetadata(f.parentPathHint ?? '');
+      const parsed0 = parseScoreFilename(name);
+      const parsed: ParsedScoreFilename = {
+        ...parsed0,
+        artist: parsed0.artist || folderMeta.artist,
+        key: parsed0.key || folderMeta.performanceKey,
+      };
       const guess = pickLibrarySongForScore(songs, parsed);
       const defaults = defaultRowFromParsed(parsed);
       return {
@@ -291,23 +307,25 @@ export function BulkScoreImportDialog(props: BulkScoreImportDialogProps): ReactE
     }
     setBusy(true);
     try {
-      const files = await driveCollectScoreFilesRecursive(googleAccessToken, folderId);
-      if (!files.length) {
-        setMsg('No PDF / MusicXML / MIDI files in that folder tree.');
-        return;
-      }
-      const built = files.map((f) => buildRowFromDriveFile(f));
-      setRows((prev) => {
-        const seen = new Set(prev.map((r) => r.id));
-        return [...prev, ...built.filter((r) => !seen.has(r.id))];
+      await withBlockingJob('Scanning Drive for scores…', async () => {
+        const files = await driveCollectScoreFilesRecursive(googleAccessToken, folderId);
+        if (!files.length) {
+          setMsg('No PDF / MusicXML / MIDI files in that folder tree.');
+          return;
+        }
+        const built = files.map((f) => buildRowFromDriveFile(f));
+        setRows((prev) => {
+          const seen = new Set(prev.map((r) => r.id));
+          return [...prev, ...built.filter((r) => !seen.has(r.id))];
+        });
+        setStep('review');
       });
-      setStep('review');
     } catch (e) {
       setMsg(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
     }
-  }, [folderInput, googleAccessToken, buildRowFromDriveFile]);
+  }, [folderInput, googleAccessToken, buildRowFromDriveFile, withBlockingJob]);
 
   const updateRow = useCallback((id: string, patch: Partial<BulkScoreRow>) => {
     setRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
@@ -708,65 +726,90 @@ export function BulkScoreImportDialog(props: BulkScoreImportDialogProps): ReactE
     setMsg(null);
     setProgress({ done: 0, total: rows.length });
     try {
-      const now = new Date().toISOString();
-      let done = 0;
-      for (const r of rows) {
-        if (scoreRowExcluded(r)) {
-          done += 1;
-          setProgress({ done, total: rows.length });
-          continue;
-        }
-        if (!r.guessedSongId) {
-          /* Skip rows without a target — user already had the chance to pick. */
-          done += 1;
-          setProgress({ done, total: rows.length });
-          continue;
-        }
-        const targetSong = songById.get(r.guessedSongId);
-        if (!targetSong) {
-          done += 1;
-          setProgress({ done, total: rows.length });
-          continue;
-        }
-        let driveFileId = r.driveFileId ?? '';
-        /* Direct upload rows: push the bytes to Drive into the charts folder. */
-        if (r.source === 'upload' && r.file) {
-          if (!googleAccessToken) {
-            throw new Error('Sign in to Google to upload score files.');
+      await withBlockingJob('Importing scores…', async (setBlockingProgress) => {
+        await withBatch(async () => {
+          const now = new Date().toISOString();
+          let done = 0;
+          for (const r of rows) {
+            if (scoreRowExcluded(r)) {
+              done += 1;
+              setProgress({ done, total: rows.length });
+              setBlockingProgress(rows.length ? done / rows.length : null);
+              continue;
+            }
+            if (!r.guessedSongId) {
+              done += 1;
+              setProgress({ done, total: rows.length });
+              setBlockingProgress(rows.length ? done / rows.length : null);
+              continue;
+            }
+            const targetSong = songById.get(r.guessedSongId);
+            if (!targetSong) {
+              done += 1;
+              setProgress({ done, total: rows.length });
+              setBlockingProgress(rows.length ? done / rows.length : null);
+              continue;
+            }
+            let driveFileId = r.driveFileId ?? '';
+            if (r.source === 'upload' && r.file) {
+              if (!googleAccessToken) {
+                throw new Error('Sign in to Google to upload score files.');
+              }
+              if (!chartsFolderId) {
+                throw new Error('Drive charts folder is not ready yet — try again in a moment.');
+              }
+              const created = await driveUploadFileResumable(googleAccessToken, r.file, [chartsFolderId]);
+              driveFileId = created.id;
+            }
+            if (!driveFileId) {
+              done += 1;
+              setProgress({ done, total: rows.length });
+              setBlockingProgress(rows.length ? done / rows.length : null);
+              continue;
+            }
+            let updated = addSongAttachment(targetSong, {
+              kind: 'chart',
+              driveFileId,
+              label: r.name,
+            });
+            if (r.applyKey && r.parsed.key) {
+              updated = { ...updated, performanceKey: r.parsed.key, updatedAt: now };
+            } else {
+              updated = { ...updated, updatedAt: now };
+            }
+            const folderMeta = parseEncoreFolderMetadata(r.parentPathHint ?? '');
+            if (folderMeta.tags?.length) {
+              const merged = [...(updated.tags ?? [])];
+              for (const t of folderMeta.tags) {
+                if (!merged.some((x) => x.toLowerCase() === t.toLowerCase())) merged.push(t);
+              }
+              updated = { ...updated, tags: merged, updatedAt: now };
+            }
+            await onSaveSong(updated);
+            done += 1;
+            setProgress({ done, total: rows.length });
+            setBlockingProgress(rows.length ? done / rows.length : null);
           }
-          if (!chartsFolderId) {
-            throw new Error('Drive charts folder is not ready yet — try again in a moment.');
-          }
-          const created = await driveUploadFileResumable(googleAccessToken, r.file, [chartsFolderId]);
-          driveFileId = created.id;
-        }
-        if (!driveFileId) {
-          done += 1;
-          setProgress({ done, total: rows.length });
-          continue;
-        }
-        let updated = addSongAttachment(targetSong, {
-          kind: 'chart',
-          driveFileId,
-          label: r.name,
         });
-        if (r.applyKey && r.parsed.key) {
-          updated = { ...updated, performanceKey: r.parsed.key, updatedAt: now };
-        } else {
-          updated = { ...updated, updatedAt: now };
-        }
-        await onSaveSong(updated);
-        done += 1;
-        setProgress({ done, total: rows.length });
-      }
-      onClose();
+        onClose();
+      });
     } catch (e) {
       setMsg(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
       setProgress(null);
     }
-  }, [rows, songById, googleAccessToken, chartsFolderId, onSaveSong, onClose, scoreRowExcluded]);
+  }, [
+    rows,
+    songById,
+    googleAccessToken,
+    chartsFolderId,
+    onSaveSong,
+    onClose,
+    scoreRowExcluded,
+    withBlockingJob,
+    withBatch,
+  ]);
 
   const reviewFullscreen = step === 'review';
 
@@ -846,10 +889,10 @@ export function BulkScoreImportDialog(props: BulkScoreImportDialogProps): ReactE
                   boxSizing: 'border-box',
                 }
               : {
+                  ...encoreDialogContentSx,
                   display: 'flex',
                   flexDirection: 'column',
                   gap: 2,
-                  py: 2,
                   maxWidth: '100%',
                   boxSizing: 'border-box',
                   overflowX: 'hidden',
@@ -858,6 +901,23 @@ export function BulkScoreImportDialog(props: BulkScoreImportDialogProps): ReactE
         >
           {step === 'source' ? (
             <>
+              <Alert severity="info" sx={{ py: 0.75 }}>
+                <Typography variant="body2" sx={{ lineHeight: 1.5 }}>
+                  For how Encore reads MusicNotes-style names and how it saves charts in Drive, see the{' '}
+                  <Link
+                    component="button"
+                    type="button"
+                    variant="body2"
+                    onClick={() => {
+                      onClose();
+                      navigateEncore({ kind: 'help' });
+                    }}
+                  >
+                    Import guide
+                  </Link>
+                  .
+                </Typography>
+              </Alert>
               <DragDropFileUpload
                 label="Drop score files here or click to choose"
                 helperText="PDF, MusicXML (.xml / .musicxml / .mxl), and MIDI accepted. Each file is matched to your library using its file name."

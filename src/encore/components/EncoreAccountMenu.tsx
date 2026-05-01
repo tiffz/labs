@@ -103,7 +103,7 @@ export function EncoreAccountMenu(props: {
     spotifyConnectError,
     spotifyConnectLoopbackUrl,
     clearSpotifyConnectError,
-    reorganizePerformanceVideos,
+    reorganizeDriveUploads,
   } = useEncore();
 
   const [reorganizing, setReorganizing] = useState(false);
@@ -112,18 +112,23 @@ export function EncoreAccountMenu(props: {
     setReorganizing(true);
     setReorganizeMsg(null);
     try {
-      const result = await reorganizePerformanceVideos();
-      const created = result.shortcutsCreated;
-      if (result.renamed === 0 && result.errors === 0 && created === 0) {
+      const { performanceVideos: pv, attachments: at } = await reorganizeDriveUploads();
+      const totalErrors = pv.errors + at.errors;
+      const created = pv.shortcutsCreated;
+      if (pv.renamed === 0 && totalErrors === 0 && created === 0 && at.renamed === 0 && at.moved === 0) {
         setReorganizeMsg('Already organized.');
-      } else if (result.errors > 0) {
+      } else if (totalErrors > 0) {
         setReorganizeMsg(
-          `Renamed ${result.renamed}, created ${created} shortcut${created === 1 ? '' : 's'}; ${result.errors} could not be touched.`,
+          `Videos: renamed ${pv.renamed}, ${created} shortcut${created === 1 ? '' : 's'} (${pv.errors} errors). Attachments: renamed ${at.renamed}, moved ${at.moved} (${at.errors} errors).`,
         );
       } else {
         const parts = [
-          result.renamed > 0 ? `renamed ${result.renamed}` : null,
-          created > 0 ? `created ${created} shortcut${created === 1 ? '' : 's'}` : null,
+          pv.renamed > 0
+            ? `renamed ${pv.renamed} performance video${pv.renamed === 1 ? '' : 's'}`
+            : null,
+          at.renamed > 0 ? `renamed ${at.renamed} chart/recording file${at.renamed === 1 ? '' : 's'}` : null,
+          at.moved > 0 ? `moved ${at.moved} file${at.moved === 1 ? '' : 's'} into Encore folders` : null,
+          created > 0 ? `created ${created} video shortcut${created === 1 ? '' : 's'}` : null,
         ].filter(Boolean);
         setReorganizeMsg(`Drive is up to date — ${parts.join(', ') || 'nothing to do'}.`);
       }
@@ -132,7 +137,7 @@ export function EncoreAccountMenu(props: {
     } finally {
       setReorganizing(false);
     }
-  }, [reorganizePerformanceVideos]);
+  }, [reorganizeDriveUploads]);
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
@@ -408,13 +413,19 @@ export function EncoreAccountMenu(props: {
                     </IconButton>
                   </Tooltip>
                 ) : null}
-                <Tooltip title={reorganizing ? 'Reorganizing…' : 'Reorganize performance videos'}>
+                <Tooltip
+                  title={
+                    reorganizing
+                      ? 'Reorganizing…'
+                      : 'Reorganize Drive uploads (performance videos, charts, recordings)'
+                  }
+                >
                   <span>
                     <IconButton
                       size="small"
                       onClick={() => void handleReorganize()}
                       disabled={reorganizing}
-                      aria-label="Reorganize performance videos"
+                      aria-label="Reorganize Drive uploads (videos, charts, recordings)"
                     >
                       {reorganizing ? <RefreshIcon className="spin" fontSize="small" /> : <AutoFixHighIcon fontSize="small" />}
                     </IconButton>

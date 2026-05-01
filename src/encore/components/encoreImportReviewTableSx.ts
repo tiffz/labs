@@ -29,8 +29,8 @@ const encoreTableBodyCellSx = {
 };
 
 /**
- * Shared `Table` `sx` for Encore import review grids (playlist import, bulk performance import).
- * Sticky header cells use an opaque paper background so body rows do not show through when scrolling.
+ * Shared `Table` `sx` for Encore import review grids (playlist import, bulk imports).
+ * Compact row rhythm and middle vertical alignment; sticky header uses an opaque paper background.
  */
 export const encoreImportReviewTableSx: SxProps<Theme> = {
   tableLayout: 'fixed',
@@ -38,13 +38,15 @@ export const encoreImportReviewTableSx: SxProps<Theme> = {
   minWidth: 0,
   '& .MuiTableCell-root': {
     ...encoreTableBodyCellSx,
-    px: 2,
-    py: 1.5,
-    verticalAlign: 'top',
+    px: 1.5,
+    py: 1,
+    verticalAlign: 'middle',
+    fontSize: '0.8125rem',
   },
   '& .MuiTableCell-head': {
     ...encoreTableHeadCellSx,
-    py: 1.5,
+    py: 1,
+    fontSize: '0.65rem',
   },
 };
 

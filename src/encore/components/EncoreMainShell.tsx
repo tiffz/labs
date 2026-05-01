@@ -18,8 +18,10 @@ import { EncoreAppShell } from '../ui/EncoreAppShell';
 import { EncoreAccountMenu } from './EncoreAccountMenu';
 import { EncoreShareMenu } from './EncoreShareMenu';
 import { ConflictResolutionDialog } from './ConflictResolutionDialog';
+import { PracticeScreen } from './PracticeScreen';
 import { LibraryScreen } from './LibraryScreen';
 import { PerformancesScreen } from './PerformancesScreen';
+import { ImportGuideScreen } from './ImportGuideScreen';
 import { RepertoireSettingsScreen } from './RepertoireSettingsScreen';
 import { SongPage } from './SongPage';
 
@@ -66,7 +68,17 @@ export function EncoreMainShell(): React.ReactElement {
   const onSongRoute = route.kind === 'song' || route.kind === 'songNew';
   const songPageKey = route.kind === 'songNew' ? 'new' : route.kind === 'song' ? route.id : 'main';
   const librarySectionTab =
-    route.kind === 'performances' ? 1 : route.kind === 'repertoireSettings' ? 2 : 0; /* Repertoire: library + song detail */
+    onSongRoute
+      ? 0
+      : route.kind === 'practice'
+        ? 1
+        : route.kind === 'performances'
+          ? 2
+          : route.kind === 'repertoireSettings'
+            ? 3
+            : route.kind === 'help'
+              ? 4
+              : 0;
 
   return (
     <EncoreAppShell>
@@ -177,15 +189,18 @@ export function EncoreMainShell(): React.ReactElement {
               value={librarySectionTab}
               onChange={(_, v) => {
                 if (v === 0) navigateEncore({ kind: 'library' });
-                else if (v === 1) navigateEncore({ kind: 'performances' });
-                else navigateEncore({ kind: 'repertoireSettings' });
+                else if (v === 1) navigateEncore({ kind: 'practice' });
+                else if (v === 2) navigateEncore({ kind: 'performances' });
+                else if (v === 3) navigateEncore({ kind: 'repertoireSettings' });
+                else navigateEncore({ kind: 'help' });
               }}
               aria-label="Encore library sections"
               variant={compactHeaderTabs ? 'fullWidth' : 'standard'}
               sx={{
                 minHeight: 44,
                 width: { md: 'auto' },
-                maxWidth: { md: 480 },
+                maxWidth: { md: 720 },
+                overflowX: 'auto',
                 '& .MuiTabs-indicator': { height: 2, borderRadius: 1 },
                 '& .MuiTab-root': {
                   minHeight: 44,
@@ -206,19 +221,25 @@ export function EncoreMainShell(): React.ReactElement {
                   if (route.kind === 'song' || route.kind === 'songNew') navigateEncore({ kind: 'library' });
                 }}
               />
+              <Tab
+                label="Practice"
+                id="encore-tab-practice"
+                aria-controls="encore-panel-practice"
+              />
               <Tab label="Performances" id="encore-tab-performances" aria-controls="encore-panel-performances" />
               <Tab label="Library settings" id="encore-tab-setup" aria-controls="encore-panel-setup" />
+              <Tab label="Help" id="encore-tab-help" aria-controls="encore-panel-help" />
             </Tabs>
           </Box>
         </Toolbar>
       </AppBar>
-      <Box component="main" id="main" sx={{ flex: 1, minHeight: 0 }}>
+      <Box component="main" id="main" sx={{ flex: 1, minHeight: 0, minWidth: 0, width: 1 }}>
         {onSongRoute ? (
           <Box
             role="tabpanel"
             id="encore-panel-repertoire"
             aria-labelledby="encore-tab-repertoire"
-            sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}
+            sx={{ flex: 1, minHeight: 0, minWidth: 0, width: 1, display: 'flex', flexDirection: 'column' }}
           >
             <SongPage key={songPageKey} route={route} />
           </Box>
@@ -226,25 +247,37 @@ export function EncoreMainShell(): React.ReactElement {
           <Box
             role="tabpanel"
             id={
-              route.kind === 'performances'
-                ? 'encore-panel-performances'
-                : route.kind === 'repertoireSettings'
-                  ? 'encore-panel-setup'
-                  : 'encore-panel-repertoire'
+              route.kind === 'practice'
+                ? 'encore-panel-practice'
+                : route.kind === 'performances'
+                  ? 'encore-panel-performances'
+                  : route.kind === 'repertoireSettings'
+                    ? 'encore-panel-setup'
+                    : route.kind === 'help'
+                      ? 'encore-panel-help'
+                      : 'encore-panel-repertoire'
             }
             aria-labelledby={
-              route.kind === 'performances'
-                ? 'encore-tab-performances'
-                : route.kind === 'repertoireSettings'
-                  ? 'encore-tab-setup'
-                  : 'encore-tab-repertoire'
+              route.kind === 'practice'
+                ? 'encore-tab-practice'
+                : route.kind === 'performances'
+                  ? 'encore-tab-performances'
+                  : route.kind === 'repertoireSettings'
+                    ? 'encore-tab-setup'
+                    : route.kind === 'help'
+                      ? 'encore-tab-help'
+                      : 'encore-tab-repertoire'
             }
-            sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}
+            sx={{ flex: 1, minHeight: 0, minWidth: 0, width: 1, display: 'flex', flexDirection: 'column' }}
           >
-            {route.kind === 'performances' ? (
+            {route.kind === 'practice' ? (
+              <PracticeScreen />
+            ) : route.kind === 'performances' ? (
               <PerformancesScreen />
             ) : route.kind === 'repertoireSettings' ? (
               <RepertoireSettingsScreen />
+            ) : route.kind === 'help' ? (
+              <ImportGuideScreen />
             ) : (
               <LibraryScreen />
             )}

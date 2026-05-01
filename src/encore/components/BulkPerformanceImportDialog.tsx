@@ -28,6 +28,8 @@ import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
 import { MaterialReactTable, useMaterialReactTable, type MRT_ColumnDef } from 'material-react-table';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactElement } from 'react';
+import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
+import { useEncoreBlockingJobs } from '../context/EncoreBlockingJobContext';
 import { useEncore } from '../context/EncoreContext';
 import { ensureEncoreDriveLayout } from '../drive/bootstrapFolders';
 import { driveUploadFileResumable } from '../drive/driveFetch';
@@ -36,6 +38,8 @@ import { driveFolderWebUrl } from '../drive/driveWebUrls';
 import { openEncoreGoogleDrivePicker } from '../drive/googlePicker';
 import { parseDriveFileIdFromUrlOrId, parseDriveFolderIdFromUrlOrId } from '../drive/parseDriveFileUrl';
 import { DragDropFileUpload } from '../../shared/components/DragDropFileUpload';
+import { navigateEncore } from '../routes/encoreAppHash';
+import { parseEncoreFolderMetadata } from '../import/encoreFolderMetadata';
 import { bestVenueFromCatalog } from '../import/venueCatalogMatch';
 import {
   bulkImportEffectiveSkip,
@@ -58,8 +62,12 @@ import {
   sortBulkPerfTableRows,
   type BulkPerfTableSort,
 } from '../import/bulkPerformanceImportTableSort';
-import { encoreDialogActionsSx, encoreDialogTitleSx } from '../theme/encoreUiTokens';
-import type { EncorePerformance, EncoreSong } from '../types';
+import {
+  encoreDialogActionsSx,
+  encoreDialogContentSx,
+  encoreDialogTitleSx,
+} from '../theme/encoreUiTokens';
+import type { EncoreAccompanimentTag, EncorePerformance, EncoreSong } from '../types';
 import { encoreMrtBulkImportReviewOptions } from './encoreMrtTableDefaults';
 import { BulkVideoSongMatchDialog } from './BulkVideoSongMatchDialog';
 import { LibrarySongPickerDialog } from './LibrarySongPickerDialog';
@@ -93,6 +101,8 @@ export interface BulkPerfRow {
   driveDescription?: string;
   /** Folder breadcrumb under the scanned root (from walker). */
   parentPathHint?: string;
+  /** From `Accompaniment - …` folder segments (deepest wins); applied when saving the performance. */
+  folderAccompanimentTags?: EncoreAccompanimentTag[];
   /** `contentHints.indexableText` when Drive returns it. */
   driveIndexableText?: string;
   /**
@@ -211,6 +221,8 @@ export function BulkPerformanceImportDialog(props: {
 }): ReactElement {
   const { open, onClose, songs, googleAccessToken, spotifyLinked, onSaveSong, onSavePerformances } = props;
   const { connectSpotify, spotifyConnectError, clearSpotifyConnectError, performances, repertoireExtras } = useEncore();
+  const { withBlockingJob } = useEncoreBlockingJobs();
+  const { withBatch } = useLabsUndo();
   const clientId = (import.meta.env.VITE_SPOTIFY_CLIENT_ID as string | undefined)?.trim() ?? '';
   const theme = useTheme();
 
@@ -350,7 +362,8 @@ export function BulkPerformanceImportDialog(props: {
   const songMatchInitialQuery = useMemo(() => {
     const r = rows.find((x) => x.id === songMatchRowId);
     if (!r) return '';
-    const pathTail = r.parentPathHint
+    const residual = parseEncoreFolderMetadata(r.parentPathHint ?? '').residualPathHint;
+    const pathTail = residual
       ?.split('/')
       .map((s) => s.trim())
       .filter(Boolean)
@@ -467,172 +480,227 @@ export function BulkPerformanceImportDialog(props: {
     }
     setBusy(true);
     try {
-      const files = await driveCollectVideoFilesRecursive(googleAccessToken, folderId);
-      if (!files.length) {
-        setMsg(
-          'No video files in that folder tree. If bulk import used to fail empty, sign in to Google once more (Account → Disconnect Google, then sign in) so Drive metadata access is granted.',
-        );
-        setRows([]);
-        return;
-      }
-      const seenIds = new Set<string>();
-      const uniqueFiles = files.filter((f) => {
-        const id = f.id ?? '';
-        if (!id || seenIds.has(id)) return false;
-        seenIds.add(id);
-        return true;
+      await withBlockingJob('Scanning Drive for videos…', async () => {
+        const files = await driveCollectVideoFilesRecursive(googleAccessToken, folderId);
+        if (!files.length) {
+          setMsg(
+            'No video files in that folder tree. If bulk import used to fail empty, sign in to Google once more (Account → Disconnect Google, then sign in) so Drive metadata access is granted.',
+          );
+          setRows([]);
+          return;
+        }
+        const seenIds = new Set<string>();
+        const uniqueFiles = files.filter((f) => {
+          const id = f.id ?? '';
+          if (!id || seenIds.has(id)) return false;
+          seenIds.add(id);
+          return true;
+        });
+        if (uniqueFiles.length < files.length) {
+          setScanNote(`Skipped ${files.length - uniqueFiles.length} duplicate file id(s) in the scan (same Drive file listed more than once).`);
+        }
+        const built: BulkPerfRow[] = uniqueFiles.map((f) => {
+          const name = f.name ?? 'video';
+          const idx = f.contentHints?.indexableText?.trim();
+          const folderMeta = parseEncoreFolderMetadata(f.parentPathHint ?? '');
+          const pathForMatch =
+            folderMeta.residualPathHint.trim().length > 0 ? folderMeta.residualPathHint.trim() : undefined;
+          const best = pickBestLibrarySongForBulkVideo(songs, {
+            fileName: name,
+            description: f.description,
+            parentPathHint: pathForMatch,
+            indexableText: idx,
+          });
+          const matchHaystack = buildBulkVideoMatchText({
+            fileName: name,
+            description: f.description,
+            parentPathHint: pathForMatch,
+            indexableText: idx,
+          });
+          const linked = findEncorePerformanceLinkingDriveFile(performances, f.id);
+          const guessedSongId = linked?.songId ?? best?.id ?? '';
+          const dateGuess = performanceCalendarDateForBulkRow({
+            fileName: name,
+            matchHaystack,
+            driveCreatedTime: f.createdTime,
+            driveModifiedTime: f.modifiedTime,
+          });
+          const catalogVenue = bestVenueFromCatalog(repertoireExtras.venueCatalog, {
+            fileName: name,
+            parentPathHint: pathForMatch,
+          });
+          const folderAcc = folderMeta.accompaniment;
+          return {
+            id: f.id ?? crypto.randomUUID(),
+            driveFileId: f.id ?? '',
+            name,
+            modifiedTime: f.modifiedTime,
+            guessedSongId,
+            venue: folderMeta.venue?.trim() || catalogVenue || guessVenueFromName(matchHaystack),
+            date: folderMeta.date ?? dateGuess,
+            skipRow: undefined,
+            driveDescription: f.description?.trim() || undefined,
+            parentPathHint: f.parentPathHint,
+            driveIndexableText: idx,
+            linkedPerformanceId: linked?.id,
+            folderAccompanimentTags: folderAcc && folderAcc.length > 0 ? folderAcc : undefined,
+          };
+        });
+        setRows(built);
+        setLibraryPairFilter('all');
+        setTableQuery('');
+        setTableSorting(BULK_PERF_DEFAULT_SORTING);
+        lockedRowOrderRef.current = null;
+        setOrderLockActive(false);
+        setStep('review');
       });
-      if (uniqueFiles.length < files.length) {
-        setScanNote(`Skipped ${files.length - uniqueFiles.length} duplicate file id(s) in the scan (same Drive file listed more than once).`);
-      }
-      const built: BulkPerfRow[] = uniqueFiles.map((f) => {
-        const name = f.name ?? 'video';
-        const idx = f.contentHints?.indexableText?.trim();
-        const best = pickBestLibrarySongForBulkVideo(songs, {
-          fileName: name,
-          description: f.description,
-          parentPathHint: f.parentPathHint,
-          indexableText: idx,
-        });
-        const matchHaystack = buildBulkVideoMatchText({
-          fileName: name,
-          description: f.description,
-          parentPathHint: f.parentPathHint,
-          indexableText: idx,
-        });
-        const linked = findEncorePerformanceLinkingDriveFile(performances, f.id);
-        const guessedSongId = linked?.songId ?? best?.id ?? '';
-        const dateGuess = performanceCalendarDateForBulkRow({
-          fileName: name,
-          matchHaystack,
-          driveCreatedTime: f.createdTime,
-          driveModifiedTime: f.modifiedTime,
-        });
-        const catalogVenue = bestVenueFromCatalog(repertoireExtras.venueCatalog, {
-          fileName: name,
-          parentPathHint: f.parentPathHint,
-        });
-        return {
-          id: f.id ?? crypto.randomUUID(),
-          driveFileId: f.id ?? '',
-          name,
-          modifiedTime: f.modifiedTime,
-          guessedSongId,
-          venue: catalogVenue || guessVenueFromName(matchHaystack),
-          date: dateGuess,
-          skipRow: undefined,
-          driveDescription: f.description?.trim() || undefined,
-          parentPathHint: f.parentPathHint,
-          driveIndexableText: idx,
-          linkedPerformanceId: linked?.id,
-        };
-      });
-      setRows(built);
-      setLibraryPairFilter('all');
-      setTableQuery('');
-      setTableSorting(BULK_PERF_DEFAULT_SORTING);
-      lockedRowOrderRef.current = null;
-      setOrderLockActive(false);
-      setStep('review');
     } catch (e) {
       setMsg(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
     }
-  }, [folderInput, googleAccessToken, songs, performances, repertoireExtras.venueCatalog]);
+  }, [folderInput, googleAccessToken, songs, performances, repertoireExtras.venueCatalog, withBlockingJob]);
 
   const applyAll = useCallback(async () => {
     setBusy(true);
     setMsg(null);
     try {
-      const now = new Date().toISOString();
-      const perf: EncorePerformance[] = [];
-      for (const r of rows) {
-        if (perfRowExcluded(r)) continue;
-        let songId = r.guessedSongId;
-        if (r.newSongFromSpotify) {
-          const ns = r.newSongFromSpotify;
-          const song: EncoreSong = {
-            id: crypto.randomUUID(),
-            title: ns.title,
-            artist: ns.artist,
-            albumArtUrl: ns.albumArtUrl,
-            spotifyTrackId: ns.spotifyTrackId,
-            journalMarkdown: '',
-            createdAt: now,
-            updatedAt: now,
-          };
-          await onSaveSong(song);
-          songId = song.id;
-        } else if (r.newSongManual) {
-          const song = encoreSongFromManualTitleArtist(r.newSongManual.title, r.newSongManual.artist, now);
-          await onSaveSong(song);
-          songId = song.id;
-        }
-        if (!songId && r.linkedPerformanceId) {
-          const prev = performances.find((p) => p.id === r.linkedPerformanceId);
-          songId = prev?.songId ?? '';
-        }
-        if (!songId) continue;
-
-        /* Direct-upload row: push the bytes to the Drive Performances folder
-           first; the resulting Drive id then plays the same role as a scanned
-           video for the rest of the save logic. */
-        let videoFileId = r.driveFileId;
-        if (r.pendingUploadFile) {
-          if (!googleAccessToken) {
-            throw new Error('Sign in to Google to upload videos.');
+      const totalRows = rows.length;
+      let rowStep = 0;
+      await withBlockingJob('Importing performances…', async (setBlockingProgress) => {
+        await withBatch(async () => {
+        const now = new Date().toISOString();
+        const perf: EncorePerformance[] = [];
+        for (const r of rows) {
+          if (perfRowExcluded(r)) {
+            rowStep += 1;
+            setBlockingProgress(totalRows ? rowStep / totalRows : null);
+            continue;
           }
-          if (!performancesFolderId) {
-            throw new Error('Drive Performances folder is not ready yet — try again in a moment.');
+          const folderMeta = parseEncoreFolderMetadata(r.parentPathHint ?? '');
+          let songId = r.guessedSongId;
+          if (r.newSongFromSpotify) {
+            const ns = r.newSongFromSpotify;
+            const song: EncoreSong = {
+              id: crypto.randomUUID(),
+              title: ns.title,
+              artist: ns.artist?.trim() || folderMeta.artist?.trim() || 'Unknown artist',
+              albumArtUrl: ns.albumArtUrl,
+              spotifyTrackId: ns.spotifyTrackId,
+              journalMarkdown: '',
+              createdAt: now,
+              updatedAt: now,
+              ...(folderMeta.performanceKey?.trim() ? { performanceKey: folderMeta.performanceKey.trim() } : {}),
+              ...(folderMeta.tags?.length ? { tags: folderMeta.tags } : {}),
+            };
+            await onSaveSong(song);
+            songId = song.id;
+          } else if (r.newSongManual) {
+            const song = encoreSongFromManualTitleArtist(
+              r.newSongManual.title,
+              r.newSongManual.artist.trim() || folderMeta.artist?.trim() || '',
+              now,
+            );
+            const withFolder: EncoreSong = {
+              ...song,
+              ...(folderMeta.performanceKey?.trim() ? { performanceKey: folderMeta.performanceKey.trim() } : {}),
+              ...(folderMeta.tags?.length ? { tags: folderMeta.tags } : {}),
+            };
+            await onSaveSong(withFolder);
+            songId = withFolder.id;
           }
-          const created = await driveUploadFileResumable(
-            googleAccessToken,
-            r.pendingUploadFile,
-            [performancesFolderId],
-          );
-          videoFileId = created.id;
-        }
+          if (!songId && r.linkedPerformanceId) {
+            const prev = performances.find((p) => p.id === r.linkedPerformanceId);
+            songId = prev?.songId ?? '';
+          }
+          if (!songId) {
+            rowStep += 1;
+            setBlockingProgress(totalRows ? rowStep / totalRows : null);
+            continue;
+          }
 
-        if (r.linkedPerformanceId) {
-          const prev = performances.find((p) => p.id === r.linkedPerformanceId);
-          if (!prev) continue;
-          const importLine = `Imported: ${r.name}`;
-          const nextNotes = prev.notes?.includes(importLine)
-            ? prev.notes
-            : [prev.notes?.trim(), importLine].filter(Boolean).join('\n');
+          let videoFileId = r.driveFileId;
+          if (r.pendingUploadFile) {
+            if (!googleAccessToken) {
+              throw new Error('Sign in to Google to upload videos.');
+            }
+            if (!performancesFolderId) {
+              throw new Error('Drive Performances folder is not ready yet — try again in a moment.');
+            }
+            const created = await driveUploadFileResumable(
+              googleAccessToken,
+              r.pendingUploadFile,
+              [performancesFolderId],
+            );
+            videoFileId = created.id;
+          }
+
+          if (r.linkedPerformanceId) {
+            const prev = performances.find((p) => p.id === r.linkedPerformanceId);
+            if (!prev) {
+              rowStep += 1;
+              setBlockingProgress(totalRows ? rowStep / totalRows : null);
+              continue;
+            }
+            const importLine = `Imported: ${r.name}`;
+            const nextNotes = prev.notes?.includes(importLine)
+              ? prev.notes
+              : [prev.notes?.trim(), importLine].filter(Boolean).join('\n');
+            perf.push({
+              ...prev,
+              songId,
+              date: r.date,
+              venueTag: r.venue.trim() || 'Venue',
+              notes: nextNotes,
+              videoTargetDriveFileId: videoFileId || prev.videoTargetDriveFileId,
+              ...(r.folderAccompanimentTags?.length
+                ? { accompanimentTags: r.folderAccompanimentTags }
+                : {}),
+              updatedAt: now,
+            });
+            rowStep += 1;
+            setBlockingProgress(totalRows ? rowStep / totalRows : null);
+            continue;
+          }
+
           perf.push({
-            ...prev,
+            id: crypto.randomUUID(),
             songId,
             date: r.date,
             venueTag: r.venue.trim() || 'Venue',
-            notes: nextNotes,
-            videoTargetDriveFileId: videoFileId || prev.videoTargetDriveFileId,
+            videoTargetDriveFileId: videoFileId || undefined,
+            externalVideoUrl: undefined,
+            notes: `Imported: ${r.name}`,
+            ...(r.folderAccompanimentTags?.length
+              ? { accompanimentTags: r.folderAccompanimentTags }
+              : {}),
+            createdAt: now,
             updatedAt: now,
           });
-          continue;
+          rowStep += 1;
+          setBlockingProgress(totalRows ? rowStep / totalRows : null);
         }
-
-        perf.push({
-          id: crypto.randomUUID(),
-          songId,
-          date: r.date,
-          venueTag: r.venue.trim() || 'Venue',
-          videoTargetDriveFileId: videoFileId || undefined,
-          externalVideoUrl: undefined,
-          notes: `Imported: ${r.name}`,
-          createdAt: now,
-          updatedAt: now,
+        await onSavePerformances(perf);
+        handleClose();
         });
-      }
-      await onSavePerformances(perf);
-      handleClose();
+      });
     } catch (e) {
       setMsg(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
     }
-  }, [rows, performances, onSavePerformances, onSaveSong, handleClose, googleAccessToken, performancesFolderId, perfRowExcluded]);
+  }, [
+    rows,
+    performances,
+    onSavePerformances,
+    onSaveSong,
+    handleClose,
+    googleAccessToken,
+    performancesFolderId,
+    perfRowExcluded,
+    withBlockingJob,
+    withBatch,
+  ]);
 
   const columns = useMemo<MRT_ColumnDef<BulkPerfRow>[]>(
     () => [
@@ -1050,11 +1118,28 @@ export function BulkPerformanceImportDialog(props: {
                   maxWidth: '100%',
                   boxSizing: 'border-box',
                 }
-              : { maxWidth: '100%', boxSizing: 'border-box', overflowX: 'hidden' }
+              : { ...encoreDialogContentSx, maxWidth: '100%', boxSizing: 'border-box', overflowX: 'hidden' }
           }
         >
           {step === 'folder' && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, pt: 1, maxWidth: '100%' }}>
+              <Alert severity="info" sx={{ py: 0.75 }}>
+                <Typography variant="body2" sx={{ lineHeight: 1.5 }}>
+                  For recommended video file names (and import order), see the{' '}
+                  <Link
+                    component="button"
+                    type="button"
+                    variant="body2"
+                    onClick={() => {
+                      onClose();
+                      navigateEncore({ kind: 'help' });
+                    }}
+                  >
+                    Import guide
+                  </Link>
+                  .
+                </Typography>
+              </Alert>
               <DragDropFileUpload
                 label="Drop performance videos here or click to choose"
                 helperText="We'll guess song, venue, and date from the file name, then upload to your Drive Performances folder on save."

@@ -2,8 +2,11 @@ import { describe, expect, it } from 'vitest';
 import type { EncoreSong } from '../types';
 import {
   findExistingSongForImport,
+  IMPORT_MATCH_AUTO_MIN,
   importRowHasLibraryMerge,
   scoreSongSimilarityForImport,
+  crossSectionMovesForPlaylistRow,
+  totalCrossSectionLinksForPlaylistImport,
 } from './findExistingSongForImport';
 import { normalizeForMatch, type PlaylistImportRow } from './matchPlaylists';
 
@@ -61,6 +64,22 @@ describe('scoreSongSimilarityForImport', () => {
     const lib = song({ id: '1', title: 'drivers license', artist: 'Olivia Rodrigo' });
     const sp = song({ id: '2', title: 'drivers license', artist: 'Olivia Rodrigo', spotifyTrackId: 's1' });
     expect(scoreSongSimilarityForImport(lib, sp)).toBeGreaterThanOrEqual(0.76);
+  });
+
+  it('matches when library title/artist are swapped vs Spotify canonical (karaoke catalog in title)', () => {
+    const lib = song({
+      id: '1',
+      title: 'Evanescence - Piano Karaoke Instrumental',
+      artist: 'My Immortal',
+      spotifyTrackId: '4AuTOA3kjmi5aoZ',
+    });
+    const incoming = song({
+      id: '2',
+      title: 'My Immortal',
+      artist: 'Evanescence',
+      spotifyTrackId: 'differentSpotifyId',
+    });
+    expect(scoreSongSimilarityForImport(lib, incoming)).toBeGreaterThanOrEqual(IMPORT_MATCH_AUTO_MIN);
   });
 
   it('matches multi-name artist lineups via token overlap when title is identical', () => {
@@ -185,6 +204,26 @@ describe('findExistingSongForImport', () => {
     expect(findExistingSongForImport(existing, incoming)?.id).toBe('lib-les');
   });
 
+  it('matches alternate Spotify recording when title has [Live] and artist differs (cast vs solo)', () => {
+    const existing = [
+      song({
+        id: 'lib-omo',
+        title: 'On My Own (From "Les Misérables")',
+        artist: 'Original London Cast',
+        spotifyTrackId: 'studioTrackId',
+      }),
+    ];
+    const incoming = song({
+      id: 'imp',
+      title: 'On My Own (From "Les misérables") [Live]',
+      artist: 'Lea Salonga',
+      spotifyTrackId: 'liveTrackId',
+      albumArtUrl: 'https://example.com/a.jpg',
+    });
+    expect(findExistingSongForImport(existing, incoming)?.id).toBe('lib-omo');
+    expect(scoreSongSimilarityForImport(existing[0]!, incoming)).toBeGreaterThanOrEqual(IMPORT_MATCH_AUTO_MIN);
+  });
+
   it('returns null when nothing is close enough', () => {
     const existing = [song({ id: 'e1', title: 'Song A', artist: 'Artist One' })];
     const incoming = song({ id: 'i', title: 'Completely Different', artist: 'Other Band', spotifyTrackId: 'z' });
@@ -238,5 +277,162 @@ describe('importRowHasLibraryMerge', () => {
       matchScore: 0,
     } satisfies PlaylistImportRow;
     expect(importRowHasLibraryMerge(row, [])).toBe(false);
+  });
+});
+
+describe('crossSectionMovesForPlaylistRow', () => {
+  it('counts backing import when same YouTube is legacy reference only (referenceLinks has no YouTube row)', () => {
+    const vid = 'RRSAkl0Dkrk';
+    const lib = song({
+      id: 'lib1',
+      title: 'I’ll Only Love You More',
+      artist: 'Cast',
+      spotifyTrackId: 'spCat',
+      youtubeVideoId: vid,
+      referenceLinks: [
+        { id: 'r1', source: 'spotify', spotifyTrackId: 'spCat', isPrimaryReference: true },
+      ],
+    });
+    const row = {
+      id: 'imp',
+      kind: 'youtube_only' as const,
+      youtube: { videoId: vid, title: 'instrumental', channelTitle: 'ch' },
+      youtubeVideoId: vid,
+      matchScore: 1,
+    } satisfies PlaylistImportRow;
+    expect(crossSectionMovesForPlaylistRow(row, [lib], 'backing')).toBe(1);
+  });
+
+  it('counts backing import when same YouTube is a reference link', () => {
+    const vid = 'AbCdEfGhIj0';
+    const lib = song({
+      id: 'lib1',
+      title: 'Song',
+      artist: 'Artist',
+      spotifyTrackId: 'sp1',
+      referenceLinks: [
+        { id: 'r1', source: 'spotify', spotifyTrackId: 'sp1', isPrimaryReference: true },
+        { id: 'r2', source: 'youtube', youtubeVideoId: vid, youtubeKind: 'reference', isPrimaryReference: false },
+      ],
+    });
+    const row = {
+      id: 'imp',
+      kind: 'paired' as const,
+      spotify: { trackId: 'sp1', title: 'Song', artist: 'Artist' },
+      youtube: { videoId: vid, title: 'karaoke', channelTitle: 'k' },
+      youtubeVideoId: vid,
+      matchScore: 0.9,
+    } satisfies PlaylistImportRow;
+    expect(crossSectionMovesForPlaylistRow(row, [lib], 'backing')).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe('totalCrossSectionLinksForPlaylistImport', () => {
+  it('returns zero counts when no rows match an existing song', () => {
+    const existing = [song({ id: 'e1', title: 'A', artist: 'X' })];
+    const rows: PlaylistImportRow[] = [
+      {
+        id: 'r1',
+        kind: 'spotify_only',
+        spotify: { trackId: 'sp1', title: 'Different', artist: 'Other' },
+        youtubeVideoId: null,
+        matchScore: 0,
+      },
+    ];
+    expect(totalCrossSectionLinksForPlaylistImport(rows, existing, 'backing')).toEqual({
+      fromReference: 0,
+      fromBacking: 0,
+    });
+  });
+
+  it('skips rows marked skipRow', () => {
+    const vid = 'CCCCCCCCCCC';
+    const lib = song({
+      id: 'lib1',
+      title: 'Song',
+      artist: 'Artist',
+      referenceLinks: [
+        { id: 'r1', source: 'youtube', youtubeVideoId: vid, youtubeKind: 'reference', isPrimaryReference: true },
+      ],
+    });
+    const rows: PlaylistImportRow[] = [
+      {
+        id: 'imp',
+        kind: 'youtube_only',
+        youtube: { videoId: vid, title: 'instrumental', channelTitle: 'ch' },
+        youtubeVideoId: vid,
+        matchScore: 1,
+        linkedLibrarySongId: 'lib1',
+        skipRow: true,
+      },
+    ];
+    const totals = totalCrossSectionLinksForPlaylistImport(rows, [lib], 'backing');
+    expect(totals.fromReference).toBe(0);
+  });
+
+  it('sums fromReference across multiple backing imports merging into different library songs', () => {
+    const vidA = 'AAAAAAAAAAA';
+    const vidB = 'BBBBBBBBBBB';
+    const libA = song({
+      id: 'libA',
+      title: 'Song A',
+      artist: 'Artist',
+      referenceLinks: [
+        { id: 'r1', source: 'youtube', youtubeVideoId: vidA, youtubeKind: 'reference', isPrimaryReference: true },
+      ],
+    });
+    const libB = song({
+      id: 'libB',
+      title: 'Song B',
+      artist: 'Artist',
+      referenceLinks: [
+        { id: 'r2', source: 'youtube', youtubeVideoId: vidB, youtubeKind: 'reference', isPrimaryReference: true },
+      ],
+    });
+    const rows: PlaylistImportRow[] = [
+      {
+        id: 'i1',
+        kind: 'youtube_only',
+        youtube: { videoId: vidA, title: 'kar', channelTitle: 'c' },
+        youtubeVideoId: vidA,
+        matchScore: 1,
+        linkedLibrarySongId: 'libA',
+      },
+      {
+        id: 'i2',
+        kind: 'youtube_only',
+        youtube: { videoId: vidB, title: 'kar', channelTitle: 'c' },
+        youtubeVideoId: vidB,
+        matchScore: 1,
+        linkedLibrarySongId: 'libB',
+      },
+    ];
+    const totals = totalCrossSectionLinksForPlaylistImport(rows, [libA, libB], 'backing');
+    expect(totals.fromReference).toBe(2);
+    expect(totals.fromBacking).toBe(0);
+  });
+
+  it('counts fromBacking when reference imports clash with existing backing rows', () => {
+    const lib = song({
+      id: 'libC',
+      title: 'C',
+      artist: 'Y',
+      backingLinks: [
+        { id: 'b1', source: 'spotify', spotifyTrackId: 'spDup', isPrimaryBacking: true },
+      ],
+    });
+    const rows: PlaylistImportRow[] = [
+      {
+        id: 'r',
+        kind: 'spotify_only',
+        spotify: { trackId: 'spDup', title: 'C', artist: 'Y' },
+        youtubeVideoId: null,
+        matchScore: 1,
+        linkedLibrarySongId: 'libC',
+      },
+    ];
+    const totals = totalCrossSectionLinksForPlaylistImport(rows, [lib], 'reference');
+    expect(totals.fromBacking).toBe(1);
+    expect(totals.fromReference).toBe(0);
   });
 });

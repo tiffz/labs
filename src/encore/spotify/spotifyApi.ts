@@ -1,5 +1,8 @@
 import { ensureSpotifyAccessToken, readSpotifyToken } from './pkce';
-import { spotifyGrantedScopesSufficientForPlaylistImport } from './spotifyScopes';
+import {
+  spotifyGrantedScopesSufficientForPlaylistImport,
+  spotifyGrantedScopesSufficientForPlaylistModify,
+} from './spotifyScopes';
 
 async function spotifyFetchRaw(
   url: string,
@@ -212,6 +215,41 @@ export async function fetchSpotifyPlaylistTracks(
     url = data.next ?? null;
   }
   return acc;
+}
+
+/** Replace all tracks in a playlist (order matches `trackIds`). Requires playlist-modify OAuth scopes. */
+export async function replaceSpotifyPlaylistTracks(
+  clientId: string,
+  playlistId: string,
+  trackIds: readonly string[],
+): Promise<void> {
+  const bundle = readSpotifyToken();
+  if (bundle && !spotifyGrantedScopesSufficientForPlaylistModify(bundle.scope)) {
+    throw new Error(
+      'Spotify needs permission to edit playlists. Open Account menu → Disconnect Spotify, then Connect again and approve playlist editing on the consent screen.',
+    );
+  }
+  const token = await ensureSpotifyAccessToken(clientId);
+  if (!token) throw new Error('Connect Spotify first.');
+
+  const uris = trackIds.map((id) => `spotify:track:${id}`);
+  const res = await fetch(
+    `https://api.spotify.com/v1/playlists/${encodeURIComponent(playlistId)}/tracks`,
+    {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ uris }),
+      signal: AbortSignal.timeout(60_000),
+    },
+  );
+  if (!res.ok) {
+    const t = await res.text();
+    const snip = t.replace(/\s+/g, ' ').trim().slice(0, 200);
+    throw new Error(`Spotify could not update playlist (${res.status})${snip ? `: ${snip}` : ''}`);
+  }
 }
 
 export async function fetchSpotifyTrack(token: string, trackId: string): Promise<SpotifySearchTrack> {

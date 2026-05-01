@@ -15,12 +15,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useEncore } from '../context/EncoreContext';
 import { ensureSpotifyAccessToken } from '../spotify/pkce';
 import { searchTracks, type SpotifySearchTrack } from '../spotify/spotifyApi';
-import { encoreDialogActionsSx, encoreDialogContentSx, encoreDialogTitleSx } from '../theme/encoreUiTokens';
+import {
+  encoreDialogActionsSx,
+  encoreDialogContentSx,
+  encoreDialogTitleSx,
+} from '../theme/encoreUiTokens';
 import type { EncoreSong } from '../types';
 import { navigateEncore } from '../routes/encoreAppHash';
 import { applyTemplateProgressToSong } from '../repertoire/repertoireMilestones';
 import { SpotifyBrandIcon } from './EncoreBrandIcon';
 import { EncoreSpotifyConnectionChip } from '../ui/EncoreSpotifyConnectionChip';
+import { renderSpotifyTrackAutocompleteOption } from '../ui/renderSpotifyTrackAutocompleteOption';
 
 /**
  * Minimal "Add song" flow:
@@ -36,15 +41,24 @@ export function AddSongDialog(props: {
   onClose: () => void;
 }): React.ReactElement {
   const { open, onClose } = props;
-  const { saveSong, repertoireExtras, spotifyLinked, clearSpotifyConnectError } = useEncore();
-  const clientId = (import.meta.env.VITE_SPOTIFY_CLIENT_ID as string | undefined)?.trim() ?? '';
+  const {
+    saveSong,
+    repertoireExtras,
+    spotifyLinked,
+    clearSpotifyConnectError,
+  } = useEncore();
+  const clientId =
+    (import.meta.env.VITE_SPOTIFY_CLIENT_ID as string | undefined)?.trim() ??
+    '';
   const spotifyAvailable = Boolean(clientId && spotifyLinked);
 
   const [title, setTitle] = useState('');
   const [artist, setArtist] = useState('');
   const [albumArtUrl, setAlbumArtUrl] = useState<string | null>(null);
   const [spotifyTrackId, setSpotifyTrackId] = useState<string | null>(null);
-  const [spotifyOptions, setSpotifyOptions] = useState<SpotifySearchTrack[]>([]);
+  const [spotifyOptions, setSpotifyOptions] = useState<SpotifySearchTrack[]>(
+    []
+  );
   const [searchInput, setSearchInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -64,7 +78,9 @@ export function AddSongDialog(props: {
     setSearchInput('');
     setError(null);
     requestAnimationFrame(() => {
-      const target = spotifyAvailable ? searchInputRef.current : titleInputRef.current;
+      const target = spotifyAvailable
+        ? searchInputRef.current
+        : titleInputRef.current;
       target?.focus();
     });
   }, [open, spotifyAvailable]);
@@ -103,12 +119,18 @@ export function AddSongDialog(props: {
 
   const applySpotifyTrack = useCallback((t: SpotifySearchTrack) => {
     setTitle(t.name?.trim() ?? '');
-    setArtist(t.artists?.map((a) => a.name).join(', ').trim() ?? '');
+    setArtist(
+      t.artists
+        ?.map((a) => a.name)
+        .join(', ')
+        .trim() ?? ''
+    );
     setAlbumArtUrl(t.album?.images?.[0]?.url ?? null);
     setSpotifyTrackId(t.id);
   }, []);
 
-  const canSubmit = title.trim().length > 0 && artist.trim().length > 0 && !saving;
+  const canSubmit =
+    title.trim().length > 0 && artist.trim().length > 0 && !saving;
 
   const submit = useCallback(async () => {
     if (!canSubmit) return;
@@ -126,7 +148,10 @@ export function AddSongDialog(props: {
       updatedAt: now,
     };
     try {
-      const synced = applyTemplateProgressToSong(draft, repertoireExtras.milestoneTemplate);
+      const synced = applyTemplateProgressToSong(
+        draft,
+        repertoireExtras.milestoneTemplate
+      );
       await saveSong(synced);
       onClose();
       // Open the song page so the user can fill in the rest at their leisure.
@@ -136,7 +161,16 @@ export function AddSongDialog(props: {
     } finally {
       setSaving(false);
     }
-  }, [albumArtUrl, artist, canSubmit, onClose, repertoireExtras.milestoneTemplate, saveSong, spotifyTrackId, title]);
+  }, [
+    albumArtUrl,
+    artist,
+    canSubmit,
+    onClose,
+    repertoireExtras.milestoneTemplate,
+    saveSong,
+    spotifyTrackId,
+    title,
+  ]);
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -145,7 +179,7 @@ export function AddSongDialog(props: {
         void submit();
       }
     },
-    [canSubmit, submit],
+    [canSubmit, submit]
   );
 
   const previewMeta = useMemo(() => {
@@ -191,37 +225,22 @@ export function AddSongDialog(props: {
                   loading={loading}
                   options={spotifyOptions}
                   filterOptions={(x) => x}
-                  getOptionLabel={(o) => (typeof o === 'string' ? o : trackLabel(o))}
+                  getOptionLabel={(o) =>
+                    typeof o === 'string' ? o : trackLabel(o)
+                  }
                   isOptionEqualToValue={(a, b) =>
-                    typeof a !== 'string' && typeof b !== 'string' && a.id === b.id
+                    typeof a !== 'string' &&
+                    typeof b !== 'string' &&
+                    a.id === b.id
                   }
                   inputValue={searchInput}
                   onInputChange={(_e, v) => setSearchInput(v)}
                   onChange={(_e, v) => {
                     if (v && typeof v !== 'string') applySpotifyTrack(v);
                   }}
-                  renderOption={(p, t) => (
-                    <Box component="li" {...p} key={t.id} sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-                      {t.album?.images?.[0]?.url ? (
-                        <Box
-                          component="img"
-                          src={t.album.images[0].url}
-                          alt=""
-                          sx={{ width: 36, height: 36, borderRadius: 1, objectFit: 'cover', flexShrink: 0 }}
-                        />
-                      ) : (
-                        <Box sx={{ width: 36, height: 36, borderRadius: 1, bgcolor: 'action.hover', flexShrink: 0 }} />
-                      )}
-                      <Box sx={{ minWidth: 0 }}>
-                        <Typography variant="body2" noWrap sx={{ fontWeight: 600 }}>
-                          {t.name}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" noWrap display="block">
-                          {(t.artists ?? []).map((a) => a.name).join(', ')}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  )}
+                  renderOption={(p, t) =>
+                    renderSpotifyTrackAutocompleteOption(p, t)
+                  }
                   renderInput={(params) => (
                     <TextField
                       {...params}
@@ -233,7 +252,13 @@ export function AddSongDialog(props: {
                       InputProps={{
                         ...params.InputProps,
                         startAdornment: (
-                          <Box sx={{ display: 'inline-flex', alignItems: 'center', mr: 0.5 }}>
+                          <Box
+                            sx={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              mr: 0.5,
+                            }}
+                          >
                             <SpotifyBrandIcon sx={{ fontSize: 18 }} />
                           </Box>
                         ),
@@ -251,7 +276,11 @@ export function AddSongDialog(props: {
               ) : null}
             </>
           ) : (
-            <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.55 }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ lineHeight: 1.55 }}
+            >
               Spotify isn’t configured here — fill in title and artist below.
             </Typography>
           )}
@@ -262,7 +291,14 @@ export function AddSongDialog(props: {
                 component="img"
                 src={previewMeta}
                 alt=""
-                sx={{ width: 96, height: 96, borderRadius: 1.5, objectFit: 'cover', flexShrink: 0, alignSelf: 'flex-start' }}
+                sx={{
+                  width: 96,
+                  height: 96,
+                  borderRadius: 1.5,
+                  objectFit: 'cover',
+                  flexShrink: 0,
+                  alignSelf: 'flex-start',
+                }}
               />
             ) : null}
             <Stack spacing={1.5} sx={{ flex: 1, minWidth: 0 }}>
@@ -296,7 +332,12 @@ export function AddSongDialog(props: {
               target="_blank"
               rel="noreferrer"
               variant="caption"
-              sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, fontWeight: 600 }}
+              sx={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 0.5,
+                fontWeight: 600,
+              }}
             >
               Linked to Spotify track
               <OpenInNewIcon sx={{ fontSize: 12 }} />
@@ -304,7 +345,11 @@ export function AddSongDialog(props: {
           ) : null}
 
           {error ? (
-            <Typography variant="caption" color="error" sx={{ lineHeight: 1.5 }}>
+            <Typography
+              variant="caption"
+              color="error"
+              sx={{ lineHeight: 1.5 }}
+            >
               {error}
             </Typography>
           ) : null}
@@ -314,7 +359,11 @@ export function AddSongDialog(props: {
         <Button onClick={onClose} color="inherit" disabled={saving}>
           Cancel
         </Button>
-        <Button onClick={() => void submit()} variant="contained" disabled={!canSubmit}>
+        <Button
+          onClick={() => void submit()}
+          variant="contained"
+          disabled={!canSubmit}
+        >
           {saving ? 'Adding…' : 'Add song'}
         </Button>
       </DialogActions>

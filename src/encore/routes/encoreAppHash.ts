@@ -3,8 +3,11 @@
  */
 export type EncoreAppRoute =
   | { kind: 'library' }
+  | { kind: 'practice' }
   | { kind: 'performances' }
   | { kind: 'repertoireSettings' }
+  /** Help center; import guide lives at `#/help` (legacy `#/settings/repertoire/import-guide` redirects here). */
+  | { kind: 'help' }
   | { kind: 'song'; id: string }
   | { kind: 'songNew' };
 
@@ -18,15 +21,20 @@ export function parseEncoreAppHash(hash: string): EncoreAppRoute {
   /** Signed-in “share settings” lived here; guest links use `#/share/<fileId>` (see App.tsx). */
   if (segs[0] === 'share' && !segs[1]) return { kind: 'library' };
   if (segs[0] === 'library') return { kind: 'library' };
+  if (segs[0] === 'practice') return { kind: 'practice' };
   if (segs[0] === 'performances') return { kind: 'performances' };
+  if (segs[0] === 'help') return { kind: 'help' };
+  if (segs[0] === 'settings' && segs[1] === 'repertoire' && segs[2] === 'import-guide') return { kind: 'help' };
   if (segs[0] === 'settings' && segs[1] === 'repertoire') return { kind: 'repertoireSettings' };
   return { kind: 'library' };
 }
 
 export function navigateEncore(route: EncoreAppRoute): void {
   let h = '#/library';
-  if (route.kind === 'performances') h = '#/performances';
+  if (route.kind === 'practice') h = '#/practice';
+  else if (route.kind === 'performances') h = '#/performances';
   else if (route.kind === 'repertoireSettings') h = '#/settings/repertoire';
+  else if (route.kind === 'help') h = '#/help';
   else if (route.kind === 'songNew') h = '#/song/new';
   else if (route.kind === 'song') h = `#/song/${encodeURIComponent(route.id)}`;
   if (window.location.hash !== h) window.location.hash = h;

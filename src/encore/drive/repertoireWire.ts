@@ -18,6 +18,10 @@ export function parseRepertoireWire(json: string): RepertoireWirePayload {
     venueCatalog: Array.isArray(data.venueCatalog) ? data.venueCatalog : undefined,
     milestoneTemplate: Array.isArray(data.milestoneTemplate) ? data.milestoneTemplate : undefined,
     ownerDisplayName: typeof data.ownerDisplayName === 'string' ? data.ownerDisplayName : undefined,
+    currentlyLearningSpotifyPlaylistId:
+      typeof data.currentlyLearningSpotifyPlaylistId === 'string'
+        ? data.currentlyLearningSpotifyPlaylistId.trim() || undefined
+        : undefined,
   };
 }
 
@@ -38,6 +42,7 @@ export function buildWireFromTables(
     venueCatalog: extras.venueCatalog,
     milestoneTemplate: extras.milestoneTemplate,
     ownerDisplayName: extras.ownerDisplayName,
+    currentlyLearningSpotifyPlaylistId: extras.currentlyLearningSpotifyPlaylistId,
   };
 }
 
@@ -55,6 +60,7 @@ export function repertoireExtrasFromWire(wire: RepertoireWirePayload): Repertoir
     venueCatalog,
     milestoneTemplate: wire.milestoneTemplate ?? [],
     ownerDisplayName: wire.ownerDisplayName?.trim() || undefined,
+    currentlyLearningSpotifyPlaylistId: wire.currentlyLearningSpotifyPlaylistId?.trim() || undefined,
     updatedAt: wire.exportedAt,
   };
 }

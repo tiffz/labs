@@ -1,4 +1,4 @@
-import type { EncoreSong } from '../types';
+import type { EncoreMediaLink, EncoreSong } from '../types';
 import type { SpotifyPlaylistTrackRow } from '../spotify/spotifyApi';
 import type { YouTubePlaylistItemRow } from '../youtube/youtubePlaylistApi';
 import { parseYoutubeTitleForSong, parseYoutubeTitleForSongWithContext } from './parseYoutubeTitleForSong';
@@ -202,8 +202,186 @@ export function buildPlaylistImportRows(
   return rows;
 }
 
-export function encoreSongFromImportRow(row: PlaylistImportRow): EncoreSong | null {
+/**
+ * Split a paired Spotify+YouTube row into separate Spotify-only and YouTube-only rows.
+ * Both produced rows share a `splitPairRef` so they can be re-merged via {@link mergeSplitPairRows}.
+ * If the row is not paired (or is missing one side), it is returned unchanged.
+ */
+export function splitPairedImportRow(row: PlaylistImportRow): PlaylistImportRow[] {
+  if (row.kind !== 'paired' || !row.spotify || !row.youtube) return [row];
+  const sp = row.spotify;
+  const yt = row.youtube;
+  const splitPairRef: SplitPairRef = { spotifyTrackId: sp.trackId, youtubeVideoId: yt.videoId };
+  const extra: Partial<PlaylistImportRow> = {
+    ...(row.skipRow ? { skipRow: row.skipRow } : {}),
+    ...(row.linkedLibrarySongId ? { linkedLibrarySongId: row.linkedLibrarySongId } : {}),
+    ...(row.ignoreAutoMatch ? { ignoreAutoMatch: row.ignoreAutoMatch } : {}),
+  };
+  return [
+    {
+      id: `sp-${sp.trackId}`,
+      spotify: sp,
+      youtubeVideoId: null,
+      matchScore: 0,
+      kind: 'spotify_only',
+      splitPairRef,
+      ...extra,
+    },
+    {
+      id: `yt-${yt.videoId}`,
+      youtube: yt,
+      youtubeVideoId: yt.videoId,
+      matchScore: 0,
+      kind: 'youtube_only',
+      splitPairRef,
+    },
+  ];
+}
+
+/**
+ * Re-merge two rows previously produced by {@link splitPairedImportRow} back into a single
+ * paired row. No-op if the matching Spotify-only / YouTube-only siblings can no longer be
+ * located by the `ref`.
+ */
+export function mergeSplitPairRows(
+  rows: PlaylistImportRow[],
+  ref: SplitPairRef,
+): PlaylistImportRow[] {
+  const spIdx = rows.findIndex(
+    (r) =>
+      r.kind === 'spotify_only' &&
+      r.spotify?.trackId === ref.spotifyTrackId &&
+      r.splitPairRef?.youtubeVideoId === ref.youtubeVideoId,
+  );
+  const ytIdx = rows.findIndex(
+    (r) =>
+      r.kind === 'youtube_only' &&
+      r.youtube?.videoId === ref.youtubeVideoId &&
+      r.splitPairRef?.spotifyTrackId === ref.spotifyTrackId,
+  );
+  if (spIdx < 0 || ytIdx < 0) return rows;
+  const a = rows[spIdx]!;
+  const b = rows[ytIdx]!;
+  const sp = a.spotify;
+  const ytResolved = b.youtube ?? a.youtube;
+  if (!sp || !ytResolved) return rows;
+  const skipRow = Boolean(a.skipRow || b.skipRow);
+  const linkedLibrarySongId = a.linkedLibrarySongId ?? b.linkedLibrarySongId;
+  const ignoreAutoMatch = a.ignoreAutoMatch || b.ignoreAutoMatch;
+  const paired: PlaylistImportRow = {
+    id: `pair-${sp.trackId}-${ytResolved.videoId}`,
+    spotify: sp,
+    youtube: ytResolved,
+    youtubeVideoId: ytResolved.videoId,
+    matchScore: scoreSpotifyYoutube(sp, ytResolved),
+    kind: 'paired',
+    ...(skipRow ? { skipRow: true } : {}),
+    ...(linkedLibrarySongId ? { linkedLibrarySongId } : {}),
+    ...(ignoreAutoMatch ? { ignoreAutoMatch: true } : {}),
+  };
+  const next = [...rows];
+  const hi = Math.max(spIdx, ytIdx);
+  const lo = Math.min(spIdx, ytIdx);
+  next.splice(hi, 1);
+  next.splice(lo, 1);
+  next.splice(lo, 0, paired);
+  return next;
+}
+
+export function encoreSongFromImportRow(
+  row: PlaylistImportRow,
+  placement: 'reference' | 'backing' = 'reference',
+): EncoreSong | null {
   const now = new Date().toISOString();
+
+  if (placement === 'backing') {
+    const backingLinks: EncoreMediaLink[] = [];
+
+    if (row.spotify) {
+      const vid = row.youtubeVideoId ?? row.youtube?.videoId ?? null;
+      backingLinks.push({
+        id: crypto.randomUUID(),
+        source: 'spotify',
+        spotifyTrackId: row.spotify.trackId,
+        isPrimaryBacking: true,
+      });
+      if (vid) {
+        backingLinks.push({
+          id: crypto.randomUUID(),
+          source: 'youtube',
+          youtubeVideoId: vid,
+          youtubeKind: 'karaoke',
+          isPrimaryBacking: false,
+        });
+      }
+      return {
+        id: crypto.randomUUID(),
+        title: row.spotify.title,
+        artist: row.spotify.artist,
+        spotifyTrackId: row.spotify.trackId,
+        albumArtUrl: row.spotify.albumArtUrl,
+        referenceLinks: [],
+        backingLinks,
+        journalMarkdown: '',
+        createdAt: now,
+        updatedAt: now,
+      };
+    }
+
+    const vid = row.youtubeVideoId;
+    if (!vid) return null;
+    const yt = row.youtube;
+    if (!yt) return null;
+
+    if (row.spotifyEnrichment) {
+      const se = row.spotifyEnrichment;
+      backingLinks.push({
+        id: crypto.randomUUID(),
+        source: 'spotify',
+        spotifyTrackId: se.spotifyTrackId,
+        isPrimaryBacking: true,
+      });
+      backingLinks.push({
+        id: crypto.randomUUID(),
+        source: 'youtube',
+        youtubeVideoId: vid,
+        youtubeKind: 'karaoke',
+        isPrimaryBacking: false,
+      });
+      return {
+        id: crypto.randomUUID(),
+        title: se.title,
+        artist: se.artist,
+        spotifyTrackId: se.spotifyTrackId,
+        albumArtUrl: se.albumArtUrl,
+        referenceLinks: [],
+        backingLinks,
+        journalMarkdown: '',
+        createdAt: now,
+        updatedAt: now,
+      };
+    }
+
+    const parsed = parseYoutubeTitleForSongWithContext(yt.title, { description: yt.description });
+    backingLinks.push({
+      id: crypto.randomUUID(),
+      source: 'youtube',
+      youtubeVideoId: vid,
+      youtubeKind: 'karaoke',
+      isPrimaryBacking: true,
+    });
+    return {
+      id: crypto.randomUUID(),
+      title: parsed.songTitle || yt.title || 'Untitled',
+      artist: parsed.artist || yt.channelTitle || 'Unknown artist',
+      referenceLinks: [],
+      backingLinks,
+      journalMarkdown: '',
+      createdAt: now,
+      updatedAt: now,
+    };
+  }
+
   if (row.spotify) {
     return {
       id: crypto.randomUUID(),

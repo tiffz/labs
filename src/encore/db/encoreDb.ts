@@ -31,6 +31,8 @@ export interface RepertoireExtrasRow {
    * on publish so guests see "{name}'s repertoire".
    */
   ownerDisplayName?: string;
+  /** Spotify playlist id for Practice page “Currently learning” playlist sync. */
+  currentlyLearningSpotifyPlaylistId?: string;
   updatedAt: string;
 }
 

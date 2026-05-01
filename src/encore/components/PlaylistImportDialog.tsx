@@ -1,6 +1,7 @@
 import LibraryMusicOutlinedIcon from '@mui/icons-material/LibraryMusicOutlined';
 import LinkIcon from '@mui/icons-material/Link';
 import LinkOffIcon from '@mui/icons-material/LinkOff';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import VideoLibraryOutlinedIcon from '@mui/icons-material/VideoLibraryOutlined';
@@ -10,7 +11,6 @@ import Box from '@mui/material/Box';
 import ButtonBase from '@mui/material/ButtonBase';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
-import CircularProgress from '@mui/material/CircularProgress';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
@@ -36,14 +36,15 @@ import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
-import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { collectUniquePlaylistIdsFromMixedPaste } from '../import/collectPlaylistIdsFromText';
 import {
   buildPlaylistImportRows,
   diceCoefficient,
   encoreSongFromImportRow,
+  mergeSplitPairRows,
   parseYoutubeTitleForSongWithContext,
-  scoreSpotifyYoutube,
+  splitPairedImportRow,
   type PlaylistImportRow,
   type SplitPairRef,
 } from '../import/matchPlaylists';
@@ -55,6 +56,7 @@ import {
   type SpotifyPlaylistTrackRow,
   type SpotifySearchTrack,
 } from '../spotify/spotifyApi';
+import { navigateEncore } from '../routes/encoreAppHash';
 import { encoreLoopbackUrlFromCurrent } from '../spotify/spotifyRedirectUri';
 import { readAndClearSpotifyOAuthFlash } from '../spotify/completeOAuthFromUrl';
 import { fetchYouTubePlaylistItems, type YouTubePlaylistItemRow } from '../youtube/youtubePlaylistApi';
@@ -64,15 +66,23 @@ import {
   importRowHasLibraryMerge,
   mergeSongWithImport,
   scoreSongSimilarityForImport,
+  totalCrossSectionLinksForPlaylistImport,
+  crossSectionMovesForPlaylistRow,
 } from '../import/findExistingSongForImport';
+import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
+import { useEncoreBlockingJobs } from '../context/EncoreBlockingJobContext';
 import { useEncore } from '../context/EncoreContext';
 import { encoreDialogActionsSx, encoreDialogContentSx, encoreDialogTitleSx } from '../theme/encoreUiTokens';
 import { EncoreSpotifyConnectionChip } from '../ui/EncoreSpotifyConnectionChip';
+import { PlaylistImportSpotifyPicker } from './playlistImport/PlaylistImportSpotifyPicker';
 import { encoreImportReviewTableSx } from './encoreImportReviewTableSx';
 import { LibrarySongPickerDialog } from './LibrarySongPickerDialog';
 import { SpotifyBrandIcon, YouTubeBrandIcon } from './EncoreBrandIcon';
 
 type Step = 'urls' | 'review';
+
+const LIBRARY_MATCH_FILTER_TOOLTIP =
+  'Encore matches when titles and artists are similar, or when a Spotify or YouTube id on this row already exists on a library song. Use Matched or No match to review suggestions. For rows with no match, choose a library song or—for YouTube-only imports—search Spotify to link before importing.';
 
 function youtubeThumbUrl(videoId: string): string {
   return `https://i.ytimg.com/vi/${encodeURIComponent(videoId)}/mqdefault.jpg`;
@@ -84,6 +94,67 @@ function youtubeWatchUrl(videoId: string): string {
 
 function spotifyTrackOpenUrl(trackId: string): string {
   return `https://open.spotify.com/track/${encodeURIComponent(trackId)}`;
+}
+
+/** Denser primary/secondary lines in import review cells */
+const importCellPrimarySx = {
+  fontWeight: 600,
+  fontSize: '0.8125rem',
+  lineHeight: 1.35,
+  wordBreak: 'break-word' as const,
+};
+
+const importCellSecondarySx = {
+  fontSize: '0.75rem',
+  lineHeight: 1.3,
+  color: 'text.secondary',
+  mt: 0.25,
+};
+
+function PlaylistImportCrossSectionChip(props: {
+  crossMoves: number;
+  skipRow: boolean;
+  importPlacement: 'reference' | 'backing';
+}): ReactElement | null {
+  const { crossMoves, skipRow, importPlacement } = props;
+  if (crossMoves <= 0 || skipRow) return null;
+  const title =
+    importPlacement === 'backing'
+      ? 'This Spotify or YouTube link is already under Reference recordings. It will move to Backing tracks when you import.'
+      : 'This Spotify or YouTube link is already under Backing tracks. It will move to Reference recordings when you import.';
+  const label =
+    importPlacement === 'backing'
+      ? crossMoves > 1
+        ? `Also in reference (${crossMoves})`
+        : 'Also in reference'
+      : crossMoves > 1
+        ? `Also in backing (${crossMoves})`
+        : 'Also in backing';
+  return (
+    <Tooltip title={title}>
+      <Chip
+        size="small"
+        color="warning"
+        variant="outlined"
+        icon={<LinkIcon sx={{ fontSize: 16 }} />}
+        label={label}
+        sx={{
+          height: 24,
+          maxWidth: '100%',
+          '& .MuiChip-icon': { ml: 0.5 },
+          '& .MuiChip-label': {
+            px: 0.75,
+            fontSize: '0.7rem',
+            fontWeight: 600,
+            lineHeight: 1.2,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          },
+        }}
+      />
+    </Tooltip>
+  );
 }
 
 /** True if another import row already uses this YouTube video (paired or selected). */
@@ -120,79 +191,8 @@ function sortYoutubePickerPool(
   });
 }
 
-/** Split a paired Spotify+YouTube row into separate Spotify-only and YouTube-only rows. */
-function splitPairedImportRow(row: PlaylistImportRow): PlaylistImportRow[] {
-  if (row.kind !== 'paired' || !row.spotify || !row.youtube) return [row];
-  const sp = row.spotify;
-  const yt = row.youtube;
-  const splitPairRef: SplitPairRef = { spotifyTrackId: sp.trackId, youtubeVideoId: yt.videoId };
-  const extra: Partial<PlaylistImportRow> = {
-    ...(row.skipRow ? { skipRow: row.skipRow } : {}),
-    ...(row.linkedLibrarySongId ? { linkedLibrarySongId: row.linkedLibrarySongId } : {}),
-    ...(row.ignoreAutoMatch ? { ignoreAutoMatch: row.ignoreAutoMatch } : {}),
-  };
-  return [
-    {
-      id: `sp-${sp.trackId}`,
-      spotify: sp,
-      youtubeVideoId: null,
-      matchScore: 0,
-      kind: 'spotify_only',
-      splitPairRef,
-      ...extra,
-    },
-    {
-      id: `yt-${yt.videoId}`,
-      youtube: yt,
-      youtubeVideoId: yt.videoId,
-      matchScore: 0,
-      kind: 'youtube_only',
-      splitPairRef,
-    },
-  ];
-}
-
-function mergeSplitPairRows(rows: PlaylistImportRow[], ref: SplitPairRef): PlaylistImportRow[] {
-  const spIdx = rows.findIndex(
-    (r) =>
-      r.kind === 'spotify_only' &&
-      r.spotify?.trackId === ref.spotifyTrackId &&
-      r.splitPairRef?.youtubeVideoId === ref.youtubeVideoId,
-  );
-  const ytIdx = rows.findIndex(
-    (r) =>
-      r.kind === 'youtube_only' &&
-      r.youtube?.videoId === ref.youtubeVideoId &&
-      r.splitPairRef?.spotifyTrackId === ref.spotifyTrackId,
-  );
-  if (spIdx < 0 || ytIdx < 0) return rows;
-  const a = rows[spIdx]!;
-  const b = rows[ytIdx]!;
-  const sp = a.spotify;
-  const ytResolved = b.youtube ?? a.youtube;
-  if (!sp || !ytResolved) return rows;
-  const skipRow = Boolean(a.skipRow || b.skipRow);
-  const linkedLibrarySongId = a.linkedLibrarySongId ?? b.linkedLibrarySongId;
-  const ignoreAutoMatch = a.ignoreAutoMatch || b.ignoreAutoMatch;
-  const paired: PlaylistImportRow = {
-    id: `pair-${sp.trackId}-${ytResolved.videoId}`,
-    spotify: sp,
-    youtube: ytResolved,
-    youtubeVideoId: ytResolved.videoId,
-    matchScore: scoreSpotifyYoutube(sp, ytResolved),
-    kind: 'paired',
-    ...(skipRow ? { skipRow: true } : {}),
-    ...(linkedLibrarySongId ? { linkedLibrarySongId } : {}),
-    ...(ignoreAutoMatch ? { ignoreAutoMatch: true } : {}),
-  };
-  const next = [...rows];
-  const hi = Math.max(spIdx, ytIdx);
-  const lo = Math.min(spIdx, ytIdx);
-  next.splice(hi, 1);
-  next.splice(lo, 1);
-  next.splice(lo, 0, paired);
-  return next;
-}
+// `splitPairedImportRow` and `mergeSplitPairRows` live in `../import/matchPlaylists.ts`
+// so they can be unit-tested independently of the dialog UI.
 
 type PairingBandProps = {
   paired: boolean;
@@ -212,25 +212,24 @@ function PairingBand(props: PairingBandProps): ReactElement {
       sx={{
         display: 'inline-flex',
         alignItems: 'center',
-        gap: 0.35,
-        borderRadius: 2,
-        px: 1,
-        py: 0.35,
+        gap: 0.25,
+        borderRadius: 1.5,
+        px: 0.75,
+        py: 0.2,
         maxWidth: '100%',
         border: '1px solid',
-        borderColor: paired ? alpha(success, 0.45) : alpha(theme.palette.divider, 0.9),
-        bgcolor: paired ? alpha(success, 0.14) : alpha(theme.palette.action.hover, 0.9),
-        boxShadow: paired ? `0 1px 0 ${alpha(success, 0.2)}, 0 2px 8px ${alpha(theme.palette.common.black, 0.06)}` : 'none',
+        borderColor: paired ? alpha(success, 0.35) : alpha(theme.palette.divider, 0.85),
+        bgcolor: paired ? alpha(success, 0.08) : alpha(theme.palette.action.hover, 0.45),
       }}
     >
       <Typography
         variant="caption"
         component="span"
         sx={{
-          fontWeight: 800,
-          letterSpacing: '0.03em',
-          fontSize: '0.7rem',
-          lineHeight: 1.45,
+          fontWeight: 700,
+          letterSpacing: '0.02em',
+          fontSize: '0.68rem',
+          lineHeight: 1.3,
           minWidth: 0,
           color: paired ? success : muted,
         }}
@@ -248,12 +247,12 @@ function PairingBand(props: PairingBandProps): ReactElement {
             }}
             aria-label={paired ? unpairTooltip : pairTooltip}
             sx={{
-              p: 0.35,
+              p: 0.25,
               color: paired ? success : 'action.active',
-              '&:hover': { bgcolor: paired ? alpha(success, 0.12) : 'action.selected' },
+              '&:hover': { bgcolor: paired ? alpha(success, 0.1) : 'action.selected' },
             }}
           >
-            {paired ? <LinkOffIcon sx={{ fontSize: 18 }} /> : <LinkIcon sx={{ fontSize: 18 }} />}
+            {paired ? <LinkOffIcon sx={{ fontSize: 16 }} /> : <LinkIcon sx={{ fontSize: 16 }} />}
           </IconButton>
         </span>
       </Tooltip>
@@ -276,15 +275,15 @@ function PairingEmptyNudge(props: PairingEmptyNudgeProps): ReactElement {
       sx={{
         display: 'flex',
         alignItems: 'center',
-        gap: 1.25,
+        gap: 1,
         width: '100%',
         minWidth: 0,
-        py: 1,
-        px: 1.25,
-        borderRadius: 2,
+        py: 0.65,
+        px: 1,
+        borderRadius: 1.5,
         border: '1px dashed',
         borderColor: 'divider',
-        bgcolor: (t) => alpha(t.palette.primary.main, 0.04),
+        bgcolor: (t) => alpha(t.palette.primary.main, 0.03),
       }}
     >
       <Box sx={{ color: 'primary.main', opacity: 0.85, display: 'flex', alignItems: 'center', flexShrink: 0 }}>{icon}</Box>
@@ -336,9 +335,22 @@ export function PlaylistImportDialog(props: {
   /** Current library for merge/dedupe on import. */
   existingSongs: EncoreSong[];
   onSaveSong: (song: EncoreSong) => Promise<void>;
+  /** Reference imports add to reference recordings; backing imports add to backing tracks. */
+  importPlacement?: 'reference' | 'backing';
 }): ReactElement {
-  const { open, onClose, googleAccessToken, spotifyLinked, existingSongs, onSaveSong } = props;
+  const {
+    open,
+    onClose,
+    googleAccessToken,
+    spotifyLinked,
+    existingSongs,
+    onSaveSong,
+    importPlacement: importPlacementProp,
+  } = props;
+  const importPlacement = importPlacementProp ?? 'reference';
   const { spotifyConnectError, clearSpotifyConnectError } = useEncore();
+  const { withBlockingJob } = useEncoreBlockingJobs();
+  const { withBatch } = useLabsUndo();
   const clientId = (import.meta.env.VITE_SPOTIFY_CLIENT_ID as string | undefined)?.trim() ?? '';
 
   const [step, setStep] = useState<Step>('urls');
@@ -365,9 +377,21 @@ export function PlaylistImportDialog(props: {
   const [videoPickQuery, setVideoPickQuery] = useState('');
   const [ytPairFilter, setYtPairFilter] = useState<'all' | 'paired' | 'unpaired'>('all');
   const [libraryMatchFilter, setLibraryMatchFilter] = useState<'all' | 'matched' | 'unmatched'>('all');
+  const [crossSectionPrompt, setCrossSectionPrompt] = useState<{
+    fromReference: number;
+    fromBacking: number;
+  } | null>(null);
+  const [crossSectionBannerDismissed, setCrossSectionBannerDismissed] = useState(false);
+  const allowCrossSectionMovesRef = useRef(false);
 
   const youtubeOptions = useMemo(() => youtubeItems ?? [], [youtubeItems]);
   const loopbackHref = useMemo(() => encoreLoopbackUrlFromCurrent(), []);
+
+  useEffect(() => {
+    if (!open) {
+      allowCrossSectionMovesRef.current = false;
+    }
+  }, [open]);
 
   useEffect(() => {
     if (!open || step !== 'urls') return;
@@ -392,6 +416,8 @@ export function PlaylistImportDialog(props: {
     setSpotifyPickError(null);
     setVideoPickerRowId(null);
     setVideoPickQuery('');
+    setCrossSectionPrompt(null);
+    setCrossSectionBannerDismissed(false);
   }, [setMsg]);
 
   const handleClose = () => {
@@ -429,63 +455,75 @@ export function PlaylistImportDialog(props: {
         }
       }
 
-      const warnings: string[] = [];
-      const mergedSp: SpotifyPlaylistTrackRow[] = [];
-      const seenTrack = new Set<string>();
-      for (const id of spIds) {
-        try {
-          const chunk = await fetchSpotifyPlaylistTracks(clientId, id);
-          for (const row of chunk) {
-            if (seenTrack.has(row.trackId)) continue;
-            seenTrack.add(row.trackId);
-            mergedSp.push(row);
-          }
-        } catch (e) {
-          warnings.push(`Spotify playlist ${id}: ${e instanceof Error ? e.message : String(e)}`);
-        }
-      }
+      await withBlockingJob('Loading playlists…', async (setProgress) => {
+        const fetchTotal = spIds.length + ytIds.length;
+        let fetchDone = 0;
+        const bump = () => {
+          fetchDone += 1;
+          setProgress(fetchTotal ? fetchDone / fetchTotal : null);
+        };
 
-      const mergedYt: YouTubePlaylistItemRow[] = [];
-      const seenVideo = new Set<string>();
-      if (googleAccessToken) {
-        for (const id of ytIds) {
+        const warnings: string[] = [];
+        const mergedSp: SpotifyPlaylistTrackRow[] = [];
+        const seenTrack = new Set<string>();
+        for (const id of spIds) {
           try {
-            const chunk = await fetchYouTubePlaylistItems(googleAccessToken, id);
+            const chunk = await fetchSpotifyPlaylistTracks(clientId, id);
             for (const row of chunk) {
-              if (seenVideo.has(row.videoId)) continue;
-              seenVideo.add(row.videoId);
-              mergedYt.push(row);
+              if (seenTrack.has(row.trackId)) continue;
+              seenTrack.add(row.trackId);
+              mergedSp.push(row);
             }
           } catch (e) {
-            warnings.push(`YouTube playlist ${id}: ${e instanceof Error ? e.message : String(e)}`);
+            warnings.push(`Spotify playlist ${id}: ${e instanceof Error ? e.message : String(e)}`);
+          }
+          bump();
+        }
+
+        const mergedYt: YouTubePlaylistItemRow[] = [];
+        const seenVideo = new Set<string>();
+        if (googleAccessToken) {
+          for (const id of ytIds) {
+            try {
+              const chunk = await fetchYouTubePlaylistItems(googleAccessToken, id);
+              for (const row of chunk) {
+                if (seenVideo.has(row.videoId)) continue;
+                seenVideo.add(row.videoId);
+                mergedYt.push(row);
+              }
+            } catch (e) {
+              warnings.push(`YouTube playlist ${id}: ${e instanceof Error ? e.message : String(e)}`);
+            }
+            bump();
           }
         }
-      }
 
-      const sp = mergedSp.length ? mergedSp : null;
-      const yt = mergedYt.length ? mergedYt : null;
-      setYoutubeItems(yt);
-      const built = buildPlaylistImportRows(sp, yt);
-      setRows(built);
-      setYtPairFilter('all');
-      setLibraryMatchFilter('all');
-      if (!built.length) {
-        setMsg(
-          warnings.length
-            ? 'No tracks or videos could be loaded. Fix the errors below or check your playlists.'
-            : 'No tracks or videos found in those playlists.',
-        );
+        const sp = mergedSp.length ? mergedSp : null;
+        const yt = mergedYt.length ? mergedYt : null;
+        setYoutubeItems(yt);
+        const built = buildPlaylistImportRows(sp, yt);
+        setRows(built);
+        setYtPairFilter('all');
+        setLibraryMatchFilter('all');
+        setCrossSectionBannerDismissed(false);
+        if (!built.length) {
+          setMsg(
+            warnings.length
+              ? 'No tracks or videos could be loaded. Fix the errors below or check your playlists.'
+              : 'No tracks or videos found in those playlists.',
+          );
+          if (warnings.length) setLoadWarnings(warnings);
+          return;
+        }
         if (warnings.length) setLoadWarnings(warnings);
-        return;
-      }
-      if (warnings.length) setLoadWarnings(warnings);
-      setStep('review');
+        setStep('review');
+      });
     } catch (e) {
       setMsg(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
     }
-  }, [clientId, googleAccessToken, playlistPaste, spotifyLinked, setMsg]);
+  }, [clientId, googleAccessToken, playlistPaste, spotifyLinked, setMsg, withBlockingJob]);
 
   const pickYoutubeForRow = useCallback((rowId: string, videoId: string | null, pool: YouTubePlaylistItemRow[]) => {
     setRows((prev) =>
@@ -623,41 +661,80 @@ export function PlaylistImportDialog(props: {
   }, []);
 
   const applyImport = useCallback(async () => {
+    const cross = totalCrossSectionLinksForPlaylistImport(rows, existingSongs, importPlacement);
+    if (
+      (cross.fromReference > 0 || cross.fromBacking > 0) &&
+      !allowCrossSectionMovesRef.current
+    ) {
+      setCrossSectionPrompt(cross);
+      return;
+    }
+    allowCrossSectionMovesRef.current = false;
+    setCrossSectionPrompt(null);
     setBusy(true);
     setMsg(null);
     try {
-      const librarySnapshot = [...existingSongs];
-      for (const r of rows) {
-        if (r.skipRow) continue;
-        const song = encoreSongFromImportRow(r);
-        if (!song) continue;
-        const manual =
-          r.linkedLibrarySongId != null
-            ? (librarySnapshot.find((s) => s.id === r.linkedLibrarySongId) ??
-                existingSongs.find((s) => s.id === r.linkedLibrarySongId) ??
-                null)
-            : null;
-        const auto =
-          manual == null && !r.ignoreAutoMatch ? findExistingSongForImport(librarySnapshot, song) : null;
-        const match = manual ?? auto;
-        const toSave = match ? mergeSongWithImport(match, song) : song;
-        await onSaveSong(toSave);
-        if (!match) librarySnapshot.push(toSave);
-        else {
-          const i = librarySnapshot.findIndex((s) => s.id === match.id);
-          if (i >= 0) librarySnapshot[i] = toSave;
-        }
-      }
-      reset();
-      onClose();
+      const toProcess = rows.filter((r) => !r.skipRow);
+      const importTotal = toProcess.length;
+      let importDone = 0;
+      await withBlockingJob('Importing songs…', async (setProgress) => {
+        await withBatch(async () => {
+          const librarySnapshot = [...existingSongs];
+          for (const r of toProcess) {
+            const song = encoreSongFromImportRow(r, importPlacement);
+            if (!song) {
+              importDone += 1;
+              setProgress(importTotal ? importDone / importTotal : null);
+              continue;
+            }
+            const manual =
+              r.linkedLibrarySongId != null
+                ? (librarySnapshot.find((s) => s.id === r.linkedLibrarySongId) ??
+                    existingSongs.find((s) => s.id === r.linkedLibrarySongId) ??
+                    null)
+                : null;
+            const auto =
+              manual == null && !r.ignoreAutoMatch
+                ? findExistingSongForImport(librarySnapshot, song)
+                : null;
+            const match = manual ?? auto;
+            const toSave = match
+              ? mergeSongWithImport(match, song, { placement: importPlacement })
+              : song;
+            await onSaveSong(toSave);
+            if (!match) librarySnapshot.push(toSave);
+            else {
+              const i = librarySnapshot.findIndex((s) => s.id === match.id);
+              if (i >= 0) librarySnapshot[i] = toSave;
+            }
+            importDone += 1;
+            setProgress(importTotal ? importDone / importTotal : null);
+          }
+        });
+        reset();
+        onClose();
+      });
     } catch (e) {
       setMsg(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
     }
-  }, [rows, onSaveSong, onClose, reset, setMsg, existingSongs]);
+  }, [
+    rows,
+    onSaveSong,
+    onClose,
+    reset,
+    setMsg,
+    existingSongs,
+    importPlacement,
+    withBlockingJob,
+    withBatch,
+  ]);
 
   const showYoutubeColumns = youtubeOptions.length > 0;
+  /** True when at least one row came from a Spotify playlist (paired or Spotify-only). YouTube-only imports omit the Spotify column. */
+  const importIncludesSpotifyFromPlaylists = useMemo(() => rows.some((r) => r.spotify != null), [rows]);
+  const hideSpotifyColumn = showYoutubeColumns && !importIncludesSpotifyFromPlaylists;
   const reviewFullscreen = step === 'review';
   const importActiveCount = useMemo(() => rows.filter((r) => !r.skipRow).length, [rows]);
 
@@ -667,10 +744,10 @@ export function PlaylistImportDialog(props: {
   const libraryMatchByRowId = useMemo(() => {
     const m = new Map<string, boolean>();
     for (const r of rows) {
-      m.set(r.id, importRowHasLibraryMerge(r, existingSongs));
+      m.set(r.id, importRowHasLibraryMerge(r, existingSongs, importPlacement));
     }
     return m;
-  }, [rows, existingSongs]);
+  }, [rows, existingSongs, importPlacement]);
 
   const libraryReviewStats = useMemo(() => {
     let matchedAll = 0;
@@ -693,9 +770,26 @@ export function PlaylistImportDialog(props: {
     };
   }, [rows, libraryMatchByRowId]);
 
+  const crossSectionMovesByRowId = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const r of rows) {
+      m.set(r.id, crossSectionMovesForPlaylistRow(r, existingSongs, importPlacement));
+    }
+    return m;
+  }, [rows, existingSongs, importPlacement]);
+
+  const crossSectionIncludedCount = useMemo(() => {
+    let n = 0;
+    for (const r of rows) {
+      if (r.skipRow) continue;
+      if ((crossSectionMovesByRowId.get(r.id) ?? 0) > 0) n += 1;
+    }
+    return n;
+  }, [rows, crossSectionMovesByRowId]);
+
   const displayRows = useMemo(() => {
     let list = rows;
-    if (showYoutubeColumns && ytPairFilter !== 'all') {
+    if (showYoutubeColumns && importIncludesSpotifyFromPlaylists && ytPairFilter !== 'all') {
       list = ytPairFilter === 'paired' ? list.filter((r) => r.kind === 'paired') : list.filter((r) => r.kind !== 'paired');
     }
     if (libraryMatchFilter === 'matched') {
@@ -704,15 +798,15 @@ export function PlaylistImportDialog(props: {
       list = list.filter((r) => !libraryMatchByRowId.get(r.id));
     }
     return list;
-  }, [rows, ytPairFilter, showYoutubeColumns, libraryMatchFilter, libraryMatchByRowId]);
+  }, [rows, ytPairFilter, showYoutubeColumns, importIncludesSpotifyFromPlaylists, libraryMatchFilter, libraryMatchByRowId]);
 
   const libraryPickerRow = useMemo(
     () => (libraryPickerRowId ? (rows.find((r) => r.id === libraryPickerRowId) ?? null) : null),
     [libraryPickerRowId, rows],
   );
   const libraryPickerIncoming = useMemo(
-    () => (libraryPickerRow ? encoreSongFromImportRow(libraryPickerRow) : null),
-    [libraryPickerRow],
+    () => (libraryPickerRow ? encoreSongFromImportRow(libraryPickerRow, importPlacement) : null),
+    [libraryPickerRow, importPlacement],
   );
 
   const videoPickerSortedPool = useMemo(() => {
@@ -857,7 +951,13 @@ export function PlaylistImportDialog(props: {
       }}
     >
       <DialogTitle id="playlist-import-title" sx={{ ...encoreDialogTitleSx, flexShrink: 0 }}>
-        {reviewFullscreen ? 'Review import' : 'Import playlists'}
+        {reviewFullscreen
+          ? importPlacement === 'backing'
+            ? 'Review backing import'
+            : 'Review import'
+          : importPlacement === 'backing'
+            ? 'Import backing from playlists'
+            : 'Import playlists'}
       </DialogTitle>
       <DialogContent
         sx={
@@ -869,11 +969,11 @@ export function PlaylistImportDialog(props: {
                 display: 'flex',
                 flexDirection: 'column',
                 overflow: 'hidden',
-                pt: 1,
-                pb: 0,
-                px: { xs: 1.5, sm: 2 },
+                pt: 2,
+                pb: 1,
+                px: { xs: 2, sm: 3 },
               }
-            : { ...encoreDialogContentSx }
+            : { ...encoreDialogContentSx, px: { xs: 2.5, sm: 3 } }
         }
       >
         {step === 'urls' && (
@@ -926,6 +1026,11 @@ export function PlaylistImportDialog(props: {
               playlist links or ids (one per line or comma-separated). Encore picks the platform from each URL. When
               both sides have tracks, we suggest title matches; you can adjust pairings before saving.
             </Typography>
+            <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: -0.5 }}>
+              {importPlacement === 'backing'
+                ? 'Saving adds Spotify and YouTube rows to backing tracks. If the same id already lives under reference recordings, Encore will ask before moving it.'
+                : 'Saving adds Spotify and YouTube rows to reference recordings. If the same id is only on backing tracks, Encore will ask before moving it.'}
+            </Typography>
             <TextField
               label="Playlist URLs or ids"
               value={playlistPaste}
@@ -938,6 +1043,21 @@ export function PlaylistImportDialog(props: {
               }
               helperText="Mix Spotify and YouTube in any order. Duplicate tracks or videos across lists are merged once. Bare 22-character ids are treated as Spotify."
             />
+            <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: -0.5 }}>
+              New here? Read the{' '}
+              <Link
+                component="button"
+                type="button"
+                onClick={() => {
+                  onClose();
+                  navigateEncore({ kind: 'help' });
+                }}
+                sx={{ fontSize: 'inherit', verticalAlign: 'baseline' }}
+              >
+                import guide
+              </Link>{' '}
+              for suggested playlist order and bulk file naming.
+            </Typography>
             {clientId ? (
               <EncoreSpotifyConnectionChip
                 onBeforeOAuth={clearSpotifyConnectError}
@@ -1019,49 +1139,49 @@ export function PlaylistImportDialog(props: {
                 </Box>
               </Alert>
             )}
-            <Stack spacing={1.25} sx={{ mb: 1, flexShrink: 0 }}>
-              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.45 }}>
-                <strong>{rows.length}</strong> tracks · turn off <strong>Include</strong> to skip a row when importing
+            <Stack spacing={2} sx={{ mb: 2, flexShrink: 0 }}>
+              <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.5, fontSize: '0.8125rem', maxWidth: 640 }}>
+                Toggle <strong>Include</strong> on each row you want to import. Use the filters below to focus by pairing or
+                library match.
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.45 }}>
-                {libraryReviewStats.included === 0 ? (
-                  <>Library: no rows are included for import (all rows are unchecked).</>
-                ) : libraryReviewStats.unmatchedIncluded === 0 ? (
-                  <>
-                    Library: every included row matches (<strong>{libraryReviewStats.matchedIncluded}</strong> of{' '}
-                    <strong>{libraryReviewStats.included}</strong>
-                    {libraryReviewStats.included !== rows.length ? (
-                      <>
-                        {' '}
-                        · <strong>{libraryReviewStats.matchedAll}</strong> of <strong>{rows.length}</strong> rows overall
-                      </>
-                    ) : null}
-                    ).
-                  </>
-                ) : (
-                  <>
-                    Library: <strong>{libraryReviewStats.matchedIncluded}</strong> of <strong>{libraryReviewStats.included}</strong>{' '}
-                    included rows match · <strong>{libraryReviewStats.unmatchedIncluded}</strong> included with no match
-                    {libraryReviewStats.included !== rows.length ? (
-                      <>
-                        {' '}
-                        (<strong>{libraryReviewStats.matchedAll}</strong> of <strong>{rows.length}</strong> rows overall match)
-                      </>
-                    ) : null}
-                  </>
-                )}
-              </Typography>
-              <Stack spacing={2}>
-                {showYoutubeColumns ? (
-                  <Box>
+              {crossSectionIncludedCount > 0 && !crossSectionBannerDismissed ? (
+                <Alert
+                  severity="info"
+                  variant="outlined"
+                  onClose={() => setCrossSectionBannerDismissed(true)}
+                  sx={{
+                    py: 0.65,
+                    px: 1.25,
+                    alignItems: 'flex-start',
+                    '& .MuiAlert-action': { pt: 0.25, alignItems: 'flex-start' },
+                  }}
+                >
+                  <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.45 }}>
+                    <strong>{crossSectionIncludedCount}</strong> included row{crossSectionIncludedCount === 1 ? '' : 's'}: the
+                    same media is already under <strong>{importPlacement === 'backing' ? 'Reference recordings' : 'Backing tracks'}</strong>{' '}
+                    and will move to <strong>{importPlacement === 'backing' ? 'Backing tracks' : 'Reference recordings'}</strong>.
+                    You&rsquo;ll confirm when you import.
+                  </Typography>
+                </Alert>
+              ) : null}
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={{ xs: 2, sm: 4 }}
+                alignItems="flex-start"
+                flexWrap="wrap"
+                useFlexGap
+                sx={{ columnGap: { sm: 5 }, rowGap: 2 }}
+              >
+                {showYoutubeColumns && importIncludesSpotifyFromPlaylists ? (
+                  <Box sx={{ minWidth: { sm: 200 } }}>
                     <Typography
                       variant="overline"
-                      sx={{ display: 'block', color: 'text.secondary', letterSpacing: '0.08em', fontWeight: 700, mb: 0.25 }}
+                      sx={{ display: 'block', color: 'text.secondary', letterSpacing: '0.08em', fontWeight: 700, mb: 0.5, lineHeight: 1.2 }}
                     >
                       Spotify ↔ YouTube
                     </Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1, lineHeight: 1.45 }}>
-                      Filter by whether each import row has both a Spotify track and a YouTube video linked.
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.75, lineHeight: 1.45, maxWidth: 280 }}>
+                      Paired rows link both sources on one line.
                     </Typography>
                     <ToggleButtonGroup
                       size="small"
@@ -1079,16 +1199,21 @@ export function PlaylistImportDialog(props: {
                     </ToggleButtonGroup>
                   </Box>
                 ) : null}
-                <Box>
-                  <Typography
-                    variant="overline"
-                    sx={{ display: 'block', color: 'text.secondary', letterSpacing: '0.08em', fontWeight: 700, mb: 0.25 }}
-                  >
-                    Your Encore library
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1, lineHeight: 1.45 }}>
-                    Filter by whether a row will merge into an existing library song when you import.
-                  </Typography>
+                <Box sx={{ minWidth: { sm: 220 } }}>
+                  <Stack direction="row" alignItems="center" spacing={0.25} sx={{ mb: 0.75 }}>
+                    <Typography
+                      component="span"
+                      variant="body2"
+                      sx={{ fontWeight: 600, color: 'text.secondary', fontSize: '0.8125rem', letterSpacing: '0.01em' }}
+                    >
+                      Songs matching library
+                    </Typography>
+                    <Tooltip title={LIBRARY_MATCH_FILTER_TOOLTIP}>
+                      <IconButton size="small" aria-label="How library matching works" sx={{ p: 0.35, color: 'text.secondary' }}>
+                        <InfoOutlinedIcon sx={{ fontSize: 18 }} />
+                      </IconButton>
+                    </Tooltip>
+                  </Stack>
                   <ToggleButtonGroup
                     size="small"
                     value={libraryMatchFilter}
@@ -1105,8 +1230,9 @@ export function PlaylistImportDialog(props: {
                 </Box>
               </Stack>
             </Stack>
-            {(showYoutubeColumns && ytPairFilter !== 'all') || libraryMatchFilter !== 'all' ? (
-              <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block', flexShrink: 0 }}>
+            {(showYoutubeColumns && importIncludesSpotifyFromPlaylists && ytPairFilter !== 'all') ||
+            libraryMatchFilter !== 'all' ? (
+              <Typography variant="caption" color="text.secondary" sx={{ mb: 1.5, mt: -0.5, display: 'block', flexShrink: 0 }}>
                 Showing {displayRows.length} of {rows.length} rows
               </Typography>
             ) : null}
@@ -1130,7 +1256,8 @@ export function PlaylistImportDialog(props: {
                 overflowY: 'auto',
                 border: 1,
                 borderColor: 'divider',
-                borderRadius: 1,
+                borderRadius: 1.5,
+                mt: 0.5,
               }}
             >
               <Table size="small" stickyHeader sx={encoreImportReviewTableSx}>
@@ -1140,20 +1267,22 @@ export function PlaylistImportDialog(props: {
                       Include
                     </TableCell>
                     <TableCell sx={{ width: '5%', minWidth: 44, maxWidth: 56 }}>Art</TableCell>
-                    <TableCell sx={{ width: showYoutubeColumns ? '20%' : '28%', minWidth: 0 }}>Spotify</TableCell>
+                    {!hideSpotifyColumn ? (
+                      <TableCell sx={{ width: showYoutubeColumns ? '20%' : '28%', minWidth: 0 }}>Spotify</TableCell>
+                    ) : null}
                     {showYoutubeColumns ? (
-                      <TableCell sx={{ width: '30%', minWidth: 0 }}>
+                      <TableCell sx={{ width: hideSpotifyColumn ? '40%' : '30%', minWidth: 0 }}>
                         YouTube
                       </TableCell>
                     ) : null}
-                    <TableCell sx={{ width: showYoutubeColumns ? '38%' : '58%', minWidth: 0 }}>
+                    <TableCell sx={{ width: hideSpotifyColumn ? '50%' : showYoutubeColumns ? '38%' : '58%', minWidth: 0 }}>
                       Library
                     </TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {displayRows.map((r) => {
-                    const incoming = encoreSongFromImportRow(r);
+                    const incoming = encoreSongFromImportRow(r, importPlacement);
                     const autoMatch = incoming ? findExistingSongForImport(existingSongs, incoming) : null;
                     const manualLib =
                       r.linkedLibrarySongId != null
@@ -1163,6 +1292,7 @@ export function PlaylistImportDialog(props: {
                       incoming && autoMatch && !manualLib && !r.ignoreAutoMatch
                         ? Math.round(scoreSongSimilarityForImport(autoMatch, incoming) * 100)
                         : null;
+                    const crossMoves = crossSectionMovesByRowId.get(r.id) ?? 0;
                     const artUrl =
                       r.spotify?.albumArtUrl ??
                       r.spotifyEnrichment?.albumArtUrl ??
@@ -1178,9 +1308,12 @@ export function PlaylistImportDialog(props: {
                           ...(!rowLibraryMatched && !r.skipRow
                             ? { boxShadow: `inset 3px 0 0 ${alpha(theme.palette.primary.main, 0.42)}` }
                             : {}),
+                          ...(rowLibraryMatched && crossMoves > 0 && !r.skipRow
+                            ? { bgcolor: alpha(theme.palette.warning.main, 0.04) }
+                            : {}),
                         })}
                       >
-                        <TableCell padding="checkbox" sx={{ verticalAlign: 'middle', pt: 1.5 }}>
+                        <TableCell padding="checkbox" sx={{ verticalAlign: 'middle', py: 0.5 }}>
                           <Tooltip title="Include this row when you import">
                             <Checkbox
                               size="small"
@@ -1201,13 +1334,12 @@ export function PlaylistImportDialog(props: {
                         <TableCell sx={cell}>
                           <Box
                             sx={{
-                              width: 44,
-                              height: 44,
+                              width: 40,
+                              height: 40,
                               borderRadius: 1,
                               overflow: 'hidden',
                               bgcolor: 'action.hover',
                               flexShrink: 0,
-                              mt: 0.25,
                             }}
                           >
                             {artUrl ? (
@@ -1220,14 +1352,15 @@ export function PlaylistImportDialog(props: {
                             ) : null}
                           </Box>
                         </TableCell>
+                        {!hideSpotifyColumn ? (
                         <TableCell sx={cell}>
                           {r.spotify ? (
                             <Stack direction="row" alignItems="flex-start" spacing={0.5}>
                               <Box sx={{ minWidth: 0, flex: 1 }}>
-                                <Typography variant="subtitle2" component="div" sx={{ wordBreak: 'break-word', lineHeight: 1.43, fontWeight: 500 }}>
+                                <Typography component="div" sx={importCellPrimarySx}>
                                   {r.spotify.title}
                                 </Typography>
-                                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, lineHeight: 1.43 }}>
+                                <Typography component="div" sx={importCellSecondarySx}>
                                   {r.spotify.artist}
                                 </Typography>
                               </Box>
@@ -1246,7 +1379,7 @@ export function PlaylistImportDialog(props: {
                               </Tooltip>
                             </Stack>
                           ) : r.kind === 'youtube_only' && r.youtube ? (
-                            <Stack spacing={1} alignItems="flex-start">
+                            <Stack spacing={0.5} alignItems="flex-start">
                               {r.spotifyEnrichment ? (
                                 <>
                                   <Stack direction="row" alignItems="flex-start" spacing={0.5} sx={{ width: '100%', minWidth: 0 }}>
@@ -1260,7 +1393,7 @@ export function PlaylistImportDialog(props: {
                                         height: 'auto',
                                         flex: 1,
                                         minWidth: 0,
-                                        '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 },
+                                        '& .MuiChip-label': { whiteSpace: 'normal', py: 0.35, fontSize: '0.75rem', lineHeight: 1.3 },
                                       }}
                                     />
                                     <Tooltip title="Open in Spotify">
@@ -1277,18 +1410,36 @@ export function PlaylistImportDialog(props: {
                                       </IconButton>
                                     </Tooltip>
                                   </Stack>
-                                  <Button size="small" variant="text" onClick={() => clearSpotifyEnrichment(r.id)}>
+                                  <Button size="small" variant="text" onClick={() => clearSpotifyEnrichment(r.id)} sx={{ textTransform: 'none', py: 0, minHeight: 0 }}>
                                     Clear Spotify
                                   </Button>
                                 </>
-                              ) : clientId ? (
-                                <Button size="small" variant="outlined" onClick={() => openSpotifyPicker(r)} disabled={busy}>
-                                  Link Spotify song…
-                                </Button>
                               ) : (
-                                <Typography variant="caption" color="text.secondary">
-                                  Spotify search unavailable
-                                </Typography>
+                                <>
+                                  {rowLibraryMatched ? (
+                                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem' }}>
+                                      —
+                                    </Typography>
+                                  ) : (
+                                    <>
+                                      {clientId ? (
+                                        <Button
+                                          size="small"
+                                          variant="outlined"
+                                          onClick={() => openSpotifyPicker(r)}
+                                          disabled={busy}
+                                          sx={{ textTransform: 'none', mt: 0.25 }}
+                                        >
+                                          Link Spotify…
+                                        </Button>
+                                      ) : (
+                                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                                          Spotify search unavailable
+                                        </Typography>
+                                      )}
+                                    </>
+                                  )}
+                                </>
                               )}
                             </Stack>
                           ) : (
@@ -1297,18 +1448,19 @@ export function PlaylistImportDialog(props: {
                             </Typography>
                           )}
                         </TableCell>
+                        ) : null}
                         {showYoutubeColumns ? (
                           <TableCell sx={cell}>
                             {r.youtube ? (
-                              <Stack spacing={1} alignItems="flex-start">
+                              <Stack spacing={0.5} alignItems="flex-start">
                                 <Stack direction="row" alignItems="flex-start" spacing={0.5} sx={{ width: '100%', minWidth: 0 }}>
                                   <Box sx={{ minWidth: 0, flex: 1 }}>
                                     <Tooltip title={r.youtube.title}>
-                                      <Typography variant="subtitle2" component="div" sx={{ wordBreak: 'break-word', lineHeight: 1.43, fontWeight: 500 }}>
+                                      <Typography component="div" sx={importCellPrimarySx}>
                                         {r.youtube.title.length > 88 ? `${r.youtube.title.slice(0, 88)}…` : r.youtube.title}
                                       </Typography>
                                     </Tooltip>
-                                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, lineHeight: 1.43 }}>
+                                    <Typography component="div" sx={importCellSecondarySx}>
                                       {r.youtube.channelTitle}
                                     </Typography>
                                   </Box>
@@ -1338,25 +1490,29 @@ export function PlaylistImportDialog(props: {
                                     </IconButton>
                                   </Tooltip>
                                 </Stack>
-                                {r.kind === 'paired' ? (
-                                  <PairingBand
-                                    paired
-                                    label={`Paired · ${Math.round(r.matchScore * 100)}%`}
-                                    onToggle={() => dissolvePairing(r.id)}
-                                    unpairTooltip="Split Spotify and YouTube into separate rows"
-                                    pairTooltip="Relink"
-                                  />
-                                ) : r.splitPairRef ? (
-                                  <PairingBand
-                                    paired={false}
-                                    label="Unlinked"
-                                    onToggle={() => repairSplitPairing(r.splitPairRef!)}
-                                    unpairTooltip=""
-                                    pairTooltip="Merge Spotify and YouTube into one row again"
-                                  />
+                                {(r.kind === 'paired' || r.splitPairRef) ? (
+                                  <Stack direction="row" flexWrap="wrap" gap={0.5} alignItems="center" sx={{ width: '100%' }}>
+                                    {r.kind === 'paired' ? (
+                                      <PairingBand
+                                        paired
+                                        label={`Paired · ${Math.round(r.matchScore * 100)}%`}
+                                        onToggle={() => dissolvePairing(r.id)}
+                                        unpairTooltip="Split Spotify and YouTube into separate rows"
+                                        pairTooltip="Relink"
+                                      />
+                                    ) : r.splitPairRef ? (
+                                      <PairingBand
+                                        paired={false}
+                                        label="Unlinked"
+                                        onToggle={() => repairSplitPairing(r.splitPairRef!)}
+                                        unpairTooltip=""
+                                        pairTooltip="Merge Spotify and YouTube into one row again"
+                                      />
+                                    ) : null}
+                                  </Stack>
                                 ) : null}
                                 {r.kind === 'youtube_only' ? (
-                                  <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.45 }}>
+                                  <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.35, fontSize: '0.7rem' }}>
                                     {(() => {
                                       const p = parseYoutubeTitleForSongWithContext(r.youtube.title, {
                                         description: r.youtube.description,
@@ -1367,7 +1523,7 @@ export function PlaylistImportDialog(props: {
                                 ) : null}
                               </Stack>
                             ) : r.spotify || r.kind === 'youtube_only' ? (
-                              <Stack spacing={1} alignItems="flex-start">
+                              <Stack spacing={0.5} alignItems="flex-start">
                                 {r.splitPairRef ? (
                                   <PairingBand
                                     paired={false}
@@ -1409,21 +1565,21 @@ export function PlaylistImportDialog(props: {
                           </TableCell>
                         ) : null}
                         <TableCell sx={cell}>
-                          <Stack spacing={1} alignItems="flex-start">
+                          <Stack spacing={0.75} alignItems="flex-start" sx={{ width: '100%' }}>
                             {manualLib ? (
                               <>
-                                <Stack direction="row" spacing={1} alignItems="center" sx={{ width: '100%', minWidth: 0 }}>
+                                <Stack direction="row" spacing={0.75} alignItems="center" sx={{ width: '100%', minWidth: 0 }}>
                                   <Avatar
                                     src={manualLib.albumArtUrl}
                                     variant="rounded"
                                     alt=""
-                                    sx={{ width: 48, height: 48, flexShrink: 0 }}
+                                    sx={{ width: 40, height: 40, flexShrink: 0 }}
                                   />
                                   <Box sx={{ minWidth: 0, flex: 1 }}>
-                                    <Typography variant="subtitle2" component="div" fontWeight={500} noWrap title={manualLib.title}>
+                                    <Typography component="div" sx={importCellPrimarySx} noWrap title={manualLib.title}>
                                       {manualLib.title}
                                     </Typography>
-                                    <Typography variant="body2" color="text.secondary" noWrap title={manualLib.artist}>
+                                    <Typography component="div" sx={importCellSecondarySx} noWrap title={manualLib.artist}>
                                       {manualLib.artist}
                                     </Typography>
                                   </Box>
@@ -1433,36 +1589,43 @@ export function PlaylistImportDialog(props: {
                                     </IconButton>
                                   </Tooltip>
                                 </Stack>
-                                <PairingBand
-                                  paired
-                                  label="Paired · library"
-                                  onToggle={() =>
-                                    setRows((prev) =>
-                                      prev.map((row) =>
-                                        row.id === r.id
-                                          ? { ...row, linkedLibrarySongId: undefined, ignoreAutoMatch: undefined }
-                                          : row,
-                                      ),
-                                    )
-                                  }
-                                  unpairTooltip="Unlink this library pick"
-                                  pairTooltip="Relink"
-                                />
+                                <Stack direction="row" flexWrap="wrap" gap={0.5} alignItems="center" sx={{ width: '100%' }}>
+                                  <PairingBand
+                                    paired
+                                    label="Paired · library"
+                                    onToggle={() =>
+                                      setRows((prev) =>
+                                        prev.map((row) =>
+                                          row.id === r.id
+                                            ? { ...row, linkedLibrarySongId: undefined, ignoreAutoMatch: undefined }
+                                            : row,
+                                        ),
+                                      )
+                                    }
+                                    unpairTooltip="Unlink this library pick"
+                                    pairTooltip="Relink"
+                                  />
+                                  <PlaylistImportCrossSectionChip
+                                    crossMoves={crossMoves}
+                                    skipRow={!!r.skipRow}
+                                    importPlacement={importPlacement}
+                                  />
+                                </Stack>
                               </>
                             ) : autoMatch && !r.ignoreAutoMatch ? (
                               <>
-                                <Stack direction="row" spacing={1} alignItems="center" sx={{ width: '100%', minWidth: 0 }}>
+                                <Stack direction="row" spacing={0.75} alignItems="center" sx={{ width: '100%', minWidth: 0 }}>
                                   <Avatar
                                     src={autoMatch.albumArtUrl}
                                     variant="rounded"
                                     alt=""
-                                    sx={{ width: 48, height: 48, flexShrink: 0 }}
+                                    sx={{ width: 40, height: 40, flexShrink: 0 }}
                                   />
                                   <Box sx={{ minWidth: 0, flex: 1 }}>
-                                    <Typography variant="subtitle2" component="div" fontWeight={500} noWrap title={autoMatch.title}>
+                                    <Typography component="div" sx={importCellPrimarySx} noWrap title={autoMatch.title}>
                                       {autoMatch.title}
                                     </Typography>
-                                    <Typography variant="body2" color="text.secondary" noWrap title={autoMatch.artist}>
+                                    <Typography component="div" sx={importCellSecondarySx} noWrap title={autoMatch.artist}>
                                       {autoMatch.artist}
                                     </Typography>
                                   </Box>
@@ -1472,32 +1635,39 @@ export function PlaylistImportDialog(props: {
                                     </IconButton>
                                   </Tooltip>
                                 </Stack>
-                                <PairingBand
-                                  paired
-                                  label={matchPct != null ? `Paired · ${matchPct}%` : 'Paired'}
-                                  onToggle={() =>
-                                    setRows((prev) =>
-                                      prev.map((row) => (row.id === r.id ? { ...row, ignoreAutoMatch: true } : row)),
-                                    )
-                                  }
-                                  unpairTooltip="Unlink from this library song (import as new)"
-                                  pairTooltip="Relink"
-                                />
+                                <Stack direction="row" flexWrap="wrap" gap={0.5} alignItems="center" sx={{ width: '100%' }}>
+                                  <PairingBand
+                                    paired
+                                    label={matchPct != null ? `Paired · ${matchPct}%` : 'Paired'}
+                                    onToggle={() =>
+                                      setRows((prev) =>
+                                        prev.map((row) => (row.id === r.id ? { ...row, ignoreAutoMatch: true } : row)),
+                                      )
+                                    }
+                                    unpairTooltip="Unlink from this library song (import as new)"
+                                    pairTooltip="Relink"
+                                  />
+                                  <PlaylistImportCrossSectionChip
+                                    crossMoves={crossMoves}
+                                    skipRow={!!r.skipRow}
+                                    importPlacement={importPlacement}
+                                  />
+                                </Stack>
                               </>
                             ) : autoMatch && r.ignoreAutoMatch ? (
                               <>
-                                <Stack direction="row" spacing={1} alignItems="center" sx={{ width: '100%', minWidth: 0 }}>
+                                <Stack direction="row" spacing={0.75} alignItems="center" sx={{ width: '100%', minWidth: 0 }}>
                                   <Avatar
                                     src={autoMatch.albumArtUrl}
                                     variant="rounded"
                                     alt=""
-                                    sx={{ width: 48, height: 48, flexShrink: 0, opacity: 0.65 }}
+                                    sx={{ width: 40, height: 40, flexShrink: 0, opacity: 0.65 }}
                                   />
                                   <Box sx={{ minWidth: 0, flex: 1 }}>
-                                    <Typography variant="subtitle2" component="div" fontWeight={500} noWrap title={autoMatch.title}>
+                                    <Typography component="div" sx={importCellPrimarySx} noWrap title={autoMatch.title}>
                                       {autoMatch.title}
                                     </Typography>
-                                    <Typography variant="body2" color="text.secondary" noWrap title={autoMatch.artist}>
+                                    <Typography component="div" sx={importCellSecondarySx} noWrap title={autoMatch.artist}>
                                       {autoMatch.artist}
                                     </Typography>
                                   </Box>
@@ -1523,11 +1693,79 @@ export function PlaylistImportDialog(props: {
                               <PairingEmptyNudge
                                 icon={<LibraryMusicOutlinedIcon fontSize="small" />}
                                 title="No library match"
-                                hint="Tap to match a library song."
+                                hint={
+                                  hideSpotifyColumn && r.kind === 'youtube_only'
+                                    ? 'Pick a library song or search Spotify below.'
+                                    : 'Tap to match a library song.'
+                                }
                                 swapLabel="Choose library song"
                                 onPickClick={() => setLibraryPickerRowId(r.id)}
                               />
                             )}
+                            {hideSpotifyColumn &&
+                            r.kind === 'youtube_only' &&
+                            r.youtube &&
+                            (!rowLibraryMatched || r.spotifyEnrichment) ? (
+                              <Box sx={{ width: '100%', borderTop: 1, borderColor: 'divider', pt: 0.75, mt: 0.25 }}>
+                                {r.spotifyEnrichment ? (
+                                  <Stack spacing={0.75} alignItems="flex-start">
+                                    <Stack direction="row" alignItems="flex-start" spacing={0.5} sx={{ width: '100%', minWidth: 0 }}>
+                                      <Chip
+                                        size="small"
+                                        color="primary"
+                                        variant="outlined"
+                                        label={`${r.spotifyEnrichment.title} — ${r.spotifyEnrichment.artist}`}
+                                        sx={{
+                                          maxWidth: '100%',
+                                          height: 'auto',
+                                          flex: 1,
+                                          minWidth: 0,
+                                          '& .MuiChip-label': { whiteSpace: 'normal', py: 0.5 },
+                                        }}
+                                      />
+                                      <Tooltip title="Open in Spotify">
+                                        <IconButton
+                                          component="a"
+                                          href={spotifyTrackOpenUrl(r.spotifyEnrichment.spotifyTrackId)}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          size="small"
+                                          aria-label="Open in Spotify"
+                                          sx={{ flexShrink: 0, mt: -0.25 }}
+                                        >
+                                          <OpenInNewIcon fontSize="small" />
+                                        </IconButton>
+                                      </Tooltip>
+                                    </Stack>
+                                    <Button size="small" variant="text" onClick={() => clearSpotifyEnrichment(r.id)}>
+                                      Clear Spotify
+                                    </Button>
+                                  </Stack>
+                                ) : !rowLibraryMatched ? (
+                                  clientId ? (
+                                    <Stack spacing={0.5} alignItems="flex-start">
+                                      <Button
+                                        size="small"
+                                        variant="outlined"
+                                        startIcon={<SpotifyBrandIcon sx={{ fontSize: 18, opacity: 0.9 }} />}
+                                        onClick={() => openSpotifyPicker(r)}
+                                        disabled={busy}
+                                        sx={{ textTransform: 'none' }}
+                                      >
+                                        Search Spotify…
+                                      </Button>
+                                      <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.45 }}>
+                                        Optional: attach a Spotify track to help match a library song.
+                                      </Typography>
+                                    </Stack>
+                                  ) : (
+                                    <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.45 }}>
+                                      Spotify search needs a configured client id and connection.
+                                    </Typography>
+                                  )
+                                ) : null}
+                              </Box>
+                            ) : null}
                           </Stack>
                         </TableCell>
                       </TableRow>
@@ -1567,6 +1805,51 @@ export function PlaylistImportDialog(props: {
                 : `Import ${importActiveCount} song${importActiveCount === 1 ? '' : 's'}`}
           </Button>
         )}
+      </DialogActions>
+    </Dialog>
+
+    <Dialog
+      open={crossSectionPrompt != null}
+      onClose={() => setCrossSectionPrompt(null)}
+      aria-labelledby="cross-section-import-title"
+    >
+      <DialogTitle id="cross-section-import-title" sx={encoreDialogTitleSx}>
+        Move media links?
+      </DialogTitle>
+      <DialogContent sx={encoreDialogContentSx}>
+        <Stack spacing={1.5}>
+          {crossSectionPrompt && crossSectionPrompt.fromReference > 0 ? (
+            <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.55 }}>
+              {crossSectionPrompt.fromReference} link{crossSectionPrompt.fromReference === 1 ? '' : 's'} will move from
+              reference recordings to backing tracks (the same Spotify or YouTube item cannot stay in both).
+            </Typography>
+          ) : null}
+          {crossSectionPrompt && crossSectionPrompt.fromBacking > 0 ? (
+            <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.55 }}>
+              {crossSectionPrompt.fromBacking} link{crossSectionPrompt.fromBacking === 1 ? '' : 's'} will move from
+              backing tracks to reference recordings.
+            </Typography>
+          ) : null}
+        </Stack>
+      </DialogContent>
+      <DialogActions sx={encoreDialogActionsSx}>
+        <Button
+          onClick={() => {
+            setCrossSectionPrompt(null);
+          }}
+        >
+          Cancel
+        </Button>
+        <Button
+          variant="contained"
+          onClick={() => {
+            allowCrossSectionMovesRef.current = true;
+            setCrossSectionPrompt(null);
+            void applyImport();
+          }}
+        >
+          Continue
+        </Button>
       </DialogActions>
     </Dialog>
 
@@ -1680,141 +1963,32 @@ export function PlaylistImportDialog(props: {
       </DialogActions>
     </Dialog>
 
-    <Dialog
+    <PlaylistImportSpotifyPicker
       open={spotifyPickerRowId != null}
+      importTracks={spotifyPickerImportTracks}
+      searchResults={spotifyPickResultsSorted}
+      query={spotifyPickQuery}
+      loading={spotifyPickLoading}
+      busy={busy}
+      error={spotifyPickError}
+      onChangeQuery={(value) => {
+        setSpotifyPickQuery(value);
+        setSpotifyPickError(null);
+      }}
+      onClearError={() => setSpotifyPickError(null)}
+      onRunSearch={() => void runSpotifyPickSearch()}
+      onPickImportTrack={(sp) => {
+        const id = spotifyPickerRowId;
+        if (!id) return;
+        applySpotifyFromPlaylistTrack(id, sp);
+      }}
+      onPickSearchResult={(t) => {
+        const id = spotifyPickerRowId;
+        if (!id) return;
+        applySpotifyEnrichment(id, t);
+      }}
       onClose={closeSpotifyPicker}
-      maxWidth="sm"
-      fullWidth
-      aria-labelledby="spotify-picker-title"
-    >
-      <DialogTitle id="spotify-picker-title" sx={encoreDialogTitleSx}>
-        Link Spotify song
-      </DialogTitle>
-      <DialogContent
-        sx={{
-          ...encoreDialogContentSx,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 3,
-          overflow: 'visible',
-        }}
-      >
-        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5 }}>
-          Pick a track already in this import (Spotify-only rows), or search Spotify and choose a result.
-        </Typography>
-        {spotifyPickError ? (
-          <Alert severity="error" onClose={() => setSpotifyPickError(null)}>
-            {spotifyPickError}
-          </Alert>
-        ) : null}
-        <Box>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ sm: 'flex-start' }}>
-            <TextField
-              size="small"
-              label="Spotify search"
-              value={spotifyPickQuery}
-              onChange={(e) => {
-                setSpotifyPickQuery(e.target.value);
-                setSpotifyPickError(null);
-              }}
-              fullWidth
-              InputLabelProps={{ shrink: true }}
-              sx={{ flex: 1, minWidth: 0 }}
-            />
-            <Button
-              variant="contained"
-              size="medium"
-              onClick={() => void runSpotifyPickSearch()}
-              disabled={busy || !spotifyPickQuery.trim()}
-              sx={{ flexShrink: 0, mt: { xs: 0, sm: 0.25 } }}
-            >
-              Search Spotify
-            </Button>
-            {spotifyPickLoading ? <CircularProgress size={28} sx={{ alignSelf: 'center' }} /> : null}
-          </Stack>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1, lineHeight: 1.45 }}>
-            Prefilled using track and artist hints from the YouTube title. Import-only rows below always show; rows
-            matching your search text are sorted to the top.
-          </Typography>
-        </Box>
-        {spotifyPickerImportTracks.length > 0 ? (
-          <>
-            <Box>
-              <Typography variant="overline" sx={{ display: 'block', color: 'text.secondary', letterSpacing: '0.08em', fontWeight: 700, mb: 1 }}>
-                From this import
-              </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1, lineHeight: 1.45 }}>
-                Spotify-only rows with no video yet in this import.
-              </Typography>
-              <List dense sx={{ maxHeight: 220, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1 }}>
-              {spotifyPickerImportTracks.map((sp) => (
-                <ListItemButton
-                  key={sp.trackId}
-                  onClick={() => {
-                    const id = spotifyPickerRowId;
-                    if (!id) return;
-                    applySpotifyFromPlaylistTrack(id, sp);
-                  }}
-                  alignItems="flex-start"
-                >
-                  <ListItemAvatar sx={{ minWidth: 56, mt: 0.5 }}>
-                    <Avatar src={sp.albumArtUrl} variant="rounded" alt="" sx={{ width: 44, height: 44 }} />
-                  </ListItemAvatar>
-                  <ListItemText
-                    primary={sp.title}
-                    secondary={sp.artist}
-                    primaryTypographyProps={{ noWrap: true, title: sp.title, variant: 'subtitle2', fontWeight: 500 }}
-                    secondaryTypographyProps={{ noWrap: true, variant: 'body2' }}
-                  />
-                </ListItemButton>
-              ))}
-            </List>
-            </Box>
-          </>
-        ) : null}
-        {spotifyPickerImportTracks.length > 0 && spotifyPickResultsSorted.length > 0 ? (
-          <Divider role="presentation" sx={{ borderColor: 'divider' }} />
-        ) : null}
-        {spotifyPickResultsSorted.length > 0 ? (
-          <>
-            <Box>
-              <Typography variant="overline" sx={{ display: 'block', color: 'text.secondary', letterSpacing: '0.08em', fontWeight: 700, mb: 1 }}>
-                Spotify catalog
-              </Typography>
-              <List dense sx={{ maxHeight: 280, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1 }}>
-              {spotifyPickResultsSorted.map((t) => {
-                const thumb = t.album.images?.[0]?.url;
-                return (
-                  <ListItemButton
-                    key={t.id}
-                    onClick={() => {
-                      const id = spotifyPickerRowId;
-                      if (!id) return;
-                      applySpotifyEnrichment(id, t);
-                    }}
-                    alignItems="flex-start"
-                  >
-                    <ListItemAvatar sx={{ minWidth: 56, mt: 0.5 }}>
-                      <Avatar src={thumb} variant="rounded" alt="" sx={{ width: 44, height: 44 }} />
-                    </ListItemAvatar>
-                    <ListItemText
-                      primary={t.name}
-                      secondary={t.artists.map((a) => a.name).join(', ')}
-                      primaryTypographyProps={{ noWrap: true, variant: 'subtitle2', fontWeight: 500 }}
-                      secondaryTypographyProps={{ noWrap: true, variant: 'body2' }}
-                    />
-                  </ListItemButton>
-                );
-              })}
-            </List>
-            </Box>
-          </>
-        ) : null}
-      </DialogContent>
-      <DialogActions sx={encoreDialogActionsSx}>
-        <Button onClick={closeSpotifyPicker}>Cancel</Button>
-      </DialogActions>
-    </Dialog>
+    />
     </>
   );
 }

@@ -1,5 +1,6 @@
 /* eslint-disable react/prop-types -- MRT Cell render props are typed via MRT_ColumnDef, not PropTypes */
 import AddIcon from '@mui/icons-material/Add';
+import Alert from '@mui/material/Alert';
 import EditIcon from '@mui/icons-material/Edit';
 import SearchIcon from '@mui/icons-material/Search';
 import ViewListIcon from '@mui/icons-material/ViewList';
@@ -7,7 +8,13 @@ import ViewModuleIcon from '@mui/icons-material/ViewModule';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
+import Paper from '@mui/material/Paper';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
 import IconButton from '@mui/material/IconButton';
+import Link from '@mui/material/Link';
 import InputAdornment from '@mui/material/InputAdornment';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
@@ -16,11 +23,12 @@ import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   MaterialReactTable,
   useMaterialReactTable,
   type MRT_ColumnDef,
+  type MRT_RowSelectionState,
 } from 'material-react-table';
 import {
   ENCORE_ACCOMPANIMENT_TAGS,
@@ -30,7 +38,14 @@ import {
 } from '../types';
 import { navigateEncore } from '../routes/encoreAppHash';
 import { useEncore } from '../context/EncoreContext';
-import { encoreMaxWidthPage, encoreRadius, encoreShadowSurface } from '../theme/encoreUiTokens';
+import {
+  encoreDialogActionsSx,
+  encoreDialogContentSx,
+  encoreDialogTitleSx,
+  encoreMaxWidthPage,
+  encoreRadius,
+  encoreShadowSurface,
+} from '../theme/encoreUiTokens';
 import { encorePagePaddingTop, encoreScreenPaddingX } from '../theme/encoreM3Layout';
 import { EncorePageHeader } from '../ui/EncorePageHeader';
 import { performanceVideoOpenUrl } from '../utils/performanceVideoUrl';
@@ -40,6 +55,7 @@ import { PerformanceVideoThumb } from './PerformanceVideoThumb';
 import { encoreMrtRepertoireTableOptions } from './encoreMrtTableDefaults';
 import { InlineChipDate, InlineChipMultiSelect, InlineChipSelect } from '../ui/InlineEditChip';
 import { EncoreToolbarRow } from '../ui/EncoreToolbarRow';
+import { encorePossessivePageTitle } from '../utils/encorePossessivePageTitle';
 
 type PerformancesViewMode = 'table' | 'grid';
 const VIEW_STORAGE_KEY = 'encore.performances.view';
@@ -65,7 +81,15 @@ function formatPerformanceNotesLine(notes: string, maxLen = 72): string {
 
 export function PerformancesScreen(): React.ReactElement {
   const theme = useTheme();
-  const { songs, performances, savePerformance, googleAccessToken, repertoireExtras } = useEncore();
+  const {
+    songs,
+    performances,
+    savePerformance,
+    deletePerformance,
+    googleAccessToken,
+    repertoireExtras,
+    effectiveDisplayName,
+  } = useEncore();
   const [query, setQuery] = useState('');
   const [pickSongOpen, setPickSongOpen] = useState(false);
   const [pickQuery, setPickQuery] = useState('');
@@ -76,9 +100,17 @@ export function PerformancesScreen(): React.ReactElement {
     if (typeof window === 'undefined') return 'table';
     return window.localStorage.getItem(VIEW_STORAGE_KEY) === 'grid' ? 'grid' : 'table';
   });
+  const [rowSelection, setRowSelection] = useState<MRT_RowSelectionState>({});
+  const [bulkVenueOpen, setBulkVenueOpen] = useState(false);
+  const [bulkVenueDraft, setBulkVenueDraft] = useState('');
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
   useEffect(() => {
     window.localStorage.setItem(VIEW_STORAGE_KEY, viewMode);
+  }, [viewMode]);
+
+  useEffect(() => {
+    if (viewMode === 'grid') setRowSelection({});
   }, [viewMode]);
 
   const venueOptions = useMemo(() => {
@@ -95,6 +127,11 @@ export function PerformancesScreen(): React.ReactElement {
   }, [repertoireExtras.venueCatalog, performances]);
 
   const songById = useMemo(() => new Map(songs.map((s) => [s.id, s] as const)), [songs]);
+
+  const hasAnyPerformanceVideoLink = useMemo(
+    () => performances.some((p) => Boolean(performanceVideoOpenUrl(p))),
+    [performances],
+  );
 
   const data = useMemo<PerfMrtRow[]>(() => {
     const q = query.trim().toLowerCase();
@@ -116,6 +153,32 @@ export function PerformancesScreen(): React.ReactElement {
       return hay.includes(q);
     });
   }, [performances, songById, query]);
+
+  const selectedPerfIds = useMemo(
+    () => new Set(Object.keys(rowSelection).filter((id) => rowSelection[id])),
+    [rowSelection],
+  );
+
+  const applyBulkVenue = useCallback(async () => {
+    const v = bulkVenueDraft.trim();
+    if (!v) return;
+    const now = new Date().toISOString();
+    for (const row of data) {
+      if (!selectedPerfIds.has(row.perf.id)) continue;
+      await savePerformance({ ...row.perf, venueTag: v, updatedAt: now });
+    }
+    setBulkVenueOpen(false);
+    setBulkVenueDraft('');
+    setRowSelection({});
+  }, [bulkVenueDraft, data, selectedPerfIds, savePerformance]);
+
+  const applyBulkDelete = useCallback(async () => {
+    for (const id of selectedPerfIds) {
+      await deletePerformance(id);
+    }
+    setBulkDeleteOpen(false);
+    setRowSelection({});
+  }, [deletePerformance, selectedPerfIds]);
 
   const updatePerformance = async (next: EncorePerformance) => {
     const now = new Date().toISOString();
@@ -257,7 +320,7 @@ export function PerformancesScreen(): React.ReactElement {
       accessorKey: 'accompaniment',
       header: 'Accompaniment',
       filterVariant: 'multi-select',
-      filterSelectOptions: ENCORE_ACCOMPANIMENT_TAGS as unknown as string[],
+      filterSelectOptions: [...ENCORE_ACCOMPANIMENT_TAGS],
       filterFn: (row, _columnId, filterValue: unknown) => {
         if (!Array.isArray(filterValue) || filterValue.length === 0) return true;
         const cellTags = row.original.accompaniment;
@@ -300,6 +363,9 @@ export function PerformancesScreen(): React.ReactElement {
     getRowId: (row) => row.perf.id,
     ...encoreMrtRepertoireTableOptions<PerfMrtRow>(),
     enableColumnFilters: true,
+    enableRowSelection: viewMode === 'table',
+    onRowSelectionChange: setRowSelection,
+    state: { rowSelection },
     mrtTheme: {
       baseBackgroundColor: theme.palette.background.paper,
     },
@@ -326,7 +392,7 @@ export function PerformancesScreen(): React.ReactElement {
       }}
     >
       <EncorePageHeader
-        title="Performances"
+        title={encorePossessivePageTitle(effectiveDisplayName, 'performances')}
         description="Every show you have logged. Open a song for charts, milestones, and notes."
         actions={
           <Button variant="contained" size="small" startIcon={<AddIcon />} onClick={() => setPickSongOpen(true)}>
@@ -334,6 +400,23 @@ export function PerformancesScreen(): React.ReactElement {
           </Button>
         }
       />
+
+      {performances.length > 0 && !hasAnyPerformanceVideoLink ? (
+        <Alert severity="info" sx={{ mt: 1, mb: 1 }}>
+          <Typography variant="body2" component="div" sx={{ lineHeight: 1.55 }}>
+            None of your performances have a linked video yet. To attach many files at once, go to{' '}
+            <Link component="button" type="button" onClick={() => navigateEncore({ kind: 'library' })} sx={{ fontSize: 'inherit' }}>
+              Repertoire
+            </Link>
+            , then <strong>Add</strong>, <strong>Import</strong>, <strong>Bulk import videos</strong>. Encore renames
+            files in your Performances folder to match the suggested pattern in{' '}
+            <Link component="button" type="button" onClick={() => navigateEncore({ kind: 'help' })} sx={{ fontSize: 'inherit' }}>
+              Help: Import guide
+            </Link>
+            .
+          </Typography>
+        </Alert>
+      ) : null}
 
       <EncoreToolbarRow>
         <TextField
@@ -384,10 +467,104 @@ export function PerformancesScreen(): React.ReactElement {
         </ToggleButtonGroup>
       </EncoreToolbarRow>
 
-      {performances.length === 0 ? (
-        <Typography color="text.secondary" sx={{ py: 4, lineHeight: 1.6 }}>
-          No performances yet. Add one from a song, or tap <strong>Add performance</strong> above.
-        </Typography>
+      {performances.length > 0 && viewMode === 'table' && selectedPerfIds.size > 0 ? (
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={1}
+          alignItems={{ sm: 'center' }}
+          flexWrap="wrap"
+          useFlexGap
+          sx={{
+            mt: 2,
+            mb: 1,
+            p: 1.5,
+            borderRadius: 2,
+            border: 1,
+            borderColor: 'divider',
+            bgcolor: (t) => alpha(t.palette.primary.main, 0.06),
+          }}
+        >
+          <Typography variant="body2" sx={{ fontWeight: 700 }}>
+            {selectedPerfIds.size} selected
+          </Typography>
+          <Button size="small" variant="outlined" onClick={() => setBulkVenueOpen(true)}>
+            Set venue…
+          </Button>
+          <Button size="small" color="error" variant="outlined" onClick={() => setBulkDeleteOpen(true)}>
+            Delete…
+          </Button>
+          <Button size="small" variant="text" onClick={() => setRowSelection({})}>
+            Clear selection
+          </Button>
+        </Stack>
+      ) : null}
+
+      {performances.length === 0 && songs.length === 0 ? (
+        <Stack spacing={1.5} sx={{ py: 4, maxWidth: 520 }}>
+          <Typography color="text.secondary" sx={{ lineHeight: 1.6 }}>
+            Nothing here yet — add songs from Repertoire first, then log a performance from a song page or tap{' '}
+            <strong>Add performance</strong> above.
+          </Typography>
+          <Button variant="outlined" size="small" onClick={() => navigateEncore({ kind: 'library' })} sx={{ alignSelf: 'flex-start', textTransform: 'none' }}>
+            Go to repertoire
+          </Button>
+        </Stack>
+      ) : performances.length === 0 && songs.length > 0 ? (
+        <Paper
+          elevation={0}
+          sx={{
+            mt: 2,
+            py: 3,
+            px: { xs: 2.5, sm: 3.5 },
+            maxWidth: 640,
+            borderRadius: encoreRadius,
+            boxShadow: encoreShadowSurface,
+            border: 'none',
+          }}
+        >
+          <Typography variant="h6" sx={{ fontWeight: 800, letterSpacing: '-0.02em', mb: 1.5 }}>
+            Bring in performance videos
+          </Typography>
+          <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.7, mb: 2 }}>
+            You have songs but no performances yet. Use bulk import from Drive to attach many videos at once. Encore
+            matches each file to a song from the name and folder path, then keeps Drive names aligned with this
+            pattern when it organizes your Performances folder:
+          </Typography>
+          <Box
+            component="pre"
+            sx={{
+              m: 0,
+              mb: 2.5,
+              p: 1.5,
+              borderRadius: 1,
+              borderLeft: 4,
+              borderColor: 'primary.main',
+              bgcolor: (t) => alpha(t.palette.primary.main, 0.06),
+              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+              fontSize: '0.8125rem',
+              lineHeight: 1.5,
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
+            }}
+          >
+            {'YYYY-MM-DD - Song title - Artist.mp4'}
+          </Box>
+          <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.65, mb: 2 }}>
+            Put the performance date first, then the title, then the artist. Use Drive folder names like{' '}
+            <Typography component="span" sx={{ fontFamily: 'ui-monospace, monospace' }}>
+              Venue - Martuni&apos;s
+            </Typography>{' '}
+            to tag venue (and other metadata) for a whole folder — see Help.
+          </Typography>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+            <Button variant="contained" onClick={() => navigateEncore({ kind: 'library' })} sx={{ textTransform: 'none' }}>
+              Go to repertoire to import
+            </Button>
+            <Button variant="outlined" onClick={() => navigateEncore({ kind: 'help' })} sx={{ textTransform: 'none' }}>
+              Open import guide
+            </Button>
+          </Stack>
+        </Paper>
       ) : viewMode === 'table' ? (
         <Box sx={{ mt: 2 }}>
           <MaterialReactTable table={table} />
@@ -540,6 +717,42 @@ export function PerformancesScreen(): React.ReactElement {
           }}
         />
       )}
+
+      <Dialog open={bulkVenueOpen} onClose={() => setBulkVenueOpen(false)} fullWidth maxWidth="xs">
+        <DialogTitle sx={encoreDialogTitleSx}>Set venue ({selectedPerfIds.size})</DialogTitle>
+        <DialogContent sx={encoreDialogContentSx}>
+          <TextField
+            margin="dense"
+            label="Venue"
+            fullWidth
+            value={bulkVenueDraft}
+            onChange={(e) => setBulkVenueDraft(e.target.value)}
+            helperText={venueOptions.length ? `Suggestions include: ${venueOptions.slice(0, 4).join(', ')}` : undefined}
+          />
+        </DialogContent>
+        <DialogActions sx={encoreDialogActionsSx}>
+          <Button onClick={() => setBulkVenueOpen(false)}>Cancel</Button>
+          <Button variant="contained" onClick={() => void applyBulkVenue()} disabled={!bulkVenueDraft.trim()}>
+            Apply
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={bulkDeleteOpen} onClose={() => setBulkDeleteOpen(false)}>
+        <DialogTitle sx={encoreDialogTitleSx}>Delete {selectedPerfIds.size} performances?</DialogTitle>
+        <DialogContent sx={encoreDialogContentSx}>
+          <Typography variant="body2" color="text.secondary">
+            This removes the performance entries from your log. Linked videos in Drive are not deleted
+            automatically.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={encoreDialogActionsSx}>
+          <Button onClick={() => setBulkDeleteOpen(false)}>Cancel</Button>
+          <Button color="error" variant="contained" onClick={() => void applyBulkDelete()}>
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

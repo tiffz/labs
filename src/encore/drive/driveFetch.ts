@@ -428,6 +428,36 @@ export async function driveRenameFile(
 }
 
 /**
+ * Move a Drive file (or shortcut) from one parent folder to another.
+ * `previousParentId` must be one of the file’s current parents (see `driveGetFileMetadata`).
+ */
+export async function driveMoveFile(
+  accessToken: string,
+  fileId: string,
+  newParentId: string,
+  previousParentId: string,
+): Promise<void> {
+  const qs = new URLSearchParams({
+    addParents: newParentId,
+    removeParents: previousParentId,
+    supportsAllDrives: 'true',
+    fields: 'id',
+  });
+  const res = await fetch(`${DRIVE_BASE}/files/${encodeURIComponent(fileId)}?${qs}`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({}),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new DriveHttpError(formatDriveRequestFailure('PATCH', 'files (move)', res.status, text), res.status, text);
+  }
+}
+
+/**
  * Returns true when the file has at least one `type:'anyone'` reader permission.
  * Caller must hold a token with `drive.metadata.readonly` (or `drive` / `drive.file` if owned/shared with app).
  */

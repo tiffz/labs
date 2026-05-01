@@ -16,6 +16,7 @@ import { alpha, useTheme } from '@mui/material/styles';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { fetchPublicDriveJson } from '../drive/bootstrapFolders';
 import type { PublicSnapshot } from '../types';
+import { orderSnapshotSongsByLatestPerformanceDesc } from '../drive/publicSnapshotSort';
 import { encoreNoAlbumArtIconSx, encoreNoAlbumArtSurfaceSx } from '../utils/encoreNoAlbumArtSurface';
 import {
   encorePageKickerSx,
@@ -112,6 +113,11 @@ export function GuestShareView({ fileId }: { fileId: string }): React.ReactEleme
     };
   }, [theme]);
 
+  const sortedSongs = useMemo((): PublicSnapshot['songs'] => {
+    if (!snap) return [];
+    return orderSnapshotSongsByLatestPerformanceDesc(snap.songs, snap.performances);
+  }, [snap]);
+
   useEffect(() => {
     const key = (import.meta.env.VITE_GOOGLE_API_KEY as string | undefined)?.trim();
     if (!key) {
@@ -195,7 +201,7 @@ export function GuestShareView({ fileId }: { fileId: string }): React.ReactEleme
         </Typography>
 
         <Stack spacing={1.5}>
-          {snap.songs.map((s) => {
+          {sortedSongs.map((s) => {
             const songPerformances = snap.performances
               .filter((p) => p.songId === s.id)
               .sort((a, b) => b.date.localeCompare(a.date));

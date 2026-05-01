@@ -103,6 +103,7 @@ export function InlineSongTagsCell(props: InlineSongTagsCellProps): ReactElement
       >
         <TagsAutocomplete
           dense
+          omitInputChips
           value={[...tags]}
           suggestions={suggestions}
           label="Tags"

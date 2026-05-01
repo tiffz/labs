@@ -13,4 +13,5 @@ describe('buildBulkVideoFilenameCandidates', () => {
     expect(c.some((x) => x.includes('vampire'))).toBe(true);
     expect(c.some((x) => x.includes('martuni'))).toBe(true);
   });
+
 });

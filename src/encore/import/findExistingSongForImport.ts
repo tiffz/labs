@@ -1,20 +1,23 @@
 import type { EncoreSong } from '../types';
-import { parseYoutubeVideoId } from '../youtube/parseYoutubeVideoUrl';
+import { normalizeTitleForImportMatch } from './importTitleNormalize';
 import { libraryTitleMatchHeads } from './libraryTitleMatchHeads';
 import { diceCoefficient, encoreSongFromImportRow, normalizeForMatch, type PlaylistImportRow } from './matchPlaylists';
-
-function normalizedSpotifyTrackId(id?: string): string | null {
-  const t = id?.trim();
-  return t ? t : null;
-}
-
-function normalizedYoutubeVideoId(raw?: string): string | null {
-  if (!raw?.trim()) return null;
-  return parseYoutubeVideoId(raw);
-}
+import {
+  countCrossSectionLinksForImportMerge,
+  appendIncomingBackingMediaLinks,
+  appendIncomingMediaLinks,
+  collectSpotifyTrackIdsFromSong,
+  collectYoutubeVideoIdsFromSong,
+  stripBackingLinksMatchingIncomingMedia,
+  stripReferenceLinksMatchingIncomingMedia,
+} from '../repertoire/songMediaLinks';
 
 /** Auto-merge when best fuzzy score is at least this (playlist import only). */
-const FUZZY_THRESHOLD = 0.76;
+export const IMPORT_MATCH_AUTO_MIN = 0.76;
+/** Below auto threshold but above this → suggest merge in UI (Practice playlist pull). */
+export const IMPORT_MATCH_SUGGEST_MIN = 0.68;
+
+const FUZZY_THRESHOLD = IMPORT_MATCH_AUTO_MIN;
 
 function firstArtistSegment(artist: string): string {
   return artist
@@ -86,24 +89,21 @@ function titleLongEnoughForRelaxedArtist(nTitle: string): boolean {
 }
 
 /**
- * How well `existing` matches `incoming` for playlist import (title, artist, optional Spotify ids).
- * Exposed for unit tests.
+ * Fuzzy similarity for one pairing of (library title, library artist) vs (incoming title, incoming artist).
+ * Does not consider Spotify/YouTube ids — see {@link scoreSongSimilarityForImport}.
  */
-export function scoreSongSimilarityForImport(existing: EncoreSong, incoming: EncoreSong): number {
-  const spIn = normalizedSpotifyTrackId(incoming.spotifyTrackId);
-  const spEx = normalizedSpotifyTrackId(existing.spotifyTrackId);
-  if (spIn && spEx && spIn === spEx) {
-    return 1;
-  }
-  const ytIn = normalizedYoutubeVideoId(incoming.youtubeVideoId);
-  const ytEx = normalizedYoutubeVideoId(existing.youtubeVideoId);
-  if (ytIn && ytEx && ytIn === ytEx) {
-    return 1;
-  }
-  const iTitle = incoming.title.trim();
-  const iArtist = incoming.artist.trim();
-  const eTitle = existing.title.trim();
-  const eArtist = existing.artist.trim();
+function scoreFuzzyTitleArtistSimilarity(
+  existingTitleRaw: string,
+  existingArtist: string,
+  incomingTitleRaw: string,
+  incomingArtist: string,
+): number {
+  const iTitleRaw = incomingTitleRaw.trim();
+  const eTitleRaw = existingTitleRaw.trim();
+  const iTitle = normalizeTitleForImportMatch(iTitleRaw);
+  const eTitle = normalizeTitleForImportMatch(eTitleRaw);
+  const iArtist = incomingArtist.trim();
+  const eArtist = existingArtist.trim();
   if (!iTitle || !eTitle) return 0;
 
   const labelIncoming = `${iArtist} ${iTitle}`;
@@ -114,8 +114,8 @@ export function scoreSongSimilarityForImport(existing: EncoreSong, incoming: Enc
 
   const nTitleI = normalizeForMatch(iTitle);
   const nTitleE = normalizeForMatch(eTitle);
-  const headNormsE = libraryTitleMatchHeads(eTitle).map((h) => normalizeForMatch(h));
-  const headNormsI = libraryTitleMatchHeads(iTitle).map((h) => normalizeForMatch(h));
+  const headNormsE = libraryTitleMatchHeads(eTitleRaw).map((h) => normalizeForMatch(normalizeTitleForImportMatch(h)));
+  const headNormsI = libraryTitleMatchHeads(iTitleRaw).map((h) => normalizeForMatch(normalizeTitleForImportMatch(h)));
   const titlesNormalizedEqual =
     nTitleI.length >= 3 &&
     (nTitleI === nTitleE || headNormsE.includes(nTitleI) || headNormsI.includes(nTitleE));
@@ -147,33 +147,82 @@ export function scoreSongSimilarityForImport(existing: EncoreSong, incoming: Enc
     composite = Math.max(composite, 0.66 * dTitle + 0.34 * Math.max(artRel, missingArtistSide ? 0.6 : 0.22));
   }
 
+  // Alternate recording: strong title match (live / cast vs solo) but weak artist string.
+  if (dTitle >= 0.82 && longTitle && composite < FUZZY_THRESHOLD && artRel >= 0.06) {
+    composite = Math.max(composite, 0.7 + 0.14 * Math.min(1, artRel / 0.3));
+  }
+
   return composite;
+}
+
+/**
+ * How well `existing` matches `incoming` for playlist import (title, artist, optional Spotify ids).
+ * Exposed for unit tests.
+ */
+export function scoreSongSimilarityForImport(existing: EncoreSong, incoming: EncoreSong): number {
+  for (const spIn of collectSpotifyTrackIdsFromSong(incoming)) {
+    const exIds = collectSpotifyTrackIdsFromSong(existing);
+    if (exIds.includes(spIn)) {
+      return 1;
+    }
+  }
+  for (const ytIn of collectYoutubeVideoIdsFromSong(incoming)) {
+    const exYts = collectYoutubeVideoIdsFromSong(existing);
+    if (exYts.includes(ytIn)) {
+      return 1;
+    }
+  }
+  const incomingTitleRaw = incoming.title;
+  const incomingArtist = incoming.artist;
+  const direct = scoreFuzzyTitleArtistSimilarity(
+    existing.title,
+    existing.artist,
+    incomingTitleRaw,
+    incomingArtist,
+  );
+  // Karaoke / odd imports sometimes store the catalog line in Title and the real song name in Artist.
+  // Spotify always sends canonical (title, artist); also score with library fields role-swapped.
+  if (existing.title.trim() && existing.artist.trim()) {
+    const roleSwapped = scoreFuzzyTitleArtistSimilarity(
+      existing.artist,
+      existing.title,
+      incomingTitleRaw,
+      incomingArtist,
+    );
+    return Math.max(direct, roleSwapped);
+  }
+  return direct;
 }
 
 /**
  * Whether this import row will merge into an existing library song on import (manual link, or auto-match
  * when not ignored). Matches playlist import apply: manual link wins; else auto if not ignored.
  */
-export function importRowHasLibraryMerge(row: PlaylistImportRow, existing: EncoreSong[]): boolean {
+export function importRowHasLibraryMerge(
+  row: PlaylistImportRow,
+  existing: EncoreSong[],
+  placement: 'reference' | 'backing' = 'reference',
+): boolean {
   if (row.linkedLibrarySongId) return true;
-  const incoming = encoreSongFromImportRow(row);
+  const incoming = encoreSongFromImportRow(row, placement);
   if (!incoming) return false;
   if (row.ignoreAutoMatch) return false;
   return findExistingSongForImport(existing, incoming) != null;
 }
 
-/** Find a library song that should receive this import row instead of creating a duplicate. */
-export function findExistingSongForImport(existing: EncoreSong[], incoming: EncoreSong): EncoreSong | null {
-  const spIn = normalizedSpotifyTrackId(incoming.spotifyTrackId);
-  if (spIn) {
-    const bySpotify = existing.find((s) => normalizedSpotifyTrackId(s.spotifyTrackId) === spIn);
-    if (bySpotify) return bySpotify;
+/** Best library match for an import stub, with similarity score in [0, 1]. */
+export function bestImportMatch(
+  existing: EncoreSong[],
+  incoming: EncoreSong,
+): { song: EncoreSong | null; score: number } {
+  for (const spIn of collectSpotifyTrackIdsFromSong(incoming)) {
+    const bySpotify = existing.find((s) => collectSpotifyTrackIdsFromSong(s).includes(spIn));
+    if (bySpotify) return { song: bySpotify, score: 1 };
   }
 
-  const ytIn = normalizedYoutubeVideoId(incoming.youtubeVideoId);
-  if (ytIn) {
-    const byYoutube = existing.find((s) => normalizedYoutubeVideoId(s.youtubeVideoId) === ytIn);
-    if (byYoutube) return byYoutube;
+  for (const ytIn of collectYoutubeVideoIdsFromSong(incoming)) {
+    const byYoutube = existing.find((s) => collectYoutubeVideoIdsFromSong(s).includes(ytIn));
+    if (byYoutube) return { song: byYoutube, score: 1 };
   }
 
   let best: EncoreSong | null = null;
@@ -185,21 +234,87 @@ export function findExistingSongForImport(existing: EncoreSong[], incoming: Enco
       best = e;
     }
   }
-  return bestScore >= FUZZY_THRESHOLD ? best : null;
+  return { song: best, score: bestScore };
+}
+
+/** Sum link moves across review rows (for cross-section import confirmation). */
+export function totalCrossSectionLinksForPlaylistImport(
+  rows: PlaylistImportRow[],
+  existingSongs: EncoreSong[],
+  placement: 'reference' | 'backing',
+): { fromReference: number; fromBacking: number } {
+  const snap = [...existingSongs];
+  let fromReference = 0;
+  let fromBacking = 0;
+  for (const r of rows) {
+    if (r.skipRow) continue;
+    const song = encoreSongFromImportRow(r, placement);
+    if (!song) continue;
+    const manual =
+      r.linkedLibrarySongId != null
+        ? (snap.find((s) => s.id === r.linkedLibrarySongId) ?? existingSongs.find((s) => s.id === r.linkedLibrarySongId) ?? null)
+        : null;
+    const auto =
+      manual == null && !r.ignoreAutoMatch ? findExistingSongForImport(snap, song) : null;
+    const match = manual ?? auto;
+    if (!match) continue;
+    if (placement === 'backing') {
+      fromReference += countCrossSectionLinksForImportMerge(match, song, 'backing');
+    } else {
+      fromBacking += countCrossSectionLinksForImportMerge(match, song, 'reference');
+    }
+  }
+  return { fromReference, fromBacking };
+}
+
+/** How many media links on the merge target would move out of the opposite section for this row (0 if no merge). */
+export function crossSectionMovesForPlaylistRow(
+  row: PlaylistImportRow,
+  existingSongs: EncoreSong[],
+  placement: 'reference' | 'backing',
+): number {
+  if (row.skipRow) return 0;
+  const song = encoreSongFromImportRow(row, placement);
+  if (!song) return 0;
+  const manual =
+    row.linkedLibrarySongId != null
+      ? (existingSongs.find((s) => s.id === row.linkedLibrarySongId) ?? null)
+      : null;
+  const auto =
+    manual == null && !row.ignoreAutoMatch ? findExistingSongForImport(existingSongs, song) : null;
+  const match = manual ?? auto;
+  if (!match) return 0;
+  if (placement === 'backing') {
+    return countCrossSectionLinksForImportMerge(match, song, 'backing');
+  }
+  return countCrossSectionLinksForImportMerge(match, song, 'reference');
+}
+
+export function findExistingSongForImport(existing: EncoreSong[], incoming: EncoreSong): EncoreSong | null {
+  const { song, score } = bestImportMatch(existing, incoming);
+  return score >= FUZZY_THRESHOLD ? song : null;
 }
 
 /** Merge playlist-import fields into an existing song; preserves journal, attachments, and user performance fields unless empty strategy says otherwise. */
-export function mergeSongWithImport(existing: EncoreSong, incoming: EncoreSong): EncoreSong {
+export function mergeSongWithImport(
+  existing: EncoreSong,
+  incoming: EncoreSong,
+  opts?: { placement?: 'reference' | 'backing' },
+): EncoreSong {
   const now = new Date().toISOString();
-  return {
+  const placement = opts?.placement ?? 'reference';
+  const base: EncoreSong = {
     ...existing,
-    title: incoming.title.trim() || existing.title,
-    artist: incoming.artist.trim() || existing.artist,
-    spotifyTrackId: incoming.spotifyTrackId ?? existing.spotifyTrackId,
-    youtubeVideoId: incoming.youtubeVideoId ?? existing.youtubeVideoId,
-    albumArtUrl: incoming.albumArtUrl ?? existing.albumArtUrl,
     attachments: existing.attachments,
     recordingDriveFileIds: existing.recordingDriveFileIds,
     updatedAt: now,
   };
+  const stripped =
+    placement === 'backing'
+      ? stripReferenceLinksMatchingIncomingMedia(base, incoming)
+      : stripBackingLinksMatchingIncomingMedia(base, incoming);
+  if (placement === 'backing') {
+    return appendIncomingBackingMediaLinks(stripped, incoming);
+  }
+  return appendIncomingMediaLinks(stripped, incoming);
 }

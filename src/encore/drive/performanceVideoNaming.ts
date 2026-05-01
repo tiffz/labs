@@ -11,10 +11,16 @@ function sanitizeForFilename(s: string): string {
     .trim();
 }
 
+const FIELD_SEP = ' - ';
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
 /**
  * Build the canonical performance video filename used inside `Encore_App/Performances/`.
  *
- * Format: `YYYY-MM-DD - Song title[ - Venue][.ext]`
+ * Format: `YYYY-MM-DD - Title - Artist.ext` (same `Title - Artist` spine as chart files; venue is not encoded
+ * in the filename — use folder metadata during bulk import, see `encoreFolderMetadata.ts`).
+ *
+ * Artist is always present (`Unknown artist` when missing on the song). Venue is intentionally omitted.
  *
  * - `extension` should include the leading dot for real files (".mp4"); empty for shortcuts.
  * - Truncated to a sensible length so Drive doesn't reject it.
@@ -24,12 +30,11 @@ export function buildPerformanceVideoName(
   song: Pick<EncoreSong, 'title' | 'artist'> | null,
   extension = '',
 ): string {
-  const date = /^\d{4}-\d{2}-\d{2}$/.test(performance.date) ? performance.date : 'Undated';
-  const title = sanitizeForFilename(song?.title ?? 'Untitled song');
-  const venue = sanitizeForFilename(performance.venueTag ?? '');
-  const venueIsPlaceholder = !venue || venue.toLowerCase() === 'venue';
-  const parts = [date, title, venueIsPlaceholder ? '' : venue].filter(Boolean);
-  let base = parts.join(' - ');
+  const date = ISO_DATE.test(performance.date) ? performance.date : 'Undated';
+  const title = sanitizeForFilename((song?.title ?? '').trim() || 'Untitled song');
+  const artist = sanitizeForFilename((song?.artist ?? '').trim() || 'Unknown artist');
+  const parts = [date, title, artist];
+  let base = parts.join(FIELD_SEP);
   const MAX_LEN = 200;
   if (base.length > MAX_LEN) base = `${base.slice(0, MAX_LEN - 1)}…`;
   return `${base}${extension}`;

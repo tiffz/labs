@@ -3,10 +3,12 @@ import AddIcon from '@mui/icons-material/Add';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import QueueMusicIcon from '@mui/icons-material/QueueMusic';
 import SearchIcon from '@mui/icons-material/Search';
+import GraphicEqIcon from '@mui/icons-material/GraphicEq';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
 import Box from '@mui/material/Box';
@@ -16,6 +18,10 @@ import Card from '@mui/material/Card';
 import CardActionArea from '@mui/material/CardActionArea';
 import CardContent from '@mui/material/CardContent';
 import Chip from '@mui/material/Chip';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
 import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
 import ListItemIcon from '@mui/material/ListItemIcon';
@@ -29,13 +35,16 @@ import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
-import { MaterialReactTable, useMaterialReactTable, type MRT_ColumnDef } from 'material-react-table';
+import { MaterialReactTable, useMaterialReactTable, type MRT_ColumnDef, type MRT_RowSelectionState } from 'material-react-table';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { EncorePerformance, EncoreSong } from '../types';
 import { navigateEncore } from '../routes/encoreAppHash';
 import { encoreNoAlbumArtIconSx, encoreNoAlbumArtSurfaceSx } from '../utils/encoreNoAlbumArtSurface';
 import { useEncore } from '../context/EncoreContext';
 import {
+  encoreDialogActionsSx,
+  encoreDialogContentSx,
+  encoreDialogTitleSx,
   encoreMutedCaptionSx,
   encoreMaxWidthPage,
   encoreRadius,
@@ -52,10 +61,11 @@ import { BulkScoreImportDialog } from './BulkScoreImportDialog';
 import { SpotifyBrandIcon, YouTubeBrandIcon } from './EncoreBrandIcon';
 import { milestoneProgressSummary } from '../repertoire/repertoireMilestoneSummary';
 import { ENCORE_PERFORMANCE_KEY_OPTIONS } from '../repertoire/performanceKeys';
-import { collectAllSongTags } from '../repertoire/songTags';
+import { collectAllSongTags, normalizeSongTags } from '../repertoire/songTags';
 import { InlineChipSelect } from '../ui/InlineEditChip';
 import { InlineSongTagsCell } from '../ui/InlineSongTagsCell';
 import { encoreMrtRepertoireTableOptions } from './encoreMrtTableDefaults';
+import { encorePossessivePageTitle } from '../utils/encorePossessivePageTitle';
 
 const REPERTOIRE_VIEW_STORAGE_KEY = 'encore.library.repertoireView';
 
@@ -119,6 +129,7 @@ export function LibraryScreen(): React.ReactElement {
     effectiveDisplayName,
   } = useEncore();
   const [importOpen, setImportOpen] = useState(false);
+  const [importPlacement, setImportPlacement] = useState<'reference' | 'backing'>('reference');
   const [addSongOpen, setAddSongOpen] = useState(false);
   const [bulkPerfOpen, setBulkPerfOpen] = useState(false);
   const [bulkScoreOpen, setBulkScoreOpen] = useState(false);
@@ -135,9 +146,17 @@ export function LibraryScreen(): React.ReactElement {
     if (typeof window === 'undefined') return 'table';
     return window.localStorage.getItem(REPERTOIRE_VIEW_STORAGE_KEY) === 'grid' ? 'grid' : 'table';
   });
+  const [rowSelection, setRowSelection] = useState<MRT_RowSelectionState>({});
+  const [bulkTagOpen, setBulkTagOpen] = useState(false);
+  const [bulkTagInput, setBulkTagInput] = useState('');
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
   useEffect(() => {
     window.localStorage.setItem(REPERTOIRE_VIEW_STORAGE_KEY, viewMode);
+  }, [viewMode]);
+
+  useEffect(() => {
+    if (viewMode === 'grid') setRowSelection({});
   }, [viewMode]);
 
   const libraryStats = useMemo(() => {
@@ -250,6 +269,45 @@ export function LibraryScreen(): React.ReactElement {
   const openSong = useCallback((s: EncoreSong) => {
     navigateEncore({ kind: 'song', id: s.id });
   }, []);
+
+  const selectedSongIds = useMemo(
+    () => new Set(Object.keys(rowSelection).filter((id) => rowSelection[id])),
+    [rowSelection],
+  );
+
+  const bulkSetPracticing = useCallback(
+    async (practicing: boolean) => {
+      const now = new Date().toISOString();
+      for (const row of tableData) {
+        if (!selectedSongIds.has(row.song.id)) continue;
+        await saveSong({ ...row.song, practicing, updatedAt: now });
+      }
+      setRowSelection({});
+    },
+    [tableData, selectedSongIds, saveSong],
+  );
+
+  const bulkAddTag = useCallback(async () => {
+    const tag = bulkTagInput.trim();
+    if (!tag) return;
+    const now = new Date().toISOString();
+    for (const row of tableData) {
+      if (!selectedSongIds.has(row.song.id)) continue;
+      const next = normalizeSongTags([...(row.song.tags ?? []), tag]);
+      await saveSong({ ...row.song, tags: next.length ? next : undefined, updatedAt: now });
+    }
+    setBulkTagInput('');
+    setBulkTagOpen(false);
+    setRowSelection({});
+  }, [bulkTagInput, tableData, selectedSongIds, saveSong]);
+
+  const bulkRemoveSongs = useCallback(async () => {
+    for (const id of selectedSongIds) {
+      await deleteSong(id);
+    }
+    setBulkDeleteOpen(false);
+    setRowSelection({});
+  }, [deleteSong, selectedSongIds]);
 
   const columns = useMemo<MRT_ColumnDef<EncoreRepertoireMrtRow>[]>(
     () => [
@@ -393,7 +451,7 @@ export function LibraryScreen(): React.ReactElement {
       },
       {
         id: 'practicing',
-        header: 'Working on',
+        header: 'Currently practicing',
         size: 104,
         enableColumnFilter: false,
         enableSorting: false,
@@ -408,7 +466,7 @@ export function LibraryScreen(): React.ReactElement {
                 const now = new Date().toISOString();
                 void saveSong({ ...s, practicing: e.target.checked, updatedAt: now });
               }}
-              inputProps={{ 'aria-label': `Working on ${s.title}` }}
+              inputProps={{ 'aria-label': `Currently practicing: ${s.title}` }}
               sx={{ p: 0.5, ml: -0.5 }}
             />
           );
@@ -500,6 +558,9 @@ export function LibraryScreen(): React.ReactElement {
     displayColumnDefOptions: {
       'mrt-row-actions': { header: '', size: 52 },
     },
+    enableRowSelection: viewMode === 'table',
+    onRowSelectionChange: setRowSelection,
+    state: { rowSelection },
     renderRowActions: ({ row }) => (
       <IconButton
         size="small"
@@ -514,7 +575,11 @@ export function LibraryScreen(): React.ReactElement {
       </IconButton>
     ),
     muiTableBodyRowProps: ({ row }) => ({
-      onClick: () => openSong(row.original.song),
+      onClick: (e) => {
+        const el = e.target as HTMLElement;
+        if (el.closest('.MuiCheckbox-root') || el.closest('input[type="checkbox"]')) return;
+        openSong(row.original.song);
+      },
       sx: (t) => ({
         cursor: 'pointer',
         '&:nth-of-type(even)': { bgcolor: alpha(t.palette.action.hover, 0.35) },
@@ -538,7 +603,7 @@ export function LibraryScreen(): React.ReactElement {
       }}
     >
       <EncorePageHeader
-        title={effectiveDisplayName ? `${effectiveDisplayName}'s repertoire` : 'Your repertoire'}
+        title={encorePossessivePageTitle(effectiveDisplayName, 'repertoire')}
         description={
           songs.length === 0
             ? 'Add a song or import a playlist to start.'
@@ -579,40 +644,103 @@ export function LibraryScreen(): React.ReactElement {
               anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
               transformOrigin={{ vertical: 'top', horizontal: 'right' }}
               slotProps={{
-                list: { 'aria-labelledby': 'encore-library-import-button' },
+                list: {
+                  'aria-labelledby': 'encore-library-import-button',
+                  sx: {
+                    py: 1.25,
+                    px: 0.75,
+                    '& .MuiMenuItem-root': {
+                      py: 1.75,
+                      px: 1.5,
+                      minHeight: 0,
+                      alignItems: 'flex-start',
+                      columnGap: 1.25,
+                      borderRadius: 1,
+                    },
+                  },
+                },
               }}
             >
               <MenuItem
                 onClick={() => {
                   setImportMenuAnchor(null);
+                  navigateEncore({ kind: 'help' });
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 36, mt: 0.35 }}>
+                  <MenuBookOutlinedIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText
+                  primary="Import guide (recommended order)"
+                  primaryTypographyProps={{ sx: { fontWeight: 600, lineHeight: 1.35 } }}
+                  secondaryTypographyProps={{ sx: { mt: 0.85 } }}
+                  secondary="Opens the Help tab: playlists first, bulk files, naming tips."
+                />
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  setImportMenuAnchor(null);
+                  setImportPlacement('reference');
                   setImportOpen(true);
                 }}
               >
-                <ListItemIcon>
+                <ListItemIcon sx={{ minWidth: 36, mt: 0.35 }}>
                   <QueueMusicIcon fontSize="small" />
                 </ListItemIcon>
                 <ListItemText
-                  primary="Import playlists"
-                  secondaryTypographyProps={{ component: 'div' }}
+                  primary="Import reference from playlists"
+                  primaryTypographyProps={{ sx: { fontWeight: 600, lineHeight: 1.35 } }}
+                  secondaryTypographyProps={{ component: 'div', sx: { mt: 0.85 } }}
                   secondary={
-                    <Stack component="span" direction="row" alignItems="center" spacing={0.75} sx={{ mt: 0.25 }}>
-                      <Box
-                        component="span"
-                        sx={{ display: 'inline-flex', alignItems: 'center', gap: '0.22em', verticalAlign: 'middle' }}
-                      >
-                        <SpotifyBrandIcon sx={{ fontSize: 14, position: 'relative', top: '0.08em' }} aria-hidden />
-                        Spotify
-                      </Box>
-                      <Typography component="span" variant="caption" color="text.secondary" sx={{ px: 0.25 }}>
+                    <Stack
+                      component="span"
+                      direction="row"
+                      alignItems="center"
+                      spacing={1.25}
+                      aria-label="Spotify and YouTube playlists. Saves to reference recordings."
+                    >
+                      <SpotifyBrandIcon sx={{ fontSize: 18, display: 'block', flexShrink: 0 }} aria-hidden />
+                      <Typography component="span" variant="caption" color="text.secondary" sx={{ lineHeight: 0 }}>
                         ·
                       </Typography>
-                      <Box
-                        component="span"
-                        sx={{ display: 'inline-flex', alignItems: 'center', gap: '0.22em', verticalAlign: 'middle' }}
-                      >
-                        <YouTubeBrandIcon sx={{ fontSize: 14, position: 'relative', top: '0.08em' }} aria-hidden />
-                        YouTube
-                      </Box>
+                      <YouTubeBrandIcon sx={{ fontSize: 18, display: 'block', flexShrink: 0 }} aria-hidden />
+                      <Typography component="span" variant="caption" color="text.secondary" sx={{ pl: 0.25 }}>
+                        → reference recordings
+                      </Typography>
+                    </Stack>
+                  }
+                />
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  setImportMenuAnchor(null);
+                  setImportPlacement('backing');
+                  setImportOpen(true);
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 36, mt: 0.35 }}>
+                  <GraphicEqIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText
+                  primary="Import backing from playlists"
+                  primaryTypographyProps={{ sx: { fontWeight: 600, lineHeight: 1.35 } }}
+                  secondaryTypographyProps={{ component: 'div', sx: { mt: 0.85 } }}
+                  secondary={
+                    <Stack
+                      component="span"
+                      direction="row"
+                      alignItems="center"
+                      spacing={1.25}
+                      aria-label="Spotify and YouTube playlists. Saves to backing tracks."
+                    >
+                      <SpotifyBrandIcon sx={{ fontSize: 18, display: 'block', flexShrink: 0 }} aria-hidden />
+                      <Typography component="span" variant="caption" color="text.secondary" sx={{ lineHeight: 0 }}>
+                        ·
+                      </Typography>
+                      <YouTubeBrandIcon sx={{ fontSize: 18, display: 'block', flexShrink: 0 }} aria-hidden />
+                      <Typography component="span" variant="caption" color="text.secondary" sx={{ pl: 0.25 }}>
+                        → backing tracks
+                      </Typography>
                     </Stack>
                   }
                 />
@@ -623,10 +751,15 @@ export function LibraryScreen(): React.ReactElement {
                   setBulkPerfOpen(true);
                 }}
               >
-                <ListItemIcon>
+                <ListItemIcon sx={{ minWidth: 36, mt: 0.35 }}>
                   <CloudUploadIcon fontSize="small" />
                 </ListItemIcon>
-                <ListItemText primary="Bulk import videos" secondary="Drive folder or files" />
+                <ListItemText
+                  primaryTypographyProps={{ sx: { fontWeight: 600, lineHeight: 1.35 } }}
+                  primary="Bulk import videos"
+                  secondaryTypographyProps={{ sx: { mt: 0.85 } }}
+                  secondary="Drive folder or files"
+                />
               </MenuItem>
               <MenuItem
                 onClick={() => {
@@ -634,10 +767,15 @@ export function LibraryScreen(): React.ReactElement {
                   setBulkScoreOpen(true);
                 }}
               >
-                <ListItemIcon>
+                <ListItemIcon sx={{ minWidth: 36, mt: 0.35 }}>
                   <DescriptionOutlinedIcon fontSize="small" />
                 </ListItemIcon>
-                <ListItemText primary="Bulk import scores" secondary="PDF, MusicXML, MIDI" />
+                <ListItemText
+                  primaryTypographyProps={{ sx: { fontWeight: 600, lineHeight: 1.35 } }}
+                  primary="Bulk import scores"
+                  secondaryTypographyProps={{ sx: { mt: 0.85 } }}
+                  secondary="PDF, MusicXML, MIDI"
+                />
               </MenuItem>
             </Menu>
           </>
@@ -726,7 +864,7 @@ export function LibraryScreen(): React.ReactElement {
                   {(
                     [
                       { id: 'all' as const, label: 'All songs' },
-                      { id: 'practicing' as const, label: 'Working on' },
+                      { id: 'practicing' as const, label: 'Currently practicing' },
                     ] as const
                   ).map(({ id, label }) => (
                     <Chip
@@ -777,15 +915,85 @@ export function LibraryScreen(): React.ReactElement {
       ) : null}
 
       {songs.length === 0 && (
-        <Typography color="text.secondary" sx={{ py: 5, textAlign: 'center', px: 2, lineHeight: 1.65, maxWidth: 520, mx: 'auto' }}>
-          No songs yet. Add one to start. Data stays on this device until you sign in to Google for Drive sync (Account
-          menu).
-        </Typography>
+        <Stack spacing={2} sx={{ py: 5, alignItems: 'center', px: 2, maxWidth: 560, mx: 'auto' }}>
+          <Typography color="text.secondary" sx={{ textAlign: 'center', lineHeight: 1.65 }}>
+            Nothing here yet — add a song to start. Data stays on this device until you sign in to Google for Drive
+            sync (Account menu).
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', lineHeight: 1.65, maxWidth: 480 }}>
+            The fastest way to build your library is usually a playlist import. Spotify titles and artists are the
+            most structured, so starting with a Spotify playlist (then adding YouTube playlists in the same import if
+            you want) tends to match more reliably than YouTube-only.
+          </Typography>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} justifyContent="center" sx={{ width: 1 }}>
+            <Button variant="contained" size="small" startIcon={<AddIcon />} onClick={() => setAddSongOpen(true)} sx={{ textTransform: 'none' }}>
+              Add song
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<QueueMusicIcon />}
+              onClick={() => {
+                setImportPlacement('reference');
+                setImportOpen(true);
+              }}
+              sx={{ textTransform: 'none' }}
+            >
+              Import from playlists
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<MenuBookOutlinedIcon />}
+              onClick={() => navigateEncore({ kind: 'help' })}
+              sx={{ textTransform: 'none' }}
+            >
+              Import guide (Help)
+            </Button>
+          </Stack>
+        </Stack>
       )}
       {songs.length > 0 && repertoireSongs.length === 0 ? (
         <Typography color="text.secondary" sx={{ mb: 2, lineHeight: 1.55 }}>
           No matches. Clear filters or try a shorter search.
         </Typography>
+      ) : null}
+
+      {repertoireSongs.length > 0 && viewMode === 'table' && selectedSongIds.size > 0 ? (
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={1}
+          alignItems={{ sm: 'center' }}
+          flexWrap="wrap"
+          useFlexGap
+          sx={{
+            mb: 2,
+            p: 1.5,
+            borderRadius: 2,
+            border: 1,
+            borderColor: 'divider',
+            bgcolor: (t) => alpha(t.palette.primary.main, 0.06),
+          }}
+        >
+          <Typography variant="body2" sx={{ fontWeight: 700 }}>
+            {selectedSongIds.size} selected
+          </Typography>
+          <Button size="small" variant="outlined" onClick={() => void bulkSetPracticing(true)}>
+            Mark currently practicing
+          </Button>
+          <Button size="small" variant="outlined" onClick={() => void bulkSetPracticing(false)}>
+            Clear practicing
+          </Button>
+          <Button size="small" variant="outlined" onClick={() => setBulkTagOpen(true)}>
+            Add tag…
+          </Button>
+          <Button size="small" color="error" variant="outlined" onClick={() => setBulkDeleteOpen(true)}>
+            Remove from library…
+          </Button>
+          <Button size="small" variant="text" onClick={() => setRowSelection({})}>
+            Clear selection
+          </Button>
+        </Stack>
       ) : null}
 
       {repertoireSongs.length > 0 && viewMode === 'table' ? (
@@ -882,7 +1090,7 @@ export function LibraryScreen(): React.ReactElement {
                           size="small"
                           color="primary"
                           variant="outlined"
-                          label="Working on"
+                          label="Currently practicing"
                           sx={{ mt: 0.75, height: 22, fontWeight: 600 }}
                         />
                       ) : null}
@@ -982,6 +1190,7 @@ export function LibraryScreen(): React.ReactElement {
         spotifyLinked={spotifyLinked}
         existingSongs={songs}
         onSaveSong={saveSong}
+        importPlacement={importPlacement}
       />
       <BulkPerformanceImportDialog
         open={bulkPerfOpen}
@@ -1019,6 +1228,42 @@ export function LibraryScreen(): React.ReactElement {
           }}
         />
       )}
+
+      <Dialog open={bulkTagOpen} onClose={() => setBulkTagOpen(false)} fullWidth maxWidth="xs">
+        <DialogTitle sx={encoreDialogTitleSx}>Add tag to {selectedSongIds.size} songs</DialogTitle>
+        <DialogContent sx={encoreDialogContentSx}>
+          <TextField
+            margin="dense"
+            label="Tag"
+            fullWidth
+            value={bulkTagInput}
+            onChange={(e) => setBulkTagInput(e.target.value)}
+            placeholder="e.g. Wedding"
+          />
+        </DialogContent>
+        <DialogActions sx={encoreDialogActionsSx}>
+          <Button onClick={() => setBulkTagOpen(false)}>Cancel</Button>
+          <Button variant="contained" onClick={() => void bulkAddTag()} disabled={!bulkTagInput.trim()}>
+            Apply
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={bulkDeleteOpen} onClose={() => setBulkDeleteOpen(false)}>
+        <DialogTitle sx={encoreDialogTitleSx}>Remove {selectedSongIds.size} songs?</DialogTitle>
+        <DialogContent sx={encoreDialogContentSx}>
+          <Typography variant="body2" color="text.secondary">
+            This deletes the songs from your library on this device (and from Drive after the next sync). Performances
+            linked to these songs may become orphaned.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={encoreDialogActionsSx}>
+          <Button onClick={() => setBulkDeleteOpen(false)}>Cancel</Button>
+          <Button color="error" variant="contained" onClick={() => void bulkRemoveSongs()}>
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

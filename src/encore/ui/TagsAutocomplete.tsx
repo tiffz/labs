@@ -26,6 +26,11 @@ export interface TagsAutocompleteProps {
   fullWidth?: boolean;
   /** Render compact (no label, single row) for inline-edit contexts. */
   dense?: boolean;
+  /**
+   * When true, committed tags are not shown as chips inside the input.
+   * Use when the parent already lists every tag (e.g. inline chip row + popover editor).
+   */
+  omitInputChips?: boolean;
 }
 
 const filter = createFilterOptions<string>({
@@ -47,6 +52,7 @@ export function TagsAutocomplete(props: TagsAutocompleteProps): React.ReactEleme
     size = 'small',
     fullWidth = true,
     dense = false,
+    omitInputChips = false,
   } = props;
 
   const options = useMemo(() => {
@@ -107,20 +113,23 @@ export function TagsAutocomplete(props: TagsAutocompleteProps): React.ReactEleme
           </li>
         );
       }}
-      renderTags={(items, getTagProps) =>
-        items.map((tag, index) => {
-          const { key, ...tagProps } = getTagProps({ index });
-          return (
-            <Chip
-              {...tagProps}
-              key={key ?? `${tag}-${index}`}
-              size={size}
-              label={tag}
-              variant="filled"
-              sx={{ fontWeight: 600 }}
-            />
-          );
-        })
+      renderTags={
+        omitInputChips
+          ? () => null
+          : (items, getTagProps) =>
+              items.map((tag, index) => {
+                const { key, ...tagProps } = getTagProps({ index });
+                return (
+                  <Chip
+                    {...tagProps}
+                    key={key ?? `${tag}-${index}`}
+                    size={size}
+                    label={tag}
+                    variant="filled"
+                    sx={{ fontWeight: 600 }}
+                  />
+                );
+              })
       }
       onChange={(_event, raw) => {
         const cleaned = (raw as string[]).map((v) =>

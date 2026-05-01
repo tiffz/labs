@@ -11,6 +11,7 @@ import React, {
 } from 'react';
 import { encoreDb, getSyncMeta, type RepertoireExtrasRow } from '../db/encoreDb';
 import type { EncorePerformance, EncoreSong } from '../types';
+import { syncSongLegacyMediaIds } from '../repertoire/songMediaLinks';
 import { fetchGoogleUserProfile, friendlyGoogleDisplayName } from '../auth/loadGisScript';
 import {
   clearPersistedGoogleSession,
@@ -39,10 +40,16 @@ import {
 } from '../spotify/pkce';
 import type { SyncCheckResult } from '../drive/repertoireSync';
 import { publishSnapshotToDrive, type BuildPublicSnapshotOptions } from '../drive/publicSnapshot';
-import { reorganizeAllPerformanceVideos, syncPerformanceVideo, syncPerformanceVideoFileName } from '../drive/performanceShortcut';
+import { reorganizeAllDriveUploads, type ReorganizeDriveUploadsResult } from '../drive/driveReorganize';
+import { syncPerformanceVideo, syncPerformanceVideoFileName } from '../drive/performanceShortcut';
 import { SpotifyPrivacyAckDialog } from '../components/SpotifyPrivacyAckDialog';
 import { hasSpotifyPrivacyAck, setSpotifyPrivacyAck } from '../spotify/spotifyPrivacyAck';
 import { startSpotifyOAuthFlow } from '../spotify/startSpotifyOAuthFlow';
+import { LabsUndoProvider, useLabsUndo } from '../../shared/undo/LabsUndoContext';
+import { installServerLogger } from '../../shared/utils/serverLogger';
+import { EncoreBlockingJobProvider, useEncoreBlockingJobs } from './EncoreBlockingJobContext';
+
+const serverLogger = installServerLogger('ENCORE');
 
 const GOOGLE_SCOPES = [
   'https://www.googleapis.com/auth/drive.file',
@@ -116,9 +123,17 @@ interface EncoreContextValue {
   libraryReady: boolean;
   refreshLibrary: () => Promise<void>;
   saveRepertoireExtras: (patch: Partial<Omit<RepertoireExtrasRow, 'id'>>) => Promise<void>;
-  saveSong: (song: EncoreSong) => Promise<void>;
+  /**
+   * Persist a song.
+   *
+   * Pass `silentUndo: true` for autosave-driven writes that should not push a
+   * per-tick undo entry (e.g. SongPage debounced autosave). When silent, the
+   * caller is responsible for pushing a single combined undo at the explicit
+   * commit boundary (e.g. on navigate-away).
+   */
+  saveSong: (song: EncoreSong, options?: { silentUndo?: boolean }) => Promise<void>;
   deleteSong: (id: string) => Promise<void>;
-  savePerformance: (p: EncorePerformance) => Promise<void>;
+  savePerformance: (p: EncorePerformance, options?: { silentUndo?: boolean }) => Promise<void>;
   deletePerformance: (id: string) => Promise<void>;
   syncState: SyncUiState;
   syncMessage: string | null;
@@ -136,8 +151,8 @@ interface EncoreContextValue {
     publicVideoCount: number;
     privateVideoCount: number;
   }>;
-  /** Re-name every Encore-managed performance video file and create any missing shortcuts. */
-  reorganizePerformanceVideos: () => Promise<{ renamed: number; skipped: number; errors: number; shortcutsCreated: number }>;
+  /** Re-name / move Encore-managed Drive uploads: performance videos and song attachments (charts, etc.). */
+  reorganizeDriveUploads: () => Promise<ReorganizeDriveUploadsResult>;
 }
 
 const EncoreContext = createContext<EncoreContextValue | null>(null);
@@ -163,7 +178,23 @@ async function requestGoogleSilentToken(clientId: string, scope: string): Promis
   }
 }
 
+function cloneEncoreUndoSnapshot<T>(value: T): T {
+  return structuredClone(value);
+}
+
 export function EncoreProvider({ children }: { children: React.ReactNode }): React.ReactElement {
+  return (
+    <LabsUndoProvider>
+      <EncoreBlockingJobProvider>
+        <EncoreProviderImpl>{children}</EncoreProviderImpl>
+      </EncoreBlockingJobProvider>
+    </LabsUndoProvider>
+  );
+}
+
+function EncoreProviderImpl({ children }: { children: React.ReactNode }): React.ReactElement {
+  const { push: pushUndo, isReplayingRef, clear: clearUndoStack } = useLabsUndo();
+  const { withBlockingJob } = useEncoreBlockingJobs();
   const [googleAuthReady, setGoogleAuthReady] = useState(false);
   const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(null);
   const [googleGateBypassed, setGoogleGateBypassed] = useState(() =>
@@ -430,11 +461,12 @@ export function EncoreProvider({ children }: { children: React.ReactNode }): Rea
     setGoogleAccessToken(null);
     setDisplayName(null);
     setConflict(null);
+    clearUndoStack();
     clearPersistedGoogleSession();
     if (token) revokeGoogleAccessTokenBestEffort(token);
     writeGoogleGateBypassed(true);
     setGoogleGateBypassed(true);
-  }, [googleAccessToken]);
+  }, [clearUndoStack, googleAccessToken]);
 
   const retryAccessGate = useCallback(() => {
     setAccessDenied(false);
@@ -443,25 +475,27 @@ export function EncoreProvider({ children }: { children: React.ReactNode }): Rea
 
   const runSync = useCallback(async () => {
     if (!googleAccessToken) return;
-    setSyncState('syncing');
-    setSyncMessage(null);
-    const result = await runInitialSyncIfPossible(googleAccessToken);
-    if (!result.ok && result.conflict?.conflict) {
-      setSyncState('conflict');
-      setConflict(result.conflict);
+    await withBlockingJob('Syncing with Google Drive…', async () => {
+      setSyncState('syncing');
+      setSyncMessage(null);
+      const result = await runInitialSyncIfPossible(googleAccessToken);
+      if (!result.ok && result.conflict?.conflict) {
+        setSyncState('conflict');
+        setConflict(result.conflict);
+        await refreshLibrary();
+        return;
+      }
+      if (!result.ok && result.error) {
+        setSyncState('error');
+        setSyncMessage(result.error);
+        await refreshLibrary();
+        return;
+      }
+      setSyncState('idle');
+      setConflict(null);
       await refreshLibrary();
-      return;
-    }
-    if (!result.ok && result.error) {
-      setSyncState('error');
-      setSyncMessage(result.error);
-      await refreshLibrary();
-      return;
-    }
-    setSyncState('idle');
-    setConflict(null);
-    await refreshLibrary();
-  }, [googleAccessToken, refreshLibrary]);
+    });
+  }, [googleAccessToken, refreshLibrary, withBlockingJob]);
 
   const lastAutoSyncTokenRef = useRef<string | null>(null);
   useEffect(() => {
@@ -477,70 +511,167 @@ export function EncoreProvider({ children }: { children: React.ReactNode }): Rea
   const scheduleBackgroundSync = useCallback(() => {
     if (!googleAccessToken) return;
     void (async () => {
-      try {
-        const meta = await getSyncMeta();
-        if (!meta.repertoireFileId) return;
-        await pushRepertoireToDrive(googleAccessToken, meta.repertoireFileId, meta.lastRemoteEtag);
-        setSyncState('idle');
-        setSyncMessage(null);
-      } catch (e) {
-        setSyncState('error');
-        setSyncMessage(e instanceof Error ? e.message : String(e));
-      }
+      // Wrap in a *silent* blocking job: the snackbar stays hidden (so the
+      // autosave-driven push isn't a noisy distraction on every keystroke),
+      // but the beforeunload guard still fires so users aren't surprised by a
+      // half-written push when they close the tab. See PR 4 of the Encore
+      // quality sweep.
+      await withBlockingJob(
+        'Saving to Drive…',
+        async () => {
+          try {
+            const meta = await getSyncMeta();
+            if (!meta.repertoireFileId) return;
+            await pushRepertoireToDrive(googleAccessToken, meta.repertoireFileId, meta.lastRemoteEtag);
+            setSyncState('idle');
+            setSyncMessage(null);
+          } catch (e) {
+            setSyncState('error');
+            setSyncMessage(e instanceof Error ? e.message : String(e));
+          }
+        },
+        { silent: true },
+      );
     })();
-  }, [googleAccessToken]);
+  }, [googleAccessToken, withBlockingJob]);
 
   const saveRepertoireExtras = useCallback(
     async (patch: Partial<Omit<RepertoireExtrasRow, 'id'>>) => {
       const now = new Date().toISOString();
       const cur = (await encoreDb.repertoireExtras.get('default')) ?? defaultRepertoireExtrasRow(now);
       const next: RepertoireExtrasRow = { ...cur, ...patch, id: 'default', updatedAt: now };
+      const prevSnap = cloneEncoreUndoSnapshot(cur);
+      const nextSnap = cloneEncoreUndoSnapshot(next);
       await encoreDb.repertoireExtras.put(next);
       setRepertoireExtras(next);
       scheduleBackgroundSync();
+      if (!isReplayingRef.current) {
+        pushUndo({
+          undo: async () => {
+            await encoreDb.repertoireExtras.put(prevSnap);
+            setRepertoireExtras(prevSnap);
+            scheduleBackgroundSync();
+          },
+          redo: async () => {
+            await encoreDb.repertoireExtras.put(nextSnap);
+            setRepertoireExtras(nextSnap);
+            scheduleBackgroundSync();
+          },
+        });
+      }
     },
-    [scheduleBackgroundSync],
+    [isReplayingRef, pushUndo, scheduleBackgroundSync],
   );
 
   const saveSong = useCallback(
-    async (song: EncoreSong) => {
+    async (song: EncoreSong, options?: { silentUndo?: boolean }) => {
       const previous = await encoreDb.songs.get(song.id);
-      await encoreDb.songs.put(song);
+      const synced = syncSongLegacyMediaIds(song);
+      const prevSnap = previous ? cloneEncoreUndoSnapshot(previous) : undefined;
+      const nextSnap = cloneEncoreUndoSnapshot(synced);
+      await encoreDb.songs.put(synced);
       await refreshLibrary();
       scheduleBackgroundSync();
-      if (googleAccessToken && previous && previous.title !== song.title) {
+      if (googleAccessToken && previous && previous.title !== synced.title) {
         void (async () => {
           try {
             const songPerformances = await encoreDb.performances.where('songId').equals(song.id).toArray();
             await Promise.all(
               songPerformances
                 .filter((p) => p.videoShortcutDriveFileId || p.videoTargetDriveFileId)
-                .map((p) => syncPerformanceVideoFileName(googleAccessToken, p, song).catch(() => undefined)),
+                .map((p) =>
+                  syncPerformanceVideoFileName(googleAccessToken, p, synced).catch((err) => {
+                    serverLogger.warn('encore.saveSong: video rename failed', err);
+                  }),
+                ),
             );
-          } catch {
-            /* best-effort rename; ignore */
+          } catch (err) {
+            serverLogger.warn('encore.saveSong: video rename batch failed', err);
           }
         })();
       }
+      if (!isReplayingRef.current && !options?.silentUndo) {
+        const id = synced.id;
+        pushUndo({
+          undo: async () => {
+            if (prevSnap) {
+              await encoreDb.songs.put(prevSnap);
+            } else {
+              await encoreDb.songs.delete(id);
+            }
+            await refreshLibrary();
+            scheduleBackgroundSync();
+          },
+          redo: async () => {
+            await encoreDb.songs.put(nextSnap);
+            await refreshLibrary();
+            scheduleBackgroundSync();
+          },
+        });
+      }
     },
-    [googleAccessToken, refreshLibrary, scheduleBackgroundSync]
+    [googleAccessToken, isReplayingRef, pushUndo, refreshLibrary, scheduleBackgroundSync],
   );
 
   const deleteSong = useCallback(
     async (id: string) => {
+      const prevSong = await encoreDb.songs.get(id);
+      if (!prevSong) return;
+      const prevPerfs = await encoreDb.performances.where('songId').equals(id).toArray();
+      const songSnap = cloneEncoreUndoSnapshot(prevSong);
+      const perfsSnap = prevPerfs.map((p) => cloneEncoreUndoSnapshot(p));
       await encoreDb.songs.delete(id);
       await encoreDb.performances.where('songId').equals(id).delete();
       await refreshLibrary();
       scheduleBackgroundSync();
+      if (!isReplayingRef.current) {
+        pushUndo({
+          undo: async () => {
+            await encoreDb.songs.put(songSnap);
+            for (const perf of perfsSnap) {
+              await encoreDb.performances.put(perf);
+            }
+            await refreshLibrary();
+            scheduleBackgroundSync();
+          },
+          redo: async () => {
+            await encoreDb.songs.delete(id);
+            await encoreDb.performances.where('songId').equals(id).delete();
+            await refreshLibrary();
+            scheduleBackgroundSync();
+          },
+        });
+      }
     },
-    [refreshLibrary, scheduleBackgroundSync]
+    [isReplayingRef, pushUndo, refreshLibrary, scheduleBackgroundSync],
   );
 
   const savePerformance = useCallback(
-    async (p: EncorePerformance) => {
+    async (p: EncorePerformance, options?: { silentUndo?: boolean }) => {
+      const previous = await encoreDb.performances.get(p.id);
+      const prevSnap = previous ? cloneEncoreUndoSnapshot(previous) : undefined;
+      const nextSnap = cloneEncoreUndoSnapshot(p);
       await encoreDb.performances.put(p);
       await refreshLibrary();
       scheduleBackgroundSync();
+      if (!isReplayingRef.current && !options?.silentUndo) {
+        pushUndo({
+          undo: async () => {
+            if (prevSnap) {
+              await encoreDb.performances.put(prevSnap);
+            } else {
+              await encoreDb.performances.delete(p.id);
+            }
+            await refreshLibrary();
+            scheduleBackgroundSync();
+          },
+          redo: async () => {
+            await encoreDb.performances.put(nextSnap);
+            await refreshLibrary();
+            scheduleBackgroundSync();
+          },
+        });
+      }
       // Best-effort: ensure Drive footprint matches (create missing shortcut for picked
       // files, rename to canonical naming when relevant metadata changed).
       if (googleAccessToken && p.videoTargetDriveFileId) {
@@ -557,66 +688,98 @@ export function EncoreProvider({ children }: { children: React.ReactNode }): Rea
               await refreshLibrary();
               scheduleBackgroundSync();
             }
-          } catch {
-            /* best-effort */
+          } catch (err) {
+            serverLogger.warn('encore.savePerformance: video shortcut sync failed', err);
           }
         })();
       }
     },
-    [googleAccessToken, refreshLibrary, scheduleBackgroundSync]
+    [googleAccessToken, isReplayingRef, pushUndo, refreshLibrary, scheduleBackgroundSync],
   );
 
   const deletePerformance = useCallback(
     async (id: string) => {
+      const prev = await encoreDb.performances.get(id);
+      if (!prev) return;
+      const snap = cloneEncoreUndoSnapshot(prev);
       await encoreDb.performances.delete(id);
       await refreshLibrary();
       scheduleBackgroundSync();
+      if (!isReplayingRef.current) {
+        pushUndo({
+          undo: async () => {
+            await encoreDb.performances.put(snap);
+            await refreshLibrary();
+            scheduleBackgroundSync();
+          },
+          redo: async () => {
+            await encoreDb.performances.delete(id);
+            await refreshLibrary();
+            scheduleBackgroundSync();
+          },
+        });
+      }
     },
-    [refreshLibrary, scheduleBackgroundSync]
+    [isReplayingRef, pushUndo, refreshLibrary, scheduleBackgroundSync],
   );
 
   const resolveConflictRemote = useCallback(async () => {
     if (!googleAccessToken) return;
-    setSyncState('syncing');
-    try {
-      await resolveConflictUseRemoteThenPush(googleAccessToken);
-      setConflict(null);
-      setSyncState('idle');
-      await refreshLibrary();
-    } catch (e) {
-      setSyncState('error');
-      setSyncMessage(e instanceof Error ? e.message : String(e));
-    }
-  }, [googleAccessToken, refreshLibrary]);
+    await withBlockingJob('Resolving conflict (using Google Drive)…', async () => {
+      setSyncState('syncing');
+      try {
+        await resolveConflictUseRemoteThenPush(googleAccessToken);
+        setConflict(null);
+        setSyncState('idle');
+        await refreshLibrary();
+      } catch (e) {
+        setSyncState('error');
+        setSyncMessage(e instanceof Error ? e.message : String(e));
+      }
+    });
+  }, [googleAccessToken, refreshLibrary, withBlockingJob]);
 
   const resolveConflictLocal = useCallback(async () => {
     if (!googleAccessToken) return;
-    setSyncState('syncing');
-    try {
-      await resolveConflictKeepLocal(googleAccessToken);
-      setConflict(null);
-      setSyncState('idle');
-      await refreshLibrary();
-    } catch (e) {
-      setSyncState('error');
-      setSyncMessage(e instanceof Error ? e.message : String(e));
-    }
-  }, [googleAccessToken, refreshLibrary]);
+    await withBlockingJob('Resolving conflict (keeping this device)…', async () => {
+      setSyncState('syncing');
+      try {
+        await resolveConflictKeepLocal(googleAccessToken);
+        setConflict(null);
+        setSyncState('idle');
+        await refreshLibrary();
+      } catch (e) {
+        setSyncState('error');
+        setSyncMessage(e instanceof Error ? e.message : String(e));
+      }
+    });
+  }, [googleAccessToken, refreshLibrary, withBlockingJob]);
 
   const dismissConflict = useCallback(() => {
     setConflict(null);
     setSyncState('idle');
   }, []);
 
-  const publishPublicSnapshot = useCallback(async (options?: BuildPublicSnapshotOptions) => {
-    if (!googleAccessToken) throw new Error('Not signed in');
-    return publishSnapshotToDrive(googleAccessToken, options);
-  }, [googleAccessToken]);
+  const effectiveDisplayName = useMemo<string | null>(() => {
+    const override = repertoireExtras.ownerDisplayName?.trim();
+    if (override) return override;
+    return displayName?.trim() || null;
+  }, [repertoireExtras.ownerDisplayName, displayName]);
 
-  const reorganizePerformanceVideos = useCallback(async () => {
+  const publishPublicSnapshot = useCallback(
+    async (options?: BuildPublicSnapshotOptions) => {
+      if (!googleAccessToken) throw new Error('Not signed in');
+      return withBlockingJob('Publishing guest snapshot…', () =>
+        publishSnapshotToDrive(googleAccessToken, options, effectiveDisplayName),
+      );
+    },
+    [googleAccessToken, effectiveDisplayName, withBlockingJob],
+  );
+
+  const reorganizeDriveUploads = useCallback(async () => {
     if (!googleAccessToken) throw new Error('Not signed in');
-    return reorganizeAllPerformanceVideos(googleAccessToken);
-  }, [googleAccessToken]);
+    return withBlockingJob('Organizing files in Google Drive…', () => reorganizeAllDriveUploads(googleAccessToken));
+  }, [googleAccessToken, withBlockingJob]);
 
   const setOwnerDisplayName = useCallback(
     async (name: string) => {
@@ -630,18 +793,28 @@ export function EncoreProvider({ children }: { children: React.ReactNode }): Rea
         ownerDisplayName: trimmed || undefined,
         updatedAt: now,
       };
+      const prevSnap = cloneEncoreUndoSnapshot(cur);
+      const nextSnap = cloneEncoreUndoSnapshot(next);
       await encoreDb.repertoireExtras.put(next);
       setRepertoireExtras(next);
       scheduleBackgroundSync();
+      if (!isReplayingRef.current) {
+        pushUndo({
+          undo: async () => {
+            await encoreDb.repertoireExtras.put(prevSnap);
+            setRepertoireExtras(prevSnap);
+            scheduleBackgroundSync();
+          },
+          redo: async () => {
+            await encoreDb.repertoireExtras.put(nextSnap);
+            setRepertoireExtras(nextSnap);
+            scheduleBackgroundSync();
+          },
+        });
+      }
     },
-    [scheduleBackgroundSync],
+    [isReplayingRef, pushUndo, scheduleBackgroundSync],
   );
-
-  const effectiveDisplayName = useMemo<string | null>(() => {
-    const override = repertoireExtras.ownerDisplayName?.trim();
-    if (override) return override;
-    return displayName?.trim() || null;
-  }, [repertoireExtras.ownerDisplayName, displayName]);
 
   const value = useMemo<EncoreContextValue>(
     () => ({
@@ -681,7 +854,7 @@ export function EncoreProvider({ children }: { children: React.ReactNode }): Rea
       resolveConflictLocal,
       dismissConflict,
       publishPublicSnapshot,
-      reorganizePerformanceVideos,
+      reorganizeDriveUploads,
     }),
     [
       googleAuthReady,
@@ -720,7 +893,7 @@ export function EncoreProvider({ children }: { children: React.ReactNode }): Rea
       resolveConflictLocal,
       dismissConflict,
       publishPublicSnapshot,
-      reorganizePerformanceVideos,
+      reorganizeDriveUploads,
     ]
   );
 

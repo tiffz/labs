@@ -161,6 +161,16 @@ Migrate existing MUI `Popover` usages opportunistically (i.e. when touching the 
 
 For local-only debug surfaces (e.g. practice timelines), wrap app-specific content in `LabsDebugDock` from [`src/shared/components/LabsDebugDock.tsx`](./components/LabsDebugDock.tsx). It provides a consistent bottom dock, collapse affordance, optional **Copy bundle** (JSON for bug reports / LLM paste), and an optional `reportOuterHeightCssVar` hook when the main app layout must subtract dock height (see scales `--debug-panel-height`).
 
+## App-specific shared primitives
+
+Some primitives live under `src/<app>/ui/` rather than `src/shared/components/` because their data shapes are app-specific, but they should still be discoverable from this conventions doc.
+
+### Encore
+
+- **`src/encore/ui/EncoreMediaLinkRow.tsx`** — single row primitive for displaying an `EncoreMediaLink` (Spotify, YouTube, or Drive chart). Encapsulates the icon + caption + optional primary star + optional open + optional remove affordances. Used by `SongPage` for reference recordings, backing tracks, and chart attachments. Use this instead of hand-rolling another media-link strip; if you find yourself rendering a list of `EncoreMediaLink` anywhere new (e.g. PracticeScreen, GuestShareView), wrap each row in this primitive so spacing and accessibility stay consistent. The "Make primary <slot>" tooltip/aria-label copy is centralized in this file (see [`src/encore/COPY_STYLE.md`](../encore/COPY_STYLE.md) § _Primary-star affordance_).
+- **`src/encore/ui/EncoreStreamingHoverCard.tsx`** — hover popover that resolves a Spotify/YouTube link into title + artist via the appropriate API (Spotify Web API, YouTube oEmbed). Wrap any `EncoreMediaLinkRow` (or any other Spotify/YouTube link) in this hover card to give users at-a-glance metadata without leaving the page. Caches results for the session.
+- **`src/encore/ui/EncoreSpotifyTrackListRow.tsx`** — album art + title + artist row, used by `renderSpotifyTrackAutocompleteOption` and the manual Spotify picker inside `PlaylistImportDialog` so search results look identical everywhere a Spotify track is offered. Use this for any new Spotify search/result list.
+
 ## Related Docs
 
 - [Music Input Token Contracts](./components/music/THEMING_DECISIONS.md)

@@ -7,6 +7,24 @@
     <link rel="apple-touch-icon" href="/icons/favicon-encore.png?v=1" />
     <meta name="theme-color" content="#c026d3" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      Guest share is #/share/<driveFileId> (fragment not sent to server). Inline guard so noindex
+      is present before the JS bundle; keep the regex in sync with src/encore/seo/guestShareRobots.ts.
+    -->
+    <script>
+      (function () {
+        try {
+          var h = window.location.hash || '';
+          if (!/^#\/share\/[^/?#]+$/.test(h)) return;
+          if (document.getElementById('encore-guest-share-robots')) return;
+          var m = document.createElement('meta');
+          m.id = 'encore-guest-share-robots';
+          m.setAttribute('name', 'robots');
+          m.setAttribute('content', 'noindex, nofollow, noarchive, nosnippet');
+          document.head.appendChild(m);
+        } catch (e) {}
+      })();
+    </script>
     <meta name="color-scheme" content="light" />
     <style>html{color-scheme:light;background:#fbf7fb;color:#4c1d95}</style>
     <meta name="description" content="Track musical repertoire, practice journals, and performance history. Local-first with optional Google Drive sync." />

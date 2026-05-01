@@ -1,4 +1,4 @@
-import type { Theme } from '@mui/material/styles';
+import { alpha, type Theme } from '@mui/material/styles';
 import type { SystemStyleObject } from '@mui/system';
 
 /**
@@ -18,6 +18,29 @@ export const encoreShadowLift = '0 12px 40px rgba(76, 29, 149, 0.08)' as const;
  * border at all" and we reach for this only when a separator is required.
  */
 export const encoreHairline = 'rgba(76, 29, 149, 0.04)' as const;
+
+/**
+ * Inline media row (Spotify catalog strip, reference/backing links, charts): white paper, lavender
+ * hairline, and {@link encoreShadowSurface} so chips match Encore surfaces instead of grey
+ * `action.hover` pills.
+ */
+export function encoreMediaLinkRowSx(theme: Theme, isPrimary: boolean): SystemStyleObject<Theme> {
+  return {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 0.5,
+    pl: 0.875,
+    pr: 0.375,
+    py: 0.375,
+    borderRadius: encoreRadius,
+    border: 1,
+    borderStyle: 'solid',
+    borderColor: isPrimary ? alpha(theme.palette.primary.main, 0.3) : encoreHairline,
+    maxWidth: '100%',
+    bgcolor: isPrimary ? alpha(theme.palette.primary.main, 0.08) : theme.palette.background.paper,
+    boxShadow: encoreShadowSurface,
+  };
+}
 
 /** Primary content column: one max width for list and detail screens (8px grid, ~82rem). */
 export const encoreMaxWidthPage: SystemStyleObject<Theme> = {

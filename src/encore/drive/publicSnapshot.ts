@@ -15,6 +15,9 @@ import { fetchPublicDriveJson } from './bootstrapFolders';
 import { PUBLIC_SNAPSHOT_FILE_NAME } from './constants';
 import { driveFileWebUrl } from './driveWebUrls';
 import { encoreDb, getSyncMeta, patchSyncMeta } from '../db/encoreDb';
+import { orderSnapshotSongsByLatestPerformanceDesc } from './publicSnapshotSort';
+
+export { orderSnapshotSongsByLatestPerformanceDesc } from './publicSnapshotSort';
 
 function qJsonInParent(name: string, parentId: string): string {
   return `name='${name.replace(/'/g, "\\'")}' and mimeType='application/json' and '${parentId}' in parents and trashed=false`;
@@ -70,6 +73,7 @@ export async function buildPublicSnapshot(
   options?: BuildPublicSnapshotOptions,
 ): Promise<PublicSnapshot> {
   const { songs: songsOut, performances: performancesOut } = filterSnapshotSource(songs, performances, options);
+  const songsOrdered = orderSnapshotSongsByLatestPerformanceDesc(songsOut, performancesOut);
   const performanceRows: PublicSnapshotPerformance[] = await Promise.all(
     performancesOut.map(async (p) => {
       const videoOpenUrl = await resolvePublicVideoUrl(accessToken, p);
@@ -88,7 +92,7 @@ export async function buildPublicSnapshot(
     version: 1,
     generatedAt: new Date().toISOString(),
     ownerDisplayName: ownerDisplayName?.trim() || undefined,
-    songs: songsOut.map((s) => ({
+    songs: songsOrdered.map((s) => ({
       id: s.id,
       title: s.title,
       artist: s.artist,
@@ -97,6 +101,12 @@ export async function buildPublicSnapshot(
       youtubeVideoId: s.youtubeVideoId,
       performanceKey: s.performanceKey,
       tags: s.tags && s.tags.length > 0 ? s.tags : undefined,
+      ...(s.referenceLinks && s.referenceLinks.length > 0
+        ? { referenceLinks: s.referenceLinks }
+        : {}),
+      ...(s.backingLinks && s.backingLinks.length > 0
+        ? { backingLinks: s.backingLinks }
+        : {}),
     })),
     performances: performanceRows,
   };
@@ -149,17 +159,15 @@ export interface PublishSnapshotResult {
 export async function publishSnapshotToDrive(
   accessToken: string,
   publishOptions?: BuildPublicSnapshotOptions,
+  /** Same resolution as in-app header: synced override, else Google profile name from the signed-in session. */
+  ownerDisplayNameForPublish?: string | null,
 ): Promise<PublishSnapshotResult> {
   const songs = await encoreDb.songs.toArray();
   const performances = await encoreDb.performances.toArray();
   const extras = await encoreDb.repertoireExtras.get('default');
-  const snap = await buildPublicSnapshot(
-    accessToken,
-    songs,
-    performances,
-    extras?.ownerDisplayName,
-    publishOptions,
-  );
+  const ownerName =
+    ownerDisplayNameForPublish?.trim() || extras?.ownerDisplayName?.trim() || undefined;
+  const snap = await buildPublicSnapshot(accessToken, songs, performances, ownerName, publishOptions);
   const body = JSON.stringify(snap);
   const fileId = await ensureSnapshotFileId(accessToken);
   const patchResult = await drivePatchJsonMedia(accessToken, fileId, body, undefined);

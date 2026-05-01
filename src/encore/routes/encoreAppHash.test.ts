@@ -9,12 +9,23 @@ describe('parseEncoreAppHash', () => {
   it('parses library', () => {
     expect(parseEncoreAppHash('#/library')).toEqual({ kind: 'library' });
   });
+
+  it('parses help and legacy import-guide URL', () => {
+    expect(parseEncoreAppHash('#/help')).toEqual({ kind: 'help' });
+    expect(parseEncoreAppHash('#/settings/repertoire/import-guide')).toEqual({ kind: 'help' });
+    expect(parseEncoreAppHash('#/settings/repertoire')).toEqual({ kind: 'repertoireSettings' });
+  });
 });
 
 describe('navigateEncore', () => {
   it('sets hash for performances without throwing', () => {
     navigateEncore({ kind: 'performances' });
     expect(window.location.hash).toBe('#/performances');
+  });
+
+  it('sets hash for help', () => {
+    navigateEncore({ kind: 'help' });
+    expect(window.location.hash).toBe('#/help');
   });
 
   afterAll(() => {

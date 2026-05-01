@@ -34,8 +34,8 @@ export interface PerformanceVideoSyncResult {
  *   folder (Drive-picked file), ensure a shortcut to it exists in `Encore_App/Performances`.
  * - If the target lives **inside** the Performances folder (uploaded directly), no
  *   shortcut is needed; we leave the file as-is.
- * - Rename the shortcut (or in-folder upload) to `YYYY-MM-DD - Song - Venue` so Drive
- *   stays organized as song titles, dates, and venues evolve.
+ * - Rename the shortcut (or in-folder upload) to `YYYY-MM-DD - Title - Artist` (venue is not in the filename;
+ *   use Drive folder names during bulk import). Drive stays organized as metadata evolves.
  *
  * Safe to call repeatedly; no-op when nothing needs to change.
  */

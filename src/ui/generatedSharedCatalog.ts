@@ -7939,6 +7939,168 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-undo-islabsundohotkeysuppressedtarget-ts-islabsundohotkeysuppressedtarget",
+    "name": "isLabsUndoHotkeySuppressedTarget",
+    "path": "src/shared/undo/isLabsUndoHotkeySuppressedTarget.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "When true, Encore/Labs app-level undo should not run so the browser or widget can handle ⌘Z / Ctrl+Z (e.g. text field typing undo).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-undo-labsundocontext-tsx-labsundocommit",
+    "name": "LabsUndoCommit",
+    "path": "src/shared/undo/LabsUndoContext.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-undo-labsundocontext-tsx-labsundocontextvalue",
+    "name": "LabsUndoContextValue",
+    "path": "src/shared/undo/LabsUndoContext.tsx",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-undo-labsundocontext-tsx-labsundoprovider",
+    "name": "LabsUndoProvider",
+    "path": "src/shared/undo/LabsUndoContext.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-undo-labsundocontext-tsx-uselabsundo",
+    "name": "useLabsUndo",
+    "path": "src/shared/undo/LabsUndoContext.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-undo-labsundostack-ts-combineundocommits",
+    "name": "combineUndoCommits",
+    "path": "src/shared/undo/labsUndoStack.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Combine many small commits into a single undo entry. Pass an async function that receives a `queue`; call `queue.push({ undo, redo })` for each individual mutation as it commits. After the function resolves, the collected entries are folded into a single commit on the stack so the user undoes them as one action. Order semantics: - On undo, individual commits are reversed in *reverse* order (LIFO), so the last write is undone first. This matches a sequential redo of the original operations. - On redo, individual commits are replayed in their original (FIFO) order. If the function throws, partial entries are *not* committed (caller is responsible for any compensating cleanup). If the function pushes zero entries, nothing is added to the stack.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-undo-labsundostack-ts-createlabsundostack",
+    "name": "createLabsUndoStack",
+    "path": "src/shared/undo/labsUndoStack.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-undo-labsundostack-ts-labsundobatchqueue",
+    "name": "LabsUndoBatchQueue",
+    "path": "src/shared/undo/labsUndoStack.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-undo-labsundostack-ts-labsundocommit",
+    "name": "LabsUndoCommit",
+    "path": "src/shared/undo/labsUndoStack.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-undo-labsundostack-ts-labsundostack",
+    "name": "LabsUndoStack",
+    "path": "src/shared/undo/labsUndoStack.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-undo-labsundostack-ts-labsundostacksnapshot",
+    "name": "LabsUndoStackSnapshot",
+    "path": "src/shared/undo/labsUndoStack.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
     "id": "src-shared-utils-analytics-ts-appanalytics",
     "name": "AppAnalytics",
     "path": "src/shared/utils/analytics.ts",

@@ -20,9 +20,10 @@ import {
 } from '../theme/encoreUiTokens';
 import { encorePagePaddingTop, encoreScreenPaddingX } from '../theme/encoreM3Layout';
 import { EncorePageHeader } from '../ui/EncorePageHeader';
+import { encorePossessivePageTitle } from '../utils/encorePossessivePageTitle';
 
 export function RepertoireSettingsScreen(): React.ReactElement {
-  const { repertoireExtras, saveRepertoireExtras } = useEncore();
+  const { repertoireExtras, saveRepertoireExtras, effectiveDisplayName } = useEncore();
   const [venueInput, setVenueInput] = useState('');
   const [milestoneLabel, setMilestoneLabel] = useState('');
 
@@ -33,9 +34,11 @@ export function RepertoireSettingsScreen(): React.ReactElement {
 
   const sortedMilestones = useMemo(
     () =>
-      [...repertoireExtras.milestoneTemplate]
-        .filter((m) => !m.archived)
-        .sort((a, b) => a.sortOrder - b.sortOrder || a.label.localeCompare(b.label)),
+      [...repertoireExtras.milestoneTemplate].sort((a, b) => {
+        const arch = Number(Boolean(a.archived)) - Number(Boolean(b.archived));
+        if (arch !== 0) return arch;
+        return a.sortOrder - b.sortOrder || a.label.localeCompare(b.label);
+      }),
     [repertoireExtras.milestoneTemplate],
   );
 
@@ -103,8 +106,7 @@ export function RepertoireSettingsScreen(): React.ReactElement {
       }}
     >
       <EncorePageHeader
-        kicker="Library"
-        title="Library settings"
+        title={encorePossessivePageTitle(effectiveDisplayName, 'settings')}
         description="Venues feed autocomplete and bulk import matching. Milestones are your shared checklist on every song — voice-first; add keys or staging steps you care about."
       />
 
@@ -170,7 +172,8 @@ export function RepertoireSettingsScreen(): React.ReactElement {
           Global milestones
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Each song gets these rows as a checklist. You can mark a row N/A on a song, or add song-only rows from the song page.
+          Each song gets these rows as a checklist. You can mark a row N/A on a song, or add song-only rows from the
+          song page. Archived rows appear at the bottom here; uncheck Archived on a row to show it on songs again.
         </Typography>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mb: 2 }}>
           <TextField
@@ -190,14 +193,22 @@ export function RepertoireSettingsScreen(): React.ReactElement {
             Add
           </Button>
         </Stack>
-        {sortedMilestones.length === 0 ? (
+        {repertoireExtras.milestoneTemplate.length === 0 ? (
           <Typography variant="body2" color="text.secondary">
             No milestones yet. Add steps like “Sing with karaoke track in time” or “Comp keys while singing.”
           </Typography>
         ) : (
           <Stack spacing={1.5}>
             {sortedMilestones.map((m) => (
-              <Stack key={m.id} direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }}>
+              <Stack
+                key={m.id}
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={1}
+                alignItems={{ sm: 'center' }}
+                sx={{
+                  opacity: m.archived ? 0.72 : 1,
+                }}
+              >
                 <TextField
                   size="small"
                   fullWidth
@@ -213,7 +224,7 @@ export function RepertoireSettingsScreen(): React.ReactElement {
                       size="small"
                     />
                   }
-                  label="Archived"
+                  label={m.archived ? 'Archived (uncheck to restore)' : 'Archived'}
                   sx={{ flexShrink: 0, m: 0 }}
                 />
                 <IconButton size="small" aria-label={`Delete ${m.label}`} onClick={() => void deleteMilestone(m.id)}>

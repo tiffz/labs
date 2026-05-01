@@ -6,7 +6,7 @@ Instructions for AI coding assistants working in this repo (Cursor, Claude, Code
 
 1. `README.md` — repo layout and quick start.
 2. `DEVELOPMENT.md` — architecture decisions, guardrails, and policy. **This is the authoritative policy document.**
-3. `STYLE_GUIDE.md` — TypeScript + UI/a11y conventions.
+3. `STYLE_GUIDE.md` — TypeScript + UI/a11y conventions (see § _Information density_ for tooltip-first explanatory copy and icon-forward controls on dense screens).
 4. `docs/USER_COPY_STYLE.md` — default voice for user-visible copy across apps.
 5. `docs/SOURCE_OF_TRUTH.md` — precedence map when docs disagree.
 6. `.cursor/rules/*.mdc` — machine-enforced rules (pre-commit checks, app-entry-html, spa-css-conventions, react-a11y).

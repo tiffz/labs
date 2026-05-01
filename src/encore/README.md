@@ -115,3 +115,64 @@ Under **My Drive**:
 ## Guest URLs
 
 Format: `https://labs.tiffzhang.com/encore/#/share/<FILE_ID>` where `FILE_ID` is the Drive id of `public_snapshot.json`.
+
+## Architecture in 60 seconds
+
+For the full module diagram, see [`ARCHITECTURE.md`](ARCHITECTURE.md). Key points:
+
+### Provider stack
+
+`src/encore/main.tsx` mounts a single `<EncoreProvider>` that composes (outside-in):
+
+```
+LabsUndoProvider                  // src/shared/undo/LabsUndoContext.tsx
+  └─ EncoreBlockingJobProvider    // src/encore/context/EncoreBlockingJobContext.tsx
+       └─ EncoreProviderImpl      // src/encore/context/EncoreContext.tsx (the data + sync layer)
+```
+
+- `LabsUndoProvider` owns the keyboard shortcut (Ctrl/Cmd-Z, Ctrl/Cmd-Shift-Z) and a small per-app stack (`labsUndoStack`). It is shared across labs apps; see [`src/shared/undo/README.md`](../shared/undo/README.md).
+- `EncoreBlockingJobProvider` exposes `useEncoreBlockingJobs().withBlockingJob(label, fn)`. Any background work that the user shouldn't navigate away from goes through it. The provider renders a single bottom snackbar with progress + a "keep this tab open" caption (see [§ Long-running jobs](#long-running-jobs)) and registers a `beforeunload` warning while jobs are non-empty.
+- `EncoreProviderImpl` (a.k.a. `EncoreContext`) holds Dexie-backed `songs`, `performances`, `repertoireExtras`, plus Google/Spotify session state, sync state, conflict state, and CRUD methods. Hooks: `useEncore()` for everything; specialized helpers re-exported from the same file for back-compat.
+
+### Long-running jobs
+
+Always wrap user-launched async work in `withBlockingJob` (or `startBlockingJob` for streaming progress). Examples:
+
+- Drive sync: `runSync` in `EncoreContext`
+- Snapshot publish/unpublish: `publishPublicSnapshot` / `unpublishPublicSnapshot`
+- Drive reorganize: `reorganizeDriveUploads`
+- Bulk imports: `applyImport` (PlaylistImportDialog), `applyAll` (BulkScoreImportDialog, BulkPerformanceImportDialog)
+- Drive uploads (chart, performance video): `handleDriveChartUpload`, `onPickVideoFile`
+
+Rule of thumb: **anything > 1 s that writes to Drive or Dexie should be wrapped**. Synchronous edits and quick local ops do not need it. `scheduleBackgroundSync` (the autosave-driven Drive push) intentionally runs _outside_ the snackbar today; in PR 4 of the quality sweep this becomes a "silent" blocking-job variant that still registers the `beforeunload` warning without rendering the loud snackbar.
+
+### Undo coverage
+
+`LabsUndoProvider` plus per-action `pushUndo` calls in `EncoreContext` cover:
+
+- Save song, delete song
+- Save performance, delete performance
+- Set primary reference / backing / chart
+- Tag edits (add / remove / clear)
+- Bulk operations (PR 4 will batch these into one undo entry)
+
+Intentionally excluded:
+
+- Drive sync, conflict resolution, snapshot publish (these are remote side-effects, not local edits)
+- Spotify OAuth flows, sign-in/out
+- Autosave debounce ticks (PR 4 collapses these so a draft commit pushes one undo, not many)
+
+### `runSync` vs `scheduleBackgroundSync`
+
+- `runSync()` is the explicit user-triggered (or app-startup) sync. Wraps `withBlockingJob('Syncing with Drive…')`, surfaces conflicts via `syncState`/`conflict` so the UI can show a banner.
+- `scheduleBackgroundSync()` is the debounced auto-push fired after most local writes. It currently runs without a blocking-job wrapper; treat it as best-effort (failures surface in `syncState.lastError` but do not block the UI). PR 4 will wrap it in a silent blocking-job so the `beforeunload` warning still fires.
+
+### `EncoreMediaLink[]` model
+
+Songs persist `referenceLinks: EncoreMediaLink[]` and `backingLinks: EncoreMediaLink[]`. Each link is a Spotify track, YouTube video, or Drive file with `id`, `source`, `isPrimaryReference?`/`isPrimaryBacking?`, and an optional human `label`. The legacy single-id fields (`spotifyTrackId`, `youtubeVideoId`) are mirrored into `referenceLinks` by `ensureSongHasDerivedMediaLinks` (and the legacy mirror is kept in sync by `syncSongLegacyMediaIds`). Read media via `referenceLinks` / `backingLinks`; write via the helpers in [`src/encore/repertoire/songMediaLinks.ts`](repertoire/songMediaLinks.ts) (e.g. `appendSpotifyReferenceLink`, `removeMediaLinkById`, `setPrimaryReferenceLinkId`).
+
+### Hover cards + media-link rows
+
+- `<EncoreMediaLinkRow>` ([`ui/EncoreMediaLinkRow.tsx`](ui/EncoreMediaLinkRow.tsx)) is the shared row used for reference, backing, and chart strips on SongPage. Use it whenever you render a single Spotify/YouTube/Drive link with optional primary star + open + remove affordances.
+- `<EncoreStreamingHoverCard>` ([`components/EncoreStreamingHoverCard.tsx`](components/EncoreStreamingHoverCard.tsx)) wraps a media row to fetch and show resolved track / video metadata on hover (Spotify Web API for tracks, YouTube oEmbed for videos).
+- `<EncoreSpotifyTrackListRow>` ([`ui/EncoreSpotifyTrackListRow.tsx`](ui/EncoreSpotifyTrackListRow.tsx)) is the shared album-art + title + artist row used in Spotify search autocomplete (`renderSpotifyTrackAutocompleteOption`) and in `PlaylistImportDialog`'s manual Spotify picker.

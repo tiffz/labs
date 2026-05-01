@@ -1,11 +1,11 @@
 import CircularProgress from '@mui/material/CircularProgress';
-import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import SkipToMain from '../shared/components/SkipToMain';
 import {
   replaceLocalhostWithLoopbackOrigin,
   shouldRedirectLocalhostToLoopbackInDev,
 } from './devLocalhostToLoopbackRedirect';
-import { EncoreProvider, useEncore } from './context/EncoreContext';
+import { useEncore } from './context/EncoreContext';
 import { AccessRestrictedScreen, SignInLanding } from './components/AccessGateScreens';
 import { EncoreMainShell } from './components/EncoreMainShell';
 import { GuestShareView } from './components/GuestShareView';
@@ -14,7 +14,7 @@ import { EncoreAppShell } from './ui/EncoreAppShell';
 
 function parseShareFileIdFromHash(): string | null {
   const raw = window.location.hash.replace(/^#/, '');
-  const m = /^\/share\/([^/?#]+)/.exec(raw);
+  const m = /^\/share\/([^/?#]+)$/.exec(raw);
   return m?.[1] ?? null;
 }
 
@@ -69,8 +69,14 @@ function EncoreSignedInRouter(): React.ReactElement {
 }
 
 export default function App(): React.ReactElement {
-  const shareFileId = useMemo(() => parseShareFileIdFromHash(), []);
+  const [shareFileId, setShareFileId] = useState(() => parseShareFileIdFromHash());
   const [localhostDevRedirect] = useState(shouldRedirectLocalhostToLoopbackInDev);
+
+  useEffect(() => {
+    const onHash = () => setShareFileId(parseShareFileIdFromHash());
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
 
   useLayoutEffect(() => {
     if (!localhostDevRedirect) return;
@@ -100,9 +106,5 @@ export default function App(): React.ReactElement {
     );
   }
 
-  return (
-    <EncoreProvider>
-      <EncoreSignedInRouter />
-    </EncoreProvider>
-  );
+  return <EncoreSignedInRouter />;
 }

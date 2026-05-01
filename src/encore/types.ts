@@ -40,6 +40,37 @@ export interface EncoreSongAttachment {
   kind: EncoreSongAttachmentKind;
   driveFileId: string;
   label?: string;
+  /** Charts: the default chart for practice links and legacy {@link EncoreSong.sheetMusicDriveFileId} sync. */
+  isPrimaryChart?: boolean;
+}
+
+export type EncoreMediaSource = 'spotify' | 'youtube' | 'drive';
+
+/** Purpose for YouTube links (karaoke vs performance vs general reference). */
+export type EncoreYoutubeMediaKind = 'karaoke' | 'performance' | 'reference' | 'other';
+
+/**
+ * A single reference or backing media link (Spotify, YouTube, or Drive audio).
+ * Legacy `spotifyTrackId` / `youtubeVideoId` on {@link EncoreSong}: `spotifyTrackId` is the **metadata /
+ * playlist data source** (must be Spotify when set). `youtubeVideoId` is synced from the **primary
+ * reference** YouTube link when present.
+ */
+export interface EncoreMediaLink {
+  id: string;
+  source: EncoreMediaSource;
+  spotifyTrackId?: string;
+  youtubeVideoId?: string;
+  driveFileId?: string;
+  label?: string;
+  /**
+   * Inferred from placement: reference links use `reference`, backing links use `karaoke`.
+   * Optional for older rows; do not surface in UI.
+   */
+  youtubeKind?: EncoreYoutubeMediaKind;
+  /** At most one link in {@link EncoreSong.referenceLinks} should be true: your main reference listen. */
+  isPrimaryReference?: boolean;
+  /** At most one link in {@link EncoreSong.backingLinks} should be true: default backing track. */
+  isPrimaryBacking?: boolean;
 }
 
 /** Song stored locally and in repertoire_data.json */
@@ -48,9 +79,17 @@ export interface EncoreSong {
   title: string;
   artist: string;
   albumArtUrl?: string;
+  /**
+   * Spotify track id used for playlist sync, Fill from Spotify, and album artwork.
+   * Independent of which reference recording is marked primary (you may study from a different link).
+   */
   spotifyTrackId?: string;
   /** Reference performance / recording on YouTube (from playlist import or manual). */
   youtubeVideoId?: string;
+  /** Additional reference media (karaoke, alt recordings, etc.). */
+  referenceLinks?: EncoreMediaLink[];
+  /** Backing / practice tracks separate from reference listening. */
+  backingLinks?: EncoreMediaLink[];
   /** The key you actually perform this song in (manual entry; no auto-fill). */
   performanceKey?: string;
   journalMarkdown: string;
@@ -113,8 +152,8 @@ export interface PublicSnapshot {
   version: 1;
   generatedAt: string;
   /**
-   * Display name for the snapshot owner — populates "{name}'s repertoire" in the
-   * guest header. Mirrors `RepertoireExtrasRow.ownerDisplayName` at publish time.
+   * Display name for the guest header ("{name}'s repertoire"). At publish time this is
+   * the same as the in-app name: synced override when set, otherwise the Google profile name.
    */
   ownerDisplayName?: string;
   songs: Array<
@@ -128,6 +167,8 @@ export interface PublicSnapshot {
       | 'youtubeVideoId'
       | 'performanceKey'
       | 'tags'
+      | 'referenceLinks'
+      | 'backingLinks'
     >
   >;
   performances: PublicSnapshotPerformance[];
@@ -144,4 +185,9 @@ export interface RepertoireWirePayload {
   milestoneTemplate?: EncoreMilestoneDefinition[];
   /** Owner display name override — surfaces in app header and shared snapshot. */
   ownerDisplayName?: string;
+  /**
+   * Spotify playlist id (not URI) Encore uses for “Currently learning” sync on the Practice page.
+   * Stored in `repertoire_data.json` with other extras.
+   */
+  currentlyLearningSpotifyPlaylistId?: string;
 }

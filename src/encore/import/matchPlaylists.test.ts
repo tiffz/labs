@@ -3,12 +3,119 @@ import {
   buildPlaylistImportRows,
   diceCoefficient,
   encoreSongFromImportRow,
+  mergeSplitPairRows,
   normalizeForMatch,
   scoreSpotifyYoutube,
+  splitPairedImportRow,
+  type PlaylistImportRow,
+  type SplitPairRef,
 } from './matchPlaylists';
 import type { SpotifyPlaylistTrackRow } from '../spotify/spotifyApi';
 import type { YouTubePlaylistItemRow } from '../youtube/youtubePlaylistApi';
 
+function spRow(over: Partial<SpotifyPlaylistTrackRow> = {}): SpotifyPlaylistTrackRow {
+  return { trackId: 'sp1', title: 'Song', artist: 'Artist', albumArtUrl: undefined, ...over };
+}
+function ytRow(over: Partial<YouTubePlaylistItemRow> = {}): YouTubePlaylistItemRow {
+  return { videoId: 'yt1', title: 'Song - Artist', channelTitle: 'Artist', description: undefined, ...over };
+}
+function pairedRow(over: Partial<PlaylistImportRow> = {}): PlaylistImportRow {
+  return {
+    id: 'pair-sp1-yt1',
+    spotify: spRow(),
+    youtube: ytRow(),
+    youtubeVideoId: 'yt1',
+    matchScore: 0.9,
+    kind: 'paired',
+    ...over,
+  };
+}
+
+describe('splitPairedImportRow', () => {
+  it('returns the row unchanged when not paired', () => {
+    const row = { ...pairedRow(), kind: 'spotify_only' as const, youtube: undefined };
+    expect(splitPairedImportRow(row)).toEqual([row]);
+  });
+
+  it('returns the row unchanged when paired but missing one side', () => {
+    const row = { ...pairedRow(), youtube: undefined };
+    expect(splitPairedImportRow(row)).toEqual([row]);
+  });
+
+  it('produces a Spotify-only and a YouTube-only row that share a splitPairRef', () => {
+    const split = splitPairedImportRow(pairedRow());
+    expect(split).toHaveLength(2);
+    const sp = split.find((r) => r.kind === 'spotify_only')!;
+    const yt = split.find((r) => r.kind === 'youtube_only')!;
+    expect(sp.spotify?.trackId).toBe('sp1');
+    expect(sp.youtubeVideoId).toBeNull();
+    expect(yt.youtube?.videoId).toBe('yt1');
+    expect(yt.youtubeVideoId).toBe('yt1');
+    expect(sp.splitPairRef).toEqual({ spotifyTrackId: 'sp1', youtubeVideoId: 'yt1' });
+    expect(yt.splitPairRef).toEqual({ spotifyTrackId: 'sp1', youtubeVideoId: 'yt1' });
+  });
+
+  it('preserves skipRow / linkedLibrarySongId / ignoreAutoMatch on the Spotify side only', () => {
+    const split = splitPairedImportRow(
+      pairedRow({ skipRow: true, linkedLibrarySongId: 'lib-1', ignoreAutoMatch: true }),
+    );
+    const sp = split.find((r) => r.kind === 'spotify_only')!;
+    const yt = split.find((r) => r.kind === 'youtube_only')!;
+    expect(sp.skipRow).toBe(true);
+    expect(sp.linkedLibrarySongId).toBe('lib-1');
+    expect(sp.ignoreAutoMatch).toBe(true);
+    expect(yt.skipRow).toBeUndefined();
+    expect(yt.linkedLibrarySongId).toBeUndefined();
+    expect(yt.ignoreAutoMatch).toBeUndefined();
+  });
+});
+
+describe('mergeSplitPairRows', () => {
+  const ref: SplitPairRef = { spotifyTrackId: 'sp1', youtubeVideoId: 'yt1' };
+
+  it('merges sibling Spotify-only + YouTube-only rows back into a paired row', () => {
+    const split = splitPairedImportRow(pairedRow());
+    const merged = mergeSplitPairRows(split, ref);
+    expect(merged).toHaveLength(1);
+    const m = merged[0]!;
+    expect(m.kind).toBe('paired');
+    expect(m.spotify?.trackId).toBe('sp1');
+    expect(m.youtube?.videoId).toBe('yt1');
+    expect(m.youtubeVideoId).toBe('yt1');
+    expect(m.matchScore).toBeGreaterThan(0);
+  });
+
+  it('returns input unchanged when one sibling is missing', () => {
+    const split = splitPairedImportRow(pairedRow());
+    const onlySpotify = split.filter((r) => r.kind === 'spotify_only');
+    expect(mergeSplitPairRows(onlySpotify, ref)).toEqual(onlySpotify);
+  });
+
+  it('preserves position relative to other rows when merging in the middle', () => {
+    const otherPaired = pairedRow({
+      id: 'pair-sp2-yt2',
+      spotify: spRow({ trackId: 'sp2' }),
+      youtube: ytRow({ videoId: 'yt2' }),
+      youtubeVideoId: 'yt2',
+    });
+    const split = splitPairedImportRow(pairedRow());
+    const rows = [otherPaired, ...split];
+    const merged = mergeSplitPairRows(rows, ref);
+    expect(merged.map((r) => r.id)).toEqual(['pair-sp2-yt2', 'pair-sp1-yt1']);
+  });
+
+  it('carries skip/link/ignore flags from either sibling', () => {
+    const [sp, yt] = splitPairedImportRow(pairedRow());
+    const rows: PlaylistImportRow[] = [
+      { ...sp!, skipRow: true, linkedLibrarySongId: 'lib-7' },
+      { ...yt!, ignoreAutoMatch: true },
+    ];
+    const [m] = mergeSplitPairRows(rows, ref);
+    expect(m?.skipRow).toBe(true);
+    expect(m?.linkedLibrarySongId).toBe('lib-7');
+    expect(m?.ignoreAutoMatch).toBe(true);
+  });
+});
 describe('matchPlaylists', () => {
   it('normalizeForMatch strips noise', () => {
     expect(normalizeForMatch("Don't Stop Me Now (Official Video)")).toContain('don t stop me now');
@@ -147,5 +254,25 @@ describe('matchPlaylists', () => {
     expect(song).not.toBeNull();
     expect(song!.title).toBe('The Real Track Name');
     expect(song!.artist).toBe('In Show');
+  });
+
+  it('encoreSongFromImportRow backing placement stores YouTube on backingLinks only', () => {
+    const row = {
+      id: 'x',
+      youtube: {
+        videoId: 'v',
+        title: 'Karaoke Memory YouTube 2',
+        channelTitle: 'Roland Soh',
+        description: 'In Show - The Real Track Name\nMore credits',
+      },
+      youtubeVideoId: 'v',
+      matchScore: 0,
+      kind: 'youtube_only' as const,
+    };
+    const song = encoreSongFromImportRow(row, 'backing');
+    expect(song).not.toBeNull();
+    expect(song!.backingLinks?.length).toBeGreaterThan(0);
+    expect(song!.referenceLinks?.length ?? 0).toBe(0);
+    expect(song!.youtubeVideoId).toBeUndefined();
   });
 });

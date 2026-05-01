@@ -2,31 +2,31 @@ import { describe, expect, it } from 'vitest';
 import { buildPerformanceVideoName, splitFileNameExtension } from './performanceVideoNaming';
 
 describe('buildPerformanceVideoName', () => {
-  it('joins date, song title, and venue with " - "', () => {
+  it('joins date, title, and artist with " - " (no venue)', () => {
     const name = buildPerformanceVideoName(
       { date: '2026-04-30', venueTag: 'Cafe Bach' },
       { title: 'All of Me', artist: 'Frank Sinatra' },
       '.mp4',
     );
-    expect(name).toBe('2026-04-30 - All of Me - Cafe Bach.mp4');
+    expect(name).toBe('2026-04-30 - All of Me - Frank Sinatra.mp4');
   });
 
-  it('omits venue when set to the placeholder "Venue"', () => {
+  it('uses Unknown artist when song artist is blank', () => {
+    const name = buildPerformanceVideoName(
+      { date: '2026-04-30', venueTag: 'Cafe Bach' },
+      { title: 'All of Me', artist: '' },
+      '.mp4',
+    );
+    expect(name).toBe('2026-04-30 - All of Me - Unknown artist.mp4');
+  });
+
+  it('omits venue even when set to the placeholder "Venue"', () => {
     const name = buildPerformanceVideoName(
       { date: '2026-04-30', venueTag: 'Venue' },
       { title: 'All of Me', artist: '' },
       '.mp4',
     );
-    expect(name).toBe('2026-04-30 - All of Me.mp4');
-  });
-
-  it('omits venue when blank', () => {
-    const name = buildPerformanceVideoName(
-      { date: '2026-04-30', venueTag: '' },
-      { title: 'All of Me', artist: '' },
-      '',
-    );
-    expect(name).toBe('2026-04-30 - All of Me');
+    expect(name).toBe('2026-04-30 - All of Me - Unknown artist.mp4');
   });
 
   it('strips Drive-disallowed characters from inputs', () => {
@@ -35,7 +35,7 @@ describe('buildPerformanceVideoName', () => {
       { title: 'song: with bad/chars*', artist: '' },
       '.mp4',
     );
-    expect(name).toBe('2026-04-30 - song with bad chars - cafe bach.mp4');
+    expect(name).toBe('2026-04-30 - song with bad chars - Unknown artist.mp4');
   });
 
   it('falls back to "Undated" when date is malformed', () => {
@@ -44,16 +44,12 @@ describe('buildPerformanceVideoName', () => {
       { title: 'A song', artist: '' },
       '',
     );
-    expect(name).toBe('Undated - A song - home');
+    expect(name).toBe('Undated - A song - Unknown artist');
   });
 
-  it('falls back to "Untitled song" when no song row is provided', () => {
-    const name = buildPerformanceVideoName(
-      { date: '2026-04-30', venueTag: 'home' },
-      null,
-      '',
-    );
-    expect(name).toBe('2026-04-30 - Untitled song - home');
+  it('falls back to Untitled song and Unknown artist when no song row is provided', () => {
+    const name = buildPerformanceVideoName({ date: '2026-04-30', venueTag: 'home' }, null, '');
+    expect(name).toBe('2026-04-30 - Untitled song - Unknown artist');
   });
 });
 

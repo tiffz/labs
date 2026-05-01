@@ -1,6 +1,7 @@
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import PublicOutlinedIcon from '@mui/icons-material/PublicOutlined';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -88,24 +89,28 @@ function MilestoneRow(props: {
           {label}
         </Typography>
       )}
-      <Tooltip title={isNa ? 'Mark as a real milestone again' : 'Mark as not applicable for this song'}>
-        <Button
+      <Tooltip
+        placement="left"
+        title={
+          isNa
+            ? 'Clear N/A — bring this milestone back so you can check it off or leave it to do.'
+            : 'Mark not applicable — skip this step for this song without counting it done (use when the milestone does not apply).'
+        }
+      >
+        <IconButton
           size="small"
-          variant="text"
-          startIcon={<RemoveCircleOutlineIcon sx={{ fontSize: 16 }} />}
+          aria-label={
+            isNa ? `Clear not applicable for "${label}"` : `Mark "${label}" as not applicable for this song`
+          }
           onClick={() => onSetState(isNa ? 'todo' : 'na')}
           sx={{
-            color: 'text.secondary',
-            fontSize: '0.7rem',
-            textTransform: 'none',
-            fontWeight: isNa ? 700 : 500,
-            minWidth: 0,
-            px: 0.75,
-            '&:hover': { color: 'text.primary', bgcolor: 'transparent' },
+            flexShrink: 0,
+            color: isNa ? 'text.disabled' : 'text.secondary',
+            '&:hover': { color: 'text.primary', bgcolor: 'action.hover' },
           }}
         >
-          {isNa ? 'N/A' : 'Mark N/A'}
-        </Button>
+          <RemoveCircleOutlineIcon sx={{ fontSize: 18 }} />
+        </IconButton>
       </Tooltip>
       {onRemove ? (
         <IconButton size="small" aria-label="Remove milestone" onClick={onRemove} sx={{ color: 'text.disabled' }}>
@@ -209,20 +214,21 @@ export function SongMilestoneChecklist(props: {
           {defs.map((m) => {
             const st = synced.milestoneProgress?.[m.id]?.state ?? 'todo';
             return (
-              <Stack key={m.id} direction="row" spacing={1} alignItems="flex-start" sx={{ width: 1 }}>
-                <Tooltip title="Applies to every song · Click to open Library settings">
-                  <Chip
+              <Stack key={m.id} direction="row" spacing={1} alignItems="center" sx={{ width: 1 }}>
+                <Tooltip title="Global template · applies to every song">
+                  <IconButton
                     size="small"
-                    label="Global"
-                    variant="outlined"
+                    aria-label="Global milestone template"
                     onClick={() => onOpenGlobalMilestoneSettings?.()}
+                    disabled={!onOpenGlobalMilestoneSettings}
                     sx={{
-                      mt: 0.5,
                       flexShrink: 0,
-                      fontWeight: 700,
-                      cursor: onOpenGlobalMilestoneSettings ? 'pointer' : 'default',
+                      color: 'text.disabled',
+                      '&:hover': { color: 'text.secondary', bgcolor: 'action.hover' },
                     }}
-                  />
+                  >
+                    <PublicOutlinedIcon sx={{ fontSize: 18 }} />
+                  </IconButton>
                 </Tooltip>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <MilestoneRow
@@ -251,8 +257,8 @@ export function SongMilestoneChecklist(props: {
         {(synced.songOnlyMilestones ?? []).length === 0 ? null : (
           <Stack spacing={0.5} sx={{ mb: 1.5 }}>
             {(synced.songOnlyMilestones ?? []).map((row) => (
-              <Stack key={row.id} direction="row" spacing={1} alignItems="flex-start" sx={{ width: 1 }}>
-                <Chip size="small" label="Song" variant="outlined" sx={{ mt: 0.5, flexShrink: 0, fontWeight: 700 }} />
+              <Stack key={row.id} direction="row" spacing={1} alignItems="center" sx={{ width: 1 }}>
+                <Chip size="small" label="Song" variant="outlined" sx={{ flexShrink: 0, fontWeight: 700 }} />
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <MilestoneRow
                     label={row.label}

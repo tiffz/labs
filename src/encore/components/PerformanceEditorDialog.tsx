@@ -28,6 +28,7 @@ import {
   encoreMutedCaptionSx,
 } from '../theme/encoreUiTokens';
 import { SongPageSubheading } from '../ui/SongPageSection';
+import { useEncoreBlockingJobs } from '../context/EncoreBlockingJobContext';
 import { useEncore } from '../context/EncoreContext';
 import type { EncorePerformance } from '../types';
 import { ENCORE_ACCOMPANIMENT_TAGS } from '../types';
@@ -72,6 +73,7 @@ export function PerformanceEditorDialog(props: {
 }): React.ReactElement {
   const { open, performance, songId, googleAccessToken, venueOptions, onClose, onSave } = props;
   const { songs } = useEncore();
+  const { withBlockingJob } = useEncoreBlockingJobs();
   const songForPerformance = useMemo(() => songs.find((s) => s.id === songId) ?? null, [songs, songId]);
   const [draft, setDraft] = useState<EncorePerformance>(newPerformance(songId));
   const [videoInput, setVideoInput] = useState('');
@@ -185,28 +187,30 @@ export function PerformanceEditorDialog(props: {
     setUploading(true);
     setShortcutMsg(null);
     try {
-      const layout = await ensureEncoreDriveLayout(googleAccessToken);
-      const date = isoDateFromFileLastModified(file);
-      const { extension } = splitFileNameExtension(file.name);
-      const desiredName = buildPerformanceVideoName(
-        { date, venueTag: draft.venueTag },
-        songForPerformance,
-        extension,
-      );
-      const created = await driveUploadFileResumable(
-        googleAccessToken,
-        file,
-        [layout.performancesFolderId],
-        desiredName,
-      );
-      setVideoInput(created.id);
-      setDraft((d) => ({
-        ...d,
-        videoTargetDriveFileId: created.id,
-        externalVideoUrl: undefined,
-        date,
-      }));
-      setShortcutMsg('Uploaded to your Performances folder in Drive.');
+      await withBlockingJob('Uploading performance video…', async () => {
+        const layout = await ensureEncoreDriveLayout(googleAccessToken);
+        const date = isoDateFromFileLastModified(file);
+        const { extension } = splitFileNameExtension(file.name);
+        const desiredName = buildPerformanceVideoName(
+          { date, venueTag: draft.venueTag },
+          songForPerformance,
+          extension,
+        );
+        const created = await driveUploadFileResumable(
+          googleAccessToken,
+          file,
+          [layout.performancesFolderId],
+          desiredName,
+        );
+        setVideoInput(created.id);
+        setDraft((d) => ({
+          ...d,
+          videoTargetDriveFileId: created.id,
+          externalVideoUrl: undefined,
+          date,
+        }));
+        setShortcutMsg('Uploaded to your Performances folder in Drive.');
+      });
     } catch (e) {
       setShortcutMsg(`Upload failed: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
