@@ -94,8 +94,8 @@ function MilestoneRow(props: {
         placement="left"
         title={
           isNa
-            ? 'Clear N/A — bring this milestone back so you can check it off or leave it to do.'
-            : 'Mark not applicable — skip this step for this song without counting it done (use when the milestone does not apply).'
+            ? 'Clear N/A to bring this milestone back so you can check it off or leave it to do.'
+            : 'Mark not applicable. Skips this step for this song without counting it done (when the milestone does not apply).'
         }
       >
         <IconButton

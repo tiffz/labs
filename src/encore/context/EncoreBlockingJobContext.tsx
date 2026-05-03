@@ -163,7 +163,7 @@ export function EncoreBlockingJobProvider(props: { children: ReactNode }): React
               />
             </Box>
             <Typography variant="caption" color="text.secondary" component="p" sx={{ m: 0, lineHeight: 1.45 }}>
-              Keep this tab open—closing it or leaving Encore can cancel in-progress work.
+              Keep this tab open. Closing it or leaving Encore can cancel in-progress work.
             </Typography>
           </Stack>
         </Paper>

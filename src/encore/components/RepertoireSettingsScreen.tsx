@@ -211,7 +211,7 @@ export function RepertoireSettingsScreen(): ReactElement {
     >
       <EncorePageHeader
         title={encorePossessivePageTitle(effectiveDisplayName, 'settings')}
-        description="Venues feed autocomplete and bulk import matching. Milestones are your shared checklist on every song — voice-first; add keys or staging steps you care about."
+        description="Venues feed autocomplete and bulk import matching. Milestones are a shared checklist on every song: add keys, staging notes, or other steps you care about."
       />
 
       <Paper
@@ -283,7 +283,7 @@ export function RepertoireSettingsScreen(): ReactElement {
         </Typography>
         <Alert severity="info" sx={{ mb: 2, py: 0.75 }} variant="outlined">
           Folder paths here are a <strong>draft</strong> until you save them. New uploads and <strong>Organize Drive</strong>{' '}
-          use the <strong>saved</strong> folder on each row — not the clipboard or picker selection by itself.
+          use the <strong>saved</strong> folder on each row, not the clipboard or picker selection by itself.
         </Alert>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2, lineHeight: 1.55 }}>
           Paste a folder link or id, pick a folder, then tap <strong>Save folder</strong> for that row. Saving checks the

@@ -135,7 +135,7 @@ const SONG_INFO_SOURCE_ICON_ARIA = 'About song info source';
 
 function trackLabel(t: SpotifySearchTrack): string {
   const artists = t.artists?.map((a) => a.name).join(', ') ?? '';
-  return `${t.name} — ${artists}`;
+  return `${t.name} · ${artists}`;
 }
 
 /**

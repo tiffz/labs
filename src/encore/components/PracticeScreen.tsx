@@ -802,10 +802,10 @@ export function PracticeScreen(): React.ReactElement {
               {importSuggestions?.map((item) => (
                 <Stack key={item.row.trackId} spacing={0.75}>
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    {item.row.title} — {item.row.artist}
+                    {item.row.title} · {item.row.artist}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    Likely match: {item.match.title} — {item.match.artist} (score {(item.score * 100).toFixed(0)}%)
+                    Likely match: {item.match.title} · {item.match.artist} (score {(item.score * 100).toFixed(0)}%)
                   </Typography>
                   <Stack direction="row" gap={1} flexWrap="wrap" useFlexGap>
                     <Button size="small" variant="contained" onClick={() => void mergeSuggestion(item)}>
@@ -833,7 +833,7 @@ export function PracticeScreen(): React.ReactElement {
               <Stack spacing={0.75}>
                 {importCandidates?.map((r) => (
                   <Typography key={r.trackId} variant="body2">
-                    {r.title} — {r.artist}
+                    {r.title} · {r.artist}
                   </Typography>
                 ))}
               </Stack>

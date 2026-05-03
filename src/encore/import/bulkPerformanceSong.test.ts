@@ -44,7 +44,7 @@ describe('pickBestLibrarySongForBulkVideo', () => {
     const songs = [song('a', 'Let It Go', 'Stage Cast'), song('b', 'Defying Gravity', 'Wicked')];
     const best = pickBestLibrarySongForBulkVideo(songs, {
       fileName: 'IMG_9912.mov',
-      description: 'Open mic — Let It Go (Frozen)',
+      description: 'Open mic: Let It Go (Frozen)',
       parentPathHint: 'Martuni / ',
     });
     expect(best?.id).toBe('a');

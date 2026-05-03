@@ -27,7 +27,7 @@ type Choice = 'local' | 'remote';
 
 function formatTs(iso: string | undefined | null): string {
   const t = iso?.trim();
-  if (!t) return '—';
+  if (!t) return '–';
   const d = new Date(t);
   return Number.isNaN(d.getTime()) ? t : d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 }
@@ -175,7 +175,7 @@ export function SyncConflictReviewDialog(props: SyncConflictReviewDialogProps): 
                 Encore stores your library in this browser and backs it up to Google Drive (
                 <code>repertoire_data.json</code>). When both sides edit the same row Encore cannot
                 merge automatically, so you pick which version to keep. Edits on different rows are
-                merged silently — newer wins.
+                merged silently; the newer version wins.
               </Typography>
             }
           >

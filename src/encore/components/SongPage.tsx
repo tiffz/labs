@@ -77,7 +77,7 @@ function newSong(): EncoreSong {
 
 function trackLabel(t: SpotifySearchTrack): string {
   const artists = t.artists?.map((a) => a.name).join(', ') ?? '';
-  return `${t.name} — ${artists}`;
+  return `${t.name} · ${artists}`;
 }
 
 /** Shared elevated surface for song hero + lower sections (Performances, Practice). */
@@ -939,7 +939,7 @@ export function SongPage(props: {
 
               {isNew ? (
                 <Typography variant="body2" color="text.secondary">
-                  Save this song (add a title — it saves automatically) to log
+                  Save this song (add a title; it saves automatically) to log
                   performances.
                 </Typography>
               ) : null}

@@ -23,7 +23,7 @@ describe('milestoneProgressSummary', () => {
       createdAt: 'x',
       updatedAt: 'x',
     });
-    expect(milestoneProgressSummary(s, []).labelShort).toBe('—');
+    expect(milestoneProgressSummary(s, []).labelShort).toBe('None');
   });
 
   it('counts template rows with defaults as todo', () => {

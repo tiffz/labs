@@ -636,7 +636,7 @@ export function BulkPerformanceImportDialog(props: {
               throw new Error('Sign in to Google to upload videos.');
             }
             if (!performancesUploadFolderId) {
-              throw new Error('Drive Performances folder is not ready yet — try again in a moment.');
+              throw new Error('Drive Performances folder is not ready yet. Try again in a moment.');
             }
             const created = await driveUploadFileResumable(
               googleAccessToken,
@@ -1282,7 +1282,7 @@ export function BulkPerformanceImportDialog(props: {
                   color="warning.main"
                   sx={{ display: 'block', mb: 0.25, flexShrink: 0, lineHeight: 1.35 }}
                 >
-                  {perfDuplicateSkippedCount} duplicate row{perfDuplicateSkippedCount === 1 ? '' : 's'} skipped — enable the
+                  {perfDuplicateSkippedCount} duplicate row{perfDuplicateSkippedCount === 1 ? '' : 's'} skipped. Enable the
                   checkbox on a row to import it anyway.
                 </Typography>
               ) : null}

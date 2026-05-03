@@ -237,13 +237,13 @@ function YearComparator(props: {
                 href={t?.song ? encoreAppHref({ kind: 'song', id: t.song.id }) : undefined}
                 sx={{ justifyContent: 'flex-start', textTransform: 'none', px: 0, fontWeight: 700 }}
               >
-                {t?.song?.title ?? '—'} {t ? `· ${t.count}×` : ''}
+                {t?.song?.title ?? '–'} {t ? `· ${t.count}×` : ''}
               </Button>
               <Typography variant="subtitle2" sx={{ fontWeight: 800, mt: 1.5, mb: 0.5 }}>
                 Top venue
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {v ? `${v.name} · ${v.count}` : '—'}
+                {v ? `${v.name} · ${v.count}` : '–'}
               </Typography>
             </Card>
           );
@@ -363,7 +363,7 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
                 {possessive} performance insights
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75, lineHeight: 1.55, maxWidth: 520 }}>
-                Lifetime totals by default. Choose a year to zoom in — charts and rankings match the scope you pick.
+                Lifetime totals by default. Pick a year to zoom in; charts and rankings follow that scope.
               </Typography>
             </Box>
             <FormControl size="small" sx={{ minWidth: 200, flexShrink: 0 }} id="encore-perf-insights-scope">
@@ -541,7 +541,7 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
           title={isAllTime ? 'Last twelve months' : `Months in ${yearScope}`}
           subtitle={
             isAllTime
-              ? 'Rolling year through today — month by month.'
+              ? 'Rolling year through today, month by month.'
               : 'January through December for the selected year.'
           }
         />
@@ -567,7 +567,7 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
                   <strong>{lifetimeStats.perfLastYear}</strong> in {cy - 1}. Counts use full calendar years (Jan–Dec).
                 </Typography>
                 <Typography variant="body2" sx={{ lineHeight: 1.65, mt: 1.5 }} color="text.secondary">
-                  Last 90 days: <strong>{lifetimeExtended.songsTouchedLast90d}</strong> songs with a new show — out of{' '}
+                  Last 90 days: <strong>{lifetimeExtended.songsTouchedLast90d}</strong> songs with a new show, out of{' '}
                   <strong>{lifetimeExtended.distinctSongs}</strong> you have ever logged.
                 </Typography>
               </>
@@ -588,7 +588,7 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
             </Stack>
             <Typography variant="body2" sx={{ lineHeight: 1.65 }} color="text.secondary">
               <strong>{activeExtended.onlyOnceSongCount}</strong> {isAllTime ? 'songs' : 'songs in this year'} with exactly one
-              performance {isAllTime ? 'logged — your “tried it once” set.' : 'in this year.'}
+              performance {isAllTime ? 'logged (your “tried it once” set).' : 'in this year.'}
             </Typography>
             {activeStats.leastRecentlyPerformed?.song ? (
               <Button
@@ -607,7 +607,11 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
       <Divider />
 
       <Section>
-        <SectionTitle kicker="Spotlights" title="Three lenses" subtitle="Most played, latest show, longest gap — for your current scope." />
+        <SectionTitle
+          kicker="Spotlights"
+          title="Three lenses"
+          subtitle="Most played, latest show, and longest gap for your current scope."
+        />
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 2 }}>
           {(
             [
@@ -662,7 +666,7 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
                 onClick={(e) => block.song && onOpenSong(block.song.id, e)}
                 sx={{ fontWeight: 700, fontSize: '1rem', textTransform: 'none', lineHeight: 1.35 }}
               >
-                {block.song?.title ?? '—'}
+                {block.song?.title ?? '–'}
               </Button>
               {block.sub ? (
                 <Typography variant="caption" color="text.secondary">
@@ -721,7 +725,7 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
                     onClick={(e) => row.song && onOpenSong(row.song.id, e)}
                     sx={{ textTransform: 'none', fontWeight: 700, fontSize: '0.95rem', minWidth: 0, flex: 1, justifyContent: 'flex-start' }}
                   >
-                    {row.song?.title ?? '—'}
+                    {row.song?.title ?? '–'}
                   </Button>
                 </Stack>
                 <Chip label={`${row.count}×`} size="small" color="primary" variant="outlined" sx={{ fontWeight: 700 }} />
@@ -792,7 +796,7 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
                 onClick={() => setYearScope(y)}
                 sx={{ textTransform: 'none', fontWeight: 700 }}
               >
-                {y} — {c} performances
+                {y}: {c} performances
               </Button>
               <Link
                 component="button"
@@ -819,7 +823,7 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
         <Stack spacing={1.5} sx={{ mt: 0.5 }}>
           {activeExtended.accompanimentCounts.length === 0 ? (
             <Typography color="text.secondary" variant="body2">
-              No tags in this scope — add them on performance rows.
+              No tags in this scope. Add them on performance rows.
             </Typography>
           ) : (
             activeExtended.accompanimentCounts.map(({ tag, count }) => {
@@ -908,7 +912,7 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
             Log the next one
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2, maxWidth: 520 }}>
-            Short on time? Add a row while it is fresh — your insights update right away.
+            Short on time? Log a row while it is fresh; your totals update as soon as you save.
           </Typography>
           <Button variant="contained" onClick={onAddPerformance} sx={{ fontWeight: 700 }}>
             Add performance

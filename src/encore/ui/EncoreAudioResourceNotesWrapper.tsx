@@ -114,7 +114,7 @@ export function EncoreAudioResourceNotesWrapper(props: EncoreAudioResourceNotesW
         </Typography>
         <TextField
           size="small"
-          placeholder="Optional — e.g. which take to use"
+          placeholder="Optional, e.g. which take to use"
           value={notes}
           onChange={(e) => onNotesChange(e.target.value)}
           multiline

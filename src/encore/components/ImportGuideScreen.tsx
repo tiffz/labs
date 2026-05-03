@@ -109,8 +109,9 @@ export function ImportGuideScreen(): ReactElement {
         </Typography>
 
         <Typography component="p" sx={{ ...articleLeadSx, mb: 4 }}>
-          How to name files and arrange Drive folders so imports line up with your library. Encore uses fuzzy matching
-          and parsing, not magic. Skim the review step and spot-check songs afterward.
+          How to name files and arrange Drive folders so imports line up with your library. Encore uses titles,
+          artists, ids, and the rules below to suggest matches. Use each import&apos;s review step before you save,
+          then open a few songs if anything still looks off.
         </Typography>
 
         <Box component="article">
@@ -130,36 +131,33 @@ export function ImportGuideScreen(): ReactElement {
           >
             <Box component="li">
               <Typography component="span" sx={{ fontWeight: 700 }}>
-                Import at least one Spotify playlist first.
+                Start with at least one Spotify playlist when you can.
               </Typography>{' '}
-              Spotify rows give stable titles, artists, and track ids. That baseline helps match YouTube rows, Drive
-              videos, and charts later.
+              Spotify rows give stable titles, artists, and track ids, which makes later YouTube, Drive, and score
+              imports easier to pair.
             </Box>
             <Box component="li">
               <Typography component="span" sx={{ fontWeight: 700 }}>
-                Add more Spotify and YouTube playlists in one step if you want.
+                You can paste several playlist URLs in one go.
               </Typography>{' '}
-              In the playlist import dialog, paste multiple playlist URLs or ids separated by{' '}
-              <Typography component="span" sx={{ fontFamily: 'monospace', fontSize: '0.95em' }}>
-                ,
-              </Typography>{' '}
-              or new lines. Encore detects Spotify vs YouTube per line. Rows are matched to existing library songs when
-              titles and artists line up, or when the same Spotify or YouTube id is already on a song. Unmatched rows need
-              a manual pick in the review table.
+              In the import dialog, separate Spotify or YouTube playlist URLs or ids with commas or new lines. Each line
+              is detected as Spotify or YouTube. Rows attach to an existing library song when titles and artists line up
+              or the same Spotify or YouTube id is already saved. Anything else stays in the review table for a manual
+              pick.
             </Box>
             <Box component="li">
               <Typography component="span" sx={{ fontWeight: 700 }}>
-                Duplicate tracks in source playlists are OK.
+                Duplicate tracks in a source playlist are fine.
               </Typography>{' '}
               Encore collapses duplicates by Spotify or YouTube id when merging into the library.
             </Box>
             <Box component="li">
               <Typography component="span" sx={{ fontWeight: 700 }}>
-                Then bulk performance videos, then bulk scores (both optional).
+                Bulk performance videos and bulk scores are optional next steps.
               </Typography>{' '}
-              These steps lean on file names and folder paths. You can pull from a Drive folder or add local files in the
-              import dialog (Google sign-in required; videos upload into your Encore Performances folder). Afterward,
-              open a few songs and fix anything that still looks wrong.
+              Both lean on file names and folder paths. You can pick a Drive folder or add local files (Google sign-in
+              required; videos upload into your Encore Performances folder). Fix stragglers in the review table or on
+              the song page.
             </Box>
           </Box>
 
@@ -169,15 +167,15 @@ export function ImportGuideScreen(): ReactElement {
             Performance videos (bulk import)
           </Typography>
           <Typography component="p" sx={{ ...articleBodySx, color: 'text.secondary', mb: 2 }}>
-            Encore infers the song from the video file name, folder path, and Drive fields such as description and
-            indexable text when present. For the performance date it prefers a date in the file name; otherwise it tries
-            other text from the same clues, then Drive creation time, then modified time, then today as a last resort.
-            When it files videos in your Performances folder it renames them to a short{' '}
+            Encore guesses the song from the video file name, folder path, and Drive text fields when they exist. For the
+            performance date it prefers a date in the file name; if none, it tries other text from the same clues, then
+            Drive creation time, then modified time, then today. After import, files in your Performances folder use a
+            short{' '}
             <Typography component="span" sx={{ fontFamily: 'monospace', fontSize: '0.95em' }}>
               YYYY-MM-DD - Title - Artist
             </Typography>{' '}
-            pattern. Venue does not go in the file name; use folder metadata (below) or edit venue in the review table.
-            Supported types include common video extensions (for example{' '}
+            name. Venue stays out of the file name; set it from folder metadata (below) or in the review table. Common
+            video extensions (
             <Typography component="span" sx={{ fontFamily: 'monospace', fontSize: '0.95em' }}>
               .mp4
             </Typography>
@@ -189,12 +187,12 @@ export function ImportGuideScreen(): ReactElement {
             <Typography component="span" sx={{ fontFamily: 'monospace', fontSize: '0.95em' }}>
               .m4v
             </Typography>
-            ) and other video mime types Drive reports.
+            ) and other video types Drive lists are supported.
           </Typography>
           <Typography component="p" sx={{ ...articleBodySx, color: 'text.secondary', mb: 2 }}>
             If a Drive file is already attached to an Encore performance, saving the bulk import updates that
-            performance (date, venue, video file, notes) instead of creating a second copy. Duplicate-looking rows in the
-            review table may be flagged and skipped by default; you can still include them explicitly.
+            performance (date, venue, video file, notes) instead of creating a second row. Duplicate-looking rows in the
+            review table may be skipped by default; you can still include them with the row checkbox.
           </Typography>
           <Typography component="p" sx={{ ...articleBodySx, fontWeight: 700, mb: 0.5 }}>
             Canonical file name (before import)
@@ -205,7 +203,7 @@ export function ImportGuideScreen(): ReactElement {
             <Typography component="span" sx={{ fontFamily: 'monospace', fontSize: '0.95em' }}>
               Unknown artist
             </Typography>{' '}
-            when it renames the file. Underscores and extra hyphens still give the matcher fragments to work with.
+            when it renames the file. Underscores and extra hyphens still give the matcher useful fragments.
           </Typography>
 
           <Typography component="h2" variant="h6" sx={sectionTitleSx}>
@@ -244,8 +242,8 @@ export function ImportGuideScreen(): ReactElement {
               <Typography component="span" sx={{ fontFamily: 'monospace', fontSize: '0.95em' }}>
                 Accompaniment
               </Typography>
-              : comma-separated tags. Only values in Encore’s accompaniment list count ({ACCOMPANIMENT_TAGS_GUIDE_TEXT});
-              unknown tokens are dropped.
+              : comma-separated tags. Only values in Encore&apos;s accompaniment list count ({ACCOMPANIMENT_TAGS_GUIDE_TEXT}
+              ); unknown tokens are dropped.
             </li>
             <li>
               <Typography component="span" sx={{ fontFamily: 'monospace', fontSize: '0.95em' }}>
@@ -310,10 +308,10 @@ export function ImportGuideScreen(): ReactElement {
               .mxl
             </Typography>
             ), MIDI, and other score-like types Drive lists under common extensions. It parses title, artist, and key
-            from typical publisher-style names (MusicNotes-style patterns are covered). The same name shape is used when
-            Encore later organizes charts in Drive so round-tripping stays predictable. Choose a Drive folder in the
-            dialog, or drop local files. If the Google Picker is unavailable, pasting a folder link or folder id in the
-            same field still works when you are signed in.
+            from typical publisher-style names (including common MusicNotes-style patterns). The same name shape is used
+            when Encore organizes charts in Drive. Choose a Drive folder in the dialog, or drop local files. If the
+            Google Picker is unavailable, pasting a folder link or folder id in the same field still works when you are
+            signed in.
           </Typography>
           <Typography component="p" sx={{ ...articleBodySx, fontWeight: 700, mb: 0.5 }}>
             Canonical chart name when Encore organizes files
@@ -340,7 +338,7 @@ export function ImportGuideScreen(): ReactElement {
           </Typography>
           <Typography component="p" sx={{ ...articleBodySx, color: 'text.secondary', mb: 0 }}>
             In the review table you pair each file to a song and, when a key was parsed, optionally copy it into the
-            song’s performance key if that field is empty. Folder names{' '}
+            song&apos;s performance key if that field is empty. Folder names{' '}
             <Typography component="span" sx={{ fontFamily: 'monospace', fontSize: '0.95em' }}>
               Artist - …
             </Typography>
@@ -361,7 +359,7 @@ export function ImportGuideScreen(): ReactElement {
             After every import
           </Typography>
           <Typography component="p" sx={{ ...articleBodySx, color: 'text.secondary', mb: 3 }}>
-            Adjust outliers in the import dialog, then open a handful of songs and confirm titles, artists, linked media,
+            Fix outliers in the import dialog, then open a handful of songs and confirm titles, artists, linked media,
             and performances.
           </Typography>
 

@@ -121,7 +121,7 @@ export function SongResourcesEditDialog(props: {
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="md" scroll="paper">
-      <DialogTitle sx={encoreDialogTitleSx}>Edit song media — {title}</DialogTitle>
+      <DialogTitle sx={encoreDialogTitleSx}>Edit song media: {title}</DialogTitle>
       <DialogContent ref={contentRef} sx={{ ...encoreDialogContentSx, pt: 1 }}>
         {draft ? (
           <Stack spacing={2} sx={{ pt: 0.5 }}>

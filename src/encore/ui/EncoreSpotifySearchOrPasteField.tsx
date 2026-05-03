@@ -8,7 +8,7 @@ import { renderSpotifyTrackAutocompleteOption } from './renderSpotifyTrackAutoco
 
 function defaultTrackLabel(t: SpotifySearchTrack): string {
   const artists = t.artists?.map((a) => a.name).join(', ') ?? '';
-  return `${t.name} — ${artists}`;
+  return `${t.name} · ${artists}`;
 }
 
 export type EncoreSpotifySearchOrPasteFieldProps = {

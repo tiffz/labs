@@ -411,7 +411,7 @@ export function applySpotifyDataSourcePick(
 
 function spotifyTrackWebLabel(track: SpotifySearchTrack): string {
   const artists = track.artists?.map((a) => a.name).join(', ') ?? '';
-  return `${track.name?.trim() || 'Untitled'} — ${artists}`.trim();
+  return `${track.name?.trim() || 'Untitled'} · ${artists}`.trim();
 }
 
 /**

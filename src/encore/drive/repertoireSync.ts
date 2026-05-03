@@ -37,7 +37,7 @@ export type ConflictRowKind = 'song' | 'performance';
 export interface ConflictRowSummary {
   id: string;
   kind: ConflictRowKind;
-  /** Headline label (song title, or "Performance: <song> — <date>" for performances). */
+  /** Headline label (song title, or "Performance: <song> · <date>" for performances). */
   label: string;
   sublabel?: string;
   localUpdatedAt?: string;
@@ -185,7 +185,7 @@ function perfSummary(
   return {
     id: ref.id,
     kind: 'performance',
-    label: `${songTitle} — ${ref.date || ''}`.trim(),
+    label: `${songTitle} · ${ref.date || ''}`.trim(),
     sublabel: venue || undefined,
     localUpdatedAt: p?.updatedAt,
     remoteUpdatedAt: remote?.updatedAt,

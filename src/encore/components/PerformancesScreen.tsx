@@ -44,7 +44,9 @@ import Tabs from '@mui/material/Tabs';
 import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
 import {
+  createContext,
   useCallback,
+  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -56,6 +58,7 @@ import {
   MaterialReactTable,
   useMaterialReactTable,
   type MRT_ColumnDef,
+  type MRT_Row,
   type MRT_RowSelectionState,
 } from 'material-react-table';
 import {
@@ -93,6 +96,17 @@ import { PerformancesWrappedScreen } from './PerformancesWrappedScreen';
 import { SpotifyBrandIcon, YouTubeBrandIcon } from './EncoreBrandIcon';
 import { PerformanceVideoThumb } from './PerformanceVideoThumb';
 import { encoreMrtRepertoireTableOptions } from './encoreMrtTableDefaults';
+import {
+  LEGACY_MRT_ACTIONS_DATA_COL,
+  MRT_ROW_SELECT_COL,
+  MRT_ROW_SPACER_COL,
+  ensureEncoreMrtRowActionsInOrder,
+  ensureEncoreMrtSelectLeading,
+  migrateEncoreMrtColumnOrderIds,
+  migrateEncoreMrtColumnVisibility,
+  normalizeEncoreMrtColumnOrder,
+  withEncoreMrtTrailingSpacer,
+} from './encoreMrtColumnOrder';
 import { InlineChipDate, InlineChipMultiSelect, InlineChipSelect } from '../ui/InlineEditChip';
 import { EncoreToolbarRow } from '../ui/EncoreToolbarRow';
 import {
@@ -143,6 +157,26 @@ function normalizePerformancesTableSorting(
   return sorting;
 }
 
+/** Controlled column order for MRT: prefs only list data columns; inject display columns so checkboxes stay first. */
+function performancesColumnOrderForMrt(
+  viewMode: PerformancesViewMode,
+  perfColOrder: string[] | undefined,
+  perfDefaultColumnOrder: string[],
+): string[] {
+  const base = perfColOrder ?? perfDefaultColumnOrder;
+  if (viewMode !== 'table') {
+    return withEncoreMrtTrailingSpacer(
+      normalizeEncoreMrtColumnOrder(
+        ensureEncoreMrtRowActionsInOrder(base.filter((id) => id !== MRT_ROW_SELECT_COL)),
+      ),
+    );
+  }
+  const withSelect = base.includes(MRT_ROW_SELECT_COL) ? base : [MRT_ROW_SELECT_COL, ...base];
+  const withActions = ensureEncoreMrtRowActionsInOrder(withSelect);
+  const normalized = normalizeEncoreMrtColumnOrder(withActions);
+  return withEncoreMrtTrailingSpacer(ensureEncoreMrtSelectLeading(normalized));
+}
+
 function perfMrtColumnId(c: MRT_ColumnDef<PerfMrtRow>): string {
   if (c.id) return c.id;
   if (typeof c.accessorKey === 'string') return c.accessorKey;
@@ -157,6 +191,80 @@ function formatPerformanceNotesLine(notes: string, maxLen = 72): string {
   const base = stripped || t;
   if (base.length <= maxLen) return base;
   return `${base.slice(0, maxLen - 1)}…`;
+}
+
+const PerformancesSearchHighlightContext = createContext('');
+
+function PerfSongColumnCell({ row }: { row: MRT_Row<PerfMrtRow> }): ReactElement {
+  const highlight = useContext(PerformancesSearchHighlightContext);
+  const { song, artistLabel, perf } = row.original;
+  return (
+    <Box>
+      <Button
+        variant="text"
+        size="small"
+        disabled={!song}
+        component={song ? 'a' : 'button'}
+        href={song ? encoreAppHref({ kind: 'song', id: song.id }) : undefined}
+        sx={{
+          textAlign: 'left',
+          justifyContent: 'flex-start',
+          fontWeight: 600,
+          textTransform: 'none',
+          p: 0,
+          minWidth: 0,
+          maxWidth: '100%',
+          color: 'text.primary',
+          '&:hover': { bgcolor: 'transparent', color: 'primary.main' },
+        }}
+      >
+        <AppTooltip title={row.original.songLabel}>
+          <Box component="span" sx={{ display: 'block', minWidth: 0, maxWidth: '100%' }}>
+            <HighlightedText
+              text={row.original.songLabel}
+              highlight={highlight}
+              variant="body2"
+              sx={{
+                fontWeight: 600,
+                display: 'block',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            />
+          </Box>
+        </AppTooltip>
+      </Button>
+      {artistLabel ? (
+        <AppTooltip title={artistLabel}>
+          <Box component="span" sx={{ display: 'block', minWidth: 0, maxWidth: '100%' }}>
+            <HighlightedText
+              text={artistLabel}
+              highlight={highlight}
+              variant="caption"
+              sx={{
+                color: 'text.secondary',
+                display: 'block',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            />
+          </Box>
+        </AppTooltip>
+      ) : null}
+      {perf.notes ? (
+        <AppTooltip title={perf.notes}>
+          <Box component="span" sx={{ display: 'block', minWidth: 0, maxWidth: '100%', mt: 0.25 }}>
+            <HighlightedText
+              text={formatPerformanceNotesLine(perf.notes)}
+              highlight={highlight}
+              variant="caption"
+              sx={{ color: 'text.secondary', lineHeight: 1.4, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis' }}
+            />
+          </Box>
+        </AppTooltip>
+      ) : null}
+    </Box>
+  );
 }
 
 function subscribePerformancesSubTab(onStoreChange: () => void): () => void {
@@ -245,6 +353,7 @@ export function PerformancesScreen(): ReactElement {
 
   const lastAppliedPerfTableRef = useRef<EncoreMrtTablePrefs | null>(null);
   const perfLegacySortFixSentRef = useRef(false);
+  const perfLegacyColumnIdsMigratedRef = useRef(false);
 
   const persistPerformancesTablePrefs = useCallback(
     (patch: Partial<EncoreMrtTablePrefs>) => {
@@ -261,9 +370,26 @@ export function PerformancesScreen(): ReactElement {
     if (lastAppliedPerfTableRef.current === r) return;
     lastAppliedPerfTableRef.current = r;
     const normalizedSort = normalizePerformancesTableSorting(r.sorting?.length ? r.sorting : undefined);
-    setPerfColVis(r.columnVisibility ?? {});
-    setPerfColOrder(r.columnOrder);
+    const rawOrder = r.columnOrder;
+    const migratedOrder =
+      rawOrder?.length
+        ? normalizeEncoreMrtColumnOrder(migrateEncoreMrtColumnOrderIds(rawOrder))
+        : undefined;
+    const migratedVis = migrateEncoreMrtColumnVisibility(r.columnVisibility ?? {});
+    setPerfColVis(migratedVis);
+    setPerfColOrder(migratedOrder);
     setPerfSorting(normalizedSort);
+    const needsLegacyColumnPersist =
+      (rawOrder?.includes(LEGACY_MRT_ACTIONS_DATA_COL) ?? false) ||
+      (r.columnVisibility != null &&
+        Object.prototype.hasOwnProperty.call(r.columnVisibility, LEGACY_MRT_ACTIONS_DATA_COL));
+    if (needsLegacyColumnPersist && !perfLegacyColumnIdsMigratedRef.current) {
+      perfLegacyColumnIdsMigratedRef.current = true;
+      persistPerformancesTablePrefs({
+        columnOrder: migratedOrder,
+        columnVisibility: migratedVis,
+      });
+    }
     const isLegacySongAsc =
       r.sorting?.length === 1 && r.sorting[0].id === 'songLabel' && r.sorting[0].desc === false;
     if (isLegacySongAsc && !perfLegacySortFixSentRef.current) {
@@ -626,76 +752,7 @@ export function PerformancesScreen(): ReactElement {
       size: 240,
       minSize: 180,
       enableColumnFilter: false,
-      Cell: ({ row }) => {
-        const { song, artistLabel, perf } = row.original;
-        return (
-          <Box>
-            <Button
-              variant="text"
-              size="small"
-              disabled={!song}
-              component={song ? 'a' : 'button'}
-              href={song ? encoreAppHref({ kind: 'song', id: song.id }) : undefined}
-              sx={{
-                textAlign: 'left',
-                justifyContent: 'flex-start',
-                fontWeight: 600,
-                textTransform: 'none',
-                p: 0,
-                minWidth: 0,
-                maxWidth: '100%',
-                color: 'text.primary',
-                '&:hover': { bgcolor: 'transparent', color: 'primary.main' },
-              }}
-            >
-              <AppTooltip title={row.original.songLabel}>
-                <Box component="span" sx={{ display: 'block', minWidth: 0, maxWidth: '100%' }}>
-                  <HighlightedText
-                    text={row.original.songLabel}
-                    highlight={debouncedQuery}
-                    variant="body2"
-                    sx={{
-                      fontWeight: 600,
-                      display: 'block',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}
-                  />
-                </Box>
-              </AppTooltip>
-            </Button>
-            {artistLabel ? (
-              <AppTooltip title={artistLabel}>
-                <Box component="span" sx={{ display: 'block', minWidth: 0, maxWidth: '100%' }}>
-                  <HighlightedText
-                    text={artistLabel}
-                    highlight={debouncedQuery}
-                    variant="caption"
-                    sx={{
-                      color: 'text.secondary',
-                      display: 'block',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}
-                  />
-                </Box>
-              </AppTooltip>
-            ) : null}
-            {perf.notes ? (
-              <AppTooltip title={perf.notes}>
-                <Box component="span" sx={{ display: 'block', minWidth: 0, maxWidth: '100%', mt: 0.25 }}>
-                  <HighlightedText
-                    text={formatPerformanceNotesLine(perf.notes)}
-                    highlight={debouncedQuery}
-                    variant="caption"
-                    sx={{ color: 'text.secondary', lineHeight: 1.4, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis' }}
-                  />
-                </Box>
-              </AppTooltip>
-            ) : null}
-          </Box>
-        );
-      },
+      Cell: ({ row }) => <PerfSongColumnCell row={row} />,
     },
     {
       accessorKey: 'venue',
@@ -742,25 +799,7 @@ export function PerformancesScreen(): ReactElement {
         />
       ),
     },
-    {
-      id: 'actions',
-      header: '',
-      size: 48,
-      minSize: 44,
-      maxSize: 56,
-      enableColumnFilter: false,
-      enableSorting: false,
-      enableHiding: false,
-      enableColumnActions: false,
-      muiTableHeadCellProps: { sx: { textAlign: 'right' } },
-      muiTableBodyCellProps: { sx: { textAlign: 'right' } },
-      Cell: ({ row }) => (
-        <IconButton size="small" aria-label="Edit performance" onClick={() => openEdit(row.original.perf)}>
-          <EditIcon fontSize="small" />
-        </IconButton>
-      ),
-    },
-  ], [googleAccessToken, venueOptions, debouncedQuery, updatePerformance, openEdit]);
+  ], [googleAccessToken, venueOptions, updatePerformance]);
 
   const perfTableBodyRowSx = useMemo(
     () => ({
@@ -779,14 +818,39 @@ export function PerformancesScreen(): ReactElement {
     () => ({ baseBackgroundColor: theme.palette.background.paper }),
     [theme.palette.background.paper],
   );
+  const perfDisplayColumnDefOptions = useMemo(
+    () =>
+      ({
+        [MRT_ROW_SELECT_COL]: {
+          enableColumnOrdering: false,
+          size: 44,
+          minSize: 40,
+          maxSize: 56,
+          muiTableHeadCellProps: { sx: { px: 1, py: 1.25, verticalAlign: 'middle' } },
+          muiTableBodyCellProps: { sx: { px: 1, py: 1.25, verticalAlign: 'middle' } },
+        },
+        [MRT_ROW_SPACER_COL]: { enableColumnOrdering: false },
+        'mrt-row-actions': {
+          header: '',
+          size: 48,
+          minSize: 44,
+          maxSize: 56,
+          enableHiding: false,
+          enableColumnActions: false,
+          muiTableHeadCellProps: { sx: { textAlign: 'right' } },
+          muiTableBodyCellProps: { sx: { textAlign: 'right' } },
+        },
+      }) as const,
+    [],
+  );
   const perfMrtState = useMemo(
     () => ({
       rowSelection,
       columnVisibility: perfColVis,
-      columnOrder: perfColOrder ?? perfDefaultColumnOrder,
+      columnOrder: performancesColumnOrderForMrt(viewMode, perfColOrder, perfDefaultColumnOrder),
       sorting: perfSorting,
     }),
-    [rowSelection, perfColVis, perfColOrder, perfDefaultColumnOrder, perfSorting],
+    [rowSelection, perfColVis, perfColOrder, perfDefaultColumnOrder, perfSorting, viewMode],
   );
   const handlePerfColumnVisibilityChange = useCallback(
     (updater: Parameters<NonNullable<Parameters<typeof useMaterialReactTable<PerfMrtRow>>[0]['onColumnVisibilityChange']>>[0]) => {
@@ -801,13 +865,21 @@ export function PerformancesScreen(): ReactElement {
   const handlePerfColumnOrderChange = useCallback(
     (updater: Parameters<NonNullable<Parameters<typeof useMaterialReactTable<PerfMrtRow>>[0]['onColumnOrderChange']>>[0]) => {
       setPerfColOrder((prev) => {
-        const base = prev ?? perfDefaultColumnOrder;
-        const next = typeof updater === 'function' ? (updater as (p: string[]) => string[])(base) : updater;
-        persistPerformancesTablePrefs({ columnOrder: next });
-        return next;
+        // Must match the same effective order we pass in `state.columnOrder`, or TanStack's functional
+        // updater receives the wrong "old" list when `mrt-row-spacer` / `mrt-row-select` were injected here
+        // (and MRT's length-mismatch effect would otherwise persist a bad order after debounced column remounts).
+        const base = performancesColumnOrderForMrt(viewMode, prev, perfDefaultColumnOrder);
+        const nextRaw = typeof updater === 'function' ? (updater as (p: string[]) => string[])(base) : updater;
+        const next =
+          viewMode === 'table'
+            ? ensureEncoreMrtSelectLeading(ensureEncoreMrtRowActionsInOrder(nextRaw))
+            : ensureEncoreMrtRowActionsInOrder(nextRaw);
+        const normalized = withEncoreMrtTrailingSpacer(normalizeEncoreMrtColumnOrder(next));
+        persistPerformancesTablePrefs({ columnOrder: normalized });
+        return normalized;
       });
     },
-    [perfDefaultColumnOrder, persistPerformancesTablePrefs],
+    [perfDefaultColumnOrder, persistPerformancesTablePrefs, viewMode],
   );
   const handlePerfSortingChange = useCallback(
     (updater: Parameters<NonNullable<Parameters<typeof useMaterialReactTable<PerfMrtRow>>[0]['onSortingChange']>>[0]) => {
@@ -822,6 +894,15 @@ export function PerformancesScreen(): ReactElement {
   const perfBodyRowProps = useMemo(() => ({ sx: perfTableBodyRowSx }), [perfTableBodyRowSx]);
   const perfInitialState = useMemo(() => ({ density: 'compact' as const }), []);
 
+  const renderPerfRowActions = useCallback(
+    ({ row }: { row: MRT_Row<PerfMrtRow> }) => (
+      <IconButton size="small" aria-label="Edit performance" onClick={() => openEdit(row.original.perf)}>
+        <EditIcon fontSize="small" />
+      </IconButton>
+    ),
+    [openEdit],
+  );
+
   const table = useMaterialReactTable<PerfMrtRow>({
     columns,
     data,
@@ -831,6 +912,10 @@ export function PerformancesScreen(): ReactElement {
     enableHiding: true,
     enableColumnActions: false,
     enableColumnOrdering: true,
+    displayColumnDefOptions: perfDisplayColumnDefOptions,
+    enableRowActions: true,
+    positionActionsColumn: 'last',
+    renderRowActions: renderPerfRowActions,
     enableRowSelection: viewMode === 'table',
     onRowSelectionChange: setRowSelection,
     state: perfMrtState,
@@ -1236,7 +1321,7 @@ export function PerformancesScreen(): ReactElement {
       {performances.length === 0 && songs.length === 0 ? (
         <Stack spacing={1.5} sx={{ py: 4, maxWidth: 520 }}>
           <Typography color="text.secondary" sx={{ lineHeight: 1.6 }}>
-            Nothing here yet — add songs from Repertoire first, then log a performance from a song page or tap{' '}
+            Nothing here yet. Add songs from Repertoire first, then log a performance from a song page or tap{' '}
             <strong>Add performance</strong> above.
           </Typography>
           <Button variant="outlined" size="small" component="a" href={encoreAppHref({ kind: 'library' })} sx={{ alignSelf: 'flex-start', textTransform: 'none' }}>
@@ -1260,9 +1345,9 @@ export function PerformancesScreen(): ReactElement {
             Bring in performance videos
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.7, mb: 2 }}>
-            You have songs but no performances yet. Use bulk import from Drive to attach many videos at once. Encore
-            matches each file to a song from the name and folder path, then keeps Drive names aligned with this
-            pattern when it organizes your Performances folder:
+            You have songs but no performances yet. Bulk import from Drive can attach many videos at once. Encore
+            matches each file from the name and folder path, then renames files in your Performances folder to this
+            pattern:
           </Typography>
           <Box
             component="pre"
@@ -1288,7 +1373,7 @@ export function PerformancesScreen(): ReactElement {
             <Typography component="span" sx={{ fontFamily: 'ui-monospace, monospace' }}>
               Venue - Martuni&apos;s
             </Typography>{' '}
-            to tag venue (and other metadata) for a whole folder — see Help.
+            to tag venue (and other metadata) for a whole folder. See Help.
           </Typography>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
             <Button variant="contained" onClick={() => setBulkPerfImportOpen(true)} sx={{ textTransform: 'none' }}>
@@ -1304,7 +1389,9 @@ export function PerformancesScreen(): ReactElement {
         </Paper>
       ) : viewMode === 'table' ? (
         <Box sx={{ mt: 2 }}>
-          <MaterialReactTable table={table} />
+          <PerformancesSearchHighlightContext.Provider value={debouncedQuery}>
+            <MaterialReactTable table={table} />
+          </PerformancesSearchHighlightContext.Provider>
         </Box>
       ) : (
         <Box

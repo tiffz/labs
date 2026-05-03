@@ -21,11 +21,11 @@ export function augmentGooglePickerSetupErrorMessage(message: string): string {
     return [
       t,
       '',
-      'This usually means the browser API key (VITE_GOOGLE_API_KEY) is not allowed to run the Picker for this app. Check all of the following — all must be the same Google Cloud project as your Web OAuth client (VITE_GOOGLE_CLIENT_ID):',
+      'This usually means the browser API key (VITE_GOOGLE_API_KEY) is not allowed to run the Picker for this app. Check all of the following. Each item must use the same Google Cloud project as your Web OAuth client (VITE_GOOGLE_CLIENT_ID):',
       `• Same project: create the API key under APIs & Services → Credentials in that project (not a different project).`,
       `• Enable APIs (Library): Google Picker API and Google Drive API.`,
       `• Key “API restrictions”: restricted key → allow at least Google Picker API and Google Drive API.`,
-      `• Key “Application restrictions” (HTTP referrers): include your dev and prod origins with a path wildcard, e.g. ${origin}/* — and if you use Vite on loopback, also add http://127.0.0.1${portSegment}/* and http://localhost${portSegment}/*.`,
+      `• Key “Application restrictions” (HTTP referrers): include your dev and prod origins with a path wildcard, e.g. ${origin}/*. If you use Vite on loopback, also add http://127.0.0.1${portSegment}/* and http://localhost${portSegment}/*.`,
       `• Picker app id: Encore sets this from the numeric prefix of VITE_GOOGLE_CLIENT_ID (Cloud “Project number”). If yours is unusual, set VITE_GOOGLE_PICKER_APP_ID to the Project number from the Cloud Console dashboard.`,
       '• Encore only sends Picker setOrigin when the app is in an iframe (or when VITE_GOOGLE_PICKER_ORIGIN is set). If you still see this error, double-check the bullets above in Cloud Console.',
       '• After changing .env, restart npm run dev (or redeploy). See Encore README → Browser API key.',

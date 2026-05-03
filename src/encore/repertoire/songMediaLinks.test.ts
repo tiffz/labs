@@ -47,7 +47,7 @@ describe('songMediaLinks', () => {
 
   it('spotifyDataSourceTrackId falls back to primary Spotify reference when legacy empty', () => {
     const s = appendSpotifyReferenceLink(minimalSong({ spotifyTrackId: undefined }), 'refonly', {
-      label: 'A — B',
+      label: 'A · B',
     });
     expect(spotifyDataSourceTrackId(s)).toBe('refonly');
   });
@@ -80,7 +80,7 @@ describe('songMediaLinks', () => {
     expect(m.artist).toBe('Evanescence');
     expect(m.albumArtUrl).toBe('https://art.example');
     expect(m.referenceLinks?.find((r) => r.spotifyTrackId === 'tid')?.label).toBe(
-      'My Immortal — Evanescence',
+      'My Immortal · Evanescence',
     );
   });
 

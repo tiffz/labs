@@ -114,7 +114,7 @@ export function AddSongDialog(props: {
 
   const trackLabel = useCallback((t: SpotifySearchTrack) => {
     const artists = t.artists?.map((a) => a.name).join(', ') ?? '';
-    return `${t.name} — ${artists}`;
+    return `${t.name} · ${artists}`;
   }, []);
 
   const applySpotifyTrack = useCallback((t: SpotifySearchTrack) => {
@@ -281,7 +281,7 @@ export function AddSongDialog(props: {
               color="text.secondary"
               sx={{ lineHeight: 1.55 }}
             >
-              Spotify isn’t configured here — fill in title and artist below.
+              Spotify isn’t configured here. Fill in title and artist below.
             </Typography>
           )}
 

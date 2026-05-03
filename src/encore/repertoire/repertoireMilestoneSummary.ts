@@ -43,7 +43,7 @@ export function milestoneProgressSummary(
       na: 0,
       todo: 0,
       total: 0,
-      labelShort: '—',
+      labelShort: 'None',
       tooltip: 'Add milestone steps in Settings to track progress here.',
     };
   }

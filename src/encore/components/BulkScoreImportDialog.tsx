@@ -525,7 +525,7 @@ export function BulkScoreImportDialog(props: BulkScoreImportDialogProps): ReactE
             return (
               <Box sx={{ display: 'flex', alignItems: 'center', minHeight: 56 }}>
                 <Typography variant="body2" sx={{ color: 'text.disabled' }}>
-                  —
+                  –
                 </Typography>
               </Box>
             );
@@ -766,7 +766,7 @@ export function BulkScoreImportDialog(props: BulkScoreImportDialogProps): ReactE
                 throw new Error('Sign in to Google to upload score files.');
               }
               if (!chartsUploadFolderId) {
-                throw new Error('Drive charts folder is not ready yet — try again in a moment.');
+                throw new Error('Drive charts folder is not ready yet. Try again in a moment.');
               }
               const created = await driveUploadFileResumable(googleAccessToken, r.file, [chartsUploadFolderId]);
               driveFileId = created.id;
@@ -988,7 +988,7 @@ export function BulkScoreImportDialog(props: BulkScoreImportDialogProps): ReactE
                   inputProps={{ 'aria-label': 'Filter score import rows' }}
                 />
                 <Tooltip
-                  title={`Paired: a library song is selected for the file. Unpaired: still need a match. Counts — all ${rows.length}, paired ${pairedTotalCount}, unpaired ${unpairedTotalCount}.`}
+                  title={`Paired: a library song is selected for the file. Unpaired: still need a match. Counts: all ${rows.length}, paired ${pairedTotalCount}, unpaired ${unpairedTotalCount}.`}
                   placement="top"
                 >
                   <ToggleButtonGroup

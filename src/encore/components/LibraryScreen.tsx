@@ -106,6 +106,15 @@ import { effectiveSongAttachments } from '../utils/songAttachments';
 import { InlineChipSelect } from '../ui/InlineEditChip';
 import { InlineSongTagsCell } from '../ui/InlineSongTagsCell';
 import { encoreMrtRepertoireTableOptions } from './encoreMrtTableDefaults';
+import {
+  ensureEncoreMrtRowActionsInOrder,
+  ensureEncoreMrtSelectLeading,
+  MRT_ROW_SELECT_COL,
+  migrateEncoreMrtColumnOrderIds,
+  migrateEncoreMrtColumnVisibility,
+  normalizeEncoreMrtColumnOrder,
+  withEncoreMrtTrailingSpacer,
+} from './encoreMrtColumnOrder';
 import { encorePossessivePageTitle } from '../utils/encorePossessivePageTitle';
 import { performanceVideoOpenUrl } from '../utils/performanceVideoUrl';
 import { useDebouncedString } from '../utils/useDebouncedString';
@@ -189,7 +198,7 @@ function normalizeVenueTag(tag: string): string {
 }
 
 function formatShortDate(iso: string | null): string {
-  if (!iso) return '—';
+  if (!iso) return '–';
   try {
     return new Date(`${iso}T12:00:00`).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
   } catch {
@@ -204,23 +213,24 @@ function mrtColumnId<T extends Record<string, unknown>>(c: MRT_ColumnDef<T>): st
   return '';
 }
 
-/** MRT display column ids — keep selection first and row actions last regardless of reorder prefs. */
-const MRT_REPERTOIRE_SELECT_COL = 'mrt-row-select';
-const MRT_REPERTOIRE_ACTIONS_COL = 'mrt-row-actions';
-
-function normalizeEncoreRepertoireColumnOrder(order: string[]): string[] {
-  const hasSelect = order.includes(MRT_REPERTOIRE_SELECT_COL);
-  const hasActions = order.includes(MRT_REPERTOIRE_ACTIONS_COL);
-  const hasSpacer = order.includes('mrt-row-spacer');
-  const core = order.filter(
-    (id) => id !== MRT_REPERTOIRE_SELECT_COL && id !== MRT_REPERTOIRE_ACTIONS_COL && id !== 'mrt-row-spacer',
-  );
-  const next: string[] = [];
-  if (hasSelect) next.push(MRT_REPERTOIRE_SELECT_COL);
-  next.push(...core);
-  if (hasActions) next.push(MRT_REPERTOIRE_ACTIONS_COL);
-  if (hasSpacer) next.push('mrt-row-spacer');
-  return next;
+/** Match `state.columnOrder` so TanStack functional updaters see the same base as MRT. */
+function repertoireColumnOrderForMrt(
+  viewMode: RepertoireViewMode,
+  repColOrder: string[] | undefined,
+  repDefaultColumnOrder: string[],
+): string[] {
+  const base = repColOrder ?? repDefaultColumnOrder;
+  if (viewMode !== 'table') {
+    return withEncoreMrtTrailingSpacer(
+      normalizeEncoreMrtColumnOrder(
+        ensureEncoreMrtRowActionsInOrder(base.filter((id) => id !== MRT_ROW_SELECT_COL)),
+      ),
+    );
+  }
+  const withSelect = base.includes(MRT_ROW_SELECT_COL) ? base : [MRT_ROW_SELECT_COL, ...base];
+  const withActions = ensureEncoreMrtRowActionsInOrder(withSelect);
+  const normalized = normalizeEncoreMrtColumnOrder(withActions);
+  return withEncoreMrtTrailingSpacer(ensureEncoreMrtSelectLeading(normalized));
 }
 
 /** Show dense row actions on hover (fine pointer); keep visible on touch/coarse pointers. */
@@ -811,8 +821,12 @@ export function LibraryScreen(): React.ReactElement {
     if (!r) return;
     if (lastAppliedRepTableRef.current === r) return;
     lastAppliedRepTableRef.current = r;
-    setRepColVis(mergeRepertoireColumnVisibility(r.columnVisibility));
-    setRepColOrder(r.columnOrder?.length ? normalizeEncoreRepertoireColumnOrder(r.columnOrder) : undefined);
+    setRepColVis(mergeRepertoireColumnVisibility(migrateEncoreMrtColumnVisibility(r.columnVisibility ?? {})));
+    setRepColOrder(
+      r.columnOrder?.length
+        ? withEncoreMrtTrailingSpacer(normalizeEncoreMrtColumnOrder(migrateEncoreMrtColumnOrderIds(r.columnOrder)))
+        : undefined,
+    );
     setRepSorting(r.sorting?.length ? r.sorting : [{ id: 'title', desc: false }]);
   }, [repertoireExtras.tableUi]);
 
@@ -1230,11 +1244,11 @@ export function LibraryScreen(): React.ReactElement {
       const perfCount = perfList.length;
       const venueSet = new Set(perfList.map((p) => normalizeVenueTag(p.venueTag)));
       const venuesList = [...venueSet].sort((a, b) => a.localeCompare(b));
-      const venues = venuesList.join(', ') || '—';
+      const venues = venuesList.join(', ') || '–';
       const last =
         perfList.length === 0 ? null : perfList.reduce((best, p) => (p.date >= best.date ? p : best), perfList[0]!).date;
       const latestPerf = perfList.length === 0 ? null : perfList[0];
-      const keyDisplay = s.performanceKey?.trim() || '—';
+      const keyDisplay = s.performanceKey?.trim() || '–';
       const ms = milestoneProgressSummary(s, repertoireExtras.milestoneTemplate);
       const tags = s.tags ?? [];
       const spotId = s.spotifyTrackId?.trim() ?? '';
@@ -1242,7 +1256,7 @@ export function LibraryScreen(): React.ReactElement {
         ? spotId.length > 10
           ? `${spotId.slice(0, 8)}…`
           : spotId
-        : '—';
+        : '–';
       return {
         song: s,
         title: s.title,
@@ -1637,7 +1651,7 @@ export function LibraryScreen(): React.ReactElement {
               </Typography>
             ) : (
               <Typography variant="body2" sx={{ color: 'text.disabled' }}>
-                —
+                –
               </Typography>
             );
           return (
@@ -1775,7 +1789,7 @@ export function LibraryScreen(): React.ReactElement {
                   </Typography>
                 ) : (
                   <Typography variant="body2" sx={{ color: 'text.disabled' }}>
-                    —
+                    –
                   </Typography>
                 )
               }
@@ -1815,7 +1829,7 @@ export function LibraryScreen(): React.ReactElement {
                   </Typography>
                 ) : (
                   <Typography variant="body2" sx={{ color: 'text.disabled' }}>
-                    —
+                    –
                   </Typography>
                 )
               }
@@ -1894,7 +1908,7 @@ export function LibraryScreen(): React.ReactElement {
                   </Typography>
                 ) : (
                   <Typography variant="body2" sx={{ color: 'text.disabled' }}>
-                    —
+                    –
                   </Typography>
                 )
               }
@@ -1934,7 +1948,7 @@ export function LibraryScreen(): React.ReactElement {
                   </Typography>
                 ) : (
                   <Typography variant="body2" sx={{ color: 'text.disabled' }}>
-                    —
+                    –
                   </Typography>
                 )
               }
@@ -1959,7 +1973,7 @@ export function LibraryScreen(): React.ReactElement {
           if (list.length === 0) {
             return (
               <Typography variant="body2" sx={{ color: 'text.disabled' }}>
-                —
+                –
               </Typography>
             );
           }
@@ -2090,17 +2104,28 @@ export function LibraryScreen(): React.ReactElement {
     [theme.palette.background.paper],
   );
   const repertoireDisplayColumnDefOptions = useMemo(
-    () => ({ 'mrt-row-actions': { header: '', size: 52 } }),
+    () => ({
+      [MRT_ROW_SELECT_COL]: {
+        enableColumnOrdering: false,
+        /** `defaultColumn` below uses minSize 100; override so the checkbox column stays icon-width. */
+        size: 44,
+        minSize: 40,
+        maxSize: 56,
+        muiTableHeadCellProps: { sx: { px: 1, py: 1.25, verticalAlign: 'middle' } },
+        muiTableBodyCellProps: { sx: { px: 1, py: 1.25, verticalAlign: 'middle' } },
+      },
+      'mrt-row-actions': { header: '', size: 52 },
+    }),
     [],
   );
   const repertoireMrtState = useMemo(
     () => ({
       rowSelection,
       columnVisibility: repColVis,
-      columnOrder: normalizeEncoreRepertoireColumnOrder(repColOrder ?? repDefaultColumnOrder),
+      columnOrder: repertoireColumnOrderForMrt(viewMode, repColOrder, repDefaultColumnOrder),
       sorting: repSorting,
     }),
-    [rowSelection, repColVis, repColOrder, repDefaultColumnOrder, repSorting],
+    [rowSelection, repColVis, repColOrder, repDefaultColumnOrder, repSorting, viewMode],
   );
   const handleRepertoireColumnVisibilityChange = useCallback(
     (updater: Parameters<NonNullable<Parameters<typeof useMaterialReactTable<EncoreRepertoireMrtRow>>[0]['onColumnVisibilityChange']>>[0]) => {
@@ -2115,14 +2140,18 @@ export function LibraryScreen(): React.ReactElement {
   const handleRepertoireColumnOrderChange = useCallback(
     (updater: Parameters<NonNullable<Parameters<typeof useMaterialReactTable<EncoreRepertoireMrtRow>>[0]['onColumnOrderChange']>>[0]) => {
       setRepColOrder((prev) => {
-        const base = prev ?? repDefaultColumnOrder;
-        const next = typeof updater === 'function' ? (updater as (p: string[]) => string[])(base) : updater;
-        const normalized = normalizeEncoreRepertoireColumnOrder(next);
+        const base = repertoireColumnOrderForMrt(viewMode, prev, repDefaultColumnOrder);
+        const nextRaw = typeof updater === 'function' ? (updater as (p: string[]) => string[])(base) : updater;
+        const next =
+          viewMode === 'table'
+            ? ensureEncoreMrtSelectLeading(ensureEncoreMrtRowActionsInOrder(nextRaw))
+            : ensureEncoreMrtRowActionsInOrder(nextRaw);
+        const normalized = withEncoreMrtTrailingSpacer(normalizeEncoreMrtColumnOrder(next));
         persistRepertoireTablePrefs({ columnOrder: normalized });
         return normalized;
       });
     },
-    [repDefaultColumnOrder, persistRepertoireTablePrefs],
+    [repDefaultColumnOrder, persistRepertoireTablePrefs, viewMode],
   );
   const handleRepertoireSortingChange = useCallback(
     (updater: Parameters<NonNullable<Parameters<typeof useMaterialReactTable<EncoreRepertoireMrtRow>>[0]['onSortingChange']>>[0]) => {
@@ -2443,13 +2472,13 @@ export function LibraryScreen(): React.ReactElement {
       {songs.length === 0 && (
         <Stack spacing={2} sx={{ py: 5, alignItems: 'center', px: 2, maxWidth: 560, mx: 'auto' }}>
           <Typography color="text.secondary" sx={{ textAlign: 'center', lineHeight: 1.65 }}>
-            Nothing here yet — add a song to start. Data stays on this device until you sign in to Google for Drive
-            sync (Account menu).
+            Nothing here yet. Add a song to start. Data stays on this device until you sign in to Google for Drive sync
+            (Account menu).
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', lineHeight: 1.65, maxWidth: 480 }}>
-            The fastest way to build your library is usually a playlist import. Spotify titles and artists are the
-            most structured, so starting with a Spotify playlist (then adding YouTube playlists in the same import if
-            you want) tends to match more reliably than YouTube-only.
+            Playlist import is usually the fastest way to grow the library. Spotify rows give cleaner titles and artists
+            than YouTube alone, so many people start from a Spotify playlist and add YouTube playlists in the same import
+            when they need to.
           </Typography>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} justifyContent="center" sx={{ width: 1 }}>
             <Button variant="contained" size="small" startIcon={<AddIcon />} onClick={() => setAddSongOpen(true)} sx={{ textTransform: 'none' }}>
@@ -2670,7 +2699,7 @@ export function LibraryScreen(): React.ReactElement {
 
       <Dialog open={Boolean(perfBrowse)} onClose={() => setPerfBrowse(null)} fullWidth maxWidth="xs">
         <DialogTitle sx={encoreDialogTitleSx}>
-          {perfBrowse ? `Edit performance — ${perfBrowse.song.title}` : 'Edit performance'}
+          {perfBrowse ? `Edit performance: ${perfBrowse.song.title}` : 'Edit performance'}
         </DialogTitle>
         <DialogContent sx={encoreDialogContentSx}>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
@@ -2772,15 +2801,14 @@ export function LibraryScreen(): React.ReactElement {
             track’s catalog metadata. Songs without a Spotify source on file are skipped.
           </Typography>
           <Typography variant="body2" sx={{ mb: 1.5 }}>
-            Selected: <strong>{bulkSpotifyRefreshPlan.total}</strong> — will refresh{' '}
-            <strong>{bulkSpotifyRefreshPlan.eligibleCount}</strong> with a Spotify id
+            Selected: <strong>{bulkSpotifyRefreshPlan.total}</strong>.{' '}
+            <strong>{bulkSpotifyRefreshPlan.eligibleCount}</strong> will refresh from Spotify metadata.
             {bulkSpotifyRefreshPlan.skippedNoSource > 0 ? (
               <>
                 {' '}
-                (<strong>{bulkSpotifyRefreshPlan.skippedNoSource}</strong> skipped, no Spotify source)
+                (<strong>{bulkSpotifyRefreshPlan.skippedNoSource}</strong> skipped: no Spotify source on file.)
               </>
             ) : null}
-            .
           </Typography>
           {!spotifyClientId ? (
             <Alert severity="warning" sx={{ mb: 1.5 }}>

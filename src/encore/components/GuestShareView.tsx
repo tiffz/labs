@@ -172,7 +172,7 @@ export function GuestShareView({ fileId }: { fileId: string }): React.ReactEleme
             {message ?? 'The link may have expired or been removed.'}
           </Typography>
           <Typography color="text.secondary" sx={{ lineHeight: 1.6, mb: 3 }}>
-            If this keeps happening, ask the owner to publish the snapshot again from Encore — the link stays the same.
+            If this keeps happening, ask the owner to publish the snapshot again from Encore. The link does not change.
           </Typography>
           <Button variant="outlined" startIcon={<RefreshIcon />} onClick={retry}>
             Try again

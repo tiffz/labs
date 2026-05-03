@@ -82,7 +82,7 @@ import { SpotifyBrandIcon, YouTubeBrandIcon } from './EncoreBrandIcon';
 type Step = 'urls' | 'review';
 
 const LIBRARY_MATCH_FILTER_TOOLTIP =
-  'Encore matches when titles and artists are similar, or when a Spotify or YouTube id on this row already exists on a library song. Use Matched or No match to review suggestions. For rows with no match, choose a library song or—for YouTube-only imports—search Spotify to link before importing.';
+  'Rows match your library when titles and artists are close, or when this row’s Spotify or YouTube id is already on a song. Use Matched / No match to review suggestions. If there is no match, pick a library song or link Spotify (especially for YouTube-only rows) before importing.';
 
 function youtubeThumbUrl(videoId: string): string {
   return `https://i.ytimg.com/vi/${encodeURIComponent(videoId)}/mqdefault.jpg`;
@@ -1385,7 +1385,7 @@ export function PlaylistImportDialog(props: {
                                       size="small"
                                       color="primary"
                                       variant="outlined"
-                                      label={`${r.spotifyEnrichment.title} — ${r.spotifyEnrichment.artist}`}
+                                      label={`${r.spotifyEnrichment.title} · ${r.spotifyEnrichment.artist}`}
                                       sx={{
                                         maxWidth: '100%',
                                         height: 'auto',
@@ -1416,7 +1416,7 @@ export function PlaylistImportDialog(props: {
                                 <>
                                   {rowLibraryMatched ? (
                                     <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem' }}>
-                                      —
+                                      –
                                     </Typography>
                                   ) : (
                                     <>
@@ -1442,7 +1442,7 @@ export function PlaylistImportDialog(props: {
                             </Stack>
                           ) : (
                             <Typography variant="body2" color="text.secondary">
-                              —
+                              –
                             </Typography>
                           )}
                         </TableCell>
@@ -1515,7 +1515,7 @@ export function PlaylistImportDialog(props: {
                                       const p = parseYoutubeTitleForSongWithContext(r.youtube.title, {
                                         description: r.youtube.description,
                                       });
-                                      return `${p.artist ? `${p.artist} — ` : ''}${p.songTitle}`;
+                                      return `${p.artist ? `${p.artist} · ` : ''}${p.songTitle}`;
                                     })()}
                                   </Typography>
                                 ) : null}
@@ -1557,7 +1557,7 @@ export function PlaylistImportDialog(props: {
                               </Stack>
                             ) : (
                               <Typography variant="body2" color="text.secondary">
-                                —
+                                –
                               </Typography>
                             )}
                           </TableCell>
@@ -1712,7 +1712,7 @@ export function PlaylistImportDialog(props: {
                                         size="small"
                                         color="primary"
                                         variant="outlined"
-                                        label={`${r.spotifyEnrichment.title} — ${r.spotifyEnrichment.artist}`}
+                                        label={`${r.spotifyEnrichment.title} · ${r.spotifyEnrichment.artist}`}
                                         sx={{
                                           maxWidth: '100%',
                                           height: 'auto',

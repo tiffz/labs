@@ -145,7 +145,9 @@ export function EncoreAccountMenu(props: {
             ? `created ${attShortcuts} attachment shortcut${attShortcuts === 1 ? '' : 's'}`
             : null,
         ].filter(Boolean);
-        setReorganizeMsg(`Drive is up to date — ${parts.join(', ') || 'nothing to do'}.`);
+        setReorganizeMsg(
+          parts.length > 0 ? `Drive is up to date: ${parts.join(', ')}.` : 'Drive is up to date. Nothing to change.',
+        );
       }
     } catch (e) {
       setReorganizeMsg(`Could not reorganize: ${e instanceof Error ? e.message : String(e)}`);
