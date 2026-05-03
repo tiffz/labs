@@ -1,6 +1,8 @@
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import ButtonBase from '@mui/material/ButtonBase';
+import Snackbar from '@mui/material/Snackbar';
+import Alert from '@mui/material/Alert';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
 import Toolbar from '@mui/material/Toolbar';
@@ -8,22 +10,42 @@ import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import useScrollTrigger from '@mui/material/useScrollTrigger';
-import { useCallback, useEffect, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useState } from 'react';
 import type { EncoreAppRoute } from '../routes/encoreAppHash';
-import { navigateEncore, parseEncoreAppHash } from '../routes/encoreAppHash';
-import { useEncore } from '../context/EncoreContext';
+import { encoreAppHref, navigateEncore, parseEncoreAppHash } from '../routes/encoreAppHash';
+import { useEncoreSync } from '../context/EncoreContext';
 import { encoreScreenPaddingX } from '../theme/encoreM3Layout';
-import { encoreFrostedSurfaceSx, encoreRadius } from '../theme/encoreUiTokens';
+import { encoreHairline, encoreRadius } from '../theme/encoreUiTokens';
 import { EncoreAppShell } from '../ui/EncoreAppShell';
 import { EncoreAccountMenu } from './EncoreAccountMenu';
 import { EncoreShareMenu } from './EncoreShareMenu';
-import { ConflictResolutionDialog } from './ConflictResolutionDialog';
-import { PracticeScreen } from './PracticeScreen';
-import { LibraryScreen } from './LibraryScreen';
-import { PerformancesScreen } from './PerformancesScreen';
-import { ImportGuideScreen } from './ImportGuideScreen';
-import { RepertoireSettingsScreen } from './RepertoireSettingsScreen';
-import { SongPage } from './SongPage';
+import { SyncConflictReviewDialog } from './SyncConflictReviewDialog';
+import { EncoreScreenSkeleton } from './EncoreScreenSkeleton';
+
+const SongPage = lazy(async () => {
+  const m = await import('./SongPage');
+  return { default: m.SongPage };
+});
+const PracticeScreen = lazy(async () => {
+  const m = await import('./PracticeScreen');
+  return { default: m.PracticeScreen };
+});
+const LibraryScreen = lazy(async () => {
+  const m = await import('./LibraryScreen');
+  return { default: m.LibraryScreen };
+});
+const PerformancesScreen = lazy(async () => {
+  const m = await import('./PerformancesScreen');
+  return { default: m.PerformancesScreen };
+});
+const ImportGuideScreen = lazy(async () => {
+  const m = await import('./ImportGuideScreen');
+  return { default: m.ImportGuideScreen };
+});
+const RepertoireSettingsScreen = lazy(async () => {
+  const m = await import('./RepertoireSettingsScreen');
+  return { default: m.RepertoireSettingsScreen };
+});
 
 function bareSignedInShareHash(): boolean {
   const raw = window.location.hash.replace(/^#/, '').trim();
@@ -41,8 +63,27 @@ export function EncoreMainShell(): React.ReactElement {
   const compactHeaderTabs = useMediaQuery(theme.breakpoints.down('sm'));
   const [route, setRoute] = useState<EncoreAppRoute>(() => readHashRoute());
   const [shareMenuKick, setShareMenuKick] = useState(0);
-  const { syncState, syncMessage, conflict, resolveConflictRemote, resolveConflictLocal, dismissConflict } = useEncore();
-  const scrolled = useScrollTrigger({ disableHysteresis: true, threshold: 4 });
+  const {
+    syncState,
+    syncMessage,
+    conflict,
+    conflictAnalysis,
+    resolveConflictWithChoices,
+    dismissConflict,
+    lastSilentMerge,
+    acknowledgeSilentMerge,
+  } = useEncoreSync();
+  const scrolled = useScrollTrigger({ disableHysteresis: false, threshold: 8 });
+
+  const silentMergeMessage = lastSilentMerge
+    ? (() => {
+        const parts: string[] = [];
+        if (lastSilentMerge.localOnlyCount > 0) parts.push(`${lastSilentMerge.localOnlyCount} from this device`);
+        if (lastSilentMerge.remoteOnlyCount > 0) parts.push(`${lastSilentMerge.remoteOnlyCount} from Drive`);
+        if (parts.length === 0) return 'Merged with Google Drive.';
+        return `Merged ${parts.join(' + ')} from Google Drive.`;
+      })()
+    : null;
 
   const openShareFromHash = useCallback(() => {
     if (!bareSignedInShareHash()) return;
@@ -70,9 +111,9 @@ export function EncoreMainShell(): React.ReactElement {
   const librarySectionTab =
     onSongRoute
       ? 0
-      : route.kind === 'practice'
+      : route.kind === 'performances'
         ? 1
-        : route.kind === 'performances'
+        : route.kind === 'practice'
           ? 2
           : route.kind === 'repertoireSettings'
             ? 3
@@ -87,8 +128,16 @@ export function EncoreMainShell(): React.ReactElement {
         color="transparent"
         elevation={0}
         sx={{
-          ...encoreFrostedSurfaceSx,
-          borderBottom: 'none',
+          /**
+           * Avoid `backdrop-filter` on sticky chrome: when the main column scrolls under the
+           * AppBar, blur compositing dominates frame time (felt as jank even with small tables).
+           * Use a solid translucent bar instead — same warmth, much cheaper to paint.
+           */
+          bgcolor: (t) =>
+            t.palette.mode === 'dark' ? 'rgba(20, 16, 30, 0.94)' : 'rgba(255, 255, 255, 0.94)',
+          borderBottomWidth: 1,
+          borderBottomStyle: 'solid',
+          borderBottomColor: encoreHairline,
           transition: theme.transitions.create('box-shadow', { duration: 240 }),
           boxShadow: scrolled ? '0 4px 20px rgba(76, 29, 149, 0.10)' : 'none',
         }}
@@ -113,9 +162,8 @@ export function EncoreMainShell(): React.ReactElement {
             }}
           >
             <ButtonBase
-              component="button"
-              type="button"
-              onClick={() => navigateEncore({ kind: 'library' })}
+              component="a"
+              href={encoreAppHref({ kind: 'library' })}
               aria-label="Encore, go to library"
               sx={{
                 display: 'inline-flex',
@@ -187,13 +235,6 @@ export function EncoreMainShell(): React.ReactElement {
           >
             <Tabs
               value={librarySectionTab}
-              onChange={(_, v) => {
-                if (v === 0) navigateEncore({ kind: 'library' });
-                else if (v === 1) navigateEncore({ kind: 'practice' });
-                else if (v === 2) navigateEncore({ kind: 'performances' });
-                else if (v === 3) navigateEncore({ kind: 'repertoireSettings' });
-                else navigateEncore({ kind: 'help' });
-              }}
               aria-label="Encore library sections"
               variant={compactHeaderTabs ? 'fullWidth' : 'standard'}
               sx={{
@@ -215,20 +256,39 @@ export function EncoreMainShell(): React.ReactElement {
             >
               <Tab
                 label="Repertoire"
+                component="a"
+                href={encoreAppHref({ kind: 'library' })}
                 id="encore-tab-repertoire"
                 aria-controls="encore-panel-repertoire"
-                onClick={() => {
-                  if (route.kind === 'song' || route.kind === 'songNew') navigateEncore({ kind: 'library' });
-                }}
+              />
+              <Tab
+                label="Performances"
+                component="a"
+                href={encoreAppHref({ kind: 'performances' })}
+                id="encore-tab-performances"
+                aria-controls="encore-panel-performances"
               />
               <Tab
                 label="Practice"
+                component="a"
+                href={encoreAppHref({ kind: 'practice' })}
                 id="encore-tab-practice"
                 aria-controls="encore-panel-practice"
               />
-              <Tab label="Performances" id="encore-tab-performances" aria-controls="encore-panel-performances" />
-              <Tab label="Library settings" id="encore-tab-setup" aria-controls="encore-panel-setup" />
-              <Tab label="Help" id="encore-tab-help" aria-controls="encore-panel-help" />
+              <Tab
+                label="Settings"
+                component="a"
+                href={encoreAppHref({ kind: 'repertoireSettings' })}
+                id="encore-tab-setup"
+                aria-controls="encore-panel-setup"
+              />
+              <Tab
+                label="Help"
+                component="a"
+                href={encoreAppHref({ kind: 'help' })}
+                id="encore-tab-help"
+                aria-controls="encore-panel-help"
+              />
             </Tabs>
           </Box>
         </Toolbar>
@@ -241,7 +301,9 @@ export function EncoreMainShell(): React.ReactElement {
             aria-labelledby="encore-tab-repertoire"
             sx={{ flex: 1, minHeight: 0, minWidth: 0, width: 1, display: 'flex', flexDirection: 'column' }}
           >
-            <SongPage key={songPageKey} route={route} />
+            <Suspense fallback={<EncoreScreenSkeleton label="Loading song" />}>
+              <SongPage key={songPageKey} route={route} />
+            </Suspense>
           </Box>
         ) : (
           <Box
@@ -270,27 +332,44 @@ export function EncoreMainShell(): React.ReactElement {
             }
             sx={{ flex: 1, minHeight: 0, minWidth: 0, width: 1, display: 'flex', flexDirection: 'column' }}
           >
-            {route.kind === 'practice' ? (
-              <PracticeScreen />
-            ) : route.kind === 'performances' ? (
-              <PerformancesScreen />
-            ) : route.kind === 'repertoireSettings' ? (
-              <RepertoireSettingsScreen />
-            ) : route.kind === 'help' ? (
-              <ImportGuideScreen />
-            ) : (
-              <LibraryScreen />
-            )}
+            <Suspense fallback={<EncoreScreenSkeleton />}>
+              {route.kind === 'practice' ? (
+                <PracticeScreen />
+              ) : route.kind === 'performances' ? (
+                <PerformancesScreen />
+              ) : route.kind === 'repertoireSettings' ? (
+                <RepertoireSettingsScreen />
+              ) : route.kind === 'help' ? (
+                <ImportGuideScreen />
+              ) : (
+                <LibraryScreen />
+              )}
+            </Suspense>
           </Box>
         )}
       </Box>
-      <ConflictResolutionDialog
-        open={Boolean(conflict?.conflict)}
-        conflict={conflict}
-        onUseRemote={() => void resolveConflictRemote()}
-        onKeepLocal={() => void resolveConflictLocal()}
+      <SyncConflictReviewDialog
+        open={Boolean(conflict?.conflict) && (conflictAnalysis?.bothEdited.length ?? 0) > 0}
+        analysis={conflictAnalysis}
+        onApply={(choices) => void resolveConflictWithChoices(choices)}
         onDismiss={dismissConflict}
       />
+      <Snackbar
+        open={Boolean(silentMergeMessage)}
+        autoHideDuration={4500}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        onClose={acknowledgeSilentMerge}
+        sx={{ bottom: { xs: 96, sm: 104 } }}
+      >
+        <Alert
+          onClose={acknowledgeSilentMerge}
+          severity="success"
+          variant="filled"
+          sx={{ borderRadius: 2 }}
+        >
+          {silentMergeMessage}
+        </Alert>
+      </Snackbar>
     </EncoreAppShell>
   );
 }

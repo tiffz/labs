@@ -5,11 +5,29 @@
  * still reads in the air without making a heavy gradient backdrop. Visual
  * depth comes from hairline dividers and the shadow scale in
  * `theme/encoreUiTokens.ts`, not from a tinted Paper everywhere.
+ *
+ * IMPORTANT: the radial-gradient wash lives on a `position: fixed` pseudo-element
+ * (NOT on the shell itself with `background-attachment: fixed`). With
+ * `background-attachment: fixed` the browser must re-rasterize the gradient
+ * against the viewport on every scroll frame, which makes the page-level
+ * scrollbar feel "heavy" even on cheap content. The fixed pseudo-element gets
+ * its own composited layer that the GPU caches once; scroll then only translates
+ * the document above it.
  */
 .encore-app-shell {
+  position: relative;
+  isolation: isolate;
   min-height: 100vh;
   min-height: 100dvh;
   background-color: #fbf7fb;
+}
+
+.encore-app-shell::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
   background-image:
     radial-gradient(
       circle at 100% 0%,
@@ -17,7 +35,9 @@
       transparent 45%
     ),
     radial-gradient(circle at 0% 0%, rgba(124, 58, 237, 0.05), transparent 40%);
-  background-attachment: fixed;
+  /* Promote to its own composite layer so scroll never re-rasterizes the wash. */
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 .encore-markdown-preview h1,

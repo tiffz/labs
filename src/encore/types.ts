@@ -5,6 +5,9 @@ export const ENCORE_ACCOMPANIMENT_TAGS = [
   'Guitar',
   'Violin',
   'Piano',
+  'Flute',
+  'Drums',
+  'Band',
   'Backing Track',
   'Backing Vocals',
   'Duet partner',
@@ -39,9 +42,17 @@ export interface EncoreSongOnlyMilestone {
 export interface EncoreSongAttachment {
   kind: EncoreSongAttachmentKind;
   driveFileId: string;
+  /** When the file lives outside Encore’s canonical folder, shortcut in that folder (optional). */
+  encoreShortcutDriveFileId?: string;
   label?: string;
   /** Charts: the default chart for practice links and legacy {@link EncoreSong.sheetMusicDriveFileId} sync. */
   isPrimaryChart?: boolean;
+  /**
+   * Optional singer notes for this attachment (e.g. "transposed copy", "best take").
+   * Surfaced via {@link EncoreAudioResourceNotesWrapper} on the song page so charts and takes
+   * have parity with reference/backing media link notes ({@link EncoreMediaLink.notes}).
+   */
+  notes?: string;
 }
 
 export type EncoreMediaSource = 'spotify' | 'youtube' | 'drive';
@@ -61,7 +72,11 @@ export interface EncoreMediaLink {
   spotifyTrackId?: string;
   youtubeVideoId?: string;
   driveFileId?: string;
+  /** Shortcut in Encore canonical folder when {@link driveFileId} targets a file elsewhere. */
+  encoreShortcutDriveFileId?: string;
   label?: string;
+  /** Optional singer notes (e.g. which take to use for auditions). Omitted from public snapshots by default. */
+  notes?: string;
   /**
    * Inferred from placement: reference links use `reference`, backing links use `karaoke`.
    * Optional for older rows; do not surface in UI.
@@ -174,6 +189,31 @@ export interface PublicSnapshot {
   performances: PublicSnapshotPerformance[];
 }
 
+/** Persisted Material React Table layout for Encore list screens (synced via repertoire extras). */
+export type EncoreMrtTablePrefs = {
+  columnVisibility?: Record<string, boolean>;
+  columnOrder?: string[];
+  sorting?: Array<{ id: string; desc: boolean }>;
+};
+
+export type EncoreTableUiBundle = {
+  repertoire?: EncoreMrtTablePrefs;
+  performances?: EncoreMrtTablePrefs;
+};
+
+/** Keys for optional Google Drive folder overrides (new uploads); unset = Encore default folder. */
+export type EncoreDriveUploadFolderKind =
+  | 'performances'
+  | 'charts'
+  | 'referenceTracks'
+  | 'backingTracks'
+  | 'takes';
+
+export type EncoreDriveUploadFolderOverrides = Partial<Record<EncoreDriveUploadFolderKind, string>>;
+
+/** Optional display names for picked folders (Drive metadata); same keys as overrides. */
+export type EncoreDriveUploadFolderOverrideLabels = Partial<Record<EncoreDriveUploadFolderKind, string>>;
+
 export interface RepertoireWirePayload {
   version: 1;
   exportedAt: string;
@@ -190,4 +230,10 @@ export interface RepertoireWirePayload {
    * Stored in `repertoire_data.json` with other extras.
    */
   currentlyLearningSpotifyPlaylistId?: string;
+  /** Column visibility, order, and sort for library / performances tables. */
+  tableUi?: EncoreTableUiBundle;
+  /** Optional Drive folder ids for uploads (bytes); Encore keeps shortcuts under its own `Encore_App` tree. */
+  driveUploadFolderOverrides?: EncoreDriveUploadFolderOverrides;
+  /** Human-readable folder titles for UI (from Drive); optional. */
+  driveUploadFolderOverrideLabels?: EncoreDriveUploadFolderOverrideLabels;
 }

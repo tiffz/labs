@@ -5,7 +5,6 @@ import Typography from '@mui/material/Typography';
 import type { Theme } from '@mui/material/styles';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import type { ReactElement, ReactNode } from 'react';
 import type { EncoreMediaLink, EncoreMediaSource } from '../types';
@@ -62,8 +61,15 @@ export type EncoreMediaLinkRowProps = {
   openAriaLabel?: string;
   /** Callback to remove the link/attachment. Omit to hide the affordance. */
   onRemove?: () => void;
-  /** Optional trailing slot content (e.g. "Catalog" badge). Inserted before the actions. */
+  /** Optional trailing slot content (e.g. song info source marker). Inserted before the actions. */
   trailing?: ReactNode;
+  /**
+   * Wraps only the icon + caption + trailing strip (not star/open/remove). Use with
+   * {@link EncoreStreamingHoverCard} so interactive buttons do not sit inside the hover anchor.
+   */
+  hoverStripWrapper?: (strip: ReactElement) => ReactElement;
+  /** When true, no outer chip border (parent supplies a single shell around row + notes). */
+  embedded?: boolean;
 };
 
 /**
@@ -85,6 +91,8 @@ export function EncoreMediaLinkRow(props: EncoreMediaLinkRowProps): ReactElement
     openAriaLabel,
     onRemove,
     trailing,
+    hoverStripWrapper,
+    embedded = false,
   } = props;
   const source = sourceProp ?? link?.source;
   const resolvedCaption = caption ?? (link ? formatMediaLinkShortCaption(link) : '');
@@ -92,18 +100,51 @@ export function EncoreMediaLinkRow(props: EncoreMediaLinkRowProps): ReactElement
   const primaryCopy = PRIMARY_COPY[slot];
   const removeCopy = REMOVE_COPY[slot];
 
-  return (
-    <Box sx={(t: Theme) => encoreMediaLinkRowSx(t, isPrimary)}>
+  /*
+   * The icon + caption strip is the row's primary "open the resource" affordance: when an
+   * `openUrl` is supplied we render it as an `<a>` link so a single click opens the asset
+   * directly (Spotify/YouTube/Drive). Previously the strip was non-interactive and the user
+   * had to click a separate external-link icon — an extra click for the most common action.
+   * The dedicated "Open" icon button is intentionally dropped to avoid duplicating affordances.
+   */
+  const stripBaseSx = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 0.5,
+    minWidth: 0,
+    flex: '1 1 auto',
+    color: 'inherit',
+    textDecoration: 'none',
+  } as const;
+  const stripLinkSx = {
+    ...stripBaseSx,
+    cursor: 'pointer',
+    borderRadius: 0.75,
+    transition: 'background-color 120ms ease, color 120ms ease',
+    '&:hover .EncoreMediaLinkRowCaption, &:focus-visible .EncoreMediaLinkRowCaption': {
+      color: 'primary.main',
+      textDecoration: 'underline',
+    },
+    '&:focus-visible': {
+      outline: '2px solid',
+      outlineColor: 'primary.main',
+      outlineOffset: 2,
+    },
+  } as const;
+
+  const stripBody = (
+    <>
       {source === 'spotify' ? (
         <SpotifyBrandIcon sx={{ fontSize: 15, flexShrink: 0, opacity: 0.88 }} aria-hidden />
       ) : source === 'youtube' ? (
         <YouTubeBrandIcon sx={{ fontSize: 15, flexShrink: 0, opacity: 0.88 }} aria-hidden />
       ) : null}
       <Typography
+        className="EncoreMediaLinkRowCaption"
         variant="caption"
         noWrap
         sx={{
-          maxWidth: { xs: 160, sm: 320 },
+          maxWidth: { xs: 140, sm: 220 },
           fontWeight: 600,
           fontSize: '0.8125rem',
           color: 'text.primary',
@@ -119,7 +160,41 @@ export function EncoreMediaLinkRow(props: EncoreMediaLinkRowProps): ReactElement
             <StarIcon sx={{ fontSize: 15, color: 'text.primary' }} aria-hidden />
           </Box>
         </Tooltip>
-      ) : onMakePrimary ? (
+      ) : null}
+    </>
+  );
+
+  const stripInner = openUrl ? (
+    <Box
+      component="a"
+      href={openUrl}
+      target="_blank"
+      rel="noreferrer"
+      aria-label={openAriaLabel ?? 'Open link'}
+      sx={stripLinkSx}
+    >
+      {stripBody}
+    </Box>
+  ) : (
+    <Box sx={stripBaseSx}>{stripBody}</Box>
+  );
+
+  const wrappedStrip = hoverStripWrapper ? hoverStripWrapper(stripInner) : stripInner;
+
+  return (
+    <Box
+      sx={(t: Theme) => ({
+        ...encoreMediaLinkRowSx(t, isPrimary, { embedded }),
+        display: 'inline-flex',
+        alignItems: 'center',
+        maxWidth: embedded ? 'min(100%, 280px)' : '100%',
+        flexWrap: 'nowrap',
+        gap: 0.25,
+        pr: hoverStripWrapper ? 0.375 : undefined,
+      })}
+    >
+      {wrappedStrip}
+      {!isPrimary && onMakePrimary ? (
         <Tooltip title={primaryCopy.promote}>
           <IconButton
             size="small"
@@ -128,21 +203,6 @@ export function EncoreMediaLinkRow(props: EncoreMediaLinkRowProps): ReactElement
             sx={iconBtnSx}
           >
             <StarBorderIcon sx={{ fontSize: 15 }} />
-          </IconButton>
-        </Tooltip>
-      ) : null}
-      {openUrl ? (
-        <Tooltip title="Open">
-          <IconButton
-            size="small"
-            component="a"
-            href={openUrl}
-            target="_blank"
-            rel="noreferrer"
-            aria-label={openAriaLabel ?? 'Open link'}
-            sx={{ ...iconBtnSx, p: 0.35 }}
-          >
-            <OpenInNewIcon sx={{ fontSize: 15 }} />
           </IconButton>
         </Tooltip>
       ) : null}

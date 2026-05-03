@@ -9,6 +9,20 @@ Encore-specific notes:
 - **Account and sync messages**: stay factual and calm; prefer “what you can do next” over abstract reassurance.
 - **Form and settings density:** follow repo-wide [`STYLE_GUIDE.md`](../../STYLE_GUIDE.md) § _Information density (modern surfaces)_: short headings, explanatory copy in info-icon tooltips, icon buttons + tooltips for non-primary actions and external links, minimal inline paragraphs.
 
+## Form and dialog layout (Material Design / minimal UI)
+
+Use these patterns when a modal or dense form feels noisy or repetitive. They align with MD3’s emphasis on clear hierarchy, grouping, and fewer parallel explanations.
+
+1. **Spatial grouping beats section labels.** Put related inputs in one outlined `Paper` or bordered stack with light tint instead of stacking a heading (`VIDEO`, `ACCOMPANIMENT`) above every block. The frame signals “these belong together”; reserve headings for the one place that truly needs a label (e.g. chip groups with no field label).
+2. **One explanation per concern.** If the placeholder or field label already states what can go in a control, drop the `helperText`. Put edge cases and constraints in a tooltip or a single caption at the **bottom of the group**, not under every control.
+3. **Avoid duplicate affordances.** If “open in Drive” is visible next to a resolved file name, do not repeat a second full-width “Open in Drive” text button. Prefer an icon button + tooltip for the secondary open action.
+4. **Quiet primary, loud errors.** Use subtle success tint + border for resolved metadata; keep `Alert` for things that need correction (warning/error/info gates). Shorter alert copy reads faster than long sentences.
+5. **Size and density.** Prefer `size="small"` on fields and secondary buttons inside dialogs; use `minHeight` on compact drop zones so the modal does not read as a stack of oversized targets.
+6. **Terminology.** Match action names to the dialog title (`Log performance` ↔ logging flow) so users are not mapping “Add” vs “Log” mentally.
+7. **Card grids (repertoire).** Prefer a **flat card** with `border: 1` + `encoreHairline` and **no shadow** at rest; lift slightly on hover. **Do not** lump unrelated concepts (tags vs milestones vs performance history) into one tinted `Paper`; that implies a single task. Use **generous vertical spacing** (or a hairline divider) between those regions so each reads as its own idea. Keep **title + artist** as the obvious header.
+
+Reference implementation: `PerformanceEditorDialog.tsx` (intentional single `Paper` for one workflow: video source); `LibraryScreen.tsx` `RepertoireGridCard` (separate vertical sections, no shared group box).
+
 ## Canonical micro-copy
 
 Use these exact strings unless you have a strong reason not to. Consistency here helps screen-reader users and keeps the surface predictable.

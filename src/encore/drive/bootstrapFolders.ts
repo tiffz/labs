@@ -1,4 +1,4 @@
-import { driveCreateFolder, driveCreateJsonFile, driveListFiles } from './driveFetch';
+import { driveCreateFolder, driveCreateJsonFile, driveListFiles, pickPreferredDriveListFileId } from './driveFetch';
 import {
   ENCORE_PERFORMANCES_FOLDER,
   ENCORE_RECORDINGS_FOLDER,
@@ -26,8 +26,10 @@ export interface EncoreDriveBootstrap {
   snapshotFileId?: string;
 }
 
-export async function ensureEncoreDriveLayout(accessToken: string): Promise<EncoreDriveBootstrap> {
-  const meta = await getSyncMeta();
+/** Coalesce concurrent bootstraps (first Google sign-in + sync + screens all call layout). */
+const encoreDriveLayoutInflight = new Map<string, Promise<EncoreDriveBootstrap>>();
+
+function layoutFromMeta(meta: Awaited<ReturnType<typeof getSyncMeta>>): EncoreDriveBootstrap | null {
   if (
     meta.rootFolderId &&
     meta.performancesFolderId &&
@@ -44,7 +46,13 @@ export async function ensureEncoreDriveLayout(accessToken: string): Promise<Enco
       snapshotFileId: meta.snapshotFileId,
     };
   }
+  return null;
+}
 
+type DriveListResult = Awaited<ReturnType<typeof driveListFiles>>;
+
+async function createEncoreDriveLayout(accessToken: string): Promise<EncoreDriveBootstrap> {
+  const priorMeta = await getSyncMeta();
   const rootList = await driveListFiles(accessToken, qFolderInParent(ENCORE_ROOT_FOLDER, 'root'));
   const rootFiles = rootList.files ?? [];
   let rootFolderId = (rootFiles[0] as { id?: string } | undefined)?.id;
@@ -53,25 +61,29 @@ export async function ensureEncoreDriveLayout(accessToken: string): Promise<Enco
     rootFolderId = created.id;
   }
 
-  const perfList = await driveListFiles(accessToken, qFolderInParent(ENCORE_PERFORMANCES_FOLDER, rootFolderId));
-  let performancesFolderId = (perfList.files?.[0] as { id?: string } | undefined)?.id;
-  if (!performancesFolderId) {
-    performancesFolderId = (await driveCreateFolder(accessToken, ENCORE_PERFORMANCES_FOLDER, rootFolderId)).id;
-  }
+  const [perfList, sheetList, recList] = await Promise.all([
+    driveListFiles(accessToken, qFolderInParent(ENCORE_PERFORMANCES_FOLDER, rootFolderId)),
+    driveListFiles(accessToken, qFolderInParent(ENCORE_SHEET_MUSIC_FOLDER, rootFolderId)),
+    driveListFiles(accessToken, qFolderInParent(ENCORE_RECORDINGS_FOLDER, rootFolderId)),
+  ]);
 
-  const sheetList = await driveListFiles(accessToken, qFolderInParent(ENCORE_SHEET_MUSIC_FOLDER, rootFolderId));
-  let sheetMusicFolderId = (sheetList.files?.[0] as { id?: string } | undefined)?.id;
-  if (!sheetMusicFolderId) {
-    sheetMusicFolderId = (await driveCreateFolder(accessToken, ENCORE_SHEET_MUSIC_FOLDER, rootFolderId)).id;
-  }
+  const ensureSubfolder = async (list: DriveListResult, folderName: string): Promise<string> => {
+    const existingId = (list.files?.[0] as { id?: string } | undefined)?.id;
+    if (existingId) return existingId;
+    const created = await driveCreateFolder(accessToken, folderName, rootFolderId);
+    return created.id;
+  };
 
-  const recList = await driveListFiles(accessToken, qFolderInParent(ENCORE_RECORDINGS_FOLDER, rootFolderId));
-  let recordingsFolderId = (recList.files?.[0] as { id?: string } | undefined)?.id;
-  if (!recordingsFolderId) {
-    recordingsFolderId = (await driveCreateFolder(accessToken, ENCORE_RECORDINGS_FOLDER, rootFolderId)).id;
-  }
+  const [performancesFolderId, sheetMusicFolderId, recordingsFolderId] = await Promise.all([
+    ensureSubfolder(perfList, ENCORE_PERFORMANCES_FOLDER),
+    ensureSubfolder(sheetList, ENCORE_SHEET_MUSIC_FOLDER),
+    ensureSubfolder(recList, ENCORE_RECORDINGS_FOLDER),
+  ]);
 
-  const repList = await driveListFiles(accessToken, qJsonInParent(REPERTOIRE_FILE_NAME, rootFolderId));
+  const [repList, snapList] = await Promise.all([
+    driveListFiles(accessToken, qJsonInParent(REPERTOIRE_FILE_NAME, rootFolderId)),
+    driveListFiles(accessToken, qJsonInParent(PUBLIC_SNAPSHOT_FILE_NAME, rootFolderId)),
+  ]);
   let repertoireFileId = (repList.files?.[0] as { id?: string } | undefined)?.id;
   if (!repertoireFileId) {
     const emptyPayload = JSON.stringify({
@@ -86,8 +98,7 @@ export async function ensureEncoreDriveLayout(accessToken: string): Promise<Enco
     repertoireFileId = created.id;
   }
 
-  const snapList = await driveListFiles(accessToken, qJsonInParent(PUBLIC_SNAPSHOT_FILE_NAME, rootFolderId));
-  const snapshotFileId = (snapList.files?.[0] as { id?: string } | undefined)?.id;
+  const snapshotFileId = pickPreferredDriveListFileId(snapList.files, priorMeta.snapshotFileId);
 
   await patchSyncMeta({
     rootFolderId,
@@ -106,6 +117,28 @@ export async function ensureEncoreDriveLayout(accessToken: string): Promise<Enco
     repertoireFileId,
     snapshotFileId,
   };
+}
+
+export async function ensureEncoreDriveLayout(accessToken: string): Promise<EncoreDriveBootstrap> {
+  const meta = await getSyncMeta();
+  const fromMeta = layoutFromMeta(meta);
+  if (fromMeta) return fromMeta;
+
+  const existing = encoreDriveLayoutInflight.get(accessToken);
+  if (existing) return existing;
+
+  const started = (async (): Promise<EncoreDriveBootstrap> => {
+    const metaAgain = await getSyncMeta();
+    const again = layoutFromMeta(metaAgain);
+    if (again) return again;
+    return createEncoreDriveLayout(accessToken);
+  })();
+
+  const tracked = started.finally(() => {
+    encoreDriveLayoutInflight.delete(accessToken);
+  });
+  encoreDriveLayoutInflight.set(accessToken, tracked);
+  return tracked;
 }
 
 function isLocalhostOrigin(): boolean {

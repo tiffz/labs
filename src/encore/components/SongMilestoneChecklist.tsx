@@ -12,8 +12,9 @@ import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, type ReactElement } from 'react';
 import type { EncoreMilestoneDefinition, EncoreMilestoneState, EncoreSong, EncoreSongOnlyMilestone } from '../types';
+import { encoreAppHref } from '../routes/encoreAppHash';
 import { applyTemplateProgressToSong } from '../repertoire/repertoireMilestones';
 
 function sortTemplate(template: readonly EncoreMilestoneDefinition[]): EncoreMilestoneDefinition[] {
@@ -31,7 +32,7 @@ function MilestoneRow(props: {
   onSetState: (state: EncoreMilestoneState) => void;
   onRemove?: () => void;
   onLabelChange?: (label: string) => void;
-}): React.ReactElement {
+}): ReactElement {
   const { label, state, onSetState, onRemove, onLabelChange } = props;
   const isNa = state === 'na';
   const isDone = state === 'done';
@@ -125,9 +126,8 @@ export function SongMilestoneChecklist(props: {
   song: EncoreSong;
   milestoneTemplate: readonly EncoreMilestoneDefinition[];
   onChange: (next: EncoreSong) => void;
-  onOpenGlobalMilestoneSettings?: () => void;
-}): React.ReactElement {
-  const { song, milestoneTemplate, onChange, onOpenGlobalMilestoneSettings } = props;
+}): ReactElement {
+  const { song, milestoneTemplate, onChange } = props;
   const [localLabel, setLocalLabel] = useState('');
 
   const defs = useMemo(() => sortTemplate(milestoneTemplate), [milestoneTemplate]);
@@ -207,7 +207,7 @@ export function SongMilestoneChecklist(props: {
     <Stack spacing={3}>
       {defs.length === 0 ? (
         <Typography variant="body2" color="text.secondary">
-          No global milestones yet. Add them in Library settings, or track nuance in your practice journal above.
+          No global milestones yet. Add them in Settings, or track nuance in your practice journal above.
         </Typography>
       ) : (
         <Stack spacing={0.5}>
@@ -219,8 +219,8 @@ export function SongMilestoneChecklist(props: {
                   <IconButton
                     size="small"
                     aria-label="Global milestone template"
-                    onClick={() => onOpenGlobalMilestoneSettings?.()}
-                    disabled={!onOpenGlobalMilestoneSettings}
+                    component="a"
+                    href={encoreAppHref({ kind: 'repertoireSettings' })}
                     sx={{
                       flexShrink: 0,
                       color: 'text.disabled',
@@ -248,7 +248,7 @@ export function SongMilestoneChecklist(props: {
           <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
             Song-only milestones
           </Typography>
-          <Tooltip title="Global milestones come from Library settings and apply to every song. Song-only steps are extra checklist items for this title only.">
+          <Tooltip title="Global milestones come from Settings and apply to every song. Song-only steps are extra checklist items for this title only.">
             <IconButton size="small" aria-label="About global vs song-only milestones" sx={{ p: 0.25 }}>
               <InfoOutlinedIcon sx={{ fontSize: 18 }} />
             </IconButton>

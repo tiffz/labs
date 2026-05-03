@@ -4,6 +4,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha, useTheme, type SxProps, type Theme } from '@mui/material/styles';
 import { useCallback, useId, useRef, useState } from 'react';
+import { fileMatchesAccept } from '../utils/fileMatchesAccept';
 
 /**
  * Shared drag-and-drop file uploader.
@@ -32,35 +33,14 @@ export interface DragDropFileUploadProps {
   label: string;
   /** Secondary helper text under the primary label. */
   helperText?: string;
-  /** Force a specific minimum height. Defaults to 160. */
+  /** Force a specific minimum height. Defaults to 160, or 56 when {@link compact} is true. */
   minHeight?: number;
+  /** Dense row-style target (smaller icon and padding). */
+  compact?: boolean;
   /** Optional aria-label override for the pick button (defaults to `label`). */
   ariaLabel?: string;
   /** Merged after built-in `sx` (per-app tweaks). */
   sx?: SxProps<Theme>;
-}
-
-function fileMatchesAccept(file: File, accept: string | undefined): boolean {
-  if (!accept) return true;
-  const tokens = accept
-    .split(',')
-    .map((t) => t.trim().toLowerCase())
-    .filter(Boolean);
-  if (tokens.length === 0) return true;
-  const fileType = file.type.toLowerCase();
-  const fileName = file.name.toLowerCase();
-  for (const t of tokens) {
-    if (t.startsWith('.')) {
-      if (fileName.endsWith(t)) return true;
-      continue;
-    }
-    if (t.endsWith('/*')) {
-      if (fileType.startsWith(t.slice(0, -1))) return true;
-      continue;
-    }
-    if (t === fileType) return true;
-  }
-  return false;
 }
 
 export function DragDropFileUpload(props: DragDropFileUploadProps): React.ReactElement {
@@ -71,10 +51,12 @@ export function DragDropFileUpload(props: DragDropFileUploadProps): React.ReactE
     disabled,
     label,
     helperText,
-    minHeight = 160,
+    minHeight: minHeightProp,
+    compact = false,
     ariaLabel,
     sx: sxProp,
   } = props;
+  const minHeight = minHeightProp ?? (compact ? 56 : 160);
   const theme = useTheme();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const dragCounterRef = useRef(0);
@@ -130,6 +112,7 @@ export function DragDropFileUpload(props: DragDropFileUploadProps): React.ReactE
     (e: React.DragEvent<HTMLDivElement>) => {
       if (disabled) return;
       e.preventDefault();
+      e.stopPropagation();
       dragCounterRef.current = 0;
       setDragActive(false);
       handleSelected(e.dataTransfer.files);
@@ -148,8 +131,8 @@ export function DragDropFileUpload(props: DragDropFileUploadProps): React.ReactE
     alignItems: 'center',
     justifyContent: 'center',
     minHeight,
-    px: { xs: 2.5, sm: 3.5 },
-    py: { xs: 2.5, sm: 3 },
+    px: compact ? { xs: 1.75, sm: 2.25 } : { xs: 2.5, sm: 3.5 },
+    py: compact ? { xs: 1, sm: 1.125 } : { xs: 2.5, sm: 3 },
     borderRadius: `${radius}px`,
     cursor: disabled ? 'not-allowed' : 'pointer',
     opacity: disabled ? 0.55 : 1,
@@ -201,10 +184,10 @@ export function DragDropFileUpload(props: DragDropFileUploadProps): React.ReactE
         ...(sxProp ? (Array.isArray(sxProp) ? sxProp : [sxProp]) : []),
       ]}
     >
-      <Stack alignItems="center" gap={1.25} sx={{ maxWidth: 360 }}>
+      <Stack alignItems="center" gap={compact ? 0.5 : 1.25} sx={{ maxWidth: compact ? 420 : 360 }}>
         <CloudUploadOutlinedIcon
           sx={{
-            fontSize: 34,
+            fontSize: compact ? 22 : 34,
             color: dragActive ? 'primary.main' : alpha(theme.palette.primary.main, 0.62),
           }}
         />

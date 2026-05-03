@@ -20,25 +20,51 @@ export const encoreShadowLift = '0 12px 40px rgba(76, 29, 149, 0.08)' as const;
 export const encoreHairline = 'rgba(76, 29, 149, 0.04)' as const;
 
 /**
- * Inline media row (Spotify catalog strip, reference/backing links, charts): white paper, lavender
+ * Inline media row (song info source strip, reference/backing links, charts): white paper, lavender
  * hairline, and {@link encoreShadowSurface} so chips match Encore surfaces instead of grey
  * `action.hover` pills.
  */
-export function encoreMediaLinkRowSx(theme: Theme, isPrimary: boolean): SystemStyleObject<Theme> {
+export function encoreMediaLinkRowSx(
+  theme: Theme,
+  isPrimary: boolean,
+  opts?: { embedded?: boolean },
+): SystemStyleObject<Theme> {
+  const embedded = Boolean(opts?.embedded);
   return {
     display: 'inline-flex',
     alignItems: 'center',
     gap: 0.5,
-    pl: 0.875,
-    pr: 0.375,
+    pl: embedded ? 0.25 : 0.875,
+    pr: embedded ? 0.25 : 0.375,
     py: 0.375,
-    borderRadius: encoreRadius,
-    border: 1,
+    borderRadius: embedded ? 0 : encoreRadius,
+    border: embedded ? 0 : 1,
     borderStyle: 'solid',
-    borderColor: isPrimary ? alpha(theme.palette.primary.main, 0.3) : encoreHairline,
+    borderColor: embedded ? 'transparent' : isPrimary ? alpha(theme.palette.primary.main, 0.3) : encoreHairline,
     maxWidth: '100%',
-    bgcolor: isPrimary ? alpha(theme.palette.primary.main, 0.08) : theme.palette.background.paper,
-    boxShadow: encoreShadowSurface,
+    bgcolor: embedded ? 'transparent' : isPrimary ? alpha(theme.palette.primary.main, 0.08) : theme.palette.background.paper,
+    boxShadow: embedded ? 'none' : encoreShadowSurface,
+  };
+}
+
+/**
+ * Full-width flex shell for song-page media rows so the song info source strip matches
+ * {@link EncoreMediaLinkRow} chip chrome (same border, paper fill, shadow).
+ */
+export function songPageResourceRowShellSx(
+  theme: Theme,
+  isPrimary = false,
+): SystemStyleObject<Theme> {
+  return {
+    ...encoreMediaLinkRowSx(theme, isPrimary),
+    display: 'flex',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: theme.spacing(0.75),
+    width: '100%',
+    minWidth: 0,
+    maxWidth: '100%',
+    boxSizing: 'border-box',
   };
 }
 
@@ -82,15 +108,6 @@ export const encorePageHeaderSubtitleSx: SystemStyleObject<Theme> = {
   lineHeight: 1.55,
 };
 
-/** Muted labels and table secondary text. */
-export const encoreMutedCaptionSx: SystemStyleObject<Theme> = {
-  color: 'text.secondary',
-  fontWeight: 600,
-  letterSpacing: '0.08em',
-  fontSize: '0.6875rem',
-  textTransform: 'uppercase',
-};
-
 /** Dialog title — consistent padding and weight across Encore dialogs. */
 export const encoreDialogTitleSx: SystemStyleObject<Theme> = {
   fontWeight: 700,
@@ -128,15 +145,4 @@ export const encoreShellCenteredSx: SystemStyleObject<Theme> = {
   alignItems: 'center',
   justifyContent: 'center',
   p: { xs: 3, sm: 4 },
-};
-
-/** Frosted-glass token for sticky chrome (AppBar + song page sticky action bar). */
-export const encoreFrostedSurfaceSx: SystemStyleObject<Theme> = {
-  bgcolor: (theme) =>
-    theme.palette.mode === 'dark'
-      ? 'rgba(20, 16, 30, 0.72)'
-      : 'rgba(255, 255, 255, 0.78)',
-  backdropFilter: 'saturate(180%) blur(20px)',
-  WebkitBackdropFilter: 'saturate(180%) blur(20px)',
-  borderColor: encoreHairline,
 };

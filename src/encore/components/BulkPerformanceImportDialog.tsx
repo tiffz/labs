@@ -17,6 +17,7 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import InputAdornment from '@mui/material/InputAdornment';
+import LinearProgress from '@mui/material/LinearProgress';
 import IconButton from '@mui/material/IconButton';
 import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
@@ -32,13 +33,12 @@ import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
 import { useEncoreBlockingJobs } from '../context/EncoreBlockingJobContext';
 import { useEncore } from '../context/EncoreContext';
 import { ensureEncoreDriveLayout } from '../drive/bootstrapFolders';
+import { resolveDriveUploadFolderId, type DriveUploadFolderLayout } from '../drive/resolveDriveUploadFolder';
 import { driveUploadFileResumable } from '../drive/driveFetch';
 import { driveCollectVideoFilesRecursive } from '../drive/driveFolderWalk';
-import { driveFolderWebUrl } from '../drive/driveWebUrls';
-import { openEncoreGoogleDrivePicker } from '../drive/googlePicker';
-import { parseDriveFileIdFromUrlOrId, parseDriveFolderIdFromUrlOrId } from '../drive/parseDriveFileUrl';
+import { resolveDriveFolderFromUserInput } from '../drive/resolveDriveFolderFromUserInput';
 import { DragDropFileUpload } from '../../shared/components/DragDropFileUpload';
-import { navigateEncore } from '../routes/encoreAppHash';
+import { encoreAppHref, isModifiedOrNonPrimaryClick } from '../routes/encoreAppHash';
 import { parseEncoreFolderMetadata } from '../import/encoreFolderMetadata';
 import { bestVenueFromCatalog } from '../import/venueCatalogMatch';
 import {
@@ -69,6 +69,7 @@ import {
 } from '../theme/encoreUiTokens';
 import type { EncoreAccompanimentTag, EncorePerformance, EncoreSong } from '../types';
 import { encoreMrtBulkImportReviewOptions } from './encoreMrtTableDefaults';
+import { EncoreDriveFolderPasteOrBrowseBlock } from '../ui/EncoreDriveFolderPasteOrBrowseBlock';
 import { BulkVideoSongMatchDialog } from './BulkVideoSongMatchDialog';
 import { LibrarySongPickerDialog } from './LibrarySongPickerDialog';
 import { useDriveFileThumbnailSrc } from '../drive/useDriveFileThumbnailSrc';
@@ -232,7 +233,7 @@ export function BulkPerformanceImportDialog(props: {
   const [msg, setMsg] = useState<string | null>(null);
   const [scanNote, setScanNote] = useState<string | null>(null);
   const [rows, setRows] = useState<BulkPerfRow[]>([]);
-  const [performancesFolderId, setPerformancesFolderId] = useState<string | null>(null);
+  const [driveUploadLayout, setDriveUploadLayout] = useState<DriveUploadFolderLayout | null>(null);
   const [libraryPickerRowId, setLibraryPickerRowId] = useState<string | null>(null);
   const [libraryPickQuery, setLibraryPickQuery] = useState('');
   const [songMatchRowId, setSongMatchRowId] = useState<string | null>(null);
@@ -245,11 +246,16 @@ export function BulkPerformanceImportDialog(props: {
   const blurScheduleRef = useRef(0);
   const tableFocusRootRef = useRef<HTMLDivElement | null>(null);
 
-  const parsedFolderIdForBrowse =
-    parseDriveFolderIdFromUrlOrId(folderInput) ??
-    (/^\s*[^/]+\s*$/.test(folderInput) ? parseDriveFileIdFromUrlOrId(folderInput) : null);
-
   const reviewFullscreen = step === 'review';
+
+  const performancesUploadFolderId = useMemo(
+    () =>
+      driveUploadLayout
+        ? resolveDriveUploadFolderId('performances', driveUploadLayout, repertoireExtras.driveUploadFolderOverrides) ??
+          null
+        : null,
+    [driveUploadLayout, repertoireExtras.driveUploadFolderOverrides],
+  );
 
   const reset = useCallback(() => {
     setStep('folder');
@@ -278,14 +284,14 @@ export function BulkPerformanceImportDialog(props: {
     if (libraryPickerRowId) setLibraryPickQuery('');
   }, [libraryPickerRowId]);
 
-  /* Lazy-resolve the Drive Performances folder id so direct uploads have a target. */
+  /* Lazy-resolve Encore Drive layout so direct uploads have a resolved parent folder. */
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      if (!open || !googleAccessToken || performancesFolderId) return;
+      if (!open || !googleAccessToken || driveUploadLayout) return;
       try {
         const layout = await ensureEncoreDriveLayout(googleAccessToken);
-        if (!cancelled) setPerformancesFolderId(layout.performancesFolderId);
+        if (!cancelled) setDriveUploadLayout(layout);
       } catch {
         /* non-fatal — surfaces as an error on save if the user attempts a direct upload. */
       }
@@ -293,7 +299,7 @@ export function BulkPerformanceImportDialog(props: {
     return () => {
       cancelled = true;
     };
-  }, [open, googleAccessToken, performancesFolderId]);
+  }, [open, googleAccessToken, driveUploadLayout]);
 
   const buildLocalUploadRow = useCallback(
     (file: File): BulkPerfRow => {
@@ -473,11 +479,16 @@ export function BulkPerformanceImportDialog(props: {
   const scanFolder = useCallback(async () => {
     setMsg(null);
     setScanNote(null);
-    const folderId = parseDriveFolderIdFromUrlOrId(folderInput) ?? parseDriveFileIdFromUrlOrId(folderInput);
-    if (!folderId || !googleAccessToken) {
+    if (!googleAccessToken) {
       setMsg('Paste a valid Google Drive folder URL or id (sign in to Google first).');
       return;
     }
+    const resolved = await resolveDriveFolderFromUserInput(googleAccessToken, folderInput);
+    if (!resolved.ok) {
+      setMsg(resolved.message);
+      return;
+    }
+    const folderId = resolved.id;
     setBusy(true);
     try {
       await withBlockingJob('Scanning Drive for videos…', async () => {
@@ -624,13 +635,13 @@ export function BulkPerformanceImportDialog(props: {
             if (!googleAccessToken) {
               throw new Error('Sign in to Google to upload videos.');
             }
-            if (!performancesFolderId) {
+            if (!performancesUploadFolderId) {
               throw new Error('Drive Performances folder is not ready yet — try again in a moment.');
             }
             const created = await driveUploadFileResumable(
               googleAccessToken,
               r.pendingUploadFile,
-              [performancesFolderId],
+              [performancesUploadFolderId],
             );
             videoFileId = created.id;
           }
@@ -696,7 +707,7 @@ export function BulkPerformanceImportDialog(props: {
     onSaveSong,
     handleClose,
     googleAccessToken,
-    performancesFolderId,
+    performancesUploadFolderId,
     perfRowExcluded,
     withBlockingJob,
     withBatch,
@@ -1127,12 +1138,10 @@ export function BulkPerformanceImportDialog(props: {
                 <Typography variant="body2" sx={{ lineHeight: 1.5 }}>
                   For recommended video file names (and import order), see the{' '}
                   <Link
-                    component="button"
-                    type="button"
+                    href={encoreAppHref({ kind: 'help' })}
                     variant="body2"
-                    onClick={() => {
-                      onClose();
-                      navigateEncore({ kind: 'help' });
+                    onClick={(e) => {
+                      if (!isModifiedOrNonPrimaryClick(e)) onClose();
                     }}
                   >
                     Import guide
@@ -1157,82 +1166,44 @@ export function BulkPerformanceImportDialog(props: {
                 <Box sx={{ flex: 1, height: 1, bgcolor: 'divider' }} />
               </Box>
 
-              <Stack direction="row" alignItems="flex-start" gap={0.5}>
-                <Typography variant="body2" color="text.secondary" sx={{ flex: 1, lineHeight: 1.45 }}>
-                  Paste a Drive folder link or id. We scan subfolders for videos and guess song, venue, and date from the
-                  file name, path, and description.
-                </Typography>
-                <Tooltip
-                  title="Dates: text in the file name wins; otherwise we use Drive created time, then last modified, in your local calendar. Google does not expose camera “recorded at” in the Files API, so putting the performance date in the file name is the most reliable signal."
-                  placement="left"
-                  enterDelay={200}
-                >
-                  <IconButton size="small" aria-label="How bulk import guesses dates" sx={{ color: 'text.secondary', mt: -0.25 }}>
-                    <InfoOutlinedIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-              </Stack>
-              <TextField
-                label="Drive folder URL or id"
+              <EncoreDriveFolderPasteOrBrowseBlock
                 value={folderInput}
-                onChange={(e) => setFolderInput(e.target.value)}
-                fullWidth
-                multiline
-                minRows={2}
+                onChange={(v) => {
+                  setFolderInput(v);
+                  setMsg(null);
+                }}
+                googleAccessToken={googleAccessToken}
+                disabled={busy}
+                description={
+                  <Stack direction="row" alignItems="flex-start" gap={0.5}>
+                    <Typography variant="body2" color="text.secondary" sx={{ flex: 1, lineHeight: 1.45 }}>
+                      Paste a Drive folder link or id. We scan subfolders for videos and guess song, venue, and date from
+                      the file name, path, and description.
+                    </Typography>
+                    <Tooltip
+                      title="Dates: text in the file name wins; otherwise we use Drive created time, then last modified, in your local calendar. Google does not expose camera “recorded at” in the Files API, so putting the performance date in the file name is the most reliable signal."
+                      placement="left"
+                      enterDelay={200}
+                    >
+                      <IconButton size="small" aria-label="How bulk import guesses dates" sx={{ color: 'text.secondary', mt: -0.25 }}>
+                        <InfoOutlinedIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </Stack>
+                }
+                primaryAction={
+                  <Button
+                    size="small"
+                    variant="contained"
+                    onClick={() => void scanFolder()}
+                    disabled={busy || !folderInput.trim() || !googleAccessToken}
+                  >
+                    Scan folder
+                  </Button>
+                }
               />
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', minHeight: 40 }}>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  disabled={!googleAccessToken}
-                  sx={{ flexShrink: 0 }}
-                  onClick={() => {
-                    if (!googleAccessToken) return;
-                    void openEncoreGoogleDrivePicker({
-                      accessToken: googleAccessToken,
-                      title: parsedFolderIdForBrowse ? 'Choose a subfolder' : 'Choose a folder',
-                      parentFolderId: parsedFolderIdForBrowse,
-                      selectFolder: true,
-                      onPicked: (files) => {
-                        const f = files[0];
-                        if (!f?.id) return;
-                        const looksLikeNonFolder =
-                          Boolean(f.mimeType) && f.mimeType !== 'application/vnd.google-apps.folder';
-                        if (looksLikeNonFolder) {
-                          setMsg('Pick a folder, not a file.');
-                          return;
-                        }
-                        setFolderInput(f.id);
-                        setMsg(null);
-                      },
-                      onError: (m) => setMsg(m),
-                    });
-                  }}
-                >
-                  {parsedFolderIdForBrowse ? 'Pick subfolder in Drive' : 'Pick folder in Drive'}
-                </Button>
-                <Button
-                  size="small"
-                  variant="text"
-                  disabled={!parsedFolderIdForBrowse || !googleAccessToken}
-                  sx={{ flexShrink: 0 }}
-                  {...(parsedFolderIdForBrowse && googleAccessToken
-                    ? {
-                        component: 'a' as const,
-                        href: driveFolderWebUrl(parsedFolderIdForBrowse),
-                        target: '_blank',
-                        rel: 'noreferrer',
-                      }
-                    : {})}
-                >
-                  Open folder in browser
-                </Button>
-              </Box>
-              {msg && (
-                <Typography color="error" variant="body2">
-                  {msg}
-                </Typography>
-              )}
+              {msg ? <Alert severity="warning" sx={{ whiteSpace: 'pre-line' }}>{msg}</Alert> : null}
+              {busy ? <LinearProgress /> : null}
             </Box>
           )}
           {step === 'review' && (
@@ -1386,11 +1357,7 @@ export function BulkPerformanceImportDialog(props: {
           <Button onClick={handleClose} disabled={busy}>
             Cancel
           </Button>
-          {step === 'folder' ? (
-            <Button variant="contained" onClick={() => void scanFolder()} disabled={busy}>
-              {busy ? 'Scanning…' : 'Scan folder'}
-            </Button>
-          ) : (
+          {step === 'folder' ? null : (
             <Button
               variant="contained"
               onClick={() => void applyAll()}

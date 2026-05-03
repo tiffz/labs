@@ -1,3 +1,4 @@
+import AddToDriveIcon from '@mui/icons-material/AddToDrive';
 import SvgIcon from '@mui/material/SvgIcon';
 import type { SvgIconProps } from '@mui/material/SvgIcon';
 import type { ReactElement } from 'react';
@@ -39,6 +40,14 @@ export function GoogleBrandIcon(props: SvgIconProps): ReactElement {
       />
     </SvgIcon>
   );
+}
+
+/**
+ * Google Drive–branded control icon (Material “Add to Drive” glyph). Matches SharePanel and other
+ * Encore Drive entry points so Browse / picker actions share one recognisable mark.
+ */
+export function GoogleDriveBrandIcon(props: SvgIconProps): ReactElement {
+  return <AddToDriveIcon {...props} />;
 }
 
 export function YouTubeBrandIcon(props: SvgIconProps): ReactElement {

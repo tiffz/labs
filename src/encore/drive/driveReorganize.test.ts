@@ -36,7 +36,7 @@ describe('reorganizeAllDriveUploads', () => {
     });
     (reorganizeAllSongAttachments as any).mockImplementation(async () => {
       attStartedAfterLayout = layoutResolved;
-      return { renamed: 3, moved: 2, skipped: 0, errors: 0 };
+      return { renamed: 3, moved: 2, skipped: 0, errors: 0, shortcutsCreated: 0 };
     });
 
     const result = await reorganizeAllDriveUploads('tok');
@@ -46,7 +46,7 @@ describe('reorganizeAllDriveUploads', () => {
     expect(attStartedAfterLayout).toBe(true);
     expect(result).toEqual({
       performanceVideos: { renamed: 2, skipped: 1, errors: 0, shortcutsCreated: 1 },
-      attachments: { renamed: 3, moved: 2, skipped: 0, errors: 0 },
+      attachments: { renamed: 3, moved: 2, skipped: 0, errors: 0, shortcutsCreated: 0 },
     });
   });
 

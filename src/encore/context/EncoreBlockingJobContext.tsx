@@ -21,17 +21,19 @@ type BlockingJob = {
   /** 0–1, or null for indeterminate */
   progress: number | null;
   /**
-   * When true, the job still arms the `beforeunload` warning so the user is
-   * prompted before closing the tab, but the snackbar UI does not surface it.
-   * Use for noisy autosave-driven background work (e.g. debounced Drive push)
-   * where a visible snackbar would be distracting on every keystroke. The
-   * snackbar still appears for any concurrent non-silent jobs.
+   * When true, the snackbar is hidden. **`beforeunload` is only registered when
+   * at least one non-silent job is running**, so silent background work (e.g.
+   * debounced Drive push) does not spam “Leave site?” while nothing visible is
+   * happening. Pair silent jobs with a loud job if a specific flow must block unload.
    */
   silent: boolean;
 };
 
 export type StartBlockingJobOptions = {
-  /** See `BlockingJob.silent` above. Defaults to `false`. */
+  /**
+   * When `true`, hides the snackbar and excludes this job from the `beforeunload`
+   * guard unless a concurrent non-silent job is running.
+   */
   silent?: boolean;
 };
 
@@ -93,15 +95,17 @@ export function EncoreBlockingJobProvider(props: { children: ReactNode }): React
     [startBlockingJob],
   );
 
+  const shouldWarnOnUnload = useMemo(() => jobs.some((j) => !j.silent), [jobs]);
+
   useEffect(() => {
-    if (jobs.length === 0) return;
+    if (!shouldWarnOnUnload) return;
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
       e.preventDefault();
       e.returnValue = '';
     };
     window.addEventListener('beforeunload', onBeforeUnload);
     return () => window.removeEventListener('beforeunload', onBeforeUnload);
-  }, [jobs.length]);
+  }, [shouldWarnOnUnload]);
 
   const api = useMemo(
     () => ({
@@ -111,8 +115,8 @@ export function EncoreBlockingJobProvider(props: { children: ReactNode }): React
     [withBlockingJob, startBlockingJob],
   );
 
-  // Snackbar reflects only loud (non-silent) jobs; silent jobs still arm the
-  // beforeunload guard but stay invisible (e.g. autosave-driven Drive push).
+  // Snackbar reflects only loud (non-silent) jobs; same filter drives beforeunload
+  // so invisible work does not trigger “Leave site?” prompts.
   const visibleJobs = useMemo(() => jobs.filter((j) => !j.silent), [jobs]);
   const displayLabel =
     visibleJobs.length === 0

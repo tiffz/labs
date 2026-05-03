@@ -1,3 +1,4 @@
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
@@ -5,11 +6,13 @@ import SyncIcon from '@mui/icons-material/Sync';
 import Accordion from '@mui/material/Accordion';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import AccordionSummary from '@mui/material/AccordionSummary';
+import ListItemButton from '@mui/material/ListItemButton';
+import ListItemText from '@mui/material/ListItemText';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
+import IconButton from '@mui/material/IconButton';
+import Paper from '@mui/material/Paper';
 import Chip from '@mui/material/Chip';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -19,19 +22,24 @@ import Divider from '@mui/material/Divider';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import { useTheme } from '@mui/material/styles';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import Tooltip from '@mui/material/Tooltip';
+import { alpha, useTheme } from '@mui/material/styles';
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useEncoreBlockingJobs } from '../context/EncoreBlockingJobContext';
 import { useEncore } from '../context/EncoreContext';
 import { driveFileWebUrl } from '../drive/driveWebUrls';
+import { driveUploadFileResumable } from '../drive/driveFetch';
+import { ensureEncoreDriveLayout } from '../drive/bootstrapFolders';
+import { resolveDriveUploadFolderId, type DriveUploadFolderLayout } from '../drive/resolveDriveUploadFolder';
 import {
   bestImportMatch,
   IMPORT_MATCH_AUTO_MIN,
   IMPORT_MATCH_SUGGEST_MIN,
   mergeSongWithImport,
 } from '../import/findExistingSongForImport';
-import { navigateEncore } from '../routes/encoreAppHash';
+import { encoreAppHref } from '../routes/encoreAppHash';
 import { applyTemplateProgressToSong } from '../repertoire/repertoireMilestones';
+import { milestoneProgressSummary } from '../repertoire/repertoireMilestoneSummary';
 import {
   effectivePrimaryBackingLink,
   effectivePrimaryReferenceLink,
@@ -45,6 +53,7 @@ import {
 } from '../spotify/spotifyApi';
 import { parseSpotifyPlaylistId } from '../spotify/parseSpotifyPlaylistUrl';
 import { spotifyGrantedScopesSufficientForPlaylistModify } from '../spotify/spotifyScopes';
+import { mediaLinkYoutubePracticeOpenUrl } from '../youtube/loopTubeOpenUrl';
 import { readSpotifyToken } from '../spotify/pkce';
 import type { EncoreSong } from '../types';
 import {
@@ -58,7 +67,7 @@ import {
 import { encorePagePaddingTop, encoreScreenPaddingX } from '../theme/encoreM3Layout';
 import { EncorePageHeader } from '../ui/EncorePageHeader';
 import { encoreNoAlbumArtIconSx, encoreNoAlbumArtSurfaceSx } from '../utils/encoreNoAlbumArtSurface';
-import { primaryChartAttachment } from '../utils/songAttachments';
+import { addSongAttachment, effectiveSongAttachments, primaryChartAttachment } from '../utils/songAttachments';
 import { SpotifyBrandIcon, YouTubeBrandIcon } from './EncoreBrandIcon';
 import { SongMilestoneChecklist } from './SongMilestoneChecklist';
 import { encorePossessivePageTitle } from '../utils/encorePossessivePageTitle';
@@ -93,6 +102,7 @@ export function PracticeScreen(): React.ReactElement {
     saveRepertoireExtras,
     spotifyLinked,
     effectiveDisplayName,
+    googleAccessToken,
   } = useEncore();
   const { withBlockingJob } = useEncoreBlockingJobs();
 
@@ -118,16 +128,51 @@ export function PracticeScreen(): React.ReactElement {
   const [syncError, setSyncError] = useState<string | null>(null);
   const [importCandidates, setImportCandidates] = useState<SpotifyPlaylistTrackRow[] | null>(null);
   const [importSuggestions, setImportSuggestions] = useState<PracticeImportSuggestRow[] | null>(null);
-  const [playlistPanelOpen, setPlaylistPanelOpen] = useState(false);
+  const [focusedSongId, setFocusedSongId] = useState<string | null>(null);
+
+  const effectiveFocusId = useMemo(() => {
+    if (practicingSongs.length === 0) return null;
+    if (focusedSongId && practicingSongs.some((s) => s.id === focusedSongId)) return focusedSongId;
+    return practicingSongs[0].id;
+  }, [practicingSongs, focusedSongId]);
+
+  const panelSong = useMemo(
+    () => (effectiveFocusId ? practicingSongs.find((x) => x.id === effectiveFocusId) ?? null : null),
+    [effectiveFocusId, practicingSongs],
+  );
+
+  const [playlistSyncOpen, setPlaylistSyncOpen] = useState(false);
   const [journalLocalBySongId, setJournalLocalBySongId] = useState<Record<string, string>>({});
+  const [driveUploadLayout, setDriveUploadLayout] = useState<DriveUploadFolderLayout | null>(null);
+  const practiceRecInputRef = useRef<HTMLInputElement>(null);
+  const practiceRecTargetSongIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!googleAccessToken) {
+      setDriveUploadLayout(null);
+      return;
+    }
+    void (async () => {
+      try {
+        const layout = await ensureEncoreDriveLayout(googleAccessToken);
+        setDriveUploadLayout(layout);
+      } catch {
+        setDriveUploadLayout(null);
+      }
+    })();
+  }, [googleAccessToken]);
+
+  const takesUploadFolderId = useMemo(
+    () =>
+      driveUploadLayout
+        ? resolveDriveUploadFolderId('takes', driveUploadLayout, repertoireExtras.driveUploadFolderOverrides) ?? null
+        : null,
+    [driveUploadLayout, repertoireExtras.driveUploadFolderOverrides],
+  );
 
   const savedPlaylistId = repertoireExtras.currentlyLearningSpotifyPlaylistId?.trim() ?? '';
   const resolvedPlaylistId =
     savedPlaylistId || parseSpotifyPlaylistId(playlistField.trim()) || playlistField.trim();
-
-  useEffect(() => {
-    setPlaylistPanelOpen(!savedPlaylistId);
-  }, [savedPlaylistId]);
 
   useEffect(() => {
     setJournalLocalBySongId((prev) => {
@@ -256,6 +301,31 @@ export function PracticeScreen(): React.ReactElement {
     [saveSong],
   );
 
+  const onPracticeRecordingFile = useCallback(
+    async (e: ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      const songId = practiceRecTargetSongIdRef.current;
+      practiceRecTargetSongIdRef.current = null;
+      e.target.value = '';
+      if (!file || !songId || !googleAccessToken || !takesUploadFolderId) return;
+      const song = songs.find((x) => x.id === songId);
+      if (!song) return;
+      try {
+        await withBlockingJob('Uploading practice take…', async () => {
+          const created = await driveUploadFileResumable(googleAccessToken, file, [takesUploadFolderId]);
+          const next = addSongAttachment(song, { kind: 'recording', driveFileId: created.id, label: file.name });
+          await saveSong({
+            ...next,
+            updatedAt: new Date().toISOString(),
+          });
+        });
+      } catch (err) {
+        setSyncError(err instanceof Error ? err.message : String(err));
+      }
+    },
+    [googleAccessToken, takesUploadFolderId, songs, saveSong, withBlockingJob],
+  );
+
   const onPushToPlaylist = useCallback(async () => {
     setSyncError(null);
     if (!clientId || !spotifyLinked) {
@@ -293,9 +363,9 @@ export function PracticeScreen(): React.ReactElement {
 
   const playlistControls = (
     <Stack spacing={1.25}>
-      <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5 }}>
-        Pull matches playlist tracks to your library and marks them practicing. Push replaces the entire playlist with
-        your practicing songs’ <strong>primary</strong> Spotify tracks only (destructive).
+      <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.5, display: 'block' }}>
+        Pull imports tracks and marks them practicing. Push overwrites the playlist with your songs’ primary Spotify
+        ids (destructive).
       </Typography>
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }}>
         <TextField
@@ -349,215 +419,360 @@ export function PracticeScreen(): React.ReactElement {
         ...encoreMaxWidthPage,
       }}
     >
-      <EncorePageHeader
-        title={encorePossessivePageTitle(effectiveDisplayName, 'practice')}
-        description="Focused workspace for songs you’re actively practicing."
-      />
+      <EncorePageHeader title={encorePossessivePageTitle(effectiveDisplayName, 'practice')} />
+
+      <Paper
+        elevation={0}
+        sx={{
+          p: 2,
+          mb: 3,
+          borderRadius: encoreRadius,
+          boxShadow: encoreShadowSurface,
+          border: 1,
+          borderColor: 'divider',
+          bgcolor: 'background.paper',
+        }}
+      >
+        <Stack spacing={1.5}>
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={2}
+            alignItems={{ sm: 'center' }}
+            justifyContent="space-between"
+          >
+            <Box sx={{ minWidth: 0 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 800, letterSpacing: '0.04em' }}>
+                Learning playlist
+              </Typography>
+            </Box>
+            {resolvedPlaylistId ? (
+              <Button
+                component="a"
+                href={`https://open.spotify.com/playlist/${encodeURIComponent(resolvedPlaylistId)}`}
+                target="_blank"
+                rel="noreferrer"
+                variant="contained"
+                size="medium"
+                startIcon={<OpenInNewIcon />}
+                sx={{ flexShrink: 0, textTransform: 'none', fontWeight: 700 }}
+              >
+                Open in Spotify
+              </Button>
+            ) : (
+              <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0 }}>
+                Paste a playlist URL or id under Sync to enable this button.
+              </Typography>
+            )}
+          </Stack>
+          <Accordion
+            expanded={playlistSyncOpen}
+            onChange={(_, exp) => setPlaylistSyncOpen(exp)}
+            disableGutters
+            elevation={0}
+            sx={{
+              border: 1,
+              borderColor: 'divider',
+              borderRadius: 1,
+              '&:before': { display: 'none' },
+              overflow: 'hidden',
+            }}
+          >
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                Sync & edit linked playlist
+              </Typography>
+            </AccordionSummary>
+            <AccordionDetails sx={{ pt: 0 }}>{playlistControls}</AccordionDetails>
+          </Accordion>
+        </Stack>
+      </Paper>
 
       {practicingSongs.length === 0 ? (
         <Typography color="text.secondary" sx={{ py: 1, mb: 2, lineHeight: 1.6 }}>
-          Nothing here yet. Turn on <strong>Currently practicing</strong> on a song, or pull from your playlist below.
+          Nothing here yet. Mark songs as <strong>Currently practicing</strong>, or pull from your playlist (
+          <strong>Sync & edit linked playlist</strong>).
         </Typography>
-      ) : (
+      ) : panelSong ? (
         <Box
           sx={{
             display: 'grid',
-            gridTemplateColumns: {
-              xs: '1fr',
-              sm: 'repeat(2, minmax(0, 1fr))',
-              md: 'repeat(3, minmax(0, 1fr))',
-            },
-            gap: 2,
+            gridTemplateColumns: { xs: '1fr', md: 'minmax(220px, 30%) minmax(0, 1fr)' },
+            gap: { xs: 2, md: 3 },
             mb: 2,
+            alignItems: 'stretch',
           }}
         >
-          {practicingSongs.map((s) => {
-            const chartPrimary = primaryChartAttachment(s);
-            const refLink = effectivePrimaryReferenceLink(s);
-            const backLink = effectivePrimaryBackingLink(s);
-            const refUrl = refLink ? mediaLinkOpenUrl(refLink) : undefined;
-            const backUrl = backLink ? mediaLinkOpenUrl(backLink) : undefined;
-            const chartUrl = chartPrimary ? driveFileWebUrl(chartPrimary.driveFileId) : undefined;
-            const milestoneSong = applyTemplateProgressToSong(s, repertoireExtras.milestoneTemplate);
-            const journalKey = s.id;
-            const journalVal = journalLocalBySongId[journalKey] ?? s.journalMarkdown ?? '';
-
-            return (
-              <Card
-                key={s.id}
-                elevation={0}
-                sx={{
-                  borderRadius: encoreRadius,
-                  border: 'none',
-                  boxShadow: encoreShadowSurface,
-                  overflow: 'hidden',
-                }}
-              >
-                <Stack direction="row" gap={1.5} sx={{ p: 1.5, alignItems: 'flex-start' }}>
-                  <Box
+          <Paper
+            elevation={0}
+            sx={{
+              p: 1.25,
+              borderRadius: encoreRadius,
+              border: 1,
+              borderColor: 'divider',
+              boxShadow: encoreShadowSurface,
+              bgcolor: 'background.paper',
+              maxHeight: { md: 'min(70vh, 640px)' },
+              overflow: 'auto',
+            }}
+          >
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, letterSpacing: '0.08em' }}>
+              Practicing ({practicingSongs.length})
+            </Typography>
+            <Stack component="nav" aria-label="Practicing songs" spacing={0.5} sx={{ mt: 1 }}>
+              {practicingSongs.map((s) => {
+                const selected = s.id === effectiveFocusId;
+                return (
+                  <ListItemButton
+                    key={s.id}
+                    selected={selected}
+                    onClick={() => setFocusedSongId(s.id)}
                     sx={{
-                      width: 72,
-                      height: 72,
                       borderRadius: 1,
-                      overflow: 'hidden',
-                      flexShrink: 0,
-                      bgcolor: 'action.hover',
+                      py: 1,
+                      alignItems: 'flex-start',
+                      border: 1,
+                      borderColor: selected ? 'primary.main' : 'transparent',
+                      bgcolor: selected ? (th) => alpha(th.palette.primary.main, 0.06) : 'transparent',
                     }}
                   >
-                    {s.albumArtUrl ? (
-                      <Box
-                        component="img"
-                        src={s.albumArtUrl}
-                        alt=""
-                        sx={{ width: 1, height: 1, objectFit: 'cover', display: 'block' }}
-                      />
-                    ) : (
-                      <Box sx={{ ...encoreNoAlbumArtSurfaceSx(theme), width: 1, height: 1, minHeight: 0 }}>
-                        <MusicNoteIcon sx={{ ...encoreNoAlbumArtIconSx(theme), fontSize: 28 }} aria-hidden />
-                      </Box>
-                    )}
-                  </Box>
-                  <CardContent sx={{ flex: 1, minWidth: 0, py: 0, px: 0, '&:last-child': { pb: 0 } }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, lineHeight: 1.3 }}>
-                      {s.title}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.25 }}>
-                      {s.artist}
-                    </Typography>
-                    <Stack direction="row" flexWrap="wrap" gap={0.5} useFlexGap sx={{ mt: 1 }}>
-                      {refUrl ? (
-                        <Chip
-                          size="small"
-                          component="a"
-                          href={refUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          clickable
-                          icon={
-                            refLink?.source === 'youtube' ? (
-                              <YouTubeBrandIcon sx={{ '&&': { fontSize: 16 } }} />
-                            ) : (
-                              <SpotifyBrandIcon sx={{ '&&': { fontSize: 16 } }} />
-                            )
-                          }
-                          label="Reference"
-                          onClick={(e) => e.stopPropagation()}
-                          variant="outlined"
+                    <Box
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 0.75,
+                        overflow: 'hidden',
+                        flexShrink: 0,
+                        mr: 1.25,
+                        bgcolor: 'action.hover',
+                      }}
+                    >
+                      {s.albumArtUrl ? (
+                        <Box
+                          component="img"
+                          src={s.albumArtUrl}
+                          alt=""
+                          sx={{ width: 1, height: 1, objectFit: 'cover', display: 'block' }}
                         />
+                      ) : (
+                        <Box sx={{ ...encoreNoAlbumArtSurfaceSx(theme), width: 1, height: 1, minHeight: 0 }}>
+                          <MusicNoteIcon sx={{ ...encoreNoAlbumArtIconSx(theme), fontSize: 20 }} aria-hidden />
+                        </Box>
+                      )}
+                    </Box>
+                    <ListItemText
+                      primary={s.title}
+                      secondary={s.artist}
+                      primaryTypographyProps={{ variant: 'body2', fontWeight: 700, noWrap: true }}
+                      secondaryTypographyProps={{ variant: 'caption', noWrap: true }}
+                    />
+                  </ListItemButton>
+                );
+              })}
+            </Stack>
+          </Paper>
+
+          <Paper
+            elevation={0}
+            sx={{
+              p: { xs: 2, sm: 2.5 },
+              borderRadius: encoreRadius,
+              border: 1,
+              borderColor: 'divider',
+              boxShadow: encoreShadowSurface,
+              bgcolor: 'background.paper',
+              minHeight: { md: 360 },
+            }}
+          >
+            {(() => {
+              const s = panelSong;
+              const chartPrimary = primaryChartAttachment(s);
+              const refLink = effectivePrimaryReferenceLink(s);
+              const backLink = effectivePrimaryBackingLink(s);
+              const refUrl = refLink
+                ? refLink.source === 'youtube'
+                  ? mediaLinkYoutubePracticeOpenUrl(refLink)
+                  : mediaLinkOpenUrl(refLink)
+                : undefined;
+              const backUrl = backLink
+                ? backLink.source === 'youtube'
+                  ? mediaLinkYoutubePracticeOpenUrl(backLink)
+                  : mediaLinkOpenUrl(backLink)
+                : undefined;
+              const chartUrl = chartPrimary ? driveFileWebUrl(chartPrimary.driveFileId) : undefined;
+              const milestoneSong = applyTemplateProgressToSong(s, repertoireExtras.milestoneTemplate);
+              const ms = milestoneProgressSummary(s, repertoireExtras.milestoneTemplate);
+              const recAttachments = effectiveSongAttachments(s).filter((a) => a.kind === 'recording');
+              const journalKey = s.id;
+              const journalVal = journalLocalBySongId[journalKey] ?? s.journalMarkdown ?? '';
+
+              return (
+                <Stack spacing={2.25}>
+                  <Stack direction="row" alignItems="flex-start" justifyContent="space-between" gap={1}>
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.25 }}>
+                        {s.title}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
+                        {s.artist}
+                      </Typography>
+                      {ms.total > 0 ? (
+                        <Typography variant="caption" color="text.secondary" sx={{ mt: 0.75, display: 'block' }}>
+                          {ms.labelShort}
+                        </Typography>
                       ) : null}
-                      {backUrl ? (
-                        <Chip
+                    </Box>
+                    <Stack direction="row" spacing={0.5} sx={{ flexShrink: 0 }}>
+                      <Tooltip title="Upload practice take to Drive">
+                        <span>
+                          <IconButton
+                            size="small"
+                            disabled={!googleAccessToken || !takesUploadFolderId}
+                            aria-label="Upload practice take"
+                            onClick={() => {
+                              practiceRecTargetSongIdRef.current = s.id;
+                              practiceRecInputRef.current?.click();
+                            }}
+                          >
+                            <CloudUploadIcon fontSize="small" />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                      <Tooltip title="Open full song page">
+                        <IconButton
                           size="small"
+                          aria-label="Open full song page"
                           component="a"
-                          href={backUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          clickable
-                          icon={
-                            backLink?.source === 'youtube' ? (
-                              <YouTubeBrandIcon sx={{ '&&': { fontSize: 16 } }} />
-                            ) : (
-                              <SpotifyBrandIcon sx={{ '&&': { fontSize: 16 } }} />
-                            )
-                          }
-                          label="Backing"
-                          onClick={(e) => e.stopPropagation()}
-                          variant="outlined"
-                        />
-                      ) : null}
-                      {chartUrl ? (
-                        <Chip
-                          size="small"
-                          component="a"
-                          href={chartUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          clickable
-                          label={chartPrimary?.label ?? 'Chart'}
-                          onClick={(e) => e.stopPropagation()}
-                          variant="outlined"
-                        />
-                      ) : null}
+                          href={encoreAppHref({ kind: 'song', id: s.id })}
+                        >
+                          <OpenInNewIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
                     </Stack>
+                  </Stack>
+
+                  <Stack direction="row" flexWrap="wrap" gap={0.75} useFlexGap>
+                    {refUrl ? (
+                      <Chip
+                        size="small"
+                        component="a"
+                        href={refUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        clickable
+                        title={
+                          refLink?.source === 'youtube'
+                            ? 'Opens in LoopTube for AB looping (external site)'
+                            : undefined
+                        }
+                        icon={
+                          refLink?.source === 'youtube' ? (
+                            <YouTubeBrandIcon sx={{ '&&': { fontSize: 16 } }} />
+                          ) : (
+                            <SpotifyBrandIcon sx={{ '&&': { fontSize: 16 } }} />
+                          )
+                        }
+                        label="Reference"
+                        variant="outlined"
+                        sx={{ fontWeight: 700, borderWidth: 2, px: 0.75 }}
+                      />
+                    ) : null}
+                    {backUrl ? (
+                      <Chip
+                        size="small"
+                        component="a"
+                        href={backUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        clickable
+                        title={
+                          backLink?.source === 'youtube'
+                            ? 'Opens in LoopTube for AB looping (external site)'
+                            : undefined
+                        }
+                        icon={
+                          backLink?.source === 'youtube' ? (
+                            <YouTubeBrandIcon sx={{ '&&': { fontSize: 16 } }} />
+                          ) : (
+                            <SpotifyBrandIcon sx={{ '&&': { fontSize: 16 } }} />
+                          )
+                        }
+                        label="Backing"
+                        variant="outlined"
+                        sx={{ fontWeight: 700, borderWidth: 2, px: 0.75 }}
+                      />
+                    ) : null}
+                    {chartUrl ? (
+                      <Chip
+                        size="small"
+                        component="a"
+                        href={chartUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        clickable
+                        label={chartPrimary?.label ?? 'Chart'}
+                        variant="outlined"
+                        sx={{ fontWeight: 700, borderWidth: 2, px: 0.75 }}
+                      />
+                    ) : null}
+                    {recAttachments.map((a) => (
+                      <Chip
+                        key={a.driveFileId}
+                        size="small"
+                        component="a"
+                        href={driveFileWebUrl(a.driveFileId)}
+                        target="_blank"
+                        rel="noreferrer"
+                        clickable
+                        label={a.label ?? 'Take'}
+                        variant="outlined"
+                      />
+                    ))}
+                  </Stack>
+
+                  <SongMilestoneChecklist
+                    song={milestoneSong}
+                    milestoneTemplate={repertoireExtras.milestoneTemplate}
+                    onChange={(next) => void saveSong(next)}
+                  />
+
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.75 }}>
+                      Journal
+                    </Typography>
+                    <TextField
+                      value={journalVal}
+                      onChange={(e) =>
+                        setJournalLocalBySongId((m) => ({ ...m, [journalKey]: e.target.value }))
+                      }
+                      fullWidth
+                      multiline
+                      minRows={4}
+                      size="small"
+                      inputProps={{ 'aria-label': `Practice journal for ${s.title}` }}
+                      placeholder="Notes…"
+                    />
                     <Button
                       size="small"
-                      variant="text"
-                      endIcon={<OpenInNewIcon sx={{ fontSize: 14, opacity: 0.7 }} />}
-                      onClick={() => navigateEncore({ kind: 'song', id: s.id })}
-                      sx={{ mt: 0.75, p: 0, minWidth: 0, fontWeight: 600 }}
+                      variant="contained"
+                      sx={{ mt: 1, textTransform: 'none' }}
+                      onClick={() => {
+                        const md = journalVal;
+                        void saveSong({
+                          ...s,
+                          journalMarkdown: md,
+                          updatedAt: new Date().toISOString(),
+                        });
+                      }}
                     >
-                      Full song page
+                      Save
                     </Button>
-                  </CardContent>
+                  </Box>
                 </Stack>
-
-                <Accordion
-                  disableGutters
-                  elevation={0}
-                  sx={{ borderTop: 1, borderColor: 'divider', '&:before': { display: 'none' } }}
-                >
-                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      Practice details
-                    </Typography>
-                  </AccordionSummary>
-                  <AccordionDetails sx={{ pt: 0 }}>
-                    <Stack spacing={2}>
-                      <SongMilestoneChecklist
-                        song={milestoneSong}
-                        milestoneTemplate={repertoireExtras.milestoneTemplate}
-                        onChange={(next) => void saveSong(next)}
-                        onOpenGlobalMilestoneSettings={() => navigateEncore({ kind: 'repertoireSettings' })}
-                      />
-                      <Box>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.75 }}>
-                          Practice journal
-                        </Typography>
-                        <TextField
-                          value={journalVal}
-                          onChange={(e) =>
-                            setJournalLocalBySongId((m) => ({ ...m, [journalKey]: e.target.value }))
-                          }
-                          fullWidth
-                          multiline
-                          minRows={4}
-                          size="small"
-                          inputProps={{ 'aria-label': `Practice journal for ${s.title}` }}
-                          placeholder="Notes for this song…"
-                        />
-                        <Button
-                          size="small"
-                          variant="contained"
-                          sx={{ mt: 1 }}
-                          onClick={() => {
-                            const md = journalVal;
-                            void saveSong({
-                              ...s,
-                              journalMarkdown: md,
-                              updatedAt: new Date().toISOString(),
-                            });
-                          }}
-                        >
-                          Save journal
-                        </Button>
-                      </Box>
-                    </Stack>
-                  </AccordionDetails>
-                </Accordion>
-              </Card>
-            );
-          })}
+              );
+            })()}
+          </Paper>
         </Box>
-      )}
-
-      <Accordion expanded={playlistPanelOpen} onChange={(_, exp) => setPlaylistPanelOpen(exp)} sx={{ boxShadow: 'none', border: 1, borderColor: 'divider', borderRadius: encoreRadius, '&:before': { display: 'none' }, overflow: 'hidden' }}>
-        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-            Spotify “Currently learning” playlist
-          </Typography>
-        </AccordionSummary>
-        <AccordionDetails sx={{ pt: 0 }}>{playlistControls}</AccordionDetails>
-      </Accordion>
+      ) : null}
 
       <Dialog
         open={practiceImportReviewOpen}
@@ -634,6 +849,13 @@ export function PracticeScreen(): React.ReactElement {
           ) : null}
         </DialogActions>
       </Dialog>
+      <input
+        ref={practiceRecInputRef}
+        type="file"
+        hidden
+        accept="audio/*,video/*"
+        onChange={(e) => void onPracticeRecordingFile(e)}
+      />
     </Box>
   );
 }

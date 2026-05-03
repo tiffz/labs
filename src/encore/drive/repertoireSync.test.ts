@@ -81,10 +81,12 @@ import {
 } from './driveFetch';
 import { ensureEncoreDriveLayout } from './bootstrapFolders';
 import {
+  analyzeRepertoireConflict,
   pullRepertoireFromDrive,
   pushRepertoireToDrive,
   resolveConflictKeepLocal,
   resolveConflictUseRemoteThenPush,
+  resolveConflictWithChoices,
   runInitialSyncIfPossible,
 } from './repertoireSync';
 
@@ -304,7 +306,7 @@ describe('runInitialSyncIfPossible', () => {
     expect(ifMatch).toBe('priorEtag');
   });
 
-  it('returns conflict=true when both local and remote have changed since last sync', async () => {
+  it('returns conflict=true and a row-level analysis when both local and remote changed', async () => {
     setLayoutOk();
     syncMetaState = {
       id: 'default',
@@ -313,20 +315,63 @@ describe('runInitialSyncIfPossible', () => {
       lastSyncedLocalMaxUpdatedAt: '2025-05-01T00:00:00.000Z',
       lastRemoteEtag: 'priorEtag',
     };
-    songsTable.rows = [song('s1', '2025-06-15T00:00:00.000Z', 'Local dirty')];
+    songsTable.rows = [
+      song('s1', '2025-06-15T00:00:00.000Z', 'Local dirty s1'),
+      song('s2', '2025-04-01T00:00:00.000Z', 'Untouched on both sides'),
+    ];
     (driveGetFileMetadata as any).mockResolvedValueOnce({
       id: REPERTOIRE_FILE_ID,
       modifiedTime: '2025-06-10T00:00:00.000Z',
       etag: 'remoteEtag',
     });
+    // Remote: s2 unchanged; remote-only s3 added; s1 untouched on remote (still old).
+    (driveGetMedia as any).mockResolvedValueOnce(
+      wirePayload(
+        [
+          song('s1', '2025-04-15T00:00:00.000Z', 'Old remote s1'),
+          song('s2', '2025-04-01T00:00:00.000Z', 'Untouched on both sides'),
+          song('s3', '2025-06-09T00:00:00.000Z', 'Remote-added s3'),
+        ],
+        [],
+      ),
+    );
 
     const r = await runInitialSyncIfPossible('tok');
     expect(r.ok).toBe(false);
     expect(r.conflict?.conflict).toBe(true);
     expect(r.conflict?.reason).toBe('local_and_remote_changed');
     expect(r.conflict?.remoteEtag).toBe('remoteEtag');
-    expect(driveGetMedia).not.toHaveBeenCalled();
+    expect(r.analysis).toBeDefined();
+    expect(r.analysis!.localOnly.map((x) => x.id).sort()).toEqual(['s1']);
+    expect(r.analysis!.remoteOnly.map((x) => x.id).sort()).toEqual(['s3']);
+    expect(r.analysis!.bothEdited).toEqual([]);
     expect(drivePatchJsonMedia).not.toHaveBeenCalled();
+  });
+
+  it('returns analysis with bothEdited rows when local and remote both edit the same row', async () => {
+    setLayoutOk();
+    syncMetaState = {
+      id: 'default',
+      repertoireFileId: REPERTOIRE_FILE_ID,
+      lastRemoteModified: '2025-06-01T00:00:00.000Z',
+      lastSyncedLocalMaxUpdatedAt: '2025-05-01T00:00:00.000Z',
+      lastRemoteEtag: 'priorEtag',
+    };
+    songsTable.rows = [song('s1', '2025-06-15T00:00:00.000Z', 'Local edit s1')];
+    (driveGetFileMetadata as any).mockResolvedValueOnce({
+      id: REPERTOIRE_FILE_ID,
+      modifiedTime: '2025-06-10T00:00:00.000Z',
+      etag: 'remoteEtag',
+    });
+    (driveGetMedia as any).mockResolvedValueOnce(
+      wirePayload([song('s1', '2025-06-09T00:00:00.000Z', 'Remote edit s1')], []),
+    );
+
+    const r = await runInitialSyncIfPossible('tok');
+    expect(r.ok).toBe(false);
+    expect(r.analysis?.bothEdited.map((x) => x.id)).toEqual(['s1']);
+    expect(r.analysis?.localOnly).toEqual([]);
+    expect(r.analysis?.remoteOnly).toEqual([]);
   });
 
   it('captures bootstrap errors and surfaces them as ok=false with a message', async () => {
@@ -372,6 +417,130 @@ describe('resolveConflictUseRemoteThenPush', () => {
   it('throws when meta has no repertoireFileId', async () => {
     syncMetaState = { id: 'default' };
     await expect(resolveConflictUseRemoteThenPush('tok')).rejects.toThrow('Not bootstrapped');
+  });
+});
+
+describe('analyzeRepertoireConflict', () => {
+  const meta = {
+    lastSyncedLocalMaxUpdatedAt: '2025-05-01T00:00:00.000Z',
+    lastRemoteModified: '2025-05-01T00:00:00.000Z',
+  };
+
+  it('classifies rows into localOnly, remoteOnly, and bothEdited buckets', () => {
+    const local = {
+      songs: [
+        song('local-only', '2025-06-01T00:00:00.000Z'), // edited locally, not on remote
+        song('shared-local-newer', '2025-06-10T00:00:00.000Z'), // both edited
+        song('quiet', '2025-04-01T00:00:00.000Z'), // unchanged on both sides
+      ],
+      performances: [],
+    };
+    const remote = {
+      songs: [
+        song('shared-local-newer', '2025-06-09T00:00:00.000Z'), // both edited
+        song('remote-only', '2025-06-02T00:00:00.000Z'), // edited remotely, not local
+        song('quiet', '2025-04-01T00:00:00.000Z'), // unchanged on both sides
+      ],
+      performances: [],
+    };
+
+    const a = analyzeRepertoireConflict(local, remote, meta);
+    expect(a.localOnly.map((x) => x.id)).toEqual(['local-only']);
+    expect(a.remoteOnly.map((x) => x.id)).toEqual(['remote-only']);
+    expect(a.bothEdited.map((x) => x.id)).toEqual(['shared-local-newer']);
+  });
+
+  it('treats identical updatedAt rows as in-sync (no entries in any bucket)', () => {
+    const local = { songs: [song('s1', '2025-06-01T00:00:00.000Z')], performances: [] };
+    const remote = { songs: [song('s1', '2025-06-01T00:00:00.000Z')], performances: [] };
+    const a = analyzeRepertoireConflict(local, remote, meta);
+    expect(a.localOnly).toEqual([]);
+    expect(a.remoteOnly).toEqual([]);
+    expect(a.bothEdited).toEqual([]);
+  });
+
+  it('classifies performances by id with the same rules', () => {
+    const local = {
+      songs: [song('s1', '2025-04-01T00:00:00.000Z')],
+      performances: [perf('p1', 's1', '2025-06-10T00:00:00.000Z')],
+    };
+    const remote = {
+      songs: [song('s1', '2025-04-01T00:00:00.000Z')],
+      performances: [perf('p2', 's1', '2025-06-09T00:00:00.000Z')],
+    };
+    const a = analyzeRepertoireConflict(local, remote, meta);
+    expect(a.localOnly.map((x) => `${x.kind}:${x.id}`)).toEqual(['performance:p1']);
+    expect(a.remoteOnly.map((x) => `${x.kind}:${x.id}`)).toEqual(['performance:p2']);
+  });
+});
+
+describe('resolveConflictWithChoices', () => {
+  function setupConflictForChoice() {
+    syncMetaState = {
+      id: 'default',
+      repertoireFileId: REPERTOIRE_FILE_ID,
+      lastRemoteModified: '2025-05-01T00:00:00.000Z',
+      lastSyncedLocalMaxUpdatedAt: '2025-05-01T00:00:00.000Z',
+      lastRemoteEtag: 'priorEtag',
+    };
+    songsTable.rows = [
+      song('s1', '2025-06-10T00:00:00.000Z', 'Local s1'),
+      song('s2', '2025-06-01T00:00:00.000Z', 'Local s2 (newer than remote)'),
+    ];
+    (driveGetMedia as any).mockResolvedValueOnce(
+      wirePayload(
+        [
+          song('s1', '2025-06-09T00:00:00.000Z', 'Remote s1'),
+          song('s2', '2025-04-01T00:00:00.000Z', 'Remote s2 (older)'),
+          song('s3', '2025-05-15T00:00:00.000Z', 'Remote-only s3'),
+        ],
+        [],
+      ),
+    );
+    (drivePatchJsonMedia as any).mockResolvedValueOnce({
+      id: REPERTOIRE_FILE_ID,
+      modifiedTime: '2025-06-15T00:00:00.000Z',
+      etag: 'merged-etag',
+    });
+    (driveGetFileMetadata as any).mockResolvedValueOnce({
+      id: REPERTOIRE_FILE_ID,
+      modifiedTime: '2025-06-15T00:00:00.000Z',
+      etag: 'merged-etag',
+    });
+  }
+
+  it('keeps local for "local" choice (and bumps its updatedAt past remote)', async () => {
+    setupConflictForChoice();
+    await resolveConflictWithChoices('tok', new Map([['s1', 'local']]));
+
+    const s1 = songsTable.rows.find((s) => s.id === 's1')!;
+    expect(s1.title).toBe('Local s1');
+    expect(s1.updatedAt > '2025-06-09T00:00:00.000Z').toBe(true);
+    // Auto-merged rows: s2 (local newer wins), s3 (remote-only added).
+    expect(songsTable.rows.find((s) => s.id === 's2')!.title).toBe('Local s2 (newer than remote)');
+    expect(songsTable.rows.find((s) => s.id === 's3')!.title).toBe('Remote-only s3');
+  });
+
+  it('uses remote row verbatim for "remote" choice', async () => {
+    setupConflictForChoice();
+    await resolveConflictWithChoices('tok', new Map([['s1', 'remote']]));
+    const s1 = songsTable.rows.find((s) => s.id === 's1')!;
+    expect(s1.title).toBe('Remote s1');
+  });
+
+  it('falls back to newer-wins when no choice is supplied (silent auto-merge)', async () => {
+    setupConflictForChoice();
+    await resolveConflictWithChoices('tok', new Map());
+    const s1 = songsTable.rows.find((s) => s.id === 's1')!;
+    expect(s1.title).toBe('Local s1'); // local is newer
+    expect(songsTable.rows.find((s) => s.id === 's3')).toBeDefined();
+  });
+
+  it('pushes the merged result without an If-Match etag', async () => {
+    setupConflictForChoice();
+    await resolveConflictWithChoices('tok', new Map([['s1', 'local']]));
+    const [, , , ifMatch] = (drivePatchJsonMedia as any).mock.calls[0];
+    expect(ifMatch).toBeUndefined();
   });
 });
 

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { etagFromDriveResponse, formatDriveRequestFailure, summarizeDriveApiErrorBody } from './driveFetch';
+import {
+  etagFromDriveResponse,
+  formatDriveRequestFailure,
+  pickPreferredDriveListFileId,
+  summarizeDriveApiErrorBody,
+} from './driveFetch';
 
 describe('summarizeDriveApiErrorBody', () => {
   it('parses Drive v3 JSON error message', () => {
@@ -31,12 +36,52 @@ describe('formatDriveRequestFailure', () => {
     });
     const msg = formatDriveRequestFailure('GET', '/files', 403, body);
     expect(msg).toContain('Insufficient Permission');
-    expect(msg).toContain('Disconnect Google');
+    expect(msg).toMatch(/sign in/i);
   });
 
   it('appends session hint for 401', () => {
     const msg = formatDriveRequestFailure('GET', '/files', 401, '{"error":{"message":"Invalid Credentials"}}');
     expect(msg).toContain('401');
     expect(msg).toMatch(/sign(ing)? in/i);
+  });
+});
+
+describe('pickPreferredDriveListFileId', () => {
+  it('returns preferred id when it is still in the list', () => {
+    expect(
+      pickPreferredDriveListFileId(
+        [
+          { id: 'older', modifiedTime: '2025-01-02T00:00:00.000Z' },
+          { id: 'stable', modifiedTime: '2020-01-01T00:00:00.000Z' },
+        ],
+        'stable',
+      ),
+    ).toBe('stable');
+  });
+
+  it('picks most recently modified when preferred is missing or not listed', () => {
+    expect(
+      pickPreferredDriveListFileId(
+        [
+          { id: 'a', modifiedTime: '2025-01-01T00:00:00.000Z' },
+          { id: 'b', modifiedTime: '2026-02-01T00:00:00.000Z' },
+        ],
+        undefined,
+      ),
+    ).toBe('b');
+    expect(
+      pickPreferredDriveListFileId(
+        [
+          { id: 'a', modifiedTime: '2025-01-01T00:00:00.000Z' },
+          { id: 'b', modifiedTime: '2026-02-01T00:00:00.000Z' },
+        ],
+        'gone',
+      ),
+    ).toBe('b');
+  });
+
+  it('returns undefined for empty input', () => {
+    expect(pickPreferredDriveListFileId(undefined, 'x')).toBeUndefined();
+    expect(pickPreferredDriveListFileId([], 'x')).toBeUndefined();
   });
 });

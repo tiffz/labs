@@ -32,6 +32,10 @@ describe('parseEncoreFolderMetadata', () => {
     expect(parseEncoreFolderMetadata('Date - 2025-08-15 / ').date).toBe('2025-08-15');
   });
 
+  it('parses Date from natural language when strict ISO not used', () => {
+    expect(parseEncoreFolderMetadata('Date - Feb 8, 2024 / ').date).toBe('2024-02-08');
+  });
+
   it('ignores invalid Date values', () => {
     expect(parseEncoreFolderMetadata('Date - 2025-13-40 / ').date).toBeUndefined();
     expect(parseEncoreFolderMetadata('Date - not-a-date / ').date).toBeUndefined();

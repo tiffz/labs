@@ -31,12 +31,12 @@ import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
 import { useEncoreBlockingJobs } from '../context/EncoreBlockingJobContext';
 import { useEncore } from '../context/EncoreContext';
 import { ensureEncoreDriveLayout } from '../drive/bootstrapFolders';
+import { resolveDriveUploadFolderId, type DriveUploadFolderLayout } from '../drive/resolveDriveUploadFolder';
 import { driveCollectScoreFilesRecursive } from '../drive/driveFolderWalk';
 import { driveUploadFileResumable } from '../drive/driveFetch';
-import { driveFolderWebUrl, driveFileWebUrl } from '../drive/driveWebUrls';
-import { openEncoreGoogleDrivePicker } from '../drive/googlePicker';
-import { parseDriveFileIdFromUrlOrId, parseDriveFolderIdFromUrlOrId } from '../drive/parseDriveFileUrl';
-import { navigateEncore } from '../routes/encoreAppHash';
+import { driveFileWebUrl } from '../drive/driveWebUrls';
+import { resolveDriveFolderFromUserInput } from '../drive/resolveDriveFolderFromUserInput';
+import { encoreAppHref, isModifiedOrNonPrimaryClick } from '../routes/encoreAppHash';
 import { parseEncoreFolderMetadata } from '../import/encoreFolderMetadata';
 import { parseScoreFilename, type ParsedScoreFilename } from '../import/parseScoreFilename';
 import { pickLibrarySongForScore } from '../import/pickLibrarySongForScore';
@@ -57,6 +57,7 @@ import { addSongAttachment } from '../utils/songAttachments';
 import { encoreMrtBulkImportReviewOptions } from './encoreMrtTableDefaults';
 import { LibrarySongPickerDialog } from './LibrarySongPickerDialog';
 import { DragDropFileUpload } from '../../shared/components/DragDropFileUpload';
+import { EncoreDriveFolderPasteOrBrowseBlock } from '../ui/EncoreDriveFolderPasteOrBrowseBlock';
 
 type SourceKind = 'upload' | 'drive';
 
@@ -151,7 +152,7 @@ function ScoreFilePreviewLink(props: {
 export function BulkScoreImportDialog(props: BulkScoreImportDialogProps): ReactElement {
   const { open, onClose, songs, onSaveSong } = props;
   const theme = useTheme();
-  const { googleAccessToken } = useEncore();
+  const { googleAccessToken, repertoireExtras } = useEncore();
   const { withBlockingJob } = useEncoreBlockingJobs();
   const { withBatch } = useLabsUndo();
 
@@ -160,7 +161,7 @@ export function BulkScoreImportDialog(props: BulkScoreImportDialogProps): ReactE
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [rows, setRows] = useState<BulkScoreRow[]>([]);
-  const [chartsFolderId, setChartsFolderId] = useState<string | null>(null);
+  const [driveUploadLayout, setDriveUploadLayout] = useState<DriveUploadFolderLayout | null>(null);
   const [pickerOpenForRowId, setPickerOpenForRowId] = useState<string | null>(null);
   const [pickQuery, setPickQuery] = useState('');
   const [tableQuery, setTableQuery] = useState('');
@@ -183,14 +184,14 @@ export function BulkScoreImportDialog(props: BulkScoreImportDialogProps): ReactE
     }
   }, [open]);
 
-  /* Resolve charts Drive folder lazily so direct uploads have somewhere to go. */
+  /* Resolve charts upload parent lazily so direct uploads have a target. */
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      if (!open || !googleAccessToken || chartsFolderId) return;
+      if (!open || !googleAccessToken || driveUploadLayout) return;
       try {
         const layout = await ensureEncoreDriveLayout(googleAccessToken);
-        if (!cancelled) setChartsFolderId(layout.sheetMusicFolderId);
+        if (!cancelled) setDriveUploadLayout(layout);
       } catch {
         /* non-fatal — direct upload path will surface a helpful error on save. */
       }
@@ -198,11 +199,15 @@ export function BulkScoreImportDialog(props: BulkScoreImportDialogProps): ReactE
     return () => {
       cancelled = true;
     };
-  }, [open, googleAccessToken, chartsFolderId]);
+  }, [open, googleAccessToken, driveUploadLayout]);
 
-  const parsedFolderIdForBrowse = useMemo(() => {
-    return parseDriveFolderIdFromUrlOrId(folderInput) ?? parseDriveFileIdFromUrlOrId(folderInput);
-  }, [folderInput]);
+  const chartsUploadFolderId = useMemo(
+    () =>
+      driveUploadLayout
+        ? resolveDriveUploadFolderId('charts', driveUploadLayout, repertoireExtras.driveUploadFolderOverrides) ?? null
+        : null,
+    [driveUploadLayout, repertoireExtras.driveUploadFolderOverrides],
+  );
 
   const buildRowFromUploadFile = useCallback(
     (file: File): BulkScoreRow => {
@@ -300,11 +305,16 @@ export function BulkScoreImportDialog(props: BulkScoreImportDialogProps): ReactE
 
   const scanFolder = useCallback(async () => {
     setMsg(null);
-    const folderId = parseDriveFolderIdFromUrlOrId(folderInput) ?? parseDriveFileIdFromUrlOrId(folderInput);
-    if (!folderId || !googleAccessToken) {
+    if (!googleAccessToken) {
       setMsg('Paste a valid Google Drive folder URL or id (sign in to Google first).');
       return;
     }
+    const resolved = await resolveDriveFolderFromUserInput(googleAccessToken, folderInput);
+    if (!resolved.ok) {
+      setMsg(resolved.message);
+      return;
+    }
+    const folderId = resolved.id;
     setBusy(true);
     try {
       await withBlockingJob('Scanning Drive for scores…', async () => {
@@ -755,10 +765,10 @@ export function BulkScoreImportDialog(props: BulkScoreImportDialogProps): ReactE
               if (!googleAccessToken) {
                 throw new Error('Sign in to Google to upload score files.');
               }
-              if (!chartsFolderId) {
+              if (!chartsUploadFolderId) {
                 throw new Error('Drive charts folder is not ready yet — try again in a moment.');
               }
-              const created = await driveUploadFileResumable(googleAccessToken, r.file, [chartsFolderId]);
+              const created = await driveUploadFileResumable(googleAccessToken, r.file, [chartsUploadFolderId]);
               driveFileId = created.id;
             }
             if (!driveFileId) {
@@ -803,7 +813,7 @@ export function BulkScoreImportDialog(props: BulkScoreImportDialogProps): ReactE
     rows,
     songById,
     googleAccessToken,
-    chartsFolderId,
+    chartsUploadFolderId,
     onSaveSong,
     onClose,
     scoreRowExcluded,
@@ -905,12 +915,10 @@ export function BulkScoreImportDialog(props: BulkScoreImportDialogProps): ReactE
                 <Typography variant="body2" sx={{ lineHeight: 1.5 }}>
                   For how Encore reads MusicNotes-style names and how it saves charts in Drive, see the{' '}
                   <Link
-                    component="button"
-                    type="button"
+                    href={encoreAppHref({ kind: 'help' })}
                     variant="body2"
-                    onClick={() => {
-                      onClose();
-                      navigateEncore({ kind: 'help' });
+                    onClick={(e) => {
+                      if (!isModifiedOrNonPrimaryClick(e)) onClose();
                     }}
                   >
                     Import guide
@@ -935,65 +943,28 @@ export function BulkScoreImportDialog(props: BulkScoreImportDialogProps): ReactE
                 <Box sx={{ flex: 1, height: 1, bgcolor: 'divider' }} />
               </Box>
 
-              <Stack gap={1.5}>
-                <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.45 }}>
-                  Already have a folder of scores in Drive? Paste a link or pick the folder; subfolders are scanned too.
-                </Typography>
-                <TextField
-                  label="Drive folder URL or id"
-                  value={folderInput}
-                  onChange={(e) => setFolderInput(e.target.value)}
-                  fullWidth
-                  multiline
-                  minRows={2}
-                />
-                <Stack direction="row" gap={1} flexWrap="wrap">
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    disabled={!googleAccessToken || busy}
-                    onClick={() => {
-                      if (!googleAccessToken) return;
-                      void openEncoreGoogleDrivePicker({
-                        accessToken: googleAccessToken,
-                        title: parsedFolderIdForBrowse ? 'Choose a subfolder' : 'Choose a folder',
-                        parentFolderId: parsedFolderIdForBrowse,
-                        selectFolder: true,
-                        onPicked: (files) => {
-                          const f = files[0];
-                          if (!f?.id) return;
-                          setFolderInput(f.id);
-                          setMsg(null);
-                        },
-                        onError: (m) => setMsg(m),
-                      });
-                    }}
-                  >
-                    {parsedFolderIdForBrowse ? 'Pick subfolder in Drive' : 'Pick folder in Drive'}
-                  </Button>
-                  <Button
-                    size="small"
-                    variant="text"
-                    disabled={!parsedFolderIdForBrowse || !googleAccessToken}
-                    {...(parsedFolderIdForBrowse && googleAccessToken
-                      ? { component: 'a' as const, href: driveFolderWebUrl(parsedFolderIdForBrowse), target: '_blank', rel: 'noreferrer' }
-                      : {})}
-                  >
-                    Open folder in browser
-                  </Button>
-                  <Box sx={{ flex: 1 }} />
+              <EncoreDriveFolderPasteOrBrowseBlock
+                value={folderInput}
+                onChange={(v) => {
+                  setFolderInput(v);
+                  setMsg(null);
+                }}
+                googleAccessToken={googleAccessToken}
+                disabled={busy}
+                description="Already have a folder of scores in Drive? Paste a link or open Drive in your browser, then paste the folder URL here; subfolders are scanned too."
+                primaryAction={
                   <Button
                     size="small"
                     variant="contained"
-                    onClick={scanFolder}
+                    onClick={() => void scanFolder()}
                     disabled={busy || !folderInput.trim() || !googleAccessToken}
                   >
                     Scan folder
                   </Button>
-                </Stack>
-                {msg ? <Alert severity="warning">{msg}</Alert> : null}
-                {busy ? <LinearProgress /> : null}
-              </Stack>
+                }
+              />
+              {msg ? <Alert severity="warning" sx={{ whiteSpace: 'pre-line' }}>{msg}</Alert> : null}
+              {busy ? <LinearProgress /> : null}
             </>
           ) : (
             <Stack gap={1.5} sx={{ flex: '1 1 auto', minHeight: 0, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
@@ -1050,7 +1021,7 @@ export function BulkScoreImportDialog(props: BulkScoreImportDialogProps): ReactE
                   />
                 </Stack>
               ) : null}
-              {msg ? <Alert severity="warning">{msg}</Alert> : null}
+              {msg ? <Alert severity="warning" sx={{ whiteSpace: 'pre-line' }}>{msg}</Alert> : null}
               <Box sx={{ flex: '1 1 auto', minHeight: 0, minWidth: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                 <MaterialReactTable table={table} />
               </Box>

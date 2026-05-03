@@ -1,6 +1,15 @@
 import 'fake-indexeddb/auto';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { encoreDb, getSyncMeta, patchSyncMeta } from './encoreDb';
+import {
+  clearDirtyRows,
+  dirtySyncRowKey,
+  encoreDb,
+  getSyncMeta,
+  markDirtyRow,
+  markDirtyRows,
+  patchSyncMeta,
+  takeDirtyRows,
+} from './encoreDb';
 import type { EncorePerformance, EncoreSong } from '../types';
 
 beforeEach(async () => {
@@ -8,6 +17,7 @@ beforeEach(async () => {
   await encoreDb.performances.clear();
   await encoreDb.syncMeta.clear();
   await encoreDb.repertoireExtras.clear();
+  await encoreDb.dirtySync.clear();
 });
 
 afterEach(async () => {
@@ -15,13 +25,14 @@ afterEach(async () => {
   await encoreDb.performances.clear();
   await encoreDb.syncMeta.clear();
   await encoreDb.repertoireExtras.clear();
+  await encoreDb.dirtySync.clear();
 });
 
 describe('encoreDb schema', () => {
-  it('opens at version 3 with songs/performances/syncMeta/repertoireExtras tables', async () => {
-    expect(encoreDb.verno).toBe(3);
+  it('opens at version 4 with songs/performances/syncMeta/repertoireExtras/dirtySync tables', async () => {
+    expect(encoreDb.verno).toBe(4);
     expect(encoreDb.tables.map((t) => t.name).sort()).toEqual(
-      ['performances', 'repertoireExtras', 'songs', 'syncMeta'].sort(),
+      ['dirtySync', 'performances', 'repertoireExtras', 'songs', 'syncMeta'].sort(),
     );
   });
 
@@ -91,6 +102,14 @@ describe('getSyncMeta / patchSyncMeta', () => {
     expect(meta.lastRemoteEtag).toBe('etag-B');
   });
 
+  it('patchSyncMeta does not clear optional fields when patch omits them via undefined', async () => {
+    await patchSyncMeta({ snapshotFileId: 'snap-1', rootFolderId: 'root-1' });
+    await patchSyncMeta({ rootFolderId: 'root-2', snapshotFileId: undefined });
+    const meta = await getSyncMeta();
+    expect(meta.rootFolderId).toBe('root-2');
+    expect(meta.snapshotFileId).toBe('snap-1');
+  });
+
   it('patchSyncMeta always pins the row id to "default"', async () => {
     await patchSyncMeta({
       // @ts-expect-error - test explicitly tries to override the id
@@ -107,5 +126,49 @@ describe('getSyncMeta / patchSyncMeta', () => {
     await getSyncMeta();
     await getSyncMeta();
     expect(await encoreDb.syncMeta.count()).toBe(1);
+  });
+});
+
+describe('dirtySync helpers', () => {
+  it('markDirtyRow upserts under a stable compound id (kind:rowId)', async () => {
+    await markDirtyRow('song', 's1', 'upsert');
+    await markDirtyRow('song', 's1', 'upsert'); // same row → coalesces
+    const rows = await takeDirtyRows();
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.id).toBe(dirtySyncRowKey('song', 's1'));
+    expect(rows[0]!.op).toBe('upsert');
+  });
+
+  it('markDirtyRow promotes a row from upsert → delete on later writes', async () => {
+    await markDirtyRow('song', 's1', 'upsert');
+    await markDirtyRow('song', 's1', 'delete');
+    const rows = await takeDirtyRows();
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.op).toBe('delete');
+  });
+
+  it('markDirtyRows is a no-op for an empty list', async () => {
+    await markDirtyRows([]);
+    expect((await takeDirtyRows()).length).toBe(0);
+  });
+
+  it('markDirtyRows + clearDirtyRows round-trips a batch of mixed kinds', async () => {
+    await markDirtyRows([
+      { kind: 'song', rowId: 's1' },
+      { kind: 'performance', rowId: 'p1' },
+      { kind: 'extras', rowId: 'default' },
+    ]);
+    const rows = await takeDirtyRows();
+    expect(rows.map((r) => r.id).sort()).toEqual(
+      [dirtySyncRowKey('song', 's1'), dirtySyncRowKey('performance', 'p1'), dirtySyncRowKey('extras', 'default')].sort(),
+    );
+    await clearDirtyRows(rows.map((r) => r.id));
+    expect((await takeDirtyRows()).length).toBe(0);
+  });
+
+  it('clearDirtyRows is a no-op for an empty id list (does not wipe other entries)', async () => {
+    await markDirtyRow('song', 's1', 'upsert');
+    await clearDirtyRows([]);
+    expect((await takeDirtyRows()).length).toBe(1);
   });
 });

@@ -1,5 +1,43 @@
 import type { RepertoireExtrasRow } from '../db/encoreDb';
-import type { EncorePerformance, EncoreSong, RepertoireWirePayload } from '../types';
+import type {
+  EncoreDriveUploadFolderKind,
+  EncoreDriveUploadFolderOverrideLabels,
+  EncoreDriveUploadFolderOverrides,
+  EncorePerformance,
+  EncoreSong,
+  EncoreTableUiBundle,
+  RepertoireWirePayload,
+} from '../types';
+
+const DRIVE_UPLOAD_FOLDER_KINDS = new Set<EncoreDriveUploadFolderKind>([
+  'performances',
+  'charts',
+  'referenceTracks',
+  'backingTracks',
+  'takes',
+]);
+
+function parseDriveUploadFolderOverrides(raw: unknown): EncoreDriveUploadFolderOverrides | undefined {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+  const o = raw as Record<string, unknown>;
+  const out: EncoreDriveUploadFolderOverrides = {};
+  for (const key of DRIVE_UPLOAD_FOLDER_KINDS) {
+    const v = o[key];
+    if (typeof v === 'string' && v.trim()) out[key] = v.trim();
+  }
+  return Object.keys(out).length ? out : undefined;
+}
+
+function parseDriveUploadFolderOverrideLabels(raw: unknown): EncoreDriveUploadFolderOverrideLabels | undefined {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+  const o = raw as Record<string, unknown>;
+  const out: EncoreDriveUploadFolderOverrideLabels = {};
+  for (const key of DRIVE_UPLOAD_FOLDER_KINDS) {
+    const v = o[key];
+    if (typeof v === 'string' && v.trim()) out[key] = v.trim();
+  }
+  return Object.keys(out).length ? out : undefined;
+}
 
 export function defaultRepertoireExtrasRow(iso: string): RepertoireExtrasRow {
   return { id: 'default', venueCatalog: [], milestoneTemplate: [], updatedAt: iso };
@@ -22,7 +60,43 @@ export function parseRepertoireWire(json: string): RepertoireWirePayload {
       typeof data.currentlyLearningSpotifyPlaylistId === 'string'
         ? data.currentlyLearningSpotifyPlaylistId.trim() || undefined
         : undefined,
+    tableUi: parseTableUiBundle(data.tableUi),
+    driveUploadFolderOverrides: parseDriveUploadFolderOverrides(data.driveUploadFolderOverrides),
+    driveUploadFolderOverrideLabels: parseDriveUploadFolderOverrideLabels(data.driveUploadFolderOverrideLabels),
   };
+}
+
+function parseTableUiBundle(raw: unknown): EncoreTableUiBundle | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const o = raw as Record<string, unknown>;
+  const repertoire = parseMrtPrefs(o.repertoire);
+  const performances = parseMrtPrefs(o.performances);
+  if (!repertoire && !performances) return undefined;
+  return { repertoire, performances };
+}
+
+function parseMrtPrefs(raw: unknown): EncoreTableUiBundle['repertoire'] {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const o = raw as Record<string, unknown>;
+  const columnVisibility =
+    o.columnVisibility && typeof o.columnVisibility === 'object' && !Array.isArray(o.columnVisibility)
+      ? (o.columnVisibility as Record<string, boolean>)
+      : undefined;
+  const columnOrder = Array.isArray(o.columnOrder)
+    ? (o.columnOrder as string[]).filter((x) => typeof x === 'string')
+    : undefined;
+  const sorting = Array.isArray(o.sorting)
+    ? (o.sorting as unknown[])
+        .filter(
+          (s): s is { id: string; desc: boolean } =>
+            Boolean(s) &&
+            typeof s === 'object' &&
+            typeof (s as { id?: unknown }).id === 'string' &&
+            typeof (s as { desc?: unknown }).desc === 'boolean',
+        )
+    : undefined;
+  if (!columnVisibility && !columnOrder?.length && !sorting?.length) return undefined;
+  return { columnVisibility, columnOrder, sorting };
 }
 
 export function serializeRepertoireWire(payload: RepertoireWirePayload): string {
@@ -43,6 +117,9 @@ export function buildWireFromTables(
     milestoneTemplate: extras.milestoneTemplate,
     ownerDisplayName: extras.ownerDisplayName,
     currentlyLearningSpotifyPlaylistId: extras.currentlyLearningSpotifyPlaylistId,
+    tableUi: extras.tableUi,
+    driveUploadFolderOverrides: extras.driveUploadFolderOverrides,
+    driveUploadFolderOverrideLabels: extras.driveUploadFolderOverrideLabels,
   };
 }
 
@@ -61,6 +138,9 @@ export function repertoireExtrasFromWire(wire: RepertoireWirePayload): Repertoir
     milestoneTemplate: wire.milestoneTemplate ?? [],
     ownerDisplayName: wire.ownerDisplayName?.trim() || undefined,
     currentlyLearningSpotifyPlaylistId: wire.currentlyLearningSpotifyPlaylistId?.trim() || undefined,
+    tableUi: wire.tableUi,
+    driveUploadFolderOverrides: wire.driveUploadFolderOverrides,
+    driveUploadFolderOverrideLabels: wire.driveUploadFolderOverrideLabels,
     updatedAt: wire.exportedAt,
   };
 }

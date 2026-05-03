@@ -1,18 +1,21 @@
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Checkbox from '@mui/material/Checkbox';
 import Divider from '@mui/material/Divider';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import IconButton from '@mui/material/IconButton';
+import LinearProgress from '@mui/material/LinearProgress';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import { useCallback, useMemo, useState } from 'react';
-import type { EncoreMilestoneDefinition } from '../types';
+import { useCallback, useMemo, useState, type ReactElement } from 'react';
+import type { EncoreDriveUploadFolderKind, EncoreMilestoneDefinition } from '../types';
 import { useEncore } from '../context/EncoreContext';
+import { resolveDriveFolderFromUserInput } from '../drive/resolveDriveFolderFromUserInput';
 import {
   encoreMaxWidthNarrowPage,
   encoreRadius,
@@ -20,12 +23,25 @@ import {
 } from '../theme/encoreUiTokens';
 import { encorePagePaddingTop, encoreScreenPaddingX } from '../theme/encoreM3Layout';
 import { EncorePageHeader } from '../ui/EncorePageHeader';
+import { EncoreDriveFolderPasteOrBrowseBlock } from '../ui/EncoreDriveFolderPasteOrBrowseBlock';
 import { encorePossessivePageTitle } from '../utils/encorePossessivePageTitle';
 
-export function RepertoireSettingsScreen(): React.ReactElement {
-  const { repertoireExtras, saveRepertoireExtras, effectiveDisplayName } = useEncore();
+export function RepertoireSettingsScreen(): ReactElement {
+  const {
+    repertoireExtras,
+    saveRepertoireExtras,
+    effectiveDisplayName,
+    googleAccessToken,
+  } = useEncore();
   const [venueInput, setVenueInput] = useState('');
   const [milestoneLabel, setMilestoneLabel] = useState('');
+  const [folderDraftByKind, setFolderDraftByKind] = useState<
+    Partial<Record<EncoreDriveUploadFolderKind, string>>
+  >({});
+  const [folderRowError, setFolderRowError] = useState<
+    Partial<Record<EncoreDriveUploadFolderKind, string>>
+  >({});
+  const [folderApplyBusyKind, setFolderApplyBusyKind] = useState<EncoreDriveUploadFolderKind | null>(null);
 
   const sortedVenues = useMemo(
     () => [...repertoireExtras.venueCatalog].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),
@@ -96,6 +112,93 @@ export function RepertoireSettingsScreen(): React.ReactElement {
     [repertoireExtras.milestoneTemplate, saveRepertoireExtras],
   );
 
+  const driveFolderRows = useMemo(
+    () =>
+      (
+        [
+          { kind: 'performances' as const, label: 'Performance videos' },
+          { kind: 'charts' as const, label: 'Charts / sheet music' },
+          { kind: 'referenceTracks' as const, label: 'Reference tracks (file uploads)' },
+          { kind: 'backingTracks' as const, label: 'Backing tracks (file uploads)' },
+          { kind: 'takes' as const, label: 'Takes / recordings' },
+        ] satisfies Array<{ kind: EncoreDriveUploadFolderKind; label: string }>
+      ),
+    [],
+  );
+
+  const applyDriveUploadFolderFromInput = useCallback(
+    async (kind: EncoreDriveUploadFolderKind) => {
+      if (!googleAccessToken) return;
+      const overrideId = repertoireExtras.driveUploadFolderOverrides?.[kind]?.trim();
+      const raw = (folderDraftByKind[kind] !== undefined ? folderDraftByKind[kind] : overrideId ?? '').trim();
+      setFolderRowError((prev) => {
+        const next = { ...prev };
+        delete next[kind];
+        return next;
+      });
+      setFolderApplyBusyKind(kind);
+      try {
+        const resolved = await resolveDriveFolderFromUserInput(googleAccessToken, raw);
+        if (!resolved.ok) {
+          setFolderRowError((prev) => ({ ...prev, [kind]: resolved.message }));
+          return;
+        }
+        await saveRepertoireExtras({
+          driveUploadFolderOverrides: {
+            ...repertoireExtras.driveUploadFolderOverrides,
+            [kind]: resolved.id,
+          },
+          driveUploadFolderOverrideLabels: {
+            ...repertoireExtras.driveUploadFolderOverrideLabels,
+            [kind]: resolved.name,
+          },
+        });
+        setFolderDraftByKind((prev) => {
+          const next = { ...prev };
+          delete next[kind];
+          return next;
+        });
+      } finally {
+        setFolderApplyBusyKind(null);
+      }
+    },
+    [
+      googleAccessToken,
+      folderDraftByKind,
+      repertoireExtras.driveUploadFolderOverrides,
+      repertoireExtras.driveUploadFolderOverrideLabels,
+      saveRepertoireExtras,
+    ],
+  );
+
+  const clearDriveUploadFolder = useCallback(
+    async (kind: EncoreDriveUploadFolderKind) => {
+      const o = { ...(repertoireExtras.driveUploadFolderOverrides ?? {}) };
+      delete o[kind];
+      const labels = { ...(repertoireExtras.driveUploadFolderOverrideLabels ?? {}) };
+      delete labels[kind];
+      setFolderDraftByKind((prev) => {
+        const next = { ...prev };
+        delete next[kind];
+        return next;
+      });
+      setFolderRowError((prev) => {
+        const next = { ...prev };
+        delete next[kind];
+        return next;
+      });
+      await saveRepertoireExtras({
+        driveUploadFolderOverrides: Object.keys(o).length > 0 ? o : undefined,
+        driveUploadFolderOverrideLabels: Object.keys(labels).length > 0 ? labels : undefined,
+      });
+    },
+    [
+      repertoireExtras.driveUploadFolderOverrides,
+      repertoireExtras.driveUploadFolderOverrideLabels,
+      saveRepertoireExtras,
+    ],
+  );
+
   return (
     <Box
       sx={{
@@ -155,6 +258,110 @@ export function RepertoireSettingsScreen(): React.ReactElement {
                 </IconButton>
               </Stack>
             ))}
+          </Stack>
+        )}
+      </Paper>
+
+      <Paper
+        elevation={0}
+        sx={{
+          borderRadius: encoreRadius,
+          p: { xs: 2.5, sm: 3 },
+          mb: { xs: 3, sm: 4 },
+          boxShadow: encoreShadowSurface,
+          border: 'none',
+        }}
+      >
+        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
+          Drive upload folders
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.25, lineHeight: 1.55 }}>
+          Encore still keeps its <Box component="span" sx={{ fontWeight: 600 }}>Encore_App</Box> tree in Google Drive.
+          Optional overrides send new uploads to folders you choose; Encore adds shortcuts with canonical names inside its
+          own folders where needed.
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2, lineHeight: 1.55 }}>
+          For each row below: paste a folder link or id and choose <strong>Set folder</strong>, or use{' '}
+          <strong>Pick folder in Drive</strong> — that path needs the Google Picker API and a browser API key configured
+          (see Encore README).
+        </Typography>
+        {!googleAccessToken ? (
+          <Typography variant="body2" color="text.secondary">
+            Sign in with Google (Account menu) to choose upload folders.
+          </Typography>
+        ) : (
+          <Stack divider={<Divider flexItem />} spacing={1.25}>
+            {driveFolderRows.map(({ kind, label }) => {
+              const overrideId = repertoireExtras.driveUploadFolderOverrides?.[kind]?.trim();
+              const statusLabel = repertoireExtras.driveUploadFolderOverrideLabels?.[kind]?.trim();
+              const status =
+                overrideId && statusLabel
+                  ? statusLabel
+                  : overrideId
+                    ? `Folder id · ${overrideId.length > 18 ? `${overrideId.slice(0, 9)}…` : overrideId}`
+                    : 'Encore default';
+              const draft = folderDraftByKind[kind];
+              const folderFieldValue = draft !== undefined ? draft : (overrideId ?? '');
+              const rowBusy = folderApplyBusyKind === kind;
+              return (
+                <Stack key={kind} spacing={1.25}>
+                  <Stack
+                    direction={{ xs: 'column', sm: 'row' }}
+                    spacing={1}
+                    alignItems={{ sm: 'flex-start' }}
+                    justifyContent="space-between"
+                  >
+                    <Box sx={{ minWidth: 0, flex: '1 1 auto' }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {label}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
+                        {status}
+                      </Typography>
+                    </Box>
+                    <Button
+                      size="small"
+                      color="inherit"
+                      disabled={!overrideId || rowBusy}
+                      onClick={() => void clearDriveUploadFolder(kind)}
+                      sx={{ textTransform: 'none', flexShrink: 0, alignSelf: { sm: 'center' } }}
+                    >
+                      Clear
+                    </Button>
+                  </Stack>
+                  <EncoreDriveFolderPasteOrBrowseBlock
+                    value={folderFieldValue}
+                    onChange={(v) => {
+                      setFolderDraftByKind((prev) => ({ ...prev, [kind]: v }));
+                      setFolderRowError((prev) => {
+                        const next = { ...prev };
+                        delete next[kind];
+                        return next;
+                      });
+                    }}
+                    googleAccessToken={googleAccessToken}
+                    disabled={rowBusy}
+                    primaryAction={
+                      <Button
+                        size="small"
+                        variant="contained"
+                        onClick={() => void applyDriveUploadFolderFromInput(kind)}
+                        disabled={rowBusy || !folderFieldValue.trim() || !googleAccessToken}
+                        sx={{ textTransform: 'none' }}
+                      >
+                        Set folder
+                      </Button>
+                    }
+                  />
+                  {folderRowError[kind] ? (
+                    <Alert severity="warning" sx={{ py: 0.5, whiteSpace: 'pre-line' }}>
+                      {folderRowError[kind]}
+                    </Alert>
+                  ) : null}
+                  {rowBusy ? <LinearProgress /> : null}
+                </Stack>
+              );
+            })}
           </Stack>
         )}
       </Paper>

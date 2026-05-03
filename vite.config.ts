@@ -198,6 +198,15 @@ export default defineConfig({
   root: 'src',
   publicDir: '../public',
 
+  /**
+   * Dev + HMR: without dedupe, Vite can instantiate React/Emotion twice (different
+   * optimized chunks). MUI then calls `useContext`/`useTheme` on the “wrong” React
+   * → `Invalid hook call` / `Cannot read properties of null (reading 'useContext')`.
+   */
+  resolve: {
+    dedupe: ['react', 'react-dom', 'react/jsx-runtime', '@emotion/react', '@emotion/styled'],
+  },
+
   build: {
     outDir: '../dist',
     emptyOutDir: true,
@@ -267,7 +276,16 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    include: ['jszip', 'midi-json-parser', 'webmscore'],
+    include: [
+      'jszip',
+      'midi-json-parser',
+      'webmscore',
+      'react',
+      'react-dom',
+      'react/jsx-runtime',
+      '@emotion/react',
+      '@emotion/styled',
+    ],
   },
   server: {
     /** Spotify OAuth redirect URIs cannot use `localhost`; default dev URL is loopback. */

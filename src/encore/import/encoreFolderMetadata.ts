@@ -1,4 +1,5 @@
 import { ENCORE_ACCOMPANIMENT_TAGS, type EncoreAccompanimentTag } from '../types';
+import { guessIsoDateFromFreeText } from './guessIsoDateFromFreeText';
 
 const RESERVED_KEY_RE = /^(Venue|Artist|Accompaniment|Date|Key|Tags)\s-\s(.+)$/i;
 
@@ -106,12 +107,17 @@ export function parseEncoreFolderMetadata(parentPathHint: string): ParsedFolderM
         if (next.length) accompaniment = next;
         break;
       }
-      case 'date':
-        if (isValidCalendarYmd(value)) {
-          const ymd = value.trim().match(ISO_YMD)!;
+      case 'date': {
+        const raw = value.trim();
+        if (isValidCalendarYmd(raw)) {
+          const ymd = raw.match(ISO_YMD)!;
           date = `${ymd[1]}-${ymd[2]}-${ymd[3]}`;
+        } else {
+          const guessed = guessIsoDateFromFreeText(value);
+          if (guessed && isValidCalendarYmd(guessed)) date = guessed;
         }
         break;
+      }
       case 'key':
         performanceKey = value;
         break;

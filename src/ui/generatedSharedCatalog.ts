@@ -8195,6 +8195,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-utils-filematchesaccept-ts-filematchesaccept",
+    "name": "fileMatchesAccept",
+    "path": "src/shared/utils/fileMatchesAccept.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Whether `file` matches an `<input accept>`-style filter (mime globs + extensions).",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-utils-hashstate-ts-gethashvalues",
     "name": "getHashValues",
     "path": "src/shared/utils/hashState.ts",

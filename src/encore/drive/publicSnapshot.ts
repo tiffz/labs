@@ -1,4 +1,5 @@
 import type {
+  EncoreMediaLink,
   EncorePerformance,
   EncoreSong,
   PublicSnapshot,
@@ -10,6 +11,7 @@ import {
   driveFileHasAnyoneReader,
   driveListFiles,
   drivePatchJsonMedia,
+  pickPreferredDriveListFileId,
 } from './driveFetch';
 import { fetchPublicDriveJson } from './bootstrapFolders';
 import { PUBLIC_SNAPSHOT_FILE_NAME } from './constants';
@@ -18,6 +20,14 @@ import { encoreDb, getSyncMeta, patchSyncMeta } from '../db/encoreDb';
 import { orderSnapshotSongsByLatestPerformanceDesc } from './publicSnapshotSort';
 
 export { orderSnapshotSongsByLatestPerformanceDesc } from './publicSnapshotSort';
+
+function stripMediaLinkNotesForGuest(links: EncoreMediaLink[]): EncoreMediaLink[] {
+  return links.map((link) => {
+    const { notes, ...rest } = link;
+    void notes;
+    return rest;
+  });
+}
 
 function qJsonInParent(name: string, parentId: string): string {
   return `name='${name.replace(/'/g, "\\'")}' and mimeType='application/json' and '${parentId}' in parents and trashed=false`;
@@ -102,10 +112,10 @@ export async function buildPublicSnapshot(
       performanceKey: s.performanceKey,
       tags: s.tags && s.tags.length > 0 ? s.tags : undefined,
       ...(s.referenceLinks && s.referenceLinks.length > 0
-        ? { referenceLinks: s.referenceLinks }
+        ? { referenceLinks: stripMediaLinkNotesForGuest(s.referenceLinks) }
         : {}),
       ...(s.backingLinks && s.backingLinks.length > 0
-        ? { backingLinks: s.backingLinks }
+        ? { backingLinks: stripMediaLinkNotesForGuest(s.backingLinks) }
         : {}),
     })),
     performances: performanceRows,
@@ -117,7 +127,7 @@ export async function ensureSnapshotFileId(accessToken: string): Promise<string>
   if (meta.snapshotFileId) return meta.snapshotFileId;
   if (!meta.rootFolderId) throw new Error('Drive not bootstrapped');
   const list = await driveListFiles(accessToken, qJsonInParent(PUBLIC_SNAPSHOT_FILE_NAME, meta.rootFolderId));
-  const existing = (list.files?.[0] as { id?: string } | undefined)?.id;
+  const existing = pickPreferredDriveListFileId(list.files, undefined);
   if (existing) {
     await patchSyncMeta({ snapshotFileId: existing });
     return existing;

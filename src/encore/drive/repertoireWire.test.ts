@@ -19,6 +19,27 @@ describe('parseRepertoireWire', () => {
     expect(round.milestoneTemplate).toEqual([]);
   });
 
+  it('round-trips tableUi preferences', () => {
+    const iso = new Date().toISOString();
+    const extras = {
+      ...defaultRepertoireExtrasRow(iso),
+      tableUi: {
+        repertoire: {
+          columnVisibility: { artist: false },
+          columnOrder: ['title', 'artist', 'venues'],
+          sorting: [{ id: 'title', desc: true }],
+        },
+        performances: {
+          columnVisibility: { venue: false },
+          sorting: [{ id: 'date', desc: false }],
+        },
+      },
+    };
+    const wire = buildWireFromTables([], [], extras);
+    const round = parseRepertoireWire(serializeRepertoireWire(wire));
+    expect(round.tableUi).toEqual(extras.tableUi);
+  });
+
   it('rejects invalid', () => {
     expect(() => parseRepertoireWire('{}')).toThrow();
   });

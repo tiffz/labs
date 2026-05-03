@@ -1,16 +1,9 @@
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
-import Popover from '@mui/material/Popover';
+import Tooltip, { tooltipClasses, type TooltipProps } from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import { useTheme } from '@mui/material/styles';
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type ReactElement,
-  type ReactNode,
-} from 'react';
+import { styled } from '@mui/material/styles';
+import { useEffect, useState, type ReactElement, type ReactNode } from 'react';
 import { ensureSpotifyAccessToken } from '../spotify/pkce';
 import { fetchSpotifyTrack } from '../spotify/spotifyApi';
 import type { EncoreMediaSource } from '../types';
@@ -73,6 +66,29 @@ async function fetchSpotifyTrackMeta(
   }
 }
 
+/**
+ * Tooltip styled as a small card. We piggyback on MUI's Tooltip rather than rolling our own
+ * Popover-based hover behavior because Tooltip ships a pixel-perfect "interactive zone" between
+ * the trigger and the floating content (the transparent margin captures mouse events) and well-
+ * tuned `enterNextDelay`/`leaveDelay` semantics. The previous Popover-based card had visible
+ * open/close races whenever the popover content height changed (lazy meta fetch) or the user
+ * crossed the trigger→paper boundary, which read as the "flashing" the user reported.
+ */
+const HoverCardTooltip = styled(({ className, ...props }: TooltipProps) => (
+  <Tooltip {...props} classes={{ popper: className }} />
+))(({ theme }) => ({
+  [`& .${tooltipClasses.tooltip}`]: {
+    backgroundColor: theme.palette.background.paper,
+    color: theme.palette.text.primary,
+    boxShadow: theme.shadows[3],
+    border: `1px solid ${theme.palette.divider}`,
+    borderRadius: Number(theme.shape.borderRadius) * 1.5,
+    padding: theme.spacing(0.875, 1.25),
+    maxWidth: 320,
+    fontSize: theme.typography.body2.fontSize,
+  },
+}));
+
 export type EncoreStreamingHoverCardProps = {
   kind: EncoreStreamingHoverCardKind;
   spotifyTrackId?: string | null;
@@ -88,6 +104,12 @@ export type EncoreStreamingHoverCardProps = {
 /**
  * Wraps a Spotify or YouTube media control; on hover, opens a small card with
  * resolved track/video title and artist/channel when available.
+ *
+ * Uses MUI Tooltip under the hood. Tooltip handles the mouse-tracking edge cases (interactive
+ * trigger→content bridge, focus retention, leave debounce) that a hand-rolled Popover would have
+ * to reimplement. We keep the resolved `meta` in component state across open/close cycles so a
+ * re-hover after the user briefly leaves does not flash a fallback frame before the cached value
+ * paints back in.
  */
 export function EncoreStreamingHoverCard(props: EncoreStreamingHoverCardProps): ReactElement {
   const {
@@ -101,48 +123,25 @@ export function EncoreStreamingHoverCard(props: EncoreStreamingHoverCardProps): 
     children,
   } = props;
 
-  const theme = useTheme();
-  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
-  const [meta, setMeta] = useState<ResolvedMeta | null>(null);
+  // Seed meta from the module cache synchronously so the very first open paints with the cached
+  // value (no fallback flash). Subsequent re-hovers also avoid the brief loading frame.
+  const cacheKey =
+    kind === 'spotify'
+      ? (spotifyTrackId?.trim() ?? '')
+      : kind === 'youtube'
+        ? (youtubeWatchUrl?.trim() ?? '')
+        : '';
+  const cachedAtMount: ResolvedMeta | null = cacheKey
+    ? (kind === 'spotify'
+        ? spotifyMetaCache.get(cacheKey)
+        : youtubeMetaCache.get(cacheKey)) ?? null
+    : null;
+  const [meta, setMeta] = useState<ResolvedMeta | null>(cachedAtMount);
   const [loading, setLoading] = useState(false);
-  const openTimerRef = useRef(0);
-  const closeTimerRef = useRef(0);
-
-  const clearOpenTimer = useCallback(() => {
-    if (openTimerRef.current) window.clearTimeout(openTimerRef.current);
-    openTimerRef.current = 0;
-  }, []);
-
-  const clearCloseTimer = useCallback(() => {
-    if (closeTimerRef.current) window.clearTimeout(closeTimerRef.current);
-    closeTimerRef.current = 0;
-  }, []);
-
-  const openPopover = useCallback((el: HTMLElement) => {
-    setAnchorEl(el);
-  }, []);
-
-  const scheduleOpen = useCallback(
-    (el: HTMLElement) => {
-      clearOpenTimer();
-      clearCloseTimer();
-      openTimerRef.current = window.setTimeout(() => openPopover(el), 380);
-    },
-    [clearCloseTimer, clearOpenTimer, openPopover],
-  );
-
-  const scheduleClose = useCallback(() => {
-    clearOpenTimer();
-    clearCloseTimer();
-    closeTimerRef.current = window.setTimeout(() => {
-      setAnchorEl(null);
-      setMeta(null);
-      setLoading(false);
-    }, 220);
-  }, [clearCloseTimer, clearOpenTimer]);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    if (!anchorEl) return;
+    if (!open) return;
     const track = spotifyTrackId?.trim() ?? '';
     const ytUrl = youtubeWatchUrl?.trim() ?? '';
     let cancelled = false;
@@ -183,73 +182,76 @@ export function EncoreStreamingHoverCard(props: EncoreStreamingHoverCardProps): 
       };
     }
 
-    setMeta(null);
-    setLoading(false);
     return undefined;
-  }, [anchorEl, kind, spotifyTrackId, youtubeWatchUrl, clientId, spotifyLinked]);
+  }, [open, kind, spotifyTrackId, youtubeWatchUrl, clientId, spotifyLinked]);
 
-  const open = Boolean(anchorEl);
   const title = meta?.title?.trim() || fallbackTitle.trim() || (kind === 'spotify' ? 'Spotify track' : 'YouTube video');
   const subtitle = meta?.subtitle?.trim() || fallbackSubtitle.trim();
 
+  const tooltipContent = (
+    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+      {loading && !meta ? <CircularProgress size={16} sx={{ mt: 0.25, flexShrink: 0 }} /> : null}
+      <Box sx={{ minWidth: 0, flex: 1 }}>
+        <Typography variant="body2" sx={{ fontWeight: 700, lineHeight: 1.35, wordBreak: 'break-word' }}>
+          {title}
+        </Typography>
+        {subtitle ? (
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.35, lineHeight: 1.4 }}>
+            {subtitle}
+          </Typography>
+        ) : null}
+        {!subtitle && !loading && kind === 'spotify' && !spotifyLinked ? (
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.35, lineHeight: 1.4 }}>
+            Connect Spotify to load track details.
+          </Typography>
+        ) : null}
+      </Box>
+    </Box>
+  );
+
   return (
-    <>
+    <HoverCardTooltip
+      title={tooltipContent}
+      placement="bottom-start"
+      arrow={false}
+      enterDelay={280}
+      enterNextDelay={120}
+      leaveDelay={140}
+      open={open}
+      onOpen={() => setOpen(true)}
+      onClose={() => setOpen(false)}
+      // Tooltip's default `disableInteractive` is false, so the mouse can move from trigger into
+      // the tooltip without closing it. Keeping it interactive is what makes this read as a hover
+      // *card* rather than a pure tooltip.
+      disableInteractive={false}
+      slotProps={{
+        popper: {
+          modifiers: [
+            // Stable vertical offset; Tooltip's default 14px gap can leave the cursor briefly in
+            // dead space between the trigger and the content. 4px keeps a hairline gap (so the
+            // shadow reads) while staying inside Tooltip's invisible bridge.
+            { name: 'offset', options: { offset: [0, 4] } },
+          ],
+          sx: {
+            // Render above modal-priority content (e.g. EncoreAudioResourceNotesWrapper popover).
+            zIndex: (z) => z.zIndex.modal + 25,
+          },
+        },
+      }}
+    >
+      {/* Tooltip needs a single ref-forwarding child. Wrapping span keeps the trigger
+          inline-aligned with the surrounding caption row. */}
       <Box
         component="span"
-        onMouseEnter={(e) => scheduleOpen(e.currentTarget)}
-        onMouseLeave={scheduleClose}
         sx={{
           display: 'inline-flex',
           maxWidth: '100%',
           verticalAlign: 'middle',
           borderRadius: 1,
-          cursor: 'default',
         }}
       >
         {children}
       </Box>
-      <Popover
-        open={open}
-        anchorEl={anchorEl}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-        disableRestoreFocus
-        slotProps={{
-          paper: {
-            onMouseEnter: clearCloseTimer,
-            onMouseLeave: scheduleClose,
-            sx: {
-              mt: 0.75,
-              px: 1.25,
-              py: 1,
-              maxWidth: 320,
-              borderRadius: 1.5,
-              border: 1,
-              borderColor: 'divider',
-              boxShadow: theme.shadows[3],
-            },
-          },
-        }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-          {loading ? <CircularProgress size={18} sx={{ mt: 0.25, flexShrink: 0 }} /> : null}
-          <Box sx={{ minWidth: 0, flex: 1 }}>
-            <Typography variant="body2" sx={{ fontWeight: 700, lineHeight: 1.35, wordBreak: 'break-word' }}>
-              {title}
-            </Typography>
-            {subtitle ? (
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.35, lineHeight: 1.4 }}>
-                {subtitle}
-              </Typography>
-            ) : null}
-            {!subtitle && !loading && kind === 'spotify' && !spotifyLinked ? (
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.35, lineHeight: 1.4 }}>
-                Connect Spotify to load track details.
-              </Typography>
-            ) : null}
-          </Box>
-        </Box>
-      </Popover>
-    </>
+    </HoverCardTooltip>
   );
 }

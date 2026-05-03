@@ -156,7 +156,7 @@ describe('EncoreBlockingJobProvider', () => {
     await waitFor(() => expect(beforeUnloadRemoveCount()).toBeGreaterThanOrEqual(1));
   });
 
-  it('silent jobs arm the beforeunload guard but do not render the snackbar', async () => {
+  it('silent jobs do not arm beforeunload or render the snackbar', async () => {
     const api = renderProvider();
     const beforeUnloadAddCount = () =>
       addEventSpy.mock.calls.filter((c) => c[0] === 'beforeunload').length;
@@ -172,9 +172,7 @@ describe('EncoreBlockingJobProvider', () => {
       await Promise.resolve();
     });
 
-    // beforeunload guard is armed
-    expect(beforeUnloadAddCount()).toBeGreaterThanOrEqual(1);
-    // but no visible snackbar
+    expect(beforeUnloadAddCount()).toBe(0);
     expect(screen.queryByRole('status')).toBeNull();
 
     await act(async () => {

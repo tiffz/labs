@@ -104,9 +104,11 @@ export function EncoreAccountMenu(props: {
     spotifyConnectLoopbackUrl,
     clearSpotifyConnectError,
     reorganizeDriveUploads,
+    retryDriveSync,
   } = useEncore();
 
   const [reorganizing, setReorganizing] = useState(false);
+  const [driveRetryBusy, setDriveRetryBusy] = useState(false);
   const [reorganizeMsg, setReorganizeMsg] = useState<string | null>(null);
   const handleReorganize = useCallback(async () => {
     setReorganizing(true);
@@ -115,11 +117,19 @@ export function EncoreAccountMenu(props: {
       const { performanceVideos: pv, attachments: at } = await reorganizeDriveUploads();
       const totalErrors = pv.errors + at.errors;
       const created = pv.shortcutsCreated;
-      if (pv.renamed === 0 && totalErrors === 0 && created === 0 && at.renamed === 0 && at.moved === 0) {
+      const attShortcuts = at.shortcutsCreated;
+      if (
+        pv.renamed === 0 &&
+        totalErrors === 0 &&
+        created === 0 &&
+        attShortcuts === 0 &&
+        at.renamed === 0 &&
+        at.moved === 0
+      ) {
         setReorganizeMsg('Already organized.');
       } else if (totalErrors > 0) {
         setReorganizeMsg(
-          `Videos: renamed ${pv.renamed}, ${created} shortcut${created === 1 ? '' : 's'} (${pv.errors} errors). Attachments: renamed ${at.renamed}, moved ${at.moved} (${at.errors} errors).`,
+          `Videos: renamed ${pv.renamed}, ${created} shortcut${created === 1 ? '' : 's'} (${pv.errors} errors). Attachments: renamed ${at.renamed}, moved ${at.moved}, ${attShortcuts} shortcut${attShortcuts === 1 ? '' : 's'} (${at.errors} errors).`,
         );
       } else {
         const parts = [
@@ -129,6 +139,9 @@ export function EncoreAccountMenu(props: {
           at.renamed > 0 ? `renamed ${at.renamed} chart/recording file${at.renamed === 1 ? '' : 's'}` : null,
           at.moved > 0 ? `moved ${at.moved} file${at.moved === 1 ? '' : 's'} into Encore folders` : null,
           created > 0 ? `created ${created} video shortcut${created === 1 ? '' : 's'}` : null,
+          attShortcuts > 0
+            ? `created ${attShortcuts} attachment shortcut${attShortcuts === 1 ? '' : 's'}`
+            : null,
         ].filter(Boolean);
         setReorganizeMsg(`Drive is up to date — ${parts.join(', ') || 'nothing to do'}.`);
       }
@@ -431,7 +444,35 @@ export function EncoreAccountMenu(props: {
                     </IconButton>
                   </span>
                 </Tooltip>
+                {syncState === 'error' ? (
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="inherit"
+                    disabled={driveRetryBusy}
+                    startIcon={driveRetryBusy ? <RefreshIcon className="spin" fontSize="small" /> : <RefreshIcon fontSize="small" />}
+                    onClick={() => {
+                      setDriveRetryBusy(true);
+                      void retryDriveSync().finally(() => setDriveRetryBusy(false));
+                    }}
+                    sx={{ textTransform: 'none' }}
+                  >
+                    Retry sync
+                  </Button>
+                ) : null}
                 <Box sx={{ flex: 1 }} />
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="inherit"
+                  onClick={() => {
+                    close();
+                    void signInWithGoogle();
+                  }}
+                  sx={{ textTransform: 'none' }}
+                >
+                  Sign in again
+                </Button>
                 <Button
                   size="small"
                   variant="text"

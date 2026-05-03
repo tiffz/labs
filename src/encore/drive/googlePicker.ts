@@ -1,64 +1,37 @@
 /**
- * Google Picker (Drive) — in-app modal file/folder selection.
- * Works with OAuth scope `drive.file`: user grants access per file/folder they pick.
+ * Google Picker (Drive) — setup helpers retained for docs/tests. In-app selection uses “open Drive
+ * in browser” + paste instead of the Picker overlay (avoids browser API key + `files.list` issues).
  * @see https://developers.google.com/drive/picker/guides/overview
- * @see https://developers.google.com/drive/api/guides/api-specific-auth (Picker + drive.file)
  */
 
-const GAPI_SCRIPT = 'https://apis.google.com/js/api.js';
-
-export type DrivePickerSelection = { id: string; name: string; mimeType?: string };
-
-export type OpenGoogleDrivePickerOptions = {
-  accessToken: string;
-  /** Browser API key (same Cloud project; HTTP referrer–restricted). */
-  developerKey: string;
-  /** Cloud project number = numeric prefix of OAuth Web client id (e.g. `811…` from `811…-xxx.apps.googleusercontent.com`). */
-  appId: string;
-  title?: string;
-  /** Open picker rooted in this Drive folder (folder id). */
-  parentFolderId?: string | null;
-  /** Comma-separated MIME types (e.g. `application/pdf,video/mp4`). Omit for broad Drive view. */
-  mimeTypes?: string;
-  /** When true, user can pick a folder (e.g. bulk performance import). */
-  selectFolder?: boolean;
-  onPicked: (files: DrivePickerSelection[]) => void;
-  onCancel?: () => void;
-  onError?: (message: string) => void;
-};
-
-type GapiWithLoad = {
-  load: (
-    api: string,
-    opts: {
-      callback: () => void;
-      onerror?: (err: unknown) => void;
-      timeout?: number;
-      ontimeout?: () => void;
-    },
-  ) => void;
-};
-
-let pickerApiPromise: Promise<void> | null = null;
-
-function scriptAlreadyLoaded(src: string): boolean {
-  return [...document.querySelectorAll('script[src]')].some((el) => el.getAttribute('src') === src);
-}
-
-function loadScriptOnce(src: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (scriptAlreadyLoaded(src)) {
-      resolve();
-      return;
-    }
-    const s = document.createElement('script');
-    s.src = src;
-    s.async = true;
-    s.defer = true;
-    s.onload = () => resolve();
-    s.onerror = () => reject(new Error(`Failed to load script: ${src}`));
-    document.head.appendChild(s);
-  });
+/**
+ * Adds setup hints when Google’s Picker reports an invalid developer key (often: Picker API
+ * not enabled, or API key restrictions omit Picker / Drive).
+ */
+export function augmentGooglePickerSetupErrorMessage(message: string): string {
+  const t = message.trim();
+  const lower = t.toLowerCase();
+  if (
+    lower.includes('developer key') &&
+    (lower.includes('invalid') || lower.includes('not valid'))
+  ) {
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'this site’s origin';
+    const portSegment =
+      typeof window !== 'undefined' && window.location.port ? `:${window.location.port}` : '';
+    return [
+      t,
+      '',
+      'This usually means the browser API key (VITE_GOOGLE_API_KEY) is not allowed to run the Picker for this app. Check all of the following — all must be the same Google Cloud project as your Web OAuth client (VITE_GOOGLE_CLIENT_ID):',
+      `• Same project: create the API key under APIs & Services → Credentials in that project (not a different project).`,
+      `• Enable APIs (Library): Google Picker API and Google Drive API.`,
+      `• Key “API restrictions”: restricted key → allow at least Google Picker API and Google Drive API.`,
+      `• Key “Application restrictions” (HTTP referrers): include your dev and prod origins with a path wildcard, e.g. ${origin}/* — and if you use Vite on loopback, also add http://127.0.0.1${portSegment}/* and http://localhost${portSegment}/*.`,
+      `• Picker app id: Encore sets this from the numeric prefix of VITE_GOOGLE_CLIENT_ID (Cloud “Project number”). If yours is unusual, set VITE_GOOGLE_PICKER_APP_ID to the Project number from the Cloud Console dashboard.`,
+      '• Encore only sends Picker setOrigin when the app is in an iframe (or when VITE_GOOGLE_PICKER_ORIGIN is set). If you still see this error, double-check the bullets above in Cloud Console.',
+      '• After changing .env, restart npm run dev (or redeploy). See Encore README → Browser API key.',
+    ].join('\n');
+  }
+  return t;
 }
 
 /**
@@ -71,192 +44,39 @@ export function googlePickerAppIdFromClientId(clientId: string): string | null {
   return m?.[1] ?? null;
 }
 
-function assertGooglePickerReady(): void {
-  const google = (window as unknown as { google?: { picker?: unknown } }).google;
-  if (!google?.picker) {
-    throw new Error('Google Picker API is not loaded yet.');
-  }
+type PickerAppIdEnv = {
+  VITE_GOOGLE_PICKER_APP_ID?: string;
+  VITE_GOOGLE_CLIENT_ID?: string;
+};
+
+/** Resolves Picker `appId`: explicit env, else numeric prefix of Web client id. */
+export function resolvePickerAppId(env: PickerAppIdEnv): string | null {
+  const explicit = env.VITE_GOOGLE_PICKER_APP_ID?.trim() ?? '';
+  if (explicit && /^\d+$/.test(explicit)) return explicit;
+  return googlePickerAppIdFromClientId(env.VITE_GOOGLE_CLIENT_ID?.trim() ?? '');
 }
 
 /**
- * Loads `api.js` and the `picker` module once per page lifetime.
+ * Picker `setOrigin` is for the **top-level** page origin when the app runs in an iframe.
+ * Google's minimal sample omits it for a normal top-level app; always passing `location.origin`
+ * can surface as “The API developer key is invalid” in some setups.
+ *
+ * @see https://developers.google.com/workspace/drive/picker/reference/picker.pickerbuilder.setorigin
  */
-export function loadGooglePickerApi(): Promise<void> {
-  if (pickerApiPromise) return pickerApiPromise;
-  pickerApiPromise = (async () => {
-    await loadScriptOnce(GAPI_SCRIPT);
-    const gapi = (window as unknown as { gapi?: GapiWithLoad }).gapi;
-    if (!gapi?.load) {
-      throw new Error('Google gapi is not available after loading api.js.');
-    }
-    await new Promise<void>((resolve, reject) => {
-      gapi.load('picker', {
-        callback: () => resolve(),
-        onerror: (err) => reject(err instanceof Error ? err : new Error(String(err))),
-        timeout: 60_000,
-        // gapi throws if `timeout` is set without `ontimeout` (see browser console).
-        ontimeout: () => reject(new Error('Google Picker API load timed out.')),
-      });
-    });
-    assertGooglePickerReady();
-  })().catch((e) => {
-    pickerApiPromise = null;
-    throw e;
-  });
-  return pickerApiPromise;
-}
-
-/** MIME filters Encore uses for chart/backing uploads (Drive picker). */
-export const ENCORE_DRIVE_CHART_MIME_TYPES = [
-  'application/pdf',
-  'application/xml',
-  'application/vnd.recordare.musicxml+xml',
-  'audio/mpeg',
-  'audio/wav',
-  'audio/x-wav',
-  'audio/mp4',
-  'audio/aac',
-  'audio/ogg',
-  'audio/flac',
-].join(',');
-
-export const ENCORE_DRIVE_VIDEO_MIME_TYPES = [
-  'video/mp4',
-  'video/quicktime',
-  'video/webm',
-  'video/x-msvideo',
-  'video/x-matroska',
-].join(',');
-
-type PickerCallbackData = Record<string, unknown>;
-
-/**
- * Opens the Google-hosted Picker overlay. Call from a user gesture (click).
- */
-export async function openGoogleDrivePicker(options: OpenGoogleDrivePickerOptions): Promise<void> {
-  const {
-    accessToken,
-    developerKey,
-    appId,
-    title = 'Google Drive',
-    parentFolderId,
-    mimeTypes,
-    selectFolder,
-    onPicked,
-    onCancel,
-    onError,
-  } = options;
-
-  const fail = (msg: string) => {
-    onError?.(msg);
-  };
-
-  const dk = developerKey.trim();
-  if (!dk) {
-    fail(
-      'Missing VITE_GOOGLE_API_KEY. Add a browser API key (AIza…) in src/.env.local and restart dev; see src/encore/README.md → Browser API key.',
-    );
-    return;
-  }
-  if (dk.includes('apps.googleusercontent.com')) {
-    fail(
-      'VITE_GOOGLE_API_KEY looks like an OAuth client id, not a browser API key. Create an API key in Google Cloud Console (Credentials) and use the AIza… value.',
-    );
-    return;
-  }
-  if (!appId.trim()) {
-    fail('Could not derive Picker app id from VITE_GOOGLE_CLIENT_ID (expected numeric prefix).');
-    return;
-  }
-
+export function googlePickerSetOriginFromEnvAndWindow(
+  vitePickerOrigin: string | undefined,
+  win: Pick<Window, 'self' | 'top'> & { location: Pick<Location, 'origin'> },
+): string | null {
+  const explicit = vitePickerOrigin?.trim() ?? '';
+  if (explicit) return explicit;
   try {
-    await loadGooglePickerApi();
-  } catch (e) {
-    fail(e instanceof Error ? e.message : String(e));
-    return;
+    const topWin = win.top;
+    if (topWin != null && win.self !== topWin) {
+      return topWin.location.origin;
+    }
+  } catch {
+    /* cross-origin parent: cannot read top origin */
+    return null;
   }
-
-  const google = (window as unknown as { google: Record<string, unknown> }).google;
-  const pickerNs = google.picker as Record<string, unknown>;
-  type PickerBuilderChain = {
-    setDeveloperKey(k: string): PickerBuilderChain;
-    setOAuthToken(t: string): PickerBuilderChain;
-    setAppId(id: string): PickerBuilderChain;
-    setOrigin(o: string): PickerBuilderChain;
-    setTitle(t: string): PickerBuilderChain;
-    addView(v: unknown): PickerBuilderChain;
-    setCallback(cb: (d: PickerCallbackData) => void): PickerBuilderChain;
-    build(): { setVisible(v: boolean): void };
-  };
-  const PickerBuilder = pickerNs.PickerBuilder as new () => PickerBuilderChain;
-  type DocsViewInst = {
-    setParent(id: string): DocsViewInst;
-    setMimeTypes(m: string): DocsViewInst;
-    setIncludeFolders(b: boolean): DocsViewInst;
-    setSelectFolderEnabled(b: boolean): DocsViewInst;
-  };
-  const DocsView = pickerNs.DocsView as new (viewId?: unknown) => DocsViewInst;
-  const ViewId = pickerNs.ViewId as { DOCS: unknown };
-  const Action = pickerNs.Action as { PICKED: string; CANCEL: string };
-  const Response = pickerNs.Response as { ACTION: string; DOCUMENTS: string };
-
-  let docsView: DocsViewInst = new DocsView(ViewId.DOCS);
-  if (parentFolderId?.trim()) {
-    docsView = docsView.setParent(parentFolderId.trim());
-  }
-  if (mimeTypes?.trim()) {
-    docsView = docsView.setMimeTypes(mimeTypes.trim());
-  }
-  if (selectFolder) {
-    docsView = docsView.setIncludeFolders(true);
-    docsView = docsView.setSelectFolderEnabled(true);
-  }
-
-  const picker = new PickerBuilder()
-    .setDeveloperKey(dk)
-    .setOAuthToken(accessToken)
-    .setAppId(appId.trim())
-    .setOrigin(window.location.origin)
-    .setTitle(title)
-    .addView(docsView)
-    .setCallback((data: PickerCallbackData) => {
-      const actionKey = Response.ACTION;
-      const docsKey = Response.DOCUMENTS;
-      const action = data[actionKey] as string | undefined;
-      if (action === Action.PICKED) {
-        const raw = (data[docsKey] as Array<{ id?: string; name?: string; mimeType?: string }> | undefined) ?? [];
-        const files: DrivePickerSelection[] = raw
-          .map((d) => ({
-            id: d.id ?? '',
-            name: (d.name ?? '').trim() || 'Untitled',
-            mimeType: d.mimeType,
-          }))
-          .filter((d) => d.id);
-        if (files.length) onPicked(files);
-      } else if (action === Action.CANCEL) {
-        onCancel?.();
-      }
-    })
-    .build();
-  picker.setVisible(true);
-}
-
-export function readPickerDeveloperKey(): string {
-  return (import.meta.env.VITE_GOOGLE_API_KEY as string | undefined)?.trim() ?? '';
-}
-
-export function readPickerAppId(): string | null {
-  const cid = (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined)?.trim() ?? '';
-  return googlePickerAppIdFromClientId(cid);
-}
-
-export type OpenEncoreGoogleDrivePickerOptions = Omit<OpenGoogleDrivePickerOptions, 'developerKey' | 'appId'>;
-
-/** Same as {@link openGoogleDrivePicker} but fills `developerKey` / `appId` from Vite env. */
-export async function openEncoreGoogleDrivePicker(options: OpenEncoreGoogleDrivePickerOptions): Promise<void> {
-  return openGoogleDrivePicker({
-    ...options,
-    developerKey: readPickerDeveloperKey(),
-    appId: readPickerAppId() ?? '',
-  });
+  return null;
 }

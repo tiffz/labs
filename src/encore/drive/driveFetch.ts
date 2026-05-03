@@ -39,10 +39,10 @@ export function formatDriveRequestFailure(method: string, path: string, status: 
   const head = `Drive ${method} ${path} (${status})`;
   if (!detail) return head;
   if (status === 403 && /insufficient|scope|authentication|access denied|forbidden/i.test(detail)) {
-    return `${head}: ${detail} If you recently changed Google permissions for Encore, use Account → Disconnect Google, then sign in again.`;
+    return `${head}: ${detail} If you recently changed Google permissions for Encore, open Account → Sign in again, or Disconnect then sign in.`;
   }
   if (status === 401) {
-    return `${head}: ${detail} Try signing in to Google again from the Account menu.`;
+    return `${head}: ${detail} Open Account (top right), then under Google choose Sign in again.`;
   }
   return `${head}: ${detail}`;
 }
@@ -93,6 +93,27 @@ export type DriveFileListRow = {
   contentHints?: { indexableText?: string };
 };
 
+/**
+ * Pick one Drive file id from a list: keep {@link preferredId} when it still appears (stable guest URLs),
+ * otherwise the most recently modified row. Empty / missing ids are skipped.
+ */
+export function pickPreferredDriveListFileId(
+  files: DriveFileListRow[] | undefined,
+  preferredId: string | undefined,
+): string | undefined {
+  const list = (files ?? []).filter((f): f is DriveFileListRow & { id: string } => Boolean(f.id?.trim()));
+  const pref = preferredId?.trim();
+  if (pref && list.some((f) => f.id === pref)) return pref;
+  if (list.length === 0) return undefined;
+  const sorted = [...list].sort((a, b) => {
+    const ta = a.modifiedTime ? Date.parse(a.modifiedTime) : 0;
+    const tb = b.modifiedTime ? Date.parse(b.modifiedTime) : 0;
+    if (tb !== ta) return tb - ta;
+    return a.id.localeCompare(b.id);
+  });
+  return sorted[0]?.id;
+}
+
 export async function driveListFiles(
   accessToken: string,
   q: string,
@@ -111,8 +132,13 @@ export async function driveListFiles(
     q,
     fields: fieldsParam,
     spaces: 'drive',
-    /** Explicit corpora avoids ambiguous defaults for `q` on some Drive API configurations. */
-    corpora: 'user',
+    /**
+     * My Drive + shared drives: without these, `files.list` can 403/empty-list for folders on
+     * shared drives or certain `in parents` queries (breaks in-app Drive browse).
+     */
+    corpora: 'allDrives',
+    includeItemsFromAllDrives: 'true',
+    supportsAllDrives: 'true',
     pageSize: String(pageSize),
   };
   if (pageToken) query.pageToken = pageToken;
@@ -127,8 +153,11 @@ export async function driveUploadFileResumable(
   name?: string,
 ): Promise<{ id: string }> {
   const fileName = name?.trim() || file.name || 'upload';
+  if (file.size <= 0) {
+    throw new DriveHttpError('Cannot upload an empty file (0 bytes).', 400);
+  }
   const mimeType = file.type || 'application/octet-stream';
-  const init = await fetch(`${UPLOAD_BASE}/files?uploadType=resumable&fields=id`, {
+  const init = await fetch(`${UPLOAD_BASE}/files?uploadType=resumable&fields=id&supportsAllDrives=true`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -146,12 +175,15 @@ export async function driveUploadFileResumable(
   if (!location) {
     throw new DriveHttpError(formatDriveRequestFailure('POST', 'upload/resumable (no Location)', init.status, initText), init.status, initText);
   }
+  const putHeaders: Record<string, string> = {
+    'Content-Length': String(file.size),
+    'Content-Type': mimeType,
+    /** Required when uploading the full object in one PUT; without it, Drive may accept but store 0 bytes. */
+    'Content-Range': `bytes 0-${file.size - 1}/${file.size}`,
+  };
   const put = await fetch(location, {
     method: 'PUT',
-    headers: {
-      'Content-Length': String(file.size),
-      'Content-Type': mimeType,
-    },
+    headers: putHeaders,
     body: file,
   });
   const putText = await put.text();
@@ -313,6 +345,8 @@ export async function driveGetFileMetadata(
   fileId: string
 ): Promise<{
   id: string;
+  /** When the file was created in Drive (first upload / insert). Prefer for “performance happened near”. */
+  createdTime?: string;
   modifiedTime?: string;
   etag?: string;
   mimeType?: string;
@@ -323,7 +357,7 @@ export async function driveGetFileMetadata(
 }> {
   const path = `/files/${encodeURIComponent(fileId)}`;
   const qs = `?${new URLSearchParams({
-    fields: 'id,modifiedTime,mimeType,name,parents,shortcutDetails',
+    fields: 'id,createdTime,modifiedTime,mimeType,name,parents,shortcutDetails',
     supportsAllDrives: 'true',
   }).toString()}`;
   let lastStatus = 0;
@@ -349,6 +383,7 @@ export async function driveGetFileMetadata(
   const text = await res.text();
   const data = JSON.parse(text) as {
     id: string;
+    createdTime?: string;
     modifiedTime?: string;
     mimeType?: string;
     name?: string;
@@ -404,6 +439,29 @@ export async function driveResolveThumbnailLink(accessToken: string, fileId: str
   }
 }
 
+/**
+ * Trash a Drive file (reversible from the Drive UI for ~30 days). The sharded sync uses this for
+ * per-row deletes so a stray double-click in the UI does not vaporize the user's only copy.
+ */
+export async function driveTrashFile(accessToken: string, fileId: string): Promise<void> {
+  const res = await fetch(
+    `${DRIVE_BASE}/files/${encodeURIComponent(fileId)}?fields=id&supportsAllDrives=true`,
+    {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ trashed: true }),
+    },
+  );
+  if (res.ok) return;
+  const text = await res.text();
+  // 404 means the shard is already gone; treat as success so retry storms drain.
+  if (res.status === 404) return;
+  throw new DriveHttpError(formatDriveRequestFailure('PATCH', 'files (trash)', res.status, text), res.status, text);
+}
+
 /** Rename a file (does not move parents). */
 export async function driveRenameFile(
   accessToken: string,
@@ -424,36 +482,6 @@ export async function driveRenameFile(
   if (!res.ok) {
     const text = await res.text();
     throw new DriveHttpError(formatDriveRequestFailure('PATCH', 'files (rename)', res.status, text), res.status, text);
-  }
-}
-
-/**
- * Move a Drive file (or shortcut) from one parent folder to another.
- * `previousParentId` must be one of the file’s current parents (see `driveGetFileMetadata`).
- */
-export async function driveMoveFile(
-  accessToken: string,
-  fileId: string,
-  newParentId: string,
-  previousParentId: string,
-): Promise<void> {
-  const qs = new URLSearchParams({
-    addParents: newParentId,
-    removeParents: previousParentId,
-    supportsAllDrives: 'true',
-    fields: 'id',
-  });
-  const res = await fetch(`${DRIVE_BASE}/files/${encodeURIComponent(fileId)}?${qs}`, {
-    method: 'PATCH',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({}),
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new DriveHttpError(formatDriveRequestFailure('PATCH', 'files (move)', res.status, text), res.status, text);
   }
 }
 

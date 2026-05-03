@@ -39,13 +39,16 @@ Shared defaults (including `VITE_GOOGLE_CLIENT_ID`) live in the committed **deve
 
 ## Environment variables
 
-| Variable                         | Purpose                                                                                                                                                                                                                            |
-| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `VITE_GOOGLE_CLIENT_ID`          | Google Identity Services OAuth client (Web).                                                                                                                                                                                       |
-| `VITE_GOOGLE_OAUTH_REDIRECT_URI` | Optional override for GIS `redirect_uri`. Default is **`{origin}/encore`** (no trailing slash). Set this only if your OAuth client lists a different string (e.g. `.../encore/`).                                                  |
-| `VITE_ALLOWED_EMAIL_HASHES`      | Comma-separated **SHA-256 hex** digests of **normalized** emails (`trim` + lowercase). No plaintext emails in the repo.                                                                                                            |
-| `VITE_SPOTIFY_CLIENT_ID`         | Spotify app (PKCE). Redirect URIs must match the dashboard (see **Spotify console** below).                                                                                                                                        |
-| `VITE_GOOGLE_API_KEY`            | Browser **API key** (`AIza…`, **not** the OAuth client id). HTTP-referrer restricted; used for **guest** `alt=media` reads of `public_snapshot.json` and for **Google Picker** (`setDeveloperKey`). See **Browser API key** below. |
+| Variable                         | Purpose                                                                                                                                                                                                                                                  |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VITE_GOOGLE_CLIENT_ID`          | Google Identity Services OAuth client (Web).                                                                                                                                                                                                             |
+| `VITE_GOOGLE_OAUTH_REDIRECT_URI` | Optional override for GIS `redirect_uri`. Default is **`{origin}/encore`** (no trailing slash). Set this only if your OAuth client lists a different string (e.g. `.../encore/`).                                                                        |
+| `VITE_ALLOWED_EMAIL_HASHES`      | Comma-separated **SHA-256 hex** digests of **normalized** emails (`trim` + lowercase). No plaintext emails in the repo.                                                                                                                                  |
+| `VITE_SPOTIFY_CLIENT_ID`         | Spotify app (PKCE). Redirect URIs must match the dashboard (see **Spotify console** below).                                                                                                                                                              |
+| `VITE_GOOGLE_API_KEY`            | Browser **API key** (`AIza…`, **not** the OAuth client id). HTTP-referrer restricted; used for **guest** `alt=media` reads of `public_snapshot.json` and for **Google Picker** (`setDeveloperKey`). See **Browser API key** below.                       |
+| `VITE_GOOGLE_PICKER_APP_ID`      | Optional. Cloud **Project number** (digits only, from the Console dashboard) passed to Picker `setAppId`. Defaults to the numeric prefix of `VITE_GOOGLE_CLIENT_ID`. Set this if that prefix does not match your project number.                         |
+| `VITE_GOOGLE_PICKER_ORIGIN`      | Optional. **`protocol//host[:port]`** passed to Picker `setOrigin`. Use when Encore is embedded in a **cross-origin** iframe (parent origin cannot be read). Top-level Encore omits `setOrigin` (matches Google’s sample).                               |
+| `VITE_ENCORE_SHARDED_SYNC`       | Optional. Set to `1` / `true` to opt in to the per-row sharded Drive layout (Phase 5 of the perf overhaul). When on, background sync pushes only changed rows + a small manifest. The legacy monolithic push still runs as a safety net. Off by default. |
 
 **GitHub Pages (CI):** Production builds use the **`VITE_GOOGLE_API_KEY` repository secret** (or the same name on the **`github-pages` environment**). GitHub Actions injects it at build time for `.github/workflows/ci.yml` and `deploy-docs.yml`; it is not read from committed `src/.env.production`. Local dev still uses `src/.env.local` or uncommented vars in `src/.env.development`.
 
@@ -62,14 +65,15 @@ Shared defaults (including `VITE_GOOGLE_CLIENT_ID`) live in the committed **deve
 
 ### Google Cloud console
 
-- Enable **Google Drive API**, **People API** (if needed), and **YouTube Data API v3** for playlist import.
+- Enable **Google Picker API**, **Google Drive API**, **People API** (if needed), and **YouTube Data API v3** for playlist import.
 - OAuth scopes requested by Encore (add all under **Google Auth Platform → Data access**): `drive.file`, **`drive.metadata.readonly`** (list names in pasted Drive folders and subfolders for bulk performance import), `userinfo.email`, **`userinfo.profile`** (given name for the greeting), and **`youtube.readonly`** (read playlists you own). After adding or changing scopes, users must **sign in to Google again** once so the new scope is granted. **Google Picker** still uses your browser API key plus OAuth; per-file access for uploads stays on `drive.file`. Encore does **not** request full `drive.readonly` (content-wide read).
 - **Authorized JavaScript origins** (Web client): add every origin you use (**no path**), e.g. `http://localhost:5173` and `http://127.0.0.1:5173` (match your Vite port). This is the main requirement for the GIS **token (popup)** flow. Missing origins often produce a vague “Something went wrong”.
 - **Authorized redirect URIs:** Encore sends **`redirect_uri` = `{origin}/encore`** (no trailing slash), e.g. `http://127.0.0.1:5173/encore`. Google compares this string **byte-for-byte** to your list. A trailing slash on only one side causes **`redirect_uri_mismatch`**, so either register **`.../encore`** (recommended, matches the app default) or add **`.../encore/`** and set **`VITE_GOOGLE_OAUTH_REDIRECT_URI`** to that exact URL. Typical set:
   - `http://localhost:5173/encore`
   - `http://127.0.0.1:5173/encore`
   - `https://labs.tiffzhang.com/encore` (production)
-- **Google Picker (manual QA):** From a song, use **Charts folder** / **My Drive** under “Browse in Google Drive”, or **Google Picker** in the Drive file dialog, or **Browse My Drive** in the performance editor. If the overlay appears blank or errors after idle, **Sign in with Google** again so the access token is fresh.
+- **Google Picker (manual QA):** From a song, open **Browse Drive** under charts or in the performance editor, or **Browse Drive** in the chart file dialog. If the overlay shows **“The API developer key is invalid”**, enable **Google Picker API** and **Google Drive API** for the key’s Cloud project, include both under the key’s **API restrictions**, and add your dev **HTTP referrers** (see below). If the overlay appears blank or errors after idle, **Sign in with Google** again so the access token is fresh.
+- **Drive upload folders (Repertoire settings) and bulk import:** You can **paste a folder URL or id** and apply; Encore checks the id with the Drive Files API (folder mime type) using your OAuth token, so that path works even when **Google Picker** is misconfigured. **Pick folder in Drive** still needs a valid browser API key and Picker-enabled project; fixing the key remains the best long-term setup.
 
 #### Browser API key (`VITE_GOOGLE_API_KEY`) — Picker + guest reads
 
@@ -80,7 +84,7 @@ Create this in **Google Cloud Console → APIs & Services → Credentials → Cr
    - `http://localhost:5173/*` (optional backup if you ever load without redirect)
    - Production: `https://labs.tiffzhang.com/*` (or your host)
      Missing **`127.0.0.1`** in the key’s referrer list is the usual cause of Google’s **“There was an error! The API developer key is invalid.”** in local development.
-2. **API restrictions:** restrict the key and allow at least **Google Drive API**. If the console lists **Google Picker API** for this project, enable it as well.
+2. **API restrictions:** restrict the key and allow **Google Drive API** and **Google Picker API** (enable both APIs under **APIs & Services → Library** in the same project first). The Picker UI calls the Picker API; omission is a common cause of **“The API developer key is invalid.”** when clicking **Browse Drive**.
 3. Put the key in **`src/.env.local`** as `VITE_GOOGLE_API_KEY=…`, then **restart** `npm run dev` so Vite picks it up. **Do not** put this key in committed `src/.env.development`; that file is shared in git, while `.env.local` stays on your machine only.
 
 **Local dev + guest snapshot reads:** Browsers load `public_snapshot.json` via the Drive API using this key. Referrer-restricted keys often make **direct** `googleapis.com` requests fail CORS on `http://127.0.0.1:…` even when the key is valid. With `npm run dev`, Encore uses a **same-origin Vite proxy** for those reads so publish checks and the guest view work without relaxing key restrictions. The proxy sends `Referer: http://<your-dev-host>/encore/` by default (from the incoming request’s `Host`). If your key’s allowlist only includes **production** (e.g. `https://labs.example.com/*` but **not** loopback), set **`VITE_GOOGLE_DRIVE_DEV_PROXY_REFERER`** in `.env.local` to that production origin with path, for example `https://labs.example.com/encore/`, so outbound Drive requests match an allowed referrer. Production builds still call Google directly from the browser.
@@ -107,7 +111,8 @@ From **Library → Import playlists**, paste **Spotify** and/or **YouTube** play
 
 Under **My Drive**:
 
-- `Encore_App/repertoire_data.json` — canonical merged data.
+- `Encore_App/repertoire_data.json` — canonical merged data (the monolithic format used by every published Encore release).
+- `Encore_App/repertoire/` — per-row sharded layout (Phase 5, behind `VITE_ENCORE_SHARDED_SYNC`). Contains `manifest.json` plus `song/<id>.json`, `performance/<id>.json`, and `extras/default.json`. The background sync pushes only the rows you actually edited and updates the manifest in one round-trip; pulls fetch only shards whose manifest `updatedAt` is newer than the local row. The legacy file keeps being updated alongside until the sharded path graduates.
 - `Encore_App/Performances/` — shortcuts to performance videos.
 - `Encore_App/SheetMusic/` — reserved for your own organization (IDs stored per song).
 - `Encore_App/public_snapshot.json` — created/updated when you use **Share** (link-readable).
@@ -125,30 +130,34 @@ For the full module diagram, see [`ARCHITECTURE.md`](ARCHITECTURE.md). Key point
 `src/encore/main.tsx` mounts a single `<EncoreProvider>` that composes (outside-in):
 
 ```
-LabsUndoProvider                  // src/shared/undo/LabsUndoContext.tsx
-  └─ EncoreBlockingJobProvider    // src/encore/context/EncoreBlockingJobContext.tsx
-       └─ EncoreProviderImpl      // src/encore/context/EncoreContext.tsx (the data + sync layer)
+LabsUndoProvider                       // src/shared/undo/LabsUndoContext.tsx
+  └─ EncoreBlockingJobProvider         // src/encore/context/EncoreBlockingJobContext.tsx
+       └─ EncoreAuthProvider           // Google + Spotify session state
+            └─ EncoreLibraryProvider   // reactive Dexie selectors (useLiveQuery)
+                 └─ EncoreSyncProvider // Drive sync + conflict state
+                      └─ EncoreActionsProvider // CRUD + bulk ops + dirty-row marking
 ```
 
 - `LabsUndoProvider` owns the keyboard shortcut (Ctrl/Cmd-Z, Ctrl/Cmd-Shift-Z) and a small per-app stack (`labsUndoStack`). It is shared across labs apps; see [`src/shared/undo/README.md`](../shared/undo/README.md).
-- `EncoreBlockingJobProvider` exposes `useEncoreBlockingJobs().withBlockingJob(label, fn)`. Any background work that the user shouldn't navigate away from goes through it. The provider renders a single bottom snackbar with progress + a "keep this tab open" caption (see [§ Long-running jobs](#long-running-jobs)) and registers a `beforeunload` warning while jobs are non-empty.
-- `EncoreProviderImpl` (a.k.a. `EncoreContext`) holds Dexie-backed `songs`, `performances`, `repertoireExtras`, plus Google/Spotify session state, sync state, conflict state, and CRUD methods. Hooks: `useEncore()` for everything; specialized helpers re-exported from the same file for back-compat.
+- `EncoreBlockingJobProvider` exposes `useEncoreBlockingJobs().withBlockingJob(label, fn)`. Any background work that the user shouldn't navigate away from goes through it. The provider renders a single bottom snackbar with progress + a "keep this tab open" caption (see [§ Long-running jobs](#long-running-jobs)) and registers a `beforeunload` warning **only while at least one non-silent job is running** (silent jobs such as debounced Drive push do not trigger “Leave site?”).
+- The four Encore providers are split by responsibility so each consumer only re-renders on the slice it cares about. New code should reach for the specialized hooks (`useEncoreAuth`, `useEncoreLibrary`, `useEncoreSync`, `useEncoreActions`); `useEncore()` remains as a back-compat façade that flattens all four.
+- The library context is reactive: it subscribes to the Dexie `songs`, `performances`, and `repertoireExtras` tables via `dexie-react-hooks#useLiveQuery`, so writes from anywhere (other tabs included) propagate without an explicit refresh call.
 
 ### Long-running jobs
 
 Always wrap user-launched async work in `withBlockingJob` (or `startBlockingJob` for streaming progress). Examples:
 
-- Drive sync: `runSync` in `EncoreContext`
+- Drive sync: `runSync` in `EncoreSyncContext`
 - Snapshot publish/unpublish: `publishPublicSnapshot` / `unpublishPublicSnapshot`
 - Drive reorganize: `reorganizeDriveUploads`
 - Bulk imports: `applyImport` (PlaylistImportDialog), `applyAll` (BulkScoreImportDialog, BulkPerformanceImportDialog)
 - Drive uploads (chart, performance video): `handleDriveChartUpload`, `onPickVideoFile`
 
-Rule of thumb: **anything > 1 s that writes to Drive or Dexie should be wrapped**. Synchronous edits and quick local ops do not need it. `scheduleBackgroundSync` (the autosave-driven Drive push) intentionally runs _outside_ the snackbar today; in PR 4 of the quality sweep this becomes a "silent" blocking-job variant that still registers the `beforeunload` warning without rendering the loud snackbar.
+Rule of thumb: **anything > 1 s that writes to Drive or Dexie should be wrapped**. Synchronous edits and quick local ops do not need it. **`scheduleBackgroundSync`** uses a **silent** `withBlockingJob` (no snackbar, no `beforeunload`) and is **debounced + serialized** so rapid saves coalesce. **`runSync`** (initial / retry Drive sync) is also **silent** so login does not show the bottom snackbar or unload prompts; use **Account → Drive status** (“Syncing…”) for feedback.
 
 ### Undo coverage
 
-`LabsUndoProvider` plus per-action `pushUndo` calls in `EncoreContext` cover:
+`LabsUndoProvider` plus per-action `pushUndo` calls in `EncoreActionsContext` cover:
 
 - Save song, delete song
 - Save performance, delete performance
@@ -164,8 +173,12 @@ Intentionally excluded:
 
 ### `runSync` vs `scheduleBackgroundSync`
 
-- `runSync()` is the explicit user-triggered (or app-startup) sync. Wraps `withBlockingJob('Syncing with Drive…')`, surfaces conflicts via `syncState`/`conflict` so the UI can show a banner.
-- `scheduleBackgroundSync()` is the debounced auto-push fired after most local writes. It currently runs without a blocking-job wrapper; treat it as best-effort (failures surface in `syncState.lastError` but do not block the UI). PR 4 will wrap it in a silent blocking-job so the `beforeunload` warning still fires.
+- `runSync()` runs after sign-in / token restore (once `libraryReady`, after a paint deferral) and when the user retries Drive sync. It uses **`withBlockingJob(..., { silent: true })`** and passes progress into `runInitialSyncIfPossible` for optional future UI. The result also includes a row-level `analysis` (`localOnly` / `remoteOnly` / `bothEdited`); when `bothEdited.length === 0` the sync silently auto-merges and surfaces a brief snackbar via `EncoreSyncContext.lastSilentMerge`. Otherwise the `<SyncConflictReviewDialog>` opens with only the overlapping rows for per-row resolution.
+- `scheduleBackgroundSync()` fires after most local writes: **500ms debounce**, then a **serialized** silent blocking job. When `VITE_ENCORE_SHARDED_SYNC=1` it first runs the one-shot migration into the per-row layout, drains the `dirtySync` table via `pushDirtyShards`, and then re-emits the legacy `repertoire_data.json` as a safety net. With the flag off it pushes the monolithic file only. Failures set `syncState` / `syncMessage`.
+
+### List screen performance (Library, Performances)
+
+Keep MRT tables scroll-friendly: stable row/cell `sx`, debounced search feeding `data`, complete `columns` memo dependencies, and avoid zebra rows if paint cost matters. See [`ARCHITECTURE.md`](ARCHITECTURE.md) § Client performance guardrails.
 
 ### `EncoreMediaLink[]` model
 

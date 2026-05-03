@@ -14,6 +14,7 @@ export type ReorganizeDriveUploadsResult = {
     moved: number;
     skipped: number;
     errors: number;
+    shortcutsCreated: number;
   };
 };
 

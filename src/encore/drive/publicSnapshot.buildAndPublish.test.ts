@@ -2,13 +2,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { EncorePerformance, EncoreSong } from '../types';
 
-vi.mock('./driveFetch', () => ({
-  driveCreateAnyoneReaderPermission: vi.fn(),
-  driveCreateJsonFile: vi.fn(),
-  driveFileHasAnyoneReader: vi.fn(),
-  driveListFiles: vi.fn(),
-  drivePatchJsonMedia: vi.fn(),
-}));
+vi.mock('./driveFetch', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./driveFetch')>();
+  return {
+    ...actual,
+    driveCreateAnyoneReaderPermission: vi.fn(),
+    driveCreateJsonFile: vi.fn(),
+    driveFileHasAnyoneReader: vi.fn(),
+    driveListFiles: vi.fn(),
+    drivePatchJsonMedia: vi.fn(),
+  };
+});
 
 vi.mock('./bootstrapFolders', () => ({
   fetchPublicDriveJson: vi.fn(),

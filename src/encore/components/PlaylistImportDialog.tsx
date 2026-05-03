@@ -56,7 +56,7 @@ import {
   type SpotifyPlaylistTrackRow,
   type SpotifySearchTrack,
 } from '../spotify/spotifyApi';
-import { navigateEncore } from '../routes/encoreAppHash';
+import { encoreAppHref, isModifiedOrNonPrimaryClick } from '../routes/encoreAppHash';
 import { encoreLoopbackUrlFromCurrent } from '../spotify/spotifyRedirectUri';
 import { readAndClearSpotifyOAuthFlash } from '../spotify/completeOAuthFromUrl';
 import { fetchYouTubePlaylistItems, type YouTubePlaylistItemRow } from '../youtube/youtubePlaylistApi';
@@ -1046,13 +1046,11 @@ export function PlaylistImportDialog(props: {
             <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: -0.5 }}>
               New here? Read the{' '}
               <Link
-                component="button"
-                type="button"
-                onClick={() => {
-                  onClose();
-                  navigateEncore({ kind: 'help' });
-                }}
+                href={encoreAppHref({ kind: 'help' })}
                 sx={{ fontSize: 'inherit', verticalAlign: 'baseline' }}
+                onClick={(e) => {
+                  if (!isModifiedOrNonPrimaryClick(e)) onClose();
+                }}
               >
                 import guide
               </Link>{' '}

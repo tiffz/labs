@@ -13,6 +13,11 @@ function normYoutube(raw?: string): string | null {
   return parseYoutubeVideoId(raw);
 }
 
+function normDrive(id?: string): string | null {
+  const t = id?.trim();
+  return t || null;
+}
+
 /**
  * Spotify track id used as the catalog / metadata data source: legacy {@link EncoreSong.spotifyTrackId},
  * or when that is unset, the primary (or first) Spotify **reference** link so “refresh from Spotify”
@@ -565,6 +570,57 @@ export function appendYoutubeBackingLink(d: EncoreSong, rawInput: string): Encor
     source: 'youtube',
     youtubeVideoId: rawInput.trim(),
     youtubeKind: 'karaoke',
+    isPrimaryBacking: !hasPb && backing.length === 0,
+  });
+  return syncSongLegacyMediaIds({ ...base, backingLinks: backing });
+}
+
+/** Add a Drive-hosted audio/video file to reference links (opens via Drive web URL). */
+export function appendDriveReferenceLink(
+  d: EncoreSong,
+  driveFileId: string,
+  opts?: { label?: string; asPrimaryReference?: boolean },
+): EncoreSong {
+  const fid = normDrive(driveFileId);
+  if (!fid) return ensureSongHasDerivedMediaLinks(d);
+  const base = ensureSongHasDerivedMediaLinks(d);
+  const refs = [...(base.referenceLinks ?? [])];
+  if (refs.some((r) => r.source === 'drive' && normDrive(r.driveFileId) === fid)) {
+    return syncSongLegacyMediaIds(base);
+  }
+  const asPrimary = opts?.asPrimaryReference ?? false;
+  const nextRefs = asPrimary ? refs.map((r) => ({ ...r, isPrimaryReference: false })) : [...refs];
+  const willBePrimary = asPrimary || !nextRefs.some((r) => r.isPrimaryReference);
+  const label = opts?.label?.trim();
+  nextRefs.push({
+    id: crypto.randomUUID(),
+    source: 'drive',
+    driveFileId: fid,
+    ...(label ? { label } : {}),
+    isPrimaryReference: willBePrimary,
+  });
+  return syncSongLegacyMediaIds({ ...base, referenceLinks: nextRefs });
+}
+
+export function appendDriveBackingLink(
+  d: EncoreSong,
+  driveFileId: string,
+  opts?: { label?: string },
+): EncoreSong {
+  const fid = normDrive(driveFileId);
+  if (!fid) return ensureSongHasDerivedMediaLinks(d);
+  const base = ensureSongHasDerivedMediaLinks(d);
+  const backing = [...(base.backingLinks ?? [])];
+  if (backing.some((l) => l.source === 'drive' && normDrive(l.driveFileId) === fid)) {
+    return syncSongLegacyMediaIds(base);
+  }
+  const hasPb = backing.some((l) => l.isPrimaryBacking);
+  const label = opts?.label?.trim();
+  backing.push({
+    id: crypto.randomUUID(),
+    source: 'drive',
+    driveFileId: fid,
+    ...(label ? { label } : {}),
     isPrimaryBacking: !hasPb && backing.length === 0,
   });
   return syncSongLegacyMediaIds({ ...base, backingLinks: backing });

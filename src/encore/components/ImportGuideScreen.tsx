@@ -2,13 +2,18 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
-import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import type { ReactElement } from 'react';
-import { navigateEncore } from '../routes/encoreAppHash';
+import { encoreAppHref } from '../routes/encoreAppHash';
 import { encoreHairline } from '../theme/encoreUiTokens';
 import { encorePagePaddingTop, encoreScreenPaddingX } from '../theme/encoreM3Layout';
+import { ENCORE_ACCOMPANIMENT_TAGS } from '../types';
+
+/** Alphabetical for the guide; the performance editor shows the same set in app-defined order. */
+const ACCOMPANIMENT_TAGS_GUIDE_TEXT = [...ENCORE_ACCOMPANIMENT_TAGS]
+  .sort((a, b) => a.localeCompare(b))
+  .join(', ');
 
 /** Readable article column (outside narrow settings width). */
 const ARTICLE_MAX = 'min(42rem, 100%)';
@@ -63,7 +68,7 @@ function Mono(props: { children: string }): ReactElement {
   );
 }
 
-export function ImportGuideScreen(): React.ReactElement {
+export function ImportGuideScreen(): ReactElement {
   return (
     <Box
       sx={{
@@ -81,7 +86,8 @@ export function ImportGuideScreen(): React.ReactElement {
             variant="text"
             size="small"
             startIcon={<ArrowBackIcon />}
-            onClick={() => navigateEncore({ kind: 'library' })}
+            component="a"
+            href={encoreAppHref({ kind: 'library' })}
             sx={{ textTransform: 'none', flexShrink: 0, mt: -0.5 }}
           >
             Repertoire
@@ -103,8 +109,8 @@ export function ImportGuideScreen(): React.ReactElement {
         </Typography>
 
         <Typography component="p" sx={{ ...articleLeadSx, mb: 4 }}>
-          Recommended order and file naming so Encore can match playlists, videos, and charts to your library. Encore
-          uses best-effort parsing and fuzzy matching. Plan a quick review pass after each import.
+          How to name files and arrange Drive folders so imports line up with your library. Encore uses fuzzy matching
+          and parsing, not magic. Skim the review step and spot-check songs afterward.
         </Typography>
 
         <Box component="article">
@@ -124,58 +130,82 @@ export function ImportGuideScreen(): React.ReactElement {
           >
             <Box component="li">
               <Typography component="span" sx={{ fontWeight: 700 }}>
-                Start with at least one Spotify playlist.
+                Import at least one Spotify playlist first.
               </Typography>{' '}
-              Spotify gives the cleanest title, artist, and track ids. Importing that first gives Encore a strong base
-              when it later matches YouTube rows, Drive videos, and sheet files to songs.
+              Spotify rows give stable titles, artists, and track ids. That baseline helps match YouTube rows, Drive
+              videos, and charts later.
             </Box>
             <Box component="li">
               <Typography component="span" sx={{ fontWeight: 700 }}>
-                Add more Spotify and YouTube playlists in one go if you like.
+                Add more Spotify and YouTube playlists in one step if you want.
               </Typography>{' '}
-              You can paste several playlist links in the same import. Encore tries to smart-match rows to existing
-              songs (including across Spotify and YouTube). Matches are not guaranteed: skim the review table,
-              especially where titles differ between services.
+              In the playlist import dialog, paste multiple playlist URLs or ids separated by{' '}
+              <Typography component="span" sx={{ fontFamily: 'monospace', fontSize: '0.95em' }}>
+                ,
+              </Typography>{' '}
+              or new lines. Encore detects Spotify vs YouTube per line. Rows are matched to existing library songs when
+              titles and artists line up, or when the same Spotify or YouTube id is already on a song. Unmatched rows need
+              a manual pick in the review table.
             </Box>
             <Box component="li">
               <Typography component="span" sx={{ fontWeight: 700 }}>
-                Duplicates in source playlists are fine.
+                Duplicate tracks in source playlists are OK.
               </Typography>{' '}
-              The same track or video can appear more than once. Encore deduplicates by Spotify or YouTube id when
-              merging into your library.
+              Encore collapses duplicates by Spotify or YouTube id when merging into the library.
             </Box>
             <Box component="li">
               <Typography component="span" sx={{ fontWeight: 700 }}>
-                Bulk performance videos, then bulk scores (optional).
+                Then bulk performance videos, then bulk scores (both optional).
               </Typography>{' '}
-              After songs exist, import performance videos and sheet files. Naming matters more here: see the sections
-              below. Then open a few songs and fix anything that still looks off.
+              These steps lean on file names and folder paths. You can pull from a Drive folder or add local files in the
+              import dialog (Google sign-in required; videos upload into your Encore Performances folder). Afterward,
+              open a few songs and fix anything that still looks wrong.
             </Box>
           </Box>
 
           <Divider sx={{ my: 4, borderColor: encoreHairline }} />
 
           <Typography component="h2" variant="h6" sx={sectionTitleSx}>
-            Performance videos (Drive bulk import)
+            Performance videos (bulk import)
           </Typography>
           <Typography component="p" sx={{ ...articleBodySx, color: 'text.secondary', mb: 2 }}>
-            Encore guesses the song from the file name, folder path, and Drive text fields, then picks a date from a
-            date in the name if present, otherwise Drive timestamps. When Encore organizes videos in your Performances
-            folder, it renames them to a simple hyphen pattern (venue is not part of the file name — use folder names
-            below to tag venue and other metadata for a whole tree of files).
+            Encore infers the song from the video file name, folder path, and Drive fields such as description and
+            indexable text when present. For the performance date it prefers a date in the file name; otherwise it tries
+            other text from the same clues, then Drive creation time, then modified time, then today as a last resort.
+            When it files videos in your Performances folder it renames them to a short{' '}
+            <Typography component="span" sx={{ fontFamily: 'monospace', fontSize: '0.95em' }}>
+              YYYY-MM-DD - Title - Artist
+            </Typography>{' '}
+            pattern. Venue does not go in the file name; use folder metadata (below) or edit venue in the review table.
+            Supported types include common video extensions (for example{' '}
+            <Typography component="span" sx={{ fontFamily: 'monospace', fontSize: '0.95em' }}>
+              .mp4
+            </Typography>
+            ,{' '}
+            <Typography component="span" sx={{ fontFamily: 'monospace', fontSize: '0.95em' }}>
+              .mov
+            </Typography>
+            ,{' '}
+            <Typography component="span" sx={{ fontFamily: 'monospace', fontSize: '0.95em' }}>
+              .m4v
+            </Typography>
+            ) and other video mime types Drive reports.
+          </Typography>
+          <Typography component="p" sx={{ ...articleBodySx, color: 'text.secondary', mb: 2 }}>
+            If a Drive file is already attached to an Encore performance, saving the bulk import updates that
+            performance (date, venue, video file, notes) instead of creating a second copy. Duplicate-looking rows in the
+            review table may be flagged and skipped by default; you can still include them explicitly.
           </Typography>
           <Typography component="p" sx={{ ...articleBodySx, fontWeight: 700, mb: 0.5 }}>
-            Canonical name (recommended before import)
+            Canonical file name (before import)
           </Typography>
           <Mono>{'YYYY-MM-DD - Song title - Artist.mp4'}</Mono>
           <Typography component="p" sx={{ ...articleBodySx, color: 'text.secondary', mb: 2 }}>
-            Use a real calendar date (YYYY-MM-DD), then the title, then the artist. If the song has no artist in your
-            library, Encore uses{' '}
+            Use a real calendar date, then title, then artist. If artist is missing, Encore may use{' '}
             <Typography component="span" sx={{ fontFamily: 'monospace', fontSize: '0.95em' }}>
               Unknown artist
             </Typography>{' '}
-            in the saved file name. Underscores and extra hyphens still split into clues for fuzzy matching during
-            import.
+            when it renames the file. Underscores and extra hyphens still give the matcher fragments to work with.
           </Typography>
 
           <Typography component="h2" variant="h6" sx={sectionTitleSx}>
@@ -186,60 +216,63 @@ export function ImportGuideScreen(): React.ReactElement {
             <Typography component="span" sx={{ fontFamily: 'monospace', fontSize: '0.95em' }}>
               Key - Value
             </Typography>{' '}
-            (space, hyphen, space after the key) is treated as metadata for every file inside that folder or deeper.
-            The key is case-insensitive. If the same key appears in nested folders, the{' '}
+            (space, hyphen, space after the key) applies to every file inside that folder and subfolders. Keys are
+            case-insensitive. The deepest folder wins when the same key appears more than once. Segments that are{' '}
             <Typography component="span" sx={{ fontWeight: 700 }}>
-              deepest
+              not
             </Typography>{' '}
-            folder wins. Recognized keys:
+            in this pattern are still kept as a path hint, which helps venue guessing for performances. Recognized keys:
           </Typography>
           <Box component="ul" sx={{ ...articleBodySx, pl: 2.5, mb: 2, color: 'text.secondary' }}>
             <li>
               <Typography component="span" sx={{ fontFamily: 'monospace', fontSize: '0.95em' }}>
                 Venue
-              </Typography>{' '}
-              — performance venue (bulk performance import).
+              </Typography>
+              : default venue for performances imported from that tree.
             </li>
             <li>
               <Typography component="span" sx={{ fontFamily: 'monospace', fontSize: '0.95em' }}>
                 Artist
+              </Typography>
+              : fills missing artist when pairing scores; on{' '}
+              <Typography component="span" sx={{ fontWeight: 700 }}>
+                new
               </Typography>{' '}
-              — song artist when creating a new song from the import row (performances); also fills filename gaps for
-              score pairing when the PDF name has no artist (scores).
+              songs created from a performance import row, combines with folder Key and Tags where applicable.
             </li>
             <li>
               <Typography component="span" sx={{ fontFamily: 'monospace', fontSize: '0.95em' }}>
                 Accompaniment
-              </Typography>{' '}
-              — comma-separated accompaniment tags (must match Encore’s list: Guitar, Violin, Piano, Backing Track,
-              Backing Vocals, Duet partner, Self-accompany).
+              </Typography>
+              : comma-separated tags. Only values in Encore’s accompaniment list count ({ACCOMPANIMENT_TAGS_GUIDE_TEXT});
+              unknown tokens are dropped.
             </li>
             <li>
               <Typography component="span" sx={{ fontFamily: 'monospace', fontSize: '0.95em' }}>
                 Date
-              </Typography>{' '}
-              — performance date as{' '}
+              </Typography>
+              : performance date. Prefer{' '}
               <Typography component="span" sx={{ fontFamily: 'monospace', fontSize: '0.95em' }}>
                 YYYY-MM-DD
-              </Typography>{' '}
-              (performances).
+              </Typography>
+              ; other date-shaped text may parse.
             </li>
             <li>
               <Typography component="span" sx={{ fontFamily: 'monospace', fontSize: '0.95em' }}>
                 Key
-              </Typography>{' '}
-              — performance key on the song (e.g.{' '}
-              <Typography component="span" sx={{ fontFamily: 'monospace', fontSize: '0.95em' }}>
-                A major
               </Typography>
-              ) when creating a new song from import (performances); also used for score pairing when the filename has
-              no key (scores).
+              : performance key for new songs from performance import, and a fallback when a score file name has no key.
             </li>
             <li>
               <Typography component="span" sx={{ fontFamily: 'monospace', fontSize: '0.95em' }}>
                 Tags
+              </Typography>
+              : comma-separated song tags. For score import, merged into the library song when you save. For performance
+              import, applied when the row creates a{' '}
+              <Typography component="span" sx={{ fontWeight: 700 }}>
+                new
               </Typography>{' '}
-              — comma-separated song tags merged onto the library song when you import a score from that folder tree.
+              song (not when attaching to an existing song only).
             </li>
           </Box>
           <Typography component="p" sx={{ ...articleBodySx, fontWeight: 700, mb: 0.5 }}>
@@ -272,16 +305,22 @@ export function ImportGuideScreen(): React.ReactElement {
             Sheet music and scores (bulk import)
           </Typography>
           <Typography component="p" sx={{ ...articleBodySx, color: 'text.secondary', mb: 2 }}>
-            Bulk import reads PDF, MusicXML, MIDI, and similar exports. Encore parses title, optional artist, and key
-            from common patterns (especially MusicNotes-style names). When Encore saves or tidies charts in Drive, it
-            uses the same shape so a file you export from Encore is easy to re-import later.
+            Encore picks up PDF, MusicXML (including{' '}
+            <Typography component="span" sx={{ fontFamily: 'monospace', fontSize: '0.95em' }}>
+              .mxl
+            </Typography>
+            ), MIDI, and other score-like types Drive lists under common extensions. It parses title, artist, and key
+            from typical publisher-style names (MusicNotes-style patterns are covered). The same name shape is used when
+            Encore later organizes charts in Drive so round-tripping stays predictable. Choose a Drive folder in the
+            dialog, or drop local files. If the Google Picker is unavailable, pasting a folder link or folder id in the
+            same field still works when you are signed in.
           </Typography>
           <Typography component="p" sx={{ ...articleBodySx, fontWeight: 700, mb: 0.5 }}>
-            Canonical name when Encore organizes charts
+            Canonical chart name when Encore organizes files
           </Typography>
           <Mono>{'Title - Artist - Key.pdf'}</Mono>
           <Typography component="p" sx={{ ...articleBodySx, color: 'text.secondary', mb: 2 }}>
-            When the song has a performance key, Encore appends it after the artist (for example{' '}
+            When the song has a performance key, Encore adds it after the artist (for example{' '}
             <Typography component="span" sx={{ fontFamily: 'monospace', fontSize: '0.95em' }}>
               Title - Artist - A major.pdf
             </Typography>
@@ -289,11 +328,7 @@ export function ImportGuideScreen(): React.ReactElement {
             <Typography component="span" sx={{ fontFamily: 'monospace', fontSize: '0.95em' }}>
               Title - Artist.pdf
             </Typography>
-            . Examples Encore already understands include MusicNotes lines such as{' '}
-            <Typography component="span" sx={{ fontFamily: 'monospace', fontSize: '0.95em' }}>
-              Title - A major - MN…
-            </Typography>{' '}
-            Variants that include an artist segment before the key work too. Generic tails like{' '}
+            . Labels such as{' '}
             <Typography component="span" sx={{ fontStyle: 'italic' }}>
               Lead Sheet
             </Typography>{' '}
@@ -301,22 +336,23 @@ export function ImportGuideScreen(): React.ReactElement {
             <Typography component="span" sx={{ fontStyle: 'italic' }}>
               Piano Vocal
             </Typography>{' '}
-            are stripped when parsing.
+            at the end are stripped while parsing. Variants with an MN-style catalog segment are recognized.
           </Typography>
           <Typography component="p" sx={{ ...articleBodySx, color: 'text.secondary', mb: 0 }}>
-            {`In the review step you can pair each file to a song and, when Encore parsed a key, apply it to the song's performance key if that field is still empty. Folder names using `}
+            In the review table you pair each file to a song and, when a key was parsed, optionally copy it into the
+            song’s performance key if that field is empty. Folder names{' '}
             <Typography component="span" sx={{ fontFamily: 'monospace', fontSize: '0.95em' }}>
               Artist - …
             </Typography>
-            {`, `}
+            ,{' '}
             <Typography component="span" sx={{ fontFamily: 'monospace', fontSize: '0.95em' }}>
               Key - …
             </Typography>
-            {`, or `}
+            , or{' '}
             <Typography component="span" sx={{ fontFamily: 'monospace', fontSize: '0.95em' }}>
               Tags - …
-            </Typography>
-            {` (see Tagging a whole folder above) fill gaps when the filename alone does not carry that metadata; Tags are merged onto the song when you import.`}
+            </Typography>{' '}
+            fill gaps when the file name does not carry that information (see Tagging a whole folder).
           </Typography>
 
           <Divider sx={{ my: 4, borderColor: encoreHairline }} />
@@ -325,25 +361,28 @@ export function ImportGuideScreen(): React.ReactElement {
             After every import
           </Typography>
           <Typography component="p" sx={{ ...articleBodySx, color: 'text.secondary', mb: 3 }}>
-            Encore does fuzzy matching and best-effort parsing. Treat the review step as part of the workflow: fix a
-            few rows in the import dialog, then spot-check songs in the library (titles, artists, linked media, and
-            performances).
+            Adjust outliers in the import dialog, then open a handful of songs and confirm titles, artists, linked media,
+            and performances.
           </Typography>
 
           <Stack direction="row" flexWrap="wrap" gap={1.5}>
-            <Button variant="contained" onClick={() => navigateEncore({ kind: 'library' })} sx={{ textTransform: 'none' }}>
+            <Button variant="contained" component="a" href={encoreAppHref({ kind: 'library' })} sx={{ textTransform: 'none' }}>
               Go to repertoire
             </Button>
-            <Button variant="outlined" onClick={() => navigateEncore({ kind: 'repertoireSettings' })} sx={{ textTransform: 'none' }}>
-              Library settings
+            <Button variant="outlined" component="a" href={encoreAppHref({ kind: 'repertoireSettings' })} sx={{ textTransform: 'none' }}>
+              Settings
             </Button>
           </Stack>
           <Typography variant="body2" color="text.secondary" sx={{ display: 'block', mt: 2.5, lineHeight: 1.6 }}>
-            From the repertoire screen, use the toolbar{' '}
-            <Link component="button" type="button" onClick={() => navigateEncore({ kind: 'library' })} sx={{ fontSize: 'inherit' }}>
+            From the repertoire screen, open the toolbar{' '}
+            <Typography component="span" sx={{ fontWeight: 600 }}>
               Add
-            </Link>
-            , then the Import menu.
+            </Typography>{' '}
+            menu, then{' '}
+            <Typography component="span" sx={{ fontWeight: 600 }}>
+              Import
+            </Typography>{' '}
+            for playlists, videos, or scores.
           </Typography>
         </Box>
       </Box>

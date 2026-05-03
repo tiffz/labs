@@ -1,12 +1,13 @@
 import VideocamIcon from '@mui/icons-material/Videocam';
 import Box from '@mui/material/Box';
-import { useEffect, useState, type ReactElement } from 'react';
+import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { useDriveFileThumbnailSrc } from '../drive/useDriveFileThumbnailSrc';
 import type { EncorePerformance } from '../types';
 import {
   performanceDriveVideoFileIdForThumbnail,
   performanceVideoThumbnailUrl,
 } from '../utils/performanceVideoThumbnailUrl';
+import { useEncoreInViewport } from '../utils/useEncoreInViewport';
 
 export type PerformanceVideoThumbProps = {
   performance: EncorePerformance;
@@ -23,13 +24,26 @@ export type PerformanceVideoThumbProps = {
   googleAccessToken?: string | null;
 };
 
-/** 16:9 performance video thumbnail or a neutral placeholder when none / load error. */
+/**
+ * 16:9 performance video thumbnail or a neutral placeholder when none / load error.
+ *
+ * The Drive `thumbnailLink` resolve and the underlying `<img>` only mount once the host element
+ * intersects the viewport — large performance grids no longer fire dozens of parallel Drive
+ * fetches for offscreen rows on first paint or while the user scrolls past them.
+ */
 export function PerformanceVideoThumb(props: PerformanceVideoThumbProps): ReactElement {
   const { performance, width = 120, fluid = false, alt = '', googleAccessToken = null } = props;
   const height = Math.round((width * 9) / 16);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inView = useEncoreInViewport(containerRef, { rootMargin: '240px' });
   const driveId = performanceDriveVideoFileIdForThumbnail(performance);
   const fallback = performanceVideoThumbnailUrl(performance);
-  const { src, swallowErrorTryFallback } = useDriveFileThumbnailSrc(driveId, googleAccessToken, fallback);
+  // Pass null for fileId until the cell is in view; the hook then short-circuits the Drive fetch.
+  const { src, swallowErrorTryFallback } = useDriveFileThumbnailSrc(
+    inView ? driveId : null,
+    inView ? googleAccessToken : null,
+    inView ? fallback : null,
+  );
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
@@ -45,6 +59,7 @@ export function PerformanceVideoThumb(props: PerformanceVideoThumbProps): ReactE
     const showPlaceholder = !src || failed;
     return (
       <Box
+        ref={containerRef}
         sx={{
           position: 'relative',
           width: '100%',
@@ -96,6 +111,7 @@ export function PerformanceVideoThumb(props: PerformanceVideoThumbProps): ReactE
   if (!src || failed) {
     return (
       <Box
+        ref={containerRef}
         sx={{
           width,
           height,
@@ -125,6 +141,7 @@ export function PerformanceVideoThumb(props: PerformanceVideoThumbProps): ReactE
 
   return (
     <Box
+      ref={containerRef}
       component="img"
       src={src}
       alt={alt}
