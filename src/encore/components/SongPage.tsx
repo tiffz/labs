@@ -410,6 +410,11 @@ export function SongPage(props: {
       setSongPageFileDragActive(false);
       setHoveredMediaSlot(null);
     };
+    /** OS→browser file drops often skip `dragend` on `document` and leave dragenter/leave counts unbalanced; always clear. */
+    const onDrop = (e: DragEvent) => {
+      if (!hasFiles(e.dataTransfer)) return;
+      onEnd();
+    };
     const onDragOver = (e: DragEvent) => {
       if (hasFiles(e.dataTransfer)) {
         e.preventDefault();
@@ -419,11 +424,13 @@ export function SongPage(props: {
     document.addEventListener('dragenter', onEnter);
     document.addEventListener('dragleave', onLeave);
     document.addEventListener('dragend', onEnd);
+    document.addEventListener('drop', onDrop, true);
     document.addEventListener('dragover', onDragOver);
     return () => {
       document.removeEventListener('dragenter', onEnter);
       document.removeEventListener('dragleave', onLeave);
       document.removeEventListener('dragend', onEnd);
+      document.removeEventListener('drop', onDrop, true);
       document.removeEventListener('dragover', onDragOver);
     };
   }, [draft, loadState]);

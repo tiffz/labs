@@ -1,5 +1,17 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { buildSpotifyTrackSearchQuery, searchTracks } from './spotifyApi';
+import { buildSpotifyTrackSearchQuery, searchTracks, spotifyTrackTitleAndArtist } from './spotifyApi';
+
+describe('spotifyTrackTitleAndArtist', () => {
+  it('trims title and joins artist names', () => {
+    const row = spotifyTrackTitleAndArtist({
+      id: 't1',
+      name: '  Hello  ',
+      artists: [{ name: 'A' }, { name: 'B' }],
+      album: { images: [] },
+    });
+    expect(row).toEqual({ title: 'Hello', artist: 'A, B' });
+  });
+});
 
 describe('searchTracks', () => {
   const originalFetch = globalThis.fetch;

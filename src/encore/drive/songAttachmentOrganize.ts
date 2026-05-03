@@ -1,11 +1,19 @@
-import type { EncoreMediaLink, EncoreSong, EncoreSongAttachment } from '../types';
+import type {
+  EncoreDriveUploadFolderKind,
+  EncoreDriveUploadFolderOverrides,
+  EncoreMediaLink,
+  EncoreSong,
+  EncoreSongAttachment,
+} from '../types';
 import { encoreDb, getSyncMeta } from '../db/encoreDb';
 import { effectiveSongAttachments } from '../utils/songAttachments';
 import {
   driveCreateShortcut,
   driveGetFileMetadata,
+  driveMoveFile,
   driveRenameFile,
 } from './driveFetch';
+import { resolveDriveUploadFolderId } from './resolveDriveUploadFolder';
 import { splitFileNameExtension } from './performanceVideoNaming';
 
 const SHORTCUT_MIME = 'application/vnd.google-apps.shortcut';
@@ -18,7 +26,7 @@ function sanitizeForFilename(s: string): string {
 }
 
 /**
- * Canonical filename inside `Encore_App/SheetMusic` or `Encore_App/Song recordings`.
+ * Canonical filename inside the **effective** upload folder (override or Encore_App default).
  *
  * Uses the same `Title - Artist` spine as performance videos. **Charts** append the song’s performance key when set:
  * `Title - Artist - Key.ext`; otherwise `Title - Artist.ext`. Recordings and backing tracks use `Title - Artist.ext`
@@ -50,15 +58,6 @@ export function buildSongMediaLinkDriveName(
   extension: string,
 ): string {
   return buildSongAttachmentDriveName(song, { kind: 'backing' }, extension);
-}
-
-function attachmentCanonicalFolderId(
-  attachment: EncoreSongAttachment,
-  sheetMusicFolderId: string,
-  recordingsFolderId: string,
-): string {
-  if (attachment.kind === 'recording') return recordingsFolderId;
-  return sheetMusicFolderId;
 }
 
 export type SongAttachmentSyncResult = {
@@ -109,56 +108,85 @@ async function ensureAttachmentShortcutInCanonical(
 }
 
 /**
- * Reconcile one attachment: files **inside** the Encore canonical folder are renamed in place.
- * Files **outside** stay put; a shortcut with a canonical name is ensured in the Encore folder.
+ * Reconcile one attachment: ensure the file lives under the **effective** upload folder (saved overrides
+ * or Encore defaults), rename it to the canonical spine, and when overrides place files outside
+ * Encore_App, keep a shortcut with the same name inside the Encore bootstrap folder.
  */
 export async function syncSongAttachmentInDrive(
   accessToken: string,
   song: EncoreSong,
   attachment: EncoreSongAttachment,
-  sheetMusicFolderId: string,
-  recordingsFolderId: string,
+  effectiveFolderId: string,
+  encoreBootstrapFolderId: string,
 ): Promise<SongAttachmentSyncResult> {
-  const canonicalFolder = attachmentCanonicalFolderId(attachment, sheetMusicFolderId, recordingsFolderId);
   const id = attachment.driveFileId?.trim();
   if (!id) return { renamed: false, moved: false };
 
-  const meta = await driveGetFileMetadata(accessToken, id);
-  const parents = meta.parents ?? [];
+  let meta = await driveGetFileMetadata(accessToken, id);
+  let parents = meta.parents ?? [];
   if (parents.length === 0) return { renamed: false, moved: false };
 
-  const targetInCanonical = parents.includes(canonicalFolder);
+  let moved = false;
+  /** Only pull Encore-managed uploads out of the bootstrap folder when an override moves the effective target. */
+  const shouldMoveToEffective =
+    effectiveFolderId !== encoreBootstrapFolderId &&
+    parents.includes(encoreBootstrapFolderId) &&
+    !parents.includes(effectiveFolderId);
+  if (shouldMoveToEffective) {
+    await driveMoveFile(accessToken, id, effectiveFolderId, parents);
+    moved = true;
+    meta = await driveGetFileMetadata(accessToken, id);
+    parents = meta.parents ?? [];
+  }
 
-  if (targetInCanonical) {
+  const inEffective = (meta.parents ?? []).includes(effectiveFolderId);
+
+  if (inEffective) {
     const ext2 = splitFileNameExtension(meta.name ?? '').extension;
-    const desired2 = buildSongAttachmentDriveName(song, attachment, meta.mimeType === SHORTCUT_MIME ? '' : ext2);
+    const desiredBlobName = buildSongAttachmentDriveName(
+      song,
+      attachment,
+      meta.mimeType === SHORTCUT_MIME ? '' : ext2,
+    );
     let renamed = false;
-    if ((meta.name ?? '') !== desired2) {
-      await driveRenameFile(accessToken, id, desired2);
+    if ((meta.name ?? '') !== desiredBlobName) {
+      await driveRenameFile(accessToken, id, desiredBlobName);
       renamed = true;
     }
-    const patch =
-      attachment.encoreShortcutDriveFileId != null
-        ? { encoreShortcutDriveFileId: undefined as string | undefined }
-        : undefined;
-    return { renamed, moved: false, attachmentPatch: patch };
+    if (effectiveFolderId === encoreBootstrapFolderId) {
+      const patch =
+        attachment.encoreShortcutDriveFileId != null
+          ? { encoreShortcutDriveFileId: undefined as string | undefined }
+          : undefined;
+      return { renamed, moved, attachmentPatch: patch };
+    }
+    const { shortcutId, renamedShortcut } = await ensureAttachmentShortcutInCanonical(
+      accessToken,
+      attachment,
+      id,
+      encoreBootstrapFolderId,
+      desiredBlobName,
+    );
+    return {
+      renamed: renamed || renamedShortcut,
+      moved,
+      attachmentPatch: { encoreShortcutDriveFileId: shortcutId },
+    };
   }
 
   const isShortcutBlob = meta.mimeType === SHORTCUT_MIME;
   const { extension } = splitFileNameExtension(meta.name ?? '');
   const desiredName = buildSongAttachmentDriveName(song, attachment, isShortcutBlob ? '' : extension);
-
-  // Target lives outside Encore canonical folder — keep file; shortcut only.
   const { shortcutId, renamedShortcut } = await ensureAttachmentShortcutInCanonical(
     accessToken,
     attachment,
     id,
-    canonicalFolder,
+    encoreBootstrapFolderId,
     desiredName,
   );
   return {
     renamed: renamedShortcut,
-    moved: false,
+    moved,
     attachmentPatch: { encoreShortcutDriveFileId: shortcutId },
   };
 }
@@ -187,41 +215,74 @@ function mergeMediaLinkShortcutPatch(
   };
 }
 
-/** Reference/backing Drive audio: canonical shortcuts live under Encore `recordingsFolderId` (matches default uploads). */
+/** Reference/backing Drive audio: same effective/bootstrap split as attachments. */
 export async function syncDriveMediaLinkInDrive(
   accessToken: string,
   song: Pick<EncoreSong, 'title' | 'artist' | 'performanceKey' | 'id'>,
   link: EncoreMediaLink,
-  recordingsFolderId: string,
+  effectiveFolderId: string,
+  encoreBootstrapFolderId: string,
 ): Promise<DriveMediaLinkSyncResult> {
   if (link.source !== 'drive') return { renamed: false, moved: false };
   const targetId = link.driveFileId?.trim();
   if (!targetId) return { renamed: false, moved: false };
 
-  const meta = await driveGetFileMetadata(accessToken, targetId);
-  const parents = meta.parents ?? [];
+  let meta = await driveGetFileMetadata(accessToken, targetId);
+  let parents = meta.parents ?? [];
   if (parents.length === 0) return { renamed: false, moved: false };
 
-  const targetInCanonical = parents.includes(recordingsFolderId);
+  let moved = false;
+  const shouldMoveToEffective =
+    effectiveFolderId !== encoreBootstrapFolderId &&
+    parents.includes(encoreBootstrapFolderId) &&
+    !parents.includes(effectiveFolderId);
+  if (shouldMoveToEffective) {
+    await driveMoveFile(accessToken, targetId, effectiveFolderId, parents);
+    moved = true;
+    meta = await driveGetFileMetadata(accessToken, targetId);
+    parents = meta.parents ?? [];
+  }
+
+  const inEffective = (meta.parents ?? []).includes(effectiveFolderId);
+
+  if (inEffective) {
+    const isShortcut = meta.mimeType === SHORTCUT_MIME;
+    const { extension } = splitFileNameExtension(meta.name ?? '');
+    const desiredName = buildSongMediaLinkDriveName(song, isShortcut ? '' : extension);
+    let renamed = false;
+    if ((meta.name ?? '') !== desiredName) {
+      await driveRenameFile(accessToken, targetId, desiredName);
+      renamed = true;
+    }
+    if (effectiveFolderId === encoreBootstrapFolderId) {
+      const patch =
+        link.encoreShortcutDriveFileId != null
+          ? { encoreShortcutDriveFileId: undefined as string | undefined }
+          : undefined;
+      return { renamed, moved, linkPatch: patch };
+    }
+    const fauxAtt: EncoreSongAttachment = {
+      kind: 'backing',
+      driveFileId: targetId,
+      encoreShortcutDriveFileId: link.encoreShortcutDriveFileId,
+    };
+    const { shortcutId, renamedShortcut } = await ensureAttachmentShortcutInCanonical(
+      accessToken,
+      fauxAtt,
+      targetId,
+      encoreBootstrapFolderId,
+      desiredName,
+    );
+    return {
+      renamed: renamed || renamedShortcut,
+      moved,
+      linkPatch: { encoreShortcutDriveFileId: shortcutId },
+    };
+  }
+
   const isShortcut = meta.mimeType === SHORTCUT_MIME;
   const { extension } = splitFileNameExtension(meta.name ?? '');
   const desiredName = buildSongMediaLinkDriveName(song, isShortcut ? '' : extension);
-
-  if (targetInCanonical) {
-    const ext2 = splitFileNameExtension(meta.name ?? '').extension;
-    const desired2 = buildSongMediaLinkDriveName(song, meta.mimeType === SHORTCUT_MIME ? '' : ext2);
-    let renamed = false;
-    if ((meta.name ?? '') !== desired2) {
-      await driveRenameFile(accessToken, targetId, desired2);
-      renamed = true;
-    }
-    const patch =
-      link.encoreShortcutDriveFileId != null
-        ? { encoreShortcutDriveFileId: undefined as string | undefined }
-        : undefined;
-    return { renamed, moved: false, linkPatch: patch };
-  }
-
   const fauxAtt: EncoreSongAttachment = {
     kind: 'backing',
     driveFileId: targetId,
@@ -231,18 +292,36 @@ export async function syncDriveMediaLinkInDrive(
     accessToken,
     fauxAtt,
     targetId,
-    recordingsFolderId,
+    encoreBootstrapFolderId,
     desiredName,
   );
   return {
     renamed: renamedShortcut,
-    moved: false,
+    moved,
     linkPatch: { encoreShortcutDriveFileId: shortcutId },
   };
 }
 
+function requireFolderPair(
+  kind: EncoreDriveUploadFolderKind,
+  meta: Parameters<typeof resolveDriveUploadFolderId>[1],
+  overrides: EncoreDriveUploadFolderOverrides | null | undefined,
+): { effective: string; bootstrap: string } {
+  const effective = resolveDriveUploadFolderId(kind, meta, overrides);
+  const bootstrap = resolveDriveUploadFolderId(kind, meta, {});
+  if (!effective || !bootstrap) {
+    throw new Error(
+      `${kind} folder missing; open Encore after signing in to Google so Drive layout syncs.`,
+    );
+  }
+  return { effective, bootstrap };
+}
+
 /** Reorganize every Drive-backed song attachment (charts, backing tracks, recordings). */
-export async function reorganizeAllSongAttachments(accessToken: string): Promise<{
+export async function reorganizeAllSongAttachments(
+  accessToken: string,
+  driveUploadFolderOverrides?: EncoreDriveUploadFolderOverrides | null,
+): Promise<{
   renamed: number;
   moved: number;
   skipped: number;
@@ -253,7 +332,12 @@ export async function reorganizeAllSongAttachments(accessToken: string): Promise
   if (!meta.sheetMusicFolderId || !meta.recordingsFolderId) {
     throw new Error('Sheet music or recordings folder missing; open Encore after signing in to Google so Drive layout syncs.');
   }
-  const { sheetMusicFolderId, recordingsFolderId } = meta;
+
+  const ov = driveUploadFolderOverrides ?? undefined;
+  const charts = requireFolderPair('charts', meta, ov);
+  const takes = requireFolderPair('takes', meta, ov);
+  const referenceTracks = requireFolderPair('referenceTracks', meta, ov);
+  const backingTracks = requireFolderPair('backingTracks', meta, ov);
 
   const songs = await encoreDb.songs.toArray();
   let renamed = 0;
@@ -274,12 +358,13 @@ export async function reorganizeAllSongAttachments(accessToken: string): Promise
         }
         try {
           const hadShortcut = Boolean(att.encoreShortcutDriveFileId?.trim());
+          const pair = att.kind === 'chart' ? charts : takes;
           const r = await syncSongAttachmentInDrive(
             accessToken,
             nextSong,
             att,
-            sheetMusicFolderId,
-            recordingsFolderId,
+            pair.effective,
+            pair.bootstrap,
           );
           if (r.attachmentPatch) {
             nextSong = mergeAttachmentShortcutPatch(nextSong, att.driveFileId, r.attachmentPatch);
@@ -299,14 +384,21 @@ export async function reorganizeAllSongAttachments(accessToken: string): Promise
         if (link.source !== 'drive' || !link.driveFileId?.trim()) continue;
         try {
           const hadShortcut = Boolean(link.encoreShortcutDriveFileId?.trim());
-          const r = await syncDriveMediaLinkInDrive(accessToken, nextSong, link, recordingsFolderId);
+          const r = await syncDriveMediaLinkInDrive(
+            accessToken,
+            nextSong,
+            link,
+            referenceTracks.effective,
+            referenceTracks.bootstrap,
+          );
           if (r.linkPatch) {
             nextSong = mergeMediaLinkShortcutPatch(nextSong, link.id, r.linkPatch, 'reference');
             touched = true;
             if (!hadShortcut && r.linkPatch.encoreShortcutDriveFileId) shortcutsCreated += 1;
           }
           if (r.renamed) renamed += 1;
-          if (!r.renamed && !r.linkPatch) skipped += 1;
+          if (r.moved) moved += 1;
+          if (!r.renamed && !r.moved && !r.linkPatch) skipped += 1;
         } catch {
           errors += 1;
         }
@@ -316,14 +408,21 @@ export async function reorganizeAllSongAttachments(accessToken: string): Promise
         if (link.source !== 'drive' || !link.driveFileId?.trim()) continue;
         try {
           const hadShortcut = Boolean(link.encoreShortcutDriveFileId?.trim());
-          const r = await syncDriveMediaLinkInDrive(accessToken, nextSong, link, recordingsFolderId);
+          const r = await syncDriveMediaLinkInDrive(
+            accessToken,
+            nextSong,
+            link,
+            backingTracks.effective,
+            backingTracks.bootstrap,
+          );
           if (r.linkPatch) {
             nextSong = mergeMediaLinkShortcutPatch(nextSong, link.id, r.linkPatch, 'backing');
             touched = true;
             if (!hadShortcut && r.linkPatch.encoreShortcutDriveFileId) shortcutsCreated += 1;
           }
           if (r.renamed) renamed += 1;
-          if (!r.renamed && !r.linkPatch) skipped += 1;
+          if (r.moved) moved += 1;
+          if (!r.renamed && !r.moved && !r.linkPatch) skipped += 1;
         } catch {
           errors += 1;
         }

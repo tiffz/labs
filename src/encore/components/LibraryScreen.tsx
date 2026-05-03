@@ -14,7 +14,9 @@ import SearchIcon from '@mui/icons-material/Search';
 import GraphicEqIcon from '@mui/icons-material/GraphicEq';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
+import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
+import Divider from '@mui/material/Divider';
 import Link from '@mui/material/Link';
 import List from '@mui/material/List';
 import ListItemButton from '@mui/material/ListItemButton';
@@ -34,6 +36,7 @@ import InputAdornment from '@mui/material/InputAdornment';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
+import Snackbar from '@mui/material/Snackbar';
 import Autocomplete from '@mui/material/Autocomplete';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
@@ -68,6 +71,9 @@ import {
 } from '../routes/encoreAppHash';
 import { encoreNoAlbumArtIconSx, encoreNoAlbumArtSurfaceSx } from '../utils/encoreNoAlbumArtSurface';
 import { useEncore } from '../context/EncoreContext';
+import { useEncoreBlockingJobs } from '../context/EncoreBlockingJobContext';
+import { ensureSpotifyAccessToken } from '../spotify/pkce';
+import { fetchSpotifyTrack, spotifyTrackTitleAndArtist } from '../spotify/spotifyApi';
 import {
   encoreDialogActionsSx,
   encoreDialogContentSx,
@@ -747,8 +753,11 @@ export function LibraryScreen(): React.ReactElement {
     deletePerformance,
     googleAccessToken,
     spotifyLinked,
+    connectSpotify,
     effectiveDisplayName,
   } = useEncore();
+  const { withBlockingJob } = useEncoreBlockingJobs();
+  const spotifyClientId = (import.meta.env.VITE_SPOTIFY_CLIENT_ID as string | undefined)?.trim() ?? '';
   const [importOpen, setImportOpen] = useState(false);
   const [importPlacement, setImportPlacement] = useState<'reference' | 'backing'>('reference');
   const [addSongOpen, setAddSongOpen] = useState(false);
@@ -778,6 +787,8 @@ export function LibraryScreen(): React.ReactElement {
   const [bulkTagOpen, setBulkTagOpen] = useState(false);
   const [bulkTagInput, setBulkTagInput] = useState('');
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkRefreshSpotifyOpen, setBulkRefreshSpotifyOpen] = useState(false);
+  const [bulkSpotifyRefreshToast, setBulkSpotifyRefreshToast] = useState<null | { message: string; severity: 'success' | 'error' }>(null);
   const [bulkOverflowAnchor, setBulkOverflowAnchor] = useState<HTMLElement | null>(null);
 
   const extrasRef = useRef(repertoireExtras);
@@ -1338,6 +1349,76 @@ export function LibraryScreen(): React.ReactElement {
     setBulkDeleteOpen(false);
     setRowSelection({});
   }, [bulkDeleteSongs, selectedSongIds]);
+
+  const bulkSpotifyRefreshPlan = useMemo(() => {
+    const rows = tableData.filter((row) => selectedSongIds.has(row.song.id));
+    const eligibleCount = rows.filter((r) => Boolean(r.song.spotifyTrackId?.trim())).length;
+    return {
+      total: rows.length,
+      eligibleCount,
+      skippedNoSource: rows.length - eligibleCount,
+    };
+  }, [tableData, selectedSongIds]);
+
+  const runBulkRefreshSpotifyMetadata = useCallback(async () => {
+    const eligible = tableData
+      .filter((row) => selectedSongIds.has(row.song.id))
+      .map((r) => r.song)
+      .filter((s) => Boolean(s.spotifyTrackId?.trim()));
+    if (!spotifyClientId || eligible.length === 0) {
+      setBulkRefreshSpotifyOpen(false);
+      return;
+    }
+    setBulkRefreshSpotifyOpen(false);
+    try {
+      const message = await withBlockingJob('Refreshing song info from Spotify…', async (setProgress) => {
+        const token = await ensureSpotifyAccessToken(spotifyClientId);
+        if (!token) {
+          throw new Error('Connect Spotify from the Account menu, then try again.');
+        }
+        const toSave: EncoreSong[] = [];
+        let unchanged = 0;
+        let errors = 0;
+        const n = eligible.length;
+        for (let i = 0; i < n; i++) {
+          const song = eligible[i]!;
+          const trackId = song.spotifyTrackId!.trim();
+          setProgress(n <= 1 ? null : (i + 1) / n);
+          try {
+            const track = await fetchSpotifyTrack(token, trackId);
+            const { title, artist } = spotifyTrackTitleAndArtist(track);
+            if (title === song.title.trim() && artist === song.artist.trim()) {
+              unchanged += 1;
+            } else {
+              toSave.push({
+                ...song,
+                title,
+                artist,
+                updatedAt: new Date().toISOString(),
+              });
+            }
+          } catch {
+            errors += 1;
+          }
+        }
+        setProgress(1);
+        if (toSave.length > 0) {
+          await bulkSaveSongs(toSave);
+        }
+        const parts: string[] = [];
+        if (toSave.length > 0) parts.push(`Updated ${toSave.length} song${toSave.length === 1 ? '' : 's'}`);
+        if (unchanged > 0) parts.push(`${unchanged} already matched Spotify`);
+        if (errors > 0) parts.push(`${errors} could not be fetched`);
+        return parts.join(' · ') || 'No changes.';
+      });
+      setBulkSpotifyRefreshToast({ message, severity: 'success' });
+    } catch (e) {
+      setBulkSpotifyRefreshToast({
+        message: e instanceof Error ? e.message : String(e),
+        severity: 'error',
+      });
+    }
+  }, [tableData, selectedSongIds, spotifyClientId, withBlockingJob, bulkSaveSongs]);
 
   const columns = useMemo<MRT_ColumnDef<EncoreRepertoireMrtRow>[]>(
     () => [
@@ -2471,6 +2552,15 @@ export function LibraryScreen(): React.ReactElement {
             <MenuItem
               onClick={() => {
                 setBulkOverflowAnchor(null);
+                setBulkRefreshSpotifyOpen(true);
+              }}
+            >
+              Refresh song info from Spotify…
+            </MenuItem>
+            <Divider />
+            <MenuItem
+              onClick={() => {
+                setBulkOverflowAnchor(null);
                 setBulkDeleteOpen(true);
               }}
               sx={{ color: 'error.main' }}
@@ -2674,6 +2764,65 @@ export function LibraryScreen(): React.ReactElement {
         }}
       />
 
+      <Dialog open={bulkRefreshSpotifyOpen} onClose={() => setBulkRefreshSpotifyOpen(false)} fullWidth maxWidth="sm">
+        <DialogTitle sx={encoreDialogTitleSx}>Refresh song info from Spotify</DialogTitle>
+        <DialogContent sx={encoreDialogContentSx}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, lineHeight: 1.55 }}>
+            Overwrites <strong>title</strong> and <strong>artist</strong> on each selected song using the linked Spotify
+            track’s catalog metadata. Songs without a Spotify source on file are skipped.
+          </Typography>
+          <Typography variant="body2" sx={{ mb: 1.5 }}>
+            Selected: <strong>{bulkSpotifyRefreshPlan.total}</strong> — will refresh{' '}
+            <strong>{bulkSpotifyRefreshPlan.eligibleCount}</strong> with a Spotify id
+            {bulkSpotifyRefreshPlan.skippedNoSource > 0 ? (
+              <>
+                {' '}
+                (<strong>{bulkSpotifyRefreshPlan.skippedNoSource}</strong> skipped, no Spotify source)
+              </>
+            ) : null}
+            .
+          </Typography>
+          {!spotifyClientId ? (
+            <Alert severity="warning" sx={{ mb: 1.5 }}>
+              Spotify is not configured for this build (<code>VITE_SPOTIFY_CLIENT_ID</code>).
+            </Alert>
+          ) : null}
+          {spotifyClientId && !spotifyLinked ? (
+            <Alert severity="info" sx={{ mb: 1.5 }}>
+              Connect Spotify from the Account menu so Encore can read track metadata.
+            </Alert>
+          ) : null}
+          {bulkSpotifyRefreshPlan.eligibleCount === 0 ? (
+            <Alert severity="info">None of the selected rows have a Spotify source to refresh.</Alert>
+          ) : null}
+        </DialogContent>
+        <DialogActions sx={encoreDialogActionsSx}>
+          <Button onClick={() => setBulkRefreshSpotifyOpen(false)}>Cancel</Button>
+          {spotifyClientId && !spotifyLinked ? (
+            <Button
+              variant="outlined"
+              onClick={() => {
+                setBulkRefreshSpotifyOpen(false);
+                void connectSpotify();
+              }}
+            >
+              Connect Spotify
+            </Button>
+          ) : null}
+          <Button
+            variant="contained"
+            onClick={() => void runBulkRefreshSpotifyMetadata()}
+            disabled={
+              !spotifyClientId ||
+              !spotifyLinked ||
+              bulkSpotifyRefreshPlan.eligibleCount === 0
+            }
+          >
+            Refresh
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <Dialog open={bulkTagOpen} onClose={() => setBulkTagOpen(false)} fullWidth maxWidth="xs">
         <DialogTitle sx={encoreDialogTitleSx}>Add tag to {selectedSongIds.size} songs</DialogTitle>
         <DialogContent sx={encoreDialogContentSx}>
@@ -2725,6 +2874,21 @@ export function LibraryScreen(): React.ReactElement {
           </Button>
         </DialogActions>
       </Dialog>
+      <Snackbar
+        open={Boolean(bulkSpotifyRefreshToast)}
+        autoHideDuration={10_000}
+        onClose={() => setBulkSpotifyRefreshToast(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setBulkSpotifyRefreshToast(null)}
+          severity={bulkSpotifyRefreshToast?.severity ?? 'success'}
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {bulkSpotifyRefreshToast?.message ?? ''}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

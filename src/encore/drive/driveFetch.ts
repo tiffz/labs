@@ -486,6 +486,46 @@ export async function driveRenameFile(
 }
 
 /**
+ * Move a file so it is filed under `newParentId`. Removes prior parent folder ids except any that
+ * already match `newParentId`. Uses Drive `addParents` / `removeParents` (v3).
+ */
+export async function driveMoveFile(
+  accessToken: string,
+  fileId: string,
+  newParentId: string,
+  previousParentIds: string[],
+): Promise<void> {
+  const toRemove = previousParentIds.filter((p) => p !== newParentId);
+  if (previousParentIds.length === 1 && previousParentIds[0] === newParentId) {
+    return;
+  }
+  if (toRemove.length === 0 && previousParentIds.includes(newParentId)) {
+    return;
+  }
+  const params = new URLSearchParams({
+    supportsAllDrives: 'true',
+    fields: 'id',
+    addParents: newParentId,
+  });
+  if (toRemove.length > 0) {
+    params.set('removeParents', toRemove.join(','));
+  }
+  const res = await fetch(
+    `${DRIVE_BASE}/files/${encodeURIComponent(fileId)}?${params.toString()}`,
+    {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
+  );
+  if (!res.ok) {
+    const text = await res.text();
+    throw new DriveHttpError(formatDriveRequestFailure('PATCH', 'files (move)', res.status, text), res.status, text);
+  }
+}
+
+/**
  * Returns true when the file has at least one `type:'anyone'` reader permission.
  * Caller must hold a token with `drive.metadata.readonly` (or `drive` / `drive.file` if owned/shared with app).
  */

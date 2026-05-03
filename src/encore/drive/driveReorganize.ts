@@ -1,3 +1,5 @@
+import { encoreDb } from '../db/encoreDb';
+import { defaultRepertoireExtrasRow } from './repertoireWire';
 import { ensureEncoreDriveLayout } from './bootstrapFolders';
 import { reorganizeAllPerformanceVideos } from './performanceShortcut';
 import { reorganizeAllSongAttachments } from './songAttachmentOrganize';
@@ -24,9 +26,11 @@ export type ReorganizeDriveUploadsResult = {
  */
 export async function reorganizeAllDriveUploads(accessToken: string): Promise<ReorganizeDriveUploadsResult> {
   await ensureEncoreDriveLayout(accessToken);
+  const extras = (await encoreDb.repertoireExtras.get('default')) ?? defaultRepertoireExtrasRow(new Date().toISOString());
+  const overrides = extras.driveUploadFolderOverrides;
   const [performanceVideos, attachments] = await Promise.all([
-    reorganizeAllPerformanceVideos(accessToken),
-    reorganizeAllSongAttachments(accessToken),
+    reorganizeAllPerformanceVideos(accessToken, overrides),
+    reorganizeAllSongAttachments(accessToken, overrides),
   ]);
   return { performanceVideos, attachments };
 }

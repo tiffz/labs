@@ -4,6 +4,7 @@ import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Checkbox from '@mui/material/Checkbox';
+import Chip from '@mui/material/Chip';
 import Divider from '@mui/material/Divider';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import IconButton from '@mui/material/IconButton';
@@ -280,10 +281,14 @@ export function RepertoireSettingsScreen(): ReactElement {
           Optional overrides send new uploads to folders you choose; Encore adds shortcuts with canonical names inside its
           own folders where needed.
         </Typography>
+        <Alert severity="info" sx={{ mb: 2, py: 0.75 }} variant="outlined">
+          Folder paths here are a <strong>draft</strong> until you save them. New uploads and <strong>Organize Drive</strong>{' '}
+          use the <strong>saved</strong> folder on each row — not the clipboard or picker selection by itself.
+        </Alert>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2, lineHeight: 1.55 }}>
-          For each row below: paste a folder link or id and choose <strong>Set folder</strong>, or use{' '}
-          <strong>Pick folder in Drive</strong> — that path needs the Google Picker API and a browser API key configured
-          (see Encore README).
+          Paste a folder link or id, pick a folder, then tap <strong>Save folder</strong> for that row. Saving checks the
+          folder with Google and writes it to your Encore library settings. <strong>Pick folder in Drive</strong> needs the
+          Google Picker API and a browser API key configured (see Encore README).
         </Typography>
         {!googleAccessToken ? (
           <Typography variant="body2" color="text.secondary">
@@ -303,6 +308,7 @@ export function RepertoireSettingsScreen(): ReactElement {
               const draft = folderDraftByKind[kind];
               const folderFieldValue = draft !== undefined ? draft : (overrideId ?? '');
               const rowBusy = folderApplyBusyKind === kind;
+              const rowDirty = draft !== undefined;
               return (
                 <Stack key={kind} spacing={1.25}>
                   <Stack
@@ -312,9 +318,14 @@ export function RepertoireSettingsScreen(): ReactElement {
                     justifyContent="space-between"
                   >
                     <Box sx={{ minWidth: 0, flex: '1 1 auto' }}>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        {label}
-                      </Typography>
+                      <Stack direction="row" alignItems="center" spacing={0.75} flexWrap="wrap" useFlexGap>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {label}
+                        </Typography>
+                        {rowDirty ? (
+                          <Chip size="small" label="Unsaved" color="warning" variant="outlined" sx={{ height: 22 }} />
+                        ) : null}
+                      </Stack>
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
                         {status}
                       </Typography>
@@ -332,7 +343,14 @@ export function RepertoireSettingsScreen(): ReactElement {
                   <EncoreDriveFolderPasteOrBrowseBlock
                     value={folderFieldValue}
                     onChange={(v) => {
-                      setFolderDraftByKind((prev) => ({ ...prev, [kind]: v }));
+                      const trimmed = v.trim();
+                      const saved = (overrideId ?? '').trim();
+                      setFolderDraftByKind((prev) => {
+                        const next = { ...prev };
+                        if (trimmed === saved) delete next[kind];
+                        else next[kind] = v;
+                        return next;
+                      });
                       setFolderRowError((prev) => {
                         const next = { ...prev };
                         delete next[kind];
@@ -346,10 +364,10 @@ export function RepertoireSettingsScreen(): ReactElement {
                         size="small"
                         variant="contained"
                         onClick={() => void applyDriveUploadFolderFromInput(kind)}
-                        disabled={rowBusy || !folderFieldValue.trim() || !googleAccessToken}
+                        disabled={rowBusy || !rowDirty || !folderFieldValue.trim() || !googleAccessToken}
                         sx={{ textTransform: 'none' }}
                       >
-                        Set folder
+                        Save folder
                       </Button>
                     }
                   />

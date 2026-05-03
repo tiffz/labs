@@ -73,7 +73,7 @@ function cloneRow<T>(value: T): T {
 
 export function EncoreActionsProvider({ children }: { children: ReactNode }): ReactElement {
   const { googleAccessToken } = useEncoreAuth();
-  const { effectiveDisplayName } = useEncoreLibrary();
+  const { effectiveDisplayName, repertoireExtras } = useEncoreLibrary();
   const { scheduleBackgroundSync } = useEncoreSync();
   const { withBlockingJob } = useEncoreBlockingJobs();
   const { push: pushUndo, isReplayingRef } = useLabsUndo();
@@ -96,7 +96,7 @@ export function EncoreActionsProvider({ children }: { children: ReactNode }): Re
               songPerformances
                 .filter((p) => p.videoShortcutDriveFileId || p.videoTargetDriveFileId)
                 .map((p) =>
-                  syncPerformanceVideoFileName(googleAccessToken, p, synced).catch((err) => {
+                  syncPerformanceVideoFileName(googleAccessToken, p, synced, repertoireExtras.driveUploadFolderOverrides).catch((err) => {
                     serverLogger.warn('encore.saveSong: video rename failed', err);
                   }),
                 ),
@@ -127,7 +127,7 @@ export function EncoreActionsProvider({ children }: { children: ReactNode }): Re
         });
       }
     },
-    [googleAccessToken, isReplayingRef, pushUndo, scheduleBackgroundSync],
+    [googleAccessToken, isReplayingRef, pushUndo, repertoireExtras.driveUploadFolderOverrides, scheduleBackgroundSync],
   );
 
   const deleteSong = useCallback(
@@ -210,7 +210,7 @@ export function EncoreActionsProvider({ children }: { children: ReactNode }): Re
         void (async () => {
           try {
             const song = (await encoreDb.songs.get(p.songId)) ?? null;
-            const result = await syncPerformanceVideo(googleAccessToken, p, song);
+            const result = await syncPerformanceVideo(googleAccessToken, p, song, repertoireExtras.driveUploadFolderOverrides);
             if (result.shortcutCreatedId && result.shortcutCreatedId !== p.videoShortcutDriveFileId) {
               await encoreDb.performances.put({
                 ...p,
@@ -225,7 +225,7 @@ export function EncoreActionsProvider({ children }: { children: ReactNode }): Re
         })();
       }
     },
-    [googleAccessToken, isReplayingRef, pushUndo, scheduleBackgroundSync],
+    [googleAccessToken, isReplayingRef, pushUndo, repertoireExtras.driveUploadFolderOverrides, scheduleBackgroundSync],
   );
 
   const deletePerformance = useCallback(

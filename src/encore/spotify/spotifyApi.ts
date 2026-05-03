@@ -141,6 +141,14 @@ export interface SpotifySearchTrack {
   album: { images: Array<{ url: string; height: number }> };
 }
 
+/** Title and primary artist line for repertoire rows (same labeling as playlist import). */
+export function spotifyTrackTitleAndArtist(track: SpotifySearchTrack): { title: string; artist: string } {
+  return {
+    title: track.name?.trim() || 'Untitled',
+    artist: track.artists?.map((a) => a.name).join(', ').trim() || 'Unknown artist',
+  };
+}
+
 export interface SpotifyPlaylistTrackRow {
   trackId: string;
   title: string;

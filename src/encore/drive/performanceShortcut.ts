@@ -1,18 +1,23 @@
-import type { EncorePerformance, EncoreSong } from '../types';
-import { driveCreateShortcut, driveGetFileMetadata, driveRenameFile } from './driveFetch';
+import type { EncoreDriveUploadFolderOverrides, EncorePerformance, EncoreSong } from '../types';
+import { driveCreateShortcut, driveGetFileMetadata, driveMoveFile, driveRenameFile } from './driveFetch';
 import { encoreDb, getSyncMeta } from '../db/encoreDb';
 import { buildPerformanceVideoName, splitFileNameExtension } from './performanceVideoNaming';
+import { resolveDriveUploadFolderId } from './resolveDriveUploadFolder';
+
+const SHORTCUT_MIME = 'application/vnd.google-apps.shortcut';
 
 export async function createPerformanceVideoShortcut(
   accessToken: string,
   targetDriveFileId: string,
   shortcutName: string,
+  shortcutParentFolderId?: string,
 ): Promise<string> {
   const meta = await getSyncMeta();
-  if (!meta.performancesFolderId) {
+  const parent = shortcutParentFolderId?.trim() || meta.performancesFolderId;
+  if (!parent) {
     throw new Error('Performances folder missing; sync Drive first.');
   }
-  const created = await driveCreateShortcut(accessToken, shortcutName, meta.performancesFolderId, targetDriveFileId);
+  const created = await driveCreateShortcut(accessToken, shortcutName, parent, targetDriveFileId);
   return created.id;
 }
 
@@ -30,10 +35,11 @@ export interface PerformanceVideoSyncResult {
 /**
  * Reconcile the Drive footprint of a performance video:
  *
- * - If `videoTargetDriveFileId` is set and the target lives **outside** the Performances
- *   folder (Drive-picked file), ensure a shortcut to it exists in `Encore_App/Performances`.
- * - If the target lives **inside** the Performances folder (uploaded directly), no
- *   shortcut is needed; we leave the file as-is.
+ * - When upload-folder overrides move the effective performances folder, Encore-managed files
+ *   still sitting under `Encore_App/Performances` are **moved** into that folder; a shortcut remains
+ *   in the Encore folder when the video no longer lives there.
+ * - If `videoTargetDriveFileId` is set and the target lives **outside** the Encore_App Performances
+ *   folder (Drive-picked file), ensure a shortcut to it exists there.
  * - Rename the shortcut (or in-folder upload) to `YYYY-MM-DD - Title - Artist` (venue is not in the filename;
  *   use Drive folder names during bulk import). Drive stays organized as metadata evolves.
  *
@@ -43,9 +49,15 @@ export async function syncPerformanceVideo(
   accessToken: string,
   performance: EncorePerformance,
   song: EncoreSong | null,
+  driveUploadFolderOverrides?: EncoreDriveUploadFolderOverrides | null,
 ): Promise<PerformanceVideoSyncResult> {
   const meta = await getSyncMeta();
-  if (!meta.performancesFolderId) return { renamed: false };
+  const bootstrapPerf = meta.performancesFolderId?.trim();
+  if (!bootstrapPerf) return { renamed: false };
+
+  const effectivePerf =
+    resolveDriveUploadFolderId('performances', meta, driveUploadFolderOverrides ?? undefined)?.trim() ||
+    bootstrapPerf;
 
   let renamed = false;
   let shortcutCreatedId: string | undefined;
@@ -61,26 +73,42 @@ export async function syncPerformanceVideo(
       /* target may no longer be reachable; we'll skip shortcut work below */
     }
   }
-  const targetParents = targetMeta?.parents ?? [];
-  const targetInPerformancesFolder = targetParents.includes(meta.performancesFolderId);
 
-  // Create a missing shortcut for picked-from-Drive videos that live elsewhere.
-  if (!shortcutIdFromState && targetId && targetMeta && !targetInPerformancesFolder) {
+  if (targetId && targetMeta && targetMeta.mimeType !== SHORTCUT_MIME) {
+    const parents = targetMeta.parents ?? [];
+    const shouldMoveToEffective =
+      effectivePerf !== bootstrapPerf &&
+      parents.includes(bootstrapPerf) &&
+      !parents.includes(effectivePerf);
+    if (shouldMoveToEffective) {
+      try {
+        await driveMoveFile(accessToken, targetId, effectivePerf, parents);
+        targetMeta = await driveGetFileMetadata(accessToken, targetId);
+      } catch {
+        /* leave file location if move fails */
+      }
+    }
+  }
+
+  const targetParents = targetMeta?.parents ?? [];
+  const targetInBootstrap =
+    Boolean(targetId && targetMeta && targetMeta.mimeType !== SHORTCUT_MIME && targetParents.includes(bootstrapPerf));
+
+  if (!shortcutIdFromState && targetId && targetMeta && targetMeta.mimeType !== SHORTCUT_MIME && !targetInBootstrap) {
     try {
       const desired = buildPerformanceVideoName(performance, song, '');
-      shortcutCreatedId = (await createPerformanceVideoShortcut(accessToken, targetId, desired));
+      shortcutCreatedId = await createPerformanceVideoShortcut(accessToken, targetId, desired, bootstrapPerf);
     } catch {
       /* shortcut creation is best-effort */
     }
   }
 
-  // Rename the shortcut (existing or newly created) to match the canonical name.
   const shortcutId = shortcutIdFromState ?? shortcutCreatedId;
   if (shortcutId) {
     try {
       const m = await driveGetFileMetadata(accessToken, shortcutId);
-      const livesInPerformancesFolder = (m.parents ?? []).includes(meta.performancesFolderId);
-      if (livesInPerformancesFolder) {
+      const livesInBootstrap = (m.parents ?? []).includes(bootstrapPerf);
+      if (livesInBootstrap) {
         const desired = buildPerformanceVideoName(performance, song, '');
         if ((m.name ?? '') !== desired) {
           await driveRenameFile(accessToken, shortcutId, desired);
@@ -92,16 +120,19 @@ export async function syncPerformanceVideo(
     }
   }
 
-  // Rename the actual file if Encore owns it (uploaded directly into the Performances folder).
-  if (targetId && targetMeta && targetInPerformancesFolder && targetId !== shortcutId) {
-    const { extension } = splitFileNameExtension(targetMeta.name ?? '');
-    const desired = buildPerformanceVideoName(performance, song, extension);
-    if ((targetMeta.name ?? '') !== desired) {
-      try {
-        await driveRenameFile(accessToken, targetId, desired);
-        renamed = true;
-      } catch {
-        /* leave the file alone if rename fails */
+  if (targetId && targetMeta && targetMeta.mimeType !== SHORTCUT_MIME) {
+    const tp = targetMeta.parents ?? [];
+    const targetInEffective = tp.includes(effectivePerf);
+    if (targetInEffective && targetId !== shortcutId) {
+      const { extension } = splitFileNameExtension(targetMeta.name ?? '');
+      const desired = buildPerformanceVideoName(performance, song, extension);
+      if ((targetMeta.name ?? '') !== desired) {
+        try {
+          await driveRenameFile(accessToken, targetId, desired);
+          renamed = true;
+        } catch {
+          /* leave the file alone if rename fails */
+        }
       }
     }
   }
@@ -114,8 +145,9 @@ export async function syncPerformanceVideoFileName(
   accessToken: string,
   performance: EncorePerformance,
   song: EncoreSong | null,
+  driveUploadFolderOverrides?: EncoreDriveUploadFolderOverrides | null,
 ): Promise<boolean> {
-  const r = await syncPerformanceVideo(accessToken, performance, song);
+  const r = await syncPerformanceVideo(accessToken, performance, song, driveUploadFolderOverrides);
   return r.renamed;
 }
 
@@ -124,7 +156,10 @@ export async function syncPerformanceVideoFileName(
  * AND create any missing shortcuts. Useful as a one-shot "Reorganize my performance videos"
  * action when the user updates many songs at once or wants to migrate older entries.
  */
-export async function reorganizeAllPerformanceVideos(accessToken: string): Promise<{
+export async function reorganizeAllPerformanceVideos(
+  accessToken: string,
+  driveUploadFolderOverrides?: EncoreDriveUploadFolderOverrides | null,
+): Promise<{
   renamed: number;
   skipped: number;
   errors: number;
@@ -144,7 +179,12 @@ export async function reorganizeAllPerformanceVideos(accessToken: string): Promi
       continue;
     }
     try {
-      const result = await syncPerformanceVideo(accessToken, p, songsById.get(p.songId) ?? null);
+      const result = await syncPerformanceVideo(
+        accessToken,
+        p,
+        songsById.get(p.songId) ?? null,
+        driveUploadFolderOverrides,
+      );
       if (result.shortcutCreatedId) {
         shortcutsCreated += 1;
         await encoreDb.performances.put({

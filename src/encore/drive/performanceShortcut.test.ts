@@ -5,6 +5,7 @@ import type { EncorePerformance, EncoreSong } from '../types';
 vi.mock('./driveFetch', () => ({
   driveCreateShortcut: vi.fn(),
   driveGetFileMetadata: vi.fn(),
+  driveMoveFile: vi.fn(),
   driveRenameFile: vi.fn(),
 }));
 
@@ -19,6 +20,7 @@ vi.mock('../db/encoreDb', () => ({
 import {
   driveCreateShortcut,
   driveGetFileMetadata,
+  driveMoveFile,
   driveRenameFile,
 } from './driveFetch';
 import { encoreDb, getSyncMeta } from '../db/encoreDb';
@@ -62,6 +64,46 @@ beforeEach(() => {
 });
 
 describe('syncPerformanceVideo', () => {
+  it('moves in-folder uploads into a performances override folder, then ensures an Encore_App shortcut', async () => {
+    const OVERRIDE = 'custom-perf';
+    const targetId = 'target-1';
+    (driveGetFileMetadata as any)
+      .mockResolvedValueOnce({
+        id: targetId,
+        name: 'orig.mp4',
+        parents: [PERF_FOLDER],
+        mimeType: 'video/mp4',
+      })
+      .mockResolvedValueOnce({
+        id: targetId,
+        name: 'orig.mp4',
+        parents: [OVERRIDE],
+        mimeType: 'video/mp4',
+      })
+      .mockResolvedValueOnce({
+        id: 'newShortcut',
+        name: '2025-08-15 - Hey Jude - The Beatles',
+        parents: [PERF_FOLDER],
+      });
+    (driveMoveFile as any).mockResolvedValueOnce(undefined);
+    (driveCreateShortcut as any).mockResolvedValueOnce({ id: 'newShortcut' });
+
+    await syncPerformanceVideo(
+      'tok',
+      perf({ videoTargetDriveFileId: targetId }),
+      song(),
+      { performances: OVERRIDE },
+    );
+
+    expect(driveMoveFile).toHaveBeenCalledWith('tok', targetId, OVERRIDE, [PERF_FOLDER]);
+    expect(driveCreateShortcut).toHaveBeenCalledWith(
+      'tok',
+      '2025-08-15 - Hey Jude - The Beatles',
+      PERF_FOLDER,
+      targetId,
+    );
+  });
+
   it('returns no-op when Drive folder is missing', async () => {
     (getSyncMeta as any).mockResolvedValueOnce({ id: 'default' });
     const result = await syncPerformanceVideo('tok', perf(), song());

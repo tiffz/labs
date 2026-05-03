@@ -137,7 +137,9 @@ export function EncoreAccountMenu(props: {
             ? `renamed ${pv.renamed} performance video${pv.renamed === 1 ? '' : 's'}`
             : null,
           at.renamed > 0 ? `renamed ${at.renamed} chart/recording file${at.renamed === 1 ? '' : 's'}` : null,
-          at.moved > 0 ? `moved ${at.moved} file${at.moved === 1 ? '' : 's'} into Encore folders` : null,
+          at.moved > 0
+            ? `moved ${at.moved} Encore-managed file${at.moved === 1 ? '' : 's'} to your saved folder targets`
+            : null,
           created > 0 ? `created ${created} video shortcut${created === 1 ? '' : 's'}` : null,
           attShortcuts > 0
             ? `created ${attShortcuts} attachment shortcut${attShortcuts === 1 ? '' : 's'}`
@@ -430,7 +432,7 @@ export function EncoreAccountMenu(props: {
                   title={
                     reorganizing
                       ? 'Reorganizing…'
-                      : 'Reorganize Drive uploads (performance videos, charts, recordings)'
+                      : 'Rename, move Encore uploads into your saved folder settings, and add shortcuts under Encore_App where needed'
                   }
                 >
                   <span>
@@ -438,7 +440,7 @@ export function EncoreAccountMenu(props: {
                       size="small"
                       onClick={() => void handleReorganize()}
                       disabled={reorganizing}
-                      aria-label="Reorganize Drive uploads (videos, charts, recordings)"
+                      aria-label="Reorganize Drive uploads using saved folder settings; add Encore_App shortcuts where needed"
                     >
                       {reorganizing ? <RefreshIcon className="spin" fontSize="small" /> : <AutoFixHighIcon fontSize="small" />}
                     </IconButton>

@@ -4,6 +4,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('./bootstrapFolders', () => ({
   ensureEncoreDriveLayout: vi.fn(),
 }));
+vi.mock('../db/encoreDb', () => ({
+  encoreDb: {
+    repertoireExtras: {
+      get: vi.fn(),
+    },
+  },
+}));
 vi.mock('./performanceShortcut', () => ({
   reorganizeAllPerformanceVideos: vi.fn(),
 }));
@@ -11,6 +18,7 @@ vi.mock('./songAttachmentOrganize', () => ({
   reorganizeAllSongAttachments: vi.fn(),
 }));
 
+import { encoreDb } from '../db/encoreDb';
 import { ensureEncoreDriveLayout } from './bootstrapFolders';
 import { reorganizeAllPerformanceVideos } from './performanceShortcut';
 import { reorganizeAllSongAttachments } from './songAttachmentOrganize';
@@ -18,6 +26,11 @@ import { reorganizeAllDriveUploads } from './driveReorganize';
 
 beforeEach(() => {
   vi.clearAllMocks();
+  (encoreDb.repertoireExtras.get as any).mockResolvedValue({
+    id: 'default',
+    driveUploadFolderOverrides: { takes: 'custom-takes' },
+    updatedAt: new Date().toISOString(),
+  });
 });
 
 describe('reorganizeAllDriveUploads', () => {
@@ -42,6 +55,8 @@ describe('reorganizeAllDriveUploads', () => {
     const result = await reorganizeAllDriveUploads('tok');
 
     expect(ensureEncoreDriveLayout).toHaveBeenCalledWith('tok');
+    expect(reorganizeAllPerformanceVideos).toHaveBeenCalledWith('tok', { takes: 'custom-takes' });
+    expect(reorganizeAllSongAttachments).toHaveBeenCalledWith('tok', { takes: 'custom-takes' });
     expect(perfStartedAfterLayout).toBe(true);
     expect(attStartedAfterLayout).toBe(true);
     expect(result).toEqual({
