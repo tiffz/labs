@@ -254,11 +254,41 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
             if (cancelled) return;
             if (ok) return;
           } catch {
-            /* fall through to clear */
+            /* fall through: token may be revoked — try silent refresh before clearing */
+          }
+          if (!cancelled) {
+            const next = await requestGoogleSilentToken(clientId, GOOGLE_SCOPES);
+            if (next && !cancelled) {
+              const okSilent = await finalizeGoogleSession(next.access_token, next.expires_in, {
+                persist: true,
+                silent: true,
+              });
+              if (okSilent) return;
+            }
+            clearPersistedGoogleSession();
+          }
+        } else if (stored) {
+          // Local expiry heuristic passed, but Google may still grant a token via cookie (`prompt: none`).
+          const next = await requestGoogleSilentToken(clientId, GOOGLE_SCOPES);
+          if (cancelled) return;
+          if (next) {
+            const okSilent = await finalizeGoogleSession(next.access_token, next.expires_in, {
+              persist: true,
+              silent: true,
+            });
+            if (okSilent) return;
+          }
+          try {
+            const okLegacy = await promiseWithTimeout(
+              finalizeGoogleSession(stored.accessToken, undefined, { persist: true, silent: true }),
+              15_000,
+              'Restoring Google session',
+            );
+            if (!cancelled && okLegacy) return;
+          } catch {
+            /* clear */
           }
           if (!cancelled) clearPersistedGoogleSession();
-        } else if (stored) {
-          clearPersistedGoogleSession();
         }
       } finally {
         if (!cancelled) setGoogleAuthReady(true);
@@ -298,24 +328,32 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
 
     armTimer();
 
+    let visibilityDebounceId: number | undefined;
+
     const onVisibility = () => {
       if (document.visibilityState !== 'visible') return;
       const s = readPersistedGoogleSession();
-      if (!s || s.expiresAtMs > Date.now() + 120_000) return;
-      void (async () => {
-        const next = await requestGoogleSilentToken(clientId, GOOGLE_SCOPES);
-        if (next) {
-          await finalizeGoogleSession(next.access_token, next.expires_in, {
-            persist: true,
-            silent: true,
-          });
-        }
-      })();
+      // Avoid a silent GIS exchange on every tab focus when the token is still healthy.
+      if (!s || s.expiresAtMs > Date.now() + 4 * 60 * 1000) return;
+      if (visibilityDebounceId != null) window.clearTimeout(visibilityDebounceId);
+      visibilityDebounceId = window.setTimeout(() => {
+        visibilityDebounceId = undefined;
+        void (async () => {
+          const next = await requestGoogleSilentToken(clientId, GOOGLE_SCOPES);
+          if (next) {
+            await finalizeGoogleSession(next.access_token, next.expires_in, {
+              persist: true,
+              silent: true,
+            });
+          }
+        })();
+      }, 450);
     };
     document.addEventListener('visibilitychange', onVisibility);
 
     return () => {
       if (timeoutId != null) window.clearTimeout(timeoutId);
+      if (visibilityDebounceId != null) window.clearTimeout(visibilityDebounceId);
       document.removeEventListener('visibilitychange', onVisibility);
     };
   }, [googleAccessToken, finalizeGoogleSession]);

@@ -26,7 +26,7 @@ import {
 } from '../drive/repertoireSharded';
 import { useEncoreAuth } from './EncoreAuthContext';
 import { useEncoreBlockingJobs } from './EncoreBlockingJobContext';
-import { useEncoreLibrary } from './EncoreLibraryContext';
+import { useEncoreLibraryReady } from './EncoreLibraryContext';
 
 export type SyncUiState = 'idle' | 'syncing' | 'error' | 'conflict';
 
@@ -74,7 +74,7 @@ function waitForNextPaint(): Promise<void> {
 
 export function EncoreSyncProvider({ children }: { children: ReactNode }): ReactElement {
   const { googleAccessToken } = useEncoreAuth();
-  const { libraryReady } = useEncoreLibrary();
+  const libraryReady = useEncoreLibraryReady();
   const { withBlockingJob } = useEncoreBlockingJobs();
 
   const [syncState, setSyncState] = useState<SyncUiState>('idle');

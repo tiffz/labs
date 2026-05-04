@@ -54,7 +54,6 @@ describe('usePlayback', () => {
       usePlayback({
         parsedRhythm: mockParsedRhythm,
         bpm: 120,
-        debouncedBpm: 120,
         metronomeEnabled: false,
         playbackSettings: defaultSettings,
       })
@@ -70,7 +69,6 @@ describe('usePlayback', () => {
       usePlayback({
         parsedRhythm: mockParsedRhythm,
         bpm: 120,
-        debouncedBpm: 120,
         metronomeEnabled: false,
         playbackSettings: defaultSettings,
       })
@@ -107,7 +105,6 @@ describe('usePlayback', () => {
       usePlayback({
         parsedRhythm: invalidRhythm,
         bpm: 120,
-        debouncedBpm: 120,
         metronomeEnabled: false,
         playbackSettings: defaultSettings,
       })
@@ -134,7 +131,6 @@ describe('usePlayback', () => {
       usePlayback({
         parsedRhythm: emptyRhythm,
         bpm: 120,
-        debouncedBpm: 120,
         metronomeEnabled: false,
         playbackSettings: defaultSettings,
       })
@@ -153,7 +149,6 @@ describe('usePlayback', () => {
       usePlayback({
         parsedRhythm: mockParsedRhythm,
         bpm: 120,
-        debouncedBpm: 120,
         metronomeEnabled: false,
         playbackSettings: defaultSettings,
       })
@@ -178,7 +173,6 @@ describe('usePlayback', () => {
       usePlayback({
         parsedRhythm: mockParsedRhythm,
         bpm: 120,
-        debouncedBpm: 120,
         metronomeEnabled: false,
         playbackSettings: defaultSettings,
       })
@@ -204,7 +198,6 @@ describe('usePlayback', () => {
       usePlayback({
         parsedRhythm: mockParsedRhythm,
         bpm: 120,
-        debouncedBpm: 120,
         metronomeEnabled: true,
         playbackSettings: defaultSettings,
       })
@@ -238,7 +231,6 @@ describe('usePlayback', () => {
       usePlayback({
         parsedRhythm: mockParsedRhythm,
         bpm: 120,
-        debouncedBpm: 120,
         metronomeEnabled: false,
         playbackSettings: defaultSettings,
       })
@@ -266,7 +258,6 @@ describe('usePlayback', () => {
       usePlayback({
         parsedRhythm: mockParsedRhythm,
         bpm: 120,
-        debouncedBpm: 120,
         metronomeEnabled: false,
         playbackSettings: defaultSettings,
       })
@@ -285,7 +276,6 @@ describe('usePlayback', () => {
         usePlayback({
           parsedRhythm: mockParsedRhythm,
           bpm: 120,
-          debouncedBpm: 120,
           metronomeEnabled: false,
           playbackSettings: props.settings,
         }),
@@ -310,18 +300,17 @@ describe('usePlayback', () => {
     });
   });
 
-  it('should update BPM when debouncedBpm changes during playback', async () => {
+  it('should update BPM when bpm changes during playback', async () => {
     const { result, rerender } = renderHook(
       (props) =>
         usePlayback({
           parsedRhythm: mockParsedRhythm,
-          bpm: 120,
-          debouncedBpm: props.debouncedBpm,
+          bpm: props.bpm,
           metronomeEnabled: false,
           playbackSettings: defaultSettings,
         }),
       {
-        initialProps: { debouncedBpm: 120 },
+        initialProps: { bpm: 120 },
       }
     );
 
@@ -329,7 +318,7 @@ describe('usePlayback', () => {
       result.current.handlePlay();
     });
 
-    rerender({ debouncedBpm: 140 });
+    rerender({ bpm: 140 });
 
     await waitFor(() => {
       expect(rhythmPlayer.setBpmAtMeasureBoundary).toHaveBeenCalledWith(140);
@@ -341,7 +330,6 @@ describe('usePlayback', () => {
       usePlayback({
         parsedRhythm: mockParsedRhythm,
         bpm: 120,
-        debouncedBpm: 120,
         metronomeEnabled: true,
         playbackSettings: defaultSettings,
       })
@@ -362,7 +350,6 @@ describe('usePlayback', () => {
       usePlayback({
         parsedRhythm: mockParsedRhythm,
         bpm: 120,
-        debouncedBpm: 120,
         metronomeEnabled: false,
         playbackSettings: defaultSettings,
         selectionRange,
@@ -390,7 +377,6 @@ describe('usePlayback', () => {
       usePlayback({
         parsedRhythm: mockParsedRhythm,
         bpm: 120,
-        debouncedBpm: 120,
         metronomeEnabled: false,
         playbackSettings: defaultSettings,
         selectionRange: null,

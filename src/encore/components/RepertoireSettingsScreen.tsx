@@ -15,7 +15,7 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useCallback, useMemo, useState, type ReactElement } from 'react';
 import type { EncoreDriveUploadFolderKind, EncoreMilestoneDefinition } from '../types';
-import { useEncore } from '../context/EncoreContext';
+import { useEncoreActions, useEncoreAuth, useEncoreLibraryExtras } from '../context/EncoreContext';
 import { resolveDriveFolderFromUserInput } from '../drive/resolveDriveFolderFromUserInput';
 import {
   encoreMaxWidthNarrowPage,
@@ -28,12 +28,9 @@ import { EncoreDriveFolderPasteOrBrowseBlock } from '../ui/EncoreDriveFolderPast
 import { encorePossessivePageTitle } from '../utils/encorePossessivePageTitle';
 
 export function RepertoireSettingsScreen(): ReactElement {
-  const {
-    repertoireExtras,
-    saveRepertoireExtras,
-    effectiveDisplayName,
-    googleAccessToken,
-  } = useEncore();
+  const { googleAccessToken } = useEncoreAuth();
+  const { repertoireExtras, effectiveDisplayName } = useEncoreLibraryExtras();
+  const { saveRepertoireExtras } = useEncoreActions();
   const [venueInput, setVenueInput] = useState('');
   const [milestoneLabel, setMilestoneLabel] = useState('');
   const [folderDraftByKind, setFolderDraftByKind] = useState<

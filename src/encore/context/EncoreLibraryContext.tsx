@@ -20,20 +20,47 @@ import { useEncoreAuth } from './EncoreAuthContext';
  * `dexie-react-hooks#useLiveQuery` so a single-row Dexie write only re-emits that table; we no
  * longer reload the whole library on every save (the legacy `refreshLibrary()` is preserved as a
  * no-op for the small set of callers that still pass it as a callback dependency).
+ *
+ * Tables (`songs` / `performances`) and `repertoireExtras` are exposed through **separate**
+ * React contexts so a write to extras (e.g. MRT column prefs) does not force list screens to
+ * treat `songs` / `performances` as changed. Prefer {@link useEncoreLibraryTables} and
+ * {@link useEncoreLibraryExtras} on heavy surfaces; {@link useEncoreLibrary} merges both for
+ * back-compat.
+ *
+ * Per-song reads use {@link useEncoreSong}: `{ status: 'loading' | 'missing' | 'ok' }` so callers
+ * do not conflate Dexie `get` returning `undefined` with the live query still settling.
  */
-export interface EncoreLibraryContextValue {
+export type EncoreSongLiveState =
+  | { status: 'loading' }
+  | { status: 'missing' }
+  | { status: 'ok'; song: EncoreSong };
+
+export interface EncoreLibraryTablesContextValue {
   songs: EncoreSong[];
   performances: EncorePerformance[];
+  /** True after the first `songs` live query resolves (empty array may be real empty library). */
+  songsHydrated: boolean;
+  /** True after the performances live query has resolved at least once. */
+  performancesHydrated: boolean;
+}
+
+export interface EncoreLibraryExtrasContextValue {
   repertoireExtras: RepertoireExtrasRow;
-  /** True after the first live Dexie read commits (avoids treating an empty in-memory list as definitive). */
-  libraryReady: boolean;
+  /** True after the repertoire extras row has resolved at least once (including seeded default). */
+  extrasHydrated: boolean;
   /** No-op kept for back-compat. Prefer relying on the live query instead. */
   refreshLibrary: () => Promise<void>;
   /** Owner display name shown in app + share view: user override (synced) wins; falls back to Google profile. */
   effectiveDisplayName: string | null;
 }
 
-const EncoreLibraryContext = createContext<EncoreLibraryContextValue | null>(null);
+export interface EncoreLibraryContextValue extends EncoreLibraryTablesContextValue, EncoreLibraryExtrasContextValue {
+  /** True after songs, performances, and extras live queries have each resolved at least once. */
+  libraryReady: boolean;
+}
+
+const EncoreLibraryTablesContext = createContext<EncoreLibraryTablesContextValue | null>(null);
+const EncoreLibraryExtrasContext = createContext<EncoreLibraryExtrasContextValue | null>(null);
 
 const EMPTY_SONGS: EncoreSong[] = [];
 const EMPTY_PERFORMANCES: EncorePerformance[] = [];
@@ -79,8 +106,9 @@ export function EncoreLibraryProvider({ children }: { children: ReactNode }): Re
   );
   const repertoireExtras: RepertoireExtrasRow = extrasRaw ?? fallbackExtras;
 
-  const libraryReady =
-    songsRaw !== undefined && performancesRaw !== undefined && extrasRaw !== undefined;
+  const songsHydrated = songsRaw !== undefined;
+  const performancesHydrated = performancesRaw !== undefined;
+  const extrasHydrated = extrasRaw !== undefined;
 
   const refreshLibrary = useCallback(async () => {
     /* No-op; useLiveQuery keeps state fresh. Kept as a stable reference for back-compat. */
@@ -92,45 +120,85 @@ export function EncoreLibraryProvider({ children }: { children: ReactNode }): Re
     return displayName?.trim() || null;
   }, [repertoireExtras.ownerDisplayName, displayName]);
 
-  const value = useMemo<EncoreLibraryContextValue>(
+  const tablesValue = useMemo<EncoreLibraryTablesContextValue>(
     () => ({
       songs,
       performances,
+      songsHydrated,
+      performancesHydrated,
+    }),
+    [songs, performances, songsHydrated, performancesHydrated],
+  );
+
+  const extrasValue = useMemo<EncoreLibraryExtrasContextValue>(
+    () => ({
       repertoireExtras,
-      libraryReady,
+      extrasHydrated,
       refreshLibrary,
       effectiveDisplayName,
     }),
-    [
-      songs,
-      performances,
-      repertoireExtras,
-      libraryReady,
-      refreshLibrary,
-      effectiveDisplayName,
-    ],
+    [repertoireExtras, extrasHydrated, refreshLibrary, effectiveDisplayName],
   );
 
-  return <EncoreLibraryContext.Provider value={value}>{children}</EncoreLibraryContext.Provider>;
+  return (
+    <EncoreLibraryTablesContext.Provider value={tablesValue}>
+      <EncoreLibraryExtrasContext.Provider value={extrasValue}>{children}</EncoreLibraryExtrasContext.Provider>
+    </EncoreLibraryTablesContext.Provider>
+  );
 }
 
-export function useEncoreLibrary(): EncoreLibraryContextValue {
-  const ctx = useContext(EncoreLibraryContext);
-  if (!ctx) throw new Error('useEncoreLibrary outside EncoreLibraryProvider');
+export function useEncoreLibraryTables(): EncoreLibraryTablesContextValue {
+  const ctx = useContext(EncoreLibraryTablesContext);
+  if (!ctx) throw new Error('useEncoreLibraryTables outside EncoreLibraryProvider');
+  return ctx;
+}
+
+export function useEncoreLibraryExtras(): EncoreLibraryExtrasContextValue {
+  const ctx = useContext(EncoreLibraryExtrasContext);
+  if (!ctx) throw new Error('useEncoreLibraryExtras outside EncoreLibraryProvider');
   return ctx;
 }
 
 /**
- * Per-song selector. Reads directly from the live query so SongPage no longer rebinds when an
- * unrelated song updates — only the currently-viewed song's row identity changes.
+ * True once songs, performances, and extras live queries have each resolved at least once.
+ * Subscribes to both library slices; use instead of `useEncoreLibrary()` when only readiness matters.
  */
-export function useEncoreSong(songId: string | null | undefined): EncoreSong | undefined {
+export function useEncoreLibraryReady(): boolean {
+  const tables = useContext(EncoreLibraryTablesContext);
+  const extras = useContext(EncoreLibraryExtrasContext);
+  if (!tables || !extras) throw new Error('useEncoreLibraryReady outside EncoreLibraryProvider');
+  return tables.songsHydrated && tables.performancesHydrated && extras.extrasHydrated;
+}
+
+/**
+ * Merged library hook for back-compat. Prefer {@link useEncoreLibraryTables} / {@link useEncoreLibraryExtras}
+ * on list screens so extras-only writes do not invalidate memoized work keyed on `songs` / `performances`.
+ */
+export function useEncoreLibrary(): EncoreLibraryContextValue {
+  const tables = useEncoreLibraryTables();
+  const extras = useEncoreLibraryExtras();
+  return useMemo<EncoreLibraryContextValue>(
+    () => ({
+      ...tables,
+      ...extras,
+      libraryReady: tables.songsHydrated && tables.performancesHydrated && extras.extrasHydrated,
+    }),
+    [tables, extras],
+  );
+}
+
+/**
+ * Per-song selector. Reads directly from Dexie via `liveQuery` so SongPage hydrates as soon as this
+ * row resolves — without waiting on unrelated tables (performances/extras) used for `libraryReady`.
+ */
+export function useEncoreSong(songId: string | null | undefined): EncoreSongLiveState {
   return useLiveQuery(
     async () => {
-      if (!songId) return undefined;
-      return encoreDb.songs.get(songId);
+      if (songId == null || songId === '') return { status: 'missing' } as const;
+      const song = await encoreDb.songs.get(songId);
+      return song ? ({ status: 'ok', song } as const) : ({ status: 'missing' } as const);
     },
     [songId],
-    undefined,
+    { status: 'loading' } as const,
   );
 }

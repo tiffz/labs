@@ -3,6 +3,7 @@ import {
   createContext,
   useCallback,
   useMemo,
+  useRef,
   type ReactElement,
   type ReactNode,
 } from 'react';
@@ -15,7 +16,7 @@ import { reorganizeAllDriveUploads, type ReorganizeDriveUploadsResult } from '..
 import { syncPerformanceVideo, syncPerformanceVideoFileName } from '../drive/performanceShortcut';
 import { installServerLogger } from '../../shared/utils/serverLogger';
 import { useEncoreAuth } from './EncoreAuthContext';
-import { useEncoreLibrary } from './EncoreLibraryContext';
+import { useEncoreLibraryExtras } from './EncoreLibraryContext';
 import { useEncoreSync } from './useEncoreSync';
 import { useEncoreBlockingJobs } from './EncoreBlockingJobContext';
 import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
@@ -73,7 +74,9 @@ function cloneRow<T>(value: T): T {
 
 export function EncoreActionsProvider({ children }: { children: ReactNode }): ReactElement {
   const { googleAccessToken } = useEncoreAuth();
-  const { effectiveDisplayName, repertoireExtras } = useEncoreLibrary();
+  const { effectiveDisplayName, repertoireExtras } = useEncoreLibraryExtras();
+  const driveUploadFolderOverridesRef = useRef(repertoireExtras.driveUploadFolderOverrides);
+  driveUploadFolderOverridesRef.current = repertoireExtras.driveUploadFolderOverrides;
   const { scheduleBackgroundSync } = useEncoreSync();
   const { withBlockingJob } = useEncoreBlockingJobs();
   const { push: pushUndo, isReplayingRef } = useLabsUndo();
@@ -96,7 +99,12 @@ export function EncoreActionsProvider({ children }: { children: ReactNode }): Re
               songPerformances
                 .filter((p) => p.videoShortcutDriveFileId || p.videoTargetDriveFileId)
                 .map((p) =>
-                  syncPerformanceVideoFileName(googleAccessToken, p, synced, repertoireExtras.driveUploadFolderOverrides).catch((err) => {
+                  syncPerformanceVideoFileName(
+                    googleAccessToken,
+                    p,
+                    synced,
+                    driveUploadFolderOverridesRef.current,
+                  ).catch((err) => {
                     serverLogger.warn('encore.saveSong: video rename failed', err);
                   }),
                 ),
@@ -127,7 +135,7 @@ export function EncoreActionsProvider({ children }: { children: ReactNode }): Re
         });
       }
     },
-    [googleAccessToken, isReplayingRef, pushUndo, repertoireExtras.driveUploadFolderOverrides, scheduleBackgroundSync],
+    [googleAccessToken, isReplayingRef, pushUndo, scheduleBackgroundSync],
   );
 
   const deleteSong = useCallback(
@@ -210,7 +218,12 @@ export function EncoreActionsProvider({ children }: { children: ReactNode }): Re
         void (async () => {
           try {
             const song = (await encoreDb.songs.get(p.songId)) ?? null;
-            const result = await syncPerformanceVideo(googleAccessToken, p, song, repertoireExtras.driveUploadFolderOverrides);
+            const result = await syncPerformanceVideo(
+              googleAccessToken,
+              p,
+              song,
+              driveUploadFolderOverridesRef.current,
+            );
             if (result.shortcutCreatedId && result.shortcutCreatedId !== p.videoShortcutDriveFileId) {
               await encoreDb.performances.put({
                 ...p,
@@ -225,7 +238,7 @@ export function EncoreActionsProvider({ children }: { children: ReactNode }): Re
         })();
       }
     },
-    [googleAccessToken, isReplayingRef, pushUndo, repertoireExtras.driveUploadFolderOverrides, scheduleBackgroundSync],
+    [googleAccessToken, isReplayingRef, pushUndo, scheduleBackgroundSync],
   );
 
   const deletePerformance = useCallback(

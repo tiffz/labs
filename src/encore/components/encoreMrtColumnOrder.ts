@@ -1,4 +1,8 @@
-/** MRT display column ids — selection first, row actions last, spacer after actions when present. */
+/**
+ * MRT display column ids — selection first, row actions last, spacer after actions when present.
+ * TanStack column ordering: any leaf id missing from controlled `columnOrder` is appended last after
+ * merging (ColumnOrdering `_getOrderColumnsFn`), so callers must list display columns explicitly.
+ */
 export const MRT_ROW_SELECT_COL = 'mrt-row-select';
 export const MRT_ROW_ACTIONS_COL = 'mrt-row-actions';
 export const MRT_ROW_SPACER_COL = 'mrt-row-spacer';

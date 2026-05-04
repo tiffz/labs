@@ -7,13 +7,10 @@ import EditIcon from '@mui/icons-material/Edit';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import GraphicEqIcon from '@mui/icons-material/GraphicEq';
 import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
 import QueueMusicIcon from '@mui/icons-material/QueueMusic';
-import SearchIcon from '@mui/icons-material/Search';
-import ViewListIcon from '@mui/icons-material/ViewList';
-import ViewModuleIcon from '@mui/icons-material/ViewModule';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
 import Chip from '@mui/material/Chip';
 import Card from '@mui/material/Card';
 import Paper from '@mui/material/Paper';
@@ -25,7 +22,6 @@ import IconButton from '@mui/material/IconButton';
 import Link from '@mui/material/Link';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
-import InputAdornment from '@mui/material/InputAdornment';
 import Autocomplete from '@mui/material/Autocomplete';
 import FormControl from '@mui/material/FormControl';
 import FormControlLabel from '@mui/material/FormControlLabel';
@@ -36,15 +32,11 @@ import Radio from '@mui/material/Radio';
 import RadioGroup from '@mui/material/RadioGroup';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
-import ToggleButton from '@mui/material/ToggleButton';
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
-import Tooltip from '@mui/material/Tooltip';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
 import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
 import {
-  createContext,
   useCallback,
   useContext,
   useEffect,
@@ -73,9 +65,13 @@ import {
   isModifiedOrNonPrimaryClick,
   navigateEncore,
   openEncoreRouteInBackgroundTab,
-  parseEncoreAppHash,
 } from '../routes/encoreAppHash';
-import { useEncore } from '../context/EncoreContext';
+import {
+  useEncoreActions,
+  useEncoreAuth,
+  useEncoreLibraryExtras,
+  useEncoreLibraryTables,
+} from '../context/EncoreContext';
 import {
   encoreDialogActionsSx,
   encoreDialogContentSx,
@@ -107,15 +103,19 @@ import {
   normalizeEncoreMrtColumnOrder,
   withEncoreMrtTrailingSpacer,
 } from './encoreMrtColumnOrder';
-import { InlineChipDate, InlineChipMultiSelect, InlineChipSelect } from '../ui/InlineEditChip';
-import { EncoreToolbarRow } from '../ui/EncoreToolbarRow';
 import {
-  EncoreFilterChipBar,
-  type EncoreFilterChipBarHandle,
-  type EncoreFilterFieldConfig,
-} from '../ui/EncoreFilterChipBar';
+  type PerformancesViewMode,
+  type PerfMrtRow,
+  formatPerformanceNotesLine,
+  getPerfRowId,
+  normalizePerformancesTableSorting,
+  normalizePerfVenueLabel,
+  perfMrtColumnId,
+  performancesColumnOrderForMrt,
+} from './performancesScreenHelpers';
+import { InlineChipDate, InlineChipMultiSelect, InlineChipSelect } from '../ui/InlineEditChip';
+import { type EncoreFilterChipBarHandle, type EncoreFilterFieldConfig } from '../ui/EncoreFilterChipBar';
 import { EncoreMrtColumnHeader } from '../ui/EncoreMrtColumnHeader';
-import { EncoreMrtColumnsSettingsButton } from '../ui/EncoreMrtColumnsSettingsButton';
 import { ENCORE_FILTER_SENTINEL } from '../utils/encoreFilterSentinels';
 import { encorePossessivePageTitle } from '../utils/encorePossessivePageTitle';
 import { useDebouncedString } from '../utils/useDebouncedString';
@@ -123,80 +123,24 @@ import { HighlightedText } from '../ui/HighlightedText';
 import {
   buildExtendedPerformanceInsights,
   buildPerformanceDashboardStats,
+  type ExtendedPerformanceInsights,
+  type PerformanceDashboardStats,
 } from '../performances/performancesStatsModel';
 import AppTooltip from '../../shared/components/AppTooltip';
+import { EncoreMrtSearchHighlightContext } from './encoreMrtSearchHighlightContext';
+import { PerformancesBulkSelectionBar } from './performancesScreen/PerformancesBulkSelectionBar';
+import { PerformancesListToolbar } from './performancesScreen/PerformancesListToolbar';
+import {
+  getPerformancesSubTabSnapshot,
+  subscribePerformancesSubTab,
+} from './performancesScreen/performancesSubTabSubscription';
 
-type PerformancesViewMode = 'table' | 'grid';
 const VIEW_STORAGE_KEY = 'encore.performances.view';
 
 const PERFORMANCES_FILTER_PINNED = ['venue', 'accompaniment'] as const;
 
-function normalizePerfVenueLabel(tag: string): string {
-  return tag.trim() || 'Venue';
-}
-
-type PerfMrtRow = {
-  perf: EncorePerformance;
-  song: EncoreSong | null;
-  date: string;
-  songLabel: string;
-  artistLabel: string;
-  venue: string;
-  accompaniment: EncoreAccompanimentTag[];
-};
-
-const getPerfRowId = (row: PerfMrtRow): string => row.perf.id;
-
-/** Older prefs defaulted to song title A→Z; replace with newest-first date for Activity. */
-function normalizePerformancesTableSorting(
-  sorting: Array<{ id: string; desc: boolean }> | undefined,
-): Array<{ id: string; desc: boolean }> {
-  const def = [{ id: 'date', desc: true }];
-  if (!sorting?.length) return def;
-  if (sorting.length === 1 && sorting[0]?.id === 'songLabel' && sorting[0]?.desc === false) return def;
-  return sorting;
-}
-
-/** Controlled column order for MRT: prefs only list data columns; inject display columns so checkboxes stay first. */
-function performancesColumnOrderForMrt(
-  viewMode: PerformancesViewMode,
-  perfColOrder: string[] | undefined,
-  perfDefaultColumnOrder: string[],
-): string[] {
-  const base = perfColOrder ?? perfDefaultColumnOrder;
-  if (viewMode !== 'table') {
-    return withEncoreMrtTrailingSpacer(
-      normalizeEncoreMrtColumnOrder(
-        ensureEncoreMrtRowActionsInOrder(base.filter((id) => id !== MRT_ROW_SELECT_COL)),
-      ),
-    );
-  }
-  const withSelect = base.includes(MRT_ROW_SELECT_COL) ? base : [MRT_ROW_SELECT_COL, ...base];
-  const withActions = ensureEncoreMrtRowActionsInOrder(withSelect);
-  const normalized = normalizeEncoreMrtColumnOrder(withActions);
-  return withEncoreMrtTrailingSpacer(ensureEncoreMrtSelectLeading(normalized));
-}
-
-function perfMrtColumnId(c: MRT_ColumnDef<PerfMrtRow>): string {
-  if (c.id) return c.id;
-  if (typeof c.accessorKey === 'string') return c.accessorKey;
-  if (c.accessorKey != null) return String(c.accessorKey);
-  return '';
-}
-
-function formatPerformanceNotesLine(notes: string, maxLen = 72): string {
-  const t = notes.trim();
-  if (!t) return '';
-  const stripped = t.replace(/^Imported:\s*/i, '').trim();
-  const base = stripped || t;
-  if (base.length <= maxLen) return base;
-  return `${base.slice(0, maxLen - 1)}…`;
-}
-
-const PerformancesSearchHighlightContext = createContext('');
-
 function PerfSongColumnCell({ row }: { row: MRT_Row<PerfMrtRow> }): ReactElement {
-  const highlight = useContext(PerformancesSearchHighlightContext);
+  const highlight = useContext(EncoreMrtSearchHighlightContext);
   const { song, artistLabel, perf } = row.original;
   return (
     <Box>
@@ -267,34 +211,46 @@ function PerfSongColumnCell({ row }: { row: MRT_Row<PerfMrtRow> }): ReactElement
   );
 }
 
-function subscribePerformancesSubTab(onStoreChange: () => void): () => void {
-  window.addEventListener('hashchange', onStoreChange);
-  return () => window.removeEventListener('hashchange', onStoreChange);
-}
-
-function getPerformancesSubTabSnapshot(): 'list' | 'wrapped' {
-  if (typeof window === 'undefined') return 'list';
-  const route = parseEncoreAppHash(window.location.hash);
-  if (route.kind !== 'performances') return 'list';
-  return route.tab === 'wrapped' ? 'wrapped' : 'list';
-}
-
-export function PerformancesScreen(): ReactElement {
+export function PerformancesScreen(props?: {
+  heavyListTabActive?: boolean;
+  onHeavyTabLaidOut?: () => void;
+}): ReactElement {
+  const { heavyListTabActive = true, onHeavyTabLaidOut } = props ?? {};
   const theme = useTheme();
+  const { googleAccessToken, spotifyLinked } = useEncoreAuth();
+  const { songs, songsHydrated, performances } = useEncoreLibraryTables();
+  const { repertoireExtras, effectiveDisplayName } = useEncoreLibraryExtras();
   const {
-    songs,
-    performances,
     savePerformance,
     deletePerformance,
     saveSong,
     bulkSavePerformances,
     bulkDeletePerformances,
-    googleAccessToken,
-    spotifyLinked,
-    repertoireExtras,
     saveRepertoireExtras,
-    effectiveDisplayName,
-  } = useEncore();
+  } = useEncoreActions();
+  const heavyListTabPrevActiveRef = useRef(false);
+  useEffect(() => {
+    if (!heavyListTabActive) {
+      heavyListTabPrevActiveRef.current = false;
+      return;
+    }
+    if (!heavyListTabPrevActiveRef.current) {
+      onHeavyTabLaidOut?.();
+    }
+    heavyListTabPrevActiveRef.current = true;
+  }, [heavyListTabActive, onHeavyTabLaidOut]);
+
+  /** Skip rebuilding heavy lists while this tab is keep-alive hidden (Dexie still updates elsewhere). */
+  const venueOptionsCacheRef = useRef<string[]>([]);
+  const perfVenueFilterOptionsCacheRef = useRef<string[]>([]);
+  const performanceYearOptionsCacheRef = useRef<string[]>([]);
+  const songByIdCacheRef = useRef(new Map<string, EncoreSong>());
+  const perfMrtDataCacheRef = useRef<PerfMrtRow[]>([]);
+  const perfFilterFieldDefsCacheRef = useRef<EncoreFilterFieldConfig[]>([]);
+  const perfDashboardStatsCacheRef = useRef<PerformanceDashboardStats | null>(null);
+  const perfExtendedInsightsCacheRef = useRef<ExtendedPerformanceInsights | null>(null);
+  const hasAnyPerformanceVideoLinkCacheRef = useRef(false);
+
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebouncedString(query, 220);
   const [perfFilterValues, setPerfFilterValues] = useState<Record<string, string[]>>(() => ({
@@ -420,6 +376,7 @@ export function PerformancesScreen(): ReactElement {
   }, [viewMode]);
 
   const venueOptions = useMemo(() => {
+    if (!heavyListTabActive) return venueOptionsCacheRef.current;
     const s = new Set<string>();
     for (const v of repertoireExtras.venueCatalog) {
       const t = v.trim();
@@ -429,34 +386,50 @@ export function PerformancesScreen(): ReactElement {
       const t = p.venueTag.trim();
       if (t) s.add(t);
     }
-    return [...s].sort((a, b) => a.localeCompare(b));
-  }, [repertoireExtras.venueCatalog, performances]);
+    const next = [...s].sort((a, b) => a.localeCompare(b));
+    venueOptionsCacheRef.current = next;
+    return next;
+  }, [heavyListTabActive, repertoireExtras.venueCatalog, performances]);
 
   const perfVenueFilterOptions = useMemo(() => {
+    if (!heavyListTabActive) return perfVenueFilterOptionsCacheRef.current;
     const s = new Set<string>(venueOptions);
     for (const p of performances) {
       s.add(normalizePerfVenueLabel(p.venueTag));
     }
-    return [...s].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
-  }, [venueOptions, performances]);
+    const next = [...s].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    perfVenueFilterOptionsCacheRef.current = next;
+    return next;
+  }, [heavyListTabActive, venueOptions, performances]);
 
   const performanceYearOptions = useMemo(() => {
+    if (!heavyListTabActive) return performanceYearOptionsCacheRef.current;
     const ys = new Set<string>();
     for (const p of performances) {
       const y = p.date.slice(0, 4);
       if (/^\d{4}$/.test(y)) ys.add(y);
     }
-    return [...ys].sort((a, b) => b.localeCompare(a));
-  }, [performances]);
+    const next = [...ys].sort((a, b) => b.localeCompare(a));
+    performanceYearOptionsCacheRef.current = next;
+    return next;
+  }, [heavyListTabActive, performances]);
 
-  const songById = useMemo(() => new Map(songs.map((s) => [s.id, s] as const)), [songs]);
+  const songById = useMemo(() => {
+    if (!heavyListTabActive) return songByIdCacheRef.current;
+    const next = new Map(songs.map((s) => [s.id, s] as const));
+    songByIdCacheRef.current = next;
+    return next;
+  }, [heavyListTabActive, songs]);
 
-  const hasAnyPerformanceVideoLink = useMemo(
-    () => performances.some((p) => Boolean(performanceVideoOpenUrl(p))),
-    [performances],
-  );
+  const hasAnyPerformanceVideoLink = useMemo(() => {
+    if (!heavyListTabActive) return hasAnyPerformanceVideoLinkCacheRef.current;
+    const next = performances.some((p) => Boolean(performanceVideoOpenUrl(p)));
+    hasAnyPerformanceVideoLinkCacheRef.current = next;
+    return next;
+  }, [heavyListTabActive, performances]);
 
   const data = useMemo<PerfMrtRow[]>(() => {
+    if (!heavyListTabActive) return perfMrtDataCacheRef.current;
     const venueChipFilters = perfFilterValues.venue ?? [];
     const accompanimentChipFilters = perfFilterValues.accompaniment ?? [];
     const yearChipFilters = perfFilterValues.year ?? [];
@@ -519,12 +492,18 @@ export function PerformancesScreen(): ReactElement {
         return matchConcrete;
       });
     }
-    if (!q) return rows;
-    return rows.filter((r) => {
+    if (!q) {
+      perfMrtDataCacheRef.current = rows;
+      return rows;
+    }
+    const filtered = rows.filter((r) => {
       const hay = [r.songLabel, r.artistLabel, r.venue, r.date, r.perf.notes ?? ''].join(' ').toLowerCase();
       return hay.includes(q);
     });
+    perfMrtDataCacheRef.current = filtered;
+    return filtered;
   }, [
+    heavyListTabActive,
     performances,
     songById,
     debouncedQuery,
@@ -535,6 +514,7 @@ export function PerformancesScreen(): ReactElement {
   ]);
 
   const perfFilterFieldDefs = useMemo((): EncoreFilterFieldConfig[] => {
+    if (!heavyListTabActive) return perfFilterFieldDefsCacheRef.current;
     const venueOpts = [
       { value: ENCORE_FILTER_SENTINEL.blankPerfVenue, label: 'No venue set' },
       ...perfVenueFilterOptions.map((v) => ({ value: v, label: v })),
@@ -547,7 +527,7 @@ export function PerformancesScreen(): ReactElement {
       { value: ENCORE_FILTER_SENTINEL.blankYear, label: 'Year not set' },
       ...performanceYearOptions.map((y) => ({ value: y, label: y })),
     ];
-    return [
+    const next: EncoreFilterFieldConfig[] = [
       { id: 'venue', label: 'Venue', options: venueOpts },
       { id: 'accompaniment', label: 'Accompaniment', options: accOpts },
       { id: 'year', label: 'Year', options: yearOpts },
@@ -557,7 +537,9 @@ export function PerformancesScreen(): ReactElement {
         options: [{ value: ENCORE_FILTER_SENTINEL.unknownSong, label: 'Unknown in library' }],
       },
     ];
-  }, [perfVenueFilterOptions, performanceYearOptions]);
+    perfFilterFieldDefsCacheRef.current = next;
+    return next;
+  }, [heavyListTabActive, perfVenueFilterOptions, performanceYearOptions]);
 
   const perfAddableFilterFields = useMemo(() => {
     const pinned = new Set<string>(PERFORMANCES_FILTER_PINNED);
@@ -664,17 +646,21 @@ export function PerformancesScreen(): ReactElement {
     setPerfOpen(true);
   }, []);
 
-  const performanceDashboardStats = useMemo(
-    () => buildPerformanceDashboardStats(performances, songById, normalizePerfVenueLabel),
-    [performances, songById],
-  );
-  const extendedPerformanceInsights = useMemo(
-    () =>
-      performanceDashboardStats
-        ? buildExtendedPerformanceInsights(performances, songById, performanceDashboardStats)
-        : null,
-    [performances, songById, performanceDashboardStats],
-  );
+  const performanceDashboardStats = useMemo(() => {
+    if (!heavyListTabActive) return perfDashboardStatsCacheRef.current;
+    const next = buildPerformanceDashboardStats(performances, songById, normalizePerfVenueLabel);
+    perfDashboardStatsCacheRef.current = next;
+    return next;
+  }, [heavyListTabActive, performances, songById]);
+
+  const extendedPerformanceInsights = useMemo(() => {
+    if (!heavyListTabActive) return perfExtendedInsightsCacheRef.current;
+    const next = performanceDashboardStats
+      ? buildExtendedPerformanceInsights(performances, songById, performanceDashboardStats)
+      : null;
+    perfExtendedInsightsCacheRef.current = next;
+    return next;
+  }, [heavyListTabActive, performances, songById, performanceDashboardStats]);
 
   const columns = useMemo<MRT_ColumnDef<PerfMrtRow>[]>(() => [
     {
@@ -903,29 +889,49 @@ export function PerformancesScreen(): ReactElement {
     [openEdit],
   );
 
-  const table = useMaterialReactTable<PerfMrtRow>({
-    columns,
-    data,
-    getRowId: getPerfRowId,
-    ...perfMrtBaseOptions,
-    enableColumnFilters: false,
-    enableHiding: true,
-    enableColumnActions: false,
-    enableColumnOrdering: true,
-    displayColumnDefOptions: perfDisplayColumnDefOptions,
-    enableRowActions: true,
-    positionActionsColumn: 'last',
-    renderRowActions: renderPerfRowActions,
-    enableRowSelection: viewMode === 'table',
-    onRowSelectionChange: setRowSelection,
-    state: perfMrtState,
-    onColumnVisibilityChange: handlePerfColumnVisibilityChange,
-    onColumnOrderChange: handlePerfColumnOrderChange,
-    onSortingChange: handlePerfSortingChange,
-    mrtTheme: perfMrtTheme,
-    muiTableBodyRowProps: perfBodyRowProps,
-    initialState: perfInitialState,
-  });
+  const table = useMaterialReactTable<PerfMrtRow>(
+    useMemo(
+      () => ({
+        columns,
+        data,
+        getRowId: getPerfRowId,
+        ...perfMrtBaseOptions,
+        enableColumnFilters: false,
+        enableHiding: true,
+        enableColumnActions: false,
+        enableColumnOrdering: true,
+        displayColumnDefOptions: perfDisplayColumnDefOptions,
+        enableRowActions: true,
+        positionActionsColumn: 'last',
+        renderRowActions: renderPerfRowActions,
+        enableRowSelection: viewMode === 'table',
+        onRowSelectionChange: setRowSelection,
+        state: perfMrtState,
+        onColumnVisibilityChange: handlePerfColumnVisibilityChange,
+        onColumnOrderChange: handlePerfColumnOrderChange,
+        onSortingChange: handlePerfSortingChange,
+        mrtTheme: perfMrtTheme,
+        muiTableBodyRowProps: perfBodyRowProps,
+        initialState: perfInitialState,
+      }),
+      [
+        columns,
+        data,
+        perfMrtBaseOptions,
+        perfDisplayColumnDefOptions,
+        renderPerfRowActions,
+        viewMode,
+        setRowSelection,
+        perfMrtState,
+        handlePerfColumnVisibilityChange,
+        handlePerfColumnOrderChange,
+        handlePerfSortingChange,
+        perfMrtTheme,
+        perfBodyRowProps,
+        perfInitialState,
+      ],
+    ),
+  );
 
   const performancesHeaderStackPb =
     performancesSubTab === 'list'
@@ -1161,164 +1167,51 @@ export function PerformancesScreen(): ReactElement {
               </Alert>
             ) : null}
 
-      <EncoreToolbarRow>
-        <TextField
-          size="small"
-          fullWidth
-          placeholder="Search song, artist, venue, date…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          inputProps={{ 'aria-label': 'Search performances' }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon fontSize="small" color="action" aria-hidden />
-              </InputAdornment>
-            ),
-          }}
-          sx={{ maxWidth: { sm: 560 } }}
-        />
-      </EncoreToolbarRow>
-
-      {performances.length > 0 ? (
-        <Box sx={{ mt: 2, mb: 1 }}>
-          <Stack spacing={0.75}>
-            <EncoreFilterChipBar
-              ref={perfFilterBarRef}
-              fields={perfFilterFieldDefs}
-              visibleFieldIds={visiblePerfFilterIds}
-              values={perfFilterValues}
-              onChange={onPerfFilterChange}
-              addableFields={perfAddableFilterFields}
-              onVisibleFieldIdsChange={setVisiblePerfFilterIds}
-              defaultPinnedFieldIds={[...PERFORMANCES_FILTER_PINNED]}
-              hasActiveFilters={hasActivePerfFilters}
-              onClearAll={() => {
+            <PerformancesListToolbar
+              query={query}
+              onQueryChange={setQuery}
+              performancesCount={performances.length}
+              filteredCount={data.length}
+              hasActivePerfFilters={hasActivePerfFilters}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
+              table={table}
+              onResetTableLayout={resetPerformancesTableLayout}
+              perfFilterBarRef={perfFilterBarRef}
+              perfFilterFieldDefs={perfFilterFieldDefs}
+              visiblePerfFilterIds={visiblePerfFilterIds}
+              perfFilterValues={perfFilterValues}
+              onPerfFilterChange={onPerfFilterChange}
+              perfAddableFilterFields={perfAddableFilterFields}
+              onVisiblePerfFilterIdsChange={setVisiblePerfFilterIds}
+              defaultPinnedFieldIds={PERFORMANCES_FILTER_PINNED}
+              onClearAllFilters={() => {
                 clearPerfFilters();
                 setQuery('');
               }}
             />
-            <Stack direction="row" flexWrap="wrap" alignItems="center" justifyContent="space-between" gap={1} useFlexGap>
-              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500, minWidth: 0 }}>
-                Showing {data.length} of {performances.length}{' '}
-                {performances.length === 1 ? 'performance' : 'performances'}
-                {hasActivePerfFilters || query.trim() ? ' · search or filters applied' : ''}
-              </Typography>
-              <Stack direction="row" alignItems="center" gap={2.5} sx={{ flexShrink: 0 }}>
-                <EncoreMrtColumnsSettingsButton
-                  show={viewMode === 'table'}
-                  table={table}
-                  onResetLayout={resetPerformancesTableLayout}
-                />
-                <ToggleButtonGroup
-                  exclusive
-                  size="small"
-                  value={viewMode}
-                  onChange={(_e, next: PerformancesViewMode | null) => {
-                    if (next) setViewMode(next);
-                  }}
-                  aria-label="Performances layout"
-                >
-                  <Tooltip title="Table view">
-                    <ToggleButton value="table" aria-label="Table view">
-                      <ViewListIcon fontSize="small" />
-                    </ToggleButton>
-                  </Tooltip>
-                  <Tooltip title="Grid view">
-                    <ToggleButton value="grid" aria-label="Grid view">
-                      <ViewModuleIcon fontSize="small" />
-                    </ToggleButton>
-                  </Tooltip>
-                </ToggleButtonGroup>
-              </Stack>
-            </Stack>
-          </Stack>
+
+            {performances.length > 0 && viewMode === 'table' && selectedPerfIds.size > 0 ? (
+              <PerformancesBulkSelectionBar
+                selectedCount={selectedPerfIds.size}
+                bulkOverflowAnchor={bulkOverflowAnchor}
+                onBulkOverflowAnchorChange={setBulkOverflowAnchor}
+                onClearRowSelection={() => setRowSelection({})}
+                onOpenBulkVenue={() => setBulkVenueOpen(true)}
+                onOpenBulkAccompaniment={() => {
+                  setBulkAccDraft([]);
+                  setBulkAccMode('replace');
+                  setBulkAccOpen(true);
+                }}
+                onOpenBulkDelete={() => setBulkDeleteOpen(true)}
+              />
+            ) : null}
+
+      {!songsHydrated && performances.length === 0 ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }} aria-busy="true" aria-label="Loading library">
+          <CircularProgress />
         </Box>
-      ) : null}
-
-      {performances.length > 0 && viewMode === 'table' && selectedPerfIds.size > 0 ? (
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          spacing={1}
-          alignItems={{ sm: 'center' }}
-          flexWrap="wrap"
-          useFlexGap
-          sx={{
-            mt: 2,
-            mb: 1,
-            p: 1.5,
-            borderRadius: 2,
-            border: 1,
-            borderColor: 'divider',
-            bgcolor: (t) => alpha(t.palette.primary.main, 0.06),
-          }}
-        >
-          {/*
-            Structured bulk-action bar mirroring LibraryScreen: edit affordances grouped on the
-            left (Set venue, Set accompaniment), destructive Delete tucked into an overflow menu
-            so it isn't a one-misclick action when many rows are selected.
-          */}
-          <Typography variant="body2" sx={{ fontWeight: 700 }}>
-            {selectedPerfIds.size} selected
-          </Typography>
-          <Button size="small" variant="outlined" onClick={() => setBulkVenueOpen(true)}>
-            Set venue…
-          </Button>
-          <Button
-            size="small"
-            variant="outlined"
-            onClick={() => {
-              setBulkAccDraft([]);
-              setBulkAccMode('replace');
-              setBulkAccOpen(true);
-            }}
-          >
-            Set accompaniment…
-          </Button>
-          <Box sx={{ flex: 1 }} />
-          <Button size="small" variant="text" onClick={() => setRowSelection({})}>
-            Clear selection
-          </Button>
-          <Tooltip title="More actions">
-            <IconButton
-              size="small"
-              aria-label="More bulk actions"
-              aria-haspopup="true"
-              aria-expanded={bulkOverflowAnchor ? 'true' : undefined}
-              onClick={(e) => setBulkOverflowAnchor(e.currentTarget)}
-              sx={{
-                ml: 0.5,
-                border: 1,
-                borderColor: 'divider',
-                borderRadius: 1,
-                p: 0.5,
-                color: 'text.secondary',
-              }}
-            >
-              <MoreVertIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-          <Menu
-            anchorEl={bulkOverflowAnchor}
-            open={Boolean(bulkOverflowAnchor)}
-            onClose={() => setBulkOverflowAnchor(null)}
-            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-          >
-            <MenuItem
-              onClick={() => {
-                setBulkOverflowAnchor(null);
-                setBulkDeleteOpen(true);
-              }}
-              sx={{ color: 'error.main' }}
-            >
-              Delete…
-            </MenuItem>
-          </Menu>
-        </Stack>
-      ) : null}
-
-      {performances.length === 0 && songs.length === 0 ? (
+      ) : performances.length === 0 && songsHydrated && songs.length === 0 ? (
         <Stack spacing={1.5} sx={{ py: 4, maxWidth: 520 }}>
           <Typography color="text.secondary" sx={{ lineHeight: 1.6 }}>
             Nothing here yet. Add songs from Repertoire first, then log a performance from a song page or tap{' '}
@@ -1389,9 +1282,9 @@ export function PerformancesScreen(): ReactElement {
         </Paper>
       ) : viewMode === 'table' ? (
         <Box sx={{ mt: 2 }}>
-          <PerformancesSearchHighlightContext.Provider value={debouncedQuery}>
+          <EncoreMrtSearchHighlightContext.Provider value={debouncedQuery}>
             <MaterialReactTable table={table} />
-          </PerformancesSearchHighlightContext.Provider>
+          </EncoreMrtSearchHighlightContext.Provider>
         </Box>
       ) : (
         <Box

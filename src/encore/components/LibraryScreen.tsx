@@ -10,13 +10,10 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import QueueMusicIcon from '@mui/icons-material/QueueMusic';
-import SearchIcon from '@mui/icons-material/Search';
 import GraphicEqIcon from '@mui/icons-material/GraphicEq';
-import ViewListIcon from '@mui/icons-material/ViewList';
-import ViewModuleIcon from '@mui/icons-material/ViewModule';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
-import Divider from '@mui/material/Divider';
+import CircularProgress from '@mui/material/CircularProgress';
 import Link from '@mui/material/Link';
 import List from '@mui/material/List';
 import ListItemButton from '@mui/material/ListItemButton';
@@ -32,7 +29,6 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import IconButton from '@mui/material/IconButton';
-import InputAdornment from '@mui/material/InputAdornment';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
@@ -41,12 +37,9 @@ import Autocomplete from '@mui/material/Autocomplete';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
-import ToggleButton from '@mui/material/ToggleButton';
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
 import {
-  MaterialReactTable,
   useMaterialReactTable,
   type MRT_ColumnDef,
   type MRT_Row,
@@ -55,11 +48,13 @@ import {
 import {
   memo,
   useCallback,
+  useContext,
   useEffect,
   useMemo,
   useRef,
   useState,
   type MouseEvent as ReactMouseEvent,
+  type ReactElement,
   type ReactNode,
 } from 'react';
 import type { EncoreMrtTablePrefs, EncorePerformance, EncoreSong } from '../types';
@@ -70,7 +65,12 @@ import {
   openEncoreRouteInBackgroundTab,
 } from '../routes/encoreAppHash';
 import { encoreNoAlbumArtIconSx, encoreNoAlbumArtSurfaceSx } from '../utils/encoreNoAlbumArtSurface';
-import { useEncore } from '../context/EncoreContext';
+import {
+  useEncoreActions,
+  useEncoreAuth,
+  useEncoreLibraryExtras,
+  useEncoreLibraryTables,
+} from '../context/EncoreContext';
 import { useEncoreBlockingJobs } from '../context/EncoreBlockingJobContext';
 import { ensureSpotifyAccessToken } from '../spotify/pkce';
 import { fetchSpotifyTrack, spotifyTrackTitleAndArtist } from '../spotify/spotifyApi';
@@ -83,14 +83,8 @@ import {
 } from '../theme/encoreUiTokens';
 import { encorePagePaddingTop, encoreScreenPaddingX } from '../theme/encoreM3Layout';
 import { EncorePageHeader } from '../ui/EncorePageHeader';
-import { EncoreToolbarRow } from '../ui/EncoreToolbarRow';
-import {
-  EncoreFilterChipBar,
-  type EncoreFilterChipBarHandle,
-  type EncoreFilterFieldConfig,
-} from '../ui/EncoreFilterChipBar';
+import { type EncoreFilterChipBarHandle, type EncoreFilterFieldConfig } from '../ui/EncoreFilterChipBar';
 import { EncoreMrtColumnHeader } from '../ui/EncoreMrtColumnHeader';
-import { EncoreMrtColumnsSettingsButton } from '../ui/EncoreMrtColumnsSettingsButton';
 import { AddSongDialog } from './AddSongDialog';
 import { PerformanceEditorDialog } from './PerformanceEditorDialog';
 import { PlaylistImportDialog } from './PlaylistImportDialog';
@@ -102,7 +96,6 @@ import { milestoneProgressSummary } from '../repertoire/repertoireMilestoneSumma
 import { applyTemplateProgressToSong } from '../repertoire/repertoireMilestones';
 import { ENCORE_PERFORMANCE_KEY_OPTIONS } from '../repertoire/performanceKeys';
 import { collectAllSongTags, normalizeSongTags } from '../repertoire/songTags';
-import { effectiveSongAttachments } from '../utils/songAttachments';
 import { InlineChipSelect } from '../ui/InlineEditChip';
 import { InlineSongTagsCell } from '../ui/InlineSongTagsCell';
 import { encoreMrtRepertoireTableOptions } from './encoreMrtTableDefaults';
@@ -115,6 +108,27 @@ import {
   normalizeEncoreMrtColumnOrder,
   withEncoreMrtTrailingSpacer,
 } from './encoreMrtColumnOrder';
+import {
+  type RepertoireViewMode,
+  REPERTOIRE_FILTER_EMPTY,
+  countBackingTracks,
+  countChartAttachments,
+  countReferenceTracks,
+  countTakeAttachments,
+  formatShortDate,
+  mergeRepertoireColumnVisibility,
+  mrtColumnId,
+  normalizeVenueTag,
+  repertoireColumnOrderForMrt,
+  songHasSpotifySource,
+  songMatchesAnySelectedTag,
+  songMatchesSearch,
+} from './libraryScreenHelpers';
+import { EncoreMrtSearchHighlightContext } from './encoreMrtSearchHighlightContext';
+import { LibraryRepertoireBulkBar } from './libraryScreen/LibraryRepertoireBulkBar';
+import { LibraryRepertoireFiltersPanel } from './libraryScreen/LibraryRepertoireFiltersPanel';
+import { LibraryRepertoireMrtOrGrid } from './libraryScreen/LibraryRepertoireMrtOrGrid';
+import type { EncoreRepertoireMrtRow } from './libraryScreen/libraryRepertoireMrtRowTypes';
 import { encorePossessivePageTitle } from '../utils/encorePossessivePageTitle';
 import { performanceVideoOpenUrl } from '../utils/performanceVideoUrl';
 import { useDebouncedString } from '../utils/useDebouncedString';
@@ -124,114 +138,7 @@ import AppTooltip from '../../shared/components/AppTooltip';
 
 const REPERTOIRE_VIEW_STORAGE_KEY = 'encore.library.repertoireView';
 
-type RepertoireViewMode = 'table' | 'grid';
-
 const REPERTOIRE_FILTER_PINNED = ['performed', 'practicing', 'venue'] as const;
-
-const REPERTOIRE_FILTER_EMPTY: Record<string, string[]> = {
-  performed: [],
-  practicing: [],
-  venue: [],
-  tags: [],
-  artist: [],
-  perfKey: [],
-  assetRefs: [],
-  assetBacking: [],
-  assetSpotify: [],
-  assetCharts: [],
-  assetTakes: [],
-  milestoneWhich: [],
-  milestoneNotDone: [],
-  milestoneDoneMin: [],
-  milestoneDoneMax: [],
-};
-
-/** Columns that should be visible when missing from saved prefs (older installs). MRT uses `false` = hidden. */
-const REP_COLUMN_VISIBLE_BY_DEFAULT_IF_ABSENT = {
-  lastIso: true,
-} as const satisfies Record<string, boolean>;
-
-/** New resource columns: hidden until the user shows them (merged into prefs on load). MRT uses `false` = hidden. */
-const REP_COLUMN_HIDDEN_BY_DEFAULT = {
-  refTracks: false,
-  backingTracks: false,
-  spotifySource: false,
-  songCharts: false,
-  songTakes: false,
-} as const satisfies Record<string, boolean>;
-
-function mergeRepertoireColumnVisibility(
-  saved: Record<string, boolean> | undefined,
-): Record<string, boolean> {
-  const vis = { ...(saved ?? {}) };
-  for (const [k, v] of Object.entries(REP_COLUMN_VISIBLE_BY_DEFAULT_IF_ABSENT)) {
-    if (!(k in vis)) vis[k] = v;
-  }
-  for (const [k, v] of Object.entries(REP_COLUMN_HIDDEN_BY_DEFAULT)) {
-    if (!(k in vis)) vis[k] = v;
-  }
-  return vis;
-}
-
-function countReferenceTracks(s: EncoreSong): number {
-  return s.referenceLinks?.length ?? 0;
-}
-
-function countBackingTracks(s: EncoreSong): number {
-  return s.backingLinks?.length ?? 0;
-}
-
-function countChartAttachments(s: EncoreSong): number {
-  return effectiveSongAttachments(s).filter((a) => a.kind === 'chart').length;
-}
-
-function countTakeAttachments(s: EncoreSong): number {
-  return effectiveSongAttachments(s).filter((a) => a.kind === 'recording').length;
-}
-
-function songHasSpotifySource(s: EncoreSong): boolean {
-  return Boolean(s.spotifyTrackId?.trim());
-}
-
-function normalizeVenueTag(tag: string): string {
-  return tag.trim() || 'Venue';
-}
-
-function formatShortDate(iso: string | null): string {
-  if (!iso) return '–';
-  try {
-    return new Date(`${iso}T12:00:00`).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-  } catch {
-    return iso;
-  }
-}
-
-function mrtColumnId<T extends Record<string, unknown>>(c: MRT_ColumnDef<T>): string {
-  if (c.id) return c.id;
-  if (typeof c.accessorKey === 'string') return c.accessorKey;
-  if (c.accessorKey != null) return String(c.accessorKey);
-  return '';
-}
-
-/** Match `state.columnOrder` so TanStack functional updaters see the same base as MRT. */
-function repertoireColumnOrderForMrt(
-  viewMode: RepertoireViewMode,
-  repColOrder: string[] | undefined,
-  repDefaultColumnOrder: string[],
-): string[] {
-  const base = repColOrder ?? repDefaultColumnOrder;
-  if (viewMode !== 'table') {
-    return withEncoreMrtTrailingSpacer(
-      normalizeEncoreMrtColumnOrder(
-        ensureEncoreMrtRowActionsInOrder(base.filter((id) => id !== MRT_ROW_SELECT_COL)),
-      ),
-    );
-  }
-  const withSelect = base.includes(MRT_ROW_SELECT_COL) ? base : [MRT_ROW_SELECT_COL, ...base];
-  const withActions = ensureEncoreMrtRowActionsInOrder(withSelect);
-  const normalized = normalizeEncoreMrtColumnOrder(withActions);
-  return withEncoreMrtTrailingSpacer(ensureEncoreMrtSelectLeading(normalized));
-}
 
 /** Show dense row actions on hover (fine pointer); keep visible on touch/coarse pointers. */
 const REPERTOIRE_CELL_HOVER_ACTIONS_SX = {
@@ -247,34 +154,82 @@ const REPERTOIRE_CELL_HOVER_ACTIONS_SX = {
   },
 } as const;
 
-type EncoreRepertoireMrtRow = {
-  song: EncoreSong;
-  title: string;
-  artist: string;
-  keyDisplay: string;
-  perfCount: number;
-  venues: string;
-  /** Per-row venue list, sorted alphabetically. Drives the chip rendering in the Venues column. */
-  venuesList: string[];
-  lastIso: string;
-  lastDisplay: string;
-  /** Most recent performance for this song (perf list is sorted newest-first). */
-  latestPerf: EncorePerformance | null;
-  /** Number of template + song-only milestones in `done` state (for sorting). */
-  milestoneDone: number;
-  milestoneShort: string;
-  milestoneDetail: string;
-  tags: string[];
-  tagsLabel: string;
-  refCount: number;
-  backingCount: number;
-  hasSpotifySource: boolean;
-  spotifySourceLabel: string;
-  chartCount: number;
-  takeCount: number;
-};
-
 const getRepertoireRowId = (row: EncoreRepertoireMrtRow): string => row.song.id;
+
+const REPERTOIRE_MRT_DEFAULT_COLUMN = { minSize: 100, maxSize: 640, size: 140 } as const;
+
+function RepTitleTableCell({ renderedCellValue }: { renderedCellValue: unknown }): ReactElement {
+  const highlight = useContext(EncoreMrtSearchHighlightContext);
+  const t = String(renderedCellValue ?? '');
+  return (
+    <AppTooltip title={t}>
+      <Box component="span" sx={{ display: 'block', minWidth: 0, maxWidth: '100%' }}>
+        <HighlightedText
+          text={t}
+          highlight={highlight}
+          variant="body2"
+          sx={{
+            fontWeight: 600,
+            lineHeight: 1.35,
+            color: 'text.primary',
+            display: 'block',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        />
+      </Box>
+    </AppTooltip>
+  );
+}
+
+function RepArtistTableCell({
+  row,
+  onFilterArtist,
+}: {
+  row: MRT_Row<EncoreRepertoireMrtRow>;
+  onFilterArtist: (filterVal: string) => void;
+}): ReactElement {
+  const highlight = useContext(EncoreMrtSearchHighlightContext);
+  const t = String(row.original.song.artist ?? '');
+  const filterVal = t.trim() ? t.trim() : ENCORE_FILTER_SENTINEL.blankArtist;
+  return (
+    <Stack direction="row" alignItems="center" spacing={0.25} sx={REPERTOIRE_CELL_HOVER_ACTIONS_SX}>
+      <Box sx={{ minWidth: 0, flex: 1, maxWidth: '100%' }}>
+        <AppTooltip title={t}>
+          <Box component="span" sx={{ display: 'block', minWidth: 0, maxWidth: '100%' }}>
+            <HighlightedText
+              text={t}
+              highlight={highlight}
+              variant="body2"
+              sx={{
+                lineHeight: 1.35,
+                color: 'text.secondary',
+                display: 'block',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            />
+          </Box>
+        </AppTooltip>
+      </Box>
+      <Tooltip title="Filter to this artist">
+        <IconButton
+          size="small"
+          aria-label="Filter to this artist"
+          className="encore-rep-cell-hover-target"
+          data-encore-row-control
+          onClick={(e) => {
+            e.stopPropagation();
+            onFilterArtist(filterVal);
+          }}
+          sx={{ flexShrink: 0, p: 0.25 }}
+        >
+          <FilterListIcon sx={{ fontSize: 18 }} />
+        </IconButton>
+      </Tooltip>
+    </Stack>
+  );
+}
 
 const RepertoireTableMediaEdit = memo(function RepertoireTableMediaEdit(props: {
   song: EncoreSong;
@@ -341,40 +296,6 @@ const REPERTOIRE_ROW_SX = {
 /** Repertoire grid cards list this many recent performances before offering "Show more". */
 const REPERTOIRE_GRID_PERF_PREVIEW_COUNT = 5;
 
-/**
- * Search predicate keyed off a precomputed `perfBySong` map (the screen already builds it for
- * the venue / "performed" filters). The legacy version filtered the global `performances` array
- * for every song on every keystroke — O(songs × performances). This O(songsPerformances) version
- * stays linear in the row's own performance list.
- */
-function songMatchesSearch(
-  song: EncoreSong,
-  query: string,
-  perfBySong: ReadonlyMap<string, ReadonlyArray<EncorePerformance>>,
-): boolean {
-  const t = query.trim().toLowerCase();
-  if (!t) return true;
-  if (song.title.toLowerCase().includes(t) || song.artist.toLowerCase().includes(t)) return true;
-  const songPerfs = perfBySong.get(song.id);
-  if (songPerfs) {
-    for (const p of songPerfs) {
-      if (normalizeVenueTag(p.venueTag).toLowerCase().includes(t)) return true;
-      if (p.date.toLowerCase().includes(t)) return true;
-    }
-  }
-  if ((song.performanceKey ?? '').toLowerCase().includes(t)) return true;
-  if (song.tags && song.tags.some((tag) => tag.toLowerCase().includes(t))) return true;
-  return false;
-}
-
-function songMatchesAnySelectedTag(song: EncoreSong, selectedTags: string[]): boolean {
-  if (!selectedTags.length) return true;
-  const songTags = song.tags ?? [];
-  const lower = (t: string) => t.trim().toLowerCase();
-  const songLower = new Set(songTags.map((t) => lower(t)));
-  return selectedTags.some((t) => songLower.has(lower(t)));
-}
-
 type RepertoireGridCardProps = {
   song: EncoreSong;
   perfs: EncorePerformance[];
@@ -382,7 +303,6 @@ type RepertoireGridCardProps = {
   milestoneTooltip: string;
   milestoneTotal: number;
   tagFilterOptions: string[];
-  debouncedSearch: string;
   onOpenSong: (s: EncoreSong, e?: ReactMouseEvent) => void;
   onEditPerformance: (p: EncorePerformance, songId: string) => void;
   onLogPerformance: (song: EncoreSong) => void;
@@ -398,7 +318,6 @@ const RepertoireGridCard = memo(function RepertoireGridCard(props: RepertoireGri
     milestoneTooltip,
     milestoneTotal,
     tagFilterOptions,
-    debouncedSearch,
     onOpenSong,
     onEditPerformance,
     onLogPerformance,
@@ -406,6 +325,7 @@ const RepertoireGridCard = memo(function RepertoireGridCard(props: RepertoireGri
     onTagsCommit,
   } = props;
   const theme = useTheme();
+  const debouncedSearch = useContext(EncoreMrtSearchHighlightContext);
   const [perfExpanded, setPerfExpanded] = useState(false);
   const keyDisplay = s.performanceKey?.trim() || '';
   const perfOverflow = perfs.length > REPERTOIRE_GRID_PERF_PREVIEW_COUNT;
@@ -747,12 +667,18 @@ const RepertoireGridCard = memo(function RepertoireGridCard(props: RepertoireGri
   );
 });
 
-export function LibraryScreen(): React.ReactElement {
+export function LibraryScreen(props?: {
+  /** When false, this screen is keep-alive mounted but not the visible list tab. */
+  heavyListTabActive?: boolean;
+  /** Signals the shell that the heavy list surface has laid out (min placeholder time may still apply). */
+  onHeavyTabLaidOut?: () => void;
+}): React.ReactElement {
+  const { heavyListTabActive = true, onHeavyTabLaidOut } = props ?? {};
   const theme = useTheme();
+  const { googleAccessToken, spotifyLinked, connectSpotify } = useEncoreAuth();
+  const { songs, songsHydrated, performances } = useEncoreLibraryTables();
+  const { repertoireExtras, effectiveDisplayName } = useEncoreLibraryExtras();
   const {
-    songs,
-    performances,
-    repertoireExtras,
     saveRepertoireExtras,
     saveSong,
     deleteSong,
@@ -761,12 +687,31 @@ export function LibraryScreen(): React.ReactElement {
     bulkSavePerformances,
     savePerformance,
     deletePerformance,
-    googleAccessToken,
-    spotifyLinked,
-    connectSpotify,
-    effectiveDisplayName,
-  } = useEncore();
+  } = useEncoreActions();
   const { withBlockingJob } = useEncoreBlockingJobs();
+  const heavyListTabPrevActiveRef = useRef(false);
+  useEffect(() => {
+    if (!heavyListTabActive) {
+      heavyListTabPrevActiveRef.current = false;
+      return;
+    }
+    if (!heavyListTabPrevActiveRef.current) {
+      onHeavyTabLaidOut?.();
+    }
+    heavyListTabPrevActiveRef.current = true;
+  }, [heavyListTabActive, onHeavyTabLaidOut]);
+
+  /** While this tab is keep-alive hidden, skip rebuilding heavy derived data (Dexie still updates elsewhere). */
+  const libraryStatsCacheRef = useRef({ topVenues: [] as [string, number][], totalPerf: 0 });
+  const venueOptionsCacheRef = useRef<string[]>([]);
+  const artistFilterOptionsCacheRef = useRef<string[]>([]);
+  const keyFilterOptionsCacheRef = useRef<string[]>([]);
+  const milestoneCountFilterOptionsCacheRef = useRef<{ value: string; label: string }[]>([{ value: '0', label: '0' }]);
+  const perfBySongCacheRef = useRef(new Map<string, EncorePerformance[]>());
+  const repertoireSongsCacheRef = useRef<EncoreSong[]>([]);
+  const repertoireFilterFieldDefsCacheRef = useRef<EncoreFilterFieldConfig[]>([]);
+  const repertoireTableDataCacheRef = useRef<EncoreRepertoireMrtRow[]>([]);
+
   const spotifyClientId = (import.meta.env.VITE_SPOTIFY_CLIENT_ID as string | undefined)?.trim() ?? '';
   const [importOpen, setImportOpen] = useState(false);
   const [importPlacement, setImportPlacement] = useState<'reference' | 'backing'>('reference');
@@ -862,16 +807,20 @@ export function LibraryScreen(): React.ReactElement {
   }, [viewMode]);
 
   const libraryStats = useMemo(() => {
+    if (!heavyListTabActive) return libraryStatsCacheRef.current;
     const venueMap = new Map<string, number>();
     for (const p of performances) {
       const v = normalizeVenueTag(p.venueTag);
       venueMap.set(v, (venueMap.get(v) ?? 0) + 1);
     }
     const topVenues = [...venueMap.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
-    return { topVenues, totalPerf: performances.length };
-  }, [performances]);
+    const next = { topVenues, totalPerf: performances.length };
+    libraryStatsCacheRef.current = next;
+    return next;
+  }, [heavyListTabActive, performances]);
 
   const venueOptions = useMemo(() => {
+    if (!heavyListTabActive) return venueOptionsCacheRef.current;
     const s = new Set<string>();
     for (const v of repertoireExtras.venueCatalog) {
       const t = v.trim();
@@ -881,26 +830,34 @@ export function LibraryScreen(): React.ReactElement {
       const t = p.venueTag.trim();
       if (t) s.add(t);
     }
-    return [...s];
-  }, [repertoireExtras.venueCatalog, performances]);
+    const next = [...s];
+    venueOptionsCacheRef.current = next;
+    return next;
+  }, [heavyListTabActive, repertoireExtras.venueCatalog, performances]);
 
   const artistFilterOptions = useMemo(() => {
+    if (!heavyListTabActive) return artistFilterOptionsCacheRef.current;
     const s = new Set<string>();
     for (const song of songs) {
       const a = song.artist.trim();
       if (a) s.add(a);
     }
-    return [...s].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
-  }, [songs]);
+    const next = [...s].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    artistFilterOptionsCacheRef.current = next;
+    return next;
+  }, [heavyListTabActive, songs]);
 
   const keyFilterOptions = useMemo(() => {
+    if (!heavyListTabActive) return keyFilterOptionsCacheRef.current;
     const s = new Set<string>(ENCORE_PERFORMANCE_KEY_OPTIONS);
     for (const song of songs) {
       const k = song.performanceKey?.trim();
       if (k) s.add(k);
     }
-    return [...s].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
-  }, [songs]);
+    const next = [...s].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    keyFilterOptionsCacheRef.current = next;
+    return next;
+  }, [heavyListTabActive, songs]);
 
   const milestoneWhichFieldOptions = useMemo(
     () =>
@@ -912,13 +869,17 @@ export function LibraryScreen(): React.ReactElement {
   );
 
   const milestoneCountFilterOptions = useMemo(() => {
+    if (!heavyListTabActive) return milestoneCountFilterOptionsCacheRef.current;
     const tmpl = repertoireExtras.milestoneTemplate.filter((m) => !m.archived).length;
     const songOnlyMax = songs.reduce((m, s) => Math.max(m, (s.songOnlyMilestones ?? []).length), 0);
     const cap = Math.min(48, Math.max(1, tmpl + songOnlyMax));
-    return Array.from({ length: cap + 1 }, (_, i) => ({ value: String(i), label: String(i) }));
-  }, [repertoireExtras.milestoneTemplate, songs]);
+    const next = Array.from({ length: cap + 1 }, (_, i) => ({ value: String(i), label: String(i) }));
+    milestoneCountFilterOptionsCacheRef.current = next;
+    return next;
+  }, [heavyListTabActive, repertoireExtras.milestoneTemplate, songs]);
 
   const perfBySong = useMemo(() => {
+    if (!heavyListTabActive) return perfBySongCacheRef.current;
     const m = new Map<string, EncorePerformance[]>();
     for (const p of performances) {
       const list = m.get(p.songId) ?? [];
@@ -928,8 +889,9 @@ export function LibraryScreen(): React.ReactElement {
     for (const list of m.values()) {
       list.sort((a, b) => b.date.localeCompare(a.date));
     }
+    perfBySongCacheRef.current = m;
     return m;
-  }, [performances]);
+  }, [heavyListTabActive, performances]);
 
   const perfPresence = repertoireFilterValues.performed[0] === 'with' ? 'with' : repertoireFilterValues.performed[0] === 'none' ? 'none' : 'all';
   const practicingSel = repertoireFilterValues.practicing[0];
@@ -941,6 +903,7 @@ export function LibraryScreen(): React.ReactElement {
         : 'all';
 
   const repertoireSongs = useMemo(() => {
+    if (!heavyListTabActive) return repertoireSongsCacheRef.current;
     const venueFilters = repertoireFilterValues.venue ?? [];
     const tagFilters = repertoireFilterValues.tags ?? [];
     const artistFilters = repertoireFilterValues.artist ?? [];
@@ -1056,8 +1019,10 @@ export function LibraryScreen(): React.ReactElement {
     if (debouncedSearch.trim()) {
       list = list.filter((s) => songMatchesSearch(s, debouncedSearch, perfBySong));
     }
+    repertoireSongsCacheRef.current = list;
     return list;
   }, [
+    heavyListTabActive,
     songs,
     perfPresence,
     practicingFilter,
@@ -1094,6 +1059,7 @@ export function LibraryScreen(): React.ReactElement {
   }, []);
 
   const repertoireFilterFieldDefs = useMemo((): EncoreFilterFieldConfig[] => {
+    if (!heavyListTabActive) return repertoireFilterFieldDefsCacheRef.current;
     const venueOpts = [
       { value: ENCORE_FILTER_SENTINEL.repertoireNoPerformances, label: 'No performances yet' },
       ...[...venueOptions]
@@ -1189,7 +1155,7 @@ export function LibraryScreen(): React.ReactElement {
       },
     );
 
-    return [
+    const next: EncoreFilterFieldConfig[] = [
       {
         id: 'performed',
         label: 'Performed',
@@ -1215,7 +1181,10 @@ export function LibraryScreen(): React.ReactElement {
       ...assetPair,
       ...milestoneFields,
     ];
+    repertoireFilterFieldDefsCacheRef.current = next;
+    return next;
   }, [
+    heavyListTabActive,
     songs,
     venueOptions,
     artistFilterOptions,
@@ -1239,7 +1208,8 @@ export function LibraryScreen(): React.ReactElement {
   }, []);
 
   const tableData = useMemo((): EncoreRepertoireMrtRow[] => {
-    return repertoireSongs.map((s) => {
+    if (!heavyListTabActive) return repertoireTableDataCacheRef.current;
+    const next = repertoireSongs.map((s) => {
       const perfList = perfBySong.get(s.id) ?? [];
       const perfCount = perfList.length;
       const venueSet = new Set(perfList.map((p) => normalizeVenueTag(p.venueTag)));
@@ -1281,7 +1251,9 @@ export function LibraryScreen(): React.ReactElement {
         takeCount: countTakeAttachments(s),
       };
     });
-  }, [repertoireSongs, perfBySong, repertoireExtras.milestoneTemplate]);
+    repertoireTableDataCacheRef.current = next;
+    return next;
+  }, [heavyListTabActive, repertoireSongs, perfBySong, repertoireExtras.milestoneTemplate]);
 
   const tagFilterOptions = useMemo(() => collectAllSongTags(songs), [songs]);
 
@@ -1476,28 +1448,7 @@ export function LibraryScreen(): React.ReactElement {
         ),
         size: 220,
         minSize: 200,
-        Cell: ({ renderedCellValue }) => {
-          const t = String(renderedCellValue ?? '');
-          return (
-            <AppTooltip title={t}>
-              <Box component="span" sx={{ display: 'block', minWidth: 0, maxWidth: '100%' }}>
-                <HighlightedText
-                  text={t}
-                  highlight={debouncedSearch}
-                  variant="body2"
-                  sx={{
-                    fontWeight: 600,
-                    lineHeight: 1.35,
-                    color: 'text.primary',
-                    display: 'block',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}
-                />
-              </Box>
-            </AppTooltip>
-          );
-        },
+        Cell: ({ renderedCellValue }) => <RepTitleTableCell renderedCellValue={renderedCellValue} />,
       },
       {
         accessorKey: 'artist',
@@ -1508,48 +1459,12 @@ export function LibraryScreen(): React.ReactElement {
         ),
         size: 180,
         minSize: 140,
-        Cell: ({ row }) => {
-          const s = row.original.song;
-          const t = String(s.artist ?? '');
-          const filterVal = t.trim() ? t.trim() : ENCORE_FILTER_SENTINEL.blankArtist;
-          return (
-            <Stack direction="row" alignItems="center" spacing={0.25} sx={REPERTOIRE_CELL_HOVER_ACTIONS_SX}>
-              <Box sx={{ minWidth: 0, flex: 1, maxWidth: '100%' }}>
-                <AppTooltip title={t}>
-                  <Box component="span" sx={{ display: 'block', minWidth: 0, maxWidth: '100%' }}>
-                    <HighlightedText
-                      text={t}
-                      highlight={debouncedSearch}
-                      variant="body2"
-                      sx={{
-                        lineHeight: 1.35,
-                        color: 'text.secondary',
-                        display: 'block',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                      }}
-                    />
-                  </Box>
-                </AppTooltip>
-              </Box>
-              <Tooltip title="Filter to this artist">
-                <IconButton
-                  size="small"
-                  aria-label="Filter to this artist"
-                  className="encore-rep-cell-hover-target"
-                  data-encore-row-control
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    applyExclusiveRepertoireFilter('artist', filterVal);
-                  }}
-                  sx={{ flexShrink: 0, p: 0.25 }}
-                >
-                  <FilterListIcon sx={{ fontSize: 18 }} />
-                </IconButton>
-              </Tooltip>
-            </Stack>
-          );
-        },
+        Cell: ({ row }) => (
+          <RepArtistTableCell
+            row={row}
+            onFilterArtist={(filterVal) => applyExclusiveRepertoireFilter('artist', filterVal)}
+          />
+        ),
       },
       {
         accessorKey: 'tagsLabel',
@@ -2069,7 +1984,7 @@ export function LibraryScreen(): React.ReactElement {
         },
       },
     ],
-    [theme, saveSong, tagFilterOptions, debouncedSearch, openSongResources, milestoneWhichFieldOptions, applyExclusiveRepertoireFilter],
+    [theme, saveSong, tagFilterOptions, openSongResources, milestoneWhichFieldOptions, applyExclusiveRepertoireFilter],
   );
 
   const repDefaultColumnOrder = useMemo(
@@ -2184,31 +2099,51 @@ export function LibraryScreen(): React.ReactElement {
     [],
   );
 
-  const table = useMaterialReactTable({
-    columns,
-    data: tableData,
-    getRowId: getRepertoireRowId,
-    ...repertoireMrtBaseOptions,
-    defaultColumn: { minSize: 100, maxSize: 640, size: 140 },
-    enableGlobalFilter: false,
-    enableColumnFilters: false,
-    enableHiding: true,
-    enableColumnActions: false,
-    enableColumnOrdering: true,
-    mrtTheme: repertoireMrtTheme,
-    enableRowActions: true,
-    positionActionsColumn: 'last',
-    displayColumnDefOptions: repertoireDisplayColumnDefOptions,
-    enableRowSelection: viewMode === 'table',
-    onRowSelectionChange: setRowSelection,
-    state: repertoireMrtState,
-    onColumnVisibilityChange: handleRepertoireColumnVisibilityChange,
-    onColumnOrderChange: handleRepertoireColumnOrderChange,
-    onSortingChange: handleRepertoireSortingChange,
-    renderRowActions: renderRepertoireRowActions,
-    muiTableBodyRowProps: repertoireTableBodyRowProps,
-    initialState: repertoireInitialState,
-  });
+  const table = useMaterialReactTable<EncoreRepertoireMrtRow>(
+    useMemo(
+      () => ({
+        columns,
+        data: tableData,
+        getRowId: getRepertoireRowId,
+        ...repertoireMrtBaseOptions,
+        defaultColumn: REPERTOIRE_MRT_DEFAULT_COLUMN,
+        enableGlobalFilter: false,
+        enableColumnFilters: false,
+        enableHiding: true,
+        enableColumnActions: false,
+        enableColumnOrdering: true,
+        mrtTheme: repertoireMrtTheme,
+        enableRowActions: true,
+        positionActionsColumn: 'last',
+        displayColumnDefOptions: repertoireDisplayColumnDefOptions,
+        enableRowSelection: viewMode === 'table',
+        onRowSelectionChange: setRowSelection,
+        state: repertoireMrtState,
+        onColumnVisibilityChange: handleRepertoireColumnVisibilityChange,
+        onColumnOrderChange: handleRepertoireColumnOrderChange,
+        onSortingChange: handleRepertoireSortingChange,
+        renderRowActions: renderRepertoireRowActions,
+        muiTableBodyRowProps: repertoireTableBodyRowProps,
+        initialState: repertoireInitialState,
+      }),
+      [
+        columns,
+        tableData,
+        repertoireMrtBaseOptions,
+        repertoireMrtTheme,
+        repertoireDisplayColumnDefOptions,
+        viewMode,
+        setRowSelection,
+        repertoireMrtState,
+        handleRepertoireColumnVisibilityChange,
+        handleRepertoireColumnOrderChange,
+        handleRepertoireSortingChange,
+        renderRepertoireRowActions,
+        repertoireTableBodyRowProps,
+        repertoireInitialState,
+      ],
+    ),
+  );
 
   return (
     <Box
@@ -2222,7 +2157,9 @@ export function LibraryScreen(): React.ReactElement {
       <EncorePageHeader
         title={encorePossessivePageTitle(effectiveDisplayName, 'repertoire')}
         description={
-          songs.length === 0
+          !songsHydrated
+            ? 'Loading your library from this device…'
+            : songs.length === 0
             ? 'Add a song or import a playlist to start.'
             : libraryStats.totalPerf === 0
               ? `${songs.length} ${songs.length === 1 ? 'song' : 'songs'}. No performances logged yet.`
@@ -2398,78 +2335,38 @@ export function LibraryScreen(): React.ReactElement {
         }
       />
 
-      {songs.length > 0 ? (
-        <Box sx={{ mb: { xs: 4, sm: 5 } }}>
-          <Stack spacing={2.5}>
-            <EncoreToolbarRow sx={{ mb: 0 }}>
-              <TextField
-                size="small"
-                fullWidth
-                placeholder="Search title, artist, venue, key…"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                inputProps={{ 'aria-label': 'Search repertoire' }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon fontSize="small" color="action" aria-hidden />
-                    </InputAdornment>
-                  ),
-                }}
-                sx={{ maxWidth: { sm: 560 } }}
-              />
-            </EncoreToolbarRow>
-
-            <EncoreFilterChipBar
-              ref={repertoireFilterBarRef}
-              fields={repertoireFilterFieldDefs}
-              visibleFieldIds={visibleRepertoireFilterIds}
-              values={repertoireFilterValues}
-              onChange={onRepertoireFilterChange}
-              addableFields={repertoireAddableFilterFields}
-              onVisibleFieldIdsChange={setVisibleRepertoireFilterIds}
-              defaultPinnedFieldIds={[...REPERTOIRE_FILTER_PINNED]}
-              hasActiveFilters={hasActiveFilters}
-              onClearAll={clearAllFilters}
-            />
-            <Stack direction="row" flexWrap="wrap" alignItems="center" justifyContent="space-between" gap={1} useFlexGap>
-              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500, minWidth: 0 }}>
-                Showing {repertoireSongs.length} of {songs.length} {songs.length === 1 ? 'song' : 'songs'}
-                {hasActiveFilters || searchQuery.trim() ? ' · search or filters applied' : ''}
-              </Typography>
-              <Stack direction="row" alignItems="center" gap={2.5} sx={{ flexShrink: 0 }}>
-                <EncoreMrtColumnsSettingsButton
-                  show={viewMode === 'table'}
-                  table={table}
-                  onResetLayout={resetRepertoireTableLayout}
-                />
-                <ToggleButtonGroup
-                  exclusive
-                  size="small"
-                  value={viewMode}
-                  onChange={(_e, next: RepertoireViewMode | null) => {
-                    if (next) setViewMode(next);
-                  }}
-                  aria-label="Repertoire layout"
-                >
-                  <Tooltip title="Table view">
-                    <ToggleButton value="table" aria-label="Table view">
-                      <ViewListIcon fontSize="small" />
-                    </ToggleButton>
-                  </Tooltip>
-                  <Tooltip title="Grid view">
-                    <ToggleButton value="grid" aria-label="Grid view">
-                      <ViewModuleIcon fontSize="small" />
-                    </ToggleButton>
-                  </Tooltip>
-                </ToggleButtonGroup>
-              </Stack>
-            </Stack>
-          </Stack>
+      {!songsHydrated ? (
+        <Box
+          sx={{ display: 'flex', justifyContent: 'center', py: 8 }}
+          aria-busy="true"
+          aria-label="Loading library"
+        >
+          <CircularProgress />
         </Box>
       ) : null}
 
-      {songs.length === 0 && (
+      <LibraryRepertoireFiltersPanel
+        songsCount={songs.length}
+        repertoireSongsCount={repertoireSongs.length}
+        searchQuery={searchQuery}
+        onSearchQueryChange={setSearchQuery}
+        hasActiveFilters={hasActiveFilters}
+        repertoireFilterBarRef={repertoireFilterBarRef}
+        repertoireFilterFieldDefs={repertoireFilterFieldDefs}
+        visibleRepertoireFilterIds={visibleRepertoireFilterIds}
+        repertoireFilterValues={repertoireFilterValues}
+        onRepertoireFilterChange={onRepertoireFilterChange}
+        repertoireAddableFilterFields={repertoireAddableFilterFields}
+        onVisibleRepertoireFilterIdsChange={setVisibleRepertoireFilterIds}
+        defaultPinnedFieldIds={REPERTOIRE_FILTER_PINNED}
+        onClearAllFilters={clearAllFilters}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        table={table}
+        onResetRepertoireTableLayout={resetRepertoireTableLayout}
+      />
+
+      {songsHydrated && songs.length === 0 && (
         <Stack spacing={2} sx={{ py: 5, alignItems: 'center', px: 2, maxWidth: 560, mx: 'auto' }}>
           <Typography color="text.secondary" sx={{ textAlign: 'center', lineHeight: 1.65 }}>
             Nothing here yet. Add a song to start. Data stays on this device until you sign in to Google for Drive sync
@@ -2516,104 +2413,25 @@ export function LibraryScreen(): React.ReactElement {
       ) : null}
 
       {repertoireSongs.length > 0 && viewMode === 'table' && selectedSongIds.size > 0 ? (
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          spacing={1}
-          alignItems={{ sm: 'center' }}
-          flexWrap="wrap"
-          useFlexGap
-          sx={{
-            mb: 2,
-            p: 1.5,
-            borderRadius: 2,
-            border: 1,
-            borderColor: 'divider',
-            bgcolor: (t) => alpha(t.palette.primary.main, 0.06),
-          }}
-        >
-          {/*
-            Structured bulk-action bar: safe edits sit on the main row, destructive actions live
-            in the overflow menu so they aren't a one-click misfire on a toolbar with selected
-            rows. Tag input upgrades to an Autocomplete with existing-tag suggestions.
-          */}
-          <Typography variant="body2" sx={{ fontWeight: 700 }}>
-            {selectedSongIds.size} selected
-          </Typography>
-          <Button size="small" variant="outlined" onClick={() => void bulkSetPracticing(true)}>
-            Mark currently practicing
-          </Button>
-          <Button size="small" variant="outlined" onClick={() => void bulkSetPracticing(false)}>
-            Clear practicing
-          </Button>
-          <Button size="small" variant="outlined" onClick={() => setBulkTagOpen(true)}>
-            Add tag…
-          </Button>
-          <Box sx={{ flex: 1 }} />
-          <Button size="small" variant="text" onClick={() => setRowSelection({})}>
-            Clear selection
-          </Button>
-          <Tooltip title="More actions">
-            <IconButton
-              size="small"
-              aria-label="More bulk actions"
-              aria-haspopup="true"
-              aria-expanded={bulkOverflowAnchor ? 'true' : undefined}
-              onClick={(e) => setBulkOverflowAnchor(e.currentTarget)}
-              sx={{
-                ml: 0.5,
-                border: 1,
-                borderColor: 'divider',
-                borderRadius: 1,
-                p: 0.5,
-                color: 'text.secondary',
-              }}
-            >
-              <MoreVertIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-          <Menu
-            anchorEl={bulkOverflowAnchor}
-            open={Boolean(bulkOverflowAnchor)}
-            onClose={() => setBulkOverflowAnchor(null)}
-            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-          >
-            <MenuItem
-              onClick={() => {
-                setBulkOverflowAnchor(null);
-                setBulkRefreshSpotifyOpen(true);
-              }}
-            >
-              Refresh song info from Spotify…
-            </MenuItem>
-            <Divider />
-            <MenuItem
-              onClick={() => {
-                setBulkOverflowAnchor(null);
-                setBulkDeleteOpen(true);
-              }}
-              sx={{ color: 'error.main' }}
-            >
-              Remove from library…
-            </MenuItem>
-          </Menu>
-        </Stack>
+        <LibraryRepertoireBulkBar
+          selectedCount={selectedSongIds.size}
+          bulkOverflowAnchor={bulkOverflowAnchor}
+          onBulkOverflowAnchorChange={setBulkOverflowAnchor}
+          onMarkPracticing={() => void bulkSetPracticing(true)}
+          onClearPracticing={() => void bulkSetPracticing(false)}
+          onOpenAddTag={() => setBulkTagOpen(true)}
+          onClearSelection={() => setRowSelection({})}
+          onOpenRefreshSpotify={() => setBulkRefreshSpotifyOpen(true)}
+          onOpenBulkDelete={() => setBulkDeleteOpen(true)}
+        />
       ) : null}
 
-      {repertoireSongs.length > 0 && viewMode === 'table' ? (
-        <Box className="encore-mrt-repertoire" sx={{ width: '100%', minWidth: 0, maxWidth: '100%', overflow: 'hidden' }}>
-          <MaterialReactTable table={table} />
-        </Box>
-      ) : null}
-      {repertoireSongs.length > 0 && viewMode === 'grid' ? (
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))',
-            gap: { xs: 2.25, sm: 2.75 },
-          }}
-        >
-          {repertoireSongs.map((s) => {
+      {repertoireSongs.length > 0 ? (
+        <LibraryRepertoireMrtOrGrid
+          debouncedSearch={debouncedSearch}
+          viewMode={viewMode}
+          table={table}
+          grid={repertoireSongs.map((s) => {
             const perfs = perfBySong.get(s.id) ?? [];
             const ms = milestoneProgressSummary(s, repertoireExtras.milestoneTemplate);
             return (
@@ -2625,7 +2443,6 @@ export function LibraryScreen(): React.ReactElement {
                 milestoneTooltip={ms.tooltip}
                 milestoneTotal={ms.total}
                 tagFilterOptions={tagFilterOptions}
-                debouncedSearch={debouncedSearch}
                 onOpenSong={openSong}
                 onEditPerformance={onGridEditPerformance}
                 onLogPerformance={onGridLogPerformance}
@@ -2634,7 +2451,7 @@ export function LibraryScreen(): React.ReactElement {
               />
             );
           })}
-        </Box>
+        />
       ) : null}
 
       <Menu

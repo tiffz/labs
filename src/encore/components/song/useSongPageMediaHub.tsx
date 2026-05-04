@@ -2,7 +2,6 @@
  * Media hub for SongPage + SongResourcesEditDialog (reference, backing, Spotify source, charts, takes).
  * Slices copied from SongPage — refactor together when media flows change.
  */
-/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable react-refresh/only-export-components -- hook co-located with small section-heading helper */
 import AddIcon from '@mui/icons-material/Add';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
@@ -248,7 +247,8 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
     if (!draft) return;
     setSpotifyQuery(`${draft.title} ${draft.artist}`.trim());
     setSpotifyCatalogSwapOpen(false);
-  }, [draft?.id]);
+    // Intentionally key off song id only: avoid resetting the Spotify search field on every title/artist keystroke.
+  }, [draft?.id]); // eslint-disable-line react-hooks/exhaustive-deps -- reset when navigating between songs, not on each draft field edit
 
   useEffect(() => {
     if (!googleAccessToken) {
@@ -394,12 +394,12 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
       });
     });
     setSpotifyQuery(trackLabel(t));
-  }, []);
+  }, [setDraft]);
 
   const appendReferenceSpotifyFromTrack = useCallback((t: SpotifySearchTrack) => {
     setDraft((d) => (d ? appendSpotifyReferenceLink(d, t.id, { label: trackLabel(t) }) : d));
     setRefSpotifyQuery(trackLabel(t));
-  }, []);
+  }, [setDraft]);
 
   const resolveSpotifyDataSourcePaste = useCallback(
     async (rawOverride?: string) => {
@@ -452,7 +452,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
   const appendBackingSpotifyFromTrack = useCallback((t: SpotifySearchTrack) => {
     setDraft((d) => (d ? appendSpotifyBackingLink(d, t.id, { label: trackLabel(t) }) : d));
     setBackingSpotifyQuery(trackLabel(t));
-  }, []);
+  }, [setDraft]);
 
   const resolveBackingSpotifyPaste = useCallback(async () => {
     if (!draft || !clientId || !spotifyLinked) return;
@@ -514,7 +514,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
     } finally {
       setSpotifyMetaLoading(false);
     }
-  }, [clientId, draft, spotifyLinked, persistAfterMetadataRefresh]);
+  }, [clientId, draft, spotifyLinked, persistAfterMetadataRefresh, setDraft]);
   const uploadReferenceDriveFile = useCallback(
     async (file: File) => {
       if (!googleAccessToken) throw new Error('Sign in to Google to upload files to Drive.');
@@ -524,7 +524,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
       const created = await driveUploadFileResumable(googleAccessToken, file, [referenceUploadFolderId]);
       setDraft((d) => (d ? appendDriveReferenceLink(d, created.id, { label: file.name }) : d));
     },
-    [googleAccessToken, referenceUploadFolderId],
+    [googleAccessToken, referenceUploadFolderId, setDraft],
   );
 
   const uploadBackingDriveFile = useCallback(
@@ -536,7 +536,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
       const created = await driveUploadFileResumable(googleAccessToken, file, [backingUploadFolderId]);
       setDraft((d) => (d ? appendDriveBackingLink(d, created.id, { label: file.name }) : d));
     },
-    [googleAccessToken, backingUploadFolderId],
+    [googleAccessToken, backingUploadFolderId, setDraft],
   );
 
   const uploadTakeDriveFile = useCallback(
@@ -555,7 +555,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
         });
       });
     },
-    [googleAccessToken, takesUploadFolderId],
+    [googleAccessToken, takesUploadFolderId, setDraft],
   );
 
   const uploadChartDriveFile = useCallback(
@@ -575,7 +575,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
           : d,
       );
     },
-    [googleAccessToken, chartUploadFolderId],
+    [googleAccessToken, chartUploadFolderId, setDraft],
   );
 
   const onReferenceDriveFile = useCallback(

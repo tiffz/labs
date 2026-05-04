@@ -1,7 +1,5 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
 import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -9,15 +7,9 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Container from '@mui/material/Container';
 import Paper from '@mui/material/Paper';
 import FormControlLabel from '@mui/material/FormControlLabel';
-import IconButton from '@mui/material/IconButton';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
 import Stack from '@mui/material/Stack';
 import Switch from '@mui/material/Switch';
 import TextField from '@mui/material/TextField';
-import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent as ReactDragEvent } from 'react';
@@ -31,12 +23,7 @@ import {
 } from '../utils/encoreNoAlbumArtSurface';
 import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
 import { useEncore, useEncoreSong } from '../context/EncoreContext';
-import {
-  encoreHairline,
-  encoreMaxWidthPage,
-  encoreRadius,
-  encoreShadowSurface,
-} from '../theme/encoreUiTokens';
+import { encoreMaxWidthPage } from '../theme/encoreUiTokens';
 import {
   encorePagePaddingTop,
   encoreScreenPaddingX,
@@ -60,86 +47,16 @@ import { InlineChipSelect } from '../ui/InlineEditChip';
 import { InlineSongTagsCell } from '../ui/InlineSongTagsCell';
 import { renderSpotifyTrackAutocompleteOption } from '../ui/renderSpotifyTrackAutocompleteOption';
 import { SongMediaUploadIntentDialog } from './song/SongMediaUploadIntentDialog';
+import { SongPageChrome } from './song/SongPageChrome';
 import type { SongMediaUploadSlot } from './song/songMediaUploadSlot';
+import {
+  encoreSongPageCardPaddingSx,
+  encoreSongPageCardPaperSx,
+  newSong,
+  songAutosaveDirty,
+  trackLabel,
+} from './song/songPageHelpers';
 import { useSongPageMediaHub } from './song/useSongPageMediaHub';
-
-function newSong(): EncoreSong {
-  const now = new Date().toISOString();
-  return {
-    id: crypto.randomUUID(),
-    title: '',
-    artist: '',
-    journalMarkdown: '',
-    createdAt: now,
-    updatedAt: now,
-  };
-}
-
-function trackLabel(t: SpotifySearchTrack): string {
-  const artists = t.artists?.map((a) => a.name).join(', ') ?? '';
-  return `${t.name} · ${artists}`;
-}
-
-/** Shared elevated surface for song hero + lower sections (Performances, Practice). */
-const encoreSongPageCardPaperSx = {
-  p: 0,
-  width: 1,
-  minWidth: 0,
-  borderRadius: encoreRadius,
-  border: 1,
-  borderColor: encoreHairline,
-  boxShadow: encoreShadowSurface,
-  bgcolor: 'background.paper',
-} as const;
-
-const encoreSongPageCardPaddingSx = {
-  px: { xs: 2.25, sm: 3 },
-  pt: { xs: 2.25, sm: 3 },
-  pb: { xs: 2.25, sm: 3 },
-} as const;
-
-/**
- * Structural change detector for the debounced autosave path. Compares the substantive song
- * fields with `===` and arrays element-by-element so a typing burst can compare in microseconds
- * (the previous `JSON.stringify` ran on every keystroke and dominated edit-tab CPU).
- */
-function shallowItemsEqual<T>(a: T[] | undefined, b: T[] | undefined): boolean {
-  if (a === b) return true;
-  if (!a || !b) return (a?.length ?? 0) === 0 && (b?.length ?? 0) === 0;
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
-  return true;
-}
-
-function shallowRecordEqual(a: Record<string, unknown> | undefined, b: Record<string, unknown> | undefined): boolean {
-  if (a === b) return true;
-  if (!a || !b) return Object.keys(a ?? {}).length === 0 && Object.keys(b ?? {}).length === 0;
-  const ak = Object.keys(a);
-  if (ak.length !== Object.keys(b).length) return false;
-  for (const k of ak) if (a[k] !== b[k]) return false;
-  return true;
-}
-
-function songAutosaveDirty(prev: EncoreSong | null, next: EncoreSong): boolean {
-  if (!prev) return true;
-  if (prev === next) return false;
-  if (prev.id !== next.id) return true;
-  if (prev.title !== next.title) return true;
-  if (prev.artist !== next.artist) return true;
-  if (prev.journalMarkdown !== next.journalMarkdown) return true;
-  if (prev.spotifyTrackId !== next.spotifyTrackId) return true;
-  if (prev.youtubeVideoId !== next.youtubeVideoId) return true;
-  if (prev.performanceKey !== next.performanceKey) return true;
-  if (prev.practicing !== next.practicing) return true;
-  if (prev.albumArtUrl !== next.albumArtUrl) return true;
-  if (!shallowItemsEqual(prev.tags, next.tags)) return true;
-  if (!shallowRecordEqual(prev.milestoneProgress as Record<string, unknown> | undefined, next.milestoneProgress as Record<string, unknown> | undefined)) return true;
-  if (!shallowItemsEqual(prev.songOnlyMilestones, next.songOnlyMilestones)) return true;
-  if (!shallowItemsEqual(prev.attachments, next.attachments)) return true;
-  if (!shallowItemsEqual(prev.referenceLinks, next.referenceLinks)) return true;
-  if (!shallowItemsEqual(prev.backingLinks, next.backingLinks)) return true;
-  return false;
-}
 
 export function SongPage(props: {
   route: Extract<EncoreAppRoute, { kind: 'song' } | { kind: 'songNew' }>;
@@ -148,7 +65,6 @@ export function SongPage(props: {
   const theme = useTheme();
   const {
     songs,
-    libraryReady,
     saveSong,
     deleteSong,
     savePerformance,
@@ -244,7 +160,7 @@ export function SongPage(props: {
    * reset the editor focus.
    */
   const routeSongId = route.kind === 'song' ? route.id : null;
-  const liveSong = useEncoreSong(routeSongId);
+  const liveSongState = useEncoreSong(routeSongId);
   const hydratedSongIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -263,21 +179,17 @@ export function SongPage(props: {
       setLoadState('ok');
       return;
     }
-    if (!libraryReady) {
+    if (liveSongState.status === 'loading') {
       setLoadState('pending');
       return;
     }
-    if (liveSong === undefined) {
-      // Live query hasn't resolved yet for this id.
-      setLoadState('pending');
-      return;
-    }
-    if (liveSong === null || liveSong === (undefined as never)) {
+    if (liveSongState.status === 'missing') {
       hydratedSongIdRef.current = null;
       setDraft(null);
       setLoadState('missing');
       return;
     }
+    const liveSong = liveSongState.song;
     // Re-bind editor state when the route id changes; subsequent live updates to the same row
     // do not reset draft/journal (autosave is already keeping local state in sync).
     if (hydratedSongIdRef.current === liveSong.id) return;
@@ -291,7 +203,7 @@ export function SongPage(props: {
     originalSongRef.current = { ...liveSong };
     latestSavedRef.current = { ...liveSong };
     setLoadState('ok');
-  }, [route.kind, liveSong, libraryReady]);
+  }, [route.kind, liveSongState]);
 
   const persistSongNow = useCallback(
     async (raw: EncoreSong) => {
@@ -793,69 +705,12 @@ export function SongPage(props: {
           ...encoreMaxWidthPage,
         }}
       >
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-            mb: 2.5,
-          }}
-        >
-          <IconButton
-            aria-label="Back to library"
-            component="a"
-            href={encoreAppHref({ kind: 'library' })}
-            edge="start"
-            size="small"
-            sx={{ ml: -0.5 }}
-          >
-            <ArrowBackIcon />
-          </IconButton>
-          <Typography
-            variant="overline"
-            color="primary"
-            sx={{ fontWeight: 700, letterSpacing: '0.18em', lineHeight: 1.2 }}
-          >
-            {isNew ? 'New song' : 'Song'}
-          </Typography>
-          <Box sx={{ flex: 1, minWidth: 0 }} />
-          {!isNew ? (
-            <>
-              <Tooltip title="More">
-                <IconButton
-                  aria-label="Song actions"
-                  size="small"
-                  onClick={(e) => setSongMenuAnchor(e.currentTarget)}
-                >
-                  <MoreVertIcon />
-                </IconButton>
-              </Tooltip>
-              <Menu
-                anchorEl={songMenuAnchor}
-                open={Boolean(songMenuAnchor)}
-                onClose={() => setSongMenuAnchor(null)}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-              >
-                <MenuItem
-                  onClick={() => {
-                    setSongMenuAnchor(null);
-                    void handleDelete();
-                  }}
-                  sx={{ color: 'error.main' }}
-                >
-                  <ListItemIcon>
-                    <DeleteOutlineIcon
-                      fontSize="small"
-                      sx={{ color: 'error.main' }}
-                    />
-                  </ListItemIcon>
-                  <ListItemText>Delete from library</ListItemText>
-                </MenuItem>
-              </Menu>
-            </>
-          ) : null}
-        </Box>
+        <SongPageChrome
+          isNew={isNew}
+          songMenuAnchor={songMenuAnchor}
+          onSongMenuAnchorChange={setSongMenuAnchor}
+          onRequestDelete={() => void handleDelete()}
+        />
 
         <Paper
           component="section"

@@ -116,7 +116,6 @@ class RhythmPlayer {
   private onPlaybackEnd: (() => void) | null = null;
   private onMetronomeBeat: MetronomeCallback | null = null;
   private metronomeEnabled = false;
-  private loopCount = 0;
   private settings: PlaybackSettings | null = null;
   private pendingBpm: number | null = null;
   private visibilityHandler: (() => void) | null = null;
@@ -125,6 +124,7 @@ class RhythmPlayer {
   private metronomeResolution: 'sixteenth' | 'beat' = 'sixteenth';
 
   private scheduledUpToSec = 0;
+  /** Absolute AudioContext time where the current loop iteration begins (event times are relative to this). */
   private audioStartTimeSec = 0;
   private noteEvents: ScheduledNoteEvent[] = [];
   private metronomeEvents: ScheduledMetronomeEvent[] = [];
@@ -133,6 +133,14 @@ class RhythmPlayer {
   private loopDurationSec = 0;
 
   private static readonly LOOK_AHEAD_SEC = 0.25;
+  /** Background tabs throttle rAF; schedule farther ahead so clicks still fire on time. */
+  private static readonly LOOK_AHEAD_HIDDEN_SEC = 3.5;
+
+  private getLookAheadSec(): number {
+    return typeof document !== 'undefined' && document.visibilityState === 'hidden'
+      ? RhythmPlayer.LOOK_AHEAD_HIDDEN_SEC
+      : RhythmPlayer.LOOK_AHEAD_SEC;
+  }
 
   async play(
     rhythm: ParsedRhythm,
@@ -169,7 +177,6 @@ class RhythmPlayer {
     this.settings = settings || null;
     this.tickRange = tickRange || null;
     this.metronomeResolution = metronomeResolution;
-    this.loopCount = 0;
 
     if (settings) {
       audioPlayer.setReverbStrength(settings.reverbStrength);
@@ -362,19 +369,19 @@ class RhythmPlayer {
     if (!ctx) return;
 
     const now = ctx.currentTime;
-    const horizon = now + RhythmPlayer.LOOK_AHEAD_SEC;
+    const lookAhead = this.getLookAheadSec();
+    const horizon = now + lookAhead;
 
     const gap = now - this.scheduledUpToSec;
-    if (gap > RhythmPlayer.LOOK_AHEAD_SEC * 2) {
-      const loopOffset = this.loopCount * this.loopDurationSec;
+    if (gap > lookAhead * 2) {
       while (this.noteEventIndex < this.noteEvents.length) {
         const evt = this.noteEvents[this.noteEventIndex];
-        if (this.audioStartTimeSec + loopOffset + evt.timeSec > now) break;
+        if (this.audioStartTimeSec + evt.timeSec > now) break;
         this.noteEventIndex++;
       }
       while (this.metronomeEventIndex < this.metronomeEvents.length) {
         const evt = this.metronomeEvents[this.metronomeEventIndex];
-        if (this.audioStartTimeSec + loopOffset + evt.timeSec > now) break;
+        if (this.audioStartTimeSec + evt.timeSec > now) break;
         this.metronomeEventIndex++;
       }
       this.scheduledUpToSec = now;
@@ -383,8 +390,7 @@ class RhythmPlayer {
     // --- schedule note events ---
     while (this.noteEventIndex < this.noteEvents.length) {
       const evt = this.noteEvents[this.noteEventIndex];
-      const loopOffset = this.loopCount * this.loopDurationSec;
-      const audioTime = this.audioStartTimeSec + loopOffset + evt.timeSec;
+      const audioTime = this.audioStartTimeSec + evt.timeSec;
 
       if (audioTime > horizon) break;
 
@@ -410,8 +416,7 @@ class RhythmPlayer {
     // --- schedule metronome events ---
     while (this.metronomeEventIndex < this.metronomeEvents.length) {
       const evt = this.metronomeEvents[this.metronomeEventIndex];
-      const loopOffset = this.loopCount * this.loopDurationSec;
-      const audioTime = this.audioStartTimeSec + loopOffset + evt.timeSec;
+      const audioTime = this.audioStartTimeSec + evt.timeSec;
 
       if (audioTime > horizon) break;
 
@@ -439,9 +444,14 @@ class RhythmPlayer {
     this.scheduledUpToSec = Math.max(this.scheduledUpToSec, now);
 
     // --- loop boundary ---
-    const loopEndTimeSec = this.audioStartTimeSec + (this.loopCount + 1) * this.loopDurationSec;
+    // One pattern loop occupies [audioStartTimeSec, audioStartTimeSec + loopDurationSec).
+    // When BPM changes at the boundary, buildEventList() updates loopDurationSec for the *next*
+    // loop — we must advance audioStartTimeSec by the *completed* loop's duration (captured before
+    // rebuild), not by loopCount * newDuration (which mis-anchors and can skip or stall playback).
+    const loopEndTimeSec = this.audioStartTimeSec + this.loopDurationSec;
 
     if (now >= loopEndTimeSec - 0.01) {
+      const durationOfCompletedLoop = this.loopDurationSec;
       if (this.pendingBpm !== null && this.pendingBpm !== this.currentBpm) {
         this.currentBpm = this.pendingBpm;
         this.pendingBpm = null;
@@ -449,10 +459,10 @@ class RhythmPlayer {
       }
 
       if (this.isLooping) {
-        this.loopCount++;
+        this.audioStartTimeSec += durationOfCompletedLoop;
         this.noteEventIndex = 0;
         this.metronomeEventIndex = 0;
-        this.scheduledUpToSec = this.audioStartTimeSec + this.loopCount * this.loopDurationSec;
+        this.scheduledUpToSec = this.audioStartTimeSec;
       } else {
         this.isPlaying = false;
         this.scheduler.stop();
@@ -478,7 +488,6 @@ class RhythmPlayer {
     this.currentRhythm = null;
     this.onNotePlay = null;
     this.onPlaybackEnd = null;
-    this.loopCount = 0;
     this.noteEvents = [];
     this.metronomeEvents = [];
   }

@@ -5,7 +5,6 @@ import type { ParsedRhythm, PlaybackSettings } from './types';
 interface UsePlaybackOptions {
   parsedRhythm: ParsedRhythm;
   bpm: number;
-  debouncedBpm: number;
   metronomeEnabled: boolean;
   playbackSettings: PlaybackSettings;
   selectionRange?: { startTick: number; endTick: number } | null;
@@ -18,7 +17,6 @@ interface UsePlaybackOptions {
 export function usePlayback({
   parsedRhythm,
   bpm,
-  debouncedBpm,
   metronomeEnabled,
   playbackSettings,
   selectionRange,
@@ -105,12 +103,12 @@ export function usePlayback({
     }
   }, [isPlaying, playbackSettings]);
 
-  // Update BPM at measure boundaries during playback
+  // Live BPM (not URL-debounced): `setBpmAtMeasureBoundary` already applies at measure ends.
   useEffect(() => {
     if (isPlaying) {
-      rhythmPlayer.setBpmAtMeasureBoundary(debouncedBpm);
+      rhythmPlayer.setBpmAtMeasureBoundary(bpm);
     }
-  }, [isPlaying, debouncedBpm]);
+  }, [isPlaying, bpm]);
 
   return {
     isPlaying,

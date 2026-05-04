@@ -107,7 +107,8 @@ export default function App() {
   const [timeSignature, setTimeSignature] = useState<TimeSignature>(initial.timeSignature);
   const [volumes, setVolumes] = useState<SubdivisionVolumes>(initial.volumes);
   const [subdivisionLevel, setSubdivisionLevel] = useState<SubdivisionLevel>(initial.subdivisionLevel ?? 2);
-  const [voiceGain, setVoiceGain] = useState(initial.voiceGain ?? 1.0);
+  /** Default click-only: spoken counting is opt-in via the mixer or a saved profile / URL. */
+  const [voiceGain, setVoiceGain] = useState(initial.voiceGain ?? 0);
   const [clickGain, setClickGain] = useState(initial.clickGain ?? 0.5);
   const [drumGain, setDrumGain] = useState(initial.drumGain ?? 0);
   const [channelVoiceMutes, setChannelVoiceMutes] = useState<Set<SubdivisionChannel>>(initial.channelVoiceMutes ?? new Set());

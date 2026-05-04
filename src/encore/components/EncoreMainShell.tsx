@@ -10,7 +10,7 @@ import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import useScrollTrigger from '@mui/material/useScrollTrigger';
-import { Suspense, lazy, useCallback, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import type { EncoreAppRoute } from '../routes/encoreAppHash';
 import { encoreAppHref, navigateEncore, parseEncoreAppHash } from '../routes/encoreAppHash';
 import { useEncoreSync } from '../context/EncoreContext';
@@ -18,34 +18,23 @@ import { encoreScreenPaddingX } from '../theme/encoreM3Layout';
 import { encoreHairline, encoreRadius } from '../theme/encoreUiTokens';
 import { EncoreAppShell } from '../ui/EncoreAppShell';
 import { EncoreAccountMenu } from './EncoreAccountMenu';
+import { EncoreHeavyListTabPlaceholder } from './EncoreHeavyListTabPlaceholder';
 import { EncoreShareMenu } from './EncoreShareMenu';
 import { SyncConflictReviewDialog } from './SyncConflictReviewDialog';
-import { EncoreScreenSkeleton } from './EncoreScreenSkeleton';
+import { ImportGuideScreen as ImportGuideScreenBase } from './ImportGuideScreen';
+import { LibraryScreen as LibraryScreenBase } from './LibraryScreen';
+import { PerformancesScreen as PerformancesScreenBase } from './PerformancesScreen';
+import { PracticeScreen as PracticeScreenBase } from './PracticeScreen';
+import { RepertoireSettingsScreen as RepertoireSettingsScreenBase } from './RepertoireSettingsScreen';
+import { SongPage as SongPageBase } from './SongPage';
 
-const SongPage = lazy(async () => {
-  const m = await import('./SongPage');
-  return { default: m.SongPage };
-});
-const PracticeScreen = lazy(async () => {
-  const m = await import('./PracticeScreen');
-  return { default: m.PracticeScreen };
-});
-const LibraryScreen = lazy(async () => {
-  const m = await import('./LibraryScreen');
-  return { default: m.LibraryScreen };
-});
-const PerformancesScreen = lazy(async () => {
-  const m = await import('./PerformancesScreen');
-  return { default: m.PerformancesScreen };
-});
-const ImportGuideScreen = lazy(async () => {
-  const m = await import('./ImportGuideScreen');
-  return { default: m.ImportGuideScreen };
-});
-const RepertoireSettingsScreen = lazy(async () => {
-  const m = await import('./RepertoireSettingsScreen');
-  return { default: m.RepertoireSettingsScreen };
-});
+/** Eager imports: Encore’s main surfaces are one cohesive shell; avoiding `React.lazy` removes Suspense + chunk latency on tab and song navigation for a modest bundle cost. */
+const LibraryScreen = memo(LibraryScreenBase);
+const PerformancesScreen = memo(PerformancesScreenBase);
+const PracticeScreen = memo(PracticeScreenBase);
+const RepertoireSettingsScreen = memo(RepertoireSettingsScreenBase);
+const ImportGuideScreen = memo(ImportGuideScreenBase);
+const SongPage = memo(SongPageBase);
 
 function bareSignedInShareHash(): boolean {
   const raw = window.location.hash.replace(/^#/, '').trim();
@@ -54,14 +43,75 @@ function bareSignedInShareHash(): boolean {
   return segs[0] === 'share' && !segs[1];
 }
 
-function readHashRoute(): EncoreAppRoute {
-  return parseEncoreAppHash(window.location.hash);
+function subscribeEncoreHash(onStoreChange: () => void): () => void {
+  window.addEventListener('hashchange', onStoreChange);
+  return () => window.removeEventListener('hashchange', onStoreChange);
 }
+
+function encoreHashSnapshot(): string {
+  return window.location.hash;
+}
+
+/** Top-level list tabs (not song editor); kept mounted once visited so tab switches stay instant. */
+type EncoreMainListSection = 'library' | 'performances' | 'practice' | 'repertoireSettings' | 'help';
+
+function listSectionFromRoute(r: EncoreAppRoute): EncoreMainListSection | null {
+  switch (r.kind) {
+    case 'library':
+    case 'performances':
+    case 'practice':
+    case 'repertoireSettings':
+    case 'help':
+      return r.kind;
+    default:
+      return null;
+  }
+}
+
+function initialListSectionVisited(route: EncoreAppRoute): Record<EncoreMainListSection, boolean> {
+  const next: Record<EncoreMainListSection, boolean> = {
+    library: false,
+    performances: false,
+    practice: false,
+    repertoireSettings: false,
+    help: false,
+  };
+  const s = listSectionFromRoute(route);
+  if (s) next[s] = true;
+  return next;
+}
+
+function readInitialRoute(): EncoreAppRoute {
+  return parseEncoreAppHash(typeof window !== 'undefined' ? window.location.hash : '');
+}
+
+/** Minimum time the grey list-tab placeholder stays up on a tab’s **first** visit so cold load reads as intentional. */
+const HEAVY_TAB_OVERLAY_MIN_MS = 160;
+const HEAVY_TAB_OVERLAY_FAILSAFE_MS = 2800;
+
+type HeavyListTabKey = 'library' | 'performances';
+
+type HeavyListTabOverlayState =
+  | { kind: 'none' }
+  | { kind: 'waiting'; tab: HeavyListTabKey; since: number; laidOut: boolean };
+
+type HeavyListTabSessionWarmed = Record<HeavyListTabKey, boolean>;
+
+const LIST_TAB_PANEL_IDS: Record<EncoreMainListSection, { id: string; ariaLabelledBy: string }> = {
+  library: { id: 'encore-panel-repertoire', ariaLabelledBy: 'encore-tab-repertoire' },
+  performances: { id: 'encore-panel-performances', ariaLabelledBy: 'encore-tab-performances' },
+  practice: { id: 'encore-panel-practice', ariaLabelledBy: 'encore-tab-practice' },
+  repertoireSettings: { id: 'encore-panel-setup', ariaLabelledBy: 'encore-tab-setup' },
+  help: { id: 'encore-panel-help', ariaLabelledBy: 'encore-tab-help' },
+};
 
 export function EncoreMainShell(): React.ReactElement {
   const theme = useTheme();
+
   const compactHeaderTabs = useMediaQuery(theme.breakpoints.down('sm'));
-  const [route, setRoute] = useState<EncoreAppRoute>(() => readHashRoute());
+  const hashFragment = useSyncExternalStore(subscribeEncoreHash, encoreHashSnapshot, () => '');
+  const route = useMemo(() => parseEncoreAppHash(hashFragment), [hashFragment]);
+  const [listSectionVisited, setListSectionVisited] = useState(() => initialListSectionVisited(readInitialRoute()));
   const [shareMenuKick, setShareMenuKick] = useState(0);
   const {
     syncState,
@@ -98,7 +148,6 @@ export function EncoreMainShell(): React.ReactElement {
 
   useEffect(() => {
     const onHash = () => {
-      setRoute(readHashRoute());
       openShareFromHash();
     };
     onHash();
@@ -120,6 +169,69 @@ export function EncoreMainShell(): React.ReactElement {
             : route.kind === 'help'
               ? 4
               : 0;
+
+  const listSection = listSectionFromRoute(route);
+
+  const [heavyListTabOverlay, setHeavyListTabOverlay] = useState<HeavyListTabOverlayState>({ kind: 'none' });
+  const [heavyListTabSessionWarmed, setHeavyListTabSessionWarmed] = useState<HeavyListTabSessionWarmed>({
+    library: false,
+    performances: false,
+  });
+
+  useLayoutEffect(() => {
+    const s = listSectionFromRoute(route);
+    if (s) {
+      setListSectionVisited((prev) => (prev[s] ? prev : { ...prev, [s]: true }));
+    }
+
+    const heavyTab =
+      !onSongRoute && (s === 'library' || s === 'performances') ? s : null;
+    if (!heavyTab) {
+      setHeavyListTabOverlay({ kind: 'none' });
+      return;
+    }
+    if (heavyListTabSessionWarmed[heavyTab]) {
+      setHeavyListTabOverlay({ kind: 'none' });
+      return;
+    }
+    setHeavyListTabOverlay({ kind: 'waiting', tab: heavyTab, since: performance.now(), laidOut: false });
+    const failsafe = window.setTimeout(() => {
+      setHeavyListTabOverlay((cur) =>
+        cur.kind === 'waiting' && cur.tab === heavyTab ? { kind: 'none' } : cur,
+      );
+      setHeavyListTabSessionWarmed((w) => (w[heavyTab] ? w : { ...w, [heavyTab]: true }));
+    }, HEAVY_TAB_OVERLAY_FAILSAFE_MS);
+    return () => window.clearTimeout(failsafe);
+  }, [route, onSongRoute, heavyListTabSessionWarmed]);
+
+  useEffect(() => {
+    if (heavyListTabOverlay.kind !== 'waiting' || !heavyListTabOverlay.laidOut) return;
+    const tab = heavyListTabOverlay.tab;
+    const elapsed = performance.now() - heavyListTabOverlay.since;
+    const remaining = Math.max(0, HEAVY_TAB_OVERLAY_MIN_MS - elapsed);
+    const id = window.setTimeout(() => {
+      setHeavyListTabOverlay({ kind: 'none' });
+      setHeavyListTabSessionWarmed((w) => (w[tab] ? w : { ...w, [tab]: true }));
+    }, remaining);
+    return () => window.clearTimeout(id);
+  }, [heavyListTabOverlay]);
+
+  const markHeavyListTabLaidOut = useCallback((tab: HeavyListTabKey) => {
+    setHeavyListTabOverlay((cur) => {
+      if (cur.kind !== 'waiting' || cur.tab !== tab) return cur;
+      return { ...cur, laidOut: true };
+    });
+  }, []);
+
+  const onLibraryHeavyTabLaidOut = useCallback(() => {
+    markHeavyListTabLaidOut('library');
+  }, [markHeavyListTabLaidOut]);
+
+  const onPerformancesHeavyTabLaidOut = useCallback(() => {
+    markHeavyListTabLaidOut('performances');
+  }, [markHeavyListTabLaidOut]);
+
+  const showHeavyListTabPlaceholder = heavyListTabOverlay.kind === 'waiting';
 
   return (
     <EncoreAppShell>
@@ -242,7 +354,14 @@ export function EncoreMainShell(): React.ReactElement {
                 width: { md: 'auto' },
                 maxWidth: { md: 720 },
                 overflowX: 'auto',
-                '& .MuiTabs-indicator': { height: 2, borderRadius: 1 },
+                '& .MuiTabs-indicator': {
+                  height: 2,
+                  borderRadius: 1,
+                  transition: theme.transitions.create(['left', 'width'], {
+                    duration: theme.transitions.duration.standard,
+                    easing: theme.transitions.easing.easeInOut,
+                  }),
+                },
                 '& .MuiTab-root': {
                   minHeight: 44,
                   px: { xs: 0, sm: 2 },
@@ -259,7 +378,7 @@ export function EncoreMainShell(): React.ReactElement {
                 component="a"
                 href={encoreAppHref({ kind: 'library' })}
                 id="encore-tab-repertoire"
-                aria-controls="encore-panel-repertoire"
+                aria-controls={onSongRoute ? 'encore-panel-song' : 'encore-panel-repertoire'}
               />
               <Tab
                 label="Performances"
@@ -293,60 +412,173 @@ export function EncoreMainShell(): React.ReactElement {
           </Box>
         </Toolbar>
       </AppBar>
-      <Box component="main" id="main" sx={{ flex: 1, minHeight: 0, minWidth: 0, width: 1 }}>
+      <Box
+        component="main"
+        id="main"
+        sx={{
+          position: 'relative',
+          flex: 1,
+          minHeight: 0,
+          minWidth: 0,
+          width: 1,
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        {/*
+          Keep each list section mounted after first visit (display:none when inactive). Tab clicks
+          only toggled visibility before; unmounting LibraryScreen / PerformancesScreen forced a
+          full MRT + Dexie subscription rebuild every time, which felt like a slow tab.
+        */}
+        <Box
+          sx={{
+            flex: 1,
+            minHeight: 0,
+            minWidth: 0,
+            width: 1,
+            display: onSongRoute ? 'none' : 'flex',
+            flexDirection: 'column',
+          }}
+          aria-hidden={onSongRoute}
+        >
+          {listSectionVisited.library ? (
+            <Box
+              role="tabpanel"
+              id={!onSongRoute && listSection === 'library' ? LIST_TAB_PANEL_IDS.library.id : undefined}
+              aria-labelledby={
+                !onSongRoute && listSection === 'library' ? LIST_TAB_PANEL_IDS.library.ariaLabelledBy : undefined
+              }
+              sx={{
+                flex: 1,
+                minHeight: 0,
+                minWidth: 0,
+                width: 1,
+                display: !onSongRoute && listSection === 'library' ? 'flex' : 'none',
+                flexDirection: 'column',
+              }}
+              aria-hidden={onSongRoute || listSection !== 'library'}
+            >
+              <LibraryScreen
+                heavyListTabActive={!onSongRoute && listSection === 'library'}
+                onHeavyTabLaidOut={onLibraryHeavyTabLaidOut}
+              />
+            </Box>
+          ) : null}
+          {listSectionVisited.performances ? (
+            <Box
+              role="tabpanel"
+              id={!onSongRoute && listSection === 'performances' ? LIST_TAB_PANEL_IDS.performances.id : undefined}
+              aria-labelledby={
+                !onSongRoute && listSection === 'performances'
+                  ? LIST_TAB_PANEL_IDS.performances.ariaLabelledBy
+                  : undefined
+              }
+              sx={{
+                flex: 1,
+                minHeight: 0,
+                minWidth: 0,
+                width: 1,
+                display: !onSongRoute && listSection === 'performances' ? 'flex' : 'none',
+                flexDirection: 'column',
+              }}
+              aria-hidden={onSongRoute || listSection !== 'performances'}
+            >
+              <PerformancesScreen
+                heavyListTabActive={!onSongRoute && listSection === 'performances'}
+                onHeavyTabLaidOut={onPerformancesHeavyTabLaidOut}
+              />
+            </Box>
+          ) : null}
+          {listSectionVisited.practice ? (
+            <Box
+              role="tabpanel"
+              id={!onSongRoute && listSection === 'practice' ? LIST_TAB_PANEL_IDS.practice.id : undefined}
+              aria-labelledby={
+                !onSongRoute && listSection === 'practice' ? LIST_TAB_PANEL_IDS.practice.ariaLabelledBy : undefined
+              }
+              sx={{
+                flex: 1,
+                minHeight: 0,
+                minWidth: 0,
+                width: 1,
+                display: !onSongRoute && listSection === 'practice' ? 'flex' : 'none',
+                flexDirection: 'column',
+              }}
+              aria-hidden={onSongRoute || listSection !== 'practice'}
+            >
+              <PracticeScreen />
+            </Box>
+          ) : null}
+          {listSectionVisited.repertoireSettings ? (
+            <Box
+              role="tabpanel"
+              id={
+                !onSongRoute && listSection === 'repertoireSettings' ? LIST_TAB_PANEL_IDS.repertoireSettings.id : undefined
+              }
+              aria-labelledby={
+                !onSongRoute && listSection === 'repertoireSettings'
+                  ? LIST_TAB_PANEL_IDS.repertoireSettings.ariaLabelledBy
+                  : undefined
+              }
+              sx={{
+                flex: 1,
+                minHeight: 0,
+                minWidth: 0,
+                width: 1,
+                display: !onSongRoute && listSection === 'repertoireSettings' ? 'flex' : 'none',
+                flexDirection: 'column',
+              }}
+              aria-hidden={onSongRoute || listSection !== 'repertoireSettings'}
+            >
+              <RepertoireSettingsScreen />
+            </Box>
+          ) : null}
+          {listSectionVisited.help ? (
+            <Box
+              role="tabpanel"
+              id={!onSongRoute && listSection === 'help' ? LIST_TAB_PANEL_IDS.help.id : undefined}
+              aria-labelledby={!onSongRoute && listSection === 'help' ? LIST_TAB_PANEL_IDS.help.ariaLabelledBy : undefined}
+              sx={{
+                flex: 1,
+                minHeight: 0,
+                minWidth: 0,
+                width: 1,
+                display: !onSongRoute && listSection === 'help' ? 'flex' : 'none',
+                flexDirection: 'column',
+              }}
+              aria-hidden={onSongRoute || listSection !== 'help'}
+            >
+              <ImportGuideScreen />
+            </Box>
+          ) : null}
+        </Box>
+
+        {showHeavyListTabPlaceholder ? (
+          <Box
+            sx={{
+              position: 'absolute',
+              inset: 0,
+              zIndex: 2,
+              display: 'flex',
+              flexDirection: 'column',
+              minHeight: 0,
+              pointerEvents: 'auto',
+            }}
+          >
+            <EncoreHeavyListTabPlaceholder />
+          </Box>
+        ) : null}
+
         {onSongRoute ? (
           <Box
             role="tabpanel"
-            id="encore-panel-repertoire"
+            id="encore-panel-song"
             aria-labelledby="encore-tab-repertoire"
             sx={{ flex: 1, minHeight: 0, minWidth: 0, width: 1, display: 'flex', flexDirection: 'column' }}
           >
-            <Suspense fallback={<EncoreScreenSkeleton label="Loading song" />}>
-              <SongPage key={songPageKey} route={route} />
-            </Suspense>
+            <SongPage key={songPageKey} route={route} />
           </Box>
-        ) : (
-          <Box
-            role="tabpanel"
-            id={
-              route.kind === 'practice'
-                ? 'encore-panel-practice'
-                : route.kind === 'performances'
-                  ? 'encore-panel-performances'
-                  : route.kind === 'repertoireSettings'
-                    ? 'encore-panel-setup'
-                    : route.kind === 'help'
-                      ? 'encore-panel-help'
-                      : 'encore-panel-repertoire'
-            }
-            aria-labelledby={
-              route.kind === 'practice'
-                ? 'encore-tab-practice'
-                : route.kind === 'performances'
-                  ? 'encore-tab-performances'
-                  : route.kind === 'repertoireSettings'
-                    ? 'encore-tab-setup'
-                    : route.kind === 'help'
-                      ? 'encore-tab-help'
-                      : 'encore-tab-repertoire'
-            }
-            sx={{ flex: 1, minHeight: 0, minWidth: 0, width: 1, display: 'flex', flexDirection: 'column' }}
-          >
-            <Suspense fallback={<EncoreScreenSkeleton />}>
-              {route.kind === 'practice' ? (
-                <PracticeScreen />
-              ) : route.kind === 'performances' ? (
-                <PerformancesScreen />
-              ) : route.kind === 'repertoireSettings' ? (
-                <RepertoireSettingsScreen />
-              ) : route.kind === 'help' ? (
-                <ImportGuideScreen />
-              ) : (
-                <LibraryScreen />
-              )}
-            </Suspense>
-          </Box>
-        )}
+        ) : null}
       </Box>
       <SyncConflictReviewDialog
         open={Boolean(conflict?.conflict) && (conflictAnalysis?.bothEdited.length ?? 0) > 0}

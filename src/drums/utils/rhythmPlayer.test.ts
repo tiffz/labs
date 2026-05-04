@@ -459,6 +459,24 @@ describe('rhythmPlayer timing accuracy', () => {
       }
     });
 
+    it('keeps scheduling after BPM change at loop boundary (re-anchored loop clock)', async () => {
+      const notation = 'D-T-';
+      const timeSignature: TimeSignature = { numerator: 2, denominator: 4 };
+      const parsedRhythm = parseRhythm(notation, timeSignature);
+      const playCalls = vi.mocked(audioPlayer.playNowIfReady);
+
+      await rhythmPlayer.play(parsedRhythm, 120);
+      pumpFrames(1200);
+      const countBeforeBpm = playCalls.mock.calls.length;
+      expect(countBeforeBpm).toBeGreaterThan(0);
+
+      rhythmPlayer.setBpmAtMeasureBoundary(60);
+      pumpFrames(8000);
+
+      expect(rhythmPlayer.getIsPlaying()).toBe(true);
+      expect(playCalls.mock.calls.length).toBeGreaterThan(countBeforeBpm + 4);
+    });
+
     it('first note of every loop iteration receives a playNowIfReady call', async () => {
       const notation = 'D---';
       const timeSignature: TimeSignature = { numerator: 1, denominator: 4 };

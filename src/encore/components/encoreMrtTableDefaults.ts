@@ -94,6 +94,9 @@ const REPERTOIRE_TABLE = Object.freeze({
   /** Row virtualization: client-side data + heavy cells → keep React work proportional to viewport. */
   enableRowVirtualization: true,
   rowVirtualizerOptions: { overscan: 8 },
+  /** Many Encore columns are optional/hidden; virtualize horizontally so wide tables stay cheaper. */
+  enableColumnVirtualization: true,
+  columnVirtualizerOptions: { overscan: 4 },
   /**
    * Cell-level memoization: the virtualizer re-renders the table body on every wheel tick to
    * update row transforms. Without memoization MRT re-runs every Cell render function for every

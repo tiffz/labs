@@ -470,7 +470,6 @@ const App: React.FC = () => {
     DEFAULT_TIME_SIGNATURE
   );
   const [bpm, setBpm] = useState<number>(100);
-  const [debouncedBpm, setDebouncedBpm] = useState<number>(100);
   const [metronomeEnabled, setMetronomeEnabled] = useState<boolean>(true);
   const [autoFollowPlayback, setAutoFollowPlayback] = useState<boolean>(true);
   const [generationMenuOpen, setGenerationMenuOpen] = useState<boolean>(false);
@@ -945,7 +944,6 @@ const App: React.FC = () => {
   } = usePlayback({
     parsedRhythm,
     bpm,
-    debouncedBpm,
     metronomeEnabled,
     playbackSettings: effectivePlaybackSettings,
     selectionRange: playbackSelectionRange,
@@ -1029,11 +1027,6 @@ const App: React.FC = () => {
     masterVolume,
     masterMuted,
   ]);
-
-  useEffect(() => {
-    const timeoutId = window.setTimeout(() => setDebouncedBpm(bpm), 350);
-    return () => window.clearTimeout(timeoutId);
-  }, [bpm]);
 
   useEffect(() => {
     if (!pendingPlaybackStartMode) return;
@@ -2151,7 +2144,6 @@ const App: React.FC = () => {
 
     if (!Number.isNaN(bpmParam) && bpmParam >= 40 && bpmParam <= 220) {
       setBpm(bpmParam);
-      setDebouncedBpm(bpmParam);
     }
     const decodedPattern = encodedPattern
       ? decodeBase64UrlUtf8(encodedPattern)

@@ -49,8 +49,6 @@ const App: React.FC = () => {
   });
 
   const [bpm, setBpm] = useState<number>(initialState.bpm);
-  const [debouncedBpm, setDebouncedBpm] = useState<number>(initialState.bpm);
-  const debounceTimeoutRef = useRef<number | null>(null);
   const [metronomeEnabled, setMetronomeEnabled] = useState<boolean>(initialState.metronomeEnabled || false);
   const [showKeyboardHelp, setShowKeyboardHelp] = useState<boolean>(false);
   const [showSettings, setShowSettings] = useState<boolean>(false);
@@ -133,7 +131,6 @@ const App: React.FC = () => {
   } = usePlayback({
     parsedRhythm,
     bpm,
-    debouncedBpm,
     metronomeEnabled,
     playbackSettings,
     selectionRange,
@@ -238,23 +235,6 @@ const App: React.FC = () => {
       setNotationWithoutHistory(newNotation);
     }
   }, [notation, addToHistory, timeSignature, setNotationWithoutHistory, parsedRhythm]);
-
-  // Debounce BPM changes - only apply after user stops typing for 500ms
-  useEffect(() => {
-    if (debounceTimeoutRef.current !== null) {
-      clearTimeout(debounceTimeoutRef.current);
-    }
-
-    debounceTimeoutRef.current = window.setTimeout(() => {
-      setDebouncedBpm(bpm);
-    }, 500);
-
-    return () => {
-      if (debounceTimeoutRef.current !== null) {
-        clearTimeout(debounceTimeoutRef.current);
-      }
-    };
-  }, [bpm]);
 
   const drumsPlayStartRef = useRef<number>(0);
   useEffect(() => {

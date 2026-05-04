@@ -98,7 +98,7 @@ Drive conflicts now go through a row-level analysis instead of an all-or-nothing
 The Encore data + sync layer is **split into four focused providers** that nest in a fixed order. `EncoreContext.tsx` is now a thin façade that composes them and exposes `useEncore()` for back-compat with screens that still expect the aggregate value. New code should reach for the specialized hooks (`useEncoreLibrary`, `useEncoreSync`, etc.) so consumers only re-render on the slice they care about.
 
 - **`EncoreAuthContext.tsx`** — Google sign-in / sign-out, allowlist gating, Spotify connect state. Exposes `googleAccessToken`, `displayName`, `signInWithGoogle`, `signOut`, `connectSpotify` via `useEncoreAuth()`.
-- **`EncoreLibraryContext.tsx`** — reactive Dexie selectors via [`dexie-react-hooks`](<https://dexie.org/docs/dexie-react-hooks/useLiveQuery()>): `songs`, `performances`, `repertoireExtras`. Also exports the `useEncoreSong(id)` selector used by `SongPage` so a single-row edit does not re-render the whole library.
+- **`EncoreLibraryContext.tsx`** — reactive Dexie selectors via [`dexie-react-hooks`](<https://dexie.org/docs/dexie-react-hooks/useLiveQuery()>): `songs`, `performances`, `repertoireExtras`. Exposes **`songsHydrated`** once the songs live query has emitted (so empty lists are not mistaken for “still loading”), **`libraryReady`** when all three tables have emitted (used by Drive auto-sync + any screen that needs full index consistency), and **`useEncoreSong(id)`** which returns `{ status: 'loading' | 'missing' | 'ok' }` so `SongPage` can hydrate from the row alone without waiting on `libraryReady`.
 - **`EncoreSyncContext.tsx`** — Drive sync state machine (`syncState`, `syncMessage`, `conflict`, `conflictAnalysis`, `lastSilentMerge`), `scheduleBackgroundSync`, the per-row `resolveConflictWithChoices`, plus the legacy "all local" / "all remote" resolvers for back-compat. Wraps `runInitialSyncIfPossible` and the silent auto-merge path described above.
 - **`EncoreActionsContext.tsx`** — every Dexie mutation (`saveSong`, `deleteSong`, `savePerformance`, `deletePerformance`, `bulkSaveSongs`, `bulkDeleteSongs`, `bulkSavePerformances`, `bulkDeletePerformances`, `saveRepertoireExtras`, `setOwnerDisplayName`). Each action is a granular Dexie write that pushes a single undo entry, marks the row dirty in the `dirtySync` table, and triggers `scheduleBackgroundSync()` once. Bulk variants wrap their writes in a single Dexie transaction so 50 songs get 50 dirty marks but **one** undo entry and **one** debounced push.
 - **`EncoreContext.tsx`** — composer + back-compat façade. Renders the providers in `Auth → Library → Sync → Actions` order and exposes `useEncore()` that flattens the four context values into the legacy shape.
@@ -195,10 +195,23 @@ Migration is one-shot and idempotent (skipped when `syncMeta.shardedMigratedAt` 
 
 Tests: [`drive/repertoireSharded.test.ts`](drive/repertoireSharded.test.ts) covers push (create vs. PATCH), delete, idempotent migration, and incremental pull.
 
+#### Sync QA checklist (manual, before shipping Drive sync changes)
+
+Smoke **both** modes when touching sync: set `VITE_ENCORE_SHARDED_SYNC` to off vs `1`/`true` in `src/.env.development`, restart `npm run dev`, and reload Encore.
+
+| Check                   | Monolithic default (flag off)                                               | Sharded (flag on)                                                                              |
+| ----------------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Cold load after sign-in | Library + performances load; sync completes; account menu leaves “Syncing…” | Same; one-time sharded migration may run (`syncMeta.shardedMigratedAt`)                        |
+| Edit a song field       | Saves locally; debounced background push; second tab / refresh sees update  | `markDirtyRow` → shard upload + manifest bump; legacy monolithic push still runs as safety net |
+| Add performance         | Row appears; Drive reflects after sync                                      | Performance shard + manifest                                                                   |
+| Optional conflict drill | Two tabs edit same row → conflict review resolves                           | Same while monolithic soak applies                                                             |
+
+Note in the PR which mode(s) you exercised if you only had time for one.
+
 ## Client performance guardrails (list screens)
 
 - Prefer **stable** `muiTableBodyRowProps` / cell `sx` (plain objects or `useMemo`), not a fresh `() => ({ sx: (theme) => … })` each render. **Zebra striping** on large MRT tables can add scroll-linked paint cost; prefer hover-only row emphasis unless product design requires stripes.
-- **Debounce** free-text search that feeds table `data` (see Library / Performances). Keep `columns` **`useMemo`** dependency arrays **accurate** so column defs are not rebuilt on unrelated state.
+- **Debounce** free-text search that feeds table `data` (see Library / Performances). Keep `columns` **`useMemo`** dependency arrays **accurate** so column defs are not rebuilt on unrelated state (Library and Performances scope search **highlight** via a small React context so `debouncedSearch` does not invalidate MRT column defs).
 - MRT `enableRowVirtualization: true` is the default for the repertoire and performances tables (`encoreMrtTableDefaults.ts`). Both files freeze the option objects at module scope so the same reference flows into MRT every render.
 - Heavy Markdown renders (e.g. song journal preview) use `React.memo` + `useDeferredValue` so typing in a long doc does not block interaction; see `MarkdownPreview.tsx`.
 - Drive thumbnails for performance videos are gated on `useEncoreInViewport(ref)` so offscreen rows never fire a `driveResolveThumbnailLink` request.

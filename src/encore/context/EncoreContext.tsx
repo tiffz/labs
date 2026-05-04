@@ -7,7 +7,7 @@
  * and SongPage in lockstep. The provider has been split into four focused sub-contexts:
  *
  *  - {@link EncoreAuthProvider}     — Google + Spotify session
- *  - {@link EncoreLibraryProvider}  — `songs` / `performances` / `repertoireExtras` (Dexie live queries)
+ *  - {@link EncoreLibraryProvider}  — Dexie live queries split into tables vs extras contexts (see {@link useEncoreLibraryTables} / {@link useEncoreLibraryExtras})
  *  - {@link EncoreSyncProvider}     — sync state machine, conflict, debounced background push
  *  - {@link EncoreActionsProvider}  — saveSong / deleteSong / savePerformance / deletePerformance / publish / reorganize
  *
@@ -31,8 +31,14 @@ import { useEncoreSync } from './useEncoreSync';
 import { useEncoreActions } from './useEncoreActions';
 
 export type { SyncUiState } from './EncoreSyncContext';
+export type { EncoreSongLiveState } from './EncoreLibraryContext';
 export { useEncoreAuth } from './EncoreAuthContext';
-export { useEncoreLibrary, useEncoreSong } from './EncoreLibraryContext';
+export {
+  useEncoreLibrary,
+  useEncoreLibraryExtras,
+  useEncoreLibraryTables,
+  useEncoreSong,
+} from './EncoreLibraryContext';
 export { useEncoreSync } from './useEncoreSync';
 export { useEncoreActions } from './useEncoreActions';
 
@@ -61,6 +67,7 @@ export interface EncoreContextValue {
   songs: EncoreSong[];
   performances: EncorePerformance[];
   repertoireExtras: RepertoireExtrasRow;
+  songsHydrated: boolean;
   libraryReady: boolean;
   refreshLibrary: () => Promise<void>;
   saveRepertoireExtras: (patch: Partial<Omit<RepertoireExtrasRow, 'id'>>) => Promise<void>;
@@ -139,6 +146,7 @@ export function useEncore(): EncoreContextValue {
       songs: library.songs,
       performances: library.performances,
       repertoireExtras: library.repertoireExtras,
+      songsHydrated: library.songsHydrated,
       libraryReady: library.libraryReady,
       refreshLibrary: library.refreshLibrary,
       effectiveDisplayName: library.effectiveDisplayName,
