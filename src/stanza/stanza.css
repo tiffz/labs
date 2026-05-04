@@ -1,0 +1,525 @@
+/**
+ * Stanza — cohesive surfaces + MUI fine-tuning (scoped to .stanza-app).
+ * Apple-ish: soft neutrals, one accent, pill controls, calm shadows.
+ */
+
+/* Full-page shell: one cream + pink environment (landing + viewer). */
+.stanza-app {
+  min-height: 100vh;
+  min-height: 100dvh;
+  position: relative;
+  box-sizing: border-box;
+  color: #1d1d1f;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.stanza-app::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse 95% 60% at 50% -25%,
+      rgba(232, 72, 160, 0.11),
+      transparent 58%
+    ),
+    radial-gradient(
+      ellipse 65% 50% at 100% 85%,
+      rgba(99, 102, 241, 0.05),
+      transparent 52%
+    ),
+    linear-gradient(168deg, #fdfcfa 0%, #f4ebe3 42%, #ebe2d8 100%);
+}
+
+.stanza-main {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.stanza-panel {
+  background: rgba(255, 252, 248, 0.72);
+  border: 1px solid rgba(60, 60, 67, 0.1);
+  border-radius: 16px;
+  box-shadow:
+    0 0 0 0.5px rgba(60, 60, 67, 0.06),
+    0 2px 12px rgba(29, 29, 31, 0.04);
+}
+
+@supports (backdrop-filter: blur(8px)) {
+  .stanza-panel {
+    backdrop-filter: blur(10px);
+  }
+}
+
+.stanza-library-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  max-height: min(52vh, 420px);
+  overflow: auto;
+  padding: 2px;
+}
+
+.stanza-library-card {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  text-align: left;
+  border: 1px solid rgba(26, 21, 32, 0.08);
+  background: rgba(255, 253, 250, 0.9);
+  transition:
+    box-shadow 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.12s ease;
+}
+
+.stanza-library-card:hover {
+  border-color: rgba(232, 72, 160, 0.42);
+  box-shadow: 0 4px 14px rgba(29, 29, 31, 0.07);
+}
+
+.stanza-library-card--selected {
+  border-color: rgba(232, 72, 160, 0.78);
+  box-shadow: 0 0 0 2px rgba(232, 72, 160, 0.22);
+}
+
+button.stanza-library-card {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.stanza-library-card-thumb {
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  object-fit: cover;
+  display: block;
+  background: #0f172a;
+}
+
+/* Width cap lives on .stanza-viewer-media-stack so video + transport + timeline share one column. */
+.stanza-viewer-media-stack {
+  width: 100%;
+  max-width: 520px;
+}
+
+.stanza-video-column {
+  width: 100%;
+}
+
+.stanza-viewer-header {
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid rgba(60, 60, 67, 0.08);
+  margin-bottom: 0.25rem;
+}
+
+.stanza-practice-rail .MuiFormControl-root {
+  margin-top: 0;
+}
+
+.stanza-transport-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.stanza-root {
+  min-height: 100vh;
+  min-height: 100dvh;
+  box-sizing: border-box;
+}
+
+/* Viewer column stack (page gradient comes from .stanza-app). */
+.stanza-viewer-shell {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.stanza-playback-stack {
+  margin-top: 1rem;
+}
+
+.stanza-playback-strip {
+  background: rgba(255, 252, 248, 0.55);
+  border: 1px solid rgba(60, 60, 67, 0.1);
+  border-radius: 14px;
+  padding: 10px 12px 12px;
+  margin-bottom: 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+@supports (backdrop-filter: blur(6px)) {
+  .stanza-playback-strip {
+    backdrop-filter: blur(8px);
+  }
+}
+
+.stanza-playback-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 12px;
+  margin-bottom: 0;
+}
+
+@media (min-width: 540px) {
+  .stanza-playback-toolbar {
+    flex-wrap: nowrap;
+  }
+}
+
+.stanza-playback-track-meta {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  min-height: 1.25rem;
+  margin-top: 4px;
+  margin-bottom: 8px;
+}
+
+.stanza-hint-text--compact {
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+/* Pill segmented controls — iOS-style inset track; use with className="stanza-segmented". */
+.stanza-playback-toolbar .stanza-segmented.MuiToggleButtonGroup-root {
+  flex-shrink: 0;
+}
+
+.stanza-app .stanza-segmented.MuiToggleButtonGroup-root {
+  border-radius: 9999px !important;
+  padding: 3px;
+  gap: 0;
+  background: rgba(29, 29, 31, 0.05);
+  box-shadow: inset 0 0 0 1px rgba(60, 60, 67, 0.11);
+}
+
+.stanza-app
+  .stanza-segmented.MuiToggleButtonGroup-root
+  .MuiToggleButtonGroup-grouped {
+  margin: 0 !important;
+  border: none !important;
+}
+
+.stanza-app .stanza-segmented.MuiToggleButtonGroup-root .MuiToggleButton-root {
+  padding: 6px 13px;
+  border: none !important;
+  border-radius: 9999px !important;
+  margin: 0 !important;
+  background: transparent !important;
+  color: #3a3a3c;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  text-transform: none;
+}
+
+.stanza-app
+  .stanza-segmented.MuiToggleButtonGroup-root
+  .MuiToggleButton-root.Mui-selected {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  color: #1d1d1f !important;
+  box-shadow:
+    0 1px 2px rgba(29, 29, 31, 0.07),
+    0 0 0 1px rgba(232, 72, 160, 0.18);
+}
+
+.stanza-app
+  .stanza-segmented.MuiToggleButtonGroup-root
+  .MuiToggleButton-root:hover {
+  background-color: rgba(255, 255, 255, 0.35) !important;
+}
+
+.stanza-app
+  .stanza-segmented.MuiToggleButtonGroup-root
+  .MuiToggleButton-root.Mui-selected:hover {
+  background-color: rgba(255, 255, 255, 0.98) !important;
+}
+
+/* Practice rail: less stark than pure white on cream */
+.stanza-practice-rail.stanza-panel {
+  background: rgba(255, 252, 248, 0.62);
+}
+
+.stanza-marker-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  margin-top: 14px;
+}
+
+.stanza-play-btn {
+  width: 42px !important;
+  height: 42px !important;
+  padding: 0 !important;
+  background-color: rgba(29, 29, 31, 0.06) !important;
+  color: #1d1d1f !important;
+  transition:
+    background-color 0.15s ease,
+    transform 0.12s ease !important;
+}
+
+.stanza-play-btn:hover {
+  background-color: rgba(29, 29, 31, 0.1) !important;
+}
+
+.stanza-playback-time {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: #6e6e73;
+}
+
+.stanza-link-quiet {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #6e6e73;
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+  transition: color 0.15s ease;
+}
+
+.stanza-link-quiet:hover,
+.stanza-link-quiet:focus-visible {
+  color: #e848a0;
+}
+
+.stanza-link-quiet:focus-visible {
+  outline: 2px solid rgba(232, 72, 160, 0.4);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Timeline / hints: readable secondary text, dotted affordance (tooltip expands detail). */
+.stanza-hint-text {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.45;
+  color: #6e6e73;
+  cursor: help;
+  border-bottom: 1px dotted rgba(110, 110, 115, 0.42);
+}
+
+.stanza-playback-track {
+  position: relative;
+  height: 42px;
+  border-radius: 10px;
+  overflow: visible;
+  border: 1px solid rgba(60, 60, 67, 0.11);
+  background: rgba(255, 255, 255, 0.52);
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.stanza-playback-track:focus-visible {
+  outline: 2px solid rgba(232, 72, 160, 0.45);
+  outline-offset: 2px;
+}
+
+.stanza-playback-seg:focus-visible {
+  outline: 2px solid rgba(232, 72, 160, 0.5);
+  outline-offset: -2px;
+  z-index: 1;
+}
+
+/* Mui controls inside Stanza (non-segmented groups only — see .stanza-segmented) */
+.stanza-app
+  .MuiToggleButtonGroup-root:not(.stanza-segmented)
+  .MuiToggleButton-root {
+  text-transform: none;
+  font-weight: 500;
+  font-size: 0.8125rem;
+  padding: 6px 14px;
+  border-color: rgba(60, 60, 67, 0.16);
+  color: #3a3a3c;
+}
+
+.stanza-app
+  .MuiToggleButtonGroup-root:not(.stanza-segmented)
+  .MuiToggleButton-root.Mui-selected {
+  background-color: rgba(232, 72, 160, 0.1) !important;
+  color: #1d1d1f;
+  border-color: rgba(232, 72, 160, 0.28);
+}
+
+.stanza-app
+  .MuiToggleButtonGroup-root:not(.stanza-segmented)
+  .MuiToggleButton-root:hover {
+  background-color: rgba(29, 29, 31, 0.04);
+}
+
+.stanza-app .MuiButton-root.Mui-disabled {
+  opacity: 0.45;
+}
+
+.stanza-app .MuiSwitch-switchBase.Mui-checked {
+  color: #e848a0;
+}
+
+.stanza-app .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track {
+  background-color: rgba(232, 72, 160, 0.45) !important;
+}
+
+.stanza-library-footer.MuiPaper-root.MuiAccordion-root {
+  background: rgba(255, 252, 248, 0.55);
+  border: none;
+  border-top: 1px solid rgba(60, 60, 67, 0.1);
+  border-radius: 0 !important;
+  box-shadow: none;
+}
+
+.stanza-library-footer .MuiAccordionSummary-root {
+  min-height: 56px;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.stanza-library-footer .MuiAccordionDetails-root {
+  padding-top: 8px;
+}
+
+.stanza-btn-pill {
+  border-radius: 999px !important;
+  padding-left: 20px !important;
+  padding-right: 20px !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.01em;
+  box-shadow: 0 1px 2px rgba(29, 29, 31, 0.06) !important;
+}
+
+.stanza-btn-soft-outline {
+  border-radius: 999px !important;
+  border-color: rgba(60, 60, 67, 0.22) !important;
+  color: #1d1d1f !important;
+  font-weight: 600 !important;
+}
+
+.stanza-hero {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(2rem, 6vw, 3.5rem) 1.25rem 2.5rem;
+}
+
+.stanza-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      ellipse 90% 55% at 50% -30%,
+      rgba(232, 72, 160, 0.12),
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 70% 45% at 100% 80%,
+      rgba(99, 102, 241, 0.06),
+      transparent 50%
+    ),
+    linear-gradient(168deg, #fdfcfa 0%, #f5ebe3 48%, #efe6dc 100%);
+  pointer-events: none;
+}
+
+.stanza-hero-inner {
+  position: relative;
+  z-index: 1;
+  max-width: 42rem;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.stanza-hero-url .MuiOutlinedInput-root {
+  border-radius: 14px;
+  background: rgba(255, 253, 250, 0.92);
+  font-size: 1.2rem;
+  transition:
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.stanza-hero-url .MuiOutlinedInput-root:hover {
+  background: #fffefb;
+}
+
+.stanza-hero-url .MuiOutlinedInput-root.Mui-focused {
+  box-shadow: 0 0 0 3px rgba(232, 72, 160, 0.2);
+}
+
+.stanza-hero-url .MuiOutlinedInput-input {
+  padding-top: 1.15rem;
+  padding-bottom: 1.15rem;
+}
+
+@media (min-width: 600px) {
+  .stanza-hero-url .MuiOutlinedInput-input {
+    font-size: 1.28rem;
+    padding-top: 1.35rem;
+    padding-bottom: 1.35rem;
+  }
+}
+
+.stanza-youtube-host {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  aspect-ratio: 16 / 9;
+  background: #0f172a;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 0.5px rgba(60, 60, 67, 0.12),
+    0 8px 28px rgba(29, 29, 31, 0.1);
+}
+
+.stanza-youtube-iframe,
+.stanza-youtube-iframe iframe {
+  width: 100%;
+  height: 100%;
+}
+
+.stanza-metronome-pulse {
+  --stanza-beat: 1s;
+  border-radius: 12px;
+  transition: box-shadow 0.12s ease-out;
+}
+
+.stanza-metronome-pulse--on {
+  animation: stanzaBeatPulse var(--stanza-beat, 1s) linear infinite;
+}
+
+@keyframes stanzaBeatPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(232, 72, 160, 0.5);
+  }
+  15% {
+    box-shadow: 0 0 0 10px rgba(232, 72, 160, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(232, 72, 160, 0);
+  }
+}

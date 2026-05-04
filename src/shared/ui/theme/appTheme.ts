@@ -1,5 +1,7 @@
 import { alpha, createTheme, type Theme } from '@mui/material/styles';
 
+import { STANZA_THEME_OVERRIDES } from './stanzaThemeBase';
+
 export type AppThemeId =
   | 'beat'
   | 'chords'
@@ -16,7 +18,8 @@ export type AppThemeId =
   | 'story'
   | 'zines'
   | 'agility'
-  | 'encore';
+  | 'encore'
+  | 'stanza';
 
 interface AppThemeConfig {
   mode: 'light' | 'dark';
@@ -383,6 +386,11 @@ const THEMES: Record<AppThemeId, Theme> = {
     radius: 4,
     spacingBase: 5,
     readable: true,
+  }),
+  stanza: buildTheme({
+    mode: 'light',
+    ...MUSIC_LIGHT_DEFAULT,
+    ...STANZA_THEME_OVERRIDES,
   }),
   encore: createTheme(
     buildTheme({

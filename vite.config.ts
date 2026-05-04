@@ -45,6 +45,7 @@ const MULTI_APP_INPUTS = {
   ui: resolve(__dirname, 'src/ui/index.html'),
   agility: resolve(__dirname, 'src/agility/index.html'),
   encore: resolve(__dirname, 'src/encore/index.html'),
+  stanza: resolve(__dirname, 'src/stanza/index.html'),
 } as const;
 
 const SRC_ROOT = resolve(__dirname, 'src');

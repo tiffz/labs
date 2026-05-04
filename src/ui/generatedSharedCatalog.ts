@@ -7939,6 +7939,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-ui-theme-stanzathemebase-ts-stanza-theme-overrides",
+    "name": "STANZA_THEME_OVERRIDES",
+    "path": "src/shared/ui/theme/stanzaThemeBase.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Canonical Stanza brand + surface colors. Drives `getAppTheme('stanza')`. Warm cream surfaces and near-Apple neutrals; pink stays the single accent. (Full-page wash still lives in `src/stanza/stanza.css`.)",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
     "id": "src-shared-undo-islabsundohotkeysuppressedtarget-ts-islabsundohotkeysuppressedtarget",
     "name": "isLabsUndoHotkeySuppressedTarget",
     "path": "src/shared/undo/isLabsUndoHotkeySuppressedTarget.ts",

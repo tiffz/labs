@@ -14,6 +14,7 @@ const APP_DIRS = new Set([
   'piano',
   'pitch',
   'scales',
+  'stanza',
   'story',
   'ui',
   'words',
