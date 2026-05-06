@@ -1,0 +1,141 @@
+{
+  "$schemaComment": "Single source of truth for the static Labs homepage catalog (src/index.html). Run: npm run generate:labs-catalog. Per-app index.html shells stay separate for critical CSS, theme-color, and cookie consent.",
+  "apps": [
+    {
+      "path": "/drums/",
+      "title": "Darbuka Rhythm Trainer",
+      "shortDescription": "Learn and practice Darbuka drum rhythms",
+      "stage": "stable",
+      "category": "music",
+      "iconClass": "drums"
+    },
+    {
+      "path": "/words/",
+      "title": "Words in Rhythm",
+      "shortDescription": "Turn words and lyrics into playable darbuka rhythms",
+      "stage": "stable",
+      "category": "music",
+      "iconClass": "word-rhythm"
+    },
+    {
+      "path": "/count/",
+      "title": "Count Me In",
+      "shortDescription": "Configurable metronome with vocal counting, subdivisions, and more",
+      "stage": "stable",
+      "category": "music",
+      "iconClass": "count"
+    },
+    {
+      "path": "/chords/",
+      "title": "Chord Progression Generator",
+      "shortDescription": "Generate random chord progressions for practice and inspiration",
+      "stage": "development",
+      "category": "music",
+      "iconClass": "chords"
+    },
+    {
+      "path": "/pitch/",
+      "title": "Find Your Pitch",
+      "shortDescription": "Sing into a mic for live note, cents, and contour feedback",
+      "stage": "development",
+      "category": "music",
+      "iconClass": "pitch"
+    },
+    {
+      "path": "/scales/",
+      "title": "Learn Your Scales",
+      "shortDescription": "Guided curriculum for mastering piano scales and arpeggios",
+      "stage": "development",
+      "category": "music",
+      "iconClass": "piano"
+    },
+    {
+      "path": "/beat/",
+      "title": "Find the Beat",
+      "shortDescription": "Analyze music with BPM detection and visual beat guidance",
+      "stage": "unlisted",
+      "category": "music",
+      "iconClass": "beat"
+    },
+    {
+      "path": "/piano/",
+      "title": "Piano Practice",
+      "shortDescription": "Practice piano with exercises, MIDI support, and realtime feedback",
+      "stage": "unlisted",
+      "category": "music",
+      "iconClass": "piano"
+    },
+    {
+      "path": "/melodia/",
+      "title": "Melodia Online",
+      "shortDescription": "Sight-singing: rhythm tap, audiation, sing with pitch trace and listen-back duet",
+      "stage": "unlisted",
+      "category": "music",
+      "iconClass": "melodia"
+    },
+    {
+      "path": "/agility/",
+      "title": "Vocal Agility Trainer",
+      "shortDescription": "Metronome subdivision drills with timing heatmaps and twelve optional palettes",
+      "stage": "unlisted",
+      "category": "music",
+      "iconClass": "agility"
+    },
+    {
+      "path": "/encore/",
+      "title": "Encore",
+      "shortDescription": "Personal repertoire companion: songs, journals, performances, and Drive backup",
+      "stage": "unlisted",
+      "category": "music",
+      "iconClass": "encore"
+    },
+    {
+      "path": "/stanza/",
+      "title": "Stanza",
+      "shortDescription": "Practice songs in sections — markers, loops, guided Conductor, and metronome wizard",
+      "stage": "unlisted",
+      "category": "music",
+      "iconClass": "stanza"
+    },
+    {
+      "path": "/zines/",
+      "title": "Zine Studio",
+      "shortDescription": "Format image files into zines for home or professional printing",
+      "stage": "stable",
+      "category": "art",
+      "iconClass": "zines"
+    },
+    {
+      "path": "/forms/",
+      "title": "Form Intersections",
+      "shortDescription": "3D visualization for Drawabox form intersections",
+      "stage": "stable",
+      "category": "art",
+      "iconClass": "forms"
+    },
+    {
+      "path": "/story/",
+      "title": "Save the Cat Story Generator",
+      "shortDescription": "Generate random story plots from the Save the Cat beat structure",
+      "stage": "development",
+      "category": "art",
+      "iconClass": "story"
+    },
+    {
+      "path": "/cats/",
+      "title": "Cat Clicker",
+      "shortDescription": "Click a cat for the greater good",
+      "stage": "development",
+      "category": "games",
+      "iconClass": "cats"
+    },
+    {
+      "path": "/corp/",
+      "title": "Corporate Ladder",
+      "shortDescription": "Crawl through the dungeons of corporate life",
+      "stage": "development",
+      "category": "games",
+      "iconClass": "corp"
+    }
+  ]
+}

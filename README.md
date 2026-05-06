@@ -58,10 +58,27 @@ npm run generate:shared-catalog
 npm run check:shared-catalog
 ```
 
+## Labs homepage catalog
+
+The Music, Art & Writing, and Games grids on the static Labs homepage (`src/index.html`) are generated from a single manifest (still **plain HTML** in the repo — no React on the landing page):
+
+- Manifest: `src/labsHome/labsCatalog.manifest.json`
+- Generator: `scripts/render-labs-catalog.mjs`
+- Markers in `src/index.html`: `<!-- labs-catalog:generated:start -->` … `<!-- labs-catalog:generated:end -->`
+
+Commands:
+
+```sh
+npm run generate:labs-catalog
+npm run check:labs-catalog
+```
+
+Within each column, apps are ordered **stable → experimental → unlisted**, with ties broken by manifest order. Per-app shells (`src/<app>/index.html`) stay hand-authored for critical CSS, theme-color, and cookie consent.
+
 Notes:
 
-- `npm run dev`, `npm run lint`, `npm test`, and `npm run build` all regenerate the catalog automatically.
-- CI regenerates the catalog before lint/test/build so stale generated output does not block deployments.
+- `npm run dev`, `npm run lint`, `npm test`, and `npm run build` all regenerate the shared UI catalog and Labs homepage catalog automatically.
+- CI regenerates the shared catalog before lint; the Labs homepage catalog is checked with `check:labs-catalog` so a stale `src/index.html` fails the build.
 - Git hooks also enforce freshness:
   - `pre-commit` regenerates and stages `src/ui/generatedSharedCatalog.ts` automatically.
   - `pre-push` warns (non-blocking) if catalog drift is detected.

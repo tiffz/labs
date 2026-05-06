@@ -53,11 +53,14 @@
       </div>
 
       <div class="catalog-columns">
+<!-- labs-catalog:generated:start -->
         <section class="catalog-section" data-category-section="music">
           <div class="section-heading">
             <h2 class="section-title">Music</h2>
           </div>
           <div class="apps-grid">
+            <!-- Stable + experimental first; unlisted last (order from labsCatalog.manifest.json + scripts/render-labs-catalog.mjs). -->
+
             <a href="/drums/" class="app-card" data-stage="stable" data-name="Darbuka Rhythm Trainer" data-description="Learn and practice Darbuka drum rhythms">
               <div class="app-icon drums"></div>
               <div class="app-info">
@@ -94,20 +97,11 @@
               <span class="status-badge status-development">Experimental</span>
             </a>
 
-            <a href="/beat/" class="app-card" data-stage="development" data-name="Find the Beat" data-description="Analyze music with BPM detection and visual beat guidance">
-              <div class="app-icon beat"></div>
+            <a href="/pitch/" class="app-card" data-stage="development" data-name="Find Your Pitch" data-description="Sing into a mic for live note, cents, and contour feedback">
+              <div class="app-icon pitch"></div>
               <div class="app-info">
-                <h3 class="app-title">Find the Beat</h3>
-                <p class="app-description">Analyze music with BPM detection and visual beat guidance</p>
-              </div>
-              <span class="status-badge status-development">Experimental</span>
-            </a>
-
-            <a href="/piano/" class="app-card" data-stage="development" data-name="Piano Practice" data-description="Practice piano with exercises, MIDI support, and realtime feedback">
-              <div class="app-icon piano"></div>
-              <div class="app-info">
-                <h3 class="app-title">Piano Practice</h3>
-                <p class="app-description">Practice piano with exercises, MIDI support, and realtime feedback</p>
+                <h3 class="app-title">Find Your Pitch</h3>
+                <p class="app-description">Sing into a mic for live note, cents, and contour feedback</p>
               </div>
               <span class="status-badge status-development">Experimental</span>
             </a>
@@ -121,13 +115,22 @@
               <span class="status-badge status-development">Experimental</span>
             </a>
 
-            <a href="/pitch/" class="app-card" data-stage="development" data-name="Find Your Pitch" data-description="Sing into a mic for live note, cents, and contour feedback">
-              <div class="app-icon pitch"></div>
+            <a href="/beat/" class="app-card" data-stage="unlisted" data-name="Find the Beat" data-description="Analyze music with BPM detection and visual beat guidance">
+              <div class="app-icon beat"></div>
               <div class="app-info">
-                <h3 class="app-title">Find Your Pitch</h3>
-                <p class="app-description">Sing into a mic for live note, cents, and contour feedback</p>
+                <h3 class="app-title">Find the Beat</h3>
+                <p class="app-description">Analyze music with BPM detection and visual beat guidance</p>
               </div>
-              <span class="status-badge status-development">Experimental</span>
+              <span class="status-badge status-unlisted">Unlisted</span>
+            </a>
+
+            <a href="/piano/" class="app-card" data-stage="unlisted" data-name="Piano Practice" data-description="Practice piano with exercises, MIDI support, and realtime feedback">
+              <div class="app-icon piano"></div>
+              <div class="app-info">
+                <h3 class="app-title">Piano Practice</h3>
+                <p class="app-description">Practice piano with exercises, MIDI support, and realtime feedback</p>
+              </div>
+              <span class="status-badge status-unlisted">Unlisted</span>
             </a>
 
             <a href="/melodia/" class="app-card" data-stage="unlisted" data-name="Melodia Online" data-description="Sight-singing: rhythm tap, audiation, sing with pitch trace and listen-back duet">
@@ -139,7 +142,7 @@
               <span class="status-badge status-unlisted">Unlisted</span>
             </a>
 
-            <a href="/agility/" class="app-card" data-stage="unlisted" data-name="Vocal Agility Trainer" data-description="Subdivision ladders, latency-aware rhythm feedback, pitch trace, and playful design previews">
+            <a href="/agility/" class="app-card" data-stage="unlisted" data-name="Vocal Agility Trainer" data-description="Metronome subdivision drills with timing heatmaps and twelve optional palettes">
               <div class="app-icon agility"></div>
               <div class="app-info">
                 <h3 class="app-title">Vocal Agility Trainer</h3>
@@ -148,7 +151,7 @@
               <span class="status-badge status-unlisted">Unlisted</span>
             </a>
 
-            <a href="/encore/" class="app-card" data-stage="unlisted" data-name="Encore" data-description="Track repertoire, practice notes, and performance history with local-first storage and Google Drive sync">
+            <a href="/encore/" class="app-card" data-stage="unlisted" data-name="Encore" data-description="Personal repertoire companion: songs, journals, performances, and Drive backup">
               <div class="app-icon encore"></div>
               <div class="app-info">
                 <h3 class="app-title">Encore</h3>
@@ -157,7 +160,7 @@
               <span class="status-badge status-unlisted">Unlisted</span>
             </a>
 
-            <a href="/stanza/" class="app-card" data-stage="unlisted" data-name="Stanza" data-description="Practice songs in sections with YouTube or local audio, guided drills, and local-only storage">
+            <a href="/stanza/" class="app-card" data-stage="unlisted" data-name="Stanza" data-description="Practice songs in sections — markers, loops, guided Conductor, and metronome wizard">
               <div class="app-icon stanza"></div>
               <div class="app-info">
                 <h3 class="app-title">Stanza</h3>
@@ -165,6 +168,7 @@
               </div>
               <span class="status-badge status-unlisted">Unlisted</span>
             </a>
+
           </div>
         </section>
 
@@ -173,6 +177,7 @@
             <h2 class="section-title">Art &amp; Writing</h2>
           </div>
           <div class="apps-grid">
+
             <a href="/zines/" class="app-card" data-stage="stable" data-name="Zine Studio" data-description="Format image files into zines for home or professional printing">
               <div class="app-icon zines"></div>
               <div class="app-info">
@@ -182,7 +187,7 @@
               <span class="status-badge status-stable">Stable</span>
             </a>
 
-            <a href="/forms/" class="app-card" data-stage="stable" data-name="Form Intersections" data-description="3D visualization tool for practicing Drawabox form intersections">
+            <a href="/forms/" class="app-card" data-stage="stable" data-name="Form Intersections" data-description="3D visualization for Drawabox form intersections">
               <div class="app-icon forms"></div>
               <div class="app-info">
                 <h3 class="app-title">Form Intersections</h3>
@@ -199,6 +204,7 @@
               </div>
               <span class="status-badge status-development">Experimental</span>
             </a>
+
           </div>
         </section>
 
@@ -207,6 +213,7 @@
             <h2 class="section-title">Games</h2>
           </div>
           <div class="apps-grid">
+
             <a href="/cats/" class="app-card" data-stage="development" data-name="Cat Clicker" data-description="Click a cat for the greater good">
               <div class="app-icon cats"></div>
               <div class="app-info">
@@ -227,6 +234,7 @@
 
           </div>
         </section>
+<!-- labs-catalog:generated:end -->
       </div>
 
       <footer class="labs-site-footer" aria-label="Site">
