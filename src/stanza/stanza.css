@@ -112,7 +112,7 @@ button.stanza-library-card {
 /* Width cap lives on .stanza-viewer-media-stack so video + transport + timeline share one column. */
 .stanza-viewer-media-stack {
   width: 100%;
-  max-width: 520px;
+  max-width: 600px;
 }
 
 .stanza-video-column {
@@ -153,7 +153,7 @@ button.stanza-library-card {
 }
 
 .stanza-playback-stack {
-  margin-top: 1rem;
+  margin-top: 0.625rem;
 }
 
 .stanza-playback-strip {
@@ -256,16 +256,46 @@ button.stanza-library-card {
 
 /* Practice rail: less stark than pure white on cream */
 .stanza-practice-rail.stanza-panel {
-  background: rgba(255, 252, 248, 0.62);
+  background: rgba(255, 252, 248, 0.78);
 }
 
-.stanza-marker-actions {
+/* Footer under timeline (Add marker) — keeps editing near the bar */
+.stanza-playback-track-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 10px 14px;
-  margin-top: 14px;
+  gap: 8px 12px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(60, 60, 67, 0.08);
+}
+
+/* Practice rail: equal-width speed presets (avoid uneven flex from label length) */
+.stanza-practice-rail .stanza-segmented.MuiToggleButtonGroup-root {
+  display: flex;
+}
+
+.stanza-practice-rail
+  .stanza-segmented.MuiToggleButtonGroup-root
+  .MuiToggleButton-root {
+  flex: 1 1 0;
+  min-width: 0;
+  padding-left: 6px;
+  padding-right: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Speed: hide native number spinners; use MUI arrow buttons */
+.stanza-speed-number input[type='number'] {
+  -moz-appearance: textfield;
+  font-variant-numeric: tabular-nums;
+}
+
+.stanza-speed-number input[type='number']::-webkit-outer-spin-button,
+.stanza-speed-number input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .stanza-play-btn {
@@ -341,10 +371,145 @@ button.stanza-library-card {
   outline-offset: 2px;
 }
 
+/* Segment tiles: zebra background from .stanza-playback-seg--even / --odd; selection = light brand pink; practice amount lives in the meter below the bar, not in the tile. */
+.stanza-playback-seg {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  margin: 0;
+  border: 1px solid rgba(60, 60, 67, 0.12);
+  border-radius: 6px;
+}
+
+.stanza-playback-seg--even {
+  background-color: #ffffff;
+}
+
+.stanza-playback-seg--odd {
+  background-color: #fafafa;
+}
+
+.stanza-playback-seg--selected {
+  background-color: rgba(232, 72, 160, 0.16);
+  border-color: rgba(232, 72, 160, 0.72);
+  border-width: 2px;
+  z-index: 2;
+}
+
+.stanza-playback-seg--practiced::after {
+  display: none;
+}
+
 .stanza-playback-seg:focus-visible {
   outline: 2px solid rgba(232, 72, 160, 0.5);
   outline-offset: -2px;
   z-index: 1;
+}
+
+/* Beat-style loop mode icons (Find the Beat parity) */
+.stanza-loop-options {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 12px;
+  background: rgba(29, 29, 31, 0.05);
+  box-shadow: inset 0 0 0 1px rgba(60, 60, 67, 0.1);
+}
+
+.stanza-loop-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 34px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: #3a3a3c;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.stanza-loop-option .material-symbols-outlined {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.stanza-loop-option:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.stanza-loop-option--active {
+  background: rgba(255, 255, 255, 0.92);
+  color: #1d1d1f;
+  box-shadow:
+    0 1px 2px rgba(29, 29, 31, 0.07),
+    0 0 0 1px rgba(232, 72, 160, 0.2);
+}
+
+.stanza-loop-option:focus-visible {
+  outline: 2px solid rgba(232, 72, 160, 0.45);
+  outline-offset: 2px;
+}
+
+.stanza-metronome-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: rgba(29, 29, 31, 0.06);
+  color: #1d1d1f;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.stanza-metronome-toggle:hover {
+  background: rgba(29, 29, 31, 0.1);
+}
+
+.stanza-metronome-toggle.active {
+  background: rgba(232, 72, 160, 0.18);
+  color: #1d1d1f;
+  box-shadow: 0 0 0 1px rgba(232, 72, 160, 0.35);
+}
+
+.stanza-marker-delete-btn,
+.stanza-marker-delete.MuiIconButton-root {
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 253, 250, 0.95);
+  color: #6e6e73;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(29, 29, 31, 0.12);
+}
+
+.stanza-marker-delete-btn:hover,
+.stanza-marker-delete.MuiIconButton-root:hover {
+  color: #e848a0;
 }
 
 /* Mui controls inside Stanza (non-segmented groups only — see .stanza-segmented) */

@@ -149,20 +149,6 @@ export function primaryReferenceLink(
   return marked;
 }
 
-/** Default reference listen when a primary isn’t marked (first row). */
-export function effectivePrimaryReferenceLink(s: EncoreSong): EncoreMediaLink | undefined {
-  const withL = ensureSongHasDerivedMediaLinks(s);
-  const refs = withL.referenceLinks ?? [];
-  return refs.find((r) => r.isPrimaryReference) ?? refs[0];
-}
-
-/** Primary backing link, or first backing row. */
-export function effectivePrimaryBackingLink(s: EncoreSong): EncoreMediaLink | undefined {
-  const withL = ensureSongHasDerivedMediaLinks(s);
-  const backing = withL.backingLinks ?? [];
-  return backing.find((l) => l.isPrimaryBacking) ?? backing[0];
-}
-
 function linkMatchesIncomingMediaIds(link: EncoreMediaLink, incoming: EncoreSong): boolean {
   if (link.source === 'spotify') {
     const id = normSpotify(link.spotifyTrackId);

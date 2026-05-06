@@ -37,14 +37,23 @@ import { getSyncMeta } from '../db/encoreDb';
 import { driveFolderWebUrl } from '../drive/driveWebUrls';
 import { ENCORE_ROOT_FOLDER } from '../drive/constants';
 import { useEncore, type SyncUiState } from '../context/EncoreContext';
+import { ensureSpotifyAccessToken } from '../spotify/pkce';
+import { fetchSpotifyCurrentUserSummary, type SpotifyCurrentUserSummary } from '../spotify/spotifyApi';
 import { encoreHairline, encoreShadowLift } from '../theme/encoreUiTokens';
-import { EncoreSpotifyConnectionChip } from '../ui/EncoreSpotifyConnectionChip';
 import { EncoreStatusPill } from '../ui/EncoreStatusPill';
 import { GoogleBrandIcon, SpotifyBrandIcon } from './EncoreBrandIcon';
 
-function formatDriveInstant(iso: string): string {
+/** Short relative day phrasing for the "Last sync" caption (today / yesterday / Mon DD). */
+function formatRelativeSyncInstant(iso: string): string {
   try {
-    return new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso;
+    const time = d.toLocaleTimeString(undefined, { timeStyle: 'short' });
+    const startOfDay = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+    const dayDelta = Math.round((startOfDay(new Date()) - startOfDay(d)) / 86_400_000);
+    if (dayDelta === 0) return `today, ${time}`;
+    if (dayDelta === 1) return `yesterday, ${time}`;
+    return `${d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}, ${time}`;
   } catch {
     return iso;
   }
@@ -53,37 +62,271 @@ function formatDriveInstant(iso: string): string {
 /** Privacy policy URL (separate static page; opens in a new tab). */
 const PRIVACY_POLICY_URL = '/legal/privacy.html';
 
-/** Section card used inside the account menu — title row + body content. */
-function MenuSection(props: {
+/**
+ * Parallel card layout used by the Google and Spotify integration sections in the account menu.
+ *
+ * Both connections have the same conceptual primitives (status, identity, description, sub-actions,
+ * primary "sign in again", secondary "disconnect"). Rendering them through one component keeps the
+ * visual rhythm consistent so users can scan from one integration to the next without remapping.
+ *
+ * See `src/encore/COPY_STYLE.md` § _Account integrations_ for the copy contract.
+ */
+type IntegrationActionConfig =
+  | {
+      label: string;
+      onClick: () => void;
+      disabled?: boolean;
+      loading?: boolean;
+      icon?: ReactNode;
+    }
+  | undefined;
+
+type IntegrationUtilityAction = {
+  /** Tooltip text + accessible name. */
+  label: string;
   icon: ReactNode;
+  onClick?: () => void;
+  href?: string;
+};
+
+function IntegrationCard(props: {
+  brandIcon: ReactNode;
   title: string;
-  status?: ReactNode;
-  children?: ReactNode;
+  status: { tone: 'ok' | 'error' | 'warning' | 'info' | 'idle'; label: string; icon?: ReactNode };
+  /**
+   * "Signed in as" label + value (and an optional identity-linked open link, e.g. the user's
+   * Spotify profile). The link sits adjacent to the value because it's bound to *that* identity;
+   * non-identity workspace utilities (open Drive folder, reorganize) belong in `utilityActions`.
+   */
+  identity?: {
+    label: string;
+    value: ReactNode;
+    link?: { href: string; label: string };
+  };
+  /** One short sentence describing what this connection does (or how to enable it). */
+  description: ReactNode;
+  /** Optional caption under the description (e.g. "Last sync today, 9:10 AM"). */
+  meta?: ReactNode;
+  /** Small icon-only buttons for workspace utilities (open Drive folder, reorganize, etc.). */
+  utilityActions?: IntegrationUtilityAction[];
+  /** Primary button (Sign in / Sign in again / Reconnect). */
+  primary: IntegrationActionConfig;
+  /** Optional inline secondary action for error states (e.g. Retry sync). */
+  inlineSecondary?: IntegrationActionConfig;
+  /** Tertiary text button (Disconnect). Omit when not connected. */
+  disconnect?: IntegrationActionConfig;
+  /** Inline alert (error / warning) for connection failures. */
+  alert?: ReactNode;
+  /** Optional caption under the action row (e.g. reorganize result). */
+  footnote?: ReactNode;
 }): ReactElement {
-  const { icon, title, status, children } = props;
+  const {
+    brandIcon,
+    title,
+    status,
+    identity,
+    description,
+    meta,
+    utilityActions,
+    primary,
+    inlineSecondary,
+    disconnect,
+    alert,
+    footnote,
+  } = props;
   return (
     <Box sx={{ px: 3, py: 2.5 }}>
-      <Stack direction="row" alignItems="flex-start" spacing={1.25} sx={{ mb: 1.25 }}>
-        <Box sx={{ color: 'text.secondary', display: 'inline-flex', mt: 0.125 }}>{icon}</Box>
-        <Typography
-          variant="caption"
-          sx={{
-            fontWeight: 700,
-            letterSpacing: '0.1em',
-            textTransform: 'uppercase',
-            color: 'text.secondary',
-            fontSize: '0.6875rem',
-            lineHeight: 1.35,
-            pt: 0.125,
-          }}
-        >
-          {title}
-        </Typography>
-        {status ? (
-          <Box sx={{ ml: 'auto', display: 'inline-flex', alignItems: 'center', flexShrink: 0, mt: -0.25 }}>{status}</Box>
+      <Stack spacing={1.5}>
+        {/* Section header: brand mark + title + status */}
+        <Stack direction="row" alignItems="center" spacing={1.25}>
+          <Box sx={{ color: 'text.secondary', display: 'inline-flex' }}>{brandIcon}</Box>
+          <Typography
+            variant="caption"
+            sx={{
+              fontWeight: 700,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color: 'text.secondary',
+              fontSize: '0.6875rem',
+              lineHeight: 1.35,
+            }}
+          >
+            {title}
+          </Typography>
+          <Box sx={{ ml: 'auto' }}>
+            <EncoreStatusPill tone={status.tone} label={status.label} icon={status.icon} />
+          </Box>
+        </Stack>
+
+        {/* Identity (only when connected). Identity-linked open is rendered inline with the
+            value so the user reads "I'm signed in as X — open X's profile" as one unit. */}
+        {identity ? (
+          <Box>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: 'block', lineHeight: 1.35, fontWeight: 700, letterSpacing: '0.06em', mb: 0.35 }}
+            >
+              {identity.label}
+            </Typography>
+            <Stack direction="row" alignItems="center" spacing={0.5} sx={{ flexWrap: 'wrap', rowGap: 0.25 }}>
+              <Typography
+                variant="body2"
+                sx={{ fontWeight: 600, lineHeight: 1.45, wordBreak: 'break-word', minWidth: 0 }}
+              >
+                {identity.value}
+              </Typography>
+              {identity.link ? (
+                <Tooltip title={identity.link.label}>
+                  <IconButton
+                    size="small"
+                    aria-label={identity.link.label}
+                    component="a"
+                    href={identity.link.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    sx={{ p: 0.25, color: 'text.secondary', '&:hover': { color: 'text.primary' } }}
+                  >
+                    <OpenInNewIcon sx={{ fontSize: 16 }} />
+                  </IconButton>
+                </Tooltip>
+              ) : null}
+            </Stack>
+          </Box>
+        ) : null}
+
+        {/* Description + optional meta caption */}
+        <Box>
+          <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.65, letterSpacing: '-0.01em' }}>
+            {description}
+          </Typography>
+          {meta ? (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: 'block', mt: 0.5, lineHeight: 1.5 }}
+            >
+              {meta}
+            </Typography>
+          ) : null}
+        </Box>
+
+        {/* Utility icon row (open external, reorganize, etc.) */}
+        {utilityActions && utilityActions.length > 0 ? (
+          <Stack direction="row" spacing={0.25} alignItems="center">
+            {utilityActions.map((u) => (
+              <Tooltip key={u.label} title={u.label}>
+                <span>
+                  <IconButton
+                    size="small"
+                    aria-label={u.label}
+                    component={u.href ? 'a' : 'button'}
+                    href={u.href}
+                    target={u.href ? '_blank' : undefined}
+                    rel={u.href ? 'noreferrer' : undefined}
+                    onClick={u.onClick}
+                    disabled={!u.href && !u.onClick}
+                  >
+                    {u.icon}
+                  </IconButton>
+                </span>
+              </Tooltip>
+            ))}
+          </Stack>
+        ) : null}
+
+        {/* Inline alert (error / warning) */}
+        {alert ? <Box>{alert}</Box> : null}
+
+        {/*
+         * Action row.
+         *
+         * Recovery actions ("Sign in again", "Disconnect") are *low-key* when the connection is
+         * healthy — these are paths the user only walks down if something is wrong, so they
+         * shouldn't visually compete with the rest of the menu. When status is `warning` /
+         * `error` / `idle`, the primary button promotes back to outlined so the user can find
+         * the call-to-action while skimming.
+         *
+         * Disconnect is always low-key — it's a destructive action, never a happy-path CTA.
+         */}
+        {primary || disconnect || inlineSecondary ? (
+          (() => {
+            const primaryNeedsCta = status.tone !== 'ok';
+            return (
+              <Stack direction="row" gap={1} flexWrap="wrap" alignItems="center" sx={{ pt: 0.25 }}>
+                {primary ? (
+                  <Button
+                    size="small"
+                    variant={primaryNeedsCta ? 'outlined' : 'text'}
+                    color="inherit"
+                    startIcon={primary.icon}
+                    onClick={primary.onClick}
+                    disabled={primary.disabled || primary.loading}
+                    sx={{
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      ...(primaryNeedsCta
+                        ? {}
+                        : {
+                            color: 'text.secondary',
+                            px: 1,
+                            '&:hover': { color: 'text.primary', bgcolor: 'action.hover' },
+                          }),
+                    }}
+                  >
+                    {primary.label}
+                  </Button>
+                ) : null}
+                {inlineSecondary ? (
+                  <Button
+                    size="small"
+                    variant="text"
+                    color="inherit"
+                    startIcon={inlineSecondary.icon}
+                    onClick={inlineSecondary.onClick}
+                    disabled={inlineSecondary.disabled || inlineSecondary.loading}
+                    sx={{
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      color: 'text.secondary',
+                      px: 1,
+                      '&:hover': { color: 'text.primary', bgcolor: 'action.hover' },
+                    }}
+                  >
+                    {inlineSecondary.label}
+                  </Button>
+                ) : null}
+                <Box sx={{ flex: 1 }} />
+                {disconnect ? (
+                  <Button
+                    size="small"
+                    variant="text"
+                    color="inherit"
+                    startIcon={disconnect.icon ?? <LogoutIcon fontSize="small" />}
+                    onClick={disconnect.onClick}
+                    disabled={disconnect.disabled}
+                    sx={{
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      color: 'text.secondary',
+                      px: 1,
+                      '&:hover': { color: 'text.primary', bgcolor: 'action.hover' },
+                    }}
+                  >
+                    {disconnect.label}
+                  </Button>
+                ) : null}
+              </Stack>
+            );
+          })()
+        ) : null}
+
+        {footnote ? (
+          <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.55, display: 'block' }}>
+            {footnote}
+          </Typography>
         ) : null}
       </Stack>
-      {children ? <Box sx={{ pl: { xs: 0, sm: 0.25 } }}>{children}</Box> : null}
     </Box>
   );
 }
@@ -98,11 +341,17 @@ export function EncoreAccountMenu(props: {
     effectiveDisplayName,
     setOwnerDisplayName,
     googleAccessToken,
+    googleEmail,
+    googleSessionExpired,
     signOut,
     signInWithGoogle,
     spotifyConnectError,
     spotifyConnectLoopbackUrl,
     clearSpotifyConnectError,
+    spotifyLinked,
+    connectSpotify,
+    disconnectSpotify,
+    reauthorizeSpotify,
     reorganizeDriveUploads,
     retryDriveSync,
   } = useEncore();
@@ -233,6 +482,34 @@ export function EncoreAccountMenu(props: {
     [],
   );
 
+  const spotifyClientId = useMemo(
+    () => (import.meta.env.VITE_SPOTIFY_CLIENT_ID as string | undefined)?.trim() ?? '',
+    [],
+  );
+
+  const [spotifyAccountSummary, setSpotifyAccountSummary] = useState<SpotifyCurrentUserSummary | null>(null);
+
+  useEffect(() => {
+    if (!open || !spotifyLinked || !spotifyClientId) {
+      setSpotifyAccountSummary(null);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const token = await ensureSpotifyAccessToken(spotifyClientId);
+        if (!token || cancelled) return;
+        const me = await fetchSpotifyCurrentUserSummary(token);
+        if (!cancelled) setSpotifyAccountSummary(me);
+      } catch {
+        if (!cancelled) setSpotifyAccountSummary(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, spotifyLinked, spotifyClientId]);
+
   const googleClientConfigured = useMemo(
     () => Boolean((import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined)?.trim()),
     [],
@@ -288,9 +565,21 @@ export function EncoreAccountMenu(props: {
                 Hi, {effectiveDisplayName}
               </Typography>
             ) : null}
-            <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.35, fontWeight: 500 }}>
-              Account
-            </Typography>
+            {googleSessionExpired && !googleAccessToken ? (
+              <Stack direction="row" alignItems="center" spacing={0.5}>
+                <ErrorOutlineIcon sx={{ fontSize: 14, color: 'warning.main' }} />
+                <Typography
+                  variant="caption"
+                  sx={{ lineHeight: 1.35, fontWeight: 600, color: 'warning.main' }}
+                >
+                  Sign in to sync
+                </Typography>
+              </Stack>
+            ) : (
+              <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.35, fontWeight: 500 }}>
+                Account
+              </Typography>
+            )}
           </Stack>
         </Stack>
       </Button>
@@ -387,175 +676,218 @@ export function EncoreAccountMenu(props: {
         <Box sx={{ borderTop: 1, borderColor: encoreHairline }} />
 
         {/* Google card */}
-        <MenuSection
-          icon={<GoogleBrandIcon sx={{ fontSize: 18 }} />}
-          title="Google"
-          status={
-            <EncoreStatusPill
-              tone={driveStatus.tone}
-              label={driveStatus.label}
-              icon={driveStatusIcon ?? undefined}
-            />
-          }
-        >
-          {googleAccessToken ? (
-            <Stack spacing={1.5}>
-              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7, letterSpacing: '-0.01em' }}>
-                Drive backup runs in the background. Your library lives in the{' '}
-                <strong>{ENCORE_ROOT_FOLDER}</strong> folder.
-                {driveBanner.lastSuccessfulPushAt ? (
-                  <>
-                    {' '}Last backup {formatDriveInstant(driveBanner.lastSuccessfulPushAt)}.
-                  </>
-                ) : null}
-              </Typography>
-              {syncState === 'error' && syncMessage ? (
-                <Typography variant="caption" color="error" sx={{ lineHeight: 1.45 }}>
-                  {syncMessage}
-                </Typography>
-              ) : null}
-              <Stack direction="row" gap={1} flexWrap="wrap" alignItems="center" sx={{ mt: 0.5, pt: 0.25 }}>
-                {driveBanner.rootFolderId ? (
-                  <Tooltip title="Open Encore folder in Drive">
-                    <IconButton
-                      size="small"
-                      component="a"
-                      href={driveFolderWebUrl(driveBanner.rootFolderId)}
-                      target="_blank"
-                      rel="noreferrer"
-                      onClick={close}
-                      aria-label="Open Encore folder in Drive"
-                    >
-                      <FolderIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                ) : null}
-                <Tooltip
-                  title={
-                    reorganizing
-                      ? 'Reorganizing…'
-                      : 'Rename, move Encore uploads into your saved folder settings, and add shortcuts under Encore_App where needed'
-                  }
-                >
-                  <span>
-                    <IconButton
-                      size="small"
-                      onClick={() => void handleReorganize()}
-                      disabled={reorganizing}
-                      aria-label="Reorganize Drive uploads using saved folder settings; add Encore_App shortcuts where needed"
-                    >
-                      {reorganizing ? <RefreshIcon className="spin" fontSize="small" /> : <AutoFixHighIcon fontSize="small" />}
-                    </IconButton>
-                  </span>
-                </Tooltip>
-                {syncState === 'error' ? (
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    color="inherit"
-                    disabled={driveRetryBusy}
-                    startIcon={driveRetryBusy ? <RefreshIcon className="spin" fontSize="small" /> : <RefreshIcon fontSize="small" />}
-                    onClick={() => {
+        {googleAccessToken ? (
+          <IntegrationCard
+            brandIcon={<GoogleBrandIcon sx={{ fontSize: 18 }} />}
+            title="Google"
+            status={{ tone: driveStatus.tone, label: driveStatus.label, icon: driveStatusIcon ?? undefined }}
+            identity={googleEmail ? { label: 'Signed in as', value: googleEmail } : undefined}
+            description={
+              <>
+                Backed up to <strong>{ENCORE_ROOT_FOLDER}</strong> in your Drive.
+              </>
+            }
+            meta={
+              driveBanner.lastSuccessfulPushAt
+                ? `Last sync ${formatRelativeSyncInstant(driveBanner.lastSuccessfulPushAt)}.`
+                : syncState === 'error' && syncMessage
+                  ? syncMessage
+                  : undefined
+            }
+            utilityActions={[
+              ...(driveBanner.rootFolderId
+                ? [
+                    {
+                      label: 'Open Encore folder in Drive',
+                      icon: <FolderIcon fontSize="small" />,
+                      href: driveFolderWebUrl(driveBanner.rootFolderId),
+                    },
+                  ]
+                : []),
+              {
+                label: reorganizing ? 'Reorganizing…' : 'Reorganize Drive uploads',
+                icon: reorganizing ? <RefreshIcon className="spin" fontSize="small" /> : <AutoFixHighIcon fontSize="small" />,
+                onClick: () => void handleReorganize(),
+              },
+            ]}
+            primary={{
+              label: 'Sign in again',
+              icon: <RefreshIcon fontSize="small" />,
+              onClick: () => {
+                close();
+                void signInWithGoogle();
+              },
+            }}
+            inlineSecondary={
+              syncState === 'error'
+                ? {
+                    label: 'Retry sync',
+                    icon: driveRetryBusy ? <RefreshIcon className="spin" fontSize="small" /> : <RefreshIcon fontSize="small" />,
+                    loading: driveRetryBusy,
+                    onClick: () => {
                       setDriveRetryBusy(true);
                       void retryDriveSync().finally(() => setDriveRetryBusy(false));
-                    }}
-                    sx={{ textTransform: 'none' }}
-                  >
-                    Retry sync
-                  </Button>
-                ) : null}
-                <Box sx={{ flex: 1 }} />
-                <Button
-                  size="small"
-                  variant="outlined"
-                  color="inherit"
-                  onClick={() => {
-                    close();
-                    void signInWithGoogle();
-                  }}
-                  sx={{ textTransform: 'none' }}
-                >
-                  Sign in again
-                </Button>
-                <Button
-                  size="small"
-                  variant="text"
-                  color="inherit"
-                  startIcon={<LogoutIcon fontSize="small" />}
-                  onClick={() => {
-                    close();
-                    signOut();
-                  }}
-                  sx={{ textTransform: 'none' }}
-                >
-                  Disconnect
-                </Button>
-              </Stack>
-              {reorganizeMsg ? (
-                <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.6, display: 'block', pt: 0.25 }}>
-                  {reorganizeMsg}
-                </Typography>
-              ) : null}
-            </Stack>
-          ) : googleClientConfigured ? (
-            <Stack spacing={1.5}>
-              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7, letterSpacing: '-0.01em' }}>
-                Connect Google to back up your library to Drive and share read-only snapshots.
-              </Typography>
-              <Button
-                size="small"
-                variant="outlined"
-                onClick={() => {
-                  close();
-                  void signInWithGoogle();
-                }}
-                sx={{ alignSelf: 'flex-start', textTransform: 'none' }}
-              >
-                Sign in with Google
-              </Button>
-            </Stack>
-          ) : (
-            <Typography variant="body2" color="text.secondary">
-              Google sign-in is not configured for this site.
-            </Typography>
-          )}
-        </MenuSection>
+                    },
+                  }
+                : undefined
+            }
+            disconnect={{
+              label: 'Disconnect',
+              onClick: () => {
+                close();
+                signOut();
+              },
+            }}
+            footnote={reorganizeMsg ?? undefined}
+          />
+        ) : googleClientConfigured && googleSessionExpired && googleEmail ? (
+          <IntegrationCard
+            brandIcon={<GoogleBrandIcon sx={{ fontSize: 18 }} />}
+            title="Google"
+            status={{ tone: 'warning', label: 'Sign in to sync', icon: <ErrorOutlineIcon sx={{ fontSize: 14 }} /> }}
+            identity={{ label: 'Signed in as', value: googleEmail }}
+            description="Your Google sign-in expired. Local edits are safe; sign in again to resume Drive backup."
+            primary={{
+              label: 'Sign in again',
+              icon: <RefreshIcon fontSize="small" />,
+              onClick: () => {
+                close();
+                void signInWithGoogle();
+              },
+            }}
+            disconnect={{
+              label: 'Disconnect',
+              onClick: () => {
+                close();
+                signOut();
+              },
+            }}
+          />
+        ) : googleClientConfigured ? (
+          <IntegrationCard
+            brandIcon={<GoogleBrandIcon sx={{ fontSize: 18 }} />}
+            title="Google"
+            status={{ tone: 'idle', label: 'Not connected' }}
+            description="Connect Google to back up your library to Drive and share read-only snapshots."
+            primary={{
+              label: 'Sign in with Google',
+              onClick: () => {
+                close();
+                void signInWithGoogle();
+              },
+            }}
+          />
+        ) : (
+          <IntegrationCard
+            brandIcon={<GoogleBrandIcon sx={{ fontSize: 18 }} />}
+            title="Google"
+            status={{ tone: 'idle', label: 'Unavailable' }}
+            description="Google sign-in is not configured for this site."
+            primary={undefined}
+          />
+        )}
 
         <Box sx={{ borderTop: 1, borderColor: encoreHairline }} />
 
         {/* Spotify card */}
-        <MenuSection
-          icon={<SpotifyBrandIcon sx={{ fontSize: 18 }} />}
-          title="Spotify"
-          status={<EncoreSpotifyConnectionChip size="compact" onMenuAction={close} />}
-        >
-          <Stack spacing={1.5}>
-            <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7, letterSpacing: '-0.01em' }}>
-              Powers playlist import and song search. Skip if you don’t use Spotify.
-            </Typography>
-            {!spotifyClientConfigured ? (
-              <Typography variant="caption" color="text.secondary">
-                Spotify is not configured for this site.
-              </Typography>
-            ) : null}
-          </Stack>
-          {spotifyConnectError ? (
-            <Alert
-              severity="error"
-              onClose={clearSpotifyConnectError}
-              sx={{ mt: 1.5, '& .MuiAlert-message': { width: 1 } }}
-            >
-              <Typography variant="body2" component="span" display="block">
-                {spotifyConnectError}
-              </Typography>
-              {spotifyConnectLoopbackUrl ? (
-                <Link href={spotifyConnectLoopbackUrl} sx={{ mt: 0.75, display: 'inline-block' }}>
-                  Open this app on 127.0.0.1
-                </Link>
-              ) : null}
-            </Alert>
-          ) : null}
-        </MenuSection>
+        {spotifyLinked && spotifyClientConfigured ? (
+          <IntegrationCard
+            brandIcon={<SpotifyBrandIcon sx={{ fontSize: 18 }} />}
+            title="Spotify"
+            status={{ tone: 'ok', label: 'Connected', icon: <CheckCircleIcon sx={{ fontSize: 14 }} /> }}
+            identity={
+              spotifyAccountSummary
+                ? {
+                    label: 'Signed in as',
+                    value: (
+                      <>
+                        {spotifyAccountSummary.display_name?.trim() || 'Spotify user'}
+                        <Typography
+                          component="span"
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ ml: 0.75, fontFamily: 'ui-monospace, monospace', fontWeight: 500 }}
+                        >
+                          · {spotifyAccountSummary.id}
+                        </Typography>
+                      </>
+                    ),
+                    link: {
+                      label: 'Open Spotify profile',
+                      href: `https://open.spotify.com/user/${encodeURIComponent(spotifyAccountSummary.id)}`,
+                    },
+                  }
+                : undefined
+            }
+            description="Used for playlist import, sync, and Spotify search."
+            primary={{
+              label: 'Sign in again',
+              icon: <RefreshIcon fontSize="small" />,
+              onClick: () => {
+                close();
+                void reauthorizeSpotify();
+              },
+            }}
+            disconnect={{
+              label: 'Disconnect',
+              onClick: () => {
+                close();
+                disconnectSpotify();
+              },
+            }}
+            alert={
+              spotifyConnectError ? (
+                <Alert severity="error" onClose={clearSpotifyConnectError} sx={{ '& .MuiAlert-message': { width: 1 } }}>
+                  <Typography variant="body2" component="span" display="block">
+                    {spotifyConnectError}
+                  </Typography>
+                  {spotifyConnectLoopbackUrl ? (
+                    <Link href={spotifyConnectLoopbackUrl} sx={{ mt: 0.75, display: 'inline-block' }}>
+                      Open this app on 127.0.0.1
+                    </Link>
+                  ) : null}
+                </Alert>
+              ) : undefined
+            }
+          />
+        ) : spotifyClientConfigured ? (
+          <IntegrationCard
+            brandIcon={<SpotifyBrandIcon sx={{ fontSize: 18 }} />}
+            title="Spotify"
+            status={{ tone: 'idle', label: 'Not connected' }}
+            description="Connect Spotify to import playlists and search Spotify tracks."
+            primary={{
+              label: 'Sign in with Spotify',
+              onClick: () => {
+                close();
+                clearSpotifyConnectError();
+                void connectSpotify();
+              },
+            }}
+            alert={
+              spotifyConnectError ? (
+                <Alert severity="error" onClose={clearSpotifyConnectError} sx={{ '& .MuiAlert-message': { width: 1 } }}>
+                  <Typography variant="body2" component="span" display="block">
+                    {spotifyConnectError}
+                  </Typography>
+                  {spotifyConnectLoopbackUrl ? (
+                    <Link href={spotifyConnectLoopbackUrl} sx={{ mt: 0.75, display: 'inline-block' }}>
+                      Open this app on 127.0.0.1
+                    </Link>
+                  ) : null}
+                </Alert>
+              ) : undefined
+            }
+          />
+        ) : (
+          <IntegrationCard
+            brandIcon={<SpotifyBrandIcon sx={{ fontSize: 18 }} />}
+            title="Spotify"
+            status={{ tone: 'idle', label: 'Unavailable' }}
+            description="Spotify is not configured for this site."
+            primary={undefined}
+          />
+        )}
 
         <Box sx={{ borderTop: 1, borderColor: encoreHairline }} />
 

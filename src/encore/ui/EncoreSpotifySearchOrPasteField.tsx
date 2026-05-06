@@ -3,8 +3,8 @@ import CircularProgress from '@mui/material/CircularProgress';
 import TextField from '@mui/material/TextField';
 import type { ReactNode } from 'react';
 import type { SpotifySearchTrack } from '../spotify/spotifyApi';
-import { SpotifyBrandIcon } from '../components/EncoreBrandIcon';
 import { renderSpotifyTrackAutocompleteOption } from './renderSpotifyTrackAutocompleteOption';
+import { encoreBrandInputStartAdornment } from './EncoreBrandTextField';
 
 function defaultTrackLabel(t: SpotifySearchTrack): string {
   const artists = t.artists?.map((a) => a.name).join(', ') ?? '';
@@ -67,7 +67,7 @@ export function EncoreSpotifySearchOrPasteField(props: EncoreSpotifySearchOrPast
             ...params.InputProps,
             startAdornment: (
               <>
-                <SpotifyBrandIcon sx={{ mr: 0.75, fontSize: 18, alignSelf: 'center' }} />
+                {encoreBrandInputStartAdornment('spotify', { iconPx: 18 })}
                 {params.InputProps.startAdornment}
               </>
             ),

@@ -5,15 +5,20 @@ import Typography from '@mui/material/Typography';
 import type { Theme } from '@mui/material/styles';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import type { ReactElement, ReactNode } from 'react';
+import CloseIcon from '@mui/icons-material/Close';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import { useMemo, type ReactElement, type ReactNode } from 'react';
 import type { EncoreMediaLink, EncoreMediaSource } from '../types';
-import { SpotifyBrandIcon, YouTubeBrandIcon } from '../components/EncoreBrandIcon';
+import { GoogleDriveBrandIcon, SpotifyBrandIcon, YouTubeBrandIcon } from '../components/EncoreBrandIcon';
+import { useYoutubeOembedForMediaChip } from '../youtube/useYoutubeOembedForMediaChip';
 import {
   formatMediaLinkCaption,
   formatMediaLinkShortCaption,
+  truncateMediaLinkCaption,
+  youtubeWatchUrlFromMediaLink,
 } from './encoreMediaLinkFormat';
 import { encoreMediaLinkRowSx } from '../theme/encoreUiTokens';
+import { stanzaPracticeHrefFromEncoreMediaLink } from '../youtube/stanzaPracticeOpenUrl';
 
 /**
  * Which "primary" facet the row belongs to. Drives:
@@ -36,7 +41,9 @@ const REMOVE_COPY: Record<EncoreMediaLinkRowSlot, string> = {
 
 const iconBtnSx = {
   color: 'text.secondary',
-  p: 0.25,
+  flexShrink: 0,
+  p: 0.375,
+  boxSizing: 'border-box' as const,
   '&:hover': { color: 'text.primary', bgcolor: 'action.hover' },
 } as const;
 
@@ -64,18 +71,21 @@ export type EncoreMediaLinkRowProps = {
   /** Optional trailing slot content (e.g. song info source marker). Inserted before the actions. */
   trailing?: ReactNode;
   /**
-   * Wraps only the icon + caption + trailing strip (not star/open/remove). Use with
-   * {@link EncoreStreamingHoverCard} so interactive buttons do not sit inside the hover anchor.
+   * Wraps only the icon + caption strip (opens `openUrl` when set). Trailing info, primary star,
+   * and row actions are outside this wrapper so they stay right-aligned in the chip shell.
    */
   hoverStripWrapper?: (strip: ReactElement) => ReactElement;
+  /** When set, overrides Drive-backed Stanza `/stanza/` link. Default: reference and backing slots only (not chart sheets). */
+  stanzaPracticeAllowDrive?: boolean;
   /** When true, no outer chip border (parent supplies a single shell around row + notes). */
   embedded?: boolean;
 };
 
 /**
  * Single row primitive for media links across SongPage / PracticeScreen / GuestShareView /
- * PlaylistImportDialog. Renders icon + caption + optional primary star + open + remove,
- * using shared spacing, border and primary-state tokens. Wraps callers' `EncoreStreamingHoverCard`
+ * PlaylistImportDialog. Renders icon + caption as a flexible left strip, with trailing info,
+ * primary state, Stanza, make-primary, and remove actions grouped and pinned to the right edge
+ * of the chip (consistent padding from the shell). Wraps callers' `EncoreStreamingHoverCard`
  * by being a leaf — the hover card sits around this row.
  */
 export function EncoreMediaLinkRow(props: EncoreMediaLinkRowProps): ReactElement {
@@ -92,13 +102,63 @@ export function EncoreMediaLinkRow(props: EncoreMediaLinkRowProps): ReactElement
     onRemove,
     trailing,
     hoverStripWrapper,
+    stanzaPracticeAllowDrive,
     embedded = false,
   } = props;
   const source = sourceProp ?? link?.source;
-  const resolvedCaption = caption ?? (link ? formatMediaLinkShortCaption(link) : '');
-  const resolvedFull = fullCaption ?? (link ? formatMediaLinkCaption(link) : resolvedCaption);
+  const youtubeWatchUrlForChip =
+    caption === undefined &&
+    link &&
+    link.source === 'youtube' &&
+    !link.label?.trim() &&
+    link.youtubeVideoId?.trim()
+      ? youtubeWatchUrlFromMediaLink(link)
+      : null;
+
+  const { title: ytOembedTitle, suppressStanzaPractice } = useYoutubeOembedForMediaChip(youtubeWatchUrlForChip);
+
+  const resolvedCaption = useMemo(
+    () =>
+      caption ??
+      (link
+        ? link.source === 'youtube' && !link.label?.trim() && ytOembedTitle?.trim()
+          ? truncateMediaLinkCaption(ytOembedTitle.trim(), 26)
+          : formatMediaLinkShortCaption(link)
+        : ''),
+    [caption, link, ytOembedTitle],
+  );
+
+  const resolvedFull = useMemo(
+    () =>
+      fullCaption ??
+      (link
+        ? link.source === 'youtube' && !link.label?.trim() && ytOembedTitle?.trim()
+          ? ytOembedTitle.trim()
+          : formatMediaLinkCaption(link)
+        : resolvedCaption),
+    [fullCaption, link, ytOembedTitle, resolvedCaption],
+  );
   const primaryCopy = PRIMARY_COPY[slot];
   const removeCopy = REMOVE_COPY[slot];
+
+  const stanzaPracticeAllowDriveEffective =
+    stanzaPracticeAllowDrive ?? (slot === 'reference' || slot === 'backing');
+
+  const stanzaHref = useMemo(() => {
+    const base = stanzaPracticeHrefFromEncoreMediaLink(link, {
+      allowDriveAudio: stanzaPracticeAllowDriveEffective,
+    });
+    if (base == null) return null;
+    if (link?.source === 'youtube' && suppressStanzaPractice) return null;
+    return base;
+  }, [link, stanzaPracticeAllowDriveEffective, suppressStanzaPractice]);
+
+  const stanzaTooltip =
+    stanzaHref == null
+      ? ''
+      : link?.source === 'youtube'
+        ? 'Practice this video in Stanza (Segno)'
+        : 'Open in Stanza (Segno) to practice. Use Upload audio for Drive files.';
 
   /*
    * The icon + caption strip is the row's primary "open the resource" affordance: when an
@@ -108,11 +168,12 @@ export function EncoreMediaLinkRow(props: EncoreMediaLinkRowProps): ReactElement
    * The dedicated "Open" icon button is intentionally dropped to avoid duplicating affordances.
    */
   const stripBaseSx = {
-    display: 'inline-flex',
+    display: 'flex',
     alignItems: 'center',
     gap: 0.5,
     minWidth: 0,
-    flex: '1 1 auto',
+    flex: '1 1 0%',
+    maxWidth: '100%',
     color: 'inherit',
     textDecoration: 'none',
   } as const;
@@ -138,13 +199,16 @@ export function EncoreMediaLinkRow(props: EncoreMediaLinkRowProps): ReactElement
         <SpotifyBrandIcon sx={{ fontSize: 15, flexShrink: 0, opacity: 0.88 }} aria-hidden />
       ) : source === 'youtube' ? (
         <YouTubeBrandIcon sx={{ fontSize: 15, flexShrink: 0, opacity: 0.88 }} aria-hidden />
+      ) : source === 'drive' ? (
+        <GoogleDriveBrandIcon sx={{ fontSize: 15, flexShrink: 0, opacity: 0.88 }} aria-hidden />
       ) : null}
       <Typography
         className="EncoreMediaLinkRowCaption"
         variant="caption"
         noWrap
         sx={{
-          maxWidth: { xs: 140, sm: 220 },
+          minWidth: 0,
+          flex: '1 1 0%',
           fontWeight: 600,
           fontSize: '0.8125rem',
           color: 'text.primary',
@@ -153,14 +217,6 @@ export function EncoreMediaLinkRow(props: EncoreMediaLinkRowProps): ReactElement
       >
         {resolvedCaption}
       </Typography>
-      {trailing}
-      {isPrimary ? (
-        <Tooltip title={primaryCopy.active}>
-          <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center' }}>
-            <StarIcon sx={{ fontSize: 15, color: 'text.primary' }} aria-hidden />
-          </Box>
-        </Tooltip>
-      ) : null}
     </>
   );
 
@@ -181,19 +237,45 @@ export function EncoreMediaLinkRow(props: EncoreMediaLinkRowProps): ReactElement
 
   const wrappedStrip = hoverStripWrapper ? hoverStripWrapper(stripInner) : stripInner;
 
-  return (
+  const showActionsCluster =
+    Boolean(trailing) ||
+    isPrimary ||
+    stanzaHref != null ||
+    (!isPrimary && onMakePrimary) ||
+    Boolean(onRemove);
+
+  const actionsCluster = (
     <Box
-      sx={(t: Theme) => ({
-        ...encoreMediaLinkRowSx(t, isPrimary, { embedded }),
-        display: 'inline-flex',
+      sx={{
+        display: 'flex',
         alignItems: 'center',
-        maxWidth: embedded ? 'min(100%, 280px)' : '100%',
-        flexWrap: 'nowrap',
-        gap: 0.25,
-        pr: hoverStripWrapper ? 0.375 : undefined,
-      })}
+        flexShrink: 0,
+        gap: 0.125,
+        pl: 0.5,
+        boxSizing: 'border-box',
+      }}
     >
-      {wrappedStrip}
+      {trailing}
+      {isPrimary ? (
+        <Tooltip title={primaryCopy.active}>
+          <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center' }}>
+            <StarIcon sx={{ fontSize: 15, color: 'text.primary' }} aria-hidden />
+          </Box>
+        </Tooltip>
+      ) : null}
+      {stanzaHref ? (
+        <Tooltip title={stanzaTooltip}>
+          <IconButton
+            component="a"
+            href={stanzaHref}
+            size="small"
+            aria-label="Open practice in Stanza (Segno)"
+            sx={iconBtnSx}
+          >
+            <OpenInNewIcon sx={{ fontSize: 17 }} aria-hidden />
+          </IconButton>
+        </Tooltip>
+      ) : null}
       {!isPrimary && onMakePrimary ? (
         <Tooltip title={primaryCopy.promote}>
           <IconButton
@@ -207,7 +289,7 @@ export function EncoreMediaLinkRow(props: EncoreMediaLinkRowProps): ReactElement
         </Tooltip>
       ) : null}
       {onRemove ? (
-        <Tooltip title="Remove">
+        <Tooltip title={removeCopy}>
           <span>
             <IconButton
               size="small"
@@ -215,11 +297,29 @@ export function EncoreMediaLinkRow(props: EncoreMediaLinkRowProps): ReactElement
               onClick={onRemove}
               sx={iconBtnSx}
             >
-              <DeleteOutlineIcon sx={{ fontSize: 15 }} />
+              <CloseIcon sx={{ fontSize: 15 }} />
             </IconButton>
           </span>
         </Tooltip>
       ) : null}
+    </Box>
+  );
+
+  return (
+    <Box
+      sx={(t: Theme) => ({
+        ...encoreMediaLinkRowSx(t, isPrimary, { embedded }),
+        display: embedded ? 'flex' : 'inline-flex',
+        width: embedded ? '100%' : 'auto',
+        alignItems: 'center',
+        alignSelf: embedded ? 'stretch' : undefined,
+        maxWidth: '100%',
+        flexWrap: 'nowrap',
+        columnGap: 0,
+      })}
+    >
+      <Box sx={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', overflow: 'hidden' }}>{wrappedStrip}</Box>
+      {showActionsCluster ? actionsCluster : null}
     </Box>
   );
 }

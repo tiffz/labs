@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
+import KeyboardArrowUp from '@mui/icons-material/KeyboardArrowUp';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import Accordion from '@mui/material/Accordion';
 import AccordionDetails from '@mui/material/AccordionDetails';
@@ -12,35 +14,57 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import FormControl from '@mui/material/FormControl';
-import FormControlLabel from '@mui/material/FormControlLabel';
 import IconButton from '@mui/material/IconButton';
+import InputAdornment from '@mui/material/InputAdornment';
 import InputLabel from '@mui/material/InputLabel';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Paper from '@mui/material/Paper';
 import Select from '@mui/material/Select';
 import Stack from '@mui/material/Stack';
-import Switch from '@mui/material/Switch';
 import TextField from '@mui/material/TextField';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Typography from '@mui/material/Typography';
 import AppTooltip from '../../shared/components/AppTooltip';
-import { stanzaDb, type StanzaSong } from '../db/stanzaDb';
+import MetronomeToggleButton from '../../shared/components/MetronomeToggleButton';
+import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
+import { stanzaDb, type StanzaSong, type StanzaTake } from '../db/stanzaDb';
+import { buildLocalAudioStanzaSong } from '../db/stanzaLocalAudioImport';
+import {
+  readStanzaLastSelectedSongId,
+  writeStanzaLastSelectedSongId,
+} from '../db/stanzaLastSelectedSong';
+import { useStanzaFileDrop } from '../hooks/useStanzaFileDrop';
 import { canResolveYoutubePaste, resolveYoutubePaste } from '../utils/youtubePasteImport';
-import { deriveSegments, ensureMarkerIds, findSegmentIndexAtTime } from '../utils/segments';
+import { deriveSegments, ensureMarkerIds, findSegmentIndexAtTime, STANZA_TIME_EPS } from '../utils/segments';
+import {
+  computeLoopHull,
+  STANZA_LOOP_EPS,
+  type StanzaPlaybackLoopMode,
+} from '../utils/stanzaPlaybackLoop';
 import { migrateStanzaSongSegmentKeysIfNeeded } from '../utils/stanzaSegmentMigration';
 import { fetchYoutubeOEmbedTitle, youtubeMqThumbnailUrl } from '../utils/stanzaYoutubeMeta';
 import { readYoutubeVFromLocation, replaceStanzaYoutubeSearchParam } from '../utils/stanzaUrlYoutube';
 import type { GuidedRegimen } from '../utils/conductorRegimen';
 import StanzaYouTubePlayer, { type StanzaYouTubeController } from './StanzaYouTubePlayer';
-import StanzaTimeline, { type StanzaLoopScope } from './StanzaTimeline';
+import StanzaTimeline from './StanzaTimeline';
 import ConductorOverlay from './ConductorOverlay';
 import MetronomeWizard from './MetronomeWizard';
 import StanzaRepeatMark from './StanzaRepeatMark';
 import { useMetronomeSync } from '../hooks/useMetronomeSync';
 
-const SPEED_PRESETS = [0.5, 0.75, 1, 1.25] as const;
+/** YouTube embed and local audio: stay within a conservative range. */
+const STANZA_RATE_MIN = 0.25;
+const STANZA_RATE_MAX = 2;
+const STANZA_RATE_STEP = 0.05;
+/** Common presets; any rate in [min,max] is available via the numeric control. */
+const SPEED_PRESETS = [0.5, 0.75, 1, 1.25, 1.5] as const;
+
+function formatPlaybackRateForInput(rate: number): string {
+  const r = Math.round(rate * 100) / 100;
+  return String(r);
+}
 
 function songHasPractice(s: StanzaSong): boolean {
   return (s.markers?.length ?? 0) > 0 || Object.keys(s.stats ?? {}).length > 0;
@@ -48,9 +72,12 @@ function songHasPractice(s: StanzaSong): boolean {
 
 export default function StanzaWorkspace() {
   const songs = useLiveQuery(() => stanzaDb.songs.orderBy('updatedAt').reverse().toArray(), []);
+  const { push: pushUndo, isReplayingRef } = useLabsUndo();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [ytPaste, setYtPaste] = useState('');
-  const [loopScope, setLoopScope] = useState<StanzaLoopScope>('all');
+  const [loopMode, setLoopMode] = useState<StanzaPlaybackLoopMode>('through');
+  const [selectedSegmentIndices, setSelectedSegmentIndices] = useState<number[]>([]);
+  const [lastClickedSegmentIndex, setLastClickedSegmentIndex] = useState<number | null>(null);
   const [playback, setPlayback] = useState({
     currentTime: 0,
     duration: 0,
@@ -63,7 +90,6 @@ export default function StanzaWorkspace() {
   const timeRef = useRef(0);
   const durationRef = useRef(0);
   const playingRef = useRef(false);
-  const [activeLoopIndex, setActiveLoopIndex] = useState<number | null>(null);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [conductorOpen, setConductorOpen] = useState(false);
   const [regimen, setRegimen] = useState<GuidedRegimen>('accuracy');
@@ -118,6 +144,20 @@ export default function StanzaWorkspace() {
       updatedAt: Date.now(),
     };
     await stanzaDb.songs.put(row);
+    if (!isReplayingRef.current) {
+      const id = rowId;
+      const snap = structuredClone(row);
+      pushUndo({
+        undo: async () => {
+          await stanzaDb.takes.where('songId').equals(id).delete();
+          await stanzaDb.songs.delete(id);
+          setSelectedId((cur) => (cur === id ? null : cur));
+        },
+        redo: async () => {
+          await stanzaDb.songs.put(structuredClone(snap));
+        },
+      });
+    }
     void (async () => {
       const t = await fetchYoutubeOEmbedTitle(videoId);
       if (!t) return;
@@ -126,7 +166,7 @@ export default function StanzaWorkspace() {
       await stanzaDb.songs.put({ ...latest, title: t, updatedAt: Date.now() });
     })();
     return rowId;
-  }, []);
+  }, [isReplayingRef, pushUndo]);
 
   useEffect(() => {
     if (urlBootstrapDoneRef.current) return;
@@ -135,6 +175,38 @@ export default function StanzaWorkspace() {
     if (!vid) return;
     void ensureYoutubeSongByVideoId(vid).then((id) => setSelectedId(id));
   }, [ensureYoutubeSongByVideoId]);
+
+  /**
+   * Auto-resume the last opened song on reload. URL `?v=…` always wins, so this only kicks in
+   * when there's no YouTube deep link. Without this, even though the audio blob is sitting in
+   * IndexedDB, the user lands on the empty hero screen and feels like Stanza forgot the upload.
+   */
+  const lastSelectedRestoreAttemptedRef = useRef(false);
+  useEffect(() => {
+    if (lastSelectedRestoreAttemptedRef.current) return;
+    if (selectedId) {
+      // URL bootstrap (or some other path) already selected something; lock in this session.
+      lastSelectedRestoreAttemptedRef.current = true;
+      return;
+    }
+    if (!songs) return; // live query still hydrating
+    if (readYoutubeVFromLocation()) return; // URL deep link will handle selection
+    lastSelectedRestoreAttemptedRef.current = true;
+    const savedId = readStanzaLastSelectedSongId();
+    if (!savedId) return;
+    if (songs.some((s) => s.id === savedId)) {
+      setSelectedId(savedId);
+    } else {
+      // Stale id (song was deleted in another tab / earlier session) — drop it so we don't keep
+      // trying to restore something that's gone.
+      writeStanzaLastSelectedSongId(null);
+    }
+  }, [songs, selectedId]);
+
+  /** Persist `selectedId` so a fresh load can resume it (see `lastSelectedRestoreAttemptedRef`). */
+  useEffect(() => {
+    writeStanzaLastSelectedSongId(selectedId);
+  }, [selectedId]);
 
   useEffect(() => {
     const onPop = () => {
@@ -162,6 +234,12 @@ export default function StanzaWorkspace() {
     if (p && selectedId != null && p.songId !== selectedId) pendingYoutubeBootstrapRef.current = null;
   }, [selectedId]);
 
+  useEffect(() => {
+    setSelectedSegmentIndices([]);
+    setLastClickedSegmentIndex(null);
+    setLoopMode('through');
+  }, [selectedId]);
+
   const localUrl = useMemo(() => {
     if (!selected?.localAudioBlob) return null;
     return URL.createObjectURL(selected.localAudioBlob);
@@ -183,6 +261,13 @@ export default function StanzaWorkspace() {
     () => deriveSegments(selected?.markers ?? [], playback.duration),
     [selected?.markers, playback.duration],
   );
+
+  const loopHull = useMemo(() => computeLoopHull(segments, selectedSegmentIndices), [segments, selectedSegmentIndices]);
+
+  const [customRateInput, setCustomRateInput] = useState('1');
+  useEffect(() => {
+    setCustomRateInput(formatPlaybackRateForInput(playback.playbackRate));
+  }, [playback.playbackRate, selectedId]);
 
   useEffect(() => {
     if (!selectedId || playback.duration <= 0 || !songs) return;
@@ -208,13 +293,29 @@ export default function StanzaWorkspace() {
     }
   }, [songs]);
 
-  const persistSong = useCallback(async (patch: Partial<StanzaSong> & Pick<StanzaSong, 'id'>) => {
-    const row = await stanzaDb.songs.get(patch.id);
-    if (!row) return;
-    const nextMarkers = patch.markers != null ? ensureMarkerIds(patch.markers) : row.markers;
-    const next: StanzaSong = { ...row, ...patch, markers: nextMarkers, updatedAt: Date.now() };
-    await stanzaDb.songs.put(next);
-  }, []);
+  const persistSong = useCallback(
+    async (patch: Partial<StanzaSong> & Pick<StanzaSong, 'id'>, opts?: { recordUndo?: boolean }) => {
+      const row = await stanzaDb.songs.get(patch.id);
+      if (!row) return;
+      const recordUndo = opts?.recordUndo !== false && !isReplayingRef.current;
+      const prevSnap = recordUndo ? structuredClone(row) : null;
+      const nextMarkers = patch.markers != null ? ensureMarkerIds(patch.markers) : row.markers;
+      const next: StanzaSong = { ...row, ...patch, markers: nextMarkers, updatedAt: Date.now() };
+      await stanzaDb.songs.put(next);
+      if (recordUndo && prevSnap) {
+        const nextSnap = structuredClone(next);
+        pushUndo({
+          undo: async () => {
+            await stanzaDb.songs.put(prevSnap);
+          },
+          redo: async () => {
+            await stanzaDb.songs.put(nextSnap);
+          },
+        });
+      }
+    },
+    [isReplayingRef, pushUndo],
+  );
 
   const addYoutubeSong = useCallback(async () => {
     const imp = resolveYoutubePaste(ytPaste);
@@ -236,47 +337,113 @@ export default function StanzaWorkspace() {
     await stanzaDb.songs.put(row);
     setSelectedId(row.id);
     setYtPaste('');
+    if (!isReplayingRef.current) {
+      const id = rowId;
+      const snap = structuredClone(row);
+      pushUndo({
+        undo: async () => {
+          await stanzaDb.takes.where('songId').equals(id).delete();
+          await stanzaDb.songs.delete(id);
+          setSelectedId((cur) => (cur === id ? null : cur));
+        },
+        redo: async () => {
+          await stanzaDb.songs.put(structuredClone(snap));
+          setSelectedId(id);
+        },
+      });
+    }
     void (async () => {
       const t = await fetchYoutubeOEmbedTitle(imp.videoId);
       if (!t) return;
       const latest = await stanzaDb.songs.get(rowId);
       if (!latest) return;
-      await stanzaDb.songs.put({ ...latest, title: t, updatedAt: Date.now() });
+      void persistSong({ id: latest.id, title: t }, { recordUndo: false });
     })();
-  }, [ytPaste]);
+  }, [ytPaste, isReplayingRef, pushUndo, persistSong]);
 
   const addLocalSong = useCallback(async (file: File) => {
-    const blob = new Blob([await file.arrayBuffer()], { type: file.type || 'audio/mpeg' });
-    const row: StanzaSong = {
-      id: crypto.randomUUID(),
-      ytId: null,
-      title: file.name.replace(/\.[^/.]+$/, '') || 'Local audio',
-      markers: [],
-      stats: {},
-      updatedAt: Date.now(),
-      localAudioBlob: blob,
-    };
+    const row = await buildLocalAudioStanzaSong(file);
     await stanzaDb.songs.put(row);
     setSelectedId(row.id);
-  }, []);
+    if (!isReplayingRef.current) {
+      const id = row.id;
+      const snap = structuredClone(row);
+      pushUndo({
+        undo: async () => {
+          await stanzaDb.takes.where('songId').equals(id).delete();
+          await stanzaDb.songs.delete(id);
+          setSelectedId((cur) => (cur === id ? null : cur));
+        },
+        redo: async () => {
+          await stanzaDb.songs.put(structuredClone(snap));
+          setSelectedId(id);
+        },
+      });
+    }
+  }, [isReplayingRef, pushUndo]);
 
-  const removeSongById = useCallback(async (id: string) => {
-    await stanzaDb.takes.where('songId').equals(id).delete();
-    await stanzaDb.songs.delete(id);
-    if (selectedId === id) setSelectedId(null);
-  }, [selectedId]);
+  /**
+   * Drag-and-drop bridge: drag an audio file from Finder/Explorer onto the Stanza page and it
+   * imports + selects automatically — the "one-click" load path. The button-based pickers below
+   * still exist for keyboard / a11y.
+   */
+  const { isDragging: isFileDragging } = useStanzaFileDrop({
+    onAudioFile: (f) => addLocalSong(f),
+  });
+
+  const removeSongById = useCallback(
+    async (id: string) => {
+      const row = await stanzaDb.songs.get(id);
+      if (!row) return;
+      const prevSnap = structuredClone(row);
+      const prevTakes = (await stanzaDb.takes.where('songId').equals(id).toArray()).map((t) => structuredClone(t));
+      const wasSelected = selectedId === id;
+      await stanzaDb.takes.where('songId').equals(id).delete();
+      await stanzaDb.songs.delete(id);
+      if (wasSelected) setSelectedId(null);
+      if (!isReplayingRef.current) {
+        pushUndo({
+          undo: async () => {
+            await stanzaDb.songs.put(prevSnap);
+            for (const t of prevTakes) {
+              await stanzaDb.takes.put(t);
+            }
+            if (wasSelected) setSelectedId(prevSnap.id);
+          },
+          redo: async () => {
+            await stanzaDb.takes.where('songId').equals(id).delete();
+            await stanzaDb.songs.delete(id);
+            if (wasSelected) setSelectedId(null);
+          },
+        });
+      }
+    },
+    [selectedId, isReplayingRef, pushUndo],
+  );
 
   const applyPlaybackRate = useCallback(
     (rate: number) => {
+      const clamped = Math.min(STANZA_RATE_MAX, Math.max(STANZA_RATE_MIN, rate));
       if (isYoutube) {
-        ytControllerRef.current?.setPlaybackRate(rate);
+        ytControllerRef.current?.setPlaybackRate(clamped);
       } else {
         const a = audioRef.current;
-        if (a) a.playbackRate = rate;
+        if (a) a.playbackRate = clamped;
       }
-      setPlayback((p) => ({ ...p, playbackRate: rate }));
+      setPlayback((p) => ({ ...p, playbackRate: clamped }));
     },
     [isYoutube],
+  );
+
+  const bumpPlaybackRate = useCallback(
+    (delta: number) => {
+      const next = Math.min(
+        STANZA_RATE_MAX,
+        Math.max(STANZA_RATE_MIN, Math.round((playback.playbackRate + delta) * 100) / 100),
+      );
+      applyPlaybackRate(next);
+    },
+    [applyPlaybackRate, playback.playbackRate],
   );
 
   const seekUnified = useCallback(
@@ -295,9 +462,18 @@ export default function StanzaWorkspace() {
   );
 
   const playUnified = useCallback(() => {
+    const t = timeRef.current;
+    const d = durationRef.current;
+    if (loopMode === 'loopAll' && d > 0) {
+      if (t < 0 || t > d - STANZA_LOOP_EPS) seekUnified(0);
+    } else if (loopMode === 'loopSelection' && loopHull) {
+      if (t < loopHull.start - 0.05 || t > loopHull.end - STANZA_LOOP_EPS) {
+        seekUnified(loopHull.start);
+      }
+    }
     if (isYoutube) ytControllerRef.current?.play();
     else void audioRef.current?.play();
-  }, [isYoutube]);
+  }, [isYoutube, loopMode, loopHull, seekUnified]);
 
   const pauseUnified = useCallback(() => {
     if (isYoutube) ytControllerRef.current?.pause();
@@ -320,9 +496,7 @@ export default function StanzaWorkspace() {
   );
 
   useEffect(() => {
-    if (loopScope !== 'section' || activeLoopIndex === null) return;
-    const seg = segments[activeLoopIndex];
-    if (!seg) return;
+    if (loopMode === 'through') return;
     let raf = 0;
     const tick = () => {
       if (!playingRef.current) {
@@ -330,14 +504,18 @@ export default function StanzaWorkspace() {
         return;
       }
       const t = timeRef.current;
-      if (t >= seg.end - 0.06) {
-        seekUnified(seg.start);
+      const d = durationRef.current;
+      if (loopMode === 'loopAll' && d > 0) {
+        if (t >= d - STANZA_LOOP_EPS) seekUnified(0);
+      } else if (loopMode === 'loopSelection' && loopHull) {
+        if (t >= loopHull.end - STANZA_LOOP_EPS) seekUnified(loopHull.start);
+        else if (t < loopHull.start - STANZA_LOOP_EPS) seekUnified(loopHull.start);
       }
       raf = window.requestAnimationFrame(tick);
     };
     raf = window.requestAnimationFrame(tick);
     return () => window.cancelAnimationFrame(raf);
-  }, [loopScope, activeLoopIndex, segments, seekUnified]);
+  }, [loopMode, loopHull, seekUnified]);
 
   useEffect(() => {
     if (!selected) return;
@@ -345,10 +523,7 @@ export default function StanzaWorkspace() {
       if (!document.hasFocus()) return;
       if (!playingRef.current) return;
       const t = timeRef.current;
-      const idx =
-        activeLoopIndex !== null && activeLoopIndex >= 0
-          ? activeLoopIndex
-          : findSegmentIndexAtTime(segments, t);
+      const idx = findSegmentIndexAtTime(segments, t);
       if (idx === null) return;
       const seg = segments[idx];
       if (!seg) return;
@@ -363,11 +538,17 @@ export default function StanzaWorkspace() {
             lastPracticed: Date.now(),
           },
         };
-        await stanzaDb.songs.put({ ...row, stats, updatedAt: Date.now() });
+        void persistSong(
+          {
+            id: selected.id,
+            stats,
+          },
+          { recordUndo: false },
+        );
       })();
     }, 1000);
     return () => window.clearInterval(id);
-  }, [selected, segments, activeLoopIndex]);
+  }, [selected, segments, persistSong]);
 
   useEffect(() => {
     if (!selected || wizardOpen || conductorOpen) return;
@@ -401,19 +582,92 @@ export default function StanzaWorkspace() {
     void persistSong({ id: selected.id, markers });
   }, [selected, persistSong]);
 
-  const handleTimelineSegmentClick = useCallback(
-    (i: number) => {
+  const handleSelectSegments = useCallback(
+    (i: number, event: React.MouseEvent) => {
       const seg = segments[i];
       if (!seg) return;
-      if (loopScope === 'all') {
-        seekUnified(seg.start);
-        setActiveLoopIndex(i);
+      setLastClickedSegmentIndex(i);
+      if (event.shiftKey) {
+        setSelectedSegmentIndices((prev) => {
+          if (prev.includes(i)) return prev.filter((x) => x !== i);
+          return [...prev, i].sort((a, b) => a - b);
+        });
       } else {
-        setActiveLoopIndex(i);
+        setSelectedSegmentIndices([i]);
+        seekUnified(seg.start);
       }
     },
-    [loopScope, segments, seekUnified],
+    [segments, seekUnified],
   );
+
+  const onLoopModeChange = useCallback(
+    (m: StanzaPlaybackLoopMode) => {
+      setLoopMode(m);
+      if (m === 'loopSelection' && segments.length > 0) {
+        setSelectedSegmentIndices((prev) => {
+          if (prev.length > 0) return prev;
+          const idx = findSegmentIndexAtTime(segments, timeRef.current) ?? 0;
+          return [idx];
+        });
+      }
+    },
+    [segments],
+  );
+
+  const deleteMarkerById = useCallback(
+    (markerId: string) => {
+      if (!selected) return;
+      void persistSong({
+        id: selected.id,
+        markers: ensureMarkerIds(selected.markers ?? []).filter((m) => m.id !== markerId),
+      });
+    },
+    [persistSong, selected],
+  );
+
+  const renameSectionFromLabel = useCallback(
+    (segmentIndex: number, label: string) => {
+      if (!selected) return;
+      const seg = segments[segmentIndex];
+      if (!seg) return;
+      const sorted = [...ensureMarkerIds(selected.markers ?? [])].sort((a, b) => a.time - b.time);
+      const at = sorted.find((m) => Math.abs(m.time - seg.start) < STANZA_TIME_EPS);
+      if (at) {
+        void persistSong({
+          id: selected.id,
+          markers: sorted.map((m) => (m.id === at.id ? { ...m, label } : m)),
+        });
+        return;
+      }
+      if (seg.start < STANZA_TIME_EPS) {
+        void persistSong({
+          id: selected.id,
+          markers: [{ id: crypto.randomUUID(), time: 0, label }, ...sorted.filter((m) => m.time > STANZA_TIME_EPS)],
+        });
+        return;
+      }
+      void persistSong({
+        id: selected.id,
+        markers: [...sorted, { id: crypto.randomUUID(), time: seg.start, label }].sort((a, b) => a.time - b.time),
+      });
+    },
+    [persistSong, selected, segments],
+  );
+
+  const skipToLoopStart = useCallback(() => {
+    if (loopMode === 'through' || loopMode === 'loopAll') seekUnified(0);
+    else if (loopHull) seekUnified(loopHull.start);
+  }, [loopHull, loopMode, seekUnified]);
+
+  const skipToLoopEnd = useCallback(() => {
+    const d = durationRef.current;
+    if (!(d > 0)) return;
+    if (loopMode === 'through' || loopMode === 'loopAll') {
+      seekUnified(Math.max(0, d - STANZA_TIME_EPS));
+    } else if (loopHull) {
+      seekUnified(Math.max(loopHull.start, loopHull.end - STANZA_TIME_EPS));
+    }
+  }, [loopHull, loopMode, seekUnified]);
 
   useMetronomeSync(
     Boolean(selected?.metronomeEnabled && selected.metronomeBpm && selected.metronomeBpm > 0),
@@ -448,7 +702,11 @@ export default function StanzaWorkspace() {
 
   const startFreeformRecord = useCallback(async () => {
     if (!selected || segments.length === 0) return;
-    const idx = activeLoopIndex ?? findSegmentIndexAtTime(segments, timeRef.current) ?? 0;
+    const idx =
+      lastClickedSegmentIndex ??
+      (selectedSegmentIndices.length > 0 ? Math.min(...selectedSegmentIndices) : null) ??
+      findSegmentIndexAtTime(segments, timeRef.current) ??
+      0;
     const seg = segments[idx];
     if (!seg) return;
     recChunksRef.current = [];
@@ -469,14 +727,26 @@ export default function StanzaWorkspace() {
         mediaRecorderRef.current = null;
         const blob = new Blob(recChunksRef.current, { type: mime });
         recChunksRef.current = [];
-        await stanzaDb.takes.add({
+        const take: StanzaTake = {
           id: crypto.randomUUID(),
           songId: selected.id,
           segmentId: seg.id,
           blob,
           isGuided: false,
           createdAt: Date.now(),
-        });
+        };
+        await stanzaDb.takes.add(take);
+        if (!isReplayingRef.current) {
+          const snap = structuredClone(take);
+          pushUndo({
+            undo: async () => {
+              await stanzaDb.takes.delete(snap.id);
+            },
+            redo: async () => {
+              await stanzaDb.takes.put(snap);
+            },
+          });
+        }
         setRecState('idle');
       };
       rec.start();
@@ -484,7 +754,7 @@ export default function StanzaWorkspace() {
     } catch (err) {
       console.error('Stanza: record failed', err);
     }
-  }, [activeLoopIndex, segments, selected]);
+  }, [lastClickedSegmentIndex, selectedSegmentIndices, segments, selected, isReplayingRef, pushUndo]);
 
   const stopFreeformRecord = useCallback(() => {
     const r = mediaRecorderRef.current;
@@ -494,16 +764,28 @@ export default function StanzaWorkspace() {
   const saveGuidedTake = useCallback(
     async (blob: Blob, segmentId: string) => {
       if (!selected) return;
-      await stanzaDb.takes.add({
+      const take: StanzaTake = {
         id: crypto.randomUUID(),
         songId: selected.id,
         segmentId,
         blob,
         isGuided: true,
         createdAt: Date.now(),
-      });
+      };
+      await stanzaDb.takes.add(take);
+      if (!isReplayingRef.current) {
+        const snap = structuredClone(take);
+        pushUndo({
+          undo: async () => {
+            await stanzaDb.takes.delete(snap.id);
+          },
+          redo: async () => {
+            await stanzaDb.takes.put(snap);
+          },
+        });
+      }
     },
-    [selected],
+    [selected, isReplayingRef, pushUndo],
   );
 
   const safeGuidedIndex =
@@ -531,6 +813,7 @@ export default function StanzaWorkspace() {
     fontSize: '0.6875rem',
     fontWeight: 600,
     color: 'text.secondary',
+    whiteSpace: 'nowrap' as const,
   };
 
   const renderLibraryGrid = (variant: 'landing' | 'footer') => (
@@ -614,6 +897,47 @@ export default function StanzaWorkspace() {
         bgcolor: 'transparent',
       }}
     >
+      {/* Window-level drop overlay. Shown only while the user is dragging files into the page;
+          `pointer-events: none` lets the drop event continue through to the window listener in
+          `useStanzaFileDrop`. Decorative (`aria-hidden`) — drag-and-drop is mouse-only UX and
+          the keyboard upload buttons remain available below. */}
+      {isFileDragging ? (
+        <Box
+          aria-hidden
+          sx={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 2000,
+            pointerEvents: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            bgcolor: 'rgba(168, 85, 247, 0.12)',
+            backdropFilter: 'blur(4px)',
+            transition: 'opacity 80ms ease-out',
+          }}
+        >
+          <Box
+            sx={{
+              border: '2px dashed rgba(168, 85, 247, 0.6)',
+              borderRadius: 3,
+              px: 4,
+              py: 3,
+              bgcolor: 'rgba(255, 255, 255, 0.92)',
+              boxShadow: '0 18px 48px rgba(76, 29, 149, 0.18)',
+              maxWidth: 420,
+              textAlign: 'center',
+            }}
+          >
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#4c1d95', mb: 0.5 }}>
+              Drop to load audio
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#5b21b6', lineHeight: 1.5 }}>
+              Stanza will save it to your local library and select it as the current piece.
+            </Typography>
+          </Box>
+        </Box>
+      ) : null}
       {!selected && (
         <>
           <Box className="stanza-hero">
@@ -698,6 +1022,21 @@ export default function StanzaWorkspace() {
                   />
                 </Button>
               </Stack>
+              {/* Discovery hint for the window-level drop zone. Kept understated — power users
+                  will notice once they try; it's not blocking the keyboard / button paths. */}
+              <Typography
+                variant="caption"
+                sx={{
+                  display: 'block',
+                  textAlign: 'center',
+                  mt: 1.5,
+                  color: 'rgba(76, 29, 149, 0.55)',
+                  fontWeight: 500,
+                  letterSpacing: '0.01em',
+                }}
+              >
+                or drop an audio file anywhere on the page
+              </Typography>
             </Box>
           </Box>
           {(songs?.length ?? 0) > 0 && (
@@ -750,11 +1089,11 @@ export default function StanzaWorkspace() {
               direction={{ xs: 'column', md: 'row' }}
               spacing={{ xs: 2.25, md: 3 }}
               alignItems="flex-start"
-              sx={{ width: '100%', maxWidth: { md: 868 }, mx: 'auto' }}
+              sx={{ width: '100%', maxWidth: { md: 980 }, mx: 'auto' }}
             >
               <Box
                 className="stanza-viewer-media-stack"
-                sx={{ flex: { xs: '1 1 auto', md: '0 1 520px' }, minWidth: 0, width: '100%' }}
+                sx={{ flex: { xs: '1 1 auto', md: '0 1 600px' }, minWidth: 0, width: '100%' }}
               >
                 <Box className="stanza-video-column">
                   <Box
@@ -826,28 +1165,22 @@ export default function StanzaWorkspace() {
                   duration={playback.duration}
                   currentTime={playback.currentTime}
                   markers={selected.markers ?? []}
-                  activeLoopIndex={activeLoopIndex}
                   segmentMs={selected.stats}
-                  loopScope={loopScope}
-                  onLoopScopeChange={setLoopScope}
+                  selectedSegmentIndices={selectedSegmentIndices}
+                  loopMode={loopMode}
+                  onLoopModeChange={onLoopModeChange}
                   isPlaying={playback.isPlaying}
                   onPlay={playUnified}
                   onPause={pauseUnified}
                   onSeek={seekUnified}
-                  onSelectSegment={handleTimelineSegmentClick}
+                  onSelectSegments={handleSelectSegments}
                   onMarkersChange={(m) => void persistSong({ id: selected.id, markers: m })}
+                  onDeleteMarker={deleteMarkerById}
+                  onRenameSectionFromLabel={renameSectionFromLabel}
+                  onSkipToLoopStart={skipToLoopStart}
+                  onSkipToLoopEnd={skipToLoopEnd}
+                  onAddMarker={addMarkerAtCurrentTime}
                 />
-
-                <Box className="stanza-marker-actions">
-                  <AppTooltip title="Drop a marker at the playhead. Press M when not typing in a field. Use Whole song / Loop section to set range.">
-                    <Button variant="outlined" size="small" className="stanza-btn-soft-outline" onClick={addMarkerAtCurrentTime}>
-                      Add marker
-                    </Button>
-                  </AppTooltip>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem', fontWeight: 500, lineHeight: 1.45 }}>
-                    Shortcut: M
-                  </Typography>
-                </Box>
               </Box>
 
               <Paper
@@ -859,21 +1192,26 @@ export default function StanzaWorkspace() {
                   flexShrink: 0,
                   p: { xs: 2.25, md: 2.25 },
                   alignSelf: { md: 'flex-start' },
+                  border: '1px solid rgba(60, 60, 67, 0.08)',
+                  boxShadow: '0 2px 18px rgba(29, 29, 31, 0.045)',
                 }}
               >
-                <Typography component="p" sx={{ ...sectionFieldLabelSx, mb: 1.5 }}>
+                <Typography component="p" sx={{ ...sectionFieldLabelSx, mb: 1.25 }}>
                   Practice
                 </Typography>
-                <Stack spacing={2.25}>
-                  <Box>
-                    <Typography sx={sectionFieldLabelSx}>Speed</Typography>
+                <Stack spacing={2}>
+                  <Box className="stanza-speed-section">
+                    <Typography sx={{ ...sectionFieldLabelSx, mb: 1 }}>Speed</Typography>
                     <ToggleButtonGroup
                       className="stanza-segmented"
                       exclusive
                       size="small"
                       fullWidth
-                      value={playback.playbackRate}
+                      value={
+                        SPEED_PRESETS.find((r) => Math.abs(r - playback.playbackRate) < 0.0001) ?? null
+                      }
                       onChange={(_, v) => v != null && applyPlaybackRate(v)}
+                      sx={{ mb: 1.25 }}
                     >
                       {SPEED_PRESETS.map((r) => (
                         <ToggleButton key={r} value={r} aria-label={`${r} times speed`}>
@@ -881,6 +1219,68 @@ export default function StanzaWorkspace() {
                         </ToggleButton>
                       ))}
                     </ToggleButtonGroup>
+                    <TextField
+                      className="stanza-speed-number"
+                      size="small"
+                      fullWidth
+                      value={customRateInput}
+                      onChange={(e) => setCustomRateInput(e.target.value)}
+                      onBlur={() => {
+                        const v = parseFloat(customRateInput);
+                        if (Number.isFinite(v)) applyPlaybackRate(v);
+                        else setCustomRateInput(formatPlaybackRateForInput(playback.playbackRate));
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          (e.target as HTMLInputElement).blur();
+                        }
+                      }}
+                      type="number"
+                      placeholder="1"
+                      aria-label="Playback speed"
+                      inputProps={{
+                        step: STANZA_RATE_STEP,
+                        min: STANZA_RATE_MIN,
+                        max: STANZA_RATE_MAX,
+                        'aria-describedby': 'stanza-speed-range-hint',
+                      }}
+                      InputProps={{
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <Stack spacing={0} alignItems="center" sx={{ mr: -0.25 }}>
+                              <IconButton
+                                size="small"
+                                aria-label="Increase playback speed"
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => bumpPlaybackRate(STANZA_RATE_STEP)}
+                                sx={{ p: 0.2, borderRadius: 1 }}
+                              >
+                                <KeyboardArrowUp sx={{ fontSize: 20 }} />
+                              </IconButton>
+                              <IconButton
+                                size="small"
+                                aria-label="Decrease playback speed"
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => bumpPlaybackRate(-STANZA_RATE_STEP)}
+                                sx={{ p: 0.2, borderRadius: 1 }}
+                              >
+                                <KeyboardArrowDown sx={{ fontSize: 20 }} />
+                              </IconButton>
+                            </Stack>
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                    <Typography
+                      id="stanza-speed-range-hint"
+                      variant="caption"
+                      component="p"
+                      color="text.secondary"
+                      sx={{ mt: 0.75, mb: 0, opacity: 0.92, letterSpacing: '0.01em' }}
+                    >
+                      {STANZA_RATE_MIN}–{STANZA_RATE_MAX}× · ±{STANZA_RATE_STEP} with arrows
+                    </Typography>
                   </Box>
                   <Box>
                     <Typography sx={sectionFieldLabelSx}>Metronome</Typography>
@@ -892,17 +1292,16 @@ export default function StanzaWorkspace() {
                             : 'Calibrate first to save tempo and the first downbeat.'
                         }
                       >
-                        <FormControlLabel
-                          control={
-                            <Switch
-                              checked={Boolean(selected.metronomeEnabled)}
-                              disabled={!metronomeCalibrated && !selected.metronomeEnabled}
-                              onChange={(_, c) => void persistSong({ id: selected.id, metronomeEnabled: c })}
-                              aria-label="Metronome enabled"
-                              size="small"
-                            />
+                        <MetronomeToggleButton
+                          enabled={Boolean(selected.metronomeEnabled)}
+                          disabled={!metronomeCalibrated && !selected.metronomeEnabled}
+                          onToggle={() =>
+                            void persistSong({ id: selected.id, metronomeEnabled: !selected.metronomeEnabled })
                           }
-                          label="On"
+                          className="stanza-metronome-toggle"
+                          includeNativeTitle={false}
+                          includeDataTooltip={false}
+                          ariaLabel="Toggle metronome"
                         />
                       </AppTooltip>
                       <Button variant="outlined" size="small" className="stanza-btn-soft-outline" onClick={() => setWizardOpen(true)}>
@@ -929,7 +1328,7 @@ export default function StanzaWorkspace() {
                           sx={{ py: 1, fontWeight: 600 }}
                           disabled={segments.length === 0}
                           onClick={() => {
-                            setGuidedSegmentIndex(activeLoopIndex ?? 0);
+                            setGuidedSegmentIndex(lastClickedSegmentIndex ?? selectedSegmentIndices[0] ?? 0);
                             setConductorOpen(true);
                           }}
                         >
@@ -963,8 +1362,16 @@ export default function StanzaWorkspace() {
                       >
                         {recState === 'recording' ? 'Stop' : 'Record'}
                       </Button>
-                      <button type="button" className="stanza-link-quiet" onClick={() => setActiveLoopIndex(null)} aria-label="Clear active loop">
-                        Clear loop
+                      <button
+                        type="button"
+                        className="stanza-link-quiet"
+                        onClick={() => {
+                          setSelectedSegmentIndices([]);
+                          setLoopMode('through');
+                        }}
+                        aria-label="Clear section selection"
+                      >
+                        Clear selection
                       </button>
                     </Stack>
                   </Box>
@@ -1096,7 +1503,8 @@ export default function StanzaWorkspace() {
           guidedTakesSinceCheckpoint={guidedSinceCp}
           onSwitchSegment={(i) => {
             setGuidedSegmentIndex(i);
-            setActiveLoopIndex(i);
+            setSelectedSegmentIndices([i]);
+            setLastClickedSegmentIndex(i);
           }}
           onCheckpointResolved={() => setGuidedSinceCp(0)}
         />

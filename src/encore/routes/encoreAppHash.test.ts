@@ -12,6 +12,16 @@ describe('parseEncoreAppHash', () => {
     expect(parseEncoreAppHash('#/library')).toEqual({ kind: 'library' });
   });
 
+  it('parses saved searches manage page', () => {
+    expect(parseEncoreAppHash('#/saved-searches')).toEqual({ kind: 'savedSearches' });
+  });
+
+  it('parses practice with optional song id', () => {
+    expect(parseEncoreAppHash('#/practice')).toEqual({ kind: 'practice' });
+    expect(parseEncoreAppHash('#/practice/my-song')).toEqual({ kind: 'practice', songId: 'my-song' });
+    expect(parseEncoreAppHash(`#/practice/${encodeURIComponent('a/b')}`)).toEqual({ kind: 'practice', songId: 'a/b' });
+  });
+
   it('parses help and legacy import-guide URL', () => {
     expect(parseEncoreAppHash('#/help')).toEqual({ kind: 'help' });
     expect(parseEncoreAppHash('#/settings/repertoire/import-guide')).toEqual({ kind: 'help' });
@@ -22,7 +32,10 @@ describe('parseEncoreAppHash', () => {
 describe('encoreAppHref', () => {
   it('matches navigateEncore hash targets', () => {
     expect(encoreAppHref({ kind: 'library' })).toBe('#/library');
+    expect(encoreAppHref({ kind: 'savedSearches' })).toBe('#/saved-searches');
     expect(encoreAppHref({ kind: 'practice' })).toBe('#/practice');
+    expect(encoreAppHref({ kind: 'practice', songId: 'x' })).toBe('#/practice/x');
+    expect(encoreAppHref({ kind: 'practice', songId: 'a/b' })).toBe(`#/practice/${encodeURIComponent('a/b')}`);
     expect(encoreAppHref({ kind: 'performances' })).toBe('#/performances');
     expect(encoreAppHref({ kind: 'performances', tab: 'wrapped' })).toBe('#/performances/wrapped');
     expect(encoreAppHref({ kind: 'repertoireSettings' })).toBe('#/settings/repertoire');

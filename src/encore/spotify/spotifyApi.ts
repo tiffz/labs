@@ -80,6 +80,7 @@ function spotifyPlaylistTracksErrorMessage(
     linkedUser: SpotifyCurrentUserSummary | null;
     playlist: SpotifyPlaylistSummary | null;
   },
+  hint: 'read' | 'write' = 'read',
 ): string {
   const snippet = bodyText.replace(/\s+/g, ' ').trim().slice(0, 200);
   const base = `Spotify playlist ${status}${snippet ? `: ${snippet}` : ''}`;
@@ -96,12 +97,13 @@ function spotifyPlaylistTracksErrorMessage(
         : '';
     const mismatch =
       u != null && p != null && p.ownerId !== u.id
-        ? ' The linked Spotify user is not the playlist owner: use Account menu → Connect Spotify with the owner account, or ensure the playlist is public if you expect access from this account.'
+        ? ' The linked Spotify user is not the playlist owner: edits require the owner account (or a playlist you can modify with this account). For read access, a public playlist may work from a non-owner account, but replacing tracks typically requires ownership.'
         : '';
-    return (
-      `${base}.${who}${ownerLine}${mismatch} ` +
-      'If this is your playlist, try Account menu → Disconnect Spotify, then Connect again and accept playlist-read scopes. In Spotify Developer Dashboard (Development mode), add this Spotify login under User management for your app.'
-    );
+    const tail =
+      hint === 'write'
+        ? ' If you own this playlist and your Spotify account is on the User management list for the app, this is most often Spotify’s February 2026 Development-mode change: the legacy /playlists/{id}/tracks write endpoint returns 403 — Encore now uses the new /items endpoint, so make sure you are running the latest build. Otherwise, use Account menu → “Refresh Spotify login” so playlist-write scopes are stored, or add this Spotify user under User management in the Developer Dashboard. Spotify also cannot edit playlists you only follow unless you are a collaborator with edit rights.'
+        : ' If this is your playlist, try Account menu → Disconnect Spotify, then Connect again and accept playlist-read scopes. In Spotify Developer Dashboard (Development mode), add this Spotify login under User management for your app.';
+    return `${base}.${who}${ownerLine}${mismatch} ${tail}`;
   }
   if (status === 404) {
     return `${base}. Check the playlist URL or id.`;
@@ -204,7 +206,7 @@ export async function fetchSpotifyPlaylistTracks(
     });
     if (!res.ok) {
       const t = await res.text();
-      throw new Error(spotifyPlaylistTracksErrorMessage(res.status, t, { linkedUser, playlist: playlistMeta }));
+      throw new Error(spotifyPlaylistTracksErrorMessage(res.status, t, { linkedUser, playlist: playlistMeta }, 'read'));
     }
     const data = (await res.json()) as {
       items?: Array<{ track?: SpotifySearchTrack | null; item?: unknown }>;
@@ -225,7 +227,14 @@ export async function fetchSpotifyPlaylistTracks(
   return acc;
 }
 
-/** Replace all tracks in a playlist (order matches `trackIds`). Requires playlist-modify OAuth scopes. */
+/**
+ * Replace all tracks in a playlist (order matches `trackIds`). Requires playlist-modify OAuth scopes.
+ *
+ * Targets [Update Playlist Items](https://developer.spotify.com/documentation/web-api/reference/reorder-or-replace-playlists-items)
+ * (`PUT /playlists/{id}/items`). The legacy `/tracks` write endpoint returns 403 Forbidden in
+ * Spotify Development Mode after the February 2026 API changes, even for the playlist owner with
+ * `playlist-modify-public` granted, so we only call `/items`.
+ */
 export async function replaceSpotifyPlaylistTracks(
   clientId: string,
   playlistId: string,
@@ -234,15 +243,18 @@ export async function replaceSpotifyPlaylistTracks(
   const bundle = readSpotifyToken();
   if (bundle && !spotifyGrantedScopesSufficientForPlaylistModify(bundle.scope)) {
     throw new Error(
-      'Spotify needs permission to edit playlists. Open Account menu → Disconnect Spotify, then Connect again and approve playlist editing on the consent screen.',
+      'Spotify needs permission to edit playlists. In the Account menu, use Refresh Spotify login (or Disconnect Spotify, then Connect) and approve playlist editing on the consent screen.',
     );
   }
   const token = await ensureSpotifyAccessToken(clientId);
   if (!token) throw new Error('Connect Spotify first.');
 
+  const linkedUser = await fetchSpotifyCurrentUserSummary(token);
+  const playlistMeta = await fetchSpotifyPlaylistSummary(token, playlistId);
+
   const uris = trackIds.map((id) => `spotify:track:${id}`);
   const res = await fetch(
-    `https://api.spotify.com/v1/playlists/${encodeURIComponent(playlistId)}/tracks`,
+    `https://api.spotify.com/v1/playlists/${encodeURIComponent(playlistId)}/items`,
     {
       method: 'PUT',
       headers: {
@@ -255,8 +267,7 @@ export async function replaceSpotifyPlaylistTracks(
   );
   if (!res.ok) {
     const t = await res.text();
-    const snip = t.replace(/\s+/g, ' ').trim().slice(0, 200);
-    throw new Error(`Spotify could not update playlist (${res.status})${snip ? `: ${snip}` : ''}`);
+    throw new Error(spotifyPlaylistTracksErrorMessage(res.status, t, { linkedUser, playlist: playlistMeta }, 'write'));
   }
 }
 

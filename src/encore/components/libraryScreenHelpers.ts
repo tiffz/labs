@@ -9,6 +9,8 @@ import {
   withEncoreMrtTrailingSpacer,
 } from './encoreMrtColumnOrder';
 
+export const REPERTOIRE_FILTER_PINNED = ['performed', 'practicing', 'venue'] as const;
+
 export type RepertoireViewMode = 'table' | 'grid';
 
 export const REPERTOIRE_FILTER_EMPTY: Record<string, string[]> = {
@@ -83,9 +85,12 @@ export function normalizeVenueTag(tag: string): string {
 export function formatShortDate(iso: string | null): string {
   if (!iso) return '–';
   try {
-    return new Date(`${iso}T12:00:00`).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    const hasTime = /[T\s]/.test(iso);
+    const d = hasTime ? new Date(iso) : new Date(`${iso}T12:00:00`);
+    if (Number.isNaN(d.getTime())) return '–';
+    return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
   } catch {
-    return iso;
+    return '–';
   }
 }
 

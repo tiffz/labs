@@ -4,6 +4,7 @@ import type {
   EncoreDriveUploadFolderOverrides,
   EncoreMilestoneDefinition,
   EncorePerformance,
+  EncoreRepertoireSavedSearch,
   EncoreSong,
   EncoreTableUiBundle,
 } from '../types';
@@ -67,6 +68,12 @@ export interface RepertoireExtrasRow {
   ownerDisplayName?: string;
   /** Spotify playlist id for Practice page “Currently learning” playlist sync. */
   currentlyLearningSpotifyPlaylistId?: string;
+  /**
+   * Guest snapshot only: when true, only songs with at least one logged performance are published.
+   */
+  repertoireSpotifySyncPerformedOnly?: boolean;
+  /** Named saved searches with optional Spotify playlist sync. */
+  repertoireSavedSearches?: EncoreRepertoireSavedSearch[];
   /** Table column prefs for repertoire / performances (mirrors wire `tableUi`). */
   tableUi?: EncoreTableUiBundle;
   /** Optional Drive folder ids for category uploads; default = Encore `Encore_App` subfolders. */

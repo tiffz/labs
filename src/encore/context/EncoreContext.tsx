@@ -27,6 +27,7 @@ import { EncoreAuthProvider, useEncoreAuth } from './EncoreAuthContext';
 import { EncoreLibraryProvider, useEncoreLibrary } from './EncoreLibraryContext';
 import { EncoreSyncProvider, type SyncUiState } from './EncoreSyncContext';
 import { EncoreActionsProvider } from './EncoreActionsContext';
+import { EncoreRepertoirePlaylistProvider } from './EncoreRepertoirePlaylistContext';
 import { useEncoreSync } from './useEncoreSync';
 import { useEncoreActions } from './useEncoreActions';
 
@@ -41,6 +42,10 @@ export {
 } from './EncoreLibraryContext';
 export { useEncoreSync } from './useEncoreSync';
 export { useEncoreActions } from './useEncoreActions';
+export {
+  EncoreRepertoirePlaylistProvider,
+  useEncoreRepertoirePlaylist,
+} from './EncoreRepertoirePlaylistContext';
 
 /**
  * Legacy shape exposed by `useEncore()`. New code should reach for the slice-specific hooks.
@@ -49,7 +54,9 @@ export interface EncoreContextValue {
   googleAuthReady: boolean;
   googleAccessToken: string | null;
   googleGateBypassed: boolean;
+  googleSessionExpired: boolean;
   displayName: string | null;
+  googleEmail: string | null;
   effectiveDisplayName: string | null;
   setOwnerDisplayName: (name: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
@@ -58,6 +65,7 @@ export interface EncoreContextValue {
   spotifyLinked: boolean;
   disconnectSpotify: () => void;
   connectSpotify: () => Promise<void>;
+  reauthorizeSpotify: () => Promise<void>;
   spotifyConnectError: string | null;
   spotifyConnectLoopbackUrl: string | null;
   clearSpotifyConnectError: () => void;
@@ -106,7 +114,9 @@ export function EncoreProvider({ children }: { children: ReactNode }): ReactElem
         <EncoreAuthProvider>
           <EncoreLibraryProvider>
             <EncoreSyncProvider>
-              <EncoreActionsProvider>{children}</EncoreActionsProvider>
+              <EncoreActionsProvider>
+                <EncoreRepertoirePlaylistProvider>{children}</EncoreRepertoirePlaylistProvider>
+              </EncoreActionsProvider>
             </EncoreSyncProvider>
           </EncoreLibraryProvider>
         </EncoreAuthProvider>
@@ -130,13 +140,16 @@ export function useEncore(): EncoreContextValue {
       googleAuthReady: auth.googleAuthReady,
       googleAccessToken: auth.googleAccessToken,
       googleGateBypassed: auth.googleGateBypassed,
+      googleSessionExpired: auth.googleSessionExpired,
       displayName: auth.displayName,
+      googleEmail: auth.googleEmail,
       signInWithGoogle: auth.signInWithGoogle,
       continueWithoutGoogle: auth.continueWithoutGoogle,
       signOut: auth.signOut,
       spotifyLinked: auth.spotifyLinked,
       disconnectSpotify: auth.disconnectSpotify,
       connectSpotify: auth.connectSpotify,
+      reauthorizeSpotify: auth.reauthorizeSpotify,
       spotifyConnectError: auth.spotifyConnectError,
       spotifyConnectLoopbackUrl: auth.spotifyConnectLoopbackUrl,
       clearSpotifyConnectError: auth.clearSpotifyConnectError,

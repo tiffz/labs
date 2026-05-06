@@ -1,7 +1,14 @@
+import BookmarksOutlinedIcon from '@mui/icons-material/BookmarksOutlined';
+import BookmarkAddIcon from '@mui/icons-material/BookmarkAdd';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import SearchIcon from '@mui/icons-material/Search';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
+import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import Divider from '@mui/material/Divider';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import ToggleButton from '@mui/material/ToggleButton';
@@ -10,7 +17,9 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import InputAdornment from '@mui/material/InputAdornment';
 import type { MRT_TableInstance } from 'material-react-table';
-import type { ReactElement, RefObject } from 'react';
+import { useCallback, useId, useState, type ReactElement, type RefObject } from 'react';
+import type { EncoreRepertoireSavedSearch } from '../../types';
+import { navigateEncore } from '../../routes/encoreAppHash';
 import {
   EncoreFilterChipBar,
   type EncoreFilterChipBarHandle,
@@ -32,6 +41,8 @@ export type LibraryRepertoireFiltersPanelProps = {
   visibleRepertoireFilterIds: string[];
   repertoireFilterValues: Record<string, string[]>;
   onRepertoireFilterChange: (fieldId: string, next: string[]) => void;
+  excludedRepertoireFilterIds: string[];
+  onExcludedRepertoireFilterIdsChange: (next: string[]) => void;
   repertoireAddableFilterFields: EncoreFilterFieldConfig[];
   onVisibleRepertoireFilterIdsChange: (ids: string[]) => void;
   defaultPinnedFieldIds: readonly string[];
@@ -40,6 +51,10 @@ export type LibraryRepertoireFiltersPanelProps = {
   onViewModeChange: (next: RepertoireViewMode) => void;
   table: MRT_TableInstance<EncoreRepertoireMrtRow>;
   onResetRepertoireTableLayout: () => void;
+  /** Opens the save-search dialog (search + filters snapshot). */
+  onSaveCurrentViewClick?: () => void;
+  savedSearches: EncoreRepertoireSavedSearch[];
+  onApplySavedSearch: (s: EncoreRepertoireSavedSearch) => void;
 };
 
 export function LibraryRepertoireFiltersPanel(props: LibraryRepertoireFiltersPanelProps): ReactElement | null {
@@ -54,6 +69,8 @@ export function LibraryRepertoireFiltersPanel(props: LibraryRepertoireFiltersPan
     visibleRepertoireFilterIds,
     repertoireFilterValues,
     onRepertoireFilterChange,
+    excludedRepertoireFilterIds,
+    onExcludedRepertoireFilterIdsChange,
     repertoireAddableFilterFields,
     onVisibleRepertoireFilterIdsChange,
     defaultPinnedFieldIds,
@@ -62,7 +79,16 @@ export function LibraryRepertoireFiltersPanel(props: LibraryRepertoireFiltersPan
     onViewModeChange,
     table,
     onResetRepertoireTableLayout,
+    onSaveCurrentViewClick,
+    savedSearches,
+    onApplySavedSearch,
   } = props;
+
+  const [savedSearchMenuAnchor, setSavedSearchMenuAnchor] = useState<null | HTMLElement>(null);
+  const savedSearchMenuOpen = Boolean(savedSearchMenuAnchor);
+  const savedSearchMenuId = useId();
+
+  const closeSavedSearchMenu = useCallback(() => setSavedSearchMenuAnchor(null), []);
 
   if (songsCount === 0) return null;
 
@@ -70,22 +96,110 @@ export function LibraryRepertoireFiltersPanel(props: LibraryRepertoireFiltersPan
     <Box sx={{ mb: { xs: 4, sm: 5 } }}>
       <Stack spacing={2.5}>
         <EncoreToolbarRow sx={{ mb: 0 }}>
-          <TextField
-            size="small"
-            fullWidth
-            placeholder="Search title, artist, venue, key…"
-            value={searchQuery}
-            onChange={(e) => onSearchQueryChange(e.target.value)}
-            inputProps={{ 'aria-label': 'Search repertoire' }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon fontSize="small" color="action" aria-hidden />
-                </InputAdornment>
-              ),
-            }}
-            sx={{ maxWidth: { sm: 560 } }}
-          />
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={1}
+            alignItems={{ sm: 'stretch' }}
+            sx={{ width: 1, maxWidth: { sm: 860 } }}
+          >
+            <TextField
+              size="small"
+              fullWidth
+              placeholder="Search title, artist, venue, key…"
+              value={searchQuery}
+              onChange={(e) => onSearchQueryChange(e.target.value)}
+              inputProps={{ 'aria-label': 'Search repertoire' }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon fontSize="small" color="action" aria-hidden />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{ flex: 1, minWidth: 0 }}
+            />
+            {onSaveCurrentViewClick ? (
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<BookmarkAddIcon sx={{ fontSize: 18 }} />}
+                onClick={onSaveCurrentViewClick}
+                sx={{
+                  flexShrink: 0,
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  whiteSpace: 'nowrap',
+                  alignSelf: { xs: 'stretch', sm: 'auto' },
+                }}
+              >
+                Save search
+              </Button>
+            ) : null}
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<BookmarksOutlinedIcon sx={{ fontSize: 20 }} />}
+              endIcon={<KeyboardArrowDownIcon sx={{ fontSize: 20 }} />}
+              id={`${savedSearchMenuId}-trigger`}
+              aria-controls={savedSearchMenuOpen ? `${savedSearchMenuId}-menu` : undefined}
+              aria-haspopup="true"
+              aria-expanded={savedSearchMenuOpen ? 'true' : undefined}
+              onClick={(e) => setSavedSearchMenuAnchor(e.currentTarget)}
+              sx={{
+                flexShrink: 0,
+                textTransform: 'none',
+                fontWeight: 600,
+                whiteSpace: 'nowrap',
+                alignSelf: { xs: 'stretch', sm: 'auto' },
+              }}
+            >
+              Saved searches
+              {savedSearches.length > 0 ? (
+                <Typography
+                  component="span"
+                  variant="caption"
+                  sx={{ ml: 0.5, color: 'text.secondary', fontWeight: 500 }}
+                >
+                  ({savedSearches.length})
+                </Typography>
+              ) : null}
+            </Button>
+            <Menu
+              id={`${savedSearchMenuId}-menu`}
+              anchorEl={savedSearchMenuAnchor}
+              open={savedSearchMenuOpen}
+              onClose={closeSavedSearchMenu}
+              slotProps={{ list: { 'aria-labelledby': `${savedSearchMenuId}-trigger`, dense: true } }}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+            >
+              {savedSearches.length === 0 ? (
+                <MenuItem disabled>No saved searches yet</MenuItem>
+              ) : (
+                savedSearches.map((s) => (
+                  <MenuItem
+                    key={s.id}
+                    onClick={() => {
+                      onApplySavedSearch(s);
+                      closeSavedSearchMenu();
+                    }}
+                    sx={{ py: 1 }}
+                  >
+                    {s.name}
+                  </MenuItem>
+                ))
+              )}
+              <Divider />
+              <MenuItem
+                onClick={() => {
+                  closeSavedSearchMenu();
+                  navigateEncore({ kind: 'savedSearches' });
+                }}
+                sx={{ fontWeight: 600 }}
+              >
+                Manage saved searches…
+              </MenuItem>
+            </Menu>
+          </Stack>
         </EncoreToolbarRow>
 
         <EncoreFilterChipBar
@@ -94,6 +208,8 @@ export function LibraryRepertoireFiltersPanel(props: LibraryRepertoireFiltersPan
           visibleFieldIds={visibleRepertoireFilterIds}
           values={repertoireFilterValues}
           onChange={onRepertoireFilterChange}
+          excludedFieldIds={excludedRepertoireFilterIds}
+          onExcludedFieldIdsChange={onExcludedRepertoireFilterIdsChange}
           addableFields={repertoireAddableFilterFields}
           onVisibleFieldIdsChange={onVisibleRepertoireFilterIdsChange}
           defaultPinnedFieldIds={[...defaultPinnedFieldIds]}

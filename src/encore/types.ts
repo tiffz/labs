@@ -88,6 +88,54 @@ export interface EncoreMediaLink {
   isPrimaryBacking?: boolean;
 }
 
+export type EncorePracticeExerciseKind = 'lyricsInOwnWords' | 'characterNineQuestions';
+
+export type EncorePracticeExerciseStatus = 'draft' | 'completed';
+
+export interface EncorePracticeExerciseRunBase {
+  id: string;
+  status: EncorePracticeExerciseStatus;
+  startedAt: string;
+  updatedAt: string;
+  completedAt?: string;
+}
+
+/**
+ * A Genius-style section of lyrics (`[Verse 1]`, `[Chorus]`, `[Bridge]`, …) plus the
+ * user's interpretation/staging notes for that section. Lines are paired (`original` /
+ * `rewrite`) so the editor can render side-by-side without a separate index.
+ */
+export interface EncoreLyricsExerciseSection {
+  /** Genius-style label (e.g. "Verse 1", "Pre-Chorus"). Empty string for unlabeled lines. */
+  title: string;
+  lines: Array<{ original: string; rewrite: string }>;
+  /** Free-form notes — emotional intent, blocking, vocal choices, etc. Optional. */
+  notes?: string;
+}
+
+/** Guided exercise: paste lyrics, then rewrite line by line (synced on the song; not in guest snapshots). */
+export interface EncoreLyricsInOwnWordsExerciseRun extends EncorePracticeExerciseRunBase {
+  kind: 'lyricsInOwnWords';
+  /** Optional copy of pasted source for editing or re-parsing. */
+  pastedLyrics?: string;
+  /**
+   * @deprecated Prefer {@link sections}. Older runs created before section parsing landed have
+   * only this flat list; the editor normalizes them on read into a single anonymous section.
+   */
+  lines?: Array<{ original: string; rewrite: string }>;
+  /** Sections derived from Genius-style markers, plus per-section interpretation notes. */
+  sections?: EncoreLyricsExerciseSection[];
+}
+
+/** Guided exercise: nine short character prompts (titles only; no third-party descriptive text). */
+export interface EncoreCharacterNineQuestionsExerciseRun extends EncorePracticeExerciseRunBase {
+  kind: 'characterNineQuestions';
+  /** Same length and order as in-app prompt list. */
+  answers: string[];
+}
+
+export type EncorePracticeExerciseRun = EncoreLyricsInOwnWordsExerciseRun | EncoreCharacterNineQuestionsExerciseRun;
+
 /** Song stored locally and in repertoire_data.json */
 export interface EncoreSong {
   id: string;
@@ -108,6 +156,11 @@ export interface EncoreSong {
   /** The key you actually perform this song in (manual entry; no auto-fill). */
   performanceKey?: string;
   journalMarkdown: string;
+  /**
+   * In-app practice exercises for this song (drafts and completed runs). Syncs with your repertoire on Drive.
+   * Omitted from {@link PublicSnapshot}.
+   */
+  practiceExerciseRuns?: EncorePracticeExerciseRun[];
   /** @deprecated Prefer {@link attachments} with kind `chart`; kept for sync and older data. */
   sheetMusicDriveFileId?: string;
   /** @deprecated Prefer {@link attachments} with kind `backing`. */
@@ -214,6 +267,30 @@ export type EncoreDriveUploadFolderOverrides = Partial<Record<EncoreDriveUploadF
 /** Optional display names for picked folders (Drive metadata); same keys as overrides. */
 export type EncoreDriveUploadFolderOverrideLabels = Partial<Record<EncoreDriveUploadFolderKind, string>>;
 
+/**
+ * Persisted repertoire list view + optional Spotify playlist binding. Playlist sync uses the filter
+ * bundle to choose library tracks to write; imports from Spotify use {@link playlistImportTags} when
+ * provided so new rows remain discoverable under the same saved search.
+ */
+export type EncoreRepertoireSavedSearch = {
+  id: string;
+  name: string;
+  updatedAt: string;
+  searchQuery: string;
+  visibleFieldIds: string[];
+  filterValues: Record<string, string[]>;
+  /**
+   * Field ids whose `filterValues` selection is treated as **exclude / NOT IN** instead of
+   * include / OR. For example, `venue: ['Martuni\'s']` with `excludedFieldIds: ['venue']`
+   * means "songs **not** performed at Martuni's". Only multi-select fields opt in (see
+   * {@link EncoreFilterFieldConfig['supportsExclude']}); exclusive single-value fields
+   * already model is/is-not via their own options.
+   */
+  excludedFieldIds?: string[];
+  spotifyPlaylistId?: string;
+  playlistImportTags?: string[];
+};
+
 export interface RepertoireWirePayload {
   version: 1;
   exportedAt: string;
@@ -230,6 +307,10 @@ export interface RepertoireWirePayload {
    * Stored in `repertoire_data.json` with other extras.
    */
   currentlyLearningSpotifyPlaylistId?: string;
+  /** Guest snapshot: only songs with at least one logged performance. Not used for saved-search playlist sync. */
+  repertoireSpotifySyncPerformedOnly?: boolean;
+  /** Named repertoire filter sets; optional Spotify playlist per row for sync. */
+  repertoireSavedSearches?: EncoreRepertoireSavedSearch[];
   /** Column visibility, order, and sort for library / performances tables. */
   tableUi?: EncoreTableUiBundle;
   /** Optional Drive folder ids for uploads (bytes); Encore keeps shortcuts under its own `Encore_App` tree. */

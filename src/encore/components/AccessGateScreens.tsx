@@ -1,3 +1,4 @@
+import type { ReactElement } from 'react';
 import Button from '@mui/material/Button';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
@@ -10,7 +11,16 @@ import {
   encoreShadowLift,
 } from '../theme/encoreUiTokens';
 
-function EncoreWordmark({ size = 'lg' }: { size?: 'md' | 'lg' }): React.ReactElement {
+function accessDenialKind(
+  message: string | null,
+): 'allowlist' | 'timeout' | 'generic' {
+  const m = (message ?? '').toLowerCase();
+  if (m.includes('timed out')) return 'timeout';
+  if (m.includes('not on the allowlist') || m.includes('vite_allowed_email_hashes')) return 'allowlist';
+  return 'generic';
+}
+
+function EncoreWordmark({ size = 'lg' }: { size?: 'md' | 'lg' }): ReactElement {
   const theme = useTheme();
   return (
     <Typography
@@ -32,8 +42,26 @@ function EncoreWordmark({ size = 'lg' }: { size?: 'md' | 'lg' }): React.ReactEle
   );
 }
 
-export function AccessRestrictedScreen(props: { message: string | null; onRetry: () => void }): React.ReactElement {
+export function AccessRestrictedScreen(props: { message: string | null; onRetry: () => void }): ReactElement {
   const { message, onRetry } = props;
+  const kind = accessDenialKind(message);
+
+  const title =
+    kind === 'allowlist'
+      ? 'Invite only'
+      : kind === 'timeout'
+        ? 'Sign-in timed out'
+        : 'Could not sign in';
+
+  const lead =
+    kind === 'allowlist'
+      ? 'This Google account is not on the allowlist for this build of Encore.'
+      : kind === 'timeout'
+        ? 'Google did not return a token before the time limit. That usually means a blocked popup, a closed sign-in window, or a slow network—not that your email failed an allowlist check.'
+        : 'Something went wrong while signing in with Google.';
+
+  const retryLabel = kind === 'allowlist' ? 'Try another account' : 'Try again';
+
   return (
     <EncoreAppShell centered>
       <Paper
@@ -62,18 +90,29 @@ export function AccessRestrictedScreen(props: { message: string | null; onRetry:
             mb: 1.5,
           }}
         >
-          Invite only
+          {title}
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5, lineHeight: 1.6 }}>
-          This Google account is not on the allowlist for this build of Encore.
+        <Typography variant="body2" color="text.secondary" sx={{ mb: message ? 1.25 : 2.5, lineHeight: 1.6 }}>
+          {lead}
         </Typography>
         {message ? (
-          <Typography variant="body2" color="text.secondary" display="block" sx={{ mb: 2.5, lineHeight: 1.6 }}>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            component="pre"
+            sx={{
+              mb: 2.5,
+              lineHeight: 1.55,
+              whiteSpace: 'pre-wrap',
+              fontFamily: 'inherit',
+              wordBreak: 'break-word',
+            }}
+          >
             {message}
           </Typography>
         ) : null}
         <Button variant="contained" size="large" fullWidth onClick={onRetry}>
-          Try another account
+          {retryLabel}
         </Button>
       </Paper>
     </EncoreAppShell>
@@ -85,7 +124,7 @@ export function SignInLanding(props: {
   clientConfigured: boolean;
   /** When set, user can open the library without Google (Drive sync and YouTube import stay gated until sign-in). */
   onContinueLocalOnly?: () => void;
-}): React.ReactElement {
+}): ReactElement {
   const { onSignIn, clientConfigured, onContinueLocalOnly } = props;
   return (
     <EncoreAppShell centered>

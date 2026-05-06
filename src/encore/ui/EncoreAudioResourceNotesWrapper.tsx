@@ -47,12 +47,16 @@ export function EncoreAudioResourceNotesWrapper(props: EncoreAudioResourceNotesW
         display: 'inline-flex',
         alignItems: 'stretch',
         maxWidth: 'min(100%, 440px)',
-        width: 'auto',
+        width: '100%',
         minWidth: 0,
-        mb: 0.75,
+        mb: 0.5,
+        boxSizing: 'border-box',
+        // Matches `songPageResourceRowShellSx` (34) so Takes rows align with the other three
+        // hub cards visually.
+        minHeight: 34,
         ...encoreMediaLinkRowSx(theme, false),
-        pr: 0.25,
-        pl: 0.5,
+        pr: 1.25,
+        pl: 0.75,
         gap: 0.25,
       }}
     >

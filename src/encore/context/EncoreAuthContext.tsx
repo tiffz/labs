@@ -13,9 +13,13 @@ import {
 } from 'react';
 import { fetchGoogleUserProfile, friendlyGoogleDisplayName } from '../auth/loadGisScript';
 import {
+  clearPersistedGoogleIdentity,
   clearPersistedGoogleSession,
+  isLikelyGoogleAuthRejection,
   isPersistedSessionStillFresh,
+  readPersistedGoogleIdentity,
   readPersistedGoogleSession,
+  writePersistedGoogleIdentity,
   writePersistedGoogleSession,
 } from '../auth/encoreGoogleTokenStorage';
 import { requestGoogleAccessToken, revokeGoogleAccessTokenBestEffort } from '../auth/googleTokenClient';
@@ -46,14 +50,28 @@ export interface EncoreAuthContextValue {
   googleAccessToken: string | null;
   /** True when the user skipped Google sign-in or disconnected Google but stayed in the app. */
   googleGateBypassed: boolean;
+  /**
+   * True when we have a remembered Google identity (email / displayName) but the access token has
+   * expired and silent refresh failed. The user can keep using local data; surface a "Sign in
+   * again" affordance instead of bouncing to the full sign-in gate so we don't ping-pong them
+   * every hour. Cleared as soon as a token request succeeds.
+   */
+  googleSessionExpired: boolean;
   /** Raw Google profile name (read-only; sourced from `userinfo`). */
   displayName: string | null;
+  /** Google account email from `userinfo` (allowlist / Drive identity). */
+  googleEmail: string | null;
   signInWithGoogle: () => Promise<void>;
   continueWithoutGoogle: () => void;
   signOut: () => void;
   spotifyLinked: boolean;
   disconnectSpotify: () => void;
   connectSpotify: () => Promise<void>;
+  /**
+   * Clears the stored Spotify session and starts OAuth again with Spotify’s approve screen
+   * (`show_dialog`) so newly added scopes (e.g. playlist write) can be granted.
+   */
+  reauthorizeSpotify: () => Promise<void>;
   spotifyConnectError: string | null;
   spotifyConnectLoopbackUrl: string | null;
   clearSpotifyConnectError: () => void;
@@ -122,7 +140,17 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
   const [googleGateBypassed, setGoogleGateBypassed] = useState(() =>
     typeof window !== 'undefined' ? readGoogleGateBypassed() : false,
   );
-  const [displayName, setDisplayName] = useState<string | null>(null);
+  // Hydrate identity synchronously so the account menu / shell don't flash a "Not signed in" state
+  // while the bootstrap effect is still working through the silent-refresh paths.
+  const [displayName, setDisplayName] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    return readPersistedGoogleIdentity()?.displayName?.trim() || null;
+  });
+  const [googleEmail, setGoogleEmail] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    return readPersistedGoogleIdentity()?.email ?? null;
+  });
+  const [googleSessionExpired, setGoogleSessionExpired] = useState(false);
   const [accessDenied, setAccessDenied] = useState(false);
   const [accessDeniedMessage, setAccessDeniedMessage] = useState<string | null>(null);
   const [spotifyLinked, setSpotifyLinked] = useState(() => hasUsableSpotifyTokenBundle());
@@ -132,6 +160,8 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
 
   const googleAccessTokenRef = useRef<string | null>(null);
   googleAccessTokenRef.current = googleAccessToken;
+  /** Passed to Spotify authorize as `show_dialog` for reconnect flows. */
+  const spotifyNextOAuthShowDialogRef = useRef(false);
 
   const refreshSpotifyLinked = useCallback(() => {
     setSpotifyLinked(hasUsableSpotifyTokenBundle());
@@ -168,7 +198,9 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
       setSpotifyConnectError('Spotify is not configured for this build (missing VITE_SPOTIFY_CLIENT_ID).');
       return;
     }
-    const result = await startSpotifyOAuthFlow(clientId);
+    const showDialog = spotifyNextOAuthShowDialogRef.current;
+    spotifyNextOAuthShowDialogRef.current = false;
+    const result = await startSpotifyOAuthFlow(clientId, { showDialog });
     if (!result.ok) {
       setSpotifyConnectError(result.message);
       setSpotifyConnectLoopbackUrl(result.openOnLoopbackUrl ?? null);
@@ -183,6 +215,24 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
       setSpotifyConnectError('Spotify is not configured for this build (missing VITE_SPOTIFY_CLIENT_ID).');
       return;
     }
+    spotifyNextOAuthShowDialogRef.current = false;
+    if (!hasSpotifyPrivacyAck()) {
+      setSpotifyPrivacyOpen(true);
+      return;
+    }
+    await runSpotifyOAuthFlowInner();
+  }, [runSpotifyOAuthFlowInner]);
+
+  const reauthorizeSpotify = useCallback(async () => {
+    setSpotifyConnectError(null);
+    setSpotifyConnectLoopbackUrl(null);
+    const clientId = (import.meta.env.VITE_SPOTIFY_CLIENT_ID as string | undefined)?.trim() ?? '';
+    if (!clientId) {
+      setSpotifyConnectError('Spotify is not configured for this build (missing VITE_SPOTIFY_CLIENT_ID).');
+      return;
+    }
+    clearSpotifyToken();
+    spotifyNextOAuthShowDialogRef.current = true;
     if (!hasSpotifyPrivacyAck()) {
       setSpotifyPrivacyOpen(true);
       return;
@@ -209,6 +259,9 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
         const hash = await sha256HexOfEmail(email);
         if (!isEmailHashAllowed(hash, allowed)) {
           clearPersistedGoogleSession();
+          clearPersistedGoogleIdentity();
+          setGoogleEmail(null);
+          setDisplayName(null);
           if (!options.silent) {
             setAccessDenied(true);
             setAccessDeniedMessage(
@@ -218,15 +271,27 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
           return false;
         }
         if (options.persist) writePersistedGoogleSession(accessToken, expiresIn);
+        const friendly = friendlyGoogleDisplayName(profile);
+        // Persist identity separately from the access token so a future expiry doesn't blank
+        // the account menu — the user keeps seeing who they were until they explicitly sign out.
+        writePersistedGoogleIdentity({ email, displayName: friendly });
         setGoogleAccessToken(accessToken);
-        setDisplayName(friendlyGoogleDisplayName(profile));
+        setDisplayName(friendly);
+        setGoogleEmail(email);
+        setGoogleSessionExpired(false);
         setAccessDenied(false);
         setAccessDeniedMessage(null);
         writeGoogleGateBypassed(false);
         setGoogleGateBypassed(false);
         return true;
       } catch (e) {
-        clearPersistedGoogleSession();
+        // Only nuke the persisted token + identity when Google itself rejected the credentials.
+        // For network blips / 5xx / aborted requests we leave them in place so the user can
+        // recover (silent refresh, or "Sign in again" from the account menu) instead of being
+        // demoted to the full-screen sign-in gate.
+        if (isLikelyGoogleAuthRejection(e)) {
+          clearPersistedGoogleSession();
+        }
         if (!options.silent) {
           setAccessDeniedMessage(e instanceof Error ? e.message : 'Could not verify Google account');
           setAccessDenied(true);
@@ -244,6 +309,21 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
         const clientId = getGoogleClientId();
         if (!clientId) return;
         const stored = readPersistedGoogleSession();
+        const rememberedIdentity = readPersistedGoogleIdentity();
+
+        // Soft-bypass helper: when we *had* a session and silent restore can't recover one, leave
+        // the user in the app with their remembered identity and surface a "Session expired"
+        // affordance, instead of bouncing them to the full-screen sign-in gate.
+        const enterSessionExpiredMode = () => {
+          if (cancelled) return;
+          // Token is no longer trustworthy — drop it so Drive calls fail fast instead of 401-looping.
+          clearPersistedGoogleSession();
+          setGoogleAccessToken(null);
+          setGoogleSessionExpired(true);
+          writeGoogleGateBypassed(true);
+          setGoogleGateBypassed(true);
+        };
+
         if (stored && isPersistedSessionStillFresh(stored)) {
           try {
             const ok = await promiseWithTimeout(
@@ -254,7 +334,7 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
             if (cancelled) return;
             if (ok) return;
           } catch {
-            /* fall through: token may be revoked — try silent refresh before clearing */
+            /* fall through: token may be revoked — try silent refresh before degrading */
           }
           if (!cancelled) {
             const next = await requestGoogleSilentToken(clientId, GOOGLE_SCOPES);
@@ -265,7 +345,11 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
               });
               if (okSilent) return;
             }
-            clearPersistedGoogleSession();
+            if (rememberedIdentity) {
+              enterSessionExpiredMode();
+            } else {
+              clearPersistedGoogleSession();
+            }
           }
         } else if (stored) {
           // Local expiry heuristic passed, but Google may still grant a token via cookie (`prompt: none`).
@@ -286,9 +370,27 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
             );
             if (!cancelled && okLegacy) return;
           } catch {
-            /* clear */
+            /* fall through to expired mode below */
           }
-          if (!cancelled) clearPersistedGoogleSession();
+          if (rememberedIdentity) {
+            enterSessionExpiredMode();
+          } else if (!cancelled) {
+            clearPersistedGoogleSession();
+          }
+        } else if (rememberedIdentity) {
+          // No stored token (cleared by a previous failure) but we still remember who they are.
+          // Try a silent refresh; if it fails, surface the "Session expired" affordance instead
+          // of dropping them at the sign-in gate.
+          const next = await requestGoogleSilentToken(clientId, GOOGLE_SCOPES);
+          if (cancelled) return;
+          if (next) {
+            const okSilent = await finalizeGoogleSession(next.access_token, next.expires_in, {
+              persist: true,
+              silent: true,
+            });
+            if (okSilent) return;
+          }
+          enterSessionExpiredMode();
         }
       } finally {
         if (!cancelled) setGoogleAuthReady(true);
@@ -300,18 +402,34 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
   }, [finalizeGoogleSession]);
 
   useEffect(() => {
-    if (!googleAccessToken) return;
+    // We want the refresh loop active whenever there's *any* hope of recovering a session — either
+    // a live access token, or a remembered identity sitting in expired mode (where a successful
+    // silent refresh quietly restores Drive without a UI bounce).
+    if (!googleAccessToken && !googleSessionExpired) return;
     const clientId = getGoogleClientId();
     if (!clientId) return;
 
     let timeoutId: number | undefined;
+    /**
+     * Backoff for *failed* silent refreshes (browser blocking 3rd-party cookies, GIS hiccups, etc.).
+     * Without this, a single failure used to wedge the loop until the next tab focus — long enough
+     * that the user perceived "I have to sign in again every time I open Encore".
+     */
+    const FAILURE_BACKOFFS_MS = [5 * 60 * 1000, 15 * 60 * 1000, 60 * 60 * 1000];
+    let consecutiveFailures = 0;
 
     const armTimer = () => {
       if (timeoutId != null) window.clearTimeout(timeoutId);
       const s = readPersistedGoogleSession();
-      if (!s) return;
-      const wakeAt = s.expiresAtMs - 3 * 60 * 1000;
-      const delay = Math.max(25_000, Math.min(wakeAt - Date.now(), 55 * 60 * 1000));
+      let delay: number;
+      if (s) {
+        const wakeAt = s.expiresAtMs - 3 * 60 * 1000;
+        delay = Math.max(25_000, Math.min(wakeAt - Date.now(), 55 * 60 * 1000));
+      } else {
+        // Expired mode: keep poking GIS in case the user signs into Google in another tab.
+        const idx = Math.min(consecutiveFailures, FAILURE_BACKOFFS_MS.length - 1);
+        delay = FAILURE_BACKOFFS_MS[idx]!;
+      }
       timeoutId = window.setTimeout(() => {
         void (async () => {
           const next = await requestGoogleSilentToken(clientId, GOOGLE_SCOPES);
@@ -320,8 +438,16 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
               persist: true,
               silent: true,
             });
-            if (ok) armTimer();
+            if (ok) {
+              consecutiveFailures = 0;
+              armTimer();
+              return;
+            }
           }
+          consecutiveFailures += 1;
+          const idx = Math.min(consecutiveFailures - 1, FAILURE_BACKOFFS_MS.length - 1);
+          if (timeoutId != null) window.clearTimeout(timeoutId);
+          timeoutId = window.setTimeout(armTimer, FAILURE_BACKOFFS_MS[idx]!);
         })();
       }, delay);
     };
@@ -333,18 +459,24 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
     const onVisibility = () => {
       if (document.visibilityState !== 'visible') return;
       const s = readPersistedGoogleSession();
-      // Avoid a silent GIS exchange on every tab focus when the token is still healthy.
-      if (!s || s.expiresAtMs > Date.now() + 4 * 60 * 1000) return;
+      // Skip when the token is still comfortably healthy — no need to re-handshake on every focus.
+      // But always retry on focus when we're in expired mode: tab focus is the user's most
+      // likely "I just signed back into Google in another tab" moment.
+      if (s && s.expiresAtMs > Date.now() + 4 * 60 * 1000) return;
       if (visibilityDebounceId != null) window.clearTimeout(visibilityDebounceId);
       visibilityDebounceId = window.setTimeout(() => {
         visibilityDebounceId = undefined;
         void (async () => {
           const next = await requestGoogleSilentToken(clientId, GOOGLE_SCOPES);
           if (next) {
-            await finalizeGoogleSession(next.access_token, next.expires_in, {
+            const ok = await finalizeGoogleSession(next.access_token, next.expires_in, {
               persist: true,
               silent: true,
             });
+            if (ok) {
+              consecutiveFailures = 0;
+              armTimer();
+            }
           }
         })();
       }, 450);
@@ -356,7 +488,7 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
       if (visibilityDebounceId != null) window.clearTimeout(visibilityDebounceId);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [googleAccessToken, finalizeGoogleSession]);
+  }, [googleAccessToken, googleSessionExpired, finalizeGoogleSession]);
 
   const signInWithGoogle = useCallback(async () => {
     const clientId = getGoogleClientId();
@@ -371,6 +503,7 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
       const { access_token, expires_in } = await requestGoogleAccessToken(clientId, GOOGLE_SCOPES);
       const ok = await finalizeGoogleSession(access_token, expires_in, { persist: true, silent: false });
       if (!ok) return;
+      setGoogleSessionExpired(false);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       setAccessDeniedMessage(msg);
@@ -387,8 +520,11 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
     const token = googleAccessToken;
     setGoogleAccessToken(null);
     setDisplayName(null);
+    setGoogleEmail(null);
+    setGoogleSessionExpired(false);
     clearUndoStack();
     clearPersistedGoogleSession();
+    clearPersistedGoogleIdentity();
     if (token) revokeGoogleAccessTokenBestEffort(token);
     writeGoogleGateBypassed(true);
     setGoogleGateBypassed(true);
@@ -404,13 +540,16 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
       googleAuthReady,
       googleAccessToken,
       googleGateBypassed,
+      googleSessionExpired,
       displayName,
+      googleEmail,
       signInWithGoogle,
       continueWithoutGoogle,
       signOut,
       spotifyLinked,
       disconnectSpotify,
       connectSpotify,
+      reauthorizeSpotify,
       spotifyConnectError,
       spotifyConnectLoopbackUrl,
       clearSpotifyConnectError,
@@ -422,13 +561,16 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
       googleAuthReady,
       googleAccessToken,
       googleGateBypassed,
+      googleSessionExpired,
       displayName,
+      googleEmail,
       signInWithGoogle,
       continueWithoutGoogle,
       signOut,
       spotifyLinked,
       disconnectSpotify,
       connectSpotify,
+      reauthorizeSpotify,
       spotifyConnectError,
       spotifyConnectLoopbackUrl,
       clearSpotifyConnectError,

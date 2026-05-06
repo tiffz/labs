@@ -38,7 +38,7 @@ import { fetchSpotifyTrack, searchTracks, type SpotifySearchTrack } from '../../
 import { parseSpotifyTrackId } from '../../spotify/parseSpotifyTrackUrl';
 import type { EncoreDriveUploadFolderOverrides, EncoreSong } from '../../types';
 import { useEncoreBlockingJobs } from '../../context/EncoreBlockingJobContext';
-import { songPageResourceRowShellSx } from '../../theme/encoreUiTokens';
+import { encoreMediaHubAddButtonSx, songPageResourceRowShellSx } from '../../theme/encoreUiTokens';
 import { GoogleDriveBrandIcon, SpotifyBrandIcon, YouTubeBrandIcon } from '../EncoreBrandIcon';
 import {
   encoreGeniusSearchUrl,
@@ -66,10 +66,15 @@ import {
   spotifyDataSourceTrackId,
 } from '../../repertoire/songMediaLinks';
 import { EncoreSpotifyConnectionChip } from '../../ui/EncoreSpotifyConnectionChip';
-import { EncoreStreamingHoverCard } from '../EncoreStreamingHoverCard';
+import { EncoreStaticResourceHoverCard, EncoreStreamingHoverCard } from '../EncoreStreamingHoverCard';
 import { EncoreMediaLinkRow } from '../../ui/EncoreMediaLinkRow';
 import { EncoreAudioResourceNotesWrapper } from '../../ui/EncoreAudioResourceNotesWrapper';
-import { formatMediaLinkCaption, youtubeWatchUrlFromMediaLink } from '../../ui/encoreMediaLinkFormat';
+import {
+  formatChartAttachmentCaption,
+  formatChartAttachmentShortCaption,
+  formatMediaLinkCaption,
+  youtubeWatchUrlFromMediaLink,
+} from '../../ui/encoreMediaLinkFormat';
 import { EncoreSpotifySearchOrPasteField } from '../../ui/EncoreSpotifySearchOrPasteField';
 import { EncoreYouTubePasteField } from '../../ui/EncoreYouTubePasteField';
 import type { SongPageMediaSlots } from './SongPageMediaHubCards';
@@ -151,8 +156,7 @@ function spotifyCatalogDisplayLabel(draft: EncoreSong, catalogTrackId: string): 
     const max = 72;
     return line.length <= max ? line : `${line.slice(0, max - 1)}…`;
   }
-  const id = idNorm;
-  return id.length <= 14 ? `Spotify · ${id}` : `Spotify · ${id.slice(0, 6)}…`;
+  return 'Spotify track';
 }
 
 export type SongPageMediaHubBundle = {
@@ -1061,18 +1065,46 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                         ? `https://open.spotify.com/track/${encodeURIComponent(link.spotifyTrackId)}`
                         : link.source === 'youtube'
                           ? (youtubeWatchUrlFromMediaLink(link) ?? undefined)
-                          : undefined;
+                          : link.source === 'drive' && link.driveFileId?.trim()
+                            ? driveFileWebUrl(link.driveFileId.trim())
+                            : undefined;
                     const openAria =
-                      link.source === 'spotify' ? 'Open in Spotify' : 'Open in YouTube';
+                      link.source === 'spotify'
+                        ? 'Open in Spotify'
+                        : link.source === 'youtube'
+                          ? 'Open in YouTube'
+                          : link.source === 'drive'
+                            ? 'Open reference in Google Drive'
+                            : 'Open link';
                     const hoverStripWrapper =
                       link.source === 'spotify' && link.spotifyTrackId?.trim()
                         ? (inner: ReactElement) => (
                             <EncoreStreamingHoverCard
                               kind="spotify"
                               spotifyTrackId={link.spotifyTrackId}
-                              fallbackTitle={link.label?.trim() || formatMediaLinkCaption(link)}
+                              fallbackTitle={link.label?.trim() || ''}
                               clientId={clientId}
                               spotifyLinked={spotifyLinked}
+                              editNickname={link.label ?? ''}
+                              onEditNicknameChange={(value) =>
+                                setDraft((d) => {
+                                  if (!d) return d;
+                                  const next = (d.referenceLinks ?? []).map((x) =>
+                                    x.id === link.id ? { ...x, label: value.trim() || undefined } : x,
+                                  );
+                                  return { ...d, referenceLinks: next };
+                                })
+                              }
+                              resourceNotes={link.notes ?? ''}
+                              onResourceNotesChange={(value) =>
+                                setDraft((d) => {
+                                  if (!d) return d;
+                                  const next = (d.referenceLinks ?? []).map((x) =>
+                                    x.id === link.id ? { ...x, notes: value.trim() || undefined } : x,
+                                  );
+                                  return { ...d, referenceLinks: next };
+                                })
+                              }
                             >
                               {inner}
                             </EncoreStreamingHoverCard>
@@ -1082,64 +1114,110 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                               <EncoreStreamingHoverCard
                                 kind="youtube"
                                 youtubeWatchUrl={youtubeWatchUrlFromMediaLink(link)}
-                                fallbackTitle={link.label?.trim() || formatMediaLinkCaption(link)}
+                                fallbackTitle={link.label?.trim() || ''}
                                 clientId={clientId}
                                 spotifyLinked={spotifyLinked}
+                                editNickname={link.label ?? ''}
+                                onEditNicknameChange={(value) =>
+                                  setDraft((d) => {
+                                    if (!d) return d;
+                                    const next = (d.referenceLinks ?? []).map((x) =>
+                                      x.id === link.id ? { ...x, label: value.trim() || undefined } : x,
+                                    );
+                                    return { ...d, referenceLinks: next };
+                                  })
+                                }
+                                resourceNotes={link.notes ?? ''}
+                                onResourceNotesChange={(value) =>
+                                  setDraft((d) => {
+                                    if (!d) return d;
+                                    const next = (d.referenceLinks ?? []).map((x) =>
+                                      x.id === link.id ? { ...x, notes: value.trim() || undefined } : x,
+                                    );
+                                    return { ...d, referenceLinks: next };
+                                  })
+                                }
                               >
                                 {inner}
                               </EncoreStreamingHoverCard>
                             )
-                          : undefined;
-                    return (
-                      <EncoreAudioResourceNotesWrapper
-                        key={link.id}
-                        notes={link.notes ?? ''}
-                        resourceLabel="Notes for this reference"
-                        onNotesChange={(value) =>
-                          setDraft((d) => {
-                            if (!d) return d;
-                            const next = (d.referenceLinks ?? []).map((x) =>
-                              x.id === link.id ? { ...x, notes: value || undefined } : x,
-                            );
-                            return { ...d, referenceLinks: next };
-                          })
-                        }
-                      >
-                        <EncoreMediaLinkRow
-                          link={link}
-                          slot="reference"
-                          isPrimary={isPrimary}
-                          onMakePrimary={() =>
-                            setDraft((d) => (d ? setPrimaryReferenceLinkId(d, link.id) : d))
-                          }
-                          openUrl={openUrl}
-                          openAriaLabel={openAria}
-                          onRemove={() =>
-                            setDraft((d) => (d ? removeMediaLinkById(d, link.id) : d))
-                          }
-                          trailing={
-                            isCatalog ? (
-                              <Tooltip title={SONG_INFO_SOURCE_TOOLTIP}>
-                                <IconButton
-                                  size="small"
-                                  aria-label={SONG_INFO_SOURCE_ICON_ARIA}
-                                  sx={{
-                                    color: 'text.secondary',
-                                    p: 0.125,
-                                    ml: 0.125,
-                                    minWidth: 26,
-                                    height: 26,
-                                    '&:hover': { color: 'text.primary', bgcolor: 'action.hover' },
-                                  }}
+                          : link.source === 'drive' && link.driveFileId?.trim()
+                            ? (inner: ReactElement) => (
+                                <EncoreStaticResourceHoverCard
+                                  title={formatMediaLinkCaption(link)}
+                                  subtitle="Google Drive"
+                                  editNickname={link.label ?? ''}
+                                  onEditNicknameChange={(value) =>
+                                    setDraft((d) => {
+                                      if (!d) return d;
+                                      const next = (d.referenceLinks ?? []).map((x) =>
+                                        x.id === link.id ? { ...x, label: value.trim() || undefined } : x,
+                                      );
+                                      return { ...d, referenceLinks: next };
+                                    })
+                                  }
+                                  resourceNotes={link.notes ?? ''}
+                                  onResourceNotesChange={(value) =>
+                                    setDraft((d) => {
+                                      if (!d) return d;
+                                      const next = (d.referenceLinks ?? []).map((x) =>
+                                        x.id === link.id ? { ...x, notes: value.trim() || undefined } : x,
+                                      );
+                                      return { ...d, referenceLinks: next };
+                                    })
+                                  }
                                 >
-                                  <InfoOutlinedIcon sx={{ fontSize: 15 }} />
-                                </IconButton>
-                              </Tooltip>
-                            ) : null
-                          }
-                          hoverStripWrapper={hoverStripWrapper}
-                        />
-                      </EncoreAudioResourceNotesWrapper>
+                                  {inner}
+                                </EncoreStaticResourceHoverCard>
+                              )
+                            : undefined;
+                    const referenceLinkRow = (
+                      <EncoreMediaLinkRow
+                        link={link}
+                        slot="reference"
+                        isPrimary={isPrimary}
+                        embedded
+                        onMakePrimary={() =>
+                          setDraft((d) => (d ? setPrimaryReferenceLinkId(d, link.id) : d))
+                        }
+                        openUrl={openUrl}
+                        openAriaLabel={openAria}
+                        onRemove={() => setDraft((d) => (d ? removeMediaLinkById(d, link.id) : d))}
+                        trailing={
+                          isCatalog ? (
+                            <Tooltip title={SONG_INFO_SOURCE_TOOLTIP}>
+                              <IconButton
+                                size="small"
+                                aria-label={SONG_INFO_SOURCE_ICON_ARIA}
+                                sx={{
+                                  color: 'text.secondary',
+                                  p: 0.125,
+                                  ml: 0.125,
+                                  minWidth: 26,
+                                  height: 26,
+                                  '&:hover': { color: 'text.primary', bgcolor: 'action.hover' },
+                                }}
+                              >
+                                <InfoOutlinedIcon sx={{ fontSize: 15 }} />
+                              </IconButton>
+                            </Tooltip>
+                          ) : null
+                        }
+                        hoverStripWrapper={hoverStripWrapper}
+                      />
+                    );
+                    return (
+                      <Box
+                        key={link.id}
+                        sx={(t) => ({
+                          width: '100%',
+                          maxWidth: 'min(100%, 440px)',
+                          mb: 0.5,
+                          ...songPageResourceRowShellSx(t, isPrimary),
+                        })}
+                      >
+                        {referenceLinkRow}
+                      </Box>
                     );
                   })}
                   <Button
@@ -1148,9 +1226,9 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                     color="inherit"
                     startIcon={<AddIcon sx={{ fontSize: 17 }} />}
                     onClick={(e) => setReferenceAddMenuAnchor(e.currentTarget)}
-                    sx={{ flexShrink: 0, textTransform: 'none', borderColor: 'divider', fontSize: '0.8125rem' }}
+                    sx={(t) => encoreMediaHubAddButtonSx(t)}
                   >
-                    Add audio
+                    Add track
                   </Button>
                   <Menu
                     open={Boolean(referenceAddMenuAnchor)}
@@ -1323,18 +1401,46 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                         ? `https://open.spotify.com/track/${encodeURIComponent(link.spotifyTrackId)}`
                         : link.source === 'youtube'
                           ? (youtubeWatchUrlFromMediaLink(link) ?? undefined)
-                          : undefined;
+                          : link.source === 'drive' && link.driveFileId?.trim()
+                            ? driveFileWebUrl(link.driveFileId.trim())
+                            : undefined;
                     const openAria =
-                      link.source === 'spotify' ? 'Open backing in Spotify' : 'Open backing in YouTube';
+                      link.source === 'spotify'
+                        ? 'Open backing in Spotify'
+                        : link.source === 'youtube'
+                          ? 'Open backing in YouTube'
+                          : link.source === 'drive'
+                            ? 'Open backing in Google Drive'
+                            : 'Open link';
                     const hoverStripWrapper =
                       link.source === 'spotify' && link.spotifyTrackId?.trim()
                         ? (inner: ReactElement) => (
                             <EncoreStreamingHoverCard
                               kind="spotify"
                               spotifyTrackId={link.spotifyTrackId}
-                              fallbackTitle={link.label?.trim() || formatMediaLinkCaption(link)}
+                              fallbackTitle={link.label?.trim() || ''}
                               clientId={clientId}
                               spotifyLinked={spotifyLinked}
+                              editNickname={link.label ?? ''}
+                              onEditNicknameChange={(value) =>
+                                setDraft((d) => {
+                                  if (!d) return d;
+                                  const next = (d.backingLinks ?? []).map((x) =>
+                                    x.id === link.id ? { ...x, label: value.trim() || undefined } : x,
+                                  );
+                                  return { ...d, backingLinks: next };
+                                })
+                              }
+                              resourceNotes={link.notes ?? ''}
+                              onResourceNotesChange={(value) =>
+                                setDraft((d) => {
+                                  if (!d) return d;
+                                  const next = (d.backingLinks ?? []).map((x) =>
+                                    x.id === link.id ? { ...x, notes: value.trim() || undefined } : x,
+                                  );
+                                  return { ...d, backingLinks: next };
+                                })
+                              }
                             >
                               {inner}
                             </EncoreStreamingHoverCard>
@@ -1344,44 +1450,90 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                               <EncoreStreamingHoverCard
                                 kind="youtube"
                                 youtubeWatchUrl={youtubeWatchUrlFromMediaLink(link)}
-                                fallbackTitle={link.label?.trim() || formatMediaLinkCaption(link)}
+                                fallbackTitle={link.label?.trim() || ''}
                                 clientId={clientId}
                                 spotifyLinked={spotifyLinked}
+                                editNickname={link.label ?? ''}
+                                onEditNicknameChange={(value) =>
+                                  setDraft((d) => {
+                                    if (!d) return d;
+                                    const next = (d.backingLinks ?? []).map((x) =>
+                                      x.id === link.id ? { ...x, label: value.trim() || undefined } : x,
+                                    );
+                                    return { ...d, backingLinks: next };
+                                  })
+                                }
+                                resourceNotes={link.notes ?? ''}
+                                onResourceNotesChange={(value) =>
+                                  setDraft((d) => {
+                                    if (!d) return d;
+                                    const next = (d.backingLinks ?? []).map((x) =>
+                                      x.id === link.id ? { ...x, notes: value.trim() || undefined } : x,
+                                    );
+                                    return { ...d, backingLinks: next };
+                                  })
+                                }
                               >
                                 {inner}
                               </EncoreStreamingHoverCard>
                             )
-                          : undefined;
-                    return (
-                      <EncoreAudioResourceNotesWrapper
-                        key={link.id}
-                        notes={link.notes ?? ''}
-                        resourceLabel="Notes for this backing track"
-                        onNotesChange={(value) =>
-                          setDraft((d) => {
-                            if (!d) return d;
-                            const next = (d.backingLinks ?? []).map((x) =>
-                              x.id === link.id ? { ...x, notes: value || undefined } : x,
-                            );
-                            return { ...d, backingLinks: next };
-                          })
+                          : link.source === 'drive' && link.driveFileId?.trim()
+                            ? (inner: ReactElement) => (
+                                <EncoreStaticResourceHoverCard
+                                  title={formatMediaLinkCaption(link)}
+                                  subtitle="Google Drive"
+                                  editNickname={link.label ?? ''}
+                                  onEditNicknameChange={(value) =>
+                                    setDraft((d) => {
+                                      if (!d) return d;
+                                      const next = (d.backingLinks ?? []).map((x) =>
+                                        x.id === link.id ? { ...x, label: value.trim() || undefined } : x,
+                                      );
+                                      return { ...d, backingLinks: next };
+                                    })
+                                  }
+                                  resourceNotes={link.notes ?? ''}
+                                  onResourceNotesChange={(value) =>
+                                    setDraft((d) => {
+                                      if (!d) return d;
+                                      const next = (d.backingLinks ?? []).map((x) =>
+                                        x.id === link.id ? { ...x, notes: value.trim() || undefined } : x,
+                                      );
+                                      return { ...d, backingLinks: next };
+                                    })
+                                  }
+                                >
+                                  {inner}
+                                </EncoreStaticResourceHoverCard>
+                              )
+                            : undefined;
+                    const backingLinkRow = (
+                      <EncoreMediaLinkRow
+                        link={link}
+                        slot="backing"
+                        isPrimary={isPrimary}
+                        embedded
+                        onMakePrimary={() =>
+                          setDraft((d) => (d ? setPrimaryBackingLinkId(d, link.id) : d))
                         }
+                        openUrl={openUrl}
+                        openAriaLabel={openAria}
+                        onRemove={() => setDraft((d) => (d ? removeMediaLinkById(d, link.id) : d))}
+                        hoverStripWrapper={hoverStripWrapper}
+                      />
+                    );
+                    return (
+                      <Box
+                        key={link.id}
+                        sx={(t) => ({
+                          width: '100%',
+                          maxWidth: 'min(100%, 440px)',
+                          mb: 0.5,
+                          ...songPageResourceRowShellSx(t, isPrimary),
+                        })}
                       >
-                        <EncoreMediaLinkRow
-                          link={link}
-                          slot="backing"
-                          isPrimary={isPrimary}
-                          onMakePrimary={() =>
-                            setDraft((d) => (d ? setPrimaryBackingLinkId(d, link.id) : d))
-                          }
-                          openUrl={openUrl}
-                          openAriaLabel={openAria}
-                          onRemove={() =>
-                            setDraft((d) => (d ? removeMediaLinkById(d, link.id) : d))
-                          }
-                          hoverStripWrapper={hoverStripWrapper}
-                        />
-                      </EncoreAudioResourceNotesWrapper>
+                        {backingLinkRow}
+                      </Box>
                     );
                   })}
                   <Button
@@ -1390,9 +1542,9 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                     color="inherit"
                     startIcon={<AddIcon sx={{ fontSize: 17 }} />}
                     onClick={(e) => setBackingAddMenuAnchor(e.currentTarget)}
-                    sx={{ flexShrink: 0, textTransform: 'none', borderColor: 'divider', fontSize: '0.8125rem' }}
+                    sx={(t) => encoreMediaHubAddButtonSx(t)}
                   >
-                    Add audio
+                    Add track
                   </Button>
                   <Menu
                     open={Boolean(backingAddMenuAnchor)}
@@ -1554,36 +1706,64 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                 >
                   {chartAttachments.map((a) => {
                     const isPrimary = Boolean(primaryChartDriveFileId && a.driveFileId === primaryChartDriveFileId);
-                    const caption = a.label ?? a.driveFileId.slice(0, 8);
+                    const caption = formatChartAttachmentShortCaption(a);
+                    const fullCaption = formatChartAttachmentCaption(a);
                     return (
-                      <EncoreAudioResourceNotesWrapper
+                      <Box
                         key={a.driveFileId}
-                        notes={a.notes ?? ''}
-                        resourceLabel="Notes for this chart"
-                        onNotesChange={(value) =>
-                          setDraft((d) => {
-                            if (!d) return d;
-                            const next = (d.attachments ?? []).map((x) =>
-                              x.kind === 'chart' && x.driveFileId === a.driveFileId
-                                ? { ...x, notes: value || undefined }
-                                : x,
-                            );
-                            return { ...d, attachments: next };
-                          })
-                        }
+                        sx={(t) => ({
+                          width: '100%',
+                          maxWidth: 'min(100%, 440px)',
+                          mb: 0.5,
+                          ...songPageResourceRowShellSx(t, isPrimary),
+                        })}
                       >
                         <EncoreMediaLinkRow
                           slot="chart"
+                          source="drive"
                           isPrimary={isPrimary}
+                          embedded
                           caption={caption}
-                          fullCaption={a.label ?? a.driveFileId}
+                          fullCaption={fullCaption}
                           onMakePrimary={() =>
                             setDraft((d) => (d ? setPrimaryChartByDriveFileId(d, a.driveFileId) : d))
                           }
                           openUrl={driveFileWebUrl(a.driveFileId)}
                           openAriaLabel="Open chart in new tab"
+                          hoverStripWrapper={(strip) => (
+                            <EncoreStaticResourceHoverCard
+                              title={fullCaption}
+                              subtitle="Google Drive"
+                              editNickname={a.label ?? ''}
+                              onEditNicknameChange={(value) =>
+                                setDraft((d) => {
+                                  if (!d) return d;
+                                  const next = (d.attachments ?? []).map((x) =>
+                                    x.kind === 'chart' && x.driveFileId === a.driveFileId
+                                      ? { ...x, label: value.trim() || undefined }
+                                      : x,
+                                  );
+                                  return { ...d, attachments: next };
+                                })
+                              }
+                              resourceNotes={a.notes ?? ''}
+                              onResourceNotesChange={(value) =>
+                                setDraft((d) => {
+                                  if (!d) return d;
+                                  const next = (d.attachments ?? []).map((x) =>
+                                    x.kind === 'chart' && x.driveFileId === a.driveFileId
+                                      ? { ...x, notes: value.trim() || undefined }
+                                      : x,
+                                  );
+                                  return { ...d, attachments: next };
+                                })
+                              }
+                            >
+                              {strip}
+                            </EncoreStaticResourceHoverCard>
+                          )}
                         />
-                      </EncoreAudioResourceNotesWrapper>
+                      </Box>
                     );
                   })}
                   <Button
@@ -1593,11 +1773,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                     startIcon={<AddIcon sx={{ fontSize: 17 }} />}
                     disabled={!googleAccessToken || !chartUploadFolderId || driveUploading}
                     onClick={(e) => setChartAddAnchor(e.currentTarget)}
-                    sx={{
-                      textTransform: 'none',
-                      borderColor: 'divider',
-                      fontSize: '0.8125rem',
-                    }}
+                    sx={(t) => encoreMediaHubAddButtonSx(t)}
                   >
                     Add chart
                   </Button>
@@ -1712,6 +1888,13 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                       <EncoreMediaLinkRow
                         slot="chart"
                         source="drive"
+                        link={{
+                          id: `recording-${a.driveFileId}`,
+                          source: 'drive',
+                          driveFileId: a.driveFileId,
+                          label: a.label,
+                        }}
+                        stanzaPracticeAllowDrive
                         isPrimary={false}
                         caption={a.label ?? 'Take'}
                         fullCaption={a.label ?? a.driveFileId}
@@ -1727,11 +1910,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                     startIcon={<AddIcon sx={{ fontSize: 17 }} />}
                     disabled={!googleAccessToken || !takesUploadFolderId || driveUploading}
                     onClick={() => takesDriveInputRef.current?.click()}
-                    sx={{
-                      textTransform: 'none',
-                      borderColor: 'divider',
-                      fontSize: '0.8125rem',
-                    }}
+                    sx={(t) => encoreMediaHubAddButtonSx(t)}
                   >
                     Upload take
                   </Button>

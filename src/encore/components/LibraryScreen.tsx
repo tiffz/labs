@@ -57,7 +57,7 @@ import {
   type ReactElement,
   type ReactNode,
 } from 'react';
-import type { EncoreMrtTablePrefs, EncorePerformance, EncoreSong } from '../types';
+import type { EncoreMrtTablePrefs, EncorePerformance, EncoreRepertoireSavedSearch, EncoreSong } from '../types';
 import {
   encoreAppHref,
   isModifiedOrNonPrimaryClick,
@@ -93,7 +93,13 @@ import { BulkScoreImportDialog } from './BulkScoreImportDialog';
 import { SongResourcesEditDialog, type SongResourcesEditSection } from './SongResourcesEditDialog';
 import { SpotifyBrandIcon, YouTubeBrandIcon } from './EncoreBrandIcon';
 import { milestoneProgressSummary } from '../repertoire/repertoireMilestoneSummary';
-import { applyTemplateProgressToSong } from '../repertoire/repertoireMilestones';
+import {
+  derivePlaylistImportTagsFromFilters,
+  filterSongsByRepertoireSavedSearchBundle,
+  normalizeExcludedRepertoireFieldIds,
+  normalizeSavedSearchFilterValues,
+} from '../repertoire/repertoireSavedSearchFilter';
+import { buildLibraryRepertoireFilterFieldDefs } from '../repertoire/buildLibraryRepertoireFilterFieldDefs';
 import { ENCORE_PERFORMANCE_KEY_OPTIONS } from '../repertoire/performanceKeys';
 import { collectAllSongTags, normalizeSongTags } from '../repertoire/songTags';
 import { InlineChipSelect } from '../ui/InlineEditChip';
@@ -120,13 +126,13 @@ import {
   mrtColumnId,
   normalizeVenueTag,
   repertoireColumnOrderForMrt,
+  REPERTOIRE_FILTER_PINNED,
   songHasSpotifySource,
-  songMatchesAnySelectedTag,
-  songMatchesSearch,
 } from './libraryScreenHelpers';
 import { EncoreMrtSearchHighlightContext } from './encoreMrtSearchHighlightContext';
 import { LibraryRepertoireBulkBar } from './libraryScreen/LibraryRepertoireBulkBar';
 import { LibraryRepertoireFiltersPanel } from './libraryScreen/LibraryRepertoireFiltersPanel';
+import { LibraryRepertoireSavedSearchesBar } from './libraryScreen/LibraryRepertoireSavedSearchesBar';
 import { LibraryRepertoireMrtOrGrid } from './libraryScreen/LibraryRepertoireMrtOrGrid';
 import type { EncoreRepertoireMrtRow } from './libraryScreen/libraryRepertoireMrtRowTypes';
 import { encorePossessivePageTitle } from '../utils/encorePossessivePageTitle';
@@ -137,8 +143,6 @@ import { HighlightedText } from '../ui/HighlightedText';
 import AppTooltip from '../../shared/components/AppTooltip';
 
 const REPERTOIRE_VIEW_STORAGE_KEY = 'encore.library.repertoireView';
-
-const REPERTOIRE_FILTER_PINNED = ['performed', 'practicing', 'venue'] as const;
 
 /** Show dense row actions on hover (fine pointer); keep visible on touch/coarse pointers. */
 const REPERTOIRE_CELL_HOVER_ACTIONS_SX = {
@@ -704,9 +708,6 @@ export function LibraryScreen(props?: {
   /** While this tab is keep-alive hidden, skip rebuilding heavy derived data (Dexie still updates elsewhere). */
   const libraryStatsCacheRef = useRef({ topVenues: [] as [string, number][], totalPerf: 0 });
   const venueOptionsCacheRef = useRef<string[]>([]);
-  const artistFilterOptionsCacheRef = useRef<string[]>([]);
-  const keyFilterOptionsCacheRef = useRef<string[]>([]);
-  const milestoneCountFilterOptionsCacheRef = useRef<{ value: string; label: string }[]>([{ value: '0', label: '0' }]);
   const perfBySongCacheRef = useRef(new Map<string, EncorePerformance[]>());
   const repertoireSongsCacheRef = useRef<EncoreSong[]>([]);
   const repertoireFilterFieldDefsCacheRef = useRef<EncoreFilterFieldConfig[]>([]);
@@ -731,6 +732,7 @@ export function LibraryScreen(props?: {
   const [repertoireFilterValues, setRepertoireFilterValues] = useState<Record<string, string[]>>(
     () => ({ ...REPERTOIRE_FILTER_EMPTY }),
   );
+  const [excludedRepertoireFilterIds, setExcludedRepertoireFilterIds] = useState<string[]>([]);
   const [visibleRepertoireFilterIds, setVisibleRepertoireFilterIds] = useState<string[]>([
     ...REPERTOIRE_FILTER_PINNED,
   ]);
@@ -745,6 +747,7 @@ export function LibraryScreen(props?: {
   const [bulkRefreshSpotifyOpen, setBulkRefreshSpotifyOpen] = useState(false);
   const [bulkSpotifyRefreshToast, setBulkSpotifyRefreshToast] = useState<null | { message: string; severity: 'success' | 'error' }>(null);
   const [bulkOverflowAnchor, setBulkOverflowAnchor] = useState<HTMLElement | null>(null);
+  const [saveSearchDialogOpen, setSaveSearchDialogOpen] = useState(false);
 
   const extrasRef = useRef(repertoireExtras);
   extrasRef.current = repertoireExtras;
@@ -835,30 +838,6 @@ export function LibraryScreen(props?: {
     return next;
   }, [heavyListTabActive, repertoireExtras.venueCatalog, performances]);
 
-  const artistFilterOptions = useMemo(() => {
-    if (!heavyListTabActive) return artistFilterOptionsCacheRef.current;
-    const s = new Set<string>();
-    for (const song of songs) {
-      const a = song.artist.trim();
-      if (a) s.add(a);
-    }
-    const next = [...s].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
-    artistFilterOptionsCacheRef.current = next;
-    return next;
-  }, [heavyListTabActive, songs]);
-
-  const keyFilterOptions = useMemo(() => {
-    if (!heavyListTabActive) return keyFilterOptionsCacheRef.current;
-    const s = new Set<string>(ENCORE_PERFORMANCE_KEY_OPTIONS);
-    for (const song of songs) {
-      const k = song.performanceKey?.trim();
-      if (k) s.add(k);
-    }
-    const next = [...s].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
-    keyFilterOptionsCacheRef.current = next;
-    return next;
-  }, [heavyListTabActive, songs]);
-
   const milestoneWhichFieldOptions = useMemo(
     () =>
       [...repertoireExtras.milestoneTemplate]
@@ -867,16 +846,6 @@ export function LibraryScreen(props?: {
         .map((m) => ({ value: m.id, label: m.label })),
     [repertoireExtras.milestoneTemplate],
   );
-
-  const milestoneCountFilterOptions = useMemo(() => {
-    if (!heavyListTabActive) return milestoneCountFilterOptionsCacheRef.current;
-    const tmpl = repertoireExtras.milestoneTemplate.filter((m) => !m.archived).length;
-    const songOnlyMax = songs.reduce((m, s) => Math.max(m, (s.songOnlyMilestones ?? []).length), 0);
-    const cap = Math.min(48, Math.max(1, tmpl + songOnlyMax));
-    const next = Array.from({ length: cap + 1 }, (_, i) => ({ value: String(i), label: String(i) }));
-    milestoneCountFilterOptionsCacheRef.current = next;
-    return next;
-  }, [heavyListTabActive, repertoireExtras.milestoneTemplate, songs]);
 
   const perfBySong = useMemo(() => {
     if (!heavyListTabActive) return perfBySongCacheRef.current;
@@ -904,139 +873,33 @@ export function LibraryScreen(props?: {
 
   const repertoireSongs = useMemo(() => {
     if (!heavyListTabActive) return repertoireSongsCacheRef.current;
-    const venueFilters = repertoireFilterValues.venue ?? [];
-    const tagFilters = repertoireFilterValues.tags ?? [];
-    const artistFilters = repertoireFilterValues.artist ?? [];
-    const keyFilters = repertoireFilterValues.perfKey ?? [];
-    const milestoneWhich = repertoireFilterValues.milestoneWhich ?? [];
-    const milestoneNotDone = repertoireFilterValues.milestoneNotDone ?? [];
-    const milestoneMinRaw = repertoireFilterValues.milestoneDoneMin?.[0];
-    const milestoneMaxRaw = repertoireFilterValues.milestoneDoneMax?.[0];
-    const milestoneMin = milestoneMinRaw != null && milestoneMinRaw !== '' ? Number(milestoneMinRaw) : null;
-    const milestoneMax = milestoneMaxRaw != null && milestoneMaxRaw !== '' ? Number(milestoneMaxRaw) : null;
-    const assetRefs = repertoireFilterValues.assetRefs?.[0];
-    const assetBacking = repertoireFilterValues.assetBacking?.[0];
-    const assetSpotify = repertoireFilterValues.assetSpotify?.[0];
-    const assetCharts = repertoireFilterValues.assetCharts?.[0];
-    const assetTakes = repertoireFilterValues.assetTakes?.[0];
-    const template = repertoireExtras.milestoneTemplate;
-
-    let list = songs;
-    if (perfPresence === 'with') {
-      list = list.filter((s) => (perfBySong.get(s.id) ?? []).length > 0);
-    } else if (perfPresence === 'none') {
-      list = list.filter((s) => (perfBySong.get(s.id) ?? []).length === 0);
-    }
-    if (venueFilters.length > 0) {
-      const blankVenue = venueFilters.includes(ENCORE_FILTER_SENTINEL.repertoireNoPerformances);
-      const concreteVenues = venueFilters.filter((v) => v !== ENCORE_FILTER_SENTINEL.repertoireNoPerformances);
-      list = list.filter((s) => {
-        const songPerfs = perfBySong.get(s.id) ?? [];
-        const noPerf = songPerfs.length === 0;
-        const matchBlank = blankVenue && noPerf;
-        const matchConcrete =
-          concreteVenues.length > 0 &&
-          concreteVenues.some((v) =>
-            performances.some((p) => p.songId === s.id && normalizeVenueTag(p.venueTag) === v),
-          );
-        if (blankVenue && concreteVenues.length === 0) return noPerf;
-        if (blankVenue && concreteVenues.length > 0) return matchBlank || matchConcrete;
-        return matchConcrete;
-      });
-    }
-    if (practicingFilter === 'practicing') {
-      list = list.filter((s) => Boolean(s.practicing));
-    } else if (practicingFilter === 'not_practicing') {
-      list = list.filter((s) => !s.practicing);
-    }
-    if (tagFilters.length > 0) {
-      const blankTags = tagFilters.includes(ENCORE_FILTER_SENTINEL.blankTags);
-      const concreteTags = tagFilters.filter((t) => t !== ENCORE_FILTER_SENTINEL.blankTags);
-      list = list.filter((s) => {
-        const songTags = s.tags ?? [];
-        const isUntagged = songTags.length === 0;
-        const matchBlank = blankTags && isUntagged;
-        const matchConcrete =
-          concreteTags.length > 0 && songMatchesAnySelectedTag(s, concreteTags);
-        if (blankTags && concreteTags.length === 0) return isUntagged;
-        if (blankTags && concreteTags.length > 0) return matchBlank || matchConcrete;
-        return matchConcrete;
-      });
-    }
-    if (artistFilters.length > 0) {
-      const blankArtist = artistFilters.includes(ENCORE_FILTER_SENTINEL.blankArtist);
-      const concreteArtists = artistFilters.filter((a) => a !== ENCORE_FILTER_SENTINEL.blankArtist);
-      list = list.filter((s) => {
-        const a = s.artist.trim();
-        const isBlank = !a;
-        const matchBlank = blankArtist && isBlank;
-        const matchConcrete =
-          concreteArtists.length > 0 &&
-          concreteArtists.some((x) => a.toLowerCase() === x.trim().toLowerCase());
-        if (blankArtist && concreteArtists.length === 0) return isBlank;
-        if (blankArtist && concreteArtists.length > 0) return matchBlank || matchConcrete;
-        return matchConcrete;
-      });
-    }
-    if (keyFilters.length > 0) {
-      list = list.filter((s) => {
-        const k = (s.performanceKey ?? '').trim();
-        return keyFilters.some((sel) =>
-          sel === ENCORE_FILTER_SENTINEL.blankKey ? !k : k === sel,
-        );
-      });
-    }
-    if (assetRefs === 'with') list = list.filter((s) => countReferenceTracks(s) > 0);
-    else if (assetRefs === 'without') list = list.filter((s) => countReferenceTracks(s) === 0);
-    if (assetBacking === 'with') list = list.filter((s) => countBackingTracks(s) > 0);
-    else if (assetBacking === 'without') list = list.filter((s) => countBackingTracks(s) === 0);
-    if (assetSpotify === 'with') list = list.filter((s) => songHasSpotifySource(s));
-    else if (assetSpotify === 'without') list = list.filter((s) => !songHasSpotifySource(s));
-    if (assetCharts === 'with') list = list.filter((s) => countChartAttachments(s) > 0);
-    else if (assetCharts === 'without') list = list.filter((s) => countChartAttachments(s) === 0);
-    if (assetTakes === 'with') list = list.filter((s) => countTakeAttachments(s) > 0);
-    else if (assetTakes === 'without') list = list.filter((s) => countTakeAttachments(s) === 0);
-
-    if (milestoneWhich.length > 0) {
-      list = list.filter((s) => {
-        const synced = applyTemplateProgressToSong(s, template);
-        return milestoneWhich.every((id) => synced.milestoneProgress?.[id]?.state === 'done');
-      });
-    }
-    if (milestoneNotDone.length > 0) {
-      list = list.filter((s) => {
-        const synced = applyTemplateProgressToSong(s, template);
-        return milestoneNotDone.every((id) => synced.milestoneProgress?.[id]?.state !== 'done');
-      });
-    }
-    if (milestoneMin != null && !Number.isNaN(milestoneMin)) {
-      list = list.filter((s) => milestoneProgressSummary(s, template).done >= milestoneMin);
-    }
-    if (milestoneMax != null && !Number.isNaN(milestoneMax)) {
-      list = list.filter((s) => milestoneProgressSummary(s, template).done <= milestoneMax);
-    }
-
-    if (debouncedSearch.trim()) {
-      list = list.filter((s) => songMatchesSearch(s, debouncedSearch, perfBySong));
-    }
+    const list = filterSongsByRepertoireSavedSearchBundle(
+      songs,
+      performances,
+      perfBySong,
+      repertoireExtras.milestoneTemplate,
+      debouncedSearch,
+      repertoireFilterValues,
+      excludedRepertoireFilterIds,
+    );
     repertoireSongsCacheRef.current = list;
     return list;
   }, [
     heavyListTabActive,
     songs,
-    perfPresence,
-    practicingFilter,
-    repertoireFilterValues,
-    debouncedSearch,
     performances,
     perfBySong,
     repertoireExtras.milestoneTemplate,
+    debouncedSearch,
+    repertoireFilterValues,
+    excludedRepertoireFilterIds,
   ]);
 
   const hasActiveFilters = Boolean(
     searchQuery.trim() ||
       perfPresence !== 'all' ||
       practicingFilter !== 'all' ||
+      excludedRepertoireFilterIds.length > 0 ||
       (repertoireFilterValues.venue ?? []).length > 0 ||
       (repertoireFilterValues.tags ?? []).length > 0 ||
       (repertoireFilterValues.artist ?? []).length > 0 ||
@@ -1055,143 +918,55 @@ export function LibraryScreen(props?: {
   const clearAllFilters = useCallback(() => {
     setSearchQuery('');
     setRepertoireFilterValues({ ...REPERTOIRE_FILTER_EMPTY });
+    setExcludedRepertoireFilterIds([]);
     setVisibleRepertoireFilterIds([...REPERTOIRE_FILTER_PINNED]);
+  }, []);
+
+  const repertoireSavedSearches = repertoireExtras.repertoireSavedSearches ?? [];
+
+  const saveCurrentViewAsSearch = useCallback(
+    (name: string) => {
+      const now = new Date().toISOString();
+      const fv = normalizeSavedSearchFilterValues(repertoireFilterValues);
+      const excluded = normalizeExcludedRepertoireFieldIds(excludedRepertoireFilterIds);
+      const tags = derivePlaylistImportTagsFromFilters(fv, excluded);
+      const next: EncoreRepertoireSavedSearch = {
+        id: crypto.randomUUID(),
+        name,
+        updatedAt: now,
+        searchQuery,
+        visibleFieldIds: [...visibleRepertoireFilterIds],
+        filterValues: fv,
+        excludedFieldIds: excluded.length > 0 ? excluded : undefined,
+        playlistImportTags: tags,
+      };
+      void saveRepertoireExtras({
+        repertoireSavedSearches: [...(extrasRef.current.repertoireSavedSearches ?? []), next],
+      });
+    },
+    [excludedRepertoireFilterIds, repertoireFilterValues, saveRepertoireExtras, searchQuery, visibleRepertoireFilterIds],
+  );
+
+  const applySavedSearch = useCallback((s: EncoreRepertoireSavedSearch) => {
+    setSearchQuery(s.searchQuery);
+    setRepertoireFilterValues(normalizeSavedSearchFilterValues(s.filterValues));
+    setExcludedRepertoireFilterIds(normalizeExcludedRepertoireFieldIds(s.excludedFieldIds));
+    setVisibleRepertoireFilterIds(
+      s.visibleFieldIds.length > 0 ? [...s.visibleFieldIds] : [...REPERTOIRE_FILTER_PINNED],
+    );
   }, []);
 
   const repertoireFilterFieldDefs = useMemo((): EncoreFilterFieldConfig[] => {
     if (!heavyListTabActive) return repertoireFilterFieldDefsCacheRef.current;
-    const venueOpts = [
-      { value: ENCORE_FILTER_SENTINEL.repertoireNoPerformances, label: 'No performances yet' },
-      ...[...venueOptions]
-        .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
-        .map((v) => ({ value: v, label: v })),
-    ];
-    const tagOpts = [
-      { value: ENCORE_FILTER_SENTINEL.blankTags, label: 'No tags' },
-      ...collectAllSongTags(songs).map((t) => ({ value: t, label: t })),
-    ];
-    const artistOpts = [
-      { value: ENCORE_FILTER_SENTINEL.blankArtist, label: 'No artist' },
-      ...artistFilterOptions.map((a) => ({ value: a, label: a })),
-    ];
-    const keyOpts = [
-      { value: ENCORE_FILTER_SENTINEL.blankKey, label: 'No key set' },
-      ...keyFilterOptions.map((k) => ({ value: k, label: k })),
-    ];
-    const assetPair: EncoreFilterFieldConfig[] = [
-      {
-        id: 'assetRefs',
-        label: 'References',
-        exclusive: true,
-        options: [
-          { value: 'with', label: 'Has reference tracks' },
-          { value: 'without', label: 'No reference tracks' },
-        ],
-      },
-      {
-        id: 'assetBacking',
-        label: 'Backing tracks',
-        exclusive: true,
-        options: [
-          { value: 'with', label: 'Has backing tracks' },
-          { value: 'without', label: 'No backing tracks' },
-        ],
-      },
-      {
-        id: 'assetSpotify',
-        label: 'Spotify source',
-        exclusive: true,
-        options: [
-          { value: 'with', label: 'Spotify info source set' },
-          { value: 'without', label: 'No Spotify source' },
-        ],
-      },
-      {
-        id: 'assetCharts',
-        label: 'Charts',
-        exclusive: true,
-        options: [
-          { value: 'with', label: 'Has charts' },
-          { value: 'without', label: 'No charts' },
-        ],
-      },
-      {
-        id: 'assetTakes',
-        label: 'Takes',
-        exclusive: true,
-        options: [
-          { value: 'with', label: 'Has takes' },
-          { value: 'without', label: 'No takes' },
-        ],
-      },
-    ];
-    const milestoneFields: EncoreFilterFieldConfig[] = [];
-    if (milestoneWhichFieldOptions.length > 0) {
-      milestoneFields.push({
-        id: 'milestoneWhich',
-        label: 'Milestone checked off',
-        allowEmptyOptions: true,
-        options: milestoneWhichFieldOptions,
-      });
-      milestoneFields.push({
-        id: 'milestoneNotDone',
-        label: 'Milestone not complete',
-        allowEmptyOptions: true,
-        options: milestoneWhichFieldOptions,
-      });
-    }
-    milestoneFields.push(
-      {
-        id: 'milestoneDoneMin',
-        label: 'Done count (min)',
-        exclusive: true,
-        options: milestoneCountFilterOptions,
-      },
-      {
-        id: 'milestoneDoneMax',
-        label: 'Done count (max)',
-        exclusive: true,
-        options: milestoneCountFilterOptions,
-      },
-    );
-
-    const next: EncoreFilterFieldConfig[] = [
-      {
-        id: 'performed',
-        label: 'Performed',
-        exclusive: true,
-        options: [
-          { value: 'with', label: 'With performances' },
-          { value: 'none', label: 'None yet' },
-        ],
-      },
-      {
-        id: 'practicing',
-        label: 'Status',
-        exclusive: true,
-        options: [
-          { value: 'practicing', label: 'Currently practicing' },
-          { value: 'not_practicing', label: 'Not practicing' },
-        ],
-      },
-      { id: 'venue', label: 'Venue', options: venueOpts },
-      { id: 'tags', label: 'Tags', options: tagOpts },
-      { id: 'artist', label: 'Artist', options: artistOpts },
-      { id: 'perfKey', label: 'Key', options: keyOpts },
-      ...assetPair,
-      ...milestoneFields,
-    ];
+    const next = buildLibraryRepertoireFilterFieldDefs({
+      songs,
+      performances,
+      venueCatalog: repertoireExtras.venueCatalog,
+      milestoneTemplate: repertoireExtras.milestoneTemplate,
+    });
     repertoireFilterFieldDefsCacheRef.current = next;
     return next;
-  }, [
-    heavyListTabActive,
-    songs,
-    venueOptions,
-    artistFilterOptions,
-    keyFilterOptions,
-    milestoneWhichFieldOptions,
-    milestoneCountFilterOptions,
-  ]);
+  }, [heavyListTabActive, songs, performances, repertoireExtras.venueCatalog, repertoireExtras.milestoneTemplate]);
 
   const repertoireAddableFilterFields = useMemo(() => {
     const pinned = new Set<string>(REPERTOIRE_FILTER_PINNED);
@@ -2356,6 +2131,8 @@ export function LibraryScreen(props?: {
         visibleRepertoireFilterIds={visibleRepertoireFilterIds}
         repertoireFilterValues={repertoireFilterValues}
         onRepertoireFilterChange={onRepertoireFilterChange}
+        excludedRepertoireFilterIds={excludedRepertoireFilterIds}
+        onExcludedRepertoireFilterIdsChange={setExcludedRepertoireFilterIds}
         repertoireAddableFilterFields={repertoireAddableFilterFields}
         onVisibleRepertoireFilterIdsChange={setVisibleRepertoireFilterIds}
         defaultPinnedFieldIds={REPERTOIRE_FILTER_PINNED}
@@ -2364,7 +2141,18 @@ export function LibraryScreen(props?: {
         onViewModeChange={setViewMode}
         table={table}
         onResetRepertoireTableLayout={resetRepertoireTableLayout}
+        onSaveCurrentViewClick={songs.length > 0 ? () => setSaveSearchDialogOpen(true) : undefined}
+        savedSearches={repertoireSavedSearches}
+        onApplySavedSearch={applySavedSearch}
       />
+
+      {songs.length > 0 ? (
+        <LibraryRepertoireSavedSearchesBar
+          onSaveCurrentView={saveCurrentViewAsSearch}
+          saveDialogOpen={saveSearchDialogOpen}
+          onSaveDialogClose={() => setSaveSearchDialogOpen(false)}
+        />
+      ) : null}
 
       {songsHydrated && songs.length === 0 && (
         <Stack spacing={2} sx={{ py: 5, alignItems: 'center', px: 2, maxWidth: 560, mx: 'auto' }}>

@@ -1,5 +1,6 @@
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
 import type { ReactElement, ReactNode } from 'react';
 
@@ -121,6 +122,20 @@ export function SongPageSongTopSection(props: {
             {artistField}
           </Stack>
           <Box sx={{ width: 1, minWidth: 0 }}>{catalogStrip}</Box>
+          <Typography
+            component="h2"
+            variant="subtitle2"
+            sx={{
+              fontWeight: 800,
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+              color: 'text.secondary',
+              mt: 0.5,
+              mb: -0.25,
+            }}
+          >
+            Practice resources
+          </Typography>
           <SongPageMediaHubCards slots={mediaSlots} fileDrop={mediaHubFileDrop} />
         </Stack>
       </Stack>

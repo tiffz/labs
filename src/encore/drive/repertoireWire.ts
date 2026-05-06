@@ -1,9 +1,15 @@
 import type { RepertoireExtrasRow } from '../db/encoreDb';
+import {
+  derivePlaylistImportTagsFromFilters,
+  normalizeExcludedRepertoireFieldIds,
+  normalizeSavedSearchFilterValues,
+} from '../repertoire/repertoireSavedSearchFilter';
 import type {
   EncoreDriveUploadFolderKind,
   EncoreDriveUploadFolderOverrideLabels,
   EncoreDriveUploadFolderOverrides,
   EncorePerformance,
+  EncoreRepertoireSavedSearch,
   EncoreSong,
   EncoreTableUiBundle,
   RepertoireWirePayload,
@@ -39,6 +45,59 @@ function parseDriveUploadFolderOverrideLabels(raw: unknown): EncoreDriveUploadFo
   return Object.keys(out).length ? out : undefined;
 }
 
+function parseRepertoireSavedSearches(raw: unknown): EncoreRepertoireSavedSearch[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const out: EncoreRepertoireSavedSearch[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const o = item as Record<string, unknown>;
+    const id = typeof o.id === 'string' ? o.id.trim() : '';
+    const name = typeof o.name === 'string' ? o.name.trim() : '';
+    let updatedAt = typeof o.updatedAt === 'string' ? o.updatedAt.trim() : '';
+    if (!updatedAt) updatedAt = new Date().toISOString();
+    if (!id || !name) continue;
+    const searchQuery = typeof o.searchQuery === 'string' ? o.searchQuery : '';
+    const visibleFieldIds = Array.isArray(o.visibleFieldIds)
+      ? (o.visibleFieldIds as unknown[]).filter((x): x is string => typeof x === 'string')
+      : [];
+    const filterValues: Record<string, string[]> = {};
+    if (o.filterValues && typeof o.filterValues === 'object' && !Array.isArray(o.filterValues)) {
+      for (const [k, v] of Object.entries(o.filterValues as Record<string, unknown>)) {
+        if (!k) continue;
+        if (Array.isArray(v)) filterValues[k] = v.filter((x): x is string => typeof x === 'string');
+      }
+    }
+    const normalizedFilters = normalizeSavedSearchFilterValues(filterValues);
+    const excludedFieldIds = normalizeExcludedRepertoireFieldIds(
+      Array.isArray(o.excludedFieldIds)
+        ? (o.excludedFieldIds as unknown[]).filter((x): x is string => typeof x === 'string')
+        : undefined,
+    );
+    const spotifyPlaylistId =
+      typeof o.spotifyPlaylistId === 'string' ? o.spotifyPlaylistId.trim() || undefined : undefined;
+    const tagRaw = o.playlistImportTags;
+    let playlistImportTags =
+      Array.isArray(tagRaw) && tagRaw.length > 0
+        ? tagRaw.filter((x): x is string => typeof x === 'string').map((x) => x.trim()).filter(Boolean)
+        : undefined;
+    if (!playlistImportTags?.length) {
+      playlistImportTags = derivePlaylistImportTagsFromFilters(normalizedFilters, excludedFieldIds);
+    }
+    out.push({
+      id,
+      name,
+      updatedAt,
+      searchQuery,
+      visibleFieldIds,
+      filterValues: normalizedFilters,
+      excludedFieldIds: excludedFieldIds.length > 0 ? excludedFieldIds : undefined,
+      spotifyPlaylistId,
+      playlistImportTags: playlistImportTags?.length ? playlistImportTags : undefined,
+    });
+  }
+  return out.length > 0 ? out : undefined;
+}
+
 export function defaultRepertoireExtrasRow(iso: string): RepertoireExtrasRow {
   return { id: 'default', venueCatalog: [], milestoneTemplate: [], updatedAt: iso };
 }
@@ -60,6 +119,11 @@ export function parseRepertoireWire(json: string): RepertoireWirePayload {
       typeof data.currentlyLearningSpotifyPlaylistId === 'string'
         ? data.currentlyLearningSpotifyPlaylistId.trim() || undefined
         : undefined,
+    repertoireSpotifySyncPerformedOnly:
+      typeof data.repertoireSpotifySyncPerformedOnly === 'boolean'
+        ? data.repertoireSpotifySyncPerformedOnly
+        : undefined,
+    repertoireSavedSearches: parseRepertoireSavedSearches(data.repertoireSavedSearches),
     tableUi: parseTableUiBundle(data.tableUi),
     driveUploadFolderOverrides: parseDriveUploadFolderOverrides(data.driveUploadFolderOverrides),
     driveUploadFolderOverrideLabels: parseDriveUploadFolderOverrideLabels(data.driveUploadFolderOverrideLabels),
@@ -117,6 +181,8 @@ export function buildWireFromTables(
     milestoneTemplate: extras.milestoneTemplate,
     ownerDisplayName: extras.ownerDisplayName,
     currentlyLearningSpotifyPlaylistId: extras.currentlyLearningSpotifyPlaylistId,
+    repertoireSpotifySyncPerformedOnly: extras.repertoireSpotifySyncPerformedOnly,
+    repertoireSavedSearches: extras.repertoireSavedSearches,
     tableUi: extras.tableUi,
     driveUploadFolderOverrides: extras.driveUploadFolderOverrides,
     driveUploadFolderOverrideLabels: extras.driveUploadFolderOverrideLabels,
@@ -138,6 +204,11 @@ export function repertoireExtrasFromWire(wire: RepertoireWirePayload): Repertoir
     milestoneTemplate: wire.milestoneTemplate ?? [],
     ownerDisplayName: wire.ownerDisplayName?.trim() || undefined,
     currentlyLearningSpotifyPlaylistId: wire.currentlyLearningSpotifyPlaylistId?.trim() || undefined,
+    repertoireSpotifySyncPerformedOnly:
+      typeof wire.repertoireSpotifySyncPerformedOnly === 'boolean'
+        ? wire.repertoireSpotifySyncPerformedOnly
+        : undefined,
+    repertoireSavedSearches: wire.repertoireSavedSearches,
     tableUi: wire.tableUi,
     driveUploadFolderOverrides: wire.driveUploadFolderOverrides,
     driveUploadFolderOverrideLabels: wire.driveUploadFolderOverrideLabels,

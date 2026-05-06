@@ -7,7 +7,10 @@ export type StartSpotifyOAuthFlowResult =
   | { ok: false; message: string; openOnLoopbackUrl?: string };
 
 /** Starts Spotify authorization (full-page redirect). Caller should show `message` when `ok` is false. */
-export async function startSpotifyOAuthFlow(clientId: string): Promise<StartSpotifyOAuthFlowResult> {
+export async function startSpotifyOAuthFlow(
+  clientId: string,
+  options?: { showDialog?: boolean },
+): Promise<StartSpotifyOAuthFlowResult> {
   const id = clientId.trim();
   if (!id) {
     return { ok: false, message: 'Set VITE_SPOTIFY_CLIENT_ID to use Spotify.' };
@@ -32,6 +35,7 @@ export async function startSpotifyOAuthFlow(clientId: string): Promise<StartSpot
       challenge,
       state,
       scope: ENCORE_SPOTIFY_SCOPES,
+      showDialog: options?.showDialog,
     }),
   );
   return { ok: true, kind: 'redirect' };

@@ -3,7 +3,8 @@
  */
 export type EncoreAppRoute =
   | { kind: 'library' }
-  | { kind: 'practice' }
+  | { kind: 'savedSearches' }
+  | { kind: 'practice'; songId?: string }
   | { kind: 'performances'; tab?: 'list' | 'wrapped' }
   | { kind: 'repertoireSettings' }
   /** Help center; import guide lives at `#/help` (legacy `#/settings/repertoire/import-guide` redirects here). */
@@ -14,7 +15,9 @@ export type EncoreAppRoute =
 /** In-app hash URL fragment for an Encore route (starts with `#`). Use on `<a href>` so modifier-clicks open a new tab. */
 export function encoreAppHref(route: EncoreAppRoute): string {
   let h = '#/library';
-  if (route.kind === 'practice') h = '#/practice';
+  if (route.kind === 'savedSearches') h = '#/saved-searches';
+  else if (route.kind === 'practice')
+    h = route.songId ? `#/practice/${encodeURIComponent(route.songId)}` : '#/practice';
   else if (route.kind === 'performances')
     h = route.tab === 'wrapped' ? '#/performances/wrapped' : '#/performances';
   else if (route.kind === 'repertoireSettings') h = '#/settings/repertoire';
@@ -48,7 +51,11 @@ export function parseEncoreAppHash(hash: string): EncoreAppRoute {
   /** Signed-in “share settings” lived here; guest links use `#/share/<fileId>` (see App.tsx). */
   if (segs[0] === 'share' && !segs[1]) return { kind: 'library' };
   if (segs[0] === 'library') return { kind: 'library' };
-  if (segs[0] === 'practice') return { kind: 'practice' };
+  if (segs[0] === 'saved-searches') return { kind: 'savedSearches' };
+  if (segs[0] === 'practice') {
+    const songId = segs[1] ? decodeURIComponent(segs[1]) : undefined;
+    return songId ? { kind: 'practice', songId } : { kind: 'practice' };
+  }
   if (segs[0] === 'performances') {
     const sub = segs[1];
     const tab: 'list' | 'wrapped' = sub === 'wrapped' || sub === 'stats' ? 'wrapped' : 'list';

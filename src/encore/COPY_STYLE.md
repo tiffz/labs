@@ -47,3 +47,33 @@ When the row is already the primary, the star button is replaced by a filled sta
 
 - Open link: `Open in Spotify`, `Open on YouTube`, `Open in Drive`, `Open file` (fallback). Tooltip + aria-label both use this string.
 - Remove link: `Remove`, with confirmation only required for primary slots ("Remove primary <slot>?"). See `EncoreMediaLinkRow` for the canonical confirmation prompt.
+
+### Account integrations (Google, Spotify, …)
+
+Every third-party connection in the Encore account menu (and any future site-wide settings page) is rendered through the `IntegrationCard` helper in [`components/EncoreAccountMenu.tsx`](components/EncoreAccountMenu.tsx). New connections (e.g. YouTube, Apple Music) **must** plug into the same shell — see [STYLE_GUIDE.md](../../STYLE_GUIDE.md) § _Parallel surfaces for parallel concepts_ for the rationale.
+
+Card slots, in order:
+
+1. Brand mark + section title + `EncoreStatusPill` (right-aligned).
+2. Optional `Signed in as` row (only when connected).
+3. One short description sentence.
+4. Optional caption under the description for sync metadata (e.g. `Last sync today, 9:10 AM.`).
+5. Utility icon row: `Open in Drive`, `Open Spotify profile`, `Reorganize Drive uploads` — keep these icon-only with tooltips.
+6. Action row: **primary** `Sign in again` (outlined button) and **tertiary** `Disconnect` (text button). When relevant, an `inlineSecondary` such as `Retry sync` sits between them.
+7. Optional inline `Alert` for connection errors (uses MUI `Alert`, dismissible).
+
+Canonical strings:
+
+- **Status pills (connected):** `Backed up`, `Connected`. Same pill component on both cards; never one card's pill is a button and the other's is static.
+- **Status pills (disconnected):** `Not connected`, `Unavailable` (when env / client id is missing).
+- **Primary action when connected:** `Sign in again` for **every** integration. Do not drift to `Refresh Spotify login`, `Refresh Google session`, etc. The verb describes what happens to the account, not the integration.
+- **Primary action when disconnected:** `Sign in with <Brand>` (`Sign in with Google`, `Sign in with Spotify`).
+- **Disconnect:** `Disconnect`. Always a tertiary text button with `LogoutIcon`. Never bury this inside a chip dropdown when other connections expose it inline.
+- **Description (connected):** one short sentence stating what the connection does **on this app**, not what the brand is. `Used for playlist import, sync, and Spotify search.` / `Backed up to <root folder> in your Drive.` Drop "Skip if you don't use Spotify" once already connected; that copy belongs on the disconnected state, not after sign-in.
+- **Description (disconnected):** lead with the user benefit. `Connect Spotify to import playlists and search Spotify tracks.`
+
+### Filter chips and saved searches
+
+- **Filter chip label format** is `<Field>: <summary>`. When the field is in exclude mode, prefix the summary with `not ` (e.g. `Venue: not Martuni's`, `Tags: not 3 selected`). The chip also flips to an error-tinted color and shows a `BlockIcon` so screen-reader users hear the negation and sighted users see it.
+- **Match / Exclude toggle** copy is the literal pair `Match` / `Exclude` (segmented control). Avoid `Includes` / `Excludes` and `Is` / `Is not`; the chosen pair stays parallel and reads naturally next to the chip preview.
+- **Saved-search card** sections use lightweight ALL-CAPS labels for grouping (`FILTERS`, `SPOTIFY PLAYLIST`); the brand-tinted sub-paper signals "this is one optional integration, not a required step". Use the canonical empty-state copy from § _Empty states_ (`Nothing here yet. <next step>`).

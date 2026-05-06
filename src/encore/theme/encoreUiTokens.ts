@@ -20,6 +20,37 @@ export const encoreShadowLift = '0 12px 40px rgba(76, 29, 149, 0.08)' as const;
 export const encoreHairline = 'rgba(76, 29, 149, 0.04)' as const;
 
 /**
+ * Tone for **Exclude / NOT-IN** filter UI (chip, toggle, and checked-state checkbox).
+ *
+ * Exclude is a deliberate user choice, *not* an error condition. We borrow the warm hue of the
+ * MUI `error` family so users still read "negative", but we de-saturate it so the surface
+ * doesn't shout `something went wrong`. All exclude surfaces (chip body, toggle pill, X-square
+ * checkbox) source from this helper so they stay in the same visual key — bumping the alpha or
+ * swapping the hue happens in one place.
+ */
+export function encoreExcludeTone(theme: Theme): {
+  /** Foreground (text + icon) — full-saturation dark red so the soft bg stays readable. */
+  fg: string;
+  /** Resting fill (chip / toggle pill background). */
+  bg: string;
+  /** Hover fill — bumped just enough to feel interactive without crossing into `error.main`. */
+  bgHover: string;
+  /** Border / outline for outlined chips and quiet dividers within the exclude family. */
+  border: string;
+  /** Emphatic fill for the X-in-square checkbox icon. Sits on the soft bg, never on a card. */
+  iconFill: string;
+} {
+  const base = theme.palette.error;
+  return {
+    fg: base.dark,
+    bg: alpha(base.main, 0.08),
+    bgHover: alpha(base.main, 0.14),
+    border: alpha(base.dark, 0.28),
+    iconFill: base.dark,
+  };
+}
+
+/**
  * Inline media row (song info source strip, reference/backing links, charts): white paper, lavender
  * hairline, and {@link encoreShadowSurface} so chips match Encore surfaces instead of grey
  * `action.hover` pills.
@@ -34,9 +65,11 @@ export function encoreMediaLinkRowSx(
     display: 'inline-flex',
     alignItems: 'center',
     gap: 0.5,
-    pl: embedded ? 0.25 : 0.875,
-    pr: embedded ? 0.25 : 0.375,
-    py: 0.375,
+    pl: embedded ? 0.5 : 0.875,
+    pr: embedded ? 0.5 : 0.375,
+    py: embedded ? 0.5 : 0.375,
+    boxSizing: 'border-box',
+    minHeight: embedded ? 36 : 34,
     borderRadius: embedded ? 0 : encoreRadius,
     border: embedded ? 0 : 1,
     borderStyle: 'solid',
@@ -44,6 +77,38 @@ export function encoreMediaLinkRowSx(
     maxWidth: '100%',
     bgcolor: embedded ? 'transparent' : isPrimary ? alpha(theme.palette.primary.main, 0.08) : theme.palette.background.paper,
     boxShadow: embedded ? 'none' : encoreShadowSurface,
+  };
+}
+
+/**
+ * “+ Add …” controls in the song media hub: matches non-primary {@link encoreMediaLinkRowSx} fill,
+ * border, shadow, and radius so they read as the same family as resource chips.
+ */
+export function encoreMediaHubAddButtonSx(theme: Theme): SystemStyleObject<Theme> {
+  return {
+    flexShrink: 0,
+    textTransform: 'none',
+    fontWeight: 600,
+    fontSize: '0.8125rem',
+    lineHeight: 1.35,
+    minHeight: 34,
+    px: 1.125,
+    py: 0.5,
+    borderRadius: encoreRadius,
+    color: 'text.primary',
+    bgcolor: theme.palette.background.paper,
+    border: 1,
+    borderStyle: 'solid',
+    borderColor: encoreHairline,
+    boxShadow: encoreShadowSurface,
+    '&:hover': {
+      bgcolor: alpha(theme.palette.primary.main, 0.06),
+      borderColor: alpha(theme.palette.primary.main, 0.22),
+    },
+    '&.Mui-disabled': {
+      borderColor: alpha(theme.palette.text.primary, 0.08),
+      bgcolor: alpha(theme.palette.action.hover, 0.04),
+    },
   };
 }
 
@@ -59,12 +124,22 @@ export function songPageResourceRowShellSx(
     ...encoreMediaLinkRowSx(theme, isPrimary),
     display: 'flex',
     flexWrap: 'wrap',
-    alignItems: 'center',
+    alignItems: 'stretch',
     gap: theme.spacing(0.75),
     width: '100%',
     minWidth: 0,
     maxWidth: '100%',
     boxSizing: 'border-box',
+    /**
+     * Aligned with `encoreMediaLinkRowSx` (34) and `encoreMediaHubAddButtonSx` (34) so the row
+     * shell, chip, and "+ Add …" affordance all share the same band height. Was 40 — caused tall
+     * resource cards on songs with many references.
+     */
+    minHeight: 34,
+    /** Inset from outer stroke; extra right room for remove / star hit targets. */
+    pl: 1.25,
+    pr: 2,
+    py: 0.5,
   };
 }
 

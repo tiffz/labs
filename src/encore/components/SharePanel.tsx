@@ -2,6 +2,7 @@ import AddToDriveIcon from '@mui/icons-material/AddToDrive';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Checkbox from '@mui/material/Checkbox';
 import FormControlLabel from '@mui/material/FormControlLabel';
@@ -11,21 +12,13 @@ import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import type { ReactElement } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useEncore } from '../context/EncoreContext';
-
-const SHARE_ONLY_PERFORMED_LS = 'encore.share.onlyPerformedSongs';
-
-function readOnlyPerformedFromStorage(): boolean {
-  try {
-    return typeof localStorage !== 'undefined' && localStorage.getItem(SHARE_ONLY_PERFORMED_LS) === '1';
-  } catch {
-    return false;
-  }
-}
 import { getSyncMeta } from '../db/encoreDb';
 import { driveGetFileMetadata } from '../drive/driveFetch';
 import { driveFileWebUrl } from '../drive/driveWebUrls';
+
+const SHARE_ONLY_PERFORMED_LS = 'encore.share.onlyPerformedSongs';
 
 function publicShareUrl(fileId: string): string {
   return `${window.location.origin}/encore/#/share/${fileId}`;
@@ -44,7 +37,7 @@ function formatSnapshotInstant(iso: string | undefined): string {
  * Compact share controls for the header Share menu (read-only guest link).
  */
 export function SharePanel(): ReactElement {
-  const { publishPublicSnapshot, googleAccessToken } = useEncore();
+  const { publishPublicSnapshot, googleAccessToken, repertoireExtras, saveRepertoireExtras } = useEncore();
   const [link, setLink] = useState<string | null>(null);
   const [snapshotDriveFileId, setSnapshotDriveFileId] = useState<string | null>(null);
   const [driveModifiedTime, setDriveModifiedTime] = useState<string | null>(null);
@@ -54,16 +47,23 @@ export function SharePanel(): ReactElement {
   const [statusLine, setStatusLine] = useState<string | null>(null);
   const [statusTone, setStatusTone] = useState<'success' | 'warning' | 'error' | null>(null);
   const [busy, setBusy] = useState(false);
-  const [onlyPerformedSongs, setOnlyPerformedSongs] = useState(readOnlyPerformedFromStorage);
 
-  const persistOnlyPerformed = useCallback((value: boolean) => {
-    setOnlyPerformedSongs(value);
+  const legacyOnlyPerformedMigrated = useRef(false);
+  useEffect(() => {
+    if (legacyOnlyPerformedMigrated.current) return;
     try {
-      localStorage.setItem(SHARE_ONLY_PERFORMED_LS, value ? '1' : '0');
+      if (localStorage.getItem(SHARE_ONLY_PERFORMED_LS) !== '1') {
+        legacyOnlyPerformedMigrated.current = true;
+        return;
+      }
+      legacyOnlyPerformedMigrated.current = true;
+      localStorage.removeItem(SHARE_ONLY_PERFORMED_LS);
+      if (repertoireExtras.repertoireSpotifySyncPerformedOnly === true) return;
+      void saveRepertoireExtras({ repertoireSpotifySyncPerformedOnly: true });
     } catch {
-      /* ignore quota / private mode */
+      legacyOnlyPerformedMigrated.current = true;
     }
-  }, []);
+  }, [repertoireExtras.repertoireSpotifySyncPerformedOnly, saveRepertoireExtras]);
 
   const refreshDriveModifiedTime = useCallback(async (fileId: string, token: string | null) => {
     if (!token || !fileId) {
@@ -117,6 +117,7 @@ export function SharePanel(): ReactElement {
     clearStatus();
     setBusy(true);
     try {
+      const onlyPerformedSongs = repertoireExtras.repertoireSpotifySyncPerformedOnly === true;
       const result = await publishPublicSnapshot({ onlyPerformedSongs });
       setSnapshotDriveFileId(result.fileId);
       setEmbeddedSnapshotTime(result.generatedAt);
@@ -237,8 +238,8 @@ export function SharePanel(): ReactElement {
         <FormControlLabel
           control={
             <Checkbox
-              checked={onlyPerformedSongs}
-              onChange={(_, checked) => persistOnlyPerformed(checked)}
+              checked={repertoireExtras.repertoireSpotifySyncPerformedOnly === true}
+              onChange={(_, checked) => void saveRepertoireExtras({ repertoireSpotifySyncPerformedOnly: checked })}
               size="small"
             />
           }
@@ -246,6 +247,10 @@ export function SharePanel(): ReactElement {
           label={
             <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.45 }}>
               Only include songs I’ve performed at least once
+              <Box component="span" sx={{ display: 'block', mt: 0.35, fontSize: '0.8125rem', opacity: 0.92 }}>
+                Applies to the <strong>guest link</strong> only. Spotify playlists are configured under{' '}
+                <strong>Saved searches</strong> on the Repertoire page.
+              </Box>
             </Typography>
           }
         />

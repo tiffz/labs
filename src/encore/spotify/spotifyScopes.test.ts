@@ -2,16 +2,22 @@ import { describe, expect, it } from 'vitest';
 import { spotifyGrantedScopesSufficientForPlaylistImport, spotifyGrantedScopesSufficientForPlaylistModify } from './spotifyScopes';
 
 describe('spotifyGrantedScopesSufficientForPlaylistModify', () => {
-  it('treats missing granted string as unknown (allow API attempt)', () => {
-    expect(spotifyGrantedScopesSufficientForPlaylistModify(undefined)).toBe(true);
+  it('treats missing or empty granted string as insufficient (force re-auth for playlist writes)', () => {
+    expect(spotifyGrantedScopesSufficientForPlaylistModify(undefined)).toBe(false);
+    expect(spotifyGrantedScopesSufficientForPlaylistModify('')).toBe(false);
+    expect(spotifyGrantedScopesSufficientForPlaylistModify('   ')).toBe(false);
   });
 
-  it('requires both playlist-modify scopes when a scope string is present', () => {
-    expect(spotifyGrantedScopesSufficientForPlaylistModify('playlist-modify-public')).toBe(false);
-    expect(spotifyGrantedScopesSufficientForPlaylistModify('playlist-modify-private')).toBe(false);
+  it('accepts either playlist-modify scope when present', () => {
+    expect(spotifyGrantedScopesSufficientForPlaylistModify('playlist-modify-public')).toBe(true);
+    expect(spotifyGrantedScopesSufficientForPlaylistModify('playlist-modify-private')).toBe(true);
     expect(
       spotifyGrantedScopesSufficientForPlaylistModify('playlist-modify-public playlist-modify-private'),
     ).toBe(true);
+  });
+
+  it('rejects when scope string exists but lacks modify scopes', () => {
+    expect(spotifyGrantedScopesSufficientForPlaylistModify('playlist-read-private user-read-email')).toBe(false);
   });
 });
 

@@ -1,5 +1,6 @@
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
+import TextField from '@mui/material/TextField';
 import Tooltip, { tooltipClasses, type TooltipProps } from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { styled } from '@mui/material/styles';
@@ -7,6 +8,7 @@ import { useEffect, useState, type ReactElement, type ReactNode } from 'react';
 import { ensureSpotifyAccessToken } from '../spotify/pkce';
 import { fetchSpotifyTrack } from '../spotify/spotifyApi';
 import type { EncoreMediaSource } from '../types';
+import { fetchYoutubeOembedMeta, getYoutubeOembedCached } from '../youtube/youtubeOembedMeta';
 
 /**
  * Streaming sources this hover card can resolve metadata for. A subset of
@@ -20,26 +22,15 @@ type ResolvedMeta = {
 };
 
 const spotifyMetaCache = new Map<string, ResolvedMeta>();
-const youtubeMetaCache = new Map<string, ResolvedMeta>();
 
-async function fetchYoutubeOembedMeta(watchUrl: string): Promise<ResolvedMeta | null> {
-  const cached = youtubeMetaCache.get(watchUrl);
-  if (cached) return cached;
+function fallbackYoutubeHeadingFromWatchUrl(watchUrl: string): string {
   try {
-    const u = `https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(watchUrl)}`;
-    const res = await fetch(u, { signal: AbortSignal.timeout(12_000) });
-    if (!res.ok) return null;
-    const j = (await res.json()) as { title?: string; author_name?: string };
-    const title = typeof j.title === 'string' ? j.title.trim() : '';
-    if (!title) return null;
-    const subtitle =
-      typeof j.author_name === 'string' && j.author_name.trim() ? j.author_name.trim() : 'YouTube';
-    const meta = { title, subtitle };
-    youtubeMetaCache.set(watchUrl, meta);
-    return meta;
+    const v = new URL(watchUrl).searchParams.get('v')?.trim();
+    if (v) return `Video · ${v}`;
   } catch {
-    return null;
+    /* ignore */
   }
+  return 'YouTube';
 }
 
 async function fetchSpotifyTrackMeta(
@@ -83,8 +74,8 @@ const HoverCardTooltip = styled(({ className, ...props }: TooltipProps) => (
     boxShadow: theme.shadows[3],
     border: `1px solid ${theme.palette.divider}`,
     borderRadius: Number(theme.shape.borderRadius) * 1.5,
-    padding: theme.spacing(0.875, 1.25),
-    maxWidth: 320,
+    padding: theme.spacing(1, 1.25),
+    maxWidth: 360,
     fontSize: theme.typography.body2.fontSize,
   },
 }));
@@ -99,6 +90,11 @@ export type EncoreStreamingHoverCardProps = {
   clientId: string;
   spotifyLinked: boolean;
   children: ReactNode;
+  /** Optional inline nickname (stored on {@link EncoreMediaLink.label}). */
+  editNickname?: string;
+  onEditNicknameChange?: (value: string) => void;
+  resourceNotes?: string;
+  onResourceNotesChange?: (value: string) => void;
 };
 
 /**
@@ -121,6 +117,10 @@ export function EncoreStreamingHoverCard(props: EncoreStreamingHoverCardProps): 
     clientId,
     spotifyLinked,
     children,
+    editNickname,
+    onEditNicknameChange,
+    resourceNotes,
+    onResourceNotesChange,
   } = props;
 
   // Seed meta from the module cache synchronously so the very first open paints with the cached
@@ -134,7 +134,7 @@ export function EncoreStreamingHoverCard(props: EncoreStreamingHoverCardProps): 
   const cachedAtMount: ResolvedMeta | null = cacheKey
     ? (kind === 'spotify'
         ? spotifyMetaCache.get(cacheKey)
-        : youtubeMetaCache.get(cacheKey)) ?? null
+        : getYoutubeOembedCached(cacheKey)) ?? null
     : null;
   const [meta, setMeta] = useState<ResolvedMeta | null>(cachedAtMount);
   const [loading, setLoading] = useState(false);
@@ -147,7 +147,7 @@ export function EncoreStreamingHoverCard(props: EncoreStreamingHoverCardProps): 
     let cancelled = false;
 
     if (kind === 'youtube' && ytUrl) {
-      const cached = youtubeMetaCache.get(ytUrl);
+      const cached = getYoutubeOembedCached(ytUrl);
       if (cached) {
         setMeta(cached);
         return;
@@ -185,27 +185,67 @@ export function EncoreStreamingHoverCard(props: EncoreStreamingHoverCardProps): 
     return undefined;
   }, [open, kind, spotifyTrackId, youtubeWatchUrl, clientId, spotifyLinked]);
 
-  const title = meta?.title?.trim() || fallbackTitle.trim() || (kind === 'spotify' ? 'Spotify track' : 'YouTube video');
+  const title =
+    meta?.title?.trim() ||
+    fallbackTitle.trim() ||
+    (kind === 'spotify'
+      ? 'Spotify track'
+      : kind === 'youtube' && youtubeWatchUrl?.trim()
+        ? fallbackYoutubeHeadingFromWatchUrl(youtubeWatchUrl.trim())
+        : 'YouTube');
   const subtitle = meta?.subtitle?.trim() || fallbackSubtitle.trim();
 
   const tooltipContent = (
-    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-      {loading && !meta ? <CircularProgress size={16} sx={{ mt: 0.25, flexShrink: 0 }} /> : null}
-      <Box sx={{ minWidth: 0, flex: 1 }}>
-        <Typography variant="body2" sx={{ fontWeight: 700, lineHeight: 1.35, wordBreak: 'break-word' }}>
-          {title}
-        </Typography>
-        {subtitle ? (
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.35, lineHeight: 1.4 }}>
-            {subtitle}
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0, minWidth: 0 }}>
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+        {loading && !meta ? <CircularProgress size={16} sx={{ mt: 0.25, flexShrink: 0 }} /> : null}
+        <Box sx={{ minWidth: 0, flex: 1 }}>
+          <Typography variant="body2" sx={{ fontWeight: 700, lineHeight: 1.35, wordBreak: 'break-word' }}>
+            {title}
           </Typography>
-        ) : null}
-        {!subtitle && !loading && kind === 'spotify' && !spotifyLinked ? (
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.35, lineHeight: 1.4 }}>
-            Connect Spotify to load track details.
-          </Typography>
-        ) : null}
+          {subtitle ? (
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.35, lineHeight: 1.4 }}>
+              {subtitle}
+            </Typography>
+          ) : null}
+          {!subtitle && !loading && kind === 'spotify' && !spotifyLinked ? (
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.35, lineHeight: 1.4 }}>
+              Connect Spotify to load track details.
+            </Typography>
+          ) : null}
+        </Box>
       </Box>
+      {onEditNicknameChange || onResourceNotesChange ? (
+        <Box
+          sx={{ mt: 1.25, pt: 1, borderTop: 1, borderColor: 'divider' }}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          {onEditNicknameChange ? (
+            <TextField
+              label="Nickname"
+              size="small"
+              fullWidth
+              value={editNickname ?? ''}
+              onChange={(e) => onEditNicknameChange(e.target.value)}
+              placeholder="Optional label in your list"
+              sx={{ mb: onResourceNotesChange ? 1 : 0 }}
+            />
+          ) : null}
+          {onResourceNotesChange ? (
+            <TextField
+              label="Notes"
+              size="small"
+              fullWidth
+              multiline
+              minRows={2}
+              maxRows={6}
+              value={resourceNotes ?? ''}
+              onChange={(e) => onResourceNotesChange(e.target.value)}
+              placeholder="e.g. which take to use"
+            />
+          ) : null}
+        </Box>
+      ) : null}
     </Box>
   );
 
@@ -241,6 +281,115 @@ export function EncoreStreamingHoverCard(props: EncoreStreamingHoverCardProps): 
     >
       {/* Tooltip needs a single ref-forwarding child. Wrapping span keeps the trigger
           inline-aligned with the surrounding caption row. */}
+      <Box
+        component="span"
+        sx={{
+          display: 'inline-flex',
+          maxWidth: '100%',
+          verticalAlign: 'middle',
+          borderRadius: 1,
+        }}
+      >
+        {children}
+      </Box>
+    </HoverCardTooltip>
+  );
+}
+
+export type EncoreStaticResourceHoverCardProps = {
+  /** Primary heading (e.g. chart attachment title). */
+  title: string;
+  subtitle?: string;
+  children: ReactNode;
+  editNickname?: string;
+  onEditNicknameChange?: (value: string) => void;
+  resourceNotes?: string;
+  onResourceNotesChange?: (value: string) => void;
+};
+
+/**
+ * Same hover-card chrome as {@link EncoreStreamingHoverCard} for Drive attachments (no remote metadata fetch).
+ */
+export function EncoreStaticResourceHoverCard(props: EncoreStaticResourceHoverCardProps): ReactElement {
+  const {
+    title,
+    subtitle,
+    children,
+    editNickname,
+    onEditNicknameChange,
+    resourceNotes,
+    onResourceNotesChange,
+  } = props;
+  const [open, setOpen] = useState(false);
+  const heading = title.trim() || 'Attachment';
+
+  const tooltipContent = (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0, minWidth: 0 }}>
+      <Box sx={{ minWidth: 0, flex: 1 }}>
+        <Typography variant="body2" sx={{ fontWeight: 700, lineHeight: 1.35, wordBreak: 'break-word' }}>
+          {heading}
+        </Typography>
+        {subtitle?.trim() ? (
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.35, lineHeight: 1.4 }}>
+            {subtitle.trim()}
+          </Typography>
+        ) : null}
+      </Box>
+      {onEditNicknameChange || onResourceNotesChange ? (
+        <Box
+          sx={{ mt: 1.25, pt: 1, borderTop: 1, borderColor: 'divider' }}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          {onEditNicknameChange ? (
+            <TextField
+              label="Nickname"
+              size="small"
+              fullWidth
+              value={editNickname ?? ''}
+              onChange={(e) => onEditNicknameChange(e.target.value)}
+              placeholder="Optional label in your list"
+              sx={{ mb: onResourceNotesChange ? 1 : 0 }}
+            />
+          ) : null}
+          {onResourceNotesChange ? (
+            <TextField
+              label="Notes"
+              size="small"
+              fullWidth
+              multiline
+              minRows={2}
+              maxRows={6}
+              value={resourceNotes ?? ''}
+              onChange={(e) => onResourceNotesChange(e.target.value)}
+              placeholder="e.g. transposed copy"
+            />
+          ) : null}
+        </Box>
+      ) : null}
+    </Box>
+  );
+
+  return (
+    <HoverCardTooltip
+      title={tooltipContent}
+      placement="bottom-start"
+      arrow={false}
+      enterDelay={280}
+      enterNextDelay={120}
+      leaveDelay={140}
+      open={open}
+      onOpen={() => setOpen(true)}
+      onClose={() => setOpen(false)}
+      disableInteractive={false}
+      slotProps={{
+        popper: {
+          modifiers: [{ name: 'offset', options: { offset: [0, 4] } }],
+          sx: {
+            zIndex: (z) => z.zIndex.modal + 25,
+          },
+        },
+      }}
+    >
       <Box
         component="span"
         sx={{

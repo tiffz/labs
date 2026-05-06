@@ -26,6 +26,7 @@ import { LibraryScreen as LibraryScreenBase } from './LibraryScreen';
 import { PerformancesScreen as PerformancesScreenBase } from './PerformancesScreen';
 import { PracticeScreen as PracticeScreenBase } from './PracticeScreen';
 import { RepertoireSettingsScreen as RepertoireSettingsScreenBase } from './RepertoireSettingsScreen';
+import { SavedSearchesManageScreen as SavedSearchesManageScreenBase } from './SavedSearchesManageScreen';
 import { SongPage as SongPageBase } from './SongPage';
 
 /** Eager imports: Encore’s main surfaces are one cohesive shell; avoiding `React.lazy` removes Suspense + chunk latency on tab and song navigation for a modest bundle cost. */
@@ -35,6 +36,7 @@ const PracticeScreen = memo(PracticeScreenBase);
 const RepertoireSettingsScreen = memo(RepertoireSettingsScreenBase);
 const ImportGuideScreen = memo(ImportGuideScreenBase);
 const SongPage = memo(SongPageBase);
+const SavedSearchesManageScreen = memo(SavedSearchesManageScreenBase);
 
 function bareSignedInShareHash(): boolean {
   const raw = window.location.hash.replace(/^#/, '').trim();
@@ -57,6 +59,8 @@ type EncoreMainListSection = 'library' | 'performances' | 'practice' | 'repertoi
 
 function listSectionFromRoute(r: EncoreAppRoute): EncoreMainListSection | null {
   switch (r.kind) {
+    case 'savedSearches':
+      return 'library';
     case 'library':
     case 'performances':
     case 'practice':
@@ -458,10 +462,14 @@ export function EncoreMainShell(): React.ReactElement {
               }}
               aria-hidden={onSongRoute || listSection !== 'library'}
             >
-              <LibraryScreen
-                heavyListTabActive={!onSongRoute && listSection === 'library'}
-                onHeavyTabLaidOut={onLibraryHeavyTabLaidOut}
-              />
+              {route.kind === 'savedSearches' ? (
+                <SavedSearchesManageScreen onHeavyTabLaidOut={onLibraryHeavyTabLaidOut} />
+              ) : (
+                <LibraryScreen
+                  heavyListTabActive={!onSongRoute && listSection === 'library'}
+                  onHeavyTabLaidOut={onLibraryHeavyTabLaidOut}
+                />
+              )}
             </Box>
           ) : null}
           {listSectionVisited.performances ? (
@@ -506,7 +514,10 @@ export function EncoreMainShell(): React.ReactElement {
               }}
               aria-hidden={onSongRoute || listSection !== 'practice'}
             >
-              <PracticeScreen />
+              <PracticeScreen
+                practiceHashActive={route.kind === 'practice'}
+                songIdFromPracticeHash={route.kind === 'practice' ? route.songId : undefined}
+              />
             </Box>
           ) : null}
           {listSectionVisited.repertoireSettings ? (

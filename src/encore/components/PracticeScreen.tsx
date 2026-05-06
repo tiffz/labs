@@ -1,99 +1,84 @@
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import SyncIcon from '@mui/icons-material/Sync';
-import Accordion from '@mui/material/Accordion';
-import AccordionDetails from '@mui/material/AccordionDetails';
-import AccordionSummary from '@mui/material/AccordionSummary';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemText from '@mui/material/ListItemText';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
 import Paper from '@mui/material/Paper';
-import Chip from '@mui/material/Chip';
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import DialogTitle from '@mui/material/DialogTitle';
-import Divider from '@mui/material/Divider';
+import ListItemButton from '@mui/material/ListItemButton';
+import ListItemText from '@mui/material/ListItemText';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import Tooltip from '@mui/material/Tooltip';
 import { alpha, useTheme } from '@mui/material/styles';
-import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent as ReactDragEvent } from 'react';
 import { useEncoreBlockingJobs } from '../context/EncoreBlockingJobContext';
 import { useEncore } from '../context/EncoreContext';
-import { driveFileWebUrl } from '../drive/driveWebUrls';
-import { driveUploadFileResumable } from '../drive/driveFetch';
-import { ensureEncoreDriveLayout } from '../drive/bootstrapFolders';
-import { resolveDriveUploadFolderId, type DriveUploadFolderLayout } from '../drive/resolveDriveUploadFolder';
-import {
-  bestImportMatch,
-  IMPORT_MATCH_AUTO_MIN,
-  IMPORT_MATCH_SUGGEST_MIN,
-  mergeSongWithImport,
-} from '../import/findExistingSongForImport';
-import { encoreAppHref } from '../routes/encoreAppHash';
+import { mergeSongWithImport } from '../import/findExistingSongForImport';
+import { readSpotifyToken } from '../spotify/pkce';
+import { encoreAppHref, navigateEncore } from '../routes/encoreAppHash';
 import { applyTemplateProgressToSong } from '../repertoire/repertoireMilestones';
 import { milestoneProgressSummary } from '../repertoire/repertoireMilestoneSummary';
 import {
-  effectivePrimaryBackingLink,
-  effectivePrimaryReferenceLink,
-  mediaLinkOpenUrl,
-  spotifyDataSourceTrackId,
-} from '../repertoire/songMediaLinks';
-import {
-  fetchSpotifyPlaylistTracks,
-  replaceSpotifyPlaylistTracks,
-  type SpotifyPlaylistTrackRow,
-} from '../spotify/spotifyApi';
+  encoreSongStubFromSpotifyPlaylistRow,
+  runEncoreSpotifyPlaylistSync,
+  spotifyTrackIdsForPracticingSongs,
+  type EncorePlaylistImportSuggestRow,
+} from '../spotify/encoreSpotifyPlaylistSync';
 import { parseSpotifyPlaylistId } from '../spotify/parseSpotifyPlaylistUrl';
 import { spotifyGrantedScopesSufficientForPlaylistModify } from '../spotify/spotifyScopes';
-import { mediaLinkYoutubePracticeOpenUrl } from '../youtube/loopTubeOpenUrl';
-import { readSpotifyToken } from '../spotify/pkce';
+import type { SpotifyPlaylistTrackRow } from '../spotify/spotifyApi';
 import type { EncoreSong } from '../types';
 import {
-  encoreDialogActionsSx,
-  encoreDialogContentSx,
-  encoreDialogTitleSx,
   encoreMaxWidthPage,
   encoreRadius,
   encoreShadowSurface,
 } from '../theme/encoreUiTokens';
 import { encorePagePaddingTop, encoreScreenPaddingX } from '../theme/encoreM3Layout';
 import { EncorePageHeader } from '../ui/EncorePageHeader';
+import { EncoreSynchronizableSpotifyPlaylistPanel } from '../ui/EncoreSynchronizableSpotifyPlaylistPanel';
 import { encoreNoAlbumArtIconSx, encoreNoAlbumArtSurfaceSx } from '../utils/encoreNoAlbumArtSurface';
-import { addSongAttachment, effectiveSongAttachments, primaryChartAttachment } from '../utils/songAttachments';
-import { SpotifyBrandIcon, YouTubeBrandIcon } from './EncoreBrandIcon';
 import { SongMilestoneChecklist } from './SongMilestoneChecklist';
+import { EncoreSpotifyPlaylistImportReviewDialog } from './EncoreSpotifyPlaylistImportReviewDialog';
 import { encorePossessivePageTitle } from '../utils/encorePossessivePageTitle';
+import { songAutosaveDirty } from './song/songPageHelpers';
+import { useSongPageMediaHub } from './song/useSongPageMediaHub';
+import { SongPageMediaHubCards } from './song/SongPageMediaHubCards';
+import type { SongMediaUploadSlot } from './song/songMediaUploadSlot';
+import {
+  dragPayloadRelevantToMediaHub,
+  eligibleSlotsForDragDataTransfer,
+  hasPotentialUrlPayload,
+} from './song/encoreDragPayload';
+import { applyMediaUrlToSongSlot, extractFirstUrlFromDataTransfer } from './song/songMediaUrlDrop';
+import { PracticeExercisesSection } from './practice/PracticeExercisesSection';
 
-function songStubFromPlaylistRow(row: SpotifyPlaylistTrackRow): EncoreSong {
-  const now = new Date().toISOString();
-  return {
-    id: crypto.randomUUID(),
-    title: row.title,
-    artist: row.artist,
-    spotifyTrackId: row.trackId,
-    albumArtUrl: row.albumArtUrl,
-    journalMarkdown: '',
-    practicing: true,
-    createdAt: now,
-    updatedAt: now,
-  };
-}
+const LEARNING_PLAYLIST_HELP_CONTENT = (
+  <Box sx={{ maxWidth: 300, py: 0.25 }}>
+    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.75 }}>
+      Learning playlist
+    </Typography>
+    <Typography variant="body2" sx={{ lineHeight: 1.5, mb: 1 }}>
+      One Spotify playlist you tie to Encore for the Practice screen. Saving stores its id with your repertoire so it
+      survives reloads.
+    </Typography>
+    <Typography variant="body2" sx={{ lineHeight: 1.5 }}>
+      Sync imports tracks from that playlist into your library and, when everything matches cleanly, can rewrite the
+      playlist from your practicing songs. It’s optional—only if you want Spotify and Encore lists to stay aligned.
+    </Typography>
+  </Box>
+);
 
-export type PracticeImportSuggestRow = {
-  row: SpotifyPlaylistTrackRow;
-  match: EncoreSong;
-  score: number;
+export type PracticeScreenProps = {
+  /** When true, {@link songIdFromPracticeHash} is synchronized from the URL into the focused song. */
+  practiceHashActive?: boolean;
+  /** Song id from `#/practice/<id>` when the Practice tab route is active. */
+  songIdFromPracticeHash?: string;
 };
 
-export function PracticeScreen(): React.ReactElement {
+export function PracticeScreen({
+  practiceHashActive = false,
+  songIdFromPracticeHash,
+}: PracticeScreenProps = {}): React.ReactElement {
   const theme = useTheme();
   const {
     songs,
@@ -123,12 +108,25 @@ export function PracticeScreen(): React.ReactElement {
     setPlaylistField((v) => (v.trim() === '' ? cur : v));
   }, [repertoireExtras.currentlyLearningSpotifyPlaylistId]);
 
+  const [syncBusy, setSyncBusy] = useState(false);
   const [pullBusy, setPullBusy] = useState(false);
-  const [pushBusy, setPushBusy] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [importCandidates, setImportCandidates] = useState<SpotifyPlaylistTrackRow[] | null>(null);
-  const [importSuggestions, setImportSuggestions] = useState<PracticeImportSuggestRow[] | null>(null);
+  const [importSuggestions, setImportSuggestions] = useState<EncorePlaylistImportSuggestRow[] | null>(null);
   const [focusedSongId, setFocusedSongId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!practiceHashActive) return;
+    if (songIdFromPracticeHash && practicingSongs.some((s) => s.id === songIdFromPracticeHash)) {
+      setFocusedSongId(songIdFromPracticeHash);
+      return;
+    }
+    if (!songIdFromPracticeHash) {
+      setFocusedSongId(null);
+      return;
+    }
+    if (practicingSongs.length > 0) navigateEncore({ kind: 'practice' });
+  }, [practiceHashActive, songIdFromPracticeHash, practicingSongs]);
 
   const effectiveFocusId = useMemo(() => {
     if (practicingSongs.length === 0) return null;
@@ -141,34 +139,16 @@ export function PracticeScreen(): React.ReactElement {
     [effectiveFocusId, practicingSongs],
   );
 
-  const [playlistSyncOpen, setPlaylistSyncOpen] = useState(false);
   const [journalLocalBySongId, setJournalLocalBySongId] = useState<Record<string, string>>({});
-  const [driveUploadLayout, setDriveUploadLayout] = useState<DriveUploadFolderLayout | null>(null);
-  const practiceRecInputRef = useRef<HTMLInputElement>(null);
-  const practiceRecTargetSongIdRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (!googleAccessToken) {
-      setDriveUploadLayout(null);
-      return;
-    }
-    void (async () => {
-      try {
-        const layout = await ensureEncoreDriveLayout(googleAccessToken);
-        setDriveUploadLayout(layout);
-      } catch {
-        setDriveUploadLayout(null);
-      }
-    })();
-  }, [googleAccessToken]);
-
-  const takesUploadFolderId = useMemo(
-    () =>
-      driveUploadLayout
-        ? resolveDriveUploadFolderId('takes', driveUploadLayout, repertoireExtras.driveUploadFolderOverrides) ?? null
-        : null,
-    [driveUploadLayout, repertoireExtras.driveUploadFolderOverrides],
+  const [practiceMediaDraft, setPracticeMediaDraft] = useState<EncoreSong | null>(null);
+  const lastPracticeFocusIdRef = useRef<string | null | undefined>(undefined);
+  const lastPracticeMediaSavedRef = useRef<EncoreSong | null>(null);
+  const [practiceFileDragActive, setPracticeFileDragActive] = useState(false);
+  const [practiceHoveredMediaSlot, setPracticeHoveredMediaSlot] = useState<SongMediaUploadSlot | null>(null);
+  const [practiceMediaDragEligibleSlots, setPracticeMediaDragEligibleSlots] = useState<Set<SongMediaUploadSlot> | null>(
+    null,
   );
+  const practiceFileDragDepthRef = useRef(0);
 
   const savedPlaylistId = repertoireExtras.currentlyLearningSpotifyPlaylistId?.trim() ?? '';
   const resolvedPlaylistId =
@@ -186,6 +166,20 @@ export function PracticeScreen(): React.ReactElement {
     });
   }, [practicingSongs]);
 
+  useEffect(() => {
+    const id = effectiveFocusId;
+    if (id === lastPracticeFocusIdRef.current) return;
+    lastPracticeFocusIdRef.current = id;
+    if (!id) {
+      setPracticeMediaDraft(null);
+      lastPracticeMediaSavedRef.current = null;
+      return;
+    }
+    const s = practicingSongs.find((x) => x.id === id) ?? null;
+    setPracticeMediaDraft(s);
+    lastPracticeMediaSavedRef.current = s;
+  }, [effectiveFocusId, practicingSongs]);
+
   const persistPlaylistId = useCallback(async () => {
     const raw = playlistField.trim();
     const id = raw ? parseSpotifyPlaylistId(raw) ?? raw.replace(/^\/+|\/+$/g, '') : '';
@@ -194,47 +188,253 @@ export function PracticeScreen(): React.ReactElement {
     });
   }, [playlistField, saveRepertoireExtras]);
 
-  const onPullFromPlaylist = useCallback(async () => {
+  const mergeJournalForPracticeSave = useCallback(
+    (song: EncoreSong): EncoreSong => {
+      const local = journalLocalBySongId[song.id];
+      if (local === undefined) return song;
+      return { ...song, journalMarkdown: local };
+    },
+    [journalLocalBySongId],
+  );
+
+  const persistPracticeSongBundle = useCallback(
+    (next: EncoreSong) => {
+      void saveSong({
+        ...mergeJournalForPracticeSave(next),
+        updatedAt: new Date().toISOString(),
+      });
+      setPracticeMediaDraft((d) => (d?.id === next.id ? next : d));
+    },
+    [saveSong, mergeJournalForPracticeSave],
+  );
+
+  const persistPracticeMediaNow = useCallback(
+    async (song: EncoreSong) => {
+      await saveSong({
+        ...mergeJournalForPracticeSave(song),
+        updatedAt: new Date().toISOString(),
+      });
+    },
+    [saveSong, mergeJournalForPracticeSave],
+  );
+
+  const mediaHub = useSongPageMediaHub({
+    draft: practiceMediaDraft,
+    setDraft: setPracticeMediaDraft,
+    isNew: false,
+    routeKind: 'song',
+    routeSongId: practiceMediaDraft?.id ?? null,
+    songs,
+    googleAccessToken,
+    spotifyLinked,
+    driveUploadFolderOverrides: repertoireExtras.driveUploadFolderOverrides,
+    persistAfterMetadataRefresh: persistPracticeMediaNow,
+  });
+
+  const { uploadFilesToMediaSlot } = mediaHub;
+
+  useEffect(() => {
+    if (!practiceMediaDraft) return;
+    const mergedNext = mergeJournalForPracticeSave(practiceMediaDraft);
+    const mergedPrev = lastPracticeMediaSavedRef.current
+      ? mergeJournalForPracticeSave(lastPracticeMediaSavedRef.current)
+      : null;
+    if (!songAutosaveDirty(mergedPrev, mergedNext)) return;
+    const t = setTimeout(() => {
+      void (async () => {
+        try {
+          await persistPracticeMediaNow(practiceMediaDraft);
+          lastPracticeMediaSavedRef.current = practiceMediaDraft;
+        } catch {
+          /* ignore */
+        }
+      })();
+    }, 550);
+    return () => clearTimeout(t);
+  }, [practiceMediaDraft, persistPracticeMediaNow, mergeJournalForPracticeSave]);
+
+  useEffect(() => {
+    if (!practiceMediaDraft) {
+      practiceFileDragDepthRef.current = 0;
+      setPracticeFileDragActive(false);
+      setPracticeHoveredMediaSlot(null);
+      setPracticeMediaDragEligibleSlots(null);
+      return;
+    }
+    const onEnter = (e: DragEvent) => {
+      if (!dragPayloadRelevantToMediaHub(e.dataTransfer)) return;
+      e.preventDefault();
+      practiceFileDragDepthRef.current += 1;
+      setPracticeFileDragActive(true);
+      setPracticeMediaDragEligibleSlots(eligibleSlotsForDragDataTransfer(e.dataTransfer));
+    };
+    const onLeave = (e: DragEvent) => {
+      if (!dragPayloadRelevantToMediaHub(e.dataTransfer)) return;
+      e.preventDefault();
+      practiceFileDragDepthRef.current = Math.max(0, practiceFileDragDepthRef.current - 1);
+      if (practiceFileDragDepthRef.current === 0) {
+        setPracticeFileDragActive(false);
+        setPracticeHoveredMediaSlot(null);
+        setPracticeMediaDragEligibleSlots(null);
+      }
+    };
+    const onEnd = () => {
+      practiceFileDragDepthRef.current = 0;
+      setPracticeFileDragActive(false);
+      setPracticeHoveredMediaSlot(null);
+      setPracticeMediaDragEligibleSlots(null);
+    };
+    const onDrop = (e: DragEvent) => {
+      if (!dragPayloadRelevantToMediaHub(e.dataTransfer)) return;
+      onEnd();
+    };
+    const onDragOver = (e: DragEvent) => {
+      if (dragPayloadRelevantToMediaHub(e.dataTransfer)) {
+        e.preventDefault();
+        e.dataTransfer!.dropEffect = 'copy';
+      }
+    };
+    document.addEventListener('dragenter', onEnter);
+    document.addEventListener('dragleave', onLeave);
+    document.addEventListener('dragend', onEnd);
+    document.addEventListener('drop', onDrop, true);
+    document.addEventListener('dragover', onDragOver);
+    return () => {
+      document.removeEventListener('dragenter', onEnter);
+      document.removeEventListener('dragleave', onLeave);
+      document.removeEventListener('dragend', onEnd);
+      document.removeEventListener('drop', onDrop, true);
+      document.removeEventListener('dragover', onDragOver);
+    };
+  }, [practiceMediaDraft]);
+
+  const onPracticeMediaSlotDragOver = useCallback(
+    (slot: SongMediaUploadSlot, e: ReactDragEvent<HTMLElement>) => {
+      if (!dragPayloadRelevantToMediaHub(e.dataTransfer)) return;
+      if (practiceMediaDragEligibleSlots && !practiceMediaDragEligibleSlots.has(slot)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      setPracticeHoveredMediaSlot(slot);
+    },
+    [practiceMediaDragEligibleSlots],
+  );
+
+  const onPracticeMediaSlotDragEnter = useCallback(
+    (slot: SongMediaUploadSlot, e: ReactDragEvent<HTMLElement>) => {
+      if (!dragPayloadRelevantToMediaHub(e.dataTransfer)) return;
+      if (practiceMediaDragEligibleSlots && !practiceMediaDragEligibleSlots.has(slot)) return;
+      e.preventDefault();
+      setPracticeHoveredMediaSlot(slot);
+    },
+    [practiceMediaDragEligibleSlots],
+  );
+
+  const onPracticeMediaSlotDragLeave = useCallback((slot: SongMediaUploadSlot, e: ReactDragEvent<HTMLElement>) => {
+    if (!dragPayloadRelevantToMediaHub(e.dataTransfer)) return;
+    const related = e.relatedTarget as Node | null;
+    if (related && (e.currentTarget as HTMLElement).contains(related)) return;
+    setPracticeHoveredMediaSlot((h) => (h === slot ? null : h));
+  }, []);
+
+  const onPracticeMediaSlotDrop = useCallback(
+    (slot: SongMediaUploadSlot, e: ReactDragEvent<HTMLElement>) => {
+      if (practiceMediaDragEligibleSlots && !practiceMediaDragEligibleSlots.has(slot)) return;
+      if (e.dataTransfer.types.includes('Files')) {
+        const files = Array.from(e.dataTransfer.files ?? []);
+        if (files.length === 0) return;
+        e.preventDefault();
+        e.stopPropagation();
+        void uploadFilesToMediaSlot(slot, files);
+        return;
+      }
+      if (hasPotentialUrlPayload(e.dataTransfer)) {
+        const url = extractFirstUrlFromDataTransfer(e.dataTransfer);
+        if (!url) return;
+        e.preventDefault();
+        e.stopPropagation();
+        setPracticeMediaDraft((d) => {
+          if (!d) return d;
+          const next = applyMediaUrlToSongSlot(d, slot, url);
+          if (!next) return d;
+          void persistPracticeMediaNow(next);
+          return next;
+        });
+      }
+    },
+    [practiceMediaDragEligibleSlots, uploadFilesToMediaSlot, persistPracticeMediaNow],
+  );
+
+  const practiceMediaHubFileDrop = useMemo(
+    () => ({
+      globalFileDragActive: practiceFileDragActive,
+      hoveredSlot: practiceHoveredMediaSlot,
+      eligibleSlots: practiceMediaDragEligibleSlots,
+      onMediaSlotDragEnter: onPracticeMediaSlotDragEnter,
+      onMediaSlotDragLeave: onPracticeMediaSlotDragLeave,
+      onMediaSlotDragOver: onPracticeMediaSlotDragOver,
+      onMediaSlotDrop: onPracticeMediaSlotDrop,
+    }),
+    [
+      practiceFileDragActive,
+      practiceHoveredMediaSlot,
+      practiceMediaDragEligibleSlots,
+      onPracticeMediaSlotDragEnter,
+      onPracticeMediaSlotDragLeave,
+      onPracticeMediaSlotDragOver,
+      onPracticeMediaSlotDrop,
+    ],
+  );
+
+  const onLearningPlaylistSync = useCallback(async () => {
     setSyncError(null);
     if (!clientId || !spotifyLinked) {
-      setSyncError('Connect Spotify (Account menu) to read your playlist.');
+      setSyncError('Connect Spotify (Account menu) to sync your playlist.');
+      return;
+    }
+    const bundle = readSpotifyToken();
+    if (bundle && !spotifyGrantedScopesSufficientForPlaylistModify(bundle.scope)) {
+      setSyncError(
+        'In the Account menu, use Refresh Spotify login so Encore can read and edit playlists (or Disconnect, then Connect).',
+      );
       return;
     }
     const pl = resolvedPlaylistId;
     if (!pl) {
-      setSyncError('Paste your “Currently learning” playlist link or id (you can sync before pressing Save).');
+      setSyncError('Paste or save a Spotify playlist URL or id first.');
       return;
     }
-    setPullBusy(true);
+    setSyncBusy(true);
     try {
-      await withBlockingJob('Pulling playlist from Spotify…', async (setProgress) => {
-        const rows = await fetchSpotifyPlaylistTracks(clientId, pl);
-        const fresh: SpotifyPlaylistTrackRow[] = [];
-        const suggestions: PracticeImportSuggestRow[] = [];
-        const now = new Date().toISOString();
-        const total = rows.length;
-        let i = 0;
-        for (const row of rows) {
-          const incoming = songStubFromPlaylistRow(row);
-          const { song: match, score } = bestImportMatch(songs, incoming);
-          if (score >= IMPORT_MATCH_AUTO_MIN && match) {
-            const merged = mergeSongWithImport(match, incoming);
-            await saveSong({ ...merged, practicing: true, updatedAt: now });
-          } else if (score >= IMPORT_MATCH_SUGGEST_MIN && score < IMPORT_MATCH_AUTO_MIN && match) {
-            suggestions.push({ row, match, score });
-          } else {
-            fresh.push(row);
-          }
-          i += 1;
-          setProgress(total ? i / total : null);
+      await withBlockingJob('Syncing learning playlist…', async (setProgress) => {
+        const result = await runEncoreSpotifyPlaylistSync({
+          clientId,
+          playlistId: pl,
+          songs,
+          saveSong,
+          setProgress,
+          stubPracticing: true,
+          onMergedSong: (merged, now) => ({ ...merged, practicing: true, updatedAt: now }),
+          getRewriteSpotifyTrackIds: spotifyTrackIdsForPracticingSongs,
+          emptyRewriteMessage:
+            'No practicing songs have a Spotify track id to write to the playlist yet. Link Spotify on each song or merge imports first.',
+        });
+        if (result.outcome === 'error') {
+          setSyncError(result.message);
+          return;
         }
-        if (suggestions.length > 0) setImportSuggestions(suggestions);
-        if (fresh.length > 0) setImportCandidates(fresh);
+        if (result.outcome === 'review') {
+          setImportSuggestions(result.suggestions);
+          setImportCandidates(result.fresh);
+          setSyncError(
+            'Imported every exact Spotify match into your library. Review possible matches or new tracks below, then tap Sync again to rewrite the playlist from your practicing songs.',
+          );
+          return;
+        }
       });
     } catch (e) {
       setSyncError(e instanceof Error ? e.message : String(e));
     } finally {
-      setPullBusy(false);
+      setSyncBusy(false);
     }
   }, [clientId, spotifyLinked, resolvedPlaylistId, songs, saveSong, withBlockingJob]);
 
@@ -245,8 +445,6 @@ export function PracticeScreen(): React.ReactElement {
 
   const practiceImportReviewOpen =
     (importSuggestions?.length ?? 0) > 0 || (importCandidates?.length ?? 0) > 0;
-  const hasSuggestions = (importSuggestions?.length ?? 0) > 0;
-  const hasNewCandidates = (importCandidates?.length ?? 0) > 0;
 
   const confirmImport = useCallback(async () => {
     if (!importCandidates?.length) {
@@ -259,7 +457,7 @@ export function PracticeScreen(): React.ReactElement {
       await withBlockingJob('Adding songs from playlist…', async (setProgress) => {
         let i = 0;
         for (const row of list) {
-          const stub = songStubFromPlaylistRow(row);
+          const stub = encoreSongStubFromSpotifyPlaylistRow(row, { practicing: true });
           await saveSong(stub);
           i += 1;
           setProgress(list.length ? i / list.length : null);
@@ -274,9 +472,9 @@ export function PracticeScreen(): React.ReactElement {
   }, [importCandidates, saveSong, withBlockingJob]);
 
   const mergeSuggestion = useCallback(
-    async (item: PracticeImportSuggestRow) => {
+    async (item: EncorePlaylistImportSuggestRow) => {
       const now = new Date().toISOString();
-      const incoming = songStubFromPlaylistRow(item.row);
+      const incoming = encoreSongStubFromSpotifyPlaylistRow(item.row, { practicing: true });
       const merged = mergeSongWithImport(item.match, incoming);
       await saveSong({ ...merged, practicing: true, updatedAt: now });
       setImportSuggestions((cur) => {
@@ -289,8 +487,8 @@ export function PracticeScreen(): React.ReactElement {
   );
 
   const importSuggestionAsNew = useCallback(
-    async (item: PracticeImportSuggestRow) => {
-      const stub = songStubFromPlaylistRow(item.row);
+    async (item: EncorePlaylistImportSuggestRow) => {
+      const stub = encoreSongStubFromSpotifyPlaylistRow(item.row, { practicing: true });
       await saveSong(stub);
       setImportSuggestions((cur) => {
         if (!cur) return null;
@@ -299,115 +497,6 @@ export function PracticeScreen(): React.ReactElement {
       });
     },
     [saveSong],
-  );
-
-  const onPracticeRecordingFile = useCallback(
-    async (e: ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      const songId = practiceRecTargetSongIdRef.current;
-      practiceRecTargetSongIdRef.current = null;
-      e.target.value = '';
-      if (!file || !songId || !googleAccessToken || !takesUploadFolderId) return;
-      const song = songs.find((x) => x.id === songId);
-      if (!song) return;
-      try {
-        await withBlockingJob('Uploading practice take…', async () => {
-          const created = await driveUploadFileResumable(googleAccessToken, file, [takesUploadFolderId]);
-          const next = addSongAttachment(song, { kind: 'recording', driveFileId: created.id, label: file.name });
-          await saveSong({
-            ...next,
-            updatedAt: new Date().toISOString(),
-          });
-        });
-      } catch (err) {
-        setSyncError(err instanceof Error ? err.message : String(err));
-      }
-    },
-    [googleAccessToken, takesUploadFolderId, songs, saveSong, withBlockingJob],
-  );
-
-  const onPushToPlaylist = useCallback(async () => {
-    setSyncError(null);
-    if (!clientId || !spotifyLinked) {
-      setSyncError('Connect Spotify to update the playlist.');
-      return;
-    }
-    const bundle = readSpotifyToken();
-    if (bundle && !spotifyGrantedScopesSufficientForPlaylistModify(bundle.scope)) {
-      setSyncError(
-        'Reconnect Spotify (Account menu → Disconnect, then Connect) so Encore can edit playlists.',
-      );
-      return;
-    }
-    const pl = resolvedPlaylistId;
-    if (!pl) {
-      setSyncError('Paste or save a playlist id before pushing tracks.');
-      return;
-    }
-    const ids = practicingSongs
-      .map((s) => spotifyDataSourceTrackId(s))
-      .filter((x): x is string => Boolean(x));
-    if (ids.length === 0) {
-      setSyncError('No practicing songs have a Spotify track id to send yet.');
-      return;
-    }
-    setPushBusy(true);
-    try {
-      await withBlockingJob('Updating Spotify playlist…', () => replaceSpotifyPlaylistTracks(clientId, pl, ids));
-    } catch (e) {
-      setSyncError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setPushBusy(false);
-    }
-  }, [clientId, spotifyLinked, resolvedPlaylistId, practicingSongs, withBlockingJob]);
-
-  const playlistControls = (
-    <Stack spacing={1.25}>
-      <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.5, display: 'block' }}>
-        Pull imports tracks and marks them practicing. Push overwrites the playlist with your songs’ primary Spotify
-        ids (destructive).
-      </Typography>
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }}>
-        <TextField
-          size="small"
-          fullWidth
-          label="Playlist URL or id"
-          placeholder="https://open.spotify.com/playlist/…"
-          value={playlistField}
-          onChange={(e) => setPlaylistField(e.target.value)}
-          disabled={pullBusy || pushBusy}
-        />
-        <Button variant="outlined" size="small" onClick={() => void persistPlaylistId()} sx={{ flexShrink: 0 }}>
-          Save
-        </Button>
-      </Stack>
-      <Stack direction="row" flexWrap="wrap" gap={1} useFlexGap>
-        <Button
-          size="small"
-          variant="contained"
-          startIcon={<SyncIcon />}
-          disabled={pullBusy || pushBusy || !spotifyLinked || !resolvedPlaylistId}
-          onClick={() => void onPullFromPlaylist()}
-        >
-          {pullBusy ? 'Checking…' : 'Pull from playlist'}
-        </Button>
-        <Button
-          size="small"
-          variant="outlined"
-          startIcon={<SyncIcon />}
-          disabled={pushBusy || pullBusy || !spotifyLinked || !resolvedPlaylistId}
-          onClick={() => void onPushToPlaylist()}
-        >
-          {pushBusy ? 'Updating…' : 'Push practicing → playlist'}
-        </Button>
-      </Stack>
-      {!clientId ? (
-        <Alert severity="info">
-          Set <code>VITE_SPOTIFY_CLIENT_ID</code> for Spotify actions.
-        </Alert>
-      ) : null}
-      {syncError ? <Alert severity="error">{syncError}</Alert> : null}
-    </Stack>
   );
 
   return (
@@ -433,64 +522,37 @@ export function PracticeScreen(): React.ReactElement {
           bgcolor: 'background.paper',
         }}
       >
-        <Stack spacing={1.5}>
-          <Stack
-            direction={{ xs: 'column', sm: 'row' }}
-            spacing={2}
-            alignItems={{ sm: 'center' }}
-            justifyContent="space-between"
-          >
-            <Box sx={{ minWidth: 0 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 800, letterSpacing: '0.04em' }}>
-                Learning playlist
-              </Typography>
-            </Box>
-            {resolvedPlaylistId ? (
-              <Button
-                component="a"
-                href={`https://open.spotify.com/playlist/${encodeURIComponent(resolvedPlaylistId)}`}
-                target="_blank"
-                rel="noreferrer"
-                variant="contained"
-                size="medium"
-                startIcon={<OpenInNewIcon />}
-                sx={{ flexShrink: 0, textTransform: 'none', fontWeight: 700 }}
-              >
-                Open in Spotify
-              </Button>
-            ) : (
-              <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0 }}>
-                Paste a playlist URL or id under Sync to enable this button.
-              </Typography>
-            )}
-          </Stack>
-          <Accordion
-            expanded={playlistSyncOpen}
-            onChange={(_, exp) => setPlaylistSyncOpen(exp)}
-            disableGutters
-            elevation={0}
-            sx={{
-              border: 1,
-              borderColor: 'divider',
-              borderRadius: 1,
-              '&:before': { display: 'none' },
-              overflow: 'hidden',
-            }}
-          >
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                Sync & edit linked playlist
-              </Typography>
-            </AccordionSummary>
-            <AccordionDetails sx={{ pt: 0 }}>{playlistControls}</AccordionDetails>
-          </Accordion>
+        <Stack spacing={1.25}>
+          <EncoreSynchronizableSpotifyPlaylistPanel
+            sectionTitle="Learning playlist"
+            helpContent={LEARNING_PLAYLIST_HELP_CONTENT}
+            spotifyClientId={clientId}
+            savedPlaylistId={savedPlaylistId}
+            playlistField={playlistField}
+            onPlaylistFieldChange={setPlaylistField}
+            onSavePlaylistId={() => void persistPlaylistId()}
+            resolvedPlaylistId={resolvedPlaylistId}
+            onSync={() => void onLearningPlaylistSync()}
+            syncBusy={syncBusy}
+            pullBusy={pullBusy}
+            spotifyLinked={spotifyLinked}
+            clientIdConfigured={Boolean(clientId)}
+            error={syncError}
+            announcement={
+              !clientId ? (
+                <Alert severity="info" sx={{ width: '100%' }}>
+                  Set <code>VITE_SPOTIFY_CLIENT_ID</code> for Spotify actions.
+                </Alert>
+              ) : null
+            }
+          />
         </Stack>
       </Paper>
 
       {practicingSongs.length === 0 ? (
         <Typography color="text.secondary" sx={{ py: 1, mb: 2, lineHeight: 1.6 }}>
-          Nothing here yet. Mark songs as <strong>Currently practicing</strong>, or pull from your playlist (
-          <strong>Sync & edit linked playlist</strong>).
+          Nothing here yet. Mark songs as <strong>Currently practicing</strong>, or use <strong>Learning playlist → Sync</strong>{' '}
+          to import from Spotify.
         </Typography>
       ) : panelSong ? (
         <Box
@@ -525,7 +587,10 @@ export function PracticeScreen(): React.ReactElement {
                   <ListItemButton
                     key={s.id}
                     selected={selected}
-                    onClick={() => setFocusedSongId(s.id)}
+                    onClick={() => {
+                      setFocusedSongId(s.id);
+                      navigateEncore({ kind: 'practice', songId: s.id });
+                    }}
                     sx={{
                       borderRadius: 1,
                       py: 1,
@@ -585,29 +650,22 @@ export function PracticeScreen(): React.ReactElement {
           >
             {(() => {
               const s = panelSong;
-              const chartPrimary = primaryChartAttachment(s);
-              const refLink = effectivePrimaryReferenceLink(s);
-              const backLink = effectivePrimaryBackingLink(s);
-              const refUrl = refLink
-                ? refLink.source === 'youtube'
-                  ? mediaLinkYoutubePracticeOpenUrl(refLink)
-                  : mediaLinkOpenUrl(refLink)
-                : undefined;
-              const backUrl = backLink
-                ? backLink.source === 'youtube'
-                  ? mediaLinkYoutubePracticeOpenUrl(backLink)
-                  : mediaLinkOpenUrl(backLink)
-                : undefined;
-              const chartUrl = chartPrimary ? driveFileWebUrl(chartPrimary.driveFileId) : undefined;
-              const milestoneSong = applyTemplateProgressToSong(s, repertoireExtras.milestoneTemplate);
-              const ms = milestoneProgressSummary(s, repertoireExtras.milestoneTemplate);
-              const recAttachments = effectiveSongAttachments(s).filter((a) => a.kind === 'recording');
+              const exerciseBase =
+                practiceMediaDraft?.id === s.id && practiceMediaDraft ? practiceMediaDraft : s;
+              const milestoneSource = practiceMediaDraft?.id === s.id ? practiceMediaDraft : s;
+              const milestoneSong = applyTemplateProgressToSong(milestoneSource, repertoireExtras.milestoneTemplate);
+              const ms = milestoneProgressSummary(milestoneSource, repertoireExtras.milestoneTemplate);
               const journalKey = s.id;
               const journalVal = journalLocalBySongId[journalKey] ?? s.journalMarkdown ?? '';
 
               return (
                 <Stack spacing={2.25}>
-                  <Stack direction="row" alignItems="flex-start" justifyContent="space-between" gap={1}>
+                  <Stack
+                    direction={{ xs: 'column', sm: 'row' }}
+                    alignItems={{ xs: 'flex-start', sm: 'flex-start' }}
+                    justifyContent="space-between"
+                    gap={1.25}
+                  >
                     <Box sx={{ minWidth: 0 }}>
                       <Typography variant="h6" sx={{ fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.25 }}>
                         {s.title}
@@ -621,119 +679,42 @@ export function PracticeScreen(): React.ReactElement {
                         </Typography>
                       ) : null}
                     </Box>
-                    <Stack direction="row" spacing={0.5} sx={{ flexShrink: 0 }}>
-                      <Tooltip title="Upload practice take to Drive">
-                        <span>
-                          <IconButton
-                            size="small"
-                            disabled={!googleAccessToken || !takesUploadFolderId}
-                            aria-label="Upload practice take"
-                            onClick={() => {
-                              practiceRecTargetSongIdRef.current = s.id;
-                              practiceRecInputRef.current?.click();
-                            }}
-                          >
-                            <CloudUploadIcon fontSize="small" />
-                          </IconButton>
-                        </span>
-                      </Tooltip>
-                      <Tooltip title="Open full song page">
-                        <IconButton
-                          size="small"
-                          aria-label="Open full song page"
-                          component="a"
-                          href={encoreAppHref({ kind: 'song', id: s.id })}
-                        >
-                          <OpenInNewIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </Stack>
+                    <Button
+                      component="a"
+                      href={encoreAppHref({ kind: 'song', id: s.id })}
+                      variant="contained"
+                      size="medium"
+                      startIcon={<OpenInNewIcon />}
+                      sx={{ flexShrink: 0, textTransform: 'none', fontWeight: 700, width: { xs: 1, sm: 'auto' } }}
+                    >
+                      Open song page
+                    </Button>
                   </Stack>
 
-                  <Stack direction="row" flexWrap="wrap" gap={0.75} useFlexGap>
-                    {refUrl ? (
-                      <Chip
-                        size="small"
-                        component="a"
-                        href={refUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        clickable
-                        title={
-                          refLink?.source === 'youtube'
-                            ? 'Opens in LoopTube for AB looping (external site)'
-                            : undefined
-                        }
-                        icon={
-                          refLink?.source === 'youtube' ? (
-                            <YouTubeBrandIcon sx={{ '&&': { fontSize: 16 } }} />
-                          ) : (
-                            <SpotifyBrandIcon sx={{ '&&': { fontSize: 16 } }} />
-                          )
-                        }
-                        label="Reference"
-                        variant="outlined"
-                        sx={{ fontWeight: 700, borderWidth: 2, px: 0.75 }}
-                      />
-                    ) : null}
-                    {backUrl ? (
-                      <Chip
-                        size="small"
-                        component="a"
-                        href={backUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        clickable
-                        title={
-                          backLink?.source === 'youtube'
-                            ? 'Opens in LoopTube for AB looping (external site)'
-                            : undefined
-                        }
-                        icon={
-                          backLink?.source === 'youtube' ? (
-                            <YouTubeBrandIcon sx={{ '&&': { fontSize: 16 } }} />
-                          ) : (
-                            <SpotifyBrandIcon sx={{ '&&': { fontSize: 16 } }} />
-                          )
-                        }
-                        label="Backing"
-                        variant="outlined"
-                        sx={{ fontWeight: 700, borderWidth: 2, px: 0.75 }}
-                      />
-                    ) : null}
-                    {chartUrl ? (
-                      <Chip
-                        size="small"
-                        component="a"
-                        href={chartUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        clickable
-                        label={chartPrimary?.label ?? 'Chart'}
-                        variant="outlined"
-                        sx={{ fontWeight: 700, borderWidth: 2, px: 0.75 }}
-                      />
-                    ) : null}
-                    {recAttachments.map((a) => (
-                      <Chip
-                        key={a.driveFileId}
-                        size="small"
-                        component="a"
-                        href={driveFileWebUrl(a.driveFileId)}
-                        target="_blank"
-                        rel="noreferrer"
-                        clickable
-                        label={a.label ?? 'Take'}
-                        variant="outlined"
-                      />
-                    ))}
-                  </Stack>
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.25 }}>
+                      Practice resources
+                    </Typography>
+                    <SongPageMediaHubCards slots={mediaHub.mediaSlots} fileDrop={practiceMediaHubFileDrop} />
+                  </Box>
 
-                  <SongMilestoneChecklist
-                    song={milestoneSong}
-                    milestoneTemplate={repertoireExtras.milestoneTemplate}
-                    onChange={(next) => void saveSong(next)}
-                  />
+                  <PracticeExercisesSection song={exerciseBase} onPersistSong={persistPracticeSongBundle} />
+
+                  {/*
+                   * "Milestones" gets its own subtitle so the guided-exercises Paper panel above
+                   * doesn't visually flow into the bare checklist below — without this header the
+                   * two sections felt like one continuous list.
+                   */}
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.25 }}>
+                      Milestones
+                    </Typography>
+                    <SongMilestoneChecklist
+                      song={milestoneSong}
+                      milestoneTemplate={repertoireExtras.milestoneTemplate}
+                      onChange={(next) => void saveSong(next)}
+                    />
+                  </Box>
 
                   <Box>
                     <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.75 }}>
@@ -757,8 +738,10 @@ export function PracticeScreen(): React.ReactElement {
                       sx={{ mt: 1, textTransform: 'none' }}
                       onClick={() => {
                         const md = journalVal;
+                        const base =
+                          practiceMediaDraft?.id === s.id && practiceMediaDraft ? practiceMediaDraft : s;
                         void saveSong({
-                          ...s,
+                          ...mergeJournalForPracticeSave(base),
                           journalMarkdown: md,
                           updatedAt: new Date().toISOString(),
                         });
@@ -774,87 +757,16 @@ export function PracticeScreen(): React.ReactElement {
         </Box>
       ) : null}
 
-      <Dialog
+      <EncoreSpotifyPlaylistImportReviewDialog
         open={practiceImportReviewOpen}
         onClose={closePracticeImportReview}
-        fullWidth
-        maxWidth="sm"
-        aria-labelledby="practice-playlist-import-review-title"
-      >
-        <DialogTitle id="practice-playlist-import-review-title" sx={encoreDialogTitleSx}>
-          Review playlist import
-        </DialogTitle>
-        <DialogContent sx={encoreDialogContentSx}>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2, lineHeight: 1.55 }}>
-            Exact matches were merged automatically. Use possible matches when a playlist track might already exist in
-            your library under a different title. Import new tracks to add them as separate songs (marked currently
-            practicing).
-          </Typography>
-
-          {hasSuggestions ? (
-            <Stack spacing={2}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                Possible library matches
-              </Typography>
-              <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: -1 }}>
-                Merge adds this Spotify track id to the library song. Add as new keeps a separate song row.
-              </Typography>
-              {importSuggestions?.map((item) => (
-                <Stack key={item.row.trackId} spacing={0.75}>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    {item.row.title} · {item.row.artist}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Likely match: {item.match.title} · {item.match.artist} (score {(item.score * 100).toFixed(0)}%)
-                  </Typography>
-                  <Stack direction="row" gap={1} flexWrap="wrap" useFlexGap>
-                    <Button size="small" variant="contained" onClick={() => void mergeSuggestion(item)}>
-                      Merge into library song
-                    </Button>
-                    <Button size="small" variant="outlined" onClick={() => void importSuggestionAsNew(item)}>
-                      Add as new song
-                    </Button>
-                  </Stack>
-                </Stack>
-              ))}
-            </Stack>
-          ) : null}
-
-          {hasSuggestions && hasNewCandidates ? <Divider sx={{ my: 3 }} /> : null}
-
-          {hasNewCandidates ? (
-            <Stack spacing={1.25}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                New tracks (not in your library)
-              </Typography>
-              <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: -0.75 }}>
-                These were not matched closely enough to an existing song. Import adds them all as practicing songs.
-              </Typography>
-              <Stack spacing={0.75}>
-                {importCandidates?.map((r) => (
-                  <Typography key={r.trackId} variant="body2">
-                    {r.title} · {r.artist}
-                  </Typography>
-                ))}
-              </Stack>
-            </Stack>
-          ) : null}
-        </DialogContent>
-        <DialogActions sx={encoreDialogActionsSx}>
-          <Button onClick={closePracticeImportReview}>Close</Button>
-          {hasNewCandidates ? (
-            <Button variant="contained" onClick={() => void confirmImport()} disabled={pullBusy}>
-              {pullBusy ? 'Importing…' : `Import ${importCandidates?.length ?? 0} new`}
-            </Button>
-          ) : null}
-        </DialogActions>
-      </Dialog>
-      <input
-        ref={practiceRecInputRef}
-        type="file"
-        hidden
-        accept="audio/*,video/*"
-        onChange={(e) => void onPracticeRecordingFile(e)}
+        reviewKind="practice"
+        importSuggestions={importSuggestions}
+        importCandidates={importCandidates}
+        onMergeSuggestion={(item) => void mergeSuggestion(item)}
+        onImportSuggestionAsNew={(item) => void importSuggestionAsNew(item)}
+        onConfirmImportNew={() => void confirmImport()}
+        pullBusy={pullBusy}
       />
     </Box>
   );

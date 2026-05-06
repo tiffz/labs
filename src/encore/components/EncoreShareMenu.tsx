@@ -57,7 +57,7 @@ export function EncoreShareMenu(props: {
         slotProps={{
           paper: {
             sx: {
-              width: 360,
+              width: 400,
               maxWidth: 'calc(100vw - 24px)',
               mt: 1.25,
               borderRadius: 3,
@@ -75,7 +75,7 @@ export function EncoreShareMenu(props: {
       >
         <Box sx={{ px: 3, pt: 2.5, pb: 2.5 }} onClick={(e) => e.stopPropagation()}>
           <Typography variant="subtitle2" sx={{ fontWeight: 700, letterSpacing: '-0.02em', mb: 2 }}>
-            Guest link
+            Share
           </Typography>
           <SharePanel />
         </Box>

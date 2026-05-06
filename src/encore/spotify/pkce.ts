@@ -136,6 +136,8 @@ export function spotifyAuthorizeUrl(params: {
   state: string;
   /** Space-separated Spotify scopes (required for playlist import, etc.). */
   scope: string;
+  /** When true, forces the Spotify approve screen so new scopes can be granted. */
+  showDialog?: boolean;
 }): string {
   const u = new URL('https://accounts.spotify.com/authorize');
   u.searchParams.set('client_id', params.clientId);
@@ -145,6 +147,9 @@ export function spotifyAuthorizeUrl(params: {
   u.searchParams.set('code_challenge_method', 'S256');
   u.searchParams.set('code_challenge', params.challenge);
   u.searchParams.set('state', params.state);
+  if (params.showDialog) {
+    u.searchParams.set('show_dialog', 'true');
+  }
   return u.toString();
 }
 

@@ -21,6 +21,8 @@ export type SongPageMediaHubFileDropConfig = {
   globalFileDragActive: boolean;
   /** Hub card currently receiving pointer during a file drag. */
   hoveredSlot: SongMediaUploadSlot | null;
+  /** Slots that accept the current drag payload; omit or null = all slots. */
+  eligibleSlots?: Set<SongMediaUploadSlot> | null;
   onMediaSlotDragEnter: (slot: SongMediaUploadSlot, e: DragEvent<HTMLElement>) => void;
   onMediaSlotDragLeave: (slot: SongMediaUploadSlot, e: DragEvent<HTMLElement>) => void;
   onMediaSlotDragOver: (slot: SongMediaUploadSlot, e: DragEvent<HTMLElement>) => void;
@@ -50,6 +52,9 @@ export function SongPageMediaHubCards(props: {
     boxShadow: 'none',
     overflow: 'hidden',
     minHeight: 0,
+    height: '100%',
+    display: 'flex',
+    flexDirection: 'column',
     transition: theme.transitions.create(['box-shadow', 'border-color'], {
       duration: theme.transitions.duration.shorter,
     }),
@@ -61,15 +66,19 @@ export function SongPageMediaHubCards(props: {
 
   const headerSx = {
     pb: 0,
-    pt: 1.35,
-    px: 1.75,
+    pt: 1,
+    px: 1.5,
     '& .MuiCardHeader-content': { minWidth: 0 },
   } as const;
 
   const contentSx = {
     pt: 0,
-    px: 1.75,
-    pb: 1.75,
+    px: 1.5,
+    pb: 1.25,
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    minHeight: 0,
     '& [data-encore-section-heading]': { display: 'none' },
   } as const;
 
@@ -86,9 +95,16 @@ export function SongPageMediaHubCards(props: {
 
   const dropHighlight = (slot: SongMediaUploadSlot) => {
     if (!fileDrop?.globalFileDragActive) return {};
+    const elig = fileDrop.eligibleSlots;
+    if (elig && !elig.has(slot)) {
+      return {
+        opacity: 0.4,
+        pointerEvents: 'none' as const,
+      };
+    }
     const active = fileDrop.hoveredSlot === slot;
     return {
-      outline: `2px dashed ${alpha(theme.palette.primary.main, active ? 0.55 : 0.28)}`,
+      outline: `2px dashed ${alpha(theme.palette.primary.main, active ? 0.55 : 0.22)}`,
       outlineOffset: 3,
       bgcolor: active ? alpha(theme.palette.primary.main, 0.04) : alpha(theme.palette.primary.main, 0.015),
     };
@@ -106,6 +122,7 @@ export function SongPageMediaHubCards(props: {
           borderRadius: encoreRadius,
           minHeight: 0,
           minWidth: 0,
+          height: '100%',
           transition: theme.transitions.create(['outline-color', 'background-color'], {
             duration: theme.transitions.duration.shorter,
           }),
@@ -121,7 +138,7 @@ export function SongPageMediaHubCards(props: {
     <Card id="encore-media-hub-listen" sx={cardSx} variant="outlined">
         <CardHeader
           title="Listen"
-          subheader="References"
+          subheader="Reference recordings"
           titleTypographyProps={titleProps}
           subheaderTypographyProps={subProps}
           sx={headerSx}
@@ -175,6 +192,7 @@ export function SongPageMediaHubCards(props: {
         display: 'grid',
         width: 1,
         minWidth: 0,
+        alignItems: 'stretch',
         gridTemplateColumns: {
           xs: '1fr',
           sm: 'repeat(2, minmax(0, 1fr))',

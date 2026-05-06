@@ -20,9 +20,14 @@ export function spotifyGrantedScopesSufficientForPlaylistImport(granted: string 
 
 const REQUIRED_PLAYLIST_MODIFY_SCOPES = ['playlist-modify-public', 'playlist-modify-private'] as const;
 
-/** Needs reconnect if scopes string is present but modify scopes are missing (Practice playlist push). */
+/**
+ * True when Spotify’s stored `scope` string includes at least one playlist-write scope.
+ * Missing/empty `scope` is treated as insufficient so legacy sessions re-connect before playlist writes.
+ * Spotify normally grants `playlist-modify-public` and/or `playlist-modify-private` depending on consent;
+ * either is enough to attempt edits (public vs private playlists).
+ */
 export function spotifyGrantedScopesSufficientForPlaylistModify(granted: string | undefined): boolean {
-  if (granted == null || granted.trim() === '') return true;
+  if (granted == null || granted.trim() === '') return false;
   const g = new Set(granted.split(/\s+/).filter(Boolean));
-  return REQUIRED_PLAYLIST_MODIFY_SCOPES.every((s) => g.has(s));
+  return REQUIRED_PLAYLIST_MODIFY_SCOPES.some((s) => g.has(s));
 }

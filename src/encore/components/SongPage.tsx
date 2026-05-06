@@ -57,6 +57,12 @@ import {
   trackLabel,
 } from './song/songPageHelpers';
 import { useSongPageMediaHub } from './song/useSongPageMediaHub';
+import {
+  dragPayloadRelevantToMediaHub,
+  eligibleSlotsForDragDataTransfer,
+  hasPotentialUrlPayload,
+} from './song/encoreDragPayload';
+import { applyMediaUrlToSongSlot, extractFirstUrlFromDataTransfer } from './song/songMediaUrlDrop';
 
 export function SongPage(props: {
   route: Extract<EncoreAppRoute, { kind: 'song' } | { kind: 'songNew' }>;
@@ -98,6 +104,7 @@ export function SongPage(props: {
   const [perfVenueFilter, setPerfVenueFilter] = useState<string | null>(null);
   const [songPageFileDragActive, setSongPageFileDragActive] = useState(false);
   const [hoveredMediaSlot, setHoveredMediaSlot] = useState<SongMediaUploadSlot | null>(null);
+  const [mediaDragEligibleSlots, setMediaDragEligibleSlots] = useState<Set<SongMediaUploadSlot> | null>(null);
   const [intentUploadFiles, setIntentUploadFiles] = useState<File[] | null>(null);
   const songFileDragDepthRef = useRef(0);
 
@@ -299,36 +306,39 @@ export function SongPage(props: {
       songFileDragDepthRef.current = 0;
       setSongPageFileDragActive(false);
       setHoveredMediaSlot(null);
+      setMediaDragEligibleSlots(null);
       return;
     }
-    const hasFiles = (dt: DataTransfer | null) => Boolean(dt?.types?.includes('Files'));
     const onEnter = (e: DragEvent) => {
-      if (!hasFiles(e.dataTransfer)) return;
+      if (!dragPayloadRelevantToMediaHub(e.dataTransfer)) return;
       e.preventDefault();
       songFileDragDepthRef.current += 1;
       setSongPageFileDragActive(true);
+      setMediaDragEligibleSlots(eligibleSlotsForDragDataTransfer(e.dataTransfer));
     };
     const onLeave = (e: DragEvent) => {
-      if (!hasFiles(e.dataTransfer)) return;
+      if (!dragPayloadRelevantToMediaHub(e.dataTransfer)) return;
       e.preventDefault();
       songFileDragDepthRef.current = Math.max(0, songFileDragDepthRef.current - 1);
       if (songFileDragDepthRef.current === 0) {
         setSongPageFileDragActive(false);
         setHoveredMediaSlot(null);
+        setMediaDragEligibleSlots(null);
       }
     };
     const onEnd = () => {
       songFileDragDepthRef.current = 0;
       setSongPageFileDragActive(false);
       setHoveredMediaSlot(null);
+      setMediaDragEligibleSlots(null);
     };
     /** OS→browser file drops often skip `dragend` on `document` and leave dragenter/leave counts unbalanced; always clear. */
     const onDrop = (e: DragEvent) => {
-      if (!hasFiles(e.dataTransfer)) return;
+      if (!dragPayloadRelevantToMediaHub(e.dataTransfer)) return;
       onEnd();
     };
     const onDragOver = (e: DragEvent) => {
-      if (hasFiles(e.dataTransfer)) {
+      if (dragPayloadRelevantToMediaHub(e.dataTransfer)) {
         e.preventDefault();
         e.dataTransfer!.dropEffect = 'copy';
       }
@@ -347,21 +357,29 @@ export function SongPage(props: {
     };
   }, [draft, loadState]);
 
-  const onMediaSlotDragOver = useCallback((slot: SongMediaUploadSlot, e: ReactDragEvent<HTMLElement>) => {
-    if (!e.dataTransfer.types.includes('Files')) return;
-    e.preventDefault();
-    e.stopPropagation();
-    setHoveredMediaSlot(slot);
-  }, []);
+  const onMediaSlotDragOver = useCallback(
+    (slot: SongMediaUploadSlot, e: ReactDragEvent<HTMLElement>) => {
+      if (!dragPayloadRelevantToMediaHub(e.dataTransfer)) return;
+      if (mediaDragEligibleSlots && !mediaDragEligibleSlots.has(slot)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      setHoveredMediaSlot(slot);
+    },
+    [mediaDragEligibleSlots],
+  );
 
-  const onMediaSlotDragEnter = useCallback((slot: SongMediaUploadSlot, e: ReactDragEvent<HTMLElement>) => {
-    if (!e.dataTransfer.types.includes('Files')) return;
-    e.preventDefault();
-    setHoveredMediaSlot(slot);
-  }, []);
+  const onMediaSlotDragEnter = useCallback(
+    (slot: SongMediaUploadSlot, e: ReactDragEvent<HTMLElement>) => {
+      if (!dragPayloadRelevantToMediaHub(e.dataTransfer)) return;
+      if (mediaDragEligibleSlots && !mediaDragEligibleSlots.has(slot)) return;
+      e.preventDefault();
+      setHoveredMediaSlot(slot);
+    },
+    [mediaDragEligibleSlots],
+  );
 
   const onMediaSlotDragLeave = useCallback((slot: SongMediaUploadSlot, e: ReactDragEvent<HTMLElement>) => {
-    if (!e.dataTransfer.types.includes('Files')) return;
+    if (!dragPayloadRelevantToMediaHub(e.dataTransfer)) return;
     const related = e.relatedTarget as Node | null;
     if (related && (e.currentTarget as HTMLElement).contains(related)) return;
     setHoveredMediaSlot((h) => (h === slot ? null : h));
@@ -369,20 +387,37 @@ export function SongPage(props: {
 
   const onMediaSlotDrop = useCallback(
     (slot: SongMediaUploadSlot, e: ReactDragEvent<HTMLElement>) => {
-      if (!e.dataTransfer.types.includes('Files')) return;
-      const files = Array.from(e.dataTransfer.files ?? []);
-      if (files.length === 0) return;
-      e.preventDefault();
-      e.stopPropagation();
-      void uploadFilesToMediaSlot(slot, files);
+      if (mediaDragEligibleSlots && !mediaDragEligibleSlots.has(slot)) return;
+      if (e.dataTransfer.types.includes('Files')) {
+        const files = Array.from(e.dataTransfer.files ?? []);
+        if (files.length === 0) return;
+        e.preventDefault();
+        e.stopPropagation();
+        void uploadFilesToMediaSlot(slot, files);
+        return;
+      }
+      if (hasPotentialUrlPayload(e.dataTransfer)) {
+        const url = extractFirstUrlFromDataTransfer(e.dataTransfer);
+        if (!url) return;
+        e.preventDefault();
+        e.stopPropagation();
+        setDraft((d) => {
+          if (!d) return d;
+          const next = applyMediaUrlToSongSlot(d, slot, url);
+          if (!next) return d;
+          void persistSongNow(next);
+          return next;
+        });
+      }
     },
-    [uploadFilesToMediaSlot],
+    [mediaDragEligibleSlots, uploadFilesToMediaSlot, persistSongNow],
   );
 
   const mediaHubFileDrop = useMemo(
     () => ({
       globalFileDragActive: songPageFileDragActive,
       hoveredSlot: hoveredMediaSlot,
+      eligibleSlots: mediaDragEligibleSlots,
       onMediaSlotDragEnter,
       onMediaSlotDragLeave,
       onMediaSlotDragOver,
@@ -391,6 +426,7 @@ export function SongPage(props: {
     [
       songPageFileDragActive,
       hoveredMediaSlot,
+      mediaDragEligibleSlots,
       onMediaSlotDragEnter,
       onMediaSlotDragLeave,
       onMediaSlotDragOver,
