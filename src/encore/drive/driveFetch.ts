@@ -248,7 +248,7 @@ export async function drivePatchJsonMedia(
   if (ifMatch) headers['If-Match'] = ifMatch;
 
   const res = await fetch(
-    `${UPLOAD_BASE}/files/${encodeURIComponent(fileId)}?uploadType=media&fields=id,modifiedTime`,
+    `${UPLOAD_BASE}/files/${encodeURIComponent(fileId)}?uploadType=media&fields=id,modifiedTime&supportsAllDrives=true`,
     { method: 'PATCH', headers, body }
   );
   const text = await res.text();

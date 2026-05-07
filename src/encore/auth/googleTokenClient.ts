@@ -22,6 +22,19 @@ function resolveGoogleOAuthRedirectUri(): string {
   return raw || googleEncoreOAuthRedirectUri();
 }
 
+/** Maps GIS `error_callback` reasons (see TokenClientConfig in Google’s OAuth JS reference). */
+function messageForGisTokenUxError(detail: { type?: string }): string {
+  switch (detail.type) {
+    case 'popup_failed_to_open':
+      return 'Google sign-in could not open a popup window. Allow popups for this site, then try again.';
+    case 'popup_closed':
+      return 'Google sign-in closed before finishing. Try again and complete the Google window.';
+    case 'unknown':
+    default:
+      return 'Google sign-in did not finish (browser or network interrupted the flow). Try again.';
+  }
+}
+
 export async function requestGoogleAccessToken(
   clientId: string,
   scope: string,
@@ -33,22 +46,35 @@ export async function requestGoogleAccessToken(
     if (!g) throw new Error('Google sign-in could not load.');
     const redirectUri = resolveGoogleOAuthRedirectUri();
     const inner = new Promise<{ access_token: string; expires_in?: number }>((resolve, reject) => {
+      let settled = false;
+      const finish = (fn: () => void) => {
+        if (settled) return;
+        settled = true;
+        fn();
+      };
       const client = g.initTokenClient({
         client_id: clientId,
         scope,
         redirect_uri: redirectUri,
+        error_callback: (detail) => {
+          finish(() => reject(new Error(messageForGisTokenUxError(detail))));
+        },
         callback: (resp) => {
-          if (resp.error || !resp.access_token) {
-            reject(new Error(resp.error_description ?? resp.error ?? 'No access token'));
+          const accessToken = resp.access_token;
+          if (resp.error || !accessToken) {
+            finish(() =>
+              reject(new Error(resp.error_description ?? resp.error ?? 'No access token')),
+            );
             return;
           }
-          resolve({ access_token: resp.access_token, expires_in: resp.expires_in });
+          finish(() => resolve({ access_token: accessToken, expires_in: resp.expires_in }));
         },
       });
       if (options?.prompt === 'none') client.requestAccessToken({ prompt: 'none' });
       else client.requestAccessToken();
     });
-    const timeoutMs = options?.prompt === 'none' ? 12_000 : 90_000;
+    // Silent refresh: GIS usually answers quickly; interactive flow gets error_callback for popups.
+    const timeoutMs = options?.prompt === 'none' ? 12_000 : 60_000;
     return promiseWithTimeout(inner, timeoutMs, 'Google sign-in');
   });
 }

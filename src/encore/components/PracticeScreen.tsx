@@ -198,12 +198,10 @@ export function PracticeScreen({
   );
 
   const persistPracticeSongBundle = useCallback(
-    (next: EncoreSong) => {
-      void saveSong({
-        ...mergeJournalForPracticeSave(next),
-        updatedAt: new Date().toISOString(),
-      });
-      setPracticeMediaDraft((d) => (d?.id === next.id ? next : d));
+    (next: EncoreSong): Promise<void> => {
+      const merged = { ...mergeJournalForPracticeSave(next), updatedAt: new Date().toISOString() };
+      setPracticeMediaDraft((d) => (d?.id === next.id ? merged : d));
+      return saveSong(merged);
     },
     [saveSong, mergeJournalForPracticeSave],
   );
@@ -698,12 +696,16 @@ export function PracticeScreen({
                     <SongPageMediaHubCards slots={mediaHub.mediaSlots} fileDrop={practiceMediaHubFileDrop} />
                   </Box>
 
-                  <PracticeExercisesSection song={exerciseBase} onPersistSong={persistPracticeSongBundle} />
+                  <PracticeExercisesSection
+                    song={exerciseBase}
+                    onPersistSong={persistPracticeSongBundle}
+                    googleAccessToken={googleAccessToken}
+                    withBlockingJob={withBlockingJob}
+                  />
 
                   {/*
-                   * "Milestones" gets its own subtitle so the guided-exercises Paper panel above
-                   * doesn't visually flow into the bare checklist below — without this header the
-                   * two sections felt like one continuous list.
+                   * "Milestones" gets its own subtitle so guided exercises above do not read as one
+                   * continuous list with the checklist — without this header the two sections blur.
                    */}
                   <Box>
                     <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.25 }}>

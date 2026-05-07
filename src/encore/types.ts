@@ -88,7 +88,10 @@ export interface EncoreMediaLink {
   isPrimaryBacking?: boolean;
 }
 
-export type EncorePracticeExerciseKind = 'lyricsInOwnWords' | 'characterNineQuestions';
+export type EncorePracticeExerciseKind =
+  | 'lyricsInOwnWords'
+  | 'lyricsSectionNarrative'
+  | 'characterNineQuestions';
 
 export type EncorePracticeExerciseStatus = 'draft' | 'completed';
 
@@ -98,22 +101,24 @@ export interface EncorePracticeExerciseRunBase {
   startedAt: string;
   updatedAt: string;
   completedAt?: string;
+  /**
+   * Native Google Doc created by Export → Save to Google Docs; re-sync updates this document.
+   * Cleared when the exercise draft is removed.
+   */
+  drivePracticeExportGoogleDocId?: string;
 }
 
 /**
- * A Genius-style section of lyrics (`[Verse 1]`, `[Chorus]`, `[Bridge]`, …) plus the
- * user's interpretation/staging notes for that section. Lines are paired (`original` /
- * `rewrite`) so the editor can render side-by-side without a separate index.
+ * A Genius-style section of lyrics (`[Verse 1]`, `[Chorus]`, `[Bridge]`, …). Lines are paired
+ * (`original` / `rewrite`) so the editor can render side-by-side without a separate index.
  */
 export interface EncoreLyricsExerciseSection {
   /** Genius-style label (e.g. "Verse 1", "Pre-Chorus"). Empty string for unlabeled lines. */
   title: string;
   lines: Array<{ original: string; rewrite: string }>;
-  /** Free-form notes — emotional intent, blocking, vocal choices, etc. Optional. */
-  notes?: string;
 }
 
-/** Guided exercise: paste lyrics, then rewrite line by line (synced on the song; not in guest snapshots). */
+/** Guided exercise: original lyrics on the left, plain-language rewrite on the right (synced on the song; not in guest snapshots). */
 export interface EncoreLyricsInOwnWordsExerciseRun extends EncorePracticeExerciseRunBase {
   kind: 'lyricsInOwnWords';
   /** Optional copy of pasted source for editing or re-parsing. */
@@ -123,18 +128,31 @@ export interface EncoreLyricsInOwnWordsExerciseRun extends EncorePracticeExercis
    * only this flat list; the editor normalizes them on read into a single anonymous section.
    */
   lines?: Array<{ original: string; rewrite: string }>;
-  /** Sections derived from Genius-style markers, plus per-section interpretation notes. */
+  /** Sections derived from Genius-style markers. */
   sections?: EncoreLyricsExerciseSection[];
+}
+
+/**
+ * Guided exercise: for each Genius-style section, describe what is happening in the story (free
+ * text). Encourages treating repeated sections (e.g. each chorus) as a new beat in the arc.
+ */
+export interface EncoreLyricsSectionNarrativeExerciseRun extends EncorePracticeExerciseRunBase {
+  kind: 'lyricsSectionNarrative';
+  /** One entry per parsed section title (including repeated `[Chorus]` blocks in order). */
+  sections: Array<{ title: string; narrative: string }>;
 }
 
 /** Guided exercise: nine short character prompts (titles only; no third-party descriptive text). */
 export interface EncoreCharacterNineQuestionsExerciseRun extends EncorePracticeExerciseRunBase {
   kind: 'characterNineQuestions';
-  /** Same length and order as in-app prompt list. */
+  /** Same length and order as in-app prompt list. Stored as HTML (TipTap) or legacy plain text. */
   answers: string[];
 }
 
-export type EncorePracticeExerciseRun = EncoreLyricsInOwnWordsExerciseRun | EncoreCharacterNineQuestionsExerciseRun;
+export type EncorePracticeExerciseRun =
+  | EncoreLyricsInOwnWordsExerciseRun
+  | EncoreLyricsSectionNarrativeExerciseRun
+  | EncoreCharacterNineQuestionsExerciseRun;
 
 /** Song stored locally and in repertoire_data.json */
 export interface EncoreSong {
@@ -156,6 +174,11 @@ export interface EncoreSong {
   /** The key you actually perform this song in (manual entry; no auto-fill). */
   performanceKey?: string;
   journalMarkdown: string;
+  /**
+   * Canonical Genius-style lyrics text for this song (`[Verse 1]`, line breaks, etc.). Shared by
+   * lyrics-related practice exercises; edits from an exercise update this field.
+   */
+  lyricsSourceGenius?: string;
   /**
    * In-app practice exercises for this song (drafts and completed runs). Syncs with your repertoire on Drive.
    * Omitted from {@link PublicSnapshot}.

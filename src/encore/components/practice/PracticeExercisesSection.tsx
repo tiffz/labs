@@ -1,13 +1,15 @@
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import AutoStoriesIcon from '@mui/icons-material/AutoStories';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import EditNoteIcon from '@mui/icons-material/EditNote';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Paper from '@mui/material/Paper';
+import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
+import { alpha } from '@mui/material/styles';
 import { useCallback, useMemo, useState, type ReactElement } from 'react';
 import {
   ENCORE_PRACTICE_EXERCISE_CATALOG,
@@ -15,20 +17,26 @@ import {
   getSingleRunForKind,
   newCharacterNineQuestionsRun,
   newLyricsInOwnWordsRun,
+  newLyricsSectionNarrativeRun,
   removeRunForKind,
   setSingleRunForKind,
 } from '../../practice/encorePracticeExerciseModel';
+import type { EncoreBlockingJobsApi } from '../../context/EncoreBlockingJobContext';
+import { encoreRadius } from '../../theme/encoreUiTokens';
 import type { EncorePracticeExerciseKind, EncorePracticeExerciseRun, EncoreSong } from '../../types';
 import { PracticeExerciseFocusDialog } from './PracticeExerciseFocusDialog';
 
 export type PracticeExercisesSectionProps = {
   song: EncoreSong;
-  onPersistSong: (next: EncoreSong) => void;
+  onPersistSong: (next: EncoreSong) => void | Promise<void>;
+  googleAccessToken: string | null;
+  withBlockingJob: EncoreBlockingJobsApi['withBlockingJob'];
 };
 
 const KIND_ICONS: Record<EncorePracticeExerciseKind, ReactElement> = {
-  lyricsInOwnWords: <EditNoteIcon sx={{ fontSize: 22 }} aria-hidden />,
-  characterNineQuestions: <AutoAwesomeIcon sx={{ fontSize: 20 }} aria-hidden />,
+  lyricsInOwnWords: <EditNoteIcon sx={{ fontSize: 16, color: 'text.secondary' }} aria-hidden />,
+  lyricsSectionNarrative: <AutoStoriesIcon sx={{ fontSize: 16, color: 'text.secondary' }} aria-hidden />,
+  characterNineQuestions: <AutoAwesomeIcon sx={{ fontSize: 15, color: 'text.secondary' }} aria-hidden />,
 };
 
 function formatTimestamp(iso: string | undefined): string {
@@ -45,16 +53,13 @@ function formatTimestamp(iso: string | undefined): string {
   }
 }
 
-export function PracticeExercisesSection({ song, onPersistSong }: PracticeExercisesSectionProps): ReactElement {
+export function PracticeExercisesSection({
+  song,
+  onPersistSong,
+  googleAccessToken,
+  withBlockingJob,
+}: PracticeExercisesSectionProps): ReactElement {
   const [focusKind, setFocusKind] = useState<EncorePracticeExerciseKind | null>(null);
-
-  const persistRun = useCallback(
-    (run: EncorePracticeExerciseRun) => {
-      const nextSong = setSingleRunForKind(song, run);
-      onPersistSong({ ...nextSong, updatedAt: new Date().toISOString() });
-    },
-    [song, onPersistSong],
-  );
 
   const closeDialog = useCallback(() => setFocusKind(null), []);
 
@@ -70,7 +75,12 @@ export function PracticeExercisesSection({ song, onPersistSong }: PracticeExerci
         setFocusKind(kind);
         return;
       }
-      const run = kind === 'lyricsInOwnWords' ? newLyricsInOwnWordsRun() : newCharacterNineQuestionsRun();
+      const run =
+        kind === 'lyricsInOwnWords'
+          ? newLyricsInOwnWordsRun()
+          : kind === 'lyricsSectionNarrative'
+            ? newLyricsSectionNarrativeRun(song)
+            : newCharacterNineQuestionsRun();
       const nextSong = setSingleRunForKind(song, run);
       onPersistSong({ ...nextSong, updatedAt: new Date().toISOString() });
       setFocusKind(kind);
@@ -90,78 +100,77 @@ export function PracticeExercisesSection({ song, onPersistSong }: PracticeExerci
   const focusedRun = focusKind ? getSingleRunForKind(song, focusKind) : null;
 
   return (
-    <Paper
-      variant="outlined"
-      sx={{
-        p: { xs: 1.75, sm: 2.25 },
-        borderRadius: 2,
-        bgcolor: 'background.paper',
-      }}
-    >
-      <Stack spacing={1.75}>
-        <Box>
-          <Typography variant="subtitle1" sx={{ fontWeight: 800, letterSpacing: '-0.005em' }}>
-            Guided exercises
-          </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
-            Short, focused workouts that get the meaning of the song into your body.
-          </Typography>
-        </Box>
-        <Stack
-          spacing={1.25}
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
-            gap: { xs: 1.25, md: 1.5 },
-          }}
+    <Stack spacing={0}>
+      <Box sx={{ mb: 1.25 }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.35, lineHeight: 1.2 }}>
+          Guided exercises
+        </Typography>
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ display: 'block', lineHeight: 1.45, fontSize: '0.72rem', maxWidth: 560 }}
         >
-          {kinds.map((kind) => {
-            const meta = ENCORE_PRACTICE_EXERCISE_CATALOG[kind];
-            const run = getSingleRunForKind(song, kind);
-            return (
-              <ExerciseCard
-                key={kind}
-                meta={meta}
-                icon={KIND_ICONS[kind]}
-                run={run}
-                onPrimary={() => onPrimaryActionForKind(kind)}
-                onClear={() => onClearKind(kind)}
-              />
-            );
-          })}
-        </Stack>
-      </Stack>
+          Short prompts to connect lyrics and character to how you perform the song.
+        </Typography>
+      </Box>
+      <Box
+        sx={{
+          border: 1,
+          borderStyle: 'solid',
+          borderColor: 'divider',
+          borderRadius: encoreRadius,
+          bgcolor: 'background.paper',
+          overflow: 'hidden',
+        }}
+      >
+        {kinds.map((kind, index) => {
+          const meta = ENCORE_PRACTICE_EXERCISE_CATALOG[kind];
+          const run = getSingleRunForKind(song, kind);
+          return (
+            <ExerciseListRow
+              key={kind}
+              showDivider={index > 0}
+              meta={meta}
+              icon={KIND_ICONS[kind]}
+              run={run}
+              onPrimary={() => onPrimaryActionForKind(kind)}
+              onClear={() => onClearKind(kind)}
+            />
+          );
+        })}
+      </Box>
       {focusKind && focusedRun ? (
         <PracticeExerciseFocusDialog
           key={focusedRun.id}
           open
+          song={song}
           songTitle={song.title}
           songArtist={song.artist}
           run={focusedRun}
           readOnly={focusedRun.status === 'completed'}
+          googleAccessToken={googleAccessToken}
+          withBlockingJob={withBlockingJob}
           onClose={closeDialog}
-          onSaveDraft={persistRun}
-          onMarkComplete={(r) => {
-            persistRun(r);
-            closeDialog();
-          }}
+          onPersistSong={onPersistSong}
           onClearDraft={() => {
             onClearKind(focusKind);
             closeDialog();
           }}
         />
       ) : null}
-    </Paper>
+    </Stack>
   );
 }
 
-function ExerciseCard({
+function ExerciseListRow({
+  showDivider,
   meta,
   icon,
   run,
   onPrimary,
   onClear,
 }: {
+  showDivider: boolean;
   meta: { title: string; description: string };
   icon: ReactElement;
   run: EncorePracticeExerciseRun | undefined;
@@ -169,121 +178,186 @@ function ExerciseCard({
   onClear: () => void;
 }): ReactElement {
   const summary = run ? formatExerciseRunSummary(run) : null;
+  const summaryTrimmed = summary?.trim() ?? '';
+  const showStatus = Boolean(run && (run.status === 'completed' || summaryTrimmed.length > 0));
   const completed = run?.status === 'completed';
 
-  /**
-   * Primary button copy is intentionally action-first ("Start exercise" / "Continue" / "Open"),
-   * not contextual nouns. The user pointed out the old "New" CTA felt buried in the corner;
-   * here the button is the most prominent thing on the card so it's unmissable.
-   */
   const primaryLabel = !run ? 'Start exercise' : completed ? 'Open' : 'Continue';
+
+  const statusPrimary = completed ? 'Completed' : summary;
+  const statusSecondary = completed ? summary : null;
+
+  const openExercise = useCallback(() => {
+    onPrimary();
+  }, [onPrimary]);
+
+  const statusLine =
+    showStatus && run ? (
+      <Stack direction="row" spacing={0.5} alignItems="center" sx={{ minWidth: 0, flexWrap: 'wrap', rowGap: 0.25 }}>
+        {completed ? (
+          <CheckCircleOutlineIcon sx={{ fontSize: 14, color: 'success.main', opacity: 0.88 }} aria-hidden />
+        ) : null}
+        <Typography
+          variant="caption"
+          sx={{
+            fontWeight: completed ? 600 : 500,
+            color: completed ? 'success.dark' : 'text.secondary',
+            fontSize: '0.68rem',
+            lineHeight: 1.4,
+          }}
+        >
+          {completed ? (
+            <>
+              {statusPrimary}
+              {statusSecondary ? (
+                <>
+                  {' · '}
+                  <Box component="span" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+                    {statusSecondary}
+                  </Box>
+                </>
+              ) : null}
+            </>
+          ) : (
+            summaryTrimmed
+          )}
+        </Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem', opacity: 0.88, ml: 0.25 }}>
+          {formatTimestamp(completed ? run.completedAt : run.updatedAt)}
+        </Typography>
+      </Stack>
+    ) : null;
 
   return (
     <Box
+      onClick={openExercise}
       sx={{
-        position: 'relative',
-        p: 1.5,
-        borderRadius: 1.5,
-        border: 1,
-        borderColor: 'divider',
-        bgcolor: 'background.default',
         display: 'flex',
-        flexDirection: 'column',
-        gap: 1.25,
-        minHeight: 168,
+        flexDirection: { xs: 'column', sm: 'row' },
+        alignItems: { xs: 'stretch', sm: 'center' },
+        gap: { xs: 0.75, sm: 1.5 },
+        px: { xs: 1.25, sm: 1.5 },
+        py: { xs: 0.9, sm: 0.875 },
+        cursor: 'pointer',
+        textAlign: 'left',
+        borderTop: showDivider ? 1 : 0,
+        borderTopStyle: 'solid',
+        borderColor: 'divider',
+        transition: 'background-color 100ms ease-out',
+        '&:hover': { bgcolor: (t) => alpha(t.palette.primary.main, 0.04) },
       }}
     >
-      <Stack direction="row" spacing={1} alignItems="flex-start">
+      <Stack direction="row" spacing={1} alignItems="center" sx={{ flex: 1, minWidth: 0 }}>
         <Box
           sx={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            width: 32,
-            height: 32,
-            borderRadius: 1,
-            bgcolor: 'primary.main',
-            color: 'primary.contrastText',
+            width: 24,
+            height: 24,
             flexShrink: 0,
+            color: 'text.secondary',
           }}
         >
           {icon}
         </Box>
-        <Box sx={{ minWidth: 0 }}>
-          <Typography variant="body2" sx={{ fontWeight: 800, lineHeight: 1.35 }}>
+        <Box sx={{ minWidth: 0, flex: 1, py: 0.1 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              fontWeight: 700,
+              lineHeight: 1.3,
+              color: 'text.primary',
+              fontSize: '0.8125rem',
+            }}
+          >
             {meta.title}
           </Typography>
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ display: 'block', mt: 0.25, lineHeight: 1.5 }}
-          >
-            {meta.description}
-          </Typography>
+          <Tooltip title={meta.description} placement="top" enterDelay={400}>
+            <Typography
+              variant="caption"
+              component="p"
+              color="text.secondary"
+              sx={{
+                m: 0,
+                mt: 0.2,
+                fontSize: '0.7rem',
+                lineHeight: 1.4,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {meta.description}
+            </Typography>
+          </Tooltip>
+          <Box sx={{ display: { xs: 'block', sm: 'none' }, mt: 0.5 }}>{statusLine}</Box>
         </Box>
       </Stack>
 
-      {run ? (
-        <Stack
-          direction="row"
-          spacing={0.75}
-          alignItems="center"
-          sx={{
-            px: 1,
-            py: 0.5,
-            borderRadius: 1,
-            bgcolor: completed ? 'rgba(76, 175, 80, 0.08)' : 'action.hover',
-          }}
-        >
-          {completed ? (
-            <CheckCircleOutlineIcon sx={{ fontSize: 16, color: 'success.main' }} aria-hidden />
-          ) : null}
-          <Typography
-            variant="caption"
+      <Stack
+        direction="row"
+        spacing={1}
+        alignItems="center"
+        justifyContent={{ xs: 'space-between', sm: 'flex-end' }}
+        sx={{ flexShrink: 0, flexWrap: 'wrap', rowGap: 0.5 }}
+      >
+        {showStatus && run ? (
+          <Box
             sx={{
-              fontWeight: 700,
-              color: completed ? 'success.dark' : 'text.primary',
-              flex: 1,
+              display: { xs: 'none', sm: 'flex' },
+              flexDirection: 'column',
+              alignItems: 'flex-end',
+              justifyContent: 'center',
               minWidth: 0,
+              maxWidth: { sm: 220, md: 300 },
+              textAlign: 'right',
+              gap: 0.25,
             }}
           >
-            {completed ? 'Completed' : 'In progress'} · {summary}
-          </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0 }}>
-            {formatTimestamp(completed ? run.completedAt : run.updatedAt)}
-          </Typography>
-        </Stack>
-      ) : null}
-
-      <Box sx={{ flex: 1 }} />
-
-      <Stack direction="row" spacing={1} alignItems="center" justifyContent="flex-end" sx={{ mt: 'auto' }}>
-        {run ? (
-          <Tooltip title={completed ? 'Discard this completed exercise and start fresh' : 'Discard this draft and start fresh'}>
-            <Button
-              size="small"
-              color="inherit"
-              onClick={onClear}
-              startIcon={<RestartAltIcon fontSize="small" />}
-              sx={{
-                textTransform: 'none',
-                fontWeight: 600,
-                color: 'text.secondary',
-                '&:hover': { color: 'error.main', bgcolor: 'error.light' },
-              }}
-            >
-              Clear
-            </Button>
-          </Tooltip>
+            {statusLine}
+          </Box>
         ) : null}
-        <Button
-          variant="contained"
-          size="medium"
-          onClick={onPrimary}
-          sx={{ textTransform: 'none', fontWeight: 700, px: 2.5 }}
-        >
-          {primaryLabel}
-        </Button>
+        <Stack direction="row" spacing={0.5} alignItems="center" justifyContent="flex-end" sx={{ flexShrink: 0 }}>
+          {run ? (
+            <Tooltip title={completed ? 'Discard completed exercise' : 'Discard draft'}>
+              <IconButton
+                size="small"
+                aria-label="Clear exercise"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onClear();
+                }}
+                sx={{
+                  color: 'text.secondary',
+                  '&:hover': { color: 'error.main', bgcolor: 'action.hover' },
+                }}
+              >
+                <RestartAltIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+            </Tooltip>
+          ) : null}
+          <Button
+            variant="outlined"
+            color="primary"
+            size="small"
+            onClick={(e) => {
+              e.stopPropagation();
+              onPrimary();
+            }}
+            sx={{
+              textTransform: 'none',
+              fontWeight: 600,
+              px: 1.25,
+              py: 0.45,
+              fontSize: '0.75rem',
+              minWidth: 124,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {primaryLabel}
+          </Button>
+        </Stack>
       </Stack>
     </Box>
   );

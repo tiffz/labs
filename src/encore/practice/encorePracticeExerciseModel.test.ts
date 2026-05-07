@@ -1,16 +1,23 @@
 import { describe, expect, it } from 'vitest';
 import type { EncoreLyricsInOwnWordsExerciseRun, EncoreSong } from '../types';
 import {
+  characterNineAnswerPlainText,
+  characterNineAnswerToEditorHtml,
   effectiveLyricsSections,
+  effectiveGeniusLyricsSource,
   formatExerciseRunSummary,
   getSingleRunForKind,
   lyricsRewriteProgressFromSections,
   markExerciseRunCompleted,
+  applyPositionalLyricsFallback,
+  mergeParsedNarrativeSectionsWithExisting,
   mergeParsedSectionsWithExisting,
   newLyricsInOwnWordsRun,
+  newLyricsSectionNarrativeRun,
   nineQuestionsProgress,
   parseGeniusLyricsIntoSections,
   removeRunForKind,
+  serializeLyricsSectionsToRaw,
   setSingleRunForKind,
   touchExerciseRun,
 } from './encorePracticeExerciseModel';
@@ -100,12 +107,47 @@ yo`;
   });
 });
 
+describe('serializeLyricsSectionsToRaw', () => {
+  it('round-trips parse → serialize → parse for a typical Genius paste', () => {
+    const raw = `[Verse 1]
+I'm so tired of being here
+And it won't leave me alone
+
+[Chorus]
+When you cried, I'd wipe away all of your tears`;
+    const parsed = parseGeniusLyricsIntoSections(raw);
+    const again = parseGeniusLyricsIntoSections(serializeLyricsSectionsToRaw(parsed));
+    expect(again).toEqual(parsed);
+  });
+
+  it('keeps duplicate-titled sections in order through serialize', () => {
+    const raw = `[Chorus]
+A
+B
+[Bridge]
+C
+[Chorus]
+A
+B`;
+    const parsed = parseGeniusLyricsIntoSections(raw);
+    expect(parseGeniusLyricsIntoSections(serializeLyricsSectionsToRaw(parsed))).toEqual(parsed);
+  });
+
+  it('returns empty string for empty sections', () => {
+    expect(serializeLyricsSectionsToRaw([])).toBe('');
+  });
+
+  it('emits a header line only for titled sections', () => {
+    const sections = [{ title: '', lines: [{ original: 'one', rewrite: '' }, { original: 'two', rewrite: '' }] }];
+    expect(serializeLyricsSectionsToRaw(sections)).toBe('one\ntwo');
+  });
+});
+
 describe('mergeParsedSectionsWithExisting', () => {
-  it('preserves rewrites and notes when re-parsing the same lyrics', () => {
+  it('preserves rewrites when re-parsing the same lyrics', () => {
     const existing = [
       {
         title: 'Verse 1',
-        notes: 'sad and tired',
         lines: [
           { original: "I'm so tired of being here", rewrite: 'exhausted' },
           { original: "And it won't leave me alone", rewrite: '' },
@@ -116,7 +158,6 @@ describe('mergeParsedSectionsWithExisting', () => {
       "[Verse 1]\nI'm so tired of being here\nAnd it won't leave me alone",
     );
     const merged = mergeParsedSectionsWithExisting(parsed, existing);
-    expect(merged[0]?.notes).toBe('sad and tired');
     expect(merged[0]?.lines[0]?.rewrite).toBe('exhausted');
     expect(merged[0]?.lines[1]?.rewrite).toBe('');
   });
@@ -152,6 +193,50 @@ describe('mergeParsedSectionsWithExisting', () => {
   it('returns empty array when parsed is empty even if existing has content', () => {
     const existing = [{ title: 'Verse 1', lines: [{ original: 'x', rewrite: 'y' }] }];
     expect(mergeParsedSectionsWithExisting([], existing)).toEqual([]);
+  });
+});
+
+describe('mergeParsedNarrativeSectionsWithExisting', () => {
+  it('aligns narratives by section title occurrence', () => {
+    const parsed = parseGeniusLyricsIntoSections('[A]\nx\n[B]\ny\n[A]\nz');
+    const existing = [
+      { title: 'A', narrative: 'first-a' },
+      { title: 'B', narrative: 'b' },
+      { title: 'A', narrative: 'second-a' },
+    ];
+    const merged = mergeParsedNarrativeSectionsWithExisting(parsed, existing);
+    expect(merged).toHaveLength(3);
+    expect(merged[0]?.narrative).toBe('first-a');
+    expect(merged[1]?.narrative).toBe('b');
+    expect(merged[2]?.narrative).toBe('second-a');
+  });
+});
+
+describe('applyPositionalLyricsFallback', () => {
+  it('copies rewrites by line index when originals change but section shape matches', () => {
+    const existing = [
+      {
+        title: 'Verse 1',
+        lines: [
+          { original: 'old one', rewrite: 'r1' },
+          { original: 'old two', rewrite: 'r2' },
+        ],
+      },
+    ];
+    const parsed = parseGeniusLyricsIntoSections('[Verse 1]\nnew one\nnew two');
+    const merged = mergeParsedSectionsWithExisting(parsed, existing);
+    expect(merged[0]?.lines[0]?.rewrite).toBe('');
+    const withF = applyPositionalLyricsFallback(merged, existing);
+    expect(withF[0]?.lines[0]?.rewrite).toBe('r1');
+    expect(withF[0]?.lines[1]?.rewrite).toBe('r2');
+  });
+
+  it('does not apply when line counts differ', () => {
+    const existing = [{ title: 'V', lines: [{ original: 'a', rewrite: 'x' }] }];
+    const parsed = [{ title: 'V', lines: [{ original: 'b', rewrite: '' }, { original: 'c', rewrite: '' }] }];
+    const merged = mergeParsedSectionsWithExisting(parsed, existing);
+    const withF = applyPositionalLyricsFallback(merged, existing);
+    expect(withF[0]?.lines[0]?.rewrite).toBe('');
   });
 });
 
@@ -212,6 +297,41 @@ describe('nineQuestionsProgress', () => {
       total: 9,
     });
   });
+
+  it('treats empty TipTap HTML as unanswered', () => {
+    expect(nineQuestionsProgress(['<p></p>', '<p><br></p>', '', '', '', '', '', '', ''])).toEqual({
+      done: 0,
+      total: 9,
+    });
+  });
+
+  it('counts TipTap paragraphs as answered', () => {
+    expect(nineQuestionsProgress(['<p>Hello world</p>', '', '', '', '', '', '', '', ''])).toEqual({
+      done: 1,
+      total: 9,
+    });
+  });
+});
+
+describe('characterNineAnswerPlainText', () => {
+  it('returns plain strings unchanged', () => {
+    expect(characterNineAnswerPlainText('  hi  ')).toBe('hi');
+  });
+
+  it('strips simple HTML', () => {
+    expect(characterNineAnswerPlainText('<p>One</p>')).toBe('One');
+  });
+});
+
+describe('characterNineAnswerToEditorHtml', () => {
+  it('wraps legacy plain text in paragraphs', () => {
+    expect(characterNineAnswerToEditorHtml('Hello')).toBe('<p>Hello</p>');
+  });
+
+  it('passes through stored HTML', () => {
+    const html = '<p><strong>Bold</strong></p>';
+    expect(characterNineAnswerToEditorHtml(html)).toBe(html);
+  });
 });
 
 describe('single-run-per-kind helpers', () => {
@@ -260,6 +380,14 @@ describe('single-run-per-kind helpers', () => {
   });
 });
 
+describe('effectiveGeniusLyricsSource', () => {
+  it('prefers song.lyricsSourceGenius over pasted lyrics', () => {
+    const song = { ...blankSong(), lyricsSourceGenius: '[A]\nhi' };
+    const run = { ...newLyricsInOwnWordsRun(), pastedLyrics: '[B]\nno' };
+    expect(effectiveGeniusLyricsSource(song, run)).toBe('[A]\nhi');
+  });
+});
+
 describe('formatExerciseRunSummary', () => {
   it('reports lyric progress from sections', () => {
     const run: EncoreLyricsInOwnWordsExerciseRun = {
@@ -277,8 +405,18 @@ describe('formatExerciseRunSummary', () => {
     expect(formatExerciseRunSummary(run)).toBe('1 of 2 lines');
   });
 
-  it('reports "Not started" when no lines have been parsed yet', () => {
-    expect(formatExerciseRunSummary(newLyricsInOwnWordsRun())).toBe('Not started');
+  it('returns empty summary when no lyric lines have been parsed yet', () => {
+    expect(formatExerciseRunSummary(newLyricsInOwnWordsRun())).toBe('');
+  });
+
+  it('reports section narrative progress', () => {
+    const song = { ...blankSong(), lyricsSourceGenius: '[Verse 1]\na\n[Chorus]\nb' };
+    const run = newLyricsSectionNarrativeRun(song);
+    const withOne = {
+      ...run,
+      sections: [{ title: 'Verse 1', narrative: 'x' }, { title: 'Chorus', narrative: '' }],
+    };
+    expect(formatExerciseRunSummary(withOne)).toBe('1 of 2 sections');
   });
 });
 

@@ -78,11 +78,14 @@ export interface EncoreAuthContextValue {
   accessDenied: boolean;
   accessDeniedMessage: string | null;
   retryAccessGate: () => void;
+  /** True while an interactive Google token request is in flight (popup / consent UX). */
+  googleSignInPending: boolean;
 }
 
 const EncoreAuthContext = createContext<EncoreAuthContextValue | null>(null);
 
 const GOOGLE_SCOPES = [
+  /** Covers Encore-created Drive files and Google Docs created/edited by Encore (per-file, not all Docs). */
   'https://www.googleapis.com/auth/drive.file',
   'https://www.googleapis.com/auth/drive.metadata.readonly',
   'https://www.googleapis.com/auth/userinfo.email',
@@ -123,11 +126,7 @@ async function requestGoogleSilentToken(
   scope: string,
 ): Promise<{ access_token: string; expires_in?: number } | null> {
   try {
-    return await promiseWithTimeout(
-      requestGoogleAccessToken(clientId, scope, { prompt: 'none' }),
-      12_000,
-      'Google silent refresh',
-    );
+    return await requestGoogleAccessToken(clientId, scope, { prompt: 'none' });
   } catch {
     return null;
   }
@@ -153,6 +152,7 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
   const [googleSessionExpired, setGoogleSessionExpired] = useState(false);
   const [accessDenied, setAccessDenied] = useState(false);
   const [accessDeniedMessage, setAccessDeniedMessage] = useState<string | null>(null);
+  const [googleSignInPending, setGoogleSignInPending] = useState(false);
   const [spotifyLinked, setSpotifyLinked] = useState(() => hasUsableSpotifyTokenBundle());
   const [spotifyConnectError, setSpotifyConnectError] = useState<string | null>(null);
   const [spotifyConnectLoopbackUrl, setSpotifyConnectLoopbackUrl] = useState<string | null>(null);
@@ -160,6 +160,7 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
 
   const googleAccessTokenRef = useRef<string | null>(null);
   googleAccessTokenRef.current = googleAccessToken;
+  const googleSignInInFlightRef = useRef(false);
   /** Passed to Spotify authorize as `show_dialog` for reconnect flows. */
   const spotifyNextOAuthShowDialogRef = useRef(false);
 
@@ -497,6 +498,9 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
       setAccessDenied(true);
       return;
     }
+    if (googleSignInInFlightRef.current) return;
+    googleSignInInFlightRef.current = true;
+    setGoogleSignInPending(true);
     setAccessDenied(false);
     setAccessDeniedMessage(null);
     try {
@@ -508,6 +512,9 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
       const msg = e instanceof Error ? e.message : String(e);
       setAccessDeniedMessage(msg);
       setAccessDenied(true);
+    } finally {
+      googleSignInInFlightRef.current = false;
+      setGoogleSignInPending(false);
     }
   }, [finalizeGoogleSession]);
 
@@ -556,6 +563,7 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
       accessDenied,
       accessDeniedMessage,
       retryAccessGate,
+      googleSignInPending,
     }),
     [
       googleAuthReady,
@@ -565,6 +573,7 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
       displayName,
       googleEmail,
       signInWithGoogle,
+      googleSignInPending,
       continueWithoutGoogle,
       signOut,
       spotifyLinked,

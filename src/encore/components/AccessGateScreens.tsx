@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import Button from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
@@ -13,10 +14,11 @@ import {
 
 function accessDenialKind(
   message: string | null,
-): 'allowlist' | 'timeout' | 'generic' {
+): 'allowlist' | 'timeout' | 'popup' | 'generic' {
   const m = (message ?? '').toLowerCase();
   if (m.includes('timed out')) return 'timeout';
   if (m.includes('not on the allowlist') || m.includes('vite_allowed_email_hashes')) return 'allowlist';
+  if (m.includes('popup window') || m.includes('allow popups')) return 'popup';
   return 'generic';
 }
 
@@ -51,14 +53,18 @@ export function AccessRestrictedScreen(props: { message: string | null; onRetry:
       ? 'Invite only'
       : kind === 'timeout'
         ? 'Sign-in timed out'
-        : 'Could not sign in';
+        : kind === 'popup'
+          ? 'Pop-up blocked'
+          : 'Could not sign in';
 
   const lead =
     kind === 'allowlist'
       ? 'This Google account is not on the allowlist for this build of Encore.'
       : kind === 'timeout'
         ? 'Google did not return a token before the time limit. That usually means a blocked popup, a closed sign-in window, or a slow network—not that your email failed an allowlist check.'
-        : 'Something went wrong while signing in with Google.';
+        : kind === 'popup'
+          ? 'Your browser stopped the Google sign-in window. Allow popups for this site (or try again after unblocking), then use Try again below.'
+          : 'Something went wrong while signing in with Google.';
 
   const retryLabel = kind === 'allowlist' ? 'Try another account' : 'Try again';
 
@@ -124,8 +130,10 @@ export function SignInLanding(props: {
   clientConfigured: boolean;
   /** When set, user can open the library without Google (Drive sync and YouTube import stay gated until sign-in). */
   onContinueLocalOnly?: () => void;
+  /** True while GIS is showing the Google consent / account picker (avoid double launches). */
+  signInPending?: boolean;
 }): ReactElement {
-  const { onSignIn, clientConfigured, onContinueLocalOnly } = props;
+  const { onSignIn, clientConfigured, onContinueLocalOnly, signInPending = false } = props;
   return (
     <EncoreAppShell centered>
       <Paper
@@ -165,8 +173,15 @@ export function SignInLanding(props: {
           </Typography>
         ) : null}
         <Stack spacing={1.25}>
-          <Button variant="contained" size="large" fullWidth disabled={!clientConfigured} onClick={() => void onSignIn()}>
-            Sign in with Google
+          <Button
+            variant="contained"
+            size="large"
+            fullWidth
+            disabled={!clientConfigured || signInPending}
+            onClick={() => void onSignIn()}
+            startIcon={signInPending ? <CircularProgress color="inherit" size={20} /> : undefined}
+          >
+            {signInPending ? 'Waiting for Google…' : 'Sign in with Google'}
           </Button>
           {onContinueLocalOnly ? (
             <Button variant="text" size="large" fullWidth onClick={onContinueLocalOnly}>

@@ -16,6 +16,8 @@ declare global {
               error?: string;
               error_description?: string;
             }) => void;
+            /** GIS invokes this for non-OAuth failures (blocked popup, window closed early). */
+            error_callback?: (detail: { type?: string }) => void;
           }) => { requestAccessToken: (override?: { prompt?: string }) => void };
         };
       };

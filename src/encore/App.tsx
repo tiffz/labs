@@ -26,6 +26,7 @@ function EncoreSignedInRouter(): React.ReactElement {
     accessDenied,
     accessDeniedMessage,
     signInWithGoogle,
+    googleSignInPending,
     continueWithoutGoogle,
     retryAccessGate,
   } = useEncore();
@@ -55,6 +56,7 @@ function EncoreSignedInRouter(): React.ReactElement {
         <main id="main">
           <SignInLanding
             clientConfigured={clientConfigured}
+            signInPending={googleSignInPending}
             onSignIn={() => {
               void signInWithGoogle();
             }}

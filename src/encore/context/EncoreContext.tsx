@@ -72,6 +72,7 @@ export interface EncoreContextValue {
   accessDenied: boolean;
   accessDeniedMessage: string | null;
   retryAccessGate: () => void;
+  googleSignInPending: boolean;
   songs: EncoreSong[];
   performances: EncorePerformance[];
   repertoireExtras: RepertoireExtrasRow;
@@ -156,6 +157,7 @@ export function useEncore(): EncoreContextValue {
       accessDenied: auth.accessDenied,
       accessDeniedMessage: auth.accessDeniedMessage,
       retryAccessGate: auth.retryAccessGate,
+      googleSignInPending: auth.googleSignInPending,
       songs: library.songs,
       performances: library.performances,
       repertoireExtras: library.repertoireExtras,
