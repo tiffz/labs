@@ -77,6 +77,8 @@ function getDefaultAsymmetricGrouping(numerator: number): number[] {
       return [3, 3, 3, 2]; // 11/8 = 3+3+3+2
     case 13:
       return [3, 3, 3, 2, 2]; // 13/8 = 3+3+3+2+2
+    case 14:
+      return [3, 3, 3, 3, 2]; // 14/8 = 3+3+3+3+2
     default: {
       // For other values, try to group in 3s with remainder
       const groups: number[] = [];

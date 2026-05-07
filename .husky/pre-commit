@@ -15,6 +15,12 @@ if ! git diff --quiet -- src/ui/generatedSharedCatalog.ts; then
   echo "Staged updated shared catalog (src/ui/generatedSharedCatalog.ts)."
 fi
 
+npm run generate:labs-catalog
+if ! git diff --quiet -- src/index.html; then
+  git add src/index.html
+  echo "Staged updated Labs homepage catalog (src/index.html)."
+fi
+
 STAGED_FILES="$(git diff --cached --name-only)"
 if [ -z "$STAGED_FILES" ]; then
   echo "No staged files after catalog sync; skipping pre-commit checks."

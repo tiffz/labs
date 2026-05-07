@@ -40,6 +40,9 @@ jobs:
       - name: Generate shared catalog
         run: npm run generate:shared-catalog
 
+      - name: Check labs homepage catalog
+        run: npm run check:labs-catalog
+
       - name: Run fast test suite (no retries)
         run: npm run test:fast -- --retry=0
 

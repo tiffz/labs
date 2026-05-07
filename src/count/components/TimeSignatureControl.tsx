@@ -27,7 +27,7 @@ const PRESETS: Array<{ num: number; den: number; label: string; grouping?: strin
   { num: 8, den: 8, label: '8/8', grouping: '3+3+2' },
 ];
 
-const NUMERATORS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15];
+const NUMERATORS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 const DENOMINATORS = [4, 8];
 
 const PICKER_PAPER_SX = {

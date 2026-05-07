@@ -5,3 +5,6 @@
 if ! npm run check:shared-catalog >/dev/null 2>&1; then
   echo "Shared catalog is out of date (non-blocking): run 'npm run generate:shared-catalog' when convenient."
 fi
+if ! npm run check:labs-catalog >/dev/null 2>&1; then
+  echo "Labs homepage catalog is out of date (non-blocking): run 'npm run generate:labs-catalog' when convenient."
+fi
