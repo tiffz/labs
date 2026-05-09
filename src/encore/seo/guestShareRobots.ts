@@ -6,6 +6,12 @@
  */
 export const ENCORE_GUEST_SHARE_HASH_RE = /^#\/share\/[^/?#]+$/;
 
+/** True when the URL hash is a read-only guest repertoire link (`#/share/<driveFileId>`). */
+export function isEncoreGuestShareHash(hash?: string): boolean {
+  const h = hash ?? (typeof window !== 'undefined' ? window.location.hash || '' : '');
+  return ENCORE_GUEST_SHARE_HASH_RE.test(h);
+}
+
 const META_ID = 'encore-guest-share-robots';
 
 /** Restrictive: no indexing, no following links, no cache snippet, no text snippet in results. */
@@ -20,7 +26,7 @@ const ROBOTS_ATTRS: Array<[string, string]> = [
  */
 export function syncEncoreGuestShareRobotsFromHash(): void {
   if (typeof document === 'undefined' || typeof window === 'undefined') return;
-  const isGuestShare = ENCORE_GUEST_SHARE_HASH_RE.test(window.location.hash || '');
+  const isGuestShare = isEncoreGuestShareHash();
   const existing = document.getElementById(META_ID);
   if (!isGuestShare) {
     existing?.remove();

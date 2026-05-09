@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { ENCORE_GUEST_SHARE_HASH_RE, syncEncoreGuestShareRobotsFromHash } from './guestShareRobots';
+import {
+  ENCORE_GUEST_SHARE_HASH_RE,
+  isEncoreGuestShareHash,
+  syncEncoreGuestShareRobotsFromHash,
+} from './guestShareRobots';
 
 describe('guestShareRobots', () => {
   afterEach(() => {
@@ -12,6 +16,12 @@ describe('guestShareRobots', () => {
     expect(ENCORE_GUEST_SHARE_HASH_RE.test('#/share/abc/extra')).toBe(false);
     expect(ENCORE_GUEST_SHARE_HASH_RE.test('#/library')).toBe(false);
     expect(ENCORE_GUEST_SHARE_HASH_RE.test('')).toBe(false);
+  });
+
+  it('isEncoreGuestShareHash accepts an explicit hash argument', () => {
+    expect(isEncoreGuestShareHash('#/share/abc')).toBe(true);
+    expect(isEncoreGuestShareHash('#/share/a/b')).toBe(false);
+    expect(isEncoreGuestShareHash('#/library')).toBe(false);
   });
 
   it('injects robots meta on guest share hash and removes when leaving', () => {

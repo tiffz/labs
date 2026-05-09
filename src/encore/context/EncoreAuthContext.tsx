@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -38,6 +39,7 @@ import { SpotifyPrivacyAckDialog } from '../components/SpotifyPrivacyAckDialog';
 import { hasSpotifyPrivacyAck, setSpotifyPrivacyAck } from '../spotify/spotifyPrivacyAck';
 import { startSpotifyOAuthFlow } from '../spotify/startSpotifyOAuthFlow';
 import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
+import { isEncoreGuestShareHash } from '../seo/guestShareRobots';
 
 /**
  * Auth surface for Encore: Google identity + Spotify connection state. Split out from
@@ -45,7 +47,11 @@ import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
  * EncoreAccountMenu, sign-in screens) do not re-render when library or sync state changes.
  */
 export interface EncoreAuthContextValue {
-  /** False until the first Google session restore attempt finishes (avoids sign-in UI flash). */
+  /**
+   * False until the first Google session restore attempt finishes (avoids sign-in UI flash).
+   * On the read-only guest share route (`#/share/…`), this becomes true immediately and GIS
+   * bootstrap is skipped so anonymous visitors never load Google’s sign-in script.
+   */
   googleAuthReady: boolean;
   googleAccessToken: string | null;
   /** True when the user skipped Google sign-in or disconnected Google but stayed in the app. */
@@ -134,7 +140,12 @@ async function requestGoogleSilentToken(
 
 export function EncoreAuthProvider({ children }: { children: ReactNode }): ReactElement {
   const { clear: clearUndoStack } = useLabsUndo();
-  const [googleAuthReady, setGoogleAuthReady] = useState(false);
+  const [googleAuthReady, setGoogleAuthReady] = useState(
+    () => typeof window !== 'undefined' && isEncoreGuestShareHash(),
+  );
+  const [guestShareRoute, setGuestShareRoute] = useState(
+    () => typeof window !== 'undefined' && isEncoreGuestShareHash(),
+  );
   const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(null);
   const [googleGateBypassed, setGoogleGateBypassed] = useState(() =>
     typeof window !== 'undefined' ? readGoogleGateBypassed() : false,
@@ -167,6 +178,18 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
   const refreshSpotifyLinked = useCallback(() => {
     setSpotifyLinked(hasUsableSpotifyTokenBundle());
   }, []);
+
+  useEffect(() => {
+    const onHash = () => setGuestShareRoute(isEncoreGuestShareHash());
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+
+  /** Leaving the guest route must clear “ready” before paint so the main shell shows the spinner, not the sign-in gate. */
+  useLayoutEffect(() => {
+    if (guestShareRoute) return;
+    setGoogleAuthReady(false);
+  }, [guestShareRoute]);
 
   useEffect(() => {
     refreshSpotifyLinked();
@@ -305,6 +328,14 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
 
   useEffect(() => {
     let cancelled = false;
+
+    if (guestShareRoute) {
+      setGoogleAuthReady(true);
+      return () => {
+        cancelled = true;
+      };
+    }
+
     void (async () => {
       try {
         const clientId = getGoogleClientId();
@@ -400,7 +431,7 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
     return () => {
       cancelled = true;
     };
-  }, [finalizeGoogleSession]);
+  }, [finalizeGoogleSession, guestShareRoute]);
 
   useEffect(() => {
     // We want the refresh loop active whenever there's *any* hope of recovering a session — either

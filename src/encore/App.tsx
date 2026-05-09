@@ -12,6 +12,7 @@ import { GuestShareView } from './components/GuestShareView';
 import { tryCompleteSpotifyOAuthFromUrl } from './spotify/completeOAuthFromUrl';
 import { EncoreAppShell } from './ui/EncoreAppShell';
 import { touchLabsGoogleSessionConsumer } from '../shared/google/labsGoogleSessionConsumers';
+import { isEncoreGuestShareHash } from './seo/guestShareRobots';
 
 function parseShareFileIdFromHash(): string | null {
   const raw = window.location.hash.replace(/^#/, '');
@@ -91,6 +92,7 @@ export default function App(): React.ReactElement {
   }, []);
 
   useEffect(() => {
+    if (isEncoreGuestShareHash()) return;
     touchLabsGoogleSessionConsumer('encore');
   }, []);
 
