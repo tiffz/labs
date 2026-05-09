@@ -1,5 +1,5 @@
 import type { EncoreMediaLink } from '../types';
-import { parseYoutubeVideoId } from '../youtube/parseYoutubeVideoUrl';
+import { parseYoutubeVideoId, youtubeWatchUrlFromInput } from '../youtube/parseYoutubeVideoUrl';
 
 /**
  * Long-form caption for a media link row's title attribute. Uses the nickname when set;
@@ -44,7 +44,6 @@ export function formatChartAttachmentShortCaption(a: { label?: string; driveFile
 
 /** Watch URL for a YouTube media link; null for non-YouTube or missing-id links. */
 export function youtubeWatchUrlFromMediaLink(link: EncoreMediaLink): string | null {
-  if (link.source !== 'youtube' || !link.youtubeVideoId?.trim()) return null;
-  const id = parseYoutubeVideoId(link.youtubeVideoId) ?? link.youtubeVideoId.trim();
-  return `https://www.youtube.com/watch?v=${encodeURIComponent(id)}`;
+  if (link.source !== 'youtube') return null;
+  return youtubeWatchUrlFromInput(link.youtubeVideoId);
 }

@@ -1,3 +1,4 @@
+import MicIcon from '@mui/icons-material/Mic';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -25,6 +26,8 @@ import {
   encoreShadowSurface,
   encoreShellCenteredSx,
 } from '../theme/encoreUiTokens';
+import { youtubeWatchUrlFromInput } from '../youtube/parseYoutubeVideoUrl';
+import { pickGuestYoutubeBackingWatchUrl } from './guestYoutubeBackingWatchUrl';
 import { SpotifyBrandIcon, YouTubeBrandIcon } from './EncoreBrandIcon';
 
 function isPublicSnapshot(data: unknown): data is PublicSnapshot {
@@ -107,6 +110,28 @@ export function GuestShareView({ fileId }: { fileId: string }): React.ReactEleme
             transform: 'scale(1.06)',
             '& path:nth-of-type(1)': { fill: youtubeRed },
             '& path:nth-of-type(2)': { fill: '#fff' },
+          },
+        },
+      },
+      /** Backing-track YouTube — Google Material `Mic` (filled). */
+      backingYoutube: {
+        p: 0.5,
+        borderRadius: 1.25,
+        transition: shellTransition,
+        ...focusRing,
+        color: gray,
+        '& .MuiSvgIcon-root': {
+          fontSize: 22,
+          display: 'block',
+          opacity: 0.72,
+          transition: iconTransition,
+        },
+        '&:hover': {
+          ...hoverSurface,
+          color: theme.palette.primary.main,
+          '& .MuiSvgIcon-root': {
+            opacity: 1,
+            transform: 'scale(1.06)',
           },
         },
       },
@@ -206,6 +231,10 @@ export function GuestShareView({ fileId }: { fileId: string }): React.ReactEleme
               .filter((p) => p.songId === s.id)
               .sort((a, b) => b.date.localeCompare(a.date));
             const meta = s.performanceKey ?? '';
+            const ytWatchUrl = youtubeWatchUrlFromInput(s.youtubeVideoId);
+            const backingYtCandidate = pickGuestYoutubeBackingWatchUrl(s.backingLinks);
+            const backingYtUrl =
+              backingYtCandidate && backingYtCandidate !== ytWatchUrl ? backingYtCandidate : null;
 
             return (
               <Card
@@ -283,7 +312,7 @@ export function GuestShareView({ fileId }: { fileId: string }): React.ReactEleme
                         ))}
                       </Stack>
                     ) : null}
-                    {(s.spotifyTrackId || s.youtubeVideoId) && (
+                    {(s.spotifyTrackId || ytWatchUrl || backingYtUrl) && (
                       <Stack direction="row" gap={1.25} sx={{ mt: 0.75 }} alignItems="center">
                         {s.spotifyTrackId ? (
                           <Tooltip title="Listen to the original track on Spotify">
@@ -300,11 +329,11 @@ export function GuestShareView({ fileId }: { fileId: string }): React.ReactEleme
                             </IconButton>
                           </Tooltip>
                         ) : null}
-                        {s.youtubeVideoId ? (
+                        {ytWatchUrl ? (
                           <Tooltip title="Open the reference video on YouTube">
                             <IconButton
                               component="a"
-                              href={`https://www.youtube.com/watch?v=${encodeURIComponent(s.youtubeVideoId)}`}
+                              href={ytWatchUrl}
                               target="_blank"
                               rel="noreferrer"
                               size="small"
@@ -312,6 +341,21 @@ export function GuestShareView({ fileId }: { fileId: string }): React.ReactEleme
                               sx={guestStreamingLinkIconSx.youtube}
                             >
                               <YouTubeBrandIcon aria-hidden />
+                            </IconButton>
+                          </Tooltip>
+                        ) : null}
+                        {backingYtUrl ? (
+                          <Tooltip title="Open backing track on YouTube">
+                            <IconButton
+                              component="a"
+                              href={backingYtUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              size="small"
+                              aria-label="Open backing track on YouTube"
+                              sx={guestStreamingLinkIconSx.backingYoutube}
+                            >
+                              <MicIcon aria-hidden />
                             </IconButton>
                           </Tooltip>
                         ) : null}
