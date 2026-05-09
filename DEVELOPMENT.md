@@ -2,6 +2,8 @@
 
 This document records major architectural decisions and development patterns for the Labs monorepo.
 
+Formal **Architecture Decision Records** live under [`docs/adr/`](docs/adr/README.md) when a choice needs durable context and alternatives (not every PR). Policy, checklists, and enforced guardrails stay here; ADRs capture cross-cutting intent—see for example [ADR 0001: static hosting and hash routing](docs/adr/0001-static-hosting-hash-routing.md). [ADR 0002](docs/adr/0002-historical-decisions-in-development.md) describes how this file and ADRs relate for **historical** decisions.
+
 ## Code Style
 
 This project follows the [Google TypeScript Style Guide](https://google.github.io/styleguide/tsguide.html) for consistent code formatting and patterns.

@@ -50,6 +50,7 @@ import FreeTempoGrader from './FreeTempoGrader';
 import PreStartFreeTempoProbe from './PreStartFreeTempoProbe';
 import TimedGrader from './TimedGrader';
 import ScalesInputSources from './InputSources';
+import ScalesAccountMenu from './ScalesAccountMenu';
 import {
   useAutoLoopScheduler,
   DEFAULT_AUTO_LOOP_DWELL_MS as AUTO_LOOP_DWELL_MS,
@@ -78,6 +79,7 @@ import { computeGuidance, isGuidancePayloadEmpty, resolveHandGuidance } from '..
 import {
   applyPianoDoubleTapStep,
   PIANO_ADVANCE_BUTTON_TOOLTIP,
+  PIANO_ADVANCE_BUTTON_TOOLTIP_MIC_ONLY,
   type PianoDoubleTapArm,
 } from '../utils/pianoAdvanceDoubleTap';
 
@@ -163,7 +165,7 @@ const HAND_SHORT = { right: 'RH', left: 'LH', both: 'Both' } as const;
 const NOTE_NAMES = ['C', 'C\u266F', 'D', 'D\u266F', 'E', 'F', 'F\u266F', 'G', 'G\u266F', 'A', 'A\u266F', 'B'];
 function midiToNoteName(midi: number): string { return NOTE_NAMES[midi % 12]; }
 
-function AdvanceActionTooltip({ children }: { children: ReactNode }) {
+function AdvanceActionTooltip({ children, title }: { children: ReactNode; title: string }) {
   return (
     <Tooltip
       arrow
@@ -171,7 +173,7 @@ function AdvanceActionTooltip({ children }: { children: ReactNode }) {
       enterDelay={300}
       placement="top"
       disableInteractive
-      title={PIANO_ADVANCE_BUTTON_TOOLTIP}
+      title={title}
     >
       <Box component="span" sx={{ display: 'inline-flex', justifyContent: 'center', maxWidth: '100%' }}>
         {children}
@@ -1017,6 +1019,13 @@ export default function SessionScreen() {
   const midiShortcutStreamActive =
     hasEnabledMidiDevice(state) || state.microphoneActive;
 
+  const advanceActionTooltipTitle = hasEnabledMidiDevice({
+    midiDevices: state.midiDevices,
+    disabledMidiDeviceIds: state.disabledMidiDeviceIds,
+  })
+    ? PIANO_ADVANCE_BUTTON_TOOLTIP
+    : PIANO_ADVANCE_BUTTON_TOOLTIP_MIC_ONLY;
+
   useEffect(() => {
     sessionAdvancePianoArmRef.current = null;
     timedPreStartPianoArmRef.current = null;
@@ -1225,7 +1234,12 @@ export default function SessionScreen() {
    */
   useEffect(() => {
     if (!activeExercise || !loaded || !score) return;
-    if (!midiShortcutStreamActive) {
+    // Piano double-tap advance requires a real MIDI device — mic-only pitch
+    // events would otherwise skip exercises on every detected note/noise.
+    if (!hasEnabledMidiDevice({
+      midiDevices: state.midiDevices,
+      disabledMidiDeviceIds: state.disabledMidiDeviceIds,
+    })) {
       sessionAdvancePianoArmRef.current = null;
       return;
     }
@@ -1319,7 +1333,8 @@ export default function SessionScreen() {
     cancelAutoLoop,
     armAdvanceCooldown,
     setHelpPreview,
-    midiShortcutStreamActive,
+    state.midiDevices,
+    state.disabledMidiDeviceIds,
   ]);
 
   const fingerCrossingRegions = useMemo(() => {
@@ -1683,8 +1698,9 @@ export default function SessionScreen() {
           </Box>
         </Box>
 
-        <Box sx={{ flexShrink: 0 }}>
+        <Box sx={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 0.5 }}>
           <ScalesInputSources />
+          <ScalesAccountMenu />
         </Box>
       </Paper>
 
@@ -1832,6 +1848,7 @@ export default function SessionScreen() {
                 mb: 0.5,
                 lineHeight: 1.4,
                 fontStyle: 'italic',
+                textAlign: 'center',
               }}
             >
               <Box component="span" sx={{ fontWeight: 600, mr: 0.5, fontStyle: 'normal' }}>
@@ -2320,7 +2337,7 @@ export default function SessionScreen() {
                   lineHeight: '1.25rem',
                   letterSpacing: '0.015625rem',
                   color: 'text.secondary',
-                  textAlign: 'left',
+                  textAlign: 'center',
                 }}
               >
                 {`You have put in ${stuckPreviewDrillRounds} drill rounds. Thank you for sticking with it. A short pause before the next round often helps more than pushing when your hands feel tired.`}
@@ -2332,7 +2349,7 @@ export default function SessionScreen() {
                   lineHeight: 1.6,
                   letterSpacing: '0.015625rem',
                   color: 'text.secondary',
-                  textAlign: 'left',
+                  textAlign: 'center',
                 }}
               >
                 {stuckJumpCoachingModalTip(
@@ -2346,7 +2363,7 @@ export default function SessionScreen() {
                   lineHeight: 1.55,
                   letterSpacing: '0.015625rem',
                   color: 'text.secondary',
-                  textAlign: 'left',
+                  textAlign: 'center',
                 }}
               >
                 {`You have been on this level (${attemptsOnLevelLabel}). If you want steadier footing, ${stuckFallbackLabel} is there. Staying here is fine too.`}
@@ -2361,8 +2378,16 @@ export default function SessionScreen() {
               }}
             >
               {stuckShowDrillCopy ? (
-                <Stack direction={{ xs: 'column-reverse', sm: 'row' }} spacing={1} sx={{ width: '100%' }}>
-                  <AdvanceActionTooltip>
+                <Stack
+                  direction={{ xs: 'column-reverse', sm: 'row' }}
+                  spacing={1}
+                  sx={{
+                    width: '100%',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <AdvanceActionTooltip title={advanceActionTooltipTitle}>
                     <Button
                       variant="text"
                       onClick={() => {
@@ -2381,11 +2406,10 @@ export default function SessionScreen() {
                       Keep drilling
                     </Button>
                   </AdvanceActionTooltip>
-                  <AdvanceActionTooltip>
+                  <AdvanceActionTooltip title={advanceActionTooltipTitle}>
                     <Button
                       variant="contained"
                       disableElevation
-                      fullWidth
                       onClick={() => {
                         if (stuckDialogDebugOnly) {
                           setHelpPreview(null);
@@ -2400,6 +2424,7 @@ export default function SessionScreen() {
                         height: 40,
                         fontSize: '0.875rem',
                         fontWeight: 500,
+                        minWidth: 140,
                       }}
                     >
                       Move on
@@ -2407,9 +2432,17 @@ export default function SessionScreen() {
                   </AdvanceActionTooltip>
                 </Stack>
               ) : stuckShowJumpCopy ? (
-                <Stack direction={{ xs: 'column-reverse', sm: 'row' }} spacing={1} sx={{ width: '100%' }}>
+                <Stack
+                  direction={{ xs: 'column-reverse', sm: 'row' }}
+                  spacing={1}
+                  sx={{
+                    width: '100%',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
                   {stuckFallbackStage && (
-                    <AdvanceActionTooltip>
+                    <AdvanceActionTooltip title={advanceActionTooltipTitle}>
                       <Button
                         variant="text"
                         onClick={() => {
@@ -2425,12 +2458,11 @@ export default function SessionScreen() {
                       </Button>
                     </AdvanceActionTooltip>
                   )}
-                  <AdvanceActionTooltip>
+                  <AdvanceActionTooltip title={advanceActionTooltipTitle}>
                     <Button
                       variant="contained"
                       color="primary"
                       disableElevation
-                      fullWidth
                       onClick={() => {
                         if (stuckDialogDebugOnly) {
                           setHelpPreview(null);
@@ -2446,6 +2478,7 @@ export default function SessionScreen() {
                         height: 40,
                         fontSize: '0.875rem',
                         fontWeight: 500,
+                        minWidth: 140,
                       }}
                     >
                       Got it
@@ -2453,8 +2486,16 @@ export default function SessionScreen() {
                   </AdvanceActionTooltip>
                 </Stack>
               ) : (
-                <Stack direction={{ xs: 'column-reverse', sm: 'row' }} spacing={1} sx={{ width: '100%' }}>
-                  <AdvanceActionTooltip>
+                <Stack
+                  direction={{ xs: 'column-reverse', sm: 'row' }}
+                  spacing={1}
+                  sx={{
+                    width: '100%',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <AdvanceActionTooltip title={advanceActionTooltipTitle}>
                     <Button
                       variant="text"
                       onClick={() => {
@@ -2474,11 +2515,10 @@ export default function SessionScreen() {
                     </Button>
                   </AdvanceActionTooltip>
                   {stuckFallbackStage && (
-                    <AdvanceActionTooltip>
+                    <AdvanceActionTooltip title={advanceActionTooltipTitle}>
                       <Button
                         variant="contained"
                         disableElevation
-                        fullWidth
                         onClick={() => {
                           if (stuckDialogDebugOnly) {
                             setHelpPreview(null);
@@ -2492,6 +2532,7 @@ export default function SessionScreen() {
                           height: 40,
                           fontSize: '0.875rem',
                           fontWeight: 500,
+                          minWidth: 140,
                         }}
                       >
                         {`Drop to ${stuckFallbackLabel}`}
@@ -2682,7 +2723,7 @@ export default function SessionScreen() {
         {boundary && drillState !== 'active' && (
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
             <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
-              <AdvanceActionTooltip>
+              <AdvanceActionTooltip title={advanceActionTooltipTitle}>
                 <Button
                   variant="contained"
                   size="large"
@@ -2781,7 +2822,7 @@ export default function SessionScreen() {
               <Icon name="replay" size={20} /> Practice Again
             </Button>
             {showMoveOnFromPausedFullResults && (
-              <AdvanceActionTooltip>
+              <AdvanceActionTooltip title={advanceActionTooltipTitle}>
                 <Button
                   variant="outlined"
                   size="large"

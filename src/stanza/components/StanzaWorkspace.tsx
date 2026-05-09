@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
@@ -26,6 +26,8 @@ import TextField from '@mui/material/TextField';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Typography from '@mui/material/Typography';
+import Alert from '@mui/material/Alert';
+import Link from '@mui/material/Link';
 import AppTooltip from '../../shared/components/AppTooltip';
 import MetronomeToggleButton from '../../shared/components/MetronomeToggleButton';
 import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
@@ -37,17 +39,35 @@ import {
 } from '../db/stanzaLastSelectedSong';
 import { useStanzaFileDrop } from '../hooks/useStanzaFileDrop';
 import { canResolveYoutubePaste, resolveYoutubePaste } from '../utils/youtubePasteImport';
-import { deriveSegments, ensureMarkerIds, findSegmentIndexAtTime, STANZA_TIME_EPS } from '../utils/segments';
+import {
+  deletableBoundaryMarkerAtTime,
+  deriveSegments,
+  ensureMarkerIds,
+  findSegmentIndexAtTime,
+  STANZA_TIME_EPS,
+} from '../utils/segments';
 import {
   computeLoopHull,
   STANZA_LOOP_EPS,
   type StanzaPlaybackLoopMode,
 } from '../utils/stanzaPlaybackLoop';
 import { migrateStanzaSongSegmentKeysIfNeeded } from '../utils/stanzaSegmentMigration';
+import {
+  backfillStanzaVideoThumbnailIfNeeded,
+  pickThumbnailSeekSec,
+} from '../utils/stanzaVideoThumbnail';
 import { fetchYoutubeOEmbedTitle, youtubeMqThumbnailUrl } from '../utils/stanzaYoutubeMeta';
-import { readYoutubeVFromLocation, replaceStanzaYoutubeSearchParam } from '../utils/stanzaUrlYoutube';
+import { loadDriveFileAsStanzaLocalBlob } from '../drive/loadDriveSourceForStanza';
+import { LabsGoogleInteractiveAuthRequiredError, LABS_GOOGLE_INTERACTIVE_DRIVE_AUTH_HINT } from '../../shared/google/labsGoogleDriveAccess';
+import {
+  hasStanzaDriveDeepLinkQuery,
+  readStanzaDriveBootstrapFromLocation,
+  replaceStanzaPlaybackUrlSearchParams,
+} from '../utils/stanzaDriveUrlParams';
+import { readYoutubeVFromLocation, stripStanzaYoutubeSearchParamPreservingDrive } from '../utils/stanzaUrlYoutube';
 import type { GuidedRegimen } from '../utils/conductorRegimen';
 import StanzaYouTubePlayer, { type StanzaYouTubeController } from './StanzaYouTubePlayer';
+import StanzaAccountMenu from './StanzaAccountMenu';
 import StanzaTimeline from './StanzaTimeline';
 import ConductorOverlay from './ConductorOverlay';
 import MetronomeWizard from './MetronomeWizard';
@@ -70,6 +90,77 @@ function songHasPractice(s: StanzaSong): boolean {
   return (s.markers?.length ?? 0) > 0 || Object.keys(s.stats ?? {}).length > 0;
 }
 
+function describeYoutubePlayerError(code: number): string {
+  if (code === 101 || code === 150) {
+    return 'This video cannot be played inside Stanza because the publisher has disabled embedding on other sites.';
+  }
+  if (code === 100) {
+    return 'This video is unavailable (removed, private, or not found).';
+  }
+  if (code === 5) {
+    return 'YouTube reported a playback error in the embedded player.';
+  }
+  if (code === 2) {
+    return 'YouTube reported invalid playback parameters.';
+  }
+  return `YouTube reported playback error ${code}.`;
+}
+
+function StanzaLibraryJpegThumb({ songId, blob }: { songId: string; blob: Blob }) {
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- blob reference churns from Dexie; size+type identify bytes
+  const url = useMemo(() => URL.createObjectURL(blob), [songId, blob.size, blob.type]);
+  useEffect(() => () => URL.revokeObjectURL(url), [url]);
+  return <img className="stanza-library-card-thumb" src={url} alt="" loading="lazy" />;
+}
+
+function StanzaLibraryVideoPosterThumb({ songId, videoBlob }: { songId: string; videoBlob: Blob }) {
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- blob reference churns from Dexie; size+type identify bytes
+  const url = useMemo(() => URL.createObjectURL(videoBlob), [songId, videoBlob.size, videoBlob.type]);
+  useEffect(() => () => URL.revokeObjectURL(url), [url]);
+  return (
+    <video
+      className="stanza-library-card-thumb"
+      src={url}
+      muted
+      playsInline
+      preload="metadata"
+      aria-hidden
+      onLoadedMetadata={(e) => {
+        const v = e.currentTarget;
+        v.currentTime = pickThumbnailSeekSec(v, 0.5);
+      }}
+    />
+  );
+}
+
+function StanzaLibraryLocalThumb({ song }: { song: StanzaSong }) {
+  const thumb = song.localVideoThumbnailBlob;
+  const media = song.localAudioBlob;
+  const isVideo = Boolean(media?.type.startsWith('video/'));
+
+  if (thumb) {
+    return <StanzaLibraryJpegThumb songId={song.id} blob={thumb} />;
+  }
+  if (isVideo && media) {
+    return <StanzaLibraryVideoPosterThumb songId={song.id} videoBlob={media} />;
+  }
+  return (
+    <Box
+      className="stanza-library-card-thumb"
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        bgcolor: 'grey.300',
+      }}
+    >
+      <Typography variant="caption" color="text.secondary">
+        Audio
+      </Typography>
+    </Box>
+  );
+}
+
 export default function StanzaWorkspace() {
   const songs = useLiveQuery(() => stanzaDb.songs.orderBy('updatedAt').reverse().toArray(), []);
   const { push: pushUndo, isReplayingRef } = useLabsUndo();
@@ -86,7 +177,8 @@ export default function StanzaWorkspace() {
   });
   const ytControllerRef = useRef<StanzaYouTubeController | null>(null);
   const pendingYoutubeBootstrapRef = useRef<{ songId: string; seekSec?: number; rate?: number } | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const localAudioRef = useRef<HTMLAudioElement | null>(null);
+  const localVideoRef = useRef<HTMLVideoElement | null>(null);
   const timeRef = useRef(0);
   const durationRef = useRef(0);
   const playingRef = useRef(false);
@@ -103,20 +195,50 @@ export default function StanzaWorkspace() {
   const [libraryMenu, setLibraryMenu] = useState<{ anchor: HTMLElement; songId: string } | null>(null);
   const oembedAttemptedRef = useRef(new Set<string>());
   const urlBootstrapDoneRef = useRef(false);
-  const lastPushedYoutubeV = useRef<string | null | undefined>(undefined);
+  const driveDeepLinkAttemptedRef = useRef(false);
+  const [driveDeepLinkError, setDriveDeepLinkError] = useState<string | null>(null);
+  const [driveDeepLinkNeedsGesture, setDriveDeepLinkNeedsGesture] = useState<{
+    fileId: string;
+    title: string | null;
+  } | null>(null);
+  const [driveDeepLinkBusy, setDriveDeepLinkBusy] = useState(false);
+  const [youtubePlayerErrorCode, setYoutubePlayerErrorCode] = useState<number | null>(null);
+  const lastPlaybackUrlSyncKey = useRef<string | undefined>(undefined);
 
   const selected = useMemo(() => songs?.find((s) => s.id === selectedId) ?? null, [songs, selectedId]);
   const isYoutube = Boolean(selected?.ytId);
+  const isLocalVideo = Boolean(selected?.localAudioBlob?.type.startsWith('video/'));
 
-  type UrlSyncState = 'none' | 'pending' | 'local' | { kind: 'yt'; id: string };
+  useEffect(() => {
+    setYoutubePlayerErrorCode(null);
+  }, [selected?.ytId]);
+
+  useEffect(() => {
+    if (!selectedId || !songs) return;
+    const row = songs.find((s) => s.id === selectedId);
+    if (!row?.localAudioBlob?.type.startsWith('video/')) return;
+    if (row.localVideoThumbnailBlob) return;
+    void backfillStanzaVideoThumbnailIfNeeded(selectedId);
+  }, [selectedId, songs]);
+
+  type UrlSyncState =
+    | 'none'
+    | 'pending'
+    | { kind: 'yt'; youtubeId: string }
+    | { kind: 'local'; driveFileId: string | null; driveTitle: string | null };
 
   const urlSyncState = useMemo((): UrlSyncState => {
     if (!selectedId) return 'none';
     if (!songs) return 'pending';
     const row = songs.find((s) => s.id === selectedId);
     if (!row) return 'pending';
-    if (row.ytId) return { kind: 'yt', id: row.ytId };
-    return 'local';
+    if (row.ytId) return { kind: 'yt', youtubeId: row.ytId };
+    const driveFileId = row.driveSourceFileId ?? null;
+    return {
+      kind: 'local',
+      driveFileId,
+      driveTitle: driveFileId ? row.title : null,
+    };
   }, [selectedId, songs]);
 
   const sortedLibrarySongs = useMemo(() => {
@@ -168,6 +290,67 @@ export default function StanzaWorkspace() {
     return rowId;
   }, [isReplayingRef, pushUndo]);
 
+  const commitDriveDeepLinkImport = useCallback(
+    async (opts: { fileId: string; suggestedTitle: string | null; interactiveOAuth: boolean }) => {
+      const existingByLink = await stanzaDb.songs.where('driveSourceFileId').equals(opts.fileId).first();
+      if (existingByLink) {
+        setSelectedId(existingByLink.id);
+        setDriveDeepLinkError(null);
+        setDriveDeepLinkNeedsGesture(null);
+        void backfillStanzaVideoThumbnailIfNeeded(existingByLink.id);
+        return;
+      }
+      const { blob, title, driveSourceFileId } = await loadDriveFileAsStanzaLocalBlob(opts);
+      const existing = await stanzaDb.songs.where('driveSourceFileId').equals(driveSourceFileId).first();
+      if (existing) {
+        setSelectedId(existing.id);
+        setDriveDeepLinkError(null);
+        setDriveDeepLinkNeedsGesture(null);
+        void backfillStanzaVideoThumbnailIfNeeded(existing.id);
+        return;
+      }
+      const rowId = crypto.randomUUID();
+      const row: StanzaSong = {
+        id: rowId,
+        ytId: null,
+        title,
+        markers: [],
+        stats: {},
+        updatedAt: Date.now(),
+        localAudioBlob: blob,
+        driveSourceFileId,
+      };
+      await stanzaDb.songs.put(row);
+      setSelectedId(rowId);
+      setDriveDeepLinkError(null);
+      setDriveDeepLinkNeedsGesture(null);
+      void backfillStanzaVideoThumbnailIfNeeded(rowId);
+    },
+    [],
+  );
+
+  const completeGestureDriveImport = useCallback(async () => {
+    const pending = driveDeepLinkNeedsGesture;
+    const fromUrl = readStanzaDriveBootstrapFromLocation();
+    const fileId = pending?.fileId ?? fromUrl.driveFileId;
+    const suggestedTitle = pending?.title ?? fromUrl.driveTitle;
+    if (!fileId) return;
+    setDriveDeepLinkBusy(true);
+    setDriveDeepLinkError(null);
+    try {
+      await commitDriveDeepLinkImport({
+        fileId,
+        suggestedTitle,
+        interactiveOAuth: true,
+      });
+    } catch (e) {
+      setDriveDeepLinkError(e instanceof Error ? e.message : String(e));
+      setDriveDeepLinkNeedsGesture(null);
+    } finally {
+      setDriveDeepLinkBusy(false);
+    }
+  }, [driveDeepLinkNeedsGesture, commitDriveDeepLinkImport]);
+
   useEffect(() => {
     if (urlBootstrapDoneRef.current) return;
     urlBootstrapDoneRef.current = true;
@@ -175,6 +358,44 @@ export default function StanzaWorkspace() {
     if (!vid) return;
     void ensureYoutubeSongByVideoId(vid).then((id) => setSelectedId(id));
   }, [ensureYoutubeSongByVideoId]);
+
+  useLayoutEffect(() => {
+    if (driveDeepLinkAttemptedRef.current) return;
+    const { youtubeId, driveFileId, driveTitle } = readStanzaDriveBootstrapFromLocation();
+    if (youtubeId) return;
+
+    if (!hasStanzaDriveDeepLinkQuery()) return;
+
+    if (!driveFileId) {
+      driveDeepLinkAttemptedRef.current = true;
+      setDriveDeepLinkError(
+        'This Google Drive link is not valid for Stanza (the file id in the URL is missing or malformed). Try opening it again from Encore.',
+      );
+      return;
+    }
+
+    driveDeepLinkAttemptedRef.current = true;
+    setDriveDeepLinkBusy(true);
+
+    void (async () => {
+      try {
+        await commitDriveDeepLinkImport({
+          fileId: driveFileId,
+          suggestedTitle: driveTitle,
+          interactiveOAuth: false,
+        });
+      } catch (e) {
+        if (e instanceof LabsGoogleInteractiveAuthRequiredError) {
+          setDriveDeepLinkNeedsGesture({ fileId: driveFileId, title: driveTitle });
+          setDriveDeepLinkError(null);
+          return;
+        }
+        setDriveDeepLinkError(e instanceof Error ? e.message : String(e));
+      } finally {
+        setDriveDeepLinkBusy(false);
+      }
+    })();
+  }, [commitDriveDeepLinkImport]);
 
   /**
    * Auto-resume the last opened song on reload. URL `?v=…` always wins, so this only kicks in
@@ -191,6 +412,7 @@ export default function StanzaWorkspace() {
     }
     if (!songs) return; // live query still hydrating
     if (readYoutubeVFromLocation()) return; // URL deep link will handle selection
+    if (hasStanzaDriveDeepLinkQuery()) return; // `?df=` present — wait for Drive bootstrap / error UI
     lastSelectedRestoreAttemptedRef.current = true;
     const savedId = readStanzaLastSelectedSongId();
     if (!savedId) return;
@@ -223,10 +445,26 @@ export default function StanzaWorkspace() {
 
   useEffect(() => {
     if (urlSyncState === 'pending') return;
-    const next = urlSyncState === 'none' || urlSyncState === 'local' ? null : urlSyncState.id;
-    if (lastPushedYoutubeV.current === next) return;
-    lastPushedYoutubeV.current = next;
-    replaceStanzaYoutubeSearchParam(next);
+    if (urlSyncState === 'none') {
+      const key = '__none_strip_youtube_only__';
+      if (lastPlaybackUrlSyncKey.current === key) return;
+      lastPlaybackUrlSyncKey.current = key;
+      stripStanzaYoutubeSearchParamPreservingDrive();
+      return;
+    }
+    let youtubeId: string | null = null;
+    let driveFileId: string | null = null;
+    let driveTitle: string | null = null;
+    if (urlSyncState.kind === 'yt') {
+      youtubeId = urlSyncState.youtubeId;
+    } else {
+      driveFileId = urlSyncState.driveFileId;
+      driveTitle = urlSyncState.driveTitle;
+    }
+    const key = `${youtubeId ?? ''}\0${driveFileId ?? ''}\0${driveTitle ?? ''}`;
+    if (lastPlaybackUrlSyncKey.current === key) return;
+    lastPlaybackUrlSyncKey.current = key;
+    replaceStanzaPlaybackUrlSearchParams({ youtubeId, driveFileId, driveTitle });
   }, [urlSyncState]);
 
   useEffect(() => {
@@ -241,9 +479,13 @@ export default function StanzaWorkspace() {
   }, [selectedId]);
 
   const localUrl = useMemo(() => {
-    if (!selected?.localAudioBlob) return null;
-    return URL.createObjectURL(selected.localAudioBlob);
-  }, [selected?.localAudioBlob]);
+    const blob = selected?.localAudioBlob;
+    if (!blob || selected?.ytId) return null;
+    return URL.createObjectURL(blob);
+    // Dexie liveQuery often replaces the Blob reference when unrelated fields (e.g. stats) update;
+    // key on identity-stable fields so the object URL (and <audio>/<video> src) is not recreated every tick.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally ignore blob reference churn
+  }, [selected?.id, selected?.ytId, selected?.localAudioBlob?.size, selected?.localAudioBlob?.type]);
 
   useEffect(() => {
     return () => {
@@ -427,8 +669,8 @@ export default function StanzaWorkspace() {
       if (isYoutube) {
         ytControllerRef.current?.setPlaybackRate(clamped);
       } else {
-        const a = audioRef.current;
-        if (a) a.playbackRate = clamped;
+        const el = localAudioRef.current ?? localVideoRef.current;
+        if (el) el.playbackRate = clamped;
       }
       setPlayback((p) => ({ ...p, playbackRate: clamped }));
     },
@@ -451,9 +693,9 @@ export default function StanzaWorkspace() {
       if (isYoutube) {
         ytControllerRef.current?.seekTo(t);
       } else {
-        const a = audioRef.current;
-        if (a) {
-          a.currentTime = t;
+        const el = localAudioRef.current ?? localVideoRef.current;
+        if (el) {
+          el.currentTime = t;
           setPlayback((p) => ({ ...p, currentTime: t }));
         }
       }
@@ -472,12 +714,12 @@ export default function StanzaWorkspace() {
       }
     }
     if (isYoutube) ytControllerRef.current?.play();
-    else void audioRef.current?.play();
+    else void (localAudioRef.current ?? localVideoRef.current)?.play();
   }, [isYoutube, loopMode, loopHull, seekUnified]);
 
   const pauseUnified = useCallback(() => {
     if (isYoutube) ytControllerRef.current?.pause();
-    else audioRef.current?.pause();
+    else (localAudioRef.current ?? localVideoRef.current)?.pause();
   }, [isYoutube]);
 
   const getTime = useCallback(() => timeRef.current, []);
@@ -624,6 +866,38 @@ export default function StanzaWorkspace() {
     },
     [persistSong, selected],
   );
+
+  useEffect(() => {
+    if (!selected || wizardOpen || conductorOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Delete' && e.key !== 'Backspace') return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.repeat) return;
+      const el = e.target as HTMLElement | null;
+      if (el?.closest('input, textarea, [contenteditable="true"], button')) return;
+      if (selectedSegmentIndices.length === 0) return;
+      const d = playback.duration;
+      if (!(d > 0)) return;
+      const i = Math.min(...selectedSegmentIndices);
+      const seg = segments[i];
+      if (!seg) return;
+      const m = deletableBoundaryMarkerAtTime(seg.start, ensureMarkerIds(selected.markers ?? []), d);
+      if (!m?.id) return;
+      e.preventDefault();
+      const next = ensureMarkerIds(selected.markers ?? []).filter((x) => x.id !== m.id);
+      void persistSong({ id: selected.id, markers: next });
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [
+    conductorOpen,
+    persistSong,
+    playback.duration,
+    segments,
+    selected,
+    selectedSegmentIndices,
+    wizardOpen,
+  ]);
 
   const renameSectionFromLabel = useCallback(
     (segmentIndex: number, label: string) => {
@@ -802,7 +1076,7 @@ export default function StanzaWorkspace() {
 
   const goHome = useCallback(() => {
     setSelectedId(null);
-    replaceStanzaYoutubeSearchParam(null);
+    replaceStanzaPlaybackUrlSearchParams({ youtubeId: null, driveFileId: null, driveTitle: null });
   }, []);
 
   const sectionFieldLabelSx = {
@@ -839,19 +1113,7 @@ export default function StanzaWorkspace() {
             {s.ytId ? (
               <img className="stanza-library-card-thumb" src={youtubeMqThumbnailUrl(s.ytId)} alt="" loading="lazy" />
             ) : (
-              <Box
-                className="stanza-library-card-thumb"
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  bgcolor: 'grey.300',
-                }}
-              >
-                <Typography variant="caption" color="text.secondary">
-                  Audio
-                </Typography>
-              </Box>
+              <StanzaLibraryLocalThumb song={s} />
             )}
             <Box sx={{ p: 1, pt: 0.75 }}>
               <Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1.25, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
@@ -884,6 +1146,82 @@ export default function StanzaWorkspace() {
   );
 
   const libraryMenuSong = libraryMenu ? songs?.find((x) => x.id === libraryMenu.songId) : null;
+
+  const renderDriveDeepLinkAlerts = (): ReactNode => {
+    const showLoading = driveDeepLinkBusy && !driveDeepLinkError && !driveDeepLinkNeedsGesture;
+    if (!driveDeepLinkError && !driveDeepLinkNeedsGesture && !showLoading) return null;
+    return (
+      <>
+        {showLoading ? (
+          <Alert severity="info" sx={{ maxWidth: 560, mx: 'auto', mb: 2, width: '100%' }}>
+            <Typography variant="body2" sx={{ lineHeight: 1.5 }}>
+              Fetching audio from Google Drive…
+            </Typography>
+          </Alert>
+        ) : null}
+        {driveDeepLinkNeedsGesture && !driveDeepLinkError ? (
+          <Alert
+            severity="info"
+            sx={{ maxWidth: 560, mx: 'auto', mb: 2, width: '100%' }}
+            action={
+              <Button
+                color="inherit"
+                size="small"
+                disabled={driveDeepLinkBusy}
+                onClick={() => void completeGestureDriveImport()}
+              >
+                {driveDeepLinkBusy ? '…' : 'Continue'}
+              </Button>
+            }
+          >
+            <Typography variant="body2" sx={{ lineHeight: 1.5 }}>
+              {LABS_GOOGLE_INTERACTIVE_DRIVE_AUTH_HINT}
+            </Typography>
+          </Alert>
+        ) : null}
+        {driveDeepLinkError ? (
+          <Alert
+            severity="error"
+            sx={{
+              maxWidth: 560,
+              mx: 'auto',
+              mb: 2,
+              width: '100%',
+              '& .MuiAlert-message': { width: '100%' },
+            }}
+            onClose={() => setDriveDeepLinkError(null)}
+            action={
+              /popup|Allow popups|sign-in window|blocked/i.test(driveDeepLinkError) ? (
+                <Button
+                  color="inherit"
+                  size="small"
+                  disabled={driveDeepLinkBusy}
+                  onClick={() => void completeGestureDriveImport()}
+                >
+                  Retry
+                </Button>
+              ) : undefined
+            }
+          >
+            <Stack spacing={1}>
+              <Typography variant="body2" sx={{ lineHeight: 1.5 }}>
+                {driveDeepLinkError}
+              </Typography>
+              {/popup|Allow popups|sign-in window|blocked/i.test(driveDeepLinkError) ? (
+                <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5 }}>
+                  Popups blocked here are common even when your email shows in the account menu — that menu only remembers who you last signed in as in Encore.{' '}
+                  <Link href="/encore/" target="_blank" rel="noopener noreferrer">
+                    Open Encore
+                  </Link>
+                  , finish Google sign-in from the account menu if asked, then come back and Retry (keep this tab).
+                </Typography>
+              ) : null}
+            </Stack>
+          </Alert>
+        ) : null}
+      </>
+    );
+  };
 
   return (
     <Box
@@ -940,6 +1278,10 @@ export default function StanzaWorkspace() {
       ) : null}
       {!selected && (
         <>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', px: { xs: 1.5, sm: 2 }, pt: { xs: 1, sm: 1.25 } }}>
+            <StanzaAccountMenu />
+          </Box>
+          <Box sx={{ px: { xs: 1.5, sm: 2 } }}>{renderDriveDeepLinkAlerts()}</Box>
           <Box className="stanza-hero">
             <Box className="stanza-hero-inner">
               <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
@@ -1052,6 +1394,7 @@ export default function StanzaWorkspace() {
 
       {selected && (
         <Box className="stanza-viewer-shell" sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+          <Box sx={{ px: { xs: 1.5, sm: 2 }, pt: 1, flexShrink: 0 }}>{renderDriveDeepLinkAlerts()}</Box>
           <Box
             className="stanza-viewer-header"
             sx={{
@@ -1082,20 +1425,45 @@ export default function StanzaWorkspace() {
                 ← Back to library
               </button>
             </Box>
+            <Box sx={{ flexShrink: 0, ml: 'auto', alignSelf: 'flex-start' }}>
+              <StanzaAccountMenu />
+            </Box>
           </Box>
 
           <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', px: { xs: 1.5, sm: 2 }, pb: 1 }}>
             <Stack
-              direction={{ xs: 'column', md: 'row' }}
-              spacing={{ xs: 2.25, md: 3 }}
-              alignItems="flex-start"
-              sx={{ width: '100%', maxWidth: { md: 980 }, mx: 'auto' }}
+              direction="column"
+              spacing={{ xs: 2.25, md: 2.5 }}
+              alignItems="stretch"
+              sx={{ width: '100%', maxWidth: { md: 1200 }, mx: 'auto' }}
             >
+              <Stack
+                direction={{ xs: 'column', md: 'row' }}
+                spacing={{ xs: 2.25, md: 3 }}
+                alignItems="flex-start"
+                sx={{ width: '100%', minWidth: 0 }}
+              >
               <Box
                 className="stanza-viewer-media-stack"
                 sx={{ flex: { xs: '1 1 auto', md: '0 1 600px' }, minWidth: 0, width: '100%' }}
               >
                 <Box className="stanza-video-column">
+                  {isYoutube && selected.ytId && youtubePlayerErrorCode != null && (
+                    <Alert severity="warning" sx={{ mb: 1.5 }}>
+                      <Typography variant="body2" sx={{ mb: 0.75 }}>
+                        {describeYoutubePlayerError(youtubePlayerErrorCode)}
+                      </Typography>
+                      <Link
+                        href={`https://www.youtube.com/watch?v=${encodeURIComponent(selected.ytId)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        variant="body2"
+                        underline="hover"
+                      >
+                        Open this video on YouTube
+                      </Link>
+                    </Alert>
+                  )}
                   <Box
                     className={selected.metronomeEnabled ? 'stanza-metronome-pulse stanza-metronome-pulse--on' : 'stanza-metronome-pulse'}
                     sx={{ '--stanza-beat': beatPeriod } as React.CSSProperties}
@@ -1103,6 +1471,7 @@ export default function StanzaWorkspace() {
                     {isYoutube && selected.ytId && (
                       <StanzaYouTubePlayer
                         videoId={selected.ytId}
+                        onPlayerError={setYoutubePlayerErrorCode}
                         onControllerReady={(c) => {
                           ytControllerRef.current = c;
                           if (!c) return;
@@ -1127,60 +1496,85 @@ export default function StanzaWorkspace() {
                     )}
                     {!isYoutube && localUrl && (
                       <>
-                        {/* eslint-disable-next-line jsx-a11y/media-has-caption -- user-supplied audio; no captions */}
-                        <audio
-                          ref={audioRef}
-                          className="stanza-local-audio"
-                          src={localUrl}
-                          style={{ width: '100%', marginTop: 8, borderRadius: 8 }}
-                          aria-label="Local audio track"
-                          onTimeUpdate={() => {
-                            const a = audioRef.current;
-                            if (!a) return;
-                            setPlayback({
-                              currentTime: a.currentTime,
-                              duration: a.duration || 0,
-                              isPlaying: !a.paused,
-                              playbackRate: a.playbackRate,
-                            });
-                          }}
-                          onLoadedMetadata={() => {
-                            const a = audioRef.current;
-                            if (!a) return;
-                            setPlayback((p) => ({
-                              ...p,
-                              duration: a.duration || 0,
-                              playbackRate: a.playbackRate,
-                            }));
-                          }}
-                          onPlay={() => setPlayback((p) => ({ ...p, isPlaying: true }))}
-                          onPause={() => setPlayback((p) => ({ ...p, isPlaying: false }))}
-                        />
+                        {isLocalVideo ? (
+                          /* eslint-disable-next-line jsx-a11y/media-has-caption -- user recording; no captions */
+                          <video
+                            ref={localVideoRef}
+                            className="stanza-local-video"
+                            src={localUrl}
+                            playsInline
+                            style={{
+                              width: '100%',
+                              marginTop: 8,
+                              borderRadius: 8,
+                              maxHeight: 360,
+                              background: '#0a0a0a',
+                              cursor: 'pointer',
+                            }}
+                            aria-label="Local video track. Click to play or pause."
+                            onClick={() => {
+                              const v = localVideoRef.current;
+                              if (!v) return;
+                              if (v.paused) playUnified();
+                              else pauseUnified();
+                            }}
+                            onTimeUpdate={() => {
+                              const el = localVideoRef.current;
+                              if (!el) return;
+                              setPlayback({
+                                currentTime: el.currentTime,
+                                duration: el.duration || 0,
+                                isPlaying: !el.paused,
+                                playbackRate: el.playbackRate,
+                              });
+                            }}
+                            onLoadedMetadata={() => {
+                              const el = localVideoRef.current;
+                              if (!el) return;
+                              setPlayback((p) => ({
+                                ...p,
+                                duration: el.duration || 0,
+                                playbackRate: el.playbackRate,
+                              }));
+                            }}
+                            onPlay={() => setPlayback((p) => ({ ...p, isPlaying: true }))}
+                            onPause={() => setPlayback((p) => ({ ...p, isPlaying: false }))}
+                          />
+                        ) : (
+                          /* eslint-disable-next-line jsx-a11y/media-has-caption -- user-supplied audio; no captions */
+                          <audio
+                            ref={localAudioRef}
+                            className="stanza-local-audio"
+                            src={localUrl}
+                            style={{ width: '100%', marginTop: 8, borderRadius: 8 }}
+                            aria-label="Local audio track"
+                            onTimeUpdate={() => {
+                              const el = localAudioRef.current;
+                              if (!el) return;
+                              setPlayback({
+                                currentTime: el.currentTime,
+                                duration: el.duration || 0,
+                                isPlaying: !el.paused,
+                                playbackRate: el.playbackRate,
+                              });
+                            }}
+                            onLoadedMetadata={() => {
+                              const el = localAudioRef.current;
+                              if (!el) return;
+                              setPlayback((p) => ({
+                                ...p,
+                                duration: el.duration || 0,
+                                playbackRate: el.playbackRate,
+                              }));
+                            }}
+                            onPlay={() => setPlayback((p) => ({ ...p, isPlaying: true }))}
+                            onPause={() => setPlayback((p) => ({ ...p, isPlaying: false }))}
+                          />
+                        )}
                       </>
                     )}
                   </Box>
                 </Box>
-
-                <StanzaTimeline
-                  duration={playback.duration}
-                  currentTime={playback.currentTime}
-                  markers={selected.markers ?? []}
-                  segmentMs={selected.stats}
-                  selectedSegmentIndices={selectedSegmentIndices}
-                  loopMode={loopMode}
-                  onLoopModeChange={onLoopModeChange}
-                  isPlaying={playback.isPlaying}
-                  onPlay={playUnified}
-                  onPause={pauseUnified}
-                  onSeek={seekUnified}
-                  onSelectSegments={handleSelectSegments}
-                  onMarkersChange={(m) => void persistSong({ id: selected.id, markers: m })}
-                  onDeleteMarker={deleteMarkerById}
-                  onRenameSectionFromLabel={renameSectionFromLabel}
-                  onSkipToLoopStart={skipToLoopStart}
-                  onSkipToLoopEnd={skipToLoopEnd}
-                  onAddMarker={addMarkerAtCurrentTime}
-                />
               </Box>
 
               <Paper
@@ -1377,6 +1771,30 @@ export default function StanzaWorkspace() {
                   </Box>
                 </Stack>
               </Paper>
+              </Stack>
+
+              <Box sx={{ width: '100%', minWidth: 0 }}>
+                <StanzaTimeline
+                  duration={playback.duration}
+                  currentTime={playback.currentTime}
+                  markers={selected.markers ?? []}
+                  segmentMs={selected.stats}
+                  selectedSegmentIndices={selectedSegmentIndices}
+                  loopMode={loopMode}
+                  onLoopModeChange={onLoopModeChange}
+                  isPlaying={playback.isPlaying}
+                  onPlay={playUnified}
+                  onPause={pauseUnified}
+                  onSeek={seekUnified}
+                  onSelectSegments={handleSelectSegments}
+                  onMarkersChange={(m) => void persistSong({ id: selected.id, markers: m })}
+                  onDeleteMarker={deleteMarkerById}
+                  onRenameSectionFromLabel={renameSectionFromLabel}
+                  onSkipToLoopStart={skipToLoopStart}
+                  onSkipToLoopEnd={skipToLoopEnd}
+                  onAddMarker={addMarkerAtCurrentTime}
+                />
+              </Box>
             </Stack>
           </Box>
 

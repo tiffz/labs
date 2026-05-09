@@ -14,7 +14,7 @@ export type StanzaPracticeHrefOptions = {
 
 /**
  * Stanza (Segno) practice entry for Encore media rows: YouTube deep-links with `?v=`;
- * Drive audio/video opens the Stanza app root (local/Drive files are not addressable in the URL).
+ * Drive audio opens Stanza with `?df=<driveFileId>` (and optional `driveTitle=` from the media label).
  */
 export function stanzaPracticeHrefFromEncoreMediaLink(
   link: EncoreMediaLink | undefined,
@@ -25,7 +25,12 @@ export function stanzaPracticeHrefFromEncoreMediaLink(
     return stanzaPracticeOpenUrlFromYoutubeInput(link.youtubeVideoId);
   }
   if (link.source === 'drive' && opts.allowDriveAudio && link.driveFileId?.trim()) {
-    return '/stanza/';
+    const id = link.driveFileId.trim();
+    const q = new URLSearchParams();
+    q.set('df', id);
+    const label = link.label?.trim();
+    if (label) q.set('driveTitle', label);
+    return `/stanza/?${q.toString()}`;
   }
   return null;
 }

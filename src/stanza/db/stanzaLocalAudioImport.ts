@@ -19,6 +19,22 @@ import type { StanzaSong } from './stanzaDb';
  */
 const AUDIO_EXTENSION_FALLBACK = /\.(mp3|m4a|aac|flac|wav|wave|ogg|oga|opus|webm|aiff?|caf|amr|wma)$/i;
 
+/** Common phone / performance uploads in Drive; Stanza plays them via `<audio>` when the browser exposes an audio track. */
+const DRIVE_PRACTICEABLE_VIDEO_MIMES = new Set(['video/mp4', 'video/webm', 'video/quicktime']);
+
+/**
+ * MIME sniff for Google Drive `files` metadata (or `alt=media` Content-Type): audio types plus a
+ * small allowlist of video containers Encore often stores as performance / backing recordings.
+ */
+export function isPracticeableStanzaDriveMime(mime: string | undefined, fallbackName?: string | null): boolean {
+  const m = (mime ?? '').toLowerCase();
+  if (m.startsWith('audio/')) return true;
+  if (m === 'application/ogg') return true;
+  if (DRIVE_PRACTICEABLE_VIDEO_MIMES.has(m)) return true;
+  if (m === 'application/octet-stream' && fallbackName && AUDIO_EXTENSION_FALLBACK.test(fallbackName)) return true;
+  return false;
+}
+
 export function isAudioFileForStanza(file: File): boolean {
   if (!file) return false;
   if (typeof file.type === 'string' && file.type.toLowerCase().startsWith('audio/')) return true;

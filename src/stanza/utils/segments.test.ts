@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { deriveSegments, ensureMarkerIds, findSegmentIndexAtTime, legacyDeriveSegments } from './segments';
+import {
+  deletableBoundaryMarkerAtTime,
+  deriveSegments,
+  ensureMarkerIds,
+  findSegmentIndexAtTime,
+  legacyDeriveSegments,
+} from './segments';
 
 describe('deriveSegments', () => {
   it('returns one full segment when there are no markers', () => {
@@ -58,5 +64,22 @@ describe('findSegmentIndexAtTime', () => {
     const segs = deriveSegments([{ id: 'mx', time: 10, label: 'x' }], 100);
     expect(findSegmentIndexAtTime(segs, 5)).toBe(0);
     expect(findSegmentIndexAtTime(segs, 50)).toBe(1);
+  });
+});
+
+describe('deletableBoundaryMarkerAtTime', () => {
+  const markers = ensureMarkerIds([
+    { time: 30, label: 'A' },
+    { time: 60, label: 'B' },
+  ]);
+
+  it('returns null for track start and end boundaries', () => {
+    expect(deletableBoundaryMarkerAtTime(0, markers, 120)).toBeNull();
+    expect(deletableBoundaryMarkerAtTime(120, markers, 120)).toBeNull();
+  });
+
+  it('returns interior marker at that time', () => {
+    expect(deletableBoundaryMarkerAtTime(30, markers, 120)?.id).toBe(markers[0]!.id);
+    expect(deletableBoundaryMarkerAtTime(60, markers, 120)?.id).toBe(markers[1]!.id);
   });
 });

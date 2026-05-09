@@ -11,6 +11,7 @@ import {
   driveFileHasAnyoneReader,
   driveListFiles,
   drivePatchJsonMedia,
+  driveResolveFileForMedia,
   pickPreferredDriveListFileId,
 } from './driveFetch';
 import { fetchPublicDriveJson } from './bootstrapFolders';
@@ -18,6 +19,7 @@ import { PUBLIC_SNAPSHOT_FILE_NAME } from './constants';
 import { driveFileWebUrl } from './driveWebUrls';
 import { encoreDb, getSyncMeta, patchSyncMeta } from '../db/encoreDb';
 import { orderSnapshotSongsByLatestPerformanceDesc } from './publicSnapshotSort';
+import { isPublicDriveFileMetadataReadable } from '../../shared/drive/fetchPublicDriveMediaBytes';
 
 export { orderSnapshotSongsByLatestPerformanceDesc } from './publicSnapshotSort';
 
@@ -53,9 +55,21 @@ export function filterSnapshotSource(
 
 /**
  * Best-effort permission probe for one performance video. Returns the public viewer URL
- * when we can confirm `anyone:reader` access; otherwise undefined. A network failure or
- * permission lookup error is silently swallowed (snapshot still publishes; the link is
- * just omitted on the guest view).
+ * when we can confirm `anyone` link access on the **resolved** Drive file (after following
+ * Encore’s shortcut row to the target `.mov` / `.mp4`). Otherwise undefined.
+ *
+ * We try both `videoTargetDriveFileId` and `videoShortcutDriveFileId` when present: some rows
+ * only retain the Performances-folder shortcut while the public `anyone` ACL lives on the
+ * target file — probing the shortcut alone used to miss the link on the guest page.
+ *
+ * After resolving to the media file, we first ask Drive with the owner’s OAuth token
+ * (`permissions.list`). Encore only requests `drive.file` + `drive.metadata.readonly`, so that
+ * call often returns **403** even for “Anyone with the link” videos. When
+ * `VITE_GOOGLE_API_KEY` is set, we then probe the same file with an **anonymous `files.get`**
+ * (the same access path guests use), and include the link when that succeeds.
+ *
+ * Network / permission lookup errors are swallowed (snapshot still publishes; the link is
+ * omitted on the guest view).
  */
 async function resolvePublicVideoUrl(
   accessToken: string,
@@ -63,16 +77,27 @@ async function resolvePublicVideoUrl(
 ): Promise<string | undefined> {
   const ext = perf.externalVideoUrl?.trim();
   if (ext) return ext;
-  // Prefer checking the original target file (the actual video). The shortcut in the
-  // Performances folder is just a pointer; sharing it does not share the underlying video.
-  const driveId = perf.videoTargetDriveFileId?.trim() || perf.videoShortcutDriveFileId?.trim();
-  if (!driveId) return undefined;
-  try {
-    const isPublic = await driveFileHasAnyoneReader(accessToken, driveId);
-    return isPublic ? driveFileWebUrl(driveId) : undefined;
-  } catch {
-    return undefined;
+  const rawIds = [perf.videoTargetDriveFileId?.trim(), perf.videoShortcutDriveFileId?.trim()].filter(
+    (x): x is string => Boolean(x?.trim()),
+  );
+  const uniqueRawIds = [...new Set(rawIds)];
+  if (uniqueRawIds.length === 0) return undefined;
+  for (const rawId of uniqueRawIds) {
+    try {
+      const { mediaFileId } = await driveResolveFileForMedia(accessToken, rawId);
+      let oauthListsAnyone = false;
+      try {
+        oauthListsAnyone = await driveFileHasAnyoneReader(accessToken, mediaFileId);
+      } catch {
+        oauthListsAnyone = false;
+      }
+      if (oauthListsAnyone) return driveFileWebUrl(mediaFileId);
+      if (await isPublicDriveFileMetadataReadable(mediaFileId)) return driveFileWebUrl(mediaFileId);
+    } catch {
+      /* try next id or give up */
+    }
   }
+  return undefined;
 }
 
 export async function buildPublicSnapshot(

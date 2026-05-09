@@ -3,6 +3,7 @@ import {
   buildLocalAudioStanzaSong,
   firstAudioFileFromDataTransfer,
   isAudioFileForStanza,
+  isPracticeableStanzaDriveMime,
   stanzaSongTitleFromFileName,
 } from './stanzaLocalAudioImport';
 
@@ -55,6 +56,20 @@ describe('isAudioFileForStanza', () => {
     expect(isAudioFileForStanza(fileLike('clip.mp4', 'video/mp4') as unknown as File)).toBe(false);
     expect(isAudioFileForStanza(fileLike('notes.txt', 'text/plain') as unknown as File)).toBe(false);
     expect(isAudioFileForStanza(fileLike('image.png', 'image/png') as unknown as File)).toBe(false);
+  });
+});
+
+describe('isPracticeableStanzaDriveMime', () => {
+  it('accepts audio and common Drive recording containers', () => {
+    expect(isPracticeableStanzaDriveMime('audio/mpeg', 'x.mp3')).toBe(true);
+    expect(isPracticeableStanzaDriveMime('video/mp4', 'take.mp4')).toBe(true);
+    expect(isPracticeableStanzaDriveMime('video/webm', null)).toBe(true);
+    expect(isPracticeableStanzaDriveMime('video/quicktime', 'clip.mov')).toBe(true);
+  });
+
+  it('rejects unrelated video and non-media types', () => {
+    expect(isPracticeableStanzaDriveMime('video/mpeg', null)).toBe(false);
+    expect(isPracticeableStanzaDriveMime('text/plain', 'x.txt')).toBe(false);
   });
 });
 

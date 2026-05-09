@@ -80,6 +80,13 @@ import { EncoreYouTubePasteField } from '../../ui/EncoreYouTubePasteField';
 import type { SongPageMediaSlots } from './SongPageMediaHubCards';
 import type { SongMediaUploadSlot } from './songMediaUploadSlot';
 
+/**
+ * Browsers (especially Safari) may not match Logic `.m4a` / some `.wav` exports to `audio/*` alone.
+ * Explicit extensions keep the system file picker and Drive uploads aligned with `inferMediaMimeType` (shared drive helper).
+ */
+const ENCORE_AUDIO_VIDEO_FILE_ACCEPT =
+  'audio/*,video/*,.m4a,.mp4,.mov,.m4v,.aac,.mp3,.wav,.wave,.aif,.aiff,.caf,.flac,.ogg,.oga,.opus,.webm,.mkv,.mpeg,.mpg,.avi';
+
 /** Dense subsection labels on the song page */
 const songPageBlockTitleSx = {
   fontWeight: 600,
@@ -1282,7 +1289,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                     ref={referenceDriveInputRef}
                     type="file"
                     hidden
-                    accept="audio/*,video/*"
+                    accept={ENCORE_AUDIO_VIDEO_FILE_ACCEPT}
                     onChange={(ev) => void onReferenceDriveFile(ev)}
                   />
                 </Stack>
@@ -1598,7 +1605,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                     ref={backingDriveInputRef}
                     type="file"
                     hidden
-                    accept="audio/*,video/*"
+                    accept={ENCORE_AUDIO_VIDEO_FILE_ACCEPT}
                     onChange={(ev) => void onBackingDriveFile(ev)}
                   />
                 </Stack>
@@ -1918,7 +1925,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                     ref={takesDriveInputRef}
                     type="file"
                     hidden
-                    accept="audio/*,video/*"
+                    accept={ENCORE_AUDIO_VIDEO_FILE_ACCEPT}
                     onChange={(ev) => void onTakesDriveFile(ev)}
                   />
                 </Stack>

@@ -34,9 +34,9 @@ export type PracticeExercisesSectionProps = {
 };
 
 const KIND_ICONS: Record<EncorePracticeExerciseKind, ReactElement> = {
-  lyricsInOwnWords: <EditNoteIcon sx={{ fontSize: 16, color: 'text.secondary' }} aria-hidden />,
-  lyricsSectionNarrative: <AutoStoriesIcon sx={{ fontSize: 16, color: 'text.secondary' }} aria-hidden />,
-  characterNineQuestions: <AutoAwesomeIcon sx={{ fontSize: 15, color: 'text.secondary' }} aria-hidden />,
+  lyricsInOwnWords: <EditNoteIcon sx={{ fontSize: 18, color: 'text.secondary' }} aria-hidden />,
+  lyricsSectionNarrative: <AutoStoriesIcon sx={{ fontSize: 18, color: 'text.secondary' }} aria-hidden />,
+  characterNineQuestions: <AutoAwesomeIcon sx={{ fontSize: 17, color: 'text.secondary' }} aria-hidden />,
 };
 
 function formatTimestamp(iso: string | undefined): string {
@@ -101,14 +101,14 @@ export function PracticeExercisesSection({
 
   return (
     <Stack spacing={0}>
-      <Box sx={{ mb: 1.25 }}>
-        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.35, lineHeight: 1.2 }}>
+      <Box sx={{ mb: 1.75 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 0.5, lineHeight: 1.25 }}>
           Guided exercises
         </Typography>
         <Typography
-          variant="caption"
+          variant="body2"
           color="text.secondary"
-          sx={{ display: 'block', lineHeight: 1.45, fontSize: '0.72rem', maxWidth: 560 }}
+          sx={{ display: 'block', lineHeight: 1.5, maxWidth: 620 }}
         >
           Short prompts to connect lyrics and character to how you perform the song.
         </Typography>
@@ -195,15 +195,15 @@ function ExerciseListRow({
     showStatus && run ? (
       <Stack direction="row" spacing={0.5} alignItems="center" sx={{ minWidth: 0, flexWrap: 'wrap', rowGap: 0.25 }}>
         {completed ? (
-          <CheckCircleOutlineIcon sx={{ fontSize: 14, color: 'success.main', opacity: 0.88 }} aria-hidden />
+          <CheckCircleOutlineIcon sx={{ fontSize: 16, color: 'success.main', opacity: 0.88 }} aria-hidden />
         ) : null}
         <Typography
           variant="caption"
           sx={{
             fontWeight: completed ? 600 : 500,
             color: completed ? 'success.dark' : 'text.secondary',
-            fontSize: '0.68rem',
-            lineHeight: 1.4,
+            fontSize: '0.8125rem',
+            lineHeight: 1.45,
           }}
         >
           {completed ? (
@@ -222,7 +222,7 @@ function ExerciseListRow({
             summaryTrimmed
           )}
         </Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem', opacity: 0.88, ml: 0.25 }}>
+        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem', opacity: 0.88, ml: 0.25 }}>
           {formatTimestamp(completed ? run.completedAt : run.updatedAt)}
         </Typography>
       </Stack>
@@ -235,9 +235,9 @@ function ExerciseListRow({
         display: 'flex',
         flexDirection: { xs: 'column', sm: 'row' },
         alignItems: { xs: 'stretch', sm: 'center' },
-        gap: { xs: 0.75, sm: 1.5 },
-        px: { xs: 1.25, sm: 1.5 },
-        py: { xs: 0.9, sm: 0.875 },
+        gap: { xs: 1, sm: 1.75 },
+        px: { xs: 1.5, sm: 1.75 },
+        py: { xs: 1.1, sm: 1.05 },
         cursor: 'pointer',
         textAlign: 'left',
         borderTop: showDivider ? 1 : 0,
@@ -253,36 +253,36 @@ function ExerciseListRow({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            width: 24,
-            height: 24,
+            width: 28,
+            height: 28,
             flexShrink: 0,
             color: 'text.secondary',
           }}
         >
           {icon}
         </Box>
-        <Box sx={{ minWidth: 0, flex: 1, py: 0.1 }}>
+        <Box sx={{ minWidth: 0, flex: 1, py: 0.2 }}>
           <Typography
-            variant="body2"
+            variant="body1"
             sx={{
               fontWeight: 700,
-              lineHeight: 1.3,
+              lineHeight: 1.35,
               color: 'text.primary',
-              fontSize: '0.8125rem',
+              fontSize: '0.9375rem',
             }}
           >
             {meta.title}
           </Typography>
           <Tooltip title={meta.description} placement="top" enterDelay={400}>
             <Typography
-              variant="caption"
+              variant="body2"
               component="p"
               color="text.secondary"
               sx={{
                 m: 0,
-                mt: 0.2,
-                fontSize: '0.7rem',
-                lineHeight: 1.4,
+                mt: 0.35,
+                fontSize: '0.8125rem',
+                lineHeight: 1.45,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
@@ -333,7 +333,7 @@ function ExerciseListRow({
                   '&:hover': { color: 'error.main', bgcolor: 'action.hover' },
                 }}
               >
-                <RestartAltIcon sx={{ fontSize: 18 }} />
+                <RestartAltIcon sx={{ fontSize: 20 }} />
               </IconButton>
             </Tooltip>
           ) : null}
@@ -348,10 +348,10 @@ function ExerciseListRow({
             sx={{
               textTransform: 'none',
               fontWeight: 600,
-              px: 1.25,
-              py: 0.45,
-              fontSize: '0.75rem',
-              minWidth: 124,
+              px: 1.5,
+              py: 0.55,
+              fontSize: '0.8125rem',
+              minWidth: 132,
               whiteSpace: 'nowrap',
             }}
           >

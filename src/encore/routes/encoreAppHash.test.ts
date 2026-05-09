@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { encoreAppHref, navigateEncore, parseEncoreAppHash } from './encoreAppHash';
+import {
+  encoreAppHref,
+  encoreHashPathOnlyFragment,
+  getEncoreHashScrollTargetId,
+  navigateEncore,
+  parseEncoreAppHash,
+} from './encoreAppHash';
 
 describe('parseEncoreAppHash', () => {
   it('parses performances list and wrapped stats', () => {
@@ -22,10 +28,33 @@ describe('parseEncoreAppHash', () => {
     expect(parseEncoreAppHash(`#/practice/${encodeURIComponent('a/b')}`)).toEqual({ kind: 'practice', songId: 'a/b' });
   });
 
+  it('parses song route ignoring in-fragment ?scroll= query', () => {
+    expect(parseEncoreAppHash('#/song/abc?scroll=encore-song-practice-heading')).toEqual({ kind: 'song', id: 'abc' });
+    expect(parseEncoreAppHash(`#/song/${encodeURIComponent('a/b')}?scroll=x-1`)).toEqual({ kind: 'song', id: 'a/b' });
+  });
+
+  it('does not treat scroll on guest share hash', () => {
+    expect(getEncoreHashScrollTargetId('#/share/fileId123?scroll=evil')).toBeUndefined();
+    expect(parseEncoreAppHash('#/share/fileId123?scroll=evil')).toEqual({ kind: 'library' });
+  });
+
   it('parses help and legacy import-guide URL', () => {
     expect(parseEncoreAppHash('#/help')).toEqual({ kind: 'help' });
     expect(parseEncoreAppHash('#/settings/repertoire/import-guide')).toEqual({ kind: 'help' });
     expect(parseEncoreAppHash('#/settings/repertoire')).toEqual({ kind: 'repertoireSettings' });
+  });
+});
+
+describe('encoreHashPathOnlyFragment and getEncoreHashScrollTargetId', () => {
+  it('strips scroll query for canonical hash', () => {
+    expect(encoreHashPathOnlyFragment('#/song/x?scroll=encore-song-practice-heading')).toBe('#/song/x');
+  });
+
+  it('reads sanitized scroll id', () => {
+    expect(getEncoreHashScrollTargetId('#/song/x?scroll=encore-song-practice-heading')).toBe(
+      'encore-song-practice-heading',
+    );
+    expect(getEncoreHashScrollTargetId('#/song/x?scroll=bad<id>')).toBeUndefined();
   });
 });
 
@@ -42,6 +71,14 @@ describe('encoreAppHref', () => {
     expect(encoreAppHref({ kind: 'help' })).toBe('#/help');
     expect(encoreAppHref({ kind: 'songNew' })).toBe('#/song/new');
     expect(encoreAppHref({ kind: 'song', id: 'ab/cd' })).toBe(`#/song/${encodeURIComponent('ab/cd')}`);
+    expect(
+      encoreAppHref({
+        kind: 'song',
+        id: 'x',
+        scrollToElementId: 'encore-song-practice-heading',
+      }),
+    ).toBe('#/song/x?scroll=encore-song-practice-heading');
+    expect(encoreAppHref({ kind: 'song', id: 'x', scrollToElementId: 'bad<id>' })).toBe('#/song/x');
   });
 });
 

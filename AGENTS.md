@@ -9,7 +9,8 @@ Instructions for AI coding assistants working in this repo (Cursor, Claude, Code
 3. `STYLE_GUIDE.md` — TypeScript + UI/a11y conventions (see § _Information density_ for tooltip-first explanatory copy and icon-forward controls on dense screens).
 4. `docs/USER_COPY_STYLE.md` — default voice for user-visible copy across apps.
 5. `docs/SOURCE_OF_TRUTH.md` — precedence map when docs disagree.
-6. `.cursor/rules/*.mdc` — machine-enforced rules (pre-commit checks, app-entry-html, spa-css-conventions, react-a11y).
+6. `docs/adr/README.md` — Architecture Decision Records (when to add one; index of accepted ADRs).
+7. `.cursor/rules/*.mdc` — machine-enforced rules (pre-commit checks, app-entry-html, spa-css-conventions, react-a11y).
 
 ## Canonical Rules
 
@@ -21,6 +22,7 @@ Instructions for AI coding assistants working in this repo (Cursor, Claude, Code
 - **Find Your Pitch visuals** (`src/pitch/DESIGN.md`): the pitch app ships one layout (teal/pink, white panels, halftone field). Do not reintroduce theme switchers or `data-pitch-concept` skins; extend `pitch.css` per that spec.
 - **Rhythm preset integrity** (`src/shared/rhythm/presetIntegrity.ts` + `presetIntegrity.test.ts`): when editing `RHYTHM_DATABASE` or related presets, run `npx vitest run src/shared/rhythm/presetIntegrity.test.ts`. The checks parse every pattern, flag copy/pasted variations across related rhythms with different bases, and verify labeled 8/8 ornament/anchor lines match the reference attack skeleton (prevents Malfuf/Kahleegi-style encoding mistakes).
 - **Labs debug mode** (`src/shared/debug/readLabsDebugParams.ts`, `labsDebugLog.ts`, `LabsDebugDock.tsx`): `?debug` and `?dev` are equivalent. `ServerLogger` info/debug only POST to `/__debug_log` when that flag is set; errors/warnings still post in dev. See root [DEVELOPMENT.md](DEVELOPMENT.md) § Labs debug mode. Use **Copy bundle** in the dock or `.debug-snapshots/` for assistant-friendly artifacts (no automatic browser→LLM pipe exists).
+- **Architecture Decision Records** ([`docs/adr/README.md`](docs/adr/README.md)): for **material** cross-cutting changes (routing vs static hosting, OAuth/storage contracts, new micro-app boundaries), add `docs/adr/NNNN-short-title.md` in the same PR when practical. Backfill older `DEVELOPMENT.md` prose opportunistically per [ADR 0002](docs/adr/0002-historical-decisions-in-development.md).
 
 ## Repo Map
 
@@ -32,6 +34,7 @@ src/
   shared/                  # cross-app components, music/audio/playback/rhythm utilities
   ui/                      # internal shared-UI catalog / demo workspace
 docs/
+  adr/                     # Architecture Decision Records (index: adr/README.md)
   COMPONENT_DECOMPOSITION_PATTERN.md
   CSS_IMPORTANT_AUDIT.md
   DEPENDENCY_UPGRADE_PLAN.md
@@ -69,6 +72,7 @@ Before declaring a task done:
 - [ ] Any new shared primitive is documented in `src/shared/SHARED_UI_CONVENTIONS.md` and demoed under `/ui/`
 - [ ] Any new app directory is added to `src/shared/importBoundaries.test.ts` and `scripts/check-import-boundaries.mjs`
 - [ ] Visual baselines updated intentionally, not silently (`e2e/visual/*`)
+- [ ] If the change is a **material architecture decision** (see [`docs/adr/README.md`](docs/adr/README.md)), an ADR was added or updated in the same PR when practical
 
 ## Large Refactors
 

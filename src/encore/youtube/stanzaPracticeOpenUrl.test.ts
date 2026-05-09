@@ -43,8 +43,15 @@ describe('stanzaPracticeHrefFromEncoreMediaLink', () => {
     expect(stanzaPracticeHrefFromEncoreMediaLink(ytLink, { allowDriveAudio: true })).toBe('/stanza/?v=dQw4w9WgXcQ');
   });
 
-  it('returns Stanza root for Drive when allowed', () => {
-    expect(stanzaPracticeHrefFromEncoreMediaLink(driveLink, { allowDriveAudio: true })).toBe('/stanza/');
+  it('returns Stanza Drive deep link when allowed', () => {
+    expect(stanzaPracticeHrefFromEncoreMediaLink(driveLink, { allowDriveAudio: true })).toBe('/stanza/?df=abc123');
+  });
+
+  it('includes driveTitle when Drive link has a label', () => {
+    const withLabel: EncoreMediaLink = { ...driveLink, label: 'My take' };
+    expect(stanzaPracticeHrefFromEncoreMediaLink(withLabel, { allowDriveAudio: true })).toBe(
+      '/stanza/?df=abc123&driveTitle=My+take',
+    );
   });
 
   it('returns null for Drive when not allowed', () => {

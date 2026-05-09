@@ -1,3 +1,4 @@
+import { buildPublicDriveAltMediaUrl } from '../../shared/drive/buildPublicDriveAltMediaUrl';
 import { driveCreateFolder, driveCreateJsonFile, driveListFiles, pickPreferredDriveListFileId } from './driveFetch';
 import {
   ENCORE_PERFORMANCES_FOLDER,
@@ -147,19 +148,6 @@ function isLocalhostOrigin(): boolean {
   return h === 'localhost' || h === '127.0.0.1' || h.endsWith('.local');
 }
 
-/** In Vite dev, use same-origin proxy (see root vite.config) so API-key referrer + CORS checks do not break guest reads. */
-function buildPublicDriveJsonUrl(fileId: string, apiKey: string): string {
-  const useDevProxy =
-    import.meta.env.DEV &&
-    import.meta.env.MODE !== 'test' &&
-    typeof window !== 'undefined' &&
-    typeof window.location?.origin === 'string';
-  if (useDevProxy) {
-    return `${window.location.origin}/__encore/drive-public/${encodeURIComponent(fileId)}`;
-  }
-  return `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media&supportsAllDrives=true&key=${encodeURIComponent(apiKey)}`;
-}
-
 /**
  * Fetch one URL once. Translates 4xx → typed error so the caller can decide whether
  * a retry is warranted (transient 5xx/network → yes; 403/404 → no, stop early).
@@ -199,7 +187,7 @@ async function attemptFetchPublicDriveJson(url: string): Promise<unknown> {
  * production, the browser calls Google directly with `key=` in the query string.
  */
 export async function fetchPublicDriveJson(fileId: string, apiKey: string): Promise<unknown> {
-  const url = buildPublicDriveJsonUrl(fileId, apiKey);
+  const url = buildPublicDriveAltMediaUrl(fileId, apiKey);
 
   const attempts = [0, 600, 1800];
   let lastError: (Error & { code?: string; status?: number }) | null = null;

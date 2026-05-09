@@ -113,3 +113,20 @@ export function findSegmentIndexAtTime(segments: DerivedSegment[], t: number): n
   }
   return null;
 }
+
+/**
+ * Marker exactly at `boundaryTime` that may be removed to merge this section into the previous
+ * (Logic-style: interior boundaries only — not start-of-track or end-of-track).
+ */
+export function deletableBoundaryMarkerAtTime(
+  boundaryTime: number,
+  markers: StanzaMarker[],
+  duration: number,
+): StanzaMarker | null {
+  if (!(duration > 0)) return null;
+  const sorted = ensureMarkerIds([...markers]).sort((a, b) => a.time - b.time);
+  const m = sorted.find((x) => Math.abs(x.time - boundaryTime) < STANZA_TIME_EPS);
+  if (!m?.id) return null;
+  if (m.time <= STANZA_TIME_EPS || m.time >= duration - STANZA_TIME_EPS) return null;
+  return m;
+}

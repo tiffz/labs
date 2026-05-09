@@ -199,7 +199,9 @@ type Action =
   | { type: 'WRONG_NOTE_FLASH'; notes: number[] }
   | { type: 'LOAD_STAGE'; exercise: SessionExercise; score: PianoScore }
   | { type: 'MARK_ONBOARDING_SEEN' }
-  | { type: 'MARK_GUIDANCE_INTRODUCED'; stage: Stage; exercise: ExerciseDefinition };
+  | { type: 'MARK_GUIDANCE_INTRODUCED'; stage: Stage; exercise: ExerciseDefinition }
+  /** Tester-only: replace local progress from Google Drive restore. */
+  | { type: 'REPLACE_PROGRESS_FROM_CLOUD'; progress: ScalesProgressData };
 
 function initialState(): ScalesState {
   const audioPrefs = loadAudioPrefs();
@@ -796,6 +798,10 @@ function reducer(state: ScalesState, action: Action): ScalesState {
       if (next === state.progress) return state;
       saveProgress(next);
       return { ...state, progress: next };
+    }
+    case 'REPLACE_PROGRESS_FROM_CLOUD': {
+      saveProgress(action.progress);
+      return { ...state, progress: action.progress };
     }
 
     default:

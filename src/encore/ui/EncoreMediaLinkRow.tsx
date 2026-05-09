@@ -158,7 +158,7 @@ export function EncoreMediaLinkRow(props: EncoreMediaLinkRowProps): ReactElement
       ? ''
       : link?.source === 'youtube'
         ? 'Practice this video in Stanza (Segno)'
-        : 'Open in Stanza (Segno) to practice. Use Upload audio for Drive files.';
+        : 'Practice this Drive file in Stanza (Segno). Audio or common recording formats (e.g. MP4/MOV with sound). Opens with your Google session when signed in, or a public link otherwise.';
 
   /*
    * The icon + caption strip is the row's primary "open the resource" affordance: when an

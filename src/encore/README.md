@@ -19,6 +19,8 @@ Personal musical repertoire companion: **local-first** (Dexie / IndexedDB) with 
 
 For UI copy conventions, see [`COPY_STYLE.md`](COPY_STYLE.md).
 
+**Routing (GitHub Pages):** Encore keeps in-app navigation in the URL **hash** (see repo [`docs/adr/0001-static-hosting-hash-routing.md`](../../docs/adr/0001-static-hosting-hash-routing.md)). Deep links to a section use an in-fragment query, e.g. `#/song/<id>?scroll=encore-song-practice-heading`; the app scrolls then strips `?scroll=` from the hash.
+
 ## Development: one browser origin for Encore
 
 Browsers store IndexedDB and `localStorage` **per origin** (scheme + host + port). `http://localhost:5173` and `http://127.0.0.1:5173` are different origins, so you would otherwise see **two separate libraries** in dev.

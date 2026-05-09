@@ -12,9 +12,22 @@ import Switch from '@mui/material/Switch';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
-import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent as ReactDragEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type DragEvent as ReactDragEvent,
+} from 'react';
 import type { EncoreAppRoute } from '../routes/encoreAppHash';
-import { navigateEncore, encoreAppHref } from '../routes/encoreAppHash';
+import {
+  encoreAppHref,
+  encoreHashPathOnlyFragment,
+  getEncoreHashScrollTargetId,
+  navigateEncore,
+} from '../routes/encoreAppHash';
 import type { SpotifySearchTrack } from '../spotify/spotifyApi';
 import type { EncorePerformance, EncoreSong } from '../types';
 import {
@@ -22,6 +35,7 @@ import {
   encoreNoAlbumArtSurfaceSx,
 } from '../utils/encoreNoAlbumArtSurface';
 import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
+import { useEncoreBlockingJobs } from '../context/EncoreBlockingJobContext';
 import { useEncore, useEncoreSong } from '../context/EncoreContext';
 import { encoreMaxWidthPage } from '../theme/encoreUiTokens';
 import {
@@ -36,6 +50,7 @@ import {
 } from './song/SongPageSongTopSection';
 import { SongPerformancesPanel } from './song/SongPerformancesPanel';
 import { PerformanceEditorDialog } from './PerformanceEditorDialog';
+import { PracticeExercisesSection } from './practice/PracticeExercisesSection';
 import { SongMilestoneChecklist } from './SongMilestoneChecklist';
 import { SpotifyBrandIcon } from './EncoreBrandIcon';
 import { songWithSyncedLegacyDriveIds } from '../utils/songAttachments';
@@ -80,6 +95,7 @@ export function SongPage(props: {
     googleAccessToken,
     spotifyLinked,
   } = useEncore();
+  const { withBlockingJob } = useEncoreBlockingJobs();
   const { push: pushUndo } = useLabsUndo();
   const clientId =
     (import.meta.env.VITE_SPOTIFY_CLIENT_ID as string | undefined)?.trim() ??
@@ -239,6 +255,48 @@ export function SongPage(props: {
     },
     [isNew, repertoireExtras.milestoneTemplate, saveSong]
   );
+
+  const persistPracticeExerciseSong = useCallback(
+    (next: EncoreSong) => {
+      setDraft(next);
+      void persistSongNow(next);
+    },
+    [persistSongNow],
+  );
+
+  const encoreScrollRouteKey = route.kind === 'song' ? route.id : null;
+  const encoreScrollConsumedHashRef = useRef<string | null>(null);
+  useLayoutEffect(() => {
+    encoreScrollConsumedHashRef.current = null;
+  }, [encoreScrollRouteKey]);
+
+  useLayoutEffect(() => {
+    if (route.kind !== 'song' || loadState !== 'ok' || !draft) return;
+    const scrollId = getEncoreHashScrollTargetId(window.location.hash);
+    if (!scrollId) return;
+    const fullHash = window.location.hash;
+    if (encoreScrollConsumedHashRef.current === fullHash) return;
+    encoreScrollConsumedHashRef.current = fullHash;
+    const el = document.getElementById(scrollId);
+    if (el) {
+      el.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      if (scrollId === 'encore-song-practice-heading' && el instanceof HTMLElement) {
+        try {
+          el.focus({ preventScroll: true });
+        } catch {
+          /* noop */
+        }
+      }
+    }
+    const canon = encoreHashPathOnlyFragment(fullHash);
+    if (window.location.hash !== canon) {
+      window.history.replaceState(
+        window.history.state,
+        '',
+        `${window.location.pathname}${window.location.search}${canon}`,
+      );
+    }
+  }, [route.kind, loadState, draft, encoreScrollRouteKey]);
 
   useEffect(() => {
     if (!draft || loadState !== 'ok') return;
@@ -809,11 +867,18 @@ export function SongPage(props: {
                   id="encore-song-practice-heading"
                   component="h2"
                   variant="subtitle1"
-                  sx={{ fontWeight: 700 }}
+                  tabIndex={-1}
+                  sx={{ fontWeight: 700, scrollMarginTop: { xs: 72, sm: 80 } }}
                 >
                   Practice
                 </Typography>
               ) : null}
+              <PracticeExercisesSection
+                song={draft}
+                onPersistSong={persistPracticeExerciseSong}
+                googleAccessToken={googleAccessToken}
+                withBlockingJob={withBlockingJob}
+              />
               <SongMilestoneChecklist
                 song={milestoneSong}
                 milestoneTemplate={repertoireExtras.milestoneTemplate}

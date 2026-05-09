@@ -10,6 +10,10 @@ export const PIANO_ADVANCE_DOUBLE_MS = 620;
 export const PIANO_ADVANCE_BUTTON_TOOLTIP =
   'Press Space / Enter or tap the same piano key twice (like a double click) to advance without clicking.';
 
+/** When the learner has only a microphone (no enabled MIDI device), double-tap advance is off. */
+export const PIANO_ADVANCE_BUTTON_TOOLTIP_MIC_ONLY =
+  'Press Space or Enter once to advance. Piano double-tap is disabled while only the microphone is on so noise does not skip exercises.';
+
 export type PianoDoubleTapArm = { note: number; perfMs: number; released: boolean } | null;
 
 /**

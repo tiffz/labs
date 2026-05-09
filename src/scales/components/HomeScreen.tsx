@@ -16,6 +16,7 @@ import {
   getCombinedMajorScaleMastery,
 } from '../progress/store';
 import ScalesInputSources from './InputSources';
+import ScalesAccountMenu from './ScalesAccountMenu';
 import MasteryDetailsDialog, { type MasteryCategory } from './MasteryDetailsDialog';
 import DueForReviewDialog from './DueForReviewDialog';
 import MasteryTierLegend from './MasteryTierLegend';
@@ -393,10 +394,21 @@ export default function HomeScreen() {
         width: '100%',
         maxWidth: 1120,
         mx: 'auto',
+        position: 'relative',
         px: sessionComplete ? { xs: 3, sm: 4, md: 6 } : { xs: 4, sm: 6, md: 10 },
         py: sessionComplete ? { xs: 3, md: 4 } : { xs: 6, md: 10 },
       }}
     >
+      <Box
+        sx={{
+          position: 'absolute',
+          top: sessionComplete ? { xs: 1, sm: 1.5 } : { xs: 2, sm: 2 },
+          right: sessionComplete ? { xs: 1, sm: 1.5 } : { xs: 2, sm: 2 },
+          zIndex: 1,
+        }}
+      >
+        <ScalesAccountMenu />
+      </Box>
       {/* Hero */}
       <Box sx={{ textAlign: 'center', mb: sessionComplete ? { xs: 3, md: 4 } : { xs: 8, md: 10 } }}>
         <Box sx={{ mb: sessionComplete ? 1.5 : 4 }}>

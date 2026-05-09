@@ -1,5 +1,7 @@
 /**
  * Signed-in Encore client routes (hash only). Guest share stays `#/share/<driveFileId>` in {@link App}.
+ *
+ * Optional in-fragment query: `#/song/<id>?scroll=<elementId>` — see {@link getEncoreHashScrollTargetId}.
  */
 export type EncoreAppRoute =
   | { kind: 'library' }
@@ -9,8 +11,49 @@ export type EncoreAppRoute =
   | { kind: 'repertoireSettings' }
   /** Help center; import guide lives at `#/help` (legacy `#/settings/repertoire/import-guide` redirects here). */
   | { kind: 'help' }
-  | { kind: 'song'; id: string }
+  | { kind: 'song'; id: string; scrollToElementId?: string }
   | { kind: 'songNew' };
+
+const ENCORE_HASH_SCROLL_QUERY = 'scroll';
+/** Safe DOM id fragment for `getElementById` after `scroll` query param. */
+const ENCORE_HASH_SCROLL_ID_RE = /^[a-zA-Z0-9_-]+$/;
+
+function splitEncoreHashPathAndQuery(rawNoLeadingHash: string): { pathPart: string; query: string | undefined } {
+  const q = rawNoLeadingHash.indexOf('?');
+  if (q < 0) return { pathPart: rawNoLeadingHash, query: undefined };
+  return {
+    pathPart: rawNoLeadingHash.slice(0, q),
+    query: rawNoLeadingHash.slice(q + 1),
+  };
+}
+
+/**
+ * Returns `#` + path-only fragment (drops in-fragment `?scroll=…` and any other query) for routing parse.
+ */
+export function encoreHashPathOnlyFragment(hash: string): string {
+  const raw = hash.replace(/^#/, '').trim();
+  const { pathPart } = splitEncoreHashPathAndQuery(raw);
+  const path = pathPart.startsWith('/') ? pathPart : `/${pathPart}`;
+  return `#${path}`;
+}
+
+/**
+ * Sanitized `scroll` query value inside the location hash, or `undefined`.
+ * Guest share `#/share/<id>?scroll=…` returns `undefined` (scroll is ignored for share URLs).
+ */
+export function getEncoreHashScrollTargetId(hash: string): string | undefined {
+  const raw = hash.replace(/^#/, '').trim();
+  const { pathPart, query } = splitEncoreHashPathAndQuery(raw);
+  if (!query) return undefined;
+  const path = pathPart.startsWith('/') ? pathPart : `/${pathPart}`;
+  const segs = path.split('/').filter(Boolean);
+  if (segs[0] === 'share') return undefined;
+
+  const params = new URLSearchParams(query);
+  const id = params.get(ENCORE_HASH_SCROLL_QUERY)?.trim();
+  if (!id || !ENCORE_HASH_SCROLL_ID_RE.test(id)) return undefined;
+  return id;
+}
 
 /** In-app hash URL fragment for an Encore route (starts with `#`). Use on `<a href>` so modifier-clicks open a new tab. */
 export function encoreAppHref(route: EncoreAppRoute): string {
@@ -23,7 +66,14 @@ export function encoreAppHref(route: EncoreAppRoute): string {
   else if (route.kind === 'repertoireSettings') h = '#/settings/repertoire';
   else if (route.kind === 'help') h = '#/help';
   else if (route.kind === 'songNew') h = '#/song/new';
-  else if (route.kind === 'song') h = `#/song/${encodeURIComponent(route.id)}`;
+  else if (route.kind === 'song') {
+    const base = `#/song/${encodeURIComponent(route.id)}`;
+    const scroll = route.scrollToElementId?.trim();
+    h =
+      scroll && ENCORE_HASH_SCROLL_ID_RE.test(scroll)
+        ? `${base}?${ENCORE_HASH_SCROLL_QUERY}=${encodeURIComponent(scroll)}`
+        : base;
+  }
   return h;
 }
 
@@ -42,7 +92,8 @@ export function openEncoreRouteInBackgroundTab(route: EncoreAppRoute): void {
 }
 
 export function parseEncoreAppHash(hash: string): EncoreAppRoute {
-  const raw = hash.replace(/^#/, '').trim();
+  const pathOnly = encoreHashPathOnlyFragment(hash);
+  const raw = pathOnly.replace(/^#/, '').trim();
   const path = raw.startsWith('/') ? raw : `/${raw}`;
   const segs = path.split('/').filter(Boolean);
   if (segs[0] === 'song' && segs[1] === 'new') return { kind: 'songNew' };

@@ -84,7 +84,7 @@ export default function GuidanceCallout({ payload, onDismiss }: GuidanceCalloutP
           p: { xs: 6, sm: 8 },
         }}
       >
-        {/* Centered hero — same pattern as "Connect your piano" */}
+        {/* Centered hero — same pattern as stuck-session tips / InputGateway */}
         <Box sx={{ textAlign: 'center', mb: 6 }}>
           <Box
             aria-hidden="true"
@@ -172,23 +172,25 @@ export default function GuidanceCallout({ payload, onDismiss }: GuidanceCalloutP
           {PIANO_ADVANCE_BUTTON_TOOLTIP}
         </Typography>
 
-        <Button
-          variant="contained"
-          color="primary"
-          fullWidth
-          onClick={handleDialogClose}
-          disableElevation
-          sx={{
-            mt: 2,
-            height: 40,
-            borderRadius: '999px',
-            fontSize: '0.875rem',
-            fontWeight: 500,
-            letterSpacing: '0.00625rem',
-          }}
-        >
-          Got it
-        </Button>
+        <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%', mt: 2 }}>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleDialogClose}
+            disableElevation
+            sx={{
+              height: 40,
+              borderRadius: '999px',
+              fontSize: '0.875rem',
+              fontWeight: 500,
+              letterSpacing: '0.00625rem',
+              minWidth: 140,
+              px: 3,
+            }}
+          >
+            Got it
+          </Button>
+        </Box>
       </DialogContent>
     </Dialog>
   );

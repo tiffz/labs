@@ -13,3 +13,11 @@ export function replaceStanzaYoutubeSearchParam(videoId: string | null) {
   else u.searchParams.delete('v');
   window.history.replaceState(null, '', `${u.pathname}${u.search}${u.hash}`);
 }
+
+/** Removes `?v=` only so Drive deep-link params (`df`, `driveTitle`) stay intact during bootstrap. */
+export function stripStanzaYoutubeSearchParamPreservingDrive(): void {
+  const u = new URL(window.location.href);
+  if (!u.searchParams.has('v')) return;
+  u.searchParams.delete('v');
+  window.history.replaceState(null, '', `${u.pathname}${u.search}${u.hash}`);
+}

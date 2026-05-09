@@ -85,11 +85,19 @@ function encoreDrivePublicDevProxyPlugin(): Plugin {
     configureServer(server: ViteDevServer) {
       if (IS_TEST) return;
       server.middlewares.use(async (req, res, next) => {
-        if (req.method !== 'GET' || !req.url?.startsWith('/__encore/drive-public/')) {
+        if (req.method !== 'GET' || !req.url) {
           next();
           return;
         }
-        const prefix = '/__encore/drive-public/';
+        const metaPrefix = '/__encore/drive-public-meta/';
+        const mediaPrefix = '/__encore/drive-public/';
+        const isMeta = req.url.startsWith(metaPrefix);
+        const isMedia = req.url.startsWith(mediaPrefix);
+        if (!isMeta && !isMedia) {
+          next();
+          return;
+        }
+        const prefix = isMeta ? metaPrefix : mediaPrefix;
         const q = req.url.indexOf('?');
         const pathPart = q === -1 ? req.url.slice(prefix.length) : req.url.slice(prefix.length, q);
         let fileId: string;
@@ -126,7 +134,10 @@ function encoreDrivePublicDevProxyPlugin(): Plugin {
         const referer =
           (env.VITE_GOOGLE_DRIVE_DEV_PROXY_REFERER as string | undefined)?.trim() ||
           `http://${host}/encore/`;
-        const googleUrl = `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media&supportsAllDrives=true&key=${encodeURIComponent(apiKey)}`;
+        const fields = encodeURIComponent('mimeType,name,shortcutDetails');
+        const googleUrl = isMeta
+          ? `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?fields=${fields}&supportsAllDrives=true&key=${encodeURIComponent(apiKey)}`
+          : `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media&supportsAllDrives=true&key=${encodeURIComponent(apiKey)}`;
         try {
           const r = await fetch(googleUrl, {
             cache: 'no-store',

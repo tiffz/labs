@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import CloseIcon from '@mui/icons-material/Close';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import PauseIcon from '@mui/icons-material/Pause';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -11,21 +10,24 @@ import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import type { SegmentStat } from '../db/stanzaDb';
 import type { StanzaMarker } from '../db/stanzaDb';
-import { deriveSegments, ensureMarkerIds, STANZA_TIME_EPS } from '../utils/segments';
+import {
+  deletableBoundaryMarkerAtTime,
+  deriveSegments,
+  ensureMarkerIds,
+  STANZA_TIME_EPS,
+} from '../utils/segments';
 import type { StanzaPlaybackLoopMode } from '../utils/stanzaPlaybackLoop';
 import { computeLoopHull } from '../utils/stanzaPlaybackLoop';
-import { stanzaBarHeatT } from '../utils/stanzaPracticeHeat';
 import AppTooltip from '../../shared/components/AppTooltip';
 import StanzaSectionHoverCard from './StanzaSectionHoverCard';
 
 export type { StanzaPlaybackLoopMode };
 
-const ACCENT = '#e848a0';
 const PROGRESS_WASH = 'rgba(232, 72, 160, 0.14)';
 const LOOP_REGION_WASH = 'rgba(232, 72, 160, 0.09)';
 
 const BAR_HELP =
-  'Drag the bar (or the playhead dot) to scrub. A quick tap on a section selects it and jumps to its start; drag on a section to scrub without changing selection. Shift+click to multi-select. Loop modes: play through, repeat whole song, or repeat the selected range — while paused you can scrub anywhere; Play snaps into the loop. Skip previous/next jump to track start and end in play-through mode, or to the active loop range in other modes. Drag marker handles to move; × removes an interior marker.';
+  'Drag the bar (or the playhead dot) to scrub. A quick tap on a section selects it and jumps to its start; drag on a section to scrub without changing selection. Shift+click to multi-select. Loop modes: play through, repeat whole song, or repeat the selected range — while paused you can scrub anywhere; Play snaps into the loop. Skip previous/next jump to track start and end in play-through mode, or to the active loop range in other modes. Drag thin marker lines to move a boundary. Remove a boundary from the section hover card, Delete with a section selected, or it merges into the previous section (Logic-style).';
 
 function formatClock(sec: number): string {
   if (!Number.isFinite(sec) || sec < 0) return '0:00';
@@ -247,6 +249,8 @@ export default function StanzaTimeline({
   const [hoverCard, setHoverCard] = useState<{ segmentIndex: number; x: number; y: number } | null>(null);
   const [draftSectionLabel, setDraftSectionLabel] = useState('');
   const hoverCloseTimer = useRef<number | null>(null);
+  const sectionHoverCardRootRef = useRef<HTMLDivElement | null>(null);
+  const commitSectionRenameRef = useRef<() => void>(() => {});
 
   const clearHoverClose = useCallback(() => {
     if (hoverCloseTimer.current != null) {
@@ -255,29 +259,11 @@ export default function StanzaTimeline({
     }
   }, []);
 
-  const scheduleHoverClose = useCallback(() => {
-    clearHoverClose();
-    hoverCloseTimer.current = window.setTimeout(() => {
-      setHoverCard(null);
-      hoverCloseTimer.current = null;
-    }, 120);
-  }, [clearHoverClose]);
-
   useEffect(
     () => () => {
       if (hoverCloseTimer.current != null) window.clearTimeout(hoverCloseTimer.current);
     },
     [],
-  );
-
-  const handleSectionPointerEnter = useCallback(
-    (segmentIndex: number, e: React.PointerEvent) => {
-      clearHoverClose();
-      setHoverCard({ segmentIndex, x: e.clientX, y: e.clientY });
-      const seg = segments[segmentIndex];
-      if (seg) setDraftSectionLabel(seg.label);
-    },
-    [clearHoverClose, segments],
   );
 
   const hoverSegment = hoverCard != null ? segments[hoverCard.segmentIndex] : null;
@@ -292,6 +278,41 @@ export default function StanzaTimeline({
       if (seg) setDraftSectionLabel(seg.label);
     }
   }, [draftSectionLabel, hoverCard, onRenameSectionFromLabel, segments]);
+
+  commitSectionRenameRef.current = commitSectionRename;
+
+  const scheduleHoverClose = useCallback(() => {
+    clearHoverClose();
+    hoverCloseTimer.current = window.setTimeout(() => {
+      commitSectionRenameRef.current();
+      setHoverCard(null);
+      hoverCloseTimer.current = null;
+    }, 120);
+  }, [clearHoverClose]);
+
+  const handleSectionPointerEnter = useCallback(
+    (segmentIndex: number, e: React.PointerEvent) => {
+      clearHoverClose();
+      commitSectionRenameRef.current();
+      setHoverCard({ segmentIndex, x: e.clientX, y: e.clientY });
+      const seg = segments[segmentIndex];
+      if (seg) setDraftSectionLabel(seg.label);
+    },
+    [clearHoverClose, segments],
+  );
+
+  /** Commit when clicking outside the hover card — blur alone misses non-focusable targets (video, timeline). */
+  useEffect(() => {
+    if (hoverCard == null) return;
+    const onDocPointerDown = (e: PointerEvent) => {
+      const root = sectionHoverCardRootRef.current;
+      const t = e.target;
+      if (root && t instanceof Node && root.contains(t)) return;
+      commitSectionRenameRef.current();
+    };
+    document.addEventListener('pointerdown', onDocPointerDown, true);
+    return () => document.removeEventListener('pointerdown', onDocPointerDown, true);
+  }, [hoverCard]);
 
   if (!(duration > 0) || segments.length === 0) {
     return (
@@ -327,16 +348,51 @@ export default function StanzaTimeline({
   const loopRingWidthPct =
     loopMode === 'loopAll' ? 100 : loopHull ? ((loopHull.end - loopHull.start) / duration) * 100 : 0;
 
-  const canDeleteMarker = (m: StanzaMarker) =>
-    !(m.time <= STANZA_TIME_EPS || m.time >= duration - STANZA_TIME_EPS);
-
   const loopSkipEnabled = duration > 0;
+
+  const hoverDeletableMarker =
+    hoverSegment != null && duration > 0
+      ? deletableBoundaryMarkerAtTime(hoverSegment.start, workingMarkers, duration)
+      : null;
 
   return (
     <Box className="stanza-playback-stack">
       <Box className="stanza-playback-strip">
-        <Box className="stanza-playback-toolbar">
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+        <Box
+          className="stanza-playback-toolbar"
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            width: '100%',
+            gap: 1,
+            flexWrap: { xs: 'wrap', sm: 'nowrap' },
+          }}
+        >
+          <Box
+            className="stanza-playback-transport"
+            sx={{ display: 'flex', alignItems: 'center', gap: 0.25, flexShrink: 0, flexWrap: 'nowrap' }}
+          >
+            <AppTooltip
+              title={
+                loopMode === 'through'
+                  ? 'Jump to start of video'
+                  : loopMode === 'loopAll'
+                    ? 'Jump to start of track'
+                    : 'Jump to start of selected loop range'
+              }
+            >
+              <span>
+                <IconButton
+                  size="small"
+                  aria-label="Skip to loop start"
+                  disabled={!loopSkipEnabled}
+                  onClick={onSkipToLoopStart}
+                  sx={{ color: '#1d1d1f' }}
+                >
+                  <SkipPreviousIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </AppTooltip>
             <AppTooltip title={isPlaying ? 'Pause' : 'Play'}>
               <IconButton
                 className="stanza-play-btn"
@@ -347,11 +403,37 @@ export default function StanzaTimeline({
                 {isPlaying ? <PauseIcon /> : <PlayArrowIcon />}
               </IconButton>
             </AppTooltip>
-            <Typography component="span" className="stanza-playback-time" sx={{ minWidth: '7.5rem' }}>
+            <AppTooltip
+              title={
+                loopMode === 'through' || loopMode === 'loopAll'
+                  ? 'Jump to end of video (just before the end)'
+                  : 'Jump to end of loop range (just before wrap)'
+              }
+            >
+              <span>
+                <IconButton
+                  size="small"
+                  aria-label="Skip to loop end"
+                  disabled={!loopSkipEnabled}
+                  onClick={onSkipToLoopEnd}
+                  sx={{ color: '#1d1d1f' }}
+                >
+                  <SkipNextIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </AppTooltip>
+            <Typography
+              component="span"
+              className="stanza-playback-time"
+              sx={{ minWidth: '7.5rem', ml: 0.75, pl: 0.25 }}
+            >
               {formatClock(currentTime)} / {formatClock(duration)}
             </Typography>
           </Box>
 
+          <Box sx={{ flex: '1 1 8px', minWidth: 0 }} aria-hidden />
+
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0, ml: { xs: 0, sm: 'auto' } }}>
           <Box className="stanza-loop-options" role="group" aria-label="Playback loop mode">
             <AppTooltip title="Play through — no looping">
               <button
@@ -391,47 +473,6 @@ export default function StanzaTimeline({
             </AppTooltip>
           </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }} className="stanza-playback-skip-row">
-            <AppTooltip
-              title={
-                loopMode === 'through'
-                  ? 'Jump to start of video'
-                  : loopMode === 'loopAll'
-                    ? 'Jump to start of track'
-                    : 'Jump to start of selected loop range'
-              }
-            >
-              <span>
-                <IconButton
-                  size="small"
-                  aria-label="Skip to loop start"
-                  disabled={!loopSkipEnabled}
-                  onClick={onSkipToLoopStart}
-                  sx={{ color: '#1d1d1f' }}
-                >
-                  <SkipPreviousIcon fontSize="small" />
-                </IconButton>
-              </span>
-            </AppTooltip>
-            <AppTooltip
-              title={
-                loopMode === 'through' || loopMode === 'loopAll'
-                  ? 'Jump to end of video (just before the end)'
-                  : 'Jump to end of loop range (just before wrap)'
-              }
-            >
-              <span>
-                <IconButton
-                  size="small"
-                  aria-label="Skip to loop end"
-                  disabled={!loopSkipEnabled}
-                  onClick={onSkipToLoopEnd}
-                  sx={{ color: '#1d1d1f' }}
-                >
-                  <SkipNextIcon fontSize="small" />
-                </IconButton>
-              </span>
-            </AppTooltip>
             <AppTooltip title={BAR_HELP}>
               <IconButton size="small" aria-label="How the timeline works" sx={{ color: '#6e6e73' }}>
                 <InfoOutlinedIcon fontSize="small" />
@@ -623,16 +664,16 @@ export default function StanzaTimeline({
                 sx={{
                   position: 'absolute',
                   left: `${leftPct}%`,
-                  top: -6,
-                  width: 10,
-                  height: 'calc(100% + 12px)',
-                  marginLeft: '-5px',
+                  top: -2,
+                  width: 2,
+                  height: 'calc(100% + 4px)',
+                  marginLeft: '-1px',
                   zIndex: 4,
                   cursor: 'ew-resize',
                   borderRadius: 0.5,
-                  bgcolor: 'rgba(60, 60, 67, 0.5)',
-                  border: '1px solid rgba(255,255,255,0.88)',
-                  '&:hover': { bgcolor: 'rgba(29, 29, 31, 0.78)' },
+                  bgcolor: 'rgba(60, 60, 67, 0.55)',
+                  boxShadow: '0 0 0 1px rgba(255, 255, 255, 0.75)',
+                  '&:hover': { bgcolor: 'rgba(29, 29, 31, 0.85)' },
                 }}
                 onPointerDown={(e) => {
                   e.stopPropagation();
@@ -645,110 +686,10 @@ export default function StanzaTimeline({
                   setDragId(m.id);
                 }}
                 role="separator"
-                aria-label={`Marker ${m.label} at ${m.time.toFixed(1)} seconds`}
-              >
-                {m.id != null && canDeleteMarker(m) ? (
-                  <IconButton
-                    component="span"
-                    className="stanza-marker-delete"
-                    size="small"
-                    tabIndex={-1}
-                    aria-label={`Remove marker ${m.label}`}
-                    sx={{
-                      position: 'absolute',
-                      top: 2,
-                      left: '50%',
-                      transform: 'translateX(-50%)',
-                      p: 0.2,
-                      color: '#6e6e73',
-                      '&:hover': { color: ACCENT, bgcolor: 'rgba(255,255,255,0.92)' },
-                    }}
-                    onPointerDown={(ev) => {
-                      ev.stopPropagation();
-                    }}
-                    onClick={(ev) => {
-                      ev.stopPropagation();
-                      ev.preventDefault();
-                      onDeleteMarker(m.id!);
-                    }}
-                    onMouseDown={(ev) => {
-                      ev.stopPropagation();
-                      ev.preventDefault();
-                    }}
-                  >
-                    <CloseIcon sx={{ fontSize: 14 }} />
-                  </IconButton>
-                ) : null}
-              </Box>
+                aria-label={`Section boundary ${m.label} at ${m.time.toFixed(1)} seconds. Drag to move.`}
+              />
             );
           })}
-        </Box>
-
-        <Box sx={{ mt: 0.75 }}>
-          <Typography
-            component="p"
-            variant="caption"
-            color="text.secondary"
-            sx={{
-              m: 0,
-              mb: 0.35,
-              fontSize: '0.65rem',
-              fontWeight: 600,
-              letterSpacing: '0.05em',
-              textTransform: 'uppercase',
-              color: '#6e6e73',
-            }}
-          >
-            Practice time
-          </Typography>
-          <Box
-            className="stanza-playback-practice-split-rail"
-            role="img"
-            aria-label="Relative practice time per section, aligned with the playback bar above"
-            sx={{
-              display: 'flex',
-              height: 14,
-              borderRadius: '10px',
-              overflow: 'hidden',
-              border: '1px solid rgba(60, 60, 67, 0.11)',
-              bgcolor: 'rgba(255, 255, 255, 0.52)',
-              boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.72)',
-              boxSizing: 'border-box',
-            }}
-          >
-            {segments.map((seg, i) => {
-              const widthPct = ((seg.end - seg.start) / duration) * 100;
-              const ms = segmentMs[seg.id]?.totalMs ?? 0;
-              const t = stanzaBarHeatT(ms);
-              return (
-                <Box
-                  key={seg.id}
-                  sx={{
-                    width: `${widthPct}%`,
-                    display: 'flex',
-                    alignItems: 'flex-end',
-                    justifyContent: 'stretch',
-                    px: '3px',
-                    boxSizing: 'border-box',
-                    borderRight: i < segments.length - 1 ? '1px solid rgba(60, 60, 67, 0.08)' : 'none',
-                  }}
-                  aria-hidden
-                >
-                  <Box
-                    sx={{
-                      width: '100%',
-                      height: t <= 0 ? '0%' : `${t * 100}%`,
-                      minHeight: t > 0 ? 2 : 0,
-                      borderRadius: '3px',
-                      background: 'linear-gradient(180deg, rgba(252, 206, 232, 0.95) 0%, rgba(232, 72, 160, 0.82) 100%)',
-                      opacity: t > 0 ? Math.min(1, 0.42 + t * 0.52) : 0,
-                      boxShadow: t > 0 ? 'inset 0 1px 0 rgba(255, 255, 255, 0.45)' : 'none',
-                    }}
-                  />
-                </Box>
-              );
-            })}
-          </Box>
         </Box>
 
         {onAddMarker ? (
@@ -772,6 +713,16 @@ export default function StanzaTimeline({
           onRenameCommit={commitSectionRename}
           onPointerEnter={clearHoverClose}
           onPointerLeave={scheduleHoverClose}
+          cardRootRef={sectionHoverCardRootRef}
+          sectionBoundaryMarkerDeletable={hoverDeletableMarker != null}
+          onDeleteSectionBoundaryMarker={
+            hoverDeletableMarker
+              ? () => {
+                  onDeleteMarker(hoverDeletableMarker.id!);
+                  setHoverCard(null);
+                }
+              : undefined
+          }
         />
       ) : null}
     </Box>

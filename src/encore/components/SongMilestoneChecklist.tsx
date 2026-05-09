@@ -215,12 +215,16 @@ export function SongMilestoneChecklist(props: {
             const st = synced.milestoneProgress?.[m.id]?.state ?? 'todo';
             return (
               <Stack key={m.id} direction="row" spacing={1} alignItems="center" sx={{ width: 1 }}>
-                <Tooltip title="Global template · applies to every song">
+                <Tooltip title="Open this song’s Practice section (global template still edited in Settings)">
                   <IconButton
                     size="small"
-                    aria-label="Global milestone template"
+                    aria-label="Open Practice section for this song"
                     component="a"
-                    href={encoreAppHref({ kind: 'repertoireSettings' })}
+                    href={encoreAppHref({
+                      kind: 'song',
+                      id: song.id,
+                      scrollToElementId: 'encore-song-practice-heading',
+                    })}
                     sx={{
                       flexShrink: 0,
                       color: 'text.disabled',

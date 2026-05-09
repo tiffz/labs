@@ -11,12 +11,25 @@ vi.mock('./driveFetch', async (importOriginal) => {
     driveFileHasAnyoneReader: vi.fn(),
     driveListFiles: vi.fn(),
     drivePatchJsonMedia: vi.fn(),
+    /** Default: treat id as already a media file (guest snapshot tests do not hit the network). */
+    driveResolveFileForMedia: vi.fn(async (_tok: string, id: string) => ({
+      mediaFileId: id,
+      meta: { id, mimeType: 'video/mp4' },
+    })),
   };
 });
 
 vi.mock('./bootstrapFolders', () => ({
   fetchPublicDriveJson: vi.fn(),
 }));
+
+vi.mock('../../shared/drive/fetchPublicDriveMediaBytes', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../shared/drive/fetchPublicDriveMediaBytes')>();
+  return {
+    ...actual,
+    isPublicDriveFileMetadataReadable: vi.fn().mockResolvedValue(false),
+  };
+});
 
 vi.mock('../db/encoreDb', () => ({
   encoreDb: {
@@ -35,6 +48,7 @@ import {
   driveListFiles,
   drivePatchJsonMedia,
 } from './driveFetch';
+import { isPublicDriveFileMetadataReadable } from '../../shared/drive/fetchPublicDriveMediaBytes';
 import { fetchPublicDriveJson } from './bootstrapFolders';
 import { encoreDb, getSyncMeta, patchSyncMeta } from '../db/encoreDb';
 import { buildPublicSnapshot, publishSnapshotToDrive } from './publicSnapshot';
@@ -67,6 +81,8 @@ function perf(over: Partial<EncorePerformance> = {}): EncorePerformance {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(isPublicDriveFileMetadataReadable).mockReset();
+  vi.mocked(isPublicDriveFileMetadataReadable).mockResolvedValue(false);
 });
 
 describe('buildPublicSnapshot', () => {
@@ -138,6 +154,19 @@ describe('buildPublicSnapshot', () => {
     (driveFileHasAnyoneReader as any).mockResolvedValueOnce(true);
     const snap = await buildPublicSnapshot('tok', songs, performances, undefined);
     expect(snap.performances[0]!.videoOpenUrl).toContain('driveTarget');
+    expect(isPublicDriveFileMetadataReadable).not.toHaveBeenCalled();
+  });
+
+  it('returns the Drive web URL when API key metadata read succeeds even if OAuth permission list is false', async () => {
+    const songs = [song({ id: 's1', title: 'Performed', artist: 'A' })];
+    const performances = [
+      perf({ id: 'p1', songId: 's1', videoTargetDriveFileId: 'driveTarget' }),
+    ];
+    (driveFileHasAnyoneReader as any).mockResolvedValueOnce(false);
+    vi.mocked(isPublicDriveFileMetadataReadable).mockResolvedValueOnce(true);
+    const snap = await buildPublicSnapshot('tok', songs, performances, undefined);
+    expect(snap.performances[0]!.videoOpenUrl).toContain('driveTarget');
+    expect(isPublicDriveFileMetadataReadable).toHaveBeenCalledWith('driveTarget');
   });
 
   it('silently omits the videoOpenUrl when the probe throws', async () => {
@@ -148,6 +177,29 @@ describe('buildPublicSnapshot', () => {
     (driveFileHasAnyoneReader as any).mockRejectedValueOnce(new Error('boom'));
     const snap = await buildPublicSnapshot('tok', songs, performances, undefined);
     expect(snap.performances[0]!.videoOpenUrl).toBeUndefined();
+  });
+
+  it('falls back to the shortcut id when the target id cannot be resolved but the shortcut can', async () => {
+    const songs = [song({ id: 's1', title: 'Performed', artist: 'A' })];
+    const performances = [
+      perf({
+        id: 'p1',
+        songId: 's1',
+        videoTargetDriveFileId: 'badTarget',
+        videoShortcutDriveFileId: 'goodShortcut',
+      }),
+    ];
+    const { driveResolveFileForMedia } = await import('./driveFetch');
+    (driveResolveFileForMedia as any)
+      .mockRejectedValueOnce(new Error('missing target'))
+      .mockResolvedValueOnce({
+        mediaFileId: 'resolvedMov',
+        meta: { id: 'resolvedMov', mimeType: 'video/mp4' },
+      });
+    (driveFileHasAnyoneReader as any).mockResolvedValueOnce(true);
+    const snap = await buildPublicSnapshot('tok', songs, performances, undefined);
+    expect(snap.performances[0]!.videoOpenUrl).toContain('resolvedMov');
+    expect(driveFileHasAnyoneReader).toHaveBeenCalledWith('tok', 'resolvedMov');
   });
 });
 

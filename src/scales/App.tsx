@@ -8,6 +8,8 @@ import DebugPanel from './components/DebugPanel';
 import { ScalesSessionDebugBridgeProvider } from './context/scalesSessionDebugBridge';
 import SkipToMain from '../shared/components/SkipToMain';
 import { readLabsDebugFromLocation } from '../shared/debug/readLabsDebugParams';
+import { ScalesDriveBackupProvider } from './context/ScalesDriveBackupContext';
+import ScalesDriveBackupSection from './components/ScalesDriveBackupSection';
 
 const debugMode = readLabsDebugFromLocation().debug;
 if (debugMode) enableDebug();
@@ -30,6 +32,7 @@ function ScreenRouter() {
 function AppContent() {
   const { state, audioBootstrapping, midiReady } = useScales();
   const hasInput = hasEnabledMidiDevice(state) || state.microphoneActive;
+
   // Wait out mic permission restore AND the first Web MIDI enumeration so
   // "Connect your piano" does not flash for users whose keyboard is
   // already plugged in (midiDevices is empty until requestMIDIAccess resolves).
@@ -43,6 +46,7 @@ function AppContent() {
       </main>
       {!hasInput && !suppressConnectModal && <InputGateway />}
       {debugMode && <DebugPanel />}
+      <ScalesDriveBackupSection />
     </div>
   );
 }
@@ -51,7 +55,9 @@ export default function App() {
   return (
     <ScalesProvider>
       <ScalesSessionDebugBridgeProvider>
-        <AppContent />
+        <ScalesDriveBackupProvider>
+          <AppContent />
+        </ScalesDriveBackupProvider>
       </ScalesSessionDebugBridgeProvider>
     </ScalesProvider>
   );

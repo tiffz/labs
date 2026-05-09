@@ -18,6 +18,7 @@ import {
   exerciseContributesToGlobalMasteryTotals,
 } from '../progress/store';
 import ScalesInputSources from './InputSources';
+import ScalesAccountMenu from './ScalesAccountMenu';
 import MasteryTierLegend from './MasteryTierLegend';
 
 // M3 type-scale helpers.
@@ -178,7 +179,10 @@ export default function ProgressScreen() {
         <Typography component="h1" sx={{ ...TYPE.displaySmall, color: 'text.primary', flex: 1 }}>
           Progress map
         </Typography>
-        <ScalesInputSources />
+        <Box sx={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <ScalesInputSources />
+          <ScalesAccountMenu />
+        </Box>
       </Box>
 
       {/* Overall progress summary */}

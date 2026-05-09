@@ -1,6 +1,9 @@
+import type { Ref } from 'react';
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
+import AppTooltip from '../../shared/components/AppTooltip';
 import type { SegmentStat } from '../db/stanzaDb';
 import type { DerivedSegment } from '../utils/segments';
 
@@ -13,6 +16,12 @@ export interface StanzaSectionHoverCardProps {
   onRenameCommit: () => void;
   onPointerEnter: () => void;
   onPointerLeave: () => void;
+  /** Root element for “click outside” commit when the field keeps focus on non-focusable targets. */
+  cardRootRef?: Ref<HTMLDivElement | null>;
+  /** True when this section starts at an interior marker (removable boundary). */
+  sectionBoundaryMarkerDeletable?: boolean;
+  /** Removes the boundary at this section’s start; merges into the previous section (Logic-style). */
+  onDeleteSectionBoundaryMarker?: () => void;
 }
 
 function formatDuration(sec: number): string {
@@ -34,12 +43,16 @@ export default function StanzaSectionHoverCard({
   onRenameCommit,
   onPointerEnter,
   onPointerLeave,
+  cardRootRef,
+  sectionBoundaryMarkerDeletable = false,
+  onDeleteSectionBoundaryMarker,
 }: StanzaSectionHoverCardProps) {
   const dur = segment.end - segment.start;
   const practicedMin = ((stats?.totalMs ?? 0) / 60_000).toFixed(1);
 
   return (
     <Box
+      ref={cardRootRef}
       className="stanza-section-hover-card"
       sx={{
         position: 'fixed',
@@ -72,6 +85,24 @@ export default function StanzaSectionHoverCard({
         }}
         sx={{ mb: 1 }}
       />
+      {sectionBoundaryMarkerDeletable && onDeleteSectionBoundaryMarker ? (
+        <AppTooltip title="Removes this section’s start marker and joins this section into the previous one (same idea as Logic Pro). You can also press Delete with the section selected.">
+          <Button
+            type="button"
+            variant="outlined"
+            size="small"
+            color="inherit"
+            fullWidth
+            onClick={(e) => {
+              e.stopPropagation();
+              onDeleteSectionBoundaryMarker();
+            }}
+            sx={{ mb: 1, textTransform: 'none', fontSize: '0.75rem' }}
+          >
+            Remove section start
+          </Button>
+        </AppTooltip>
+      ) : null}
       <Typography variant="caption" color="text.secondary" component="div" sx={{ lineHeight: 1.5 }}>
         {formatDuration(segment.start)} → {formatDuration(segment.end)}
         <br />

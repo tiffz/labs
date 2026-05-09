@@ -714,7 +714,7 @@ export function PracticeScreen({
                     <SongMilestoneChecklist
                       song={milestoneSong}
                       milestoneTemplate={repertoireExtras.milestoneTemplate}
-                      onChange={(next) => void saveSong(next)}
+                      onChange={(next) => void persistPracticeSongBundle(next)}
                     />
                   </Box>
 

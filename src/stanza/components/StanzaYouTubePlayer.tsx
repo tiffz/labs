@@ -18,6 +18,8 @@ interface StanzaYouTubePlayerProps {
   videoId: string;
   onStateChange?: (state: StanzaYouTubePlaybackState) => void;
   onControllerReady?: (controller: StanzaYouTubeController | null) => void;
+  /** YouTube IFrame API `onError` payload: 2 invalid param, 5 HTML5, 100 not found, 101/150 embed not allowed. */
+  onPlayerError?: (errorCode: number) => void;
 }
 
 type YtInstance = {
@@ -41,6 +43,7 @@ type YTApi = {
       events?: {
         onReady?: () => void;
         onStateChange?: () => void;
+        onError?: (event: { data: number }) => void;
       };
     },
   ) => YtInstance;
@@ -86,12 +89,18 @@ function ensureYouTubeApi(): Promise<void> {
   return youtubeApiPromise;
 }
 
-const StanzaYouTubePlayer: React.FC<StanzaYouTubePlayerProps> = ({ videoId, onStateChange, onControllerReady }) => {
+const StanzaYouTubePlayer: React.FC<StanzaYouTubePlayerProps> = ({
+  videoId,
+  onStateChange,
+  onControllerReady,
+  onPlayerError,
+}) => {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<YtInstance | null>(null);
   const pollTimerRef = useRef<number | null>(null);
   const onStateChangeRef = useRef(onStateChange);
   const onControllerReadyRef = useRef(onControllerReady);
+  const onPlayerErrorRef = useRef(onPlayerError);
   const playerDomId = useMemo(() => `stanza-yt-${crypto.randomUUID()}`, []);
 
   useEffect(() => {
@@ -101,6 +110,10 @@ const StanzaYouTubePlayer: React.FC<StanzaYouTubePlayerProps> = ({ videoId, onSt
   useEffect(() => {
     onControllerReadyRef.current = onControllerReady;
   }, [onControllerReady]);
+
+  useEffect(() => {
+    onPlayerErrorRef.current = onPlayerError;
+  }, [onPlayerError]);
 
   const emitState = useCallback(() => {
     const player = playerRef.current;
@@ -128,12 +141,15 @@ const StanzaYouTubePlayer: React.FC<StanzaYouTubePlayerProps> = ({ videoId, onSt
         mountNode.id = playerDomId;
         hostRef.current.appendChild(mountNode);
         const ytApi = readYt()!;
+        const origin =
+          typeof window !== 'undefined' && window.location?.origin ? window.location.origin : undefined;
         const player = new ytApi.Player(playerDomId, {
           videoId,
           playerVars: {
             enablejsapi: 1,
             modestbranding: 1,
             rel: 0,
+            ...(origin ? { origin } : {}),
           },
           events: {
             onReady: () => {
@@ -153,6 +169,9 @@ const StanzaYouTubePlayer: React.FC<StanzaYouTubePlayerProps> = ({ videoId, onSt
             },
             onStateChange: () => {
               emitState();
+            },
+            onError: (event) => {
+              onPlayerErrorRef.current?.(event.data);
             },
           },
         });

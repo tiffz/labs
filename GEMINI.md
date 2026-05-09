@@ -17,7 +17,9 @@ src/
     App.tsx           # Main component
     README.md         # Human-readable overview (every app has one)
     ARCHITECTURE.md   # Architecture notes (where applicable, e.g. beat, count, piano)
-    DEVELOPMENT.md    # Architecture Decision Records (where applicable, e.g. cats, drums, story)
+    DEVELOPMENT.md    # Repo policy + architecture (where applicable, e.g. cats, drums, story)
+docs/
+    adr/              # Labs-wide Architecture Decision Records (see docs/adr/README.md)
 ```
 
 ## Technology Stack

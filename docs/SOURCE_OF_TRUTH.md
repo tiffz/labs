@@ -15,6 +15,7 @@ When guidance conflicts, resolve in this order:
    - Cursor rules in `.cursor/rules/*.mdc` (app-entry-html, spa-css-conventions, react-a11y, pre-commit-checks)
    - Test-based guardrails: `src/shared/importBoundaries.test.ts`, `src/shared/spaGuardrails.test.ts`
 2. `DEVELOPMENT.md` (repo-level architectural decisions)
+   2a. `docs/adr/*.md` — accepted Architecture Decision Records ([`docs/adr/README.md`](adr/README.md)); durable context and alternatives. If an ADR and `DEVELOPMENT.md` diverge on intent, reconcile in one PR; default to the **newer accepted ADR** for architectural intent until `DEVELOPMENT.md` is updated.
 3. `STYLE_GUIDE.md` (TypeScript + UI/A11y conventions for editing code)
 4. `docs/USER_COPY_STYLE.md` (default voice and patterns for user-visible copy; app `COPY_STYLE.md` files add domain-only rules)
 5. Root `README.md` (onboarding and command quick reference)
@@ -29,6 +30,9 @@ When guidance conflicts, resolve in this order:
 - `DEVELOPMENT.md`
   - Architecture decisions, guardrails, policy, and rationale.
   - Must match enforced automation in CI/hooks/config.
+- `docs/adr/`
+  - Short, numbered ADRs for material cross-cutting decisions (routing/hosting, contracts, boundaries).
+  - See [`docs/adr/README.md`](adr/README.md) for when to add one; [ADR 0002](adr/0002-historical-decisions-in-development.md) explains backfill vs `DEVELOPMENT.md`.
 - `STYLE_GUIDE.md`
   - TypeScript + UI/A11y conventions for editing code.
 - `docs/USER_COPY_STYLE.md`

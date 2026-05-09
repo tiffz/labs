@@ -19,8 +19,12 @@ export interface StanzaSong {
   markers: StanzaMarker[];
   stats: Record<string, SegmentStat>;
   updatedAt: number;
+  /** When the row was created from Encore “Practice in Stanza” (`?df=`) or a future Drive picker. */
+  driveSourceFileId?: string;
   /** Local file backing when `ytId` is null */
   localAudioBlob?: Blob;
+  /** First-frame JPEG preview for {@link localAudioBlob} video types (library grid). */
+  localVideoThumbnailBlob?: Blob;
   metronomeBpm?: number;
   /** Media-time seconds of first downbeat for click alignment */
   metronomeAnchorMediaTime?: number;
@@ -48,6 +52,14 @@ export class StanzaDB extends Dexie {
     });
     this.version(2).stores({
       songs: 'id, updatedAt, title, ytId',
+      takes: 'id, songId, segmentId, createdAt, isGuided',
+    });
+    this.version(3).stores({
+      songs: 'id, updatedAt, title, ytId, driveSourceFileId',
+      takes: 'id, songId, segmentId, createdAt, isGuided',
+    });
+    this.version(4).stores({
+      songs: 'id, updatedAt, title, ytId, driveSourceFileId',
       takes: 'id, songId, segmentId, createdAt, isGuided',
     });
   }

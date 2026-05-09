@@ -1,5 +1,5 @@
-import CircularProgress from '@mui/material/CircularProgress';
 import { useEffect, useLayoutEffect, useState } from 'react';
+import CircularProgress from '@mui/material/CircularProgress';
 import SkipToMain from '../shared/components/SkipToMain';
 import {
   replaceLocalhostWithLoopbackOrigin,
@@ -11,6 +11,7 @@ import { EncoreMainShell } from './components/EncoreMainShell';
 import { GuestShareView } from './components/GuestShareView';
 import { tryCompleteSpotifyOAuthFromUrl } from './spotify/completeOAuthFromUrl';
 import { EncoreAppShell } from './ui/EncoreAppShell';
+import { touchLabsGoogleSessionConsumer } from '../shared/google/labsGoogleSessionConsumers';
 
 function parseShareFileIdFromHash(): string | null {
   const raw = window.location.hash.replace(/^#/, '');
@@ -87,6 +88,10 @@ export default function App(): React.ReactElement {
 
   useEffect(() => {
     void tryCompleteSpotifyOAuthFromUrl();
+  }, []);
+
+  useEffect(() => {
+    touchLabsGoogleSessionConsumer('encore');
   }, []);
 
   if (localhostDevRedirect) {

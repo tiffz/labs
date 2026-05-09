@@ -1,3 +1,4 @@
+import { inferMediaMimeType } from '../../../shared/drive/inferMediaMimeType';
 import type { SongMediaUploadSlot } from './songMediaUploadSlot';
 
 const ALL_SLOTS: SongMediaUploadSlot[] = ['listen', 'play', 'charts', 'takes'];
@@ -24,8 +25,9 @@ export function eligibleSlotsForFiles(files: File[]): Set<SongMediaUploadSlot> |
   let chartOk = true;
   let avOk = true;
   for (const f of files) {
-    const { chart, av } = mimeToCategories(f.type || '');
-    const unknown = !chart && !av && !f.type;
+    const effectiveMime = inferMediaMimeType(f);
+    const { chart, av } = mimeToCategories(effectiveMime);
+    const unknown = !chart && !av && !f.type && effectiveMime === 'application/octet-stream';
     if (unknown) {
       return new Set(ALL_SLOTS);
     }

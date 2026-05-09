@@ -174,7 +174,7 @@ button.stanza-library-card {
 .stanza-playback-toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   flex-wrap: wrap;
   gap: 10px 12px;
   margin-bottom: 0;
@@ -484,32 +484,6 @@ button.stanza-library-card {
   background: rgba(232, 72, 160, 0.18);
   color: #1d1d1f;
   box-shadow: 0 0 0 1px rgba(232, 72, 160, 0.35);
-}
-
-.stanza-marker-delete-btn,
-.stanza-marker-delete.MuiIconButton-root {
-  position: absolute;
-  top: 2px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  margin: 0;
-  padding: 0;
-  border: none;
-  border-radius: 999px;
-  background: rgba(255, 253, 250, 0.95);
-  color: #6e6e73;
-  cursor: pointer;
-  box-shadow: 0 1px 3px rgba(29, 29, 31, 0.12);
-}
-
-.stanza-marker-delete-btn:hover,
-.stanza-marker-delete.MuiIconButton-root:hover {
-  color: #e848a0;
 }
 
 /* Mui controls inside Stanza (non-segmented groups only — see .stanza-segmented) */
