@@ -1,4 +1,5 @@
 import { buildPublicDriveAltMediaUrl } from '../../shared/drive/buildPublicDriveAltMediaUrl';
+import { sleepMs } from '../../shared/thirdParty/politeNetworkPause';
 import { driveCreateFolder, driveCreateJsonFile, driveListFiles, pickPreferredDriveListFileId } from './driveFetch';
 import {
   ENCORE_PERFORMANCES_FOLDER,
@@ -148,25 +149,89 @@ function isLocalhostOrigin(): boolean {
   return h === 'localhost' || h === '127.0.0.1' || h.endsWith('.local');
 }
 
+/** Google sometimes returns an HTML interstitial instead of JSON (bot / rate heuristics). */
+function responseBodyLooksLikeGoogleAutomatedQueryWall(text: string): boolean {
+  const t = text.slice(0, 12000).toLowerCase();
+  return (
+    t.includes('automated queries') ||
+    t.includes("can't process your request right now") ||
+    t.includes('your computer or network may be sending automated queries')
+  );
+}
+
 /**
  * Fetch one URL once. Translates 4xx → typed error so the caller can decide whether
  * a retry is warranted (transient 5xx/network → yes; 403/404 → no, stop early).
  */
+type PublicDriveFetchErr = Error & {
+  code?: string;
+  status?: number;
+  /** Best-effort parse of Drive JSON error body (`error.message`). */
+  googleDetail?: string;
+};
+
+function throwGuestPublicDriveFetchFailure(err: PublicDriveFetchErr): never {
+  if (err.code === 'GOOGLE_AUTOMATED_QUERY_BLOCK') {
+    throw new Error(
+      'Google is temporarily blocking this request (it thinks the traffic may be automated). That can happen after a lot of Drive or sign-in testing from one network. Wait a while, try another network or browser, or pause rapid retries—it is usually not a permanent ban on your account or snapshot.',
+    );
+  }
+  if (err.code === 'INVALID_JSON') {
+    throw new Error('Snapshot contents are not valid JSON.');
+  }
+  if (err.status === 403) {
+    const detail = err.googleDetail ? ` ${err.googleDetail}` : '';
+    throw new Error(
+      `Google Drive refused this request (access denied).${detail} If the snapshot is still shared with "Anyone with the link", the problem is usually this site's browser API key: add your page origin under HTTP referrer restrictions and allow the Google Drive API on that key (see Encore README). Otherwise the owner may need to republish from Encore.`,
+    );
+  }
+  if (err.status === 404) {
+    throw new Error('Snapshot not found. The owner may have deleted or replaced it.');
+  }
+  if (typeof err.status === 'number') {
+    throw new Error(`Could not load this snapshot (HTTP ${err.status}).`);
+  }
+  if (err.code === 'NETWORK_OR_CORS') {
+    if (isLocalhostOrigin()) {
+      throw new Error(
+        'Could not reach this snapshot from a local dev origin. If you are not running `npm run dev`, start it (Encore uses a dev-only proxy for Drive reads). Otherwise add your dev URL to the API key’s HTTP referrer list (e.g. `http://127.0.0.1:5173/*`), or set `VITE_GOOGLE_DRIVE_DEV_PROXY_REFERER` in `.env.local` to a referrer that **is** listed (often your production Encore URL with `/encore/`). See Encore README → Browser API key.',
+      );
+    }
+    throw new Error(
+      'Could not load this snapshot: the browser was blocked from finishing the Google Drive download (often a CORS issue after a redirect, not a weak Wi-Fi signal). The site operator can fix this by turning on Encore\'s public-drive edge proxy for production builds (`VITE_ENCORE_DRIVE_PUBLIC_PROXY`, see Encore README). You can still ask the owner to publish again from Encore after that is deployed.',
+    );
+  }
+  throw new Error('Could not load this snapshot.');
+}
+
 async function attemptFetchPublicDriveJson(url: string): Promise<unknown> {
   let res: Response;
   try {
     res = await fetch(url, { cache: 'no-store', mode: 'cors', credentials: 'omit' });
   } catch {
     // CORS rejection or genuine network failure — both surface as TypeError.
-    const err = new Error('NETWORK_OR_CORS') as Error & { code?: string };
+    const err = new Error('NETWORK_OR_CORS') as PublicDriveFetchErr;
     err.code = 'NETWORK_OR_CORS';
     throw err;
   }
   const text = await res.text();
+  if (responseBodyLooksLikeGoogleAutomatedQueryWall(text)) {
+    const err = new Error('GOOGLE_AUTOMATED_QUERY_BLOCK') as PublicDriveFetchErr;
+    err.code = 'GOOGLE_AUTOMATED_QUERY_BLOCK';
+    err.status = res.status;
+    throw err;
+  }
   if (!res.ok) {
-    const err = new Error(`HTTP_${res.status}`) as Error & { code?: string; status?: number };
+    const err = new Error(`HTTP_${res.status}`) as PublicDriveFetchErr;
     err.code = `HTTP_${res.status}`;
     err.status = res.status;
+    try {
+      const j = JSON.parse(text) as { error?: { message?: string } };
+      const msg = j?.error?.message?.trim();
+      if (msg) err.googleDetail = msg;
+    } catch {
+      /* non-JSON error body */
+    }
     throw err;
   }
   try {
@@ -179,55 +244,78 @@ async function attemptFetchPublicDriveJson(url: string): Promise<unknown> {
 }
 
 /**
+ * Concurrent loads of the same snapshot fileId (e.g. React StrictMode double-mount) share one
+ * Drive round-trip instead of duplicating anonymous API-key traffic.
+ */
+const fetchPublicDriveJsonInflight = new Map<string, Promise<unknown>>();
+
+/**
  * Fetch public file bytes using a Drive API key (guest path; no user OAuth token).
  *
  * The file must be shared with `anyone:reader` and the API key must allow the caller.
  * In local dev, requests go through a same-origin Vite proxy (see `vite.config.ts`) that
- * forwards to Drive with a matching Referer so HTTP-referrer–restricted keys work; in
- * production, the browser calls Google directly with `key=` in the query string.
+ * forwards to Drive with a matching Referer so HTTP-referrer–restricted keys work. In
+ * production, either the browser calls Google directly with `key=` in the query string, or
+ * (recommended for guest reliability) `VITE_ENCORE_DRIVE_PUBLIC_PROXY` routes through the
+ * same-origin edge proxy described in `src/encore/README.md`.
  */
 export async function fetchPublicDriveJson(fileId: string, apiKey: string): Promise<unknown> {
-  const url = buildPublicDriveAltMediaUrl(fileId, apiKey);
+  const inflightKey = fileId.trim();
+  const existing = fetchPublicDriveJsonInflight.get(inflightKey);
+  if (existing) return existing;
 
-  const attempts = [0, 600, 1800];
-  let lastError: (Error & { code?: string; status?: number }) | null = null;
-  for (let i = 0; i < attempts.length; i += 1) {
-    if (attempts[i] > 0) {
-      await new Promise((resolve) => setTimeout(resolve, attempts[i]));
-    }
-    try {
-      return await attemptFetchPublicDriveJson(url);
-    } catch (e) {
-      const err = e as Error & { code?: string; status?: number };
-      lastError = err;
-      // Don't retry definitive failures (file gone, file private, malformed JSON).
-      if (err.code === 'INVALID_JSON' || err.status === 403 || err.status === 404) break;
-    }
-  }
+  const run = fetchPublicDriveJsonOnce(inflightKey, apiKey);
+  const tracked = run.finally(() => {
+    fetchPublicDriveJsonInflight.delete(inflightKey);
+  });
+  fetchPublicDriveJsonInflight.set(inflightKey, tracked);
+  return tracked;
+}
 
-  if (lastError) {
-    if (lastError.code === 'INVALID_JSON') {
-      throw new Error('Snapshot contents are not valid JSON.');
-    }
-    if (lastError.status === 403) {
-      throw new Error('This snapshot is no longer public. The owner needs to update it from Encore.');
-    }
-    if (lastError.status === 404) {
-      throw new Error('Snapshot not found. The owner may have deleted or replaced it.');
-    }
-    if (typeof lastError.status === 'number') {
-      throw new Error(`Could not load this snapshot (HTTP ${lastError.status}).`);
-    }
-    if (lastError.code === 'NETWORK_OR_CORS') {
-      if (isLocalhostOrigin()) {
-        throw new Error(
-          'Could not reach this snapshot from a local dev origin. If you are not running `npm run dev`, start it (Encore uses a dev-only proxy for Drive reads). Otherwise add your dev URL to the API key’s HTTP referrer list (e.g. `http://127.0.0.1:5173/*`), or set `VITE_GOOGLE_DRIVE_DEV_PROXY_REFERER` in `.env.local` to a referrer that **is** listed (often your production Encore URL with `/encore/`). See Encore README → Browser API key.',
-        );
+async function fetchPublicDriveJsonOnce(fileId: string, apiKey: string): Promise<unknown> {
+  /** Encore snapshots normally live in My Drive; `false` avoids some API-key edge cases. Shared-drive snapshots retry with `true`. */
+  const urlMyDrive = buildPublicDriveAltMediaUrl(fileId, apiKey, { supportsAllDrives: false });
+  const urlAllDrives = buildPublicDriveAltMediaUrl(fileId, apiKey, { supportsAllDrives: true });
+
+  /** Initial try + one delayed retry for transient errors only (no extra hits on 403/404/automated-query). */
+  const attempts = [0, 1200];
+
+  const tryUrlWithBackoff = async (url: string): Promise<{ ok: true; data: unknown } | { ok: false; err: PublicDriveFetchErr }> => {
+    let last: PublicDriveFetchErr | null = null;
+    for (let i = 0; i < attempts.length; i += 1) {
+      if (attempts[i]! > 0) {
+        await new Promise((resolve) => setTimeout(resolve, attempts[i]));
       }
-      throw new Error(
-        'Could not reach this snapshot. Check your network connection, or ask the owner to publish it again from Encore.',
-      );
+      try {
+        const data = await attemptFetchPublicDriveJson(url);
+        return { ok: true, data };
+      } catch (e) {
+        const err = e as PublicDriveFetchErr;
+        last = err;
+        if (
+          err.code === 'GOOGLE_AUTOMATED_QUERY_BLOCK' ||
+          err.code === 'INVALID_JSON' ||
+          err.status === 403 ||
+          err.status === 404
+        ) {
+          return { ok: false, err };
+        }
+      }
     }
+    const fallback = last ?? (new Error('UNKNOWN') as PublicDriveFetchErr);
+    fallback.code = fallback.code ?? 'UNKNOWN';
+    return { ok: false, err: fallback };
+  };
+
+  const primary = await tryUrlWithBackoff(urlMyDrive);
+  if (primary.ok) return primary.data;
+
+  if (primary.err.status === 403) {
+    await sleepMs(400);
+    const secondary = await tryUrlWithBackoff(urlAllDrives);
+    if (secondary.ok) return secondary.data;
+    throwGuestPublicDriveFetchFailure(secondary.err);
   }
-  throw new Error('Could not load this snapshot.');
+
+  throwGuestPublicDriveFetchFailure(primary.err);
 }

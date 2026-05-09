@@ -8,6 +8,8 @@ declare global {
           initTokenClient: (config: {
             client_id: string;
             scope: string;
+            /** When set, reduces account-picker churn for returning users (OAuth `login_hint`). */
+            login_hint?: string;
             /** Must match Google Cloud Console "Authorized redirect URIs" exactly. */
             redirect_uri?: string;
             callback: (resp: {

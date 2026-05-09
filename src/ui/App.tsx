@@ -1088,7 +1088,9 @@ function App() {
 
   useEffect(() => {
     void refreshRegressionBadge();
-    const intervalId = window.setInterval(refreshRegressionBadge, 45_000);
+    const intervalId = window.setInterval(() => {
+      if (document.visibilityState === 'visible') void refreshRegressionBadge();
+    }, 60_000);
     const onVisible = () => {
       if (document.visibilityState === 'visible') void refreshRegressionBadge();
     };

@@ -1,9 +1,9 @@
 import { useEffect, type RefObject } from 'react';
 
-/** Poll practice debug log at 200ms (piano + scales debug docks). Pass a `useCallback` tick. */
+/** Poll practice debug log (piano + scales debug docks). Pass a `useCallback` tick. */
 export function usePracticeDebugLogPoll(tick: () => void): void {
   useEffect(() => {
-    const iv = window.setInterval(tick, 200);
+    const iv = window.setInterval(tick, 420);
     return () => clearInterval(iv);
   }, [tick]);
 }

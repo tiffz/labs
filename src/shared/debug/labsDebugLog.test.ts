@@ -6,7 +6,8 @@ const mockFetch = vi.fn() as MockedFunction<typeof fetch>;
 global.fetch = mockFetch;
 
 async function flushLogs(): Promise<void> {
-  await vi.advanceTimersByTimeAsync(600);
+  // Match ServerLogger batched flush debounce (see shared/utils/serverLogger.test.ts).
+  await vi.advanceTimersByTimeAsync(950);
   await Promise.resolve();
 }
 

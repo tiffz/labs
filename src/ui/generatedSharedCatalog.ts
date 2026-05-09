@@ -2010,7 +2010,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Poll practice debug log at 200ms (piano + scales debug docks). Pass a `useCallback` tick.",
+    "description": "Poll practice debug log (piano + scales debug docks). Pass a `useCallback` tick.",
     "tags": [],
     "appsUsing": [
       "piano"
@@ -2053,7 +2053,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Browser URL for Drive `files.get` **alt=media** using an API key (guest / anyone-with-link reads). In Vite dev, uses the same-origin proxy as Encore (`/__encore/drive-public/…`) so referrer-restricted keys work.",
+    "description": "Browser URL for Drive `files.get` **alt=media** (guest / anyone-with-link reads). - **Dev:** same-origin Vite proxy (`/__encore/drive-public/…`) so referrer-restricted keys work. - **Production (optional):** set `VITE_ENCORE_DRIVE_PUBLIC_PROXY=1` and deploy an edge proxy that forwards to Google (see `workers/encore-drive-public-proxy.mjs`). Direct browser calls to `googleapis.com` + `alt=media` often fail after a redirect to `googleusercontent.com` (no CORS).",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
@@ -2066,7 +2066,35 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Same-origin dev proxy or direct API key `files.get` metadata (for shortcut resolution before `alt=media`).",
+    "description": "Same-origin proxy or direct API key `files.get` metadata (for shortcut resolution before `alt=media`).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-buildpublicdrivealtmediaurl-ts-buildpublicdriveurlopts",
+    "name": "BuildPublicDriveUrlOpts",
+    "path": "src/shared/drive/buildPublicDriveAltMediaUrl.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Browser URL for Drive `files.get` **alt=media** (guest / anyone-with-link reads). - **Dev:** same-origin Vite proxy (`/__encore/drive-public/…`) so referrer-restricted keys work. - **Production (optional):** set `VITE_ENCORE_DRIVE_PUBLIC_PROXY=1` and deploy an edge proxy that forwards to Google (see `workers/encore-drive-public-proxy.mjs`). Direct browser calls to `googleapis.com` + `alt=media` often fail after a redirect to `googleusercontent.com` (no CORS).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-buildpublicdrivealtmediaurl-ts-shouldusepublicdrivesameoriginproxy",
+    "name": "shouldUsePublicDriveSameOriginProxy",
+    "path": "src/shared/drive/buildPublicDriveAltMediaUrl.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "True when guest Drive reads should use `/{origin}/__encore/drive-public/…` (or `VITE_ENCORE_DRIVE_PUBLIC_PROXY_BASE`).",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
@@ -9026,6 +9054,34 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [],
     "exportType": "class",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-thirdparty-politenetworkpause-ts-polite-third-party-page-gap-ms",
+    "name": "POLITE_THIRD_PARTY_PAGE_GAP_MS",
+    "path": "src/shared/thirdParty/politeNetworkPause.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Small delays between back-to-back third-party HTTP calls (pagination, retries) so bursts are less likely to trip provider rate limits or anti-automation heuristics.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-thirdparty-politenetworkpause-ts-sleepms",
+    "name": "sleepMs",
+    "path": "src/shared/thirdParty/politeNetworkPause.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Small delays between back-to-back third-party HTTP calls (pagination, retries) so bursts are less likely to trip provider rate limits or anti-automation heuristics.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
     "demoId": null
   },
   {

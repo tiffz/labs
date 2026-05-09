@@ -36,8 +36,8 @@ export interface EncoreGooglePersistedIdentity {
 function defaultExpiresAtMs(expiresInSeconds?: number): number {
   const sec = typeof expiresInSeconds === 'number' && Number.isFinite(expiresInSeconds) ? expiresInSeconds : 3600;
   const clamped = Math.max(120, Math.min(sec, 7200));
-  // Refresh a bit before Google’s real expiry to avoid mid-request 401s
-  const bufferMs = 120_000;
+  /** Proactive refresh margin: Encore renews via `prompt: none` before Google cuts off the access token. */
+  const bufferMs = 300_000;
   return Date.now() + clamped * 1000 - bufferMs;
 }
 

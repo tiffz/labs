@@ -9,6 +9,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   type ReactElement,
   type ReactNode,
 } from 'react';
@@ -39,7 +40,12 @@ import { SpotifyPrivacyAckDialog } from '../components/SpotifyPrivacyAckDialog';
 import { hasSpotifyPrivacyAck, setSpotifyPrivacyAck } from '../spotify/spotifyPrivacyAck';
 import { startSpotifyOAuthFlow } from '../spotify/startSpotifyOAuthFlow';
 import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
-import { isEncoreGuestShareHash } from '../seo/guestShareRobots';
+import {
+  getEncoreLocationHash,
+  getEncoreLocationHashServerSnapshot,
+  parseGuestShareSnapshotFileIdFromHash,
+  subscribeEncoreLocationHash,
+} from '../seo/guestShareRobots';
 
 /**
  * Auth surface for Encore: Google identity + Spotify connection state. Split out from
@@ -131,8 +137,12 @@ async function requestGoogleSilentToken(
   clientId: string,
   scope: string,
 ): Promise<{ access_token: string; expires_in?: number } | null> {
+  const loginHint = readPersistedGoogleIdentity()?.email?.trim() || undefined;
   try {
-    return await requestGoogleAccessToken(clientId, scope, { prompt: 'none' });
+    return await requestGoogleAccessToken(clientId, scope, {
+      prompt: 'none',
+      ...(loginHint ? { loginHint } : {}),
+    });
   } catch {
     return null;
   }
@@ -141,11 +151,14 @@ async function requestGoogleSilentToken(
 export function EncoreAuthProvider({ children }: { children: ReactNode }): ReactElement {
   const { clear: clearUndoStack } = useLabsUndo();
   const [googleAuthReady, setGoogleAuthReady] = useState(
-    () => typeof window !== 'undefined' && isEncoreGuestShareHash(),
+    () => typeof window !== 'undefined' && parseGuestShareSnapshotFileIdFromHash() !== null,
   );
-  const [guestShareRoute, setGuestShareRoute] = useState(
-    () => typeof window !== 'undefined' && isEncoreGuestShareHash(),
+  const locationHash = useSyncExternalStore(
+    subscribeEncoreLocationHash,
+    getEncoreLocationHash,
+    getEncoreLocationHashServerSnapshot,
   );
+  const guestShareRoute = parseGuestShareSnapshotFileIdFromHash(locationHash) !== null;
   const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(null);
   const [googleGateBypassed, setGoogleGateBypassed] = useState(() =>
     typeof window !== 'undefined' ? readGoogleGateBypassed() : false,
@@ -171,18 +184,14 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
 
   const googleAccessTokenRef = useRef<string | null>(null);
   googleAccessTokenRef.current = googleAccessToken;
+  /** Limits tab-focus GIS `prompt: none` probes (expired / edge states) — the timer still refreshes on schedule. */
+  const lastVisibilitySilentProbeAtRef = useRef(0);
   const googleSignInInFlightRef = useRef(false);
   /** Passed to Spotify authorize as `show_dialog` for reconnect flows. */
   const spotifyNextOAuthShowDialogRef = useRef(false);
 
   const refreshSpotifyLinked = useCallback(() => {
     setSpotifyLinked(hasUsableSpotifyTokenBundle());
-  }, []);
-
-  useEffect(() => {
-    const onHash = () => setGuestShareRoute(isEncoreGuestShareHash());
-    window.addEventListener('hashchange', onHash);
-    return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
   /** Leaving the guest route must clear “ready” before paint so the main shell shows the spinner, not the sign-in gate. */
@@ -437,6 +446,11 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
     // We want the refresh loop active whenever there's *any* hope of recovering a session — either
     // a live access token, or a remembered identity sitting in expired mode (where a successful
     // silent refresh quietly restores Drive without a UI bounce).
+    //
+    // Never run this on `#/share/…`: guests must not load GIS at all, and signed-in users who open
+    // a share link in the same tab still had a live token + this loop — that duplicated silent
+    // refresh and could feel like an auth death spiral / blank guest load.
+    if (guestShareRoute) return;
     if (!googleAccessToken && !googleSessionExpired) return;
     const clientId = getGoogleClientId();
     if (!clientId) return;
@@ -455,8 +469,8 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
       const s = readPersistedGoogleSession();
       let delay: number;
       if (s) {
-        const wakeAt = s.expiresAtMs - 3 * 60 * 1000;
-        delay = Math.max(25_000, Math.min(wakeAt - Date.now(), 55 * 60 * 1000));
+        const wakeAt = s.expiresAtMs - 5 * 60 * 1000;
+        delay = Math.max(40_000, Math.min(wakeAt - Date.now(), 55 * 60 * 1000));
       } else {
         // Expired mode: keep poking GIS in case the user signs into Google in another tab.
         const idx = Math.min(consecutiveFailures, FAILURE_BACKOFFS_MS.length - 1);
@@ -490,11 +504,17 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
 
     const onVisibility = () => {
       if (document.visibilityState !== 'visible') return;
+      // Timer-driven refresh is enough while we hold a token; tab focus was duplicating GIS
+      // silent calls (felt like random Google UI) during normal navigation / alt-tab.
+      if (googleAccessTokenRef.current) return;
       const s = readPersistedGoogleSession();
       // Skip when the token is still comfortably healthy — no need to re-handshake on every focus.
       // But always retry on focus when we're in expired mode: tab focus is the user's most
       // likely "I just signed back into Google in another tab" moment.
       if (s && s.expiresAtMs > Date.now() + 4 * 60 * 1000) return;
+      const now = Date.now();
+      if (now - lastVisibilitySilentProbeAtRef.current < 8 * 60 * 1000) return;
+      lastVisibilitySilentProbeAtRef.current = now;
       if (visibilityDebounceId != null) window.clearTimeout(visibilityDebounceId);
       visibilityDebounceId = window.setTimeout(() => {
         visibilityDebounceId = undefined;
@@ -511,7 +531,7 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
             }
           }
         })();
-      }, 450);
+      }, 1200);
     };
     document.addEventListener('visibilitychange', onVisibility);
 
@@ -520,7 +540,7 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
       if (visibilityDebounceId != null) window.clearTimeout(visibilityDebounceId);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [googleAccessToken, googleSessionExpired, finalizeGoogleSession]);
+  }, [googleAccessToken, googleSessionExpired, finalizeGoogleSession, guestShareRoute]);
 
   const signInWithGoogle = useCallback(async () => {
     const clientId = getGoogleClientId();
@@ -535,7 +555,22 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
     setAccessDenied(false);
     setAccessDeniedMessage(null);
     try {
-      const { access_token, expires_in } = await requestGoogleAccessToken(clientId, GOOGLE_SCOPES);
+      const silent = await requestGoogleSilentToken(clientId, GOOGLE_SCOPES);
+      if (silent) {
+        const okSilent = await finalizeGoogleSession(silent.access_token, silent.expires_in, {
+          persist: true,
+          silent: true,
+        });
+        if (okSilent) {
+          setGoogleSessionExpired(false);
+          return;
+        }
+      }
+      const loginHint =
+        googleEmail?.trim() || readPersistedGoogleIdentity()?.email?.trim() || undefined;
+      const { access_token, expires_in } = await requestGoogleAccessToken(clientId, GOOGLE_SCOPES, {
+        ...(loginHint ? { loginHint } : {}),
+      });
       const ok = await finalizeGoogleSession(access_token, expires_in, { persist: true, silent: false });
       if (!ok) return;
       setGoogleSessionExpired(false);
@@ -547,7 +582,7 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
       googleSignInInFlightRef.current = false;
       setGoogleSignInPending(false);
     }
-  }, [finalizeGoogleSession]);
+  }, [finalizeGoogleSession, googleEmail]);
 
   const continueWithoutGoogle = useCallback(() => {
     writeGoogleGateBypassed(true);

@@ -8,14 +8,16 @@
     <meta name="theme-color" content="#c026d3" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <!--
-      Guest share is #/share/<driveFileId> (fragment not sent to server). Inline guard so noindex
-      is present before the JS bundle; keep the regex in sync with src/encore/seo/guestShareRobots.ts.
+      Guest share is #/share/<driveFileId> (optional ?query ignored; fragment not sent to server).
+      Inline guard so noindex is present before the JS bundle; keep in sync with guestShareRobots.ts.
     -->
     <script>
       (function () {
         try {
           var h = window.location.hash || '';
-          if (!/^#\/share\/[^/?#]+$/.test(h)) return;
+          var q = h.indexOf('?');
+          var pathOnly = q >= 0 ? h.slice(0, q) : h;
+          if (!/^#\/share\/[^/?#]+$/.test(pathOnly)) return;
           if (document.getElementById('encore-guest-share-robots')) return;
           var m = document.createElement('meta');
           m.id = 'encore-guest-share-robots';

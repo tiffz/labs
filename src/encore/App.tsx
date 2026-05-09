@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useSyncExternalStore, useState } from 'react';
 import CircularProgress from '@mui/material/CircularProgress';
 import SkipToMain from '../shared/components/SkipToMain';
 import {
@@ -12,13 +12,13 @@ import { GuestShareView } from './components/GuestShareView';
 import { tryCompleteSpotifyOAuthFromUrl } from './spotify/completeOAuthFromUrl';
 import { EncoreAppShell } from './ui/EncoreAppShell';
 import { touchLabsGoogleSessionConsumer } from '../shared/google/labsGoogleSessionConsumers';
-import { isEncoreGuestShareHash } from './seo/guestShareRobots';
-
-function parseShareFileIdFromHash(): string | null {
-  const raw = window.location.hash.replace(/^#/, '');
-  const m = /^\/share\/([^/?#]+)$/.exec(raw);
-  return m?.[1] ?? null;
-}
+import {
+  getEncoreLocationHash,
+  getEncoreLocationHashServerSnapshot,
+  isEncoreGuestShareHash,
+  parseGuestShareSnapshotFileIdFromHash,
+  subscribeEncoreLocationHash,
+} from './seo/guestShareRobots';
 
 function EncoreSignedInRouter(): React.ReactElement {
   const {
@@ -73,14 +73,13 @@ function EncoreSignedInRouter(): React.ReactElement {
 }
 
 export default function App(): React.ReactElement {
-  const [shareFileId, setShareFileId] = useState(() => parseShareFileIdFromHash());
+  const locationHash = useSyncExternalStore(
+    subscribeEncoreLocationHash,
+    getEncoreLocationHash,
+    getEncoreLocationHashServerSnapshot,
+  );
+  const shareFileId = useMemo(() => parseGuestShareSnapshotFileIdFromHash(locationHash), [locationHash]);
   const [localhostDevRedirect] = useState(shouldRedirectLocalhostToLoopbackInDev);
-
-  useEffect(() => {
-    const onHash = () => setShareFileId(parseShareFileIdFromHash());
-    window.addEventListener('hashchange', onHash);
-    return () => window.removeEventListener('hashchange', onHash);
-  }, []);
 
   useLayoutEffect(() => {
     if (!localhostDevRedirect) return;

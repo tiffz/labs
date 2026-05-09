@@ -32,13 +32,14 @@ function messageForGisTokenUxError(detail: { type?: string }): string {
 export async function requestGoogleAccessToken(
   clientId: string,
   scope: string,
-  options?: { prompt?: 'none' | 'consent' | 'select_account' },
+  options?: { prompt?: 'none' | 'consent' | 'select_account'; loginHint?: string },
 ): Promise<{ access_token: string; expires_in?: number }> {
   return runSerializedGoogleTokenRequest(async () => {
     await loadGoogleIdentityScript();
     const g = window.google?.accounts?.oauth2;
     if (!g) throw new Error('Google sign-in could not load.');
     const redirectUri = resolveLabsGoogleOAuthRedirectUri();
+    const loginHint = options?.loginHint?.trim();
     const inner = new Promise<{ access_token: string; expires_in?: number }>((resolve, reject) => {
       let settled = false;
       const finish = (fn: () => void) => {
@@ -49,6 +50,7 @@ export async function requestGoogleAccessToken(
       const client = g.initTokenClient({
         client_id: clientId,
         scope,
+        ...(loginHint ? { login_hint: loginHint } : {}),
         redirect_uri: redirectUri,
         error_callback: (detail) => {
           finish(() => reject(new Error(messageForGisTokenUxError(detail))));

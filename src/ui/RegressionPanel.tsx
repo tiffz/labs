@@ -244,8 +244,20 @@ export default function RegressionPanel({
 
   useEffect(() => {
     if (!summary?.runner.active) return;
-    const poll = window.setInterval(() => void loadSummary(), 2000);
-    return () => window.clearInterval(poll);
+    const pollMs = 4500;
+    const tick = () => {
+      if (document.visibilityState === 'hidden') return;
+      void loadSummary();
+    };
+    const poll = window.setInterval(tick, pollMs);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void loadSummary();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.clearInterval(poll);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [summary?.runner.active, loadSummary]);
 
   useEffect(() => {

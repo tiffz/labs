@@ -40,6 +40,29 @@ export type BuildPublicSnapshotOptions = {
   onlyPerformedSongs?: boolean;
 };
 
+/**
+ * Run async work over `items` with at most `pool` in flight (avoids dozens of parallel Drive
+ * `files.get` probes during publish, which can trip Google’s automated-traffic heuristics).
+ */
+async function mapWithPool<T, R>(items: readonly T[], pool: number, mapper: (item: T, index: number) => Promise<R>): Promise<R[]> {
+  if (items.length === 0) return [];
+  const results = new Array<R>(items.length);
+  let nextIndex = 0;
+  const worker = async (): Promise<void> => {
+    while (true) {
+      const i = nextIndex++;
+      if (i >= items.length) return;
+      results[i] = await mapper(items[i]!, i);
+    }
+  };
+  const workers = Math.min(Math.max(1, pool), items.length);
+  await Promise.all(Array.from({ length: workers }, () => worker()));
+  return results;
+}
+
+/** Max parallel `resolvePublicVideoUrl` calls (each may hit Drive OAuth + API-key metadata). */
+const SNAPSHOT_VIDEO_RESOLVE_POOL = 3;
+
 export function filterSnapshotSource(
   songs: EncoreSong[],
   performances: EncorePerformance[],
@@ -109,8 +132,10 @@ export async function buildPublicSnapshot(
 ): Promise<PublicSnapshot> {
   const { songs: songsOut, performances: performancesOut } = filterSnapshotSource(songs, performances, options);
   const songsOrdered = orderSnapshotSongsByLatestPerformanceDesc(songsOut, performancesOut);
-  const performanceRows: PublicSnapshotPerformance[] = await Promise.all(
-    performancesOut.map(async (p) => {
+  const performanceRows: PublicSnapshotPerformance[] = await mapWithPool(
+    performancesOut,
+    SNAPSHOT_VIDEO_RESOLVE_POOL,
+    async (p) => {
       const videoOpenUrl = await resolvePublicVideoUrl(accessToken, p);
       return {
         id: p.id,
@@ -121,7 +146,7 @@ export async function buildPublicSnapshot(
         notes: p.notes,
         videoOpenUrl,
       };
-    }),
+    },
   );
   return {
     version: 1,

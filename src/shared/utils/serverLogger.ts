@@ -4,12 +4,22 @@
  */
 import { isLabsDebugEnabled } from '../debug/readLabsDebugParams';
 
+/** Debounce before first batched POST; coalesces bursty logs without resetting on every line. */
+const SERVER_LOG_FLUSH_DEBOUNCE_MS = 900;
+/** Max entries per POST body so dev middleware and browser payloads stay small. */
+const SERVER_LOG_MAX_BATCH = 32;
+/** Pause between chained POSTs when the queue still has more than one batch. */
+const SERVER_LOG_CHAIN_GAP_MS = 280;
+/** Short follow-up debounce if new lines arrive while a flush is finishing. */
+const SERVER_LOG_TAIL_DEBOUNCE_MS = 220;
+
 class ServerLogger {
   private static instance: ServerLogger;
   private isEnabled = false;
   private appName: string;
   private logQueue: Array<{ level: string; message: string; data?: unknown; timestamp: string }> = [];
   private flushTimer: number | null = null;
+  private isFlushing = false;
   private handlingError = false; // Prevent recursive error handling
 
   static getInstance(appName: string = 'APP'): ServerLogger {
@@ -104,43 +114,65 @@ class ServerLogger {
       this.logQueue.shift(); // Remove oldest log
     }
 
-    // Batch send logs every 500ms to reduce network overhead
-    if (!this.flushTimer) {
+    if (!this.flushTimer && !this.isFlushing) {
       this.flushTimer = window.setTimeout(() => {
-        this.flushLogs();
-      }, 500);
+        void this.flushLogs();
+      }, SERVER_LOG_FLUSH_DEBOUNCE_MS);
     }
   }
 
   private async flushLogs() {
-    if (!this.isEnabled || this.logQueue.length === 0) return;
+    if (!this.isEnabled || this.logQueue.length === 0) {
+      this.flushTimer = null;
+      return;
+    }
+    if (this.isFlushing) return;
 
-    const logsToSend = [...this.logQueue];
-    this.logQueue = []; // Clear queue
     this.flushTimer = null;
-
+    this.isFlushing = true;
     try {
-      // Send batched logs
-      const response = await fetch('/__debug_log', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ logs: logsToSend })
-      });
-      
-      // If the endpoint doesn't exist, disable logging to prevent infinite loops
-      if (response.status === 404) {
-        console.warn('[ServerLogger] Debug endpoint not available, disabling server logging');
-        this.isEnabled = false;
+      let chained = false;
+      while (this.logQueue.length > 0 && this.isEnabled) {
+        if (chained) {
+          await new Promise<void>((resolve) => {
+            globalThis.setTimeout(resolve, SERVER_LOG_CHAIN_GAP_MS);
+          });
+        }
+        chained = true;
+        const logsToSend = this.logQueue.splice(0, SERVER_LOG_MAX_BATCH);
+        if (logsToSend.length === 0) break;
+
+        try {
+          const response = await fetch('/__debug_log', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ logs: logsToSend }),
+          });
+
+          if (response.status === 404) {
+            console.warn('[ServerLogger] Debug endpoint not available, disabling server logging');
+            this.isEnabled = false;
+            this.logQueue.length = 0;
+            break;
+          }
+        } catch (error) {
+          if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+            console.warn('[ServerLogger] Debug endpoint unreachable, disabling server logging');
+            this.isEnabled = false;
+            this.logQueue.length = 0;
+            break;
+          }
+        }
       }
-    } catch (error) {
-      // If fetch fails completely, disable logging to prevent infinite error loops
-      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-        console.warn('[ServerLogger] Debug endpoint unreachable, disabling server logging');
-        this.isEnabled = false;
+    } finally {
+      this.isFlushing = false;
+      if (this.logQueue.length > 0 && this.isEnabled && !this.flushTimer) {
+        this.flushTimer = window.setTimeout(() => {
+          void this.flushLogs();
+        }, SERVER_LOG_TAIL_DEBOUNCE_MS);
       }
-      // Silent fail for other errors - don't break the app
     }
   }
 

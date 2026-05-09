@@ -1,3 +1,5 @@
+import { POLITE_THIRD_PARTY_PAGE_GAP_MS, sleepMs } from '../../shared/thirdParty/politeNetworkPause';
+
 export interface YouTubePlaylistItemRow {
   videoId: string;
   title: string;
@@ -25,7 +27,9 @@ export async function fetchYouTubePlaylistItems(
 ): Promise<YouTubePlaylistItemRow[]> {
   const out: YouTubePlaylistItemRow[] = [];
   let pageToken: string | undefined;
+  let pageIndex = 0;
   do {
+    if (pageIndex++ > 0) await sleepMs(POLITE_THIRD_PARTY_PAGE_GAP_MS);
     const q = new URLSearchParams({
       part: 'snippet',
       playlistId,

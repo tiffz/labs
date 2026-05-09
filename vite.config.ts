@@ -136,8 +136,8 @@ function encoreDrivePublicDevProxyPlugin(): Plugin {
           `http://${host}/encore/`;
         const fields = encodeURIComponent('mimeType,name,shortcutDetails');
         const googleUrl = isMeta
-          ? `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?fields=${fields}&supportsAllDrives=true&key=${encodeURIComponent(apiKey)}`
-          : `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media&supportsAllDrives=true&key=${encodeURIComponent(apiKey)}`;
+          ? `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?fields=${fields}&supportsAllDrives=false&key=${encodeURIComponent(apiKey)}`
+          : `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media&supportsAllDrives=false&key=${encodeURIComponent(apiKey)}`;
         try {
           const r = await fetch(googleUrl, {
             cache: 'no-store',

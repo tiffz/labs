@@ -1,3 +1,4 @@
+import { POLITE_THIRD_PARTY_PAGE_GAP_MS, sleepMs } from '../../shared/thirdParty/politeNetworkPause';
 import { ensureSpotifyAccessToken, readSpotifyToken } from './pkce';
 import {
   spotifyGrantedScopesSufficientForPlaylistImport,
@@ -199,7 +200,9 @@ export async function fetchSpotifyPlaylistTracks(
   const acc: SpotifyPlaylistTrackRow[] = [];
   /** Use [Get Playlist Items](https://developer.spotify.com/documentation/web-api/reference/get-playlists-items) (`/items`), not legacy `/tracks`, which can return 403 for the same user. */
   let url: string | null = `https://api.spotify.com/v1/playlists/${encodeURIComponent(playlistId)}/items?limit=50&additional_types=track%2Cepisode${marketQs}`;
+  let pageIndex = 0;
   while (url) {
+    if (pageIndex++ > 0) await sleepMs(POLITE_THIRD_PARTY_PAGE_GAP_MS);
     const res = await fetch(url, {
       headers: { Authorization: `Bearer ${token}` },
       signal: AbortSignal.timeout(25_000),

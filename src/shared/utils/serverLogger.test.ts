@@ -53,7 +53,7 @@ describe('ServerLogger', () => {
   });
 
   describe('Server Communication', () => {
-    // The logger batches logs and flushes after a 500ms setTimeout, so these
+    // The logger batches logs and flushes after a debounced setTimeout, so these
     // tests drive the flush with fake timers and assert on the batched body
     // shape ({ logs: [...] }) that the server actually receives.
     beforeEach(() => {
@@ -61,7 +61,7 @@ describe('ServerLogger', () => {
     });
 
     async function flushLogs(): Promise<void> {
-      await vi.advanceTimersByTimeAsync(600);
+      await vi.advanceTimersByTimeAsync(950);
       // Allow the async fetch() resolution to settle.
       await Promise.resolve();
     }
@@ -116,6 +116,19 @@ describe('ServerLogger', () => {
       expect(mockFetch).toHaveBeenCalledTimes(1);
       const body = parseBatchedBody();
       expect(body.logs.map((l) => l.level)).toEqual(['info', 'warn', 'error', 'debug']);
+    });
+
+    it('splits oversized queues into chained POSTs', async () => {
+      const logger = installServerLogger('BIG');
+      for (let i = 0; i < 35; i += 1) logger.log(`line ${i}`);
+      await vi.advanceTimersByTimeAsync(950);
+      await Promise.resolve();
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(280);
+      await Promise.resolve();
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      expect(parseBatchedBody(0).logs).toHaveLength(32);
+      expect(parseBatchedBody(1).logs).toHaveLength(3);
     });
 
     it('serializes structured data fields', async () => {

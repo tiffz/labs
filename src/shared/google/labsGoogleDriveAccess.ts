@@ -2,6 +2,7 @@ import { fetchGoogleUserProfile, friendlyGoogleDisplayName } from './loadGisScri
 import {
   isLikelyGoogleAuthRejection,
   isPersistedSessionStillFresh,
+  readPersistedGoogleIdentity,
   readPersistedGoogleSession,
   writePersistedGoogleIdentity,
   writePersistedGoogleSession,
@@ -45,6 +46,10 @@ function getGoogleClientId(): string {
   return ((import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) ?? '').trim();
 }
 
+function labsGoogleOAuthLoginHint(): string | undefined {
+  return readPersistedGoogleIdentity()?.email?.trim() || undefined;
+}
+
 /**
  * Returns a usable access token for Drive + userinfo: prefers a fresh Encore-persisted token after
  * userinfo validation; otherwise silent then interactive GIS refresh with minimal scopes.
@@ -76,6 +81,7 @@ export async function ensureLabsGoogleAccessTokenForDrive(options?: {
   try {
     const silent = await requestGoogleAccessToken(clientId, LABS_GOOGLE_DRIVE_SESSION_SCOPES, {
       prompt: 'none',
+      loginHint: labsGoogleOAuthLoginHint(),
     });
     const profile = await fetchGoogleUserProfile(silent.access_token);
     writePersistedGoogleSession(silent.access_token, silent.expires_in);
@@ -92,7 +98,9 @@ export async function ensureLabsGoogleAccessTokenForDrive(options?: {
     throw new LabsGoogleInteractiveAuthRequiredError();
   }
 
-  const interactive = await requestGoogleAccessToken(clientId, LABS_GOOGLE_DRIVE_SESSION_SCOPES);
+  const interactive = await requestGoogleAccessToken(clientId, LABS_GOOGLE_DRIVE_SESSION_SCOPES, {
+    loginHint: labsGoogleOAuthLoginHint(),
+  });
   const profile = await fetchGoogleUserProfile(interactive.access_token);
   writePersistedGoogleSession(interactive.access_token, interactive.expires_in);
   writePersistedGoogleIdentity({
