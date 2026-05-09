@@ -35,6 +35,7 @@ src/
   ui/                      # internal shared-UI catalog / demo workspace
 docs/
   adr/                     # Architecture Decision Records (index: adr/README.md)
+  design-explorations/     # non-binding design spikes (README + topic notes; see SOURCE_OF_TRUTH)
   COMPONENT_DECOMPOSITION_PATTERN.md
   CSS_IMPORTANT_AUDIT.md
   DEPENDENCY_UPGRADE_PLAN.md

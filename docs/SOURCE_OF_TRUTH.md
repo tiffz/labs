@@ -40,6 +40,8 @@ When guidance conflicts, resolve in this order:
 - App docs under `src/<app>/`
   - Feature behavior, app-specific architecture, known constraints.
   - Must not redefine global policy.
+- `docs/design-explorations/`
+  - Non-binding design notes and spikes (see [`docs/design-explorations/README.md`](design-explorations/README.md)). Below ADRs and `DEVELOPMENT.md` in precedence. Example: [`local-first-session-and-bff.md`](design-explorations/local-first-session-and-bff.md) (OAuth / BFF / source-of-truth options).
 - AI helper docs
   - Task-oriented guidance for agents.
   - Should reference canonical docs instead of duplicating policy text.
