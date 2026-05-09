@@ -55,6 +55,8 @@ jobs:
     - name: Build project
       env:
         VITE_GOOGLE_API_KEY: ${{ secrets.VITE_GOOGLE_API_KEY }}
+        VITE_LABS_DRIVE_TESTER_HASHES: ${{ secrets.VITE_LABS_DRIVE_TESTER_HASHES }}
+        VITE_APP_ENV: production
       run: npm run build
 
     - name: Setup Pages

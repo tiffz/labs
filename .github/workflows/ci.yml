@@ -21,6 +21,7 @@ on:
       - 'eslint.config.*'
       - 'knip.config.*'
       - 'playwright.config.*'
+      - 'workers/**'
   pull_request:
     branches: [ main, master ]
     paths:
@@ -41,6 +42,7 @@ on:
       - 'eslint.config.*'
       - 'knip.config.*'
       - 'playwright.config.*'
+      - 'workers/**'
 
 jobs:
   test:
@@ -201,6 +203,10 @@ jobs:
     - name: Build project
       env:
         VITE_GOOGLE_API_KEY: ${{ secrets.VITE_GOOGLE_API_KEY }}
+        # Optional: comma-separated SHA-256 email hashes so Drive backup UI appears for testers on scales/stanza.
+        VITE_LABS_DRIVE_TESTER_HASHES: ${{ secrets.VITE_LABS_DRIVE_TESTER_HASHES }}
+        # Optional: `staging` vs `production` label when wiring env-specific Google OAuth clients in CI.
+        VITE_APP_ENV: production
       run: npm run build
 
     - name: Setup Pages

@@ -1,40 +1,22 @@
 /**
  * Browser URL for Drive `files.get` **alt=media** (guest / anyone-with-link reads).
  *
- * - **Dev:** same-origin Vite proxy (`/__encore/drive-public/…`) so referrer-restricted keys work.
- * - **Production (optional):** set `VITE_ENCORE_DRIVE_PUBLIC_PROXY=1` and deploy an edge proxy
- *   that forwards to Google (see `workers/encore-drive-public-proxy.mjs`). Direct browser calls to
- *   `googleapis.com` + `alt=media` often fail after a redirect to `googleusercontent.com` (no CORS).
+ * In **local dev**, Encore uses the same-origin Vite route `/__encore/drive-public/…` (see
+ * `vite.config.ts`) so HTTP-referrer–restricted API keys work. **Production** builds call
+ * `googleapis.com` directly; redirects to `googleusercontent.com` can cause CORS failures in
+ * some browsers—operators may need their own server-side or same-origin fetch if that occurs.
  */
-function envFlagTruthy(raw: string | boolean | undefined): boolean {
-  if (raw === true) return true;
-  if (typeof raw !== 'string') return false;
-  const v = raw.trim().toLowerCase();
-  return v === '1' || v === 'true' || v === 'yes' || v === 'on';
-}
 
-/** True when guest Drive reads should use `/{origin}/__encore/drive-public/…` (or `VITE_ENCORE_DRIVE_PUBLIC_PROXY_BASE`). */
+/** True when guest Drive reads should use `/{origin}/__encore/drive-public/…` (Vite dev only). */
 export function shouldUsePublicDriveSameOriginProxy(): boolean {
-  if (envFlagTruthy(import.meta.env.VITE_ENCORE_DRIVE_PUBLIC_PROXY)) {
-    return true;
-  }
   if (import.meta.env.MODE === 'test') return false;
   return Boolean(import.meta.env.DEV);
 }
 
-function publicDriveProxyOriginBase(): string | undefined {
-  const configured = (import.meta.env.VITE_ENCORE_DRIVE_PUBLIC_PROXY_BASE as string | undefined)?.trim();
-  if (configured) return configured.replace(/\/$/, '');
-  if (typeof window !== 'undefined' && typeof window.location?.origin === 'string') {
-    return window.location.origin;
-  }
-  return undefined;
-}
-
 function buildPublicDriveProxyMediaUrl(fileId: string, suffix: 'media' | 'meta'): string | undefined {
   if (!shouldUsePublicDriveSameOriginProxy()) return undefined;
-  const base = publicDriveProxyOriginBase();
-  if (!base) return undefined;
+  if (typeof window === 'undefined' || typeof window.location?.origin !== 'string') return undefined;
+  const base = window.location.origin.replace(/\/$/, '');
   const path =
     suffix === 'media'
       ? `/__encore/drive-public/${encodeURIComponent(fileId)}`

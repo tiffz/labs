@@ -2053,7 +2053,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Browser URL for Drive `files.get` **alt=media** (guest / anyone-with-link reads). - **Dev:** same-origin Vite proxy (`/__encore/drive-public/…`) so referrer-restricted keys work. - **Production (optional):** set `VITE_ENCORE_DRIVE_PUBLIC_PROXY=1` and deploy an edge proxy that forwards to Google (see `workers/encore-drive-public-proxy.mjs`). Direct browser calls to `googleapis.com` + `alt=media` often fail after a redirect to `googleusercontent.com` (no CORS).",
+    "description": "True when guest Drive reads should use `/{origin}/__encore/drive-public/…` (Vite dev only).",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
@@ -2079,7 +2079,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "model",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Browser URL for Drive `files.get` **alt=media** (guest / anyone-with-link reads). - **Dev:** same-origin Vite proxy (`/__encore/drive-public/…`) so referrer-restricted keys work. - **Production (optional):** set `VITE_ENCORE_DRIVE_PUBLIC_PROXY=1` and deploy an edge proxy that forwards to Google (see `workers/encore-drive-public-proxy.mjs`). Direct browser calls to `googleapis.com` + `alt=media` often fail after a redirect to `googleusercontent.com` (no CORS).",
+    "description": "True when guest Drive reads should use `/{origin}/__encore/drive-public/…` (Vite dev only).",
     "tags": [
       "api"
     ],
@@ -2094,7 +2094,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "True when guest Drive reads should use `/{origin}/__encore/drive-public/…` (or `VITE_ENCORE_DRIVE_PUBLIC_PROXY_BASE`).",
+    "description": "True when guest Drive reads should use `/{origin}/__encore/drive-public/…` (Vite dev only).",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",

@@ -81,7 +81,7 @@ async function rebuildLabsCookieConsentBundle(): Promise<void> {
  */
 function encoreDrivePublicDevProxyPlugin(): Plugin {
   return {
-    name: 'encore-drive-public-dev-proxy',
+    name: 'labs-encore-guest-drive-dev-proxy',
     configureServer(server: ViteDevServer) {
       if (IS_TEST) return;
       server.middlewares.use(async (req, res, next) => {

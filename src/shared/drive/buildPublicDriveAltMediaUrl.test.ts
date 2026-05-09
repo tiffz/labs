@@ -10,20 +10,13 @@ afterEach(() => {
 });
 
 describe('shouldUsePublicDriveSameOriginProxy', () => {
-  it('is off in test mode without VITE_ENCORE_DRIVE_PUBLIC_PROXY', () => {
-    vi.stubEnv('VITE_ENCORE_DRIVE_PUBLIC_PROXY', '');
+  it('is false in test mode (vitest)', () => {
     expect(shouldUsePublicDriveSameOriginProxy()).toBe(false);
-  });
-
-  it('is on when VITE_ENCORE_DRIVE_PUBLIC_PROXY is truthy', () => {
-    vi.stubEnv('VITE_ENCORE_DRIVE_PUBLIC_PROXY', '1');
-    expect(shouldUsePublicDriveSameOriginProxy()).toBe(true);
   });
 });
 
 describe('buildPublicDriveAltMediaUrl', () => {
-  it('embeds API key for direct googleapis URL when proxy is off', () => {
-    vi.stubEnv('VITE_ENCORE_DRIVE_PUBLIC_PROXY', '');
+  it('embeds API key for direct googleapis URL when proxy is off (test mode)', () => {
     const u = buildPublicDriveAltMediaUrl('fileId1', 'myKey');
     expect(u).toContain('https://www.googleapis.com/drive/v3/files/fileId1');
     expect(u).toContain('alt=media');
@@ -32,21 +25,10 @@ describe('buildPublicDriveAltMediaUrl', () => {
     expect(buildPublicDriveAltMediaUrl('x', 'k', { supportsAllDrives: true })).toContain('supportsAllDrives=true');
   });
 
-  it('uses VITE_ENCORE_DRIVE_PUBLIC_PROXY_BASE when proxy is enabled', () => {
-    vi.stubEnv('VITE_ENCORE_DRIVE_PUBLIC_PROXY', '1');
-    vi.stubEnv('VITE_ENCORE_DRIVE_PUBLIC_PROXY_BASE', 'https://edge.example');
-    expect(buildPublicDriveAltMediaUrl('ab_cd-1', 'ignored')).toBe(
-      'https://edge.example/__encore/drive-public/ab_cd-1',
-    );
-    expect(buildPublicDriveFileMetadataUrl('x', 'ignored')).toBe(
-      'https://edge.example/__encore/drive-public-meta/x',
-    );
-  });
-
-  it('uses window.location.origin when proxy is on and base is unset', () => {
-    vi.stubEnv('VITE_ENCORE_DRIVE_PUBLIC_PROXY', 'true');
-    vi.stubEnv('VITE_ENCORE_DRIVE_PUBLIC_PROXY_BASE', '');
-    const u = buildPublicDriveAltMediaUrl('snap', 'k');
-    expect(u).toMatch(/^https?:\/\/[^/]+\/__encore\/drive-public\/snap$/);
+  it('buildPublicDriveFileMetadataUrl uses direct googleapis in test mode', () => {
+    const u = buildPublicDriveFileMetadataUrl('metaFile', 'k2');
+    expect(u).toContain('https://www.googleapis.com/drive/v3/files/metaFile');
+    expect(u).toContain('fields=');
+    expect(u).toContain(encodeURIComponent('k2'));
   });
 });

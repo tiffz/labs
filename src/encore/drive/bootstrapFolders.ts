@@ -198,7 +198,7 @@ function throwGuestPublicDriveFetchFailure(err: PublicDriveFetchErr): never {
       );
     }
     throw new Error(
-      'Could not load this snapshot: the browser was blocked from finishing the Google Drive download (often a CORS issue after a redirect, not a weak Wi-Fi signal). The site operator can fix this by turning on Encore\'s public-drive edge proxy for production builds (`VITE_ENCORE_DRIVE_PUBLIC_PROXY`, see Encore README). You can still ask the owner to publish again from Encore after that is deployed.',
+      'Could not load this snapshot: the browser was blocked from finishing the Google Drive download (often a CORS issue after a redirect, not a weak Wi-Fi signal). On static hosting, fixing that usually requires a same-origin or server-side fetch to Google Drive; see Encore README (Browser API key). You can still ask the owner to publish again from Encore.',
     );
   }
   throw new Error('Could not load this snapshot.');
@@ -255,9 +255,7 @@ const fetchPublicDriveJsonInflight = new Map<string, Promise<unknown>>();
  * The file must be shared with `anyone:reader` and the API key must allow the caller.
  * In local dev, requests go through a same-origin Vite proxy (see `vite.config.ts`) that
  * forwards to Drive with a matching Referer so HTTP-referrer–restricted keys work. In
- * production, either the browser calls Google directly with `key=` in the query string, or
- * (recommended for guest reliability) `VITE_ENCORE_DRIVE_PUBLIC_PROXY` routes through the
- * same-origin edge proxy described in `src/encore/README.md`.
+ * production, the browser calls Google directly with `key=` in the query string.
  */
 export async function fetchPublicDriveJson(fileId: string, apiKey: string): Promise<unknown> {
   const inflightKey = fileId.trim();
