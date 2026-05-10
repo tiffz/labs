@@ -90,6 +90,7 @@ Notes:
 - Prefer Material/MUI interaction primitives for complex widgets.
 - Keep shared-layer boundaries clean (`src/shared/**` must not depend on app folders).
 - Follow docs precedence in `docs/SOURCE_OF_TRUTH.md` when guidance conflicts.
+- When adding or reorganizing documentation, follow `docs/DOCUMENTATION_STRATEGY.md` (canonical homes, no duplication).
 - Material cross-cutting architecture decisions: see `docs/adr/README.md` (ADRs complement `DEVELOPMENT.md`).
 
 ## Responsive Checklist (Music Apps)

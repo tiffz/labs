@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
+  allAudioFilesFromDataTransfer,
   buildLocalAudioStanzaSong,
   firstAudioFileFromDataTransfer,
   isAudioFileForStanza,
   isPracticeableStanzaDriveMime,
+  isStanzaBlobLikeVideo,
   stanzaSongTitleFromFileName,
 } from './stanzaLocalAudioImport';
 
@@ -56,6 +58,23 @@ describe('isAudioFileForStanza', () => {
     expect(isAudioFileForStanza(fileLike('clip.mp4', 'video/mp4') as unknown as File)).toBe(false);
     expect(isAudioFileForStanza(fileLike('notes.txt', 'text/plain') as unknown as File)).toBe(false);
     expect(isAudioFileForStanza(fileLike('image.png', 'image/png') as unknown as File)).toBe(false);
+  });
+});
+
+describe('isStanzaBlobLikeVideo', () => {
+  it('accepts video MIME types', () => {
+    expect(isStanzaBlobLikeVideo(new Blob([], { type: 'video/mp4' }), null)).toBe(true);
+    expect(isStanzaBlobLikeVideo(new Blob([], { type: 'video/webm' }), null)).toBe(true);
+  });
+
+  it('treats octet-stream as video when filename hint has a video extension', () => {
+    expect(isStanzaBlobLikeVideo(new Blob([], { type: 'application/octet-stream' }), 'take.mp4')).toBe(true);
+    expect(isStanzaBlobLikeVideo(new Blob([], { type: 'application/octet-stream' }), 'clip.mov')).toBe(true);
+  });
+
+  it('rejects octet-stream without a video-like hint', () => {
+    expect(isStanzaBlobLikeVideo(new Blob([], { type: 'application/octet-stream' }), 'song.mp3')).toBe(false);
+    expect(isStanzaBlobLikeVideo(new Blob([], { type: 'application/octet-stream' }), null)).toBe(false);
   });
 });
 
@@ -112,6 +131,23 @@ describe('firstAudioFileFromDataTransfer', () => {
       fileLike('img.png', 'image/png'),
     ]);
     expect(firstAudioFileFromDataTransfer(dt)).toBeNull();
+  });
+});
+
+describe('allAudioFilesFromDataTransfer', () => {
+  it('returns every audio entry in order, skipping non-audio', () => {
+    const dt = dataTransferLike([
+      fileLike('clip.mov', 'video/quicktime'),
+      fileLike('song.mp3', 'audio/mpeg'),
+      fileLike('also.flac', 'audio/flac'),
+      fileLike('x.txt', 'text/plain'),
+    ]);
+    const all = allAudioFilesFromDataTransfer(dt);
+    expect(all.map((f) => f.name)).toEqual(['song.mp3', 'also.flac']);
+  });
+
+  it('returns an empty array when there is no audio', () => {
+    expect(allAudioFilesFromDataTransfer(dataTransferLike([fileLike('x.png', 'image/png')]))).toEqual([]);
   });
 });
 

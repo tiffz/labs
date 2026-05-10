@@ -87,6 +87,11 @@ import type { SongMediaUploadSlot } from './songMediaUploadSlot';
 const ENCORE_AUDIO_VIDEO_FILE_ACCEPT =
   'audio/*,video/*,.m4a,.mp4,.mov,.m4v,.aac,.mp3,.wav,.wave,.aif,.aiff,.caf,.flac,.ogg,.oga,.opus,.webm,.mkv,.mpeg,.mpg,.avi';
 
+/** Persist nickname/notes while typing: trimming on every keystroke strips spaces before the user finishes. */
+function optionalNonEmptyString(value: string): string | undefined {
+  return value === '' ? undefined : value;
+}
+
 /** Dense subsection labels on the song page */
 const songPageBlockTitleSx = {
   fontWeight: 600,
@@ -1097,7 +1102,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                                 setDraft((d) => {
                                   if (!d) return d;
                                   const next = (d.referenceLinks ?? []).map((x) =>
-                                    x.id === link.id ? { ...x, label: value.trim() || undefined } : x,
+                                    x.id === link.id ? { ...x, label: optionalNonEmptyString(value) } : x,
                                   );
                                   return { ...d, referenceLinks: next };
                                 })
@@ -1107,7 +1112,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                                 setDraft((d) => {
                                   if (!d) return d;
                                   const next = (d.referenceLinks ?? []).map((x) =>
-                                    x.id === link.id ? { ...x, notes: value.trim() || undefined } : x,
+                                    x.id === link.id ? { ...x, notes: optionalNonEmptyString(value) } : x,
                                   );
                                   return { ...d, referenceLinks: next };
                                 })
@@ -1129,7 +1134,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                                   setDraft((d) => {
                                     if (!d) return d;
                                     const next = (d.referenceLinks ?? []).map((x) =>
-                                      x.id === link.id ? { ...x, label: value.trim() || undefined } : x,
+                                      x.id === link.id ? { ...x, label: optionalNonEmptyString(value) } : x,
                                     );
                                     return { ...d, referenceLinks: next };
                                   })
@@ -1139,7 +1144,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                                   setDraft((d) => {
                                     if (!d) return d;
                                     const next = (d.referenceLinks ?? []).map((x) =>
-                                      x.id === link.id ? { ...x, notes: value.trim() || undefined } : x,
+                                      x.id === link.id ? { ...x, notes: optionalNonEmptyString(value) } : x,
                                     );
                                     return { ...d, referenceLinks: next };
                                   })
@@ -1158,7 +1163,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                                     setDraft((d) => {
                                       if (!d) return d;
                                       const next = (d.referenceLinks ?? []).map((x) =>
-                                        x.id === link.id ? { ...x, label: value.trim() || undefined } : x,
+                                        x.id === link.id ? { ...x, label: optionalNonEmptyString(value) } : x,
                                       );
                                       return { ...d, referenceLinks: next };
                                     })
@@ -1168,7 +1173,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                                     setDraft((d) => {
                                       if (!d) return d;
                                       const next = (d.referenceLinks ?? []).map((x) =>
-                                        x.id === link.id ? { ...x, notes: value.trim() || undefined } : x,
+                                        x.id === link.id ? { ...x, notes: optionalNonEmptyString(value) } : x,
                                       );
                                       return { ...d, referenceLinks: next };
                                     })
@@ -1433,7 +1438,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                                 setDraft((d) => {
                                   if (!d) return d;
                                   const next = (d.backingLinks ?? []).map((x) =>
-                                    x.id === link.id ? { ...x, label: value.trim() || undefined } : x,
+                                    x.id === link.id ? { ...x, label: optionalNonEmptyString(value) } : x,
                                   );
                                   return { ...d, backingLinks: next };
                                 })
@@ -1443,7 +1448,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                                 setDraft((d) => {
                                   if (!d) return d;
                                   const next = (d.backingLinks ?? []).map((x) =>
-                                    x.id === link.id ? { ...x, notes: value.trim() || undefined } : x,
+                                    x.id === link.id ? { ...x, notes: optionalNonEmptyString(value) } : x,
                                   );
                                   return { ...d, backingLinks: next };
                                 })
@@ -1465,7 +1470,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                                   setDraft((d) => {
                                     if (!d) return d;
                                     const next = (d.backingLinks ?? []).map((x) =>
-                                      x.id === link.id ? { ...x, label: value.trim() || undefined } : x,
+                                      x.id === link.id ? { ...x, label: optionalNonEmptyString(value) } : x,
                                     );
                                     return { ...d, backingLinks: next };
                                   })
@@ -1475,7 +1480,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                                   setDraft((d) => {
                                     if (!d) return d;
                                     const next = (d.backingLinks ?? []).map((x) =>
-                                      x.id === link.id ? { ...x, notes: value.trim() || undefined } : x,
+                                      x.id === link.id ? { ...x, notes: optionalNonEmptyString(value) } : x,
                                     );
                                     return { ...d, backingLinks: next };
                                   })
@@ -1494,7 +1499,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                                     setDraft((d) => {
                                       if (!d) return d;
                                       const next = (d.backingLinks ?? []).map((x) =>
-                                        x.id === link.id ? { ...x, label: value.trim() || undefined } : x,
+                                        x.id === link.id ? { ...x, label: optionalNonEmptyString(value) } : x,
                                       );
                                       return { ...d, backingLinks: next };
                                     })
@@ -1504,7 +1509,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                                     setDraft((d) => {
                                       if (!d) return d;
                                       const next = (d.backingLinks ?? []).map((x) =>
-                                        x.id === link.id ? { ...x, notes: value.trim() || undefined } : x,
+                                        x.id === link.id ? { ...x, notes: optionalNonEmptyString(value) } : x,
                                       );
                                       return { ...d, backingLinks: next };
                                     })
@@ -1747,7 +1752,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                                   if (!d) return d;
                                   const next = (d.attachments ?? []).map((x) =>
                                     x.kind === 'chart' && x.driveFileId === a.driveFileId
-                                      ? { ...x, label: value.trim() || undefined }
+                                      ? { ...x, label: optionalNonEmptyString(value) }
                                       : x,
                                   );
                                   return { ...d, attachments: next };
@@ -1759,7 +1764,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                                   if (!d) return d;
                                   const next = (d.attachments ?? []).map((x) =>
                                     x.kind === 'chart' && x.driveFileId === a.driveFileId
-                                      ? { ...x, notes: value.trim() || undefined }
+                                      ? { ...x, notes: optionalNonEmptyString(value) }
                                       : x,
                                   );
                                   return { ...d, attachments: next };

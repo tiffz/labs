@@ -1223,6 +1223,44 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-components-applinearvolumeslider-tsx-applinearvolumeslider",
+    "name": "AppLinearVolumeSlider",
+    "path": "src/shared/components/AppLinearVolumeSlider.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Standard **0–1 linear gain** slider for mix rails and similar (MUI `Slider` with safe defaults). Prefer this over ad-hoc `Slider` copies so rail / track clicks stay reliable in tight layouts.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "ui"
+    ],
+    "exportType": "default",
+    "demoId": "app-linear-volume-slider"
+  },
+  {
+    "id": "src-shared-components-applinearvolumeslider-tsx-applinearvolumesliderprops",
+    "name": "AppLinearVolumeSliderProps",
+    "path": "src/shared/components/AppLinearVolumeSlider.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "ui"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
     "id": "src-shared-components-appslider-tsx-appslider",
     "name": "AppSlider",
     "path": "src/shared/components/AppSlider.tsx",
@@ -2886,7 +2924,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Comma-separated SHA-256 hex digests of normalized tester emails (same format as Encore allowlist).",
+    "description": "Drive backup (`VITE_LABS_DRIVE_TESTER_HASHES`) may be unset in CI while Encore sign-in allowlist (`VITE_ALLOWED_EMAIL_HASHES`) is set. Fall back so testers do not need duplicate secrets.",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
@@ -2899,20 +2937,20 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Comma-separated SHA-256 hex digests of normalized tester emails (same format as Encore allowlist).",
+    "description": "Drive backup (`VITE_LABS_DRIVE_TESTER_HASHES`) may be unset in CI while Encore sign-in allowlist (`VITE_ALLOWED_EMAIL_HASHES`) is set. Fall back so testers do not need duplicate secrets.",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
     "demoId": null
   },
   {
-    "id": "src-shared-google-labsdrivetestergate-ts-parselabsdrivetesterhashesfromenv",
-    "name": "parseLabsDriveTesterHashesFromEnv",
+    "id": "src-shared-google-labsdrivetestergate-ts-resolvelabsdrivetesterhashsets",
+    "name": "resolveLabsDriveTesterHashSets",
     "path": "src/shared/google/labsDriveTesterGate.ts",
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Comma-separated SHA-256 hex digests of normalized tester emails (same format as Encore allowlist).",
+    "description": "Drive backup (`VITE_LABS_DRIVE_TESTER_HASHES`) may be unset in CI while Encore sign-in allowlist (`VITE_ALLOWED_EMAIL_HASHES`) is set. Fall back so testers do not need duplicate secrets.",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",

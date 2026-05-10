@@ -1,12 +1,23 @@
 import { parseAllowedEmailHashesFromEnv, sha256HexOfEmail } from '../auth/hashEmail';
 
-/** Comma-separated SHA-256 hex digests of normalized tester emails (same format as Encore allowlist). */
-export function parseLabsDriveTesterHashesFromEnv(raw: string | undefined): Set<string> {
-  return parseAllowedEmailHashesFromEnv(raw);
+/**
+ * Drive backup (`VITE_LABS_DRIVE_TESTER_HASHES`) may be unset in CI while Encore sign-in allowlist
+ * (`VITE_ALLOWED_EMAIL_HASHES`) is set. Fall back so testers do not need duplicate secrets.
+ */
+export function resolveLabsDriveTesterHashSets(
+  viteLabsDriveTesterHashes: string | undefined,
+  viteAllowedEmailHashes: string | undefined,
+): Set<string> {
+  const drive = parseAllowedEmailHashesFromEnv(viteLabsDriveTesterHashes);
+  if (drive.size > 0) return drive;
+  return parseAllowedEmailHashesFromEnv(viteAllowedEmailHashes);
 }
 
 export function getLabsDriveTesterHashesFromEnv(): Set<string> {
-  return parseLabsDriveTesterHashesFromEnv(import.meta.env.VITE_LABS_DRIVE_TESTER_HASHES as string | undefined);
+  return resolveLabsDriveTesterHashSets(
+    import.meta.env.VITE_LABS_DRIVE_TESTER_HASHES as string | undefined,
+    import.meta.env.VITE_ALLOWED_EMAIL_HASHES as string | undefined,
+  );
 }
 
 export async function isEmailAllowedLabsDriveTester(email: string): Promise<boolean> {

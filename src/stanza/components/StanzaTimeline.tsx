@@ -19,15 +19,20 @@ import {
 import type { StanzaPlaybackLoopMode } from '../utils/stanzaPlaybackLoop';
 import { computeLoopHull } from '../utils/stanzaPlaybackLoop';
 import AppTooltip from '../../shared/components/AppTooltip';
+import StanzaPlaybackSpeedControl from './StanzaPlaybackSpeedControl';
 import StanzaSectionHoverCard from './StanzaSectionHoverCard';
 
 export type { StanzaPlaybackLoopMode };
 
-const PROGRESS_WASH = 'rgba(232, 72, 160, 0.14)';
-const LOOP_REGION_WASH = 'rgba(232, 72, 160, 0.09)';
+const PROGRESS_WASH = 'rgba(232, 72, 160, 0.07)';
+const LOOP_REGION_WASH = 'rgba(29, 29, 31, 0.045)';
 
 const BAR_HELP =
-  'Drag the bar (or the playhead dot) to scrub. A quick tap on a section selects it and jumps to its start; drag on a section to scrub without changing selection. Shift+click to multi-select. Loop modes: play through, repeat whole song, or repeat the selected range — while paused you can scrub anywhere; Play snaps into the loop. Skip previous/next jump to track start and end in play-through mode, or to the active loop range in other modes. Drag thin marker lines to move a boundary. Remove a boundary from the section hover card, Delete with a section selected, or it merges into the previous section (Logic-style).';
+  'Drag the bar or playhead to scrub. Click a section to select it and jump. Shift+click to extend the selection across sections. ' +
+  'Loop icons: play once, repeat the whole song, or repeat the selection. The top strip is the loop span. Pink along the left edge of a tile is the selection. ' +
+  'Drag boundary lines to move a split. Split and join live under the bar.';
+
+const HOVER_CLOSE_MS = 220;
 
 function formatClock(sec: number): string {
   if (!Number.isFinite(sec) || sec < 0) return '0:00';
@@ -64,6 +69,16 @@ export interface StanzaTimelineProps {
   onSkipToLoopStart: () => void;
   onSkipToLoopEnd: () => void;
   onAddMarker?: () => void;
+  /** Merge contiguous selected sections (internal boundaries only). */
+  onJoinSections?: () => void;
+  /** True when at least two adjacent sections are selected (Shift+click range). */
+  joinSectionsEnabled?: boolean;
+  /** When looping the whole song, soften section selection so it reads as “editing focus” not “what’s looping”. */
+  dimLoopModeSelection?: boolean;
+  /** Clear section selection (toolbar). */
+  onClearSegmentSelection?: () => void;
+  playbackRate: number;
+  onPlaybackRateChange: (rate: number) => void;
 }
 
 export default function StanzaTimeline({
@@ -85,6 +100,12 @@ export default function StanzaTimeline({
   onSkipToLoopStart,
   onSkipToLoopEnd,
   onAddMarker,
+  onJoinSections,
+  joinSectionsEnabled = false,
+  dimLoopModeSelection = false,
+  onClearSegmentSelection,
+  playbackRate,
+  onPlaybackRateChange,
 }: StanzaTimelineProps) {
   const [dragMarkers, setDragMarkers] = useState<StanzaMarker[] | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
@@ -99,6 +120,7 @@ export default function StanzaTimeline({
   const trackRef = useRef<HTMLDivElement | null>(null);
   const scrubbingRef = useRef(false);
   const suppressSegmentClickRef = useRef(false);
+  const [trackScrubActive, setTrackScrubActive] = useState(false);
 
   const getTimeFromClientX = useCallback(
     (clientX: number) => {
@@ -164,6 +186,7 @@ export default function StanzaTimeline({
       const el = trackRef.current;
       if (!el) return;
       scrubbingRef.current = true;
+      setTrackScrubActive(true);
       try {
         el.setPointerCapture(e.pointerId);
       } catch {
@@ -230,6 +253,7 @@ export default function StanzaTimeline({
   const onTrackPointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     if (!scrubbingRef.current) return;
     scrubbingRef.current = false;
+    setTrackScrubActive(false);
     try {
       e.currentTarget.releasePointerCapture(e.pointerId);
     } catch {
@@ -246,7 +270,12 @@ export default function StanzaTimeline({
     [beginTrackScrub],
   );
 
-  const [hoverCard, setHoverCard] = useState<{ segmentIndex: number; x: number; y: number } | null>(null);
+  const [hoverCard, setHoverCard] = useState<{
+    segmentId: string;
+    /** Horizontal center for the card (px). */
+    anchorCenterX: number;
+    segmentTop: number;
+  } | null>(null);
   const [draftSectionLabel, setDraftSectionLabel] = useState('');
   const hoverCloseTimer = useRef<number | null>(null);
   const sectionHoverCardRootRef = useRef<HTMLDivElement | null>(null);
@@ -266,11 +295,12 @@ export default function StanzaTimeline({
     [],
   );
 
-  const hoverSegment = hoverCard != null ? segments[hoverCard.segmentIndex] : null;
+  const hoverSegment = hoverCard != null ? segments.find((s) => s.id === hoverCard.segmentId) ?? null : null;
 
   const commitSectionRename = useCallback(() => {
     if (hoverCard == null) return;
-    const i = hoverCard.segmentIndex;
+    const i = segments.findIndex((s) => s.id === hoverCard.segmentId);
+    if (i < 0) return;
     const trimmed = draftSectionLabel.trim();
     if (trimmed.length > 0) onRenameSectionFromLabel(i, trimmed);
     else {
@@ -287,15 +317,21 @@ export default function StanzaTimeline({
       commitSectionRenameRef.current();
       setHoverCard(null);
       hoverCloseTimer.current = null;
-    }, 120);
+    }, HOVER_CLOSE_MS);
   }, [clearHoverClose]);
 
   const handleSectionPointerEnter = useCallback(
-    (segmentIndex: number, e: React.PointerEvent) => {
+    (segmentId: string, e: React.PointerEvent<HTMLButtonElement>) => {
       clearHoverClose();
       commitSectionRenameRef.current();
-      setHoverCard({ segmentIndex, x: e.clientX, y: e.clientY });
-      const seg = segments[segmentIndex];
+      const el = e.currentTarget;
+      const r = el.getBoundingClientRect();
+      setHoverCard({
+        segmentId,
+        anchorCenterX: r.left + r.width / 2,
+        segmentTop: r.top,
+      });
+      const seg = segments.find((s) => s.id === segmentId);
       if (seg) setDraftSectionLabel(seg.label);
     },
     [clearHoverClose, segments],
@@ -319,14 +355,14 @@ export default function StanzaTimeline({
       <Box className="stanza-playback-stack">
         <Box sx={{ py: 1.5 }}>
           <Typography variant="body2" color="text.secondary">
-            Load media to see the timeline. Use Add marker or press M to split into sections.
+            Load media to see the timeline. Use Split at playhead or press M to add splits.
           </Typography>
         </Box>
         {onAddMarker ? (
           <Box className="stanza-playback-track-footer">
-            <AppTooltip title="Drop a marker at the playhead. Press M when not typing in a field.">
+            <AppTooltip title="Add a split at the playhead. Shortcut M when you are not typing.">
               <Button variant="outlined" size="small" className="stanza-btn-soft-outline" onClick={onAddMarker}>
-                Add marker
+                Split at playhead
               </Button>
             </AppTooltip>
           </Box>
@@ -340,15 +376,20 @@ export default function StanzaTimeline({
     (loopMode === 'loopSelection' && loopHull != null) || (loopMode === 'loopAll' && duration > 0);
   const loopOverlayLeftPct = loopMode === 'loopAll' ? 0 : loopHull ? (loopHull.start / duration) * 100 : 0;
   const loopOverlayWidthPct = loopMode === 'loopAll' ? 100 : loopHull ? ((loopHull.end - loopHull.start) / duration) * 100 : 0;
-  const showLoopRing =
+  const showLoopRangeCap =
     (loopMode === 'loopAll' && duration > 0) || (loopMode === 'loopSelection' && loopHull != null);
 
-  const loopRingLeftPct =
+  const loopCapLeftPct =
     loopMode === 'loopAll' ? 0 : loopHull ? (loopHull.start / duration) * 100 : 0;
-  const loopRingWidthPct =
+  const loopCapWidthPct =
     loopMode === 'loopAll' ? 100 : loopHull ? ((loopHull.end - loopHull.start) / duration) * 100 : 0;
 
   const loopSkipEnabled = duration > 0;
+
+  const loopWholeTooltip =
+    selectedSegmentIndices.length > 0
+      ? 'Repeat the whole track. Highlights show editing focus, not the loop range.'
+      : 'Loop whole song';
 
   const hoverDeletableMarker =
     hoverSegment != null && duration > 0
@@ -429,55 +470,80 @@ export default function StanzaTimeline({
             >
               {formatClock(currentTime)} / {formatClock(duration)}
             </Typography>
+            <StanzaPlaybackSpeedControl value={playbackRate} onChange={onPlaybackRateChange} />
+            {selectedSegmentIndices.length > 0 && onClearSegmentSelection ? (
+              <Button
+                type="button"
+                size="small"
+                variant="text"
+                onClick={onClearSegmentSelection}
+                sx={{ ml: 0.25, minWidth: 0, px: 0.75, textTransform: 'none', fontSize: '0.8125rem', color: 'text.secondary' }}
+              >
+                Deselect
+              </Button>
+            ) : null}
           </Box>
 
           <Box sx={{ flex: '1 1 8px', minWidth: 0 }} aria-hidden />
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0, ml: { xs: 0, sm: 'auto' } }}>
-          <Box className="stanza-loop-options" role="group" aria-label="Playback loop mode">
-            <AppTooltip title="Play through — no looping">
-              <button
-                type="button"
-                className={`stanza-loop-option${loopMode === 'through' ? ' stanza-loop-option--active' : ''}`}
-                aria-pressed={loopMode === 'through'}
-                onClick={() => onLoopModeChange('through')}
-              >
-                <span className="material-symbols-outlined" aria-hidden>
-                  arrow_forward
-                </span>
-              </button>
-            </AppTooltip>
-            <AppTooltip title="Loop whole song">
-              <button
-                type="button"
-                className={`stanza-loop-option${loopMode === 'loopAll' ? ' stanza-loop-option--active' : ''}`}
-                aria-pressed={loopMode === 'loopAll'}
-                onClick={() => onLoopModeChange('loopAll')}
-              >
-                <span className="material-symbols-outlined" aria-hidden>
-                  repeat
-                </span>
-              </button>
-            </AppTooltip>
-            <AppTooltip title="Loop selected section(s). Shift+click sections to multi-select.">
-              <button
-                type="button"
-                className={`stanza-loop-option${loopMode === 'loopSelection' ? ' stanza-loop-option--active' : ''}`}
-                aria-pressed={loopMode === 'loopSelection'}
-                onClick={() => onLoopModeChange('loopSelection')}
-              >
-                <span className="material-symbols-outlined" aria-hidden>
-                  repeat_one
-                </span>
-              </button>
-            </AppTooltip>
-          </Box>
-
-            <AppTooltip title={BAR_HELP}>
-              <IconButton size="small" aria-label="How the timeline works" sx={{ color: '#6e6e73' }}>
-                <InfoOutlinedIcon fontSize="small" />
-              </IconButton>
-            </AppTooltip>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5,
+              flexShrink: 0,
+              ml: { xs: 0, sm: 'auto' },
+              minWidth: 0,
+              flexWrap: 'wrap',
+              justifyContent: { xs: 'flex-start', sm: 'flex-end' },
+            }}
+          >
+              <Box className="stanza-loop-options" role="group" aria-label="Playback loop mode">
+                <AppTooltip title="Play through — no looping">
+                  <button
+                    type="button"
+                    className={`stanza-loop-option${loopMode === 'through' ? ' stanza-loop-option--active' : ''}`}
+                    aria-label="Loop off — play through"
+                    aria-pressed={loopMode === 'through'}
+                    onClick={() => onLoopModeChange('through')}
+                  >
+                    <span className="material-symbols-outlined" aria-hidden>
+                      arrow_forward
+                    </span>
+                  </button>
+                </AppTooltip>
+                <AppTooltip title={loopWholeTooltip}>
+                  <button
+                    type="button"
+                    className={`stanza-loop-option${loopMode === 'loopAll' ? ' stanza-loop-option--active' : ''}`}
+                    aria-label="Loop whole song"
+                    aria-pressed={loopMode === 'loopAll'}
+                    onClick={() => onLoopModeChange('loopAll')}
+                  >
+                    <span className="material-symbols-outlined" aria-hidden>
+                      repeat
+                    </span>
+                  </button>
+                </AppTooltip>
+                <AppTooltip title="Repeat the selection. Shift+click to build the range.">
+                  <button
+                    type="button"
+                    className={`stanza-loop-option${loopMode === 'loopSelection' ? ' stanza-loop-option--active' : ''}`}
+                    aria-label="Loop selected sections"
+                    aria-pressed={loopMode === 'loopSelection'}
+                    onClick={() => onLoopModeChange('loopSelection')}
+                  >
+                    <span className="material-symbols-outlined" aria-hidden>
+                      repeat_one
+                    </span>
+                  </button>
+                </AppTooltip>
+              </Box>
+              <AppTooltip title={BAR_HELP}>
+                <IconButton size="small" aria-label="Timeline tips" sx={{ color: '#6e6e73' }}>
+                  <InfoOutlinedIcon fontSize="small" />
+                </IconButton>
+              </AppTooltip>
           </Box>
         </Box>
 
@@ -526,7 +592,7 @@ export default function StanzaTimeline({
                 width: `${loopOverlayWidthPct}%`,
                 top: 0,
                 bottom: 0,
-                borderRadius: '8px',
+                borderRadius: 'inherit',
                 background: LOOP_REGION_WASH,
                 pointerEvents: 'none',
                 zIndex: 0,
@@ -539,24 +605,28 @@ export default function StanzaTimeline({
           <Box
             className="stanza-playback-segments"
             sx={{
-              display: 'flex',
               height: '100%',
               width: '100%',
               position: 'relative',
               zIndex: 1,
             }}
           >
+            <Box
+              className="stanza-playback-segments-clip"
+              sx={{ display: 'flex', height: '100%', width: '100%' }}
+            >
             {segments.map((seg) => {
               const widthPct = ((seg.end - seg.start) / duration) * 100;
               const ms = segmentMs[seg.id]?.totalMs ?? 0;
               const isSelected = selectedSegmentIndices.includes(seg.index);
               const practiced = ms > 0;
               const zebra = seg.index % 2 === 0 ? ' stanza-playback-seg--even' : ' stanza-playback-seg--odd';
+              const dimSel = Boolean(dimLoopModeSelection && isSelected);
               return (
                 <button
                   key={seg.id}
                   type="button"
-                  className={`stanza-playback-seg${zebra}${isSelected ? ' stanza-playback-seg--selected' : ''}`}
+                  className={`stanza-playback-seg${zebra}${isSelected ? ' stanza-playback-seg--selected' : ''}${dimSel ? ' stanza-playback-seg--selected-dim' : ''}`}
                   onClick={(ev) => {
                     ev.stopPropagation();
                     if (suppressSegmentClickRef.current) {
@@ -565,7 +635,7 @@ export default function StanzaTimeline({
                     }
                     onSelectSegments(seg.index, ev);
                   }}
-                  onPointerEnter={(e) => handleSectionPointerEnter(seg.index, e)}
+                  onPointerEnter={(e) => handleSectionPointerEnter(seg.id, e)}
                   onPointerLeave={scheduleHoverClose}
                   aria-label={`Section ${seg.label}, ${formatClock(seg.start)} to ${formatClock(seg.end)}${practiced ? ', has practice time logged' : ''}`}
                   aria-pressed={isSelected}
@@ -574,8 +644,8 @@ export default function StanzaTimeline({
                     boxSizing: 'border-box',
                     cursor: 'pointer',
                     fontSize: 11,
-                    fontWeight: isSelected ? 700 : 500,
-                    padding: '4px 4px',
+                    fontWeight: isSelected ? 600 : 500,
+                    padding: '2px 4px',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
@@ -586,25 +656,22 @@ export default function StanzaTimeline({
                 </button>
               );
             })}
+            </Box>
           </Box>
 
-          {showLoopRing && loopRingWidthPct > 0 ? (
+          {showLoopRangeCap && loopCapWidthPct > 0 ? (
             <Box
-              className="stanza-playback-loop-band"
+              className="stanza-loop-range-cap"
               sx={{
                 position: 'absolute',
-                left: `${loopRingLeftPct}%`,
-                width: `${loopRingWidthPct}%`,
-                top: -4,
-                bottom: -4,
-                borderRadius: '12px',
-                border: '3px solid rgba(232, 72, 160, 0.78)',
-                boxShadow:
-                  '0 0 0 1px rgba(255, 255, 255, 0.92), 0 0 0 5px rgba(232, 72, 160, 0.22), 0 6px 18px rgba(232, 72, 160, 0.18)',
+                left: `${loopCapLeftPct}%`,
+                width: `${loopCapWidthPct}%`,
+                top: 0,
+                height: 3,
+                borderRadius: '2px',
+                bgcolor: 'rgba(29, 29, 31, 0.32)',
                 pointerEvents: 'none',
-                boxSizing: 'border-box',
                 zIndex: 2,
-                bgcolor: 'transparent',
               }}
               aria-hidden
             />
@@ -618,9 +685,9 @@ export default function StanzaTimeline({
               left: `${playheadPct}%`,
               top: -8,
               bottom: -4,
-              width: 14,
-              marginLeft: '-7px',
-              zIndex: 3,
+              width: 28,
+              marginLeft: '-14px',
+              zIndex: trackScrubActive ? 6 : 3,
               cursor: 'ew-resize',
               pointerEvents: 'auto',
               display: 'flex',
@@ -668,7 +735,7 @@ export default function StanzaTimeline({
                   width: 2,
                   height: 'calc(100% + 4px)',
                   marginLeft: '-1px',
-                  zIndex: 4,
+                  zIndex: trackScrubActive ? 2 : 4,
                   cursor: 'ew-resize',
                   borderRadius: 0.5,
                   bgcolor: 'rgba(60, 60, 67, 0.55)',
@@ -694,11 +761,34 @@ export default function StanzaTimeline({
 
         {onAddMarker ? (
           <Box className="stanza-playback-track-footer">
-            <AppTooltip title="Drop a marker at the playhead. Press M when not typing in a field. Loop modes are in the toolbar.">
-              <Button variant="outlined" size="small" className="stanza-btn-soft-outline" onClick={onAddMarker}>
-                Add marker
-              </Button>
-            </AppTooltip>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
+              <AppTooltip title="Add a split at the playhead. Shortcut M when you are not typing.">
+                <Button variant="outlined" size="small" className="stanza-btn-soft-outline" onClick={onAddMarker}>
+                  Split at playhead
+                </Button>
+              </AppTooltip>
+              {onJoinSections ? (
+                <AppTooltip
+                  title={
+                    joinSectionsEnabled
+                      ? 'Merge the selected adjacent sections.'
+                      : 'Shift+click two sections to select a range, then join.'
+                  }
+                >
+                  <span>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      className="stanza-btn-soft-outline"
+                      disabled={!joinSectionsEnabled}
+                      onClick={onJoinSections}
+                    >
+                      Join sections
+                    </Button>
+                  </span>
+                </AppTooltip>
+              ) : null}
+            </Box>
           </Box>
         ) : null}
       </Box>
@@ -707,7 +797,7 @@ export default function StanzaTimeline({
         <StanzaSectionHoverCard
           segment={hoverSegment}
           stats={segmentMs[hoverSegment.id]}
-          position={{ x: hoverCard.x, y: hoverCard.y }}
+          position={{ x: hoverCard.anchorCenterX, segmentTop: hoverCard.segmentTop }}
           draftLabel={draftSectionLabel}
           onDraftLabelChange={setDraftSectionLabel}
           onRenameCommit={commitSectionRename}

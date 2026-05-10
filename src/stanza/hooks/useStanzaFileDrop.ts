@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { firstAudioFileFromDataTransfer } from '../db/stanzaLocalAudioImport';
+import { allAudioFilesFromDataTransfer } from '../db/stanzaLocalAudioImport';
 
 /**
  * Window-level drag-and-drop bridge for Stanza audio files.
@@ -16,19 +16,21 @@ import { firstAudioFileFromDataTransfer } from '../db/stanzaLocalAudioImport';
  * - Non-audio files are silently ignored (no toast). A user dragging a stack of files that
  *   includes one MP3 and a stray document gets the MP3 loaded; everything else is dropped on
  *   the floor. Future: wire a richer error surface if this becomes a usability issue.
+ * - Listeners use the **capture** phase so nested interactive surfaces (timeline, MUI controls)
+ *   cannot swallow `dragover`/`drop` before the window sees OS file drags.
  */
 export function useStanzaFileDrop(opts: {
-  /** Called with the first audio file extracted from the drop. Async: hook awaits it. */
-  onAudioFile: (file: File) => void | Promise<void>;
+  /** Called with every audio file from the drop (non-audio siblings filtered out). Async-safe. */
+  onAudioFiles: (files: File[]) => void | Promise<void>;
   /** Disable the listener entirely (e.g. when a modal is up and shouldn't intercept drops). */
   disabled?: boolean;
 }): { isDragging: boolean } {
-  const { onAudioFile, disabled = false } = opts;
+  const { onAudioFiles, disabled = false } = opts;
   const [isDragging, setIsDragging] = useState(false);
   const dragDepth = useRef(0);
   // Stash the latest callback so the effect doesn't re-bind window listeners on every render.
-  const onAudioFileRef = useRef(onAudioFile);
-  onAudioFileRef.current = onAudioFile;
+  const onAudioFilesRef = useRef(onAudioFiles);
+  onAudioFilesRef.current = onAudioFiles;
 
   const dragPayloadHasFiles = useCallback((dt: DataTransfer | null | undefined): boolean => {
     if (!dt) return false;
@@ -69,9 +71,9 @@ export function useStanzaFileDrop(opts: {
       event.preventDefault();
       dragDepth.current = 0;
       setIsDragging(false);
-      const file = firstAudioFileFromDataTransfer(event.dataTransfer);
-      if (!file) return;
-      void onAudioFileRef.current(file);
+      const files = allAudioFilesFromDataTransfer(event.dataTransfer);
+      if (files.length === 0) return;
+      void onAudioFilesRef.current(files);
     };
 
     // Some browsers hold the drag state if the user releases outside the window; reset on focus.
@@ -80,16 +82,19 @@ export function useStanzaFileDrop(opts: {
       setIsDragging(false);
     };
 
-    window.addEventListener('dragenter', onDragEnter);
-    window.addEventListener('dragover', onDragOver);
-    window.addEventListener('dragleave', onDragLeave);
-    window.addEventListener('drop', onDrop);
+    // Capture phase so nested controls (timeline, MUI) never swallow `dragover`/`drop` defaults
+    // before we can accept OS file drags anywhere on the Stanza surface.
+    const capture = true;
+    window.addEventListener('dragenter', onDragEnter, capture);
+    window.addEventListener('dragover', onDragOver, capture);
+    window.addEventListener('dragleave', onDragLeave, capture);
+    window.addEventListener('drop', onDrop, capture);
     window.addEventListener('blur', onWindowBlur);
     return () => {
-      window.removeEventListener('dragenter', onDragEnter);
-      window.removeEventListener('dragover', onDragOver);
-      window.removeEventListener('dragleave', onDragLeave);
-      window.removeEventListener('drop', onDrop);
+      window.removeEventListener('dragenter', onDragEnter, capture);
+      window.removeEventListener('dragover', onDragOver, capture);
+      window.removeEventListener('dragleave', onDragLeave, capture);
+      window.removeEventListener('drop', onDrop, capture);
       window.removeEventListener('blur', onWindowBlur);
       dragDepth.current = 0;
     };

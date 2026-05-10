@@ -139,6 +139,12 @@ Bucket-specific values should be expressed via variables, not one-off per-compon
 - [ ] Snapshot or integration coverage added.
 - [ ] README/dev docs updated with usage notes.
 
+## Linear volume slider (0–1)
+
+For **mix rails and other linear 0–1 gain** controls, use `AppLinearVolumeSlider` (`src/shared/components/AppLinearVolumeSlider.tsx`) instead of raw MUI `Slider` copies. It wraps MUI with defaults (`min={0}`, `max={1}`, `step={0.02}`, `size="small"`) and **keeps vertical padding** on the Slider root so **clicks on the middle of the visible rail** still hit MUI’s input (zeroing `py` in dense layouts commonly breaks rail jumps).
+
+`AppSlider` remains the older **legacy event-shape** helper for BPM and similar; prefer `AppLinearVolumeSlider` for new **volume / gain** UX.
+
 ## Popover Primitive
 
 Apps historically re-specified MUI `Popover`'s `anchorOrigin`, `transformOrigin`, and `slotProps.paper.className` at every call site, which drifted over time. Use `AnchoredPopover` (`src/shared/components/AnchoredPopover.tsx`) for any new popover or menu surface.

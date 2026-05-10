@@ -47,6 +47,11 @@ These are consistent with widely used guidance (clarity, concision, usefulness; 
 - **Errors**: state what went wrong in plain language, what the user can do next, without blame.
 - **Permissions**: short honest line on the screen; full scope list and caveats in app `README.md`.
 
+## Stanza (timeline and library)
+
+- Prefer **DAW-adjacent verbs** users recognize: **Split at playhead** (add a boundary at the playhead), **Join with previous** (merge into the prior section). **Shift+click** extends **section selection as a contiguous range** from the last normal click. **Loop mode** uses **icon toggles**; spell out meaning in **tooltips** (play through, loop whole song, loop selection) rather than cryptic symbols alone.
+- When **whole-song loop** and **section highlights** can appear together, short helper copy may clarify that the highlight is **editing focus**, not what is looping.
+
 ## When you edit copy
 
 1. Read it aloud. If you run out of breath, cut it.

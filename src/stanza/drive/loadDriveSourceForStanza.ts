@@ -13,6 +13,7 @@ import {
   LabsGoogleInteractiveAuthRequiredError,
 } from '../../shared/google/labsGoogleDriveAccess';
 import { isPracticeableStanzaDriveMime, stanzaSongTitleFromFileName } from '../db/stanzaLocalAudioImport';
+import { formatStanzaDriveLoadErrors } from './stanzaDriveLoadErrorFormatting';
 
 /**
  * Loads bytes for a Drive file into memory for IndexedDB-backed Stanza songs.
@@ -91,20 +92,4 @@ export async function loadDriveFileAsStanzaLocalBlob(opts: {
   }
 
   throw new Error(formatStanzaDriveLoadErrors(fallbackErrors));
-}
-
-/** Avoid implying the Drive file is missing when the real issue was blocked Google popups + private file. */
-function formatStanzaDriveLoadErrors(errors: string[]): string {
-  const popupLine = errors.find((m) => /popup|Allow popups/i.test(m));
-  const onlyNoise404 = errors.every(
-    (m) => m === popupLine || /not found|^404\b|This Drive file was not found/i.test(m),
-  );
-  if (popupLine && onlyNoise404 && errors.length > 1) {
-    return (
-      'Google sign-in could not open a new window — your browser may have blocked it. ' +
-      'Check the address bar for a blocked-popup icon, allow popups for this site, then Retry. ' +
-      'Encore uploads stay private until you finish signing in; they will not load without Google access.'
-    );
-  }
-  return errors.join('\n\n');
 }

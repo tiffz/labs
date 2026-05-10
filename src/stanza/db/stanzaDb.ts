@@ -12,6 +12,16 @@ export interface SegmentStat {
   lastPracticed: number;
 }
 
+/** Optional extra audio layers (e.g. instrumental) mixed with the primary local/Drive blob. See ADR 0003. */
+export interface StanzaStemTrack {
+  id: string;
+  label: string;
+  localBlob: Blob;
+  muted?: boolean;
+  /** Linear gain 0–1 (default 1). */
+  gain?: number;
+}
+
 export interface StanzaSong {
   id: string;
   ytId: string | null;
@@ -25,6 +35,12 @@ export interface StanzaSong {
   localAudioBlob?: Blob;
   /** First-frame JPEG preview for {@link localAudioBlob} video types (library grid). */
   localVideoThumbnailBlob?: Blob;
+  /** Extra stems (local-only bytes; not included in Drive metadata backup). */
+  stems?: StanzaStemTrack[];
+  /** Main local/Drive file level 0–1 (default 1). Ignored for YouTube. */
+  primaryGain?: number;
+  /** Mute the main file only; stems follow their own mutes. */
+  primaryMuted?: boolean;
   metronomeBpm?: number;
   /** Media-time seconds of first downbeat for click alignment */
   metronomeAnchorMediaTime?: number;
@@ -59,6 +75,10 @@ export class StanzaDB extends Dexie {
       takes: 'id, songId, segmentId, createdAt, isGuided',
     });
     this.version(4).stores({
+      songs: 'id, updatedAt, title, ytId, driveSourceFileId',
+      takes: 'id, songId, segmentId, createdAt, isGuided',
+    });
+    this.version(5).stores({
       songs: 'id, updatedAt, title, ytId, driveSourceFileId',
       takes: 'id, songId, segmentId, createdAt, isGuided',
     });

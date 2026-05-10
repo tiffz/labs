@@ -24,6 +24,8 @@ When guidance conflicts, resolve in this order:
 
 ## Scope by Document Type
 
+- [`docs/DOCUMENTATION_STRATEGY.md`](DOCUMENTATION_STRATEGY.md)
+  - Where new documentation belongs, what to avoid (duplication, low-signal history), and how to promote app-local notes to repo-wide guides.
 - `README.md`
   - Quick start, repo layout, core commands, top-level links.
   - Keep concise and stable.
@@ -44,7 +46,7 @@ When guidance conflicts, resolve in this order:
   - Non-binding design notes and spikes (see [`docs/design-explorations/README.md`](design-explorations/README.md)). Below ADRs and `DEVELOPMENT.md` in precedence. Example: [`local-first-session-and-bff.md`](design-explorations/local-first-session-and-bff.md) (OAuth / BFF / source-of-truth options).
 - AI helper docs
   - Task-oriented guidance for agents.
-  - Should reference canonical docs instead of duplicating policy text.
+  - Should reference canonical docs instead of duplicating policy text (see [`DOCUMENTATION_STRATEGY.md`](DOCUMENTATION_STRATEGY.md)).
 
 ## Consistency Rules
 

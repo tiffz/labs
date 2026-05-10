@@ -7,6 +7,7 @@ import ChordStyleInput from '../shared/components/music/ChordStyleInput';
 import SharedExportPopover from '../shared/components/music/SharedExportPopover';
 import DiceIcon from '../shared/components/DiceIcon';
 import AppTooltip from '../shared/components/AppTooltip';
+import AppLinearVolumeSlider from '../shared/components/AppLinearVolumeSlider';
 import MetronomeToggleButton from '../shared/components/MetronomeToggleButton';
 import DrumNotationMini, { type NotationStyle } from '../shared/notation/DrumNotationMini';
 import { COMMON_CHORD_PROGRESSIONS } from '../shared/music/commonChordProgressions';
@@ -592,6 +593,37 @@ function StyleMultiDemo({
   );
 }
 
+function AppLinearVolumeSliderDemo() {
+  const [gain, setGain] = useState(0.55);
+  return (
+    <div
+      className="ui-demo-inline"
+      style={{
+        flexDirection: 'column',
+        alignItems: 'stretch',
+        maxWidth: 320,
+        gap: 8,
+      }}
+    >
+      <p style={{ margin: 0, fontSize: '0.8125rem', color: 'var(--ui-muted, #5c5c63)' }}>
+        Click the rail to jump to that level — the shared wrapper keeps vertical padding so the hit
+        target matches the visible track in dense rows.
+      </p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <span style={{ width: 72, flexShrink: 0, fontSize: '0.75rem', fontWeight: 600 }}>Main</span>
+        <AppLinearVolumeSlider
+          value={gain}
+          onChange={(_, v) => setGain(v as number)}
+          aria-label="Demo mix level"
+        />
+        <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: '0.75rem' }}>
+          {Math.round(gain * 100)}%
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function DrumNotationMiniPresetDemo() {
   const signature = useMemo(() => ({ numerator: 4, denominator: 4 }), []);
   const presets = useMemo(() => getRhythmTemplatePresets(signature), [signature]);
@@ -922,6 +954,8 @@ function DemoPanel({
       return <SharedExportPopoverDemo />;
     case 'drum-notation-mini':
       return <DrumNotationMiniPresetDemo />;
+    case 'app-linear-volume-slider':
+      return <AppLinearVolumeSliderDemo />;
     default:
       return null;
   }

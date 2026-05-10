@@ -1,14 +1,24 @@
-import type { StanzaSong } from '../db/stanzaDb';
+import type { StanzaSong, StanzaStemTrack } from '../db/stanzaDb';
 import { stanzaDb } from '../db/stanzaDb';
 
 export const STANZA_DRIVE_APP_ID = 'stanza' as const;
 
-export type StanzaSongDriveRow = Omit<StanzaSong, 'localAudioBlob'>;
+/** Stem labels and mix settings only — blobs stay on device. */
+export type StanzaStemDriveRow = Omit<StanzaStemTrack, 'localBlob'>;
+
+export type StanzaSongDriveRow = Omit<StanzaSong, 'localAudioBlob' | 'stems'> & {
+  stems?: StanzaStemDriveRow[];
+};
 
 function songWithoutBlob(row: StanzaSong): StanzaSongDriveRow {
-  const { localAudioBlob, ...rest } = row;
+  const { localAudioBlob, stems, ...rest } = row;
   void localAudioBlob;
-  return rest;
+  if (!stems?.length) return rest as StanzaSongDriveRow;
+  const stemMeta: StanzaStemDriveRow[] = stems.map(({ localBlob, ...m }) => {
+    void localBlob;
+    return m;
+  });
+  return { ...rest, stems: stemMeta };
 }
 
 export interface StanzaDriveEnvelopeV1 {

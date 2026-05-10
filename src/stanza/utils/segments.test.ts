@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  areContiguousSegmentIndices,
   deletableBoundaryMarkerAtTime,
   deriveSegments,
   ensureMarkerIds,
@@ -81,5 +82,21 @@ describe('deletableBoundaryMarkerAtTime', () => {
   it('returns interior marker at that time', () => {
     expect(deletableBoundaryMarkerAtTime(30, markers, 120)?.id).toBe(markers[0]!.id);
     expect(deletableBoundaryMarkerAtTime(60, markers, 120)?.id).toBe(markers[1]!.id);
+  });
+});
+
+describe('areContiguousSegmentIndices', () => {
+  it('requires at least two distinct indices in a run', () => {
+    expect(areContiguousSegmentIndices([])).toBe(false);
+    expect(areContiguousSegmentIndices([1])).toBe(false);
+    expect(areContiguousSegmentIndices([1, 1])).toBe(false);
+    expect(areContiguousSegmentIndices([1, 2])).toBe(true);
+    expect(areContiguousSegmentIndices([2, 1])).toBe(true);
+    expect(areContiguousSegmentIndices([1, 2, 3])).toBe(true);
+  });
+
+  it('rejects gaps', () => {
+    expect(areContiguousSegmentIndices([0, 2])).toBe(false);
+    expect(areContiguousSegmentIndices([0, 1, 3])).toBe(false);
   });
 });

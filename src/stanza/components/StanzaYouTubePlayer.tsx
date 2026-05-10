@@ -25,6 +25,8 @@ interface StanzaYouTubePlayerProps {
 type YtInstance = {
   playVideo: () => void;
   pauseVideo: () => void;
+  /** Embedded players often start muted for autoplay; call before `playVideo` on user play. */
+  unMute: () => void;
   seekTo: (seconds: number, allowSeekAhead?: boolean) => void;
   getCurrentTime: () => number;
   getDuration: () => number;
@@ -155,7 +157,14 @@ const StanzaYouTubePlayer: React.FC<StanzaYouTubePlayerProps> = ({
             onReady: () => {
               emitState();
               onControllerReadyRef.current?.({
-                play: () => player.playVideo(),
+                play: () => {
+                  try {
+                    player.unMute();
+                  } catch {
+                    /* ignore */
+                  }
+                  player.playVideo();
+                },
                 pause: () => player.pauseVideo(),
                 seekTo: (seconds: number) => player.seekTo(Math.max(0, seconds), true),
                 setPlaybackRate: (rate: number) => {

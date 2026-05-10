@@ -32,7 +32,7 @@ src/pitch/
 
 ### Testing notes
 
-JSDOM does not provide `navigator.mediaDevices`. Unit tests mock `MicrophonePitchInput.listDevices` to return a fixed device list. Any new test that renders `<App />` must do the same or it will throw during mount.
+JSDOM does not provide `navigator.mediaDevices`. Unit tests mock `MicrophonePitchInput.listDevices` to return a fixed device list. Any new test that renders `<App />` must do the same or it will throw during mount. Repo-wide guidance: [`STYLE_GUIDE.md`](../../STYLE_GUIDE.md) § _Unit tests: `navigator.mediaDevices` in JSDOM_.
 
 ## Shared Dependencies
 

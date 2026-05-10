@@ -9,8 +9,9 @@ Instructions for AI coding assistants working in this repo (Cursor, Claude, Code
 3. `STYLE_GUIDE.md` — TypeScript + UI/a11y conventions (see § _Information density_ for tooltip-first explanatory copy and icon-forward controls on dense screens).
 4. `docs/USER_COPY_STYLE.md` — default voice for user-visible copy across apps.
 5. `docs/SOURCE_OF_TRUTH.md` — precedence map when docs disagree.
-6. `docs/adr/README.md` — Architecture Decision Records (when to add one; index of accepted ADRs).
-7. `.cursor/rules/*.mdc` — machine-enforced rules (pre-commit checks, app-entry-html, spa-css-conventions, react-a11y).
+6. `docs/DOCUMENTATION_STRATEGY.md` — where to put new docs; avoid duplication and low-signal history.
+7. `docs/adr/README.md` — Architecture Decision Records (when to add one; index of accepted ADRs).
+8. `.cursor/rules/*.mdc` — machine-enforced rules (pre-commit checks, app-entry-html, spa-css-conventions, react-a11y).
 
 ## Canonical Rules
 
@@ -35,6 +36,7 @@ src/
   ui/                      # internal shared-UI catalog / demo workspace
 docs/
   adr/                     # Architecture Decision Records (index: adr/README.md)
+  DOCUMENTATION_STRATEGY.md # where to put new docs; avoid duplication
   design-explorations/     # non-binding design spikes (README + topic notes; see SOURCE_OF_TRUTH)
   COMPONENT_DECOMPOSITION_PATTERN.md
   CSS_IMPORTANT_AUDIT.md

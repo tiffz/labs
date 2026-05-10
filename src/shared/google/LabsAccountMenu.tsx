@@ -256,7 +256,7 @@ function LabsAccountBackupBlock(props: {
       <Alert severity="info" sx={{ ...alertSurfaceSx, py: 0.5, '& .MuiAlert-message': { py: 0.5 } }}>
         <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.45 }}>
           {backup.allowlistEmpty
-            ? 'Google Drive backup is off in this build (empty tester allowlist).'
+            ? 'Google Drive backup is off in this build. No tester hashes are configured (set VITE_LABS_DRIVE_TESTER_HASHES or VITE_ALLOWED_EMAIL_HASHES in the deployment).'
             : 'This account is not on the Google Drive backup tester list for this deployment.'}
         </Typography>
       </Alert>
@@ -402,7 +402,7 @@ export function LabsAccountMenu(props: LabsAccountMenuProps) {
         }}
         keepMounted={false}
       >
-        <>
+        <Box sx={{ display: 'flex', flexDirection: 'column', p: 0 }}>
           <Box sx={{ px: 2, pt: 1.75, pb: 1.75, minWidth: 260 }}>
             <Typography variant="subtitle1" component="h2" sx={{ fontWeight: 600, letterSpacing: '-0.02em', mb: 1.25 }}>
               Account
@@ -505,7 +505,7 @@ export function LabsAccountMenu(props: LabsAccountMenuProps) {
               <OpenInNewIcon sx={{ fontSize: 16, opacity: 0.72 }} aria-hidden />
             </Link>
           </Box>
-        </>
+        </Box>
       </Menu>
     </>
   );

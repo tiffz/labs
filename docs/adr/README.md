@@ -27,7 +27,9 @@ Skip an ADR for routine features, one-off UI tweaks, or purely internal refactor
 
 ## Index
 
-| ADR                                                   | Title                                                       |
-| ----------------------------------------------------- | ----------------------------------------------------------- |
-| [0001](./0001-static-hosting-hash-routing.md)         | Static hosting (GitHub Pages) and hash-based client routing |
-| [0002](./0002-historical-decisions-in-development.md) | Backfill: prior decisions in `DEVELOPMENT.md`               |
+| ADR                                                   | Title                                                        |
+| ----------------------------------------------------- | ------------------------------------------------------------ |
+| [0001](./0001-static-hosting-hash-routing.md)         | Static hosting (GitHub Pages) and hash-based client routing  |
+| [0002](./0002-historical-decisions-in-development.md) | Backfill: prior decisions in `DEVELOPMENT.md`                |
+| [0003](./0003-stanza-multi-stem-playback.md)          | Stanza optional multi-stem playback (local, Drive metadata)  |
+| [0004](./0004-stanza-stem-web-audio-mixer.md)         | Stanza stem mix bus (Web Audio `MediaElementSource` + gains) |

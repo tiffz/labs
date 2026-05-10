@@ -101,6 +101,14 @@ Filters that let users pick categorical values should support both **include (OR
 - Lazy-load heavy modals, analytics surfaces, and video players with `React.lazy` + `<Suspense fallback={…}>`.
 - If you add a new heavy dependency (>50 KB minified), also add it to the `manualChunks` map in `vite.config.ts`.
 
+## Unit tests: `navigator.mediaDevices` in JSDOM
+
+JSDOM does not implement `navigator.mediaDevices` (or related live-media APIs). Any unit test that mounts an app or hook which enumerates mics/cameras on mount **must mock** those calls or the suite will throw.
+
+- Prefer mocking at the **smallest boundary** you own (e.g. `MicrophonePitchInput.listDevices`, `getUserMedia`), not the entire browser.
+- Document one-line expectations in the app `README.md` **only** if the constraint is non-obvious; keep the long explanation here and link out from app docs.
+- E2E / Playwright runs in a real browser — this section applies to **Vitest + JSDOM** only.
+
 ## Async tests with `React.lazy`
 
 When a unit test asserts on content rendered behind `React.lazy` + `<Suspense>` (or behind a chain of dynamic `import()` calls), dynamic import resolution on a cold CI runner can take several seconds in jsdom. A 5 s `findBy*` timeout is not enough on shared runners.
@@ -114,5 +122,6 @@ See `src/story/App.test.tsx` for the canonical pattern.
 ## References
 
 - `DEVELOPMENT.md`
-- `GEMINI.md`
+- `AGENTS.md` (AI workflow; `GEMINI.md` defers here)
 - `src/shared/SHARED_UI_CONVENTIONS.md`
+- `docs/DOCUMENTATION_STRATEGY.md` (where to put new docs; avoid duplication)

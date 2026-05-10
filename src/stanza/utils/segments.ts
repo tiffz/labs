@@ -114,6 +114,16 @@ export function findSegmentIndexAtTime(segments: DerivedSegment[], t: number): n
   return null;
 }
 
+/** True when `indices` has at least two distinct segment indices in a single contiguous run (e.g. 2,3,4). */
+export function areContiguousSegmentIndices(indices: readonly number[]): boolean {
+  const s = [...new Set(indices)].sort((a, b) => a - b);
+  if (s.length < 2) return false;
+  for (let i = 1; i < s.length; i++) {
+    if (s[i] !== s[i - 1]! + 1) return false;
+  }
+  return true;
+}
+
 /**
  * Marker exactly at `boundaryTime` that may be removed to merge this section into the previous
  * (Logic-style: interior boundaries only — not start-of-track or end-of-track).

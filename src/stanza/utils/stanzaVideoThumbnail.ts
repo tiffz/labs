@@ -1,3 +1,4 @@
+import { isStanzaBlobLikeVideo } from '../db/stanzaLocalAudioImport';
 import { stanzaDb } from '../db/stanzaDb';
 
 const thumbBackfillInFlight = new Set<string>();
@@ -32,10 +33,12 @@ export async function captureVideoThumbnailAsJpeg(
     seekFraction?: number;
     /** When set, seeks here instead of a derived time from duration. */
     seekSec?: number;
+    /** Song/file name when MIME is missing or octet-stream (Drive). */
+    filenameHint?: string | null;
   },
 ): Promise<Blob | null> {
   if (typeof document === 'undefined') return null;
-  if (!videoBlob.type.startsWith('video/')) return null;
+  if (!isStanzaBlobLikeVideo(videoBlob, opts?.filenameHint)) return null;
 
   const maxWidth = opts?.maxWidth ?? 480;
   const quality = opts?.quality ?? 0.72;
@@ -139,12 +142,16 @@ export async function backfillStanzaVideoThumbnailIfNeeded(songId: string): Prom
     const latest = await stanzaDb.songs.get(songId);
     if (!latest) return;
     const media = latest.localAudioBlob;
-    if (!media?.type.startsWith('video/')) return;
+    if (!media || !isStanzaBlobLikeVideo(media, latest.title)) return;
     if (latest.localVideoThumbnailBlob) return;
-    const thumb = await captureVideoThumbnailAsJpeg(media);
+    const hint = latest.title;
+    const thumb =
+      (await captureVideoThumbnailAsJpeg(media, { filenameHint: hint, seekFraction: 0.5 })) ??
+      (await captureVideoThumbnailAsJpeg(media, { filenameHint: hint, seekFraction: 0.25 })) ??
+      (await captureVideoThumbnailAsJpeg(media, { filenameHint: hint, seekSec: THUMB_EARLY_FALLBACK_SEC }));
     if (!thumb) return;
     const row = await stanzaDb.songs.get(songId);
-    if (!row?.localAudioBlob?.type.startsWith('video/')) return;
+    if (!row?.localAudioBlob || !isStanzaBlobLikeVideo(row.localAudioBlob, row.title)) return;
     if (row.localVideoThumbnailBlob) return;
     await stanzaDb.songs.put({ ...row, localVideoThumbnailBlob: thumb, updatedAt: Date.now() });
   } finally {
