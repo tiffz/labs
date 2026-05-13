@@ -4201,7 +4201,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Re-reads Encore-persisted Google identity when other tabs update `localStorage` or on window focus.",
+    "description": "Re-reads Encore-persisted Google identity when other tabs update `localStorage` or on window focus. Stability note (load-bearing): `setIdentity` is gated by . `readPersistedGoogleIdentity` returns a fresh object every call (JSON parse), and any focus / storage event would otherwise push a new reference into state — which re-runs every consumer's `[identity]` effects. The downstream silent-token backfill effect is especially expensive: each run calls the GIS `requestAccessToken({ prompt: 'none' })` flow, which creates an iframe / popup attempt that GIS does not clean up. Without this guard, repeated window focus events leaked GSI iframes (~1 per focus) until the tab ran out of memory.",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",

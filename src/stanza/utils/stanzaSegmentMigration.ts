@@ -8,7 +8,7 @@ import {
 
 const LEGACY_SEG_RE = /^seg-\d+$/;
 
-export function songHasLegacySegmentStats(song: StanzaSong): boolean {
+function songHasLegacySegmentStats(song: StanzaSong): boolean {
   return Object.keys(song.stats ?? {}).some((k) => LEGACY_SEG_RE.test(k));
 }
 

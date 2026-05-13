@@ -96,6 +96,14 @@
   padding-right: 0.28rem;
 }
 
+/* Trailing slots already paint their own left divider; drop the stepper's right
+   border when one of them follows so we don't render a doubled hairline. */
+.shared-bpm-stepper:has(+ .shared-bpm-trailing-actions),
+.shared-bpm-stepper:has(+ .shared-bpm-preset-toggle),
+.shared-bpm-stepper:has(+ .shared-bpm-inline-action) {
+  border-right: 0;
+}
+
 .shared-bpm-leading-actions {
   display: inline-flex;
   align-self: stretch;

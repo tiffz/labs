@@ -39,6 +39,25 @@ export function nearestBeatMediaTime(t: number, anchorMediaTime: number, bpm: nu
   return anchorMediaTime + n * period;
 }
 
+/**
+ * Smallest beat media-time at or after `t` on the grid `(anchorMediaTime, bpm)`.
+ * Used by snap-to-beat to **pad** a section end forward without shrinking it
+ * (so the last beat is fully contained). Returns `t` itself when `t` already
+ * sits on a beat (within {@link BEAT_ALIGN_EPS}).
+ */
+export function nextBeatMediaTimeAtOrAfter(t: number, anchorMediaTime: number, bpm: number): number {
+  const period = 60 / bpm;
+  if (!(period > 0) || !Number.isFinite(t)) return t;
+  const offset = (t - anchorMediaTime) / period;
+  // If we're effectively on a beat already, stay put — avoids jumping a full
+  // period for floating-point noise like 12.0000001.
+  const nRound = Math.round(offset);
+  if (Math.abs(offset - nRound) * period <= BEAT_ALIGN_EPS) {
+    return anchorMediaTime + nRound * period;
+  }
+  return anchorMediaTime + Math.ceil(offset) * period;
+}
+
 export function beatBoundaryAlignmentErrorSec(
   boundaryMediaSec: number,
   anchorMediaTime: number,
@@ -63,9 +82,58 @@ export function clampMarkerTimeBetweenNeighbours(
   return Math.max(prevT + STANZA_TIME_EPS * 2, Math.min(nextT - STANZA_TIME_EPS * 2, rawTime));
 }
 
+/** Largest beat media-time at or before `t` on the grid `(anchorMediaTime, bpm)`. */
+export function previousBeatMediaTimeAtOrBefore(t: number, anchorMediaTime: number, bpm: number): number {
+  const period = 60 / bpm;
+  if (!(period > 0) || !Number.isFinite(t)) return t;
+  const offset = (t - anchorMediaTime) / period;
+  // If we're effectively on a beat already, stay put.
+  const nRound = Math.round(offset);
+  if (Math.abs(offset - nRound) * period <= BEAT_ALIGN_EPS) {
+    return anchorMediaTime + nRound * period;
+  }
+  return anchorMediaTime + Math.floor(offset) * period;
+}
+
 /**
- * Snap interior boundary markers for one section to the nearest metronome beat.
- * Returns a new marker list, or null if nothing changed / nothing to snap.
+ * Result of {@link snapSegmentBoundaryMarkersToBeats}. `markers` is the new
+ * marker list to persist. `updatedSegmentCalibration` is set when the section
+ * has its own per-section override AND we moved the section start: we re-anchor
+ * the calibration to the new start so `firstBeatOffsetSec` becomes 0 (the user-
+ * visible "Beat 1 offset" in the rail). The metronome click times in absolute
+ * media-time are unchanged — we're only relabelling which grid beat is "Beat 1".
+ */
+export interface SnapSegmentBoundaryResult {
+  markers: StanzaMarker[];
+  updatedSegmentCalibration?: {
+    segmentId: string;
+    calibration: StanzaSegmentMetronomeCalibration;
+  };
+}
+
+/**
+ * Snap a section's boundaries onto its effective beat grid:
+ *   - **Start** moves to the nearest beat of the grid (≤ ½ period either way).
+ *     Result: `firstBeatOffsetSec` becomes 0 — the section starts on Beat 1.
+ *     For section-scope calibrations we return an updated `calibration` (anchor
+ *     pinned to the new start, offset zeroed) so the rail reflects the move
+ *     immediately. The actual click cadence in media-time is unchanged because
+ *     the new start is itself a beat of the original grid; we're only
+ *     relabelling which grid beat counts as "Beat 1".
+ *   - **End** pads forward to the next beat at or after
+ *     ({@link nextBeatMediaTimeAtOrAfter}). The metronome can then play the
+ *     section's last beat in full.
+ *
+ * Skipped automatically:
+ *   - First section's start is fixed at 0 with no marker — left alone.
+ *   - Last section's end equals the track end — left alone.
+ *
+ * Refuses (returns `null`) when:
+ *   - Neither boundary needs to move.
+ *   - A snap target collides with a neighbouring marker / the track end (we
+ *     prefer to leave the user a deterministic state instead of a partial fix).
+ *   - The post-snap layout would shrink any segment below
+ *     {@link STANZA_MIN_LOOP_SPAN_SEC}.
  */
 export function snapSegmentBoundaryMarkersToBeats(
   segmentIndex: number,
@@ -74,70 +142,114 @@ export function snapSegmentBoundaryMarkersToBeats(
   duration: number,
   metronomeBySegmentId: Record<string, StanzaSegmentMetronomeCalibration> | undefined,
   songCalibration: StanzaSegmentMetronomeCalibration | undefined,
-): StanzaMarker[] | null {
+): SnapSegmentBoundaryResult | null {
   const seg = segments[segmentIndex];
   if (!seg || !(duration > 0)) return null;
 
   const grid = effectiveBeatGridForSegment(seg, metronomeBySegmentId, songCalibration);
   const sorted = [...ensureMarkerIds(markers)].sort((a, b) => a.time - b.time);
-
-  const startM = seg.start > STANZA_TIME_EPS ? sorted.find((m) => Math.abs(m.time - seg.start) < STANZA_TIME_EPS) : undefined;
-  const endM =
-    seg.end < duration - STANZA_TIME_EPS ? sorted.find((m) => Math.abs(m.time - seg.end) < STANZA_TIME_EPS) : undefined;
-
   const draft = sorted.map((m) => ({ ...m }));
 
-  const snap = (t: number) => nearestBeatMediaTime(t, grid.anchorMediaTime, grid.bpm);
-
   let changed = false;
+  let newSegmentStart = seg.start;
 
-  const applySnap = (marker: StanzaMarker, boundaryTime: number) => {
-    if (beatBoundaryAlignmentErrorSec(boundaryTime, grid.anchorMediaTime, grid.bpm) <= BEAT_ALIGN_EPS) return;
-    const snapped = snap(boundaryTime);
-    const clamped = clampMarkerTimeBetweenNeighbours(marker.id!, snapped, draft, duration);
-    const i = draft.findIndex((m) => m.id === marker.id);
-    if (i < 0) return;
-    if (Math.abs(clamped - draft[i]!.time) > STANZA_TIME_EPS * 0.5) {
-      draft[i] = { ...draft[i]!, time: clamped };
-      changed = true;
+  // 1. Snap START to the nearest beat. First section's start is fixed at 0 and
+  //    has no marker; skip it.
+  const startMovable = segmentIndex > 0 && seg.start > STANZA_TIME_EPS;
+  if (startMovable) {
+    const startM = draft.find((m) => Math.abs(m.time - seg.start) < STANZA_TIME_EPS);
+    if (startM?.id) {
+      const snapped = nearestBeatMediaTime(seg.start, grid.anchorMediaTime, grid.bpm);
+      if (Math.abs(snapped - seg.start) > STANZA_TIME_EPS * 0.5) {
+        const clamped = clampMarkerTimeBetweenNeighbours(startM.id, snapped, draft, duration);
+        // Refuse partial moves: snap on a beat or not at all.
+        if (Math.abs(clamped - snapped) <= STANZA_TIME_EPS) {
+          const i = draft.findIndex((m) => m.id === startM.id);
+          if (i >= 0) {
+            draft[i] = { ...draft[i]!, time: clamped };
+            newSegmentStart = clamped;
+            changed = true;
+          }
+        }
+        draft.sort((a, b) => a.time - b.time);
+      }
     }
-  };
+  }
 
-  if (startM) applySnap(startM, seg.start);
-  draft.sort((a, b) => a.time - b.time);
-
-  if (endM && (!startM || endM.id !== startM.id)) {
-    applySnap(endM, seg.end);
-    draft.sort((a, b) => a.time - b.time);
+  // 2. Pad END forward to the next beat at or after. Last section ends at the
+  //    track end and has no marker; skip it.
+  const endMovable = seg.end < duration - STANZA_TIME_EPS;
+  if (endMovable) {
+    const endM = draft.find((m) => Math.abs(m.time - seg.end) < STANZA_TIME_EPS);
+    if (endM?.id) {
+      const padded = nextBeatMediaTimeAtOrAfter(seg.end, grid.anchorMediaTime, grid.bpm);
+      if (Math.abs(padded - seg.end) > STANZA_TIME_EPS * 0.5) {
+        const clamped = clampMarkerTimeBetweenNeighbours(endM.id, padded, draft, duration);
+        if (Math.abs(clamped - padded) <= STANZA_TIME_EPS) {
+          const i = draft.findIndex((m) => m.id === endM.id);
+          if (i >= 0) {
+            draft[i] = { ...draft[i]!, time: clamped };
+            changed = true;
+          }
+        }
+        draft.sort((a, b) => a.time - b.time);
+      }
+    }
   }
 
   if (!changed) return null;
 
+  // Min-span guard: refuse if any segment would be smaller than the loop minimum.
   if (draft.length >= 2) {
-    for (let i = 0; i < draft.length - 1; i++) {
-      if (draft[i + 1]!.time - draft[i]!.time < STANZA_MIN_LOOP_SPAN_SEC) {
+    for (let j = 0; j < draft.length - 1; j++) {
+      if (draft[j + 1]!.time - draft[j]!.time < STANZA_MIN_LOOP_SPAN_SEC) {
         return null;
       }
     }
   }
 
-  return draft;
+  // If this section has its own calibration AND the start moved, re-anchor:
+  // pin Beat 1 to the new start so the rail's "Beat 1 offset" reads 0. The new
+  // start is itself a beat of the original grid, so the underlying click times
+  // do not move — only the label of which beat is "Beat 1" changes.
+  let updatedSegmentCalibration: SnapSegmentBoundaryResult['updatedSegmentCalibration'];
+  const segCal = metronomeBySegmentId?.[seg.id];
+  if (segCal && Math.abs(newSegmentStart - seg.start) > STANZA_TIME_EPS * 0.5) {
+    updatedSegmentCalibration = {
+      segmentId: seg.id,
+      calibration: {
+        ...segCal,
+        firstBeatOffsetSec: 0,
+        anchorMediaTime: newSegmentStart,
+      },
+    };
+  }
+
+  return { markers: draft, updatedSegmentCalibration };
 }
 
-export function sectionBoundaryBeatMisalignment(
+/**
+ * True when this section's start or end doesn't sit on a beat of its effective
+ * grid. Boundaries that aren't movable (first section's start = 0; last
+ * section's end = track end) are excluded so the warning only fires when the
+ * user can actually act on it via {@link snapSegmentBoundaryMarkersToBeats}.
+ */
+export function sectionBoundaryBeatMisaligned(
   segment: DerivedSegment,
   duration: number,
   metronomeBySegmentId: Record<string, StanzaSegmentMetronomeCalibration> | undefined,
   songCalibration: StanzaSegmentMetronomeCalibration | undefined,
-): { start: boolean; end: boolean } {
+): boolean {
   const grid = effectiveBeatGridForSegment(segment, metronomeBySegmentId, songCalibration);
-  const start =
-    segment.start > STANZA_TIME_EPS &&
+  const startMovable = segment.start > STANZA_TIME_EPS;
+  const endMovable = segment.end < duration - STANZA_TIME_EPS;
+  const startMisaligned =
+    startMovable &&
     beatBoundaryAlignmentErrorSec(segment.start, grid.anchorMediaTime, grid.bpm) > BEAT_ALIGN_EPS;
-  const end =
-    segment.end < duration - STANZA_TIME_EPS &&
+  const endMisaligned =
+    endMovable &&
     beatBoundaryAlignmentErrorSec(segment.end, grid.anchorMediaTime, grid.bpm) > BEAT_ALIGN_EPS;
-  return { start, end };
+  return startMisaligned || endMisaligned;
 }
 
 /**

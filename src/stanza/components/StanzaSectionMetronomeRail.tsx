@@ -1,3 +1,25 @@
+/**
+ * StanzaSectionMetronomeRail — calibrate BPM and Beat 1 for either the whole song
+ * or one section, plus the auto-detect (Essentia) preview modal.
+ *
+ * Calibration shape (see `db/stanzaDb.ts: StanzaSegmentMetronomeCalibration`):
+ *   - `bpm`             — beats per minute
+ *   - `anchorMediaTime` — media time (seconds) on which the downbeat lands
+ *   - `firstBeatOffsetSec` — `anchorMediaTime - segmentStart` (kept so a section
+ *     calibration can move with its boundary)
+ *
+ * Scope ("This section" vs "Whole song"):
+ *   - Whole-song lives at `song.metronomeSongCalibration`.
+ *   - Per-section overrides live at `song.metronomeBySegmentId[segmentId]`.
+ *   - When a section has no override but the song does, this rail "inherits" the
+ *     song BPM and reprojects Beat 1 to the section start.
+ *
+ * Why a long file:
+ *   - Three coupled draft states (rail BPM, rail offset, modal BPM/offset) all
+ *     persist into the same Dexie shape. Splitting risks the wrong draft winning
+ *     a save race. Decompose alongside hook tests.
+ */
+
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import PauseIcon from '@mui/icons-material/Pause';
@@ -19,7 +41,7 @@ import { analyzeBeatForMediaTimeRange } from '../../shared/beat/segmentBeatAnaly
 import AppTooltip from '../../shared/components/AppTooltip';
 import BpmInput from '../../shared/components/music/BpmInput';
 import type { StanzaMetronomeTimingScope, StanzaSegmentMetronomeCalibration } from '../db/stanzaDb';
-import { sectionBoundaryBeatMisalignment } from '../utils/stanzaBeatGrid';
+import { sectionBoundaryBeatMisaligned } from '../utils/stanzaBeatGrid';
 import type { DerivedSegment } from '../utils/segments';
 import {
   STANZA_METRONOME_ANALYZE_MIN_SECTION_SEC,
@@ -145,6 +167,16 @@ export default function StanzaSectionMetronomeRail({
     beatAnalysisCacheKey,
   });
   const persistTimerRef = useRef<number | null>(null);
+  /**
+   * Set by the reset button after we optimistically write the post-reset draft
+   * (e.g. inherited song values for a section). The Dexie clear is async, so the
+   * next render still sees the OLD `segmentCalibration` / `songCalibration` props
+   * and would normally `syncDraftFromBaseline()` back to the stale value, briefly
+   * reverting the user-visible reset. While this ref holds expected baseline
+   * numbers, the effect below skips the sync; once the prop-derived baseline
+   * matches, we clear the gate and resume normal syncing.
+   */
+  const pendingResetBaselineRef = useRef<{ bpm: number; offsetSec: number } | null>(null);
 
   const syncDraftFromBaseline = useCallback(() => {
     const bpm = Math.round(baselineBpm);
@@ -161,7 +193,19 @@ export default function StanzaSectionMetronomeRail({
       prev.timingScope !== timingScope || prev.segmentId !== segment.id || prev.beatAnalysisCacheKey !== beatAnalysisCacheKey;
     calibrationMetaRef.current = { timingScope, segmentId: segment.id, beatAnalysisCacheKey };
     if (scopeOrSegOrCacheChanged) {
+      pendingResetBaselineRef.current = null;
       syncDraftFromBaseline();
+      return;
+    }
+    if (pendingResetBaselineRef.current) {
+      const expected = pendingResetBaselineRef.current;
+      const baselineBpmRounded = Math.round(baselineBpm);
+      const baselineOffR = roundBeatOffsetForUi(baselineOffsetSec);
+      if (baselineBpmRounded === expected.bpm && Math.abs(baselineOffR - expected.offsetSec) < 1e-6) {
+        // Props caught up to our optimistic reset; release the gate. The draft
+        // already matches, so no extra sync needed.
+        pendingResetBaselineRef.current = null;
+      }
       return;
     }
     if (!draftDirtyRef.current) {
@@ -253,26 +297,19 @@ export default function StanzaSectionMetronomeRail({
     flushPersist();
   };
 
-  const boundaryMis = useMemo(() => {
+  const boundariesMisaligned = useMemo(() => {
     const metronomeBySegmentId: Record<string, StanzaSegmentMetronomeCalibration> = {};
     if (segmentCalibration) {
       metronomeBySegmentId[segment.id] = segmentCalibration;
     }
-    return sectionBoundaryBeatMisalignment(segment, songDurationSec, metronomeBySegmentId, songCalibration);
+    return sectionBoundaryBeatMisaligned(segment, songDurationSec, metronomeBySegmentId, songCalibration);
   }, [segment, segmentCalibration, songCalibration, songDurationSec]);
 
   const boundaryAlignmentMessage = useMemo(() => {
     if (timingScope !== 'section') return null;
-    const { start, end } = boundaryMis;
-    if (!start && !end) return null;
-    if (start && end) {
-      return 'Start and end markers are not aligned with beats for this BPM. Adjust Beat 1 (ms) or tap Snap to beat.';
-    }
-    if (start) {
-      return 'The start marker is not aligned with a beat for this BPM. Adjust Beat 1 (ms) or tap Snap to beat.';
-    }
-    return 'The end marker is not aligned with a beat for this BPM. Adjust Beat 1 (ms) or tap Snap to beat.';
-  }, [boundaryMis, timingScope]);
+    if (!boundariesMisaligned) return null;
+    return "Section boundaries don't line up with this BPM grid.";
+  }, [boundariesMisaligned, timingScope]);
 
   const [analysisBusy, setAnalysisBusy] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
@@ -352,6 +389,8 @@ export default function StanzaSectionMetronomeRail({
       onRequestSeek(segment.start);
       setAnalysisModalOpen(true);
     } catch (e) {
+      // Keep raw error in console for debugging; show user a friendly recovery line.
+      console.error('[Stanza] Tempo analysis failed', e);
       setAnalysisError(e instanceof Error ? e.message : 'Analysis failed');
     } finally {
       setAnalysisBusy(false);
@@ -461,7 +500,7 @@ export default function StanzaSectionMetronomeRail({
       {timingScope === 'song' && segmentCalibration ? (
         <Alert severity="info" sx={{ py: 0, '& .MuiAlert-message': { py: 0.5 } }}>
           <Typography variant="caption" sx={{ lineHeight: 1.35 }}>
-            Section has its own tempo — whole-song edits here don’t change that section’s BPM or Beat 1.
+            This section has its own tempo. Whole-song edits won&apos;t change its BPM or Beat 1.
           </Typography>
         </Alert>
       ) : null}
@@ -472,21 +511,36 @@ export default function StanzaSectionMetronomeRail({
           sx={{
             py: 0,
             alignItems: 'center',
-            '& .MuiAlert-action': { pt: 0, alignItems: 'center', mr: 0.5 },
-            '& .MuiAlert-message': { py: 0.5, pr: 0.5 },
+            // Keep the action vertically centered with the message and the
+            // built-in icon. Without this the action slot drops a notch on
+            // narrow rails and the button label looks orphaned.
+            '& .MuiAlert-action': { pt: 0, alignItems: 'center', mr: 0.25, ml: 0.5, flexShrink: 0 },
+            '& .MuiAlert-message': { py: 0.5, pr: 0.5, minWidth: 0 },
           }}
           action={
             onSnapSectionBoundariesToBeat ? (
-              <Button
-                type="button"
-                size="small"
-                variant="contained"
-                disableElevation
-                className="stanza-rail-snap-beat-btn"
-                onClick={onSnapSectionBoundariesToBeat}
-              >
-                Snap to beat
-              </Button>
+              <AppTooltip title="Snap the section start onto Beat 1 and pad the end forward to the next beat. The metronome click cadence stays the same — only the section edges move.">
+                <Button
+                  type="button"
+                  size="small"
+                  // Text + inherit lets the button pick up the alert's warning
+                  // tint instead of competing for primary attention. Pattern
+                  // recommended for actions inside MUI Alerts.
+                  variant="text"
+                  color="inherit"
+                  onClick={onSnapSectionBoundariesToBeat}
+                  sx={{
+                    whiteSpace: 'nowrap',
+                    fontWeight: 700,
+                    textTransform: 'none',
+                    fontSize: '0.6875rem',
+                    px: 1,
+                    minWidth: 0,
+                  }}
+                >
+                  Snap to beat
+                </Button>
+              </AppTooltip>
             ) : undefined
           }
         >
@@ -521,20 +575,33 @@ export default function StanzaSectionMetronomeRail({
                         window.clearTimeout(persistTimerRef.current);
                         persistTimerRef.current = null;
                       }
+                      // Compute the post-reset target (what the rail should show
+                      // once the persisted clear flushes). For section scope this
+                      // is the inherited whole-song values; for song scope it's
+                      // the blank default. We apply the target optimistically and
+                      // gate the prop-driven sync until baseline matches, so the
+                      // user never sees the value flicker back to the stale one.
+                      let targetBpm: number;
+                      let targetOff: number;
                       if (timingScope === 'song') {
                         onClearSongCalibration();
-                        applyDraftNumbers(ZERO_SEG.bpm, 0);
+                        targetBpm = ZERO_SEG.bpm;
+                        targetOff = 0;
                       } else {
                         onClearSegmentCalibration();
-                        const bpm =
+                        targetBpm =
                           songCalibration && songCalibration.bpm > 40 && songCalibration.bpm < 360
                             ? Math.round(songCalibration.bpm)
                             : ZERO_SEG.bpm;
-                        const off = songCalibration
+                        targetOff = songCalibration
                           ? inheritedFirstBeatOffsetSecFromSongCalibration(segment.start, songCalibration)
                           : 0;
-                        applyDraftNumbers(bpm, off);
                       }
+                      pendingResetBaselineRef.current = {
+                        bpm: Math.round(targetBpm),
+                        offsetSec: roundBeatOffsetForUi(targetOff),
+                      };
+                      applyDraftNumbers(targetBpm, targetOff);
                       draftDirtyRef.current = false;
                     }}
                     sx={{ p: 0.35 }}
@@ -570,7 +637,9 @@ export default function StanzaSectionMetronomeRail({
                 ? analyzeDisabledReason ?? 'Analysis unavailable'
                 : analyzeTooShort
                   ? `Section must be at least ${STANZA_METRONOME_ANALYZE_MIN_SECTION_SEC}s long for analysis.`
-                  : 'Detect tempo from this section (preview before saving)'
+                  : timingScope === 'song'
+                    ? 'Detect tempo from this section, then save it to the whole song.'
+                    : 'Detect tempo from this section (preview before saving).'
             }
           >
             <span>
@@ -580,7 +649,13 @@ export default function StanzaSectionMetronomeRail({
                 color="inherit"
                 className="stanza-btn-soft-outline stanza-rail-compact-btn stanza-rail-analyze-icon"
                 disabled={!canAnalyze || analysisBusy || analyzeTooShort}
-                aria-label={analysisBusy ? 'Analyzing tempo' : 'Analyze tempo for this section'}
+                aria-label={
+                  analysisBusy
+                    ? 'Analyzing tempo'
+                    : timingScope === 'song'
+                      ? 'Analyze tempo for the whole song'
+                      : 'Analyze tempo for this section'
+                }
                 onClick={() => void runAnalyze()}
                 sx={{ minWidth: 40, minHeight: 40, borderRadius: '999px', border: '1px solid rgba(232, 72, 160, 0.35)' }}
               >
@@ -593,7 +668,7 @@ export default function StanzaSectionMetronomeRail({
 
       {analysisError && (
         <Alert severity="error" onClose={() => setAnalysisError(null)}>
-          {analysisError}
+          Couldn&apos;t detect tempo. Try again, or set BPM manually.
         </Alert>
       )}
 
@@ -619,8 +694,8 @@ export default function StanzaSectionMetronomeRail({
         <DialogTitle sx={{ pb: 1 }}>Automatic tempo (preview)</DialogTitle>
         <DialogContent className="stanza-tempo-preview-dialog-content">
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2, lineHeight: 1.5 }}>
-            Detection is a starting point — adjust BPM and Beat 1 (ms), then play from the section start to line up
-            the click before saving.
+            Detection gets you close. Tweak BPM and Beat 1 (ms), then play from the section start so the click
+            lands on the downbeat before you save.
           </Typography>
           {modalDraftBpm != null && modalDraftOffsetSec != null ? (
             <Stack spacing={2} sx={{ mt: 0.25 }}>

@@ -45,6 +45,7 @@ export function stanzaSongFromDriveRow(row: StanzaSongDriveRow): StanzaSong | nu
       metronomeTimingScope: row.metronomeTimingScope,
       metronomeEnabled: row.metronomeEnabled,
       localTransposeSemitones: row.localTransposeSemitones,
+      skippedBySegmentId: row.skippedBySegmentId,
     };
   }
   if (row.driveSourceFileId?.trim()) {
@@ -64,6 +65,7 @@ export function stanzaSongFromDriveRow(row: StanzaSongDriveRow): StanzaSong | nu
       metronomeTimingScope: row.metronomeTimingScope,
       metronomeEnabled: row.metronomeEnabled,
       localTransposeSemitones: row.localTransposeSemitones,
+      skippedBySegmentId: row.skippedBySegmentId,
     };
   }
   return null;
@@ -89,6 +91,7 @@ function mergeOneSong(local: StanzaSong, remote: StanzaSongDriveRow): StanzaSong
       metronomeTimingScope: remote.metronomeTimingScope ?? local.metronomeTimingScope,
       metronomeEnabled: remote.metronomeEnabled ?? local.metronomeEnabled,
       localTransposeSemitones: remote.localTransposeSemitones ?? local.localTransposeSemitones,
+      skippedBySegmentId: remote.skippedBySegmentId ?? local.skippedBySegmentId,
       stems: stemMetaFromRemote(local.stems, remote.stems),
       localAudioBlob: local.localAudioBlob,
       localVideoThumbnailBlob: local.localVideoThumbnailBlob,

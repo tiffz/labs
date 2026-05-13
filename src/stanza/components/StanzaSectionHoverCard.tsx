@@ -1,6 +1,8 @@
 import type { Ref } from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Checkbox from '@mui/material/Checkbox';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import AppTooltip from '../../shared/components/AppTooltip';
@@ -21,14 +23,18 @@ export interface StanzaSectionHoverCardProps {
   cardRootRef?: Ref<HTMLDivElement | null>;
   /** True when this section starts at an interior marker (removable boundary). */
   sectionBoundaryMarkerDeletable?: boolean;
-  /** Removes the boundary at this section’s start; merges into the previous section (Logic-style). */
+  /** Removes the boundary at this section's start; merges into the previous section. */
   onDeleteSectionBoundaryMarker?: () => void;
   /** Resolved metronome BPM for this section (for display). */
   sectionBpm?: number;
   /** True when start/end boundaries are off the beat grid for this section. */
   boundariesMisalignedWithBeat?: boolean;
-  /** Snap section boundary markers to the nearest beat (same grid as BPM display). */
+  /** Pad the section end forward to the next beat on the metronome grid (same grid as BPM display). */
   onSnapBoundariesToBeat?: () => void;
+  /** Whether the section is currently marked to skip during forward playback. */
+  isSkipped?: boolean;
+  /** Toggle "skip during playback" for this section. */
+  onSkippedChange?: (next: boolean) => void;
 }
 
 function formatDuration(sec: number): string {
@@ -56,6 +62,8 @@ export default function StanzaSectionHoverCard({
   sectionBpm,
   boundariesMisalignedWithBeat = false,
   onSnapBoundariesToBeat,
+  isSkipped = false,
+  onSkippedChange,
 }: StanzaSectionHoverCardProps) {
   const dur = segment.end - segment.start;
   const practicedMin = ((stats?.totalMs ?? 0) / 60_000).toFixed(1);
@@ -115,7 +123,7 @@ export default function StanzaSectionHoverCard({
         </Typography>
       ) : null}
       {sectionBoundaryMarkerDeletable && onDeleteSectionBoundaryMarker ? (
-        <AppTooltip title="Removes the split at the start of this section and joins it into the previous one (same idea as Logic Pro). You can also press Delete with the section selected.">
+        <AppTooltip title="Removes the split at the start of this section and merges it into the previous one. You can also press Delete with the section selected.">
           <Button
             type="button"
             variant="outlined"
@@ -133,7 +141,7 @@ export default function StanzaSectionHoverCard({
         </AppTooltip>
       ) : null}
       {boundariesMisalignedWithBeat && onSnapBoundariesToBeat ? (
-        <AppTooltip title="Move the markers at this section’s start and/or end to the nearest downbeat on the metronome grid (section BPM, else whole song, else 120).">
+        <AppTooltip title="Snap this section's start onto Beat 1 and pad the end forward to the next beat. The metronome click cadence stays the same — only the section edges move.">
           <Button
             type="button"
             variant="outlined"
@@ -146,8 +154,33 @@ export default function StanzaSectionHoverCard({
             }}
             sx={{ mb: 0.5, py: 0.35, textTransform: 'none', fontSize: '0.6875rem' }}
           >
-            Snap boundaries to beat
+            Snap to beat
           </Button>
+        </AppTooltip>
+      ) : null}
+      {onSkippedChange ? (
+        <AppTooltip title="Auto-advance past this section during forward playback (e.g. instrumental breaks while practicing vocals). Manual scrubs still play it.">
+          <FormControlLabel
+            control={
+              <Checkbox
+                size="small"
+                checked={isSkipped}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  onSkippedChange(e.target.checked);
+                }}
+                onClick={(e) => e.stopPropagation()}
+                sx={{ p: 0.5 }}
+              />
+            }
+            label="Skip during playback"
+            sx={{
+              display: 'flex',
+              ml: -0.5,
+              mb: 0.5,
+              '& .MuiFormControlLabel-label': { fontSize: '0.6875rem', lineHeight: 1.25 },
+            }}
+          />
         </AppTooltip>
       ) : null}
       <Typography variant="caption" color="text.secondary" component="div" sx={{ lineHeight: 1.4, fontSize: '0.65rem' }}>

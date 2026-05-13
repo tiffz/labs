@@ -1,7 +1,27 @@
+/**
+ * StanzaTimeline — playback strip below the media (transport, loop chips, scrub
+ * track, section buttons, hover rename card, footer toolbars).
+ *
+ * Owns:
+ *   - Pointer scrub / playhead drag interactions on the track, including the
+ *     refined "did the user click a section vs scrub" heuristic via
+ *     `suppressSegmentClickRef`.
+ *   - Marker drag with neighbour clamping (`clampMarkerTime`).
+ *   - Hover card lifecycle (open delay, outside-click commit, rename draft).
+ *   - Loop overlay (`stanza-playback-track--loop`) and selection span wash.
+ *
+ * Does NOT own:
+ *   - Markers (the parent passes them in and receives `onMarkersChange`).
+ *   - Section selection (parent owns the `selectedSegmentIndices` array).
+ *   - Loop policy / hull math (lives in `utils/stanzaPlaybackLoop`).
+ *   - Beat-grid math (lives in `utils/stanzaBeatGrid`).
+ */
+
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined';
 import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined';
 import CallSplitOutlinedIcon from '@mui/icons-material/CallSplitOutlined';
+import CropFreeOutlinedIcon from '@mui/icons-material/CropFreeOutlined';
 import DeselectOutlinedIcon from '@mui/icons-material/DeselectOutlined';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import MergeTypeOutlinedIcon from '@mui/icons-material/MergeTypeOutlined';
@@ -13,7 +33,6 @@ import RepeatOneIcon from '@mui/icons-material/RepeatOne';
 import RestartAltOutlinedIcon from '@mui/icons-material/RestartAltOutlined';
 import SkipNextIcon from '@mui/icons-material/SkipNext';
 import SkipPreviousIcon from '@mui/icons-material/SkipPrevious';
-import PublishedWithChangesOutlinedIcon from '@mui/icons-material/PublishedWithChangesOutlined';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
@@ -25,7 +44,7 @@ import {
   ensureMarkerIds,
   STANZA_TIME_EPS,
 } from '../utils/segments';
-import { effectiveBeatGridForSegment, sectionBoundaryBeatMisalignment } from '../utils/stanzaBeatGrid';
+import { effectiveBeatGridForSegment, sectionBoundaryBeatMisaligned } from '../utils/stanzaBeatGrid';
 import type { StanzaPlaybackLoopMode } from '../utils/stanzaPlaybackLoop';
 import { computeLoopHull } from '../utils/stanzaPlaybackLoop';
 import AppTooltip from '../../shared/components/AppTooltip';
@@ -36,10 +55,14 @@ export type { StanzaPlaybackLoopMode };
 
 const SELECTION_SPAN_WASH = 'rgba(232, 72, 160, 0.16)';
 
+/**
+ * Short, sentence-case help text shown via the (i) icon next to the timeline.
+ * Per docs/USER_COPY_STYLE.md: short sentences, no em dashes, scannable.
+ */
 const BAR_HELP =
-  'Drag the bar or playhead to scrub. Click a section to select it and jump. Shift+click to extend the selection across sections. ' +
-  'Light pink fill is your selection span (pad / nudge without moving markers). In Sections, the apply-changes icon moves the outer splits of the highlighted sections to match that span. Start/End nudges use one beat from the metronome grid when BPM is known (else one second). The hot pink outline shows what repeats in loop-selection or loop-whole mode. ' +
-  'Loop icons: play once, repeat the whole song, or repeat the selection span. Under the bar, section tools sit on the left; Edit selection sits on the right.';
+  'Drag the bar or playhead to scrub. Click a section to jump there. Shift+click extends the selection across sections. ' +
+  'The light pink fill is your selection span: pad and nudge it without touching markers. ' +
+  'Loop icons play once, loop the whole song, or loop the selection.';
 
 const HOVER_CLOSE_MS = 220;
 
@@ -103,6 +126,10 @@ export interface StanzaTimelineProps {
   onCommitSelectionToBoundaries?: () => void;
   commitSelectionToBoundariesDisabled?: boolean;
   commitSelectionToBoundariesTitle?: string;
+  /** Sections marked to skip during forward playback (drives the hover-card checkbox + section button styling). */
+  skippedBySegmentId?: Record<string, true>;
+  /** Toggle "skip during playback" for a section by id. */
+  onSegmentSkippedChange?: (segmentId: string, next: boolean) => void;
 }
 
 export default function StanzaTimeline({
@@ -141,6 +168,8 @@ export default function StanzaTimeline({
   onCommitSelectionToBoundaries,
   commitSelectionToBoundariesDisabled = false,
   commitSelectionToBoundariesTitle,
+  skippedBySegmentId,
+  onSegmentSkippedChange,
 }: StanzaTimelineProps) {
   const [dragMarkers, setDragMarkers] = useState<StanzaMarker[] | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
@@ -364,13 +393,7 @@ export default function StanzaTimeline({
 
   const hoverSectionBoundaryMisaligned = useMemo(() => {
     if (!hoverSegment || !(duration > 0)) return false;
-    const m = sectionBoundaryBeatMisalignment(
-      hoverSegment,
-      duration,
-      metronomeBySegmentId,
-      metronomeSongCalibration,
-    );
-    return m.start || m.end;
+    return sectionBoundaryBeatMisaligned(hoverSegment, duration, metronomeBySegmentId, metronomeSongCalibration);
   }, [duration, hoverSegment, metronomeBySegmentId, metronomeSongCalibration]);
 
   const commitSectionRename = useCallback(() => {
@@ -489,8 +512,8 @@ export default function StanzaTimeline({
 
   const loopWholeTooltip =
     selectedSegmentIndices.length > 0
-      ? 'Repeat the whole track. Your section selection and pink span stay as they are.'
-      : 'Loop whole song';
+      ? 'Loop the whole track. Your section selection and pink span stay as they are.'
+      : 'Loop the whole song.';
 
   const hoverDeletableMarker =
     hoverSegment != null && duration > 0
@@ -565,11 +588,11 @@ export default function StanzaTimeline({
         {onSelectionSpanNudge && onSelectionMusicalPad ? <span className="stanza-playback-chip-divider" aria-hidden /> : null}
         {onSelectionMusicalPad ? (
           <>
-            <AppTooltip title="Pad both ends of the selection span from section metronome BPM when set, else ~⅔ of a beat at 120.">
+                <AppTooltip title="Pad both ends of the selection by one short beat. Uses section BPM when set, else ~⅔ of a beat at 120.">
               <IconButton
                 size="small"
                 className="stanza-playback-chip-btn"
-                aria-label="Pad selection musically"
+                aria-label="Pad selection by one short beat on each end"
                 onClick={onSelectionMusicalPad}
               >
                 <UnfoldMoreDoubleOutlinedIcon className="stanza-selection-span-pad-icon" />
@@ -693,11 +716,11 @@ export default function StanzaTimeline({
                 Loop
               </Typography>
               <Box className="stanza-playback-chip">
-                <AppTooltip title="Play through — no looping">
+                <AppTooltip title="Play through. No looping.">
                   <IconButton
                     size="small"
                     className={`stanza-playback-chip-btn${loopMode === 'through' ? ' stanza-playback-chip-btn--active' : ''}`}
-                    aria-label="Loop off — play through"
+                    aria-label="Play through (loop off)"
                     aria-pressed={loopMode === 'through'}
                     onClick={() => onLoopModeChange('through')}
                   >
@@ -715,11 +738,11 @@ export default function StanzaTimeline({
                     <RepeatIcon fontSize="small" />
                   </IconButton>
                 </AppTooltip>
-                <AppTooltip title="Repeat the current selection span (hot pink frame). Shift+click to build the range.">
+                <AppTooltip title="Loop the selection span (hot pink frame). Shift+click sections to build the range.">
                   <IconButton
                     size="small"
                     className={`stanza-playback-chip-btn${loopMode === 'loopSelection' ? ' stanza-playback-chip-btn--active' : ''}`}
-                    aria-label="Loop selected sections"
+                    aria-label="Loop selection span"
                     aria-pressed={loopMode === 'loopSelection'}
                     onClick={() => onLoopModeChange('loopSelection')}
                   >
@@ -803,11 +826,19 @@ export default function StanzaTimeline({
               const ms = segmentMs[seg.id]?.totalMs ?? 0;
               const isSelected = selectedSegmentIndices.includes(seg.index);
               const practiced = ms > 0;
+              const isSkipped = Boolean(skippedBySegmentId?.[seg.id]);
+              const classes = [
+                'stanza-playback-seg',
+                isSelected ? 'stanza-playback-seg--selected' : '',
+                isSkipped ? 'stanza-playback-seg--skipped' : '',
+              ]
+                .filter(Boolean)
+                .join(' ');
               return (
                 <button
                   key={seg.id}
                   type="button"
-                  className={`stanza-playback-seg${isSelected ? ' stanza-playback-seg--selected' : ''}`}
+                  className={classes}
                   onClick={(ev) => {
                     ev.stopPropagation();
                     if (suppressSegmentClickRef.current) {
@@ -818,7 +849,7 @@ export default function StanzaTimeline({
                   }}
                   onPointerEnter={(e) => handleSectionPointerEnter(seg.id, e)}
                   onPointerLeave={scheduleHoverClose}
-                  aria-label={`Section ${seg.label}, ${formatClock(seg.start)} to ${formatClock(seg.end)}${practiced ? ', has practice time logged' : ''}`}
+                  aria-label={`Section ${seg.label}, ${formatClock(seg.start)} to ${formatClock(seg.end)}${practiced ? ', has practice time logged' : ''}${isSkipped ? ', skipped during playback' : ''}`}
                   aria-pressed={isSelected}
                   style={{ width: `${widthPct}%` }}
                 >
@@ -961,25 +992,31 @@ export default function StanzaTimeline({
                   {onCommitSelectionToBoundaries ? (
                     <>
                       {onAddMarker || onJoinSections ? <span className="stanza-playback-chip-divider" aria-hidden /> : null}
-                      <AppTooltip
-                        title={
+                      {(() => {
+                        const commitTitle =
                           commitSelectionToBoundariesTitle ??
-                          'Move the first and last splits of the highlighted sections to the edges of the pink selection (including padding). Inner splits stay put.'
-                        }
-                      >
-                        <span>
-                          <IconButton
-                            type="button"
-                            size="small"
-                            className="stanza-playback-chip-btn"
-                            aria-label="Move outer section splits to match the pink selection span"
-                            disabled={commitSelectionToBoundariesDisabled}
-                            onClick={onCommitSelectionToBoundaries}
-                          >
-                            <PublishedWithChangesOutlinedIcon fontSize="small" />
-                          </IconButton>
-                        </span>
-                      </AppTooltip>
+                          'Resize the selected sections so their outer edges match the selection span. Inner splits stay put.';
+                        return (
+                          <AppTooltip title={commitTitle}>
+                            <span>
+                              <Button
+                                type="button"
+                                size="small"
+                                variant="text"
+                                className="stanza-playback-chip-text-btn"
+                                startIcon={<CropFreeOutlinedIcon fontSize="small" />}
+                                // Pass the dynamic title to aria-label so screen-reader users hear the
+                                // same "why disabled" explanation sighted users see in the tooltip.
+                                aria-label={commitTitle}
+                                disabled={commitSelectionToBoundariesDisabled}
+                                onClick={onCommitSelectionToBoundaries}
+                              >
+                                Resize to selection
+                              </Button>
+                            </span>
+                          </AppTooltip>
+                        );
+                      })()}
                     </>
                   ) : null}
                 </Box>
@@ -1020,6 +1057,12 @@ export default function StanzaTimeline({
                   onSnapSectionBoundariesToBeat(hoverSegment.index);
                   setHoverCard(null);
                 }
+              : undefined
+          }
+          isSkipped={Boolean(skippedBySegmentId?.[hoverSegment.id])}
+          onSkippedChange={
+            onSegmentSkippedChange
+              ? (next) => onSegmentSkippedChange(hoverSegment.id, next)
               : undefined
           }
         />

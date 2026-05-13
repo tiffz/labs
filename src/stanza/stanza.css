@@ -1,34 +1,89 @@
 /**
  * Stanza — warm paper surfaces, delicate ink, and one rose accent.
- * UI stays modern; display type leans literary.
+ *
+ * Sections:
+ *   1. Tokens, fonts, app shell + atmospheric background
+ *   2. Display titles + section labels
+ *   3. Library (grid, cards, footer accordion)
+ *   4. Hero (landing) + media (YouTube host, local video, viewer header)
+ *   5. Playback strip + transport / loop chips
+ *   6. Scrub track + section buttons + selection / loop overlays
+ *   7. Metronome strip, beat counts, BPM rail, key shift
+ *   8. Mix rail
+ *   9. MUI overrides (Accordion, Button, focus rings)
+ *
+ * Conventions:
+ *   - Colors flow from the tokens at the top. Bypass with a literal hex/rgba ONLY
+ *     when the surface lives outside `.stanza-app` (e.g. portaled MUI Dialogs)
+ *     and a token cascade can't reach.
+ *   - Every `!important` carries a `/* REASON: ... *​/` comment explaining what
+ *     it is fighting (per docs/CSS_IMPORTANT_AUDIT.md).
+ *   - Reach for `--stanza-focus-ring` instead of hand-rolled `outline: ...`.
  */
 
+/* =====================================================================
+ * 1. Tokens, fonts, app shell + atmospheric background
+ * =================================================================== */
+
 .stanza-app {
+  /* Paper surfaces */
   --stanza-paper: #faf6f1;
   --stanza-paper-wash: #f3ebe2;
   --stanza-paper-elevated: rgba(255, 251, 245, 0.9);
+  --stanza-paper-elevated-strong: rgba(255, 251, 245, 0.96);
   --stanza-paper-line: rgba(49, 43, 38, 0.1);
   --stanza-paper-line-faint: rgba(49, 43, 38, 0.06);
+
+  /* Ink (warm) */
   --stanza-ink: #2a2622;
   --stanza-ink-muted: #6d665e;
   --stanza-ink-soft: #8b837a;
+
+  /* Rose accent */
   --stanza-rose: #e848a0;
+  --stanza-rose-strong: #c4176e; /* darker rose for active text or hover-pressed labels */
+  --stanza-rose-hover: #d43d90;
   --stanza-rose-wash: rgba(232, 72, 160, 0.12);
   --stanza-rose-line: rgba(232, 72, 160, 0.28);
+
+  /* Inset control trays (quiet "iOS" pills, transport chips, segmented backgrounds) */
+  --stanza-tray-bg: rgba(255, 255, 255, 0.42);
+  --stanza-tray-bg-strong: rgba(255, 255, 255, 0.72);
+  --stanza-tray-bg-hover: rgba(49, 43, 38, 0.05);
+  --stanza-tray-bg-pressed: rgba(49, 43, 38, 0.1);
+  --stanza-tray-divider: var(--stanza-paper-line-faint);
+
+  /* Focus rings (single source of truth so app feels coherent under keyboard nav) */
+  --stanza-focus-ring: 1px solid rgba(49, 43, 38, 0.32);
+  --stanza-focus-ring-rose: 2px solid rgba(232, 72, 160, 0.4);
+  --stanza-focus-ring-offset: 1px;
+
+  /* Shape + elevation. Main work-surface cards (rail, playback strip, video frame,
+     library footer accordion) deliberately render flat — no shadow — so the cream
+     paper background reads as a continuous sheet. The `--stanza-shadow-card*` tokens
+     remain for compact cards (`.stanza-library-card`) and for portaled MUI dialogs
+     where elevation is the canonical lift cue. */
   --stanza-radius-panel: 18px;
   --stanza-radius-chip: 11px;
   --stanza-shadow-card:
     0 1px 2px rgba(47, 39, 33, 0.045), 0 16px 38px rgba(47, 39, 33, 0.075);
   --stanza-shadow-card-hover:
     0 2px 6px rgba(47, 39, 33, 0.055), 0 20px 44px rgba(47, 39, 33, 0.1);
-  --stanza-shadow-rest:
-    0 1px 2px rgba(47, 39, 33, 0.035), 0 12px 30px rgba(47, 39, 33, 0.055);
-  --stanza-shadow-hover: var(--stanza-shadow-card-hover);
+
+  /* Atmosphere gradient stops (shared between .stanza-app::before and .stanza-hero::before) */
+  --stanza-atmosphere-rose-glow: rgba(232, 72, 160, 0.08);
+  --stanza-atmosphere-amber-glow: rgba(196, 164, 132, 0.08);
+  --stanza-atmosphere-bg-top: #fdfaf6;
+  --stanza-atmosphere-bg-mid: #f3ebe2;
+  --stanza-atmosphere-bg-bot: #e9dfd3;
+
+  /* Typography */
   --stanza-font-ui:
     -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto,
     'Helvetica Neue', sans-serif;
   --stanza-font-display:
     'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+
   min-height: 100vh;
   min-height: 100dvh;
   position: relative;
@@ -55,15 +110,20 @@
     ),
     radial-gradient(
       ellipse 95% 60% at 50% -25%,
-      rgba(232, 72, 160, 0.08),
+      var(--stanza-atmosphere-rose-glow),
       transparent 58%
     ),
     radial-gradient(
       ellipse 70% 50% at 100% 85%,
-      rgba(196, 164, 132, 0.08),
+      var(--stanza-atmosphere-amber-glow),
       transparent 52%
     ),
-    linear-gradient(168deg, #fdfaf6 0%, #f3ebe2 44%, #e9dfd3 100%);
+    linear-gradient(
+      168deg,
+      var(--stanza-atmosphere-bg-top) 0%,
+      var(--stanza-atmosphere-bg-mid) 44%,
+      var(--stanza-atmosphere-bg-bot) 100%
+    );
 }
 
 .stanza-main {
@@ -73,11 +133,18 @@
   min-height: 100dvh;
 }
 
+.stanza-root {
+  min-height: 100vh;
+  min-height: 100dvh;
+  box-sizing: border-box;
+}
+
 .stanza-panel {
   background: var(--stanza-paper-elevated);
-  border: 1px solid var(--stanza-paper-line-faint);
+  /* Slightly stronger than `--stanza-paper-line-faint` because we no longer
+     paint a drop shadow under main cards; the border is the only separation. */
+  border: 1px solid var(--stanza-paper-line);
   border-radius: var(--stanza-radius-panel);
-  box-shadow: var(--stanza-shadow-card);
 }
 
 @supports (backdrop-filter: blur(8px)) {
@@ -85,6 +152,10 @@
     backdrop-filter: blur(10px);
   }
 }
+
+/* =====================================================================
+ * 2. Display titles + section labels
+ * =================================================================== */
 
 .stanza-app .stanza-display-title.MuiTypography-root,
 .stanza-display-title {
@@ -140,6 +211,34 @@
   letter-spacing: 0.01em;
   color: var(--stanza-ink-muted);
 }
+
+.stanza-link-quiet {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--stanza-ink-muted);
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+  transition: color 0.15s ease;
+}
+
+.stanza-link-quiet:hover,
+.stanza-link-quiet:focus-visible {
+  color: var(--stanza-rose);
+}
+
+.stanza-link-quiet:focus-visible {
+  outline: var(--stanza-focus-ring-rose);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* =====================================================================
+ * 3. Library (grid, cards, footer accordion)
+ * =================================================================== */
 
 .stanza-library-grid {
   display: grid;
@@ -198,10 +297,106 @@ button.stanza-library-card {
   background: #0f172a;
 }
 
-/* Width cap lives on .stanza-viewer-media-stack so video + transport + timeline share one column. */
+.stanza-library-footer.MuiPaper-root.MuiAccordion-root {
+  background: rgba(255, 251, 245, 0.82);
+  border: 1px solid var(--stanza-paper-line);
+  /* REASON: MuiAccordion sets a square radius via emotion-injected default rules. */
+  border-radius: var(--stanza-radius-panel) !important;
+  /* REASON: MuiPaper paints a default elevation shadow that overrides our `box-shadow: none`
+     unless we win specificity / use !important here. We want the footer flat against the
+     warm paper background like the other main cards. */
+  box-shadow: none !important;
+}
+
+.stanza-library-footer .MuiAccordionSummary-root {
+  min-height: 56px;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.stanza-library-footer .MuiAccordionDetails-root {
+  padding-top: 8px;
+}
+
+/* =====================================================================
+ * 4. Hero (landing) + media (YouTube host, local video, viewer header)
+ * =================================================================== */
+
+.stanza-hero {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(2rem, 6vw, 3.5rem) 1.25rem 2.5rem;
+}
+
+.stanza-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      ellipse 90% 55% at 50% -30%,
+      var(--stanza-atmosphere-rose-glow),
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 70% 45% at 100% 80%,
+      var(--stanza-atmosphere-amber-glow),
+      transparent 50%
+    ),
+    linear-gradient(
+      168deg,
+      var(--stanza-atmosphere-bg-top) 0%,
+      var(--stanza-atmosphere-bg-mid) 48%,
+      var(--stanza-atmosphere-bg-bot) 100%
+    );
+  pointer-events: none;
+}
+
+.stanza-hero-inner {
+  position: relative;
+  z-index: 1;
+  max-width: 42rem;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.stanza-hero-url .MuiOutlinedInput-root {
+  border-radius: 14px;
+  background: var(--stanza-paper-elevated-strong);
+  font-size: 1.2rem;
+  transition:
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.stanza-hero-url .MuiOutlinedInput-root:hover {
+  background: #fffdf9;
+}
+
+.stanza-hero-url .MuiOutlinedInput-root.Mui-focused {
+  box-shadow: 0 0 0 3px var(--stanza-rose-wash);
+}
+
+.stanza-hero-url .MuiOutlinedInput-input {
+  padding-top: 1.15rem;
+  padding-bottom: 1.15rem;
+}
+
+@media (min-width: 600px) {
+  .stanza-hero-url .MuiOutlinedInput-input {
+    font-size: 1.28rem;
+    padding-top: 1.35rem;
+    padding-bottom: 1.35rem;
+  }
+}
+
+/* Width cap lives on .stanza-viewer-media-stack so video + transport + timeline share one column.
+ * The cap is balanced against the right-side rail (~360px wide) inside the 1280px grid so the
+ * video grows large enough to not look dwarfed by the calibration + mix panel beside it, while
+ * still leaving breathing room around both columns on wide screens. */
 .stanza-viewer-media-stack {
   width: 100%;
-  max-width: 600px;
+  max-width: 760px;
 }
 
 .stanza-video-column {
@@ -214,25 +409,6 @@ button.stanza-library-card {
   margin-bottom: 0.35rem;
 }
 
-.stanza-practice-rail .MuiFormControl-root {
-  margin-top: 0;
-}
-
-.stanza-transport-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-top: 10px;
-}
-
-.stanza-root {
-  min-height: 100vh;
-  min-height: 100dvh;
-  box-sizing: border-box;
-}
-
-/* Viewer column stack (page gradient comes from .stanza-app). */
 .stanza-viewer-shell {
   position: relative;
   flex: 1;
@@ -241,8 +417,8 @@ button.stanza-library-card {
   min-height: 0;
 }
 
-/* Media + rail + timeline: avoid default grid align-content stretch, which opens a tall gap
-   between the video row and the transport when the scroll pane is taller than the rows. */
+/* Avoid default grid `align-content: stretch` opening a tall gap between the video row
+   and the transport when the scroll pane is taller than the rows. */
 .stanza-viewer-body-grid {
   min-height: 0;
 }
@@ -251,17 +427,51 @@ button.stanza-library-card {
   margin-top: 0;
 }
 
+.stanza-youtube-host {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  aspect-ratio: 16 / 9;
+  background: #0f172a;
+  border-radius: calc(var(--stanza-radius-panel) - 2px);
+  overflow: hidden;
+  border: 1px solid var(--stanza-paper-line);
+}
+
+.stanza-youtube-iframe,
+.stanza-youtube-iframe iframe {
+  width: 100%;
+  height: 100%;
+}
+
+.stanza-local-video {
+  width: 100%;
+  margin-top: 8px;
+  border-radius: calc(var(--stanza-radius-chip) + 1px);
+  /* Cap chosen to clear the natural 16:9 height of the column at its widest cap (760px → 428px)
+   * so common landscape recordings render edge-to-edge without letterboxing. Portrait clips still
+   * stay bounded so they don't dominate the layout. */
+  max-height: 480px;
+  background: #0a0a0a;
+  cursor: pointer;
+  border: 1px solid var(--stanza-paper-line);
+}
+
+/* =====================================================================
+ * 5. Playback strip + transport / loop chips
+ * =================================================================== */
+
 .stanza-playback-stack {
   margin-top: 0.25rem;
 }
 
 .stanza-playback-strip {
   background: var(--stanza-paper-elevated);
-  border: 1px solid var(--stanza-paper-line-faint);
+  border: 1px solid var(--stanza-paper-line);
   border-radius: calc(var(--stanza-radius-panel) - 2px);
   padding: 10px 12px 12px;
   margin-bottom: 0;
-  box-shadow: var(--stanza-shadow-rest);
 }
 
 @supports (backdrop-filter: blur(6px)) {
@@ -325,8 +535,8 @@ button.stanza-library-card {
   gap: 1px;
   padding: 2px;
   border-radius: var(--stanza-radius-chip);
-  background: rgba(255, 255, 255, 0.42);
-  box-shadow: inset 0 0 0 1px var(--stanza-paper-line-faint);
+  background: var(--stanza-tray-bg);
+  box-shadow: inset 0 0 0 1px var(--stanza-tray-divider);
 }
 
 .stanza-playback-chip--meta {
@@ -354,7 +564,7 @@ button.stanza-library-card {
   height: 16px;
   margin: 0 2px;
   flex-shrink: 0;
-  background: var(--stanza-paper-line-faint);
+  background: var(--stanza-tray-divider);
 }
 
 .stanza-playback-chip-btn.MuiIconButton-root {
@@ -375,14 +585,19 @@ button.stanza-library-card {
 
 .stanza-playback-chip-btn.MuiIconButton-root:hover {
   color: var(--stanza-ink);
-  background: rgba(49, 43, 38, 0.05);
+  background: var(--stanza-tray-bg-hover);
 }
 
 .stanza-playback-chip-btn.MuiIconButton-root.Mui-disabled {
   color: rgba(109, 102, 94, 0.28);
 }
 
-/* Loop mode trio: selected mode matches selection-span / loop ring accent (hot pink). */
+.stanza-playback-chip-btn.MuiIconButton-root:focus-visible {
+  outline: var(--stanza-focus-ring);
+  outline-offset: var(--stanza-focus-ring-offset);
+}
+
+/* Loop mode trio: selected mode matches selection-span / loop ring accent (rose). */
 .stanza-playback-chip-btn--active.MuiIconButton-root {
   background: var(--stanza-rose-wash);
   color: var(--stanza-rose);
@@ -416,8 +631,8 @@ button.stanza-library-card {
 
 .stanza-playback-chip-btn--solo.MuiIconButton-root {
   border-radius: var(--stanza-radius-chip);
-  background: rgba(255, 255, 255, 0.42);
-  box-shadow: inset 0 0 0 1px var(--stanza-paper-line-faint);
+  background: var(--stanza-tray-bg);
+  box-shadow: inset 0 0 0 1px var(--stanza-tray-divider);
 }
 
 .stanza-playback-chip-text-btn.MuiButton-root {
@@ -433,7 +648,7 @@ button.stanza-library-card {
 }
 
 .stanza-playback-chip-text-btn.MuiButton-root:hover {
-  background: rgba(29, 29, 31, 0.06);
+  background: var(--stanza-tray-bg-hover);
 }
 
 .stanza-playback-chip-text-btn .MuiButton-startIcon {
@@ -477,129 +692,20 @@ button.stanza-library-card {
   }
 }
 
-.stanza-playback-chip-btn.MuiIconButton-root:focus-visible {
-  outline: 1px solid rgba(60, 60, 67, 0.35);
-  outline-offset: 1px;
-}
-
 @media (pointer: coarse) {
   .stanza-playback-chip-btn.MuiIconButton-root {
     min-width: 44px;
     min-height: 44px;
   }
-
   .stanza-playback-chip-btn--play.MuiIconButton-root {
     width: 44px;
     height: 44px;
   }
-
   .stanza-playback-chip-reset-slot {
     width: 44px;
     height: 44px;
     flex-basis: 44px;
   }
-}
-
-.stanza-playback-track-meta {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  min-height: 1.25rem;
-  margin-top: 4px;
-  margin-bottom: 8px;
-}
-
-.stanza-hint-text--compact {
-  font-size: 0.75rem;
-  line-height: 1.35;
-}
-
-/* Pill segmented controls — iOS-style inset track; use with className="stanza-segmented". */
-.stanza-playback-toolbar .stanza-segmented.MuiToggleButtonGroup-root {
-  flex-shrink: 0;
-}
-
-.stanza-app .stanza-segmented.MuiToggleButtonGroup-root {
-  border-radius: 9999px !important;
-  padding: 3px;
-  gap: 0;
-  background: rgba(29, 29, 31, 0.05);
-  box-shadow: inset 0 0 0 1px rgba(60, 60, 67, 0.11);
-}
-
-.stanza-app
-  .stanza-segmented.MuiToggleButtonGroup-root
-  .MuiToggleButtonGroup-grouped {
-  margin: 0 !important;
-  border: none !important;
-}
-
-.stanza-app .stanza-segmented.MuiToggleButtonGroup-root .MuiToggleButton-root {
-  padding: 6px 13px;
-  border: none !important;
-  border-radius: 9999px !important;
-  margin: 0 !important;
-  background: transparent !important;
-  color: #3a3a3c;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  text-transform: none;
-}
-
-.stanza-app
-  .stanza-segmented.MuiToggleButtonGroup-root
-  .MuiToggleButton-root.Mui-selected {
-  background-color: rgba(255, 255, 255, 0.95) !important;
-  color: #1d1d1f !important;
-  box-shadow:
-    0 1px 2px rgba(29, 29, 31, 0.07),
-    0 0 0 1px rgba(232, 72, 160, 0.18);
-}
-
-.stanza-app
-  .stanza-segmented.MuiToggleButtonGroup-root
-  .MuiToggleButton-root:hover {
-  background-color: rgba(255, 255, 255, 0.35) !important;
-}
-
-.stanza-app
-  .stanza-segmented.MuiToggleButtonGroup-root
-  .MuiToggleButton-root.Mui-selected:hover {
-  background-color: rgba(255, 255, 255, 0.98) !important;
-}
-
-/* Practice rail: less stark than pure white on cream */
-.stanza-practice-rail.stanza-panel {
-  background: rgba(255, 251, 245, 0.82);
-  border-color: var(--stanza-paper-line-faint);
-  box-shadow: var(--stanza-shadow-card);
-}
-
-/* Practice rail: equal-width speed presets (avoid uneven flex from label length) */
-.stanza-practice-rail .stanza-segmented.MuiToggleButtonGroup-root {
-  display: flex;
-}
-
-.stanza-practice-rail
-  .stanza-segmented.MuiToggleButtonGroup-root
-  .MuiToggleButton-root {
-  flex: 1 1 0;
-  min-width: 0;
-  padding-left: 6px;
-  padding-right: 6px;
-  font-variant-numeric: tabular-nums;
-}
-
-/* Speed: hide native number spinners; use MUI arrow buttons */
-.stanza-speed-number input[type='number'] {
-  -moz-appearance: textfield;
-  font-variant-numeric: tabular-nums;
-}
-
-.stanza-speed-number input[type='number']::-webkit-outer-spin-button,
-.stanza-speed-number input[type='number']::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
 }
 
 .stanza-play-btn.MuiIconButton-root {
@@ -617,39 +723,21 @@ button.stanza-library-card {
   color: var(--stanza-ink);
 }
 
-.stanza-link-quiet {
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--stanza-ink-muted);
-  text-decoration: none;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  font-family: inherit;
-  transition: color 0.15s ease;
+/* Speed: hide native number spinners; use MUI arrow buttons. */
+.stanza-speed-number input[type='number'] {
+  -moz-appearance: textfield;
+  font-variant-numeric: tabular-nums;
 }
 
-.stanza-link-quiet:hover,
-.stanza-link-quiet:focus-visible {
-  color: var(--stanza-rose);
+.stanza-speed-number input[type='number']::-webkit-outer-spin-button,
+.stanza-speed-number input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
-.stanza-link-quiet:focus-visible {
-  outline: 2px solid rgba(232, 72, 160, 0.4);
-  outline-offset: 2px;
-  border-radius: 4px;
-}
-
-/* Timeline / hints: readable secondary text, dotted affordance (tooltip expands detail). */
-.stanza-hint-text {
-  font-size: 0.8125rem;
-  font-weight: 500;
-  line-height: 1.45;
-  color: #6e6e73;
-  cursor: help;
-  border-bottom: 1px dotted rgba(110, 110, 115, 0.42);
-}
+/* =====================================================================
+ * 6. Scrub track + section buttons + selection / loop overlays
+ * =================================================================== */
 
 .stanza-playback-track {
   position: relative;
@@ -657,7 +745,7 @@ button.stanza-library-card {
   border-radius: calc(var(--stanza-radius-chip) + 1px);
   overflow: visible;
   border: 1px solid var(--stanza-paper-line-faint);
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--stanza-tray-bg-strong);
   cursor: pointer;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
 }
@@ -680,11 +768,11 @@ button.stanza-library-card {
 }
 
 .stanza-playback-track:focus-visible {
-  outline: 1px solid rgba(60, 60, 67, 0.28);
+  outline: var(--stanza-focus-ring);
   outline-offset: 2px;
 }
 
-/* Segment strip: hairline dividers; light pink selection span is a track overlay. */
+/* Segment strip: hairline dividers, light pink selection span is a track overlay. */
 .stanza-playback-segments-clip {
   border-radius: 9px;
   overflow: hidden;
@@ -719,21 +807,38 @@ button.stanza-library-card {
   border-right: none;
 }
 
-.stanza-playback-seg--selected-dim {
-  opacity: 1;
-  background-color: rgba(29, 29, 31, 0.03) !important;
-  box-shadow: inset 2px 0 0 0 rgba(232, 72, 160, 0.48) !important;
-}
-
-.stanza-playback-seg--practiced::after {
-  display: none;
-}
-
 .stanza-playback-seg:focus-visible {
-  outline: 1px solid rgba(60, 60, 67, 0.35);
+  outline: var(--stanza-focus-ring);
   outline-offset: -1px;
   z-index: 1;
 }
+
+/* Skipped sections: muted label, faint diagonal hatching, strikethrough on the
+ * label so users can scan the timeline and immediately see which sections will
+ * be skipped during forward playback. The hatching layers under any selection
+ * tint without obscuring it. */
+.stanza-playback-seg--skipped {
+  color: color-mix(in srgb, var(--stanza-ink) 45%, transparent);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+  text-decoration-color: color-mix(in srgb, var(--stanza-ink) 35%, transparent);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0,
+    transparent 5px,
+    color-mix(in srgb, var(--stanza-ink) 7%, transparent) 5px,
+    color-mix(in srgb, var(--stanza-ink) 7%, transparent) 6px
+  );
+}
+
+.stanza-playback-seg--skipped.stanza-playback-seg--selected {
+  /* Keep skipped visual hint readable when the section is also selected. */
+  color: color-mix(in srgb, var(--stanza-ink) 65%, transparent);
+}
+
+/* =====================================================================
+ * 7. Metronome strip, beat counts, BPM rail, key shift
+ * =================================================================== */
 
 .stanza-metronome-toggle {
   display: inline-flex;
@@ -745,8 +850,8 @@ button.stanza-library-card {
   padding: 0;
   border: none;
   border-radius: 999px;
-  background: rgba(29, 29, 31, 0.06);
-  color: #1d1d1f;
+  background: var(--stanza-tray-bg-pressed);
+  color: var(--stanza-ink);
   cursor: pointer;
   transition:
     background-color 0.15s ease,
@@ -754,26 +859,27 @@ button.stanza-library-card {
 }
 
 .stanza-metronome-toggle:hover {
-  background: rgba(29, 29, 31, 0.1);
+  background: rgba(49, 43, 38, 0.14);
 }
 
 .stanza-metronome-toggle.active {
   background: rgba(232, 72, 160, 0.18);
-  color: #1d1d1f;
+  color: var(--stanza-ink);
   box-shadow: 0 0 0 1px rgba(232, 72, 160, 0.35);
 }
 
-.stanza-metronome-toggle.stanza-metronome-toggle--rail {
+/* Compact variant used inside the metronome strip rail. */
+.stanza-metronome-toggle.stanza-metronome-toggle--strip {
   width: 32px;
   height: 32px;
 }
 
-.stanza-metronome-toggle.stanza-metronome-toggle--rail
+.stanza-metronome-toggle.stanza-metronome-toggle--strip
   .material-symbols-outlined {
   font-size: 20px;
 }
 
-/* Metronome strip: horizontal beat counts beside the toggle (layout only; colors follow Stanza ink). */
+/* Metronome strip: horizontal beat counts beside the toggle. */
 .stanza-app .stanza-metronome-strip {
   display: flex;
   flex-direction: row;
@@ -781,7 +887,7 @@ button.stanza-library-card {
   gap: 0.45rem;
   min-height: 44px;
   padding: 4px 8px;
-  border-radius: var(--stanza-radius-chip, 12px);
+  border-radius: var(--stanza-radius-chip);
   border: 1px solid var(--stanza-paper-line-faint);
   background: rgba(255, 255, 255, 0.62);
 }
@@ -806,7 +912,7 @@ button.stanza-library-card {
 .stanza-app .stanza-metronome-strip-placeholder {
   font-size: 0.8125rem;
   font-weight: 600;
-  color: var(--stanza-ink-muted, #6e6e73);
+  color: var(--stanza-ink-muted);
 }
 
 .stanza-app .stanza-beat-visualizer--compact {
@@ -831,9 +937,9 @@ button.stanza-library-card {
   font-size: 0.75rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  color: var(--stanza-ink-muted, #6e6e73);
+  color: var(--stanza-ink-muted);
   border: 1px solid var(--stanza-paper-line-faint);
-  background: rgba(255, 255, 255, 0.45);
+  background: var(--stanza-tray-bg);
   box-sizing: border-box;
   transition:
     background-color 0.12s ease,
@@ -843,34 +949,45 @@ button.stanza-library-card {
 }
 
 .stanza-app .stanza-beat-count--active {
-  color: var(--stanza-rose, #e848a0);
-  background: var(--stanza-rose-wash, rgba(232, 72, 160, 0.12));
-  border-color: var(--stanza-rose-line, rgba(232, 72, 160, 0.28));
+  color: var(--stanza-rose);
+  background: var(--stanza-rose-wash);
+  border-color: var(--stanza-rose-line);
   box-shadow: 0 0 0 1px rgba(232, 72, 160, 0.08);
 }
 
 .stanza-app .stanza-beat-count--downbeat.stanza-beat-count--active {
-  color: #c4176e;
+  color: var(--stanza-rose-strong);
   background: rgba(232, 72, 160, 0.2);
   border-color: rgba(232, 72, 160, 0.45);
 }
 
-/* Practice rail BPM + key shift: hot pink accent (overrides shared BpmInput purple defaults). */
+/* Practice rail: warmer than pure white on cream. */
+.stanza-practice-rail.stanza-panel {
+  background: rgba(255, 251, 245, 0.82);
+  border-color: var(--stanza-paper-line);
+}
+
+.stanza-practice-rail .MuiFormControl-root {
+  margin-top: 0;
+}
+
+/* Practice rail BPM + key shift: rose accent (overrides shared BpmInput purple defaults). */
 .stanza-app .stanza-metronome-rail .shared-bpm-shell,
 .stanza-app .stanza-key-shift-block .shared-bpm-shell {
-  --bpm-focus: var(--stanza-rose, #e848a0);
-  --bpm-border: var(--stanza-rose-line, rgba(232, 72, 160, 0.32));
+  --bpm-focus: var(--stanza-rose);
+  --bpm-border: var(--stanza-rose-line);
   --bpm-dropdown-hover-bg: rgba(232, 72, 160, 0.1);
   --bpm-dropdown-active-bg: rgba(232, 72, 160, 0.16);
-  --bpm-dropdown-active-text: var(--stanza-rose, #e848a0);
+  --bpm-dropdown-active-text: var(--stanza-rose);
   --bpm-chip-hover-bg: rgba(232, 72, 160, 0.08);
   --bpm-chip-active-bg: rgba(232, 72, 160, 0.14);
-  --bpm-chip-active-text: #c4176e;
-  --bpm-bg: rgba(255, 251, 245, 0.96);
+  --bpm-chip-active-text: var(--stanza-rose-strong);
+  --bpm-bg: var(--stanza-paper-elevated-strong);
   overflow: hidden;
 }
 
-/* Avoid “double border”: default `shared-bpm-shell:focus-within` adds a 2px ring outside the 1px border. */
+/* Avoid "double border": the default `shared-bpm-shell:focus-within` adds a 2px ring
+   outside the existing 1px border. */
 .stanza-app .stanza-metronome-rail .shared-bpm-shell:focus-within,
 .stanza-app .stanza-bpm-modal-input .shared-bpm-shell:focus-within,
 .stanza-tempo-preview-dialog-content
@@ -878,7 +995,7 @@ button.stanza-library-card {
   .shared-bpm-shell:focus-within,
 .stanza-app .stanza-key-shift-block .shared-bpm-shell:focus-within {
   box-shadow: none;
-  border-color: var(--stanza-rose, #e848a0);
+  border-color: var(--stanza-rose);
 }
 
 .stanza-app
@@ -908,23 +1025,23 @@ button.stanza-library-card {
 
 .stanza-app .stanza-key-shift-block .stanza-key-shift-reset.MuiIconButton-root {
   border-radius: 0;
-  color: var(--bpm-muted, var(--stanza-ink-muted, #6d665e));
+  color: var(--bpm-muted, var(--stanza-ink-muted));
 }
 
 .stanza-app
   .stanza-key-shift-block
   .stanza-key-shift-reset.MuiIconButton-root:hover:not(.Mui-disabled) {
-  background: color-mix(in srgb, var(--stanza-rose, #e848a0) 10%, transparent);
-  color: var(--bpm-text, var(--stanza-ink, #2a2622));
+  background: color-mix(in srgb, var(--stanza-rose) 10%, transparent);
+  color: var(--bpm-text, var(--stanza-ink));
 }
 
 /* BPM preset popover (portaled under body): stanza-only class keeps rose accent. */
 .shared-bpm-dropdown.stanza-bpm-dropdown {
-  --bpm-focus: #e848a0;
+  --bpm-focus: var(--stanza-rose, #e848a0);
   --bpm-border: rgba(232, 72, 160, 0.28);
   --bpm-dropdown-hover-bg: rgba(232, 72, 160, 0.1);
   --bpm-dropdown-active-bg: rgba(232, 72, 160, 0.16);
-  --bpm-dropdown-active-text: #e848a0;
+  --bpm-dropdown-active-text: var(--stanza-rose, #e848a0);
   --bpm-chip-hover-bg: rgba(232, 72, 160, 0.08);
   --bpm-chip-active-bg: rgba(232, 72, 160, 0.14);
   --bpm-chip-active-text: #c4176e;
@@ -932,9 +1049,9 @@ button.stanza-library-card {
 
 .stanza-app .stanza-metronome-rail .app-slider.stanza-bpm-slider,
 .shared-bpm-dropdown.stanza-bpm-dropdown .app-slider.stanza-bpm-slider {
-  --app-slider-track: #e848a0;
-  --app-slider-thumb: #e848a0;
-  --app-slider-mark-active: #e848a0;
+  --app-slider-track: var(--stanza-rose, #e848a0);
+  --app-slider-thumb: var(--stanza-rose, #e848a0);
+  --app-slider-mark-active: var(--stanza-rose, #e848a0);
   --app-slider-shadow: rgba(232, 72, 160, 0.22);
 }
 
@@ -948,23 +1065,7 @@ button.stanza-library-card {
   margin-bottom: 2px;
 }
 
-.stanza-app .stanza-rail-snap-beat-btn.MuiButton-root {
-  font-size: 0.6875rem;
-  font-weight: 700;
-  text-transform: none;
-  min-width: 0;
-  padding-left: 10px;
-  padding-right: 10px;
-  border-radius: 999px;
-  background-color: var(--stanza-rose, #e848a0);
-  color: #fffdf9;
-}
-
-.stanza-app .stanza-rail-snap-beat-btn.MuiButton-root:hover {
-  background-color: #d43d90;
-}
-
-/* Automatic tempo modal (portaled): paper is outside .stanza-app — no ancestor prefix. */
+/* Automatic tempo modal (portaled): paper is outside .stanza-app, no ancestor prefix. */
 .stanza-tempo-preview-dialog-paper.MuiPaper-root {
   border-radius: 16px;
   border: 1px solid rgba(49, 43, 38, 0.08);
@@ -981,10 +1082,18 @@ button.stanza-library-card {
   max-width: none;
 }
 
+/* =====================================================================
+ * 8. Mix rail
+ * =================================================================== */
+
 .stanza-mix-block {
   border-top: 1px solid var(--stanza-paper-line-faint);
   margin-top: 2px;
   padding-top: 5px;
+}
+
+.stanza-mix-row {
+  min-height: 32px;
 }
 
 .stanza-rail-compact-btn.MuiButton-root {
@@ -995,65 +1104,26 @@ button.stanza-library-card {
   font-weight: 600;
 }
 
-.stanza-mix-row {
-  min-height: 32px;
+.stanza-transport-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
 }
 
-/* Mui controls inside Stanza (non-segmented groups only — see .stanza-segmented) */
-.stanza-app
-  .MuiToggleButtonGroup-root:not(.stanza-segmented)
-  .MuiToggleButton-root {
-  text-transform: none;
-  font-weight: 500;
-  font-size: 0.8125rem;
-  padding: 6px 14px;
-  border-color: rgba(60, 60, 67, 0.16);
-  color: #3a3a3c;
-}
-
-.stanza-app
-  .MuiToggleButtonGroup-root:not(.stanza-segmented)
-  .MuiToggleButton-root.Mui-selected {
-  background-color: rgba(232, 72, 160, 0.1) !important;
-  color: #1d1d1f;
-  border-color: rgba(232, 72, 160, 0.28);
-}
-
-.stanza-app
-  .MuiToggleButtonGroup-root:not(.stanza-segmented)
-  .MuiToggleButton-root:hover {
-  background-color: rgba(29, 29, 31, 0.04);
-}
+/* =====================================================================
+ * 9. MUI overrides (Button pills, Switch, Disabled)
+ * =================================================================== */
 
 .stanza-app .MuiButton-root.Mui-disabled {
   opacity: 0.45;
 }
 
-.stanza-app .MuiSwitch-switchBase.Mui-checked {
-  color: #e848a0;
-}
-
-.stanza-app .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track {
-  background-color: rgba(232, 72, 160, 0.45) !important;
-}
-
-.stanza-library-footer.MuiPaper-root.MuiAccordion-root {
-  background: rgba(255, 251, 245, 0.82);
-  border: 1px solid var(--stanza-paper-line-faint);
-  border-radius: var(--stanza-radius-panel) !important;
-  box-shadow: var(--stanza-shadow-card);
-}
-
-.stanza-library-footer .MuiAccordionSummary-root {
-  min-height: 56px;
-  padding-left: 16px;
-  padding-right: 16px;
-}
-
-.stanza-library-footer .MuiAccordionDetails-root {
-  padding-top: 8px;
-}
-
+/* REASON: the four !importants below all beat MUI's default Button paint that
+   `outlined` / `contained` variants ship via emotion-injected base rules. We override
+   border-radius, padding, and weight to get our pill silhouette without rebuilding the
+   whole MuiButton style overrides at the theme level. */
 .stanza-btn-pill {
   border-radius: 999px !important;
   padding-left: 20px !important;
@@ -1068,101 +1138,22 @@ button.stanza-library-card {
   border-color: var(--stanza-paper-line) !important;
   color: var(--stanza-ink) !important;
   font-weight: 600 !important;
-  background: rgba(255, 255, 255, 0.42) !important;
+  background: var(--stanza-tray-bg) !important;
 }
 
-.stanza-hero {
-  position: relative;
-  overflow: hidden;
-  padding: clamp(2rem, 6vw, 3.5rem) 1.25rem 2.5rem;
-}
+/* =====================================================================
+ * 10. Animations
+ * =================================================================== */
 
-.stanza-hero::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(
-      ellipse 90% 55% at 50% -30%,
-      rgba(232, 72, 160, 0.08),
-      transparent 55%
-    ),
-    radial-gradient(
-      ellipse 70% 45% at 100% 80%,
-      rgba(196, 164, 132, 0.08),
-      transparent 50%
-    ),
-    linear-gradient(168deg, #fdfaf6 0%, #f3ebe2 48%, #e9dfd3 100%);
-  pointer-events: none;
-}
-
-.stanza-hero-inner {
-  position: relative;
-  z-index: 1;
-  max-width: 42rem;
-  margin: 0 auto;
-  text-align: center;
-}
-
-.stanza-hero-url .MuiOutlinedInput-root {
-  border-radius: 14px;
-  background: rgba(255, 251, 245, 0.94);
-  font-size: 1.2rem;
-  transition:
-    box-shadow 0.2s ease,
-    border-color 0.2s ease;
-}
-
-.stanza-hero-url .MuiOutlinedInput-root:hover {
-  background: #fffdf9;
-}
-
-.stanza-hero-url .MuiOutlinedInput-root.Mui-focused {
-  box-shadow: 0 0 0 3px var(--stanza-rose-wash);
-}
-
-.stanza-hero-url .MuiOutlinedInput-input {
-  padding-top: 1.15rem;
-  padding-bottom: 1.15rem;
-}
-
-@media (min-width: 600px) {
-  .stanza-hero-url .MuiOutlinedInput-input {
-    font-size: 1.28rem;
-    padding-top: 1.35rem;
-    padding-bottom: 1.35rem;
+/* Reduced-motion users still need the beat indicator to convey timing — the public
+   shared.css clamps animations globally; we re-enable a tight, subtle pulse here so
+   the metronome is functional for everyone. (Keep this scoped to the pulse class.) */
+@media (prefers-reduced-motion: reduce) {
+  .stanza-metronome-pulse--on {
+    animation-duration: 240ms !important; /* REASON: re-enable a clamped animation per spa-css-conventions.mdc */
   }
 }
 
-.stanza-youtube-host {
-  position: relative;
-  width: 100%;
-  max-width: 100%;
-  margin: 0 auto;
-  aspect-ratio: 16 / 9;
-  background: #0f172a;
-  border-radius: calc(var(--stanza-radius-panel) - 2px);
-  overflow: hidden;
-  border: 1px solid var(--stanza-paper-line-faint);
-  box-shadow: var(--stanza-shadow-card);
-}
-
-.stanza-local-video {
-  width: 100%;
-  margin-top: 8px;
-  border-radius: calc(var(--stanza-radius-chip) + 1px);
-  max-height: 360px;
-  background: #0a0a0a;
-  cursor: pointer;
-  border: 1px solid var(--stanza-paper-line-faint);
-  box-shadow: var(--stanza-shadow-card);
-}
-
-.stanza-youtube-iframe,
-.stanza-youtube-iframe iframe {
-  width: 100%;
-  height: 100%;
-}
 .stanza-metronome-pulse {
   --stanza-beat: 1s;
   border-radius: 12px;

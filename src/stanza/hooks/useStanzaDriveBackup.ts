@@ -1,3 +1,21 @@
+/**
+ * useStanzaDriveBackup — Drive backup orchestration for the Stanza account menu.
+ *
+ * Responsibilities (all driven by the shared LabsAccountMenu chrome):
+ *   1. Detect a tester-allowlisted Google identity inherited from Encore.
+ *   2. Probe the Drive `progress.json` for this app to surface a conflict UI when
+ *      the local library disagrees with the remote (see `stanzaDriveConflict`).
+ *   3. Run the merge / replace / cancel paths the conflict dialog exposes,
+ *      including capturing a local "undo snapshot" before any destructive write
+ *      (see ADR 0006).
+ *   4. Manage the busy + last-message state the menu renders.
+ *
+ * Read alongside:
+ *   - ADR 0006 (`docs/adr/0006-stanza-drive-backup-merge-and-restore.md`)
+ *   - ADR 0007 (Encore-owned practice resources, Stanza secondary client)
+ *   - `src/stanza/drive/stanzaDriveEnvelope.ts` (on-disk schema)
+ */
+
 import { useCallback, useEffect, useState } from 'react';
 import { DriveHttpError } from '../../shared/drive/driveFetch';
 import {

@@ -1,11 +1,41 @@
 # Stanza
 
-Practice tool: segment YouTube or local audio with markers, loop sections, passive focus time (heatmap), optional stem mix layers, semitone pitch shift on the main upload (when no stems), and metronome calibration (BPM / beat 1 plus automatic **Analyze** for local media).
+Practice tool. Open a YouTube video or upload local audio, split it into sections,
+loop, log focus time, layer in extra audio (alternate mixes / instrumentals), shift
+pitch on uploads, and calibrate a per-section metronome (manual or **Analyze**).
 
 - Entry: `/stanza/`
-- **Deep link (YouTube):** append `?v=` plus the 11-character video id, e.g. `/stanza/?v=dQw4w9WgXcQ`. Opening that URL selects or creates the song and keeps the id in the address bar on refresh. Local audio files are not represented in the URL (`v` is cleared).
-- Storage: Dexie (`stanza-practice` database). Legacy practice **takes** rows may still exist from older builds.
-- **Local stems:** optional extra `<audio>` layers on top of the main local file; when any stem exists, the mix bus uses **Web Audio** (`MediaElementSource` → per-track `GainNode` → destination). See [`docs/adr/0004-stanza-stem-web-audio-mixer.md`](../../docs/adr/0004-stanza-stem-web-audio-mixer.md).
+- **Deep link (YouTube):** append `?v=` plus the 11-character video id, e.g.
+  `/stanza/?v=dQw4w9WgXcQ`. Opening that URL selects or creates the song and keeps
+  the id in the address bar on refresh. Local audio files are not represented in
+  the URL (`v` is cleared).
+- Storage: Dexie (`stanza-practice` database). Legacy practice **takes** rows may
+  still exist from older builds.
+
+## Architecture
+
+Behavior that's wider than a single file is captured in ADRs:
+
+- [ADR 0003](../../docs/adr/0003-stanza-multi-stem-playback.md) — optional multi-layer
+  playback (local files + Drive metadata).
+- [ADR 0004](../../docs/adr/0004-stanza-stem-web-audio-mixer.md) — when any mix layer
+  exists, the mix bus uses **Web Audio** (`MediaElementSource` → per-track
+  `GainNode` → destination); otherwise the main element plays directly.
+- [ADR 0005](../../docs/adr/0005-shared-find-the-beat-analyzer.md) — the shared
+  Essentia-based "Find the beat" analyzer used by the metronome **Auto** path.
+- [ADR 0006](../../docs/adr/0006-stanza-drive-backup-merge-and-restore.md) — Drive
+  backup conflict prompt, merge, and local undo snapshots.
+- [ADR 0007](../../docs/adr/0007-encore-owned-practice-resources-stanza-secondary-client.md)
+  — Encore-owned practice resources on Drive; Stanza as secondary client.
+- [ADR 0008](../../docs/adr/0008-stanza-section-marker-model-and-metronome-calibration.md)
+  — Section/marker data model and per-section metronome calibration.
+
+## Copy style
+
+User-facing strings (timeline, dialogs, alerts, tooltips, aria-labels) follow
+[`COPY_STYLE.md`](./COPY_STYLE.md), which extends
+[`docs/USER_COPY_STYLE.md`](../../docs/USER_COPY_STYLE.md) with the canonical
+terminology for sections, mix layers, snap-to-beat, and Beat 1 calibration.
 
 ## Development
 

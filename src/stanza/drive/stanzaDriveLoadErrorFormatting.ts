@@ -10,9 +10,9 @@ export function formatStanzaDriveLoadErrors(errors: string[]): string {
   );
   if (popupLine && onlyNoise404 && errors.length > 1) {
     return (
-      'Google sign-in could not open a new window — your browser may have blocked it. ' +
+      "Google sign-in couldn't open a new window. Your browser may have blocked it. " +
       'Check the address bar for a blocked-popup icon, allow popups for this site, then Retry. ' +
-      'Encore uploads stay private until you finish signing in; they will not load without Google access.'
+      "Encore uploads stay private until you finish signing in; they won't load without Google access."
     );
   }
   const joined = errors.join('\n\n');

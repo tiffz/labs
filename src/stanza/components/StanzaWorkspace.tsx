@@ -1,3 +1,25 @@
+/**
+ * StanzaWorkspace — top-level Stanza shell.
+ *
+ * Owns the library / viewer split, orchestrates the playback engine (YouTube IFrame
+ * controller, local `<audio>` / `<video>` elements, Web Audio stem mixer, transpose
+ * pipeline), routes URL deep-links (`?v=` for YouTube, `?df=` for Drive), and wires
+ * the section/marker timeline + metronome rail + pitch shift UI into a single shape.
+ *
+ * Why one big file (for now):
+ *   - The transport / loop / timeline / mix surfaces share mutable refs (`timeRef`,
+ *     `playingRef`, stem element map) that would become awkward to thread through
+ *     extracted components without first growing test coverage on this component.
+ *   - The decomposition pattern in `docs/COMPONENT_DECOMPOSITION_PATTERN.md`
+ *     applies: split helpers first, then leaves, then hooks. Recommended next splits
+ *     are documented in this file's audit (see chat history) and should land in
+ *     dedicated PRs once unit tests exist for the marker / metronome flows.
+ *
+ * Anything visually independent that can move out cleanly already has (e.g.
+ * `StanzaLibraryThumb`, `StanzaTimeline`, `StanzaSectionMetronomeRail`,
+ * `StanzaMetronomeStrip`, `StanzaPlaybackSpeedControl`).
+ */
+
 import {
   Fragment,
   useCallback,
@@ -77,6 +99,7 @@ import {
   type StanzaSectionSelectionExtend,
 } from '../utils/stanzaPlaybackLoop';
 import { snapSegmentBoundaryMarkersToBeats, commitSelectionSpanToHullBoundaryMarkers } from '../utils/stanzaBeatGrid';
+import { isSegmentSkipped, nextNonSkippedTimeForwardPlayback } from '../utils/stanzaSkippedSections';
 import { useStanzaLocalPlaybackObjectUrls } from '../hooks/useStanzaLocalPlaybackObjectUrls';
 import {
   stanzaPrimaryLocalBlobKey,
@@ -91,10 +114,7 @@ import {
   probeFileAudioDurationSeconds,
   STANZA_STEM_DURATION_MATCH_EPS_SEC,
 } from '../utils/probeFileAudioDuration';
-import {
-  backfillStanzaVideoThumbnailIfNeeded,
-  pickThumbnailSeekSec,
-} from '../utils/stanzaVideoThumbnail';
+import { backfillStanzaVideoThumbnailIfNeeded } from '../utils/stanzaVideoThumbnail';
 import { fetchYoutubeOEmbedTitle, youtubeMqThumbnailUrl } from '../utils/stanzaYoutubeMeta';
 import { loadDriveFileAsStanzaLocalBlob } from '../drive/loadDriveSourceForStanza';
 import { LabsGoogleInteractiveAuthRequiredError, LABS_GOOGLE_INTERACTIVE_DRIVE_AUTH_HINT } from '../../shared/google/labsGoogleDriveAccess';
@@ -106,12 +126,13 @@ import {
 import { readYoutubeVFromLocation, stripStanzaYoutubeSearchParamPreservingDrive } from '../utils/stanzaUrlYoutube';
 import StanzaYouTubePlayer, { type StanzaYouTubeController } from './StanzaYouTubePlayer';
 import StanzaAccountMenu from './StanzaAccountMenu';
+import StanzaLibraryThumb from './StanzaLibraryThumb';
 import StanzaTimeline from './StanzaTimeline';
 import { clampStanzaPlaybackRate } from '../utils/stanzaPlaybackRateLimits';
 import StanzaMetronomeStrip from './StanzaMetronomeStrip';
 import StanzaSectionMetronomeRail from './StanzaSectionMetronomeRail';
 import StanzaRepeatMark from './StanzaRepeatMark';
-import { primeMetronomeAudio, useMetronomeSync } from '../hooks/useMetronomeSync';
+import { primeStanzaMetronomeAudio, useStanzaMetronomeSync } from '../hooks/useStanzaMetronomeSync';
 import { useStanzaMetronomePersistence } from '../hooks/useStanzaMetronomePersistence';
 import { useStanzaLocalStemMixer } from '../hooks/useStanzaLocalStemMixer';
 import { StanzaLocalTransposeMirror } from '../audio/stanzaLocalTransposeMirror';
@@ -171,134 +192,6 @@ function describeYoutubePlayerError(code: number): string {
     return 'YouTube reported invalid playback parameters.';
   }
   return `YouTube reported playback error ${code}.`;
-}
-
-function StanzaLibraryJpegThumb({
-  songId,
-  blob,
-  onInvalidate,
-}: {
-  songId: string;
-  blob: Blob;
-  onInvalidate: () => void;
-}) {
-  const thumbKey = `${songId}:${blob.size}:${blob.type}`;
-  const [url, setUrl] = useState(() => URL.createObjectURL(blob));
-  useLayoutEffect(() => {
-    const u = URL.createObjectURL(blob);
-    setUrl((prev) => {
-      if (prev) URL.revokeObjectURL(prev);
-      return u;
-    });
-    // No returned cleanup: Strict Mode would revoke `u` while `<img>` still references it.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `blob` reference churns; `thumbKey` encodes identity
-  }, [thumbKey]);
-
-  const imgRef = useRef<HTMLImageElement | null>(null);
-
-  useEffect(() => {
-    const el = imgRef.current;
-    if (!el) return;
-    const onErr = () => {
-      onInvalidate();
-      void (async () => {
-        const row = await stanzaDb.songs.get(songId);
-        if (!row?.localVideoThumbnailBlob) return;
-        const { localVideoThumbnailBlob, ...rest } = row;
-        void localVideoThumbnailBlob;
-        await stanzaDb.songs.put({ ...rest, updatedAt: Date.now() });
-      })();
-    };
-    el.addEventListener('error', onErr);
-    return () => el.removeEventListener('error', onErr);
-  }, [url, songId, onInvalidate]);
-
-  return <img ref={imgRef} className="stanza-library-card-thumb" src={url} alt="" loading="lazy" />;
-}
-
-function StanzaLibraryVideoPosterThumb({ songId, videoBlob }: { songId: string; videoBlob: Blob }) {
-  const [failed, setFailed] = useState(false);
-  const posterKey = `${songId}:${videoBlob.size}:${videoBlob.type}`;
-  const [url, setUrl] = useState(() => URL.createObjectURL(videoBlob));
-  useLayoutEffect(() => {
-    const u = URL.createObjectURL(videoBlob);
-    setUrl((prev) => {
-      if (prev) URL.revokeObjectURL(prev);
-      return u;
-    });
-    // No returned cleanup: Strict Mode would revoke `u` while `<video>` still references it.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `videoBlob` reference churns; `posterKey` encodes identity
-  }, [posterKey]);
-  useEffect(() => {
-    setFailed(false);
-  }, [songId, videoBlob.size, videoBlob.type]);
-
-  if (failed) {
-    return (
-      <Box
-        className="stanza-library-card-thumb"
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          bgcolor: 'grey.400',
-        }}
-      >
-        <Typography variant="caption" color="text.secondary">
-          Video
-        </Typography>
-      </Box>
-    );
-  }
-
-  return (
-    <video
-      className="stanza-library-card-thumb"
-      src={url}
-      muted
-      playsInline
-      preload="metadata"
-      aria-hidden
-      onError={() => setFailed(true)}
-      onLoadedMetadata={(e) => {
-        const v = e.currentTarget;
-        v.currentTime = pickThumbnailSeekSec(v, 0.5);
-      }}
-    />
-  );
-}
-
-function StanzaLibraryLocalThumb({ song }: { song: StanzaSong }) {
-  const [jpegBad, setJpegBad] = useState(false);
-  useEffect(() => {
-    setJpegBad(false);
-  }, [song.id, song.localVideoThumbnailBlob]);
-
-  const thumb = song.localVideoThumbnailBlob;
-  const media = song.localAudioBlob;
-  const isVideo = Boolean(media && isStanzaBlobLikeVideo(media, song.title));
-
-  if (thumb && !jpegBad) {
-    return <StanzaLibraryJpegThumb songId={song.id} blob={thumb} onInvalidate={() => setJpegBad(true)} />;
-  }
-  if (isVideo && media) {
-    return <StanzaLibraryVideoPosterThumb songId={song.id} videoBlob={media} />;
-  }
-  return (
-    <Box
-      className="stanza-library-card-thumb"
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        bgcolor: 'grey.300',
-      }}
-    >
-      <Typography variant="caption" color="text.secondary">
-        Audio
-      </Typography>
-    </Box>
-  );
 }
 
 export default function StanzaWorkspace() {
@@ -1013,6 +906,12 @@ export default function StanzaWorkspace() {
   loopModeRef.current = loopMode;
   const effectiveSelectionSpanRef = useRef(effectiveSelectionSpan);
   effectiveSelectionSpanRef.current = effectiveSelectionSpan;
+  // Mirrored so callbacks (e.g. {@link userSeekUnified}) and the playback RAF
+  // can read the latest segment list without taking it as a closure dep —
+  // segments change reference on every Dexie write and would otherwise churn
+  // every downstream `useCallback`.
+  const segmentsRef = useRef(segments);
+  segmentsRef.current = segments;
 
   const playbackSegIdx = useMemo(
     () => (segments.length > 0 ? findSegmentIndexAtTime(segments, playback.currentTime) : null),
@@ -1045,7 +944,7 @@ export default function StanzaWorkspace() {
 
   useEffect(() => {
     if (stanzaBeatAnalysisModalOpen) {
-      primeMetronomeAudio();
+      primeStanzaMetronomeAudio();
     }
   }, [stanzaBeatAnalysisModalOpen]);
 
@@ -1057,7 +956,7 @@ export default function StanzaWorkspace() {
       return;
     }
     const songId = selected.id;
-    const scope = selected.metronomeTimingScope ?? 'section';
+    const scope = selected.metronomeTimingScope ?? 'song';
     const prev = metronomeRailScopeRef.current;
     metronomeRailScopeRef.current = { songId, scope };
     if (!prev || prev.songId !== songId) return;
@@ -1535,6 +1434,37 @@ export default function StanzaWorkspace() {
     [isYoutube, scheduleSeekFrame, syncTransposeMirrorFromMain],
   );
 
+  /**
+   * Section the user explicitly entered via a UI seek (section button click,
+   * scrub on the timeline, transport prev/next, hover-card play). The skip-
+   * playback RAF treats that section as "user wants to hear this" and skips
+   * suppression — even if it's marked skip — until the playhead naturally
+   * crosses into a different section. Programmatic seeks (loop wraps,
+   * out-of-window play() re-anchors) intentionally do NOT update this ref so
+   * skip still applies on the wrap target.
+   */
+  const lastUserEnteredSectionIdRef = useRef<string | null>(null);
+
+  /**
+   * Wrapper around `seekUnified` for user-initiated seeks. Records the destination
+   * section in {@link lastUserEnteredSectionIdRef} so the skipped-section RAF
+   * doesn't bounce the user out of a section they just chose.
+   *
+   * Reads `segments` from {@link segmentsRef} (not the closure) so this callback
+   * stays referentially stable across marker drags and Dexie writes — keeps the
+   * downstream `useCallback` chain (`handleSelectSegments`, `skipToLoopStart`,
+   * `skipToLoopEnd`) from invalidating every render.
+   */
+  const userSeekUnified = useCallback(
+    (tRaw: number, opts?: { flushPlaybackState?: boolean }) => {
+      const segs = segmentsRef.current;
+      const idx = findSegmentIndexAtTime(segs, tRaw);
+      lastUserEnteredSectionIdRef.current = idx != null ? segs[idx]?.id ?? null : null;
+      seekUnified(tRaw, opts);
+    },
+    [seekUnified],
+  );
+
   const pauseStemAudios = useCallback(() => {
     stemAudioRefs.current.forEach((a) => {
       a.pause();
@@ -1590,7 +1520,7 @@ export default function StanzaWorkspace() {
   }, [alignStemAudiosToMain]);
 
   const playUnified = useCallback(() => {
-    primeMetronomeAudio();
+    primeStanzaMetronomeAudio();
     const t = readLiveTransportTime();
     timeRef.current = t;
     const d = durationRef.current;
@@ -1687,33 +1617,147 @@ export default function StanzaWorkspace() {
     return timeRef.current;
   }, [readLiveTransportTime]);
 
+  const skippedBySegmentId = selected?.skippedBySegmentId;
+  const hasAnySkippedSection = useMemo(
+    () => Boolean(skippedBySegmentId && Object.keys(skippedBySegmentId).length > 0),
+    [skippedBySegmentId],
+  );
+
+  // Refs that mirror frequently-changing values consumed by the playback RAF.
+  // Without these, every Dexie write to `selected` would change
+  // `skippedBySegmentId` / etc. references, tearing down and re-establishing
+  // the RAF every render. Mirroring on each render lets us register the RAF
+  // once and read live values inside the tick. (`segmentsRef`,
+  // `effectiveSelectionSpanRef`, `loopModeRef` are mirrored earlier in this
+  // component for the same reason.)
+  const skippedBySegmentIdRef = useRef(skippedBySegmentId);
+  skippedBySegmentIdRef.current = skippedBySegmentId;
+  const hasAnySkippedSectionRef = useRef(hasAnySkippedSection);
+  hasAnySkippedSectionRef.current = hasAnySkippedSection;
+  const isYoutubeRef = useRef(isYoutube);
+  isYoutubeRef.current = isYoutube;
+  const seekUnifiedRef = useRef(seekUnified);
+  seekUnifiedRef.current = seekUnified;
+  const pauseStemAudiosRef = useRef(pauseStemAudios);
+  pauseStemAudiosRef.current = pauseStemAudios;
+
   useEffect(() => {
-    if (loopMode === 'through') return;
     let raf = 0;
+    // True while the transport has been auto-paused for "no playable section
+    // left in this pass". Prevents the tick from spamming pause() / setPlayback
+    // every frame until React commits `playingRef.current = false`.
+    let pausedForSkipExhausted = false;
     const tick = () => {
+      // Cheap fast-path when nothing the RAF cares about is engaged. Re-checked
+      // every frame via refs so toggling skip / loop mode mid-playback picks up
+      // immediately without re-establishing the effect.
+      const loopMode = loopModeRef.current;
+      const hasAnySkipped = hasAnySkippedSectionRef.current;
+      if (loopMode === 'through' && !hasAnySkipped) {
+        raf = window.requestAnimationFrame(tick);
+        return;
+      }
       if (!playingRef.current) {
+        pausedForSkipExhausted = false;
         raf = window.requestAnimationFrame(tick);
         return;
       }
       const tLive = readLiveTransportTime();
       timeRef.current = tLive;
       const d = durationRef.current;
-      if (loopMode === 'loopAll' && d > 0) {
-        if (tLive >= d - STANZA_LOOP_EPS) {
-          seekUnified(0, { flushPlaybackState: true });
+      const segs = segmentsRef.current;
+      const skipped = skippedBySegmentIdRef.current;
+      const span = effectiveSelectionSpanRef.current;
+
+      // 1. Skipped-section auto-advance. Resolve the playback window
+      // (whole track for through/loopAll, selection span for loopSelection)
+      // and ask the helper where to jump next. The user-entered ref keeps
+      // an explicit click-into-skipped-section playable until the playhead
+      // crosses a marker.
+      if (skipped) {
+        const idx = findSegmentIndexAtTime(segs, tLive);
+        const seg = idx != null ? segs[idx] : null;
+        if (seg && lastUserEnteredSectionIdRef.current && seg.id !== lastUserEnteredSectionIdRef.current) {
+          lastUserEnteredSectionIdRef.current = null;
         }
-      } else if (loopMode === 'loopSelection' && effectiveSelectionSpan) {
-        if (tLive >= effectiveSelectionSpan.end - STANZA_LOOP_EPS) {
-          seekUnified(effectiveSelectionSpan.start, { flushPlaybackState: true });
-        } else if (tLive < effectiveSelectionSpan.start - STANZA_LOOP_EPS) {
-          seekUnified(effectiveSelectionSpan.start, { flushPlaybackState: true });
+        if (seg && lastUserEnteredSectionIdRef.current !== seg.id && isSegmentSkipped(seg, skipped)) {
+          let windowStart = 0;
+          let windowEnd = d > 0 ? d : seg.end;
+          let loop = false;
+          if (loopMode === 'loopAll' && d > 0) {
+            loop = true;
+          } else if (loopMode === 'loopSelection' && span) {
+            windowStart = span.start;
+            windowEnd = span.end;
+            loop = true;
+          }
+          const next = nextNonSkippedTimeForwardPlayback({
+            segments: segs,
+            skipped,
+            currentTime: tLive,
+            windowStart,
+            windowEnd,
+            loop,
+          });
+          if (next != null) {
+            pausedForSkipExhausted = false;
+            try {
+              seekUnifiedRef.current(next, { flushPlaybackState: true });
+            } catch (err) {
+              console.warn('[stanza] skip-advance seek failed', err);
+            }
+            raf = window.requestAnimationFrame(tick);
+            return;
+          }
+          // Nothing playable left in this pass: pause the transport once
+          // and stop spamming pause/setPlayback every frame until React
+          // commits the state change (mirrored back via `playingRef`).
+          if (!pausedForSkipExhausted) {
+            pausedForSkipExhausted = true;
+            try {
+              if (isYoutubeRef.current) ytControllerRef.current?.pause();
+              else {
+                const main = localAudioRef.current ?? localVideoRef.current;
+                main?.pause();
+                pauseStemAudiosRef.current();
+              }
+              setPlayback((p) => (p.isPlaying ? { ...p, isPlaying: false } : p));
+            } catch (err) {
+              console.warn('[stanza] skip-advance pause failed', err);
+            }
+          }
+          raf = window.requestAnimationFrame(tick);
+          return;
         }
+      }
+      // Reaching here means we're inside a non-skipped section; clear the
+      // exhausted flag so a future skip can re-trigger the pause path.
+      pausedForSkipExhausted = false;
+
+      // 2. Loop-bound enforcement.
+      try {
+        if (loopMode === 'loopAll' && d > 0) {
+          if (tLive >= d - STANZA_LOOP_EPS) {
+            seekUnifiedRef.current(0, { flushPlaybackState: true });
+          }
+        } else if (loopMode === 'loopSelection' && span) {
+          if (tLive >= span.end - STANZA_LOOP_EPS) {
+            seekUnifiedRef.current(span.start, { flushPlaybackState: true });
+          } else if (tLive < span.start - STANZA_LOOP_EPS) {
+            seekUnifiedRef.current(span.start, { flushPlaybackState: true });
+          }
+        }
+      } catch (err) {
+        console.warn('[stanza] loop-wrap seek failed', err);
       }
       raf = window.requestAnimationFrame(tick);
     };
     raf = window.requestAnimationFrame(tick);
     return () => window.cancelAnimationFrame(raf);
-  }, [loopMode, effectiveSelectionSpan, readLiveTransportTime, seekUnified]);
+    // Mount-only: dynamic state (loopMode, segments, skipped, span, isYoutube,
+    // seekUnified, pauseStemAudios) is read from refs each tick so we never
+    // need to re-establish the RAF on prop / state churn.
+  }, [readLiveTransportTime]);
 
   useEffect(() => {
     if (!selected) return;
@@ -1793,10 +1837,10 @@ export default function StanzaWorkspace() {
       } else {
         setSegmentSelectionAnchor(i);
         setSelectedSegmentIndices([i]);
-        seekUnified(seg.start);
+        userSeekUnified(seg.start);
       }
     },
-    [segmentSelectionAnchor, segments, seekUnified],
+    [segmentSelectionAnchor, segments, userSeekUnified],
   );
 
   const clearSegmentSelection = useCallback(() => {
@@ -1839,7 +1883,7 @@ export default function StanzaWorkspace() {
   const snapHoveredSectionBoundariesToBeat = useCallback(
     (segmentIndex: number) => {
       if (!selected || !(playback.duration > 0)) return;
-      const next = snapSegmentBoundaryMarkersToBeats(
+      const result = snapSegmentBoundaryMarkersToBeats(
         segmentIndex,
         segments,
         selected.markers ?? [],
@@ -1847,7 +1891,22 @@ export default function StanzaWorkspace() {
         selected.metronomeBySegmentId,
         selected.metronomeSongCalibration,
       );
-      if (next) void persistSong({ id: selected.id, markers: next });
+      if (!result) return;
+      // Apply markers + (when present) the re-anchored section calibration in a
+      // single Dexie write so the rail's BPM grid and the timeline never disagree
+      // mid-frame.
+      const patch: Partial<StanzaSong> & Pick<StanzaSong, 'id'> = {
+        id: selected.id,
+        markers: result.markers,
+      };
+      if (result.updatedSegmentCalibration) {
+        const upd = result.updatedSegmentCalibration;
+        patch.metronomeBySegmentId = {
+          ...(selected.metronomeBySegmentId ?? {}),
+          [upd.segmentId]: upd.calibration,
+        };
+      }
+      void persistSong(patch);
     },
     [persistSong, playback.duration, segments, selected],
   );
@@ -1877,20 +1936,20 @@ export default function StanzaWorkspace() {
       return {
         disabled: true,
         title:
-          'Pad or nudge the pink span (Edit selection) so its start or end no longer matches the section edges. Then you can move those outer splits to match the span.',
+          'Adjust the selection span first using Edit selection (pad or nudge Start/End). Then this resizes the section to match.',
       };
     }
     if (preview == null) {
       return {
         disabled: true,
         title:
-          'Those outer splits cannot move here without overlapping another split or the track end. Try less padding, a smaller nudge, or a different span.',
+          "Can't resize: the new boundaries would overlap another split or the track end. Try a smaller selection span.",
       };
     }
     return {
       disabled: false,
       title:
-        'Move the first and last splits of the highlighted sections to the edges of the pink selection (including any padding). Inner splits stay put.',
+        'Resize the selected sections so their outer edges match the selection span (including padding). Inner splits stay put.',
     };
   }, [
     effectiveSelectionSpan,
@@ -2023,20 +2082,46 @@ export default function StanzaWorkspace() {
     [persistSong, selected, segments],
   );
 
+  /**
+   * Toggle "skip during playback" for a section. Stored as a sparse
+   * `{ [segmentId]: true }` map so the on-disk record only carries skipped
+   * sections (not all sections); deleting from the map keeps the JSON small
+   * after Drive backup. Section ids are stable across marker drags (see
+   * ADR 0008), so a skip flag survives boundary tweaks.
+   */
+  const setSegmentSkipped = useCallback(
+    (segmentId: string, next: boolean) => {
+      if (!selected) return;
+      const prev = selected.skippedBySegmentId ?? {};
+      const isCurrentlySkipped = prev[segmentId] === true;
+      if (next === isCurrentlySkipped) return;
+      let nextMap: Record<string, true> | undefined;
+      if (next) {
+        nextMap = { ...prev, [segmentId]: true };
+      } else {
+        const { [segmentId]: _drop, ...rest } = prev;
+        void _drop;
+        nextMap = Object.keys(rest).length > 0 ? rest : undefined;
+      }
+      void persistSong({ id: selected.id, skippedBySegmentId: nextMap });
+    },
+    [persistSong, selected],
+  );
+
   const skipToLoopStart = useCallback(() => {
-    if (loopMode === 'through' || loopMode === 'loopAll') seekUnified(0);
-    else if (effectiveSelectionSpan) seekUnified(effectiveSelectionSpan.start);
-  }, [effectiveSelectionSpan, loopMode, seekUnified]);
+    if (loopMode === 'through' || loopMode === 'loopAll') userSeekUnified(0);
+    else if (effectiveSelectionSpan) userSeekUnified(effectiveSelectionSpan.start);
+  }, [effectiveSelectionSpan, loopMode, userSeekUnified]);
 
   const skipToLoopEnd = useCallback(() => {
     const d = durationRef.current;
     if (!(d > 0)) return;
     if (loopMode === 'through' || loopMode === 'loopAll') {
-      seekUnified(Math.max(0, d - STANZA_TIME_EPS));
+      userSeekUnified(Math.max(0, d - STANZA_TIME_EPS));
     } else if (effectiveSelectionSpan) {
-      seekUnified(Math.max(effectiveSelectionSpan.start, effectiveSelectionSpan.end - STANZA_TIME_EPS));
+      userSeekUnified(Math.max(effectiveSelectionSpan.start, effectiveSelectionSpan.end - STANZA_TIME_EPS));
     }
-  }, [effectiveSelectionSpan, loopMode, seekUnified]);
+  }, [effectiveSelectionSpan, loopMode, userSeekUnified]);
 
   const metronomeEnabledForPlayback = Boolean(selected?.metronomeEnabled) || stanzaBeatAnalysisModalOpen;
 
@@ -2059,7 +2144,7 @@ export default function StanzaWorkspace() {
     railCalibSeg?.id,
   ]);
 
-  useMetronomeSync(
+  useStanzaMetronomeSync(
     Boolean(
       metronomeEnabledForPlayback && metronomeSyncSource.bpm != null && metronomeSyncSource.bpm > 0,
     ),
@@ -2139,7 +2224,7 @@ export default function StanzaWorkspace() {
             {s.ytId ? (
               <img className="stanza-library-card-thumb" src={youtubeMqThumbnailUrl(s.ytId)} alt="" loading="lazy" />
             ) : (
-              <StanzaLibraryLocalThumb song={s} />
+              <StanzaLibraryThumb song={s} />
             )}
             <Box sx={{ p: 1, pt: 0.75 }}>
               <Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1.25, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
@@ -2235,11 +2320,12 @@ export default function StanzaWorkspace() {
               </Typography>
               {/popup|Allow popups|sign-in window|blocked/i.test(driveDeepLinkError) ? (
                 <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5 }}>
-                  Popups blocked here are common even when your email shows in the account menu — that menu only remembers who you last signed in as in Encore.{' '}
+                  Popups blocked here are common even when your email shows in the account menu. That menu only
+                  remembers who you last signed in as in Encore.{' '}
                   <Link href="/encore/" target="_blank" rel="noopener noreferrer">
                     Open Encore
                   </Link>
-                  , finish Google sign-in from the account menu if asked, then come back and Retry (keep this tab).
+                  , finish Google sign-in from the account menu if asked, then come back and tap Retry (keep this tab).
                 </Typography>
               ) : null}
             </Stack>
@@ -2298,8 +2384,8 @@ export default function StanzaWorkspace() {
             </Typography>
             <Typography variant="body2" sx={{ color: '#5b21b6', lineHeight: 1.5 }}>
               {selected
-                ? "Files that match this track's length attach as stems. Otherwise Stanza adds a new library song from the first file."
-                : 'Stanza saves to your local library and selects the piece. With a song open, matching-length files become stems.'}
+                ? "Files that match this track's length attach as mix layers. Otherwise Stanza adds a new library song from the first file."
+                : 'Stanza saves to your local library and opens the piece. With a song open, matching-length files become mix layers.'}
             </Typography>
           </Box>
         </Box>
@@ -2329,7 +2415,7 @@ export default function StanzaWorkspace() {
                 className="stanza-hero-lede"
                 sx={{ mb: 3, maxWidth: '36ch', mx: 'auto' }}
               >
-                Practice songs in sections — loop markers, optional metronome, and mix layers for uploaded audio.
+                Practice songs in sections. Loop, mark beats, and mix layers on top of uploaded audio.
               </Typography>
               <TextField
                 className="stanza-hero-url"
@@ -2357,7 +2443,6 @@ export default function StanzaWorkspace() {
                   className="stanza-btn-pill"
                   onClick={() => void addYoutubeSong()}
                   disabled={!canResolveYoutubePaste(ytPaste)}
-                  aria-label="Load YouTube video"
                   sx={{ minHeight: 52, px: 3 }}
                 >
                   Load video
@@ -2463,13 +2548,13 @@ export default function StanzaWorkspace() {
                 sx={{
                   gridArea: 'media',
                   minWidth: 0,
-                  width: { xs: '100%', md: 'min(100%, 600px)' },
-                  maxWidth: { md: 600 },
+                  width: { xs: '100%', md: 'min(100%, 760px)' },
+                  maxWidth: { md: 760 },
                   justifySelf: { md: 'end' },
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'stretch',
-                  justifyContent: 'flex-start',
+                  justifyContent: 'center',
                   minHeight: { md: '100%' },
                 }}
               >
@@ -2684,7 +2769,7 @@ export default function StanzaWorkspace() {
                       enabled={Boolean(selected.metronomeEnabled)}
                       onToggle={() => {
                         if (!selected.metronomeEnabled) {
-                          primeMetronomeAudio();
+                          primeStanzaMetronomeAudio();
                         }
                         void persistSong({ id: selected.id, metronomeEnabled: !selected.metronomeEnabled });
                       }}
@@ -2708,7 +2793,7 @@ export default function StanzaWorkspace() {
                     {railCalibSeg && (
                       <StanzaSectionMetronomeRail
                         segment={railCalibSeg}
-                        timingScope={selected.metronomeTimingScope ?? 'section'}
+                        timingScope={selected.metronomeTimingScope ?? 'song'}
                         onTimingScopeChange={(scope) => void persistSong({ id: selected.id, metronomeTimingScope: scope })}
                         songDurationSec={playback.duration}
                         songCalibration={selected.metronomeSongCalibration}
@@ -2731,7 +2816,7 @@ export default function StanzaWorkspace() {
                         onRequestPlay={playUnified}
                         onRequestPause={pauseUnified}
                         onRequestSeek={(t) => {
-                          void seekUnified(t, { flushPlaybackState: true });
+                          void userSeekUnified(t, { flushPlaybackState: true });
                         }}
                         onLiveTimingChange={handleRailLiveTiming}
                         onPersistSongCalibration={(cal, opts) => void saveSongMetronome(cal, opts)}
@@ -2741,7 +2826,7 @@ export default function StanzaWorkspace() {
                         onSnapSectionBoundariesToBeat={
                           railCalibSegIdx != null ? () => snapHoveredSectionBoundariesToBeat(railCalibSegIdx) : undefined
                         }
-                        onPrimeMetronomeAudio={primeMetronomeAudio}
+                        onPrimeMetronomeAudio={primeStanzaMetronomeAudio}
                       />
                     )}
                   </Box>
@@ -2760,7 +2845,7 @@ export default function StanzaWorkspace() {
                             className="shared-bpm-input stanza-key-shift-numeric"
                             sx={{ flex: '1 1 140px', minWidth: 0, maxWidth: { xs: '100%', sm: 220 }, alignSelf: 'stretch' }}
                           >
-                            <AppTooltip title="Raise or lower pitch in half-steps (−12 to +12). Applies to the main file and stem layers. Playback re-decodes after changes settle (about half a second after you stop adjusting).">
+                            <AppTooltip title="Raise or lower pitch in half-steps (−12 to +12). Applies to the main file and any mix layers. Playback re-decodes shortly after you stop adjusting.">
                               <Box
                                 className={`shared-bpm-shell ${transposeStepperEditing ? 'is-editing' : 'is-idle'}`}
                                 role="group"
@@ -3104,7 +3189,7 @@ export default function StanzaWorkspace() {
                                   component="button"
                                   type="button"
                                   noWrap
-                                  title={`${stem.label} — click to rename`}
+                                  title={`${stem.label} (click to rename)`}
                                   onClick={() => setStemInlineEdit({ stemId: stem.id, value: stem.label })}
                                   sx={(theme) => ({
                                     ...stanzaMixTrackLabelSurfaceSx(theme),
@@ -3226,7 +3311,7 @@ export default function StanzaWorkspace() {
                   isPlaying={playback.isPlaying}
                   onPlay={playUnified}
                   onPause={pauseUnified}
-                  onSeek={seekUnified}
+                  onSeek={userSeekUnified}
                   onSelectSegments={handleSelectSegments}
                   onMarkersChange={(m) => void persistSong({ id: selected.id, markers: m })}
                   onDeleteMarker={deleteMarkerById}
@@ -3248,6 +3333,8 @@ export default function StanzaWorkspace() {
                   metronomeBySegmentId={selected.metronomeBySegmentId}
                   metronomeSongCalibration={selected.metronomeSongCalibration}
                   onSnapSectionBoundariesToBeat={snapHoveredSectionBoundariesToBeat}
+                  skippedBySegmentId={selected.skippedBySegmentId}
+                  onSegmentSkippedChange={setSegmentSkipped}
                   onSelectionSpanNudge={nudgeSectionSelectionExtend}
                   onSelectionMusicalPad={applyMusicalSelectionPad}
                   onResetSelectionSpan={resetSectionSelectionExtend}
@@ -3398,13 +3485,13 @@ export default function StanzaWorkspace() {
         maxWidth="xs"
         fullWidth
       >
-        <DialogTitle id="stanza-stem-drop-title">Add as stem layers?</DialogTitle>
+        <DialogTitle id="stanza-stem-drop-title">Add as mix layers?</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, lineHeight: 1.55 }}>
             {stemDropConfirm
               ? `Each file is about the same length as the loaded track (${stemDropConfirm.refSec.toFixed(
                   1,
-                )} s, within ±${STANZA_STEM_DURATION_MATCH_EPS_SEC.toFixed(2)} s). That often means an alternate mix (for example instrumental).`
+                )} s, within ±${STANZA_STEM_DURATION_MATCH_EPS_SEC.toFixed(2)} s). That usually means an alternate mix (for example, an instrumental).`
               : null}
           </Typography>
           <Typography variant="subtitle2" sx={{ mb: 0.5, fontWeight: 600 }}>
@@ -3446,7 +3533,7 @@ export default function StanzaWorkspace() {
               if (p) void appendStemsFromFiles(p.songId, p.files);
             }}
           >
-            Add as stems
+            Add as layers
           </Button>
         </DialogActions>
       </Dialog>

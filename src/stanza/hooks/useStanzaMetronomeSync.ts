@@ -35,7 +35,7 @@ async function ensureMetronomeClickSample(ctx: AudioContext): Promise<LoadedClic
  * Resume (or create) the shared click context. Call from a user gesture (play / toggle on)
  * so Safari and strict autoplay policies allow audible output.
  */
-export function primeMetronomeAudio(): void {
+export function primeStanzaMetronomeAudio(): void {
   const ctx = getMetronomeAudioContext();
   if (!ctx) return;
   void ensureAudioContextRunning(ctx);
@@ -49,10 +49,19 @@ function playSampleClick(ctx: AudioContext, sample: LoadedClickSample, isDownbea
 }
 
 /**
- * Emits metronome clicks on the media timeline using anchor + BPM.
- * When disabled or missing inputs, cleans up.
+ * Emits metronome clicks on the media timeline using `anchorMediaTime` + `bpm`.
+ *
+ * The hook walks beats inside a `requestAnimationFrame` loop while `isPlaying` is
+ * true, comparing the current `getMediaTime()` to the last beat index it fired. On
+ * a forward step it triggers a click (loud on the downbeat, quieter on the off-beats)
+ * via the shared click sample loaded by `primeStanzaMetronomeAudio()`. On a backward
+ * jump (loop wrap, manual seek, resume after pause) it resyncs without emitting a
+ * burst of catch-up clicks.
+ *
+ * Cleans up the rAF when any input falls out of the playable shape (no BPM, no
+ * anchor, transport paused, hook disabled).
  */
-export function useMetronomeSync(
+export function useStanzaMetronomeSync(
   enabled: boolean,
   bpm: number | undefined,
   anchorMediaTime: number | undefined,

@@ -29,7 +29,7 @@ export default function StanzaAccountMenu() {
       <LabsAccountMenu
         appId="stanza"
         googleClientConfigured
-        identityCaption="Email is remembered from Encore on this browser. Opening Drive recordings still renews a Google permission (sometimes in a popup)."
+        identityCaption="Email is remembered from Encore on this browser. Opening Drive recordings may renew a Google permission in a popup."
         backup={{
           identity: backup.identity?.email ? { email: backup.identity.email } : null,
           testerResolved: backup.testerResolved,
@@ -61,7 +61,7 @@ export default function StanzaAccountMenu() {
               className="stanza-btn-soft-outline"
               disabled={disabled}
               onClick={() => void onBackup()}
-              aria-label="Back up Stanza library metadata to Google Drive"
+              aria-label="Back up library to Google Drive"
               label={busy ? 'Saving…' : 'Back up with Google'}
               sx={{
                 borderRadius: 999,
@@ -102,7 +102,7 @@ export default function StanzaAccountMenu() {
               </Typography>
               <Stack spacing={1} sx={{ mb: 1.5 }}>
                 <Typography variant="body2">
-                  <strong>Drive file modified:</strong> {backup.conflict.driveModifiedTime || '—'}
+                  <strong>Drive file modified:</strong> {backup.conflict.driveModifiedTime || 'unknown'}
                 </Typography>
                 <Typography variant="body2">
                   <strong>Backup timestamp inside file:</strong> {backup.conflict.remoteExportedAt}
@@ -123,17 +123,17 @@ export default function StanzaAccountMenu() {
               <Typography variant="body2" color="text.secondary" component="div">
                 <ul style={{ marginTop: 0, paddingLeft: '1.25rem' }}>
                   <li>
-                    <strong>Merge, then upload</strong> — For each song id, keep the copy with the newer{' '}
+                    <strong>Merge, then upload.</strong> For each song id, keep the copy with the newer{' '}
                     <code>updatedAt</code>. When Drive wins, this device keeps local audio files where ids still match.
-                    Then uploads the combined library to Drive.
+                    The combined library is then uploaded to Drive.
                   </li>
                   <li>
-                    <strong>Replace Drive only</strong> — Uploads this device’s library as-is and overwrites the Drive
-                    file. Use when Drive is wrong or empty.
+                    <strong>Replace Drive only.</strong> Uploads this device&apos;s library as-is and overwrites the
+                    Drive file. Use when Drive is wrong or empty.
                   </li>
                   <li>
-                    <strong>Cancel</strong> — Nothing is written. A snapshot of this device was saved when you
-                    opened this dialog; use “Restore snapshot…” if you merge and change your mind.
+                    <strong>Cancel.</strong> Nothing is written. A snapshot of this device was saved when you opened
+                    this dialog; use &ldquo;Restore snapshot…&rdquo; if you merge and change your mind.
                   </li>
                 </ul>
               </Typography>
@@ -158,8 +158,8 @@ export default function StanzaAccountMenu() {
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
             Snapshots are taken when you start a Drive backup. Restoring replays a <strong>metadata merge</strong>{' '}
-            (same rules as “Merge”) between the snapshot and your current library — local audio files are kept when
-            ids match. Songs only on this device stay unless the merge removes them from the combined set.
+            (same rules as &ldquo;Merge&rdquo;) between the snapshot and your current library. Local audio files are
+            kept when ids match. Songs only on this device stay unless the merge removes them from the combined set.
           </Typography>
             {backup.undoSnapshots.length === 0 ? (
             <Typography variant="body2">No snapshots yet. Run “Back up with Google” once to create one.</Typography>

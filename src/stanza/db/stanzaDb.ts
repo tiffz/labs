@@ -67,10 +67,16 @@ export interface StanzaSong {
   metronomeSongCalibration?: StanzaSegmentMetronomeCalibration;
   /** User pitch shift for uploaded audio only (−12…+12 semitones); uses decoded-buffer detune (main + stems when layered). */
   localTransposeSemitones?: number;
-  /** Which timing target the Practice rail is editing (default: section). */
+  /** Which timing target the Practice rail is editing (default: song; see ADR 0008). */
   metronomeTimingScope?: StanzaMetronomeTimingScope;
   /** User preference: attempt synced clicks while playing (requires tempo calibration). */
   metronomeEnabled?: boolean;
+  /**
+   * Sections the user marked to skip during forward playback (e.g. instrumental breaks while
+   * practicing vocals). Keyed by stable segment id from `deriveSegments`. Crossing into a
+   * skipped section auto-advances to the next non-skipped start; manual scrubs are unaffected.
+   */
+  skippedBySegmentId?: Record<string, true>;
 }
 
 export interface StanzaTake {
