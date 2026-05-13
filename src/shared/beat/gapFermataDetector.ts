@@ -12,6 +12,7 @@
  */
 
 import { detectOnsets, type OnsetPreset } from './analysis/onsets';
+import { devLog } from '../utils/devLog';
 
 export function getOnsetPresetForTempo(bpm: number): OnsetPreset {
   if (bpm >= 110) return 'analysis';
@@ -64,11 +65,11 @@ export async function detectGapsForResync(
     return [];
   }
 
-  console.log(`[GapDetector] Detected ${onsets.length} onsets, BPM=${bpm}, beat interval=${expectedBeatInterval.toFixed(3)}s`);
-  
+  devLog(`[GapDetector] Detected ${onsets.length} onsets, BPM=${bpm}, beat interval=${expectedBeatInterval.toFixed(3)}s`);
+
   if (onsets.length > 0) {
-    const firstOnsets = onsets.slice(0, 20).map(t => t.toFixed(2)).join(', ');
-    console.log(`[GapDetector] First onsets: ${firstOnsets}...`);
+    const firstOnsets = onsets.slice(0, 20).map((t) => t.toFixed(2)).join(', ');
+    devLog(`[GapDetector] First onsets: ${firstOnsets}...`);
   }
 
   if (onsets.length < 2) {
@@ -87,7 +88,9 @@ export async function detectGapsForResync(
     const matchesDuration = duration >= minGapSeconds;
     const matchesBeats = gapBeats >= minGapBeatsThreshold;
     if (requireBoth ? (matchesDuration && matchesBeats) : (matchesDuration || matchesBeats)) {
-      console.log(`[GapDetector] Found gap: ${onsets[i - 1].toFixed(2)}s -> ${onsets[i].toFixed(2)}s (${duration.toFixed(2)}s = ${gapBeats.toFixed(1)} beats)`);
+      devLog(
+        `[GapDetector] Found gap: ${onsets[i - 1].toFixed(2)}s -> ${onsets[i].toFixed(2)}s (${duration.toFixed(2)}s = ${gapBeats.toFixed(1)} beats)`,
+      );
       gaps.push({
         gapStart: onsets[i - 1],
         gapEnd: onsets[i],
@@ -95,6 +98,6 @@ export async function detectGapsForResync(
     }
   }
 
-  console.log(`[GapDetector] Total gaps found: ${gaps.length}`);
+  devLog(`[GapDetector] Total gaps found: ${gaps.length}`);
   return gaps;
 }

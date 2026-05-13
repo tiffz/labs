@@ -11,6 +11,8 @@ export interface StanzaYouTubeController {
   play: () => void;
   pause: () => void;
   seekTo: (seconds: number) => void;
+  /** Current playback time in seconds (for tight loop / transport sync; not every UI tick). */
+  getCurrentTime: () => number;
   setPlaybackRate: (rate: number) => void;
 }
 
@@ -167,6 +169,13 @@ const StanzaYouTubePlayer: React.FC<StanzaYouTubePlayerProps> = ({
                 },
                 pause: () => player.pauseVideo(),
                 seekTo: (seconds: number) => player.seekTo(Math.max(0, seconds), true),
+                getCurrentTime: () => {
+                  try {
+                    return player.getCurrentTime() || 0;
+                  } catch {
+                    return 0;
+                  }
+                },
                 setPlaybackRate: (rate: number) => {
                   try {
                     player.setPlaybackRate(rate);

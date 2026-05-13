@@ -1,8 +1,7 @@
 import type { MinimalAudioBuffer } from '../beat/analysis/onsets';
 import { detectOnsets } from '../beat/analysis/onsets';
 
-type EssentiaConstructor = typeof import('essentia.js/dist/essentia.js-core.es.js').default;
-type EssentiaInstance = InstanceType<EssentiaConstructor>;
+export { getEssentia } from '../beat/essentiaSingleton';
 
 export interface BeatAnalysisResult {
   bpm: number;
@@ -14,45 +13,6 @@ export interface BeatAnalysisResult {
   offset: number;
   warnings: string[];
   hasTempoVariance?: boolean;
-}
-
-let essentiaInstance: EssentiaInstance | null = null;
-let essentiaInitPromise: Promise<EssentiaInstance> | null = null;
-let essentiaConstructor: EssentiaConstructor | null = null;
-let essentiaWasmModule: unknown | null = null;
-
-async function loadEssentiaModules(): Promise<{
-  Essentia: EssentiaConstructor;
-  EssentiaWASM: unknown;
-}> {
-  if (essentiaConstructor && essentiaWasmModule) {
-    return { Essentia: essentiaConstructor, EssentiaWASM: essentiaWasmModule };
-  }
-
-  const [{ default: Essentia }, wasmModule] = await Promise.all([
-    import('essentia.js/dist/essentia.js-core.es.js'),
-    import('essentia.js/dist/essentia-wasm.es.js'),
-  ]);
-
-  const EssentiaWASM = (wasmModule as { EssentiaWASM?: unknown; default?: unknown }).EssentiaWASM
-    ?? (wasmModule as { default?: unknown }).default
-    ?? wasmModule;
-
-  essentiaConstructor = Essentia;
-  essentiaWasmModule = EssentiaWASM;
-  return { Essentia, EssentiaWASM };
-}
-
-export async function getEssentia(): Promise<EssentiaInstance> {
-  if (essentiaInstance) return essentiaInstance;
-  if (essentiaInitPromise) return essentiaInitPromise;
-
-  essentiaInitPromise = (async () => {
-    const { Essentia, EssentiaWASM } = await loadEssentiaModules();
-    essentiaInstance = new Essentia(EssentiaWASM);
-    return essentiaInstance;
-  })();
-  return essentiaInitPromise;
 }
 
 function detectMusicStart(audioBuffer: AudioBuffer, threshold = 0.01): number {

@@ -84,11 +84,11 @@ const config: KnipConfig = {
     'src/corp/main.ts',
     // Kimberly System: Content generation library with many unused exports (intentional API)
     'src/story/kimberly/**/*.ts',
-    // Beat finder: deprecated exports kept for API compatibility
-    'src/beat/utils/experimental/fermataDetector.ts',
-    'src/beat/utils/experimental/tempoChangeDetector.ts',
+    // Beat finder: deprecated exports kept for API compatibility (shared implementation)
+    'src/shared/beat/experimental/fermataDetector.ts',
+    'src/shared/beat/experimental/tempoChangeDetector.ts',
     'src/beat/utils/audioBuffer.ts',
-    'src/beat/utils/bpmAccuracyTest.ts',
+    'src/shared/beat/bpmAccuracyTest.ts',
     // Count Me In: analysis/coaching features parked for future development
     'src/count/analysis/RhythmAnalyzer.ts',
     'src/count/analysis/timingAnalysis.ts',
@@ -97,7 +97,6 @@ const config: KnipConfig = {
     'src/count/components/VocalFatigueGuard.tsx',
     'src/count/hooks/useRhythmAnalyzer.ts',
     // CI False Positives (Exports used in future/debugging or tests but flagged)
-    'src/beat/utils/sectionalTempoAnalyzer.ts', // default export used in CLI/tests
     'src/zines/utils/imageProcessor.ts', // processFiles used in specialized flows
     'src/zines/utils/pdfGenerator.ts', // getCompressionDescription, downloadPDF
     'src/zines/utils/spreadOrganizer.ts', // estimateDPI, etc. helper utils

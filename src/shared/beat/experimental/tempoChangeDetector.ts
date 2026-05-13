@@ -11,7 +11,7 @@
  * 4. Correlate with section boundaries
  */
 
-import { getEssentia } from '../beatAnalyzer';
+import { getEssentia } from '../essentiaSingleton';
 import type { TempoRegion } from '../tempoRegions';
 import { generateRegionId, createSteadyRegion, findBpmForTime } from '../tempoRegions';
 import { normalizeToRange } from '../analysis/tempoUtils';

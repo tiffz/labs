@@ -6,11 +6,11 @@
 export const STANZA_THEME_OVERRIDES = {
   primary: '#e848a0',
   secondary: '#48484a',
-  backgroundDefault: '#f4efe8',
-  backgroundPaper: 'rgba(255, 252, 248, 0.94)',
-  textPrimary: '#1d1d1f',
-  textSecondary: '#6e6e73',
-  divider: 'rgba(60, 60, 67, 0.14)',
+  backgroundDefault: '#f3ebe2',
+  backgroundPaper: 'rgba(255, 251, 245, 0.94)',
+  textPrimary: '#2a2622',
+  textSecondary: '#6d665e',
+  divider: 'rgba(49, 43, 38, 0.12)',
   radius: 12,
   spacingBase: 4,
   fontFamily:

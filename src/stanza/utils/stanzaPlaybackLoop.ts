@@ -1,9 +1,65 @@
+import type { StanzaSegmentMetronomeCalibration } from '../db/stanzaDb';
 import type { DerivedSegment } from './segments';
 
 /** Match Beat: play through | loop entire media | loop selected section range(s). */
 export type StanzaPlaybackLoopMode = 'through' | 'loopAll' | 'loopSelection';
 
 export const STANZA_LOOP_EPS = 0.06;
+
+/** Minimum span after applying trim (seconds). */
+export const STANZA_MIN_LOOP_SPAN_SEC = 0.12;
+
+/** Nudge the selected time span vs marker-defined section edges (markers unchanged). */
+export type StanzaSectionSelectionExtend = {
+  /** Added to hull start (negative = extend selection earlier in the track). */
+  startDelta: number;
+  /** Added to hull end (positive = extend selection later). */
+  endDelta: number;
+};
+
+export function applySectionSelectionExtend(
+  base: { start: number; end: number },
+  extend: StanzaSectionSelectionExtend,
+  duration: number,
+): { start: number; end: number } {
+  const d = Number.isFinite(duration) && duration > 0 ? duration : base.end;
+  let start = base.start + extend.startDelta;
+  let end = base.end + extend.endDelta;
+  start = Math.max(0, Math.min(start, d));
+  end = Math.max(0, Math.min(end, d));
+  if (end - start < STANZA_MIN_LOOP_SPAN_SEC) {
+    const mid = (base.start + base.end) / 2;
+    const half = STANZA_MIN_LOOP_SPAN_SEC / 2;
+    start = Math.max(0, mid - half);
+    end = Math.min(d, start + STANZA_MIN_LOOP_SPAN_SEC);
+    start = Math.max(0, end - STANZA_MIN_LOOP_SPAN_SEC);
+  }
+  return { start, end };
+}
+
+/**
+ * Suggested symmetric padding (seconds per side) from section metronome BPM when available,
+ * otherwise ~0.35s. Clamped for sensible pre/post roll.
+ */
+export function suggestMusicalLoopPadSec(
+  selectedIndices: readonly number[],
+  segments: DerivedSegment[],
+  metronomeBySegmentId: Record<string, StanzaSegmentMetronomeCalibration> | undefined,
+): number {
+  let bpm: number | null = null;
+  for (const i of selectedIndices) {
+    const seg = segments[i];
+    const cal = seg ? metronomeBySegmentId?.[seg.id] : undefined;
+    const b = cal?.bpm;
+    if (typeof b === 'number' && b > 40 && b < 360) {
+      bpm = b;
+      break;
+    }
+  }
+  const beatSec = bpm ? 60 / bpm : 0.5;
+  const raw = beatSec * 0.85;
+  return Math.min(0.85, Math.max(0.18, raw));
+}
 
 export function computeLoopHull(
   segments: DerivedSegment[],

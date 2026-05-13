@@ -39,7 +39,13 @@ import { alpha, type Theme } from '@mui/material/styles';
 import AppTooltip from '../../shared/components/AppTooltip';
 import MetronomeToggleButton from '../../shared/components/MetronomeToggleButton';
 import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
-import { stanzaDb, type StanzaSong, type StanzaStemTrack, type StanzaTake } from '../db/stanzaDb';
+import {
+  stanzaDb,
+  type StanzaSegmentMetronomeCalibration,
+  type StanzaSong,
+  type StanzaStemTrack,
+  type StanzaTake,
+} from '../db/stanzaDb';
 import {
   buildLocalAudioStanzaSong,
   isAudioFileForStanza,
@@ -61,9 +67,12 @@ import {
   STANZA_TIME_EPS,
 } from '../utils/segments';
 import {
+  applySectionSelectionExtend,
   computeLoopHull,
   STANZA_LOOP_EPS,
+  suggestMusicalLoopPadSec,
   type StanzaPlaybackLoopMode,
+  type StanzaSectionSelectionExtend,
 } from '../utils/stanzaPlaybackLoop';
 import { useStanzaLocalPlaybackObjectUrls } from '../hooks/useStanzaLocalPlaybackObjectUrls';
 import {
@@ -97,7 +106,7 @@ import StanzaAccountMenu from './StanzaAccountMenu';
 import StanzaTimeline from './StanzaTimeline';
 import { clampStanzaPlaybackRate } from '../utils/stanzaPlaybackRateLimits';
 import ConductorOverlay from './ConductorOverlay';
-import MetronomeWizard from './MetronomeWizard';
+import StanzaSectionMetronomeRail from './StanzaSectionMetronomeRail';
 import StanzaRepeatMark from './StanzaRepeatMark';
 import { useMetronomeSync } from '../hooks/useMetronomeSync';
 import { useStanzaLocalStemMixer } from '../hooks/useStanzaLocalStemMixer';
@@ -294,6 +303,11 @@ export default function StanzaWorkspace() {
   const [ytPaste, setYtPaste] = useState('');
   const [loopMode, setLoopMode] = useState<StanzaPlaybackLoopMode>('through');
   const [selectedSegmentIndices, setSelectedSegmentIndices] = useState<number[]>([]);
+  /** Selected time span vs marker-defined section edges (markers unchanged). */
+  const [sectionSelectionExtend, setSectionSelectionExtend] = useState<StanzaSectionSelectionExtend>({
+    startDelta: 0,
+    endDelta: 0,
+  });
   /** Anchor for Shift+click range selection (last non-Shift section click). */
   const [segmentSelectionAnchor, setSegmentSelectionAnchor] = useState<number | null>(null);
   const [lastClickedSegmentIndex, setLastClickedSegmentIndex] = useState<number | null>(null);
@@ -313,7 +327,11 @@ export default function StanzaWorkspace() {
   const timeRef = useRef(0);
   const durationRef = useRef(0);
   const playingRef = useRef(false);
-  const [wizardOpen, setWizardOpen] = useState(false);
+  const seekDisplayRafRef = useRef(0);
+  const seekDisplayPendingRef = useRef<number | null>(null);
+  const isYoutubeForSeekRef = useRef(false);
+  const [metronomeSectionHint, setMetronomeSectionHint] = useState<string | null>(null);
+  const metronomeHintDismissedSegRef = useRef<string | null>(null);
   const [conductorOpen, setConductorOpen] = useState(false);
   const [regimen, setRegimen] = useState<GuidedRegimen>('accuracy');
   const [guidedSegmentIndex, setGuidedSegmentIndex] = useState(0);
@@ -351,6 +369,7 @@ export default function StanzaWorkspace() {
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
   const isYoutube = Boolean(selected?.ytId);
+  isYoutubeForSeekRef.current = isYoutube;
 
   useEffect(() => {
     setStemInlineEdit(null);
@@ -776,12 +795,56 @@ export default function StanzaWorkspace() {
     playingRef.current = playback.isPlaying;
   }, [playback]);
 
+  useEffect(() => {
+    return () => {
+      if (seekDisplayRafRef.current !== 0) {
+        window.cancelAnimationFrame(seekDisplayRafRef.current);
+        seekDisplayRafRef.current = 0;
+      }
+      seekDisplayPendingRef.current = null;
+    };
+  }, [selectedId]);
+
+  const selectedSegmentsKey = selectedSegmentIndices.join(',');
+  useEffect(() => {
+    setSectionSelectionExtend({ startDelta: 0, endDelta: 0 });
+  }, [selectedSegmentsKey]);
+
   const segments = useMemo(
     () => deriveSegments(selected?.markers ?? [], playback.duration),
     [selected?.markers, playback.duration],
   );
 
-  const loopHull = useMemo(() => computeLoopHull(segments, selectedSegmentIndices), [segments, selectedSegmentIndices]);
+  const segmentSelectionLoopHull = useMemo(
+    () => computeLoopHull(segments, selectedSegmentIndices),
+    [segments, selectedSegmentIndices],
+  );
+
+  const effectiveSelectionSpan = useMemo(() => {
+    if (!segmentSelectionLoopHull || !(playback.duration > 0)) return null;
+    return applySectionSelectionExtend(
+      segmentSelectionLoopHull,
+      sectionSelectionExtend,
+      playback.duration,
+    );
+  }, [segmentSelectionLoopHull, sectionSelectionExtend, playback.duration]);
+
+  const playbackSegIdx = useMemo(
+    () => (segments.length > 0 ? findSegmentIndexAtTime(segments, playback.currentTime) : null),
+    [segments, playback.currentTime],
+  );
+  const playbackMetSeg = playbackSegIdx != null ? segments[playbackSegIdx]! : null;
+  const playbackMetCal =
+    playbackMetSeg && selected ? selected.metronomeBySegmentId?.[playbackMetSeg.id] : undefined;
+
+  const railCalibSegIdx = useMemo(() => {
+    if (segments.length === 0) return null;
+    if (lastClickedSegmentIndex != null) return lastClickedSegmentIndex;
+    if (selectedSegmentIndices.length > 0) return Math.min(...selectedSegmentIndices);
+    return playbackSegIdx ?? 0;
+  }, [segments, lastClickedSegmentIndex, selectedSegmentIndices, playbackSegIdx]);
+
+  const railCalibSeg = railCalibSegIdx != null ? segments[railCalibSegIdx]! : null;
 
   useEffect(() => {
     if (!selectedId || playback.duration <= 0 || !songs) return;
@@ -1058,26 +1121,83 @@ export default function StanzaWorkspace() {
     [isYoutube],
   );
 
-  const seekUnified = useCallback(
-    (t: number) => {
-      if (isYoutube) {
-        ytControllerRef.current?.seekTo(t);
-      } else {
-        const el = localAudioRef.current ?? localVideoRef.current;
-        if (el) {
-          el.currentTime = t;
-          setPlayback((p) => ({ ...p, currentTime: t }));
+  const scheduleSeekFrame = useCallback(() => {
+    if (seekDisplayRafRef.current !== 0) return;
+    seekDisplayRafRef.current = window.requestAnimationFrame(() => {
+      seekDisplayRafRef.current = 0;
+      const tt = seekDisplayPendingRef.current;
+      seekDisplayPendingRef.current = null;
+      if (tt == null || !Number.isFinite(tt)) return;
+      if (isYoutubeForSeekRef.current) {
+        ytControllerRef.current?.seekTo(tt);
+      }
+      setPlayback((p) => (p.currentTime === tt ? p : { ...p, currentTime: tt }));
+    });
+  }, []);
+
+  const readLiveTransportTime = useCallback((): number => {
+    if (isYoutube) {
+      try {
+        const fn = ytControllerRef.current?.getCurrentTime;
+        if (typeof fn === 'function') {
+          const x = fn();
+          if (Number.isFinite(x)) return Math.max(0, x);
         }
-        stemAudioRefs.current.forEach((a) => {
-          try {
-            a.currentTime = t;
-          } catch {
-            /* ignore */
-          }
-        });
+      } catch {
+        /* ignore */
+      }
+    } else {
+      const el = localAudioRef.current ?? localVideoRef.current;
+      if (el && Number.isFinite(el.currentTime)) return el.currentTime;
+    }
+    return timeRef.current;
+  }, [isYoutube]);
+
+  const seekUnified = useCallback(
+    (tRaw: number, opts?: { flushPlaybackState?: boolean }) => {
+      const flush = opts?.flushPlaybackState === true;
+      const d = durationRef.current;
+      const t =
+        d > 0 && Number.isFinite(tRaw) ? Math.max(0, Math.min(d - STANZA_TIME_EPS * 0.5, tRaw)) : Math.max(0, tRaw);
+      timeRef.current = t;
+
+      if (flush) {
+        if (seekDisplayRafRef.current !== 0) {
+          window.cancelAnimationFrame(seekDisplayRafRef.current);
+          seekDisplayRafRef.current = 0;
+        }
+        seekDisplayPendingRef.current = null;
+      } else {
+        seekDisplayPendingRef.current = t;
+      }
+
+      if (isYoutube) {
+        if (flush) {
+          ytControllerRef.current?.seekTo(t);
+          setPlayback((p) => (p.currentTime === t ? p : { ...p, currentTime: t }));
+        } else {
+          scheduleSeekFrame();
+        }
+        return;
+      }
+      const el = localAudioRef.current ?? localVideoRef.current;
+      if (el) {
+        el.currentTime = t;
+      }
+      stemAudioRefs.current.forEach((a) => {
+        try {
+          a.currentTime = t;
+        } catch {
+          /* ignore */
+        }
+      });
+      if (flush) {
+        setPlayback((p) => (p.currentTime === t ? p : { ...p, currentTime: t }));
+      } else {
+        scheduleSeekFrame();
       }
     },
-    [isYoutube],
+    [isYoutube, scheduleSeekFrame],
   );
 
   const pauseStemAudios = useCallback(() => {
@@ -1135,13 +1255,14 @@ export default function StanzaWorkspace() {
   }, [alignStemAudiosToMain]);
 
   const playUnified = useCallback(() => {
-    const t = timeRef.current;
+    const t = readLiveTransportTime();
+    timeRef.current = t;
     const d = durationRef.current;
     if (loopMode === 'loopAll' && d > 0) {
-      if (t < 0 || t > d - STANZA_LOOP_EPS) seekUnified(0);
-    } else if (loopMode === 'loopSelection' && loopHull) {
-      if (t < loopHull.start - 0.05 || t > loopHull.end - STANZA_LOOP_EPS) {
-        seekUnified(loopHull.start);
+      if (t < 0 || t > d - STANZA_LOOP_EPS) seekUnified(0, { flushPlaybackState: true });
+    } else if (loopMode === 'loopSelection' && effectiveSelectionSpan) {
+      if (t < effectiveSelectionSpan.start - 0.05 || t > effectiveSelectionSpan.end - STANZA_LOOP_EPS) {
+        seekUnified(effectiveSelectionSpan.start, { flushPlaybackState: true });
       }
     }
     if (isYoutube) ytControllerRef.current?.play();
@@ -1182,7 +1303,8 @@ export default function StanzaWorkspace() {
     finalizeStemMixerResume,
     isYoutube,
     loopMode,
-    loopHull,
+    effectiveSelectionSpan,
+    readLiveTransportTime,
     pauseStemAudios,
     prepareStemMixerForPlaySync,
     restoreHtmlStemVolumes,
@@ -1223,19 +1345,25 @@ export default function StanzaWorkspace() {
         raf = window.requestAnimationFrame(tick);
         return;
       }
-      const t = timeRef.current;
+      const tLive = readLiveTransportTime();
+      timeRef.current = tLive;
       const d = durationRef.current;
       if (loopMode === 'loopAll' && d > 0) {
-        if (t >= d - STANZA_LOOP_EPS) seekUnified(0);
-      } else if (loopMode === 'loopSelection' && loopHull) {
-        if (t >= loopHull.end - STANZA_LOOP_EPS) seekUnified(loopHull.start);
-        else if (t < loopHull.start - STANZA_LOOP_EPS) seekUnified(loopHull.start);
+        if (tLive >= d - STANZA_LOOP_EPS) {
+          seekUnified(0, { flushPlaybackState: true });
+        }
+      } else if (loopMode === 'loopSelection' && effectiveSelectionSpan) {
+        if (tLive >= effectiveSelectionSpan.end - STANZA_LOOP_EPS) {
+          seekUnified(effectiveSelectionSpan.start, { flushPlaybackState: true });
+        } else if (tLive < effectiveSelectionSpan.start - STANZA_LOOP_EPS) {
+          seekUnified(effectiveSelectionSpan.start, { flushPlaybackState: true });
+        }
       }
       raf = window.requestAnimationFrame(tick);
     };
     raf = window.requestAnimationFrame(tick);
     return () => window.cancelAnimationFrame(raf);
-  }, [loopMode, loopHull, seekUnified]);
+  }, [loopMode, effectiveSelectionSpan, readLiveTransportTime, seekUnified]);
 
   useEffect(() => {
     if (!selected) return;
@@ -1271,7 +1399,7 @@ export default function StanzaWorkspace() {
   }, [selected, segments, persistSong]);
 
   useEffect(() => {
-    if (!selected || wizardOpen || conductorOpen) return;
+    if (!selected || conductorOpen) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.code !== 'KeyM') return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -1289,7 +1417,7 @@ export default function StanzaWorkspace() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [selected, wizardOpen, conductorOpen, persistSong]);
+  }, [selected, conductorOpen, persistSong]);
 
   const addMarkerAtCurrentTime = useCallback(() => {
     if (!selected) return;
@@ -1324,6 +1452,27 @@ export default function StanzaWorkspace() {
   const clearSegmentSelection = useCallback(() => {
     setSelectedSegmentIndices([]);
     setSegmentSelectionAnchor(null);
+    setSectionSelectionExtend({ startDelta: 0, endDelta: 0 });
+  }, []);
+
+  const nudgeSectionSelectionExtend = useCallback((axis: 'start' | 'end', deltaSec: number) => {
+    setSectionSelectionExtend((prev) =>
+      axis === 'start'
+        ? { ...prev, startDelta: prev.startDelta + deltaSec }
+        : { ...prev, endDelta: prev.endDelta + deltaSec },
+    );
+  }, []);
+
+  const applyMusicalSelectionPad = useCallback(() => {
+    const pad = suggestMusicalLoopPadSec(selectedSegmentIndices, segments, selected?.metronomeBySegmentId);
+    setSectionSelectionExtend((prev) => ({
+      startDelta: prev.startDelta - pad,
+      endDelta: prev.endDelta + pad,
+    }));
+  }, [selected?.metronomeBySegmentId, selectedSegmentIndices, segments]);
+
+  const resetSectionSelectionExtend = useCallback(() => {
+    setSectionSelectionExtend({ startDelta: 0, endDelta: 0 });
   }, []);
 
   const onLoopModeChange = useCallback(
@@ -1376,7 +1525,7 @@ export default function StanzaWorkspace() {
   }, [persistSong, playback.duration, segments, selected, selectedSegmentIndices]);
 
   useEffect(() => {
-    if (!selected || wizardOpen || conductorOpen) return;
+    if (!selected || conductorOpen) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Delete' && e.key !== 'Backspace') return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -1404,7 +1553,6 @@ export default function StanzaWorkspace() {
     segments,
     selected,
     selectedSegmentIndices,
-    wizardOpen,
   ]);
 
   const renameSectionFromLabel = useCallback(
@@ -1438,45 +1586,73 @@ export default function StanzaWorkspace() {
 
   const skipToLoopStart = useCallback(() => {
     if (loopMode === 'through' || loopMode === 'loopAll') seekUnified(0);
-    else if (loopHull) seekUnified(loopHull.start);
-  }, [loopHull, loopMode, seekUnified]);
+    else if (effectiveSelectionSpan) seekUnified(effectiveSelectionSpan.start);
+  }, [effectiveSelectionSpan, loopMode, seekUnified]);
 
   const skipToLoopEnd = useCallback(() => {
     const d = durationRef.current;
     if (!(d > 0)) return;
     if (loopMode === 'through' || loopMode === 'loopAll') {
       seekUnified(Math.max(0, d - STANZA_TIME_EPS));
-    } else if (loopHull) {
-      seekUnified(Math.max(loopHull.start, loopHull.end - STANZA_TIME_EPS));
+    } else if (effectiveSelectionSpan) {
+      seekUnified(Math.max(effectiveSelectionSpan.start, effectiveSelectionSpan.end - STANZA_TIME_EPS));
     }
-  }, [loopHull, loopMode, seekUnified]);
+  }, [effectiveSelectionSpan, loopMode, seekUnified]);
 
   useMetronomeSync(
-    Boolean(selected?.metronomeEnabled && selected.metronomeBpm && selected.metronomeBpm > 0),
-    selected?.metronomeBpm,
-    selected?.metronomeAnchorMediaTime,
+    Boolean(selected?.metronomeEnabled && playbackMetCal?.bpm && playbackMetCal.bpm > 0),
+    playbackMetCal?.bpm,
+    playbackMetCal?.anchorMediaTime,
     getTime,
     playback.isPlaying,
     true,
   );
 
   const beatPeriod =
-    selected?.metronomeBpm && selected.metronomeBpm > 0 ? `${60 / selected.metronomeBpm}s` : '1s';
+    playbackMetCal?.bpm && playbackMetCal.bpm > 0 ? `${60 / playbackMetCal.bpm}s` : '1s';
 
-  const metronomeCalibrated =
-    selected != null &&
-    selected.metronomeBpm != null &&
-    selected.metronomeBpm > 0 &&
-    selected.metronomeAnchorMediaTime != null;
+  useEffect(() => {
+    if (!selected?.metronomeEnabled || !playback.isPlaying || !playbackMetSeg) {
+      setMetronomeSectionHint(null);
+      return;
+    }
+    if (playbackMetCal) {
+      setMetronomeSectionHint(null);
+      metronomeHintDismissedSegRef.current = null;
+      return;
+    }
+    if (metronomeHintDismissedSegRef.current === playbackMetSeg.id) {
+      setMetronomeSectionHint(null);
+      return;
+    }
+    const id = window.setTimeout(() => {
+      setMetronomeSectionHint('Calibrate this section (Metronome below) to hear synced clicks here.');
+    }, 1200);
+    return () => window.clearTimeout(id);
+  }, [selected?.metronomeEnabled, playback.isPlaying, playbackMetSeg, playbackMetCal]);
 
-  const saveWizard = useCallback(
-    (bpm: number, anchorMediaTime: number) => {
+  const saveSegmentMetronome = useCallback(
+    (segmentId: string, cal: StanzaSegmentMetronomeCalibration) => {
       if (!selected) return;
+      const prev = selected.metronomeBySegmentId ?? {};
       void persistSong({
         id: selected.id,
-        metronomeBpm: bpm,
-        metronomeAnchorMediaTime: anchorMediaTime,
+        metronomeBySegmentId: { ...prev, [segmentId]: cal },
         metronomeEnabled: true,
+      });
+    },
+    [persistSong, selected],
+  );
+
+  const clearSegmentMetronome = useCallback(
+    (segmentId: string) => {
+      if (!selected) return;
+      const prev = selected.metronomeBySegmentId ?? {};
+      const rest = { ...prev };
+      delete rest[segmentId];
+      void persistSong({
+        id: selected.id,
+        metronomeBySegmentId: Object.keys(rest).length > 0 ? rest : undefined,
       });
     },
     [persistSong, selected],
@@ -1586,18 +1762,6 @@ export default function StanzaWorkspace() {
     setSelectedId(null);
     replaceStanzaPlaybackUrlSearchParams({ youtubeId: null, driveFileId: null, driveTitle: null });
   }, []);
-
-  const railSectionLabelSx = {
-    display: 'block' as const,
-    mb: 0.2,
-    textTransform: 'uppercase' as const,
-    letterSpacing: '0.05em',
-    fontSize: '0.625rem',
-    fontWeight: 600,
-    color: 'text.secondary',
-    whiteSpace: 'nowrap' as const,
-    opacity: 0.92,
-  };
 
   const renderLibraryGrid = (variant: 'landing' | 'footer') => (
     <Box
@@ -1801,26 +1965,16 @@ export default function StanzaWorkspace() {
               <Typography
                 variant="h3"
                 component="h1"
-                sx={{
-                  fontWeight: 600,
-                  letterSpacing: '-0.028em',
-                  color: '#1d1d1f',
-                  mb: 1,
-                }}
+                className="stanza-hero-title"
+                sx={{ mb: 1, fontSize: { xs: '2.35rem', sm: '2.75rem' } }}
               >
                 Stanza
               </Typography>
               <Typography
                 variant="h6"
                 component="p"
-                sx={{
-                  fontWeight: 400,
-                  color: 'text.secondary',
-                  mb: 3,
-                  lineHeight: 1.5,
-                  maxWidth: '36ch',
-                  mx: 'auto',
-                }}
+                className="stanza-hero-lede"
+                sx={{ mb: 3, maxWidth: '36ch', mx: 'auto' }}
               >
                 Practice songs in sections — loop, record, and let the Conductor guide your next pass.
               </Typography>
@@ -1894,7 +2048,7 @@ export default function StanzaWorkspace() {
           </Box>
           {(songs?.length ?? 0) > 0 && (
             <Paper className="stanza-panel" elevation={0} sx={{ maxWidth: '56rem', mx: 'auto', mt: 1, mb: 3, px: 2, py: 2 }}>
-              <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600, letterSpacing: '-0.01em' }}>
+              <Typography variant="subtitle2" className="stanza-whisper-title" sx={{ mb: 1.5 }}>
                 Your library
               </Typography>
               {renderLibraryGrid('landing')}
@@ -1920,16 +2074,7 @@ export default function StanzaWorkspace() {
           >
             <StanzaRepeatMark size={40} />
             <Box sx={{ flex: '1 1 200px', minWidth: 0 }}>
-              <Typography
-                variant="h5"
-                component="h1"
-                sx={{
-                  fontWeight: 600,
-                  letterSpacing: '-0.022em',
-                  lineHeight: 1.25,
-                  fontSize: { xs: '1.15rem', sm: '1.35rem' },
-                }}
-              >
+              <Typography variant="h5" component="h1" className="stanza-display-title">
                 {selected.title}
               </Typography>
               <button type="button" className="stanza-link-quiet" onClick={goHome} aria-label="Back to library" style={{ marginTop: 6 }}>
@@ -2031,14 +2176,6 @@ export default function StanzaWorkspace() {
                             className="stanza-local-video"
                             src={localUrl}
                             playsInline
-                            style={{
-                              width: '100%',
-                              marginTop: 8,
-                              borderRadius: 8,
-                              maxHeight: 360,
-                              background: '#0a0a0a',
-                              cursor: 'pointer',
-                            }}
                             aria-label="Local video track. Click to play or pause."
                             onClick={() => {
                               const v = localVideoRef.current;
@@ -2172,27 +2309,36 @@ export default function StanzaWorkspace() {
                   minHeight: 0,
                   height: { md: '100%' },
                   p: { xs: 1.1, md: 1.25 },
-                  border: '1px solid rgba(60, 60, 67, 0.07)',
-                  boxShadow: '0 1px 10px rgba(29, 29, 31, 0.035)',
                 }}
               >
-                <Typography component="p" sx={{ ...railSectionLabelSx, mb: 0.35, flexShrink: 0 }}>
+                <Typography component="p" className="stanza-rail-section-label" sx={{ mb: 0.35, flexShrink: 0 }}>
                   Practice
                 </Typography>
                 <Stack spacing={0.65} sx={{ flex: 1, minHeight: 0, overflowY: 'auto', pr: 0.25 }}>
                   <Box>
-                    <Typography sx={railSectionLabelSx}>Metronome</Typography>
+                    <Typography className="stanza-rail-section-label stanza-rail-section-label--minor">Metronome</Typography>
+                    {metronomeSectionHint && (
+                      <Alert
+                        severity="info"
+                        sx={{ mt: 0.35, mb: 0.35, py: 0.25 }}
+                        onClose={() => {
+                          if (playbackMetSeg) metronomeHintDismissedSegRef.current = playbackMetSeg.id;
+                          setMetronomeSectionHint(null);
+                        }}
+                      >
+                        <Typography variant="body2">{metronomeSectionHint}</Typography>
+                      </Alert>
+                    )}
                     <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mt: 0.15 }}>
                       <AppTooltip
                         title={
-                          metronomeCalibrated
-                            ? 'Toggle the synced click track.'
-                            : 'Calibrate first to save tempo and the first downbeat.'
+                          selected.metronomeEnabled
+                            ? 'Clicks play only in sections you calibrate below.'
+                            : 'Turn on to hear synced clicks while playing calibrated sections.'
                         }
                       >
                         <MetronomeToggleButton
                           enabled={Boolean(selected.metronomeEnabled)}
-                          disabled={!metronomeCalibrated && !selected.metronomeEnabled}
                           onToggle={() =>
                             void persistSong({ id: selected.id, metronomeEnabled: !selected.metronomeEnabled })
                           }
@@ -2202,19 +2348,32 @@ export default function StanzaWorkspace() {
                           ariaLabel="Toggle metronome"
                         />
                       </AppTooltip>
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        className="stanza-btn-soft-outline stanza-rail-compact-btn"
-                        onClick={() => setWizardOpen(true)}
-                        sx={{ minHeight: 30, py: 0.25, px: 1, fontSize: '0.75rem' }}
-                      >
-                        Calibrate
-                      </Button>
                     </Stack>
+                    {railCalibSeg && (
+                      <StanzaSectionMetronomeRail
+                        segment={railCalibSeg}
+                        calibration={selected.metronomeBySegmentId?.[railCalibSeg.id]}
+                        canAnalyze={!isYoutube && Boolean(selected.localAudioBlob && localUrl)}
+                        analyzeDisabledReason={
+                          isYoutube
+                            ? 'Automatic tempo detection is available only for uploaded audio or video files.'
+                            : !selected.localAudioBlob
+                              ? 'Add a local audio or video file to use analysis.'
+                              : undefined
+                        }
+                        localAudioBlob={selected.localAudioBlob}
+                        localSongTitle={selected.title}
+                        mediaUrl={localUrl ?? ''}
+                        isLocalVideo={isLocalVideo}
+                        getMediaTime={getTime}
+                        playbackIsPlaying={playback.isPlaying}
+                        onSaveCalibration={(cal) => saveSegmentMetronome(railCalibSeg.id, cal)}
+                        onClearCalibration={() => clearSegmentMetronome(railCalibSeg.id)}
+                      />
+                    )}
                   </Box>
                   <Box>
-                    <Typography sx={railSectionLabelSx}>Conductor</Typography>
+                    <Typography className="stanza-rail-section-label stanza-rail-section-label--minor">Conductor</Typography>
                     <Stack direction="row" spacing={0.5} alignItems="stretch" sx={{ mt: 0.2 }}>
                       <AppTooltip title="Listen, record, and review for the current loop section. Regimen sets the emphasis.">
                         <Button
@@ -2250,7 +2409,7 @@ export default function StanzaWorkspace() {
                     </Stack>
                   </Box>
                   <Box>
-                    <Typography sx={railSectionLabelSx}>Takes</Typography>
+                    <Typography className="stanza-rail-section-label stanza-rail-section-label--minor">Takes</Typography>
                     <Stack direction="row" alignItems="center" spacing={0.5} flexWrap="wrap" sx={{ mt: 0.15 }}>
                       <Button
                         variant="outlined"
@@ -2278,7 +2437,9 @@ export default function StanzaWorkspace() {
                   </Box>
                   {!isYoutube ? (
                     <Box className="stanza-mix-block" sx={{ pt: 0.15 }}>
-                      <Typography sx={{ ...railSectionLabelSx, mb: 0.25 }}>Mix</Typography>
+                      <Typography className="stanza-rail-section-label stanza-rail-section-label--minor" sx={{ mb: 0.25 }}>
+                        Mix
+                      </Typography>
                       <Stack spacing={0.2} className="stanza-mix-rows">
                         <Box
                           className="stanza-mix-row"
@@ -2620,10 +2781,20 @@ export default function StanzaWorkspace() {
                   onAddMarker={addMarkerAtCurrentTime}
                   onJoinSections={joinSelectedContiguousSections}
                   joinSectionsEnabled={areContiguousSegmentIndices(selectedSegmentIndices)}
-                  dimLoopModeSelection={loopMode === 'loopAll' && selectedSegmentIndices.length > 0}
                   onClearSegmentSelection={clearSegmentSelection}
                   playbackRate={playback.playbackRate}
                   onPlaybackRateChange={applyPlaybackRate}
+                  selectionTimeSpan={
+                    selectedSegmentIndices.length > 0
+                      ? (effectiveSelectionSpan ?? segmentSelectionLoopHull ?? undefined)
+                      : undefined
+                  }
+                  onSelectionSpanNudge={nudgeSectionSelectionExtend}
+                  onSelectionMusicalPad={applyMusicalSelectionPad}
+                  onResetSelectionSpan={resetSectionSelectionExtend}
+                  selectionExtendActive={
+                    sectionSelectionExtend.startDelta !== 0 || sectionSelectionExtend.endDelta !== 0
+                  }
                 />
               </Box>
             </Box>
@@ -2637,7 +2808,7 @@ export default function StanzaWorkspace() {
             sx={{ mt: { xs: 3.5, sm: 5 } }}
           >
             <AccordionSummary expandIcon={<ExpandMoreIcon />} aria-controls="stanza-library-panel" id="stanza-library-header">
-              <Typography variant="subtitle2" sx={{ fontWeight: 600, letterSpacing: '-0.01em' }}>
+              <Typography variant="subtitle2" className="stanza-whisper-title">
                 Your library
                 <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1, fontWeight: 400 }}>
                   ({songs?.length ?? 0})
@@ -2737,7 +2908,7 @@ export default function StanzaWorkspace() {
         <DialogContent>
           <Typography variant="body2" color="text.secondary">
             This removes “{removeConfirmSong?.title ?? ''}” from your library and deletes all practice data for it on
-            this device: markers and sections, focus-time stats, recordings (takes), and metronome calibration.
+            this device: markers and sections, focus-time stats, recordings (takes), and per-section metronome calibration.
           </Typography>
         </DialogContent>
         <DialogActions>
@@ -2815,13 +2986,6 @@ export default function StanzaWorkspace() {
           </Button>
         </DialogActions>
       </Dialog>
-
-      <MetronomeWizard
-        open={wizardOpen}
-        onClose={() => setWizardOpen(false)}
-        getMediaTime={getTime}
-        onSave={(bpm, anchor) => saveWizard(bpm, anchor)}
-      />
 
       {conductorOpen && conductorSegment && selected && (
         <ConductorOverlay

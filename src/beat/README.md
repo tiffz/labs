@@ -117,12 +117,14 @@ only keeping fractional values when they align significantly better (>12%).
 
 ### Shared Analysis Utilities
 
-We centralize onset detection and tempo helpers so diagnostics, benchmarks, and
-refinements stay consistent:
+Onset detection, tempo helpers, and the full Essentia-based beat analyzer live under
+`src/shared/beat/**` (imported by this app via thin `src/beat/utils/*` shims where needed).
+Notable modules:
 
-- `src/beat/utils/analysis/onsets.ts` — preset-based onset detection
-- `src/beat/utils/analysis/tempoUtils.ts` — shared tempo normalization helpers
-- `src/beat/utils/analysis/sectionalTempo.ts` — shared sectional tempo windows
+- `src/shared/beat/analysis/onsets.ts` — preset-based onset detection
+- `src/shared/beat/analysis/tempoUtils.ts` — tempo normalization helpers
+- `src/shared/beat/analysis/sectionalTempo.ts` — sectional tempo windows
+- `src/shared/beat/findTheBeatAnalyzer.ts` — main BPM / beat-grid pipeline
 
 ### Chord & Key Detection
 
@@ -137,13 +139,13 @@ chord and key detection:
 
 ### Experimental Detectors (Deprecated)
 
-Older or exploratory detectors are kept under `src/beat/utils/experimental/`:
+Older or exploratory detectors live under `src/shared/beat/experimental/` and are
+re-exported from the analyzer for API compatibility:
 
-- `experimental/fermataDetector.ts` (Essentia SuperFlux-based) - **deprecated**, use `gapFermataDetector.ts` instead
-- `experimental/tempoChangeDetector.ts` (windowed BPM changes) - **deprecated**
+- `fermataDetector.ts` (Essentia SuperFlux-based) — **deprecated**, prefer gap-based resync
+- `tempoChangeDetector.ts` (windowed BPM changes) — **deprecated**
 
-These are exported for API compatibility but are not part of the main analysis path.
-The gap-based fermata detector (`gapFermataDetector.ts`) provides better results.
+These are not part of the main analysis path. Gap-based resync (`gapFermataDetector.ts`) covers pauses more reliably.
 
 ### File Structure
 

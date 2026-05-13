@@ -23,5 +23,5 @@ describe('buildPracticeExercisePdfBytes (Unicode)', () => {
     const bytes = await buildPracticeExercisePdfBytes(song, run);
     expect(bytes.length).toBeGreaterThan(2000);
     expect(String.fromCharCode(bytes[0]!, bytes[1]!, bytes[2]!, bytes[3]!)).toBe('%PDF');
-  }, 20_000);
+  }, 30_000);
 });

@@ -67,20 +67,11 @@ export default function StanzaPlaybackSpeedControl({
         type="button"
         variant="text"
         size="small"
-        className="stanza-playback-speed-btn"
+        className="stanza-playback-chip-text-btn stanza-playback-speed-btn"
         onClick={(e) => setAnchorEl(e.currentTarget)}
         aria-label={`Playback speed ${formatStanzaPlaybackRateLabel(value)}. Open menu to change speed.`}
         aria-haspopup="true"
         aria-expanded={open}
-        sx={{
-          minWidth: 0,
-          px: 0.65,
-          py: 0.2,
-          fontWeight: 600,
-          fontSize: '0.8125rem',
-          color: 'text.secondary',
-          lineHeight: 1.2,
-        }}
       >
         {formatStanzaPlaybackRateLabel(value)}
       </Button>

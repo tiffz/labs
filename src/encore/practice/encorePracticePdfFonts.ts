@@ -5,21 +5,34 @@ import type { PDFDocument, PDFFont } from 'pdf-lib';
  * Hinted TTFs from Noto’s distribution (Latin, Greek, Cyrillic, and more).
  * pdf-lib standard fonts are WinAnsi-only and throw on Cyrillic and most non‑Latin text.
  *
- * @see https://github.com/notofonts/notofonts.github.io
+ * Use raw.githubusercontent.com (not jsDelivr): some environments return 403 / hang on gh CDN.
+ *
+ * @see https://github.com/googlefonts/noto-fonts
  */
 const NOTO_REGULAR_TTF =
-  'https://cdn.jsdelivr.net/gh/notofonts/notofonts.github.io@main/fonts/NotoSans/hinted/ttf/NotoSans-Regular.ttf';
+  'https://raw.githubusercontent.com/googlefonts/noto-fonts/main/hinted/ttf/NotoSans/NotoSans-Regular.ttf';
 const NOTO_BOLD_TTF =
-  'https://cdn.jsdelivr.net/gh/notofonts/notofonts.github.io@main/fonts/NotoSans/hinted/ttf/NotoSans-Bold.ttf';
+  'https://raw.githubusercontent.com/googlefonts/noto-fonts/main/hinted/ttf/NotoSans/NotoSans-Bold.ttf';
 
 async function fetchFontBytes(url: string, label: string): Promise<Uint8Array> {
-  const res = await fetch(url);
-  if (!res.ok) {
-    throw new Error(
-      `PDF export could not load the ${label} font (HTTP ${res.status}). Check your network and try again.`,
-    );
+  const controller = new AbortController();
+  const t = setTimeout(() => controller.abort(), 45_000);
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    if (!res.ok) {
+      throw new Error(
+        `PDF export could not load the ${label} font (HTTP ${res.status}). Check your network and try again.`,
+      );
+    }
+    return new Uint8Array(await res.arrayBuffer());
+  } catch (e) {
+    if (e instanceof Error && e.name === 'AbortError') {
+      throw new Error(`PDF export timed out loading the ${label} font. Check your network and try again.`);
+    }
+    throw e;
+  } finally {
+    clearTimeout(t);
   }
-  return new Uint8Array(await res.arrayBuffer());
 }
 
 let regularBytesPromise: Promise<Uint8Array> | null = null;

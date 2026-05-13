@@ -12,6 +12,18 @@ export interface SegmentStat {
   lastPracticed: number;
 }
 
+export type StanzaSegmentMetronomeSource = 'tap' | 'analysis';
+
+export interface StanzaSegmentMetronomeCalibration {
+  bpm: number;
+  /** Media-time seconds of a beat phase reference for click alignment. */
+  anchorMediaTime: number;
+  source: StanzaSegmentMetronomeSource;
+  /** Present when `source === 'analysis'` (0–1). */
+  confidence?: number;
+  analyzedAt?: number;
+}
+
 /** Optional extra audio layers (e.g. instrumental) mixed with the primary local/Drive blob. See ADR 0003. */
 export interface StanzaStemTrack {
   id: string;
@@ -41,9 +53,9 @@ export interface StanzaSong {
   primaryGain?: number;
   /** Mute the main file only; stems follow their own mutes. */
   primaryMuted?: boolean;
-  metronomeBpm?: number;
-  /** Media-time seconds of first downbeat for click alignment */
-  metronomeAnchorMediaTime?: number;
+  /** Per-section metronome calibration keyed by stable segment ids from `deriveSegments`. */
+  metronomeBySegmentId?: Record<string, StanzaSegmentMetronomeCalibration>;
+  /** User preference: attempt synced clicks while playing (requires per-section calibration). */
   metronomeEnabled?: boolean;
 }
 
@@ -79,6 +91,10 @@ export class StanzaDB extends Dexie {
       takes: 'id, songId, segmentId, createdAt, isGuided',
     });
     this.version(5).stores({
+      songs: 'id, updatedAt, title, ytId, driveSourceFileId',
+      takes: 'id, songId, segmentId, createdAt, isGuided',
+    });
+    this.version(6).stores({
       songs: 'id, updatedAt, title, ytId, driveSourceFileId',
       takes: 'id, songId, segmentId, createdAt, isGuided',
     });

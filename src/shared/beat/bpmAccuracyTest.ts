@@ -153,19 +153,6 @@ export function compareBpms(
 }
 
 /**
- * Quick test for "Wish My Life Away" style analysis
- * Tests specific BPMs: 68, 68.5, 69, 69.2, 69.5, 70, 70.5, 71
- */
-export function testWishMyLifeAwayBpms(
-  onsets: number[],
-  startTime: number = 17, // After first fermata
-  endTime: number = 100   // Before middle fermatas
-): AlignmentScore[] {
-  const candidates = [68, 68.5, 69, 69.2, 69.5, 70, 70.5, 71];
-  return compareBpms(onsets, candidates, startTime, endTime);
-}
-
-/**
  * Quick BPM accuracy test that skips redundant tempo detection
  * 
  * This is faster than testBpmAccuracy because it uses pre-computed

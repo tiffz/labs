@@ -1,15 +1,40 @@
 /**
- * Stanza — cohesive surfaces + MUI fine-tuning (scoped to .stanza-app).
- * Apple-ish: soft neutrals, one accent, pill controls, calm shadows.
+ * Stanza — warm paper surfaces, delicate ink, and one rose accent.
+ * UI stays modern; display type leans literary.
  */
 
-/* Full-page shell: one cream + pink environment (landing + viewer). */
 .stanza-app {
+  --stanza-paper: #faf6f1;
+  --stanza-paper-wash: #f3ebe2;
+  --stanza-paper-elevated: rgba(255, 251, 245, 0.9);
+  --stanza-paper-line: rgba(49, 43, 38, 0.1);
+  --stanza-paper-line-faint: rgba(49, 43, 38, 0.06);
+  --stanza-ink: #2a2622;
+  --stanza-ink-muted: #6d665e;
+  --stanza-ink-soft: #8b837a;
+  --stanza-rose: #e848a0;
+  --stanza-rose-wash: rgba(232, 72, 160, 0.12);
+  --stanza-rose-line: rgba(232, 72, 160, 0.28);
+  --stanza-radius-panel: 18px;
+  --stanza-radius-chip: 11px;
+  --stanza-shadow-card:
+    0 1px 2px rgba(47, 39, 33, 0.045), 0 16px 38px rgba(47, 39, 33, 0.075);
+  --stanza-shadow-card-hover:
+    0 2px 6px rgba(47, 39, 33, 0.055), 0 20px 44px rgba(47, 39, 33, 0.1);
+  --stanza-shadow-rest:
+    0 1px 2px rgba(47, 39, 33, 0.035), 0 12px 30px rgba(47, 39, 33, 0.055);
+  --stanza-shadow-hover: var(--stanza-shadow-card-hover);
+  --stanza-font-ui:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto,
+    'Helvetica Neue', sans-serif;
+  --stanza-font-display:
+    'Cormorant Garamond', Georgia, 'Times New Roman', serif;
   min-height: 100vh;
   min-height: 100dvh;
   position: relative;
   box-sizing: border-box;
-  color: #1d1d1f;
+  color: var(--stanza-ink);
+  font-family: var(--stanza-font-ui);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -21,17 +46,24 @@
   z-index: 0;
   pointer-events: none;
   background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.028) 0,
+      rgba(255, 255, 255, 0.028) 1px,
+      transparent 1px,
+      transparent 4px
+    ),
     radial-gradient(
       ellipse 95% 60% at 50% -25%,
-      rgba(232, 72, 160, 0.11),
+      rgba(232, 72, 160, 0.08),
       transparent 58%
     ),
     radial-gradient(
-      ellipse 65% 50% at 100% 85%,
-      rgba(99, 102, 241, 0.05),
+      ellipse 70% 50% at 100% 85%,
+      rgba(196, 164, 132, 0.08),
       transparent 52%
     ),
-    linear-gradient(168deg, #fdfcfa 0%, #f4ebe3 42%, #ebe2d8 100%);
+    linear-gradient(168deg, #fdfaf6 0%, #f3ebe2 44%, #e9dfd3 100%);
 }
 
 .stanza-main {
@@ -42,18 +74,71 @@
 }
 
 .stanza-panel {
-  background: rgba(255, 252, 248, 0.72);
-  border: 1px solid rgba(60, 60, 67, 0.1);
-  border-radius: 16px;
-  box-shadow:
-    0 0 0 0.5px rgba(60, 60, 67, 0.06),
-    0 2px 12px rgba(29, 29, 31, 0.04);
+  background: var(--stanza-paper-elevated);
+  border: 1px solid var(--stanza-paper-line-faint);
+  border-radius: var(--stanza-radius-panel);
+  box-shadow: var(--stanza-shadow-card);
 }
 
 @supports (backdrop-filter: blur(8px)) {
   .stanza-panel {
     backdrop-filter: blur(10px);
   }
+}
+
+.stanza-app .stanza-display-title.MuiTypography-root,
+.stanza-display-title {
+  font-family: var(--stanza-font-display);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+  color: var(--stanza-ink);
+}
+
+.stanza-app .stanza-hero-title.MuiTypography-root,
+.stanza-hero-title {
+  font-family: var(--stanza-font-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--stanza-ink);
+}
+
+.stanza-app .stanza-whisper-title.MuiTypography-root,
+.stanza-whisper-title {
+  font-family: var(--stanza-font-display);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.25;
+  color: var(--stanza-ink);
+}
+
+.stanza-viewer-header .stanza-display-title {
+  font-size: clamp(1.45rem, 1.2rem + 0.8vw, 1.75rem);
+}
+
+.stanza-hero-lede {
+  color: var(--stanza-ink-muted);
+  line-height: 1.6;
+}
+
+.stanza-rail-section-label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-family: var(--stanza-font-display);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  color: var(--stanza-ink);
+  white-space: nowrap;
+}
+
+.stanza-rail-section-label--minor {
+  font-family: var(--stanza-font-ui);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--stanza-ink-muted);
 }
 
 .stanza-library-grid {
@@ -67,26 +152,30 @@
 
 .stanza-library-card {
   position: relative;
-  border-radius: 12px;
+  border-radius: 14px;
   overflow: hidden;
   cursor: pointer;
   text-align: left;
-  border: 1px solid rgba(26, 21, 32, 0.08);
-  background: rgba(255, 253, 250, 0.9);
+  border: 1px solid var(--stanza-paper-line-faint);
+  background: rgba(255, 251, 245, 0.92);
+  box-shadow: var(--stanza-shadow-card);
   transition:
-    box-shadow 0.15s ease,
-    border-color 0.15s ease,
-    transform 0.12s ease;
+    box-shadow 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.14s ease;
 }
 
 .stanza-library-card:hover {
-  border-color: rgba(232, 72, 160, 0.42);
-  box-shadow: 0 4px 14px rgba(29, 29, 31, 0.07);
+  border-color: var(--stanza-rose-line);
+  box-shadow: var(--stanza-shadow-card-hover);
+  transform: translateY(-1px);
 }
 
 .stanza-library-card--selected {
-  border-color: rgba(232, 72, 160, 0.78);
-  box-shadow: 0 0 0 2px rgba(232, 72, 160, 0.22);
+  border-color: rgba(232, 72, 160, 0.62);
+  box-shadow:
+    0 0 0 1px rgba(232, 72, 160, 0.18),
+    var(--stanza-shadow-card);
 }
 
 button.stanza-library-card {
@@ -120,9 +209,9 @@ button.stanza-library-card {
 }
 
 .stanza-viewer-header {
-  padding-bottom: 0.25rem;
-  border-bottom: 1px solid rgba(60, 60, 67, 0.08);
-  margin-bottom: 0.25rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--stanza-paper-line-faint);
+  margin-bottom: 0.35rem;
 }
 
 .stanza-practice-rail .MuiFormControl-root {
@@ -167,32 +256,237 @@ button.stanza-library-card {
 }
 
 .stanza-playback-strip {
-  background: rgba(255, 253, 250, 0.65);
-  border: 1px solid rgba(60, 60, 67, 0.07);
-  border-radius: 12px;
-  padding: 8px 10px 10px;
+  background: var(--stanza-paper-elevated);
+  border: 1px solid var(--stanza-paper-line-faint);
+  border-radius: calc(var(--stanza-radius-panel) - 2px);
+  padding: 10px 12px 12px;
   margin-bottom: 0;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  box-shadow: var(--stanza-shadow-rest);
 }
 
 @supports (backdrop-filter: blur(6px)) {
   .stanza-playback-strip {
-    backdrop-filter: blur(8px);
+    backdrop-filter: blur(12px);
   }
 }
 
 .stanza-playback-toolbar {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: space-between;
   flex-wrap: wrap;
-  gap: 10px 12px;
-  margin-bottom: 0;
+  gap: 10px 14px;
+  margin-bottom: 10px;
 }
 
 @media (min-width: 540px) {
   .stanza-playback-toolbar {
     flex-wrap: nowrap;
+  }
+}
+
+.stanza-playback-transport {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.stanza-playback-toolbar-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.stanza-playback-control-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.stanza-playback-control-label {
+  font-family: var(--stanza-font-display);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--stanza-ink-muted);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.stanza-playback-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  padding: 2px;
+  border-radius: var(--stanza-radius-chip);
+  background: rgba(255, 255, 255, 0.42);
+  box-shadow: inset 0 0 0 1px var(--stanza-paper-line-faint);
+}
+
+.stanza-playback-chip--meta {
+  padding: 2px 4px;
+}
+
+.stanza-playback-chip--selection {
+  flex-wrap: wrap;
+  row-gap: 2px;
+}
+
+.stanza-playback-chip-caption {
+  padding: 0 4px 0 6px;
+  font-family: var(--stanza-font-ui);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--stanza-ink-muted);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.stanza-playback-chip-divider {
+  width: 1px;
+  height: 16px;
+  margin: 0 2px;
+  flex-shrink: 0;
+  background: var(--stanza-paper-line-faint);
+}
+
+.stanza-playback-chip-btn.MuiIconButton-root {
+  width: 30px;
+  height: 26px;
+  margin: 0;
+  padding: 0;
+  border-radius: 8px;
+  color: var(--stanza-ink-muted);
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease;
+}
+
+.stanza-playback-chip-btn.MuiIconButton-root .MuiSvgIcon-root {
+  font-size: 17px;
+}
+
+.stanza-playback-chip-btn.MuiIconButton-root:hover {
+  color: var(--stanza-ink);
+  background: rgba(49, 43, 38, 0.05);
+}
+
+.stanza-playback-chip-btn.MuiIconButton-root.Mui-disabled {
+  color: rgba(109, 102, 94, 0.28);
+}
+
+.stanza-playback-chip-btn--active.MuiIconButton-root {
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--stanza-ink);
+  box-shadow:
+    0 1px 2px rgba(47, 39, 33, 0.05),
+    inset 0 0 0 1px var(--stanza-paper-line-faint);
+}
+
+.stanza-playback-chip-btn--play.MuiIconButton-root {
+  width: 32px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--stanza-ink);
+  box-shadow:
+    0 1px 2px rgba(47, 39, 33, 0.06),
+    inset 0 0 0 1px var(--stanza-paper-line-faint);
+}
+
+.stanza-playback-chip-btn--play.MuiIconButton-root:hover {
+  background: #fffdf9;
+}
+
+.stanza-playback-chip-btn--solo.MuiIconButton-root {
+  border-radius: var(--stanza-radius-chip);
+  background: rgba(255, 255, 255, 0.42);
+  box-shadow: inset 0 0 0 1px var(--stanza-paper-line-faint);
+}
+
+.stanza-playback-chip-text-btn.MuiButton-root {
+  min-width: 0;
+  min-height: 26px;
+  padding: 0 10px;
+  border-radius: 8px;
+  text-transform: none;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--stanza-ink);
+}
+
+.stanza-playback-chip-text-btn.MuiButton-root:hover {
+  background: rgba(29, 29, 31, 0.06);
+}
+
+.stanza-playback-chip-text-btn .MuiButton-startIcon {
+  margin-right: 4px;
+  margin-left: 0;
+}
+
+.stanza-playback-chip-text-btn .MuiButton-startIcon > *:nth-of-type(1) {
+  font-size: 18px;
+}
+
+.stanza-playback-chip-reset-slot {
+  display: inline-flex;
+  width: 32px;
+  height: 28px;
+  flex: 0 0 32px;
+  align-items: center;
+  justify-content: center;
+}
+
+.stanza-selection-span-pad-icon {
+  transform: rotate(90deg);
+}
+
+.stanza-playback-track-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  margin-top: 10px;
+}
+
+.stanza-playback-footer-selection {
+  margin-left: auto;
+}
+
+@media (max-width: 539px) {
+  .stanza-playback-toolbar-tools .stanza-playback-control-label {
+    display: none;
+  }
+}
+
+.stanza-playback-chip-btn.MuiIconButton-root:focus-visible {
+  outline: 1px solid rgba(60, 60, 67, 0.35);
+  outline-offset: 1px;
+}
+
+@media (pointer: coarse) {
+  .stanza-playback-chip-btn.MuiIconButton-root {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .stanza-playback-chip-btn--play.MuiIconButton-root {
+    width: 44px;
+    height: 44px;
+  }
+
+  .stanza-playback-chip-reset-slot {
+    width: 44px;
+    height: 44px;
+    flex-basis: 44px;
   }
 }
 
@@ -266,19 +560,9 @@ button.stanza-library-card {
 
 /* Practice rail: less stark than pure white on cream */
 .stanza-practice-rail.stanza-panel {
-  background: rgba(255, 252, 248, 0.78);
-}
-
-/* Footer under timeline (Add marker) — keeps editing near the bar */
-.stanza-playback-track-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px 12px;
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px solid rgba(60, 60, 67, 0.08);
+  background: rgba(255, 251, 245, 0.82);
+  border-color: var(--stanza-paper-line-faint);
+  box-shadow: var(--stanza-shadow-card);
 }
 
 /* Practice rail: equal-width speed presets (avoid uneven flex from label length) */
@@ -308,33 +592,25 @@ button.stanza-library-card {
   margin: 0;
 }
 
-.stanza-play-btn {
-  width: 42px !important;
-  height: 42px !important;
-  padding: 0 !important;
-  background-color: rgba(29, 29, 31, 0.06) !important;
-  color: #1d1d1f !important;
-  transition:
-    background-color 0.15s ease,
-    transform 0.12s ease !important;
-}
-
-.stanza-play-btn:hover {
-  background-color: rgba(29, 29, 31, 0.1) !important;
+.stanza-play-btn.MuiIconButton-root {
+  width: 32px;
+  height: 28px;
 }
 
 .stanza-playback-time {
+  min-width: 7.5rem;
+  padding: 0 6px;
   font-variant-numeric: tabular-nums;
   font-size: 0.8125rem;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  color: #6e6e73;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--stanza-ink);
 }
 
 .stanza-link-quiet {
   font-size: 0.8125rem;
   font-weight: 500;
-  color: #6e6e73;
+  color: var(--stanza-ink-muted);
   text-decoration: none;
   background: none;
   border: none;
@@ -346,7 +622,7 @@ button.stanza-library-card {
 
 .stanza-link-quiet:hover,
 .stanza-link-quiet:focus-visible {
-  color: #e848a0;
+  color: var(--stanza-rose);
 }
 
 .stanza-link-quiet:focus-visible {
@@ -367,13 +643,30 @@ button.stanza-library-card {
 
 .stanza-playback-track {
   position: relative;
-  height: 42px;
-  border-radius: 6px;
+  height: 40px;
+  border-radius: calc(var(--stanza-radius-chip) + 1px);
   overflow: visible;
-  border: 1px solid rgba(60, 60, 67, 0.08);
+  border: 1px solid var(--stanza-paper-line-faint);
   background: rgba(255, 255, 255, 0.72);
   cursor: pointer;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+.stanza-playback-track--loop::after {
+  content: '';
+  position: absolute;
+  left: var(--stanza-loop-start, 0%);
+  width: var(--stanza-loop-width, 0%);
+  top: -3px;
+  bottom: -3px;
+  box-sizing: border-box;
+  border: 2px solid rgba(232, 72, 160, 0.94);
+  border-radius: 8px;
+  pointer-events: none;
+  z-index: 5;
+  box-shadow:
+    0 0 0 1px rgba(232, 72, 160, 0.24),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.28);
 }
 
 .stanza-playback-track:focus-visible {
@@ -381,9 +674,9 @@ button.stanza-library-card {
   outline-offset: 2px;
 }
 
-/* Segment strip: continuous bar with hairline dividers; selection = accent wash + bottom edge. */
+/* Segment strip: hairline dividers; light pink selection span is a track overlay. */
 .stanza-playback-segments-clip {
-  border-radius: 5px;
+  border-radius: 9px;
   overflow: hidden;
 }
 
@@ -391,35 +684,35 @@ button.stanza-library-card {
   appearance: none;
   -webkit-appearance: none;
   position: relative;
+  box-sizing: border-box;
   margin: 0;
   border: none;
   border-radius: 0;
-  border-right: 1px solid rgba(60, 60, 67, 0.1);
+  border-right: 1px solid var(--stanza-paper-line-faint);
+  background-color: transparent;
+  cursor: pointer;
+  padding: 2px 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--stanza-ink);
+}
+
+.stanza-playback-seg--selected {
+  z-index: 2;
+  font-weight: 600;
 }
 
 .stanza-playback-seg:last-of-type {
   border-right: none;
 }
 
-.stanza-playback-seg--even {
-  background-color: #ffffff;
-}
-
-.stanza-playback-seg--odd {
-  background-color: #f7f7f8;
-}
-
-.stanza-playback-seg--selected {
-  background-color: rgba(232, 72, 160, 0.07);
-  border-right-color: rgba(60, 60, 67, 0.1);
-  box-shadow: inset 2px 0 0 0 rgba(232, 72, 160, 0.82);
-  z-index: 2;
-}
-
 .stanza-playback-seg--selected-dim {
   opacity: 1;
   background-color: rgba(29, 29, 31, 0.03) !important;
-  box-shadow: inset 2px 0 0 0 rgba(232, 72, 160, 0.38) !important;
+  box-shadow: inset 2px 0 0 0 rgba(232, 72, 160, 0.48) !important;
 }
 
 .stanza-playback-seg--practiced::after {
@@ -430,63 +723,6 @@ button.stanza-library-card {
   outline: 1px solid rgba(60, 60, 67, 0.35);
   outline-offset: -1px;
   z-index: 1;
-}
-
-/* Loop mode: compact icon strip, neutral chrome (selection uses segment accent). */
-.stanza-loop-options {
-  display: inline-flex;
-  align-items: center;
-  gap: 1px;
-  padding: 2px;
-  border-radius: 8px;
-  background: rgba(29, 29, 31, 0.04);
-  box-shadow: none;
-}
-
-.stanza-loop-option {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 32px;
-  margin: 0;
-  padding: 0;
-  border: none;
-  border-radius: 6px;
-  background: transparent;
-  color: rgba(60, 60, 67, 0.72);
-  cursor: pointer;
-  transition:
-    background-color 0.12s ease,
-    color 0.12s ease;
-}
-
-.stanza-loop-option .material-symbols-outlined {
-  font-size: 19px;
-  line-height: 1;
-}
-
-.stanza-loop-option:hover {
-  background: rgba(29, 29, 31, 0.06);
-  color: #1d1d1f;
-}
-
-.stanza-loop-option--active {
-  background: rgba(29, 29, 31, 0.1);
-  color: #1d1d1f;
-  box-shadow: none;
-}
-
-.stanza-loop-option:focus-visible {
-  outline: 1px solid rgba(60, 60, 67, 0.35);
-  outline-offset: 1px;
-}
-
-@media (pointer: coarse) {
-  .stanza-loop-option {
-    min-width: 44px;
-    min-height: 44px;
-  }
 }
 
 .stanza-metronome-toggle {
@@ -528,9 +764,17 @@ button.stanza-library-card {
 }
 
 .stanza-mix-block {
-  border-top: 1px solid rgba(60, 60, 67, 0.07);
+  border-top: 1px solid var(--stanza-paper-line-faint);
   margin-top: 2px;
   padding-top: 5px;
+}
+
+.stanza-rail-compact-btn.MuiButton-root {
+  min-height: 30px;
+  font-size: 0.75rem;
+  border-radius: 999px;
+  text-transform: none;
+  font-weight: 600;
 }
 
 .stanza-mix-row {
@@ -576,11 +820,10 @@ button.stanza-library-card {
 }
 
 .stanza-library-footer.MuiPaper-root.MuiAccordion-root {
-  background: rgba(255, 252, 248, 0.55);
-  border: none;
-  border-top: 1px solid rgba(60, 60, 67, 0.1);
-  border-radius: 0 !important;
-  box-shadow: none;
+  background: rgba(255, 251, 245, 0.82);
+  border: 1px solid var(--stanza-paper-line-faint);
+  border-radius: var(--stanza-radius-panel) !important;
+  box-shadow: var(--stanza-shadow-card);
 }
 
 .stanza-library-footer .MuiAccordionSummary-root {
@@ -598,15 +841,16 @@ button.stanza-library-card {
   padding-left: 20px !important;
   padding-right: 20px !important;
   font-weight: 600 !important;
-  letter-spacing: -0.01em;
-  box-shadow: 0 1px 2px rgba(29, 29, 31, 0.06) !important;
+  letter-spacing: 0.01em;
+  box-shadow: 0 1px 2px rgba(47, 39, 33, 0.06) !important;
 }
 
 .stanza-btn-soft-outline {
   border-radius: 999px !important;
-  border-color: rgba(60, 60, 67, 0.22) !important;
-  color: #1d1d1f !important;
+  border-color: var(--stanza-paper-line) !important;
+  color: var(--stanza-ink) !important;
   font-weight: 600 !important;
+  background: rgba(255, 255, 255, 0.42) !important;
 }
 
 .stanza-hero {
@@ -622,15 +866,15 @@ button.stanza-library-card {
   background:
     radial-gradient(
       ellipse 90% 55% at 50% -30%,
-      rgba(232, 72, 160, 0.12),
+      rgba(232, 72, 160, 0.08),
       transparent 55%
     ),
     radial-gradient(
       ellipse 70% 45% at 100% 80%,
-      rgba(99, 102, 241, 0.06),
+      rgba(196, 164, 132, 0.08),
       transparent 50%
     ),
-    linear-gradient(168deg, #fdfcfa 0%, #f5ebe3 48%, #efe6dc 100%);
+    linear-gradient(168deg, #fdfaf6 0%, #f3ebe2 48%, #e9dfd3 100%);
   pointer-events: none;
 }
 
@@ -644,7 +888,7 @@ button.stanza-library-card {
 
 .stanza-hero-url .MuiOutlinedInput-root {
   border-radius: 14px;
-  background: rgba(255, 253, 250, 0.92);
+  background: rgba(255, 251, 245, 0.94);
   font-size: 1.2rem;
   transition:
     box-shadow 0.2s ease,
@@ -652,11 +896,11 @@ button.stanza-library-card {
 }
 
 .stanza-hero-url .MuiOutlinedInput-root:hover {
-  background: #fffefb;
+  background: #fffdf9;
 }
 
 .stanza-hero-url .MuiOutlinedInput-root.Mui-focused {
-  box-shadow: 0 0 0 3px rgba(232, 72, 160, 0.2);
+  box-shadow: 0 0 0 3px var(--stanza-rose-wash);
 }
 
 .stanza-hero-url .MuiOutlinedInput-input {
@@ -679,11 +923,21 @@ button.stanza-library-card {
   margin: 0 auto;
   aspect-ratio: 16 / 9;
   background: #0f172a;
-  border-radius: 16px;
+  border-radius: calc(var(--stanza-radius-panel) - 2px);
   overflow: hidden;
-  box-shadow:
-    0 0 0 0.5px rgba(60, 60, 67, 0.12),
-    0 8px 28px rgba(29, 29, 31, 0.1);
+  border: 1px solid var(--stanza-paper-line-faint);
+  box-shadow: var(--stanza-shadow-card);
+}
+
+.stanza-local-video {
+  width: 100%;
+  margin-top: 8px;
+  border-radius: calc(var(--stanza-radius-chip) + 1px);
+  max-height: 360px;
+  background: #0a0a0a;
+  cursor: pointer;
+  border: 1px solid var(--stanza-paper-line-faint);
+  box-shadow: var(--stanza-shadow-card);
 }
 
 .stanza-youtube-iframe,

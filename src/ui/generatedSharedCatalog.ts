@@ -203,7 +203,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "appsUsing": [
       "piano"
     ],
-    "exportType": "function",
+    "exportType": "named",
     "demoId": null
   },
   {
@@ -1158,6 +1158,907 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "shared-core",
     "description": "Shared onset detection utilities. Centralizes onset detection so analysis, benchmarks, and refinement use consistent logic with preset parameter sets.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-analysis-sectionaltempo-ts-analyzesectiontempowindows",
+    "name": "analyzeSectionTempoWindows",
+    "path": "src/shared/beat/analysis/sectionalTempo.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Analyze tempo variations across overlapping windows.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-analysis-sectionaltempo-ts-sectiontempowindow",
+    "name": "SectionTempoWindow",
+    "path": "src/shared/beat/analysis/sectionalTempo.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared sectional tempo analysis utilities.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-analysis-tempoutils-ts-normalizetorange",
+    "name": "normalizeToRange",
+    "path": "src/shared/beat/analysis/tempoUtils.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Normalize BPM to a wide safe range (50-200) for comparison only. This does NOT make octave decisions - it just ensures tempos are in a comparable range for grouping or change detection.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-beatrefinement-ts-mergebeatgrids",
+    "name": "mergeBeatGrids",
+    "path": "src/shared/beat/beatRefinement.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Merge beat grids from multiple algorithms Keeps beats that have multi-source support",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-beatrefinement-ts-snapbeatstoonsets",
+    "name": "snapBeatsToOnsets",
+    "path": "src/shared/beat/beatRefinement.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Snap beats to nearby audio onsets using onset detection",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-bpmaccuracytest-ts-bpmaccuracyresult",
+    "name": "BpmAccuracyResult",
+    "path": "src/shared/beat/bpmAccuracyTest.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "BPM Accuracy Test Tests our BPM detection accuracy by comparing detected BPM against onset alignment scores. This is a self-contained test that doesn't require ground-truth BPM values. Usage: - Import and call testBpmAccuracy with an AudioBuffer - Or run via browser console for interactive testing The test detects onsets from the audio, then scores how well different BPM values align with those onsets. If a significantly different BPM scores better than our detected BPM, it suggests our detection could be improved.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-bpmaccuracytest-ts-comparebpms",
+    "name": "compareBpms",
+    "path": "src/shared/beat/bpmAccuracyTest.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Test multiple BPM values and return detailed comparison Useful for debugging which BPM best matches the audio",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-bpmaccuracytest-ts-formatbpmaccuracyreport",
+    "name": "formatBpmAccuracyReport",
+    "path": "src/shared/beat/bpmAccuracyTest.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Format test results for console output",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-bpmaccuracytest-ts-runquickbpmaccuracytest",
+    "name": "runQuickBpmAccuracyTest",
+    "path": "src/shared/beat/bpmAccuracyTest.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Quick BPM accuracy test that skips redundant tempo detection This is faster than testBpmAccuracy because it uses pre-computed BPM and confidence values instead of re-running tempo detection.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-bpmaccuracytest-ts-testbpmaccuracy",
+    "name": "testBpmAccuracy",
+    "path": "src/shared/beat/bpmAccuracyTest.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Test BPM detection accuracy for an audio buffer",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-decodemediaforbeat-ts-analysisprogress",
+    "name": "AnalysisProgress",
+    "path": "src/shared/beat/decodeMediaForBeat.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "beat"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-decodemediaforbeat-ts-decodemediatobuffer",
+    "name": "decodeMediaToBuffer",
+    "path": "src/shared/beat/decodeMediaForBeat.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [
+      "beat"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-decodemediaforbeat-ts-yieldtomainthread",
+    "name": "yieldToMainThread",
+    "path": "src/shared/beat/decodeMediaForBeat.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [
+      "beat"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-essentiasingleton-ts-essentiainstance",
+    "name": "EssentiaInstance",
+    "path": "src/shared/beat/essentiaSingleton.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Single Essentia.js WASM instance for Find-the-Beat analysis, Stanza segment tempo, Piano chroma, and other shared audio ML entry points.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-essentiasingleton-ts-getessentia",
+    "name": "getEssentia",
+    "path": "src/shared/beat/essentiaSingleton.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Initialize Essentia.js WASM module (cached singleton).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-experimental-fermatadetector-ts-detectfermatas",
+    "name": "detectFermatas",
+    "path": "src/shared/beat/experimental/fermataDetector.ts",
+    "kind": "utility",
+    "stability": "experimental",
+    "owner": "shared-core",
+    "description": "Detect fermatas in audio",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-experimental-fermatadetector-ts-fermatacandidate",
+    "name": "FermataCandidate",
+    "path": "src/shared/beat/experimental/fermataDetector.ts",
+    "kind": "model",
+    "stability": "experimental",
+    "owner": "shared-core",
+    "description": "Fermata Detector (Experimental) Detects fermatas (held notes/pauses) in audio using inter-onset interval (IOI) analysis. Fermatas are characterized by: 1. Longer-than-expected gaps between note onsets 2. Energy profile showing sustained tone or silence (not just quiet passage) 3. Return to normal rhythm after the held section",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-experimental-fermatadetector-ts-fermatadetectionresult",
+    "name": "FermataDetectionResult",
+    "path": "src/shared/beat/experimental/fermataDetector.ts",
+    "kind": "model",
+    "stability": "experimental",
+    "owner": "shared-core",
+    "description": "Fermata Detector (Experimental) Detects fermatas (held notes/pauses) in audio using inter-onset interval (IOI) analysis. Fermatas are characterized by: 1. Longer-than-expected gaps between note onsets 2. Energy profile showing sustained tone or silence (not just quiet passage) 3. Return to normal rhythm after the held section",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-experimental-fermatadetector-ts-mergefermataregions",
+    "name": "mergeFermataRegions",
+    "path": "src/shared/beat/experimental/fermataDetector.ts",
+    "kind": "utility",
+    "stability": "experimental",
+    "owner": "shared-core",
+    "description": "Merge overlapping or adjacent fermata regions",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-experimental-tempochangedetector-ts-combinetemporegions",
+    "name": "combineTempoRegions",
+    "path": "src/shared/beat/experimental/tempoChangeDetector.ts",
+    "kind": "utility",
+    "stability": "experimental",
+    "owner": "shared-core",
+    "description": "Combine fermata detection and tempo change detection results Interleaves fermata regions with steady tempo regions",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-experimental-tempochangedetector-ts-detecttempochanges",
+    "name": "detectTempoChanges",
+    "path": "src/shared/beat/experimental/tempoChangeDetector.ts",
+    "kind": "utility",
+    "stability": "experimental",
+    "owner": "shared-core",
+    "description": "Detect tempo changes in audio using windowed analysis",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-experimental-tempochangedetector-ts-tempochangeresult",
+    "name": "TempoChangeResult",
+    "path": "src/shared/beat/experimental/tempoChangeDetector.ts",
+    "kind": "model",
+    "stability": "experimental",
+    "owner": "shared-core",
+    "description": "Tempo Change Detector (Experimental) Detects tempo changes in audio using windowed BPM analysis. Identifies sections with different steady tempos (like \"Defying Gravity\"). Algorithm: 1. Run tempo detection on overlapping windows 2. Track BPM stability within each window 3. Find change points where consecutive stable windows have different BPMs 4. Correlate with section boundaries",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-experimental-tempochangedetector-ts-tempowindow",
+    "name": "TempoWindow",
+    "path": "src/shared/beat/experimental/tempoChangeDetector.ts",
+    "kind": "model",
+    "stability": "experimental",
+    "owner": "shared-core",
+    "description": "Tempo Change Detector (Experimental) Detects tempo changes in audio using windowed BPM analysis. Identifies sections with different steady tempos (like \"Defying Gravity\"). Algorithm: 1. Run tempo detection on overlapping windows 2. Track BPM stability within each window 3. Find change points where consecutive stable windows have different BPMs 4. Correlate with section boundaries",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-findthebeatanalyzer-ts-adjustbeatsforgaps",
+    "name": "adjustBeatsForGaps",
+    "path": "src/shared/beat/findTheBeatAnalyzer.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Adjust beat positions to account for gaps (fermatas/pauses) When there's a gap in the music (like a fermata), the beat grid continues mathematically but the music pauses. This causes all subsequent beats to be out of sync. This function shifts beats after each gap to realign with where the music actually resumes.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-findthebeatanalyzer-ts-analysisprogresscallback",
+    "name": "AnalysisProgressCallback",
+    "path": "src/shared/beat/findTheBeatAnalyzer.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Progress callback type for analysis",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-findthebeatanalyzer-ts-analyzebeat",
+    "name": "analyzeBeat",
+    "path": "src/shared/beat/findTheBeatAnalyzer.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Analyze audio buffer for BPM and beat information Uses ensemble of Essentia.js algorithms for improved accuracy",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-findthebeatanalyzer-ts-beatanalysisresult",
+    "name": "BeatAnalysisResult",
+    "path": "src/shared/beat/findTheBeatAnalyzer.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Beat Analyzer using Essentia.js Uses the industry-standard Essentia library (from MTG/UPF) via its WASM port for accurate BPM detection using the RhythmExtractor2013 algorithm. Shared implementation for Find the Beat and Stanza segment analysis.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-findthebeatanalyzer-ts-combinetemporegions",
+    "name": "combineTempoRegions",
+    "path": "src/shared/beat/findTheBeatAnalyzer.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Beat Analyzer using Essentia.js Uses the industry-standard Essentia library (from MTG/UPF) via its WASM port for accurate BPM detection using the RhythmExtractor2013 algorithm. Shared implementation for Find the Beat and Stanza segment analysis.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-findthebeatanalyzer-ts-detectfermatas",
+    "name": "detectFermatas",
+    "path": "src/shared/beat/findTheBeatAnalyzer.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Beat Analyzer using Essentia.js Uses the industry-standard Essentia library (from MTG/UPF) via its WASM port for accurate BPM detection using the RhythmExtractor2013 algorithm. Shared implementation for Find the Beat and Stanza segment analysis.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-findthebeatanalyzer-ts-detecttempochanges",
+    "name": "detectTempoChanges",
+    "path": "src/shared/beat/findTheBeatAnalyzer.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Beat Analyzer using Essentia.js Uses the industry-standard Essentia library (from MTG/UPF) via its WASM port for accurate BPM detection using the RhythmExtractor2013 algorithm. Shared implementation for Find the Beat and Stanza segment analysis.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-findthebeatanalyzer-ts-getessentia",
+    "name": "getEssentia",
+    "path": "src/shared/beat/findTheBeatAnalyzer.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Beat Analyzer using Essentia.js Uses the industry-standard Essentia library (from MTG/UPF) via its WASM port for accurate BPM detection using the RhythmExtractor2013 algorithm. Shared implementation for Find the Beat and Stanza segment analysis.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-findthebeatanalyzer-ts-mergefermataregions",
+    "name": "mergeFermataRegions",
+    "path": "src/shared/beat/findTheBeatAnalyzer.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Beat Analyzer using Essentia.js Uses the industry-standard Essentia library (from MTG/UPF) via its WASM port for accurate BPM detection using the RhythmExtractor2013 algorithm. Shared implementation for Find the Beat and Stanza segment analysis.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-findthebeatanalyzer-ts-regeneratebeats",
+    "name": "regenerateBeats",
+    "path": "src/shared/beat/findTheBeatAnalyzer.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Update beat positions when BPM is manually changed",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-gapfermatadetector-ts-detectgaponsets",
+    "name": "detectGapOnsets",
+    "path": "src/shared/beat/gapFermataDetector.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Gap-based Fermata Detector Lightweight single-pass fermata detection. Analyzes inter-onset intervals (IOI) to find gaps significantly longer than the expected beat interval, then validates with simple energy analysis. This approach is much faster than binary search because it: - Computes onsets once with a single energy-based pass - Uses simple RMS for energy validation - Single O(n) pass through onset array",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-gapfermatadetector-ts-detectgapsforresync",
+    "name": "detectGapsForResync",
+    "path": "src/shared/beat/gapFermataDetector.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Detect gaps in onset pattern for beat grid resync This is used to find places where the beat grid needs to be shifted to stay aligned with the actual music after pauses/fermatas.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-gapfermatadetector-ts-gapwithresync",
+    "name": "GapWithResync",
+    "path": "src/shared/beat/gapFermataDetector.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "A gap that requires beat grid resync",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-gapfermatadetector-ts-getonsetpresetfortempo",
+    "name": "getOnsetPresetForTempo",
+    "path": "src/shared/beat/gapFermataDetector.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Gap-based Fermata Detector Lightweight single-pass fermata detection. Analyzes inter-onset intervals (IOI) to find gaps significantly longer than the expected beat interval, then validates with simple energy analysis. This approach is much faster than binary search because it: - Computes onsets once with a single energy-based pass - Uses simple RMS for energy validation - Single O(n) pass through onset array",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-onsetalignmentscorer-ts-alignmentanalysis",
+    "name": "AlignmentAnalysis",
+    "path": "src/shared/beat/onsetAlignmentScorer.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Onset Alignment Scorer Evaluates how well a given BPM aligns with detected audio onsets. This provides an objective measure of BPM accuracy without requiring human listening evaluation. The approach: 1. Detect onsets from audio (note attacks, beat positions) 2. For each candidate BPM, generate a theoretical beat grid 3. For each beat in the grid, find the nearest onset 4. Score based on how close beats are to onsets A good BPM will have beats that consistently land near onsets. A bad BPM will have beats that often fall between onsets.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-onsetalignmentscorer-ts-alignmentonsetoptions",
+    "name": "AlignmentOnsetOptions",
+    "path": "src/shared/beat/onsetAlignmentScorer.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Onset Alignment Scorer Evaluates how well a given BPM aligns with detected audio onsets. This provides an objective measure of BPM accuracy without requiring human listening evaluation. The approach: 1. Detect onsets from audio (note attacks, beat positions) 2. For each candidate BPM, generate a theoretical beat grid 3. For each beat in the grid, find the nearest onset 4. Score based on how close beats are to onsets A good BPM will have beats that consistently land near onsets. A bad BPM will have beats that often fall between onsets.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-onsetalignmentscorer-ts-alignmentscore",
+    "name": "AlignmentScore",
+    "path": "src/shared/beat/onsetAlignmentScorer.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Onset Alignment Scorer Evaluates how well a given BPM aligns with detected audio onsets. This provides an objective measure of BPM accuracy without requiring human listening evaluation. The approach: 1. Detect onsets from audio (note attacks, beat positions) 2. For each candidate BPM, generate a theoretical beat grid 3. For each beat in the grid, find the nearest onset 4. Score based on how close beats are to onsets A good BPM will have beats that consistently land near onsets. A bad BPM will have beats that often fall between onsets.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-onsetalignmentscorer-ts-analyzealignment",
+    "name": "analyzeAlignment",
+    "path": "src/shared/beat/onsetAlignmentScorer.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Analyze alignment for multiple candidate BPMs",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-onsetalignmentscorer-ts-calculatealignmentscore",
+    "name": "calculateAlignmentScore",
+    "path": "src/shared/beat/onsetAlignmentScorer.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Calculate alignment score for a specific BPM against detected onsets",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-onsetalignmentscorer-ts-detectalignmentonsets",
+    "name": "detectAlignmentOnsets",
+    "path": "src/shared/beat/onsetAlignmentScorer.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Detect onsets for alignment diagnostics with optional skip ranges.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-onsetalignmentscorer-ts-formatalignmentreport",
+    "name": "formatAlignmentReport",
+    "path": "src/shared/beat/onsetAlignmentScorer.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Format alignment analysis as a readable report",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-sectionaltempoanalyzer-ts-analyzetempovariation",
+    "name": "analyzeTempoVariation",
+    "path": "src/shared/beat/sectionalTempoAnalyzer.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Analyze tempo variations across sections of the song.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-sectionaltempoanalyzer-ts-sectiontempo",
+    "name": "SectionTempo",
+    "path": "src/shared/beat/sectionalTempoAnalyzer.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Sectional Tempo Analyzer Analyzes tempo variations across different sections of a song. This helps diagnose whether: 1. The song has a constant tempo (and we're detecting wrong BPM) 2. The song has variable tempo (musicians speed up/slow down) 3. The song has distinct tempo changes at specific points",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-sectionaltempoanalyzer-ts-tempovariationreport",
+    "name": "TempoVariationReport",
+    "path": "src/shared/beat/sectionalTempoAnalyzer.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Sectional Tempo Analyzer Analyzes tempo variations across different sections of a song. This helps diagnose whether: 1. The song has a constant tempo (and we're detecting wrong BPM) 2. The song has variable tempo (musicians speed up/slow down) 3. The song has distinct tempo changes at specific points",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-segmentbeatanalysis-ts-analyzebeatformediatimerange",
+    "name": "analyzeBeatForMediaTimeRange",
+    "path": "src/shared/beat/segmentBeatAnalysis.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Decode uploaded media, analyze only `[rangeStartSec, rangeEndSec]`, and map the first-beat offset back to absolute media time. Does not assume section edges align to downbeats.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-segmentbeatanalysis-ts-analyzebeatformediatimerangeparams",
+    "name": "AnalyzeBeatForMediaTimeRangeParams",
+    "path": "src/shared/beat/segmentBeatAnalysis.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-segmentbeatanalysis-ts-segmentbeatanalysisprogress",
+    "name": "SegmentBeatAnalysisProgress",
+    "path": "src/shared/beat/segmentBeatAnalysis.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-segmentbeatanalysis-ts-segmentbeatanalysisresult",
+    "name": "SegmentBeatAnalysisResult",
+    "path": "src/shared/beat/segmentBeatAnalysis.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-sliceaudiobuffer-ts-sliceaudiobuffer",
+    "name": "sliceAudioBuffer",
+    "path": "src/shared/beat/sliceAudioBuffer.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Copy a wall-clock subrange of an AudioBuffer into a new buffer (t=0 at slice start).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-tempoensemble-ts-detecttempoensemble",
+    "name": "detectTempoEnsemble",
+    "path": "src/shared/beat/tempoEnsemble.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Detect tempo using ensemble of algorithms",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-tempoensemble-ts-ensembleresult",
+    "name": "EnsembleResult",
+    "path": "src/shared/beat/tempoEnsemble.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Tempo Ensemble Detection Uses multiple tempo estimation algorithms and computes consensus to improve accuracy and detect/resolve octave errors (60 vs 120 vs 240 BPM).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-tempoensemble-ts-tempoestimate",
+    "name": "TempoEstimate",
+    "path": "src/shared/beat/tempoEnsemble.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Tempo Ensemble Detection Uses multiple tempo estimation algorithms and computes consensus to improve accuracy and detect/resolve octave errors (60 vs 120 vs 240 BPM).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-temporegions-ts-createdefaultregion",
+    "name": "createDefaultRegion",
+    "path": "src/shared/beat/tempoRegions.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Create a default steady region for the entire track",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-temporegions-ts-createsteadyregion",
+    "name": "createSteadyRegion",
+    "path": "src/shared/beat/tempoRegions.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Create a steady tempo region with consistent defaults.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-temporegions-ts-findbpmfortime",
+    "name": "findBpmForTime",
+    "path": "src/shared/beat/tempoRegions.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Find the BPM at a given time from tempo regions.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-temporegions-ts-generateregionid",
+    "name": "generateRegionId",
+    "path": "src/shared/beat/tempoRegions.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Generate unique ID for a tempo region",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-temporegions-ts-geteffectivebpm",
+    "name": "getEffectiveBpm",
+    "path": "src/shared/beat/tempoRegions.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Get the effective BPM at a specific time For steady regions, returns the region's BPM For accelerando/ritardando, interpolates between start and target BPM For rubato/fermata, returns null",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-temporegions-ts-getregionattime",
+    "name": "getRegionAtTime",
+    "path": "src/shared/beat/tempoRegions.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Get the tempo region at a specific time",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-temporegions-ts-steadyregionoptions",
+    "name": "SteadyRegionOptions",
+    "path": "src/shared/beat/tempoRegions.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Type of tempo region - 'steady': Consistent tempo throughout the region - 'fermata': Brief held note/pause (typically < 2 measures) - 'rubato': Free tempo section with no clear beat - 'accelerando': Gradually speeding up - 'ritardando': Gradually slowing down",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-temporegions-ts-tempoanalysisresult",
+    "name": "TempoAnalysisResult",
+    "path": "src/shared/beat/tempoRegions.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Result of tempo analysis including all detected regions",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-temporegions-ts-temporegion",
+    "name": "TempoRegion",
+    "path": "src/shared/beat/tempoRegions.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "A region of audio with specific tempo characteristics",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-temporegions-ts-tempotype",
+    "name": "TempoType",
+    "path": "src/shared/beat/tempoRegions.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Type of tempo region - 'steady': Consistent tempo throughout the region - 'fermata': Brief held note/pause (typically < 2 measures) - 'rubato': Free tempo section with no clear beat - 'accelerando': Gradually speeding up - 'ritardando': Gradually slowing down",
     "tags": [
       "api"
     ],

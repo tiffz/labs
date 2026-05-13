@@ -8,7 +8,7 @@
  * 3. Return to normal rhythm after the held section
  */
 
-import { getEssentia } from '../beatAnalyzer';
+import { getEssentia } from '../essentiaSingleton';
 import type { TempoRegion } from '../tempoRegions';
 import { generateRegionId } from '../tempoRegions';
 

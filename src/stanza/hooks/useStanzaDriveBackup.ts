@@ -4,6 +4,7 @@ import {
   ensureLabsDrivePortfolioProgressLayout,
   getLabsDriveProgressFileMeta,
   LABS_DRIVE_APP_FOLDER_STANZA,
+  readLabsDriveProgressJson,
   writeLabsDriveProgressJson,
 } from '../../shared/drive/labsDrivePortfolioLayout';
 import { ensureLabsGoogleAccessTokenForDrive } from '../../shared/google/labsGoogleDriveAccess';
@@ -12,8 +13,23 @@ import {
   isEmailAllowedLabsDriveTester,
 } from '../../shared/google/labsDriveTesterGate';
 import { useLabsEncoreGoogleIdentity } from '../../shared/google/useLabsEncoreGoogleSession';
-import { buildStanzaDriveEnvelope, serializeStanzaDriveEnvelope } from '../drive/stanzaDriveEnvelope';
+import type { StanzaSong } from '../db/stanzaDb';
+import { stanzaDb } from '../db/stanzaDb';
+import { assessStanzaDriveBackupConflict } from '../drive/stanzaDriveConflict';
+import {
+  buildStanzaDriveEnvelope,
+  parseStanzaDriveEnvelope,
+  serializeStanzaDriveEnvelope,
+  type StanzaDriveEnvelopeV1,
+} from '../drive/stanzaDriveEnvelope';
+import { formatStanzaDriveMergeReport, mergeDriveRowsIntoLocalLibrary } from '../drive/stanzaDriveMerge';
 import { readStanzaDriveSyncMeta, writeStanzaDriveSyncMeta } from '../drive/stanzaDriveSyncMeta';
+import {
+  listStanzaDriveUndoSnapshots,
+  parseSnapshotEnvelope,
+  pushStanzaDriveUndoSnapshot,
+  type StanzaDriveUndoSnapshot,
+} from '../drive/stanzaDriveUndoSnapshots';
 
 export function stanzaGoogleClientConfigured(): boolean {
   return Boolean((import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined)?.trim());
@@ -23,13 +39,39 @@ export function stanzaDriveTesterAllowlistEmpty(): boolean {
   return getLabsDriveTesterHashesFromEnv().size === 0;
 }
 
+export type StanzaDriveBackupConflictState = {
+  driveModifiedTime: string;
+  remoteExportedAt: string;
+  remoteSongCount: number;
+  localSongCount: number;
+  explainLines: string[];
+  remoteEnvelope: StanzaDriveEnvelopeV1;
+  etag: string | undefined;
+  progressFileId: string;
+};
+
+async function persistMergedSongs(nextRows: StanzaSong[]): Promise<void> {
+  await stanzaDb.transaction('rw', stanzaDb.songs, async () => {
+    const keep = new Set(nextRows.map((s) => s.id));
+    for (const row of await stanzaDb.songs.toArray()) {
+      if (!keep.has(row.id)) {
+        await stanzaDb.songs.delete(row.id);
+      }
+    }
+    for (const r of nextRows) {
+      await stanzaDb.songs.put(r);
+    }
+  });
+}
+
 export function useStanzaDriveBackup() {
   const identity = useLabsEncoreGoogleIdentity();
   const [testerOk, setTesterOk] = useState(false);
   const [testerResolved, setTesterResolved] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const lastMeta = readStanzaDriveSyncMeta();
+  const [conflict, setConflict] = useState<StanzaDriveBackupConflictState | null>(null);
+  const [restoreOpen, setRestoreOpen] = useState(false);
 
   useEffect(() => {
     if (!identity?.email) {
@@ -50,6 +92,21 @@ export function useStanzaDriveBackup() {
     };
   }, [identity?.email]);
 
+  const flushDriveWrite = useCallback(async () => {
+    const token = await ensureLabsGoogleAccessTokenForDrive();
+    const refs = await ensureLabsDrivePortfolioProgressLayout(token, LABS_DRIVE_APP_FOLDER_STANZA);
+    const metaBefore = await getLabsDriveProgressFileMeta(token, refs.progressFileId);
+    const envelope = await buildStanzaDriveEnvelope();
+    const body = serializeStanzaDriveEnvelope(envelope);
+    await writeLabsDriveProgressJson(token, refs.progressFileId, body, metaBefore.etag);
+    const metaAfter = await getLabsDriveProgressFileMeta(token, refs.progressFileId);
+    writeStanzaDriveSyncMeta({
+      lastCloudModifiedTime: metaAfter.modifiedTime,
+      lastBackupExportedAt: envelope.exportedAt,
+    });
+    setMessage('Library metadata saved to Google Drive (audio stays on this device).');
+  }, []);
+
   const onBackup = useCallback(async () => {
     setMessage(null);
     setBusy(true);
@@ -57,15 +114,39 @@ export function useStanzaDriveBackup() {
       const token = await ensureLabsGoogleAccessTokenForDrive();
       const refs = await ensureLabsDrivePortfolioProgressLayout(token, LABS_DRIVE_APP_FOLDER_STANZA);
       const metaBefore = await getLabsDriveProgressFileMeta(token, refs.progressFileId);
-      const envelope = await buildStanzaDriveEnvelope();
-      const body = serializeStanzaDriveEnvelope(envelope);
-      await writeLabsDriveProgressJson(token, refs.progressFileId, body, metaBefore.etag);
-      const metaAfter = await getLabsDriveProgressFileMeta(token, refs.progressFileId);
-      writeStanzaDriveSyncMeta({
-        lastCloudModifiedTime: metaAfter.modifiedTime,
-        lastBackupExportedAt: envelope.exportedAt,
+      const localRows = await stanzaDb.songs.toArray();
+      const localEnvelope = await buildStanzaDriveEnvelope();
+      pushStanzaDriveUndoSnapshot(localEnvelope);
+
+      let remoteEnvelope: StanzaDriveEnvelopeV1 | null = null;
+      try {
+        const json = await readLabsDriveProgressJson(token, refs.progressFileId);
+        remoteEnvelope = parseStanzaDriveEnvelope(json);
+      } catch {
+        remoteEnvelope = null;
+      }
+
+      const assessment = assessStanzaDriveBackupConflict({
+        syncMeta: readStanzaDriveSyncMeta(),
+        cloudModifiedTime: metaBefore.modifiedTime,
+        remoteEnvelope,
       });
-      setMessage('Library metadata saved to Google Drive (audio stays on this device).');
+
+      if (assessment.needsPrompt && remoteEnvelope) {
+        setConflict({
+          driveModifiedTime: metaBefore.modifiedTime ?? '',
+          remoteExportedAt: remoteEnvelope.exportedAt,
+          remoteSongCount: remoteEnvelope.songs.length,
+          localSongCount: localRows.length,
+          explainLines: assessment.explainLines,
+          remoteEnvelope,
+          etag: metaBefore.etag,
+          progressFileId: refs.progressFileId,
+        });
+        return;
+      }
+
+      await flushDriveWrite();
     } catch (e) {
       const msg =
         e instanceof DriveHttpError
@@ -77,7 +158,80 @@ export function useStanzaDriveBackup() {
     } finally {
       setBusy(false);
     }
+  }, [flushDriveWrite]);
+
+  const cancelConflict = useCallback(() => {
+    setConflict(null);
   }, []);
+
+  const confirmReplaceDriveOnly = useCallback(async () => {
+    if (!conflict) return;
+    setBusy(true);
+    try {
+      await flushDriveWrite();
+      setConflict(null);
+    } catch (e) {
+      const msg =
+        e instanceof DriveHttpError
+          ? e.message
+          : e instanceof Error
+            ? e.message
+            : 'Backup failed.';
+      setMessage(msg);
+    } finally {
+      setBusy(false);
+    }
+  }, [conflict, flushDriveWrite]);
+
+  const confirmMergeThenUpload = useCallback(async () => {
+    if (!conflict) return;
+    setBusy(true);
+    try {
+      const localRows = await stanzaDb.songs.toArray();
+      const { nextRows, report } = mergeDriveRowsIntoLocalLibrary(localRows, conflict.remoteEnvelope.songs);
+      await persistMergedSongs(nextRows);
+      setMessage(`Merged library (${formatStanzaDriveMergeReport(report)}), then saved to Drive.`);
+      setConflict(null);
+      await flushDriveWrite();
+    } catch (e) {
+      const msg =
+        e instanceof DriveHttpError
+          ? e.message
+          : e instanceof Error
+            ? e.message
+            : 'Merge or backup failed.';
+      setMessage(msg);
+    } finally {
+      setBusy(false);
+    }
+  }, [conflict, flushDriveWrite]);
+
+  const openRestorePicker = useCallback(() => {
+    setRestoreOpen(true);
+  }, []);
+
+  const closeRestorePicker = useCallback(() => {
+    setRestoreOpen(false);
+  }, []);
+
+  const applyUndoSnapshot = useCallback(
+    async (snap: StanzaDriveUndoSnapshot) => {
+      setBusy(true);
+      try {
+        const env = parseSnapshotEnvelope(snap);
+        const localRows = await stanzaDb.songs.toArray();
+        const { nextRows, report } = mergeDriveRowsIntoLocalLibrary(localRows, env.songs);
+        await persistMergedSongs(nextRows);
+        setRestoreOpen(false);
+        setMessage(`Restored snapshot from ${snap.label}. ${formatStanzaDriveMergeReport(report)}`);
+      } catch (e) {
+        setMessage(e instanceof Error ? e.message : 'Restore failed.');
+      } finally {
+        setBusy(false);
+      }
+    },
+    [],
+  );
 
   return {
     identity,
@@ -86,6 +240,15 @@ export function useStanzaDriveBackup() {
     busy,
     message,
     onBackup,
-    lastMeta,
+    lastMeta: readStanzaDriveSyncMeta(),
+    conflict,
+    cancelConflict,
+    confirmMergeThenUpload,
+    confirmReplaceDriveOnly,
+    restoreOpen,
+    openRestorePicker,
+    closeRestorePicker,
+    undoSnapshots: listStanzaDriveUndoSnapshots(),
+    applyUndoSnapshot,
   };
 }
