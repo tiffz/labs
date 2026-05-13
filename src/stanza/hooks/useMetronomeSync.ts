@@ -1,19 +1,51 @@
 import { useEffect, useRef } from 'react';
 
-function playClick(ctx: AudioContext): void {
-  const o = ctx.createOscillator();
-  const g = ctx.createGain();
-  o.type = 'sine';
-  o.frequency.value = 880;
-  g.gain.value = 0.0001;
-  o.connect(g);
-  g.connect(ctx.destination);
-  const t = ctx.currentTime;
-  g.gain.setValueAtTime(0.0001, t);
-  g.gain.exponentialRampToValueAtTime(0.12, t + 0.01);
-  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
-  o.start(t);
-  o.stop(t + 0.07);
+import { CLICK_SAMPLE_URL } from '../../shared/audio/drumSampleUrls';
+import { loadClickSample, playClickSampleAt, type LoadedClickSample } from '../../shared/audio/clickService';
+import { ensureAudioContextRunning } from '../../shared/playback/audioContextLifecycle';
+
+let metronomeAudioContext: AudioContext | null = null;
+
+let metronomeClickSample: LoadedClickSample | null = null;
+let metronomeClickSampleLoading: Promise<LoadedClickSample | null> | null = null;
+
+function getMetronomeAudioContext(): AudioContext | null {
+  const Ctor = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  if (!Ctor) return null;
+  if (!metronomeAudioContext || metronomeAudioContext.state === 'closed') {
+    metronomeAudioContext = new Ctor();
+    metronomeClickSample = null;
+    metronomeClickSampleLoading = null;
+  }
+  return metronomeAudioContext;
+}
+
+async function ensureMetronomeClickSample(ctx: AudioContext): Promise<LoadedClickSample | null> {
+  if (metronomeClickSample) return metronomeClickSample;
+  if (!metronomeClickSampleLoading) {
+    metronomeClickSampleLoading = loadClickSample(ctx, CLICK_SAMPLE_URL).then((s) => {
+      metronomeClickSample = s;
+      return s;
+    });
+  }
+  return metronomeClickSampleLoading;
+}
+
+/**
+ * Resume (or create) the shared click context. Call from a user gesture (play / toggle on)
+ * so Safari and strict autoplay policies allow audible output.
+ */
+export function primeMetronomeAudio(): void {
+  const ctx = getMetronomeAudioContext();
+  if (!ctx) return;
+  void ensureAudioContextRunning(ctx);
+  void ensureMetronomeClickSample(ctx);
+}
+
+function playSampleClick(ctx: AudioContext, sample: LoadedClickSample, isDownbeat: boolean): void {
+  const base = 0.52;
+  const vol = isDownbeat ? base : base * 0.42;
+  playClickSampleAt(ctx, sample, ctx.currentTime, vol, isDownbeat ? 1.28 : 1);
 }
 
 /**
@@ -29,14 +61,14 @@ export function useMetronomeSync(
   audioEnabled: boolean,
 ): void {
   const lastBeatRef = useRef<number | null>(null);
-  const ctxRef = useRef<AudioContext | null>(null);
 
+  /** Reset beat tracking when grid or enabled state changes, or whenever transport starts/stops (pause leaves stale indices). */
   useEffect(() => {
     lastBeatRef.current = null;
-  }, [anchorMediaTime, bpm, enabled]);
+  }, [anchorMediaTime, bpm, enabled, isPlaying]);
 
   useEffect(() => {
-    if (!enabled || !bpm || bpm <= 0 || anchorMediaTime === undefined || !isPlaying) {
+    if (!enabled || !bpm || bpm <= 0 || anchorMediaTime === undefined || !Number.isFinite(anchorMediaTime) || !isPlaying) {
       return;
     }
     const period = 60 / bpm;
@@ -50,18 +82,19 @@ export function useMetronomeSync(
       } else if (beat > lastBeatRef.current) {
         lastBeatRef.current = beat;
         if (audioEnabled) {
-          const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-          if (Ctx) {
-            if (!ctxRef.current || ctxRef.current.state === 'closed') {
-              ctxRef.current = new Ctx();
-            }
-            const ctx = ctxRef.current;
-            if (ctx.state === 'suspended') {
-              void ctx.resume();
-            }
-            playClick(ctx);
+          const ctx = getMetronomeAudioContext();
+          if (ctx) {
+            void ensureAudioContextRunning(ctx);
+            const isDownbeat = ((beat % 4) + 4) % 4 === 0;
+            void ensureMetronomeClickSample(ctx).then((sample) => {
+              if (!sample) return;
+              playSampleClick(ctx, sample, isDownbeat);
+            });
           }
         }
+      } else if (beat < lastBeatRef.current) {
+        // Seek backward, loop wrap, or resume with stale ref — resync without firing a burst of clicks.
+        lastBeatRef.current = beat;
       }
       raf = window.requestAnimationFrame(tick);
     };

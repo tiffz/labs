@@ -41,7 +41,10 @@ export function stanzaSongFromDriveRow(row: StanzaSongDriveRow): StanzaSong | nu
       primaryGain: row.primaryGain,
       primaryMuted: row.primaryMuted,
       metronomeBySegmentId: row.metronomeBySegmentId,
+      metronomeSongCalibration: row.metronomeSongCalibration,
+      metronomeTimingScope: row.metronomeTimingScope,
       metronomeEnabled: row.metronomeEnabled,
+      localTransposeSemitones: row.localTransposeSemitones,
     };
   }
   if (row.driveSourceFileId?.trim()) {
@@ -57,7 +60,10 @@ export function stanzaSongFromDriveRow(row: StanzaSongDriveRow): StanzaSong | nu
       primaryGain: row.primaryGain,
       primaryMuted: row.primaryMuted,
       metronomeBySegmentId: row.metronomeBySegmentId,
+      metronomeSongCalibration: row.metronomeSongCalibration,
+      metronomeTimingScope: row.metronomeTimingScope,
       metronomeEnabled: row.metronomeEnabled,
+      localTransposeSemitones: row.localTransposeSemitones,
     };
   }
   return null;
@@ -79,7 +85,10 @@ function mergeOneSong(local: StanzaSong, remote: StanzaSongDriveRow): StanzaSong
       primaryGain: remote.primaryGain ?? local.primaryGain,
       primaryMuted: remote.primaryMuted ?? local.primaryMuted,
       metronomeBySegmentId: remote.metronomeBySegmentId ?? local.metronomeBySegmentId,
+      metronomeSongCalibration: remote.metronomeSongCalibration ?? local.metronomeSongCalibration,
+      metronomeTimingScope: remote.metronomeTimingScope ?? local.metronomeTimingScope,
       metronomeEnabled: remote.metronomeEnabled ?? local.metronomeEnabled,
+      localTransposeSemitones: remote.localTransposeSemitones ?? local.localTransposeSemitones,
       stems: stemMetaFromRemote(local.stems, remote.stems),
       localAudioBlob: local.localAudioBlob,
       localVideoThumbnailBlob: local.localVideoThumbnailBlob,

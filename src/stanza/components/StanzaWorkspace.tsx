@@ -13,6 +13,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import RestartAltOutlinedIcon from '@mui/icons-material/RestartAltOutlined';
 import VolumeOffOutlinedIcon from '@mui/icons-material/VolumeOffOutlined';
 import VolumeUpOutlinedIcon from '@mui/icons-material/VolumeUpOutlined';
 import Accordion from '@mui/material/Accordion';
@@ -28,23 +29,22 @@ import IconButton from '@mui/material/IconButton';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Paper from '@mui/material/Paper';
-import Select from '@mui/material/Select';
 import AppLinearVolumeSlider from '../../shared/components/AppLinearVolumeSlider';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import Alert from '@mui/material/Alert';
+import CircularProgress from '@mui/material/CircularProgress';
 import Link from '@mui/material/Link';
 import { alpha, type Theme } from '@mui/material/styles';
 import AppTooltip from '../../shared/components/AppTooltip';
-import MetronomeToggleButton from '../../shared/components/MetronomeToggleButton';
+import { NumericStepperField } from '../../shared/components/music/NumericStepperField';
 import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
 import {
   stanzaDb,
-  type StanzaSegmentMetronomeCalibration,
+  type StanzaMetronomeTimingScope,
   type StanzaSong,
   type StanzaStemTrack,
-  type StanzaTake,
 } from '../db/stanzaDb';
 import {
   buildLocalAudioStanzaSong,
@@ -69,11 +69,14 @@ import {
 import {
   applySectionSelectionExtend,
   computeLoopHull,
+  effectiveBpmForSelectedSpan,
   STANZA_LOOP_EPS,
+  STANZA_MIN_LOOP_SPAN_SEC,
   suggestMusicalLoopPadSec,
   type StanzaPlaybackLoopMode,
   type StanzaSectionSelectionExtend,
 } from '../utils/stanzaPlaybackLoop';
+import { snapSegmentBoundaryMarkersToBeats, commitSelectionSpanToHullBoundaryMarkers } from '../utils/stanzaBeatGrid';
 import { useStanzaLocalPlaybackObjectUrls } from '../hooks/useStanzaLocalPlaybackObjectUrls';
 import {
   stanzaPrimaryLocalBlobKey,
@@ -83,6 +86,7 @@ import {
 import { readPositiveFiniteMediaDurationSec } from '../utils/stanzaMediaDuration';
 import { primaryPlaybackMuted, stanzaSanitizeLinearBusGain, stemPlaybackMuted } from '../utils/stanzaPlaybackMute';
 import { migrateStanzaSongSegmentKeysIfNeeded } from '../utils/stanzaSegmentMigration';
+import { resolveStanzaMetronomePlaybackSync } from '../utils/stanzaMetronomeResolution';
 import {
   probeFileAudioDurationSeconds,
   STANZA_STEM_DURATION_MATCH_EPS_SEC,
@@ -100,16 +104,19 @@ import {
   replaceStanzaPlaybackUrlSearchParams,
 } from '../utils/stanzaDriveUrlParams';
 import { readYoutubeVFromLocation, stripStanzaYoutubeSearchParamPreservingDrive } from '../utils/stanzaUrlYoutube';
-import type { GuidedRegimen } from '../utils/conductorRegimen';
 import StanzaYouTubePlayer, { type StanzaYouTubeController } from './StanzaYouTubePlayer';
 import StanzaAccountMenu from './StanzaAccountMenu';
 import StanzaTimeline from './StanzaTimeline';
 import { clampStanzaPlaybackRate } from '../utils/stanzaPlaybackRateLimits';
-import ConductorOverlay from './ConductorOverlay';
+import StanzaMetronomeStrip from './StanzaMetronomeStrip';
 import StanzaSectionMetronomeRail from './StanzaSectionMetronomeRail';
 import StanzaRepeatMark from './StanzaRepeatMark';
-import { useMetronomeSync } from '../hooks/useMetronomeSync';
+import { primeMetronomeAudio, useMetronomeSync } from '../hooks/useMetronomeSync';
+import { useStanzaMetronomePersistence } from '../hooks/useStanzaMetronomePersistence';
 import { useStanzaLocalStemMixer } from '../hooks/useStanzaLocalStemMixer';
+import { StanzaLocalTransposeMirror } from '../audio/stanzaLocalTransposeMirror';
+import { StanzaLocalTransposeStemBus } from '../audio/stanzaLocalTransposeStemBus';
+import { decodeStanzaLocalBlobForPlayback } from '../audio/decodeStanzaLocalBlob';
 
 /** Drag-reorder stem rows (not OS file drops). */
 const STANZA_STEM_REORDER_MIME = 'text/x-stanza-stem-reorder';
@@ -332,14 +339,24 @@ export default function StanzaWorkspace() {
   const isYoutubeForSeekRef = useRef(false);
   const [metronomeSectionHint, setMetronomeSectionHint] = useState<string | null>(null);
   const metronomeHintDismissedSegRef = useRef<string | null>(null);
-  const [conductorOpen, setConductorOpen] = useState(false);
-  const [regimen, setRegimen] = useState<GuidedRegimen>('accuracy');
-  const [guidedSegmentIndex, setGuidedSegmentIndex] = useState(0);
-  const [guidedSinceCp, setGuidedSinceCp] = useState(0);
-  const [recState, setRecState] = useState<'idle' | 'recording'>('idle');
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const recChunksRef = useRef<Blob[]>([]);
-  const recStreamRef = useRef<MediaStream | null>(null);
+  const [transposeBuffer, setTransposeBuffer] = useState<AudioBuffer | null>(null);
+  const [transposeStemMixPackage, setTransposeStemMixPackage] = useState<{
+    main: AudioBuffer;
+    stems: Map<string, AudioBuffer>;
+  } | null>(null);
+  const transposeStemMixPackageRef = useRef<{
+    main: AudioBuffer;
+    stems: Map<string, AudioBuffer>;
+  } | null>(null);
+  const [transposeDecodeBusy, setTransposeDecodeBusy] = useState(false);
+  const [transposeDecodeError, setTransposeDecodeError] = useState<string | null>(null);
+  const [transposeDraftSemitones, setTransposeDraftSemitones] = useState(0);
+  const [transposeStepperEditing, setTransposeStepperEditing] = useState(false);
+  const transposePersistTimerRef = useRef<number | null>(null);
+  const transposeMirrorRef = useRef<StanzaLocalTransposeMirror | null>(null);
+  const transposeStemBusRef = useRef<StanzaLocalTransposeStemBus | null>(null);
+  const transposeDraftRef = useRef(0);
+  transposeDraftRef.current = transposeDraftSemitones;
   const [removeConfirmSong, setRemoveConfirmSong] = useState<StanzaSong | null>(null);
   /** Pending OS drop: length matched current track — user must confirm stem import. */
   const [stemDropConfirm, setStemDropConfirm] = useState<{
@@ -352,6 +369,12 @@ export default function StanzaWorkspace() {
   const [stemInlineEdit, setStemInlineEdit] = useState<{ stemId: string; value: string } | null>(null);
   const [stemReorderDragId, setStemReorderDragId] = useState<string | null>(null);
   const [stemReorderOverId, setStemReorderOverId] = useState<string | null>(null);
+  /**
+   * Mix sliders stay smooth while dragging: MUI Slider is controlled from Dexie via live query,
+   * which updates after `persistSong` awaits — without local drafts the thumb can stick or jump.
+   */
+  const [mixPrimaryGainDraft, setMixPrimaryGainDraft] = useState<number | null>(null);
+  const [mixStemGainDraftById, setMixStemGainDraftById] = useState<Record<string, number>>({});
   const [libraryMenu, setLibraryMenu] = useState<{ anchor: HTMLElement; songId: string } | null>(null);
   const oembedAttemptedRef = useRef(new Set<string>());
   const urlBootstrapDoneRef = useRef(false);
@@ -371,10 +394,26 @@ export default function StanzaWorkspace() {
   const isYoutube = Boolean(selected?.ytId);
   isYoutubeForSeekRef.current = isYoutube;
 
+  /** Identifies local media for beat-analysis cache (same song + same file → reuse analysis). */
+  const stanzaBeatAnalysisCacheKey = useMemo(() => {
+    if (!selected?.id) return '';
+    const b = selected.localAudioBlob;
+    if (!b) return `${selected.id}:no-local-blob`;
+    const lm = typeof (b as File).lastModified === 'number' ? (b as File).lastModified : 0;
+    return `${selected.id}:${b.size}:${b.type}:${lm}`;
+  }, [selected?.id, selected?.localAudioBlob]);
+
   useEffect(() => {
     setStemInlineEdit(null);
     setStemReorderDragId(null);
     setStemReorderOverId(null);
+    setMixPrimaryGainDraft(null);
+    setMixStemGainDraftById({});
+    if (transposePersistTimerRef.current != null) {
+      window.clearTimeout(transposePersistTimerRef.current);
+      transposePersistTimerRef.current = null;
+    }
+    setTransposeStepperEditing(false);
   }, [selectedId]);
 
   useEffect(() => {
@@ -388,6 +427,33 @@ export default function StanzaWorkspace() {
   const isLocalVideo = Boolean(
     selected?.localAudioBlob && isStanzaBlobLikeVideo(selected.localAudioBlob, selected.title),
   );
+
+  const persistedTransposeSemitones = selected?.localTransposeSemitones ?? 0;
+  const [transposeInputStr, setTransposeInputStr] = useState('0');
+
+  useEffect(() => {
+    if (transposePersistTimerRef.current != null) return;
+    setTransposeDraftSemitones(persistedTransposeSemitones);
+    setTransposeInputStr(String(persistedTransposeSemitones));
+  }, [selectedId, persistedTransposeSemitones]);
+
+  useEffect(() => {
+    const m = new StanzaLocalTransposeMirror();
+    transposeMirrorRef.current = m;
+    return () => {
+      m.dispose();
+      transposeMirrorRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    const b = new StanzaLocalTransposeStemBus();
+    transposeStemBusRef.current = b;
+    return () => {
+      b.dispose();
+      transposeStemBusRef.current = null;
+    };
+  }, []);
 
   useEffect(() => {
     setYoutubePlayerErrorCode(null);
@@ -684,6 +750,78 @@ export default function StanzaWorkspace() {
     selectedRef,
   });
 
+  /** Pitch-shift playback reuses one decode per media identity; avoid re-decoding on unrelated Dexie churn. */
+  const transposeBuffersWanted = persistedTransposeSemitones !== 0;
+
+  useEffect(() => {
+    let cancelled = false;
+    const song = selectedRef.current;
+    const t = song?.localTransposeSemitones ?? 0;
+    const blob = song?.localAudioBlob;
+    const stems = song?.stems ?? [];
+    if (!song?.id || song.ytId || t === 0 || !blob || !localUrl) {
+      transposeMirrorRef.current?.setBuffer(null);
+      transposeStemBusRef.current?.setBuffers(null, new Map());
+      setTransposeBuffer(null);
+      setTransposeStemMixPackage(null);
+      transposeStemMixPackageRef.current = null;
+      setTransposeDecodeBusy(false);
+      setTransposeDecodeError(null);
+      return () => {
+        cancelled = true;
+      };
+    }
+    setTransposeDecodeBusy(true);
+    setTransposeDecodeError(null);
+    void (async () => {
+      try {
+        const mainBuf = await decodeStanzaLocalBlobForPlayback({
+          blob,
+          title: song.title || 'Stanza track',
+          mediaUrl: localUrl,
+          isVideo: isLocalVideo,
+        });
+        if (cancelled) return;
+        const stemMap = new Map<string, AudioBuffer>();
+        for (const st of stems) {
+          const mediaUrl = stemUrlById[st.id];
+          if (!mediaUrl) {
+            throw new Error('Stem audio URLs are not ready yet. Try again in a moment.');
+          }
+          const sb = await decodeStanzaLocalBlobForPlayback({
+            blob: st.localBlob,
+            title: `${song.title || 'Stanza track'} — ${st.label}`,
+            mediaUrl,
+            isVideo: false,
+          });
+          if (cancelled) return;
+          stemMap.set(st.id, sb);
+        }
+        if (cancelled) return;
+        transposeMirrorRef.current?.setBuffer(stems.length === 0 ? mainBuf : null);
+        transposeStemBusRef.current?.setBuffers(stems.length > 0 ? mainBuf : null, stemMap);
+        setTransposeBuffer(stems.length === 0 ? mainBuf : null);
+        const pack = stems.length > 0 ? { main: mainBuf, stems: stemMap } : null;
+        transposeStemMixPackageRef.current = pack;
+        setTransposeStemMixPackage(pack);
+      } catch (e) {
+        if (!cancelled) {
+          transposeMirrorRef.current?.setBuffer(null);
+          transposeStemBusRef.current?.setBuffers(null, new Map());
+          setTransposeBuffer(null);
+          setTransposeStemMixPackage(null);
+          transposeStemMixPackageRef.current = null;
+          setTransposeDecodeError(e instanceof Error ? e.message : 'Could not decode audio for pitch shift.');
+        }
+      } finally {
+        if (!cancelled) setTransposeDecodeBusy(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [localUrl, isLocalVideo, stemUrlById, transposeBuffersWanted, primaryLocalBlobKey, stemUrlKey, selectedId]);
+
   /** New song or new primary blob — avoid carrying the previous track's duration into `timeupdate` NaN windows. */
   useEffect(() => {
     setPlayback({
@@ -700,8 +838,28 @@ export default function StanzaWorkspace() {
       ?.map((s) => `${s.id}:${stemPlaybackMuted(s) ? 1 : 0}:${stanzaSanitizeLinearBusGain(s.gain)}`)
       .join('|') ?? '';
 
-  const stemWebAudioEnabled = Boolean(
-    selected && !selected.ytId && (selected.stems?.length ?? 0) > 0 && Boolean(stemUrlKey),
+  const stemWebAudioMixerEnabled = Boolean(
+    selected &&
+      !selected.ytId &&
+      (selected.stems?.length ?? 0) > 0 &&
+      Boolean(stemUrlKey) &&
+      (selected.localTransposeSemitones ?? 0) === 0,
+  );
+
+  const transposeMirrorPlaybackActive = Boolean(
+    selected &&
+      !selected.ytId &&
+      (selected.stems?.length ?? 0) === 0 &&
+      (selected.localTransposeSemitones ?? 0) !== 0 &&
+      transposeBuffer != null,
+  );
+
+  const transposeStemBusPlaybackActive = Boolean(
+    selected &&
+      !selected.ytId &&
+      (selected.stems?.length ?? 0) > 0 &&
+      (selected.localTransposeSemitones ?? 0) !== 0 &&
+      transposeStemMixPackage != null,
   );
 
   /** If Web Audio graph setup fails (or is abandoned), restore audible levels on the underlying media elements. */
@@ -722,7 +880,7 @@ export default function StanzaWorkspace() {
 
   const { webAudioMixReady, prepareStemMixerForPlaySync, finalizeStemMixerResume, abandonWebAudioMix } =
     useStanzaLocalStemMixer({
-      enabled: stemWebAudioEnabled,
+      enabled: stemWebAudioMixerEnabled,
       stemUrlKey,
       expectedStemCount: selected?.stems?.length ?? 0,
       primaryMuted: primaryPlaybackMuted(selected),
@@ -739,35 +897,57 @@ export default function StanzaWorkspace() {
     const main = localAudioRef.current ?? localVideoRef.current;
     if (!main) return;
 
-    const viaWebAudio = stemWebAudioEnabled && webAudioMixReady;
+    const audibleTranspose = transposeMirrorPlaybackActive || transposeStemBusPlaybackActive;
+    if ((selected.localTransposeSemitones ?? 0) !== 0 && !audibleTranspose) {
+      main.volume = 0;
+      main.muted = false;
+      for (const stem of selected.stems ?? []) {
+        const el = stemAudioRefs.current.get(stem.id);
+        if (!el) continue;
+        el.volume = 0;
+        el.muted = false;
+      }
+      return;
+    }
+
+    const viaWebAudio = stemWebAudioMixerEnabled && webAudioMixReady;
 
     if (viaWebAudio) {
       // See StanzaLocalStemMixer: MEA follows element volume — keep at 1; mix/mute via Web Audio only.
       main.volume = 1;
+      main.muted = false;
+    } else if (transposeStemBusPlaybackActive || transposeMirrorPlaybackActive) {
+      // Audible output comes from decoded-buffer Web Audio; keep media elements as transport clock only.
+      main.volume = 0;
       main.muted = false;
     } else {
       main.volume = stanzaSanitizeLinearBusGain(selected.primaryGain);
       main.muted = primaryPlaybackMuted(selected);
     }
 
-    if (!selected.stems?.length) return;
-    if (!viaWebAudio) {
-      for (const stem of selected.stems) {
-        const el = stemAudioRefs.current.get(stem.id);
-        if (!el) continue;
+    for (const stem of selected.stems ?? []) {
+      const el = stemAudioRefs.current.get(stem.id);
+      if (!el) continue;
+      if (viaWebAudio) {
+        el.volume = 1;
+        el.muted = false;
+      } else if (transposeStemBusPlaybackActive) {
+        el.volume = 0;
+        el.muted = false;
+      } else {
         el.volume = stanzaSanitizeLinearBusGain(stem.gain);
         el.muted = stemPlaybackMuted(stem);
       }
-    } else {
-      for (const stem of selected.stems) {
-        const el = stemAudioRefs.current.get(stem.id);
-        if (!el) continue;
-        // Chromium: MEA taps post-element-gain; keep at 1 and mute only in the Web Audio graph.
-        el.volume = 1;
-        el.muted = false;
-      }
     }
-  }, [primaryMixKey, stemMixKey, selected, stemWebAudioEnabled, webAudioMixReady]);
+  }, [
+    primaryMixKey,
+    stemMixKey,
+    selected,
+    stemWebAudioMixerEnabled,
+    webAudioMixReady,
+    transposeMirrorPlaybackActive,
+    transposeStemBusPlaybackActive,
+  ]);
 
   useEffect(() => {
     if (isYoutube || !stemUrlKey) return;
@@ -829,6 +1009,11 @@ export default function StanzaWorkspace() {
     );
   }, [segmentSelectionLoopHull, sectionSelectionExtend, playback.duration]);
 
+  const loopModeRef = useRef(loopMode);
+  loopModeRef.current = loopMode;
+  const effectiveSelectionSpanRef = useRef(effectiveSelectionSpan);
+  effectiveSelectionSpanRef.current = effectiveSelectionSpan;
+
   const playbackSegIdx = useMemo(
     () => (segments.length > 0 ? findSegmentIndexAtTime(segments, playback.currentTime) : null),
     [segments, playback.currentTime],
@@ -845,6 +1030,51 @@ export default function StanzaWorkspace() {
   }, [segments, lastClickedSegmentIndex, selectedSegmentIndices, playbackSegIdx]);
 
   const railCalibSeg = railCalibSegIdx != null ? segments[railCalibSegIdx]! : null;
+
+  const [railLiveTiming, setRailLiveTiming] = useState<{
+    segmentId: string;
+    bpm: number;
+    anchorMediaTime: number;
+  } | null>(null);
+
+  /** Tempo suggestion dialog: hear metronome clicks even when the strip toggle is off (does not persist). */
+  const [stanzaBeatAnalysisModalOpen, setStanzaBeatAnalysisModalOpen] = useState(false);
+  const handleBeatAnalysisModalOpenChange = useCallback((open: boolean) => {
+    setStanzaBeatAnalysisModalOpen(open);
+  }, []);
+
+  useEffect(() => {
+    if (stanzaBeatAnalysisModalOpen) {
+      primeMetronomeAudio();
+    }
+  }, [stanzaBeatAnalysisModalOpen]);
+
+  const metronomeRailScopeRef = useRef<{ songId: string; scope: StanzaMetronomeTimingScope } | null>(null);
+
+  useEffect(() => {
+    if (!selected) {
+      metronomeRailScopeRef.current = null;
+      return;
+    }
+    const songId = selected.id;
+    const scope = selected.metronomeTimingScope ?? 'section';
+    const prev = metronomeRailScopeRef.current;
+    metronomeRailScopeRef.current = { songId, scope };
+    if (!prev || prev.songId !== songId) return;
+    if (prev.scope !== scope) setRailLiveTiming(null);
+  }, [selected]);
+
+  const handleRailLiveTiming = useCallback((info: { segmentId: string; bpm: number; anchorMediaTime: number }) => {
+    setRailLiveTiming(info);
+  }, []);
+
+  useEffect(() => {
+    if (!railCalibSeg) setRailLiveTiming(null);
+  }, [railCalibSeg]);
+
+  useEffect(() => {
+    if (!selectedId) setRailLiveTiming(null);
+  }, [selectedId]);
 
   useEffect(() => {
     if (!selectedId || playback.duration <= 0 || !songs) return;
@@ -892,6 +1122,44 @@ export default function StanzaWorkspace() {
       }
     },
     [isReplayingRef, pushUndo],
+  );
+
+  const { saveSegmentMetronome, saveSongMetronome } = useStanzaMetronomePersistence(selected ?? undefined, persistSong);
+
+  const clearRailSongMetronome = useCallback(() => {
+    if (!selected) return;
+    void persistSong({ id: selected.id, metronomeSongCalibration: undefined });
+  }, [persistSong, selected]);
+
+  const clearRailSegmentMetronome = useCallback(() => {
+    if (!selected || !railCalibSeg) return;
+    const prev = selected.metronomeBySegmentId ?? {};
+    const next = { ...prev };
+    delete next[railCalibSeg.id];
+    void persistSong({
+      id: selected.id,
+      metronomeBySegmentId: Object.keys(next).length > 0 ? next : undefined,
+    });
+  }, [persistSong, railCalibSeg, selected]);
+
+  const schedulePersistTransposeSemitones = useCallback(
+    (next: number) => {
+      if (!selected) return;
+      const clamped = Math.max(-12, Math.min(12, next));
+      setTransposeDraftSemitones(clamped);
+      setTransposeInputStr(String(clamped));
+      if (transposePersistTimerRef.current != null) {
+        window.clearTimeout(transposePersistTimerRef.current);
+      }
+      transposePersistTimerRef.current = window.setTimeout(() => {
+        transposePersistTimerRef.current = null;
+        void persistSong({
+          id: selected.id,
+          localTransposeSemitones: clamped === 0 ? undefined : clamped,
+        });
+      }, 420);
+    },
+    [persistSong, selected],
   );
 
   const finishStemInlineEdit = useCallback(
@@ -1104,6 +1372,60 @@ export default function StanzaWorkspace() {
     [selectedId, isReplayingRef, pushUndo],
   );
 
+  const syncTransposeMirrorFromMain = useCallback(() => {
+    const mirror = transposeMirrorRef.current;
+    const bus = transposeStemBusRef.current;
+    const main = localAudioRef.current ?? localVideoRef.current;
+    const row = selectedRef.current;
+    if (!main || !row || row.ytId) {
+      mirror?.stop();
+      bus?.stop();
+      return;
+    }
+    const stemsLen = row.stems?.length ?? 0;
+    const transpose = row.localTransposeSemitones ?? 0;
+    if (transpose === 0) {
+      mirror?.stop();
+      bus?.stop();
+      return;
+    }
+    if (stemsLen === 0) {
+      bus?.stop();
+      if (!mirror?.getBuffer()) {
+        mirror?.stop();
+        return;
+      }
+      const linear = primaryPlaybackMuted(row) ? 0 : stanzaSanitizeLinearBusGain(row.primaryGain);
+      if (main.paused || linear <= 0) {
+        mirror.stop();
+        return;
+      }
+      mirror.startOrRestart(main.currentTime, main.playbackRate, transpose, linear);
+      return;
+    }
+    mirror?.stop();
+    if (!bus?.getMainBuffer()) {
+      bus?.stop();
+      return;
+    }
+    if (!transposeStemMixPackageRef.current) {
+      bus.stop();
+      return;
+    }
+    if (main.paused) {
+      bus.stop();
+      return;
+    }
+    bus.startOrRestart(
+      main.currentTime,
+      main.playbackRate,
+      transpose,
+      primaryPlaybackMuted(row),
+      row.primaryGain,
+      row.stems ?? STANZA_EMPTY_STEMS,
+    );
+  }, []);
+
   const applyPlaybackRate = useCallback(
     (rate: number) => {
       const clamped = clampStanzaPlaybackRate(rate);
@@ -1115,10 +1437,15 @@ export default function StanzaWorkspace() {
         stemAudioRefs.current.forEach((a) => {
           a.playbackRate = clamped;
         });
+        if (el && !el.paused) {
+          window.requestAnimationFrame(() => {
+            syncTransposeMirrorFromMain();
+          });
+        }
       }
       setPlayback((p) => ({ ...p, playbackRate: clamped }));
     },
-    [isYoutube],
+    [isYoutube, syncTransposeMirrorFromMain],
   );
 
   const scheduleSeekFrame = useCallback(() => {
@@ -1191,13 +1518,21 @@ export default function StanzaWorkspace() {
           /* ignore */
         }
       });
+      transposeMirrorRef.current?.stop();
+      transposeStemBusRef.current?.stop();
+      const elPlaying = localAudioRef.current ?? localVideoRef.current;
+      if (elPlaying && !elPlaying.paused) {
+        window.requestAnimationFrame(() => {
+          syncTransposeMirrorFromMain();
+        });
+      }
       if (flush) {
         setPlayback((p) => (p.currentTime === t ? p : { ...p, currentTime: t }));
       } else {
         scheduleSeekFrame();
       }
     },
-    [isYoutube, scheduleSeekFrame],
+    [isYoutube, scheduleSeekFrame, syncTransposeMirrorFromMain],
   );
 
   const pauseStemAudios = useCallback(() => {
@@ -1255,6 +1590,7 @@ export default function StanzaWorkspace() {
   }, [alignStemAudiosToMain]);
 
   const playUnified = useCallback(() => {
+    primeMetronomeAudio();
     const t = readLiveTransportTime();
     timeRef.current = t;
     const d = durationRef.current;
@@ -1270,14 +1606,14 @@ export default function StanzaWorkspace() {
       const main = localAudioRef.current ?? localVideoRef.current;
       if (!main) return;
       let stemMixerPrepared = false;
-      if (stemWebAudioEnabled) {
+      if (stemWebAudioMixerEnabled) {
         stemMixerPrepared = prepareStemMixerForPlaySync();
         if (!stemMixerPrepared) {
           restoreHtmlStemVolumes();
         }
       }
       const pr = main.play();
-      if (stemWebAudioEnabled && stemMixerPrepared) {
+      if (stemWebAudioMixerEnabled && stemMixerPrepared) {
         finalizeStemMixerResume();
       }
       // Same synchronous turn as the user gesture (transport / keyboard) so stem.play() keeps activation.
@@ -1285,17 +1621,19 @@ export default function StanzaWorkspace() {
       const afterMainPlaying = () => {
         snapStemsToMainAndPlay();
         scheduleAlignStemAudiosToMain();
+        syncTransposeMirrorFromMain();
       };
       if (pr !== undefined && typeof (pr as Promise<void>).then === 'function') {
         void (pr as Promise<void>).then(afterMainPlaying).catch(() => {
           pauseStemAudios();
-          if (stemWebAudioEnabled && stemMixerPrepared) {
+          if (stemWebAudioMixerEnabled && stemMixerPrepared) {
             abandonWebAudioMix();
             restoreHtmlStemVolumes();
           }
         });
       } else {
         scheduleAlignStemAudiosToMain();
+        syncTransposeMirrorFromMain();
       }
     }
   }, [
@@ -1311,31 +1649,43 @@ export default function StanzaWorkspace() {
     seekUnified,
     snapStemsToMainAndPlay,
     scheduleAlignStemAudiosToMain,
-    stemWebAudioEnabled,
+    stemWebAudioMixerEnabled,
+    syncTransposeMirrorFromMain,
   ]);
+
+  const handleLoopAtMediaEnd = useCallback(() => {
+    const mode = loopModeRef.current;
+    if (mode === 'through') return;
+    if (mode === 'loopAll') {
+      seekUnified(0, { flushPlaybackState: true });
+      void playUnified();
+      return;
+    }
+    if (mode === 'loopSelection') {
+      const span = effectiveSelectionSpanRef.current;
+      if (span != null && span.end - span.start >= STANZA_MIN_LOOP_SPAN_SEC) {
+        seekUnified(span.start, { flushPlaybackState: true });
+        void playUnified();
+      }
+    }
+  }, [seekUnified, playUnified]);
 
   const pauseUnified = useCallback(() => {
     if (isYoutube) ytControllerRef.current?.pause();
     else {
+      transposeMirrorRef.current?.stop();
+      transposeStemBusRef.current?.stop();
       (localAudioRef.current ?? localVideoRef.current)?.pause();
       pauseStemAudios();
     }
   }, [isYoutube, pauseStemAudios]);
 
-  const getTime = useCallback(() => timeRef.current, []);
-  const getDuration = useCallback(() => durationRef.current, []);
-
-  const transport = useMemo(
-    () => ({
-      play: playUnified,
-      pause: pauseUnified,
-      seek: seekUnified,
-      setRate: applyPlaybackRate,
-      getTime,
-      getDuration,
-    }),
-    [applyPlaybackRate, getDuration, getTime, pauseUnified, playUnified, seekUnified],
-  );
+  const getTime = useCallback(() => {
+    if (playingRef.current) {
+      return readLiveTransportTime();
+    }
+    return timeRef.current;
+  }, [readLiveTransportTime]);
 
   useEffect(() => {
     if (loopMode === 'through') return;
@@ -1399,7 +1749,7 @@ export default function StanzaWorkspace() {
   }, [selected, segments, persistSong]);
 
   useEffect(() => {
-    if (!selected || conductorOpen) return;
+    if (!selected) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.code !== 'KeyM') return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -1417,7 +1767,7 @@ export default function StanzaWorkspace() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [selected, conductorOpen, persistSong]);
+  }, [selected, persistSong]);
 
   const addMarkerAtCurrentTime = useCallback(() => {
     if (!selected) return;
@@ -1464,16 +1814,106 @@ export default function StanzaWorkspace() {
   }, []);
 
   const applyMusicalSelectionPad = useCallback(() => {
-    const pad = suggestMusicalLoopPadSec(selectedSegmentIndices, segments, selected?.metronomeBySegmentId);
+    const pad = suggestMusicalLoopPadSec(
+      selectedSegmentIndices,
+      segments,
+      selected?.metronomeBySegmentId,
+      selected?.metronomeSongCalibration,
+    );
     setSectionSelectionExtend((prev) => ({
       startDelta: prev.startDelta - pad,
       endDelta: prev.endDelta + pad,
     }));
-  }, [selected?.metronomeBySegmentId, selectedSegmentIndices, segments]);
+  }, [selected?.metronomeBySegmentId, selected?.metronomeSongCalibration, selectedSegmentIndices, segments]);
+
+  const selectionSpanBeatDeltaSec = useMemo(() => {
+    const bpm = effectiveBpmForSelectedSpan(
+      selectedSegmentIndices,
+      segments,
+      selected?.metronomeBySegmentId,
+      selected?.metronomeSongCalibration,
+    );
+    return 60 / bpm;
+  }, [selected?.metronomeBySegmentId, selected?.metronomeSongCalibration, selectedSegmentIndices, segments]);
+
+  const snapHoveredSectionBoundariesToBeat = useCallback(
+    (segmentIndex: number) => {
+      if (!selected || !(playback.duration > 0)) return;
+      const next = snapSegmentBoundaryMarkersToBeats(
+        segmentIndex,
+        segments,
+        selected.markers ?? [],
+        playback.duration,
+        selected.metronomeBySegmentId,
+        selected.metronomeSongCalibration,
+      );
+      if (next) void persistSong({ id: selected.id, markers: next });
+    },
+    [persistSong, playback.duration, segments, selected],
+  );
 
   const resetSectionSelectionExtend = useCallback(() => {
     setSectionSelectionExtend({ startDelta: 0, endDelta: 0 });
   }, []);
+
+  const selectionCommitControl = useMemo(() => {
+    if (!selected || !segmentSelectionLoopHull || !effectiveSelectionSpan || selectedSegmentIndices.length === 0) {
+      return null;
+    }
+    const h = segmentSelectionLoopHull;
+    const e = effectiveSelectionSpan;
+    const hasNonZeroExtend =
+      Math.abs(sectionSelectionExtend.startDelta) > 1e-9 || Math.abs(sectionSelectionExtend.endDelta) > 1e-9;
+    const differs =
+      Math.abs(e.start - h.start) > STANZA_TIME_EPS || Math.abs(e.end - h.end) > STANZA_TIME_EPS;
+    const preview = commitSelectionSpanToHullBoundaryMarkers(
+      selected.markers ?? [],
+      playback.duration,
+      h,
+      e,
+    );
+    const needsNudge = !hasNonZeroExtend && !differs;
+    if (needsNudge) {
+      return {
+        disabled: true,
+        title:
+          'Pad or nudge the pink span (Edit selection) so its start or end no longer matches the section edges. Then you can move those outer splits to match the span.',
+      };
+    }
+    if (preview == null) {
+      return {
+        disabled: true,
+        title:
+          'Those outer splits cannot move here without overlapping another split or the track end. Try less padding, a smaller nudge, or a different span.',
+      };
+    }
+    return {
+      disabled: false,
+      title:
+        'Move the first and last splits of the highlighted sections to the edges of the pink selection (including any padding). Inner splits stay put.',
+    };
+  }, [
+    effectiveSelectionSpan,
+    playback.duration,
+    sectionSelectionExtend,
+    segmentSelectionLoopHull,
+    selected,
+    selectedSegmentIndices.length,
+  ]);
+
+  const commitSelectionSpanToSectionBoundaries = useCallback(() => {
+    if (!selected || !segmentSelectionLoopHull || !effectiveSelectionSpan) return;
+    const next = commitSelectionSpanToHullBoundaryMarkers(
+      selected.markers ?? [],
+      playback.duration,
+      segmentSelectionLoopHull,
+      effectiveSelectionSpan,
+    );
+    if (next) {
+      void persistSong({ id: selected.id, markers: next });
+      setSectionSelectionExtend({ startDelta: 0, endDelta: 0 });
+    }
+  }, [effectiveSelectionSpan, persistSong, playback.duration, segmentSelectionLoopHull, selected]);
 
   const onLoopModeChange = useCallback(
     (m: StanzaPlaybackLoopMode) => {
@@ -1525,7 +1965,7 @@ export default function StanzaWorkspace() {
   }, [persistSong, playback.duration, segments, selected, selectedSegmentIndices]);
 
   useEffect(() => {
-    if (!selected || conductorOpen) return;
+    if (!selected) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Delete' && e.key !== 'Backspace') return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -1547,7 +1987,6 @@ export default function StanzaWorkspace() {
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
   }, [
-    conductorOpen,
     persistSong,
     playback.duration,
     segments,
@@ -1599,24 +2038,57 @@ export default function StanzaWorkspace() {
     }
   }, [effectiveSelectionSpan, loopMode, seekUnified]);
 
+  const metronomeEnabledForPlayback = Boolean(selected?.metronomeEnabled) || stanzaBeatAnalysisModalOpen;
+
+  const metronomeSyncSource = useMemo(() => {
+    const r = resolveStanzaMetronomePlaybackSync({
+      metronomeEnabled: metronomeEnabledForPlayback,
+      playbackSeg: playbackMetSeg,
+      songCal: selected?.metronomeSongCalibration,
+      segmentCal: playbackMetCal,
+      railLive: railLiveTiming,
+      railFocusSegmentId: railCalibSeg?.id ?? null,
+    });
+    return { bpm: r.bpm, anchor: r.anchor };
+  }, [
+    metronomeEnabledForPlayback,
+    selected?.metronomeSongCalibration,
+    playbackMetSeg,
+    playbackMetCal,
+    railLiveTiming,
+    railCalibSeg?.id,
+  ]);
+
   useMetronomeSync(
-    Boolean(selected?.metronomeEnabled && playbackMetCal?.bpm && playbackMetCal.bpm > 0),
-    playbackMetCal?.bpm,
-    playbackMetCal?.anchorMediaTime,
+    Boolean(
+      metronomeEnabledForPlayback && metronomeSyncSource.bpm != null && metronomeSyncSource.bpm > 0,
+    ),
+    metronomeSyncSource.bpm,
+    metronomeSyncSource.anchor,
     getTime,
     playback.isPlaying,
     true,
   );
 
-  const beatPeriod =
-    playbackMetCal?.bpm && playbackMetCal.bpm > 0 ? `${60 / playbackMetCal.bpm}s` : '1s';
-
   useEffect(() => {
-    if (!selected?.metronomeEnabled || !playback.isPlaying || !playbackMetSeg) {
+    if (!metronomeEnabledForPlayback || !playback.isPlaying || !playbackMetSeg) {
       setMetronomeSectionHint(null);
       return;
     }
-    if (playbackMetCal) {
+    const r = resolveStanzaMetronomePlaybackSync({
+      metronomeEnabled: true,
+      playbackSeg: playbackMetSeg,
+      songCal: selected?.metronomeSongCalibration,
+      segmentCal: playbackMetCal,
+      railLive: railLiveTiming,
+      railFocusSegmentId: railCalibSeg?.id ?? null,
+    });
+    const hasClicks =
+      r.bpm != null &&
+      r.bpm > 0 &&
+      typeof r.anchor === 'number' &&
+      Number.isFinite(r.anchor);
+    if (hasClicks) {
       setMetronomeSectionHint(null);
       metronomeHintDismissedSegRef.current = null;
       return;
@@ -1626,137 +2098,18 @@ export default function StanzaWorkspace() {
       return;
     }
     const id = window.setTimeout(() => {
-      setMetronomeSectionHint('Calibrate this section (Metronome below) to hear synced clicks here.');
+      setMetronomeSectionHint('Set BPM and Beat 1 (ms) below (whole song or this section).');
     }, 1200);
     return () => window.clearTimeout(id);
-  }, [selected?.metronomeEnabled, playback.isPlaying, playbackMetSeg, playbackMetCal]);
-
-  const saveSegmentMetronome = useCallback(
-    (segmentId: string, cal: StanzaSegmentMetronomeCalibration) => {
-      if (!selected) return;
-      const prev = selected.metronomeBySegmentId ?? {};
-      void persistSong({
-        id: selected.id,
-        metronomeBySegmentId: { ...prev, [segmentId]: cal },
-        metronomeEnabled: true,
-      });
-    },
-    [persistSong, selected],
-  );
-
-  const clearSegmentMetronome = useCallback(
-    (segmentId: string) => {
-      if (!selected) return;
-      const prev = selected.metronomeBySegmentId ?? {};
-      const rest = { ...prev };
-      delete rest[segmentId];
-      void persistSong({
-        id: selected.id,
-        metronomeBySegmentId: Object.keys(rest).length > 0 ? rest : undefined,
-      });
-    },
-    [persistSong, selected],
-  );
-
-  const startFreeformRecord = useCallback(async () => {
-    if (!selected || segments.length === 0) return;
-    const idx =
-      lastClickedSegmentIndex ??
-      (selectedSegmentIndices.length > 0 ? Math.min(...selectedSegmentIndices) : null) ??
-      findSegmentIndexAtTime(segments, timeRef.current) ??
-      0;
-    const seg = segments[idx];
-    if (!seg) return;
-    recChunksRef.current = [];
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      recStreamRef.current = stream;
-      const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-        ? 'audio/webm;codecs=opus'
-        : 'audio/webm';
-      const rec = new MediaRecorder(stream, { mimeType: mime });
-      mediaRecorderRef.current = rec;
-      rec.ondataavailable = (ev) => {
-        if (ev.data.size > 0) recChunksRef.current.push(ev.data);
-      };
-      rec.onstop = async () => {
-        stream.getTracks().forEach((tr) => tr.stop());
-        recStreamRef.current = null;
-        mediaRecorderRef.current = null;
-        const blob = new Blob(recChunksRef.current, { type: mime });
-        recChunksRef.current = [];
-        const take: StanzaTake = {
-          id: crypto.randomUUID(),
-          songId: selected.id,
-          segmentId: seg.id,
-          blob,
-          isGuided: false,
-          createdAt: Date.now(),
-        };
-        await stanzaDb.takes.add(take);
-        if (!isReplayingRef.current) {
-          const snap = structuredClone(take);
-          pushUndo({
-            undo: async () => {
-              await stanzaDb.takes.delete(snap.id);
-            },
-            redo: async () => {
-              await stanzaDb.takes.put(snap);
-            },
-          });
-        }
-        setRecState('idle');
-      };
-      rec.start();
-      setRecState('recording');
-    } catch (err) {
-      console.error('Stanza: record failed', err);
-    }
-  }, [lastClickedSegmentIndex, selectedSegmentIndices, segments, selected, isReplayingRef, pushUndo]);
-
-  const stopFreeformRecord = useCallback(() => {
-    const r = mediaRecorderRef.current;
-    if (r && r.state !== 'inactive') r.stop();
-  }, []);
-
-  const saveGuidedTake = useCallback(
-    async (blob: Blob, segmentId: string) => {
-      if (!selected) return;
-      const take: StanzaTake = {
-        id: crypto.randomUUID(),
-        songId: selected.id,
-        segmentId,
-        blob,
-        isGuided: true,
-        createdAt: Date.now(),
-      };
-      await stanzaDb.takes.add(take);
-      if (!isReplayingRef.current) {
-        const snap = structuredClone(take);
-        pushUndo({
-          undo: async () => {
-            await stanzaDb.takes.delete(snap.id);
-          },
-          redo: async () => {
-            await stanzaDb.takes.put(snap);
-          },
-        });
-      }
-    },
-    [selected, isReplayingRef, pushUndo],
-  );
-
-  const safeGuidedIndex =
-    segments.length === 0 ? 0 : Math.min(guidedSegmentIndex, Math.max(0, segments.length - 1));
-  const conductorSegment = segments[safeGuidedIndex];
-
-  const prevConductorOpen = useRef(false);
-  useEffect(() => {
-    if (conductorOpen && !prevConductorOpen.current) {
-      setGuidedSinceCp(0);
-    }
-    prevConductorOpen.current = conductorOpen;
-  }, [conductorOpen]);
+  }, [
+    metronomeEnabledForPlayback,
+    selected?.metronomeSongCalibration,
+    playback.isPlaying,
+    playbackMetSeg,
+    playbackMetCal,
+    railLiveTiming,
+    railCalibSeg?.id,
+  ]);
 
   const goHome = useCallback(() => {
     setSelectedId(null);
@@ -1976,7 +2329,7 @@ export default function StanzaWorkspace() {
                 className="stanza-hero-lede"
                 sx={{ mb: 3, maxWidth: '36ch', mx: 'auto' }}
               >
-                Practice songs in sections — loop, record, and let the Conductor guide your next pass.
+                Practice songs in sections — loop markers, optional metronome, and mix layers for uploaded audio.
               </Typography>
               <TextField
                 className="stanza-hero-url"
@@ -2086,7 +2439,7 @@ export default function StanzaWorkspace() {
             </Box>
           </Box>
 
-          <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', px: { xs: 1.5, sm: 2 }, pt: { md: 0.5 }, pb: { xs: 1.25, md: 1.75 } }}>
+          <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', px: { xs: 1.5, sm: 2 }, pt: { xs: 1, md: 1.25 }, pb: { xs: 1.5, md: 2 } }}>
             <Box
               className="stanza-viewer-body-grid"
               sx={{
@@ -2096,8 +2449,8 @@ export default function StanzaWorkspace() {
                 mx: 'auto',
                 alignContent: 'start',
                 alignItems: { xs: 'start', md: 'stretch' },
-                rowGap: { xs: 1.25, md: 1.75 },
-                columnGap: { xs: 1.25, md: 2 },
+                rowGap: { xs: 1.5, md: 2 },
+                columnGap: { xs: 1.5, md: 2.5 },
                 gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1fr) minmax(308px, 360px)' },
                 gridTemplateAreas: {
                   xs: '"media" "timeline" "rail"',
@@ -2137,14 +2490,12 @@ export default function StanzaWorkspace() {
                       </Link>
                     </Alert>
                   )}
-                  <Box
-                    className={selected.metronomeEnabled ? 'stanza-metronome-pulse stanza-metronome-pulse--on' : 'stanza-metronome-pulse'}
-                    sx={{ '--stanza-beat': beatPeriod } as React.CSSProperties}
-                  >
+                  <Box className="stanza-video-column">
                     {isYoutube && selected.ytId && (
                       <StanzaYouTubePlayer
                         videoId={selected.ytId}
                         onPlayerError={setYoutubePlayerErrorCode}
+                        onEnded={handleLoopAtMediaEnd}
                         onControllerReady={(c) => {
                           ytControllerRef.current = c;
                           if (!c) return;
@@ -2214,11 +2565,19 @@ export default function StanzaWorkspace() {
                             onPlay={() => {
                               snapStemsToMainAndPlay();
                               scheduleAlignStemAudiosToMain();
+                              syncTransposeMirrorFromMain();
                               setPlayback((p) => ({ ...p, isPlaying: true }));
                             }}
                             onPause={() => {
+                              transposeMirrorRef.current?.stop();
+                              transposeStemBusRef.current?.stop();
                               pauseStemAudios();
                               setPlayback((p) => ({ ...p, isPlaying: false }));
+                            }}
+                            onEnded={() => {
+                              transposeMirrorRef.current?.stop();
+                              transposeStemBusRef.current?.stop();
+                              handleLoopAtMediaEnd();
                             }}
                           />
                         ) : (
@@ -2260,11 +2619,19 @@ export default function StanzaWorkspace() {
                             onPlay={() => {
                               snapStemsToMainAndPlay();
                               scheduleAlignStemAudiosToMain();
+                              syncTransposeMirrorFromMain();
                               setPlayback((p) => ({ ...p, isPlaying: true }));
                             }}
                             onPause={() => {
+                              transposeMirrorRef.current?.stop();
+                              transposeStemBusRef.current?.stop();
                               pauseStemAudios();
                               setPlayback((p) => ({ ...p, isPlaying: false }));
+                            }}
+                            onEnded={() => {
+                              transposeMirrorRef.current?.stop();
+                              transposeStemBusRef.current?.stop();
+                              handleLoopAtMediaEnd();
                             }}
                           />
                         )}
@@ -2308,19 +2675,28 @@ export default function StanzaWorkspace() {
                   flexDirection: 'column',
                   minHeight: 0,
                   height: { md: '100%' },
-                  p: { xs: 1.1, md: 1.25 },
+                  p: { xs: 1.25, md: 1.5 },
                 }}
               >
-                <Typography component="p" className="stanza-rail-section-label" sx={{ mb: 0.35, flexShrink: 0 }}>
-                  Practice
-                </Typography>
-                <Stack spacing={0.65} sx={{ flex: 1, minHeight: 0, overflowY: 'auto', pr: 0.25 }}>
+                <Stack spacing={1.5} sx={{ flex: 1, minHeight: 0, overflowY: 'auto', pr: 0.25 }}>
                   <Box>
-                    <Typography className="stanza-rail-section-label stanza-rail-section-label--minor">Metronome</Typography>
+                    <StanzaMetronomeStrip
+                      enabled={Boolean(selected.metronomeEnabled)}
+                      onToggle={() => {
+                        if (!selected.metronomeEnabled) {
+                          primeMetronomeAudio();
+                        }
+                        void persistSong({ id: selected.id, metronomeEnabled: !selected.metronomeEnabled });
+                      }}
+                      bpm={metronomeSyncSource.bpm}
+                      anchorMediaTime={metronomeSyncSource.anchor}
+                      getMediaTime={getTime}
+                      isPlaying={playback.isPlaying}
+                    />
                     {metronomeSectionHint && (
                       <Alert
                         severity="info"
-                        sx={{ mt: 0.35, mb: 0.35, py: 0.25 }}
+                        sx={{ mt: 0.5, mb: 0.25, py: 0, '& .MuiAlert-message': { py: 0.5 } }}
                         onClose={() => {
                           if (playbackMetSeg) metronomeHintDismissedSegRef.current = playbackMetSeg.id;
                           setMetronomeSectionHint(null);
@@ -2329,30 +2705,14 @@ export default function StanzaWorkspace() {
                         <Typography variant="body2">{metronomeSectionHint}</Typography>
                       </Alert>
                     )}
-                    <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mt: 0.15 }}>
-                      <AppTooltip
-                        title={
-                          selected.metronomeEnabled
-                            ? 'Clicks play only in sections you calibrate below.'
-                            : 'Turn on to hear synced clicks while playing calibrated sections.'
-                        }
-                      >
-                        <MetronomeToggleButton
-                          enabled={Boolean(selected.metronomeEnabled)}
-                          onToggle={() =>
-                            void persistSong({ id: selected.id, metronomeEnabled: !selected.metronomeEnabled })
-                          }
-                          className="stanza-metronome-toggle stanza-metronome-toggle--rail"
-                          includeNativeTitle={false}
-                          includeDataTooltip={false}
-                          ariaLabel="Toggle metronome"
-                        />
-                      </AppTooltip>
-                    </Stack>
                     {railCalibSeg && (
                       <StanzaSectionMetronomeRail
                         segment={railCalibSeg}
-                        calibration={selected.metronomeBySegmentId?.[railCalibSeg.id]}
+                        timingScope={selected.metronomeTimingScope ?? 'section'}
+                        onTimingScopeChange={(scope) => void persistSong({ id: selected.id, metronomeTimingScope: scope })}
+                        songDurationSec={playback.duration}
+                        songCalibration={selected.metronomeSongCalibration}
+                        segmentCalibration={selected.metronomeBySegmentId?.[railCalibSeg.id]}
                         canAnalyze={!isYoutube && Boolean(selected.localAudioBlob && localUrl)}
                         analyzeDisabledReason={
                           isYoutube
@@ -2365,85 +2725,163 @@ export default function StanzaWorkspace() {
                         localSongTitle={selected.title}
                         mediaUrl={localUrl ?? ''}
                         isLocalVideo={isLocalVideo}
-                        getMediaTime={getTime}
                         playbackIsPlaying={playback.isPlaying}
-                        onSaveCalibration={(cal) => saveSegmentMetronome(railCalibSeg.id, cal)}
-                        onClearCalibration={() => clearSegmentMetronome(railCalibSeg.id)}
+                        beatAnalysisCacheKey={stanzaBeatAnalysisCacheKey}
+                        onAnalysisModalOpenChange={handleBeatAnalysisModalOpenChange}
+                        onRequestPlay={playUnified}
+                        onRequestPause={pauseUnified}
+                        onRequestSeek={(t) => {
+                          void seekUnified(t, { flushPlaybackState: true });
+                        }}
+                        onLiveTimingChange={handleRailLiveTiming}
+                        onPersistSongCalibration={(cal, opts) => void saveSongMetronome(cal, opts)}
+                        onPersistSegmentCalibration={(cal, opts) => void saveSegmentMetronome(railCalibSeg.id, cal, opts)}
+                        onClearSongCalibration={clearRailSongMetronome}
+                        onClearSegmentCalibration={clearRailSegmentMetronome}
+                        onSnapSectionBoundariesToBeat={
+                          railCalibSegIdx != null ? () => snapHoveredSectionBoundariesToBeat(railCalibSegIdx) : undefined
+                        }
+                        onPrimeMetronomeAudio={primeMetronomeAudio}
                       />
                     )}
                   </Box>
-                  <Box>
-                    <Typography className="stanza-rail-section-label stanza-rail-section-label--minor">Conductor</Typography>
-                    <Stack direction="row" spacing={0.5} alignItems="stretch" sx={{ mt: 0.2 }}>
-                      <AppTooltip title="Listen, record, and review for the current loop section. Regimen sets the emphasis.">
-                        <Button
-                          variant="contained"
-                          size="small"
-                          className="stanza-btn-pill stanza-rail-compact-btn"
-                          sx={{ flex: 1, minWidth: 0, py: 0.45, fontWeight: 600, fontSize: '0.75rem' }}
-                          disabled={segments.length === 0}
-                          onClick={() => {
-                            setGuidedSegmentIndex(lastClickedSegmentIndex ?? selectedSegmentIndices[0] ?? 0);
-                            setConductorOpen(true);
-                          }}
-                        >
-                          Guided
-                        </Button>
-                      </AppTooltip>
-                      <Select
-                        size="small"
-                        value={regimen}
-                        onChange={(e) => setRegimen(e.target.value as GuidedRegimen)}
-                        aria-label="Guided regimen"
-                        sx={{
-                          flex: '0 0 108px',
-                          fontSize: '0.75rem',
-                          borderRadius: 1.5,
-                          '& .MuiSelect-select': { py: 0.45, pl: 1, pr: 2 },
-                        }}
-                      >
-                        <MenuItem value="rhythm">Rhythm</MenuItem>
-                        <MenuItem value="accuracy">Accuracy</MenuItem>
-                        <MenuItem value="performance">Performance</MenuItem>
-                      </Select>
-                    </Stack>
-                  </Box>
-                  <Box>
-                    <Typography className="stanza-rail-section-label stanza-rail-section-label--minor">Takes</Typography>
-                    <Stack direction="row" alignItems="center" spacing={0.5} flexWrap="wrap" sx={{ mt: 0.15 }}>
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        className="stanza-btn-soft-outline stanza-rail-compact-btn"
-                        sx={{ minHeight: 30, py: 0.25, fontSize: '0.75rem' }}
-                        onClick={() => (recState === 'recording' ? stopFreeformRecord() : void startFreeformRecord())}
-                        aria-label={recState === 'recording' ? 'Stop recording' : 'Record take'}
-                      >
-                        {recState === 'recording' ? 'Stop' : 'Record'}
-                      </Button>
-                      <button
-                        type="button"
-                        className="stanza-link-quiet"
-                        style={{ fontSize: '0.75rem' }}
-                        onClick={() => {
-                          clearSegmentSelection();
-                          setLoopMode('through');
-                        }}
-                        aria-label="Clear section selection"
-                      >
-                        Clear
-                      </button>
-                    </Stack>
-                  </Box>
                   {!isYoutube ? (
-                    <Box className="stanza-mix-block" sx={{ pt: 0.15 }}>
-                      <Typography className="stanza-rail-section-label stanza-rail-section-label--minor" sx={{ mb: 0.25 }}>
-                        Mix
-                      </Typography>
-                      <Stack spacing={0.2} className="stanza-mix-rows">
+                    <>
+                      <Box className="stanza-key-shift-block" sx={{ pt: 0.25 }}>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ display: 'block', mb: 0.25, fontWeight: 600, letterSpacing: '0.01em' }}
+                        >
+                          Key shift (semitones)
+                        </Typography>
+                        <Stack direction="row" alignItems="stretch" spacing={0.75} useFlexGap>
+                          <Box
+                            className="shared-bpm-input stanza-key-shift-numeric"
+                            sx={{ flex: '1 1 140px', minWidth: 0, maxWidth: { xs: '100%', sm: 220 }, alignSelf: 'stretch' }}
+                          >
+                            <AppTooltip title="Raise or lower pitch in half-steps (−12 to +12). Applies to the main file and stem layers. Playback re-decodes after changes settle (about half a second after you stop adjusting).">
+                              <Box
+                                className={`shared-bpm-shell ${transposeStepperEditing ? 'is-editing' : 'is-idle'}`}
+                                role="group"
+                                aria-label="Pitch shift in semitones"
+                                aria-busy={transposeDecodeBusy}
+                              >
+                                <NumericStepperField
+                                  value={transposeDraftSemitones}
+                                  inputValue={transposeInputStr}
+                                  onInputChange={(e) => {
+                                    const raw = e.target.value;
+                                    if (!/^-?\d*$/.test(raw)) return;
+                                    setTransposeInputStr(raw);
+                                    if (raw === '' || raw === '-') return;
+                                    const n = Number.parseInt(raw, 10);
+                                    if (!Number.isFinite(n)) return;
+                                    schedulePersistTransposeSemitones(n);
+                                  }}
+                                  onInputFocus={() => setTransposeStepperEditing(true)}
+                                  onInputBlur={() => {
+                                    setTransposeStepperEditing(false);
+                                    const n = Number.parseInt(transposeInputStr, 10);
+                                    if (!Number.isFinite(n)) {
+                                      setTransposeInputStr(String(transposeDraftSemitones));
+                                      return;
+                                    }
+                                    schedulePersistTransposeSemitones(n);
+                                  }}
+                                  onInputKeyDown={(e) => {
+                                    if (e.key === 'ArrowUp') {
+                                      e.preventDefault();
+                                      schedulePersistTransposeSemitones(transposeDraftRef.current + 1);
+                                    }
+                                    if (e.key === 'ArrowDown') {
+                                      e.preventDefault();
+                                      schedulePersistTransposeSemitones(transposeDraftRef.current - 1);
+                                    }
+                                  }}
+                                  min={-12}
+                                  max={12}
+                                  step={1}
+                                  onBump={(delta) =>
+                                    schedulePersistTransposeSemitones(transposeDraftRef.current + delta)
+                                  }
+                                  incrementAriaLabel="Increase pitch by one semitone"
+                                  decrementAriaLabel="Decrease pitch by one semitone"
+                                  inputAriaLabel="Semitones relative to the recording"
+                                  stepperAriaLabel="Semitone stepper"
+                                  disabled={transposeDecodeBusy}
+                                />
+                                <div className="shared-bpm-trailing-actions">
+                                  <AppTooltip title="Reset to original key (0 semitones)">
+                                    <span>
+                                      <IconButton
+                                        type="button"
+                                        size="small"
+                                        aria-label="Reset pitch shift"
+                                        disabled={transposeDecodeBusy || transposeDraftSemitones === 0}
+                                        className="stanza-key-shift-reset"
+                                        onClick={() => {
+                                          if (transposePersistTimerRef.current != null) {
+                                            window.clearTimeout(transposePersistTimerRef.current);
+                                            transposePersistTimerRef.current = null;
+                                          }
+                                          setTransposeDraftSemitones(0);
+                                          setTransposeInputStr('0');
+                                          void persistSong({ id: selected.id, localTransposeSemitones: undefined });
+                                        }}
+                                        sx={{ p: 0.35 }}
+                                      >
+                                        <RestartAltOutlinedIcon sx={{ fontSize: 18 }} />
+                                      </IconButton>
+                                    </span>
+                                  </AppTooltip>
+                                </div>
+                              </Box>
+                            </AppTooltip>
+                          </Box>
+                          {transposeDecodeBusy ? (
+                            <Box
+                              className="stanza-key-shift-busy-spinner"
+                              sx={{
+                                flexShrink: 0,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                width: 28,
+                                alignSelf: 'center',
+                              }}
+                              aria-live="polite"
+                              aria-busy="true"
+                              aria-label="Rebuilding pitch-shifted audio"
+                            >
+                              <AppTooltip title="Rebuilding pitch-shifted audio…">
+                                <span>
+                                  <CircularProgress size={20} thickness={4.5} sx={{ color: 'var(--stanza-rose, #e848a0)' }} />
+                                </span>
+                              </AppTooltip>
+                            </Box>
+                          ) : null}
+                        </Stack>
+                        {transposeDecodeError ? (
+                          <Box aria-live="polite" sx={{ mt: 0.75 }}>
+                            <Alert
+                              severity="warning"
+                              onClose={() => setTransposeDecodeError(null)}
+                              sx={{ py: 0, '& .MuiAlert-message': { py: 0.5 } }}
+                            >
+                              {transposeDecodeError}
+                            </Alert>
+                          </Box>
+                        ) : null}
+                      </Box>
+                      <Box className="stanza-mix-block" sx={{ pt: 0.5 }}>
+                        <Typography className="stanza-rail-section-label stanza-rail-section-label--minor" sx={{ mb: 0.5 }}>
+                          Mix
+                        </Typography>
+                        <Stack spacing={0.75} className="stanza-mix-rows">
                         <Box
                           className="stanza-mix-row"
-                          sx={{ display: 'flex', alignItems: 'center', gap: 0.25, minHeight: 32 }}
+                          sx={{ display: 'flex', alignItems: 'center', gap: 1, minHeight: 36 }}
                         >
                           <Box sx={{ width: STANZA_MIX_DRAG_COL_PX, flexShrink: 0 }} aria-hidden />
                           <AppTooltip title={primaryPlaybackMuted(selected) ? 'Unmute main track' : 'Mute main track'}>
@@ -2480,13 +2918,18 @@ export default function StanzaWorkspace() {
                             Main
                           </Typography>
                           <AppLinearVolumeSlider
-                            value={stanzaSanitizeLinearBusGain(selected.primaryGain)}
-                            onChange={(_, v) =>
-                              void persistSong({
-                                id: selected.id,
-                                primaryGain: stanzaSanitizeLinearBusGain(v as number),
-                              })
+                            value={
+                              mixPrimaryGainDraft ??
+                              stanzaSanitizeLinearBusGain(selected.primaryGain)
                             }
+                            onChange={(_, v) =>
+                              setMixPrimaryGainDraft(stanzaSanitizeLinearBusGain(v as number))
+                            }
+                            onChangeCommitted={async (_, v) => {
+                              const n = stanzaSanitizeLinearBusGain(v as number);
+                              await persistSong({ id: selected.id, primaryGain: n });
+                              setMixPrimaryGainDraft(null);
+                            }}
                             aria-label="Main track level"
                             sx={{
                               alignSelf: 'center',
@@ -2524,8 +2967,8 @@ export default function StanzaWorkspace() {
                             sx={{
                               display: 'flex',
                               alignItems: 'center',
-                              gap: 0.25,
-                              minHeight: 32,
+                              gap: 1,
+                              minHeight: 36,
                               borderRadius: 0.75,
                               outline:
                                 stemReorderOverId === stem.id && stemReorderDragId && stemReorderDragId !== stem.id
@@ -2560,7 +3003,7 @@ export default function StanzaWorkspace() {
                                     cursor: 'grab',
                                     display: 'inline-flex',
                                     alignItems: 'center',
-                                    touchAction: 'none',
+                                    touchAction: 'manipulation',
                                     color: 'text.secondary',
                                     '&:active': { cursor: 'grabbing' },
                                   }}
@@ -2680,17 +3123,28 @@ export default function StanzaWorkspace() {
                               )}
                             </Box>
                             <AppLinearVolumeSlider
-                              value={stanzaSanitizeLinearBusGain(stem.gain)}
-                              onChange={(_, v) =>
-                                void persistSong({
+                              value={
+                                mixStemGainDraftById[stem.id] ??
+                                stanzaSanitizeLinearBusGain(stem.gain)
+                              }
+                              onChange={(_, v) => {
+                                const n = stanzaSanitizeLinearBusGain(v as number);
+                                setMixStemGainDraftById((prev) => ({ ...prev, [stem.id]: n }));
+                              }}
+                              onChangeCommitted={async (_, v) => {
+                                const n = stanzaSanitizeLinearBusGain(v as number);
+                                await persistSong({
                                   id: selected.id,
                                   stems: (selected.stems ?? []).map((s) =>
-                                    s.id === stem.id
-                                      ? { ...s, gain: stanzaSanitizeLinearBusGain(v as number) }
-                                      : s,
+                                    s.id === stem.id ? { ...s, gain: n } : s,
                                   ),
-                                })
-                              }
+                                });
+                                setMixStemGainDraftById((prev) => {
+                                  const next = { ...prev };
+                                  delete next[stem.id];
+                                  return next;
+                                });
+                              }}
                               aria-label={`${stem.label} level`}
                               sx={{
                                 alignSelf: 'center',
@@ -2741,20 +3195,21 @@ export default function StanzaWorkspace() {
                         className="stanza-mix-add"
                         onClick={() => stemFileInputRef.current?.click()}
                         sx={{
-                          mt: 0.35,
-                          py: 0.1,
+                          mt: 0.5,
+                          py: 0.25,
                           minHeight: 28,
                           fontSize: '0.72rem',
                           fontWeight: 600,
                           color: 'text.secondary',
                           textTransform: 'none',
                           justifyContent: 'flex-start',
-                          px: 0.5,
+                          px: 0.75,
                         }}
                       >
                         + Add layer
                       </Button>
                     </Box>
+                    </>
                   ) : null}
                 </Stack>
               </Paper>
@@ -2789,9 +3244,18 @@ export default function StanzaWorkspace() {
                       ? (effectiveSelectionSpan ?? segmentSelectionLoopHull ?? undefined)
                       : undefined
                   }
+                  selectionSpanBeatDeltaSec={selectionSpanBeatDeltaSec}
+                  metronomeBySegmentId={selected.metronomeBySegmentId}
+                  metronomeSongCalibration={selected.metronomeSongCalibration}
+                  onSnapSectionBoundariesToBeat={snapHoveredSectionBoundariesToBeat}
                   onSelectionSpanNudge={nudgeSectionSelectionExtend}
                   onSelectionMusicalPad={applyMusicalSelectionPad}
                   onResetSelectionSpan={resetSectionSelectionExtend}
+                  onCommitSelectionToBoundaries={
+                    selectionCommitControl ? commitSelectionSpanToSectionBoundaries : undefined
+                  }
+                  commitSelectionToBoundariesDisabled={selectionCommitControl?.disabled ?? false}
+                  commitSelectionToBoundariesTitle={selectionCommitControl?.title}
                   selectionExtendActive={
                     sectionSelectionExtend.startDelta !== 0 || sectionSelectionExtend.endDelta !== 0
                   }
@@ -2908,7 +3372,7 @@ export default function StanzaWorkspace() {
         <DialogContent>
           <Typography variant="body2" color="text.secondary">
             This removes “{removeConfirmSong?.title ?? ''}” from your library and deletes all practice data for it on
-            this device: markers and sections, focus-time stats, recordings (takes), and per-section metronome calibration.
+            this device: markers and sections, focus-time stats, and per-section metronome calibration.
           </Typography>
         </DialogContent>
         <DialogActions>
@@ -2986,28 +3450,6 @@ export default function StanzaWorkspace() {
           </Button>
         </DialogActions>
       </Dialog>
-
-      {conductorOpen && conductorSegment && selected && (
-        <ConductorOverlay
-          open={conductorOpen}
-          onClose={() => setConductorOpen(false)}
-          regimen={regimen}
-          segment={conductorSegment}
-          segments={segments}
-          segmentMs={selected.stats}
-          transport={transport}
-          onSaveTake={saveGuidedTake}
-          onGuidedTakeCompleted={() => setGuidedSinceCp((c) => c + 1)}
-          guidedTakesSinceCheckpoint={guidedSinceCp}
-          onSwitchSegment={(i) => {
-            setGuidedSegmentIndex(i);
-            setSelectedSegmentIndices([i]);
-            setSegmentSelectionAnchor(i);
-            setLastClickedSegmentIndex(i);
-          }}
-          onCheckpointResolved={() => setGuidedSinceCp(0)}
-        />
-      )}
     </Box>
   );
 }

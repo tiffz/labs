@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { applySectionSelectionExtend, computeLoopHull, suggestMusicalLoopPadSec } from './stanzaPlaybackLoop';
+import {
+  applySectionSelectionExtend,
+  computeLoopHull,
+  effectiveBpmForSelectedSpan,
+  suggestMusicalLoopPadSec,
+} from './stanzaPlaybackLoop';
 import type { DerivedSegment } from './segments';
 
 const seg = (index: number, start: number, end: number): DerivedSegment => ({
@@ -31,6 +36,22 @@ describe('applySectionSelectionExtend', () => {
   });
 });
 
+describe('effectiveBpmForSelectedSpan', () => {
+  const segments: DerivedSegment[] = [seg(0, 0, 5), seg(1, 5, 10)];
+
+  it('defaults to 120 when no calibration', () => {
+    expect(effectiveBpmForSelectedSpan([0], segments, undefined)).toBe(120);
+  });
+
+  it('uses section calibration when present', () => {
+    expect(
+      effectiveBpmForSelectedSpan([1], segments, {
+        s1: { bpm: 90, anchorMediaTime: 5, source: 'tap' },
+      }),
+    ).toBe(90);
+  });
+});
+
 describe('suggestMusicalLoopPadSec', () => {
   const segments: DerivedSegment[] = [seg(0, 0, 5), seg(1, 5, 10)];
 
@@ -46,6 +67,16 @@ describe('suggestMusicalLoopPadSec', () => {
   it('falls back when no BPM', () => {
     const pad = suggestMusicalLoopPadSec([0], segments, undefined);
     expect(pad).toBeCloseTo(0.425, 2);
+  });
+
+  it('uses whole-song metronome when section has no calibration', () => {
+    const pad = suggestMusicalLoopPadSec(
+      [0],
+      segments,
+      undefined,
+      { bpm: 120, anchorMediaTime: 0, source: 'tap' },
+    );
+    expect(pad).toBeCloseTo((60 / 120) * 0.85, 5);
   });
 });
 

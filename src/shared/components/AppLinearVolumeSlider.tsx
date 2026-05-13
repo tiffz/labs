@@ -27,6 +27,10 @@ export type AppLinearVolumeSliderProps = Omit<SliderProps, 'min' | 'max' | 'step
 /**
  * Standard **0–1 linear gain** slider for mix rails and similar (MUI `Slider` with safe defaults).
  * Prefer this over ad-hoc `Slider` copies so rail / track clicks stay reliable in tight layouts.
+ *
+ * When the displayed value comes from async storage (e.g. Dexie + live query), use **local state**
+ * in `onChange` and persist in `onChangeCommitted` (or after `await persist`) so the thumb does not
+ * fight stale props mid-drag.
  */
 export default function AppLinearVolumeSlider({
   min = 0,

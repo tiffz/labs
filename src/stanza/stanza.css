@@ -382,12 +382,22 @@ button.stanza-library-card {
   color: rgba(109, 102, 94, 0.28);
 }
 
+/* Loop mode trio: selected mode matches selection-span / loop ring accent (hot pink). */
 .stanza-playback-chip-btn--active.MuiIconButton-root {
-  background: rgba(255, 255, 255, 0.96);
-  color: var(--stanza-ink);
+  background: var(--stanza-rose-wash);
+  color: var(--stanza-rose);
   box-shadow:
-    0 1px 2px rgba(47, 39, 33, 0.05),
-    inset 0 0 0 1px var(--stanza-paper-line-faint);
+    0 1px 2px rgba(232, 72, 160, 0.14),
+    inset 0 0 0 1px var(--stanza-rose-line);
+}
+
+.stanza-playback-chip-btn--active.MuiIconButton-root:hover {
+  background: rgba(232, 72, 160, 0.2);
+  color: var(--stanza-rose);
+}
+
+.stanza-playback-chip-btn--active.MuiIconButton-root:focus-visible {
+  outline-color: var(--stanza-rose-line);
 }
 
 .stanza-playback-chip-btn--play.MuiIconButton-root {
@@ -763,6 +773,214 @@ button.stanza-library-card {
   font-size: 20px;
 }
 
+/* Metronome strip: horizontal beat counts beside the toggle (layout only; colors follow Stanza ink). */
+.stanza-app .stanza-metronome-strip {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 44px;
+  padding: 4px 8px;
+  border-radius: var(--stanza-radius-chip, 12px);
+  border: 1px solid var(--stanza-paper-line-faint);
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.stanza-app .stanza-metronome-strip--clickable {
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.stanza-app .stanza-metronome-strip--clickable:hover {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(232, 72, 160, 0.22);
+}
+
+.stanza-app
+  .stanza-metronome-strip--clickable.stanza-metronome-strip--active:hover {
+  border-color: rgba(232, 72, 160, 0.32);
+}
+
+.stanza-app .stanza-metronome-strip-placeholder {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--stanza-ink-muted, #6e6e73);
+}
+
+.stanza-app .stanza-beat-visualizer--compact {
+  flex: 1;
+  min-width: 0;
+}
+
+.stanza-app .stanza-beat-counts {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.stanza-app .stanza-beat-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--stanza-ink-muted, #6e6e73);
+  border: 1px solid var(--stanza-paper-line-faint);
+  background: rgba(255, 255, 255, 0.45);
+  box-sizing: border-box;
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease,
+    color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.stanza-app .stanza-beat-count--active {
+  color: var(--stanza-rose, #e848a0);
+  background: var(--stanza-rose-wash, rgba(232, 72, 160, 0.12));
+  border-color: var(--stanza-rose-line, rgba(232, 72, 160, 0.28));
+  box-shadow: 0 0 0 1px rgba(232, 72, 160, 0.08);
+}
+
+.stanza-app .stanza-beat-count--downbeat.stanza-beat-count--active {
+  color: #c4176e;
+  background: rgba(232, 72, 160, 0.2);
+  border-color: rgba(232, 72, 160, 0.45);
+}
+
+/* Practice rail BPM + key shift: hot pink accent (overrides shared BpmInput purple defaults). */
+.stanza-app .stanza-metronome-rail .shared-bpm-shell,
+.stanza-app .stanza-key-shift-block .shared-bpm-shell {
+  --bpm-focus: var(--stanza-rose, #e848a0);
+  --bpm-border: var(--stanza-rose-line, rgba(232, 72, 160, 0.32));
+  --bpm-dropdown-hover-bg: rgba(232, 72, 160, 0.1);
+  --bpm-dropdown-active-bg: rgba(232, 72, 160, 0.16);
+  --bpm-dropdown-active-text: var(--stanza-rose, #e848a0);
+  --bpm-chip-hover-bg: rgba(232, 72, 160, 0.08);
+  --bpm-chip-active-bg: rgba(232, 72, 160, 0.14);
+  --bpm-chip-active-text: #c4176e;
+  --bpm-bg: rgba(255, 251, 245, 0.96);
+  overflow: hidden;
+}
+
+/* Avoid “double border”: default `shared-bpm-shell:focus-within` adds a 2px ring outside the 1px border. */
+.stanza-app .stanza-metronome-rail .shared-bpm-shell:focus-within,
+.stanza-app .stanza-bpm-modal-input .shared-bpm-shell:focus-within,
+.stanza-tempo-preview-dialog-content
+  .stanza-bpm-modal-input
+  .shared-bpm-shell:focus-within,
+.stanza-app .stanza-key-shift-block .shared-bpm-shell:focus-within {
+  box-shadow: none;
+  border-color: var(--stanza-rose, #e848a0);
+}
+
+.stanza-app
+  .stanza-metronome-rail
+  .shared-bpm-shell
+  .MuiIconButton-root:focus-visible,
+.stanza-app
+  .stanza-key-shift-block
+  .shared-bpm-shell
+  .MuiIconButton-root:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px rgba(232, 72, 160, 0.22);
+}
+
+.stanza-app
+  .stanza-metronome-rail
+  .stanza-bpm-rail-input
+  .shared-bpm-shell
+  .shared-bpm-stepper,
+.stanza-app .stanza-key-shift-block .shared-bpm-shell .shared-bpm-stepper {
+  --bpm-stepper-min-width: 4.25rem;
+}
+
+.stanza-app .stanza-key-shift-block .shared-bpm-shell[aria-busy='true'] {
+  opacity: 0.72;
+}
+
+.stanza-app .stanza-key-shift-block .stanza-key-shift-reset.MuiIconButton-root {
+  border-radius: 0;
+  color: var(--bpm-muted, var(--stanza-ink-muted, #6d665e));
+}
+
+.stanza-app
+  .stanza-key-shift-block
+  .stanza-key-shift-reset.MuiIconButton-root:hover:not(.Mui-disabled) {
+  background: color-mix(in srgb, var(--stanza-rose, #e848a0) 10%, transparent);
+  color: var(--bpm-text, var(--stanza-ink, #2a2622));
+}
+
+/* BPM preset popover (portaled under body): stanza-only class keeps rose accent. */
+.shared-bpm-dropdown.stanza-bpm-dropdown {
+  --bpm-focus: #e848a0;
+  --bpm-border: rgba(232, 72, 160, 0.28);
+  --bpm-dropdown-hover-bg: rgba(232, 72, 160, 0.1);
+  --bpm-dropdown-active-bg: rgba(232, 72, 160, 0.16);
+  --bpm-dropdown-active-text: #e848a0;
+  --bpm-chip-hover-bg: rgba(232, 72, 160, 0.08);
+  --bpm-chip-active-bg: rgba(232, 72, 160, 0.14);
+  --bpm-chip-active-text: #c4176e;
+}
+
+.stanza-app .stanza-metronome-rail .app-slider.stanza-bpm-slider,
+.shared-bpm-dropdown.stanza-bpm-dropdown .app-slider.stanza-bpm-slider {
+  --app-slider-track: #e848a0;
+  --app-slider-thumb: #e848a0;
+  --app-slider-mark-active: #e848a0;
+  --app-slider-shadow: rgba(232, 72, 160, 0.22);
+}
+
+.stanza-app
+  .stanza-metronome-rail
+  .stanza-rail-analyze-icon:hover:not(.Mui-disabled) {
+  background-color: rgba(232, 72, 160, 0.1);
+}
+
+.stanza-app .stanza-key-shift-block {
+  margin-bottom: 2px;
+}
+
+.stanza-app .stanza-rail-snap-beat-btn.MuiButton-root {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: none;
+  min-width: 0;
+  padding-left: 10px;
+  padding-right: 10px;
+  border-radius: 999px;
+  background-color: var(--stanza-rose, #e848a0);
+  color: #fffdf9;
+}
+
+.stanza-app .stanza-rail-snap-beat-btn.MuiButton-root:hover {
+  background-color: #d43d90;
+}
+
+/* Automatic tempo modal (portaled): paper is outside .stanza-app — no ancestor prefix. */
+.stanza-tempo-preview-dialog-paper.MuiPaper-root {
+  border-radius: 16px;
+  border: 1px solid rgba(49, 43, 38, 0.08);
+  box-shadow: var(--stanza-shadow-card, 0 16px 38px rgba(47, 39, 33, 0.075));
+}
+
+.stanza-tempo-preview-dialog-content {
+  padding-top: 0;
+}
+
+.stanza-app .stanza-bpm-modal-input .shared-bpm-shell,
+.stanza-tempo-preview-dialog-content .stanza-bpm-modal-input .shared-bpm-shell {
+  width: 100%;
+  max-width: none;
+}
+
 .stanza-mix-block {
   border-top: 1px solid var(--stanza-paper-line-faint);
   margin-top: 2px;
@@ -945,7 +1163,6 @@ button.stanza-library-card {
   width: 100%;
   height: 100%;
 }
-
 .stanza-metronome-pulse {
   --stanza-beat: 1s;
   border-radius: 12px;

@@ -38,13 +38,14 @@ export function applySectionSelectionExtend(
 }
 
 /**
- * Suggested symmetric padding (seconds per side) from section metronome BPM when available,
- * otherwise ~0.35s. Clamped for sensible pre/post roll.
+ * Resolved BPM for the current selection span (first selected section with a section calibration,
+ * else whole-song calibration, else **120** default).
  */
-export function suggestMusicalLoopPadSec(
+export function effectiveBpmForSelectedSpan(
   selectedIndices: readonly number[],
   segments: DerivedSegment[],
   metronomeBySegmentId: Record<string, StanzaSegmentMetronomeCalibration> | undefined,
+  metronomeSongCalibration?: StanzaSegmentMetronomeCalibration,
 ): number {
   let bpm: number | null = null;
   for (const i of selectedIndices) {
@@ -56,7 +57,33 @@ export function suggestMusicalLoopPadSec(
       break;
     }
   }
-  const beatSec = bpm ? 60 / bpm : 0.5;
+  if (bpm == null && metronomeSongCalibration) {
+    const b = metronomeSongCalibration.bpm;
+    if (typeof b === 'number' && b > 40 && b < 360) {
+      bpm = b;
+    }
+  }
+  return bpm ?? 120;
+}
+
+/**
+ * Suggested symmetric padding (seconds per side) from the selection’s effective BPM
+ * (section metronome when set, else whole song, else **120 BPM**), scaled by ~0.85 beat.
+ * Clamped for sensible pre/post roll.
+ */
+export function suggestMusicalLoopPadSec(
+  selectedIndices: readonly number[],
+  segments: DerivedSegment[],
+  metronomeBySegmentId: Record<string, StanzaSegmentMetronomeCalibration> | undefined,
+  metronomeSongCalibration?: StanzaSegmentMetronomeCalibration,
+): number {
+  const bpm = effectiveBpmForSelectedSpan(
+    selectedIndices,
+    segments,
+    metronomeBySegmentId,
+    metronomeSongCalibration,
+  );
+  const beatSec = 60 / bpm;
   const raw = beatSec * 0.85;
   return Math.min(0.85, Math.max(0.18, raw));
 }

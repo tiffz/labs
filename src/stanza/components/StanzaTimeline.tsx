@@ -13,18 +13,19 @@ import RepeatOneIcon from '@mui/icons-material/RepeatOne';
 import RestartAltOutlinedIcon from '@mui/icons-material/RestartAltOutlined';
 import SkipNextIcon from '@mui/icons-material/SkipNext';
 import SkipPreviousIcon from '@mui/icons-material/SkipPrevious';
+import PublishedWithChangesOutlinedIcon from '@mui/icons-material/PublishedWithChangesOutlined';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
-import type { SegmentStat } from '../db/stanzaDb';
-import type { StanzaMarker } from '../db/stanzaDb';
+import type { SegmentStat, StanzaMarker, StanzaSegmentMetronomeCalibration } from '../db/stanzaDb';
 import {
   deletableBoundaryMarkerAtTime,
   deriveSegments,
   ensureMarkerIds,
   STANZA_TIME_EPS,
 } from '../utils/segments';
+import { effectiveBeatGridForSegment, sectionBoundaryBeatMisalignment } from '../utils/stanzaBeatGrid';
 import type { StanzaPlaybackLoopMode } from '../utils/stanzaPlaybackLoop';
 import { computeLoopHull } from '../utils/stanzaPlaybackLoop';
 import AppTooltip from '../../shared/components/AppTooltip';
@@ -37,7 +38,7 @@ const SELECTION_SPAN_WASH = 'rgba(232, 72, 160, 0.16)';
 
 const BAR_HELP =
   'Drag the bar or playhead to scrub. Click a section to select it and jump. Shift+click to extend the selection across sections. ' +
-  'Light pink fill is your selection span (pad / nudge without moving markers). The hot pink outline shows what repeats in loop-selection or loop-whole mode. ' +
+  'Light pink fill is your selection span (pad / nudge without moving markers). In Sections, the apply-changes icon moves the outer splits of the highlighted sections to match that span. Start/End nudges use one beat from the metronome grid when BPM is known (else one second). The hot pink outline shows what repeats in loop-selection or loop-whole mode. ' +
   'Loop icons: play once, repeat the whole song, or repeat the selection span. Under the bar, section tools sit on the left; Edit selection sits on the right.';
 
 const HOVER_CLOSE_MS = 220;
@@ -94,6 +95,14 @@ export interface StanzaTimelineProps {
   selectionExtendActive?: boolean;
   playbackRate: number;
   onPlaybackRateChange: (rate: number) => void;
+  /** One beat in seconds for the current selection span (from metronome grid); parent falls back to 120 BPM when unset. */
+  selectionSpanBeatDeltaSec?: number;
+  metronomeBySegmentId?: Record<string, StanzaSegmentMetronomeCalibration>;
+  metronomeSongCalibration?: StanzaSegmentMetronomeCalibration;
+  onSnapSectionBoundariesToBeat?: (segmentIndex: number) => void;
+  onCommitSelectionToBoundaries?: () => void;
+  commitSelectionToBoundariesDisabled?: boolean;
+  commitSelectionToBoundariesTitle?: string;
 }
 
 export default function StanzaTimeline({
@@ -125,6 +134,13 @@ export default function StanzaTimeline({
   selectionExtendActive = false,
   playbackRate,
   onPlaybackRateChange,
+  selectionSpanBeatDeltaSec,
+  metronomeBySegmentId,
+  metronomeSongCalibration,
+  onSnapSectionBoundariesToBeat,
+  onCommitSelectionToBoundaries,
+  commitSelectionToBoundariesDisabled = false,
+  commitSelectionToBoundariesTitle,
 }: StanzaTimelineProps) {
   const [dragMarkers, setDragMarkers] = useState<StanzaMarker[] | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
@@ -139,6 +155,23 @@ export default function StanzaTimeline({
     [segments, selectedSegmentIndices],
   );
   const selectionSpan = selectionTimeSpan ?? markerSelectionHull;
+
+  const selectionNudgeStepSec = useMemo(() => {
+    if (
+      typeof selectionSpanBeatDeltaSec === 'number' &&
+      Number.isFinite(selectionSpanBeatDeltaSec) &&
+      selectionSpanBeatDeltaSec > 0
+    ) {
+      return selectionSpanBeatDeltaSec;
+    }
+    return 1;
+  }, [selectionSpanBeatDeltaSec]);
+
+  const selectionNudgeHint = useMemo(() => {
+    if (selectionNudgeStepSec === 1) return 'one second';
+    const sec = selectionNudgeStepSec >= 10 ? selectionNudgeStepSec.toFixed(1) : selectionNudgeStepSec.toFixed(2);
+    return `one beat (~${sec}s)`;
+  }, [selectionNudgeStepSec]);
 
   const trackRef = useRef<HTMLDivElement | null>(null);
   const scrubbingRef = useRef(false);
@@ -320,6 +353,26 @@ export default function StanzaTimeline({
 
   const hoverSegment = hoverCard != null ? segments.find((s) => s.id === hoverCard.segmentId) ?? null : null;
 
+  const hoverSectionMetronomeBpm = useMemo(() => {
+    if (!hoverSegment || !(duration > 0)) return undefined;
+    return effectiveBeatGridForSegment(
+      hoverSegment,
+      metronomeBySegmentId,
+      metronomeSongCalibration,
+    ).bpm;
+  }, [duration, hoverSegment, metronomeBySegmentId, metronomeSongCalibration]);
+
+  const hoverSectionBoundaryMisaligned = useMemo(() => {
+    if (!hoverSegment || !(duration > 0)) return false;
+    const m = sectionBoundaryBeatMisalignment(
+      hoverSegment,
+      duration,
+      metronomeBySegmentId,
+      metronomeSongCalibration,
+    );
+    return m.start || m.end;
+  }, [duration, hoverSegment, metronomeBySegmentId, metronomeSongCalibration]);
+
   const commitSectionRename = useCallback(() => {
     if (hoverCard == null) return;
     const i = segments.findIndex((s) => s.id === hoverCard.segmentId);
@@ -447,7 +500,10 @@ export default function StanzaTimeline({
   const showSelectionEditControls =
     selectedSegmentIndices.length > 0 &&
     duration > 0 &&
-    Boolean(onSelectionSpanNudge || onClearSegmentSelection);
+    Boolean(onSelectionSpanNudge || onClearSegmentSelection || onSelectionMusicalPad || onResetSelectionSpan);
+
+  const showCommitSelectionToBoundaries =
+    selectedSegmentIndices.length > 0 && duration > 0 && Boolean(onCommitSelectionToBoundaries);
 
   const selectionEditControls = showSelectionEditControls ? (
     <Box className="stanza-playback-control-group stanza-playback-footer-selection" role="group" aria-label="Edit selection">
@@ -460,22 +516,22 @@ export default function StanzaTimeline({
             <Typography component="span" className="stanza-playback-chip-caption">
               Start
             </Typography>
-            <AppTooltip title="Move selection start one second earlier (include more before the span).">
+            <AppTooltip title={`Move selection start ${selectionNudgeHint} earlier (include more before the span).`}>
               <IconButton
                 size="small"
                 className="stanza-playback-chip-btn"
-                aria-label="Move selection start one second earlier"
-                onClick={() => onSelectionSpanNudge('start', -1)}
+                aria-label={`Move selection start ${selectionNudgeHint} earlier`}
+                onClick={() => onSelectionSpanNudge('start', -selectionNudgeStepSec)}
               >
                 <ArrowBackOutlinedIcon />
               </IconButton>
             </AppTooltip>
-            <AppTooltip title="Move selection start one second later (trim from the left).">
+            <AppTooltip title={`Move selection start ${selectionNudgeHint} later (trim from the left).`}>
               <IconButton
                 size="small"
                 className="stanza-playback-chip-btn"
-                aria-label="Move selection start one second later"
-                onClick={() => onSelectionSpanNudge('start', 1)}
+                aria-label={`Move selection start ${selectionNudgeHint} later`}
+                onClick={() => onSelectionSpanNudge('start', selectionNudgeStepSec)}
               >
                 <ArrowForwardOutlinedIcon />
               </IconButton>
@@ -484,31 +540,31 @@ export default function StanzaTimeline({
             <Typography component="span" className="stanza-playback-chip-caption">
               End
             </Typography>
-            <AppTooltip title="Move selection end one second earlier (trim from the right).">
+            <AppTooltip title={`Move selection end ${selectionNudgeHint} earlier (trim from the right).`}>
               <IconButton
                 size="small"
                 className="stanza-playback-chip-btn"
-                aria-label="Move selection end one second earlier"
-                onClick={() => onSelectionSpanNudge('end', -1)}
+                aria-label={`Move selection end ${selectionNudgeHint} earlier`}
+                onClick={() => onSelectionSpanNudge('end', -selectionNudgeStepSec)}
               >
                 <ArrowBackOutlinedIcon />
               </IconButton>
             </AppTooltip>
-            <AppTooltip title="Move selection end one second later (include more after the span).">
+            <AppTooltip title={`Move selection end ${selectionNudgeHint} later (include more after the span).`}>
               <IconButton
                 size="small"
                 className="stanza-playback-chip-btn"
-                aria-label="Move selection end one second later"
-                onClick={() => onSelectionSpanNudge('end', 1)}
+                aria-label={`Move selection end ${selectionNudgeHint} later`}
+                onClick={() => onSelectionSpanNudge('end', selectionNudgeStepSec)}
               >
                 <ArrowForwardOutlinedIcon />
               </IconButton>
             </AppTooltip>
           </>
         ) : null}
+        {onSelectionSpanNudge && onSelectionMusicalPad ? <span className="stanza-playback-chip-divider" aria-hidden /> : null}
         {onSelectionMusicalPad ? (
           <>
-            <span className="stanza-playback-chip-divider" aria-hidden />
             <AppTooltip title="Pad both ends of the selection span from section metronome BPM when set, else ~⅔ of a beat at 120.">
               <IconButton
                 size="small"
@@ -856,29 +912,31 @@ export default function StanzaTimeline({
           })}
         </Box>
 
-        {onAddMarker || selectionEditControls ? (
+        {onAddMarker || selectionEditControls || showCommitSelectionToBoundaries ? (
           <Box className="stanza-playback-track-footer">
-            {onAddMarker ? (
+            {onAddMarker || showCommitSelectionToBoundaries ? (
               <Box className="stanza-playback-control-group stanza-playback-footer-sections">
                 <Typography component="span" className="stanza-playback-control-label">
                   Sections
                 </Typography>
                 <Box className="stanza-playback-chip">
-                  <AppTooltip title="Shortcut M when you are not typing.">
-                    <Button
-                      type="button"
-                      size="small"
-                      variant="text"
-                      className="stanza-playback-chip-text-btn"
-                      startIcon={<CallSplitOutlinedIcon fontSize="small" />}
-                      onClick={onAddMarker}
-                    >
-                      Split at playhead
-                    </Button>
-                  </AppTooltip>
+                  {onAddMarker ? (
+                    <AppTooltip title="Shortcut M when you are not typing.">
+                      <Button
+                        type="button"
+                        size="small"
+                        variant="text"
+                        className="stanza-playback-chip-text-btn"
+                        startIcon={<CallSplitOutlinedIcon fontSize="small" />}
+                        onClick={onAddMarker}
+                      >
+                        Split at playhead
+                      </Button>
+                    </AppTooltip>
+                  ) : null}
                   {onJoinSections ? (
                     <>
-                      <span className="stanza-playback-chip-divider" aria-hidden />
+                      {onAddMarker ? <span className="stanza-playback-chip-divider" aria-hidden /> : null}
                       <AppTooltip
                         title={
                           joinSectionsEnabled
@@ -895,6 +953,30 @@ export default function StanzaTimeline({
                             aria-label="Join sections"
                           >
                             <MergeTypeOutlinedIcon fontSize="small" />
+                          </IconButton>
+                        </span>
+                      </AppTooltip>
+                    </>
+                  ) : null}
+                  {onCommitSelectionToBoundaries ? (
+                    <>
+                      {onAddMarker || onJoinSections ? <span className="stanza-playback-chip-divider" aria-hidden /> : null}
+                      <AppTooltip
+                        title={
+                          commitSelectionToBoundariesTitle ??
+                          'Move the first and last splits of the highlighted sections to the edges of the pink selection (including padding). Inner splits stay put.'
+                        }
+                      >
+                        <span>
+                          <IconButton
+                            type="button"
+                            size="small"
+                            className="stanza-playback-chip-btn"
+                            aria-label="Move outer section splits to match the pink selection span"
+                            disabled={commitSelectionToBoundariesDisabled}
+                            onClick={onCommitSelectionToBoundaries}
+                          >
+                            <PublishedWithChangesOutlinedIcon fontSize="small" />
                           </IconButton>
                         </span>
                       </AppTooltip>
@@ -926,6 +1008,16 @@ export default function StanzaTimeline({
             hoverDeletableMarker
               ? () => {
                   onDeleteMarker(hoverDeletableMarker.id!);
+                  setHoverCard(null);
+                }
+              : undefined
+          }
+          sectionBpm={hoverSectionMetronomeBpm}
+          boundariesMisalignedWithBeat={hoverSectionBoundaryMisaligned}
+          onSnapBoundariesToBeat={
+            onSnapSectionBoundariesToBeat && hoverSegment
+              ? () => {
+                  onSnapSectionBoundariesToBeat(hoverSegment.index);
                   setHoverCard(null);
                 }
               : undefined

@@ -22,6 +22,8 @@ interface StanzaYouTubePlayerProps {
   onControllerReady?: (controller: StanzaYouTubeController | null) => void;
   /** YouTube IFrame API `onError` payload: 2 invalid param, 5 HTML5, 100 not found, 101/150 embed not allowed. */
   onPlayerError?: (errorCode: number) => void;
+  /** Fires once when the player reaches the natural end of the video (YouTube `ENDED`). */
+  onEnded?: () => void;
 }
 
 type YtInstance = {
@@ -98,6 +100,7 @@ const StanzaYouTubePlayer: React.FC<StanzaYouTubePlayerProps> = ({
   onStateChange,
   onControllerReady,
   onPlayerError,
+  onEnded,
 }) => {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<YtInstance | null>(null);
@@ -105,6 +108,8 @@ const StanzaYouTubePlayer: React.FC<StanzaYouTubePlayerProps> = ({
   const onStateChangeRef = useRef(onStateChange);
   const onControllerReadyRef = useRef(onControllerReady);
   const onPlayerErrorRef = useRef(onPlayerError);
+  const onEndedRef = useRef(onEnded);
+  const prevYtPlayerStateRef = useRef<number | null>(null);
   const playerDomId = useMemo(() => `stanza-yt-${crypto.randomUUID()}`, []);
 
   useEffect(() => {
@@ -119,11 +124,22 @@ const StanzaYouTubePlayer: React.FC<StanzaYouTubePlayerProps> = ({
     onPlayerErrorRef.current = onPlayerError;
   }, [onPlayerError]);
 
+  useEffect(() => {
+    onEndedRef.current = onEnded;
+  }, [onEnded]);
+
   const emitState = useCallback(() => {
     const player = playerRef.current;
     const YT = readYt();
     if (!player || !onStateChangeRef.current || !YT) return;
-    const playing = player.getPlayerState() === (YT.PlayerState?.PLAYING ?? 1);
+    const st = player.getPlayerState();
+    const ENDED = YT.PlayerState?.ENDED ?? 0;
+    const prev = prevYtPlayerStateRef.current;
+    if (prev !== null && prev !== ENDED && st === ENDED) {
+      onEndedRef.current?.();
+    }
+    prevYtPlayerStateRef.current = st;
+    const playing = st === (YT.PlayerState?.PLAYING ?? 1);
     onStateChangeRef.current({
       currentTime: player.getCurrentTime() || 0,
       duration: player.getDuration() || 0,
@@ -204,6 +220,7 @@ const StanzaYouTubePlayer: React.FC<StanzaYouTubePlayerProps> = ({
 
     return () => {
       mounted = false;
+      prevYtPlayerStateRef.current = null;
       onControllerReadyRef.current?.(null);
       if (pollTimerRef.current !== null) {
         window.clearInterval(pollTimerRef.current);

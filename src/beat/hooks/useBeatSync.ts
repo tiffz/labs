@@ -2,9 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import type { TimeSignature } from '../../shared/rhythm/types';
 import { BeatGrid } from '../utils/beatGrid';
 import { getMeasureDuration } from '../utils/measureUtils';
-import {
-  getCompensatedDetune,
-} from '../utils/beatSyncMath';
+import { getCompensatedDetune } from '../../shared/audio/getCompensatedDetune';
 import { useMetronome } from './useMetronome';
 import type { TempoRegion } from '../utils/tempoRegions';
 import { devLog } from '../../shared/utils/devLog';

@@ -14,10 +14,18 @@ export interface SegmentStat {
 
 export type StanzaSegmentMetronomeSource = 'tap' | 'analysis';
 
+/** Whether the tempo rail edits whole-song timing vs the selected section. */
+export type StanzaMetronomeTimingScope = 'song' | 'section';
+
 export interface StanzaSegmentMetronomeCalibration {
   bpm: number;
   /** Media-time seconds of a beat phase reference for click alignment. */
   anchorMediaTime: number;
+  /**
+   * Seconds from this section’s start to the first downbeat (“1”) the metronome aligns to.
+   * When set, phase follows the section boundary; {@link anchorMediaTime} should equal section start + this offset on save.
+   */
+  firstBeatOffsetSec?: number;
   source: StanzaSegmentMetronomeSource;
   /** Present when `source === 'analysis'` (0–1). */
   confidence?: number;
@@ -55,7 +63,13 @@ export interface StanzaSong {
   primaryMuted?: boolean;
   /** Per-section metronome calibration keyed by stable segment ids from `deriveSegments`. */
   metronomeBySegmentId?: Record<string, StanzaSegmentMetronomeCalibration>;
-  /** User preference: attempt synced clicks while playing (requires per-section calibration). */
+  /** Whole-song metronome grid (beat 1 relative to media t = 0). Sections inherit until overridden. */
+  metronomeSongCalibration?: StanzaSegmentMetronomeCalibration;
+  /** User pitch shift for uploaded audio only (−12…+12 semitones); uses decoded-buffer detune (main + stems when layered). */
+  localTransposeSemitones?: number;
+  /** Which timing target the Practice rail is editing (default: section). */
+  metronomeTimingScope?: StanzaMetronomeTimingScope;
+  /** User preference: attempt synced clicks while playing (requires tempo calibration). */
   metronomeEnabled?: boolean;
 }
 
@@ -95,6 +109,10 @@ export class StanzaDB extends Dexie {
       takes: 'id, songId, segmentId, createdAt, isGuided',
     });
     this.version(6).stores({
+      songs: 'id, updatedAt, title, ytId, driveSourceFileId',
+      takes: 'id, songId, segmentId, createdAt, isGuided',
+    });
+    this.version(7).stores({
       songs: 'id, updatedAt, title, ytId, driveSourceFileId',
       takes: 'id, songId, segmentId, createdAt, isGuided',
     });

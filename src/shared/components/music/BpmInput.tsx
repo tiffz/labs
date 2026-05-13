@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Popover from '@mui/material/Popover';
 import { COMMON_BPMS, DEFAULT_BPM_MAX, DEFAULT_BPM_MIN } from '../../music/musicInputConstants';
 import AppSlider from '../AppSlider';
+import { NumericStepperField } from './NumericStepperField';
 import './bpmInput.css';
 
 interface BpmInputProps {
@@ -21,6 +22,13 @@ interface BpmInputProps {
   dropdownClassName?: string;
   dropdownOffsetPx?: number;
   sliderClassName?: string;
+  /**
+   * When `showPresetDropdown` is true, opening the preset panel on input focus (default).
+   * Set to `false` for dense sidebars: use the presets button instead.
+   */
+  openPresetPanelOnFocus?: boolean;
+  /** Where the preset popover anchors horizontally (`right` keeps the rail readable). */
+  presetPanelHorizontal?: 'left' | 'right';
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -47,6 +55,8 @@ const BpmInput: React.FC<BpmInputProps> = ({
   dropdownClassName,
   dropdownOffsetPx,
   sliderClassName,
+  openPresetPanelOnFocus = true,
+  presetPanelHorizontal = 'left',
 }) => {
   const [draft, setDraft] = useState(String(value));
   const [isEditing, setIsEditing] = useState(false);
@@ -55,9 +65,6 @@ const BpmInput: React.FC<BpmInputProps> = ({
   const dropdownPaperRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const valueRef = useRef(value);
-  const holdTimeoutRef = useRef<number | null>(null);
-  const holdIntervalRef = useRef<number | null>(null);
-  const suppressNextClickRef = useRef(false);
   const presets = useMemo(() => COMMON_BPMS.filter((candidate) => candidate >= min && candidate <= max), [max, min]);
   const filteredPresets = useMemo(() => presets, [presets]);
   const sliderMarkValues = useMemo(() => {
@@ -103,29 +110,6 @@ const BpmInput: React.FC<BpmInputProps> = ({
     setDraft(String(next));
   };
 
-  const stopHold = (): void => {
-    if (holdTimeoutRef.current !== null) {
-      window.clearTimeout(holdTimeoutRef.current);
-      holdTimeoutRef.current = null;
-    }
-    if (holdIntervalRef.current !== null) {
-      window.clearInterval(holdIntervalRef.current);
-      holdIntervalRef.current = null;
-    }
-  };
-
-  const startHold = (delta: number): void => {
-    if (disabled) return;
-    stopHold();
-    suppressNextClickRef.current = true;
-    bump(delta);
-    holdTimeoutRef.current = window.setTimeout(() => {
-      holdIntervalRef.current = window.setInterval(() => bump(delta), 70);
-    }, 260);
-  };
-
-  useEffect(() => () => stopHold(), []);
-
   return (
     <div className={className}>
       <div className="shared-bpm-dropdown-anchor" ref={anchorRef}>
@@ -134,102 +118,62 @@ const BpmInput: React.FC<BpmInputProps> = ({
             {leadingActions ? (
               <div className="shared-bpm-leading-actions">{leadingActions}</div>
             ) : null}
-            <div className="shared-bpm-stepper" role="group" aria-label="BPM stepper">
-              <input
-                className="shared-bpm-value"
-                type="text"
-                inputMode="numeric"
-                aria-label="Tempo in BPM"
-                value={draft}
-                onFocus={() => {
-                  if (disabled) return;
-                  setDraft(String(Math.round(value)));
-                  setIsEditing(true);
-                  if (showPresetDropdown) {
-                    setIsPresetOpen(true);
-                  }
-                }}
-                onChange={(event) => setDraft(event.target.value)}
-                onBlur={(event) => {
-                  if (disabled) return;
+            <NumericStepperField
+              value={value}
+              inputValue={draft}
+              onInputChange={(event) => setDraft(event.target.value)}
+              onInputFocus={() => {
+                if (disabled) return;
+                setDraft(String(Math.round(value)));
+                setIsEditing(true);
+                if (showPresetDropdown && openPresetPanelOnFocus) {
+                  setIsPresetOpen(true);
+                }
+              }}
+              onInputBlur={(event) => {
+                if (disabled) return;
+                commit(draft);
+                const nextTarget = event.relatedTarget;
+                const movingIntoDropdown =
+                  nextTarget instanceof Node &&
+                  dropdownPaperRef.current?.contains(nextTarget) === true;
+                setIsEditing(movingIntoDropdown);
+                setIsPresetOpen(movingIntoDropdown);
+              }}
+              inputRef={inputRef}
+              disabled={disabled}
+              onInputKeyDown={(event) => {
+                if (disabled) return;
+                if (event.key === 'Enter') {
+                  event.preventDefault();
                   commit(draft);
-                  const nextTarget = event.relatedTarget;
-                  const movingIntoDropdown =
-                    nextTarget instanceof Node &&
-                    dropdownPaperRef.current?.contains(nextTarget) === true;
-                  setIsEditing(movingIntoDropdown);
-                  setIsPresetOpen(movingIntoDropdown);
-                }}
-                ref={inputRef}
-                disabled={disabled}
-                onKeyDown={(event) => {
-                  if (disabled) return;
-                  if (event.key === 'Enter') {
-                    event.preventDefault();
-                    commit(draft);
-                    setIsEditing(false);
-                    setIsPresetOpen(false);
-                  }
-                  if (event.key === 'Escape') {
-                    setDraft(String(Math.round(value)));
-                    setIsEditing(false);
-                    setIsPresetOpen(false);
-                  }
-                  if (event.key === 'ArrowUp') {
-                    event.preventDefault();
-                    bump(step);
-                  }
-                  if (event.key === 'ArrowDown') {
-                    event.preventDefault();
-                    bump(-step);
-                  }
-                }}
-              />
-              <div className="shared-bpm-arrows">
-                <button
-                  type="button"
-                  className="shared-bpm-arrow"
-                  onMouseDown={(event) => {
-                    event.preventDefault();
-                    startHold(step);
-                  }}
-                  onMouseUp={stopHold}
-                  onMouseLeave={stopHold}
-                  onClick={() => {
-                    if (suppressNextClickRef.current) {
-                      suppressNextClickRef.current = false;
-                      return;
-                    }
-                    bump(step);
-                  }}
-                  aria-label="Increase BPM"
-                  disabled={disabled || value >= max}
-                >
-                  <span className="material-symbols-outlined">arrow_drop_up</span>
-                </button>
-                <button
-                  type="button"
-                  className="shared-bpm-arrow"
-                  onMouseDown={(event) => {
-                    event.preventDefault();
-                    startHold(-step);
-                  }}
-                  onMouseUp={stopHold}
-                  onMouseLeave={stopHold}
-                  onClick={() => {
-                    if (suppressNextClickRef.current) {
-                      suppressNextClickRef.current = false;
-                      return;
-                    }
-                    bump(-step);
-                  }}
-                  aria-label="Decrease BPM"
-                  disabled={disabled || value <= min}
-                >
-                  <span className="material-symbols-outlined">arrow_drop_down</span>
-                </button>
-              </div>
-            </div>
+                  setIsEditing(false);
+                  setIsPresetOpen(false);
+                }
+                if (event.key === 'Escape') {
+                  setDraft(String(Math.round(value)));
+                  setIsEditing(false);
+                  setIsPresetOpen(false);
+                }
+                if (event.key === 'ArrowUp') {
+                  event.preventDefault();
+                  bump(step);
+                }
+                if (event.key === 'ArrowDown') {
+                  event.preventDefault();
+                  bump(-step);
+                }
+              }}
+              min={min}
+              max={max}
+              step={step}
+              onBump={bump}
+              incrementAriaLabel="Increase BPM"
+              decrementAriaLabel="Decrease BPM"
+              inputAriaLabel="Tempo in BPM"
+              stepperAriaLabel="BPM stepper"
+              enableHoldToStep
+            />
             {showRateActions && (
               <div className="shared-bpm-rate-inline" role="group" aria-label="BPM scale actions">
                 <button
@@ -252,6 +196,26 @@ const BpmInput: React.FC<BpmInputProps> = ({
                 </button>
               </div>
             )}
+            {showPresetDropdown && !openPresetPanelOnFocus ? (
+              <button
+                type="button"
+                className="shared-bpm-preset-toggle"
+                aria-label="Tempo slider and common BPMs"
+                aria-expanded={isPresetOpen}
+                disabled={disabled}
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                }}
+                onClick={() => {
+                  setIsPresetOpen((open) => !open);
+                  setIsEditing(true);
+                }}
+              >
+                <span className="material-symbols-outlined" aria-hidden>
+                  tune
+                </span>
+              </button>
+            ) : null}
             {showRandomize && (
               <button
                 type="button"
@@ -281,8 +245,14 @@ const BpmInput: React.FC<BpmInputProps> = ({
           disableAutoFocus
           disableEnforceFocus
           disableRestoreFocus
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-          transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+          anchorOrigin={{
+            vertical: 'bottom',
+            horizontal: presetPanelHorizontal === 'right' ? 'right' : 'left',
+          }}
+          transformOrigin={{
+            vertical: 'top',
+            horizontal: presetPanelHorizontal === 'right' ? 'right' : 'left',
+          }}
           slotProps={{
             paper: {
               className: ['shared-bpm-dropdown', dropdownClassName].filter(Boolean).join(' '),

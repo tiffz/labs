@@ -23,6 +23,12 @@ export interface StanzaSectionHoverCardProps {
   sectionBoundaryMarkerDeletable?: boolean;
   /** Removes the boundary at this section’s start; merges into the previous section (Logic-style). */
   onDeleteSectionBoundaryMarker?: () => void;
+  /** Resolved metronome BPM for this section (for display). */
+  sectionBpm?: number;
+  /** True when start/end boundaries are off the beat grid for this section. */
+  boundariesMisalignedWithBeat?: boolean;
+  /** Snap section boundary markers to the nearest beat (same grid as BPM display). */
+  onSnapBoundariesToBeat?: () => void;
 }
 
 function formatDuration(sec: number): string {
@@ -47,10 +53,13 @@ export default function StanzaSectionHoverCard({
   cardRootRef,
   sectionBoundaryMarkerDeletable = false,
   onDeleteSectionBoundaryMarker,
+  sectionBpm,
+  boundariesMisalignedWithBeat = false,
+  onSnapBoundariesToBeat,
 }: StanzaSectionHoverCardProps) {
   const dur = segment.end - segment.start;
   const practicedMin = ((stats?.totalMs ?? 0) / 60_000).toFixed(1);
-  const cardW = 172;
+  const cardW = 200;
   const half = cardW / 2;
   const leftPx = Math.min(Math.max(position.x - half, 8), window.innerWidth - cardW - 8);
   const bottomPx = window.innerHeight - position.segmentTop + 8;
@@ -94,6 +103,17 @@ export default function StanzaSectionHoverCard({
         }}
         sx={{ mb: 0.75, '& .MuiInputBase-root': { fontSize: '0.8125rem' } }}
       />
+      {typeof sectionBpm === 'number' && Number.isFinite(sectionBpm) ? (
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontSize: '0.7rem' }}>
+          Metronome:{' '}
+          <strong>
+            {Math.abs(sectionBpm - Math.round(sectionBpm)) < 1e-6
+              ? String(Math.round(sectionBpm))
+              : (Math.round(sectionBpm * 10) / 10).toFixed(1)}
+          </strong>{' '}
+          BPM
+        </Typography>
+      ) : null}
       {sectionBoundaryMarkerDeletable && onDeleteSectionBoundaryMarker ? (
         <AppTooltip title="Removes the split at the start of this section and joins it into the previous one (same idea as Logic Pro). You can also press Delete with the section selected.">
           <Button
@@ -109,6 +129,24 @@ export default function StanzaSectionHoverCard({
             sx={{ mb: 0.5, py: 0.35, textTransform: 'none', fontSize: '0.6875rem' }}
           >
             Join with previous
+          </Button>
+        </AppTooltip>
+      ) : null}
+      {boundariesMisalignedWithBeat && onSnapBoundariesToBeat ? (
+        <AppTooltip title="Move the markers at this section’s start and/or end to the nearest downbeat on the metronome grid (section BPM, else whole song, else 120).">
+          <Button
+            type="button"
+            variant="outlined"
+            size="small"
+            color="inherit"
+            fullWidth
+            onClick={(e) => {
+              e.stopPropagation();
+              onSnapBoundariesToBeat();
+            }}
+            sx={{ mb: 0.5, py: 0.35, textTransform: 'none', fontSize: '0.6875rem' }}
+          >
+            Snap boundaries to beat
           </Button>
         </AppTooltip>
       ) : null}

@@ -228,6 +228,39 @@
   cursor: not-allowed;
 }
 
+/* Opens preset popover when `openPresetPanelOnFocus` is false (dense toolbars). */
+.shared-bpm-preset-toggle {
+  border: 0;
+  background: transparent;
+  color: var(--bpm-muted);
+  align-self: stretch;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  min-width: 30px;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  border-left: 1px solid var(--bpm-divider);
+  border-radius: 0;
+}
+
+.shared-bpm-preset-toggle:hover:not(:disabled) {
+  background: var(--bpm-hover);
+  color: var(--bpm-text);
+}
+
+.shared-bpm-preset-toggle:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.shared-bpm-preset-toggle .material-symbols-outlined {
+  font-size: 18px;
+  line-height: 1;
+}
+
 .shared-bpm-inline-action {
   border: none;
   background: transparent;

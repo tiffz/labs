@@ -1,14 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
+import { getCompensatedDetune } from '../../shared/audio/getCompensatedDetune';
 import { useBeatSync } from './useBeatSync';
-
-// Test the pitch compensation formula directly
-// The formula: detune = (transposeSemitones * 100) - (1200 * log2(playbackRate))
-function getCompensatedDetune(transposeSemitones: number, playbackRate: number): number {
-  const desiredCents = transposeSemitones * 100;
-  const playbackRatePitchShift = 1200 * Math.log2(playbackRate);
-  return desiredCents - playbackRatePitchShift;
-}
 
 // Mock the useMetronome hook
 vi.mock('./useMetronome', () => ({

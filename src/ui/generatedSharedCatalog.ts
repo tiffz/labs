@@ -334,6 +334,23 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-audio-getcompensateddetune-ts-getcompensateddetune",
+    "name": "getCompensatedDetune",
+    "path": "src/shared/audio/getCompensatedDetune.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Compensate pitch shift induced by playback-rate changes on an `AudioBufferSourceNode`. `AudioBufferSourceNode.detune` is in cents; changing `playbackRate` also shifts perceived pitch by `1200 * log2(rate)` cents. This returns the detune value so net pitch matches `transposeSemitones` at the given playback rate (same formula as Find the Beat / `useBeatSync`).",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [
+      "beat"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-audio-index-ts-audioplayer",
     "name": "AudioPlayer",
     "path": "src/shared/audio/index.ts",
@@ -2130,7 +2147,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-ui",
-    "description": "Standard **0–1 linear gain** slider for mix rails and similar (MUI `Slider` with safe defaults). Prefer this over ad-hoc `Slider` copies so rail / track clicks stay reliable in tight layouts.",
+    "description": "Standard **0–1 linear gain** slider for mix rails and similar (MUI `Slider` with safe defaults). Prefer this over ad-hoc `Slider` copies so rail / track clicks stay reliable in tight layouts. When the displayed value comes from async storage (e.g. Dexie + live query), use **local state** in `onChange` and persist in `onChangeCommitted` (or after `await persist`) so the thumb does not fight stale props mid-drag.",
     "tags": [
       "components",
       "api",
@@ -2653,6 +2670,42 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "ui",
       "words"
     ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-numericstepperfield-tsx-numericstepperfield",
+    "name": "NumericStepperField",
+    "path": "src/shared/components/music/NumericStepperField.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Value + ▲▼ stepper row used inside ./BpmInput.tsx shells (`shared-bpm-stepper`, `shared-bpm-value`, `shared-bpm-arrows`). BPM-agnostic chrome only — domain copy and clamping live in the parent.",
+    "tags": [
+      "components",
+      "music",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-numericstepperfield-tsx-numericstepperfieldprops",
+    "name": "NumericStepperFieldProps",
+    "path": "src/shared/components/music/NumericStepperField.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "music",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
     "exportType": "interface",
     "demoId": null
   },
