@@ -17,6 +17,19 @@ export function stripLeadingDateNoiseFromFileName(fileName: string): string {
   return s;
 }
 
+/**
+ * Strip the trailing macOS/Chrome duplicate-download suffix (` (1)`, ` (2)`, …) from a file
+ * stem. Without this, `"12 (1).mp4"` slips through {@link fallbackVenueFromFileName} as the
+ * literal venue `"(1)"` once the digits-only token `"12"` is rejected.
+ *
+ * Conservative on purpose: only strips a single trailing `(N)` group with 1–3 digits, which is
+ * what the OS-level rename pattern produces. A real venue with parentheses like
+ * `"Bar (Upstairs)"` is left intact because the inner text is non-numeric.
+ */
+export function stripTrailingDuplicateSuffix(stem: string): string {
+  return stem.replace(/\s*\(\d{1,3}\)\s*$/u, '').trim();
+}
+
 const FALLBACK_VENUE_STOPWORDS = new Set(
   [
     'recording',
@@ -37,20 +50,39 @@ const FALLBACK_VENUE_STOPWORDS = new Set(
   ].map((w) => w.toLowerCase()),
 );
 
+/** Number of ASCII letters in `s` (used to filter out punctuation-only and digit-heavy tokens). */
+function letterCount(s: string): number {
+  let n = 0;
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    if ((c >= 0x41 && c <= 0x5a) || (c >= 0x61 && c <= 0x7a)) n += 1;
+  }
+  return n;
+}
+
 /**
- * When the catalog does not match, derive a short venue-ish token from the file stem (for free‑solo Autocomplete).
+ * When the catalog does not match, derive a short venue-ish token from the file stem (for
+ * free-solo Autocomplete). Conservative by design — we'd rather leave the field blank than
+ * stuff in a meaningless token like `"(1)"` (the trailing OS duplicate suffix on `"12 (1).mp4"`)
+ * or `"IMG"` (camera prefix) and force the user to clear it.
  */
 export function fallbackVenueFromFileName(fileName: string): string {
-  const stem = stripLeadingDateNoiseFromFileName(fileName);
+  const stem = stripTrailingDuplicateSuffix(stripLeadingDateNoiseFromFileName(fileName));
   if (!stem) return '';
   const segments = stem
     .split(/[-_\s]+/)
     .map((s) => s.trim())
-    .filter((s) => s.length >= 2 && !/^\d+$/.test(s));
+    // Require at least 3 actual letters: rejects digit-only chunks ("12"), parenthetical
+    // residue ("(1)"), and short camera/device prefixes — anything left looks word-like
+    // enough to plausibly be a venue.
+    .filter((s) => letterCount(s) >= 3);
+  // If every word in the filename is a known camera/export stopword (`IMG`, `MOV`, `take`,
+  // `final`, …), the filename has nothing meaningful to say about the venue. Returning empty
+  // here is preferable to titlecasing `IMG` and forcing the user to clear it.
   const scored = segments.filter((s) => !FALLBACK_VENUE_STOPWORDS.has(s.toLowerCase()));
-  const pool = scored.length > 0 ? scored : segments;
-  const best = [...pool].sort((a, b) => b.length - a.length)[0];
-  if (!best || best.length < 3) return '';
+  if (scored.length === 0) return '';
+  const best = [...scored].sort((a, b) => b.length - a.length)[0];
+  if (!best) return '';
   return best.replace(/\b\w/g, (c) => c.toUpperCase());
 }
 

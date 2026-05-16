@@ -24,6 +24,10 @@ Pick one word per concept and use it everywhere.
 | Pink-tinted UI region around the loop selection     | **Selection span**        | "Pink area", "pink span"                                    |
 | Push outer section markers to match the selection   | **Resize to selection**   | "Commit boundaries", "Apply selection", "Pad or nudge"      |
 | Per-section opt-out from forward playback           | **Skip during playback**  | "Mute section", "Bypass", "Disable"                         |
+| Toggle a drum groove on/off                         | **Add drums**             | "Enable drums", "Drum machine", "Beat"                      |
+| Drum rhythm choice from the shared preset library   | **Pattern**               | "Groove preset", "Rhythm template"                          |
+| Mix slider for the click track                      | **Metronome** (Mix row)   | "Click", "Tick"                                             |
+| Mix slider for the drum groove                      | **Drums** (Mix row)       | "Beat", "Percussion"                                        |
 
 Internal types (`StanzaStemTrack`, `DerivedSegment`, etc.) keep technical names
 even though the UI says "layer" / "section". The boundary between code and copy

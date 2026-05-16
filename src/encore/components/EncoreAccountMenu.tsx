@@ -14,6 +14,7 @@ import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
 import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
 import Link from '@mui/material/Link';
@@ -343,6 +344,7 @@ export function EncoreAccountMenu(props: {
     googleAccessToken,
     googleEmail,
     googleSessionExpired,
+    googleSignInPending,
     signOut,
     signInWithGoogle,
     spotifyConnectError,
@@ -711,8 +713,13 @@ export function EncoreAccountMenu(props: {
               },
             ]}
             primary={{
-              label: 'Sign in again',
-              icon: <RefreshIcon fontSize="small" />,
+              label: googleSignInPending ? 'Opening Google…' : 'Sign in again',
+              icon: googleSignInPending ? (
+                <CircularProgress size={14} thickness={5} color="inherit" />
+              ) : (
+                <RefreshIcon fontSize="small" />
+              ),
+              loading: googleSignInPending,
               onClick: () => {
                 close();
                 void signInWithGoogle();
@@ -748,8 +755,13 @@ export function EncoreAccountMenu(props: {
             identity={{ label: 'Signed in as', value: googleEmail }}
             description="Your Google sign-in expired. Local edits are safe; sign in again to resume Drive backup."
             primary={{
-              label: 'Sign in again',
-              icon: <RefreshIcon fontSize="small" />,
+              label: googleSignInPending ? 'Opening Google…' : 'Sign in again',
+              icon: googleSignInPending ? (
+                <CircularProgress size={14} thickness={5} color="inherit" />
+              ) : (
+                <RefreshIcon fontSize="small" />
+              ),
+              loading: googleSignInPending,
               onClick: () => {
                 close();
                 void signInWithGoogle();
@@ -770,7 +782,11 @@ export function EncoreAccountMenu(props: {
             status={{ tone: 'idle', label: 'Not connected' }}
             description="Connect Google to back up your library to Drive and share read-only snapshots."
             primary={{
-              label: 'Sign in with Google',
+              label: googleSignInPending ? 'Opening Google…' : 'Sign in with Google',
+              icon: googleSignInPending ? (
+                <CircularProgress size={14} thickness={5} color="inherit" />
+              ) : undefined,
+              loading: googleSignInPending,
               onClick: () => {
                 close();
                 void signInWithGoogle();

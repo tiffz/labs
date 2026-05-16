@@ -42,10 +42,38 @@ export function primeStanzaMetronomeAudio(): void {
   void ensureMetronomeClickSample(ctx);
 }
 
-function playSampleClick(ctx: AudioContext, sample: LoadedClickSample, isDownbeat: boolean): void {
-  const base = 0.52;
-  const vol = isDownbeat ? base : base * 0.42;
+/**
+ * Default downbeat ceiling. Raised from the historic 0.52 because users reported the click was too
+ * quiet against backing tracks; the user-facing Metronome slider in the Mix multiplies this and
+ * lets people pull it back down if it's too loud.
+ */
+const STANZA_METRONOME_DOWNBEAT_CEILING = 0.85;
+/** Off-beats remain quieter than the downbeat by this ratio (preserved from prior behavior). */
+const STANZA_METRONOME_OFFBEAT_RATIO = 0.42;
+
+function playSampleClick(
+  ctx: AudioContext,
+  sample: LoadedClickSample,
+  isDownbeat: boolean,
+  userGain: number,
+): void {
+  const ceiling = Math.min(1, Math.max(0, STANZA_METRONOME_DOWNBEAT_CEILING * userGain));
+  const vol = isDownbeat ? ceiling : ceiling * STANZA_METRONOME_OFFBEAT_RATIO;
+  if (vol <= 0) return;
   playClickSampleAt(ctx, sample, ctx.currentTime, vol, isDownbeat ? 1.28 : 1);
+}
+
+export interface UseStanzaMetronomeSyncOptions {
+  enabled: boolean;
+  bpm: number | undefined;
+  anchorMediaTime: number | undefined;
+  getMediaTime: () => number;
+  isPlaying: boolean;
+  audioEnabled: boolean;
+  /** Linear 0–1 multiplier applied to the click ceiling. Persisted as `StanzaSong.metronomeGain`. */
+  gain: number;
+  /** Mute switch from the Mix; suppresses click emission while leaving the rAF schedule running. */
+  muted: boolean;
 }
 
 /**
@@ -61,15 +89,19 @@ function playSampleClick(ctx: AudioContext, sample: LoadedClickSample, isDownbea
  * Cleans up the rAF when any input falls out of the playable shape (no BPM, no
  * anchor, transport paused, hook disabled).
  */
-export function useStanzaMetronomeSync(
-  enabled: boolean,
-  bpm: number | undefined,
-  anchorMediaTime: number | undefined,
-  getMediaTime: () => number,
-  isPlaying: boolean,
-  audioEnabled: boolean,
-): void {
+export function useStanzaMetronomeSync(opts: UseStanzaMetronomeSyncOptions): void {
+  const { enabled, bpm, anchorMediaTime, getMediaTime, isPlaying, audioEnabled, gain, muted } = opts;
   const lastBeatRef = useRef<number | null>(null);
+  // Read gain/mute fresh on each tick without resetting beat tracking when the user drags the
+  // slider — this lets volume react in real time.
+  const gainRef = useRef(gain);
+  const mutedRef = useRef(muted);
+  useEffect(() => {
+    gainRef.current = gain;
+  }, [gain]);
+  useEffect(() => {
+    mutedRef.current = muted;
+  }, [muted]);
 
   /** Reset beat tracking when grid or enabled state changes, or whenever transport starts/stops (pause leaves stale indices). */
   useEffect(() => {
@@ -90,14 +122,15 @@ export function useStanzaMetronomeSync(
         lastBeatRef.current = beat;
       } else if (beat > lastBeatRef.current) {
         lastBeatRef.current = beat;
-        if (audioEnabled) {
+        if (audioEnabled && !mutedRef.current) {
           const ctx = getMetronomeAudioContext();
           if (ctx) {
             void ensureAudioContextRunning(ctx);
             const isDownbeat = ((beat % 4) + 4) % 4 === 0;
+            const userGain = gainRef.current;
             void ensureMetronomeClickSample(ctx).then((sample) => {
               if (!sample) return;
-              playSampleClick(ctx, sample, isDownbeat);
+              playSampleClick(ctx, sample, isDownbeat, userGain);
             });
           }
         }

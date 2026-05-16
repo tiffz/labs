@@ -194,7 +194,7 @@
 
 .stanza-rail-section-label {
   display: block;
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.25rem;
   font-family: var(--stanza-font-display);
   font-size: 0.9375rem;
   font-weight: 600;
@@ -449,10 +449,10 @@ button.stanza-library-card {
   width: 100%;
   margin-top: 8px;
   border-radius: calc(var(--stanza-radius-chip) + 1px);
-  /* Cap chosen to clear the natural 16:9 height of the column at its widest cap (760px → 428px)
+  /* Cap chosen to clear the natural 16:9 height of the column at its widest cap (840px → 472px)
    * so common landscape recordings render edge-to-edge without letterboxing. Portrait clips still
    * stay bounded so they don't dominate the layout. */
-  max-height: 480px;
+  max-height: 540px;
   background: #0a0a0a;
   cursor: pointer;
   border: 1px solid var(--stanza-paper-line);
@@ -1062,7 +1062,7 @@ button.stanza-library-card {
 }
 
 .stanza-app .stanza-key-shift-block {
-  margin-bottom: 2px;
+  margin-bottom: 0;
 }
 
 /* Automatic tempo modal (portaled): paper is outside .stanza-app, no ancestor prefix. */
@@ -1093,7 +1093,134 @@ button.stanza-library-card {
 }
 
 .stanza-mix-row {
-  min-height: 32px;
+  min-height: 28px;
+}
+
+/* "System" Mix rows (Metronome + Drums) sit above the per-file layers and use a slightly muted
+ * label tint so the user reads them as global controls, not user-supplied audio files. */
+.stanza-mix-row--system {
+  opacity: 1;
+}
+.stanza-mix-row--system + .stanza-mix-row--system {
+  border-top: 1px dashed var(--stanza-paper-line-faint);
+  padding-top: 2px;
+}
+
+/* "Add drums" block — sits below the metronome rail. The block always reserves a thin top
+ * divider so the checkbox doesn't visually float against the rail above it; matches the
+ * metronome rail's vertical rhythm. */
+.stanza-drums-block {
+  border-top: 1px solid var(--stanza-paper-line-faint);
+  padding-top: 4px;
+}
+
+/* The shared DrumAccompaniment was designed for the dark Beat Finder canvas. Restyle it to
+ * match the Stanza paper tone — smaller pills tinted with the rose accent, a compact custom
+ * notation input, and a tighter notation render with no measure-indicator margin so the panel
+ * fits inside the practice rail without dominating it. */
+.stanza-drums-panel .drum-accompaniment {
+  color: var(--stanza-ink);
+  font-family: var(--stanza-font-ui);
+}
+
+/* Preset row: three columns of pills so 8 presets + 2 dice icons fit in 3 rows max instead of
+ * 2 wide, ragged rows. */
+.stanza-drums-panel .drum-presets {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 3px 4px;
+  margin-bottom: 4px;
+}
+.stanza-drums-panel .preset-btn {
+  background: transparent;
+  border: 1px solid var(--stanza-paper-line-faint);
+  border-radius: 999px;
+  color: var(--stanza-ink);
+  font-family: inherit;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  padding: 1px 6px;
+  cursor: pointer;
+  line-height: 1.25;
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease,
+    color 0.12s ease;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.stanza-drums-panel .preset-btn:hover:not(.active) {
+  border-color: var(--stanza-rose-line);
+  background: var(--stanza-rose-wash);
+}
+.stanza-drums-panel .preset-btn.active {
+  background: var(--stanza-rose);
+  color: #fff;
+  border-color: var(--stanza-rose);
+}
+.stanza-drums-panel .preset-btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 4px;
+}
+.stanza-drums-panel .drum-pattern-input {
+  margin-bottom: 2px;
+}
+.stanza-drums-panel .drum-pattern-input input {
+  width: 100%;
+  font-family: var(--stanza-font-ui);
+  font-size: 0.74rem;
+  padding: 3px 8px;
+  border: 1px solid var(--stanza-paper-line-faint);
+  border-radius: 6px;
+  background: var(--stanza-paper-elevated, #fff);
+  color: var(--stanza-ink);
+  outline: none;
+  transition:
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+.stanza-drums-panel .drum-pattern-input input::placeholder {
+  color: var(--stanza-ink-soft);
+}
+.stanza-drums-panel .drum-pattern-input input:focus {
+  border-color: var(--stanza-rose);
+  box-shadow: 0 0 0 2px var(--stanza-rose-wash);
+}
+.stanza-drums-panel .drum-display-error {
+  color: var(--stanza-ink-muted);
+  font-size: 0.72rem;
+  margin-top: 4px;
+}
+.stanza-drums-panel .drum-display-error p {
+  margin: 0;
+}
+/* Notation: tighten container chrome and the multi-measure dot indicator. */
+.stanza-drums-panel .vexflow-mini-container {
+  margin-top: 2px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.stanza-drums-panel
+  .vexflow-mini-container
+  > div:first-child:has(.measure-dot) {
+  margin: 0 0 2px;
+}
+.stanza-drums-panel .measure-dot {
+  width: 6px;
+  height: 6px;
+}
+/* The "Edit in Darbuka Trainer" link is suppressed via the `hideDarbukaLink` prop on
+ * `DrumAccompaniment`. The selector below is a defensive fallback if anything renders an
+ * edit-link element inside the Stanza panel anyway. */
+.stanza-drums-panel .drum-notation-mini-edit-link,
+.stanza-drums-panel .drum-edit-link {
+  display: none;
 }
 
 .stanza-rail-compact-btn.MuiButton-root {

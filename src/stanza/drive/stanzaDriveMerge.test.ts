@@ -171,4 +171,55 @@ describe('mergeDriveRowsIntoLocalLibrary', () => {
     expect(nextRows).toHaveLength(0);
     expect(report.skippedRemoteOnlyUnplayable).toBe(1);
   });
+
+  it('collapses two rows that share a ytId but have different ids (cross-device dedupe)', () => {
+    // Local row was created on this device by an older addYoutubeSong (no dedupe by ytId).
+    // Remote row was created on a different device for the same YouTube video. After auto-pull
+    // both ids exist; the merge should converge to one card so the user doesn't see dupes.
+    const local = [
+      song({ id: 'local-uuid', ytId: 'shared-vid', title: 'Older title', updatedAt: 100 }),
+    ];
+    const remote: StanzaSongDriveRow[] = [
+      {
+        id: 'remote-uuid',
+        ytId: 'shared-vid',
+        title: 'Newer title from device B',
+        markers: [],
+        stats: {},
+        updatedAt: 200,
+      },
+    ];
+    const { nextRows, remappedIds, report } = mergeDriveRowsIntoLocalLibrary(local, remote);
+    expect(nextRows).toHaveLength(1);
+    expect(nextRows[0]?.id).toBe('remote-uuid');
+    expect(nextRows[0]?.title).toBe('Newer title from device B');
+    expect(report.collapsedByContentKey).toBe(1);
+    expect(remappedIds.get('local-uuid')).toBe('remote-uuid');
+  });
+
+  it('collapses two Drive-imported rows with the same driveSourceFileId', () => {
+    const local = [
+      song({
+        id: 'local-uuid',
+        ytId: null,
+        driveSourceFileId: 'drive-file-1',
+        title: 'Local',
+        updatedAt: 50,
+      }),
+    ];
+    const remote: StanzaSongDriveRow[] = [
+      {
+        id: 'remote-uuid',
+        ytId: null,
+        driveSourceFileId: 'drive-file-1',
+        title: 'Remote',
+        markers: [],
+        stats: {},
+        updatedAt: 60,
+      },
+    ];
+    const { nextRows, remappedIds } = mergeDriveRowsIntoLocalLibrary(local, remote);
+    expect(nextRows).toHaveLength(1);
+    expect(remappedIds.size).toBe(1);
+  });
 });

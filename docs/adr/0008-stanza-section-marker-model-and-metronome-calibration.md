@@ -188,3 +188,4 @@ section list jitter while the user explored.
 - [`src/stanza/components/StanzaSectionMetronomeRail.tsx`](../../src/stanza/components/StanzaSectionMetronomeRail.tsx) — UI for both scopes.
 - ADR [0005](./0005-shared-find-the-beat-analyzer.md) — how `'analysis'`-source calibrations get their numbers.
 - ADR [0006](./0006-stanza-drive-backup-merge-and-restore.md) — how the keyed map survives Drive sync.
+- ADR [0009](./0009-stanza-drums-and-metronome-volume.md) — drums groove (per-section override) reuses the same stable segment ids, and metronome volume reuses the song row.

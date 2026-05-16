@@ -136,6 +136,7 @@ function getGoogleClientId(): string {
 async function requestGoogleSilentToken(
   clientId: string,
   scope: string,
+  options?: { onFailure?: () => void },
 ): Promise<{ access_token: string; expires_in?: number } | null> {
   const loginHint = readPersistedGoogleIdentity()?.email?.trim() || undefined;
   try {
@@ -144,6 +145,7 @@ async function requestGoogleSilentToken(
       ...(loginHint ? { loginHint } : {}),
     });
   } catch {
+    options?.onFailure?.();
     return null;
   }
 }
@@ -186,6 +188,19 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
   googleAccessTokenRef.current = googleAccessToken;
   /** Limits tab-focus GIS `prompt: none` probes (expired / edge states) — the timer still refreshes on schedule. */
   const lastVisibilitySilentProbeAtRef = useRef(0);
+  /**
+   * Wall-clock of the last `requestGoogleSilentToken(...)` call that returned `null`. Used by
+   * {@link signInWithGoogle} to skip a redundant silent prefetch when we already know GIS will
+   * not hand back a token without user interaction. Without this short-circuit, every "Sign in
+   * again" click ate ~12 seconds in the silent timeout before the actual popup opened — long
+   * enough that some browsers no longer treated the click as a fresh user gesture (popup
+   * blocked, or the user gave up and clicked again, leading to the "ghost popups stacking up
+   * after hours" report).
+   */
+  const lastSilentRefreshFailureAtRef = useRef(0);
+  const markSilentRefreshFailed = useCallback(() => {
+    lastSilentRefreshFailureAtRef.current = Date.now();
+  }, []);
   const googleSignInInFlightRef = useRef(false);
   /** Passed to Spotify authorize as `show_dialog` for reconnect flows. */
   const spotifyNextOAuthShowDialogRef = useRef(false);
@@ -378,7 +393,9 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
             /* fall through: token may be revoked — try silent refresh before degrading */
           }
           if (!cancelled) {
-            const next = await requestGoogleSilentToken(clientId, GOOGLE_SCOPES);
+            const next = await requestGoogleSilentToken(clientId, GOOGLE_SCOPES, {
+              onFailure: markSilentRefreshFailed,
+            });
             if (next && !cancelled) {
               const okSilent = await finalizeGoogleSession(next.access_token, next.expires_in, {
                 persist: true,
@@ -394,7 +411,9 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
           }
         } else if (stored) {
           // Local expiry heuristic passed, but Google may still grant a token via cookie (`prompt: none`).
-          const next = await requestGoogleSilentToken(clientId, GOOGLE_SCOPES);
+          const next = await requestGoogleSilentToken(clientId, GOOGLE_SCOPES, {
+            onFailure: markSilentRefreshFailed,
+          });
           if (cancelled) return;
           if (next) {
             const okSilent = await finalizeGoogleSession(next.access_token, next.expires_in, {
@@ -422,7 +441,9 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
           // No stored token (cleared by a previous failure) but we still remember who they are.
           // Try a silent refresh; if it fails, surface the "Session expired" affordance instead
           // of dropping them at the sign-in gate.
-          const next = await requestGoogleSilentToken(clientId, GOOGLE_SCOPES);
+          const next = await requestGoogleSilentToken(clientId, GOOGLE_SCOPES, {
+            onFailure: markSilentRefreshFailed,
+          });
           if (cancelled) return;
           if (next) {
             const okSilent = await finalizeGoogleSession(next.access_token, next.expires_in, {
@@ -440,7 +461,7 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
     return () => {
       cancelled = true;
     };
-  }, [finalizeGoogleSession, guestShareRoute]);
+  }, [finalizeGoogleSession, guestShareRoute, markSilentRefreshFailed]);
 
   useEffect(() => {
     // We want the refresh loop active whenever there's *any* hope of recovering a session — either
@@ -478,7 +499,9 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
       }
       timeoutId = window.setTimeout(() => {
         void (async () => {
-          const next = await requestGoogleSilentToken(clientId, GOOGLE_SCOPES);
+          const next = await requestGoogleSilentToken(clientId, GOOGLE_SCOPES, {
+            onFailure: markSilentRefreshFailed,
+          });
           if (next) {
             const ok = await finalizeGoogleSession(next.access_token, next.expires_in, {
               persist: true,
@@ -519,7 +542,9 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
       visibilityDebounceId = window.setTimeout(() => {
         visibilityDebounceId = undefined;
         void (async () => {
-          const next = await requestGoogleSilentToken(clientId, GOOGLE_SCOPES);
+          const next = await requestGoogleSilentToken(clientId, GOOGLE_SCOPES, {
+            onFailure: markSilentRefreshFailed,
+          });
           if (next) {
             const ok = await finalizeGoogleSession(next.access_token, next.expires_in, {
               persist: true,
@@ -540,7 +565,7 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
       if (visibilityDebounceId != null) window.clearTimeout(visibilityDebounceId);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [googleAccessToken, googleSessionExpired, finalizeGoogleSession, guestShareRoute]);
+  }, [googleAccessToken, googleSessionExpired, finalizeGoogleSession, guestShareRoute, markSilentRefreshFailed]);
 
   const signInWithGoogle = useCallback(async () => {
     const clientId = getGoogleClientId();
@@ -555,19 +580,47 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
     setAccessDenied(false);
     setAccessDeniedMessage(null);
     try {
-      const silent = await requestGoogleSilentToken(clientId, GOOGLE_SCOPES);
-      if (silent) {
-        const okSilent = await finalizeGoogleSession(silent.access_token, silent.expires_in, {
-          persist: true,
-          silent: true,
+      // Decide up front whether to attempt a silent prefetch. The original behavior was "always
+      // try silent first, fall back to popup if it returns null". That's fine for the lucky
+      // path (cookie still good → no popup needed), but in two cases it actively hurts UX:
+      //
+      //   1. We're in `googleSessionExpired` mode — the timer + visibility loop have *already*
+      //      been trying silent on a schedule and failing. One more try costs ~12 seconds (the
+      //      silent timeout in `googleTokenClient.ts`) before the actual popup opens, by which
+      //      time browsers may no longer treat the click as a fresh user gesture and the popup
+      //      gets blocked or the user gives up and clicks again — the recipe for "ghost popups
+      //      stacking up after hours" the user reported.
+      //
+      //   2. We have no remembered identity at all (truly first-time sign-in) — silent
+      //      requires a `login_hint` to reduce account-picker churn, and without one Google
+      //      will reject `prompt: none` anyway.
+      //
+      // We also short-circuit when *any* silent attempt failed in the last 5 minutes — that's
+      // a strong signal Google currently won't grant a silent token (3rd-party cookies, signed
+      // out, etc.) and the popup is the right move.
+      const recentSilentFailureMs = Date.now() - lastSilentRefreshFailureAtRef.current;
+      const rememberedIdentity = readPersistedGoogleIdentity();
+      const skipSilentPrefetch =
+        googleSessionExpired ||
+        !rememberedIdentity?.email?.trim() ||
+        recentSilentFailureMs < 5 * 60 * 1000;
+      if (!skipSilentPrefetch) {
+        const silent = await requestGoogleSilentToken(clientId, GOOGLE_SCOPES, {
+          onFailure: markSilentRefreshFailed,
         });
-        if (okSilent) {
-          setGoogleSessionExpired(false);
-          return;
+        if (silent) {
+          const okSilent = await finalizeGoogleSession(silent.access_token, silent.expires_in, {
+            persist: true,
+            silent: true,
+          });
+          if (okSilent) {
+            setGoogleSessionExpired(false);
+            return;
+          }
         }
       }
       const loginHint =
-        googleEmail?.trim() || readPersistedGoogleIdentity()?.email?.trim() || undefined;
+        googleEmail?.trim() || rememberedIdentity?.email?.trim() || undefined;
       const { access_token, expires_in } = await requestGoogleAccessToken(clientId, GOOGLE_SCOPES, {
         ...(loginHint ? { loginHint } : {}),
       });
@@ -582,7 +635,7 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
       googleSignInInFlightRef.current = false;
       setGoogleSignInPending(false);
     }
-  }, [finalizeGoogleSession, googleEmail]);
+  }, [finalizeGoogleSession, googleEmail, googleSessionExpired, markSilentRefreshFailed]);
 
   const continueWithoutGoogle = useCallback(() => {
     writeGoogleGateBypassed(true);

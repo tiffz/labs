@@ -72,6 +72,22 @@ export interface StanzaSong {
   /** User preference: attempt synced clicks while playing (requires tempo calibration). */
   metronomeEnabled?: boolean;
   /**
+   * Linear metronome click level 0–1 (default 1). Multiplies the engine's downbeat/off-beat ratio
+   * (see {@link useStanzaMetronomeSync}); this is the user-facing "Metronome" Mix slider.
+   */
+  metronomeGain?: number;
+  /** Mute the metronome from the Mix without disabling its calibration. */
+  metronomeMuted?: boolean;
+  /**
+   * "Add drums" master switch (see ADR 0009). When true, the drums panel renders below the
+   * metronome strip; the user picks a pattern there (preset or custom mini-notation), but the
+   * pattern selection itself is not persisted — restart of the song reopens with the default,
+   * matching the Beat Finder UX.
+   */
+  drumsEnabled?: boolean;
+  /** Linear drums level 0–1 (default 0.7). Global only. */
+  drumsGain?: number;
+  /**
    * Sections the user marked to skip during forward playback (e.g. instrumental breaks while
    * practicing vocals). Keyed by stable segment id from `deriveSegments`. Crossing into a
    * skipped section auto-advances to the next non-skipped start; manual scrubs are unaffected.

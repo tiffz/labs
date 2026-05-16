@@ -38,15 +38,20 @@ export function readStanzaDriveBootstrapFromLocation(): {
 
 const STANZA_YOUTUBE_V_QUERY = 'v';
 
-/**
- * Single history replace for Stanza playback deep links: YouTube `v` and/or Drive `df` + `driveTitle`.
- * YouTube wins when `youtubeId` is set (Drive params are stripped).
- */
-export function replaceStanzaPlaybackUrlSearchParams(opts: {
+export interface StanzaPlaybackUrlParams {
   youtubeId: string | null;
   driveFileId: string | null;
   driveTitle: string | null;
-}): void {
+}
+
+/**
+ * Build the next URL for the given playback params without mutating browser state. Returns the
+ * `pathname?search#hash` string suitable for `history.pushState` / `replaceState`.
+ *
+ * YouTube wins when `youtubeId` is set (Drive params are stripped). Other unrelated query
+ * parameters (e.g. `?debug`) are preserved.
+ */
+function buildStanzaPlaybackUrl(opts: StanzaPlaybackUrlParams): string {
   const u = new URL(window.location.href);
   if (opts.youtubeId) {
     u.searchParams.set(STANZA_YOUTUBE_V_QUERY, opts.youtubeId);
@@ -63,5 +68,30 @@ export function replaceStanzaPlaybackUrlSearchParams(opts: {
       u.searchParams.delete(STANZA_DRIVE_TITLE_QUERY);
     }
   }
-  window.history.replaceState(null, '', `${u.pathname}${u.search}${u.hash}`);
+  return `${u.pathname}${u.search}${u.hash}`;
+}
+
+/**
+ * Single history replace for Stanza playback deep links: YouTube `v` and/or Drive `df` + `driveTitle`.
+ * Use this for **passive** URL syncing — keeping the address bar in sync after a state change
+ * that wasn't a user navigation (initial deep-link bootstrap, popstate-driven selection, async
+ * Drive resolution). Does **not** add a history entry.
+ */
+export function replaceStanzaPlaybackUrlSearchParams(opts: StanzaPlaybackUrlParams): void {
+  window.history.replaceState(null, '', buildStanzaPlaybackUrl(opts));
+}
+
+/**
+ * Push a new history entry for a Stanza playback navigation (library row click, "Back to
+ * library" button, opening a freshly imported song). This is what makes the **browser Back
+ * button** navigate **inside** the app instead of leaving Stanza for the previous site.
+ *
+ * Skips the push when the URL would not actually change — avoids stacking duplicate entries
+ * when a callback fires twice for the same target song.
+ */
+export function pushStanzaPlaybackUrlSearchParams(opts: StanzaPlaybackUrlParams): void {
+  const next = buildStanzaPlaybackUrl(opts);
+  const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  if (next === current) return;
+  window.history.pushState(null, '', next);
 }

@@ -1,3 +1,22 @@
+/**
+ * GIS TokenClient interface. We rely on the documented surface (`requestAccessToken`) plus the
+ * commonly-used mutable `callback` / `error_callback` fields so a single client can be reused
+ * across multiple `requestAccessToken` calls without re-running `initTokenClient`. Re-running
+ * `initTokenClient` is the documented cause of the `accounts.google.com/gsi/transform` iframe
+ * accumulation we saw in user reports — each new client mounts another hidden iframe that GIS
+ * does not garbage-collect until the page unloads.
+ */
+export interface GoogleTokenClient {
+  requestAccessToken: (override?: { prompt?: string }) => void;
+  callback?: (resp: {
+    access_token?: string;
+    expires_in?: number;
+    error?: string;
+    error_description?: string;
+  }) => void;
+  error_callback?: (detail: { type?: string }) => void;
+}
+
 declare global {
   interface Window {
     google?: {
@@ -20,7 +39,7 @@ declare global {
             }) => void;
             /** GIS invokes this for non-OAuth failures (blocked popup, window closed early). */
             error_callback?: (detail: { type?: string }) => void;
-          }) => { requestAccessToken: (override?: { prompt?: string }) => void };
+          }) => GoogleTokenClient;
         };
       };
     };

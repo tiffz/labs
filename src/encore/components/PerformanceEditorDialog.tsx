@@ -26,7 +26,10 @@ import { driveFileWebUrl, driveFolderWebUrl } from '../drive/driveWebUrls';
 import { parseDriveFileIdFromUrlOrId } from '../drive/parseDriveFileUrl';
 import { buildPerformanceVideoName, splitFileNameExtension } from '../drive/performanceVideoNaming';
 import { suggestPerformanceVenueFromFile } from '../import/venueCatalogMatch';
-import { guessIsoDateFromFreeText } from '../import/guessIsoDateFromFreeText';
+import {
+  calendarDateFromIsoTimestamp,
+  guessIsoDateFromFreeText,
+} from '../import/guessIsoDateFromFreeText';
 import {
   encoreDialogActionsSx,
   encoreDialogContentSx,
@@ -39,16 +42,20 @@ import { useEncore } from '../context/EncoreContext';
 import type { EncorePerformance } from '../types';
 import { ENCORE_ACCOMPANIMENT_TAGS } from '../types';
 import { parsePerformanceVideoInput } from '../utils/parsePerformanceVideoInput';
+import { PERF_LOCAL_VIDEO_ACCEPT } from '../utils/performanceVideoAccept';
 import { DragDropFileUpload } from '../../shared/components/DragDropFileUpload';
 import { fileMatchesAccept } from '../../shared/utils/fileMatchesAccept';
 
 function newPerformance(songId: string): EncorePerformance {
+  // ISO timestamps for createdAt/updatedAt are stored as instants and intentionally use UTC
+  // (`toISOString`). The user-visible `date` field, however, is the **local calendar day** the
+  // performance happened — slicing `YYYY-MM-DD` out of `toISOString()` would tip into tomorrow
+  // any time the user logs an evening performance from a timezone west of UTC.
   const now = new Date().toISOString();
-  const day = now.slice(0, 10);
   return {
     id: crypto.randomUUID(),
     songId,
-    date: day,
+    date: calendarDateFromIsoTimestamp(),
     venueTag: '',
     createdAt: now,
     updatedAt: now,
@@ -57,35 +64,16 @@ function newPerformance(songId: string): EncorePerformance {
 
 function isoDateFromDriveModified(modifiedTime?: string): string | null {
   if (!modifiedTime) return null;
-  const d = modifiedTime.slice(0, 10);
-  return /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : null;
+  const trimmed = modifiedTime.trim();
+  if (!trimmed) return null;
+  const d = new Date(trimmed);
+  if (Number.isNaN(d.getTime())) return null;
+  return calendarDateFromIsoTimestamp(trimmed);
 }
 
 function isoDateFromDriveFileMeta(meta: { createdTime?: string; modifiedTime?: string }): string | null {
   return isoDateFromDriveModified(meta.createdTime) ?? isoDateFromDriveModified(meta.modifiedTime);
 }
-
-function isoDateFromFileLastModified(file: File): string {
-  // Browsers do not expose a separate “created” timestamp for picked files; lastModified is the
-  // best-available signal (export time for many camera clips). `0` is common for broken exports.
-  try {
-    const t = file.lastModified;
-    if (!Number.isFinite(t) || t <= 0) {
-      return new Date().toISOString().slice(0, 10);
-    }
-    return new Date(t).toISOString().slice(0, 10);
-  } catch {
-    return new Date().toISOString().slice(0, 10);
-  }
-}
-
-function calendarDateFromStagedVideoFile(file: File): string {
-  const fromName = guessIsoDateFromFreeText(file.name);
-  if (fromName) return fromName;
-  return isoDateFromFileLastModified(file);
-}
-
-const PERF_LOCAL_VIDEO_ACCEPT = 'video/*,.mp4,.mov,.m4v,.webm,.mkv';
 
 type PerfDriveLinkFeedback =
   | null
@@ -119,12 +107,29 @@ export function PerformanceEditorDialog(props: {
   googleAccessToken: string | null;
   /** Distinct venue tags for autocomplete chips. */
   venueOptions: string[];
+  /**
+   * File handed in by the parent on open — typically a video the user dragged onto the song
+   * page's performances section. The dialog stages it the same way `DragDropFileUpload`
+   * would; identity comparison guards against re-staging on unrelated re-renders, so callers
+   * can keep the prop set across renders without worry.
+   */
+  initialLocalVideoFile?: File | null;
   onClose: () => void;
   onSave: (p: EncorePerformance) => Promise<void>;
   /** When set (edit mode only), shows a de-emphasized control to remove this row from the log (Drive files stay). */
   onDelete?: (id: string) => Promise<void>;
 }): ReactElement {
-  const { open, performance, songId, googleAccessToken, venueOptions, onClose, onSave, onDelete } = props;
+  const {
+    open,
+    performance,
+    songId,
+    googleAccessToken,
+    venueOptions,
+    initialLocalVideoFile,
+    onClose,
+    onSave,
+    onDelete,
+  } = props;
   const { songs, repertoireExtras } = useEncore();
   const { withBlockingJob } = useEncoreBlockingJobs();
   const songForPerformance = useMemo(() => songs.find((s) => s.id === songId) ?? null, [songs, songId]);
@@ -378,12 +383,17 @@ export function PerformanceEditorDialog(props: {
       setVideoInput('');
       setDraft((d) => {
         const guessedVenue = suggestPerformanceVenueFromFile(venueList, file.name);
-        const dateFromFile = calendarDateFromStagedVideoFile(file);
+        // Only override the date when the filename itself contains a parseable date — that's
+        // the user-explicit signal (e.g. `"2024-09-17 Blue Note.mov"`). Otherwise leave
+        // whatever's already in the field, which is either the dialog's "today" default or a
+        // value the user just typed. `File.lastModified` is too unreliable to override the
+        // user with (it's export time, not record time, and is `0` for many broken exports).
+        const dateFromFileName = performance == null ? guessIsoDateFromFreeText(file.name) : null;
         return {
           ...d,
           externalVideoUrl: undefined,
           videoTargetDriveFileId: undefined,
-          date: performance == null ? dateFromFile : d.date,
+          date: dateFromFileName ?? d.date,
           venueTag: d.venueTag.trim() ? d.venueTag : guessedVenue || d.venueTag,
         };
       });
@@ -391,6 +401,24 @@ export function PerformanceEditorDialog(props: {
     },
     [googleAccessToken, performance, venueList],
   );
+
+  /**
+   * Pick up a file the parent staged on our behalf — typically a video dragged onto the song
+   * page's performances section. We track the last-consumed File identity so unrelated parent
+   * re-renders that keep the same prop value don't re-stage and clobber the user's edits.
+   * Cleared on close so the next open with a fresh file always re-stages.
+   */
+  const consumedInitialFileRef = useRef<File | null>(null);
+  useEffect(() => {
+    if (!open) {
+      consumedInitialFileRef.current = null;
+      return;
+    }
+    if (!initialLocalVideoFile) return;
+    if (consumedInitialFileRef.current === initialLocalVideoFile) return;
+    consumedInitialFileRef.current = initialLocalVideoFile;
+    stageLocalVideoFile(initialLocalVideoFile);
+  }, [open, initialLocalVideoFile, stageLocalVideoFile]);
 
   const handlePerfDialogPaperDragOver = useCallback(
     (e: DragEvent<HTMLElement>) => {

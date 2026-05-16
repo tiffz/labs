@@ -140,23 +140,14 @@ import { performanceVideoOpenUrl } from '../utils/performanceVideoUrl';
 import { useDebouncedString } from '../utils/useDebouncedString';
 import { ENCORE_FILTER_SENTINEL } from '../utils/encoreFilterSentinels';
 import { HighlightedText } from '../ui/HighlightedText';
+import {
+  ENCORE_ROW_HOVER_ACTIONS_SX,
+  ENCORE_ROW_HOVER_TARGET_CLASS,
+} from '../ui/encoreRowHoverActions';
 import AppTooltip from '../../shared/components/AppTooltip';
 
 const REPERTOIRE_VIEW_STORAGE_KEY = 'encore.library.repertoireView';
 
-/** Show dense row actions on hover (fine pointer); keep visible on touch/coarse pointers. */
-const REPERTOIRE_CELL_HOVER_ACTIONS_SX = {
-  minWidth: 0,
-  '@media (hover: hover) and (pointer: fine)': {
-    '& .encore-rep-cell-hover-target': {
-      opacity: 0,
-      transition: 'opacity 120ms ease',
-    },
-    '&:hover .encore-rep-cell-hover-target, &:focus-within .encore-rep-cell-hover-target': {
-      opacity: 1,
-    },
-  },
-} as const;
 
 const getRepertoireRowId = (row: EncoreRepertoireMrtRow): string => row.song.id;
 
@@ -197,7 +188,7 @@ function RepArtistTableCell({
   const t = String(row.original.song.artist ?? '');
   const filterVal = t.trim() ? t.trim() : ENCORE_FILTER_SENTINEL.blankArtist;
   return (
-    <Stack direction="row" alignItems="center" spacing={0.25} sx={REPERTOIRE_CELL_HOVER_ACTIONS_SX}>
+    <Stack direction="row" alignItems="center" spacing={0.25} sx={ENCORE_ROW_HOVER_ACTIONS_SX}>
       <Box sx={{ minWidth: 0, flex: 1, maxWidth: '100%' }}>
         <AppTooltip title={t}>
           <Box component="span" sx={{ display: 'block', minWidth: 0, maxWidth: '100%' }}>
@@ -220,7 +211,7 @@ function RepArtistTableCell({
         <IconButton
           size="small"
           aria-label="Filter to this artist"
-          className="encore-rep-cell-hover-target"
+          className={ENCORE_ROW_HOVER_TARGET_CLASS}
           data-encore-row-control
           onClick={(e) => {
             e.stopPropagation();
@@ -249,14 +240,14 @@ const RepertoireTableMediaEdit = memo(function RepertoireTableMediaEdit(props: {
   const { song, summary, tooltip, ariaLabel, section, onEdit, exclusiveFilter, onApplyExclusiveFilter } = props;
   const showFilter = Boolean(exclusiveFilter && onApplyExclusiveFilter);
   return (
-    <Stack direction="row" alignItems="center" spacing={0.25} sx={REPERTOIRE_CELL_HOVER_ACTIONS_SX}>
+    <Stack direction="row" alignItems="center" spacing={0.25} sx={ENCORE_ROW_HOVER_ACTIONS_SX}>
       <Box sx={{ minWidth: 0, flex: 1, overflow: 'hidden' }}>{summary}</Box>
       {showFilter ? (
         <Tooltip title="Filter to this value">
           <IconButton
             size="small"
             aria-label="Filter to this cell value"
-            className="encore-rep-cell-hover-target"
+            className={ENCORE_ROW_HOVER_TARGET_CLASS}
             data-encore-row-control
             onClick={(e) => {
               e.stopPropagation();
@@ -272,7 +263,7 @@ const RepertoireTableMediaEdit = memo(function RepertoireTableMediaEdit(props: {
         <IconButton
           size="small"
           aria-label={ariaLabel}
-          className="encore-rep-cell-hover-target"
+          className={ENCORE_ROW_HOVER_TARGET_CLASS}
           data-encore-row-control
           onClick={(e) => {
             e.stopPropagation();
@@ -1283,7 +1274,7 @@ export function LibraryScreen(props?: {
           const kRaw = (song.performanceKey ?? '').trim();
           const filterVal = kRaw ? kRaw : ENCORE_FILTER_SENTINEL.blankKey;
           return (
-            <Stack direction="row" alignItems="center" spacing={0.25} sx={REPERTOIRE_CELL_HOVER_ACTIONS_SX}>
+            <Stack direction="row" alignItems="center" spacing={0.25} sx={ENCORE_ROW_HOVER_ACTIONS_SX}>
               <Box sx={{ flex: 1, minWidth: 0 }} onClick={(e) => e.stopPropagation()}>
                 <InlineChipSelect<string>
                   value={song.performanceKey ?? null}
@@ -1304,7 +1295,7 @@ export function LibraryScreen(props?: {
                 <IconButton
                   size="small"
                   aria-label="Filter to this key"
-                  className="encore-rep-cell-hover-target"
+                  className={ENCORE_ROW_HOVER_TARGET_CLASS}
                   data-encore-row-control
                   onClick={(e) => {
                     e.stopPropagation();
@@ -1345,13 +1336,13 @@ export function LibraryScreen(props?: {
               </Typography>
             );
           return (
-            <Stack direction="row" alignItems="center" spacing={0.25} sx={REPERTOIRE_CELL_HOVER_ACTIONS_SX}>
+            <Stack direction="row" alignItems="center" spacing={0.25} sx={ENCORE_ROW_HOVER_ACTIONS_SX}>
               <Box sx={{ minWidth: 0, flex: 1 }}>{summary}</Box>
               <Tooltip title="Filter by performance status for this row">
                 <IconButton
                   size="small"
                   aria-label="Filter by performances"
-                  className="encore-rep-cell-hover-target"
+                  className={ENCORE_ROW_HOVER_TARGET_CLASS}
                   data-encore-row-control
                   onClick={(e) => {
                     e.stopPropagation();
@@ -1386,7 +1377,7 @@ export function LibraryScreen(props?: {
           const s = row.original.song;
           const filterVal = s.practicing ? 'practicing' : 'not_practicing';
           return (
-            <Stack direction="row" alignItems="center" spacing={0.25} sx={REPERTOIRE_CELL_HOVER_ACTIONS_SX}>
+            <Stack direction="row" alignItems="center" spacing={0.25} sx={ENCORE_ROW_HOVER_ACTIONS_SX}>
               <Checkbox
                 size="small"
                 checked={Boolean(s.practicing)}
@@ -1402,7 +1393,7 @@ export function LibraryScreen(props?: {
                 <IconButton
                   size="small"
                   aria-label="Filter by practicing status"
-                  className="encore-rep-cell-hover-target"
+                  className={ENCORE_ROW_HOVER_TARGET_CLASS}
                   data-encore-row-control
                   onClick={(e) => {
                     e.stopPropagation();
@@ -1722,7 +1713,7 @@ export function LibraryScreen(props?: {
           const latest = row.original.latestPerf;
           const s = row.original.song;
           return (
-            <Stack direction="row" alignItems="center" spacing={0.25} sx={REPERTOIRE_CELL_HOVER_ACTIONS_SX}>
+            <Stack direction="row" alignItems="center" spacing={0.25} sx={ENCORE_ROW_HOVER_ACTIONS_SX}>
               <Typography
                 variant="body2"
                 sx={{
@@ -1740,7 +1731,7 @@ export function LibraryScreen(props?: {
                   <IconButton
                     size="small"
                     aria-label={`Edit latest performance for ${s.title}`}
-                    className="encore-rep-cell-hover-target"
+                    className={ENCORE_ROW_HOVER_TARGET_CLASS}
                     data-encore-row-control
                     onClick={(e) => {
                       e.stopPropagation();

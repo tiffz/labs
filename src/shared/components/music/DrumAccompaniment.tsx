@@ -38,6 +38,11 @@ interface DrumAccompanimentProps {
   volume?: number;
   notationStyle?: NotationStyle;
   notationWidth?: number;
+  /** Override the rendered notation staff height (px). Default uses an internal heuristic. */
+  notationHeight?: number;
+  /** Hide the "Edit in Darbuka Trainer" deep-link below the notation (used by host apps that
+   * don't want to send users into a separate tool). */
+  hideDarbukaLink?: boolean;
   scheduler?: DrumScheduler;
   TemplateButtonComponent?: React.ComponentType<DrumTemplateButtonProps>;
   templateButtonClassName?: string;
@@ -83,6 +88,8 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
   volume = 70,
   notationStyle,
   notationWidth,
+  notationHeight,
+  hideDarbukaLink = false,
   scheduler,
   TemplateButtonComponent,
   templateButtonClassName,
@@ -426,7 +433,7 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
             }}
             currentNoteIndex={currentNoteIndex}
             width={notationWidth ?? 320}
-            height={metronomeEnabled ? 120 : 100}
+            height={notationHeight ?? (metronomeEnabled ? 120 : 100)}
             style={notationStyle ?? {
               staffColor: '#c8c4d8',
               noteColor: '#c8c4d8',
@@ -438,13 +445,17 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
             showMetronomeDots={metronomeEnabled}
             currentBeat={currentBeat}
             isPlaying={isPlaying}
-            darbukaLinkOptions={{
-              notation,
-              bpm,
-              timeSignature,
-              metronomeEnabled,
-              className: 'drum-edit-link',
-            }}
+            darbukaLinkOptions={
+              hideDarbukaLink
+                ? undefined
+                : {
+                    notation,
+                    bpm,
+                    timeSignature,
+                    metronomeEnabled,
+                    className: 'drum-edit-link',
+                  }
+            }
           />
         </div>
       ) : (

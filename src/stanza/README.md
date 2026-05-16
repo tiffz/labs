@@ -2,7 +2,8 @@
 
 Practice tool. Open a YouTube video or upload local audio, split it into sections,
 loop, log focus time, layer in extra audio (alternate mixes / instrumentals), shift
-pitch on uploads, and calibrate a per-section metronome (manual or **Analyze**).
+pitch on uploads, calibrate a per-section metronome (manual or **Analyze**), and
+play a drum groove that follows the metronome BPM.
 
 - Entry: `/stanza/`
 - **Deep link (YouTube):** append `?v=` plus the 11-character video id, e.g.
@@ -29,6 +30,8 @@ Behavior that's wider than a single file is captured in ADRs:
   — Encore-owned practice resources on Drive; Stanza as secondary client.
 - [ADR 0008](../../docs/adr/0008-stanza-section-marker-model-and-metronome-calibration.md)
   — Section/marker data model and per-section metronome calibration.
+- [ADR 0009](../../docs/adr/0009-stanza-drums-and-metronome-volume.md) — Drums
+  groove (BPM-locked, per-section pattern override or mute) and metronome volume.
 
 ## Copy style
 

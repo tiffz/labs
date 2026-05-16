@@ -4167,13 +4167,28 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-google-loadgisscript-ts-googletokenclient",
+    "name": "GoogleTokenClient",
+    "path": "src/shared/google/loadGisScript.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "GIS TokenClient interface. We rely on the documented surface (`requestAccessToken`) plus the commonly-used mutable `callback` / `error_callback` fields so a single client can be reused across multiple `requestAccessToken` calls without re-running `initTokenClient`. Re-running `initTokenClient` is the documented cause of the `accounts.google.com/gsi/transform` iframe accumulation we saw in user reports — each new client mounts another hidden iframe that GIS does not garbage-collect until the page unloads.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
     "id": "src-shared-google-loadgisscript-ts-googleuserprofile",
     "name": "GoogleUserProfile",
     "path": "src/shared/google/loadGisScript.ts",
     "kind": "model",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "GIS TokenClient interface. We rely on the documented surface (`requestAccessToken`) plus the commonly-used mutable `callback` / `error_callback` fields so a single client can be reused across multiple `requestAccessToken` calls without re-running `initTokenClient`. Re-running `initTokenClient` is the documented cause of the `accounts.google.com/gsi/transform` iframe accumulation we saw in user reports — each new client mounts another hidden iframe that GIS does not garbage-collect until the page unloads.",
     "tags": [
       "api"
     ],
@@ -4188,7 +4203,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "GIS TokenClient interface. We rely on the documented surface (`requestAccessToken`) plus the commonly-used mutable `callback` / `error_callback` fields so a single client can be reused across multiple `requestAccessToken` calls without re-running `initTokenClient`. Re-running `initTokenClient` is the documented cause of the `accounts.google.com/gsi/transform` iframe accumulation we saw in user reports — each new client mounts another hidden iframe that GIS does not garbage-collect until the page unloads.",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",

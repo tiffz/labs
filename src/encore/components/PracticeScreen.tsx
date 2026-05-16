@@ -1,13 +1,17 @@
+import BookmarkRemoveOutlinedIcon from '@mui/icons-material/BookmarkRemoveOutlined';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
 import Paper from '@mui/material/Paper';
+import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent as ReactDragEvent } from 'react';
@@ -36,6 +40,10 @@ import {
 import { encorePagePaddingTop, encoreScreenPaddingX } from '../theme/encoreM3Layout';
 import { EncorePageHeader } from '../ui/EncorePageHeader';
 import { EncoreSynchronizableSpotifyPlaylistPanel } from '../ui/EncoreSynchronizableSpotifyPlaylistPanel';
+import {
+  ENCORE_ROW_HOVER_ACTIONS_SX,
+  ENCORE_ROW_HOVER_TARGET_CLASS,
+} from '../ui/encoreRowHoverActions';
 import { encoreNoAlbumArtIconSx, encoreNoAlbumArtSurfaceSx } from '../utils/encoreNoAlbumArtSurface';
 import { SongMilestoneChecklist } from './SongMilestoneChecklist';
 import { EncoreSpotifyPlaylistImportReviewDialog } from './EncoreSpotifyPlaylistImportReviewDialog';
@@ -195,6 +203,35 @@ export function PracticeScreen({
       return { ...song, journalMarkdown: local };
     },
     [journalLocalBySongId],
+  );
+
+  /**
+   * "Stop practicing" — flips a song's `practicing` field off so it drops out of this screen.
+   *
+   * The action is intentionally one-click + reversible rather than guarded by a confirm dialog:
+   *   - It's a low-stakes toggle (no data loss; the song stays in the library and keeps every
+   *     other field — exercises, milestones, journal, attachments).
+   *   - `saveSong` already pushes a `LabsUndoContext` entry, so the existing global undo bar is
+   *     the recovery affordance. Adding a confirm dialog here would just slow down the common
+   *     case (cleaning up after a finished practice cycle) without adding meaningful safety.
+   *
+   * When the removed song was the focused one, fall back to the next remaining practicing song
+   * (or none) so the right-pane doesn't hang on a stale id while the URL settles.
+   */
+  const stopPracticingSong = useCallback(
+    async (song: EncoreSong) => {
+      const remaining = practicingSongs.filter((x) => x.id !== song.id);
+      const wasFocused = effectiveFocusId === song.id;
+      const nextFocusId = wasFocused ? (remaining[0]?.id ?? null) : effectiveFocusId;
+      if (wasFocused) setFocusedSongId(nextFocusId);
+      // Drive the URL forward in lock-step with the focus change so a refresh/back doesn't
+      // resurrect the stale `#/practice/<removedId>` and silently re-add the song to focus.
+      if (wasFocused && practiceHashActive) {
+        navigateEncore(nextFocusId ? { kind: 'practice', songId: nextFocusId } : { kind: 'practice' });
+      }
+      await saveSong({ ...song, practicing: false, updatedAt: new Date().toISOString() });
+    },
+    [effectiveFocusId, practiceHashActive, practicingSongs, saveSong],
   );
 
   const persistPracticeSongBundle = useCallback(
@@ -582,53 +619,76 @@ export function PracticeScreen({
               {practicingSongs.map((s) => {
                 const selected = s.id === effectiveFocusId;
                 return (
-                  <ListItemButton
+                  <ListItem
                     key={s.id}
-                    selected={selected}
-                    onClick={() => {
-                      setFocusedSongId(s.id);
-                      navigateEncore({ kind: 'practice', songId: s.id });
-                    }}
-                    sx={{
-                      borderRadius: 1,
-                      py: 1,
-                      alignItems: 'flex-start',
-                      border: 1,
-                      borderColor: selected ? 'primary.main' : 'transparent',
-                      bgcolor: selected ? (th) => alpha(th.palette.primary.main, 0.06) : 'transparent',
-                    }}
+                    disablePadding
+                    sx={ENCORE_ROW_HOVER_ACTIONS_SX}
+                    secondaryAction={
+                      <Tooltip title="Stop practicing">
+                        <IconButton
+                          size="small"
+                          edge="end"
+                          className={ENCORE_ROW_HOVER_TARGET_CLASS}
+                          aria-label={`Stop practicing ${s.title}`}
+                          onClick={(e) => {
+                            // Don't navigate to the song; just remove it from the list.
+                            e.stopPropagation();
+                            void stopPracticingSong(s);
+                          }}
+                          sx={{ mr: 0.25, color: 'text.secondary' }}
+                        >
+                          <BookmarkRemoveOutlinedIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    }
                   >
-                    <Box
+                    <ListItemButton
+                      selected={selected}
+                      onClick={() => {
+                        setFocusedSongId(s.id);
+                        navigateEncore({ kind: 'practice', songId: s.id });
+                      }}
                       sx={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: 0.75,
-                        overflow: 'hidden',
-                        flexShrink: 0,
-                        mr: 1.25,
-                        bgcolor: 'action.hover',
+                        borderRadius: 1,
+                        py: 1,
+                        alignItems: 'flex-start',
+                        border: 1,
+                        borderColor: selected ? 'primary.main' : 'transparent',
+                        bgcolor: selected ? (th) => alpha(th.palette.primary.main, 0.06) : 'transparent',
                       }}
                     >
-                      {s.albumArtUrl ? (
-                        <Box
-                          component="img"
-                          src={s.albumArtUrl}
-                          alt=""
-                          sx={{ width: 1, height: 1, objectFit: 'cover', display: 'block' }}
-                        />
-                      ) : (
-                        <Box sx={{ ...encoreNoAlbumArtSurfaceSx(theme), width: 1, height: 1, minHeight: 0 }}>
-                          <MusicNoteIcon sx={{ ...encoreNoAlbumArtIconSx(theme), fontSize: 20 }} aria-hidden />
-                        </Box>
-                      )}
-                    </Box>
-                    <ListItemText
-                      primary={s.title}
-                      secondary={s.artist}
-                      primaryTypographyProps={{ variant: 'body2', fontWeight: 700, noWrap: true }}
-                      secondaryTypographyProps={{ variant: 'caption', noWrap: true }}
-                    />
-                  </ListItemButton>
+                      <Box
+                        sx={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: 0.75,
+                          overflow: 'hidden',
+                          flexShrink: 0,
+                          mr: 1.25,
+                          bgcolor: 'action.hover',
+                        }}
+                      >
+                        {s.albumArtUrl ? (
+                          <Box
+                            component="img"
+                            src={s.albumArtUrl}
+                            alt=""
+                            sx={{ width: 1, height: 1, objectFit: 'cover', display: 'block' }}
+                          />
+                        ) : (
+                          <Box sx={{ ...encoreNoAlbumArtSurfaceSx(theme), width: 1, height: 1, minHeight: 0 }}>
+                            <MusicNoteIcon sx={{ ...encoreNoAlbumArtIconSx(theme), fontSize: 20 }} aria-hidden />
+                          </Box>
+                        )}
+                      </Box>
+                      <ListItemText
+                        primary={s.title}
+                        secondary={s.artist}
+                        primaryTypographyProps={{ variant: 'body2', fontWeight: 700, noWrap: true }}
+                        secondaryTypographyProps={{ variant: 'caption', noWrap: true }}
+                      />
+                    </ListItemButton>
+                  </ListItem>
                 );
               })}
             </Stack>
@@ -677,16 +737,36 @@ export function PracticeScreen({
                         </Typography>
                       ) : null}
                     </Box>
-                    <Button
-                      component="a"
-                      href={encoreAppHref({ kind: 'song', id: s.id })}
-                      variant="contained"
-                      size="medium"
-                      startIcon={<OpenInNewIcon />}
-                      sx={{ flexShrink: 0, textTransform: 'none', fontWeight: 700, width: { xs: 1, sm: 'auto' } }}
+                    <Stack
+                      direction={{ xs: 'column', sm: 'row' }}
+                      gap={1}
+                      sx={{ flexShrink: 0, width: { xs: 1, sm: 'auto' } }}
                     >
-                      Open song page
-                    </Button>
+                      <Button
+                        variant="text"
+                        size="medium"
+                        startIcon={<BookmarkRemoveOutlinedIcon />}
+                        onClick={() => void stopPracticingSong(s)}
+                        sx={{
+                          textTransform: 'none',
+                          fontWeight: 700,
+                          color: 'text.secondary',
+                          width: { xs: 1, sm: 'auto' },
+                        }}
+                      >
+                        Stop practicing
+                      </Button>
+                      <Button
+                        component="a"
+                        href={encoreAppHref({ kind: 'song', id: s.id })}
+                        variant="contained"
+                        size="medium"
+                        startIcon={<OpenInNewIcon />}
+                        sx={{ textTransform: 'none', fontWeight: 700, width: { xs: 1, sm: 'auto' } }}
+                      >
+                        Open song page
+                      </Button>
+                    </Stack>
                   </Stack>
 
                   <Box>

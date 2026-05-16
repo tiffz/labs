@@ -31,6 +31,7 @@ import {
   type ReactNode,
 } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
+import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -43,10 +44,12 @@ import AccordionDetails from '@mui/material/AccordionDetails';
 import AccordionSummary from '@mui/material/AccordionSummary';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Checkbox from '@mui/material/Checkbox';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import IconButton from '@mui/material/IconButton';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
@@ -78,6 +81,7 @@ import {
   readStanzaLastSelectedSongId,
   writeStanzaLastSelectedSongId,
 } from '../db/stanzaLastSelectedSong';
+import { runStanzaLibraryDedupeMigrationOnce } from '../db/stanzaConsolidateLocalLibrary';
 import { useStanzaFileDrop } from '../hooks/useStanzaFileDrop';
 import { canResolveYoutubePaste, resolveYoutubePaste } from '../utils/youtubePasteImport';
 import {
@@ -120,6 +124,7 @@ import { loadDriveFileAsStanzaLocalBlob } from '../drive/loadDriveSourceForStanz
 import { LabsGoogleInteractiveAuthRequiredError, LABS_GOOGLE_INTERACTIVE_DRIVE_AUTH_HINT } from '../../shared/google/labsGoogleDriveAccess';
 import {
   hasStanzaDriveDeepLinkQuery,
+  pushStanzaPlaybackUrlSearchParams,
   readStanzaDriveBootstrapFromLocation,
   replaceStanzaPlaybackUrlSearchParams,
 } from '../utils/stanzaDriveUrlParams';
@@ -134,6 +139,8 @@ import StanzaSectionMetronomeRail from './StanzaSectionMetronomeRail';
 import StanzaRepeatMark from './StanzaRepeatMark';
 import { primeStanzaMetronomeAudio, useStanzaMetronomeSync } from '../hooks/useStanzaMetronomeSync';
 import { useStanzaMetronomePersistence } from '../hooks/useStanzaMetronomePersistence';
+import DrumAccompaniment from '../../shared/components/music/DrumAccompaniment';
+import type { TimeSignature } from '../../shared/rhythm/types';
 import { useStanzaLocalStemMixer } from '../hooks/useStanzaLocalStemMixer';
 import { StanzaLocalTransposeMirror } from '../audio/stanzaLocalTransposeMirror';
 import { StanzaLocalTransposeStemBus } from '../audio/stanzaLocalTransposeStemBus';
@@ -143,6 +150,24 @@ import { decodeStanzaLocalBlobForPlayback } from '../audio/decodeStanzaLocalBlob
 const STANZA_STEM_REORDER_MIME = 'text/x-stanza-stem-reorder';
 
 const STANZA_EMPTY_STEMS: StanzaStemTrack[] = [];
+
+/** 4/4 default for the shared drum panel. Stanza does not yet track per-song time signature. */
+const STANZA_DRUMS_DEFAULT_TIME_SIGNATURE: TimeSignature = { numerator: 4, denominator: 4 };
+/** Fallback BPM when the metronome isn't calibrated yet — keeps the drum preview UI usable. */
+const STANZA_DRUMS_DEFAULT_BPM = 120;
+/** Notation render footprint inside the practice rail. Tuned for the ~280px-wide rail; smaller
+ *  than Beat Finder's 320×100/120 default so the drum panel doesn't dominate the sidebar. */
+const STANZA_DRUMS_NOTATION_WIDTH = 240;
+const STANZA_DRUMS_NOTATION_HEIGHT = 84;
+/** Stanza-tinted notation palette so the staff matches `--stanza-ink` ink and the active note
+ *  flashes the rose accent (`--stanza-rose`) instead of Beat Finder's green. */
+const STANZA_DRUMS_NOTATION_STYLE = {
+  staffColor: '#2a2622',
+  noteColor: '#2a2622',
+  textColor: '#6d665e',
+  highlightColor: '#e848a0',
+  backgroundColor: 'transparent',
+} as const;
 
 function reorderStemsById(stems: StanzaStemTrack[], fromId: string, toId: string): StanzaStemTrack[] {
   const list = [...stems];
@@ -230,8 +255,11 @@ export default function StanzaWorkspace() {
   const seekDisplayRafRef = useRef(0);
   const seekDisplayPendingRef = useRef<number | null>(null);
   const isYoutubeForSeekRef = useRef(false);
-  const [metronomeSectionHint, setMetronomeSectionHint] = useState<string | null>(null);
-  const metronomeHintDismissedSegRef = useRef<string | null>(null);
+  /**
+   * True when metronome is on but the resolved BPM/anchor isn't usable yet (no calibration).
+   * Surfaced inline on the metronome strip rather than as a full Alert (see ADR 0009 condense pass).
+   */
+  const [metronomeNeedsCalibration, setMetronomeNeedsCalibration] = useState(false);
   const [transposeBuffer, setTransposeBuffer] = useState<AudioBuffer | null>(null);
   const [transposeStemMixPackage, setTransposeStemMixPackage] = useState<{
     main: AudioBuffer;
@@ -268,6 +296,8 @@ export default function StanzaWorkspace() {
    */
   const [mixPrimaryGainDraft, setMixPrimaryGainDraft] = useState<number | null>(null);
   const [mixStemGainDraftById, setMixStemGainDraftById] = useState<Record<string, number>>({});
+  const [mixMetronomeGainDraft, setMixMetronomeGainDraft] = useState<number | null>(null);
+  const [mixDrumsGainDraft, setMixDrumsGainDraft] = useState<number | null>(null);
   const [libraryMenu, setLibraryMenu] = useState<{ anchor: HTMLElement; songId: string } | null>(null);
   const oembedAttemptedRef = useRef(new Set<string>());
   const urlBootstrapDoneRef = useRef(false);
@@ -302,6 +332,8 @@ export default function StanzaWorkspace() {
     setStemReorderOverId(null);
     setMixPrimaryGainDraft(null);
     setMixStemGainDraftById({});
+    setMixMetronomeGainDraft(null);
+    setMixDrumsGainDraft(null);
     if (transposePersistTimerRef.current != null) {
       window.clearTimeout(transposePersistTimerRef.current);
       transposePersistTimerRef.current = null;
@@ -569,17 +601,56 @@ export default function StanzaWorkspace() {
     writeStanzaLastSelectedSongId(selectedId);
   }, [selectedId]);
 
+  /**
+   * One-shot library dedupe migration. Before auto-sync was added, pasting the same YouTube
+   * link on two devices created two rows with different `id`s but the same `ytId`; once Drive
+   * sync started merging across devices, both rows showed up in the library grid as obvious
+   * duplicates. This effect collapses them on first run, remaps any practice takes that pointed
+   * at the discarded row, then sets a `localStorage` flag so subsequent loads are no-ops.
+   * Runs independent of Drive sync so users without backup configured also get the cleanup.
+   */
   useEffect(() => {
-    const onPop = () => {
+    void runStanzaLibraryDedupeMigrationOnce();
+  }, []);
+
+  /**
+   * Browser Back / Forward: re-derive selection from the URL the browser just navigated to.
+   *   - `?v=…`       → resolve / select that YouTube song (may create a row if first time).
+   *   - `?df=…`      → look up the Drive-imported song by `driveSourceFileId`. We only select
+   *                    if a row already exists locally; the Drive bootstrap effect handles new
+   *                    imports so we don't double-trigger it here.
+   *   - no params    → clear selection (return to the library hero).
+   *
+   * The matching push side lives in `navigateToSong` / `goHome` / the import handlers; without
+   * those pushes there'd be no in-app history for this listener to react to.
+   */
+  useEffect(() => {
+    const onPop = async () => {
       const vid = readYoutubeVFromLocation();
-      if (!vid) {
+      if (vid) {
+        const id = await ensureYoutubeSongByVideoId(vid);
+        setSelectedId(id);
+        return;
+      }
+      const { driveFileId } = readStanzaDriveBootstrapFromLocation();
+      if (driveFileId) {
+        const existing = await stanzaDb.songs.where('driveSourceFileId').equals(driveFileId).first();
+        if (existing) {
+          setSelectedId(existing.id);
+          return;
+        }
+        // No local row yet — leave selection cleared so the Drive bootstrap effect can pick up
+        // the `?df=` parameter and import it as if this were a fresh deep link.
         setSelectedId(null);
         return;
       }
-      void ensureYoutubeSongByVideoId(vid).then((id) => setSelectedId(id));
+      setSelectedId(null);
     };
-    window.addEventListener('popstate', onPop);
-    return () => window.removeEventListener('popstate', onPop);
+    const handler = () => {
+      void onPop();
+    };
+    window.addEventListener('popstate', handler);
+    return () => window.removeEventListener('popstate', handler);
   }, [ensureYoutubeSongByVideoId]);
 
   useEffect(() => {
@@ -1130,6 +1201,35 @@ export default function StanzaWorkspace() {
   const addYoutubeSong = useCallback(async () => {
     const imp = resolveYoutubePaste(ytPaste);
     if (!imp) return;
+
+    // Dedupe by ytId so pasting the same video on two devices doesn't create two library cards
+    // pointing at the same source. Without this, Drive auto-sync would faithfully merge both
+    // rows together and the user would see obvious-looking duplicates side by side.
+    const existing = await stanzaDb.songs.where('ytId').equals(imp.videoId).first();
+    if (existing) {
+      const boot: { songId: string; seekSec?: number; rate?: number } = { songId: existing.id };
+      if (imp.seekSec != null) boot.seekSec = imp.seekSec;
+      if (imp.playbackRate != null && Math.abs(imp.playbackRate - 1) > 0.0001) boot.rate = imp.playbackRate;
+      pendingYoutubeBootstrapRef.current = boot.seekSec != null || boot.rate != null ? boot : null;
+      // Carry forward fresh markers from the paste only when the existing row has none yet —
+      // never clobber user-edited markers on a song they've been practicing.
+      if (imp.markers.length > 0 && (existing.markers?.length ?? 0) === 0) {
+        await stanzaDb.songs.put({
+          ...existing,
+          markers: ensureMarkerIds(imp.markers),
+          updatedAt: Date.now(),
+        });
+      }
+      pushStanzaPlaybackUrlSearchParams({
+        youtubeId: imp.videoId,
+        driveFileId: null,
+        driveTitle: null,
+      });
+      setSelectedId(existing.id);
+      setYtPaste('');
+      return;
+    }
+
     const rowId = crypto.randomUUID();
     const boot: { songId: string; seekSec?: number; rate?: number } = { songId: rowId };
     if (imp.seekSec != null) boot.seekSec = imp.seekSec;
@@ -1145,6 +1245,13 @@ export default function StanzaWorkspace() {
       updatedAt: Date.now(),
     };
     await stanzaDb.songs.put(row);
+    // Push a real history entry so a subsequent browser Back returns to the library hero
+    // instead of leaving Stanza for whatever site preceded it.
+    pushStanzaPlaybackUrlSearchParams({
+      youtubeId: imp.videoId,
+      driveFileId: null,
+      driveTitle: null,
+    });
     setSelectedId(row.id);
     setYtPaste('');
     if (!isReplayingRef.current) {
@@ -1174,6 +1281,13 @@ export default function StanzaWorkspace() {
   const addLocalSong = useCallback(async (file: File) => {
     const row = await buildLocalAudioStanzaSong(file);
     await stanzaDb.songs.put(row);
+    // Push a real history entry so a subsequent browser Back returns to the library hero
+    // instead of leaving Stanza for whatever site preceded it.
+    pushStanzaPlaybackUrlSearchParams({
+      youtubeId: null,
+      driveFileId: row.driveSourceFileId ?? null,
+      driveTitle: row.driveSourceFileId ? row.title : null,
+    });
     setSelectedId(row.id);
     if (!isReplayingRef.current) {
       const id = row.id;
@@ -2144,61 +2258,88 @@ export default function StanzaWorkspace() {
     railCalibSeg?.id,
   ]);
 
-  useStanzaMetronomeSync(
-    Boolean(
+  const metronomeUserGain = stanzaSanitizeLinearBusGain(selected?.metronomeGain, 1);
+  const metronomeUserMuted = selected?.metronomeMuted === true;
+  useStanzaMetronomeSync({
+    enabled: Boolean(
       metronomeEnabledForPlayback && metronomeSyncSource.bpm != null && metronomeSyncSource.bpm > 0,
     ),
-    metronomeSyncSource.bpm,
-    metronomeSyncSource.anchor,
-    getTime,
-    playback.isPlaying,
-    true,
+    bpm: metronomeSyncSource.bpm,
+    anchorMediaTime: metronomeSyncSource.anchor,
+    getMediaTime: getTime,
+    isPlaying: playback.isPlaying,
+    audioEnabled: true,
+    gain: metronomeUserGain,
+    muted: metronomeUserMuted,
+  });
+
+  /**
+   * Linear drums level 0–1 (default 0.7). The shared `DrumAccompaniment` consumes 0–100, so we
+   * scale at the boundary. Sliding the Mix slider updates this immediately via a draft, and the
+   * persisted value is what we hand the drum component.
+   */
+  const drumsUserGain = stanzaSanitizeLinearBusGain(selected?.drumsGain, 0.7);
+  /**
+   * Stanza drives the shared `DrumAccompaniment` from the metronome's resolved bpm + anchor so
+   * a single calibration drives both clicks and the groove. When the metronome isn't calibrated
+   * yet we still render the drum panel (so the user can pick a pattern), but `isPlaying` stays
+   * false so we don't fire hits without a real Beat 1 to align to.
+   */
+  const drumsHasGrid =
+    metronomeSyncSource.bpm != null &&
+    metronomeSyncSource.bpm > 0 &&
+    metronomeSyncSource.anchor != null &&
+    Number.isFinite(metronomeSyncSource.anchor);
+  const drumsBpm =
+    metronomeSyncSource.bpm && metronomeSyncSource.bpm > 0
+      ? metronomeSyncSource.bpm
+      : STANZA_DRUMS_DEFAULT_BPM;
+  const drumsAnchorMediaTime = drumsHasGrid ? (metronomeSyncSource.anchor as number) : 0;
+  const drumsCurrentBeatTime = Math.max(0, playback.currentTime - drumsAnchorMediaTime);
+  const drumsBeatPeriod = 60 / drumsBpm;
+  const drumsCurrentBeat = drumsHasGrid ? Math.floor(drumsCurrentBeatTime / drumsBeatPeriod) : 0;
+  const drumsActuallyPlaying = Boolean(
+    selected?.drumsEnabled && playback.isPlaying && drumsHasGrid,
   );
 
+  // Surface the "set BPM" hint on the metronome strip itself when the toggle is on but no usable
+  // calibration has resolved (no full Alert row needed).
   useEffect(() => {
-    if (!metronomeEnabledForPlayback || !playback.isPlaying || !playbackMetSeg) {
-      setMetronomeSectionHint(null);
+    if (!selected?.metronomeEnabled) {
+      setMetronomeNeedsCalibration(false);
       return;
     }
-    const r = resolveStanzaMetronomePlaybackSync({
-      metronomeEnabled: true,
-      playbackSeg: playbackMetSeg,
-      songCal: selected?.metronomeSongCalibration,
-      segmentCal: playbackMetCal,
-      railLive: railLiveTiming,
-      railFocusSegmentId: railCalibSeg?.id ?? null,
-    });
     const hasClicks =
-      r.bpm != null &&
-      r.bpm > 0 &&
-      typeof r.anchor === 'number' &&
-      Number.isFinite(r.anchor);
-    if (hasClicks) {
-      setMetronomeSectionHint(null);
-      metronomeHintDismissedSegRef.current = null;
-      return;
-    }
-    if (metronomeHintDismissedSegRef.current === playbackMetSeg.id) {
-      setMetronomeSectionHint(null);
-      return;
-    }
-    const id = window.setTimeout(() => {
-      setMetronomeSectionHint('Set BPM and Beat 1 (ms) below (whole song or this section).');
-    }, 1200);
-    return () => window.clearTimeout(id);
-  }, [
-    metronomeEnabledForPlayback,
-    selected?.metronomeSongCalibration,
-    playback.isPlaying,
-    playbackMetSeg,
-    playbackMetCal,
-    railLiveTiming,
-    railCalibSeg?.id,
-  ]);
+      metronomeSyncSource.bpm != null &&
+      metronomeSyncSource.bpm > 0 &&
+      typeof metronomeSyncSource.anchor === 'number' &&
+      Number.isFinite(metronomeSyncSource.anchor);
+    setMetronomeNeedsCalibration(!hasClicks);
+  }, [selected?.metronomeEnabled, metronomeSyncSource.bpm, metronomeSyncSource.anchor]);
 
+  /**
+   * User-initiated navigation to a song. Pushes a real history entry so the **browser Back
+   * button** returns to the library instead of leaving Stanza for whatever site preceded it.
+   * Use this from anything that walks a user from the library or an import flow into the viewer
+   * (library row click, paste-YouTube, upload-file, "open in Drive" import). Programmatic /
+   * passive selection paths (URL bootstrap, popstate handler, undo/redo, drive deep-link
+   * resolution) should keep using `setSelectedId` directly so they don't stack history.
+   */
+  const navigateToSong = useCallback((song: StanzaSong) => {
+    const youtubeId = song.ytId ?? null;
+    const driveFileId = youtubeId ? null : (song.driveSourceFileId ?? null);
+    const driveTitle = driveFileId ? song.title : null;
+    pushStanzaPlaybackUrlSearchParams({ youtubeId, driveFileId, driveTitle });
+    setSelectedId(song.id);
+  }, []);
+
+  /**
+   * "Back to library" — pushes a no-params entry so a subsequent browser Back returns to the
+   * song the user just left, mirroring `navigateToSong`.
+   */
   const goHome = useCallback(() => {
+    pushStanzaPlaybackUrlSearchParams({ youtubeId: null, driveFileId: null, driveTitle: null });
     setSelectedId(null);
-    replaceStanzaPlaybackUrlSearchParams({ youtubeId: null, driveFileId: null, driveTitle: null });
   }, []);
 
   const renderLibraryGrid = (variant: 'landing' | 'footer') => (
@@ -2218,7 +2359,7 @@ export default function StanzaWorkspace() {
           <button
             type="button"
             className={`stanza-library-card${s.id === selectedId ? ' stanza-library-card--selected' : ''}`}
-            onClick={() => setSelectedId(s.id)}
+            onClick={() => navigateToSong(s)}
             aria-current={s.id === selectedId ? 'true' : undefined}
           >
             {s.ytId ? (
@@ -2530,13 +2671,19 @@ export default function StanzaWorkspace() {
               sx={{
                 display: 'grid',
                 width: '100%',
-                maxWidth: { md: 1280 },
+                // Wider canvas for typical 13"+ laptops. Capped to avoid the rail drifting away
+                // from the video on ultrawides; the timeline below uses the same maxWidth.
+                maxWidth: { md: 1440 },
                 mx: 'auto',
                 alignContent: 'start',
-                alignItems: { xs: 'start', md: 'stretch' },
+                // `start` (vs `stretch`) lets the rail stop at its own (capped) height instead of
+                // stretching to match the video and creating empty space below the rail's last
+                // control. Combined with the rail's own `maxHeight: calc(100vh - …)`, this keeps
+                // the sidebar compact and viewport-bounded.
+                alignItems: 'start',
                 rowGap: { xs: 1.5, md: 2 },
                 columnGap: { xs: 1.5, md: 2.5 },
-                gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1fr) minmax(308px, 360px)' },
+                gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1fr) minmax(320px, 380px)' },
                 gridTemplateAreas: {
                   xs: '"media" "timeline" "rail"',
                   md: '"media rail" "timeline timeline"',
@@ -2548,14 +2695,15 @@ export default function StanzaWorkspace() {
                 sx={{
                   gridArea: 'media',
                   minWidth: 0,
-                  width: { xs: '100%', md: 'min(100%, 760px)' },
-                  maxWidth: { md: 760 },
+                  // Wider primary media frame — at 16:9 the local video is ~470px tall (was ~428),
+                  // closer to the natural viewing scale on a typical laptop.
+                  width: { xs: '100%', md: 'min(100%, 840px)' },
+                  maxWidth: { md: 840 },
                   justifySelf: { md: 'end' },
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'stretch',
                   justifyContent: 'center',
-                  minHeight: { md: '100%' },
                 }}
               >
                 <Box className="stanza-video-column">
@@ -2753,17 +2901,29 @@ export default function StanzaWorkspace() {
                 sx={{
                   gridArea: 'rail',
                   width: { xs: '100%', md: '100%' },
-                  maxWidth: { md: 360 },
+                  maxWidth: { md: 380 },
                   justifySelf: { md: 'stretch' },
-                  alignSelf: { md: 'stretch' },
+                  alignSelf: { md: 'start' },
                   display: 'flex',
                   flexDirection: 'column',
                   minHeight: 0,
-                  height: { md: '100%' },
-                  p: { xs: 1.25, md: 1.5 },
+                  // Cap the rail to the available viewport so a tall config (drums on, many
+                  // mix layers, calibration panel) scrolls inside the rail instead of pushing
+                  // the page tall. The 240px subtracts the page header + viewer header + the
+                  // timeline strip + bottom margin so the rail sits flush with the video.
+                  //
+                  // `overflowY: auto` lives on the Paper itself (not the inner Stack) so the
+                  // rail sizes to its content and only becomes a scroll container when content
+                  // genuinely exceeds the cap. Putting it on a `flex: 1` inner Stack made the
+                  // Stack always claim the full max-height — which on systems with persistent
+                  // scrollbars (macOS "Always show", many Windows configs) painted a visible
+                  // gutter even when the configured rail was much shorter than the viewport.
+                  maxHeight: { md: 'calc(100vh - 240px)' },
+                  overflowY: 'auto',
+                  p: { xs: 1, md: 1.25 },
                 }}
               >
-                <Stack spacing={1.5} sx={{ flex: 1, minHeight: 0, overflowY: 'auto', pr: 0.25 }}>
+                <Stack spacing={1} sx={{ pr: 0.25 }}>
                   <Box>
                     <StanzaMetronomeStrip
                       enabled={Boolean(selected.metronomeEnabled)}
@@ -2777,19 +2937,8 @@ export default function StanzaWorkspace() {
                       anchorMediaTime={metronomeSyncSource.anchor}
                       getMediaTime={getTime}
                       isPlaying={playback.isPlaying}
+                      needsCalibration={metronomeNeedsCalibration}
                     />
-                    {metronomeSectionHint && (
-                      <Alert
-                        severity="info"
-                        sx={{ mt: 0.5, mb: 0.25, py: 0, '& .MuiAlert-message': { py: 0.5 } }}
-                        onClose={() => {
-                          if (playbackMetSeg) metronomeHintDismissedSegRef.current = playbackMetSeg.id;
-                          setMetronomeSectionHint(null);
-                        }}
-                      >
-                        <Typography variant="body2">{metronomeSectionHint}</Typography>
-                      </Alert>
-                    )}
                     {railCalibSeg && (
                       <StanzaSectionMetronomeRail
                         segment={railCalibSeg}
@@ -2829,18 +2978,84 @@ export default function StanzaWorkspace() {
                         onPrimeMetronomeAudio={primeStanzaMetronomeAudio}
                       />
                     )}
+                    <Box className="stanza-drums-block" sx={{ pt: 0.25 }}>
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            size="small"
+                            checked={Boolean(selected.drumsEnabled)}
+                            onChange={(e) => {
+                              const enabled = e.target.checked;
+                              if (enabled) {
+                                // Resume the shared metronome AudioContext on the user gesture
+                                // so the first hit doesn't drop on Safari / strict autoplay.
+                                primeStanzaMetronomeAudio();
+                              }
+                              void persistSong({ id: selected.id, drumsEnabled: enabled });
+                            }}
+                            sx={{ p: 0.25 }}
+                          />
+                        }
+                        label={
+                          <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                            Add drums
+                          </Typography>
+                        }
+                        sx={{ ml: -0.25, mr: 0, my: 0, '.MuiFormControlLabel-label': { ml: 0.5 } }}
+                      />
+                      {selected.drumsEnabled ? (
+                        <Box sx={{ mt: 0.25 }} className="stanza-drums-panel">
+                          <DrumAccompaniment
+                            bpm={drumsBpm}
+                            timeSignature={STANZA_DRUMS_DEFAULT_TIME_SIGNATURE}
+                            isPlaying={drumsActuallyPlaying}
+                            currentBeatTime={drumsCurrentBeatTime}
+                            currentBeat={drumsCurrentBeat}
+                            metronomeEnabled={Boolean(selected.metronomeEnabled)}
+                            volume={Math.round(drumsUserGain * 100)}
+                            notationWidth={STANZA_DRUMS_NOTATION_WIDTH}
+                            notationHeight={STANZA_DRUMS_NOTATION_HEIGHT}
+                            notationStyle={STANZA_DRUMS_NOTATION_STYLE}
+                            hideDarbukaLink
+                          />
+                          {!drumsHasGrid ? (
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{ display: 'block', mt: 0.25, lineHeight: 1.35 }}
+                            >
+                              Set BPM and Beat 1 above to start the drum loop.
+                            </Typography>
+                          ) : null}
+                        </Box>
+                      ) : null}
+                    </Box>
                   </Box>
                   {!isYoutube ? (
                     <>
                       <Box className="stanza-key-shift-block" sx={{ pt: 0.25 }}>
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          sx={{ display: 'block', mb: 0.25, fontWeight: 600, letterSpacing: '0.01em' }}
+                        {/* Inline "Key shift" label saves a row vs. a stacked caption. The
+                            stepper handles its own width; the label hugs the left edge. */}
+                        <Stack
+                          direction="row"
+                          alignItems="center"
+                          spacing={0.75}
+                          useFlexGap
+                          sx={{ minWidth: 0 }}
                         >
-                          Key shift (semitones)
-                        </Typography>
-                        <Stack direction="row" alignItems="stretch" spacing={0.75} useFlexGap>
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{
+                              fontWeight: 600,
+                              letterSpacing: '0.01em',
+                              fontSize: '0.7rem',
+                              flexShrink: 0,
+                            }}
+                            title="Key shift in semitones"
+                          >
+                            Key shift
+                          </Typography>
                           <Box
                             className="shared-bpm-input stanza-key-shift-numeric"
                             sx={{ flex: '1 1 140px', minWidth: 0, maxWidth: { xs: '100%', sm: 220 }, alignSelf: 'stretch' }}
@@ -2959,14 +3174,150 @@ export default function StanzaWorkspace() {
                           </Box>
                         ) : null}
                       </Box>
-                      <Box className="stanza-mix-block" sx={{ pt: 0.5 }}>
-                        <Typography className="stanza-rail-section-label stanza-rail-section-label--minor" sx={{ mb: 0.5 }}>
-                          Mix
+                    </>
+                  ) : null}
+                  <Box className="stanza-mix-block" sx={{ pt: 0.25 }}>
+                    <Stack
+                      direction="row"
+                      alignItems="center"
+                      justifyContent="space-between"
+                      sx={{ mb: 0.25 }}
+                    >
+                      <Typography className="stanza-rail-section-label stanza-rail-section-label--minor">
+                        Mix
+                      </Typography>
+                      {!isYoutube ? (
+                        <AppTooltip title="Add another audio layer (e.g. an instrumental or vocal stem)">
+                          <IconButton
+                            size="small"
+                            aria-label="Add audio layer"
+                            className="stanza-mix-add-icon"
+                            onClick={() => stemFileInputRef.current?.click()}
+                            sx={{ p: 0.35, color: 'text.secondary' }}
+                          >
+                            <AddIcon sx={{ fontSize: 18 }} />
+                          </IconButton>
+                        </AppTooltip>
+                      ) : null}
+                    </Stack>
+                    <Stack spacing={0.4} className="stanza-mix-rows">
+                      <Box
+                        className="stanza-mix-row stanza-mix-row--system"
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1, minHeight: 28 }}
+                      >
+                        <Box sx={{ width: STANZA_MIX_DRAG_COL_PX, flexShrink: 0 }} aria-hidden />
+                        <AppTooltip
+                          title={
+                            metronomeUserMuted
+                              ? 'Unmute the metronome click'
+                              : 'Mute the metronome click (calibration is preserved)'
+                          }
+                        >
+                          <IconButton
+                            size="small"
+                            aria-label={metronomeUserMuted ? 'Unmute metronome' : 'Mute metronome'}
+                            onClick={() =>
+                              void persistSong({ id: selected.id, metronomeMuted: !metronomeUserMuted })
+                            }
+                            sx={{ p: 0.35, alignSelf: 'center' }}
+                          >
+                            {metronomeUserMuted ? (
+                              <VolumeOffOutlinedIcon sx={{ fontSize: 18 }} />
+                            ) : (
+                              <VolumeUpOutlinedIcon sx={{ fontSize: 18 }} />
+                            )}
+                          </IconButton>
+                        </AppTooltip>
+                        <Typography
+                          component="span"
+                          noWrap
+                          title="Metronome click"
+                          sx={(theme) => ({
+                            ...stanzaMixTrackLabelSurfaceSx(theme),
+                            flex: '0 1 auto',
+                            minWidth: 0,
+                            maxWidth: STANZA_MIX_LABEL_MAX_WIDTH,
+                            alignSelf: 'center',
+                          })}
+                        >
+                          Metronome
                         </Typography>
-                        <Stack spacing={0.75} className="stanza-mix-rows">
+                        <AppLinearVolumeSlider
+                          value={mixMetronomeGainDraft ?? metronomeUserGain}
+                          onChange={(_, v) =>
+                            setMixMetronomeGainDraft(stanzaSanitizeLinearBusGain(v as number))
+                          }
+                          onChangeCommitted={async (_, v) => {
+                            const n = stanzaSanitizeLinearBusGain(v as number);
+                            await persistSong({ id: selected.id, metronomeGain: n });
+                            setMixMetronomeGainDraft(null);
+                          }}
+                          aria-label="Metronome click level"
+                          sx={{
+                            alignSelf: 'center',
+                            opacity: metronomeUserMuted || !selected.metronomeEnabled ? 0.42 : 1,
+                            transition: 'opacity 0.15s ease',
+                          }}
+                        />
+                        <Box sx={{ width: STANZA_MIX_TRAIL_BALANCE_PX, flexShrink: 0 }} aria-hidden />
+                      </Box>
+                      {selected.drumsEnabled ? (
+                        <Box
+                          className="stanza-mix-row stanza-mix-row--system"
+                          sx={{ display: 'flex', alignItems: 'center', gap: 1, minHeight: 28 }}
+                        >
+                          {/* Drums has no Mix mute icon (the "Add drums" checkbox above is the
+                              on/off). We render a decorative volume icon in that slot so the row
+                              still reads as a volume control and the slider's left edge aligns
+                              with the Main + Metronome rows. */}
+                          <Box sx={{ width: STANZA_MIX_DRAG_COL_PX, flexShrink: 0 }} aria-hidden />
+                          <Box
+                            aria-hidden
+                            sx={{
+                              width: 30,
+                              flexShrink: 0,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: 'text.secondary',
+                            }}
+                          >
+                            <VolumeUpOutlinedIcon sx={{ fontSize: 18 }} />
+                          </Box>
+                          <Typography
+                            component="span"
+                            noWrap
+                            title="Drum groove"
+                            sx={(theme) => ({
+                              ...stanzaMixTrackLabelSurfaceSx(theme),
+                              flex: '0 1 auto',
+                              minWidth: 0,
+                              maxWidth: STANZA_MIX_LABEL_MAX_WIDTH,
+                              alignSelf: 'center',
+                            })}
+                          >
+                            Drums
+                          </Typography>
+                          <AppLinearVolumeSlider
+                            value={mixDrumsGainDraft ?? drumsUserGain}
+                            onChange={(_, v) =>
+                              setMixDrumsGainDraft(stanzaSanitizeLinearBusGain(v as number))
+                            }
+                            onChangeCommitted={async (_, v) => {
+                              const n = stanzaSanitizeLinearBusGain(v as number);
+                              await persistSong({ id: selected.id, drumsGain: n });
+                              setMixDrumsGainDraft(null);
+                            }}
+                            aria-label="Drums level"
+                            sx={{ alignSelf: 'center' }}
+                          />
+                          <Box sx={{ width: STANZA_MIX_TRAIL_BALANCE_PX, flexShrink: 0 }} aria-hidden />
+                        </Box>
+                      ) : null}
+                      {!isYoutube ? (
                         <Box
                           className="stanza-mix-row"
-                          sx={{ display: 'flex', alignItems: 'center', gap: 1, minHeight: 36 }}
+                          sx={{ display: 'flex', alignItems: 'center', gap: 1, minHeight: 28 }}
                         >
                           <Box sx={{ width: STANZA_MIX_DRAG_COL_PX, flexShrink: 0 }} aria-hidden />
                           <AppTooltip title={primaryPlaybackMuted(selected) ? 'Unmute main track' : 'Mute main track'}>
@@ -3024,7 +3375,9 @@ export default function StanzaWorkspace() {
                           />
                           <Box sx={{ width: STANZA_MIX_TRAIL_BALANCE_PX, flexShrink: 0 }} aria-hidden />
                         </Box>
-                        {(selected.stems ?? []).map((stem) => (
+                      ) : null}
+                      {!isYoutube
+                        ? (selected.stems ?? []).map((stem) => (
                           <Box
                             key={stem.id}
                             className="stanza-mix-row"
@@ -3053,7 +3406,7 @@ export default function StanzaWorkspace() {
                               display: 'flex',
                               alignItems: 'center',
                               gap: 1,
-                              minHeight: 36,
+                              minHeight: 28,
                               borderRadius: 0.75,
                               outline:
                                 stemReorderOverId === stem.id && stemReorderDragId && stemReorderDragId !== stem.id
@@ -3261,8 +3614,10 @@ export default function StanzaWorkspace() {
                               </IconButton>
                             </Box>
                           </Box>
-                        ))}
-                      </Stack>
+                        ))
+                        : null}
+                    </Stack>
+                    {!isYoutube ? (
                       <input
                         ref={stemFileInputRef}
                         type="file"
@@ -3274,28 +3629,8 @@ export default function StanzaWorkspace() {
                           if (f) void addStemFromFile(f);
                         }}
                       />
-                      <Button
-                        size="small"
-                        variant="text"
-                        className="stanza-mix-add"
-                        onClick={() => stemFileInputRef.current?.click()}
-                        sx={{
-                          mt: 0.5,
-                          py: 0.25,
-                          minHeight: 28,
-                          fontSize: '0.72rem',
-                          fontWeight: 600,
-                          color: 'text.secondary',
-                          textTransform: 'none',
-                          justifyContent: 'flex-start',
-                          px: 0.75,
-                        }}
-                      >
-                        + Add layer
-                      </Button>
-                    </Box>
-                    </>
-                  ) : null}
+                    ) : null}
+                  </Box>
                 </Stack>
               </Paper>
 

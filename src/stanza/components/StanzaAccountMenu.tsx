@@ -1,16 +1,20 @@
 import LabsGoogleSignInButton from '../../shared/google/LabsGoogleSignInButton';
 import { LabsAccountMenu } from '../../shared/google/LabsAccountMenu';
+import AppTooltip from '../../shared/components/AppTooltip';
 import CircularProgress from '@mui/material/CircularProgress';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
+import Divider from '@mui/material/Divider';
+import Link from '@mui/material/Link';
 import List from '@mui/material/List';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import {
   stanzaDriveTesterAllowlistEmpty,
   stanzaGoogleClientConfigured,
@@ -39,7 +43,7 @@ export default function StanzaAccountMenu() {
           message: backup.message,
           onBackup: backup.onBackup,
           lastBackupExportedAt: meta.lastBackupExportedAt,
-          scopeSummary: 'Markers & YouTube IDs only · drive.file',
+          scopeSummary: 'Sections, BPM, mix, skip flags · audio stays on device · drive.file',
         }}
         ids={{ menu: 'stanza-account-menu', button: 'stanza-account-menu-button' }}
         appearance={{
@@ -56,31 +60,67 @@ export default function StanzaAccountMenu() {
           },
         }}
         renderBackupButton={({ disabled, busy, onBackup }) => (
-          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
-            <LabsGoogleSignInButton
-              className="stanza-btn-soft-outline"
-              disabled={disabled}
-              onClick={() => void onBackup()}
-              aria-label="Back up library to Google Drive"
-              label={busy ? 'Saving…' : 'Back up with Google'}
-              sx={{
-                borderRadius: 999,
-                borderColor: 'rgba(60, 60, 67, 0.22)',
-                bgcolor: 'rgba(255, 253, 250, 0.98)',
-                color: 'text.primary',
-                '&:hover': { bgcolor: 'rgba(255, 253, 250, 1)', borderColor: 'rgba(60, 60, 67, 0.28)' },
-              }}
-            />
-            {busy ? <CircularProgress size={22} aria-label="Saving" sx={{ color: 'primary.main' }} /> : null}
-            <Button
-              size="small"
-              variant="text"
-              disabled={disabled || backup.undoSnapshots.length === 0}
-              onClick={() => backup.openRestorePicker()}
-              sx={{ fontSize: '0.7rem', minWidth: 0 }}
-            >
-              Restore snapshot…
-            </Button>
+          <Stack spacing={0.75} useFlexGap>
+            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+              <LabsGoogleSignInButton
+                className="stanza-btn-soft-outline"
+                disabled={disabled}
+                onClick={() => void onBackup()}
+                aria-label="Back up library to Google Drive"
+                label={busy ? 'Saving…' : 'Back up with Google'}
+                sx={{
+                  borderRadius: 999,
+                  borderColor: 'rgba(60, 60, 67, 0.22)',
+                  bgcolor: 'rgba(255, 253, 250, 0.98)',
+                  color: 'text.primary',
+                  '&:hover': { bgcolor: 'rgba(255, 253, 250, 1)', borderColor: 'rgba(60, 60, 67, 0.28)' },
+                }}
+              />
+              {busy ? <CircularProgress size={22} aria-label="Saving" sx={{ color: 'primary.main' }} /> : null}
+              <AppTooltip
+                title={
+                  backup.canRestore
+                    ? 'Open the restore dialog to merge a previous local snapshot or the latest Drive copy back into this device.'
+                    : 'Available after Stanza syncs with your Drive backup at least once.'
+                }
+              >
+                <span>
+                  <Button
+                    size="small"
+                    variant="text"
+                    disabled={disabled || !backup.canRestore}
+                    onClick={() => backup.openRestorePicker()}
+                    sx={{ fontSize: '0.7rem', minWidth: 0 }}
+                  >
+                    Restore…
+                  </Button>
+                </span>
+              </AppTooltip>
+            </Stack>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.45 }}>
+              Stanza syncs section markers, BPM calibration, mix levels, and skip flags to your Drive
+              automatically. Audio and stems stay on each device.
+            </Typography>
+            {backup.driveFolderUrl ? (
+              <Link
+                href={backup.driveFolderUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 0.5,
+                  fontSize: '0.7rem',
+                  textDecoration: 'none',
+                  color: 'text.secondary',
+                  fontWeight: 600,
+                  '&:hover': { color: 'primary.main', textDecoration: 'underline' },
+                }}
+              >
+                Open Stanza folder in Drive
+                <OpenInNewIcon sx={{ fontSize: 14, opacity: 0.72 }} aria-hidden />
+              </Link>
+            ) : null}
           </Stack>
         )}
       />
@@ -154,15 +194,51 @@ export default function StanzaAccountMenu() {
       </Dialog>
 
       <Dialog open={backup.restoreOpen} onClose={() => !backup.busy && backup.closeRestorePicker()} fullWidth maxWidth="xs">
-        <DialogTitle>Restore from snapshot</DialogTitle>
+        <DialogTitle>Restore library</DialogTitle>
         <DialogContent>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-            Snapshots are taken when you start a Drive backup. Restoring replays a <strong>metadata merge</strong>{' '}
-            (same rules as &ldquo;Merge&rdquo;) between the snapshot and your current library. Local audio files are
-            kept when ids match. Songs only on this device stay unless the merge removes them from the combined set.
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.25 }}>
+            Restoring replays a <strong>metadata merge</strong> against your current library: per song, the copy with
+            the newer <code>updatedAt</code> wins. Local audio files are kept when their ids match.
           </Typography>
-            {backup.undoSnapshots.length === 0 ? (
-            <Typography variant="body2">No snapshots yet. Run “Back up with Google” once to create one.</Typography>
+
+          <Typography
+            variant="overline"
+            sx={{ display: 'block', color: 'text.disabled', letterSpacing: '0.08em', mb: 0.5 }}
+          >
+            From Google Drive
+          </Typography>
+          <List dense disablePadding sx={{ mb: 1.5 }}>
+            <ListItemButton
+              disabled={backup.busy || !backup.testerOk}
+              onClick={() => void backup.restoreLatestFromDrive()}
+            >
+              <ListItemText
+                primary="Latest backup from Drive"
+                secondary={
+                  backup.latestRemoteEnvelope
+                    ? `Exported ${backup.latestRemoteEnvelope.exportedAt} · ${backup.latestRemoteEnvelope.songs.length} song${
+                        backup.latestRemoteEnvelope.songs.length === 1 ? '' : 's'
+                      }`
+                    : backup.lastMeta.lastBackupExportedAt
+                      ? `Last seen ${backup.lastMeta.lastBackupExportedAt} — tap to re-fetch`
+                      : 'Tap to fetch the latest copy from Drive'
+                }
+              />
+            </ListItemButton>
+          </List>
+
+          <Divider sx={{ my: 1 }} />
+
+          <Typography
+            variant="overline"
+            sx={{ display: 'block', color: 'text.disabled', letterSpacing: '0.08em', mb: 0.5 }}
+          >
+            Local snapshots (this browser)
+          </Typography>
+          {backup.undoSnapshots.length === 0 ? (
+            <Typography variant="body2" color="text.secondary">
+              No local snapshots yet. Snapshots are captured each time you press “Back up with Google”.
+            </Typography>
           ) : (
             <List dense disablePadding>
               {backup.undoSnapshots.map((s) => (
@@ -171,7 +247,7 @@ export default function StanzaAccountMenu() {
                   disabled={backup.busy}
                   onClick={() => void backup.applyUndoSnapshot(s)}
                 >
-                  <ListItemText primary={s.label} secondary="Tap to merge snapshot into this device" />
+                  <ListItemText primary={s.label} secondary="Local pre-backup snapshot" />
                 </ListItemButton>
               ))}
             </List>

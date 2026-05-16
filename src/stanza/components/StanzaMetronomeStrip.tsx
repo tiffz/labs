@@ -14,6 +14,11 @@ export interface StanzaMetronomeStripProps {
   anchorMediaTime: number | undefined;
   getMediaTime: () => number;
   isPlaying: boolean;
+  /**
+   * True when the metronome is enabled but no usable BPM/anchor has been calibrated yet.
+   * Shows a short "set BPM" hint inline with the placeholder so we don't need a separate Alert row.
+   */
+  needsCalibration?: boolean;
 }
 
 /**
@@ -28,6 +33,7 @@ export default function StanzaMetronomeStrip({
   anchorMediaTime,
   getMediaTime,
   isPlaying,
+  needsCalibration = false,
 }: StanzaMetronomeStripProps) {
   const [, setRafTick] = useState(0);
 
@@ -66,7 +72,15 @@ export default function StanzaMetronomeStrip({
       onClick={handleStripClick}
       role="presentation"
     >
-      <AppTooltip title={enabled ? 'Metronome on. Click this row to turn off.' : 'Metronome off. Click this row to turn on.'}>
+      <AppTooltip
+        title={
+          enabled
+            ? needsCalibration
+              ? 'Metronome on. Set BPM and Beat 1 below to start the click. Click this row to turn off.'
+              : 'Metronome on. Click this row to turn off.'
+            : 'Metronome off. Click this row to turn on.'
+        }
+      >
         <MetronomeToggleButton
           enabled={enabled}
           onToggle={onToggle}
@@ -92,7 +106,9 @@ export default function StanzaMetronomeStrip({
           </Box>
         </Box>
       ) : (
-        <span className="stanza-metronome-strip-placeholder">Metronome</span>
+        <span className="stanza-metronome-strip-placeholder">
+          {enabled && needsCalibration ? 'Metronome — set BPM below ↓' : 'Metronome'}
+        </span>
       )}
     </Box>
   );

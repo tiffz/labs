@@ -27,13 +27,14 @@ Skip an ADR for routine features, one-off UI tweaks, or purely internal refactor
 
 ## Index
 
-| ADR                                                                       | Title                                                                  |
-| ------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| [0001](./0001-static-hosting-hash-routing.md)                             | Static hosting (GitHub Pages) and hash-based client routing            |
-| [0002](./0002-historical-decisions-in-development.md)                     | Backfill: prior decisions in `DEVELOPMENT.md`                          |
-| [0003](./0003-stanza-multi-stem-playback.md)                              | Stanza optional multi-stem playback (local, Drive metadata)            |
-| [0004](./0004-stanza-stem-web-audio-mixer.md)                             | Stanza stem mix bus (Web Audio `MediaElementSource` + gains)           |
-| [0005](./0005-shared-find-the-beat-analyzer.md)                           | Shared Find-the-Beat analyzer (Essentia) for Stanza + Beat             |
-| [0006](./0006-stanza-drive-backup-merge-and-restore.md)                   | Stanza Drive backup: conflict prompt, merge, local undo snapshots      |
-| [0007](./0007-encore-owned-practice-resources-stanza-secondary-client.md) | Encore-owned practice resources on Drive; Stanza secondary client      |
-| [0008](./0008-stanza-section-marker-model-and-metronome-calibration.md)   | Stanza section/marker data model and per-section metronome calibration |
+| ADR                                                                       | Title                                                                       |
+| ------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| [0001](./0001-static-hosting-hash-routing.md)                             | Static hosting (GitHub Pages) and hash-based client routing                 |
+| [0002](./0002-historical-decisions-in-development.md)                     | Backfill: prior decisions in `DEVELOPMENT.md`                               |
+| [0003](./0003-stanza-multi-stem-playback.md)                              | Stanza optional multi-stem playback (local, Drive metadata)                 |
+| [0004](./0004-stanza-stem-web-audio-mixer.md)                             | Stanza stem mix bus (Web Audio `MediaElementSource` + gains)                |
+| [0005](./0005-shared-find-the-beat-analyzer.md)                           | Shared Find-the-Beat analyzer (Essentia) for Stanza + Beat                  |
+| [0006](./0006-stanza-drive-backup-merge-and-restore.md)                   | Stanza Drive backup: conflict prompt, merge, local undo snapshots           |
+| [0007](./0007-encore-owned-practice-resources-stanza-secondary-client.md) | Encore-owned practice resources on Drive; Stanza secondary client           |
+| [0008](./0008-stanza-section-marker-model-and-metronome-calibration.md)   | Stanza section/marker data model and per-section metronome calibration      |
+| [0009](./0009-stanza-drums-and-metronome-volume.md)                       | Stanza drums groove (BPM-locked, per-section override) and metronome volume |

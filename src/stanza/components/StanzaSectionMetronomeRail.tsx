@@ -25,6 +25,8 @@ import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import PauseIcon from '@mui/icons-material/Pause';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import RestartAltOutlinedIcon from '@mui/icons-material/RestartAltOutlined';
+import StraightenIcon from '@mui/icons-material/Straighten';
+import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -34,8 +36,11 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import IconButton from '@mui/material/IconButton';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Typography from '@mui/material/Typography';
 import { analyzeBeatForMediaTimeRange } from '../../shared/beat/segmentBeatAnalysis';
 import AppTooltip from '../../shared/components/AppTooltip';
@@ -457,98 +462,82 @@ export default function StanzaSectionMetronomeRail({
     [pushLiveFromDraft],
   );
 
+  const sectionDisplayName = segment.label || `Section ${segment.index + 1}`;
+  const showSectionOverrideHint = timingScope === 'song' && Boolean(segmentCalibration);
+  const showInheritanceHint =
+    timingScope === 'section' && !segmentCalibration && Boolean(songCalibration);
+
   return (
-    <Stack spacing={1} className="stanza-metronome-rail" sx={{ mt: 0.35 }}>
-      <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" useFlexGap spacing={0.5}>
-        <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.35 }}>
-          Calibrate for <strong>{segment.label || `Section ${segment.index + 1}`}</strong>
-        </Typography>
-        <AppTooltip
-          title={
-            timingScope === 'section'
-              ? 'Tempo target: this section. Click to edit whole song.'
-              : 'Tempo target: whole song. Click to edit this section only.'
-          }
+    <Stack spacing={0.5} className="stanza-metronome-rail" sx={{ mt: 0.25 }}>
+      {/* Single header row: section name + Section/Song toggle group + optional override icon.
+          Replaces the previous two-element header to save ~20px and unifies the calibration scope
+          control with the section the rail is editing. */}
+      <Stack
+        direction="row"
+        alignItems="center"
+        justifyContent="space-between"
+        spacing={0.75}
+        sx={{ minWidth: 0 }}
+      >
+        <Stack
+          direction="row"
+          alignItems="center"
+          spacing={0.4}
+          sx={{ minWidth: 0, flex: '1 1 auto' }}
         >
-          <Button
-            type="button"
-            size="small"
-            variant="outlined"
-            className="stanza-btn-soft-outline stanza-timing-scope-flip stanza-rail-compact-btn"
-            onClick={() => onTimingScopeChange(timingScope === 'section' ? 'song' : 'section')}
-            sx={{
-              flexShrink: 0,
-              minHeight: 30,
-              px: 1.15,
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            noWrap
+            title={`Calibrate for ${sectionDisplayName}`}
+            sx={{ lineHeight: 1.35, fontWeight: 600 }}
+          >
+            {sectionDisplayName}
+          </Typography>
+          {showSectionOverrideHint ? (
+            <AppTooltip title="This section has its own tempo. Whole-song edits won't change its BPM or Beat 1.">
+              <InfoOutlinedIcon
+                sx={{ fontSize: 14, color: 'info.main', flexShrink: 0 }}
+                aria-label="Section overrides whole-song tempo"
+              />
+            </AppTooltip>
+          ) : null}
+        </Stack>
+        <ToggleButtonGroup
+          size="small"
+          exclusive
+          value={timingScope}
+          onChange={(_event, next: StanzaMetronomeTimingScope | null) => {
+            if (!next || next === timingScope) return;
+            onTimingScopeChange(next);
+          }}
+          aria-label="Calibration scope"
+          sx={{
+            flexShrink: 0,
+            '& .MuiToggleButton-root': {
               py: 0.25,
-              fontSize: '0.72rem',
+              px: 1,
+              fontSize: '0.7rem',
               fontWeight: 600,
               textTransform: 'none',
-            }}
-          >
-            {timingScope === 'section' ? 'This section' : 'Whole song'}
-          </Button>
-        </AppTooltip>
+              lineHeight: 1.2,
+              minHeight: 28,
+            },
+          }}
+        >
+          <ToggleButton value="section">Section</ToggleButton>
+          <ToggleButton value="song">Song</ToggleButton>
+        </ToggleButtonGroup>
       </Stack>
 
-      {timingScope === 'section' && !segmentCalibration && songCalibration ? (
+      {showInheritanceHint ? (
         <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.35 }}>
-          Inheriting {Math.round(songCalibration.bpm)} BPM from whole song until you override.
+          Inheriting {Math.round(songCalibration!.bpm)} BPM from the whole song until you override.
         </Typography>
       ) : null}
 
-      {timingScope === 'song' && segmentCalibration ? (
-        <Alert severity="info" sx={{ py: 0, '& .MuiAlert-message': { py: 0.5 } }}>
-          <Typography variant="caption" sx={{ lineHeight: 1.35 }}>
-            This section has its own tempo. Whole-song edits won&apos;t change its BPM or Beat 1.
-          </Typography>
-        </Alert>
-      ) : null}
-
-      {boundaryAlignmentMessage ? (
-        <Alert
-          severity="warning"
-          sx={{
-            py: 0,
-            alignItems: 'center',
-            // Keep the action vertically centered with the message and the
-            // built-in icon. Without this the action slot drops a notch on
-            // narrow rails and the button label looks orphaned.
-            '& .MuiAlert-action': { pt: 0, alignItems: 'center', mr: 0.25, ml: 0.5, flexShrink: 0 },
-            '& .MuiAlert-message': { py: 0.5, pr: 0.5, minWidth: 0 },
-          }}
-          action={
-            onSnapSectionBoundariesToBeat ? (
-              <AppTooltip title="Snap the section start onto Beat 1 and pad the end forward to the next beat. The metronome click cadence stays the same — only the section edges move.">
-                <Button
-                  type="button"
-                  size="small"
-                  // Text + inherit lets the button pick up the alert's warning
-                  // tint instead of competing for primary attention. Pattern
-                  // recommended for actions inside MUI Alerts.
-                  variant="text"
-                  color="inherit"
-                  onClick={onSnapSectionBoundariesToBeat}
-                  sx={{
-                    whiteSpace: 'nowrap',
-                    fontWeight: 700,
-                    textTransform: 'none',
-                    fontSize: '0.6875rem',
-                    px: 1,
-                    minWidth: 0,
-                  }}
-                >
-                  Snap to beat
-                </Button>
-              </AppTooltip>
-            ) : undefined
-          }
-        >
-          <Typography variant="caption" component="div" sx={{ lineHeight: 1.45 }}>
-            {boundaryAlignmentMessage}
-          </Typography>
-        </Alert>
-      ) : null}
+      {/* Boundary misalignment lives inline (icon + Snap button) instead of a full Alert row to
+          keep the rail compact; the longer-form copy still appears in the timeline hover card. */}
 
       <Stack direction="row" alignItems="flex-end" spacing={0.75} flexWrap="wrap" useFlexGap>
         <Box sx={{ flex: '1 1 140px', minWidth: 0 }}>
@@ -664,6 +653,38 @@ export default function StanzaSectionMetronomeRail({
             </span>
           </AppTooltip>
         </Box>
+        {boundaryAlignmentMessage && onSnapSectionBoundariesToBeat ? (
+          <Box sx={{ flexShrink: 0 }}>
+            <Stack
+              direction="row"
+              alignItems="center"
+              spacing={0}
+              sx={{
+                mt: { xs: 0, sm: 1.4 },
+                color: 'warning.main',
+              }}
+              aria-live="polite"
+            >
+              <AppTooltip
+                title={`${boundaryAlignmentMessage} Snap the section start onto Beat 1 and pad the end forward to the next beat.`}
+              >
+                <WarningAmberRoundedIcon sx={{ fontSize: 18 }} aria-hidden />
+              </AppTooltip>
+              <AppTooltip title="Snap section to beat grid">
+                <IconButton
+                  type="button"
+                  size="small"
+                  color="inherit"
+                  aria-label="Snap section to beat grid"
+                  onClick={onSnapSectionBoundariesToBeat}
+                  sx={{ p: 0.35 }}
+                >
+                  <StraightenIcon sx={{ fontSize: 18 }} />
+                </IconButton>
+              </AppTooltip>
+            </Stack>
+          </Box>
+        ) : null}
       </Stack>
 
       {analysisError && (
