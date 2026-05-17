@@ -7,6 +7,8 @@ import {
   effectiveGeniusLyricsSource,
   formatExerciseRunSummary,
   getSingleRunForKind,
+  lyricsExerciseSectionDisplayLabel,
+  lyricsExerciseSectionExportHeading,
   lyricsRewriteProgressFromSections,
   markExerciseRunCompleted,
   applyPositionalLyricsFallback,
@@ -39,12 +41,67 @@ describe('parseGeniusLyricsIntoSections', () => {
     expect(parseGeniusLyricsIntoSections('   \n\n  ')).toEqual([]);
   });
 
-  it('treats unlabeled lines as a single anonymous section', () => {
-    const out = parseGeniusLyricsIntoSections('first\nsecond\n\nthird');
+  it('treats unlabeled, blank-free lines as a single anonymous section', () => {
+    const out = parseGeniusLyricsIntoSections('first\nsecond\nthird');
     expect(out).toHaveLength(1);
     expect(out[0]?.title).toBe('');
     expect(out[0]?.lines.map((l) => l.original)).toEqual(['first', 'second', 'third']);
     expect(out[0]?.lines.every((l) => l.rewrite === '')).toBe(true);
+  });
+
+  it('splits unlabeled paragraphs separated by blank lines into anonymous sections', () => {
+    // A plain lyrics paste with no [Section] markers is the canonical use case for the implicit
+    // paragraph-as-section rule. Each blank line becomes a section boundary and every section
+    // keeps an empty title so the UI assigns "Section 1", "Section 2", ….
+    const raw = 'First stanza line one\nFirst stanza line two\n\nSecond stanza line one\n\nThird';
+    const out = parseGeniusLyricsIntoSections(raw);
+    expect(out).toHaveLength(3);
+    expect(out.every((s) => s.title === '')).toBe(true);
+    expect(out[0]?.lines.map((l) => l.original)).toEqual([
+      'First stanza line one',
+      'First stanza line two',
+    ]);
+    expect(out[1]?.lines.map((l) => l.original)).toEqual(['Second stanza line one']);
+    expect(out[2]?.lines.map((l) => l.original)).toEqual(['Third']);
+  });
+
+  it('collapses multiple consecutive blank lines into one split', () => {
+    const out = parseGeniusLyricsIntoSections('A\n\n\n\nB');
+    expect(out).toHaveLength(2);
+    expect(out[0]?.lines.map((l) => l.original)).toEqual(['A']);
+    expect(out[1]?.lines.map((l) => l.original)).toEqual(['B']);
+  });
+
+  it('does not insert an empty section between a blank line and a [Header]', () => {
+    // Without the pendingBlank deferral, `…\n\n[Chorus]` would produce a stray untitled section
+    // between the previous one and Chorus. The Genius round-trip relies on this skipping.
+    const raw = `[Verse 1]
+A
+B
+
+[Chorus]
+C`;
+    const out = parseGeniusLyricsIntoSections(raw);
+    expect(out.map((s) => s.title)).toEqual(['Verse 1', 'Chorus']);
+    expect(out[0]?.lines).toHaveLength(2);
+    expect(out[1]?.lines).toHaveLength(1);
+  });
+
+  it('splits on blank lines inside an explicit-header span (paragraphs become Section N siblings)', () => {
+    // After the user labels the first paragraph, the remaining untitled paragraphs must keep
+    // their own boundaries instead of merging into the now-titled section. This is also the
+    // round-trip case for an inline-blur re-parse after a title edit.
+    const raw = `[Intro]
+X
+
+Y
+
+Z`;
+    const out = parseGeniusLyricsIntoSections(raw);
+    expect(out.map((s) => s.title)).toEqual(['Intro', '', '']);
+    expect(out[0]?.lines.map((l) => l.original)).toEqual(['X']);
+    expect(out[1]?.lines.map((l) => l.original)).toEqual(['Y']);
+    expect(out[2]?.lines.map((l) => l.original)).toEqual(['Z']);
   });
 
   it('parses Genius-format headers and groups lines under them', () => {
@@ -141,6 +198,56 @@ B`;
     const sections = [{ title: '', lines: [{ original: 'one', rewrite: '' }, { original: 'two', rewrite: '' }] }];
     expect(serializeLyricsSectionsToRaw(sections)).toBe('one\ntwo');
   });
+
+  it('round-trips paragraph-form pastes (untitled sections survive serialization)', () => {
+    // The blank-line separator the serializer now emits is the only way the parser can recover
+    // the section boundaries for untitled paragraphs.
+    const parsed = parseGeniusLyricsIntoSections('A1\nA2\n\nB1\n\nC1');
+    const raw = serializeLyricsSectionsToRaw(parsed);
+    expect(raw).toBe('A1\nA2\n\nB1\n\nC1');
+    expect(parseGeniusLyricsIntoSections(raw)).toEqual(parsed);
+  });
+
+  it('round-trips a mix of titled and untitled sections (post-rename state)', () => {
+    const sections = [
+      { title: 'Intro', lines: [{ original: 'x', rewrite: '' }] },
+      { title: '', lines: [{ original: 'y', rewrite: '' }] },
+      { title: '', lines: [{ original: 'z', rewrite: '' }] },
+    ];
+    const raw = serializeLyricsSectionsToRaw(sections);
+    expect(parseGeniusLyricsIntoSections(raw)).toEqual(sections);
+  });
+});
+
+describe('lyricsExerciseSectionDisplayLabel', () => {
+  it('returns the explicit title when set, ignoring the auto-naming rule', () => {
+    const sec = { title: 'Verse 1', lines: [] };
+    expect(lyricsExerciseSectionDisplayLabel(sec, 0, 4)).toBe('Verse 1');
+  });
+
+  it('falls back to "Lyrics" for a single untitled section so one-paragraph pastes keep that label', () => {
+    expect(lyricsExerciseSectionDisplayLabel({ title: '', lines: [] }, 0, 1)).toBe('Lyrics');
+  });
+
+  it('numbers multiple untitled sections positionally (1-indexed)', () => {
+    expect(lyricsExerciseSectionDisplayLabel({ title: '', lines: [] }, 0, 3)).toBe('Section 1');
+    expect(lyricsExerciseSectionDisplayLabel({ title: '', lines: [] }, 2, 3)).toBe('Section 3');
+  });
+
+  it('uses the positional index in mixed states (custom titles do not shift the count)', () => {
+    expect(lyricsExerciseSectionDisplayLabel({ title: '', lines: [] }, 1, 2)).toBe('Section 2');
+  });
+});
+
+describe('lyricsExerciseSectionExportHeading', () => {
+  it('brackets explicit titles for export', () => {
+    expect(lyricsExerciseSectionExportHeading({ title: 'Verse 1', lines: [] }, 0, 1)).toBe('[Verse 1]');
+  });
+
+  it('does not bracket auto-generated labels (they would read as lyrics in the export)', () => {
+    expect(lyricsExerciseSectionExportHeading({ title: '', lines: [] }, 0, 1)).toBe('Lyrics');
+    expect(lyricsExerciseSectionExportHeading({ title: '', lines: [] }, 1, 3)).toBe('Section 2');
+  });
 });
 
 describe('mergeParsedSectionsWithExisting', () => {
@@ -209,6 +316,47 @@ describe('mergeParsedNarrativeSectionsWithExisting', () => {
     expect(merged[0]?.narrative).toBe('first-a');
     expect(merged[1]?.narrative).toBe('b');
     expect(merged[2]?.narrative).toBe('second-a');
+  });
+
+  it('preserves user-renamed titles on untitled paragraphs through a re-sync', () => {
+    // User pasted three untitled paragraphs, then renamed the middle one to "Outro" inside
+    // the narrative editor. A subsequent re-sync from the unchanged plain-paragraph lyrics
+    // source must keep that rename — index-fallback for empty parsed titles is what makes
+    // this work.
+    const parsed = parseGeniusLyricsIntoSections('A\n\nB\n\nC');
+    const existing = [
+      { title: '', narrative: 'n1' },
+      { title: 'Outro', narrative: 'n2' },
+      { title: '', narrative: 'n3' },
+    ];
+    const merged = mergeParsedNarrativeSectionsWithExisting(parsed, existing);
+    expect(merged.map((s) => s.title)).toEqual(['', 'Outro', '']);
+    expect(merged.map((s) => s.narrative)).toEqual(['n1', 'n2', 'n3']);
+  });
+
+  it('keeps untitled narratives aligned positionally even when an explicit [Header] is added', () => {
+    // User had two untitled paragraphs (narratives n1, n2) and adds a [Chorus] header
+    // between them in the lyrics source. The chorus is brand new (no narrative yet); n1 and
+    // n2 stay aligned to their original index slots.
+    const parsed = parseGeniusLyricsIntoSections('A\n\n[Chorus]\nB');
+    const existing = [
+      { title: '', narrative: 'n1' },
+      { title: '', narrative: 'n2' },
+    ];
+    const merged = mergeParsedNarrativeSectionsWithExisting(parsed, existing);
+    expect(merged).toHaveLength(2);
+    expect(merged[0]).toEqual({ title: '', narrative: 'n1' });
+    expect(merged[1]).toEqual({ title: 'Chorus', narrative: '' });
+  });
+
+  it('returns blank entries for parsed sections beyond existing length', () => {
+    const parsed = parseGeniusLyricsIntoSections('A\n\nB');
+    const existing = [{ title: 'Renamed', narrative: 'n1' }];
+    const merged = mergeParsedNarrativeSectionsWithExisting(parsed, existing);
+    expect(merged).toEqual([
+      { title: 'Renamed', narrative: 'n1' },
+      { title: '', narrative: '' },
+    ]);
   });
 });
 

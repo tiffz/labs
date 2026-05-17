@@ -49,6 +49,7 @@ import {
   effectiveGeniusLyricsSource,
   effectiveLyricsSections,
   geniusSearchUrlForSong,
+  lyricsExerciseSectionDisplayLabel,
   lyricsRewriteProgressFromSections,
   lyricsSectionNarrativeProgress,
   markExerciseRunCompleted,
@@ -709,6 +710,85 @@ const LyricsSideBySideLineRow = memo(function LyricsSideBySideLineRow({
   );
 });
 
+/**
+ * Editable section heading for the lyrics rewriter. The input inherits the heading typography so
+ * a custom title (e.g. "Verse 1") and the placeholder auto-label (e.g. "Section 2") render
+ * identically. We only paint a subtle underline on hover / focus so the affordance reads as
+ * "this small caps label is clickable" rather than a stand-out form field. Read-only mode
+ * collapses to a non-interactive Typography so guests / completed runs stay quiet.
+ */
+const LyricsSectionTitleInput = memo(function LyricsSectionTitleInput({
+  value,
+  placeholder,
+  readOnly,
+  sectionIdx,
+  isFirst,
+  onPatchTitle,
+}: {
+  value: string;
+  placeholder: string;
+  readOnly: boolean;
+  sectionIdx: number;
+  isFirst: boolean;
+  onPatchTitle: (sectionIdx: number, title: string) => void;
+}): ReactElement {
+  const theme = useTheme();
+  const headingSx = lyricsWritelySectionHeadingSx(theme, { isFirst });
+
+  if (readOnly) {
+    return (
+      <Typography component="h3" sx={headingSx}>
+        {value.trim() || placeholder}
+      </Typography>
+    );
+  }
+
+  return (
+    <InputBase
+      value={value}
+      placeholder={placeholder}
+      onChange={(e) => onPatchTitle(sectionIdx, e.target.value)}
+      inputProps={{
+        'aria-label': `Section ${sectionIdx + 1} title (defaults to "${placeholder}")`,
+        maxLength: 120,
+      }}
+      sx={{
+        ...headingSx,
+        display: 'block',
+        // The Typography heading was `display: 'block'`; preserve that vertical rhythm while
+        // letting the input shrink-wrap to its content via an inner max-width on the editable
+        // element below.
+        width: 1,
+        userSelect: 'auto',
+        '& .MuiInputBase-input': {
+          // Inherit the heading typography (small caps, primary-tinted) directly so the value
+          // and placeholder render identically to the legacy non-editable heading.
+          font: 'inherit',
+          color: 'inherit',
+          letterSpacing: 'inherit',
+          textTransform: 'inherit',
+          padding: 0,
+          paddingBottom: '2px',
+          borderBottom: '1px dashed transparent',
+          transition: 'border-color 120ms ease',
+          maxWidth: 'fit-content',
+          minWidth: '6ch',
+          '&::placeholder': {
+            color: 'inherit',
+            opacity: 0.6,
+          },
+        },
+        '&:hover .MuiInputBase-input': {
+          borderBottomColor: (th) => alpha(th.palette.primary.main, 0.4),
+        },
+        '&.Mui-focused .MuiInputBase-input': {
+          borderBottomColor: (th) => th.palette.primary.main,
+        },
+      }}
+    />
+  );
+});
+
 function LyricsExerciseEditor({
   readOnly,
   run,
@@ -781,6 +861,26 @@ function LyricsExerciseEditor({
     [onChange, readOnly],
   );
 
+  /**
+   * Patches a section's `title` in place (no re-serialize / re-parse). Going through the parser
+   * would mangle adjacent untitled sections in the mixed-state case; titles are pure metadata
+   * so a direct state patch is correct here.
+   */
+  const patchSectionTitle = useCallback(
+    (sectionIdx: number, title: string) => {
+      if (readOnly) return;
+      onChange((prev) => {
+        if (prev.kind !== 'lyricsInOwnWords') return prev;
+        const secs = effectiveLyricsSections(prev);
+        const sec = secs[sectionIdx];
+        if (!sec || sec.title === title) return prev;
+        const newSecs = secs.map((s, i) => (i === sectionIdx ? { ...s, title } : s));
+        return { ...prev, sections: newSecs, lines: undefined };
+      });
+    },
+    [onChange, readOnly],
+  );
+
   /** Re-parse after inline source edits (markers may move). Does not persist to the song — use Save draft or bulk Apply. */
   const handleInlineSourceBlur = useCallback(() => {
     if (readOnly) return;
@@ -840,9 +940,10 @@ function LyricsExerciseEditor({
               Genius
               <OpenInNewIcon sx={{ fontSize: 14, ml: 0.25, verticalAlign: '-2px' }} aria-hidden />
             </Link>
-            . Edit originals inline or use <strong>Full lyrics</strong> for big pastes. Section headings follow{' '}
-            <code>[Verse]</code> / <code>[Chorus]</code> lines. <strong>Save draft</strong> stores rewrites and syncs
-            lyrics to the song.
+            . Edit originals inline or use <strong>Full lyrics</strong> for big pastes. Sections split on{' '}
+            <code>[Verse]</code> / <code>[Chorus]</code> lines or on a blank line between paragraphs — rename
+            any auto-labeled section by clicking its title. <strong>Save draft</strong> stores rewrites and
+            syncs lyrics to the song.
           </Typography>
 
           <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1}>
@@ -865,7 +966,8 @@ function LyricsExerciseEditor({
           {sections.length === 0 ? (
             <Stack spacing={1.25}>
               <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.55 }}>
-                Paste Genius-style lyrics to begin — one <code>[Section]</code> marker per line where you need a break.
+                Paste lyrics to begin — add a <code>[Section]</code> marker per heading, or just leave a blank
+                line between paragraphs and we&rsquo;ll split them into sections you can rename.
               </Typography>
               <InputBase
                 multiline
@@ -908,25 +1010,37 @@ function LyricsExerciseEditor({
                 </Typography>
               </Stack>
 
-              {sections.map((section, sectionIdx) => (
-                <Fragment key={`sec-${sectionIdx}`}>
-                  <Typography component="h3" sx={lyricsWritelySectionHeadingSx(theme, { isFirst: sectionIdx === 0 })}>
-                    {section.title.trim() ? `[${section.title}]` : 'Lyrics'}
-                  </Typography>
-                  {section.lines.map((line, lineIdx) => (
-                    <LyricsSideBySideLineRow
-                      key={`${sectionIdx}-${lineIdx}`}
-                      sectionIdx={sectionIdx}
-                      lineIdx={lineIdx}
-                      original={line.original}
-                      rewrite={line.rewrite}
+              {sections.map((section, sectionIdx) => {
+                const autoLabel = lyricsExerciseSectionDisplayLabel(
+                  section,
+                  sectionIdx,
+                  sections.length,
+                );
+                return (
+                  <Fragment key={`sec-${sectionIdx}`}>
+                    <LyricsSectionTitleInput
+                      value={section.title}
+                      placeholder={autoLabel}
                       readOnly={readOnly}
-                      onPatch={patchLine}
-                      onBlurOriginal={handleInlineSourceBlur}
+                      sectionIdx={sectionIdx}
+                      isFirst={sectionIdx === 0}
+                      onPatchTitle={patchSectionTitle}
                     />
-                  ))}
-                </Fragment>
-              ))}
+                    {section.lines.map((line, lineIdx) => (
+                      <LyricsSideBySideLineRow
+                        key={`${sectionIdx}-${lineIdx}`}
+                        sectionIdx={sectionIdx}
+                        lineIdx={lineIdx}
+                        original={line.original}
+                        rewrite={line.rewrite}
+                        readOnly={readOnly}
+                        onPatch={patchLine}
+                        onBlurOriginal={handleInlineSourceBlur}
+                      />
+                    ))}
+                  </Fragment>
+                );
+              })}
             </Stack>
           )}
         </Stack>
@@ -942,8 +1056,9 @@ function LyricsExerciseEditor({
         <DialogTitle id="lyrics-bulk-dialog-title">Edit full lyrics</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, lineHeight: 1.55 }}>
-            Genius-style text: put <code>[Verse 1]</code>, <code>[Chorus]</code>, etc. on their own line. Apply merges
-            your rewrites into the new structure and saves originals to the song.
+            Put <code>[Verse 1]</code>, <code>[Chorus]</code>, etc. on their own line, or leave a blank line
+            between paragraphs to split implicitly. Apply merges your rewrites into the new structure and
+            saves originals to the song.
           </Typography>
           <InputBase
             multiline
@@ -974,32 +1089,42 @@ function LyricsExerciseEditor({
 // ─────────────────────────────────────────────────────────────────────────────
 
 const SectionNarrativeAnswerRow = memo(function SectionNarrativeAnswerRow({
-  heading,
+  title,
+  placeholder,
+  displayLabel,
   sourceBody,
   sourceEmptyKind,
   narrative,
   readOnly,
   sectionIndex,
   patchNarrative,
+  patchTitle,
   isFirst,
 }: {
-  heading: string;
+  title: string;
+  placeholder: string;
+  displayLabel: string;
   sourceBody: string;
   sourceEmptyKind: 'mismatch' | 'no-lines' | null;
   narrative: string;
   readOnly: boolean;
   sectionIndex: number;
   patchNarrative: (i: number, html: string) => void;
+  patchTitle: (i: number, title: string) => void;
   isFirst: boolean;
 }): ReactElement {
-  const theme = useTheme();
-  const sourceAria = `Original lyrics for ${heading}`;
+  const sourceAria = `Original lyrics for ${displayLabel}`;
   const onHtml = useCallback((html: string) => patchNarrative(sectionIndex, html), [patchNarrative, sectionIndex]);
   return (
     <Box>
-      <Typography component="h3" sx={lyricsWritelySectionHeadingSx(theme, { isFirst })}>
-        {heading}
-      </Typography>
+      <LyricsSectionTitleInput
+        value={title}
+        placeholder={placeholder}
+        readOnly={readOnly}
+        sectionIdx={sectionIndex}
+        isFirst={isFirst}
+        onPatchTitle={patchTitle}
+      />
       <Stack
         direction={{ xs: 'column', md: 'row' }}
         spacing={{ xs: 1.5, md: 3 }}
@@ -1011,11 +1136,11 @@ const SectionNarrativeAnswerRow = memo(function SectionNarrativeAnswerRow({
             <Typography
               component="div"
               variant="body2"
-              sx={{
+              sx={(theme) => ({
                 ...lyricsWritelySourceInputSx(theme),
                 whiteSpace: 'pre-wrap',
                 wordBreak: 'break-word',
-              }}
+              })}
             >
               {sourceBody}
             </Typography>
@@ -1033,7 +1158,7 @@ const SectionNarrativeAnswerRow = memo(function SectionNarrativeAnswerRow({
             onChange={onHtml}
             readOnly={readOnly}
             placeholder="What is happening in the story here — moment, stakes, imagery?"
-            aria-label={`Narrative for ${heading}`}
+            aria-label={`Narrative for ${displayLabel}`}
           />
         </Box>
       </Stack>
@@ -1088,6 +1213,25 @@ function SectionNarrativeEditor({
         if (prev.kind !== 'lyricsSectionNarrative') return prev;
         if (prev.sections[sectionIndex]?.narrative === html) return prev;
         const nextSections = prev.sections.map((s, j) => (j === sectionIndex ? { ...s, narrative: html } : s));
+        return { ...prev, sections: nextSections };
+      });
+    },
+    [onChange, readOnly],
+  );
+
+  /**
+   * Patches a narrative section's title in place. Survival across re-syncs is handled by the
+   * index-fallback branch of {@link mergeParsedNarrativeSectionsWithExisting}, so a user rename
+   * sticks even when the underlying lyrics source still has the section as an untitled paragraph.
+   */
+  const patchNarrativeSectionTitle = useCallback(
+    (sectionIndex: number, title: string) => {
+      if (readOnly) return;
+      onChange((prev) => {
+        if (prev.kind !== 'lyricsSectionNarrative') return prev;
+        const cur = prev.sections[sectionIndex];
+        if (!cur || cur.title === title) return prev;
+        const nextSections = prev.sections.map((s, j) => (j === sectionIndex ? { ...s, title } : s));
         return { ...prev, sections: nextSections };
       });
     },
@@ -1164,7 +1308,10 @@ function SectionNarrativeEditor({
         {run.sections.map((sec, i) => {
           const lyricSec = parsedLyricsSections[i];
           const sourceBody = sourceBodyTextForLyricsSection(lyricSec);
-          const heading = sec.title.trim() ? `[${sec.title.trim()}]` : 'Lyrics';
+          // Narrative sections store `{title, narrative}`; adapt to the section-shape the label
+          // helpers expect (only `.title` is read).
+          const sectionShape = { title: sec.title, lines: [] };
+          const displayLabel = lyricsExerciseSectionDisplayLabel(sectionShape, i, run.sections.length);
           const sourceEmptyKind: 'mismatch' | 'no-lines' | null = sourceBody
             ? null
             : lyricSec === undefined
@@ -1173,13 +1320,16 @@ function SectionNarrativeEditor({
           return (
             <SectionNarrativeAnswerRow
               key={`narrative-sec-${i}`}
-              heading={heading}
+              title={sec.title}
+              placeholder={displayLabel}
+              displayLabel={displayLabel}
               sourceBody={sourceBody}
               sourceEmptyKind={sourceEmptyKind}
               narrative={sec.narrative}
               readOnly={readOnly}
               sectionIndex={i}
               patchNarrative={patchNarrative}
+              patchTitle={patchNarrativeSectionTitle}
               isFirst={i === 0}
             />
           );

@@ -119,6 +119,11 @@ export function parseRepertoireWire(json: string): RepertoireWirePayload {
       typeof data.currentlyLearningSpotifyPlaylistId === 'string'
         ? data.currentlyLearningSpotifyPlaylistId.trim() || undefined
         : undefined,
+    lastSyncedLearningPlaylistTrackIds: Array.isArray(data.lastSyncedLearningPlaylistTrackIds)
+      ? (data.lastSyncedLearningPlaylistTrackIds as unknown[])
+          .filter((x): x is string => typeof x === 'string' && x.trim().length > 0)
+          .map((x) => x.trim())
+      : undefined,
     repertoireSpotifySyncPerformedOnly:
       typeof data.repertoireSpotifySyncPerformedOnly === 'boolean'
         ? data.repertoireSpotifySyncPerformedOnly
@@ -181,6 +186,7 @@ export function buildWireFromTables(
     milestoneTemplate: extras.milestoneTemplate,
     ownerDisplayName: extras.ownerDisplayName,
     currentlyLearningSpotifyPlaylistId: extras.currentlyLearningSpotifyPlaylistId,
+    lastSyncedLearningPlaylistTrackIds: extras.lastSyncedLearningPlaylistTrackIds,
     repertoireSpotifySyncPerformedOnly: extras.repertoireSpotifySyncPerformedOnly,
     repertoireSavedSearches: extras.repertoireSavedSearches,
     tableUi: extras.tableUi,
@@ -204,6 +210,10 @@ export function repertoireExtrasFromWire(wire: RepertoireWirePayload): Repertoir
     milestoneTemplate: wire.milestoneTemplate ?? [],
     ownerDisplayName: wire.ownerDisplayName?.trim() || undefined,
     currentlyLearningSpotifyPlaylistId: wire.currentlyLearningSpotifyPlaylistId?.trim() || undefined,
+    lastSyncedLearningPlaylistTrackIds:
+      wire.lastSyncedLearningPlaylistTrackIds && wire.lastSyncedLearningPlaylistTrackIds.length > 0
+        ? [...wire.lastSyncedLearningPlaylistTrackIds]
+        : undefined,
     repertoireSpotifySyncPerformedOnly:
       typeof wire.repertoireSpotifySyncPerformedOnly === 'boolean'
         ? wire.repertoireSpotifySyncPerformedOnly

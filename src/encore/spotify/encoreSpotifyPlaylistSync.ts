@@ -7,6 +7,7 @@ import {
 } from '../import/findExistingSongForImport';
 import type { EncoreMilestoneDefinition, EncorePerformance, EncoreRepertoireSavedSearch, EncoreSong } from '../types';
 import { orderSnapshotSongsByLatestPerformanceDesc } from '../drive/publicSnapshotSort';
+import { withPracticingToggle } from '../repertoire/practicingToggle';
 import { filterSongsByRepertoireSavedSearchBundle } from '../repertoire/repertoireSavedSearchFilter';
 import { spotifyDataSourceTrackId } from '../repertoire/songMediaLinks';
 import {
@@ -77,6 +78,21 @@ export type RunEncoreSpotifyPlaylistSyncOptions = {
    * `exactIdAutoOnly`: only auto-merge Spotify/YouTube id hits; fuzzy + new tracks require review.
    */
   reconcilePolicy?: 'legacy' | 'exactIdAutoOnly';
+  /**
+   * Spotify track ids the caller saw in the playlist as of the last successful import. Enables
+   * the "Spotify-side removal flows back" path: any id present here but absent from the current
+   * playlist response is treated as an intentional removal — the matching local song's
+   * `practicing` is flipped off and a tombstone is set. Callers that don't model practicing-state
+   * (saved-search sync) should omit this parameter.
+   */
+  previousTrackIds?: readonly string[];
+  /**
+   * Called once with the current Spotify playlist track ids after the import phase, regardless
+   * of whether the run ends in `review` or `complete`. Callers persist these so the next sync's
+   * removal diff has the right anchor. Optional so saved-search syncs (which don't need
+   * removal-detection semantics) can skip it.
+   */
+  onPersistLastSeenTrackIds?: (ids: readonly string[]) => Promise<void>;
 };
 
 export async function runEncoreSpotifyPlaylistSync(
@@ -103,6 +119,8 @@ export async function runEncoreSpotifyPlaylistSync(
     emptyRewriteMessage,
     playlistImportTags,
     reconcilePolicy = 'legacy',
+    previousTrackIds,
+    onPersistLastSeenTrackIds,
   } = opts;
 
   const autoMergeMin = reconcilePolicy === 'exactIdAutoOnly' ? 1 : IMPORT_MATCH_AUTO_MIN;
@@ -111,6 +129,30 @@ export async function runEncoreSpotifyPlaylistSync(
   const fresh: SpotifyPlaylistTrackRow[] = [];
   const suggestions: EncorePlaylistImportSuggestRow[] = [];
   const now = new Date().toISOString();
+
+  // Spotify-side removal detection. Any track id we saw last sync that's no longer present is
+  // treated as the user (or a collaborator) intentionally dropping the song from the playlist.
+  // We mirror that decision locally by tombstoning the matching `practicing: true` song; the
+  // tombstone in turn keeps the song from bouncing back if it ever reappears in the playlist
+  // without an affirmative re-add through the UI.
+  if (previousTrackIds && previousTrackIds.length > 0) {
+    const currentIdSet = new Set(rows.map((r) => r.trackId));
+    const songBySpotifyId = new Map<string, EncoreSong>();
+    for (const s of songs) {
+      if (s.spotifyTrackId) songBySpotifyId.set(s.spotifyTrackId, s);
+    }
+    for (const prevId of previousTrackIds) {
+      if (currentIdSet.has(prevId)) continue;
+      const localSong = songBySpotifyId.get(prevId);
+      // Only act when the local song is currently practicing. If it's already off, there's
+      // nothing to do (and we'd be bumping `updatedAt` for no reason, which would muddy sync
+      // ordering on other devices).
+      if (localSong?.practicing) {
+        await saveSong(withPracticingToggle(localSong, false, now));
+      }
+    }
+  }
+
   const total = rows.length;
   let i = 0;
   for (const row of rows) {
@@ -119,7 +161,15 @@ export async function runEncoreSpotifyPlaylistSync(
     const { song: match, score } = bestImportMatch(songs, incoming);
     if (score >= autoMergeMin && match) {
       const merged = mergeSongWithImport(match, incoming);
-      await saveSong(onMergedSong(merged, now));
+      // Honor the local "I stopped practicing this" tombstone. Without this gate, every sync
+      // would force `practicing: true` back on via `onMergedSong` (which the Practice caller
+      // uses to flip the flag), undoing the user's deliberate removal. We still want the
+      // merge so corrected metadata (album art, title) flows in — just not the practicing flip.
+      if (match.practiceRemovedAt) {
+        await saveSong({ ...merged, updatedAt: now });
+      } else {
+        await saveSong(onMergedSong(merged, now));
+      }
     } else if (score >= IMPORT_MATCH_SUGGEST_MIN && score < autoMergeMin && match) {
       suggestions.push({ row, match, score });
     } else {
@@ -128,6 +178,15 @@ export async function runEncoreSpotifyPlaylistSync(
     i += 1;
     setProgress(total ? (i / total) * 0.55 : 0);
   }
+
+  // Persist the playlist snapshot for next sync's removal diff. Runs on BOTH outcomes — if the
+  // user gets a review dialog and never returns, the next sync should still know what they last
+  // saw in Spotify (otherwise a track added in the meantime would look like an old, never-seen
+  // track instead of a newly-added one).
+  if (onPersistLastSeenTrackIds) {
+    await onPersistLastSeenTrackIds(rows.map((r) => r.trackId));
+  }
+
   if (suggestions.length > 0 || fresh.length > 0) {
     return {
       outcome: 'review',

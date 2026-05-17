@@ -59,12 +59,20 @@ export function geniusSearchUrlForSong(title: string, artist: string): string {
 const SECTION_HEADER_RE = /^\s*\[([^\]]+)\]\s*$/;
 
 /**
- * Parse a Genius-format lyrics paste into ordered sections. Lines before any header land in a
- * leading anonymous section (`title === ''`). Blank lines are dropped (they're stanza-breaks
- * within a section, not data). Two sections with the same header (`[Chorus]` x 3) are kept as
- * separate ordered entries; downstream merge logic uses the occurrence index to align rewrites.
+ * Parse a Genius-format lyrics paste into ordered sections. Two complementary rules drive the
+ * split:
+ *   1. `[Header]` lines start a new section AND set its title (Genius-style markers).
+ *   2. A blank line between content lines also starts a new section, with an empty title.
  *
- * Accepts the example format used in `My Immortal` etc.:
+ * Rule (2) is what makes raw paragraph pastes work — when the user pastes plain lyrics with no
+ * `[Verse]` / `[Chorus]` markers, double line breaks become implicit section boundaries. The UI
+ * labels untitled sections "Section 1", "Section 2" via {@link lyricsExerciseSectionDisplayLabel}
+ * and lets the user rename them in place.
+ *
+ * Two sections with the same header (`[Chorus]` x 3) are kept as separate ordered entries;
+ * downstream merge logic uses the occurrence index to align rewrites.
+ *
+ * Accepts the canonical Genius format:
  *
  * ```
  * [Verse 1]
@@ -72,25 +80,48 @@ const SECTION_HEADER_RE = /^\s*\[([^\]]+)\]\s*$/;
  * [Chorus]
  * When you cried, I'd wipe…
  * ```
+ *
+ * …and bare paragraph form:
+ *
+ * ```
+ * First stanza line one
+ * First stanza line two
+ *
+ * Second stanza line one
+ * ```
  */
 export function parseGeniusLyricsIntoSections(raw: string): EncoreLyricsExerciseSection[] {
   if (!raw || !raw.trim()) return [];
   const sections: EncoreLyricsExerciseSection[] = [];
   let current: EncoreLyricsExerciseSection = { title: '', lines: [] };
+  /**
+   * Set when we hit a blank line and unset on the next non-blank line. Deferring the flush
+   * lets us drop an empty section when the next non-blank line happens to be a `[Header]`
+   * (which creates its own section anyway), so a Genius paste like `[Verse]\nA\n\n[Chorus]\nB`
+   * still produces just two sections rather than one with an empty section sandwiched in.
+   */
+  let pendingBlank = false;
 
   for (const rawLine of raw.split(/\r?\n/)) {
     const trimmed = rawLine.trim();
-    if (!trimmed) continue;
+    if (!trimmed) {
+      pendingBlank = true;
+      continue;
+    }
     const headerMatch = SECTION_HEADER_RE.exec(trimmed);
     if (headerMatch) {
-      // Flush the in-progress section if it has any content; an empty leading anonymous section
-      // would just be visual noise so it's skipped.
       if (current.lines.length > 0 || current.title) {
         sections.push(current);
       }
       current = { title: headerMatch[1]!.trim(), lines: [] };
+      pendingBlank = false;
       continue;
     }
+    if (pendingBlank && current.lines.length > 0) {
+      sections.push(current);
+      current = { title: '', lines: [] };
+    }
+    pendingBlank = false;
     current.lines.push({ original: trimmed, rewrite: '' });
   }
   if (current.lines.length > 0 || current.title) {
@@ -101,23 +132,28 @@ export function parseGeniusLyricsIntoSections(raw: string): EncoreLyricsExercise
 
 /**
  * Serialize structured sections to Genius-style plain text so inline edits to originals can be
- * re-parsed (new `[Chorus]` lines, merged lines, etc.). Blank lines are omitted — they are not
- * preserved by {@link parseGeniusLyricsIntoSections}.
+ * re-parsed (new `[Chorus]` lines, merged lines, etc.). Sections are separated by a single
+ * blank line — necessary so untitled sections (paragraph form) round-trip through
+ * {@link parseGeniusLyricsIntoSections} without merging into one big section. For titled
+ * sections the blank line is purely decorative (the `[Header]` line is already a hard
+ * boundary).
  */
 export function serializeLyricsSectionsToRaw(sections: EncoreLyricsExerciseSection[]): string {
-  const out: string[] = [];
+  const blocks: string[] = [];
   for (const sec of sections) {
+    const block: string[] = [];
     if (sec.title.trim()) {
-      out.push(`[${sec.title.trim()}]`);
+      block.push(`[${sec.title.trim()}]`);
     }
     for (const line of sec.lines) {
       for (const chunk of line.original.split(/\r?\n/)) {
         const t = chunk.trim();
-        if (t) out.push(t);
+        if (t) block.push(t);
       }
     }
+    if (block.length > 0) blocks.push(block.join('\n'));
   }
-  return out.join('\n');
+  return blocks.join('\n\n');
 }
 
 /**
@@ -162,8 +198,22 @@ export function mergeParsedSectionsWithExisting(
 }
 
 /**
- * When Genius lyrics on the song change, keep section narrative entries aligned by section title +
- * occurrence (same strategy as {@link mergeParsedSectionsWithExisting} for rewrites).
+ * When Genius lyrics on the song change, keep section narrative entries aligned with the new
+ * parse. Two-pass strategy:
+ *
+ *   1. **Titled sections** (`[Verse 1]`, `[Chorus]`, …) match by title + occurrence (same
+ *      strategy as {@link mergeParsedSectionsWithExisting}). This handles inserts, deletes,
+ *      and reorders of explicit-header sections cleanly.
+ *   2. **Untitled (implicit-paragraph) sections** fall back to the section at the same index
+ *      in `existing`, preserving **both** narrative and any user-set title. That last bit is
+ *      what lets the user rename `Section 1` → `Outro` in the narrative editor (or via the
+ *      lyrics rewriter, which round-trips empty titles through `serializeLyricsSectionsToRaw`)
+ *      and survive a subsequent re-paste of the same plain-paragraph lyrics.
+ *
+ * Trade-off: removing a `[Header]` from the lyrics source no longer clears that section's
+ * narrative title — it sticks until the user clears it inline. That trade is worth it: it
+ * preserves user customizations through normal edit flows, and the user can always clear a
+ * stale title by editing the field directly.
  */
 export function mergeParsedNarrativeSectionsWithExisting(
   parsedLyricSections: EncoreLyricsExerciseSection[],
@@ -173,18 +223,26 @@ export function mergeParsedNarrativeSectionsWithExisting(
   const narrativeByKey = new Map<string, string>();
   for (const sec of existing) {
     const titleKey = sec.title.trim().toLowerCase();
+    if (!titleKey) continue;
     const occ = seenInExisting.get(titleKey) ?? 0;
     seenInExisting.set(titleKey, occ + 1);
     narrativeByKey.set(`${titleKey}#${occ}`, sec.narrative);
   }
   const seenInParsed = new Map<string, number>();
-  return parsedLyricSections.map((sec) => {
+  return parsedLyricSections.map((sec, i) => {
     const titleKey = sec.title.trim().toLowerCase();
-    const occ = seenInParsed.get(titleKey) ?? 0;
-    seenInParsed.set(titleKey, occ + 1);
+    if (titleKey) {
+      const occ = seenInParsed.get(titleKey) ?? 0;
+      seenInParsed.set(titleKey, occ + 1);
+      return {
+        title: sec.title,
+        narrative: narrativeByKey.get(`${titleKey}#${occ}`) ?? '',
+      };
+    }
+    const prev = existing[i];
     return {
-      title: sec.title,
-      narrative: narrativeByKey.get(`${titleKey}#${occ}`) ?? '',
+      title: prev?.title ?? sec.title,
+      narrative: prev?.narrative ?? '',
     };
   });
 }
@@ -228,6 +286,40 @@ export function applyPositionalLyricsFallback(
       }),
     };
   });
+}
+
+/**
+ * Friendly in-UI label for a section heading. Preserves an explicit user-set title verbatim,
+ * shrinks to `Lyrics` when the only section is untitled (so a one-paragraph paste keeps its
+ * familiar label), and falls back to `Section N` (1-indexed) for the implicit-paragraph case.
+ * Used by the lyrics editor heading and as the placeholder for the inline title input — so
+ * clearing a custom name reverts the placeholder to the auto-generated label.
+ */
+export function lyricsExerciseSectionDisplayLabel(
+  section: EncoreLyricsExerciseSection,
+  indexZeroBased: number,
+  totalSections: number,
+): string {
+  const trimmed = section.title.trim();
+  if (trimmed) return trimmed;
+  if (totalSections <= 1) return 'Lyrics';
+  return `Section ${indexZeroBased + 1}`;
+}
+
+/**
+ * Heading line for plain-text / PDF / Google Docs exports. Explicit titles are bracketed
+ * (`[Verse 1]`) to match the Genius convention pasted text usually arrives in; auto-generated
+ * placeholders are unbracketed (`Lyrics`, `Section 2`) so they read as labels, not lyrics.
+ */
+export function lyricsExerciseSectionExportHeading(
+  section: EncoreLyricsExerciseSection,
+  indexZeroBased: number,
+  totalSections: number,
+): string {
+  const trimmed = section.title.trim();
+  if (trimmed) return `[${trimmed}]`;
+  if (totalSections <= 1) return 'Lyrics';
+  return `Section ${indexZeroBased + 1}`;
 }
 
 /**

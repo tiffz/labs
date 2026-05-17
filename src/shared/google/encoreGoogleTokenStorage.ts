@@ -2,6 +2,13 @@ const STORAGE_KEY = 'encore_google_oauth_v1';
 const IDENTITY_STORAGE_KEY = 'encore_google_identity_v1';
 
 /**
+ * Exported so other modules (notably `EncoreAuthContext`'s cross-tab `storage` listener) can
+ * compare against the canonical key without re-declaring it. Don't change this string without
+ * also writing a migration — it's the storage namespace for Encore's Google session.
+ */
+export const ENCORE_GOOGLE_SESSION_STORAGE_KEY = STORAGE_KEY;
+
+/**
  * Fired on this window after identity is written or cleared. The native `storage` event does not
  * run in the tab that performed `localStorage.setItem`, so hooks like {@link useLabsEncoreGoogleIdentity}
  * listen for this to stay in sync after Drive token flows.

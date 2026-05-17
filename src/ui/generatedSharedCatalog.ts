@@ -3659,6 +3659,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-google-encoregoogletokenstorage-ts-encore-google-session-storage-key",
+    "name": "ENCORE_GOOGLE_SESSION_STORAGE_KEY",
+    "path": "src/shared/google/encoreGoogleTokenStorage.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Exported so other modules (notably `EncoreAuthContext`'s cross-tab `storage` listener) can compare against the canonical key without re-declaring it. Don't change this string without also writing a migration — it's the storage namespace for Encore's Google session.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
     "id": "src-shared-google-encoregoogletokenstorage-ts-encoregooglepersistedidentity",
     "name": "EncoreGooglePersistedIdentity",
     "path": "src/shared/google/encoreGoogleTokenStorage.ts",

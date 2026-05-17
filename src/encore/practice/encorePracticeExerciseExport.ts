@@ -11,6 +11,7 @@ import {
   ENCORE_PRACTICE_EXERCISE_CATALOG,
   characterNineAnswerToEditorHtml,
   effectiveLyricsSections,
+  lyricsExerciseSectionExportHeading,
   parseGeniusLyricsIntoSections,
 } from './encorePracticeExerciseModel';
 const EXERCISE_FILE_SLUG: Record<EncorePracticeExerciseRun['kind'], string> = {
@@ -65,8 +66,8 @@ export function buildLyricsInOwnWordsExportTable(
 
   const tableRows: LyricsRewriteExportTableRow[] = [{ kind: 'columnLabels' }];
   const secs = effectiveLyricsSections(run);
-  for (const sec of secs) {
-    const head = sec.title.trim() ? `[${sec.title.trim()}]` : 'Lyrics';
+  secs.forEach((sec, idx) => {
+    const head = lyricsExerciseSectionExportHeading(sec, idx, secs.length);
     tableRows.push({ kind: 'sectionHeader', title: head });
     for (const line of sec.lines) {
       tableRows.push({
@@ -75,7 +76,7 @@ export function buildLyricsInOwnWordsExportTable(
         rewrite: line.rewrite.trim() ? line.rewrite : '(empty)',
       });
     }
-  }
+  });
   return { preamble, tableRows };
 }
 
@@ -212,21 +213,23 @@ export function buildPracticeExerciseExportPlainText(song: EncoreSong, run: Enco
 
   if (run.kind === 'lyricsInOwnWords') {
     const secs = effectiveLyricsSections(run);
-    for (const sec of secs) {
-      const head = sec.title.trim() ? `[${sec.title.trim()}]` : 'Lyrics';
-      lines.push(head);
+    secs.forEach((sec, idx) => {
+      lines.push(lyricsExerciseSectionExportHeading(sec, idx, secs.length));
       lines.push('');
       for (const line of sec.lines) {
         lines.push(`Original: ${line.original}`);
         lines.push(`Rewrite: ${line.rewrite || '(empty)'}`);
         lines.push('');
       }
-    }
+    });
   } else if (run.kind === 'lyricsSectionNarrative') {
     const parsed = parseGeniusLyricsIntoSections(song.lyricsSourceGenius?.trim() ?? '');
     run.sections.forEach((sec, i) => {
-      const head = sec.title.trim() ? `[${sec.title.trim()}]` : 'Lyrics';
-      lines.push(head);
+      // Narrative sections carry `{title, narrative}` but the heading helper only needs a `title`
+      // (it ignores `lines`); pass an empty lines array purely to satisfy the section shape.
+      lines.push(
+        lyricsExerciseSectionExportHeading({ title: sec.title, lines: [] }, i, run.sections.length),
+      );
       lines.push('');
       const src = sectionSourceBodyText(parsed[i]);
       lines.push(src ? `Source lyrics:\n${src}` : '(No matching source lines for this section.)');

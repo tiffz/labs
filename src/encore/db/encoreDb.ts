@@ -69,6 +69,11 @@ export interface RepertoireExtrasRow {
   /** Spotify playlist id for Practice page “Currently learning” playlist sync. */
   currentlyLearningSpotifyPlaylistId?: string;
   /**
+   * Track ids present in the Currently Learning playlist as of the last successful import
+   * phase. Drives the "Spotify-side removal flows back" path in {@link runEncoreSpotifyPlaylistSync}.
+   */
+  lastSyncedLearningPlaylistTrackIds?: string[];
+  /**
    * Guest snapshot only: when true, only songs with at least one logged performance are published.
    */
   repertoireSpotifySyncPerformedOnly?: boolean;

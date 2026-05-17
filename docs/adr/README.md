@@ -38,3 +38,4 @@ Skip an ADR for routine features, one-off UI tweaks, or purely internal refactor
 | [0007](./0007-encore-owned-practice-resources-stanza-secondary-client.md) | Encore-owned practice resources on Drive; Stanza secondary client           |
 | [0008](./0008-stanza-section-marker-model-and-metronome-calibration.md)   | Stanza section/marker data model and per-section metronome calibration      |
 | [0009](./0009-stanza-drums-and-metronome-volume.md)                       | Stanza drums groove (BPM-locked, per-section override) and metronome volume |
+| [0010](./0010-encore-no-background-google-refresh.md)                     | Encore never silently refreshes Google sign-in in the background            |

@@ -194,6 +194,16 @@ export interface EncoreSong {
   attachments?: EncoreSongAttachment[];
   /** True when you are actively working on this song in your rotation (independent of milestone checkboxes). */
   practicing?: boolean;
+  /**
+   * Tombstone marker set when the user explicitly stops practicing a song. The Spotify Learning
+   * Playlist sync respects this signal: even if the song is still present in the upstream
+   * playlist, the import phase will NOT re-set `practicing: true`. Cleared whenever the user
+   * affirmatively re-adds the song to practice (via the Add to practice dialog, Library
+   * Practicing checkbox, SongPage Practicing switch, or bulk action). Stored as an ISO timestamp
+   * so we can surface "stopped on X" in the future if useful, and so the field is naturally
+   * comparable / sortable. Omitted from {@link PublicSnapshot}.
+   */
+  practiceRemovedAt?: string;
   /** Progress for global template milestone ids. */
   milestoneProgress?: Record<string, EncoreSongMilestoneProgress>;
   /** Extra checklist rows for this song only. */
@@ -330,6 +340,13 @@ export interface RepertoireWirePayload {
    * Stored in `repertoire_data.json` with other extras.
    */
   currentlyLearningSpotifyPlaylistId?: string;
+  /**
+   * Spotify track ids that were present in the Currently Learning playlist as of the last
+   * successful import phase. Used by the next sync to detect Spotify-side removals (ids in this
+   * list that are no longer in the playlist) so they can be reflected back into Encore as
+   * `practicing: false`. Persisted to Drive so multi-device users share one anchor.
+   */
+  lastSyncedLearningPlaylistTrackIds?: string[];
   /** Guest snapshot: only songs with at least one logged performance. Not used for saved-search playlist sync. */
   repertoireSpotifySyncPerformedOnly?: boolean;
   /** Named repertoire filter sets; optional Spotify playlist per row for sync. */

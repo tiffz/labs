@@ -60,6 +60,7 @@ import { applyTemplateProgressToSong } from '../repertoire/repertoireMilestones'
 import { ENCORE_PERFORMANCE_KEY_OPTIONS } from '../repertoire/performanceKeys';
 import { collectAllSongTags, normalizeSongTags } from '../repertoire/songTags';
 import { ensureSongHasDerivedMediaLinks } from '../repertoire/songMediaLinks';
+import { withPracticingToggle } from '../repertoire/practicingToggle';
 import { InlineChipSelect } from '../ui/InlineEditChip';
 import { InlineSongTagsCell } from '../ui/InlineSongTagsCell';
 import { renderSpotifyTrackAutocompleteOption } from '../ui/renderSpotifyTrackAutocompleteOption';
@@ -845,16 +846,10 @@ export function SongPage(props: {
               <Switch
                 checked={Boolean(draft.practicing)}
                 onChange={(e) => {
-                  const ts = new Date().toISOString();
-                  setDraft((d) =>
-                    d
-                      ? {
-                          ...d,
-                          practicing: e.target.checked,
-                          updatedAt: ts,
-                        }
-                      : d
-                  );
+                  // Route through `withPracticingToggle` so the tombstone flips correctly when
+                  // the user turns Practicing off — the Spotify Learning Playlist sync reads
+                  // that signal to avoid auto-re-adding the song on the next round-trip.
+                  setDraft((d) => (d ? withPracticingToggle(d, e.target.checked) : d));
                 }}
                 inputProps={{ 'aria-label': 'Currently practicing this song' }}
               />

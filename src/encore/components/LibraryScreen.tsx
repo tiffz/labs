@@ -102,6 +102,7 @@ import {
 import { buildLibraryRepertoireFilterFieldDefs } from '../repertoire/buildLibraryRepertoireFilterFieldDefs';
 import { ENCORE_PERFORMANCE_KEY_OPTIONS } from '../repertoire/performanceKeys';
 import { collectAllSongTags, normalizeSongTags } from '../repertoire/songTags';
+import { withPracticingToggle } from '../repertoire/practicingToggle';
 import { InlineChipSelect } from '../ui/InlineEditChip';
 import { InlineSongTagsCell } from '../ui/InlineSongTagsCell';
 import { encoreMrtRepertoireTableOptions } from './encoreMrtTableDefaults';
@@ -1073,7 +1074,7 @@ export function LibraryScreen(props?: {
       const now = new Date().toISOString();
       const updates = tableData
         .filter((row) => selectedSongIds.has(row.song.id))
-        .map((row) => ({ ...row.song, practicing, updatedAt: now }));
+        .map((row) => withPracticingToggle(row.song, practicing, now));
       await bulkSaveSongs(updates);
       setRowSelection({});
     },
@@ -1383,8 +1384,9 @@ export function LibraryScreen(props?: {
                 checked={Boolean(s.practicing)}
                 onClick={(e) => e.stopPropagation()}
                 onChange={(e) => {
-                  const now = new Date().toISOString();
-                  void saveSong({ ...s, practicing: e.target.checked, updatedAt: now });
+                  // `withPracticingToggle` centralizes the tombstone bookkeeping the Spotify
+                  // Learning Playlist sync relies on (set on stop, cleared on re-add).
+                  void saveSong(withPracticingToggle(s, e.target.checked));
                 }}
                 inputProps={{ 'aria-label': `Currently practicing: ${s.title}` }}
                 sx={{ p: 0.5, ml: -0.5 }}

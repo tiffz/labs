@@ -1,4 +1,5 @@
-import BookmarkRemoveOutlinedIcon from '@mui/icons-material/BookmarkRemoveOutlined';
+import PlaylistAddOutlinedIcon from '@mui/icons-material/PlaylistAddOutlined';
+import PlaylistRemoveOutlinedIcon from '@mui/icons-material/PlaylistRemoveOutlined';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import Alert from '@mui/material/Alert';
@@ -22,6 +23,7 @@ import { readSpotifyToken } from '../spotify/pkce';
 import { encoreAppHref, navigateEncore } from '../routes/encoreAppHash';
 import { applyTemplateProgressToSong } from '../repertoire/repertoireMilestones';
 import { milestoneProgressSummary } from '../repertoire/repertoireMilestoneSummary';
+import { withPracticingToggle } from '../repertoire/practicingToggle';
 import {
   encoreSongStubFromSpotifyPlaylistRow,
   runEncoreSpotifyPlaylistSync,
@@ -32,6 +34,7 @@ import { parseSpotifyPlaylistId } from '../spotify/parseSpotifyPlaylistUrl';
 import { spotifyGrantedScopesSufficientForPlaylistModify } from '../spotify/spotifyScopes';
 import type { SpotifyPlaylistTrackRow } from '../spotify/spotifyApi';
 import type { EncoreSong } from '../types';
+import { AddToPracticeDialog } from './AddToPracticeDialog';
 import {
   encoreMaxWidthPage,
   encoreRadius,
@@ -122,6 +125,7 @@ export function PracticeScreen({
   const [importCandidates, setImportCandidates] = useState<SpotifyPlaylistTrackRow[] | null>(null);
   const [importSuggestions, setImportSuggestions] = useState<EncorePlaylistImportSuggestRow[] | null>(null);
   const [focusedSongId, setFocusedSongId] = useState<string | null>(null);
+  const [addToPracticeOpen, setAddToPracticeOpen] = useState(false);
 
   useEffect(() => {
     if (!practiceHashActive) return;
@@ -206,6 +210,19 @@ export function PracticeScreen({
   );
 
   /**
+   * Common handler for both the "pick existing library song" and "create new song" arms of the
+   * AddToPracticeDialog. Focuses the newly-added song so the right pane jumps to it immediately,
+   * and pushes the URL forward so the back button + reload behave coherently.
+   */
+  const handleSongAddedToPractice = useCallback(
+    (song: EncoreSong) => {
+      setFocusedSongId(song.id);
+      navigateEncore({ kind: 'practice', songId: song.id });
+    },
+    [],
+  );
+
+  /**
    * "Stop practicing" — flips a song's `practicing` field off so it drops out of this screen.
    *
    * The action is intentionally one-click + reversible rather than guarded by a confirm dialog:
@@ -229,7 +246,10 @@ export function PracticeScreen({
       if (wasFocused && practiceHashActive) {
         navigateEncore(nextFocusId ? { kind: 'practice', songId: nextFocusId } : { kind: 'practice' });
       }
-      await saveSong({ ...song, practicing: false, updatedAt: new Date().toISOString() });
+      // `withPracticingToggle(_, false)` is the only path that sets `practiceRemovedAt` — and
+      // therefore the only path that prevents the Spotify Learning Playlist sync from quietly
+      // re-adding this song on the next round-trip.
+      await saveSong(withPracticingToggle(song, false));
     },
     [effectiveFocusId, practiceHashActive, practicingSongs, saveSong],
   );
@@ -448,10 +468,20 @@ export function PracticeScreen({
           saveSong,
           setProgress,
           stubPracticing: true,
+          // `onMergedSong` still forces `practicing: true` for *un-tombstoned* matches — the
+          // engine itself respects `practiceRemovedAt` and bypasses this callback for any
+          // song the user has explicitly removed from practice.
           onMergedSong: (merged, now) => ({ ...merged, practicing: true, updatedAt: now }),
           getRewriteSpotifyTrackIds: spotifyTrackIdsForPracticingSongs,
           emptyRewriteMessage:
             'No practicing songs have a Spotify track id to write to the playlist yet. Link Spotify on each song or merge imports first.',
+          previousTrackIds: repertoireExtras.lastSyncedLearningPlaylistTrackIds,
+          onPersistLastSeenTrackIds: async (ids) => {
+            // Always persist a fresh copy: the snapshot anchors the next removal diff, so we
+            // need it even when this sync ends in a review dialog. Using `[...]` so Dexie /
+            // wire serialization never holds a reference to the engine's internal array.
+            await saveRepertoireExtras({ lastSyncedLearningPlaylistTrackIds: [...ids] });
+          },
         });
         if (result.outcome === 'error') {
           setSyncError(result.message);
@@ -471,7 +501,16 @@ export function PracticeScreen({
     } finally {
       setSyncBusy(false);
     }
-  }, [clientId, spotifyLinked, resolvedPlaylistId, songs, saveSong, withBlockingJob]);
+  }, [
+    clientId,
+    spotifyLinked,
+    resolvedPlaylistId,
+    songs,
+    saveSong,
+    saveRepertoireExtras,
+    repertoireExtras.lastSyncedLearningPlaylistTrackIds,
+    withBlockingJob,
+  ]);
 
   const closePracticeImportReview = useCallback(() => {
     setImportSuggestions(null);
@@ -511,7 +550,9 @@ export function PracticeScreen({
       const now = new Date().toISOString();
       const incoming = encoreSongStubFromSpotifyPlaylistRow(item.row, { practicing: true });
       const merged = mergeSongWithImport(item.match, incoming);
-      await saveSong({ ...merged, practicing: true, updatedAt: now });
+      // Affirmative re-add: clearing any tombstone via `withPracticingToggle` is what keeps the
+      // song from being silently dropped again by the next sync's removal diff.
+      await saveSong(withPracticingToggle(merged, true, now));
       setImportSuggestions((cur) => {
         if (!cur) return null;
         const next = cur.filter((x) => x.row.trackId !== item.row.trackId);
@@ -585,10 +626,20 @@ export function PracticeScreen({
       </Paper>
 
       {practicingSongs.length === 0 ? (
-        <Typography color="text.secondary" sx={{ py: 1, mb: 2, lineHeight: 1.6 }}>
-          Nothing here yet. Mark songs as <strong>Currently practicing</strong>, or use <strong>Learning playlist → Sync</strong>{' '}
-          to import from Spotify.
-        </Typography>
+        <Stack spacing={1.5} sx={{ py: 1, mb: 2, alignItems: 'flex-start' }}>
+          <Typography color="text.secondary" sx={{ lineHeight: 1.6 }}>
+            Nothing here yet. Add a song you’re working on to keep it at hand for practice
+            sessions — or sync from a <strong>Learning playlist</strong> above.
+          </Typography>
+          <Button
+            variant="contained"
+            startIcon={<PlaylistAddOutlinedIcon />}
+            onClick={() => setAddToPracticeOpen(true)}
+            sx={{ textTransform: 'none', fontWeight: 700 }}
+          >
+            Add to practice
+          </Button>
+        </Stack>
       ) : panelSong ? (
         <Box
           sx={{
@@ -596,7 +647,13 @@ export function PracticeScreen({
             gridTemplateColumns: { xs: '1fr', md: 'minmax(220px, 30%) minmax(0, 1fr)' },
             gap: { xs: 2, md: 3 },
             mb: 2,
-            alignItems: 'stretch',
+            // `flex-start` (vs `stretch`) lets the sidebar stop at its own content height instead
+            // of stretching to match the taller panel column. Combined with `overflowY: auto`
+            // below this means the rail only becomes a scroll container when content genuinely
+            // exceeds `maxHeight` — `overflow: auto` on a stretched rail painted a visible
+            // scrollbar gutter under macOS "Always show" / Windows always-on configs even when
+            // the practicing list was much shorter than the panel.
+            alignItems: 'flex-start',
           }}
         >
           <Paper
@@ -609,7 +666,7 @@ export function PracticeScreen({
               boxShadow: encoreShadowSurface,
               bgcolor: 'background.paper',
               maxHeight: { md: 'min(70vh, 640px)' },
-              overflow: 'auto',
+              overflowY: 'auto',
             }}
           >
             <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, letterSpacing: '0.08em' }}>
@@ -637,7 +694,7 @@ export function PracticeScreen({
                           }}
                           sx={{ mr: 0.25, color: 'text.secondary' }}
                         >
-                          <BookmarkRemoveOutlinedIcon fontSize="small" />
+                          <PlaylistRemoveOutlinedIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
                     }
@@ -692,6 +749,60 @@ export function PracticeScreen({
                 );
               })}
             </Stack>
+            {/*
+             * "Add to practice" lives at the bottom of the list (Trello / Linear "+ Add a card"
+             * pattern) so it reads as the next addable row rather than competing with the page
+             * header. We render it as a "ghost song" placeholder — dashed outline on both the
+             * row and the album-art slot — so it visually mirrors the practicing rows above
+             * while reading as an empty slot waiting to be filled, not a competing CTA.
+             */}
+            <ListItem disablePadding sx={{ mt: 0.5 }}>
+              <ListItemButton
+                onClick={() => setAddToPracticeOpen(true)}
+                aria-label="Add a song to practice"
+                sx={{
+                  borderRadius: 1,
+                  py: 1,
+                  alignItems: 'center',
+                  border: '1px dashed',
+                  borderColor: 'divider',
+                  bgcolor: 'transparent',
+                  color: 'text.secondary',
+                  transition:
+                    'border-color 120ms ease, color 120ms ease, background-color 120ms ease',
+                  '&:hover, &:focus-visible': {
+                    borderColor: 'primary.main',
+                    color: 'primary.main',
+                    bgcolor: (th) => alpha(th.palette.primary.main, 0.04),
+                  },
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 0.75,
+                    flexShrink: 0,
+                    mr: 1.25,
+                    border: '1px dashed',
+                    borderColor: 'currentColor',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    opacity: 0.75,
+                  }}
+                >
+                  <PlaylistAddOutlinedIcon sx={{ fontSize: 20 }} aria-hidden />
+                </Box>
+                <Typography
+                  component="span"
+                  variant="body2"
+                  sx={{ fontWeight: 700, color: 'inherit' }}
+                >
+                  Add to practice
+                </Typography>
+              </ListItemButton>
+            </ListItem>
           </Paper>
 
           <Paper
@@ -745,7 +856,7 @@ export function PracticeScreen({
                       <Button
                         variant="text"
                         size="medium"
-                        startIcon={<BookmarkRemoveOutlinedIcon />}
+                        startIcon={<PlaylistRemoveOutlinedIcon />}
                         onClick={() => void stopPracticingSong(s)}
                         sx={{
                           textTransform: 'none',
@@ -849,6 +960,12 @@ export function PracticeScreen({
         onImportSuggestionAsNew={(item) => void importSuggestionAsNew(item)}
         onConfirmImportNew={() => void confirmImport()}
         pullBusy={pullBusy}
+      />
+
+      <AddToPracticeDialog
+        open={addToPracticeOpen}
+        onClose={() => setAddToPracticeOpen(false)}
+        onAdded={handleSongAddedToPractice}
       />
     </Box>
   );
