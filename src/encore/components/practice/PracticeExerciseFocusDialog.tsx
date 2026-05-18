@@ -3,6 +3,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import UndoIcon from '@mui/icons-material/Undo';
 import AppBar from '@mui/material/AppBar';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -32,13 +33,14 @@ import {
   memo,
   useCallback,
   useEffect,
+  useImperativeHandle,
   useMemo,
   useRef,
   useState,
-  type Dispatch,
+  type ChangeEvent,
   type ReactElement,
+  type ReactNode,
   type Ref,
-  type SetStateAction,
 } from 'react';
 import type { TransitionProps } from '@mui/material/transitions';
 import {
@@ -61,6 +63,7 @@ import {
   setSingleRunForKind,
   songWithSyncedLyricsInOwnWordsAndResyncNarrative,
   touchExerciseRun,
+  unmarkExerciseRunCompleted,
 } from '../../practice/encorePracticeExerciseModel';
 import {
   buildPracticeExercisePdfBytes,
@@ -86,6 +89,12 @@ export type PracticeExerciseFocusDialogProps = {
   run: EncorePracticeExerciseRun;
   readOnly: boolean;
   googleAccessToken: string | null;
+  /**
+   * Interactive Google sign-in. Used when the user picks "Save to Google Docs" without a
+   * Drive token — instead of leaving the menu item disabled, we run sign-in inline so the
+   * one-click intent ("save this") just works.
+   */
+  signInWithGoogle: () => Promise<void>;
   withBlockingJob: EncoreBlockingJobsApi['withBlockingJob'];
   onClose: () => void;
   onPersistSong: (next: EncoreSong) => void | Promise<void>;
@@ -128,40 +137,51 @@ export function PracticeExerciseFocusDialog({
   run,
   readOnly,
   googleAccessToken,
+  signInWithGoogle,
   withBlockingJob,
   onClose,
   onPersistSong,
   onClearDraft,
 }: PracticeExerciseFocusDialogProps): ReactElement {
-  const [local, setLocal] = useState(() => cloneRun(run));
   const [exportMenuAnchor, setExportMenuAnchor] = useState<null | HTMLElement>(null);
   const [exportFeedback, setExportFeedback] = useState<{ severity: 'success' | 'error'; message: string } | null>(
     null,
   );
 
+  // Snapshot of `drivePracticeExportGoogleDocId` mirrored from the editor's live run, used for
+  // the export menu label ("Save to" vs "Update"). Updated only when the underlying id changes,
+  // so typing in the editor doesn't re-render the dialog shell. See `onDirty` below.
+  const [googleDocIdMirror, setGoogleDocIdMirror] = useState<string | null>(
+    run.drivePracticeExportGoogleDocId?.trim() ?? null,
+  );
   useEffect(() => {
-    if (!open) return;
-    setLocal(() => {
-      const base = cloneRun(run);
-      if (base.kind === 'lyricsInOwnWords') {
-        const src = effectiveGeniusLyricsSource(song, base);
-        if (effectiveLyricsSections(base).length === 0 && src.trim()) {
-          return { ...base, sections: parseGeniusLyricsIntoSections(src), pastedLyrics: undefined };
-        }
+    setGoogleDocIdMirror(run.drivePracticeExportGoogleDocId?.trim() ?? null);
+  }, [run.drivePracticeExportGoogleDocId]);
+
+  // The initial state the editor mounts with — computed once per (run id, song id, lyrics
+  // source) tuple, so the editor remounts only when the user opens a different exercise or
+  // external lyrics change. The editor owns `local` from then on and the dialog only reads
+  // through `latestRunRef` / `editorRef.getCurrentRun()`.
+  const initialRun = useMemo(() => {
+    const base = cloneRun(run);
+    if (base.kind === 'lyricsInOwnWords') {
+      const src = effectiveGeniusLyricsSource(song, base);
+      if (effectiveLyricsSections(base).length === 0 && src.trim()) {
+        return { ...base, sections: parseGeniusLyricsIntoSections(src), pastedLyrics: undefined };
       }
-      if (base.kind === 'lyricsSectionNarrative') {
-        const src = song.lyricsSourceGenius?.trim() ?? '';
-        const parsed = parseGeniusLyricsIntoSections(src);
-        return { ...base, sections: mergeParsedNarrativeSectionsWithExisting(parsed, base.sections) };
-      }
-      return base;
-    });
-    // Omit `run.updatedAt`: autosave bumps it and would overwrite faster typing. Sync on identity / external lyrics only.
+    }
+    if (base.kind === 'lyricsSectionNarrative') {
+      const src = song.lyricsSourceGenius?.trim() ?? '';
+      const parsed = parseGeniusLyricsIntoSections(src);
+      return { ...base, sections: mergeParsedNarrativeSectionsWithExisting(parsed, base.sections) };
+    }
+    return base;
+    // Omit `run.updatedAt`: autosave bumps it and we would otherwise wipe the editor mid-typing.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional narrow deps (see above)
-  }, [open, run.id, run.kind, song.lyricsSourceGenius, song.id]);
+  }, [run.id, run.kind, song.lyricsSourceGenius, song.id]);
 
   const geniusUrl = useMemo(() => geniusSearchUrlForSong(songTitle, songArtist), [songTitle, songArtist]);
-  const catalog = ENCORE_PRACTICE_EXERCISE_CATALOG[local.kind];
+  const catalog = ENCORE_PRACTICE_EXERCISE_CATALOG[run.kind];
 
   const persistSong = useCallback(
     (next: EncoreSong): void | Promise<void> => onPersistSong(stampUpdatedAt(next)),
@@ -170,32 +190,46 @@ export function PracticeExerciseFocusDialog({
 
   const songRef = useRef(song);
   songRef.current = song;
-  const localRef = useRef(local);
-  localRef.current = local;
+  // Mirrors `googleAccessToken` so the Google Doc export handler can re-read the token after
+  // an interactive sign-in resolves (the prop will have updated by the next render, but the
+  // click closure captured the old value).
+  const googleAccessTokenRef = useRef(googleAccessToken);
+  googleAccessTokenRef.current = googleAccessToken;
+  // The editor is the source of truth for the in-progress run; this ref mirrors its latest
+  // value so the dialog's export / mark-complete / autosave handlers can read it without
+  // forcing the dialog to re-render on every keystroke. Seeded once at mount — the dialog
+  // remounts when the user opens a different exercise (parent passes `key={focusedRun.id}`),
+  // so subsequent updates only ever come from the editor via `onEditorDirty`. We never
+  // re-sync from `initialRun` because doing so could overwrite an in-flight typing snapshot
+  // with the version reflected back through Dexie after autosave.
+  const latestRunRef = useRef<EncorePracticeExerciseRun>(initialRun);
+  const editorRef = useRef<EncoreExerciseEditorHandle | null>(null);
+  const readOnlyRef = useRef(readOnly);
+  readOnlyRef.current = readOnly;
   const autosaveTimerRef = useRef<number | null>(null);
 
   /** Writes the current dialog draft to Dexie via `saveSong` (awaitable for crash / tab-hide safety). */
   const flushDraftToDb = useCallback(async (): Promise<void> => {
-    if (readOnly) return;
+    if (readOnlyRef.current) return;
     if (autosaveTimerRef.current != null) {
       window.clearTimeout(autosaveTimerRef.current);
       autosaveTimerRef.current = null;
     }
     const latestSong = songRef.current;
-    const latestLocal = localRef.current;
-    if (latestLocal.kind === 'lyricsInOwnWords') {
+    const latestRun = latestRunRef.current;
+    if (latestRun.kind === 'lyricsInOwnWords') {
       await Promise.resolve(
         persistSong(
           songWithSyncedLyricsInOwnWordsAndResyncNarrative(
             latestSong,
-            latestLocal as EncoreLyricsInOwnWordsExerciseRun,
+            latestRun as EncoreLyricsInOwnWordsExerciseRun,
           ),
         ),
       );
       return;
     }
-    await Promise.resolve(persistSong(setSingleRunForKind(latestSong, touchExerciseRun(latestLocal))));
-  }, [readOnly, persistSong]);
+    await Promise.resolve(persistSong(setSingleRunForKind(latestSong, touchExerciseRun(latestRun))));
+  }, [persistSong]);
 
   const persistDraft = useCallback(() => {
     void flushDraftToDb();
@@ -204,20 +238,37 @@ export function PracticeExerciseFocusDialog({
   /** Debounced autosave: fewer Dexie live-query churns than sub-second while typing. */
   const AUTOSAVE_MS = 1100;
 
+  /**
+   * Editor-driven dirty notification. Stays entirely ref-based: updating `latestRunRef` and
+   * rescheduling the autosave timer never triggers a dialog re-render, so typing only re-renders
+   * the editor that actually changed. We mirror the Google Doc id into React state only when
+   * it actually changes (export flow), which keeps the menu label accurate without per-keystroke
+   * dialog work.
+   */
+  const onEditorDirty = useCallback<EncoreExerciseDirtyCallback>(
+    (newRun) => {
+      latestRunRef.current = newRun;
+      const nextId = newRun.drivePracticeExportGoogleDocId?.trim() ?? null;
+      setGoogleDocIdMirror((prev) => (prev === nextId ? prev : nextId));
+      if (readOnlyRef.current) return;
+      if (autosaveTimerRef.current != null) window.clearTimeout(autosaveTimerRef.current);
+      autosaveTimerRef.current = window.setTimeout(() => {
+        autosaveTimerRef.current = null;
+        void flushDraftToDb();
+      }, AUTOSAVE_MS);
+    },
+    [flushDraftToDb],
+  );
+
+  // Cancel any pending autosave on unmount (e.g. user closes the dialog before the debounce fires).
   useEffect(() => {
-    if (!open || readOnly) return;
-    if (autosaveTimerRef.current != null) window.clearTimeout(autosaveTimerRef.current);
-    autosaveTimerRef.current = window.setTimeout(() => {
-      autosaveTimerRef.current = null;
-      void flushDraftToDb();
-    }, AUTOSAVE_MS);
     return () => {
       if (autosaveTimerRef.current != null) {
         window.clearTimeout(autosaveTimerRef.current);
         autosaveTimerRef.current = null;
       }
     };
-  }, [local, open, readOnly, flushDraftToDb]);
+  }, []);
 
   useEffect(() => {
     if (!open || readOnly) return;
@@ -240,40 +291,78 @@ export function PracticeExerciseFocusDialog({
   }, [flushDraftToDb, onClose]);
 
   const handleMarkComplete = useCallback(async () => {
-    if (readOnly) return;
+    if (readOnlyRef.current) return;
     if (autosaveTimerRef.current != null) {
       window.clearTimeout(autosaveTimerRef.current);
       autosaveTimerRef.current = null;
     }
+    const current = editorRef.current?.getCurrentRun() ?? latestRunRef.current;
+    const latestSong = songRef.current;
     try {
-      if (local.kind === 'lyricsInOwnWords') {
-        const completed = markExerciseRunCompleted(touchExerciseRun(local));
+      if (current.kind === 'lyricsInOwnWords') {
+        const completed = markExerciseRunCompleted(touchExerciseRun(current));
         await Promise.resolve(
           persistSong(
-            songWithSyncedLyricsInOwnWordsAndResyncNarrative(song, completed as EncoreLyricsInOwnWordsExerciseRun),
+            songWithSyncedLyricsInOwnWordsAndResyncNarrative(
+              latestSong,
+              completed as EncoreLyricsInOwnWordsExerciseRun,
+            ),
           ),
         );
       } else {
         await Promise.resolve(
-          persistSong(setSingleRunForKind(song, markExerciseRunCompleted(touchExerciseRun(local)))),
+          persistSong(setSingleRunForKind(latestSong, markExerciseRunCompleted(touchExerciseRun(current)))),
         );
       }
     } finally {
       onClose();
     }
-  }, [local, onClose, persistSong, readOnly, song]);
+  }, [onClose, persistSong]);
 
   const handleClearDraft = useCallback(() => {
-    if (readOnly) return;
+    if (readOnlyRef.current) return;
     onClearDraft();
-  }, [onClearDraft, readOnly]);
+  }, [onClearDraft]);
+
+  /**
+   * Reverts a completed exercise to a draft so the user can keep editing. We patch the
+   * editor's local snapshot through the imperative handle (otherwise the editor would still
+   * autosave back the `status: 'completed'` it captured at mount) and persist immediately —
+   * the dialog stays open and the parent re-renders with `readOnly=false`.
+   */
+  const handleReopenForEditing = useCallback(async () => {
+    const current = editorRef.current?.getCurrentRun() ?? latestRunRef.current;
+    if (current.status !== 'completed') return;
+    const reopened = unmarkExerciseRunCompleted(current);
+    editorRef.current?.replaceRun(reopened);
+    latestRunRef.current = reopened;
+    if (autosaveTimerRef.current != null) {
+      window.clearTimeout(autosaveTimerRef.current);
+      autosaveTimerRef.current = null;
+    }
+    const latestSong = songRef.current;
+    if (reopened.kind === 'lyricsInOwnWords') {
+      await Promise.resolve(
+        persistSong(
+          songWithSyncedLyricsInOwnWordsAndResyncNarrative(
+            latestSong,
+            reopened as EncoreLyricsInOwnWordsExerciseRun,
+          ),
+        ),
+      );
+      return;
+    }
+    await Promise.resolve(persistSong(setSingleRunForKind(latestSong, reopened)));
+  }, [persistSong]);
 
   const handleDownloadPdf = useCallback(async () => {
     setExportMenuAnchor(null);
+    const current = editorRef.current?.getCurrentRun() ?? latestRunRef.current;
+    const latestSong = songRef.current;
     try {
       await withBlockingJob('Building PDF…', async () => {
-        const bytes = await buildPracticeExercisePdfBytes(song, local);
-        downloadPracticeExercisePdf(song, local, bytes);
+        const bytes = await buildPracticeExercisePdfBytes(latestSong, current);
+        downloadPracticeExercisePdf(latestSong, current, bytes);
       });
     } catch (e) {
       setExportFeedback({
@@ -281,24 +370,53 @@ export function PracticeExerciseFocusDialog({
         message: e instanceof Error ? e.message : 'Could not build PDF.',
       });
     }
-  }, [local, song, withBlockingJob]);
+  }, [withBlockingJob]);
 
+  /**
+   * "Save to Google Docs" handler. When the user clicks this without a Drive token, run the
+   * Google sign-in flow inline (popup) before falling through to the export — much friendlier
+   * than leaving the option disabled and asking the user to find the account menu themselves.
+   * A cancelled or failed sign-in surfaces a snackbar and bails without touching the run.
+   */
   const handleGoogleDocExport = useCallback(async () => {
-    if (!googleAccessToken) return;
     setExportMenuAnchor(null);
-    const hadDoc = Boolean(local.drivePracticeExportGoogleDocId?.trim());
+
+    if (!googleAccessTokenRef.current) {
+      try {
+        await withBlockingJob('Signing in to Google…', async () => {
+          await signInWithGoogle();
+        });
+      } catch (e) {
+        setExportFeedback({
+          severity: 'error',
+          message: e instanceof Error ? e.message : 'Could not sign in to Google.',
+        });
+        return;
+      }
+      if (!googleAccessTokenRef.current) {
+        // Sign-in window closed / dismissed without granting Drive scope.
+        return;
+      }
+    }
+
+    const accessToken = googleAccessTokenRef.current;
+    const current = editorRef.current?.getCurrentRun() ?? latestRunRef.current;
+    const latestSong = songRef.current;
+    const hadDoc = Boolean(current.drivePracticeExportGoogleDocId?.trim());
     try {
       await withBlockingJob(
         hadDoc ? 'Updating Google Doc…' : 'Creating Google Doc…',
         async () => {
           const res = await syncPracticeExerciseGoogleDoc({
-            accessToken: googleAccessToken,
-            song,
-            run: local,
+            accessToken,
+            song: latestSong,
+            run: current,
           });
-          const next = { ...local, ...res } as EncorePracticeExerciseRun;
-          setLocal(next);
-          persistSong(setSingleRunForKind(song, touchExerciseRun(next)));
+          const next = { ...current, ...res } as EncorePracticeExerciseRun;
+          editorRef.current?.replaceRun(next);
+          latestRunRef.current = next;
+          setGoogleDocIdMirror(next.drivePracticeExportGoogleDocId?.trim() ?? null);
+          persistSong(setSingleRunForKind(latestSong, touchExerciseRun(next)));
         },
       );
       setExportFeedback({
@@ -311,36 +429,53 @@ export function PracticeExerciseFocusDialog({
         message: e instanceof Error ? e.message : 'Could not sync Google Doc.',
       });
     }
-  }, [googleAccessToken, local, persistSong, song, withBlockingJob]);
+  }, [persistSong, signInWithGoogle, withBlockingJob]);
 
-  const googleDocWebUrl = local.drivePracticeExportGoogleDocId?.trim()
-    ? `https://docs.google.com/document/d/${encodeURIComponent(local.drivePracticeExportGoogleDocId.trim())}/edit`
+  const googleDocWebUrl = googleDocIdMirror
+    ? `https://docs.google.com/document/d/${encodeURIComponent(googleDocIdMirror)}/edit`
     : null;
 
-  const lyricsMainLayout = local.kind === 'lyricsInOwnWords';
+  const lyricsMainLayout = run.kind === 'lyricsInOwnWords';
+
+  // Stable handler for the commit-canonical-lyrics flow used by inline blur + Apply Full Lyrics.
+  // Closes over `songRef` so a new `song` from autosave doesn't recreate the callback.
+  const handleCommitLyrics = useCallback(
+    (nextRun: EncoreLyricsInOwnWordsExerciseRun) => {
+      persistSong(songWithSyncedLyricsInOwnWordsAndResyncNarrative(songRef.current, nextRun));
+    },
+    [persistSong],
+  );
 
   const body =
-    local.kind === 'lyricsInOwnWords' ? (
+    initialRun.kind === 'lyricsInOwnWords' ? (
       <LyricsExerciseEditor
+        key={initialRun.id}
+        ref={editorRef}
         readOnly={readOnly}
-        run={local}
+        initialRun={initialRun}
         geniusUrl={geniusUrl}
-        onChange={setLocal}
-        onCommitLyrics={(nextRun) => {
-          persistSong(songWithSyncedLyricsInOwnWordsAndResyncNarrative(song, nextRun));
-        }}
+        onDirty={onEditorDirty}
+        onCommitLyrics={handleCommitLyrics}
       />
-    ) : local.kind === 'lyricsSectionNarrative' ? (
+    ) : initialRun.kind === 'lyricsSectionNarrative' ? (
       <SectionNarrativeEditor
+        key={initialRun.id}
+        ref={editorRef}
         readOnly={readOnly}
         song={song}
-        run={local}
+        initialRun={initialRun}
         geniusUrl={geniusUrl}
-        onChange={setLocal}
+        onDirty={onEditorDirty}
         onPersistSong={persistSong}
       />
     ) : (
-      <NineQuestionsEditor readOnly={readOnly} run={local} onChange={setLocal} />
+      <NineQuestionsEditor
+        key={initialRun.id}
+        ref={editorRef}
+        readOnly={readOnly}
+        initialRun={initialRun}
+        onDirty={onEditorDirty}
+      />
     );
 
   return (
@@ -406,9 +541,26 @@ export function PracticeExerciseFocusDialog({
             }}
           >
             {readOnly ? (
-              <Button onClick={handleRequestClose} sx={{ textTransform: 'none', fontWeight: 600, flexShrink: 0 }}>
-                Close
-              </Button>
+              <>
+                <Tooltip title="Reopen this exercise so you can keep editing it">
+                  <Button
+                    onClick={() => void handleReopenForEditing()}
+                    startIcon={<UndoIcon />}
+                    sx={{
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      color: 'text.secondary',
+                      flexShrink: 0,
+                      '&:hover': { color: 'primary.main' },
+                    }}
+                  >
+                    Mark in progress
+                  </Button>
+                </Tooltip>
+                <Button onClick={handleRequestClose} sx={{ textTransform: 'none', fontWeight: 600, flexShrink: 0 }}>
+                  Close
+                </Button>
+              </>
             ) : (
               <Tooltip title="Discard everything in this exercise and remove it">
                 <Button
@@ -472,26 +624,19 @@ export function PracticeExerciseFocusDialog({
           </ListItemIcon>
           <ListItemText primary="Download PDF" secondary="Plain layout, opens from Downloads" />
         </MenuItem>
-        <Tooltip
-          title={!googleAccessToken ? 'Sign in with Google (Account menu) to save to Drive.' : ''}
-          placement="left"
-        >
-            <span>
-                  <MenuItem onClick={() => void handleGoogleDocExport()} disabled={!googleAccessToken}>
-                    <ListItemIcon>
-                      <AddToDriveIcon fontSize="small" aria-hidden />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={
-                        local.drivePracticeExportGoogleDocId?.trim()
-                          ? 'Update Google Doc'
-                          : 'Save to Google Docs'
-                      }
-                      secondary="Same Doc is updated each time you sync"
-                    />
-                  </MenuItem>
-                </span>
-              </Tooltip>
+        <MenuItem onClick={() => void handleGoogleDocExport()}>
+          <ListItemIcon>
+            <AddToDriveIcon fontSize="small" aria-hidden />
+          </ListItemIcon>
+          <ListItemText
+            primary={googleDocIdMirror ? 'Update Google Doc' : 'Save to Google Docs'}
+            secondary={
+              googleAccessToken
+                ? 'Same Doc is updated each time you sync'
+                : "We'll sign you in to Google first"
+            }
+          />
+        </MenuItem>
               {googleDocWebUrl && googleAccessToken ? (
                 <MenuItem
                   onClick={() => {
@@ -647,7 +792,21 @@ function sourceBodyTextForLyricsSection(sec: EncoreLyricsExerciseSection | undef
   return sec.lines.map((l) => l.original).join('\n');
 }
 
-type EncoreRunDispatch = Dispatch<SetStateAction<EncorePracticeExerciseRun>>;
+/**
+ * Imperative handle each editor exposes so the dialog can read the in-progress run on demand
+ * (for export, mark-complete, autosave flush) without having to mirror typing state back up.
+ * Keeping `local` inside the editor is what stops every keystroke from re-rendering the dialog
+ * shell (AppBar, Toolbar, Buttons, Menu, Snackbar) — see {@link PracticeExerciseFocusDialog}.
+ *
+ * `replaceRun` is used by Google Doc export to splice the returned doc id into the live run.
+ */
+type EncoreExerciseEditorHandle = {
+  getCurrentRun: () => EncorePracticeExerciseRun;
+  replaceRun: (run: EncorePracticeExerciseRun) => void;
+};
+
+/** Per-edit callback the editor fires whenever its local run state changes (typing, etc.). */
+type EncoreExerciseDirtyCallback = (run: EncorePracticeExerciseRun) => void;
 
 const LyricsSideBySideLineRow = memo(function LyricsSideBySideLineRow({
   sectionIdx,
@@ -707,6 +866,67 @@ const LyricsSideBySideLineRow = memo(function LyricsSideBySideLineRow({
         </Box>
       </Box>
     </Stack>
+  );
+});
+
+/**
+ * Modal for editing the full Genius-formatted lyrics block in one shot. Shared by the lyrics
+ * rewriter and the section-by-section narrative editor so the bulk-edit UX (copy, layout,
+ * "Apply & save to song" button) stays in lock-step. The caller owns the draft state and the
+ * apply handler — that's where the per-exercise merge logic lives (rewrite-aware vs.
+ * narrative-aware).
+ */
+const BulkLyricsEditDialog = memo(function BulkLyricsEditDialog({
+  open,
+  onClose,
+  readOnly,
+  value,
+  onChange,
+  onApply,
+  description,
+}: {
+  open: boolean;
+  onClose: () => void;
+  readOnly: boolean;
+  value: string;
+  onChange: (next: string) => void;
+  onApply: () => void;
+  description: ReactNode;
+}): ReactElement {
+  const theme = useTheme();
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="md"
+      fullWidth
+      aria-labelledby="lyrics-bulk-dialog-title"
+    >
+      <DialogTitle id="lyrics-bulk-dialog-title">Edit full lyrics</DialogTitle>
+      <DialogContent>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, lineHeight: 1.55 }}>
+          {description}
+        </Typography>
+        <InputBase
+          multiline
+          minRows={16}
+          maxRows={32}
+          readOnly={readOnly}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          inputProps={{ 'aria-label': 'Full lyrics in Genius format' }}
+          sx={{ ...lyricsDocInputSx(theme), width: 1 }}
+        />
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 2 }}>
+        <Button onClick={onClose} sx={{ textTransform: 'none' }}>
+          Cancel
+        </Button>
+        <Button variant="contained" onClick={onApply} disabled={readOnly} sx={{ textTransform: 'none' }}>
+          Apply &amp; save to song
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 });
 
@@ -789,30 +1009,61 @@ const LyricsSectionTitleInput = memo(function LyricsSectionTitleInput({
   );
 });
 
-function LyricsExerciseEditor({
-  readOnly,
-  run,
-  geniusUrl,
-  onChange,
-  onCommitLyrics,
-}: {
-  readOnly: boolean;
-  run: EncoreLyricsInOwnWordsExerciseRun;
-  geniusUrl: string;
-  onChange: EncoreRunDispatch;
-  onCommitLyrics: (nextRun: EncoreLyricsInOwnWordsExerciseRun) => void;
-}): ReactElement {
+/**
+ * Owns its `local` state so the parent dialog never re-renders on a keystroke. Exposes the
+ * current run + a replacer through {@link EncoreExerciseEditorHandle}, and notifies the parent
+ * via `onDirty` after each change. `onCommitLyrics` is reserved for the "commit canonical
+ * lyrics to the song" flow (inline-blur + Apply Full Lyrics) — autosave handles routine
+ * persistence on its own debounce.
+ */
+const LyricsExerciseEditor = forwardRef<
+  EncoreExerciseEditorHandle,
+  {
+    readOnly: boolean;
+    initialRun: EncoreLyricsInOwnWordsExerciseRun;
+    geniusUrl: string;
+    onDirty: EncoreExerciseDirtyCallback;
+    onCommitLyrics: (nextRun: EncoreLyricsInOwnWordsExerciseRun) => void;
+  }
+>(function LyricsExerciseEditor(
+  { readOnly, initialRun, geniusUrl, onDirty, onCommitLyrics },
+  ref,
+): ReactElement {
   const theme = useTheme();
-  const sections = useMemo(() => effectiveLyricsSections(run), [run]);
-  const sourceText = run.pastedLyrics ?? '';
-  const runRef = useRef(run);
-  runRef.current = run;
+  const [local, setLocal] = useState<EncoreLyricsInOwnWordsExerciseRun>(initialRun);
+  const localRef = useRef(local);
+  localRef.current = local;
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      getCurrentRun: () => localRef.current,
+      replaceRun: (run) => {
+        if (run.kind !== 'lyricsInOwnWords') return;
+        setLocal(run);
+      },
+    }),
+    [],
+  );
+
+  const onDirtyRef = useRef(onDirty);
+  onDirtyRef.current = onDirty;
+  const firstDirtyTickSkipped = useRef(false);
+  useEffect(() => {
+    if (!firstDirtyTickSkipped.current) {
+      firstDirtyTickSkipped.current = true;
+      return;
+    }
+    onDirtyRef.current(local);
+  }, [local]);
+
+  const sections = useMemo(() => effectiveLyricsSections(local), [local]);
+  const sourceText = local.pastedLyrics ?? '';
 
   const handleSourceLyricsChange = useCallback(
     (raw: string) => {
       if (readOnly) return;
-      onChange((prev) => {
-        if (prev.kind !== 'lyricsInOwnWords') return prev;
+      setLocal((prev) => {
         const sectionsNow = effectiveLyricsSections(prev);
         const parsed = parseGeniusLyricsIntoSections(raw);
         const merged = mergeParsedSectionsWithExisting(parsed, sectionsNow);
@@ -820,12 +1071,12 @@ function LyricsExerciseEditor({
         return { ...prev, pastedLyrics: raw, sections: withPos, lines: undefined };
       });
     },
-    [readOnly, onChange],
+    [readOnly],
   );
 
   const handleInitialSourceBlur = useCallback(() => {
     if (readOnly) return;
-    const r = runRef.current;
+    const r = localRef.current;
     const raw = r.pastedLyrics ?? '';
     const existing = effectiveLyricsSections(r);
     const parsed = parseGeniusLyricsIntoSections(raw);
@@ -837,15 +1088,14 @@ function LyricsExerciseEditor({
       sections: withPos,
       lines: undefined,
     };
-    onChange(nextRun);
+    setLocal(nextRun);
     onCommitLyrics(nextRun);
-  }, [readOnly, onChange, onCommitLyrics]);
+  }, [readOnly, onCommitLyrics]);
 
   const patchLine = useCallback(
     (sectionIdx: number, lineIdx: number, patch: Partial<{ original: string; rewrite: string }>) => {
       if (readOnly) return;
-      onChange((prev) => {
-        if (prev.kind !== 'lyricsInOwnWords') return prev;
+      setLocal((prev) => {
         const secs = effectiveLyricsSections(prev);
         const sec = secs[sectionIdx];
         if (!sec) return prev;
@@ -858,7 +1108,7 @@ function LyricsExerciseEditor({
         return { ...prev, sections: newSecs, lines: undefined };
       });
     },
-    [onChange, readOnly],
+    [readOnly],
   );
 
   /**
@@ -869,8 +1119,7 @@ function LyricsExerciseEditor({
   const patchSectionTitle = useCallback(
     (sectionIdx: number, title: string) => {
       if (readOnly) return;
-      onChange((prev) => {
-        if (prev.kind !== 'lyricsInOwnWords') return prev;
+      setLocal((prev) => {
         const secs = effectiveLyricsSections(prev);
         const sec = secs[sectionIdx];
         if (!sec || sec.title === title) return prev;
@@ -878,34 +1127,34 @@ function LyricsExerciseEditor({
         return { ...prev, sections: newSecs, lines: undefined };
       });
     },
-    [onChange, readOnly],
+    [readOnly],
   );
 
   /** Re-parse after inline source edits (markers may move). Does not persist to the song — use Save draft or bulk Apply. */
   const handleInlineSourceBlur = useCallback(() => {
     if (readOnly) return;
-    const r = runRef.current;
-    const existing = effectiveLyricsSections(r);
-    const raw = serializeLyricsSectionsToRaw(existing);
-    const parsed = parseGeniusLyricsIntoSections(raw);
-    const merged = mergeParsedSectionsWithExisting(parsed, existing);
-    const withPos = applyPositionalLyricsFallback(merged, existing);
-    onChange({ ...r, sections: withPos, pastedLyrics: undefined, lines: undefined });
-  }, [readOnly, onChange]);
+    setLocal((prev) => {
+      const existing = effectiveLyricsSections(prev);
+      const raw = serializeLyricsSectionsToRaw(existing);
+      const parsed = parseGeniusLyricsIntoSections(raw);
+      const merged = mergeParsedSectionsWithExisting(parsed, existing);
+      const withPos = applyPositionalLyricsFallback(merged, existing);
+      return { ...prev, sections: withPos, pastedLyrics: undefined, lines: undefined };
+    });
+  }, [readOnly]);
 
   const { done, total } = lyricsRewriteProgressFromSections(sections);
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
   const [bulkDraft, setBulkDraft] = useState('');
 
   const openBulkDialog = useCallback(() => {
-    const r = runRef.current;
-    setBulkDraft(serializeLyricsSectionsToRaw(effectiveLyricsSections(r)));
+    setBulkDraft(serializeLyricsSectionsToRaw(effectiveLyricsSections(localRef.current)));
     setBulkDialogOpen(true);
   }, []);
 
   const applyBulkDialog = useCallback(() => {
     if (readOnly) return;
-    const r = runRef.current;
+    const r = localRef.current;
     const existing = effectiveLyricsSections(r);
     const parsed = parseGeniusLyricsIntoSections(bulkDraft);
     const merged = mergeParsedSectionsWithExisting(parsed, existing);
@@ -916,10 +1165,10 @@ function LyricsExerciseEditor({
       sections: withPos,
       lines: undefined,
     };
-    onChange(nextRun);
+    setLocal(nextRun);
     onCommitLyrics(nextRun);
     setBulkDialogOpen(false);
-  }, [bulkDraft, readOnly, onChange, onCommitLyrics]);
+  }, [bulkDraft, readOnly, onCommitLyrics]);
 
   return (
     <Stack spacing={2} sx={{ width: 1 }}>
@@ -1046,43 +1295,24 @@ function LyricsExerciseEditor({
         </Stack>
       </Box>
 
-      <Dialog
+      <BulkLyricsEditDialog
         open={bulkDialogOpen}
         onClose={() => setBulkDialogOpen(false)}
-        maxWidth="md"
-        fullWidth
-        aria-labelledby="lyrics-bulk-dialog-title"
-      >
-        <DialogTitle id="lyrics-bulk-dialog-title">Edit full lyrics</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, lineHeight: 1.55 }}>
+        readOnly={readOnly}
+        value={bulkDraft}
+        onChange={setBulkDraft}
+        onApply={applyBulkDialog}
+        description={
+          <>
             Put <code>[Verse 1]</code>, <code>[Chorus]</code>, etc. on their own line, or leave a blank line
             between paragraphs to split implicitly. Apply merges your rewrites into the new structure and
             saves originals to the song.
-          </Typography>
-          <InputBase
-            multiline
-            minRows={16}
-            maxRows={32}
-            readOnly={readOnly}
-            value={bulkDraft}
-            onChange={(e) => setBulkDraft(e.target.value)}
-            inputProps={{ 'aria-label': 'Full lyrics in Genius format' }}
-            sx={{ ...lyricsDocInputSx(theme), width: 1 }}
-          />
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setBulkDialogOpen(false)} sx={{ textTransform: 'none' }}>
-            Cancel
-          </Button>
-          <Button variant="contained" onClick={applyBulkDialog} disabled={readOnly} sx={{ textTransform: 'none' }}>
-            Apply &amp; save to song
-          </Button>
-        </DialogActions>
-      </Dialog>
+          </>
+        }
+      />
     </Stack>
   );
-}
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Section narrative — free text per Genius section; shared lyrics on the song.
@@ -1099,6 +1329,8 @@ const SectionNarrativeAnswerRow = memo(function SectionNarrativeAnswerRow({
   sectionIndex,
   patchNarrative,
   patchTitle,
+  patchSourceBody,
+  onSourceBodyBlur,
   isFirst,
 }: {
   title: string;
@@ -1111,10 +1343,22 @@ const SectionNarrativeAnswerRow = memo(function SectionNarrativeAnswerRow({
   sectionIndex: number;
   patchNarrative: (i: number, html: string) => void;
   patchTitle: (i: number, title: string) => void;
+  patchSourceBody: (i: number, body: string) => void;
+  onSourceBodyBlur: () => void;
   isFirst: boolean;
 }): ReactElement {
+  const theme = useTheme();
   const sourceAria = `Original lyrics for ${displayLabel}`;
   const onHtml = useCallback((html: string) => patchNarrative(sectionIndex, html), [patchNarrative, sectionIndex]);
+  const onSourceChange = useCallback(
+    (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => patchSourceBody(sectionIndex, e.target.value),
+    [patchSourceBody, sectionIndex],
+  );
+  // Mismatch == we don't even have a parsed section at this index to attach the edit to, so
+  // inline editing is disabled (the bulk dialog or the "Lyrics in your own words" editor is
+  // the right escape hatch). Everything else — including empty `no-lines` sections — is
+  // editable so the user can fill it in directly.
+  const sourceEditable = !readOnly && sourceEmptyKind !== 'mismatch';
   return (
     <Box>
       <LyricsSectionTitleInput
@@ -1132,12 +1376,26 @@ const SectionNarrativeAnswerRow = memo(function SectionNarrativeAnswerRow({
         sx={{ mt: 1.125 }}
       >
         <Box component="section" aria-label={sourceAria} sx={{ flex: 1, minWidth: 0, pr: { md: 0.5 } }}>
-          {sourceBody ? (
+          {sourceEditable ? (
+            <InputBase
+              multiline
+              minRows={Math.max(2, sourceBody.split(/\r?\n/).length)}
+              value={sourceBody}
+              onChange={onSourceChange}
+              onBlur={onSourceBodyBlur}
+              placeholder="Add the lines for this section…"
+              inputProps={{ 'aria-label': sourceAria }}
+              sx={{
+                ...lyricsWritelySourceInputSx(theme),
+                width: 1,
+              }}
+            />
+          ) : sourceBody ? (
             <Typography
               component="div"
               variant="body2"
-              sx={(theme) => ({
-                ...lyricsWritelySourceInputSx(theme),
+              sx={(t) => ({
+                ...lyricsWritelySourceInputSx(t),
                 whiteSpace: 'pre-wrap',
                 wordBreak: 'break-word',
               })}
@@ -1147,7 +1405,7 @@ const SectionNarrativeAnswerRow = memo(function SectionNarrativeAnswerRow({
           ) : (
             <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6, fontStyle: 'italic' }}>
               {sourceEmptyKind === 'mismatch'
-                ? 'This section no longer matches the saved lyrics. Re-paste lyrics or open Lyrics in your own words to sync.'
+                ? 'This section no longer matches the saved lyrics. Use Full lyrics… to re-sync.'
                 : 'No lines in this section.'}
             </Typography>
           )}
@@ -1166,23 +1424,61 @@ const SectionNarrativeAnswerRow = memo(function SectionNarrativeAnswerRow({
   );
 });
 
-function SectionNarrativeEditor({
-  readOnly,
-  song,
-  run,
-  geniusUrl,
-  onChange,
-  onPersistSong,
-}: {
-  readOnly: boolean;
-  song: EncoreSong;
-  run: EncoreLyricsSectionNarrativeExerciseRun;
-  geniusUrl: string;
-  onChange: EncoreRunDispatch;
-  onPersistSong: (next: EncoreSong) => void | Promise<void>;
-}): ReactElement {
+/**
+ * Owns its `local` state so the parent dialog never re-renders on a keystroke. Exposes the
+ * current run + a replacer through {@link EncoreExerciseEditorHandle}, and notifies the parent
+ * via `onDirty` after each change.
+ *
+ * Note: `lyricsSourceGenius` is read off the live `song` prop (which the dialog passes through
+ * stably). When the user pastes brand-new lyrics in the empty state, the editor calls
+ * `onPersistSong` directly — that persist will re-flow `song` from the parent and the
+ * conditional below detects the now-present lyrics on the next render.
+ */
+const SectionNarrativeEditor = forwardRef<
+  EncoreExerciseEditorHandle,
+  {
+    readOnly: boolean;
+    song: EncoreSong;
+    initialRun: EncoreLyricsSectionNarrativeExerciseRun;
+    geniusUrl: string;
+    onDirty: EncoreExerciseDirtyCallback;
+    onPersistSong: (next: EncoreSong) => void | Promise<void>;
+  }
+>(function SectionNarrativeEditor(
+  { readOnly, song, initialRun, geniusUrl, onDirty, onPersistSong },
+  ref,
+): ReactElement {
   const theme = useTheme();
-  const { done, total } = lyricsSectionNarrativeProgress(run.sections);
+  const [local, setLocal] = useState<EncoreLyricsSectionNarrativeExerciseRun>(initialRun);
+  const localRef = useRef(local);
+  localRef.current = local;
+  const songRef = useRef(song);
+  songRef.current = song;
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      getCurrentRun: () => localRef.current,
+      replaceRun: (run) => {
+        if (run.kind !== 'lyricsSectionNarrative') return;
+        setLocal(run);
+      },
+    }),
+    [],
+  );
+
+  const onDirtyRef = useRef(onDirty);
+  onDirtyRef.current = onDirty;
+  const firstDirtyTickSkipped = useRef(false);
+  useEffect(() => {
+    if (!firstDirtyTickSkipped.current) {
+      firstDirtyTickSkipped.current = true;
+      return;
+    }
+    onDirtyRef.current(local);
+  }, [local]);
+
+  const { done, total } = lyricsSectionNarrativeProgress(local.sections);
   const hasLyrics = Boolean(song.lyricsSourceGenius?.trim());
   const [pasteDraft, setPasteDraft] = useState(song.lyricsSourceGenius ?? '');
   const parsedLyricsSections = useMemo(
@@ -1194,29 +1490,108 @@ function SectionNarrativeEditor({
     if (!hasLyrics) setPasteDraft(song.lyricsSourceGenius ?? '');
   }, [hasLyrics, song.lyricsSourceGenius]);
 
+  /**
+   * Re-parses raw Genius lyrics into sections, merges existing narrative content by section
+   * occurrence (preserving renamed titles), and persists the canonical lyrics + updated run to
+   * the song. Shared by the empty-state paste box and the "Full lyrics…" bulk editor.
+   */
+  const commitRawLyrics = useCallback(
+    (raw: string) => {
+      if (readOnly) return;
+      const trimmed = raw.trim();
+      if (!trimmed) return;
+      const parsed = parseGeniusLyricsIntoSections(trimmed);
+      const canon = serializeLyricsSectionsToRaw(parsed);
+      const currentRun = localRef.current;
+      const mergedNarrative = mergeParsedNarrativeSectionsWithExisting(parsed, currentRun.sections);
+      const nextRun = touchExerciseRun({ ...currentRun, sections: mergedNarrative });
+      setLocal(nextRun as EncoreLyricsSectionNarrativeExerciseRun);
+      const nextSong = setSingleRunForKind({ ...songRef.current, lyricsSourceGenius: canon }, nextRun);
+      onPersistSong(nextSong);
+    },
+    [onPersistSong, readOnly],
+  );
+
   const handlePasteLyricsBlur = useCallback(() => {
+    commitRawLyrics(pasteDraft);
+  }, [commitRawLyrics, pasteDraft]);
+
+  const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
+  const [bulkDraft, setBulkDraft] = useState('');
+
+  const openBulkDialog = useCallback(() => {
+    // Seed from the canonical serialization (not the raw saved string) so the dialog opens with
+    // the same `[Section]\n…` shape the parser will round-trip cleanly.
+    const seed = serializeLyricsSectionsToRaw(parsedLyricsSections);
+    setBulkDraft(seed);
+    setBulkDialogOpen(true);
+  }, [parsedLyricsSections]);
+
+  const applyBulkDialog = useCallback(() => {
+    commitRawLyrics(bulkDraft);
+    setBulkDialogOpen(false);
+  }, [bulkDraft, commitRawLyrics]);
+
+  // ── Per-section inline source-body editing ────────────────────────────────────
+  // `parsedLyricsSections` is the source of truth; an entry in `sourceDrafts` is the user's
+  // unsaved edit for that section. On blur of any source field we flush all pending drafts as
+  // a single `commitRawLyrics` call (so editing two sections back-to-back never silently drops
+  // one), then clear the draft map — the next render reads the canonical bodies from the
+  // freshly-persisted song.
+  const [sourceDrafts, setSourceDrafts] = useState<Record<number, string>>({});
+  const sourceDraftsRef = useRef(sourceDrafts);
+  sourceDraftsRef.current = sourceDrafts;
+  const parsedLyricsSectionsRef = useRef(parsedLyricsSections);
+  parsedLyricsSectionsRef.current = parsedLyricsSections;
+
+  const patchSourceBody = useCallback(
+    (sectionIndex: number, body: string) => {
+      if (readOnly) return;
+      setSourceDrafts((prev) => {
+        if (prev[sectionIndex] === body) return prev;
+        return { ...prev, [sectionIndex]: body };
+      });
+    },
+    [readOnly],
+  );
+
+  const onSourceBodyBlur = useCallback(() => {
     if (readOnly) return;
-    const raw = pasteDraft.trim();
-    if (!raw) return;
-    const parsed = parseGeniusLyricsIntoSections(raw);
-    const canon = serializeLyricsSectionsToRaw(parsed);
-    const mergedNarrative = mergeParsedNarrativeSectionsWithExisting(parsed, run.sections);
-    const nextRun = touchExerciseRun({ ...run, sections: mergedNarrative });
-    const nextSong = setSingleRunForKind({ ...song, lyricsSourceGenius: canon }, nextRun);
-    onPersistSong(nextSong);
-  }, [onPersistSong, pasteDraft, readOnly, run, song]);
+    const drafts = sourceDraftsRef.current;
+    if (Object.keys(drafts).length === 0) return;
+    const parsed = parsedLyricsSectionsRef.current;
+    // Rebuild raw Genius lyrics from the parsed structure, substituting any draft body.
+    // Use the parsed title (not the narrative title) so implicit sections stay implicit —
+    // narrative-side renames are preserved through the merge's index fallback for empty
+    // titles in `mergeParsedNarrativeSectionsWithExisting`.
+    const blocks: string[] = [];
+    for (let i = 0; i < parsed.length; i += 1) {
+      const sec = parsed[i]!;
+      const body = drafts[i] ?? sec.lines.map((l) => l.original).join('\n');
+      const title = sec.title.trim();
+      const block: string[] = [];
+      if (title) block.push(`[${title}]`);
+      for (const chunk of body.split(/\r?\n/)) {
+        const t = chunk.trim();
+        if (t) block.push(t);
+      }
+      if (block.length > 0) blocks.push(block.join('\n'));
+    }
+    const raw = blocks.join('\n\n');
+    commitRawLyrics(raw);
+    setSourceDrafts({});
+  }, [commitRawLyrics, readOnly]);
 
   const patchNarrative = useCallback(
     (sectionIndex: number, html: string) => {
       if (readOnly) return;
-      onChange((prev) => {
-        if (prev.kind !== 'lyricsSectionNarrative') return prev;
+      setLocal((prev) => {
         if (prev.sections[sectionIndex]?.narrative === html) return prev;
         const nextSections = prev.sections.map((s, j) => (j === sectionIndex ? { ...s, narrative: html } : s));
         return { ...prev, sections: nextSections };
       });
     },
-    [onChange, readOnly],
+    [readOnly],
   );
 
   /**
@@ -1227,15 +1602,14 @@ function SectionNarrativeEditor({
   const patchNarrativeSectionTitle = useCallback(
     (sectionIndex: number, title: string) => {
       if (readOnly) return;
-      onChange((prev) => {
-        if (prev.kind !== 'lyricsSectionNarrative') return prev;
+      setLocal((prev) => {
         const cur = prev.sections[sectionIndex];
         if (!cur || cur.title === title) return prev;
         const nextSections = prev.sections.map((s, j) => (j === sectionIndex ? { ...s, title } : s));
         return { ...prev, sections: nextSections };
       });
     },
-    [onChange, readOnly],
+    [readOnly],
   );
 
   if (!hasLyrics) {
@@ -1271,11 +1645,32 @@ function SectionNarrativeEditor({
       <Box>
         <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.55 }}>
           {ENCORE_PRACTICE_EXERCISE_CATALOG.lyricsSectionNarrative.description} If the same chorus returns later, treat
-          it as a new beat: how has the story shifted since the last time we heard it?
+          it as a new beat: how has the story shifted since the last time we heard it? Edit a section&rsquo;s source
+          lines inline to fix typos, or use <strong>Full lyrics&hellip;</strong> for a bigger rewrite.
         </Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-          {total > 0 ? `${done} of ${total} sections` : 'No sections in saved lyrics.'}
-        </Typography>
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          flexWrap="wrap"
+          gap={1}
+          sx={{ mt: 0.5 }}
+        >
+          <Typography variant="caption" color="text.secondary">
+            {total > 0 ? `${done} of ${total} sections` : 'No sections in saved lyrics.'}
+          </Typography>
+          {!readOnly ? (
+            <Button
+              type="button"
+              variant="text"
+              size="small"
+              onClick={openBulkDialog}
+              sx={{ textTransform: 'none', fontWeight: 600, fontSize: '0.8125rem', minWidth: 0, px: 0.75 }}
+            >
+              Full lyrics…
+            </Button>
+          ) : null}
+        </Stack>
       </Box>
 
       <Stack
@@ -1305,13 +1700,18 @@ function SectionNarrativeEditor({
       </Stack>
 
       <Stack spacing={3}>
-        {run.sections.map((sec, i) => {
+        {local.sections.map((sec, i) => {
           const lyricSec = parsedLyricsSections[i];
-          const sourceBody = sourceBodyTextForLyricsSection(lyricSec);
+          const parsedSourceBody = sourceBodyTextForLyricsSection(lyricSec);
+          // A pending in-flight edit for this section overrides the parsed body until blur
+          // flushes drafts. Skip the draft entirely when the section has no parsed counterpart
+          // (mismatch) so the row stays read-only and prompts the user toward Full lyrics.
+          const draft = sourceDrafts[i];
+          const sourceBody = lyricSec !== undefined && draft !== undefined ? draft : parsedSourceBody;
           // Narrative sections store `{title, narrative}`; adapt to the section-shape the label
           // helpers expect (only `.title` is read).
           const sectionShape = { title: sec.title, lines: [] };
-          const displayLabel = lyricsExerciseSectionDisplayLabel(sectionShape, i, run.sections.length);
+          const displayLabel = lyricsExerciseSectionDisplayLabel(sectionShape, i, local.sections.length);
           const sourceEmptyKind: 'mismatch' | 'no-lines' | null = sourceBody
             ? null
             : lyricSec === undefined
@@ -1330,14 +1730,32 @@ function SectionNarrativeEditor({
               sectionIndex={i}
               patchNarrative={patchNarrative}
               patchTitle={patchNarrativeSectionTitle}
+              patchSourceBody={patchSourceBody}
+              onSourceBodyBlur={onSourceBodyBlur}
               isFirst={i === 0}
             />
           );
         })}
       </Stack>
+
+      <BulkLyricsEditDialog
+        open={bulkDialogOpen}
+        onClose={() => setBulkDialogOpen(false)}
+        readOnly={readOnly}
+        value={bulkDraft}
+        onChange={setBulkDraft}
+        onApply={applyBulkDialog}
+        description={
+          <>
+            Put <code>[Verse 1]</code>, <code>[Chorus]</code>, etc. on their own line, or leave a blank line
+            between paragraphs to split implicitly. Apply re-syncs section prompts and keeps the notes you
+            already wrote for each section.
+          </>
+        }
+      />
     </Stack>
   );
-}
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Nine-questions editor
@@ -1377,27 +1795,61 @@ const CharacterNineQuestionItem = memo(function CharacterNineQuestionItem({
   );
 });
 
-function NineQuestionsEditor({
-  readOnly,
-  run,
-  onChange,
-}: {
-  readOnly: boolean;
-  run: EncoreCharacterNineQuestionsExerciseRun;
-  onChange: EncoreRunDispatch;
-}): ReactElement {
-  const { done, total } = nineQuestionsProgress(run.answers);
+/**
+ * Owns its `local` state so the parent dialog never re-renders on a keystroke. Exposes the
+ * current run + a replacer through {@link EncoreExerciseEditorHandle}, and notifies the parent
+ * via `onDirty` after each change (the dialog uses that for autosave and to keep
+ * `latestRunRef` warm for export / mark-complete handlers).
+ */
+const NineQuestionsEditor = forwardRef<
+  EncoreExerciseEditorHandle,
+  {
+    readOnly: boolean;
+    initialRun: EncoreCharacterNineQuestionsExerciseRun;
+    onDirty: EncoreExerciseDirtyCallback;
+  }
+>(function NineQuestionsEditor({ readOnly, initialRun, onDirty }, ref): ReactElement {
+  const [local, setLocal] = useState<EncoreCharacterNineQuestionsExerciseRun>(initialRun);
+  const localRef = useRef(local);
+  localRef.current = local;
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      getCurrentRun: () => localRef.current,
+      replaceRun: (run) => {
+        if (run.kind !== 'characterNineQuestions') return;
+        setLocal(run);
+      },
+    }),
+    [],
+  );
+
+  // Notify the dialog about edits after commit (skip the mount fire — the initial run is
+  // already known upstream). Reads onDirty through a ref so prop instability does not re-fire
+  // the effect after every keystroke.
+  const onDirtyRef = useRef(onDirty);
+  onDirtyRef.current = onDirty;
+  const firstDirtyTickSkipped = useRef(false);
+  useEffect(() => {
+    if (!firstDirtyTickSkipped.current) {
+      firstDirtyTickSkipped.current = true;
+      return;
+    }
+    onDirtyRef.current(local);
+  }, [local]);
+
+  const { done, total } = nineQuestionsProgress(local.answers);
   const padded = useMemo(() => {
-    const a = [...run.answers];
+    const a = [...local.answers];
     while (a.length < ENCORE_CHARACTER_NINE_QUESTION_COUNT) a.push('');
     return a.slice(0, ENCORE_CHARACTER_NINE_QUESTION_COUNT);
-  }, [run.answers]);
+  }, [local.answers]);
 
   const patchAnswer = useCallback(
     (index: number, html: string) => {
       if (readOnly) return;
-      onChange((prev) => {
-        if (prev.kind !== 'characterNineQuestions') return prev;
+      setLocal((prev) => {
         const pad = [...prev.answers];
         while (pad.length < ENCORE_CHARACTER_NINE_QUESTION_COUNT) pad.push('');
         const base = pad.slice(0, ENCORE_CHARACTER_NINE_QUESTION_COUNT);
@@ -1407,7 +1859,7 @@ function NineQuestionsEditor({
         return { ...prev, answers: next };
       });
     },
-    [onChange, readOnly],
+    [readOnly],
   );
 
   return (
@@ -1434,4 +1886,4 @@ function NineQuestionsEditor({
       </Stack>
     </Stack>
   );
-}
+});

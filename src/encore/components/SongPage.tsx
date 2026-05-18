@@ -96,6 +96,7 @@ export function SongPage(props: {
     performances,
     repertoireExtras,
     googleAccessToken,
+    signInWithGoogle,
     spotifyLinked,
   } = useEncore();
   const { withBlockingJob } = useEncoreBlockingJobs();
@@ -1023,6 +1024,7 @@ export function SongPage(props: {
                 song={draft}
                 onPersistSong={persistPracticeExerciseSong}
                 googleAccessToken={googleAccessToken}
+                signInWithGoogle={signInWithGoogle}
                 withBlockingJob={withBlockingJob}
               />
               <SongMilestoneChecklist

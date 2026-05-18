@@ -430,6 +430,18 @@ export function markExerciseRunCompleted(run: EncorePracticeExerciseRun): Encore
   return { ...run, status: 'completed', updatedAt: now, completedAt: now };
 }
 
+/**
+ * Reverts a completed run back to a draft so the user can continue editing it. We clear
+ * `completedAt` so the run no longer surfaces the completion timestamp in lists — only the
+ * status / updatedAt matter from here on. A no-op for runs that are already drafts.
+ */
+export function unmarkExerciseRunCompleted(run: EncorePracticeExerciseRun): EncorePracticeExerciseRun {
+  if (run.status !== 'completed') return run;
+  const next = { ...run, status: 'draft' as const, updatedAt: new Date().toISOString() };
+  delete next.completedAt;
+  return next;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Single-run-per-kind helpers
 //

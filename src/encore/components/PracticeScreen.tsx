@@ -99,6 +99,7 @@ export function PracticeScreen({
     spotifyLinked,
     effectiveDisplayName,
     googleAccessToken,
+    signInWithGoogle,
   } = useEncore();
   const { withBlockingJob } = useEncoreBlockingJobs();
 
@@ -665,8 +666,13 @@ export function PracticeScreen({
               borderColor: 'divider',
               boxShadow: encoreShadowSurface,
               bgcolor: 'background.paper',
-              maxHeight: { md: 'min(70vh, 640px)' },
-              overflowY: 'auto',
+              // Intentionally no `maxHeight` / `overflowY: 'auto'`: in macOS "Always show
+              // scrollbars" mode and on Windows, `overflow: auto` reserves a visible scrollbar
+              // gutter even when content fits, which read as a persistent vertical scrollbar in
+              // the practice sidebar. Sizing to content (combined with `alignItems: 'flex-start'`
+              // on the grid above) keeps the rail as tall as its songs and no taller. If the
+              // practicing list ever grows long enough to feel uncomfortable, the right answer
+              // is search/filter, not a bounded scroll region.
             }}
           >
             <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, letterSpacing: '0.08em' }}>
@@ -891,6 +897,7 @@ export function PracticeScreen({
                     song={exerciseBase}
                     onPersistSong={persistPracticeSongBundle}
                     googleAccessToken={googleAccessToken}
+                    signInWithGoogle={signInWithGoogle}
                     withBlockingJob={withBlockingJob}
                   />
 

@@ -222,4 +222,89 @@ describe('mergeDriveRowsIntoLocalLibrary', () => {
     expect(nextRows).toHaveLength(1);
     expect(remappedIds.size).toBe(1);
   });
+
+  describe('Drive deletion tombstones (ADR 0006)', () => {
+    it('skips a remote-only Drive-backed row whose driveSourceFileId is tombstoned', () => {
+      const remote: StanzaSongDriveRow[] = [
+        {
+          id: 'ghost',
+          ytId: null,
+          driveSourceFileId: 'drive-removed',
+          title: 'Official Video',
+          markers: [],
+          stats: {},
+          updatedAt: 1,
+        },
+      ];
+      const { nextRows, report } = mergeDriveRowsIntoLocalLibrary([], remote, {
+        tombstoneFileIds: new Set(['drive-removed']),
+      });
+      expect(nextRows).toHaveLength(0);
+      expect(report.skippedTombstoned).toBe(1);
+      expect(report.addedFromRemote).toBe(0);
+    });
+
+    it('still adds a remote-only row whose driveSourceFileId is NOT tombstoned', () => {
+      const remote: StanzaSongDriveRow[] = [
+        {
+          id: 'fresh',
+          ytId: null,
+          driveSourceFileId: 'drive-keep',
+          title: 'New',
+          markers: [],
+          stats: {},
+          updatedAt: 1,
+        },
+      ];
+      const { nextRows, report } = mergeDriveRowsIntoLocalLibrary([], remote, {
+        tombstoneFileIds: new Set(['drive-other']),
+      });
+      expect(nextRows).toHaveLength(1);
+      expect(report.addedFromRemote).toBe(1);
+      expect(report.skippedTombstoned).toBe(0);
+    });
+
+    it('still adds a remote-only YouTube row (no driveSourceFileId) regardless of tombstones', () => {
+      const remote: StanzaSongDriveRow[] = [
+        { id: 'yt', ytId: 'abc', title: 'YT', markers: [], stats: {}, updatedAt: 1 },
+      ];
+      const { nextRows, report } = mergeDriveRowsIntoLocalLibrary([], remote, {
+        tombstoneFileIds: new Set(['drive-removed']),
+      });
+      expect(nextRows).toHaveLength(1);
+      expect(report.addedFromRemote).toBe(1);
+    });
+
+    it('marks a tombstone stale when a local row still has that driveSourceFileId', () => {
+      const local = [
+        song({
+          id: 'local-uuid',
+          ytId: null,
+          driveSourceFileId: 'drive-readded',
+          title: 'I re-added this',
+          updatedAt: 100,
+          localAudioBlob: new Blob(['x'], { type: 'audio/wav' }),
+        }),
+      ];
+      const { nextRows, staleTombstoneFileIds } = mergeDriveRowsIntoLocalLibrary(local, [], {
+        tombstoneFileIds: new Set(['drive-readded', 'drive-still-deleted']),
+      });
+      expect(nextRows).toHaveLength(1);
+      expect(staleTombstoneFileIds).toEqual(['drive-readded']);
+    });
+
+    it('returns no stale tombstones when no caller passed any', () => {
+      const local = [
+        song({
+          id: 'local-uuid',
+          ytId: null,
+          driveSourceFileId: 'drive-readded',
+          title: 'A',
+          updatedAt: 100,
+        }),
+      ];
+      const { staleTombstoneFileIds } = mergeDriveRowsIntoLocalLibrary(local, []);
+      expect(staleTombstoneFileIds).toEqual([]);
+    });
+  });
 });

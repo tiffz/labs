@@ -93,7 +93,10 @@ export function ScalesDriveBackupProvider({ children }: { children: ReactNode })
   const checkCloudNewer = useCallback(async () => {
     if (!showForCloudChecks) return;
     try {
-      const token = await ensureLabsGoogleAccessTokenForDrive();
+      // Background auto-check: never open a popup (per ADR 0011). If the persisted token has
+      // expired, `ensureLabsGoogleAccessTokenForDrive` throws `LabsGoogleInteractiveAuthRequiredError`
+      // and we bail silently — the user's next manual Back up / Sign in click refreshes auth.
+      const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: false });
       const refs = await ensureLabsDrivePortfolioProgressLayout(token, LABS_DRIVE_APP_FOLDER_SCALES);
       const cloudMeta = await getLabsDriveProgressFileMeta(token, refs.progressFileId);
       const json = await readLabsDriveProgressJson(token, refs.progressFileId);

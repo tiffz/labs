@@ -14,7 +14,26 @@ export interface StanzaDriveMergeReport {
    * up here so the user sees a single library card per piece of source content.
    */
   collapsedByContentKey: number;
+  /**
+   * Remote-only rows skipped because the user previously tombstoned their `driveSourceFileId`
+   * (see [ADR 0006](../../../docs/adr/0006-stanza-drive-backup-merge-and-restore.md) — Drive
+   * tombstones). Counted but **not** added to `summaryLines` because the user already knows
+   * they deleted these rows; surfacing it again every sync would be noise.
+   */
+  skippedTombstoned: number;
   summaryLines: string[];
+}
+
+export interface StanzaDriveMergeOptions {
+  /**
+   * Drive file ids the user previously removed from this device's library — see
+   * [`stanzaDriveTombstones`](./stanzaDriveTombstones.ts). Remote-only rows whose
+   * `driveSourceFileId` is in this set are dropped from the merged output so the deletion
+   * sticks across reloads / sibling-tab pushes. Local rows that share a file id with a
+   * tombstone are treated as "user re-added on purpose" — the tombstone is returned as stale
+   * (caller clears it).
+   */
+  tombstoneFileIds?: ReadonlySet<string>;
 }
 
 function stemMetaFromRemote(
@@ -126,21 +145,34 @@ function mergeOneSong(local: StanzaSong, remote: StanzaSongDriveRow): StanzaSong
 
 /**
  * Per-song winner by `updatedAt`; when the remote row wins, keep local audio blobs and stem blobs
- * where ids still match. Remote-only rows are added only when YouTube or `driveSourceFileId` can play.
+ * where ids still match. Remote-only rows are added only when YouTube or `driveSourceFileId` can
+ * play and (when `options.tombstoneFileIds` is given) the row's `driveSourceFileId` is not in the
+ * user's deletion set.
  *
  * After the per-`id` merge, the result is run through `consolidateStanzaSongDuplicates` so two
  * rows that share a `ytId` / `driveSourceFileId` (created independently on different devices
  * before auto-sync was wired up) collapse into one. The resulting `remappedIds` map lets the
  * caller re-point downstream foreign keys (e.g. `stanzaDb.takes.songId`,
  * `stanzaLastSelectedSongId`) so practice takes don't dangle on the dropped row.
+ *
+ * Returns `staleTombstoneFileIds` — tombstones that the merge determined are no longer
+ * meaningful because a local row still has that `driveSourceFileId` (the user re-added the
+ * song on purpose). Callers clear those entries from the tombstone store.
  */
 export function mergeDriveRowsIntoLocalLibrary(
   localRows: StanzaSong[],
   remoteSongs: StanzaSongDriveRow[],
-): { nextRows: StanzaSong[]; remappedIds: Map<string, string>; report: StanzaDriveMergeReport } {
+  options: StanzaDriveMergeOptions = {},
+): {
+  nextRows: StanzaSong[];
+  remappedIds: Map<string, string>;
+  report: StanzaDriveMergeReport;
+  staleTombstoneFileIds: string[];
+} {
   const localById = new Map(localRows.map((s) => [s.id, s]));
   const remoteById = new Map(remoteSongs.map((s) => [s.id, s]));
   const ids = new Set<string>([...localById.keys(), ...remoteById.keys()]);
+  const tombstoneFileIds = options.tombstoneFileIds ?? new Set<string>();
 
   const report: StanzaDriveMergeReport = {
     keptLocalOnly: 0,
@@ -148,6 +180,7 @@ export function mergeDriveRowsIntoLocalLibrary(
     mergedPreferLocal: 0,
     mergedPreferRemote: 0,
     skippedRemoteOnlyUnplayable: 0,
+    skippedTombstoned: 0,
     collapsedByContentKey: 0,
     summaryLines: [],
   };
@@ -163,6 +196,11 @@ export function mergeDriveRowsIntoLocalLibrary(
       continue;
     }
     if (!L && R) {
+      const remoteDriveFileId = R.driveSourceFileId?.trim();
+      if (remoteDriveFileId && tombstoneFileIds.has(remoteDriveFileId)) {
+        report.skippedTombstoned += 1;
+        continue;
+      }
       const created = stanzaSongFromDriveRow(R);
       if (created) {
         mergedRows.push(created);
@@ -190,7 +228,23 @@ export function mergeDriveRowsIntoLocalLibrary(
   report.collapsedByContentKey = consolidation.remappedIds.size;
   const nextRows = [...consolidation.rows].sort((a, b) => b.updatedAt - a.updatedAt);
 
-  return { nextRows, remappedIds: consolidation.remappedIds, report };
+  // A tombstone is stale when a local row still claims that `driveSourceFileId` — the user
+  // re-added the song after deletion (e.g. via the deep-link "Re-add" prompt, a fresh manual
+  // import, or a snapshot restore). Caller clears the stale entries so subsequent pushes don't
+  // re-broadcast a deletion intent the user has since reversed.
+  const staleTombstoneFileIds: string[] = [];
+  if (tombstoneFileIds.size > 0) {
+    const localDriveFileIds = new Set<string>();
+    for (const row of nextRows) {
+      const fid = row.driveSourceFileId?.trim();
+      if (fid) localDriveFileIds.add(fid);
+    }
+    for (const fid of tombstoneFileIds) {
+      if (localDriveFileIds.has(fid)) staleTombstoneFileIds.push(fid);
+    }
+  }
+
+  return { nextRows, remappedIds: consolidation.remappedIds, report, staleTombstoneFileIds };
 }
 
 export function formatStanzaDriveMergeReport(r: StanzaDriveMergeReport): string {

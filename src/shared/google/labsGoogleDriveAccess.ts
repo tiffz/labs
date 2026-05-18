@@ -51,11 +51,22 @@ function labsGoogleOAuthLoginHint(): string | undefined {
 }
 
 /**
- * Returns a usable access token for Drive + userinfo: prefers a fresh Encore-persisted token after
- * userinfo validation; otherwise silent then interactive GIS refresh with minimal scopes.
+ * Returns a usable access token for Drive + userinfo. Nuclear sign-in posture (see
+ * [ADR 0011](../../../docs/adr/0011-labs-stanza-scales-no-background-google-refresh.md)):
  *
- * @param options.interactive When `false`, does not open the GIS popup if silent refresh fails —
- *   callers must retry from a **user gesture** (button click) with `interactive: true`.
+ * 1. If the locally-persisted Encore session is still fresh, validate it via userinfo and return.
+ *    Userinfo is a plain HTTPS call — no Google Identity Services iframe / popup involved.
+ * 2. Otherwise: when `interactive: false` (background callers), throw
+ *    {@link LabsGoogleInteractiveAuthRequiredError} immediately — callers must retry from a
+ *    user gesture. When `interactive: true`, open exactly one GIS popup.
+ *
+ * The silent `prompt: 'none'` path that used to sit between (1) and (2) has been removed: it was
+ * the documented source of ghost iframes / phantom popups that accumulated across Stanza / Scales
+ * tabs (see ADR 0010 for the Encore-side rationale and ADR 0011 for the shared-layer extension).
+ *
+ * @param options.interactive When `false`, never opens the GIS popup — callers must retry from a
+ *   **user gesture** (button click) with `interactive: true`. Default `true` (matches the legacy
+ *   contract for menu-button callers).
  */
 export async function ensureLabsGoogleAccessTokenForDrive(options?: {
   interactive?: boolean;
@@ -74,24 +85,11 @@ export async function ensureLabsGoogleAccessTokenForDrive(options?: {
       });
       return stored.accessToken;
     } catch (e) {
+      // Anything other than an auth rejection (401/403) — network, parser, etc. — surfaces to
+      // the caller. An auth rejection means the persisted token was actually revoked / expired
+      // server-side, so we fall through to the interactive-or-throw path below.
       if (!isLikelyGoogleAuthRejection(e)) throw e;
     }
-  }
-
-  try {
-    const silent = await requestGoogleAccessToken(clientId, LABS_GOOGLE_DRIVE_SESSION_SCOPES, {
-      prompt: 'none',
-      loginHint: labsGoogleOAuthLoginHint(),
-    });
-    const profile = await fetchGoogleUserProfile(silent.access_token);
-    writePersistedGoogleSession(silent.access_token, silent.expires_in);
-    writePersistedGoogleIdentity({
-      email: profile.email,
-      displayName: friendlyGoogleDisplayName(profile),
-    });
-    return silent.access_token;
-  } catch {
-    /* fall through to interactive */
   }
 
   if (!allowInteractive) {

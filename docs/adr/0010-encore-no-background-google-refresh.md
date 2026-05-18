@@ -91,10 +91,13 @@ chip and a full `IntegrationCard` with a "Sign in again" CTA, so no new banner i
 - **Multi-tab** sign-in propagates via the `storage` event so the user doesn't need to click in
   every tab. Safari occasionally throttles cross-tab `storage` events; in that worst case the
   user clicks Sign in in the laggy tab.
-- **Cross-app cohabitation**: Stanza / Scales / other Labs apps still drive their own Google
+- **Cross-app cohabitation**: ~~Stanza / Scales / other Labs apps still drive their own Google
   silent paths via the shared `useLabsEncoreGoogleSession` / `ensureLabsGoogleAccessTokenForDrive`
   hooks. Those are out of scope here — if popup spam reappears specifically because Encore is
-  open alongside another Labs tab, the same nuclear treatment can be applied there.
+  open alongside another Labs tab, the same nuclear treatment can be applied there.~~ **Superseded by
+  [ADR 0011](./0011-labs-stanza-scales-no-background-google-refresh.md)**, which extended the
+  same nuclear posture to the shared Labs layer (Stanza, Scales, and any future cohabiting
+  micro-app).
 - **No Drive 401 → GIS** loop: Encore's Drive layer already does not call GIS on 401 (it surfaces
   the failure via sync state). The expired-mode UI is the user's signal to act.
 - The shared `googleTokenClient` cache + serialization in

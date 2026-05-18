@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted (revised — auto-pull / auto-push, Drive-snapshot restore)
+Accepted (revised — auto-pull / auto-push, Drive-snapshot restore, Drive deletion tombstones)
 
 ## Context
 
@@ -24,6 +24,15 @@ Users asked for: changes to **propagate automatically** between devices, visible
 
 5. **Account menu surfaces**: a debug-friendly **“Open Stanza folder in Drive”** link (constructed from the cached `driveAppFolderId` in `stanzaDriveSyncMeta`) opens the live Drive folder in a new tab so users can inspect `progress.json`, the undo snapshots they expect to see, or sharing settings without leaving Stanza.
 
+6. **Deletion tombstones for Drive-backed rows** ([`stanzaDriveTombstones.ts`](../../src/stanza/drive/stanzaDriveTombstones.ts)). The per-`id` union merge in (1) has no way to express _removal_ — a row that exists on either side is kept on the merged side. Without a tombstone, deleting a `?df=…` library row would silently re-appear because either (a) the device reloaded inside the 6-second auto-push debounce window so the deletion never reached Drive, or (b) another device still had the row locally and pushed it back. Stanza now persists a per-`driveSourceFileId` tombstone whenever a Drive-backed row is removed:
+   - **Persisted locally** under `stanza_drive_file_tombstones_v1` (capped at 500 most-recent entries) so the deletion survives reloads on the same device.
+   - **Pushed to Drive** as the optional `deletedDriveSourceFileIds` array on the V1 envelope (back-compat: older Stanza builds ignore the field). `buildStanzaDriveEnvelope` populates it from the local store on every push.
+   - **Unioned on pull** in `mergeRemoteEnvelopeIntoLocal` so a deletion that originated on another device also stops re-adding the row on this one.
+   - **Enforced in the merge** via the optional `tombstoneFileIds` argument to `mergeDriveRowsIntoLocalLibrary` — remote-only rows whose `driveSourceFileId` is tombstoned are skipped (counted under `report.skippedTombstoned`). Local rows that still claim a tombstoned `driveSourceFileId` are reported as _stale_; the hook clears them so a reversed deletion isn't re-broadcast.
+   - **Cleared on re-intent**: a successful re-import via the `?df=` deep-link prompt, a snapshot restore that brings the row back, an undo of the delete, or the stale-tombstone path above all drop the tombstone.
+
+   The address bar is also cleaned up on delete: when `removeSongById` runs and the current URL's `?df=` matches the deleted row, `replaceStanzaPlaybackUrlSearchParams` strips the deep-link params so a refresh doesn't fall through into the bootstrap path. The bootstrap effect itself consults the tombstone store before importing and, on a match, renders a short **"You removed _<title>_ from your library. Re-add?"** prompt (Re-add clears the tombstone and runs the standard import; Not now strips the URL and dismisses).
+
 ## Consequences
 
 - Drive sync now **feels like real sync** — open a second device, the account menu auto-pulls, and edits flow back via the debounced auto-push. Conflicts (two devices editing the same song between pushes) still resolve to **per-song newer-wins** at the next merge, which we accept as the right trade-off for a metadata-only backup; it is documented in the conflict dialog.
@@ -31,6 +40,7 @@ Users asked for: changes to **propagate automatically** between devices, visible
 - The Drive envelope explicitly drops `localAudioBlob`, `localVideoThumbnailBlob`, and per-stem `localBlob` (see `stanzaDriveEnvelope.ts`). Thumbnails are auto-rederived locally; audio and stems are deliberately device-local to keep `progress.json` small and avoid leaking gigabyte uploads through the metadata channel.
 - Undo snapshots are still **local to the browser**; clearing site data removes them. The new “Latest from Drive” entry partially compensates by giving users a one-tap way to roll back to whatever `progress.json` currently says.
 - **Encore ↔ Stanza shared stem / practice-resource storage** is specified in **[ADR 0007](./0007-encore-owned-practice-resources-stanza-secondary-client.md)** (Encore-owned `Encore_App/` tree and repertoire schema; Stanza overlay / secondary client). This ADR remains about Stanza’s legacy `Tiff Zhang Labs/Stanza/progress.json` backup UX until migration lands.
+- **Drive deletion tombstones are append-mostly + capped** at 500 entries. A user who churns through hundreds of one-off Drive imports may eventually evict an older tombstone; if a Drive `progress.json` from a stale device still references that file id, the row could come back. We accept this because (a) the cap keeps `progress.json` size predictable and (b) at that retention depth the user can re-delete with one click and the new tombstone goes to the top of the list.
 
 ## Links
 
@@ -38,6 +48,8 @@ Users asked for: changes to **propagate automatically** between devices, visible
 - [`src/stanza/drive/stanzaDriveMerge.ts`](../../src/stanza/drive/stanzaDriveMerge.ts)
 - [`src/stanza/drive/stanzaDriveConflict.ts`](../../src/stanza/drive/stanzaDriveConflict.ts)
 - [`src/stanza/drive/stanzaDriveSyncMeta.ts`](../../src/stanza/drive/stanzaDriveSyncMeta.ts)
+- [`src/stanza/drive/stanzaDriveTombstones.ts`](../../src/stanza/drive/stanzaDriveTombstones.ts)
 - [`src/stanza/drive/stanzaDriveUndoSnapshots.ts`](../../src/stanza/drive/stanzaDriveUndoSnapshots.ts)
 - [`src/stanza/hooks/useStanzaDriveBackup.ts`](../../src/stanza/hooks/useStanzaDriveBackup.ts)
 - [`src/stanza/components/StanzaAccountMenu.tsx`](../../src/stanza/components/StanzaAccountMenu.tsx)
+- [`src/stanza/components/StanzaWorkspace.tsx`](../../src/stanza/components/StanzaWorkspace.tsx) — `removeSongById` tombstone write + URL strip; bootstrap effect's Re-add prompt.

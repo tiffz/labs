@@ -1,5 +1,9 @@
 import type { StanzaSong, StanzaStemTrack } from '../db/stanzaDb';
 import { stanzaDb } from '../db/stanzaDb';
+import {
+  readStanzaDriveTombstones,
+  type StanzaDriveTombstone,
+} from './stanzaDriveTombstones';
 
 export const STANZA_DRIVE_APP_ID = 'stanza' as const;
 
@@ -40,21 +44,48 @@ export interface StanzaDriveEnvelopeV1 {
   app: typeof STANZA_DRIVE_APP_ID;
   /** Song metadata only; local audio blobs and practice takes are not included. */
   songs: StanzaSongDriveRow[];
+  /**
+   * Per-`driveSourceFileId` deletion markers — the user explicitly removed these Drive-backed
+   * library rows. Other devices pulling this envelope union the list into their own tombstone
+   * store and skip remote rows whose `driveSourceFileId` appears here (see
+   * [ADR 0006](../../../docs/adr/0006-stanza-drive-backup-merge-and-restore.md)). Optional so
+   * older Stanza builds that don't write this field still parse; an absent field is treated as
+   * the empty set.
+   */
+  deletedDriveSourceFileIds?: StanzaDriveTombstone[];
 }
 
 export async function buildStanzaDriveEnvelope(): Promise<StanzaDriveEnvelopeV1> {
   const rows = await stanzaDb.songs.toArray();
   const songs: StanzaSongDriveRow[] = rows.map(songWithoutBlob);
-  return {
+  const deletedDriveSourceFileIds = readStanzaDriveTombstones();
+  const env: StanzaDriveEnvelopeV1 = {
     schemaVersion: 1,
     exportedAt: new Date().toISOString(),
     app: STANZA_DRIVE_APP_ID,
     songs,
   };
+  if (deletedDriveSourceFileIds.length > 0) {
+    env.deletedDriveSourceFileIds = deletedDriveSourceFileIds;
+  }
+  return env;
 }
 
 export function serializeStanzaDriveEnvelope(envelope: StanzaDriveEnvelopeV1): string {
   return JSON.stringify(envelope);
+}
+
+function parseTombstones(raw: unknown): StanzaDriveTombstone[] {
+  if (!Array.isArray(raw)) return [];
+  const out: StanzaDriveTombstone[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const o = item as { fileId?: unknown; removedAt?: unknown };
+    if (typeof o.fileId !== 'string' || !o.fileId.trim()) continue;
+    if (typeof o.removedAt !== 'string') continue;
+    out.push({ fileId: o.fileId.trim(), removedAt: o.removedAt });
+  }
+  return out;
 }
 
 export function parseStanzaDriveEnvelope(json: string): StanzaDriveEnvelopeV1 {
@@ -63,5 +94,13 @@ export function parseStanzaDriveEnvelope(json: string): StanzaDriveEnvelopeV1 {
   if (data.app !== STANZA_DRIVE_APP_ID) throw new Error('This backup is not from Stanza.');
   if (!Array.isArray(data.songs)) throw new Error('Backup has no songs array.');
   if (typeof data.exportedAt !== 'string') throw new Error('Backup is missing a timestamp.');
-  return data as StanzaDriveEnvelopeV1;
+  const env: StanzaDriveEnvelopeV1 = {
+    schemaVersion: 1,
+    exportedAt: data.exportedAt,
+    app: STANZA_DRIVE_APP_ID,
+    songs: data.songs,
+  };
+  const tombstones = parseTombstones(data.deletedDriveSourceFileIds);
+  if (tombstones.length > 0) env.deletedDriveSourceFileIds = tombstones;
+  return env;
 }

@@ -25,7 +25,10 @@ import {
   readLabsDriveProgressJson,
   writeLabsDriveProgressJson,
 } from '../../shared/drive/labsDrivePortfolioLayout';
-import { ensureLabsGoogleAccessTokenForDrive } from '../../shared/google/labsGoogleDriveAccess';
+import {
+  ensureLabsGoogleAccessTokenForDrive,
+  LabsGoogleInteractiveAuthRequiredError,
+} from '../../shared/google/labsGoogleDriveAccess';
 import {
   getLabsDriveTesterHashesFromEnv,
   isEmailAllowedLabsDriveTester,
@@ -47,6 +50,11 @@ import {
   readStanzaDriveSyncMeta,
   stanzaDriveFolderUrl,
 } from '../drive/stanzaDriveSyncMeta';
+import {
+  clearStanzaDriveTombstone,
+  getStanzaDriveTombstoneFileIds,
+  unionStanzaDriveTombstones,
+} from '../drive/stanzaDriveTombstones';
 import {
   listStanzaDriveUndoSnapshots,
   parseSnapshotEnvelope,
@@ -116,22 +124,45 @@ const STANZA_DRIVE_AUTO_PUSH_MIN_INTERVAL_MS = 4_000;
  * After persisting, any `remappedIds` produced by `consolidateStanzaSongDuplicates` (called
  * inside `mergeDriveRowsIntoLocalLibrary`) are forwarded to `remapStanzaTakesForConsolidation`
  * so practice takes don't dangle on rows that were just collapsed.
+ *
+ * **Deletion tombstones** (ADR 0006):
+ *   - Remote tombstones from `remoteEnvelope.deletedDriveSourceFileIds` are unioned into the
+ *     local store **before** the merge runs, so a deletion that originated on another device
+ *     suppresses re-adding the corresponding remote row on this device.
+ *   - The merged tombstone set is passed into `mergeDriveRowsIntoLocalLibrary`. Stale entries
+ *     (where a local row still has that `driveSourceFileId`) are cleared from the local store
+ *     so subsequent pushes don't re-broadcast a reversed deletion.
  */
 async function mergeRemoteEnvelopeIntoLocal(
   remoteEnvelope: StanzaDriveEnvelopeV1,
-): Promise<{ added: number; updatedFromRemote: number; keptLocal: number; collapsedDupes: number }> {
+): Promise<{
+  added: number;
+  updatedFromRemote: number;
+  keptLocal: number;
+  collapsedDupes: number;
+  skippedTombstoned: number;
+}> {
+  if (remoteEnvelope.deletedDriveSourceFileIds?.length) {
+    unionStanzaDriveTombstones(remoteEnvelope.deletedDriveSourceFileIds);
+  }
+  const tombstoneFileIds = getStanzaDriveTombstoneFileIds();
   const localRows = await stanzaDb.songs.toArray();
-  const { nextRows, remappedIds, report } = mergeDriveRowsIntoLocalLibrary(
+  const { nextRows, remappedIds, report, staleTombstoneFileIds } = mergeDriveRowsIntoLocalLibrary(
     localRows,
     remoteEnvelope.songs,
+    { tombstoneFileIds },
   );
   await persistMergedSongs(nextRows);
   await remapStanzaTakesForConsolidation(remappedIds);
+  for (const fid of staleTombstoneFileIds) {
+    clearStanzaDriveTombstone(fid);
+  }
   return {
     added: report.addedFromRemote,
     updatedFromRemote: report.mergedPreferRemote,
     keptLocal: report.keptLocalOnly + report.mergedPreferLocal,
     collapsedDupes: report.collapsedByContentKey,
+    skippedTombstoned: report.skippedTombstoned,
   };
 }
 
@@ -180,7 +211,11 @@ export function useStanzaDriveBackup() {
   }, [identity?.email]);
 
   const flushDriveWrite = useCallback(async (opts?: { silent?: boolean }) => {
-    const token = await ensureLabsGoogleAccessTokenForDrive();
+    // `silent` is a single dial that controls both messaging AND interactivity (ADR 0011):
+    // background callers pass `silent: true` so we never open a Google popup from a non-gesture
+    // context — if the token has expired we surface `LabsGoogleInteractiveAuthRequiredError` and
+    // the next manual "Back up" click does the popup-bound refresh.
+    const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: !opts?.silent });
     const refs = await ensureLabsDrivePortfolioProgressLayout(token, LABS_DRIVE_APP_FOLDER_STANZA);
     const metaBefore = await getLabsDriveProgressFileMeta(token, refs.progressFileId);
     const envelope = await buildStanzaDriveEnvelope();
@@ -211,7 +246,8 @@ export function useStanzaDriveBackup() {
    */
   const pullFromDriveAndMerge = useCallback(
     async (opts?: { silent?: boolean }) => {
-      const token = await ensureLabsGoogleAccessTokenForDrive();
+      // See `flushDriveWrite` for the `silent` ↔ `interactive` mapping (ADR 0011).
+      const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: !opts?.silent });
       const refs = await ensureLabsDrivePortfolioProgressLayout(token, LABS_DRIVE_APP_FOLDER_STANZA);
       const meta = await getLabsDriveProgressFileMeta(token, refs.progressFileId);
       let remoteEnvelope: StanzaDriveEnvelopeV1 | null = null;
@@ -338,13 +374,24 @@ export function useStanzaDriveBackup() {
     if (!conflict) return;
     setBusy(true);
     try {
+      // Same tombstone treatment as the auto-pull path (see `mergeRemoteEnvelopeIntoLocal`):
+      // any remote tombstones in the conflicted envelope are unioned in first; the merge then
+      // skips remote rows the user (or another device) previously removed.
+      if (conflict.remoteEnvelope.deletedDriveSourceFileIds?.length) {
+        unionStanzaDriveTombstones(conflict.remoteEnvelope.deletedDriveSourceFileIds);
+      }
+      const tombstoneFileIds = getStanzaDriveTombstoneFileIds();
       const localRows = await stanzaDb.songs.toArray();
-      const { nextRows, remappedIds, report } = mergeDriveRowsIntoLocalLibrary(
+      const { nextRows, remappedIds, report, staleTombstoneFileIds } = mergeDriveRowsIntoLocalLibrary(
         localRows,
         conflict.remoteEnvelope.songs,
+        { tombstoneFileIds },
       );
       await persistMergedSongs(nextRows);
       await remapStanzaTakesForConsolidation(remappedIds);
+      for (const fid of staleTombstoneFileIds) {
+        clearStanzaDriveTombstone(fid);
+      }
       setMessage(`Merged library (${formatStanzaDriveMergeReport(report)}), then saved to Drive.`);
       setConflict(null);
       await flushDriveWrite();
@@ -375,9 +422,21 @@ export function useStanzaDriveBackup() {
       try {
         const env = parseSnapshotEnvelope(snap);
         const localRows = await stanzaDb.songs.toArray();
+        // Snapshot restore is the user's explicit "go back to that state" intent — we do NOT
+        // pass tombstones to the merge here, so previously-removed rows in the snapshot come
+        // back. Tombstones for any restored `driveSourceFileId` are then cleared so subsequent
+        // pushes don't immediately re-broadcast the deletion.
         const { nextRows, remappedIds, report } = mergeDriveRowsIntoLocalLibrary(localRows, env.songs);
         await persistMergedSongs(nextRows);
         await remapStanzaTakesForConsolidation(remappedIds);
+        const restoredDriveFileIds = new Set<string>();
+        for (const row of nextRows) {
+          const fid = row.driveSourceFileId?.trim();
+          if (fid) restoredDriveFileIds.add(fid);
+        }
+        for (const fid of restoredDriveFileIds) {
+          clearStanzaDriveTombstone(fid);
+        }
         setRestoreOpen(false);
         setMessage(`Restored snapshot from ${snap.label}. ${formatStanzaDriveMergeReport(report)}`);
       } catch (e) {
@@ -432,11 +491,13 @@ export function useStanzaDriveBackup() {
         }
       } catch (e) {
         const msg =
-          e instanceof DriveHttpError
-            ? e.message
-            : e instanceof Error
+          e instanceof LabsGoogleInteractiveAuthRequiredError
+            ? 'Drive sync paused. Sign in again to pull the latest from Drive.'
+            : e instanceof DriveHttpError
               ? e.message
-              : 'Drive auto-pull failed.';
+              : e instanceof Error
+                ? e.message
+                : 'Drive auto-pull failed.';
         // Surface the failure so the user understands why their devices look out of sync, but
         // don't block the UI — they can still edit locally and a manual backup recovers later.
         setMessage(msg);
@@ -478,11 +539,13 @@ export function useStanzaDriveBackup() {
             lastAutoPushAtRef.current = Date.now();
           } catch (e) {
             const msg =
-              e instanceof DriveHttpError
-                ? e.message
-                : e instanceof Error
+              e instanceof LabsGoogleInteractiveAuthRequiredError
+                ? 'Drive sync paused. Sign in again to back up edits to Drive.'
+                : e instanceof DriveHttpError
                   ? e.message
-                  : 'Drive auto-push failed.';
+                  : e instanceof Error
+                    ? e.message
+                    : 'Drive auto-push failed.';
             setMessage(msg);
           } finally {
             autoPushInFlightRef.current = false;

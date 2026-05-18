@@ -22,7 +22,6 @@ import {
   setSingleRunForKind,
 } from '../../practice/encorePracticeExerciseModel';
 import type { EncoreBlockingJobsApi } from '../../context/EncoreBlockingJobContext';
-import { encoreRadius } from '../../theme/encoreUiTokens';
 import type { EncorePracticeExerciseKind, EncorePracticeExerciseRun, EncoreSong } from '../../types';
 import { PracticeExerciseFocusDialog } from './PracticeExerciseFocusDialog';
 
@@ -30,6 +29,9 @@ export type PracticeExercisesSectionProps = {
   song: EncoreSong;
   onPersistSong: (next: EncoreSong) => void | Promise<void>;
   googleAccessToken: string | null;
+  /** Interactive Google sign-in, forwarded to the focus dialog so "Save to Google Docs"
+   * can sign the user in inline instead of being disabled. */
+  signInWithGoogle: () => Promise<void>;
   withBlockingJob: EncoreBlockingJobsApi['withBlockingJob'];
 };
 
@@ -57,6 +59,7 @@ export function PracticeExercisesSection({
   song,
   onPersistSong,
   googleAccessToken,
+  signInWithGoogle,
   withBlockingJob,
 }: PracticeExercisesSectionProps): ReactElement {
   const [focusKind, setFocusKind] = useState<EncorePracticeExerciseKind | null>(null);
@@ -113,16 +116,12 @@ export function PracticeExercisesSection({
           Short prompts to connect lyrics and character to how you perform the song.
         </Typography>
       </Box>
-      <Box
-        sx={{
-          border: 1,
-          borderStyle: 'solid',
-          borderColor: 'divider',
-          borderRadius: encoreRadius,
-          bgcolor: 'background.paper',
-          overflow: 'hidden',
-        }}
-      >
+      {/*
+        Flat list (no outer card, no rounded corners) so the section reads like the Milestones
+        checklist directly below it — each exercise is its own row, separated by a hairline.
+        See `STYLE_GUIDE.md` "Information density".
+      */}
+      <Box>
         {kinds.map((kind, index) => {
           const meta = ENCORE_PRACTICE_EXERCISE_CATALOG[kind];
           const run = getSingleRunForKind(song, kind);
@@ -149,6 +148,7 @@ export function PracticeExercisesSection({
           run={focusedRun}
           readOnly={focusedRun.status === 'completed'}
           googleAccessToken={googleAccessToken}
+          signInWithGoogle={signInWithGoogle}
           withBlockingJob={withBlockingJob}
           onClose={closeDialog}
           onPersistSong={onPersistSong}
@@ -236,15 +236,26 @@ function ExerciseListRow({
         flexDirection: { xs: 'column', sm: 'row' },
         alignItems: { xs: 'stretch', sm: 'center' },
         gap: { xs: 1, sm: 1.75 },
-        px: { xs: 1.5, sm: 1.75 },
+        // No horizontal padding — the row sits flush with the section column so it reads as a
+        // standalone list item (matches the Milestones checklist directly below).
+        px: 0,
         py: { xs: 1.1, sm: 1.05 },
         cursor: 'pointer',
         textAlign: 'left',
+        // Hairline divider between distinct items — there's no outer card wrapping them.
         borderTop: showDivider ? 1 : 0,
         borderTopStyle: 'solid',
         borderColor: 'divider',
-        transition: 'background-color 100ms ease-out',
-        '&:hover': { bgcolor: (t) => alpha(t.palette.primary.main, 0.04) },
+        transition: 'opacity 100ms ease-out, background-color 100ms ease-out',
+        // Completed rows recede via opacity + muted title (Encore's done idiom — same as
+        // `MilestoneRow`). The "✓ Completed" status text carries the explicit signal; no
+        // background tint or accent border, so pending rows pop simply by being at full
+        // strength.
+        opacity: completed ? 0.62 : 1,
+        '&:hover': {
+          opacity: completed ? 0.9 : 1,
+          bgcolor: (t) => alpha(t.palette.primary.main, 0.03),
+        },
       }}
     >
       <Stack direction="row" spacing={1} alignItems="center" sx={{ flex: 1, minWidth: 0 }}>
@@ -267,7 +278,7 @@ function ExerciseListRow({
             sx={{
               fontWeight: 700,
               lineHeight: 1.35,
-              color: 'text.primary',
+              color: completed ? 'text.secondary' : 'text.primary',
               fontSize: '0.9375rem',
             }}
           >
@@ -338,8 +349,8 @@ function ExerciseListRow({
             </Tooltip>
           ) : null}
           <Button
-            variant="outlined"
-            color="primary"
+            variant={completed ? 'text' : 'outlined'}
+            color={completed ? 'inherit' : 'primary'}
             size="small"
             onClick={(e) => {
               e.stopPropagation();
@@ -353,6 +364,14 @@ function ExerciseListRow({
               fontSize: '0.8125rem',
               minWidth: 132,
               whiteSpace: 'nowrap',
+              // The "Open" review action on a completed row is a low-priority CTA; the next
+              // pending exercise's "Continue"/"Start" should be the one that pulls the eye.
+              ...(completed
+                ? {
+                    color: 'text.secondary',
+                    '&:hover': { bgcolor: (t) => alpha(t.palette.text.primary, 0.05), color: 'text.primary' },
+                  }
+                : null),
             }}
           >
             {primaryLabel}

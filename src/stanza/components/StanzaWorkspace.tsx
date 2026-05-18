@@ -123,10 +123,16 @@ import { fetchYoutubeOEmbedTitle, youtubeMqThumbnailUrl } from '../utils/stanzaY
 import { loadDriveFileAsStanzaLocalBlob } from '../drive/loadDriveSourceForStanza';
 import { LabsGoogleInteractiveAuthRequiredError, LABS_GOOGLE_INTERACTIVE_DRIVE_AUTH_HINT } from '../../shared/google/labsGoogleDriveAccess';
 import {
+  addStanzaDriveTombstone,
+  clearStanzaDriveTombstone,
+  getStanzaDriveTombstoneFileIds,
+} from '../drive/stanzaDriveTombstones';
+import {
   hasStanzaDriveDeepLinkQuery,
   pushStanzaPlaybackUrlSearchParams,
   readStanzaDriveBootstrapFromLocation,
   replaceStanzaPlaybackUrlSearchParams,
+  STANZA_DRIVE_FILE_QUERY,
 } from '../utils/stanzaDriveUrlParams';
 import { readYoutubeVFromLocation, stripStanzaYoutubeSearchParamPreservingDrive } from '../utils/stanzaUrlYoutube';
 import StanzaYouTubePlayer, { type StanzaYouTubeController } from './StanzaYouTubePlayer';
@@ -307,6 +313,16 @@ export default function StanzaWorkspace() {
     fileId: string;
     title: string | null;
   } | null>(null);
+  /**
+   * Set when the URL's `?df=<file id>` is one the user previously removed from this device's
+   * library (a Drive deletion tombstone — see ADR 0006). Renders a "Re-add to library?" prompt
+   * instead of silently re-importing the row; dismissing strips the URL params; re-adding
+   * clears the tombstone and runs the normal import.
+   */
+  const [driveDeepLinkRemovedPrompt, setDriveDeepLinkRemovedPrompt] = useState<{
+    fileId: string;
+    title: string | null;
+  } | null>(null);
   const [driveDeepLinkBusy, setDriveDeepLinkBusy] = useState(false);
   const [youtubePlayerErrorCode, setYoutubePlayerErrorCode] = useState<number | null>(null);
   const lastPlaybackUrlSyncKey = useRef<string | undefined>(undefined);
@@ -468,6 +484,8 @@ export default function StanzaWorkspace() {
         setSelectedId(existingByLink.id);
         setDriveDeepLinkError(null);
         setDriveDeepLinkNeedsGesture(null);
+        // The row is back in the library after this resolves, so any prior tombstone is stale.
+        clearStanzaDriveTombstone(opts.fileId);
         void backfillStanzaVideoThumbnailIfNeeded(existingByLink.id);
         return;
       }
@@ -477,6 +495,7 @@ export default function StanzaWorkspace() {
         setSelectedId(existing.id);
         setDriveDeepLinkError(null);
         setDriveDeepLinkNeedsGesture(null);
+        clearStanzaDriveTombstone(driveSourceFileId);
         void backfillStanzaVideoThumbnailIfNeeded(existing.id);
         return;
       }
@@ -495,6 +514,8 @@ export default function StanzaWorkspace() {
       setSelectedId(rowId);
       setDriveDeepLinkError(null);
       setDriveDeepLinkNeedsGesture(null);
+      // Successful import overrides any prior tombstone for this Drive file id.
+      clearStanzaDriveTombstone(driveSourceFileId);
       void backfillStanzaVideoThumbnailIfNeeded(rowId);
     },
     [],
@@ -546,6 +567,15 @@ export default function StanzaWorkspace() {
     }
 
     driveDeepLinkAttemptedRef.current = true;
+
+    // Tombstone gate (ADR 0006). The user previously removed this Drive file id from their
+    // library; instead of silently re-importing on every refresh of a bookmarked `?df=` URL,
+    // surface a one-click "Re-add to library" prompt and let the user choose.
+    if (getStanzaDriveTombstoneFileIds().has(driveFileId)) {
+      setDriveDeepLinkRemovedPrompt({ fileId: driveFileId, title: driveTitle });
+      return;
+    }
+
     setDriveDeepLinkBusy(true);
 
     void (async () => {
@@ -567,6 +597,48 @@ export default function StanzaWorkspace() {
       }
     })();
   }, [commitDriveDeepLinkImport]);
+
+  /**
+   * Bootstrap-prompt re-add: user clicked "Re-add to library" in the tombstone prompt. We clear
+   * the tombstone so the merge filter stops blocking the file id, then run the standard import
+   * (interactive because the click is a real user gesture).
+   */
+  const completeDriveDeepLinkReAdd = useCallback(async () => {
+    const pending = driveDeepLinkRemovedPrompt;
+    if (!pending) return;
+    clearStanzaDriveTombstone(pending.fileId);
+    setDriveDeepLinkRemovedPrompt(null);
+    setDriveDeepLinkBusy(true);
+    try {
+      await commitDriveDeepLinkImport({
+        fileId: pending.fileId,
+        suggestedTitle: pending.title,
+        interactiveOAuth: true,
+      });
+    } catch (e) {
+      setDriveDeepLinkError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setDriveDeepLinkBusy(false);
+    }
+  }, [driveDeepLinkRemovedPrompt, commitDriveDeepLinkImport]);
+
+  /**
+   * Bootstrap-prompt dismiss: the user decided not to re-add. Strip the `?df=` deep-link params
+   * so a subsequent refresh doesn't prompt again, and clear the prompt state.
+   */
+  const dismissDriveDeepLinkRemovedPrompt = useCallback(() => {
+    setDriveDeepLinkRemovedPrompt(null);
+    if (typeof window !== 'undefined') {
+      const sp = new URLSearchParams(window.location.search);
+      if (sp.get(STANZA_DRIVE_FILE_QUERY)) {
+        replaceStanzaPlaybackUrlSearchParams({
+          youtubeId: null,
+          driveFileId: null,
+          driveTitle: null,
+        });
+      }
+    }
+  }, []);
 
   /**
    * Auto-resume the last opened song on reload. URL `?v=…` always wins, so this only kicks in
@@ -1365,6 +1437,28 @@ export default function StanzaWorkspace() {
       await stanzaDb.takes.where('songId').equals(id).delete();
       await stanzaDb.songs.delete(id);
       if (wasSelected) setSelectedId(null);
+
+      // ADR 0006 — Drive deletion tombstone. When a Drive-backed row is removed, persist a
+      // `driveSourceFileId` tombstone so the auto-pull merge stops re-adding it from Drive's
+      // `progress.json`, the URL bootstrap stops re-importing the same `?df=` link, and other
+      // devices see the deletion via the next push of the envelope's `deletedDriveSourceFileIds`.
+      const driveFileId = prevSnap.driveSourceFileId?.trim();
+      if (driveFileId) {
+        addStanzaDriveTombstone(driveFileId);
+        // If the current URL still points at this Drive file, strip the deep-link params so a
+        // refresh doesn't fall into the bootstrap path (and so the address bar reflects reality).
+        if (typeof window !== 'undefined') {
+          const sp = new URLSearchParams(window.location.search);
+          if (sp.get(STANZA_DRIVE_FILE_QUERY)?.trim() === driveFileId) {
+            replaceStanzaPlaybackUrlSearchParams({
+              youtubeId: null,
+              driveFileId: null,
+              driveTitle: null,
+            });
+          }
+        }
+      }
+
       if (!isReplayingRef.current) {
         pushUndo({
           undo: async () => {
@@ -1372,11 +1466,15 @@ export default function StanzaWorkspace() {
             for (const t of prevTakes) {
               await stanzaDb.takes.put(t);
             }
+            // Undoing the delete = "I didn't mean to remove this" — drop the tombstone so the
+            // next sync doesn't immediately wipe the row again from another device.
+            if (driveFileId) clearStanzaDriveTombstone(driveFileId);
             if (wasSelected) setSelectedId(prevSnap.id);
           },
           redo: async () => {
             await stanzaDb.takes.where('songId').equals(id).delete();
             await stanzaDb.songs.delete(id);
+            if (driveFileId) addStanzaDriveTombstone(driveFileId);
             if (wasSelected) setSelectedId(null);
           },
         });
@@ -2400,14 +2498,61 @@ export default function StanzaWorkspace() {
   const libraryMenuSong = libraryMenu ? songs?.find((x) => x.id === libraryMenu.songId) : null;
 
   const renderDriveDeepLinkAlerts = (): ReactNode => {
-    const showLoading = driveDeepLinkBusy && !driveDeepLinkError && !driveDeepLinkNeedsGesture;
-    if (!driveDeepLinkError && !driveDeepLinkNeedsGesture && !showLoading) return null;
+    const showLoading =
+      driveDeepLinkBusy && !driveDeepLinkError && !driveDeepLinkNeedsGesture && !driveDeepLinkRemovedPrompt;
+    if (
+      !driveDeepLinkError &&
+      !driveDeepLinkNeedsGesture &&
+      !driveDeepLinkRemovedPrompt &&
+      !showLoading
+    ) {
+      return null;
+    }
     return (
       <>
         {showLoading ? (
           <Alert severity="info" sx={{ maxWidth: 560, mx: 'auto', mb: 2, width: '100%' }}>
             <Typography variant="body2" sx={{ lineHeight: 1.5 }}>
               Fetching audio from Google Drive…
+            </Typography>
+          </Alert>
+        ) : null}
+        {driveDeepLinkRemovedPrompt ? (
+          <Alert
+            severity="info"
+            sx={{
+              maxWidth: 560,
+              mx: 'auto',
+              mb: 2,
+              width: '100%',
+              '& .MuiAlert-message': { width: '100%' },
+            }}
+            action={
+              <Stack direction="row" spacing={0.5} alignItems="center">
+                <Button
+                  color="inherit"
+                  size="small"
+                  disabled={driveDeepLinkBusy}
+                  onClick={() => dismissDriveDeepLinkRemovedPrompt()}
+                >
+                  Not now
+                </Button>
+                <Button
+                  color="inherit"
+                  size="small"
+                  variant="outlined"
+                  disabled={driveDeepLinkBusy}
+                  onClick={() => void completeDriveDeepLinkReAdd()}
+                >
+                  {driveDeepLinkBusy ? '…' : 'Re-add'}
+                </Button>
+              </Stack>
+            }
+          >
+            <Typography variant="body2" sx={{ lineHeight: 1.5 }}>
+              You removed{' '}
+              <strong>{driveDeepLinkRemovedPrompt.title?.trim() || 'this Drive recording'}</strong>{' '}
+              from your library. Re-add it?
             </Typography>
           </Alert>
         ) : null}

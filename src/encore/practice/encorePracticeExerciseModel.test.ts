@@ -21,6 +21,7 @@ import {
   removeRunForKind,
   serializeLyricsSectionsToRaw,
   setSingleRunForKind,
+  unmarkExerciseRunCompleted,
   touchExerciseRun,
 } from './encorePracticeExerciseModel';
 
@@ -479,6 +480,25 @@ describe('characterNineAnswerToEditorHtml', () => {
   it('passes through stored HTML', () => {
     const html = '<p><strong>Bold</strong></p>';
     expect(characterNineAnswerToEditorHtml(html)).toBe(html);
+  });
+});
+
+describe('unmarkExerciseRunCompleted', () => {
+  it('reverts a completed run to a draft and drops completedAt', () => {
+    const completed = markExerciseRunCompleted(newLyricsInOwnWordsRun());
+    expect(completed.status).toBe('completed');
+    expect(completed.completedAt).toBeTruthy();
+    const reopened = unmarkExerciseRunCompleted(completed);
+    expect(reopened.status).toBe('draft');
+    expect(reopened.completedAt).toBeUndefined();
+    expect(reopened.id).toBe(completed.id);
+    expect(reopened.updatedAt >= completed.updatedAt).toBe(true);
+  });
+
+  it('is a no-op on a draft run', () => {
+    const draft = newLyricsInOwnWordsRun();
+    const result = unmarkExerciseRunCompleted(draft);
+    expect(result).toBe(draft);
   });
 });
 
