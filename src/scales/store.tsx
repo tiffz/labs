@@ -32,7 +32,7 @@ import {
   isMicrophonePermissionGranted,
 } from './utils/audioPrefs';
 import { advanceFreeTempoCursor } from './utils/freeTempoCursorStep';
-import { applyPianoDoubleTapStep } from './utils/pianoAdvanceDoubleTap';
+import { applyPianoDoubleTapStep, isPianoAdvanceTabActive } from './utils/pianoAdvanceDoubleTap';
 import {
   buildSessionSummary,
   type SessionExerciseSummary,
@@ -173,8 +173,8 @@ type Action =
   | { type: 'SET_ACTIVE_EXERCISE'; index: number; score: PianoScore }
   | { type: 'SET_PLAYING'; isPlaying: boolean }
   | { type: 'UPDATE_POSITION'; measureIndex: number; noteIndices: Map<string, number> }
-  | { type: 'MIDI_NOTE_ON'; note: number; perfMs: number }
-  | { type: 'MIDI_NOTE_OFF'; note: number; perfMs: number }
+  | { type: 'MIDI_NOTE_ON'; note: number; perfMs: number; pianoShortcutActive?: boolean }
+  | { type: 'MIDI_NOTE_OFF'; note: number; perfMs: number; pianoShortcutActive?: boolean }
   | { type: 'ADD_PRACTICE_RESULT'; result: PracticeNoteResult }
   | { type: 'START_PRACTICE_RUN' }
   /**
@@ -204,6 +204,7 @@ type Action =
   | { type: 'FREE_TEMPO_RUN_COMPLETE' }
   | { type: 'RESTART_FREE_TEMPO' }
   | { type: 'WRONG_NOTE_FLASH'; notes: number[] }
+  | { type: 'CLEAR_PIANO_ADVANCE_SHORTCUTS' }
   | { type: 'LOAD_STAGE'; exercise: SessionExercise; score: PianoScore }
   | { type: 'MARK_ONBOARDING_SEEN' }
   | { type: 'MARK_GUIDANCE_INTRODUCED'; stage: Stage; exercise: ExerciseDefinition }
@@ -425,12 +426,23 @@ function reducer(state: ScalesState, action: Action): ScalesState {
         currentNoteIndices: action.noteIndices,
       };
 
+    case 'CLEAR_PIANO_ADVANCE_SHORTCUTS':
+      return {
+        ...state,
+        homeNoteDoubleTapAwait: null,
+        midiShortcutWave: state.midiShortcutWave + 1,
+        midiShortcutLast: null,
+      };
+
     case 'MIDI_NOTE_ON': {
       const perfMs = action.perfMs;
       const nextPulse = state.midiNoteOnPulse + 1;
       const next = new Set(state.activeMidiNotes);
       next.add(action.note);
-      const shortcut = bumpMidiShortcut(state, 'on', action.note, perfMs);
+      const pianoShortcutActive = action.pianoShortcutActive ?? true;
+      const shortcut = pianoShortcutActive
+        ? bumpMidiShortcut(state, 'on', action.note, perfMs)
+        : null;
 
       if (state.screen !== 'home') {
         return {
@@ -438,17 +450,22 @@ function reducer(state: ScalesState, action: Action): ScalesState {
           activeMidiNotes: next,
           midiNoteOnPulse: nextPulse,
           homeNoteDoubleTapAwait: null,
-          ...shortcut,
+          ...(shortcut ?? {}),
         };
       }
 
-      if (!hasPracticeInput(state) || state.homeStartBlocked || nextPulse <= state.homeMidiGatePulse) {
+      if (
+        !pianoShortcutActive
+        || !hasPracticeInput(state)
+        || state.homeStartBlocked
+        || nextPulse <= state.homeMidiGatePulse
+      ) {
         return {
           ...state,
           activeMidiNotes: next,
           midiNoteOnPulse: nextPulse,
           homeNoteDoubleTapAwait: null,
-          ...shortcut,
+          ...(shortcut ?? {}),
         };
       }
 
@@ -472,7 +489,7 @@ function reducer(state: ScalesState, action: Action): ScalesState {
           midiNoteOnPulse: nextPulse,
           homeMidiGatePulse: nextPulse,
           homePracticeCue: state.sessionComplete ? 'midi_continue' : null,
-          ...shortcut,
+          ...(shortcut ?? {}),
         };
       }
 
@@ -481,20 +498,31 @@ function reducer(state: ScalesState, action: Action): ScalesState {
         activeMidiNotes: next,
         midiNoteOnPulse: nextPulse,
         homeNoteDoubleTapAwait: homeNext,
-        ...shortcut,
+        ...(shortcut ?? {}),
       };
     }
 
     case 'MIDI_NOTE_OFF': {
       const next = new Set(state.activeMidiNotes);
       next.delete(action.note);
-      const shortcut = bumpMidiShortcut(state, 'off', action.note, action.perfMs);
+      const pianoShortcutActive = action.pianoShortcutActive ?? true;
+      const shortcut = pianoShortcutActive
+        ? bumpMidiShortcut(state, 'off', action.note, action.perfMs)
+        : null;
       if (state.screen !== 'home') {
         return {
           ...state,
           activeMidiNotes: next,
           homeNoteDoubleTapAwait: null,
-          ...shortcut,
+          ...(shortcut ?? {}),
+        };
+      }
+      if (!pianoShortcutActive) {
+        return {
+          ...state,
+          activeMidiNotes: next,
+          homeNoteDoubleTapAwait: null,
+          ...(shortcut ?? {}),
         };
       }
       const { next: homeAwait } = applyPianoDoubleTapStep(
@@ -507,7 +535,7 @@ function reducer(state: ScalesState, action: Action): ScalesState {
         ...state,
         activeMidiNotes: next,
         homeNoteDoubleTapAwait: homeAwait,
-        ...shortcut,
+        ...(shortcut ?? {}),
       };
     }
 
@@ -973,22 +1001,45 @@ export function ScalesProvider({ children }: { children: React.ReactNode }) {
   }, [state.disabledMidiDeviceIds]);
 
   useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const clearShortcutsWhenHidden = () => {
+      if (!isPianoAdvanceTabActive()) {
+        dispatch({ type: 'CLEAR_PIANO_ADVANCE_SHORTCUTS' });
+      }
+    };
+    document.addEventListener('visibilitychange', clearShortcutsWhenHidden);
+    return () => document.removeEventListener('visibilitychange', clearShortcutsWhenHidden);
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
     const midi = getMidiInput();
     midiRef.current = midi;
     midi.onNote((type, note, _velocity, timestamp, deviceId) => {
       if (disabledDeviceIdsRef.current.has(deviceId)) return;
       if (type === 'noteon') {
+        const perfMs = performance.now();
         recordMidiNoteOn(note, timestamp);
-        dispatch({ type: 'MIDI_NOTE_ON', note, perfMs: performance.now() });
+        dispatch({
+          type: 'MIDI_NOTE_ON',
+          note,
+          perfMs,
+          pianoShortcutActive: isPianoAdvanceTabActive(),
+        });
         if (isDebugEnabled()) {
-          logDebugEvent({ type: 'note_on', t: performance.now(), midi: note, source: 'midi',
+          logDebugEvent({ type: 'note_on', t: perfMs, midi: note, source: 'midi',
             rawTimestamp: timestamp, compensatedTimestamp: timestamp });
         }
       } else {
+        const perfMs = performance.now();
         recordMidiNoteOff(note);
-        dispatch({ type: 'MIDI_NOTE_OFF', note, perfMs: performance.now() });
-        if (isDebugEnabled()) logDebugEvent({ type: 'note_off', t: performance.now(), midi: note, source: 'midi' });
+        dispatch({
+          type: 'MIDI_NOTE_OFF',
+          note,
+          perfMs,
+          pianoShortcutActive: isPianoAdvanceTabActive(),
+        });
+        if (isDebugEnabled()) logDebugEvent({ type: 'note_off', t: perfMs, midi: note, source: 'midi' });
       }
     });
     midi.onConnection((connected, devices) => {
@@ -1015,16 +1066,27 @@ export function ScalesProvider({ children }: { children: React.ReactNode }) {
         const rawTime = performance.now();
         const compensated = rawTime - MIC_LATENCY_COMPENSATION_MS;
         recordMidiNoteOn(midi, compensated);
-        dispatch({ type: 'MIDI_NOTE_ON', note: midi, perfMs: performance.now() });
+        dispatch({
+          type: 'MIDI_NOTE_ON',
+          note: midi,
+          perfMs: rawTime,
+          pianoShortcutActive: isPianoAdvanceTabActive(),
+        });
         if (isDebugEnabled()) {
           logDebugEvent({ type: 'note_on', t: rawTime, midi, source: 'mic',
             rawTimestamp: rawTime, compensatedTimestamp: compensated });
         }
       },
       onNoteOff: (midi) => {
+        const perfMs = performance.now();
         recordMidiNoteOff(midi);
-        dispatch({ type: 'MIDI_NOTE_OFF', note: midi, perfMs: performance.now() });
-        if (isDebugEnabled()) logDebugEvent({ type: 'note_off', t: performance.now(), midi, source: 'mic' });
+        dispatch({
+          type: 'MIDI_NOTE_OFF',
+          note: midi,
+          perfMs,
+          pianoShortcutActive: isPianoAdvanceTabActive(),
+        });
+        if (isDebugEnabled()) logDebugEvent({ type: 'note_off', t: perfMs, midi, source: 'mic' });
       },
     });
     try {

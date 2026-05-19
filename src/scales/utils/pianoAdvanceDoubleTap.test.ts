@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { applyPianoDoubleTapStep, PIANO_ADVANCE_DOUBLE_MS } from './pianoAdvanceDoubleTap';
+import {
+  applyPianoDoubleTapStep,
+  isPianoAdvanceTabActive,
+  PIANO_ADVANCE_DOUBLE_MS,
+} from './pianoAdvanceDoubleTap';
 
 describe('applyPianoDoubleTapStep', () => {
   it('requires press-off-press on the same note', () => {
@@ -51,5 +55,19 @@ describe('applyPianoDoubleTapStep', () => {
     const r = applyPianoDoubleTapStep(arm, 'on', note, tSecondOn);
     expect(r.complete).toBe(true);
     expect(r.next).toBeNull();
+  });
+});
+
+describe('isPianoAdvanceTabActive', () => {
+  it('allows piano advance when the document is visible', () => {
+    expect(isPianoAdvanceTabActive({ visibilityState: 'visible' })).toBe(true);
+  });
+
+  it('blocks piano advance when the document is hidden', () => {
+    expect(isPianoAdvanceTabActive({ visibilityState: 'hidden' })).toBe(false);
+  });
+
+  it('allows piano advance outside a browser document', () => {
+    expect(isPianoAdvanceTabActive(undefined)).toBe(true);
   });
 });

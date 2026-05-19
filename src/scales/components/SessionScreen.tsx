@@ -1055,7 +1055,10 @@ export default function SessionScreen() {
     if (guidanceModalOpen) {
       if (!midiShortcutStreamActive) return;
       const last = state.midiShortcutLast;
-      if (!last) return;
+      if (!last) {
+        guidancePianoDoubleTapArmRef.current = null;
+        return;
+      }
       const { complete, next } = applyPianoDoubleTapStep(
         guidancePianoDoubleTapArmRef.current,
         last.kind,
@@ -1127,7 +1130,10 @@ export default function SessionScreen() {
     }
 
     const last = state.midiShortcutLast;
-    if (!last) return;
+    if (!last) {
+      freeTempoPreStartPianoArmRef.current = null;
+      return;
+    }
 
     const { complete, next } = applyPianoDoubleTapStep(
       freeTempoPreStartPianoArmRef.current,
@@ -1192,7 +1198,10 @@ export default function SessionScreen() {
     // without completing the probe. Double-tap must match that affordance.
 
     const last = state.midiShortcutLast;
-    if (!last) return;
+    if (!last) {
+      timedPreStartPianoArmRef.current = null;
+      return;
+    }
 
     const { complete, next } = applyPianoDoubleTapStep(
       timedPreStartPianoArmRef.current,
@@ -1251,7 +1260,10 @@ export default function SessionScreen() {
       return;
     }
     const last = state.midiShortcutLast;
-    if (!last) return;
+    if (!last) {
+      sessionAdvancePianoArmRef.current = null;
+      return;
+    }
 
     const hasRes = !!state.lastExerciseResult && !state.isPlaying;
     const boundaryPiano = hasRes

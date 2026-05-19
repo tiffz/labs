@@ -16,6 +16,14 @@ export const PIANO_ADVANCE_BUTTON_TOOLTIP_MIC_ONLY =
 
 export type PianoDoubleTapArm = { note: number; perfMs: number; released: boolean } | null;
 
+type PianoAdvanceDocument = { visibilityState?: Document['visibilityState'] } | undefined;
+
+export function isPianoAdvanceTabActive(
+  doc: PianoAdvanceDocument = typeof document === 'undefined' ? undefined : document,
+): boolean {
+  return doc?.visibilityState == null || doc.visibilityState === 'visible';
+}
+
 /**
  * One step of the double-tap detector. Call on each MIDI/mic note on/off.
  * - First `on`: arms `{ note, perfMs, released: false }`.
