@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactElement, type ReactNode } from 'react';
 import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined';
 import AddToDriveIcon from '@mui/icons-material/AddToDrive';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -23,6 +24,7 @@ import {
   type LabsGoogleSessionConsumerId,
   type LabsGoogleSessionTouches,
 } from './labsGoogleSessionConsumers';
+import { formatLabsDriveInstant } from './formatLabsDriveInstant';
 
 const PRIVACY_URL = 'https://labs.tiffzhang.com/privacy';
 
@@ -35,8 +37,10 @@ export type LabsAccountBackupSlotProps = {
   message: string | null;
   onBackup: () => void;
   lastBackupExportedAt?: string;
-  /** Short scope line, e.g. "Markers & YouTube IDs · drive.file" */
+  /** Short scope line, e.g. "Markers & YouTube IDs · audio on device" */
   scopeSummary: string;
+  /** Optional detail for the info icon beside the scope line. */
+  scopeTooltip?: string;
 };
 
 export type LabsAccountMenuAppearance = {
@@ -72,7 +76,7 @@ function LabsAppsCompactRow(props: {
 }) {
   const { touches, currentId, onNavigateApp } = props;
   return (
-    <AppTooltip title="Same Google account across Labs on this browser. Links open each app. Tip shows last time you opened an app on this device.">
+    <AppTooltip title="Labs apps on this Google account. Hover a link for when you last opened it here.">
       <Stack
         direction="row"
         component="nav"
@@ -216,12 +220,12 @@ function LabsAccountSignInMenu(props: {
         }}
         keepMounted={false}
       >
-        <Box sx={{ px: 2, py: 2, minWidth: 260 }}>
+        <Box sx={{ px: 2.5, py: 2, minWidth: 260 }}>
           <Typography variant="subtitle1" component="h2" sx={{ fontWeight: 600, letterSpacing: '-0.02em', mb: 1 }}>
             Google account
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, lineHeight: 1.45 }}>
-            Same storage as Encore on this browser. Sign in once here (or in Encore), then Drive backup can run.
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, lineHeight: 1.5 }}>
+            Sign in to back up to Drive. Uses the same session as Encore on this browser.
           </Typography>
           {error ? (
             <Alert severity="error" sx={{ mb: 1.5, py: 0.5 }}>
@@ -263,17 +267,29 @@ function LabsAccountBackupBlock(props: {
     );
   }
 
+  const scopeTooltip =
+    backup.scopeTooltip ??
+    'Creates and updates files in a folder this app owns on your Google Drive (drive.file scope).';
+
   return (
-    <Stack spacing={1.25}>
-      <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.45 }}>
-        Saves to your Google Drive (files this app creates).
-      </Typography>
-      <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.45, display: 'block' }}>
-        {backup.scopeSummary}
-      </Typography>
+    <Stack spacing={1.5}>
+      <Stack direction="row" alignItems="flex-start" spacing={0.5} useFlexGap>
+        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5, flex: 1, minWidth: 0 }}>
+          {backup.scopeSummary}
+        </Typography>
+        <AppTooltip title={scopeTooltip}>
+          <IconButton
+            size="small"
+            aria-label="What Drive backup includes"
+            sx={{ mt: -0.25, color: 'text.disabled', '&:hover': { color: 'text.secondary' } }}
+          >
+            <InfoOutlinedIcon sx={{ fontSize: 18 }} />
+          </IconButton>
+        </AppTooltip>
+      </Stack>
       {backup.lastBackupExportedAt ? (
         <Typography variant="caption" color="text.disabled" sx={{ display: 'block', mt: -0.5 }}>
-          Last backup {backup.lastBackupExportedAt}
+          Last backup {formatLabsDriveInstant(backup.lastBackupExportedAt)}
         </Typography>
       ) : null}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
@@ -403,41 +419,57 @@ export function LabsAccountMenu(props: LabsAccountMenuProps) {
         keepMounted={false}
       >
         <Box sx={{ display: 'flex', flexDirection: 'column', p: 0 }}>
-          <Box sx={{ px: 2, pt: 1.75, pb: 1.75, minWidth: 260 }}>
-            <Typography variant="subtitle1" component="h2" sx={{ fontWeight: 600, letterSpacing: '-0.02em', mb: 1.25 }}>
+          <Box sx={{ px: 2.5, pt: 2, pb: 2, minWidth: 260 }}>
+            <Typography variant="subtitle1" component="h2" sx={{ fontWeight: 600, letterSpacing: '-0.02em', mb: 1.5 }}>
               Account
             </Typography>
 
-            <Typography
-              variant="body2"
-              sx={{
-                fontWeight: 600,
-                color: 'text.primary',
-                mb: identityCaption ? 0.5 : 1,
-              }}
-            >
-              {accountEmail}
-            </Typography>
             {identityCaption ? (
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.45, mb: 1 }}>
-                {identityCaption}
+              <AppTooltip title={identityCaption}>
+                <Typography
+                  variant="body2"
+                  component="span"
+                  sx={{
+                    display: 'block',
+                    fontWeight: 600,
+                    color: 'text.primary',
+                    mb: 1.25,
+                    cursor: 'default',
+                  }}
+                >
+                  {accountEmail}
+                </Typography>
+              </AppTooltip>
+            ) : (
+              <Typography
+                variant="body2"
+                sx={{
+                  fontWeight: 600,
+                  color: 'text.primary',
+                  mb: 1.25,
+                }}
+              >
+                {accountEmail}
               </Typography>
-            ) : null}
+            )}
 
             <LabsAppsCompactRow touches={sessionTouches} currentId={currentConsumerId} onNavigateApp={close} />
 
-            <Divider sx={{ my: 1.5 }} />
+            <Divider sx={{ my: 2 }} />
 
-            <Stack direction="row" alignItems="flex-start" spacing={1} sx={{ mb: 1 }}>
-              <AddToDriveIcon sx={{ fontSize: 22, color: 'primary.main', flexShrink: 0, mt: 0.125 }} aria-hidden />
-              <Box sx={{ minWidth: 0 }}>
-                <Typography component="h3" variant="subtitle2" sx={{ fontWeight: 700, lineHeight: 1.3, color: 'text.primary' }}>
-                  Google Drive
+            <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.25 }}>
+              <AddToDriveIcon sx={{ fontSize: 22, color: 'primary.main', flexShrink: 0 }} aria-hidden />
+              <Typography component="h3" variant="subtitle2" sx={{ fontWeight: 700, lineHeight: 1.3, color: 'text.primary' }}>
+                Google Drive backup
+                <Typography
+                  component="span"
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ ml: 0.75, fontWeight: 600, letterSpacing: '0.02em' }}
+                >
+                  (test)
                 </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600, letterSpacing: '0.04em' }}>
-                  Backup (test)
-                </Typography>
-              </Box>
+              </Typography>
             </Stack>
 
             <LabsAccountBackupBlock
@@ -449,9 +481,9 @@ export function LabsAccountMenu(props: LabsAccountMenuProps) {
           <Box
             component="footer"
             sx={(theme) => ({
-              px: 2,
-              pt: 2,
-              pb: 2,
+              px: 2.5,
+              pt: 1.5,
+              pb: 1.75,
               borderTop: '1px solid',
               borderColor: alpha(theme.palette.divider, theme.palette.mode === 'dark' ? 0.22 : 0.35),
             })}
@@ -461,7 +493,7 @@ export function LabsAccountMenu(props: LabsAccountMenuProps) {
               component="p"
               sx={{
                 m: 0,
-                mb: 1,
+                mb: 0.75,
                 color: 'text.disabled',
                 letterSpacing: '0.12em',
                 fontSize: '0.65rem',

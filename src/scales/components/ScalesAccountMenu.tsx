@@ -1,21 +1,20 @@
-import CircularProgress from '@mui/material/CircularProgress';
-import Button from '@mui/material/Button';
-import { LabsAccountMenu } from '../../shared/google/LabsAccountMenu';
+import { LabsDriveAccountMenu } from '../../shared/google/LabsDriveAccountMenu';
 import { useScalesDriveBackupContext } from '../context/ScalesDriveBackupContext';
 
 export default function ScalesAccountMenu() {
-  const { googleClientConfigured, backupSlot } = useScalesDriveBackupContext();
+  const { googleClientConfigured, backupSlot, driveUi } = useScalesDriveBackupContext();
 
   if (!googleClientConfigured) return null;
 
   return (
-    <LabsAccountMenu
+    <LabsDriveAccountMenu
       appId="scales"
       googleClientConfigured={googleClientConfigured}
       backup={backupSlot}
+      drive={driveUi}
       ids={{ menu: 'scales-account-menu', button: 'scales-account-menu-button' }}
       appearance={{
-        tooltipTitle: 'Account & Drive backup',
+        tooltipTitle: 'Account and Drive backup',
         menuPaperSx: {
           borderRadius: '16px',
           border: '1px solid',
@@ -29,18 +28,6 @@ export default function ScalesAccountMenu() {
           },
         },
       }}
-      renderBackupButton={({ disabled, busy, onBackup }) => (
-        <Button
-          variant="contained"
-          size="small"
-          disabled={disabled}
-          onClick={onBackup}
-          aria-label="Back up progress to Google Drive"
-          startIcon={busy ? <CircularProgress size={14} color="inherit" aria-hidden /> : undefined}
-        >
-          {busy ? 'Saving…' : 'Back up to Drive'}
-        </Button>
-      )}
     />
   );
 }

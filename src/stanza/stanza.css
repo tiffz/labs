@@ -187,6 +187,67 @@
   font-size: clamp(1.45rem, 1.2rem + 0.8vw, 1.75rem);
 }
 
+/* Viewer song title: one typographic source for resting + inline edit (do not use font:inherit on h1). */
+.stanza-viewer-header .stanza-song-title-heading {
+  margin: 0;
+  padding: 0;
+  font-family: var(--stanza-font-display);
+  font-size: clamp(1.45rem, 1.2rem + 0.8vw, 1.75rem);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+  color: var(--stanza-ink);
+}
+
+.stanza-viewer-header .stanza-song-title-field {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
+  color: inherit;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.stanza-viewer-header button.stanza-song-title-field {
+  cursor: text;
+  white-space: normal;
+  word-break: break-word;
+  transition: background-color 0.15s ease;
+}
+
+.stanza-viewer-header button.stanza-song-title-field:hover {
+  background: rgba(232, 72, 160, 0.06);
+}
+
+.stanza-viewer-header button.stanza-song-title-field:focus-visible {
+  outline: var(--stanza-focus-ring-rose);
+  outline-offset: 2px;
+  background: rgba(232, 72, 160, 0.06);
+}
+
+.stanza-viewer-header textarea.stanza-song-title-field {
+  resize: none;
+  overflow: hidden;
+  outline: none;
+  caret-color: var(--stanza-rose-strong, #d63d92);
+  field-sizing: content;
+  border-radius: 0;
+}
+
+.stanza-viewer-header textarea.stanza-song-title-field:focus-visible {
+  outline: var(--stanza-focus-ring-rose);
+  outline-offset: 2px;
+}
+
 .stanza-hero-lede {
   color: var(--stanza-ink-muted);
   line-height: 1.6;

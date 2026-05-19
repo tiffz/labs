@@ -143,6 +143,7 @@ import { clampStanzaPlaybackRate } from '../utils/stanzaPlaybackRateLimits';
 import StanzaMetronomeStrip from './StanzaMetronomeStrip';
 import StanzaSectionMetronomeRail from './StanzaSectionMetronomeRail';
 import StanzaRepeatMark from './StanzaRepeatMark';
+import StanzaSongTitleEditor from './StanzaSongTitleEditor';
 import { primeStanzaMetronomeAudio, useStanzaMetronomeSync } from '../hooks/useStanzaMetronomeSync';
 import { useStanzaMetronomePersistence } from '../hooks/useStanzaMetronomePersistence';
 import DrumAccompaniment from '../../shared/components/music/DrumAccompaniment';
@@ -294,6 +295,8 @@ export default function StanzaWorkspace() {
   } | null>(null);
   /** Inline mix-rail label edit (stem id + draft value). */
   const [stemInlineEdit, setStemInlineEdit] = useState<{ stemId: string; value: string } | null>(null);
+  const railScrollRef = useRef<HTMLDivElement>(null);
+  const [railScrollable, setRailScrollable] = useState(false);
   const [stemReorderDragId, setStemReorderDragId] = useState<string | null>(null);
   const [stemReorderOverId, setStemReorderOverId] = useState<string | null>(null);
   /**
@@ -1118,6 +1121,35 @@ export default function StanzaWorkspace() {
     if (!selectedId) setRailLiveTiming(null);
   }, [selectedId]);
 
+  useLayoutEffect(() => {
+    const el = railScrollRef.current;
+    if (!el) return;
+    const mql = window.matchMedia('(min-width: 900px)');
+    const update = () => {
+      if (!mql.matches) {
+        setRailScrollable(false);
+        return;
+      }
+      setRailScrollable(el.scrollHeight > el.clientHeight + 1);
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    mql.addEventListener('change', update);
+    return () => {
+      ro.disconnect();
+      mql.removeEventListener('change', update);
+    };
+  }, [
+    selectedId,
+    selected?.drumsEnabled,
+    selected?.metronomeEnabled,
+    selected?.stems?.length,
+    railCalibSeg?.id,
+    stanzaBeatAnalysisModalOpen,
+    transposeDecodeBusy,
+  ]);
+
   useEffect(() => {
     if (!selectedId || playback.duration <= 0 || !songs) return;
     const song = songs.find((s) => s.id === selectedId);
@@ -1200,6 +1232,21 @@ export default function StanzaWorkspace() {
           localTransposeSemitones: clamped === 0 ? undefined : clamped,
         });
       }, 420);
+    },
+    [persistSong, selected],
+  );
+
+  const commitSongTitle = useCallback(
+    async (nextTitle: string) => {
+      if (!selected) return;
+      await persistSong({ id: selected.id, title: nextTitle });
+      if (selected.driveSourceFileId && !selected.ytId) {
+        replaceStanzaPlaybackUrlSearchParams({
+          youtubeId: null,
+          driveFileId: selected.driveSourceFileId,
+          driveTitle: nextTitle,
+        });
+      }
     },
     [persistSong, selected],
   );
@@ -2798,9 +2845,7 @@ export default function StanzaWorkspace() {
           >
             <StanzaRepeatMark size={40} />
             <Box sx={{ flex: '1 1 200px', minWidth: 0 }}>
-              <Typography variant="h5" component="h1" className="stanza-display-title">
-                {selected.title}
-              </Typography>
+              <StanzaSongTitleEditor title={selected.title} onCommit={(t) => void commitSongTitle(t)} />
               <button type="button" className="stanza-link-quiet" onClick={goHome} aria-label="Back to library" style={{ marginTop: 6 }}>
                 ← Back to library
               </button>
@@ -3052,23 +3097,21 @@ export default function StanzaWorkspace() {
                   display: 'flex',
                   flexDirection: 'column',
                   minHeight: 0,
-                  // Cap the rail to the available viewport so a tall config (drums on, many
-                  // mix layers, calibration panel) scrolls inside the rail instead of pushing
-                  // the page tall. The 240px subtracts the page header + viewer header + the
-                  // timeline strip + bottom margin so the rail sits flush with the video.
-                  //
-                  // `overflowY: auto` lives on the Paper itself (not the inner Stack) so the
-                  // rail sizes to its content and only becomes a scroll container when content
-                  // genuinely exceeds the cap. Putting it on a `flex: 1` inner Stack made the
-                  // Stack always claim the full max-height — which on systems with persistent
-                  // scrollbars (macOS "Always show", many Windows configs) painted a visible
-                  // gutter even when the configured rail was much shorter than the viewport.
-                  maxHeight: { md: 'calc(100vh - 240px)' },
-                  overflowY: 'auto',
+                  overflow: 'hidden',
+                  maxHeight: { md: 'calc(100dvh - 240px)' },
                   p: { xs: 1, md: 1.25 },
                 }}
               >
-                <Stack spacing={1} sx={{ pr: 0.25 }}>
+                <Box
+                  ref={railScrollRef}
+                  sx={{
+                    minHeight: 0,
+                    flex: '1 1 auto',
+                    overflowY: railScrollable ? 'auto' : 'hidden',
+                    overflowX: 'hidden',
+                  }}
+                >
+                <Stack spacing={1}>
                   <Box>
                     <StanzaMetronomeStrip
                       enabled={Boolean(selected.metronomeEnabled)}
@@ -3777,6 +3820,7 @@ export default function StanzaWorkspace() {
                     ) : null}
                   </Box>
                 </Stack>
+                </Box>
               </Paper>
 
               <Box sx={{ gridArea: 'timeline', minWidth: 0, width: '100%' }}>

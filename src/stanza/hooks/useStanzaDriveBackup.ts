@@ -232,7 +232,7 @@ export function useStanzaDriveBackup() {
     setSyncMetaTick((n) => n + 1);
     setLatestRemoteEnvelope(envelope);
     if (!opts?.silent) {
-      setMessage('Library metadata saved to Google Drive (audio stays on this device).');
+      setMessage('Saved to Drive. Audio stays on this device.');
     }
   }, []);
 
@@ -269,7 +269,7 @@ export function useStanzaDriveBackup() {
       setSyncMetaTick((n) => n + 1);
       if (!remoteEnvelope) {
         sessionPullDoneRef.current = true;
-        if (!opts?.silent) setMessage('No Stanza backup in Drive yet for this account.');
+        if (!opts?.silent) setMessage('No Stanza backup on Drive yet.');
         return { added: 0, updatedFromRemote: 0, keptLocal: 0, collapsedDupes: 0 };
       }
       setLatestRemoteEnvelope(remoteEnvelope);
@@ -284,9 +284,7 @@ export function useStanzaDriveBackup() {
           parts.push(`collapsed ${result.collapsedDupes} duplicate${result.collapsedDupes === 1 ? '' : 's'}`);
         }
         setMessage(
-          parts.length > 0
-            ? `Synced from Google Drive (${parts.join(', ')}).`
-            : 'Library is already in sync with Google Drive.',
+          parts.length > 0 ? `Synced from Drive (${parts.join(', ')}).` : 'Already in sync with Drive.',
         );
       }
       return result;

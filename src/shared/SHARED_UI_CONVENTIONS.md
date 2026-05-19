@@ -181,6 +181,17 @@ Some primitives live under `src/<app>/ui/` rather than `src/shared/components/` 
 - **`src/encore/ui/EncoreSynchronizableSpotifyPlaylistPanel.tsx`** — single source of truth for any UI that lets a user bind a Spotify playlist and trigger sync. Used by the Practice page (learning playlist) and `SavedSearchesManageScreen` (saved-search → playlist binding). Resolves the live playlist _name_ from Spotify (caller passes `spotifyClientId` + the saved id), surfaces context-aware tooltips for disabled-Sync states, and renders one Spotify mark — never two — by placing the brand inside the row chip (summary mode) or the `EncoreBrandTextField` (edit mode), not in a section-label prefix. Add new sync screens by passing different `helpContent` / `syncReadyTooltip` rather than hand-rolling another inline layout, so polish on either screen benefits both.
 - **`src/encore/ui/EncoreBrandTextField.tsx`** — `TextField` whose start adornment is a brand mark (`spotify`, `youtube`, …). Use this whenever the field accepts a brand-specific URL or id. Don't double up: if your section header already shows the brand mark, route the input through `EncoreSynchronizableSpotifyPlaylistPanel` (or skip the `brand` prop) instead of stacking two icons on the same row.
 
+## Google Drive account menu (Stanza, Learn Your Scales)
+
+Apps that sync `progress.json` to Drive under `Tiff Zhang Labs / <App>` use **`LabsDriveAccountMenu`** ([`src/shared/google/LabsDriveAccountMenu.tsx`](./google/LabsDriveAccountMenu.tsx)) on top of **`LabsAccountMenu`**. It owns the shared UX: back up, **Restore** picker, **Open in Drive**, restore dialog, and optional merge/replace conflict dialog.
+
+Each app implements a hook/context that returns:
+
+- `backup` — {@link LabsAccountBackupSlotProps} (tester gate, busy, messages, scope copy)
+- `drive` — {@link LabsDriveBackupUiProps} (restore actions, folder URL, snapshots list)
+
+Wire Stanza via `useStanzaDriveBackup`; Scales via `ScalesDriveBackupProvider` (`driveUi`). Do not duplicate restore dialogs or Drive link rows in app menus.
+
 ## Related Docs
 
 - [Music Input Token Contracts](./components/music/THEMING_DECISIONS.md)

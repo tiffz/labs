@@ -3506,6 +3506,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-drive-labsdrivefolderurl-ts-labsdrivefolderurl",
+    "name": "labsDriveFolderUrl",
+    "path": "src/shared/drive/labsDriveFolderUrl.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Stable URL for a Drive app folder when the folder id is known (account menu \"Open in Drive\").",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-drive-labsdriveportfoliolayout-ts-ensurelabsdriveportfolioprogresslayout",
     "name": "ensureLabsDrivePortfolioProgressLayout",
     "path": "src/shared/drive/labsDrivePortfolioLayout.ts",
@@ -3797,6 +3810,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-google-formatlabsdriveinstant-ts-formatlabsdriveinstant",
+    "name": "formatLabsDriveInstant",
+    "path": "src/shared/google/formatLabsDriveInstant.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Human-readable timestamp for Drive backup / sync captions (today, yesterday, or Mon DD).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-google-googletokenclient-ts-requestgoogleaccesstoken",
     "name": "requestGoogleAccessToken",
     "path": "src/shared/google/googleTokenClient.ts",
@@ -3884,6 +3910,177 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [],
     "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-google-labsdriveaccountmenu-tsx-labsdriveaccountmenu",
+    "name": "LabsDriveAccountMenu",
+    "path": "src/shared/google/LabsDriveAccountMenu.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Account menu with shared Google Drive backup UX: back up, restore picker, Open in Drive, and optional conflict dialog. Apps supply from their hook/context.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-google-labsdriveaccountmenu-tsx-labsdriveaccountmenuprops",
+    "name": "LabsDriveAccountMenuProps",
+    "path": "src/shared/google/LabsDriveAccountMenu.tsx",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-google-labsdrivebackupactionrow-tsx-labsdrivebackupactionrow",
+    "name": "LabsDriveBackupActionRow",
+    "path": "src/shared/google/LabsDriveBackupActionRow.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "default",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-google-labsdrivebackupactionrow-tsx-labsdrivebackupactionrowprops",
+    "name": "LabsDriveBackupActionRowProps",
+    "path": "src/shared/google/LabsDriveBackupActionRow.tsx",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-google-labsdrivebackuptypes-ts-labsdrivebackupuiprops",
+    "name": "LabsDriveBackupUiProps",
+    "path": "src/shared/google/labsDriveBackupTypes.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Drive restore + folder link actions rendered under the backup block.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-google-labsdrivebackuptypes-ts-labsdriveconflictuiprops",
+    "name": "LabsDriveConflictUiProps",
+    "path": "src/shared/google/labsDriveBackupTypes.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-google-labsdrivebackuptypes-ts-labsdriverestoredialogcopy",
+    "name": "LabsDriveRestoreDialogCopy",
+    "path": "src/shared/google/labsDriveBackupTypes.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Copy for the manual restore picker (shared across Drive-synced Labs apps).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-google-labsdrivebackuptypes-ts-labsdriverestoredriveoption",
+    "name": "LabsDriveRestoreDriveOption",
+    "path": "src/shared/google/labsDriveBackupTypes.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-google-labsdrivebackuptypes-ts-labsdriveundosnapshotitem",
+    "name": "LabsDriveUndoSnapshotItem",
+    "path": "src/shared/google/labsDriveBackupTypes.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-google-labsdriveconflictdialog-tsx-labsdriveconflictdialog",
+    "name": "LabsDriveConflictDialog",
+    "path": "src/shared/google/LabsDriveConflictDialog.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "default",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-google-labsdriverestoredialog-tsx-labsdriverestoredialog",
+    "name": "LabsDriveRestoreDialog",
+    "path": "src/shared/google/LabsDriveRestoreDialog.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "default",
     "demoId": null
   },
   {

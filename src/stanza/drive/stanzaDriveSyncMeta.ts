@@ -42,11 +42,4 @@ export function patchStanzaDriveSyncMeta(patch: Partial<StanzaDriveSyncMeta>): S
   return next;
 }
 
-/**
- * Stable URL for the Stanza app folder in Drive, when we know the folder id.
- * Used by the account menu's "Open in Drive" debug link.
- */
-export function stanzaDriveFolderUrl(folderId: string | undefined | null): string | null {
-  if (!folderId?.trim()) return null;
-  return `https://drive.google.com/drive/folders/${encodeURIComponent(folderId.trim())}`;
-}
+export { labsDriveFolderUrl as stanzaDriveFolderUrl } from '../../shared/drive/labsDriveFolderUrl';

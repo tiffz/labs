@@ -5,6 +5,8 @@ export interface ScalesDriveSyncMeta {
   lastCloudModifiedTime?: string;
   /** `exportedAt` from our last successful upload envelope. */
   lastBackupExportedAt?: string;
+  /** Drive folder id of `Tiff Zhang Labs / LearnYourScales` (for account menu link). */
+  driveAppFolderId?: string;
 }
 
 export function readScalesDriveSyncMeta(): ScalesDriveSyncMeta {
