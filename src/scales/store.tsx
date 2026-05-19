@@ -10,8 +10,15 @@ import {
   getExerciseProgress,
   markOnboardingSeen,
   markGuidanceIntroduced,
+  stageAdvancementGateMet,
 } from './progress/store';
+import { findExercise } from './curriculum/tiers';
 import { planSession } from './curriculum/sessionPlanner';
+import {
+  clearSessionSnapshot,
+  restoreSessionFromSnapshot,
+  saveSessionSnapshot,
+} from './session/scalesSessionSnapshot';
 import { generateScoreForExercise } from './curriculum/scoreGenerator';
 import { getMidiInput, MidiInput } from '../shared/midi/midiInput';
 import type { MidiDevice } from '../shared/music/scoreTypes';
@@ -177,7 +184,7 @@ type Action =
    * view returns to a clean pre-run state.
    */
   | { type: 'STOP_PRACTICE_RUN' }
-  | { type: 'FINISH_EXERCISE'; exerciseId: string; stageId: string; purpose?: 'drill' }
+  | { type: 'FINISH_EXERCISE'; exerciseId: string; stageId: string; purpose?: 'drill' | 'review' }
   /**
    * Free-tempo only: after a perfect silent dry run ("Nice" overlay), record a
    * full-accuracy history row so the streak matches what the learner just
@@ -205,9 +212,49 @@ type Action =
 
 function initialState(): ScalesState {
   const audioPrefs = loadAudioPrefs();
+  const progress = loadProgress();
+  const restored = restoreSessionFromSnapshot(progress);
+  if (restored) {
+    return {
+      screen: 'session',
+      progress,
+      sessionPlan: restored.sessionPlan,
+      activeExerciseIndex: restored.activeExerciseIndex,
+      activeExercise: restored.activeExercise,
+      score: restored.score,
+      sessionTierIdAtStart: restored.sessionTierIdAtStart,
+      sessionComplete: false,
+      isPlaying: false,
+      currentMeasureIndex: -1,
+      currentNoteIndices: new Map(),
+      activeMidiNotes: new Set(),
+      midiNoteOnPulse: 0,
+      homeMidiGatePulse: 0,
+      homeStartBlocked: false,
+      homePracticeCue: null,
+      homeNoteDoubleTapAwait: null,
+      midiShortcutWave: 0,
+      midiShortcutLast: null,
+      practiceResults: new Map(),
+      currentRunStartTime: null,
+      midiConnected: false,
+      midiDevices: [],
+      disabledMidiDeviceIds: new Set(audioPrefs.disabledMidiDeviceIds),
+      inputMode: 'none',
+      microphoneActive: false,
+      freeTempoMeasureIndex: 0,
+      freeTempoNoteIndex: 0,
+      hasCompletedRun: false,
+      freeTempoRunComplete: false,
+      lastExerciseResult: null,
+      currentSessionRuns: [],
+      lastSessionSummary: null,
+      wrongNoteFlash: null,
+    };
+  }
   return {
     screen: 'home',
-    progress: loadProgress(),
+    progress,
     sessionPlan: null,
     activeExerciseIndex: 0,
     activeExercise: null,
@@ -307,6 +354,7 @@ function reducer(state: ScalesState, action: Action): ScalesState {
   switch (action.type) {
     case 'SET_SCREEN': {
       if (action.screen === 'home') {
+        clearSessionSnapshot();
         return {
           ...state,
           screen: 'home',
@@ -337,8 +385,18 @@ function reducer(state: ScalesState, action: Action): ScalesState {
     case 'CLEAR_HOME_PRACTICE_CUE':
       return state.homePracticeCue === null ? state : { ...state, homePracticeCue: null };
 
-    case 'START_SESSION':
-      return transitionStartSession(state, action.plan);
+    case 'START_SESSION': {
+      const next = transitionStartSession(state, action.plan);
+      if (next.activeExercise && next.sessionPlan) {
+        saveSessionSnapshot({
+          sessionPlan: next.sessionPlan,
+          activeExerciseIndex: next.activeExerciseIndex,
+          activeExercise: next.activeExercise,
+          sessionTierIdAtStart: next.sessionTierIdAtStart,
+        });
+      }
+      return next;
+    }
 
     case 'SET_ACTIVE_EXERCISE':
       return {
@@ -548,9 +606,35 @@ function reducer(state: ScalesState, action: Action): ScalesState {
       // intentionally leave `currentStageId` there (no "next" stage). The old
       // `currentStageId !== stageId` check therefore missed fluent-gate / last-
       // level completions and kept the auto-loop + boundary UI stuck off.
-      const advanced =
+      const curriculumAdvanced =
         afterProgress.currentStageId !== beforeProgress.currentStageId
         || (afterProgress.completedStageId ?? null) !== (beforeProgress.completedStageId ?? null);
+
+      // Review slots often target an earlier stage (stale/shaky refresh). Hitting
+      // 3/3 there must still end the auto-loop even when `currentStageId` does not move.
+      let reviewSlotCleared = false;
+      const slot = state.sessionPlan?.exercises[state.activeExerciseIndex];
+      if (
+        slot?.purpose === 'review'
+        && slot.exerciseId === action.exerciseId
+        && slot.stageId === action.stageId
+      ) {
+        const found = findExercise(action.exerciseId);
+        const stage = found?.exercise.stages.find(s => s.id === action.stageId);
+        if (found && stage) {
+          const stageIdx = found.exercise.stages.findIndex(s => s.id === action.stageId);
+          const isFinalStage = stageIdx === found.exercise.stages.length - 1;
+          reviewSlotCleared = stageAdvancementGateMet(
+            afterProgress,
+            action.stageId,
+            found.exercise.kind,
+            stage,
+            isFinalStage,
+          );
+        }
+      }
+
+      const advanced = curriculumAdvanced || reviewSlotCleared;
 
       const runRecord: SessionRunRecord = {
         exerciseId: action.exerciseId,
@@ -576,6 +660,7 @@ function reducer(state: ScalesState, action: Action): ScalesState {
       const nextIdx = action.targetIndex ?? state.activeExerciseIndex + 1;
       const nextExercise = state.sessionPlan?.exercises[nextIdx] ?? null;
       if (!nextExercise) {
+        clearSessionSnapshot();
         return {
           ...state,
           screen: 'home',
@@ -584,9 +669,9 @@ function reducer(state: ScalesState, action: Action): ScalesState {
           sessionTierIdAtStart: null,
         };
       }
-      return {
+      const next = {
         ...state,
-        screen: 'session',
+        screen: 'session' as const,
         activeExerciseIndex: nextIdx,
         activeExercise: nextExercise,
         score: action.score,
@@ -601,6 +686,15 @@ function reducer(state: ScalesState, action: Action): ScalesState {
         freeTempoRunComplete: false,
         lastExerciseResult: null,
       };
+      if (next.sessionPlan) {
+        saveSessionSnapshot({
+          sessionPlan: next.sessionPlan,
+          activeExerciseIndex: next.activeExerciseIndex,
+          activeExercise: nextExercise,
+          sessionTierIdAtStart: next.sessionTierIdAtStart,
+        });
+      }
+      return next;
     }
 
     case 'COMPLETE_SESSION': {
@@ -619,6 +713,7 @@ function reducer(state: ScalesState, action: Action): ScalesState {
       };
 
       if (tierGraduated) {
+        clearSessionSnapshot();
         return {
           ...afterClearingRuns,
           screen: 'home',
@@ -634,6 +729,7 @@ function reducer(state: ScalesState, action: Action): ScalesState {
 
       const nextPlan = planSession(afterClearingRuns.progress);
       if (nextPlan.exercises.length === 0) {
+        clearSessionSnapshot();
         return {
           ...afterClearingRuns,
           screen: 'home',
@@ -652,13 +748,22 @@ function reducer(state: ScalesState, action: Action): ScalesState {
         chain_after_session: true,
       });
 
-      return transitionStartSession(
+      const chained = transitionStartSession(
         {
           ...afterClearingRuns,
           lastSessionSummary: null,
         },
         nextPlan,
       );
+      if (chained.activeExercise && chained.sessionPlan) {
+        saveSessionSnapshot({
+          sessionPlan: chained.sessionPlan,
+          activeExerciseIndex: chained.activeExerciseIndex,
+          activeExercise: chained.activeExercise,
+          sessionTierIdAtStart: chained.sessionTierIdAtStart,
+        });
+      }
+      return chained;
     }
 
     case 'SET_MIDI_CONNECTED':
@@ -765,8 +870,8 @@ function reducer(state: ScalesState, action: Action): ScalesState {
     case 'WRONG_NOTE_FLASH':
       return { ...state, wrongNoteFlash: action.notes };
 
-    case 'LOAD_STAGE':
-      return {
+    case 'LOAD_STAGE': {
+      const next = {
         ...state,
         activeExercise: action.exercise,
         score: action.score,
@@ -781,6 +886,16 @@ function reducer(state: ScalesState, action: Action): ScalesState {
         freeTempoRunComplete: false,
         lastExerciseResult: null,
       };
+      if (next.screen === 'session' && next.sessionPlan) {
+        saveSessionSnapshot({
+          sessionPlan: next.sessionPlan,
+          activeExerciseIndex: next.activeExerciseIndex,
+          activeExercise: action.exercise,
+          sessionTierIdAtStart: next.sessionTierIdAtStart,
+        });
+      }
+      return next;
+    }
 
     case 'MARK_ONBOARDING_SEEN': {
       const next = markOnboardingSeen(state.progress);
@@ -801,6 +916,7 @@ function reducer(state: ScalesState, action: Action): ScalesState {
     }
     case 'REPLACE_PROGRESS_FROM_CLOUD': {
       saveProgress(action.progress);
+      clearSessionSnapshot();
       return { ...state, progress: action.progress };
     }
 
@@ -972,6 +1088,22 @@ export function ScalesProvider({ children }: { children: React.ReactNode }) {
   const toggleMidiDevice = useCallback((deviceId: string) => {
     dispatch({ type: 'TOGGLE_MIDI_DEVICE', deviceId });
   }, []);
+
+  useEffect(() => {
+    if (state.screen !== 'session' || !state.sessionPlan || !state.activeExercise) return;
+    saveSessionSnapshot({
+      sessionPlan: state.sessionPlan,
+      activeExerciseIndex: state.activeExerciseIndex,
+      activeExercise: state.activeExercise,
+      sessionTierIdAtStart: state.sessionTierIdAtStart,
+    });
+  }, [
+    state.screen,
+    state.sessionPlan,
+    state.activeExerciseIndex,
+    state.activeExercise,
+    state.sessionTierIdAtStart,
+  ]);
 
   const startSession = useCallback(() => {
     const plan = planSession(state.progress);

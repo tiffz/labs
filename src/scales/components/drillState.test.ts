@@ -5,6 +5,7 @@ import {
   isRegularStuck,
   isRegularStuckGated,
   shouldSuppressRegularStuckPrompt,
+  effectiveConsecutiveRough,
 } from './drillState';
 
 describe('nextDrillStreak', () => {
@@ -50,6 +51,14 @@ describe('isDrillStuck', () => {
     // to 8+4=12. The user must reach 12 attempts before another nag.
     expect(isDrillStuck({ ...base, drillAttempts: 11, snoozedUntil: 12 })).toBe(false);
     expect(isDrillStuck({ ...base, drillAttempts: 12, snoozedUntil: 12 })).toBe(true);
+  });
+});
+
+describe('effectiveConsecutiveRough', () => {
+  it('subtracts the dismiss baseline so the stuck counter can reset', () => {
+    expect(effectiveConsecutiveRough(9, 9)).toBe(0);
+    expect(effectiveConsecutiveRough(10, 9)).toBe(1);
+    expect(effectiveConsecutiveRough(3, 0)).toBe(3);
   });
 });
 

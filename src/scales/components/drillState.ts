@@ -67,6 +67,14 @@ export type RegularStuckArgs = {
   snoozedUntil: number;
 };
 
+/** Rough-run count since the learner last dismissed the stuck-session modal. */
+export function effectiveConsecutiveRough(
+  consecutiveRoughOnStage: number,
+  dismissedRoughBaseline: number,
+): number {
+  return Math.max(0, consecutiveRoughOnStage - dismissedRoughBaseline);
+}
+
 export function isRegularStuck(args: RegularStuckArgs): boolean {
   return args.drillState === 'inactive'
     && !args.passedThisExercise

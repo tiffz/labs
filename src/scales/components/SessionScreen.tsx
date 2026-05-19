@@ -40,7 +40,10 @@ import type { PracticeRecord } from '../progress/types';
 import {
   getExerciseProgress,
   getAdvancementCriteria,
+  formatAdvancementCleanRunsLabel,
+  formatDwellCleanRunsSubline,
   getCleanRunStreak,
+  isPracticingAdvancementStage,
   runOutcomeTier,
   consecutiveRoughRunsOnStage,
   type RunOutcomeTier,
@@ -72,6 +75,7 @@ import {
   nextDrillStreak as computeNextDrillStreak,
   isDrillStuck as computeIsDrillStuck,
   isRegularStuckGated as computeIsRegularStuckGated,
+  effectiveConsecutiveRough,
   type DrillState,
 } from './drillState';
 import GuidanceCallout from './GuidanceCallout';
@@ -93,9 +97,6 @@ const DRILL_SNOOZE_BY = 4;
 // Regular auto-loop "Try going back?" — requires this many consecutive
 // rough (red-tier) runs on the same stage; snooze bumps that bar.
 const REGULAR_STUCK_AT = 8;
-const REGULAR_SNOOZE_BY = 4;
-/** Extra snooze when stuck on a pedagogical jump — fewer interruptions while the new skill maps. */
-const REGULAR_JUMP_EXTRA_SNOOZE = 4;
 /** Jump-coaching modal only after this many finished attempts on the stage (consecutive-rough gate can still be high from history). */
 const REGULAR_STUCK_MIN_ATTEMPTS_FOR_JUMP = 4;
 /** How long the free-tempo "Nice — ready to start" overlay stays before scored playback. */
@@ -134,7 +135,9 @@ type DwellBadgeSnapshot = {
   inDrill: boolean;
   drillStreak: number;
   cleanStreak: number;
+  displayRunStreak: number;
   requiredRuns: number;
+  practicingAdvancementStage: boolean;
   lastWasClean: boolean;
   lastRunOutcomeTier: RunOutcomeTier;
 };
@@ -382,6 +385,8 @@ export default function SessionScreen() {
    */
   const [attemptsThisStage, setAttemptsThisStage] = useState(0);
   const [regularSnoozedUntil, setRegularSnoozedUntil] = useState(REGULAR_STUCK_AT);
+  /** Rough-run tally resets when the learner dismisses the stuck-session modal. */
+  const [regularRoughBaseline, setRegularRoughBaseline] = useState(0);
 
   /**
    * Tracks the most recent result we've already counted toward attempts /
@@ -658,6 +663,7 @@ export default function SessionScreen() {
     setDrillSnoozedUntil(DRILL_STUCK_AT);
     setAttemptsThisStage(0);
     setRegularSnoozedUntil(REGULAR_STUCK_AT);
+    setRegularRoughBaseline(0);
     lastCountedResultRef.current = null;
     setTimedDryRunReady(false);
     dwellBadgeSnapshotRef.current = null;
@@ -739,7 +745,7 @@ export default function SessionScreen() {
       ? getCleanRunStreak(_exerciseProgressSch, activeExercise.stageId)
       : 0;
 
-  const _consecutiveRoughSch =
+  const _rawConsecutiveRoughSch =
     activeExercise
       && loaded
       && score
@@ -754,6 +760,7 @@ export default function SessionScreen() {
         !!_isFinalStageSch,
       )
       : 0;
+  const _consecutiveRoughSch = effectiveConsecutiveRough(_rawConsecutiveRoughSch, regularRoughBaseline);
 
   const _stuckFallbackStageSch =
     _hasFallbackStageForScheduler && _currentStageIdxForScheduler > 0
@@ -1387,9 +1394,16 @@ export default function SessionScreen() {
   const advancementCriteria = currentStage
     ? getAdvancementCriteria(currentStage, isFinalStage, exerciseDef?.exercise.kind)
     : { threshold: 0.9, runs: 3 };
-  const cleanStreak = currentStage
-    ? getCleanRunStreak(exerciseProgress, currentStage.id)
-    : 0;
+  const practicingAdvancementStage = Boolean(
+    currentStage && isPracticingAdvancementStage(exerciseProgress, currentStage.id),
+  );
+  const rawCleanStreak = currentStage ? getCleanRunStreak(exerciseProgress, currentStage.id) : 0;
+  /** Streak toward the advancement gate (0 when reviewing an earlier level). */
+  const cleanStreak = practicingAdvancementStage ? rawCleanStreak : 0;
+  const cleanRunsProgressLabel = formatAdvancementCleanRunsLabel(
+    cleanStreak,
+    advancementCriteria.runs,
+  );
 
   const scaleHowToText = stageInfo
     ? resolveHandGuidance(stageInfo.exercise, activeExercise.hand)
@@ -1465,7 +1479,7 @@ export default function SessionScreen() {
     drillStreak,
     snoozedUntil: drillSnoozedUntil,
   });
-  const consecutiveRoughOnStage = exerciseDef && currentStage
+  const rawConsecutiveRoughOnStage = exerciseDef && currentStage
     ? consecutiveRoughRunsOnStage(
       exerciseProgress.history,
       activeExercise.stageId,
@@ -1474,6 +1488,14 @@ export default function SessionScreen() {
       isFinalStage,
     )
     : 0;
+  const consecutiveRoughOnStage = effectiveConsecutiveRough(
+    rawConsecutiveRoughOnStage,
+    regularRoughBaseline,
+  );
+  const resetRegularStuckCounter = () => {
+    setRegularRoughBaseline(rawConsecutiveRoughOnStage);
+    setRegularSnoozedUntil(REGULAR_STUCK_AT);
+  };
   const baseRegularStuckGated = computeIsRegularStuckGated({
     drillState,
     passedThisExercise,
@@ -1499,14 +1521,11 @@ export default function SessionScreen() {
   const dismissStuckSessionDialog = (reason: 'backdropClick' | 'escapeKeyDown') => {
     if (reason !== 'backdropClick' && reason !== 'escapeKeyDown') return;
     if (isDrillStuck) {
+      setDrillSnoozedUntil(drillAttempts + DRILL_STUCK_AT);
       setDrillState('inactive');
       setLoopPaused(true);
     } else {
-      const snooze =
-        !isDrillStuck && regularStuckJumpCoaching
-          ? REGULAR_SNOOZE_BY + REGULAR_JUMP_EXTRA_SNOOZE
-          : REGULAR_SNOOZE_BY;
-      setRegularSnoozedUntil(consecutiveRoughOnStage + snooze);
+      resetRegularStuckCounter();
     }
   };
   handleStuckDialogCloseRef.current = dismissStuckSessionDialog;
@@ -1571,7 +1590,9 @@ export default function SessionScreen() {
       inDrill: drillState === 'active',
       drillStreak,
       cleanStreak,
+      displayRunStreak: practicingAdvancementStage ? cleanStreak : rawCleanStreak,
       requiredRuns: advancementCriteria.runs,
+      practicingAdvancementStage,
       lastWasClean: snapTier === 'clean',
       lastRunOutcomeTier: snapTier,
     };
@@ -1818,16 +1839,20 @@ export default function SessionScreen() {
                 <Typography sx={{ fontSize: '0.875rem', fontWeight: 700, color: 'success.dark', lineHeight: 1.2 }}>
                   {drillState === 'completed'
                     ? 'Drilled to perfection'
-                    : allStages[currentStageIdx]
-                      ? `Level ${allStages[currentStageIdx].stageNumber} cleared`
-                      : 'Level complete'}
+                    : activeExercise.purpose === 'review'
+                      ? 'Review complete'
+                      : allStages[currentStageIdx]
+                        ? `Level ${allStages[currentStageIdx].stageNumber} cleared`
+                        : 'Level complete'}
                 </Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.25 }}>
                   {drillState === 'completed'
                     ? `${DRILL_TARGET_PERFECT_RUNS}/${DRILL_TARGET_PERFECT_RUNS} perfect runs`
-                    : allStages[currentStageIdx]
-                      ? `${formatStageSummary(allStages[currentStageIdx])} · next level unlocked`
-                      : 'You unlocked the next level.'}
+                    : activeExercise.purpose === 'review'
+                      ? 'Nice refresh — continue when you are ready.'
+                      : allStages[currentStageIdx]
+                        ? `${formatStageSummary(allStages[currentStageIdx])} · next level unlocked`
+                        : 'You unlocked the next level.'}
                 </Typography>
               </Box>
             </Box>
@@ -1914,7 +1939,7 @@ export default function SessionScreen() {
               </Box>
               <Box sx={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                 <Typography sx={{ fontSize: '0.875rem', fontWeight: 700, lineHeight: 1.2 }}>
-                  {`Clean runs: ${cleanStreak}/${advancementCriteria.runs}`}
+                  {`Clean runs: ${cleanRunsProgressLabel}`}
                 </Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.25 }}>
                   {lastWasClean
@@ -2018,7 +2043,7 @@ export default function SessionScreen() {
                 size="small"
                 color="success"
                 variant="outlined"
-                label={`${cleanStreak}/${advancementCriteria.runs} clean runs already · ${advancementCriteria.runs - cleanStreak} more to advance`}
+                label={`${cleanRunsProgressLabel} clean runs already · ${advancementCriteria.runs - cleanStreak} more to advance`}
               />
             </Box>
           )}
@@ -2120,8 +2145,8 @@ export default function SessionScreen() {
           const result: ExerciseResult = live ? lastExerciseResult! : snap!.result;
           const inDrill = live ? drillState === 'active' : snap!.inDrill;
           const streakNumerator = live
-            ? (inDrill ? drillStreak : cleanStreak)
-            : (inDrill ? snap!.drillStreak : snap!.cleanStreak);
+            ? (inDrill ? drillStreak : (practicingAdvancementStage ? cleanStreak : rawCleanStreak))
+            : (inDrill ? snap!.drillStreak : snap!.displayRunStreak);
           const streakDenominator = live
             ? (inDrill ? DRILL_TARGET_PERFECT_RUNS : advancementCriteria.runs)
             : (inDrill ? DRILL_TARGET_PERFECT_RUNS : snap!.requiredRuns);
@@ -2143,9 +2168,20 @@ export default function SessionScreen() {
           const headline = inDrill
             ? (isPerfect ? 'Perfect' : 'Reset')
             : (wasClean ? 'Clean' : statusNear ? 'Almost' : 'Again');
-          const subline = streakDenominator > 0
-            ? `${percent}% · ${streakNumerator}/${streakDenominator}`
-            : `${percent}% · ${result.correct}/${result.total}`;
+          const onAdvancementStage = live
+            ? practicingAdvancementStage
+            : snap!.practicingAdvancementStage;
+          const subline =
+            inDrill
+              ? `${percent}% · ${streakNumerator}/${streakDenominator}`
+              : streakDenominator > 0
+                ? formatDwellCleanRunsSubline(
+                  percent,
+                  streakNumerator,
+                  streakDenominator,
+                  onAdvancementStage ? 'advancement' : 'stage',
+                )
+                : `${percent}%`;
           const secondsLeft = loopCountdown ?? Math.ceil(AUTO_LOOP_DWELL_MS / 1000);
           const showLoopChrome = live && !fromCountIn;
           return (
@@ -2468,9 +2504,7 @@ export default function SessionScreen() {
                           setHelpPreview(null);
                           return;
                         }
-                        setRegularSnoozedUntil(
-                          consecutiveRoughOnStage + REGULAR_SNOOZE_BY + REGULAR_JUMP_EXTRA_SNOOZE,
-                        );
+                        resetRegularStuckCounter();
                       }}
                       sx={{
                         textTransform: 'none',
@@ -2503,7 +2537,7 @@ export default function SessionScreen() {
                           setHelpPreview(null);
                           return;
                         }
-                        setRegularSnoozedUntil(consecutiveRoughOnStage + REGULAR_SNOOZE_BY);
+                        resetRegularStuckCounter();
                       }}
                       sx={{
                         textTransform: 'none',

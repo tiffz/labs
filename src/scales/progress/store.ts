@@ -45,6 +45,34 @@ function recordCountsTowardAdvancementStreak(record: PracticeRecord): boolean {
   return record.purpose !== 'drill' && record.purpose !== 'warmup';
 }
 
+/** True when practicing the stage the curriculum treats as "current" (can advance from here). */
+export function isPracticingAdvancementStage(progress: ExerciseProgress, stageId: string): boolean {
+  return progress.currentStageId === stageId;
+}
+
+/** Label for UI chips and dwell badge, e.g. `2/3` (never `11/3`). */
+export function formatAdvancementCleanRunsLabel(streak: number, requiredRuns: number): string {
+  if (requiredRuns <= 0) return String(Math.max(0, streak));
+  const capped = Math.min(Math.max(0, streak), requiredRuns);
+  return `${capped}/${requiredRuns}`;
+}
+
+/**
+ * Dwell-toast subline: always surfaces **run** progress (never `16/18` notes).
+ * `advancement` = streak toward unlocking the next level; `stage` = same cap
+ * but copy clarifies this is the level being practiced, not curriculum headway.
+ */
+export function formatDwellCleanRunsSubline(
+  percent: number,
+  streak: number,
+  requiredRuns: number,
+  scope: 'advancement' | 'stage',
+): string {
+  const runs = formatAdvancementCleanRunsLabel(streak, requiredRuns);
+  const suffix = scope === 'advancement' ? 'clean runs' : 'on this level';
+  return `${percent}% · ${runs} ${suffix}`;
+}
+
 export function getAdvancementCriteria(
   stage: Stage,
   isFinalStage: boolean = false,
@@ -627,6 +655,27 @@ export function exerciseContributesToGlobalMasteryTotals(
 }
 
 /**
+ * True when the newest {@link consecutiveStageRecords} prefix on {@link stageId}
+ * satisfies the N-in-a-row clean gate for that stage (same rule as advancement).
+ */
+export function stageAdvancementGateMet(
+  progress: ExerciseProgress,
+  stageId: string,
+  exerciseKind: ExerciseKind,
+  stage: Stage,
+  isFinalStage: boolean,
+): boolean {
+  const { runs } = getAdvancementCriteria(stage, isFinalStage, exerciseKind);
+  const meaningfulOnStage = consecutiveStageRecords(progress.history, stageId)
+    .filter(recordCountsTowardAdvancementStreak);
+  const recentForStage = meaningfulOnStage.slice(0, runs);
+  return (
+    recentForStage.length >= runs &&
+    recentForStage.every(r => runMeetsCleanBar(r, exerciseKind, stage, isFinalStage))
+  );
+}
+
+/**
  * Record a practice result and evaluate whether the user should advance.
  */
 export function recordPractice(
@@ -640,6 +689,11 @@ export function recordPractice(
   let newCompletedStageId = progress.completedStageId;
   let newCurrentStageId = progress.currentStageId;
 
+  const progressAfterRecord: ExerciseProgress = {
+    ...progress,
+    history: updatedHistory,
+  };
+
   if (found && record.stageId === progress.currentStageId) {
     const stages = found.exercise.stages;
     const currentIdx = stages.findIndex(s => s.id === record.stageId);
@@ -647,19 +701,15 @@ export function recordPractice(
 
     if (stage) {
       const isFinalStage = currentIdx === stages.length - 1;
-      const { runs } = getAdvancementCriteria(stage, isFinalStage, found.exercise.kind);
-
-      const meaningfulOnStage = consecutiveStageRecords(updatedHistory, record.stageId)
-        .filter(recordCountsTowardAdvancementStreak);
-      const recentForStage = meaningfulOnStage.slice(0, runs);
-
-      const shouldAdvance =
-        recentForStage.length >= runs &&
-        recentForStage.every(r =>
-          runMeetsCleanBar(r, found.exercise.kind, stage, isFinalStage),
-        );
-
-      if (shouldAdvance) {
+      if (
+        stageAdvancementGateMet(
+          progressAfterRecord,
+          record.stageId,
+          found.exercise.kind,
+          stage,
+          isFinalStage,
+        )
+      ) {
         newCompletedStageId = record.stageId;
         if (currentIdx >= 0 && currentIdx < stages.length - 1) {
           newCurrentStageId = stages[currentIdx + 1].id;

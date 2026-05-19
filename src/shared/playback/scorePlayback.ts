@@ -346,13 +346,29 @@ export class ScorePlaybackEngine {
     const msPerBeat = 60000 / tempo;
     const secPerBeat = msPerBeat / 1000;
 
-    for (let i = 0; i < 4; i++) {
+    const countInBeats = 4;
+    let lastCountInClickAt = -1;
+    for (let i = 0; i < countInBeats; i++) {
       const time = ctx.currentTime + startBuffer + i * secPerBeat;
+      const at = Math.max(time, ctx.currentTime + 0.002);
+      if (lastCountInClickAt >= 0 && at - lastCountInClickAt < 0.08) continue;
+      lastCountInClickAt = at;
       this.playClickAt(time, i === 0);
     }
 
-    return new Promise<void>((resolve) => {
-      setTimeout(resolve, startBuffer * 1000 + 4 * msPerBeat);
+    // Wait on the audio clock (not wall clock) so playback does not start
+    // while count-in clicks are still queued — that sounded like a double click.
+    const resolveAt = ctx.currentTime + startBuffer + countInBeats * secPerBeat;
+    await new Promise<void>((resolve) => {
+      const wait = () => {
+        if (!this.audioContext) {
+          resolve();
+          return;
+        }
+        if (this.audioContext.currentTime >= resolveAt) resolve();
+        else requestAnimationFrame(wait);
+      };
+      wait();
     });
   }
 

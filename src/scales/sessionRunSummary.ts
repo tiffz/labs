@@ -31,7 +31,7 @@ export interface SessionRunRecord {
   stageId: string;
   advanced: boolean;
   accuracy: number;
-  purpose?: 'drill';
+  purpose?: 'drill' | 'review';
 }
 
 export function buildSessionSummary(runs: SessionRunRecord[]): SessionExerciseSummary[] {

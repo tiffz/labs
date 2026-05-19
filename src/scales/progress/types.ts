@@ -33,7 +33,7 @@ export interface PracticeRecord {
    * can clear a "3 in a row" gate). Default
    * 'normal' (or undefined for backwards-compat with older history).
    */
-  purpose?: 'normal' | 'drill' | 'warmup';
+  purpose?: 'normal' | 'drill' | 'warmup' | 'review';
 }
 
 export interface ExerciseProgress {

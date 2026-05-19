@@ -1,7 +1,11 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
   getAdvancementCriteria,
+  formatAdvancementCleanRunsLabel,
+  formatDwellCleanRunsSubline,
   getCleanRunStreak,
+  stageAdvancementGateMet,
+  isPracticingAdvancementStage,
   recordPractice,
   getExerciseProgress,
   loadProgress,
@@ -104,6 +108,37 @@ describe('getAdvancementCriteria', () => {
     const p7 = findExercise('C-pentascale-major')!.exercise.stages.find(s => s.id.endsWith('-p7'))!;
     expect(p7.hand).toBe('both');
     expect(getAdvancementCriteria(p7, true, 'pentascale-major')).toEqual({ threshold: 0.85, runs: 3 });
+  });
+});
+
+describe('formatAdvancementCleanRunsLabel', () => {
+  it('caps the numerator at required runs', () => {
+    expect(formatAdvancementCleanRunsLabel(11, 3)).toBe('3/3');
+    expect(formatAdvancementCleanRunsLabel(2, 3)).toBe('2/3');
+  });
+});
+
+describe('formatDwellCleanRunsSubline', () => {
+  it('labels run progress explicitly (not note counts)', () => {
+    expect(formatDwellCleanRunsSubline(89, 2, 3, 'advancement')).toBe('89% · 2/3 clean runs');
+    expect(formatDwellCleanRunsSubline(89, 11, 3, 'stage')).toBe('89% · 3/3 on this level');
+  });
+});
+
+describe('isPracticingAdvancementStage', () => {
+  it('is false when the practiced stage is not currentStageId', () => {
+    const stageId = `${EXERCISE_ID}-s1`;
+    const progress: ExerciseProgress = {
+      exerciseId: EXERCISE_ID,
+      completedStageId: stageId,
+      currentStageId: `${EXERCISE_ID}-s4`,
+      history: [],
+      needsReview: false,
+      reviewStageId: null,
+      lastPracticedAt: null,
+    };
+    expect(isPracticingAdvancementStage(progress, stageId)).toBe(false);
+    expect(isPracticingAdvancementStage(progress, `${EXERCISE_ID}-s4`)).toBe(true);
   });
 });
 
@@ -553,6 +588,48 @@ describe('pentascale tempo clean bar', () => {
       lastPracticedAt: null,
     };
     expect(getCleanRunStreak(progress, stageId)).toBe(2);
+  });
+
+  it('stageAdvancementGateMet is true after three consecutive cleans on that stage', () => {
+    const stageId = p4.id;
+    const progress: ExerciseProgress = {
+      exerciseId: PENTA_ID,
+      completedStageId: penta.exercise.stages[2].id,
+      currentStageId: p4.id,
+      history: [
+        pentascaleTimedRecord(stageId, { perfect: 8, early: 1, t: 300 }),
+        pentascaleTimedRecord(stageId, { perfect: 8, late: 1, t: 200 }),
+        pentascaleTimedRecord(stageId, { perfect: 8, early: 1, t: 100 }),
+      ],
+      needsReview: false,
+      reviewStageId: null,
+      lastPracticedAt: null,
+    };
+    expect(
+      stageAdvancementGateMet(progress, stageId, 'pentascale-major', p4, false),
+    ).toBe(true);
+  });
+
+  it('does not advance curriculum when cleans are on a stage that is not current', () => {
+    let data = fresh();
+    const stages = penta.exercise.stages;
+    const p3 = stages[2];
+    const p4 = stages[3];
+    data.exercises[PENTA_ID] = {
+      exerciseId: PENTA_ID,
+      completedStageId: p3.id,
+      currentStageId: p4.id,
+      history: [],
+      needsReview: false,
+      reviewStageId: null,
+      lastPracticedAt: null,
+    };
+    for (let t = 0; t < 3; t++) {
+      data = recordPractice(data, pentascaleTimedRecord(p3.id, { perfect: 8, early: 1, t: 100 + t }));
+    }
+    const after = getExerciseProgress(data, PENTA_ID);
+    expect(after.currentStageId).toBe(p4.id);
+    expect(after.completedStageId).toBe(p3.id);
   });
 
   it('advances pentascale metronome stage after three timing-lenient cleans', () => {
