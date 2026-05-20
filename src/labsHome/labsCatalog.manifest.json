@@ -50,6 +50,14 @@
       "iconClass": "piano"
     },
     {
+      "path": "/stanza/",
+      "title": "Stanza",
+      "shortDescription": "Practice songs in sections with markers, loops, and a metronome",
+      "stage": "development",
+      "category": "music",
+      "iconClass": "stanza"
+    },
+    {
       "path": "/beat/",
       "title": "Find the Beat",
       "shortDescription": "Analyze music with BPM detection and visual beat guidance",
@@ -88,14 +96,6 @@
       "stage": "unlisted",
       "category": "music",
       "iconClass": "encore"
-    },
-    {
-      "path": "/stanza/",
-      "title": "Stanza",
-      "shortDescription": "Practice songs in sections — markers, loops, guided Conductor, and metronome wizard",
-      "stage": "unlisted",
-      "category": "music",
-      "iconClass": "stanza"
     },
     {
       "path": "/zines/",
