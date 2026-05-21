@@ -106,6 +106,14 @@
       "iconClass": "zines"
     },
     {
+      "path": "/sight/",
+      "title": "Color Sight Trainer",
+      "shortDescription": "Train value, relativity, and gamut perception in Oklch space",
+      "stage": "unlisted",
+      "category": "art",
+      "iconClass": "sight"
+    },
+    {
       "path": "/forms/",
       "title": "Form Intersections",
       "shortDescription": "3D visualization for Drawabox form intersections",

@@ -18,6 +18,7 @@ const ROUTE_SPECS: Array<{
   { route: '/pitch/', title: /Find Your Pitch|Tiff Zhang Labs/i, visibleSelector: '#root' },
   { route: '/scales/', title: /Learn Your Scales/i, visibleSelector: '#root' },
   { route: '/story/', title: /Save the Cat/i, visibleSelector: '#root' },
+  { route: '/sight/', title: /Color Sight Trainer/i, visibleSelector: '#root' },
   { route: '/ui/', title: /UI Catalog/i, visibleSelector: '#root' },
   { route: '/words/', title: /Words in Rhythm/i, visibleSelector: '#root' },
   { route: '/zines/', title: /Zine Studio/i, visibleSelector: '#root' },

@@ -13,7 +13,8 @@ export type AppId =
   | 'story'
   | 'words'
   | 'zines'
-  | 'agility';
+  | 'agility'
+  | 'sight';
 
 type ContentGroup = 'Music' | 'Art & Writing' | 'Games';
 
@@ -33,6 +34,7 @@ const APP_CONTENT_GROUP: Record<AppId, ContentGroup> = {
   words: 'Music',
   zines: 'Art & Writing',
   agility: 'Music',
+  sight: 'Art & Writing',
 };
 
 export interface AppAnalytics {

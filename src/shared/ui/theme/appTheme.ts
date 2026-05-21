@@ -19,7 +19,8 @@ export type AppThemeId =
   | 'zines'
   | 'agility'
   | 'encore'
-  | 'stanza';
+  | 'stanza'
+  | 'sight';
 
 interface AppThemeConfig {
   mode: 'light' | 'dark';
@@ -391,6 +392,20 @@ const THEMES: Record<AppThemeId, Theme> = {
     mode: 'light',
     ...MUSIC_LIGHT_DEFAULT,
     ...STANZA_THEME_OVERRIDES,
+  }),
+  sight: buildTheme({
+    mode: 'dark',
+    fontFamily: "'JetBrains Mono', ui-monospace, Menlo, monospace",
+    primary: '#a78bfa',
+    secondary: '#f472b6',
+    backgroundDefault: '#121214',
+    backgroundPaper: '#1a1a1e',
+    textPrimary: '#e4e4e7',
+    textSecondary: '#a1a1aa',
+    divider: '#2e2e34',
+    radius: 4,
+    spacingBase: 4,
+    readable: true,
   }),
   encore: createTheme(
     buildTheme({
