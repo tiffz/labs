@@ -16,6 +16,7 @@
     <style>:root { --labs-cc-accent: #8b5cf6; --labs-cc-on-accent: #ffffff; }</style>
     <script defer src="/scripts/labs-cookie-consent.js"></script>
     <link rel="stylesheet" href="/styles/labs-home.css" />
+    <link rel="stylesheet" href="/styles/index.css" />
     <link rel="stylesheet" href="/styles/404.css" />
   </head>
   <body>
@@ -26,28 +27,125 @@
     <div class="bubble" style="--size: 50px; --start-x: 70%; --final-x: 60%; --duration: 18s; --delay: 8s;"></div>
     <div class="bubble" style="--size: 45px; --start-x: 15%; --final-x: 25%; --duration: 20s; --delay: 11s;"></div>
     <div class="bubble" style="--size: 38px; --start-x: 85%; --final-x: 80%; --duration: 13s; --delay: 14s;"></div>
-    
-    <div class="container">
-      <div class="error-code">404</div>
-      <h1>Page Not Found</h1>
-      <p class="subtitle">Oops! The page you're looking for doesn't exist.</p>
-      
-      <div class="url-display">
-        <script>document.write('You tried to visit: <strong>' + window.location.pathname + '</strong>');</script>
-      </div>
-      
-      <a href="/" class="home-button">← Back to Home</a>
-      
-      <div class="suggestions">
-        <p>You might be looking for:</p>
-        <ul>
-          <li><a href="/cats/">Cat Clicker Game</a></li>
-          <li><a href="/zines/">Minizine Maker</a></li>
-        </ul>
-      </div>
+
+    <div class="labs-404-shell">
+      <header class="labs-404-hero" aria-labelledby="labs-404-heading">
+        <div class="error-code" aria-hidden="true">404</div>
+        <h1 id="labs-404-heading">Page Not Found</h1>
+        <p class="subtitle">That link is not on Labs. Explore an app below or head home.</p>
+        <p class="url-display" id="labs-404-path" aria-live="polite"></p>
+        <a href="/" class="home-button">← Back to Home</a>
+      </header>
+
+      <section class="labs-404-explore" aria-labelledby="labs-404-explore-title">
+        <h2 id="labs-404-explore-title" class="labs-404-explore__title">Explore Labs apps</h2>
+        <p class="labs-404-explore__lead">Check out the different apps available in Tiff Zhang Labs.</p>
+        <div class="labs-404-categories">
+<!-- labs-404-catalog:generated:start -->
+          <!-- 404 explore grid (labsCatalog.manifest.json + render-labs-catalog.mjs). -->
+          <div class="labs-404-category" data-category-section="music">
+            <h3 class="labs-404-category__title">Music</h3>
+            <div class="labs-404-apps-grid">
+            <a href="/drums/" class="labs-404-tile" data-stage="stable" data-name="Darbuka Rhythm Trainer" title="Darbuka Rhythm Trainer">
+              <span class="app-icon drums" aria-hidden="true"></span>
+              <span class="labs-404-tile__name">Darbuka Rhythm Trainer</span>
+            </a>
+            <a href="/words/" class="labs-404-tile" data-stage="stable" data-name="Words in Rhythm" title="Words in Rhythm">
+              <span class="app-icon word-rhythm" aria-hidden="true"></span>
+              <span class="labs-404-tile__name">Words in Rhythm</span>
+            </a>
+            <a href="/count/" class="labs-404-tile" data-stage="stable" data-name="Count Me In" title="Count Me In">
+              <span class="app-icon count" aria-hidden="true"></span>
+              <span class="labs-404-tile__name">Count Me In</span>
+            </a>
+            <a href="/chords/" class="labs-404-tile" data-stage="development" data-name="Chord Progression Generator" title="Chord Progression Generator">
+              <span class="app-icon chords" aria-hidden="true"></span>
+              <span class="labs-404-tile__name">Chord Progression Generator</span>
+            </a>
+            <a href="/pitch/" class="labs-404-tile" data-stage="development" data-name="Find Your Pitch" title="Find Your Pitch">
+              <span class="app-icon pitch" aria-hidden="true"></span>
+              <span class="labs-404-tile__name">Find Your Pitch</span>
+            </a>
+            <a href="/scales/" class="labs-404-tile" data-stage="development" data-name="Learn Your Scales" title="Learn Your Scales">
+              <span class="app-icon piano" aria-hidden="true"></span>
+              <span class="labs-404-tile__name">Learn Your Scales</span>
+            </a>
+            <a href="/stanza/" class="labs-404-tile" data-stage="development" data-name="Stanza" title="Stanza">
+              <span class="app-icon stanza" aria-hidden="true"></span>
+              <span class="labs-404-tile__name">Stanza</span>
+            </a>
+            <a href="/beat/" class="labs-404-tile" data-stage="unlisted" data-name="Find the Beat" title="Find the Beat">
+              <span class="app-icon beat" aria-hidden="true"></span>
+              <span class="labs-404-tile__name">Find the Beat</span>
+            </a>
+            <a href="/piano/" class="labs-404-tile" data-stage="unlisted" data-name="Piano Practice" title="Piano Practice">
+              <span class="app-icon piano" aria-hidden="true"></span>
+              <span class="labs-404-tile__name">Piano Practice</span>
+            </a>
+            <a href="/melodia/" class="labs-404-tile" data-stage="unlisted" data-name="Melodia Online" title="Melodia Online">
+              <span class="app-icon melodia" aria-hidden="true"></span>
+              <span class="labs-404-tile__name">Melodia Online</span>
+            </a>
+            <a href="/agility/" class="labs-404-tile" data-stage="unlisted" data-name="Vocal Agility Trainer" title="Vocal Agility Trainer">
+              <span class="app-icon agility" aria-hidden="true"></span>
+              <span class="labs-404-tile__name">Vocal Agility Trainer</span>
+            </a>
+            <a href="/encore/" class="labs-404-tile" data-stage="unlisted" data-name="Encore" title="Encore">
+              <span class="app-icon encore" aria-hidden="true"></span>
+              <span class="labs-404-tile__name">Encore</span>
+            </a>
+            </div>
+          </div>
+
+          <div class="labs-404-category" data-category-section="art">
+            <h3 class="labs-404-category__title">Art &amp; Writing</h3>
+            <div class="labs-404-apps-grid">
+            <a href="/zines/" class="labs-404-tile" data-stage="stable" data-name="Zine Studio" title="Zine Studio">
+              <span class="app-icon zines" aria-hidden="true"></span>
+              <span class="labs-404-tile__name">Zine Studio</span>
+            </a>
+            <a href="/forms/" class="labs-404-tile" data-stage="stable" data-name="Form Intersections" title="Form Intersections">
+              <span class="app-icon forms" aria-hidden="true"></span>
+              <span class="labs-404-tile__name">Form Intersections</span>
+            </a>
+            <a href="/story/" class="labs-404-tile" data-stage="development" data-name="Save the Cat Story Generator" title="Save the Cat Story Generator">
+              <span class="app-icon story" aria-hidden="true"></span>
+              <span class="labs-404-tile__name">Save the Cat Story Generator</span>
+            </a>
+            <a href="/sight/" class="labs-404-tile" data-stage="unlisted" data-name="Color Sight Trainer" title="Color Sight Trainer">
+              <span class="app-icon sight" aria-hidden="true"></span>
+              <span class="labs-404-tile__name">Color Sight Trainer</span>
+            </a>
+            </div>
+          </div>
+
+          <div class="labs-404-category" data-category-section="games">
+            <h3 class="labs-404-category__title">Games</h3>
+            <div class="labs-404-apps-grid">
+            <a href="/cats/" class="labs-404-tile" data-stage="development" data-name="Cat Clicker" title="Cat Clicker">
+              <span class="app-icon cats" aria-hidden="true"></span>
+              <span class="labs-404-tile__name">Cat Clicker</span>
+            </a>
+            <a href="/corp/" class="labs-404-tile" data-stage="development" data-name="Corporate Ladder" title="Corporate Ladder">
+              <span class="app-icon corp" aria-hidden="true"></span>
+              <span class="labs-404-tile__name">Corporate Ladder</span>
+            </a>
+            </div>
+          </div>
+<!-- labs-404-catalog:generated:end -->
+        </div>
+        <a href="/" class="labs-404-explore__catalog-link">View the full catalog on home</a>
+      </section>
     </div>
 
-    <!-- Scripts -->
+    <script>
+      (function () {
+        var el = document.getElementById('labs-404-path');
+        if (el) {
+          el.textContent = 'You tried: ' + window.location.pathname;
+        }
+      })();
+    </script>
     <script src="/scripts/shared.js"></script>
   </body>
-</html> 
+</html>

@@ -1,9 +1,9 @@
 /**
- * Renders the Labs homepage app grid from `src/labsHome/labsCatalog.manifest.json`
- * into static markers inside `src/index.html` (no React; output is plain HTML).
+ * Renders the Labs app directory from `src/labsHome/labsCatalog.manifest.json`
+ * into static markers inside `src/index.html` and `src/404.html`.
  *
- *   npm run generate:labs-catalog   # write src/index.html if drift
- *   npm run check:labs-catalog      # exit 1 if src/index.html is out of date
+ *   npm run generate:labs-catalog   # write HTML if drift
+ *   npm run check:labs-catalog      # exit 1 if out of date
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -13,9 +13,12 @@ const scriptFilePath = decodeURIComponent(new URL(import.meta.url).pathname);
 const repoRoot = path.resolve(path.dirname(scriptFilePath), '..');
 const manifestPath = path.join(repoRoot, 'src/labsHome/labsCatalog.manifest.json');
 const indexPath = path.join(repoRoot, 'src/index.html');
+const notFoundPath = path.join(repoRoot, 'src/404.html');
 
-const MARKER_START = '<!-- labs-catalog:generated:start -->';
-const MARKER_END = '<!-- labs-catalog:generated:end -->';
+const INDEX_MARKER_START = '<!-- labs-catalog:generated:start -->';
+const INDEX_MARKER_END = '<!-- labs-catalog:generated:end -->';
+const NOT_FOUND_MARKER_START = '<!-- labs-404-catalog:generated:start -->';
+const NOT_FOUND_MARKER_END = '<!-- labs-404-catalog:generated:end -->';
 
 const checkMode = process.argv.includes('--check');
 
@@ -121,6 +124,37 @@ function renderAppCard(app) {
   ].join('\n');
 }
 
+function render404AppTile(app) {
+  const titleAttr = escapeHtmlAttr(app.title);
+  const titleText = escapeHtmlText(app.title);
+  return [
+    `            <a href="${escapeHtmlAttr(app.path)}" class="labs-404-tile" data-stage="${escapeHtmlAttr(app.stage)}" data-name="${titleAttr}" title="${titleAttr}">`,
+    `              <span class="app-icon ${app.iconClass}" aria-hidden="true"></span>`,
+    `              <span class="labs-404-tile__name">${titleText}</span>`,
+    `            </a>`,
+  ].join('\n');
+}
+
+/** Dense icon + name grids by category for the 404 page (not homepage cards). */
+function render404CatalogHtml(apps) {
+  validateApps(apps);
+  const chunks = [`          <!-- 404 explore grid (labsCatalog.manifest.json + render-labs-catalog.mjs). -->`];
+  for (const sec of SECTIONS) {
+    const sorted = sortAppsForCategory(apps, sec.category);
+    if (sorted.length === 0) continue;
+    chunks.push(
+      `          <div class="labs-404-category" data-category-section="${sec.dataCategory}">`,
+      `            <h3 class="labs-404-category__title">${sec.heading}</h3>`,
+      `            <div class="labs-404-apps-grid">`,
+      sorted.map(render404AppTile).join('\n'),
+      `            </div>`,
+      `          </div>`,
+      ``,
+    );
+  }
+  return chunks.join('\n').replace(/\n+$/, '');
+}
+
 function renderCatalogHtml(apps) {
   validateApps(apps);
   const chunks = [];
@@ -153,16 +187,16 @@ function renderCatalogHtml(apps) {
   return chunks.join('\n').replace(/\n+$/, '');
 }
 
-function injectGeneratedHtml(indexHtml, generated) {
-  const start = indexHtml.indexOf(MARKER_START);
-  const end = indexHtml.indexOf(MARKER_END);
+function injectGeneratedHtml(html, generated, markerStart, markerEnd, contextLabel) {
+  const start = html.indexOf(markerStart);
+  const end = html.indexOf(markerEnd);
   if (start === -1 || end === -1 || end <= start) {
     throw new Error(
-      `${toRelative(indexPath)}: missing catalog markers. Expected ${MARKER_START} … ${MARKER_END} inside <div class="catalog-columns">.`,
+      `${contextLabel}: missing catalog markers. Expected ${markerStart} … ${markerEnd}.`,
     );
   }
-  const before = indexHtml.slice(0, start + MARKER_START.length);
-  const after = indexHtml.slice(end);
+  const before = html.slice(0, start + markerStart.length);
+  const after = html.slice(end);
   return `${before}\n${generated}\n${after}`;
 }
 
@@ -170,23 +204,59 @@ function toRelative(absPath) {
   return path.relative(repoRoot, absPath).split(path.sep).join('/');
 }
 
+function updateFile(filePath, nextHtml, label) {
+  const current = fs.readFileSync(filePath, 'utf8');
+  if (checkMode) {
+    if (current !== nextHtml) {
+      console.error(`${label} is out of date. Run: npm run generate:labs-catalog`);
+      return false;
+    }
+    return true;
+  }
+  if (current !== nextHtml) {
+    fs.writeFileSync(filePath, nextHtml);
+    console.log(`Updated ${toRelative(filePath)}.`);
+    return true;
+  }
+  return false;
+}
+
 const apps = loadManifest();
-const nextSegment = renderCatalogHtml(apps);
+const catalogSegment = renderCatalogHtml(apps);
+const notFoundSegment = render404CatalogHtml(apps);
+
 const indexHtml = fs.readFileSync(indexPath, 'utf8');
-const nextIndex = injectGeneratedHtml(indexHtml, nextSegment);
+const nextIndex = injectGeneratedHtml(
+  indexHtml,
+  catalogSegment,
+  INDEX_MARKER_START,
+  INDEX_MARKER_END,
+  toRelative(indexPath),
+);
+
+const notFoundHtml = fs.readFileSync(notFoundPath, 'utf8');
+const nextNotFound = injectGeneratedHtml(
+  notFoundHtml,
+  notFoundSegment,
+  NOT_FOUND_MARKER_START,
+  NOT_FOUND_MARKER_END,
+  toRelative(notFoundPath),
+);
 
 if (checkMode) {
-  if (indexHtml !== nextIndex) {
-    console.error('Labs homepage catalog is out of date. Run: npm run generate:labs-catalog');
-    process.exit(1);
-  }
-  console.log('Labs homepage catalog is up to date.');
+  const indexOk = updateFile(indexPath, nextIndex, 'Labs homepage catalog');
+  const notFoundOk = updateFile(notFoundPath, nextNotFound, 'Labs 404 catalog');
+  if (!indexOk || !notFoundOk) process.exit(1);
+  console.log('Labs homepage and 404 catalogs are up to date.');
   process.exit(0);
 }
 
-if (indexHtml !== nextIndex) {
-  fs.writeFileSync(indexPath, nextIndex);
-  console.log(`Updated ${toRelative(indexPath)} from ${toRelative(manifestPath)} (${apps.length} apps).`);
+let changed = 0;
+if (updateFile(indexPath, nextIndex, 'homepage')) changed++;
+if (updateFile(notFoundPath, nextNotFound, '404')) changed++;
+
+if (changed === 0) {
+  console.log('Labs catalogs are already up to date.');
 } else {
-  console.log('Labs homepage catalog is already up to date.');
+  console.log(`Synced ${apps.length} apps from ${toRelative(manifestPath)}.`);
 }

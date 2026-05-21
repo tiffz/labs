@@ -3,7 +3,7 @@ import type { SightProfile } from './types';
 
 const KEY_PROFILE = 'sight:profile';
 
-/** Old 10-level curriculum → new 12-level (schema v2). */
+/** Old 10-level curriculum → 12-level (schema v2). */
 const LEGACY_LEVEL_MAP: Record<number, number> = {
   1: 1,
   2: 2,
@@ -43,11 +43,19 @@ const DEFAULT_PROFILE: SightProfile = {
 };
 
 function migrateLevel(level: number, schemaVersion: number | undefined): number {
-  const clamped = Math.max(1, Math.min(10, Math.floor(level)));
-  if (schemaVersion === undefined || schemaVersion < CURRICULUM_SCHEMA_VERSION) {
-    return LEGACY_LEVEL_MAP[clamped] ?? clamped;
+  const raw = Math.max(1, Math.floor(level));
+  let migrated = raw;
+
+  if (schemaVersion === undefined || schemaVersion < 2) {
+    const legacyClamped = Math.max(1, Math.min(10, raw));
+    migrated = LEGACY_LEVEL_MAP[legacyClamped] ?? legacyClamped;
   }
-  return Math.max(1, Math.min(MAX_LEVEL, Math.floor(level)));
+
+  if (schemaVersion === undefined || schemaVersion < 3) {
+    if (migrated >= 5) migrated += 1;
+  }
+
+  return Math.max(1, Math.min(MAX_LEVEL, migrated));
 }
 
 function normalizeProfile(parsed: Partial<SightProfile> & { sessionsCompleted?: number }): SightProfile {

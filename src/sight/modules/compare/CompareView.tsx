@@ -1,4 +1,5 @@
 import Typography from '@mui/material/Typography';
+import CompareOklchReveal from '../../components/CompareOklchReveal';
 import { comparePrompt } from '../../generators/compare';
 import { colorStateToHex } from '../../scoring/perceptualScore';
 import type { CompareChallenge, PracticeReveal } from '../../types';
@@ -78,6 +79,12 @@ export default function CompareView({
               </span>
             </div>
           </div>
+          <CompareOklchReveal
+            challenge={challenge}
+            pickedSide={compareReveal?.pickedSide ?? 'left'}
+            passed={compareReveal?.passed ?? false}
+            visible={Boolean(compareReveal)}
+          />
         </div>
       </div>
     </div>

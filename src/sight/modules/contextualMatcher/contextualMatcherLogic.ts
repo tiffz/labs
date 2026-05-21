@@ -1,8 +1,15 @@
 import { getLevelConfig } from '../../levels';
-import { calculatePerceptualScore } from '../../scoring/perceptualScore';
+import { calculatePerceptualScore, clampColorState } from '../../scoring/perceptualScore';
 import type { ColorState, ContextualChallenge } from '../../types';
 
 export function initialContextualInput(challenge: ContextualChallenge): ColorState {
+  if (challenge.display === 'adjacent' && challenge.startLightnessDelta !== undefined) {
+    return clampColorState({
+      h: challenge.locked.hue ? challenge.target.h : 0,
+      c: challenge.locked.chroma ? challenge.target.c : 0.08,
+      l: challenge.target.l + challenge.startLightnessDelta,
+    });
+  }
   return {
     h: challenge.locked.hue ? challenge.target.h : 0,
     c: challenge.locked.chroma ? challenge.target.c : 0.08,

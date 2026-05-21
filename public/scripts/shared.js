@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Unlisted apps: show in the catalog on local dev only. Production still serves /app/ URLs;
   // they are just omitted from this directory page.
   if (!isLabsCatalogLocalHost()) {
-    document.querySelectorAll('.app-card[data-stage="unlisted"]').forEach(function (el) {
+    document.querySelectorAll('[data-stage="unlisted"]').forEach(function (el) {
       el.remove();
     });
     document.querySelectorAll('[data-filter-stage="unlisted"]').forEach(function (el) {
@@ -34,7 +34,19 @@ document.addEventListener('DOMContentLoaded', function() {
   const appCards = document.querySelectorAll('.app-card[data-stage]');
   const sections = document.querySelectorAll('.catalog-section[data-category-section]');
   let activeStage = 'all';
+  let searchQuery = '';
+  const searchInput = document.querySelector('[data-catalog-search]');
   const activeAnimations = new WeakMap();
+
+  function cardMatchesFilters(card) {
+    const stage = card.dataset.stage || '';
+    const matchesStage = activeStage === 'all' || stage === activeStage;
+    if (!matchesStage) return false;
+    if (!searchQuery) return true;
+    const name = (card.dataset.name || '').toLowerCase();
+    const desc = (card.dataset.description || '').toLowerCase();
+    return name.includes(searchQuery) || desc.includes(searchQuery);
+  }
 
   function cancelAnimation(element) {
     const currentAnimation = activeAnimations.get(element);
@@ -98,9 +110,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function updateCatalogVisibility() {
     appCards.forEach((card) => {
-      const stage = card.dataset.stage || '';
-      const matchesStage = activeStage === 'all' || stage === activeStage;
-      if (matchesStage) {
+      if (cardMatchesFilters(card)) {
         animateShow(card);
       } else {
         animateHide(card);
@@ -111,8 +121,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const cardsInSection = section.querySelectorAll('.app-card[data-stage]');
       let hasVisibleCards = false;
       cardsInSection.forEach((card) => {
-        const stage = card.dataset.stage || '';
-        if (activeStage === 'all' || stage === activeStage) {
+        if (cardMatchesFilters(card)) {
           hasVisibleCards = true;
         }
       });
@@ -137,9 +146,24 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
+  if (searchInput) {
+    searchInput.addEventListener('input', () => {
+      searchQuery = searchInput.value.trim().toLowerCase();
+      updateCatalogVisibility();
+    });
+  }
+
   if (appCards.length > 0) {
     updateCatalogVisibility();
   }
+
+  // Hide empty category blocks on 404 when unlisted apps are removed (production).
+  document.querySelectorAll('.labs-404-category').forEach((section) => {
+    const tiles = section.querySelectorAll('.labs-404-tile');
+    if (tiles.length === 0) {
+      section.classList.add('is-empty');
+    }
+  });
   
   // Simple hover glow effect
   bubbles.forEach(bubble => {

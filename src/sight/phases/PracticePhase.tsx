@@ -21,6 +21,8 @@ import type { WheelPoint } from '../scoring/gamutOverlap';
 interface PracticePhaseProps {
   profile: SightProfile;
   initialRound: PracticeRound;
+  /** True when practicing a level below the saved profile level (home review picker). */
+  reviewMode: boolean;
   onProfileChange: (profile: SightProfile) => void;
   onExit: () => void;
   simulatePass: boolean | null;
@@ -66,6 +68,7 @@ function useChallengeState(challenge: SightChallenge) {
 export default function PracticePhase({
   profile,
   initialRound,
+  reviewMode,
   onProfileChange,
   onExit,
   simulatePass,
@@ -75,7 +78,7 @@ export default function PracticePhase({
   const [sessionLevel, setSessionLevel] = useState(initialRound.level);
   const advanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { challenge, level } = round;
-  const isReviewSession = sessionLevel < profile.level;
+  const isReviewSession = reviewMode;
   const canGoPrevLevel = sessionLevel > 1;
   const canGoNextLevel = sessionLevel < profile.level;
   const state = useChallengeState(challenge);
@@ -93,20 +96,22 @@ export default function PracticePhase({
   const loadChallengeAtLevel = useCallback(
     (targetLevel: number) => {
       clearAdvanceTimer();
-      const clamped = Math.max(1, Math.min(profile.level, Math.floor(targetLevel)));
       const currentProfile = readProfile();
+      const maxLevel = currentProfile.level;
+      const clamped = Math.max(1, Math.min(maxLevel, Math.floor(targetLevel)));
       const nextRound = pickPracticeChallenge(currentProfile, 0, clamped);
       setSessionLevel(clamped);
       resetChallengeState(nextRound.challenge);
       setRound(nextRound);
       setReveal(null);
     },
-    [clearAdvanceTimer, profile.level, resetChallengeState],
+    [clearAdvanceTimer, resetChallengeState],
   );
 
   const loadNextChallenge = useCallback(() => {
-    loadChallengeAtLevel(sessionLevel);
-  }, [loadChallengeAtLevel, sessionLevel]);
+    const targetLevel = reviewMode ? sessionLevel : readProfile().level;
+    loadChallengeAtLevel(targetLevel);
+  }, [loadChallengeAtLevel, reviewMode, sessionLevel]);
 
   const goToAdjacentLevel = useCallback(
     (delta: -1 | 1) => {
@@ -133,15 +138,19 @@ export default function PracticePhase({
 
   const finishRound = useCallback(
     (passed: boolean, nextReveal: PracticeReveal) => {
-      const updated = recordChallengeResult(readProfile(), passed, {
-        challengeLevel: sessionLevel,
+      const prev = readProfile();
+      const updated = recordChallengeResult(prev, passed, {
+        challengeLevel: reviewMode ? sessionLevel : prev.level,
       });
       writeProfile(updated);
       onProfileChange(updated);
+      if (!reviewMode && updated.level > prev.level) {
+        setSessionLevel(updated.level);
+      }
       setReveal(nextReveal);
       scheduleAutoAdvance(nextReveal);
     },
-    [onProfileChange, scheduleAutoAdvance, sessionLevel],
+    [onProfileChange, reviewMode, scheduleAutoAdvance, sessionLevel],
   );
 
   const handleComparePick = (side: 'left' | 'right') => {
@@ -162,6 +171,8 @@ export default function PracticePhase({
       const r = scoreContextual(challenge, state.contextualInput, level, simulatePass);
       finishRound(r.passed, {
         kind: 'contextual',
+        target: challenge.target,
+        input: state.contextualInput,
         targetHex: colorStateToHex(challenge.target),
         inputHex: colorStateToHex(state.contextualInput),
         passed: r.passed,

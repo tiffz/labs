@@ -25,6 +25,7 @@ export default function App(): React.ReactElement {
   const [phase, setPhase] = useState<AppPhase>(() => resolveInitialPhase(debug));
   const [profile, setProfile] = useState<SightProfile>(() => readProfile());
   const [practiceRound, setPracticeRound] = useState<PracticeRound | null>(null);
+  const [practiceReviewMode, setPracticeReviewMode] = useState(false);
   const [simulatePass, setSimulatePass] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -51,6 +52,7 @@ export default function App(): React.ReactElement {
     const current = readProfile();
     const round = pickPracticeChallenge(current, 0, practiceLevel);
     setPracticeRound(round);
+    setPracticeReviewMode(practiceLevel < current.level);
     setPhase('practice');
     analytics.trackEvent('sight_practice_start', {
       level: practiceLevel,
@@ -61,6 +63,7 @@ export default function App(): React.ReactElement {
 
   const exitPractice = useCallback(() => {
     setPracticeRound(null);
+    setPracticeReviewMode(false);
     setProfile(readProfile());
     setPhase('home');
   }, []);
@@ -84,6 +87,7 @@ export default function App(): React.ReactElement {
           <PracticePhase
             profile={profile}
             initialRound={practiceRound}
+            reviewMode={practiceReviewMode}
             onProfileChange={setProfile}
             onExit={exitPractice}
             simulatePass={debug ? simulatePass : null}

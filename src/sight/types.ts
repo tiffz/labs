@@ -11,7 +11,12 @@ export type CompareAxis = 'lighter' | 'darker' | 'moreSaturated' | 'lessSaturate
 
 export type CompareProfile = 'light' | 'saturationEasy' | 'saturationHard' | 'mixed';
 
-export type ContextualProfile = 'flatNeutral' | 'valueLocked' | 'hueLocked' | 'full';
+export type ContextualProfile =
+  | 'adjacentFlat'
+  | 'flatNeutral'
+  | 'valueLocked'
+  | 'hueLocked'
+  | 'full';
 
 export type BridgeProfile = 'singleAxis' | 'warmCool';
 
@@ -45,8 +50,14 @@ export interface ContextualChallenge {
   target: ColorState;
   background: ColorState;
   locked: { hue: boolean; chroma: boolean };
-  /** Same neutral behind target and match workspace (intro level). */
-  display: 'flat' | 'contextual';
+  /**
+   * adjacent — target and user swatch side by side on neutral gray;
+   * flat — single target on gray (preview in slider panel);
+   * contextual — target in a contrasting field.
+   */
+  display: 'adjacent' | 'flat' | 'contextual';
+  /** Signed L offset for the user swatch at start (adjacent levels only). */
+  startLightnessDelta?: number;
 }
 
 export interface BridgeChallenge {
@@ -87,6 +98,8 @@ export interface SightProfile {
 export type PracticeReveal =
   | {
       kind: 'contextual';
+      target: ColorState;
+      input: ColorState;
       targetHex: string;
       inputHex: string;
       passed: boolean;

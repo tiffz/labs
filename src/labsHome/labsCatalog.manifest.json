@@ -1,5 +1,5 @@
 {
-  "$schemaComment": "Single source of truth for the static Labs homepage catalog (src/index.html). Run: npm run generate:labs-catalog. Per-app index.html shells stay separate for critical CSS, theme-color, and cookie consent.",
+  "$schemaComment": "Single source of truth for the Labs app directory on the homepage (src/index.html) and 404 page (src/404.html). Run: npm run generate:labs-catalog. Per-app index.html shells stay separate for critical CSS, theme-color, and cookie consent.",
   "apps": [
     {
       "path": "/drums/",

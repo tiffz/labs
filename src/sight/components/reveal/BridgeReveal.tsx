@@ -1,3 +1,4 @@
+import OklchReadout from '../OklchReadout';
 import { colorStateToHex } from '../../scoring/perceptualScore';
 import type { PracticeReveal } from '../../types';
 
@@ -21,19 +22,21 @@ export default function BridgeReveal({ reveal }: BridgeRevealProps): React.React
           <div key={i} className="sight-bridge-reveal__row">
             <span className="sight-bridge-reveal__slot-label">Step {i + 1}</span>
             <div className="sight-bridge-reveal__pair">
-              <div>
+              <div className="sight-bridge-reveal__swatch-col">
                 <span className="sight-match-reveal__label">Reference</span>
                 <div
                   className="sight-swatch"
                   style={{ background: colorStateToHex(challenge.referenceSteps[i]!) }}
                 />
+                <OklchReadout label="Reference" state={challenge.referenceSteps[i]!} />
               </div>
-              <div>
+              <div className="sight-bridge-reveal__swatch-col">
                 <span className="sight-match-reveal__label">Yours</span>
                 <div
                   className="sight-swatch"
                   style={{ background: colorStateToHex(userSteps[i]!) }}
                 />
+                <OklchReadout label="Yours" state={userSteps[i]!} />
               </div>
             </div>
           </div>

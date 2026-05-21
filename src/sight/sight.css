@@ -251,6 +251,113 @@ body {
   border-radius: 2px;
 }
 
+.sight-contextual-stage--adjacent {
+  aspect-ratio: auto;
+  min-height: 11rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Side-by-side practice — gap and borders while matching */
+.sight-adjacent-pair {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 1.25rem;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 1.25rem;
+}
+
+.sight-adjacent-pair__col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sight-adjacent-swatch {
+  width: 6.5rem;
+  height: 6.5rem;
+  border: 2px solid rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+/* Post-submit flush pair (default merged; adjacent animates separated → merged) */
+.sight-flush-pair {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 0;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 1.25rem;
+}
+
+.sight-flush-pair__col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sight-flush-swatch {
+  width: 6.5rem;
+  height: 6.5rem;
+  border: none;
+  border-radius: 0;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.sight-flush-pair__col:first-child .sight-flush-swatch {
+  border-radius: 4px 0 0 4px;
+}
+
+.sight-flush-pair__col:last-child .sight-flush-swatch {
+  border-radius: 0 4px 4px 0;
+}
+
+.sight-flush-pair--merge-reveal {
+  transition: gap 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sight-flush-pair--merge-reveal .sight-flush-swatch {
+  transition:
+    border-width 0.45s ease,
+    border-color 0.45s ease,
+    border-radius 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sight-flush-pair--merge-reveal.sight-flush-pair--separated {
+  gap: 1.25rem;
+}
+
+.sight-flush-pair--merge-reveal.sight-flush-pair--separated
+  .sight-flush-swatch {
+  border: 2px solid rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.sight-flush-pair--merge-reveal.sight-flush-pair--merged {
+  gap: 0;
+}
+
+.sight-flush-pair--merge-reveal.sight-flush-pair--merged .sight-flush-swatch {
+  border-width: 0;
+  border-color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sight-flush-pair--merge-reveal,
+  .sight-flush-pair--merge-reveal .sight-flush-swatch {
+    transition: none;
+  }
+}
+
 .sight-neutral-panel {
   background: var(--sight-neutral-workspace);
   padding: 1rem;
@@ -364,7 +471,7 @@ body {
 /* Compare — fixed stage so swatches do not shift when verdict appears */
 .sight-compare-stage {
   width: min(100%, 420px);
-  min-height: 18rem;
+  min-height: 20rem;
   padding: 1.5rem;
   text-align: center;
   display: flex;
@@ -467,6 +574,124 @@ body {
   font-weight: 600;
 }
 
+/* Compare — axis-focused readout (L or C only) */
+.sight-axis-readout {
+  width: 100%;
+  min-height: 3.5rem;
+  margin-top: 0.75rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+  text-align: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease;
+}
+
+.sight-axis-readout--visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.sight-axis-readout__heading {
+  display: block;
+  font-family: var(--sight-font-mono);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #3f3f46;
+  margin-bottom: 0.35rem;
+}
+
+.sight-axis-readout__values {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+}
+
+.sight-axis-readout__cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  min-width: 5.5rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.sight-axis-readout__cell--correct {
+  background: rgba(52, 211, 153, 0.15);
+  box-shadow: inset 0 0 0 2px #34d399;
+}
+
+.sight-axis-readout__cell--wrong {
+  background: rgba(248, 113, 113, 0.12);
+  box-shadow: inset 0 0 0 2px #f87171;
+}
+
+.sight-axis-readout__side {
+  font-family: var(--sight-font-mono);
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #52525b;
+}
+
+.sight-axis-readout__value {
+  font-family: var(--sight-font-mono);
+  font-size: 1.375rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: #18181b;
+  font-variant-numeric: tabular-nums;
+}
+
+.sight-axis-readout--match {
+  min-height: 3.5rem;
+}
+
+.sight-axis-readout__group--stacked {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sight-axis-readout {
+    transition: none;
+  }
+}
+
+/* OKLCH readouts — full channels (match reveal, bridge) */
+.sight-oklch-pair {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  width: 100%;
+  min-height: 3.25rem;
+  margin-top: 0.75rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  box-sizing: border-box;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease;
+}
+
+.sight-oklch-pair--visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sight-oklch-pair {
+    transition: none;
+  }
+}
+
 /* Post-submit reveal */
 .sight-match-reveal {
   width: min(100%, 480px);
@@ -477,20 +702,9 @@ body {
   padding: 1rem;
 }
 
-.sight-match-reveal__pair {
-  display: flex;
-  gap: 2rem;
-  justify-content: center;
-  align-items: flex-end;
+.sight-match-reveal__flush {
   width: 100%;
-  padding: 1.5rem;
-}
-
-.sight-match-reveal__swatch-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
+  padding: 1rem 1.25rem 1.25rem;
 }
 
 .sight-match-reveal__label {
@@ -501,24 +715,9 @@ body {
   letter-spacing: 0.06em;
 }
 
-.sight-match-reveal__swatch {
+.sight-match-reveal__flush .sight-flush-swatch {
   width: 5.5rem;
   height: 5.5rem;
-  border-radius: 4px;
-  border: 2px solid rgba(0, 0, 0, 0.2);
-}
-
-.sight-match-reveal__swatch--user {
-  transform: translateX(48px);
-  opacity: 0.85;
-}
-
-.sight-match-reveal__swatch--user.sight-match-reveal__swatch--slid {
-  transform: translateX(0);
-  opacity: 1;
-  transition:
-    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 0.4s ease;
 }
 
 .sight-match-reveal__verdict {
@@ -561,6 +760,69 @@ body {
   color: var(--sight-muted);
 }
 
+.sight-match-reveal .sight-oklch-pair {
+  opacity: 1;
+  visibility: visible;
+}
+
+.sight-oklch-readout {
+  flex: 1 1 11rem;
+  max-width: 100%;
+  padding: 0.4rem 0.55rem;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.05);
+  font-family: var(--sight-font-mono);
+  font-size: 0.6875rem;
+  line-height: 1.35;
+  text-align: left;
+}
+
+.sight-oklch-readout--hidden {
+  visibility: hidden;
+}
+
+.sight-oklch-readout--correct {
+  box-shadow: inset 0 0 0 2px #34d399;
+}
+
+.sight-oklch-readout--wrong {
+  box-shadow: inset 0 0 0 2px #f87171;
+}
+
+.sight-oklch-readout__label {
+  display: inline-block;
+  min-width: 2.75rem;
+  margin-right: 0.35rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--sight-muted);
+  vertical-align: top;
+}
+
+.sight-oklch-readout__channels {
+  display: inline;
+  color: #18181b;
+}
+
+.sight-oklch-readout__chip + .sight-oklch-readout__chip::before {
+  content: ' · ';
+  color: var(--sight-muted);
+}
+
+.sight-oklch-readout__axis {
+  font-weight: 600;
+  color: var(--sight-muted);
+}
+
+.sight-oklch-readout__css {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.625rem;
+  color: #3f3f46;
+  word-break: break-all;
+}
+
 .sight-bridge-reveal__rows {
   display: flex;
   flex-direction: column;
@@ -576,18 +838,23 @@ body {
   display: flex;
   gap: 1.5rem;
   margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.sight-bridge-reveal__swatch-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  min-width: 11rem;
+}
+
+.sight-bridge-reveal__swatch-col .sight-oklch-readout {
+  width: 100%;
 }
 
 .sight-bridge-reveal__slot-label {
   font-family: var(--sight-font-mono);
   font-size: 0.75rem;
   color: var(--sight-muted);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .sight-match-reveal__swatch--user {
-    transform: translateX(0);
-    opacity: 1;
-    transition: none;
-  }
 }

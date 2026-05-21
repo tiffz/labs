@@ -32,6 +32,8 @@ export default function ContextualMatcherView({
   );
   const bgHex = colorStateToHex(challenge.background);
   const targetHex = colorStateToHex(challenge.target);
+  const inputHex = colorStateToHex(input);
+  const isAdjacent = challenge.display === 'adjacent';
   const isFlat = challenge.display === 'flat';
 
   if (reveal?.kind === 'contextual') {
@@ -39,11 +41,15 @@ export default function ContextualMatcherView({
       <div className="sight-workspace">
         <div className="sight-canvas-zone sight-canvas-zone--full">
           <MatchReveal
+            target={reveal.target}
+            input={reveal.input}
             targetHex={reveal.targetHex}
             inputHex={reveal.inputHex}
             passed={reveal.passed}
             accuracyRating={reveal.accuracyRating}
             deltaE={reveal.deltaE}
+            mergeReveal={challenge.display === 'adjacent'}
+            locked={challenge.locked}
           />
         </div>
       </div>
@@ -53,19 +59,42 @@ export default function ContextualMatcherView({
   return (
     <div className={`sight-workspace ${interactionDisabled ? 'sight-workspace--dimmed' : ''}`}>
       <div className="sight-canvas-zone">
-        <div
-          className={`sight-contextual-stage ${isFlat ? 'sight-contextual-stage--flat' : ''}`}
-          aria-label={isFlat ? 'Target swatch on neutral gray' : 'Target swatch in context'}
-        >
-          <div className="sight-contextual-bg" style={{ background: bgHex }} />
-          <div className="sight-contextual-frame">
-            <div className="sight-contextual-target" style={{ background: targetHex }} />
+        {isAdjacent ? (
+          <div
+            className="sight-contextual-stage sight-contextual-stage--adjacent sight-neutral-panel"
+            aria-label="Target and your swatch side by side on neutral gray"
+          >
+            <div className="sight-contextual-bg" style={{ background: bgHex }} />
+            <div className="sight-adjacent-pair" aria-label="Target and your swatch side by side">
+              <div className="sight-adjacent-pair__col">
+                <span className="sight-match-reveal__label">Target</span>
+                <div className="sight-adjacent-swatch" style={{ background: targetHex }} />
+              </div>
+              <div className="sight-adjacent-pair__col">
+                <span className="sight-match-reveal__label">Yours</span>
+                <div className="sight-adjacent-swatch" style={{ background: inputHex }} />
+              </div>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div
+            className={`sight-contextual-stage ${isFlat ? 'sight-contextual-stage--flat' : ''}`}
+            aria-label={isFlat ? 'Target swatch on neutral gray' : 'Target swatch in context'}
+          >
+            <div className="sight-contextual-bg" style={{ background: bgHex }} />
+            <div className="sight-contextual-frame">
+              <div className="sight-contextual-target" style={{ background: targetHex }} />
+            </div>
+          </div>
+        )}
       </div>
       <div className="sight-control-zone">
         <Typography variant="subtitle2">
-          {isFlat ? 'Match the swatch' : 'Match the swatch on neutral gray'}
+          {isAdjacent
+            ? 'Match the swatches'
+            : isFlat
+              ? 'Match the swatch'
+              : 'Match the swatch on neutral gray'}
         </Typography>
         <OklchSliders
           value={input}
@@ -78,9 +107,13 @@ export default function ContextualMatcherView({
             ΔE <strong>{live.deltaE.toFixed(2)}</strong> · Accuracy{' '}
             <strong>{Math.round(live.accuracyRating)}%</strong>
           </p>
+        ) : isAdjacent ? (
+          <Typography variant="body2" color="text.secondary">
+            Both swatches sit on the same gray. Adjust lightness until they match, then submit.
+          </Typography>
         ) : isFlat ? (
           <Typography variant="body2" color="text.secondary">
-            Same gray behind both swatches. Adjust lightness, then submit.
+            Target on gray above. Adjust lightness in the preview, then submit.
           </Typography>
         ) : (
           <Typography variant="body2" color="text.secondary">

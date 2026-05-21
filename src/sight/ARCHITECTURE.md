@@ -4,7 +4,7 @@
 
 All generators and scoring use **Oklch** via [culori](https://github.com/Evercoder/culori). Perceptual distance uses **CIEDE2000** (`differenceCiede2000`).
 
-Level thresholds and generator profiles live in [`levels.ts`](levels.ts) (12 levels). Each row may set `compareProfile`, `contextualProfile`, `bridgeProfile`, or `gamutProfile` so generators do not rely on magic level numbers.
+Level thresholds and generator profiles live in [`levels.ts`](levels.ts) (13 levels). Each row may set `compareProfile`, `contextualProfile`, `bridgeProfile`, or `gamutProfile` so generators do not rely on magic level numbers.
 
 ## Phases (`App.tsx`)
 
@@ -24,7 +24,7 @@ Level thresholds and generator profiles live in [`levels.ts`](levels.ts) (12 lev
 
 `session/practiceChallenge.ts` picks one challenge from `profile.level` (occasional review at `level - 1`). Level advances after seven consecutive passes at the current level.
 
-`storage.ts` migrates profiles without `schemaVersion` 2 from the legacy 10-level map to the 12-level curriculum.
+`storage.ts` migrates profiles: legacy 10-level map (schema &lt; 2), then +1 for levels ≥ 5 when schema &lt; 3 (adjacent-match insert).
 
 ## File layout
 

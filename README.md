@@ -60,11 +60,12 @@ npm run check:shared-catalog
 
 ## Labs homepage catalog
 
-The Music, Art & Writing, and Games grids on the static Labs homepage (`src/index.html`) are generated from a single manifest (still **plain HTML** in the repo — no React on the landing page):
+The Music, Art & Writing, and Games grids on the static Labs homepage (`src/index.html`) and the app directory on the 404 page (`src/404.html`) are generated from a single manifest (still **plain HTML** in the repo — no React on the landing page):
 
 - Manifest: `src/labsHome/labsCatalog.manifest.json`
 - Generator: `scripts/render-labs-catalog.mjs`
 - Markers in `src/index.html`: `<!-- labs-catalog:generated:start -->` … `<!-- labs-catalog:generated:end -->`
+- Markers in `src/404.html`: `<!-- labs-404-catalog:generated:start -->` … `<!-- labs-404-catalog:generated:end -->`
 
 Commands:
 
@@ -78,7 +79,7 @@ Within each column, apps are ordered **stable → experimental → unlisted**, w
 Notes:
 
 - `npm run dev`, `npm run lint`, `npm test`, and `npm run build` all regenerate the shared UI catalog and Labs homepage catalog automatically.
-- CI regenerates the shared catalog before lint; the Labs homepage catalog is checked with `check:labs-catalog` so a stale `src/index.html` fails the build.
+- CI regenerates the shared catalog before lint; the Labs catalog is checked with `check:labs-catalog` so stale `src/index.html` or `src/404.html` fails the build.
 - Git hooks also enforce freshness:
   - `pre-commit` regenerates and stages `src/ui/generatedSharedCatalog.ts` automatically.
   - `pre-push` warns (non-blocking) if catalog drift is detected.

@@ -10,6 +10,7 @@ function pickInRange(rng: () => number, min: number, max: number): number {
 
 function lockedFromProfile(profile: ContextualProfile): { hue: boolean; chroma: boolean } {
   switch (profile) {
+    case 'adjacentFlat':
     case 'flatNeutral':
     case 'valueLocked':
       return { hue: true, chroma: true };
@@ -34,6 +35,20 @@ export function generateContextualMatchChallenge(
     c: locked.chroma ? 0.06 : pickInRange(rng, 0.04, 0.18),
     l: pickInRange(rng, 0.35, 0.72),
   };
+
+  if (profile === 'adjacentFlat') {
+    const sign = rng() < 0.5 ? -1 : 1;
+    const startLightnessDelta = sign * pickInRange(rng, 0.12, 0.22);
+    return {
+      kind: 'contextual',
+      seed,
+      target,
+      background: { ...FLAT_NEUTRAL_BACKGROUND },
+      locked,
+      display: 'adjacent',
+      startLightnessDelta,
+    };
+  }
 
   if (profile === 'flatNeutral') {
     return {
