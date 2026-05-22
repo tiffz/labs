@@ -137,9 +137,13 @@ export function comparePrompt(axis: CompareAxis): string {
   }
 }
 
-export function generateCompareChallenge(seed: number, level: number): CompareChallenge {
+export function generateCompareChallenge(
+  seed: number,
+  level: number,
+  profileOverride?: CompareProfile,
+): CompareChallenge {
   const rng = createRng(seed);
-  const profile = getLevelConfig(level).compareProfile ?? 'light';
+  const profile = profileOverride ?? getLevelConfig(level).compareProfile ?? 'light';
   const { left, right, correct, axis } = generateForProfile(rng, profile);
 
   return {

@@ -27,23 +27,27 @@ function migrateLevel(level: number, schemaVersion: number | undefined): number 
     if (migrated >= 5) migrated += 1;
   }
 
+  if (schemaVersion === undefined || schemaVersion < 4) {
+    if (migrated >= 5) migrated += 7;
+  }
+
   return Math.max(1, Math.min(MAX_LEVEL, migrated));
 }
 
 describe('profile level migration', () => {
-  it('maps old level 3 to new mixed compare level 4', () => {
-    expect(migrateLevel(3, 1)).toBe(4);
+  it('maps legacy level 4 to calibration contextual level 14 after v2, v3, and v4 bumps', () => {
+    expect(migrateLevel(4, 1)).toBe(14);
   });
 
-  it('maps old contextual level 4 to new level 7 after v2 and v3 bumps', () => {
-    expect(migrateLevel(4, undefined)).toBe(7);
+  it('maps old contextual level 4 to level 14 after v2, v3, and v4 bumps', () => {
+    expect(migrateLevel(4, undefined)).toBe(14);
   });
 
-  it('bumps schema v2 level 5 to level 6 for adjacent insert', () => {
-    expect(migrateLevel(5, 2)).toBe(6);
+  it('bumps schema v3 level 12 to calibration lab 19', () => {
+    expect(migrateLevel(12, 3)).toBe(19);
   });
 
   it('leaves level unchanged when schema is current', () => {
-    expect(migrateLevel(5, CURRICULUM_SCHEMA_VERSION)).toBe(5);
+    expect(migrateLevel(12, CURRICULUM_SCHEMA_VERSION)).toBe(12);
   });
 });

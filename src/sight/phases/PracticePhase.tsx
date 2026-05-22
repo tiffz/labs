@@ -3,6 +3,9 @@ import Button from '@mui/material/Button';
 import PracticeFooter from '../components/PracticeFooter';
 import CompareView from '../modules/compare/CompareView';
 import { scoreCompare } from '../modules/compare/compareLogic';
+import AlbersFlashcardView from '../modules/flashcard/AlbersFlashcardView';
+import IsolatedFlashcardView from '../modules/flashcard/IsolatedFlashcardView';
+import { scoreAlbersFlashcard, scoreIsolatedFlashcard } from '../modules/flashcard/flashcardLogic';
 import ContextualMatcherView from '../modules/contextualMatcher/ContextualMatcherView';
 import { initialContextualInput, scoreContextual } from '../modules/contextualMatcher/contextualMatcherLogic';
 import BrokenBridgeView from '../modules/brokenBridge/BrokenBridgeView';
@@ -164,8 +167,48 @@ export default function PracticePhase({
     });
   };
 
+  const handleIsolatedPick = (side: 'left' | 'right') => {
+    if (challenge.kind !== 'flashcard-isolated' || awaitingFeedback) return;
+    const { passed } = scoreIsolatedFlashcard(challenge, side, simulatePass);
+    finishRound(passed, {
+      kind: 'flashcard-isolated',
+      challenge,
+      pickedSide: side,
+      passed,
+    });
+  };
+
+  const handleAlbersSide = (side: 'left' | 'right') => {
+    if (challenge.kind !== 'flashcard-albers' || awaitingFeedback) return;
+    const { passed } = scoreAlbersFlashcard(challenge, { side }, simulatePass);
+    finishRound(passed, {
+      kind: 'flashcard-albers',
+      challenge,
+      pickedSide: side,
+      passed,
+    });
+  };
+
+  const handleAlbersBinary = (choice: 'same' | 'different') => {
+    if (challenge.kind !== 'flashcard-albers' || awaitingFeedback) return;
+    const { passed } = scoreAlbersFlashcard(challenge, { binary: choice }, simulatePass);
+    finishRound(passed, {
+      kind: 'flashcard-albers',
+      challenge,
+      pickedBinary: choice,
+      passed,
+    });
+  };
+
   const handleSubmit = () => {
-    if (awaitingFeedback || challenge.kind === 'compare') return;
+    if (
+      awaitingFeedback ||
+      challenge.kind === 'compare' ||
+      challenge.kind === 'flashcard-isolated' ||
+      challenge.kind === 'flashcard-albers'
+    ) {
+      return;
+    }
 
     if (challenge.kind === 'contextual' && state.contextualInput) {
       const r = scoreContextual(challenge, state.contextualInput, level, simulatePass);
@@ -223,7 +266,10 @@ export default function PracticePhase({
       ? `${profile.passesAtLevel}/${PASSES_TO_ADVANCE} passes to level ${profile.level + 1}`
       : 'Max level';
 
-  const isCompare = challenge.kind === 'compare';
+  const isTapAnswer =
+    challenge.kind === 'compare' ||
+    challenge.kind === 'flashcard-isolated' ||
+    challenge.kind === 'flashcard-albers';
 
   const practiceBody = (
     <>
@@ -232,6 +278,23 @@ export default function PracticePhase({
           challenge={challenge}
           reveal={reveal}
           onPick={handleComparePick}
+          disabled={awaitingFeedback}
+        />
+      )}
+      {challenge.kind === 'flashcard-isolated' && (
+        <IsolatedFlashcardView
+          challenge={challenge}
+          reveal={reveal}
+          onPick={handleIsolatedPick}
+          disabled={awaitingFeedback}
+        />
+      )}
+      {challenge.kind === 'flashcard-albers' && (
+        <AlbersFlashcardView
+          challenge={challenge}
+          reveal={reveal}
+          onPickSide={handleAlbersSide}
+          onPickBinary={handleAlbersBinary}
           disabled={awaitingFeedback}
         />
       )}
@@ -331,7 +394,7 @@ export default function PracticePhase({
         onSubmit={handleSubmit}
         onSkipAdvance={skipToNext}
         awaitingFeedback={awaitingFeedback}
-        hideSubmit={isCompare}
+        hideSubmit={isTapAnswer}
         progressHint={progressLabel}
       />
     </>

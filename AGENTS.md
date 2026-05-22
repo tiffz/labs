@@ -15,7 +15,7 @@ Instructions for AI coding assistants working in this repo (Cursor, Claude, Code
 
 ## Canonical Rules
 
-- **Pre-commit checks** (`.cursor/rules/pre-commit-checks.mdc`): run ESLint, `npm run typecheck`, and `npm run knip` on changed files before declaring a task done.
+- **Pre-commit checks** (`.cursor/rules/pre-commit-checks.mdc`): run `npm run presubmit` before declaring a task done or suggesting a commit (mirrors `.husky/pre-commit`: boundaries, lint, knip, typecheck, `test:fast`).
 - **SPA guardrails** (`src/shared/spaGuardrails.test.ts`): every app in `src/*/` must follow the shared shell template (`src/shared/templates/app-index.starter.html`), render under `React.StrictMode`, and expose `SkipToMain`. Tests will fail the build if you add a new app that skips these.
 - **Import boundaries** (`src/shared/importBoundaries.test.ts` + `scripts/check-import-boundaries.mjs`): apps may import from `src/shared/**` but not from each other. Keep cross-app reuse in `src/shared/` and register new app directories in both files.
 - **Shared UI first** (`src/shared/SHARED_UI_CONVENTIONS.md`): reach for `src/shared/components/` primitives before writing a new popover/tooltip/menu. MUI is the underlying primitive library for complex widgets.
@@ -59,6 +59,7 @@ npm run dev            # vite dev server
 npm run typecheck      # tsc --noEmit
 npm run lint           # eslint
 npm run knip           # dead-code / unused-exports check
+npm run presubmit      # full local pre-commit mirror (run before commit)
 npm run test:fast      # vitest, fast subset used by pre-commit
 npm run test           # full vitest suite (longer; CI gate)
 npm run build          # production build
@@ -69,9 +70,7 @@ npx playwright test    # E2E (requires `npx playwright install` first)
 
 Before declaring a task done:
 
-- [ ] ESLint clean on changed files
-- [ ] `npm run typecheck` clean
-- [ ] `npm run knip` clean (delete any files/exports your change made unused)
+- [ ] `npm run presubmit` clean (or the same steps: lint, knip, typecheck, test:fast)
 - [ ] Any new shared primitive is documented in `src/shared/SHARED_UI_CONVENTIONS.md` and demoed under `/ui/`
 - [ ] Any new app directory is added to `src/shared/importBoundaries.test.ts` and `scripts/check-import-boundaries.mjs`
 - [ ] Visual baselines updated intentionally, not silently (`e2e/visual/*`)

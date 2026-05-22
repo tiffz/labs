@@ -1,12 +1,14 @@
 import Typography from '@mui/material/Typography';
-import CompareOklchReveal from '../../components/CompareOklchReveal';
+import { CompareAxisReadout } from '../../components/CompareAxisReadout';
 import CompactVerdict from '../../components/reveal/CompactVerdict';
-import { comparePrompt } from '../../generators/compare';
+import FlashcardProofStrip from '../../components/reveal/FlashcardProofStrip';
+import { isolatedFocusAxis } from '../../oklchAxisFocus';
+import { isolatedPrompt } from '../../generators/isolatedFlashcard';
 import { colorStateToHex } from '../../scoring/perceptualScore';
-import type { CompareChallenge, PracticeReveal } from '../../types';
+import type { IsolatedFlashcardChallenge, PracticeReveal } from '../../types';
 
-interface CompareViewProps {
-  challenge: CompareChallenge;
+interface IsolatedFlashcardViewProps {
+  challenge: IsolatedFlashcardChallenge;
   reveal: PracticeReveal | null;
   onPick: (side: 'left' | 'right') => void;
   disabled?: boolean;
@@ -14,8 +16,8 @@ interface CompareViewProps {
 
 function swatchClass(
   side: 'left' | 'right',
-  challenge: CompareChallenge,
-  reveal: Extract<PracticeReveal, { kind: 'compare' }> | null,
+  challenge: IsolatedFlashcardChallenge,
+  reveal: Extract<PracticeReveal, { kind: 'flashcard-isolated' }> | null,
 ): string {
   const base = 'sight-compare-swatch';
   if (!reveal) return base;
@@ -25,39 +27,43 @@ function swatchClass(
   return classes.join(' ');
 }
 
-export default function CompareView({
+export default function IsolatedFlashcardView({
   challenge,
   reveal,
   onPick,
   disabled = false,
-}: CompareViewProps): React.ReactElement {
-  const compareReveal = reveal?.kind === 'compare' ? reveal : null;
+}: IsolatedFlashcardViewProps): React.ReactElement {
+  const isolatedReveal = reveal?.kind === 'flashcard-isolated' ? reveal : null;
   const leftHex = colorStateToHex(challenge.left);
   const rightHex = colorStateToHex(challenge.right);
-  const feedbackVisible = Boolean(compareReveal);
+  const feedbackVisible = Boolean(isolatedReveal);
 
   return (
     <div className="sight-workspace sight-workspace--single">
       <div className="sight-canvas-zone">
         <div className="sight-compare-stage sight-neutral-panel">
           <Typography variant="subtitle2" component="p" className="sight-compare-prompt">
-            {comparePrompt(challenge.axis)}
+            {isolatedPrompt(challenge.axis)}
           </Typography>
-          <div className="sight-compare-swatches" role="group" aria-label={comparePrompt(challenge.axis)}>
+          <div
+            className="sight-compare-swatches"
+            role="group"
+            aria-label={isolatedPrompt(challenge.axis)}
+          >
             <button
               type="button"
-              className={swatchClass('left', challenge, compareReveal)}
+              className={swatchClass('left', challenge, isolatedReveal)}
               style={{ background: leftHex }}
               onClick={() => onPick('left')}
-              disabled={Boolean(compareReveal) || disabled}
+              disabled={Boolean(isolatedReveal) || disabled}
               aria-label="Left swatch"
             />
             <button
               type="button"
-              className={swatchClass('right', challenge, compareReveal)}
+              className={swatchClass('right', challenge, isolatedReveal)}
               style={{ background: rightHex }}
               onClick={() => onPick('right')}
-              disabled={Boolean(compareReveal) || disabled}
+              disabled={Boolean(isolatedReveal) || disabled}
               aria-label="Right swatch"
             />
           </div>
@@ -70,13 +76,21 @@ export default function CompareView({
               className={`sight-compare-verdict ${feedbackVisible ? 'sight-compare-verdict--visible' : ''}`}
             >
               <div className="sight-compare-verdict__content" aria-hidden={!feedbackVisible}>
-                <CompactVerdict passed={compareReveal?.passed !== false} />
+                <CompactVerdict passed={isolatedReveal?.passed !== false} />
               </div>
             </div>
-            <CompareOklchReveal
-              challenge={challenge}
-              pickedSide={compareReveal?.pickedSide ?? 'left'}
-              passed={compareReveal?.passed ?? false}
+            <FlashcardProofStrip
+              left={challenge.left}
+              right={challenge.right}
+              visible={feedbackVisible}
+            />
+            <CompareAxisReadout
+              left={challenge.left}
+              right={challenge.right}
+              focus={isolatedFocusAxis(challenge.axis)}
+              correctSide={challenge.correctSide}
+              pickedSide={isolatedReveal?.pickedSide ?? 'left'}
+              passed={isolatedReveal?.passed ?? false}
               visible={feedbackVisible}
             />
           </div>

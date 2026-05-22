@@ -1,4 +1,4 @@
-import CompareAxisReadout from './CompareAxisReadout';
+import { CompareAxisReadoutFromChallenge } from './CompareAxisReadout';
 import type { CompareChallenge } from '../types';
 
 interface CompareOklchRevealProps {
@@ -16,7 +16,7 @@ export default function CompareOklchReveal({
   visible = true,
 }: CompareOklchRevealProps): React.ReactElement {
   return (
-    <CompareAxisReadout
+    <CompareAxisReadoutFromChallenge
       challenge={challenge}
       pickedSide={pickedSide}
       passed={passed}

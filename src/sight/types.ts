@@ -1,3 +1,5 @@
+import type { CurriculumPhase } from './curriculum/phases';
+
 /** Oklch color state used for all generators and scoring. */
 export interface ColorState {
   h: number;
@@ -5,11 +7,35 @@ export interface ColorState {
   l: number;
 }
 
-export type ModuleId = 'compare' | 'contextual' | 'bridge' | 'gamut';
+export type ModuleId = 'flashcard' | 'compare' | 'contextual' | 'bridge' | 'gamut';
 
 export type CompareAxis = 'lighter' | 'darker' | 'moreSaturated' | 'lessSaturated';
 
+export type IsolatedAxis = CompareAxis | 'warmer' | 'cooler';
+
 export type CompareProfile = 'light' | 'saturationEasy' | 'saturationHard' | 'mixed';
+
+export type IsolatedProfile =
+  | 'valueGrayscale'
+  | 'valueHueContrast'
+  | 'valueNearMatch'
+  | 'chromaEasy'
+  | 'chromaHard'
+  | 'temperatureUndertone'
+  | 'temperatureHueBoundary';
+
+export type FlashcardKind = 'isolated' | 'albers';
+
+export type AlbersProfile = 'identity' | 'perceivedValue' | 'perceivedTemperature' | 'perceivedChroma';
+
+export type AlbersQuestionKind =
+  | 'identity'
+  | 'perceivedLighter'
+  | 'perceivedDarker'
+  | 'perceivedWarmer'
+  | 'perceivedCooler'
+  | 'perceivedMoreSaturated'
+  | 'perceivedLessSaturated';
 
 export type ContextualProfile =
   | 'adjacentFlat'
@@ -26,6 +52,10 @@ export interface LevelConfig {
   level: number;
   module: ModuleId;
   label: string;
+  phase?: CurriculumPhase;
+  flashcardKind?: FlashcardKind;
+  isolatedProfile?: IsolatedProfile;
+  albersProfile?: AlbersProfile;
   compareProfile?: CompareProfile;
   contextualProfile?: ContextualProfile;
   bridgeProfile?: BridgeProfile;
@@ -44,19 +74,42 @@ export interface CompareChallenge {
   correctSide: 'left' | 'right';
 }
 
+export interface IsolatedFlashcardChallenge {
+  kind: 'flashcard-isolated';
+  seed: number;
+  profile: IsolatedProfile;
+  axis: IsolatedAxis;
+  left: ColorState;
+  right: ColorState;
+  correctSide: 'left' | 'right';
+}
+
+export interface AlbersField {
+  background: ColorState;
+  target: ColorState;
+}
+
+export interface AlbersFlashcardChallenge {
+  kind: 'flashcard-albers';
+  seed: number;
+  profile: AlbersProfile;
+  question: AlbersQuestionKind;
+  left: AlbersField;
+  right: AlbersField;
+  targetsIdentical: boolean;
+  correctSide: 'left' | 'right' | null;
+  correctBinary: 'same' | 'different' | null;
+}
+
+export type FlashcardChallenge = IsolatedFlashcardChallenge | AlbersFlashcardChallenge;
+
 export interface ContextualChallenge {
   kind: 'contextual';
   seed: number;
   target: ColorState;
   background: ColorState;
   locked: { hue: boolean; chroma: boolean };
-  /**
-   * adjacent — target and user swatch side by side on neutral gray;
-   * flat — single target on gray (preview in slider panel);
-   * contextual — target in a contrasting field.
-   */
   display: 'adjacent' | 'flat' | 'contextual';
-  /** Signed L offset for the user swatch at start (adjacent levels only). */
   startLightnessDelta?: number;
 }
 
@@ -78,7 +131,12 @@ export interface GamutChallenge {
   maskShape: 'triangle' | 'square' | 'diamond';
 }
 
-export type SightChallenge = CompareChallenge | ContextualChallenge | BridgeChallenge | GamutChallenge;
+export type SightChallenge =
+  | CompareChallenge
+  | FlashcardChallenge
+  | ContextualChallenge
+  | BridgeChallenge
+  | GamutChallenge;
 
 export interface PracticeRound {
   level: number;
@@ -88,9 +146,7 @@ export interface PracticeRound {
 export interface SightProfile {
   level: number;
   challengesCompleted: number;
-  /** Consecutive passes at the current level (resets on fail or level-up). */
   passesAtLevel: number;
-  /** Bumped when curriculum level count changes; drives migration in storage. */
   schemaVersion?: number;
 }
 
@@ -110,6 +166,19 @@ export type PracticeReveal =
       kind: 'compare';
       challenge: CompareChallenge;
       pickedSide: 'left' | 'right';
+      passed: boolean;
+    }
+  | {
+      kind: 'flashcard-isolated';
+      challenge: IsolatedFlashcardChallenge;
+      pickedSide: 'left' | 'right';
+      passed: boolean;
+    }
+  | {
+      kind: 'flashcard-albers';
+      challenge: AlbersFlashcardChallenge;
+      pickedSide?: 'left' | 'right';
+      pickedBinary?: 'same' | 'different';
       passed: boolean;
     }
   | {

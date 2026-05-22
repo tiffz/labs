@@ -143,13 +143,11 @@ function extractStrummingBySections(text: string): {
     if (sectionMatch) {
       // Save previous section if it has patterns
       if (currentPatterns.length > 0) {
-        console.log(`[Guitar Parser] Saving section "${currentSection}" with ${currentPatterns.length} patterns`);
         sections.push({ name: currentSection, patterns: [...currentPatterns] });
         currentPatterns = [];
       }
       // Extract name from either [bracketed] format (group 1) or "Name:" format (group 2)
       currentSection = (sectionMatch[1] || sectionMatch[2] || '').trim();
-      console.log(`[Guitar Parser] Found section header: "${currentSection}"`);
       inTabBlock = false;
       continue;
     }
@@ -164,14 +162,11 @@ function extractStrummingBySections(text: string): {
     if (inTabBlock && i > tabBlockEndIndex) {
       // Check if this line contains strumming notation
       const strummingMatch = trimmed && STRUMMING_FOOTER_PATTERN.test(trimmed);
-      console.log(`[Guitar Parser] Line ${i}: inTabBlock=${inTabBlock}, i > tabBlockEndIndex=${i > tabBlockEndIndex}, strummingMatch=${strummingMatch}, line="${trimmed.substring(0, 40)}..."`);
       if (strummingMatch) {
-        console.log(`[Guitar Parser] ✓ Found strumming pattern for section "${currentSection}"`);
         currentPatterns.push(trimmed);
         inTabBlock = false;
       } else if (trimmed && !isTabLine(trimmed)) {
         // Non-strumming, non-tab line after tab block - reset
-        console.log(`[Guitar Parser] Non-strumming line after tab, resetting`);
         inTabBlock = false;
       }
     }
@@ -179,11 +174,9 @@ function extractStrummingBySections(text: string): {
 
   // Save final section
   if (currentPatterns.length > 0) {
-    console.log(`[Guitar Parser] Saving final section "${currentSection}" with ${currentPatterns.length} patterns`);
     sections.push({ name: currentSection, patterns: currentPatterns });
   }
 
-  console.log(`[Guitar Parser] Total sections found: ${sections.length}`);
   if (sections.length > 0) {
     return { sections, source: 'footer' };
   }

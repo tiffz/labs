@@ -53,14 +53,6 @@ const DevPanel: React.FC<DevPanelProps> = ({
   
   // Furniture randomization handler - memoized to prevent recreation on every render
   const handleRandomizeFurniture = useCallback(() => {
-    // Randomize furniture button clicked
-    console.log('World renderables count:', world.renderables.size);
-    console.log('World transforms count:', world.transforms.size);
-    console.log('All renderables:', Array.from(world.renderables.entries()));
-    console.log('All transforms:', Array.from(world.transforms.entries()));
-    
-    // Check if reactive system is set up
-    
     // Use the comprehensive furniture placement service to randomize all furniture
     try {
       const placementService = new FurniturePlacementService(world);

@@ -1,10 +1,16 @@
 import { formatOklchChannels } from './formatOklch';
-import type { ColorState, CompareAxis } from './types';
+import type { ColorState, CompareAxis, IsolatedAxis } from './types';
 
 export type OklchFocusAxis = 'l' | 'c' | 'h';
 
 export function compareFocusAxis(axis: CompareAxis): OklchFocusAxis {
   return axis === 'lighter' || axis === 'darker' ? 'l' : 'c';
+}
+
+export function isolatedFocusAxis(axis: IsolatedAxis): OklchFocusAxis {
+  if (axis === 'lighter' || axis === 'darker') return 'l';
+  if (axis === 'moreSaturated' || axis === 'lessSaturated') return 'c';
+  return 'h';
 }
 
 /** Axes the user could adjust for this contextual match level. */

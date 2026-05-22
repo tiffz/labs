@@ -55,6 +55,10 @@ function migrateLevel(level: number, schemaVersion: number | undefined): number 
     if (migrated >= 5) migrated += 1;
   }
 
+  if (schemaVersion === undefined || schemaVersion < 4) {
+    if (migrated >= 5) migrated += 7;
+  }
+
   return Math.max(1, Math.min(MAX_LEVEL, migrated));
 }
 

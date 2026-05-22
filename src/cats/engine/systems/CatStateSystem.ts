@@ -115,7 +115,6 @@ export const CatStateSystem: System = (world) => {
           nextState = 'pouncing';
           timers.set(id, { t0: performance.now(), phase: 'pounce' });
           // Pounce jump impulse is now handled by JumpImpulseSystem via Actor component
-          if (import.meta.env.DEV) console.debug('[POUNCE] start', { id, vz: (world.velocities.get(id)?.vz || 0) });
           try {
             const key = String(id);
             const prev = (world.debug.pouncePhase ?? {}) as Record<string, string>;
@@ -130,7 +129,6 @@ export const CatStateSystem: System = (world) => {
           nextState = 'recover';
           timers.set(id, { t0: performance.now(), phase: 'recover' });
           // No forced Z damping here; run system handles drift when not pouncing
-          if (import.meta.env.DEV) console.debug('[POUNCE] recover', { id, vz: (world.velocities.get(id) || { vz: 0 }).vz });
         }
       }
       if (cat.state === 'recover' && entry?.phase === 'recover') {
@@ -138,7 +136,6 @@ export const CatStateSystem: System = (world) => {
           nextState = 'idle';
           timers.delete(id);
           // No forced Z reset; avoid snapping
-          if (import.meta.env.DEV) console.debug('[POUNCE] end', { id });
         }
       }
 

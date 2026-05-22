@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import MatchAxisReadout from '../MatchAxisReadout';
+import CompactVerdict from './CompactVerdict';
 import type { ColorState } from '../../types';
 
 export interface MatchRevealProps {
@@ -43,9 +44,6 @@ export default function MatchReveal({
     return () => window.clearTimeout(id);
   }, [mergeReveal]);
 
-  const verdict = passed ? 'Pass' : 'Not yet';
-  const icon = passed ? 'check_circle' : 'cancel';
-
   const pairClass = [
     'sight-flush-pair',
     mergeReveal ? 'sight-flush-pair--merge-reveal' : '',
@@ -73,14 +71,13 @@ export default function MatchReveal({
           </div>
         </div>
       </div>
-      <div className="sight-match-reveal__verdict">
-        <span className="material-symbols-outlined sight-match-reveal__icon" aria-hidden>
-          {icon}
-        </span>
-        <span className="sight-match-reveal__verdict-text">{verdict}</span>
-        <span className="sight-match-reveal__grade">{Math.round(accuracyRating)}% accuracy</span>
-        <span className="sight-match-reveal__delta">ΔE {deltaE.toFixed(2)}</span>
-      </div>
+      <CompactVerdict
+        passed={passed}
+        label={passed ? 'Pass' : 'Not yet'}
+        score={`${Math.round(accuracyRating)}%`}
+        scoreSuffix="accuracy"
+        detail={`ΔE ${deltaE.toFixed(2)}`}
+      />
       <MatchAxisReadout target={target} input={input} locked={locked} passed={passed} />
     </div>
   );

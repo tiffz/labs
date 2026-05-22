@@ -1,5 +1,5 @@
-import OklchReadout from '../OklchReadout';
 import { colorStateToHex } from '../../scoring/perceptualScore';
+import CompactVerdict from './CompactVerdict';
 import type { PracticeReveal } from '../../types';
 
 interface BridgeRevealProps {
@@ -8,7 +8,6 @@ interface BridgeRevealProps {
 
 export default function BridgeReveal({ reveal }: BridgeRevealProps): React.ReactElement {
   const { challenge, userSteps, passed, closenessPct } = reveal;
-  const icon = passed ? 'check_circle' : 'cancel';
 
   return (
     <div
@@ -16,39 +15,30 @@ export default function BridgeReveal({ reveal }: BridgeRevealProps): React.React
       role="status"
       aria-live="polite"
     >
-      <p className="sight-metrics">Your fills vs reference (empty slots)</p>
       <div className="sight-bridge-reveal__rows">
         {challenge.emptyIndices.map((i) => (
           <div key={i} className="sight-bridge-reveal__row">
-            <span className="sight-bridge-reveal__slot-label">Step {i + 1}</span>
-            <div className="sight-bridge-reveal__pair">
-              <div className="sight-bridge-reveal__swatch-col">
-                <span className="sight-match-reveal__label">Reference</span>
-                <div
-                  className="sight-swatch"
-                  style={{ background: colorStateToHex(challenge.referenceSteps[i]!) }}
-                />
-                <OklchReadout label="Reference" state={challenge.referenceSteps[i]!} />
-              </div>
-              <div className="sight-bridge-reveal__swatch-col">
-                <span className="sight-match-reveal__label">Yours</span>
-                <div
-                  className="sight-swatch"
-                  style={{ background: colorStateToHex(userSteps[i]!) }}
-                />
-                <OklchReadout label="Yours" state={userSteps[i]!} />
-              </div>
+            <div className="sight-bridge-reveal__pair" aria-label={`Step ${i + 1} reference and your fill`}>
+              <div
+                className="sight-bridge-reveal__swatch"
+                style={{ background: colorStateToHex(challenge.referenceSteps[i]!) }}
+                title="Reference"
+              />
+              <div
+                className="sight-bridge-reveal__swatch"
+                style={{ background: colorStateToHex(userSteps[i]!) }}
+                title="Yours"
+              />
             </div>
           </div>
         ))}
       </div>
-      <div className="sight-match-reveal__verdict">
-        <span className="material-symbols-outlined sight-match-reveal__icon" aria-hidden>
-          {icon}
-        </span>
-        <span className="sight-match-reveal__verdict-text">{passed ? 'Pass' : 'Not yet'}</span>
-        <span className="sight-match-reveal__grade">{Math.round(closenessPct)}% closeness</span>
-      </div>
+      <CompactVerdict
+        passed={passed}
+        label={passed ? 'Pass' : 'Not yet'}
+        score={`${Math.round(closenessPct)}%`}
+        scoreSuffix="closeness"
+      />
     </div>
   );
 }

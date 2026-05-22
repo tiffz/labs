@@ -20,31 +20,30 @@ export default function MatchAxisReadout({
   passed,
 }: MatchAxisReadoutProps): React.ReactElement {
   const axes = matchFocusAxes(locked);
-  const yoursEmphasis = passed ? '' : 'sight-axis-readout__cell--wrong';
+  const yoursClass = passed ? '' : 'sight-axis-readout__value--wrong';
 
   return (
     <div
       className="sight-axis-readout sight-axis-readout--visible sight-axis-readout--match"
       aria-label="Oklch values for the axes you adjusted"
     >
-      {axes.map((axis, index) => (
-        <div
-          key={axis}
-          className={`sight-axis-readout__group ${index > 0 ? 'sight-axis-readout__group--stacked' : ''}`}
-        >
-          <span className="sight-axis-readout__heading">
-            {focusAxisShortLabel(axis)} · {focusAxisName(axis)}
+      {axes.map((axis) => (
+        <div key={axis} className="sight-axis-readout__row" title={focusAxisName(axis)}>
+          <span className="sight-axis-readout__badge" aria-hidden>
+            {focusAxisShortLabel(axis)}
           </span>
-          <div className="sight-axis-readout__values">
-            <div className="sight-axis-readout__cell">
-              <span className="sight-axis-readout__side">Target</span>
-              <span className="sight-axis-readout__value">{formatFocusAxisValue(target, axis)}</span>
-            </div>
-            <div className={`sight-axis-readout__cell ${yoursEmphasis}`.trim()}>
-              <span className="sight-axis-readout__side">Yours</span>
-              <span className="sight-axis-readout__value">{formatFocusAxisValue(input, axis)}</span>
-            </div>
-          </div>
+          <span className="sight-axis-readout__value" aria-label={`Target ${focusAxisName(axis)}`}>
+            {formatFocusAxisValue(target, axis)}
+          </span>
+          <span className="sight-axis-readout__arrow" aria-hidden>
+            →
+          </span>
+          <span
+            className={`sight-axis-readout__value ${yoursClass}`.trim()}
+            aria-label={`Yours ${focusAxisName(axis)}`}
+          >
+            {formatFocusAxisValue(input, axis)}
+          </span>
         </div>
       ))}
     </div>

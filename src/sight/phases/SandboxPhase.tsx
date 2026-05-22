@@ -24,9 +24,9 @@ type SandboxModule = ModuleId;
 
 function challengeForModule(module: SandboxModule, seed: number): SightChallenge {
   if (module === 'compare') return generateCompareChallenge(seed, 3);
-  if (module === 'contextual') return generateContextualMatchChallenge(seed, 5);
-  if (module === 'bridge') return generateBridgeChallenge(seed, 10);
-  return generateGamutChallenge(seed, 12);
+  if (module === 'contextual') return generateContextualMatchChallenge(seed, 12);
+  if (module === 'bridge') return generateBridgeChallenge(seed, 17);
+  return generateGamutChallenge(seed, 19);
 }
 
 export default function SandboxPhase(): React.ReactElement {
@@ -35,10 +35,10 @@ export default function SandboxPhase(): React.ReactElement {
   const challenge = useMemo(() => challengeForModule(module, seed), [module, seed]);
 
   const [contextualInput, setContextualInput] = useState(() =>
-    challenge.kind === 'contextual' ? initialContextualInput(challenge) : initialContextualInput(generateContextualMatchChallenge(seed, 5)),
+    challenge.kind === 'contextual' ? initialContextualInput(challenge) : initialContextualInput(generateContextualMatchChallenge(seed, 12)),
   );
   const [bridgeSteps, setBridgeSteps] = useState(() =>
-    challenge.kind === 'bridge' ? initialBridgeSteps(challenge) : initialBridgeSteps(generateBridgeChallenge(seed, 10)),
+    challenge.kind === 'bridge' ? initialBridgeSteps(challenge) : initialBridgeSteps(generateBridgeChallenge(seed, 17)),
   );
   const [bridgeSlot, setBridgeSlot] = useState(1);
   const [gamutDeform, setGamutDeform] = useState({ h: 0, c: 0, scale: 1 });
@@ -94,6 +94,9 @@ export default function SandboxPhase(): React.ReactElement {
         `Step ${i + 1}`,
         `${colorStateToHex(s)} · L${s.l.toFixed(2)}`,
       ]);
+    }
+    if (challenge.kind !== 'gamut') {
+      return [['Challenge', challenge.kind]];
     }
     const { colors } = challenge;
     return [

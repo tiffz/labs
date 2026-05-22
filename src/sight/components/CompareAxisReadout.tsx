@@ -3,10 +3,21 @@ import {
   focusAxisName,
   focusAxisShortLabel,
   formatFocusAxisValue,
+  type OklchFocusAxis,
 } from '../oklchAxisFocus';
-import type { CompareChallenge } from '../types';
+import type { ColorState, CompareChallenge } from '../types';
 
 interface CompareAxisReadoutProps {
+  left: ColorState;
+  right: ColorState;
+  focus: OklchFocusAxis;
+  correctSide: 'left' | 'right';
+  pickedSide: 'left' | 'right';
+  passed: boolean;
+  visible?: boolean;
+}
+
+interface CompareAxisReadoutFromChallengeProps {
   challenge: CompareChallenge;
   pickedSide: 'left' | 'right';
   passed: boolean;
@@ -15,55 +26,82 @@ interface CompareAxisReadoutProps {
 
 function emphasisForSide(
   side: 'left' | 'right',
-  challenge: CompareChallenge,
+  correctSide: 'left' | 'right',
   pickedSide: 'left' | 'right',
   passed: boolean,
 ): 'correct' | 'picked-wrong' | null {
-  if (challenge.correctSide === side) return 'correct';
+  if (correctSide === side) return 'correct';
   if (!passed && pickedSide === side) return 'picked-wrong';
   return null;
 }
 
-export default function CompareAxisReadout({
-  challenge,
+function AxisPairRow({
+  left,
+  right,
+  focus,
+  correctSide,
   pickedSide,
   passed,
-  visible = true,
-}: CompareAxisReadoutProps): React.ReactElement {
-  const focus = compareFocusAxis(challenge.axis);
+}: Omit<CompareAxisReadoutProps, 'visible'>): React.ReactElement {
   const axisLabel = focusAxisShortLabel(focus);
   const axisName = focusAxisName(focus);
 
   return (
-    <div
-      className={`sight-axis-readout ${visible ? 'sight-axis-readout--visible' : ''}`}
-      aria-label={`${axisName} for both swatches`}
-      aria-hidden={!visible}
-    >
-      <span className="sight-axis-readout__heading">
-        {axisLabel} · {axisName}
+    <div className="sight-axis-readout__row" title={axisName}>
+      <span className="sight-axis-readout__badge" aria-hidden>
+        {axisLabel}
       </span>
-      <div className="sight-axis-readout__values">
-        {(['left', 'right'] as const).map((side) => {
-          const state = side === 'left' ? challenge.left : challenge.right;
-          const emphasis = emphasisForSide(side, challenge, pickedSide, passed);
-          const emphasisClass =
-            emphasis === 'correct'
-              ? 'sight-axis-readout__cell--correct'
-              : emphasis === 'picked-wrong'
-                ? 'sight-axis-readout__cell--wrong'
-                : '';
-          return (
-            <div
-              key={side}
-              className={`sight-axis-readout__cell ${emphasisClass}`.trim()}
-            >
-              <span className="sight-axis-readout__side">{side === 'left' ? 'Left' : 'Right'}</span>
-              <span className="sight-axis-readout__value">{formatFocusAxisValue(state, focus)}</span>
-            </div>
-          );
-        })}
-      </div>
+      {(['left', 'right'] as const).map((side) => {
+        const state = side === 'left' ? left : right;
+        const emphasis = emphasisForSide(side, correctSide, pickedSide, passed);
+        const emphasisClass =
+          emphasis === 'correct'
+            ? 'sight-axis-readout__value--correct'
+            : emphasis === 'picked-wrong'
+              ? 'sight-axis-readout__value--wrong'
+              : '';
+        return (
+          <span
+            key={side}
+            className={`sight-axis-readout__value ${emphasisClass}`.trim()}
+            aria-label={`${side === 'left' ? 'Left' : 'Right'} ${axisName} ${formatFocusAxisValue(state, focus)}`}
+          >
+            {formatFocusAxisValue(state, focus)}
+          </span>
+        );
+      })}
     </div>
   );
 }
+
+export function CompareAxisReadout(props: CompareAxisReadoutProps): React.ReactElement {
+  return (
+    <div
+      className={`sight-axis-readout ${props.visible ? 'sight-axis-readout--visible' : ''}`}
+      aria-label={`${focusAxisName(props.focus)} for both swatches`}
+      aria-hidden={!props.visible}
+    >
+      <AxisPairRow {...props} />
+    </div>
+  );
+}
+
+export function CompareAxisReadoutFromChallenge({
+  challenge,
+  pickedSide,
+  passed,
+  visible = true,
+}: CompareAxisReadoutFromChallengeProps): React.ReactElement {
+  return (
+    <CompareAxisReadout
+      left={challenge.left}
+      right={challenge.right}
+      focus={compareFocusAxis(challenge.axis)}
+      correctSide={challenge.correctSide}
+      pickedSide={pickedSide}
+      passed={passed}
+      visible={visible}
+    />
+  );
+}
+

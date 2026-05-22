@@ -1,6 +1,6 @@
-import { generateCompareChallenge } from '../generators/compare';
 import { generateBridgeChallenge } from '../generators/brokenBridge';
 import { generateContextualMatchChallenge } from '../generators/contextualMatch';
+import { generateFlashcardChallenge } from '../generators/flashcard';
 import { generateGamutChallenge } from '../generators/gamutLandscape';
 import { createRng, randomSeed } from '../generators/rng';
 import { getLevelConfig, maxUnlockedLevel, MAX_LEVEL } from '../levels';
@@ -10,7 +10,7 @@ const PASSES_TO_ADVANCE = 7;
 
 function challengeForLevel(seed: number, level: number): SightChallenge {
   const cfg = getLevelConfig(level);
-  if (cfg.module === 'compare') return generateCompareChallenge(seed, level);
+  if (cfg.module === 'flashcard') return generateFlashcardChallenge(seed, level);
   if (cfg.module === 'contextual') return generateContextualMatchChallenge(seed, level);
   if (cfg.module === 'bridge') return generateBridgeChallenge(seed, level);
   return generateGamutChallenge(seed, level);

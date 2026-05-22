@@ -45,6 +45,7 @@
     "deploy": "npm run test:fast && npm run build && gh-pages -d dist",
     "knip": "knip",
     "knip:fix": "knip --fix",
+    "presubmit": "sh scripts/presubmit.sh",
     "audit-pipeline": "node scripts/audit-pipeline.js",
     "audit-refresh": "node scripts/audit-pipeline.js --force",
     "audit-refresh:fast": "node scripts/audit-pipeline.js --force --skip-code-audit",

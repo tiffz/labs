@@ -226,13 +226,6 @@ export function replacePatternAtPosition(
   // However, we must distinguish between "Overflow" (Pattern too long for measure) 
   // and "Implicit Rest" (Pattern replaces void at end of incomplete measure).
 
-  // DEBUG
-  if (logicalPosition > 170) {
-    const content = notation.slice(startStringIndex, endStringIndex);
-    const spans = /[|:x]/.test(content);
-    console.log(`DEBUG: replacePattern lp=${logicalPosition} idx=${startStringIndex} end=${endStringIndex} consumed=${ticksConsumed} req=${patternDuration} content='${content}' spans=${spans}`);
-  }
-
   if (ticksConsumed < patternDuration) {
     const sixteenthsPerMeasure = getSixteenthsPerMeasure(timeSignature);
     const measureOffset = logicalPosition % sixteenthsPerMeasure;
@@ -251,7 +244,6 @@ export function replacePatternAtPosition(
       };
     }
 
-    console.log('[replacePattern] BLOCKED: Overflow', { ticksConsumed, patternDuration, measureOffset, sixteenthsPerMeasure });
     return {
       newNotation: notation,
       replacedStart: startStringIndex,

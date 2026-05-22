@@ -5,6 +5,7 @@ import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import Typography from '@mui/material/Typography';
+import { PHASE_LABELS } from '../curriculum/phases';
 import { getLevelConfig, LEVEL_TABLE, MAX_LEVEL } from '../levels';
 import { PASSES_TO_ADVANCE } from '../session/practiceChallenge';
 import type { SightProfile } from '../types';
@@ -34,7 +35,8 @@ export default function HomePhase({ profile, onStartPractice }: HomePhaseProps):
       </Typography>
       <div className="sight-stats">
         <div>
-          Level {profile.level} · {levelCfg.label}
+          Level {profile.level}
+          {levelCfg.phase ? ` · ${PHASE_LABELS[levelCfg.phase]}` : ''} · {levelCfg.label}
         </div>
         <div>Challenges practiced: {profile.challengesCompleted}</div>
         {profile.level < MAX_LEVEL && (

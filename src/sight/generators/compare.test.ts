@@ -3,7 +3,7 @@ import { generateCompareChallenge } from './compare';
 
 describe('generateCompareChallenge', () => {
   it('level 1 picks lighter or darker with clear lightness gap', () => {
-    const c = generateCompareChallenge(100, 1);
+    const c = generateCompareChallenge(100, 1, 'light');
     expect(c.kind).toBe('compare');
     expect(['lighter', 'darker']).toContain(c.axis);
     const gap = Math.abs(c.left.l - c.right.l);
@@ -15,7 +15,7 @@ describe('generateCompareChallenge', () => {
   });
 
   it('level 2 uses saturation axes with chroma gap', () => {
-    const c = generateCompareChallenge(200, 2);
+    const c = generateCompareChallenge(200, 2, 'saturationEasy');
     expect(['moreSaturated', 'lessSaturated']).toContain(c.axis);
     expect(Math.abs(c.left.c - c.right.c)).toBeGreaterThan(0.04);
   });
@@ -24,7 +24,7 @@ describe('generateCompareChallenge', () => {
     let sawCrossHue = false;
     let sawTightGap = false;
     for (let seed = 0; seed < 80; seed++) {
-      const c = generateCompareChallenge(seed, 3);
+      const c = generateCompareChallenge(seed, 3, 'saturationHard');
       expect(['moreSaturated', 'lessSaturated']).toContain(c.axis);
       const hueGap = Math.abs(((c.left.h - c.right.h + 540) % 360) - 180);
       if (hueGap > 30) sawCrossHue = true;
@@ -42,7 +42,7 @@ describe('generateCompareChallenge', () => {
   it('level 4 allows all compare axes', () => {
     const axes = new Set<string>();
     for (let seed = 0; seed < 60; seed++) {
-      axes.add(generateCompareChallenge(seed, 4).axis);
+      axes.add(generateCompareChallenge(seed, 4, 'mixed').axis);
     }
     expect(axes.has('lighter')).toBe(true);
     expect(axes.has('darker')).toBe(true);
