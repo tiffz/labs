@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { defaultSkillMatrix } from '../progress/types';
+import type { SightProfile } from '../types';
 import {
   challengeCountsTowardProgress,
   pickPracticeChallenge,
@@ -6,16 +8,28 @@ import {
   PASSES_TO_ADVANCE,
 } from './practiceChallenge';
 
+function testProfile(partial: Partial<SightProfile> & Pick<SightProfile, 'level'>): SightProfile {
+  return {
+    challengesCompleted: 0,
+    passesAtLevel: 0,
+    skillMatrix: defaultSkillMatrix(partial.level),
+    recentReps: [],
+    activeFocus: null,
+    dailyQueue: null,
+    ...partial,
+  };
+}
+
 describe('pickPracticeChallenge', () => {
   it('returns isolated flashcard at level 1', () => {
-    const round = pickPracticeChallenge({ level: 1, challengesCompleted: 0, passesAtLevel: 0 }, 42);
+    const round = pickPracticeChallenge(testProfile({ level: 1 }), 42);
     expect(round.challenge.kind).toBe('flashcard-isolated');
     expect(round.level).toBe(1);
   });
 
   it('returns adjacent contextual intro at level 12', () => {
     const round = pickPracticeChallenge(
-      { level: 12, challengesCompleted: 0, passesAtLevel: 0 },
+      testProfile({ level: 12 }),
       0,
       12,
     );
@@ -28,7 +42,7 @@ describe('pickPracticeChallenge', () => {
 
   it('returns bridge challenges at level 17', () => {
     const round = pickPracticeChallenge(
-      { level: 17, challengesCompleted: 10, passesAtLevel: 2 },
+      testProfile({ level: 17, challengesCompleted: 10, passesAtLevel: 2 }),
       7,
       17,
     );
@@ -37,7 +51,7 @@ describe('pickPracticeChallenge', () => {
 
   it('returns albers flashcard at level 8', () => {
     const round = pickPracticeChallenge(
-      { level: 8, challengesCompleted: 0, passesAtLevel: 0 },
+      testProfile({ level: 8 }),
       3,
       8,
     );
@@ -46,7 +60,7 @@ describe('pickPracticeChallenge', () => {
 
   it('picks an explicit practice level when requested', () => {
     const round = pickPracticeChallenge(
-      { level: 12, challengesCompleted: 0, passesAtLevel: 0 },
+      testProfile({ level: 12 }),
       0,
       2,
     );
@@ -55,7 +69,7 @@ describe('pickPracticeChallenge', () => {
   });
 
   it('does not advance profile when reviewing a lower level', () => {
-    const profile = { level: 12, challengesCompleted: 10, passesAtLevel: 6 };
+    const profile = testProfile({ level: 12, challengesCompleted: 10, passesAtLevel: 6 });
     const updated = recordChallengeResult(profile, true, { challengeLevel: 3 });
     expect(updated.level).toBe(12);
     expect(updated.passesAtLevel).toBe(6);
@@ -63,11 +77,10 @@ describe('pickPracticeChallenge', () => {
   });
 
   it('advances profile when passing at current level', () => {
-    const profile = {
+    const profile = testProfile({
       level: 12,
-      challengesCompleted: 0,
       passesAtLevel: PASSES_TO_ADVANCE - 1,
-    };
+    });
     const updated = recordChallengeResult(profile, true, { challengeLevel: 12 });
     expect(updated.level).toBe(13);
     expect(updated.passesAtLevel).toBe(0);
@@ -79,7 +92,7 @@ describe('pickPracticeChallenge', () => {
   });
 
   it('levels up on the 7th pass at the current profile level', () => {
-    let profile = { level: 1, challengesCompleted: 0, passesAtLevel: 0 };
+    let profile = testProfile({ level: 1 });
     for (let i = 0; i < PASSES_TO_ADVANCE - 1; i++) {
       profile = recordChallengeResult(profile, true, { challengeLevel: profile.level });
       expect(profile.level).toBe(1);
@@ -90,11 +103,10 @@ describe('pickPracticeChallenge', () => {
   });
 
   it('does not level up when challengeLevel is below profile (stale session)', () => {
-    const profile = {
+    const profile = testProfile({
       level: 2,
-      challengesCompleted: 0,
       passesAtLevel: PASSES_TO_ADVANCE - 1,
-    };
+    });
     const updated = recordChallengeResult(profile, true, { challengeLevel: 1 });
     expect(updated.level).toBe(2);
     expect(updated.passesAtLevel).toBe(PASSES_TO_ADVANCE - 1);

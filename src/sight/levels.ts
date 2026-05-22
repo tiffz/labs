@@ -1,10 +1,11 @@
 import type { LevelConfig } from './types';
 
-export const CURRICULUM_SCHEMA_VERSION = 4;
+export const CURRICULUM_SCHEMA_VERSION = 6;
 
 /**
- * Four-phase curriculum (20 levels):
- * 1–7 isolated flashcards, 8–11 Albers relational, 12–18 calibration, 19–20 harmony.
+ * Six-phase curriculum (28 levels):
+ * 1–7 isolated, 8–11 Albers relational, 12–18 calibration, 19–20 gamut,
+ * 21–22 harmony wheel, 23–24 subtractive equalizer, 25–26 Munsell slice, 27–28 atmospheric cast.
  */
 export const LEVEL_TABLE: LevelConfig[] = [
   {
@@ -157,7 +158,7 @@ export const LEVEL_TABLE: LevelConfig[] = [
     phase: 'harmony',
     label: 'Wide gamut mask',
     gamutProfile: 'wide',
-    minGamutOverlapPct: 85,
+    minGamutOverlapPct: 72,
   },
   {
     level: 20,
@@ -165,7 +166,57 @@ export const LEVEL_TABLE: LevelConfig[] = [
     phase: 'harmony',
     label: 'Compressed gamut',
     gamutProfile: 'compressed',
-    minGamutOverlapPct: 90,
+    minGamutOverlapPct: 78,
+  },
+  {
+    level: 21,
+    module: 'anchor-pivot',
+    phase: 'harmony',
+    label: 'Complementary pivot',
+  },
+  {
+    level: 22,
+    module: 'anchor-pivot',
+    phase: 'harmony',
+    label: 'Split & triadic pivot',
+  },
+  {
+    level: 23,
+    module: 'albers-equalizer',
+    phase: 'calibration',
+    label: 'Warm–cool equalizer',
+    maxDeltaE: 4,
+  },
+  {
+    level: 24,
+    module: 'albers-equalizer',
+    phase: 'calibration',
+    label: 'Saturation equalizer',
+    maxDeltaE: 3.5,
+  },
+  {
+    level: 25,
+    module: 'munsell-slice',
+    phase: 'isolated',
+    label: 'Value slice outlier',
+  },
+  {
+    level: 26,
+    module: 'munsell-slice',
+    phase: 'isolated',
+    label: 'Chroma slice outlier',
+  },
+  {
+    level: 27,
+    module: 'yot-cast',
+    phase: 'relational',
+    label: 'Light cast · scenes',
+  },
+  {
+    level: 28,
+    module: 'yot-cast',
+    phase: 'relational',
+    label: 'Light cast · tricky',
   },
 ];
 

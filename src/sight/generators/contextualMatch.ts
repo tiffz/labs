@@ -1,4 +1,5 @@
 import { getLevelConfig } from '../levels';
+import type { PracticeGenConstraints } from '../progress/types';
 import type { ColorState, ContextualChallenge, ContextualProfile } from '../types';
 import { createRng } from './rng';
 
@@ -24,11 +25,14 @@ function lockedFromProfile(profile: ContextualProfile): { hue: boolean; chroma: 
 export function generateContextualMatchChallenge(
   seed: number,
   level: number,
+  constraints?: PracticeGenConstraints,
 ): ContextualChallenge {
   const rng = createRng(seed);
-  const profile = getLevelConfig(level).contextualProfile ?? 'valueLocked';
+  const profile = constraints?.contextualProfile ?? getLevelConfig(level).contextualProfile ?? 'valueLocked';
   const locked = lockedFromProfile(profile);
-  const hue = pickInRange(rng, 0, 360);
+  const hue = constraints?.hueRange
+    ? pickInRange(rng, constraints.hueRange[0], constraints.hueRange[1])
+    : pickInRange(rng, 0, 360);
 
   const target: ColorState = {
     h: hue,
@@ -62,9 +66,10 @@ export function generateContextualMatchChallenge(
   }
 
   const complementHue = (hue + 180) % 360;
+  const minBgC = constraints?.minBackgroundChroma ?? 0.14;
   const background: ColorState = {
     h: complementHue,
-    c: pickInRange(rng, 0.14, 0.32),
+    c: pickInRange(rng, minBgC, 0.32),
     l: pickInRange(rng, 0.42, 0.68),
   };
 

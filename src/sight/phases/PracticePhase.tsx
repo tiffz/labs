@@ -10,9 +10,17 @@ import ContextualMatcherView from '../modules/contextualMatcher/ContextualMatche
 import { initialContextualInput, scoreContextual } from '../modules/contextualMatcher/contextualMatcherLogic';
 import BrokenBridgeView from '../modules/brokenBridge/BrokenBridgeView';
 import { initialBridgeSteps, scoreBridge } from '../modules/brokenBridge/brokenBridgeLogic';
-import GamutFinderView from '../modules/gamutFinder/GamutFinderView';
+import GamutFinderView, { defaultGamutDeform } from '../modules/gamutFinder/GamutFinderView';
 import { scoreGamut } from '../modules/gamutFinder/gamutFinderLogic';
+import AlbersEqualizerView from '../modules/albersEqualizer/AlbersEqualizerView';
+import { initialEqualizerInput, scoreEqualizer } from '../modules/albersEqualizer/albersEqualizerLogic';
+import AnchorPivotView from '../modules/anchorPivot/AnchorPivotView';
+import { scoreAnchorPivotReveal } from '../modules/anchorPivot/anchorPivotLogic';
+import MunsellSliceView from '../modules/munsellSlice/MunsellSliceView';
+import YotCastView from '../modules/yotCast/YotCastView';
 import { getLevelConfig, MAX_LEVEL } from '../levels';
+import { buildRepRecord, appendRepToProfile, shouldCountTowardLevelAdvance } from '../progress/recordRep';
+import type { RepPurpose } from '../progress/types';
 import { deformMask } from '../scoring/gamutOverlap';
 import { colorStateToHex } from '../scoring/perceptualScore';
 import { autoAdvanceDelayMs } from '../session/practiceAutoAdvance';
@@ -24,7 +32,6 @@ import type { WheelPoint } from '../scoring/gamutOverlap';
 interface PracticePhaseProps {
   profile: SightProfile;
   initialRound: PracticeRound;
-  /** True when practicing a level below the saved profile level (home review picker). */
   reviewMode: boolean;
   onProfileChange: (profile: SightProfile) => void;
   onExit: () => void;
@@ -35,11 +42,17 @@ function useChallengeState(challenge: SightChallenge) {
   const [contextualInput, setContextualInput] = useState(() =>
     challenge.kind === 'contextual' ? initialContextualInput(challenge) : null,
   );
+  const [equalizerInput, setEqualizerInput] = useState(() =>
+    challenge.kind === 'albers-equalizer' ? initialEqualizerInput(challenge) : null,
+  );
+  const [pivotHue, setPivotHue] = useState(() =>
+    challenge.kind === 'anchor-pivot' ? challenge.pivotHue : 0,
+  );
   const [bridgeSteps, setBridgeSteps] = useState<ColorState[] | null>(() =>
     challenge.kind === 'bridge' ? initialBridgeSteps(challenge) : null,
   );
   const [bridgeSlot, setBridgeSlot] = useState(1);
-  const [gamutDeform, setGamutDeform] = useState({ h: 24, c: 0, scale: 0.85 });
+  const [gamutDeform, setGamutDeform] = useState(defaultGamutDeform);
   const userMask = useMemo((): WheelPoint[] | null => {
     if (challenge.kind !== 'gamut') return null;
     return deformMask(challenge.maskVertices, gamutDeform);
@@ -47,16 +60,22 @@ function useChallengeState(challenge: SightChallenge) {
 
   const reset = useCallback((c: SightChallenge) => {
     if (c.kind === 'contextual') setContextualInput(initialContextualInput(c));
+    if (c.kind === 'albers-equalizer') setEqualizerInput(initialEqualizerInput(c));
+    if (c.kind === 'anchor-pivot') setPivotHue(c.pivotHue);
     if (c.kind === 'bridge') {
       setBridgeSteps(initialBridgeSteps(c));
       setBridgeSlot(1);
     }
-    if (c.kind === 'gamut') setGamutDeform({ h: 24, c: 0, scale: 0.85 });
+    if (c.kind === 'gamut') setGamutDeform(defaultGamutDeform);
   }, []);
 
   return {
     contextualInput,
     setContextualInput,
+    equalizerInput,
+    setEqualizerInput,
+    pivotHue,
+    setPivotHue,
     bridgeSteps,
     setBridgeSteps,
     bridgeSlot,
@@ -85,7 +104,9 @@ export default function PracticePhase({
   const canGoPrevLevel = sessionLevel > 1;
   const canGoNextLevel = sessionLevel < profile.level;
   const state = useChallengeState(challenge);
+  const { reset: resetChallengeState } = state;
   const awaitingFeedback = reveal !== null;
+  const repPurpose: RepPurpose = reviewMode ? 'practice' : 'curriculum';
 
   const clearAdvanceTimer = useCallback(() => {
     if (advanceTimerRef.current !== null) {
@@ -94,7 +115,13 @@ export default function PracticePhase({
     }
   }, []);
 
-  const { reset: resetChallengeState } = state;
+  useEffect(() => {
+    setRound(initialRound);
+    setSessionLevel(initialRound.level);
+    resetChallengeState(initialRound.challenge);
+    setReveal(null);
+    clearAdvanceTimer();
+  }, [initialRound, clearAdvanceTimer, resetChallengeState]);
 
   const loadChallengeAtLevel = useCallback(
     (targetLevel: number) => {
@@ -142,9 +169,15 @@ export default function PracticePhase({
   const finishRound = useCallback(
     (passed: boolean, nextReveal: PracticeReveal) => {
       const prev = readProfile();
-      const updated = recordChallengeResult(prev, passed, {
-        challengeLevel: reviewMode ? sessionLevel : prev.level,
-      });
+      const rep = buildRepRecord({ round, reveal: nextReveal, purpose: repPurpose, passed });
+      let updated = appendRepToProfile(prev, rep);
+      if (shouldCountTowardLevelAdvance(repPurpose, reviewMode)) {
+        updated = recordChallengeResult(updated, passed, {
+          challengeLevel: reviewMode ? sessionLevel : prev.level,
+        });
+      } else {
+        updated = { ...updated, challengesCompleted: updated.challengesCompleted + 1 };
+      }
       writeProfile(updated);
       onProfileChange(updated);
       if (!reviewMode && updated.level > prev.level) {
@@ -153,59 +186,53 @@ export default function PracticePhase({
       setReveal(nextReveal);
       scheduleAutoAdvance(nextReveal);
     },
-    [onProfileChange, reviewMode, scheduleAutoAdvance, sessionLevel],
+    [onProfileChange, repPurpose, reviewMode, round, scheduleAutoAdvance, sessionLevel],
   );
 
   const handleComparePick = (side: 'left' | 'right') => {
     if (challenge.kind !== 'compare' || awaitingFeedback) return;
     const { passed } = scoreCompare(challenge, side, simulatePass);
-    finishRound(passed, {
-      kind: 'compare',
-      challenge,
-      pickedSide: side,
-      passed,
-    });
+    finishRound(passed, { kind: 'compare', challenge, pickedSide: side, passed });
   };
 
   const handleIsolatedPick = (side: 'left' | 'right') => {
     if (challenge.kind !== 'flashcard-isolated' || awaitingFeedback) return;
     const { passed } = scoreIsolatedFlashcard(challenge, side, simulatePass);
-    finishRound(passed, {
-      kind: 'flashcard-isolated',
-      challenge,
-      pickedSide: side,
-      passed,
-    });
+    finishRound(passed, { kind: 'flashcard-isolated', challenge, pickedSide: side, passed });
   };
 
   const handleAlbersSide = (side: 'left' | 'right') => {
     if (challenge.kind !== 'flashcard-albers' || awaitingFeedback) return;
     const { passed } = scoreAlbersFlashcard(challenge, { side }, simulatePass);
-    finishRound(passed, {
-      kind: 'flashcard-albers',
-      challenge,
-      pickedSide: side,
-      passed,
-    });
+    finishRound(passed, { kind: 'flashcard-albers', challenge, pickedSide: side, passed });
   };
 
   const handleAlbersBinary = (choice: 'same' | 'different') => {
     if (challenge.kind !== 'flashcard-albers' || awaitingFeedback) return;
     const { passed } = scoreAlbersFlashcard(challenge, { binary: choice }, simulatePass);
-    finishRound(passed, {
-      kind: 'flashcard-albers',
-      challenge,
-      pickedBinary: choice,
-      passed,
-    });
+    finishRound(passed, { kind: 'flashcard-albers', challenge, pickedBinary: choice, passed });
+  };
+
+  const handleMunsellPick = (index: number) => {
+    if (challenge.kind !== 'munsell-slice' || awaitingFeedback) return;
+    const passed = index === challenge.outlierIndex || simulatePass === true;
+    finishRound(passed, { kind: 'munsell-slice', challenge, pickedIndex: index, passed });
+  };
+
+  const handleYotPick = (index: number) => {
+    if (challenge.kind !== 'yot-cast' || awaitingFeedback) return;
+    const passed = index === challenge.correctIndex || simulatePass === true;
+    finishRound(passed, { kind: 'yot-cast', challenge, pickedIndex: index, passed });
   };
 
   const handleSubmit = () => {
+    if (awaitingFeedback) return;
     if (
-      awaitingFeedback ||
       challenge.kind === 'compare' ||
       challenge.kind === 'flashcard-isolated' ||
-      challenge.kind === 'flashcard-albers'
+      challenge.kind === 'flashcard-albers' ||
+      challenge.kind === 'munsell-slice' ||
+      challenge.kind === 'yot-cast'
     ) {
       return;
     }
@@ -233,13 +260,19 @@ export default function PracticePhase({
       });
     } else if (challenge.kind === 'gamut' && state.userMask) {
       const r = scoreGamut(challenge, state.userMask, level, simulatePass);
-      const minPct = getLevelConfig(level).minGamutOverlapPct ?? 85;
+      const minPct = getLevelConfig(level).minGamutOverlapPct ?? 72;
+      finishRound(r.passed, { kind: 'gamut', passed: r.passed, overlapPct: r.overlapPct, minPct });
+    } else if (challenge.kind === 'albers-equalizer' && state.equalizerInput) {
+      const r = scoreEqualizer(challenge, state.equalizerInput, level, simulatePass);
       finishRound(r.passed, {
-        kind: 'gamut',
+        kind: 'albers-equalizer',
         passed: r.passed,
-        overlapPct: r.overlapPct,
-        minPct,
+        accuracyRating: r.accuracyRating,
+        deltaE: r.deltaE,
       });
+    } else if (challenge.kind === 'anchor-pivot') {
+      const rev = scoreAnchorPivotReveal(challenge, state.pivotHue, simulatePass);
+      finishRound(rev.passed, rev);
     }
   };
 
@@ -261,7 +294,7 @@ export default function PracticePhase({
   }, [awaitingFeedback, skipToNext]);
 
   const progressLabel = isReviewSession
-    ? `Review · level ${sessionLevel} (progress counts at level ${profile.level})`
+    ? `Review · level ${sessionLevel}`
     : profile.level < MAX_LEVEL
       ? `${profile.passesAtLevel}/${PASSES_TO_ADVANCE} passes to level ${profile.level + 1}`
       : 'Max level';
@@ -269,25 +302,17 @@ export default function PracticePhase({
   const isTapAnswer =
     challenge.kind === 'compare' ||
     challenge.kind === 'flashcard-isolated' ||
-    challenge.kind === 'flashcard-albers';
+    challenge.kind === 'flashcard-albers' ||
+    challenge.kind === 'munsell-slice' ||
+    challenge.kind === 'yot-cast';
 
   const practiceBody = (
     <>
       {challenge.kind === 'compare' && (
-        <CompareView
-          challenge={challenge}
-          reveal={reveal}
-          onPick={handleComparePick}
-          disabled={awaitingFeedback}
-        />
+        <CompareView challenge={challenge} reveal={reveal} onPick={handleComparePick} disabled={awaitingFeedback} />
       )}
       {challenge.kind === 'flashcard-isolated' && (
-        <IsolatedFlashcardView
-          challenge={challenge}
-          reveal={reveal}
-          onPick={handleIsolatedPick}
-          disabled={awaitingFeedback}
-        />
+        <IsolatedFlashcardView challenge={challenge} reveal={reveal} onPick={handleIsolatedPick} disabled={awaitingFeedback} />
       )}
       {challenge.kind === 'flashcard-albers' && (
         <AlbersFlashcardView
@@ -298,12 +323,37 @@ export default function PracticePhase({
           disabled={awaitingFeedback}
         />
       )}
+      {challenge.kind === 'munsell-slice' && (
+        <MunsellSliceView challenge={challenge} reveal={reveal} onPick={handleMunsellPick} disabled={awaitingFeedback} />
+      )}
+      {challenge.kind === 'yot-cast' && (
+        <YotCastView challenge={challenge} reveal={reveal} onPick={handleYotPick} disabled={awaitingFeedback} />
+      )}
       {challenge.kind === 'contextual' && state.contextualInput && (
         <ContextualMatcherView
           challenge={challenge}
           level={level}
           input={state.contextualInput}
           onInputChange={state.setContextualInput}
+          reveal={reveal}
+          interactionDisabled={awaitingFeedback}
+        />
+      )}
+      {challenge.kind === 'albers-equalizer' && state.equalizerInput && (
+        <AlbersEqualizerView
+          challenge={challenge}
+          level={level}
+          input={state.equalizerInput}
+          onInputChange={state.setEqualizerInput}
+          reveal={reveal}
+          interactionDisabled={awaitingFeedback}
+        />
+      )}
+      {challenge.kind === 'anchor-pivot' && (
+        <AnchorPivotView
+          challenge={challenge}
+          pivotHue={state.pivotHue}
+          onPivotChange={state.setPivotHue}
           reveal={reveal}
           interactionDisabled={awaitingFeedback}
         />

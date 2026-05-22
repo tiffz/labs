@@ -20,3 +20,4 @@ Defers to [docs/USER_COPY_STYLE.md](../../docs/USER_COPY_STYLE.md).
 - Reveal labels: **Target**, **Your match**, **Reference**, **Yours**.
 - Verdict: **Pass** / **Not yet** / **Correct** / **Not quite** (compare).
 - Metrics: **ΔE**, **Lightness (L)**, **Chroma (C)**, **Hue (H)** on sliders; **accuracy %** only on reveal for matches.
+- Home **skills**: link `{n}/6 skills mastered` opens a modal — four stars each (New → Building → Solid → Strong), one-line description per skill. **Strong** (4★) counts as mastered. Raw 0–100 scores stay internal.

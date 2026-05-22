@@ -3,15 +3,17 @@ import SkipToMain from '../shared/components/SkipToMain';
 import { readLabsDebugFromLocation } from '../shared/debug/readLabsDebugParams';
 import { createAppAnalytics } from '../shared/utils/analytics';
 import HomePhase from './phases/HomePhase';
+import CurriculumMapPhase from './phases/CurriculumMapPhase';
 import PracticePhase from './phases/PracticePhase';
 import SandboxPhase from './phases/SandboxPhase';
+import { updateFocusAfterSession } from './progress/diagnostics';
 import { pickPracticeChallenge } from './session/practiceChallenge';
 import { clearLegacySessionStorage, readProfile, writeProfile } from './storage';
 import type { PracticeRound, SightProfile } from './types';
 
 const analytics = createAppAnalytics('sight');
 
-type AppPhase = 'home' | 'practice' | 'sandbox';
+type AppPhase = 'home' | 'map' | 'practice' | 'sandbox';
 
 function resolveInitialPhase(debug: boolean): AppPhase {
   if (debug && typeof window !== 'undefined' && window.location.hash === '#sandbox') {
@@ -48,23 +50,29 @@ export default function App(): React.ReactElement {
     return () => window.removeEventListener('keydown', onKey);
   }, [phase, debug]);
 
-  const startPractice = useCallback((practiceLevel: number) => {
+  const startPractice = useCallback((practiceLevel?: number) => {
     const current = readProfile();
-    const round = pickPracticeChallenge(current, 0, practiceLevel);
+    const level = practiceLevel ?? current.level;
+    const round = pickPracticeChallenge(current, 0, level);
+    const cleared = { ...current, dailyQueue: null };
+    writeProfile(cleared);
+    setProfile(cleared);
     setPracticeRound(round);
-    setPracticeReviewMode(practiceLevel < current.level);
+    setPracticeReviewMode(level < current.level);
     setPhase('practice');
     analytics.trackEvent('sight_practice_start', {
-      level: practiceLevel,
+      level,
       profileLevel: current.level,
-      review: practiceLevel < current.level,
+      review: level < current.level,
     });
   }, []);
 
   const exitPractice = useCallback(() => {
     setPracticeRound(null);
     setPracticeReviewMode(false);
-    setProfile(readProfile());
+    const latest = updateFocusAfterSession(readProfile());
+    writeProfile(latest);
+    setProfile(latest);
     setPhase('home');
   }, []);
 
@@ -97,19 +105,29 @@ export default function App(): React.ReactElement {
     );
   }
 
+  if (phase === 'map') {
+    return (
+      <div className="sight-app">
+        <SkipToMain />
+        <main id="main" className="sight-main">
+          <CurriculumMapPhase
+            profile={profile}
+            onBack={() => setPhase('home')}
+            onPracticeLevel={(level) => startPractice(level)}
+          />
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="sight-app">
       <SkipToMain />
-      <header className="sight-header">
-        <h1>Color Sight Trainer</h1>
-      </header>
       <main id="main" className="sight-main">
         <HomePhase
           profile={profile}
-          onStartPractice={(practiceLevel) => {
-            writeProfile(profile);
-            startPractice(practiceLevel);
-          }}
+          onStartPractice={() => startPractice()}
+          onOpenMap={() => setPhase('map')}
         />
       </main>
     </div>

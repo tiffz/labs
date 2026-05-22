@@ -5,11 +5,13 @@ import type { WheelPoint } from '../../scoring/gamutOverlap';
 interface GamutWheelCanvasProps {
   maskVertices: WheelPoint[];
   userMask: WheelPoint[];
+  samplePoints?: WheelPoint[];
 }
 
 export default function GamutWheelCanvas({
   maskVertices,
   userMask,
+  samplePoints = [],
 }: GamutWheelCanvasProps): React.ReactElement {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -29,8 +31,8 @@ export default function GamutWheelCanvas({
     ctx.fillStyle = '#1a1a1e';
     ctx.fillRect(0, 0, size, size);
 
-    for (let h = 0; h < 360; h += 4) {
-      for (let c = 0; c <= 0.4; c += 0.04) {
+    for (let h = 0; h < 360; h += 6) {
+      for (let c = 0; c <= 0.4; c += 0.05) {
         const angle = (h / 360) * Math.PI * 2 - Math.PI / 2;
         const r = (c / 0.4) * maxR;
         ctx.fillStyle = colorStateToHex({ h, c, l: 0.55 });
@@ -57,9 +59,29 @@ export default function GamutWheelCanvas({
       ctx.stroke();
     };
 
-    drawPoly(maskVertices, '#a78bfa', 'rgba(167, 139, 250, 0.25)');
-    drawPoly(userMask, '#f472b6', 'rgba(244, 114, 182, 0.15)');
-  }, [maskVertices, userMask]);
+    drawPoly(maskVertices, '#a78bfa', 'rgba(167, 139, 250, 0.22)');
+    drawPoly(userMask, '#f472b6', 'rgba(244, 114, 182, 0.12)');
 
-  return <canvas ref={canvasRef} className="sight-wheel-canvas" aria-label="Color wheel gamut mask" />;
+    for (const p of samplePoints) {
+      const angle = (p.h / 360) * Math.PI * 2 - Math.PI / 2;
+      const r = (p.c / 0.4) * maxR;
+      const x = cx + Math.cos(angle) * r;
+      const y = cy + Math.sin(angle) * r;
+      ctx.beginPath();
+      ctx.arc(x, y, 5, 0, Math.PI * 2);
+      ctx.fillStyle = '#fafafa';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+  }, [maskVertices, userMask, samplePoints]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="sight-wheel-canvas"
+      aria-label="Color wheel gamut mask; white dots are landscape colors to cover"
+    />
+  );
 }

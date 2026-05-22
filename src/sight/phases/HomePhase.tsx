@@ -1,82 +1,106 @@
-import { useEffect, useState } from 'react';
+import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-import MenuItem from '@mui/material/MenuItem';
-import Select from '@mui/material/Select';
 import Typography from '@mui/material/Typography';
-import { PHASE_LABELS } from '../curriculum/phases';
-import { getLevelConfig, LEVEL_TABLE, MAX_LEVEL } from '../levels';
+import SightHero from '../components/landing/SightHero';
+import SkillsMasteryLink from '../components/SkillsMasteryLink';
+import { shellSx, TYPE } from '../components/landing/sightLandingStyles';
+import { curriculumSections } from '../curriculum/curriculumSections';
+import { getLevelConfig, MAX_LEVEL } from '../levels';
 import { PASSES_TO_ADVANCE } from '../session/practiceChallenge';
 import type { SightProfile } from '../types';
 
-interface HomePhaseProps {
-  profile: SightProfile;
-  onStartPractice: (practiceLevel: number) => void;
+function Icon({ name, size = 18 }: { name: string; size?: number }) {
+  return (
+    <span className="material-symbols-outlined" style={{ fontSize: size, lineHeight: 1 }} aria-hidden>
+      {name}
+    </span>
+  );
 }
 
-export default function HomePhase({ profile, onStartPractice }: HomePhaseProps): React.ReactElement {
-  const [selectedLevel, setSelectedLevel] = useState(profile.level);
+interface HomePhaseProps {
+  profile: SightProfile;
+  onStartPractice: () => void;
+  onOpenMap: () => void;
+}
 
-  useEffect(() => {
-    setSelectedLevel((prev) => Math.min(prev, profile.level));
-  }, [profile.level]);
-
+export default function HomePhase({
+  profile,
+  onStartPractice,
+  onOpenMap,
+}: HomePhaseProps): React.ReactElement {
   const levelCfg = getLevelConfig(profile.level);
-  const canPickLevel = profile.level > 1;
-  const practiceLevel = canPickLevel ? selectedLevel : profile.level;
-  const practiceCfg = getLevelConfig(practiceLevel);
-  const isReview = practiceLevel < profile.level;
+  const currentSection =
+    curriculumSections().find((s) => s.levels.some((l) => l.level === profile.level)) ??
+    curriculumSections()[0]!;
+
+  const progressLine =
+    profile.level < MAX_LEVEL
+      ? `${profile.passesAtLevel}/${PASSES_TO_ADVANCE} passes to level ${profile.level + 1}`
+      : 'All levels unlocked';
 
   return (
-    <div className="sight-home">
-      <Typography variant="h2" component="h2" sx={{ fontSize: '1.25rem', fontWeight: 600 }}>
-        Color Sight Trainer
-      </Typography>
-      <div className="sight-stats">
-        <div>
-          Level {profile.level}
-          {levelCfg.phase ? ` · ${PHASE_LABELS[levelCfg.phase]}` : ''} · {levelCfg.label}
-        </div>
-        <div>Challenges practiced: {profile.challengesCompleted}</div>
-        {profile.level < MAX_LEVEL && (
-          <div>
-            Progress: {profile.passesAtLevel}/{PASSES_TO_ADVANCE} passes toward level{' '}
-            {profile.level + 1}
-          </div>
-        )}
-      </div>
-      {canPickLevel && (
-        <FormControl size="small" className="sight-home-level-picker" sx={{ minWidth: 280 }}>
-          <InputLabel id="sight-practice-level-label">Practice level</InputLabel>
-          <Select
-            labelId="sight-practice-level-label"
-            label="Practice level"
-            value={selectedLevel}
-            onChange={(e) => setSelectedLevel(Number(e.target.value))}
+    <Box
+      className="sight-landing sight-landing--home"
+      sx={{
+        ...shellSx,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        minHeight: 'min(100dvh, 900px)',
+        justifyContent: 'center',
+      }}
+    >
+      <Box sx={{ width: '100%', maxWidth: 400, textAlign: 'center' }}>
+        <SightHero onPractice={onStartPractice} hint={profile.activeFocus?.label} />
+
+        <Box sx={{ mt: { xs: 10, md: 12 }, mb: { xs: 10, md: 12 } }}>
+          <Typography sx={{ ...TYPE.title, fontSize: '1.0625rem', color: 'text.primary', mb: 1 }}>
+            Level {profile.level} · {levelCfg.label}
+          </Typography>
+          <Typography sx={{ ...TYPE.caption, color: 'text.secondary', lineHeight: 1.6 }}>
+            {currentSection.label}
+            <br />
+            {progressLine}
+          </Typography>
+        </Box>
+
+        <Box
+          sx={{
+            borderTop: '1px solid',
+            borderColor: 'rgba(255, 255, 255, 0.06)',
+            pt: { xs: 5, md: 6 },
+            pb: { xs: 4, md: 5 },
+          }}
+        >
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 1.5,
+            }}
           >
-            {LEVEL_TABLE.filter((row) => row.level <= profile.level).map((row) => (
-              <MenuItem key={row.level} value={row.level}>
-                Level {row.level} · {row.label}
-                {row.level < profile.level ? ' (review)' : ''}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      )}
-      {isReview && (
-        <Typography variant="body2" color="text.secondary" className="sight-home-review-hint">
-          Review mode. Passes here do not change your level progress.
-        </Typography>
-      )}
-      <Button variant="contained" size="large" onClick={() => onStartPractice(practiceLevel)}>
-        {isReview ? `Practice level ${practiceLevel}` : 'Practice'}
-      </Button>
-      {canPickLevel && !isReview && practiceLevel === profile.level && (
-        <Typography variant="caption" color="text.secondary">
-          Practicing {practiceCfg.label}
-        </Typography>
-      )}
-    </div>
+            <Button
+              variant="text"
+              onClick={onOpenMap}
+              endIcon={<Icon name="chevron_right" />}
+              sx={{
+                textTransform: 'none',
+                fontSize: '0.8125rem',
+                fontWeight: 500,
+                color: 'text.secondary',
+                letterSpacing: '0.03em',
+                px: 1,
+                py: 0.5,
+                '&:hover': { color: 'text.primary', bgcolor: 'transparent' },
+              }}
+            >
+              Exercises
+            </Button>
+            <SkillsMasteryLink matrix={profile.skillMatrix} />
+          </Box>
+        </Box>
+      </Box>
+    </Box>
   );
 }

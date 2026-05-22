@@ -1,4 +1,5 @@
 import { getLevelConfig } from '../levels';
+import { maskCentroid, pointInPolygon } from '../scoring/gamutOverlap';
 import type { ColorState, GamutChallenge } from '../types';
 import { createRng } from './rng';
 
@@ -6,17 +7,20 @@ function pick(rng: () => number, min: number, max: number): number {
   return min + rng() * (max - min);
 }
 
-function sampleInGamut(
+function sampleInsideMask(
   rng: () => number,
-  anchorH: number,
-  spanH: number,
-  maxC: number,
+  vertices: Array<{ h: number; c: number }>,
+  maxAttempts = 40,
 ): ColorState {
-  return {
-    h: (anchorH + pick(rng, -spanH, spanH) + 360) % 360,
-    c: pick(rng, 0.02, maxC),
-    l: pick(rng, 0.25, 0.75),
-  };
+  const center = maskCentroid(vertices);
+  for (let i = 0; i < maxAttempts; i++) {
+    const h = (center.h + pick(rng, -28, 28) + 360) % 360;
+    const c = Math.max(0.02, Math.min(0.35, center.c + pick(rng, -0.06, 0.06)));
+    if (pointInPolygon({ h, c }, vertices)) {
+      return { h, c, l: pick(rng, 0.3, 0.72) };
+    }
+  }
+  return { h: center.h, c: center.c, l: pick(rng, 0.4, 0.65) };
 }
 
 function maskForProfile(
@@ -28,9 +32,9 @@ function maskForProfile(
     return {
       shape: 'triangle',
       vertices: [
-        { h: anchorH, c: anchorC + 0.12 },
-        { h: (anchorH + 55) % 360, c: anchorC },
-        { h: (anchorH + 310) % 360, c: anchorC + 0.06 },
+        { h: anchorH, c: anchorC + 0.1 },
+        { h: (anchorH + 48) % 360, c: anchorC + 0.02 },
+        { h: (anchorH + 312) % 360, c: anchorC + 0.05 },
       ],
     };
   }
@@ -38,9 +42,9 @@ function maskForProfile(
     shape: 'diamond',
     vertices: [
       { h: anchorH, c: anchorC + 0.04 },
-      { h: (anchorH + 25) % 360, c: anchorC + 0.02 },
+      { h: (anchorH + 22) % 360, c: anchorC + 0.02 },
       { h: (anchorH + 180) % 360, c: anchorC },
-      { h: (anchorH + 335) % 360, c: anchorC + 0.02 },
+      { h: (anchorH + 318) % 360, c: anchorC + 0.02 },
     ],
   };
 }
@@ -49,18 +53,17 @@ export function generateGamutChallenge(seed: number, level: number): GamutChalle
   const rng = createRng(seed);
   const profile = getLevelConfig(level).gamutProfile ?? 'wide';
   const anchorH = pick(rng, 200, 280);
-  const spanH = profile === 'wide' ? 35 : 18;
-  const maxC = profile === 'wide' ? 0.2 : 0.1;
-  const anchorC = pick(rng, 0.04, maxC * 0.5);
+  const maxC = profile === 'wide' ? 0.18 : 0.12;
+  const anchorC = pick(rng, 0.05, maxC * 0.7);
 
   const { vertices, shape } = maskForProfile(profile, anchorH, anchorC);
 
   const colors = {
-    skyA: sampleInGamut(rng, anchorH, spanH * 0.5, maxC),
-    skyB: sampleInGamut(rng, anchorH + 15, spanH * 0.5, maxC),
-    bg: sampleInGamut(rng, anchorH + 8, spanH, maxC),
-    mid: sampleInGamut(rng, anchorH - 5, spanH, maxC * 0.85),
-    fg: sampleInGamut(rng, anchorH, spanH * 0.6, maxC * 0.7),
+    skyA: sampleInsideMask(rng, vertices),
+    skyB: sampleInsideMask(rng, vertices),
+    bg: sampleInsideMask(rng, vertices),
+    mid: sampleInsideMask(rng, vertices),
+    fg: sampleInsideMask(rng, vertices),
   };
 
   return {

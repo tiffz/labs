@@ -1,4 +1,5 @@
 import { getLevelConfig } from '../levels';
+import type { PracticeGenConstraints } from '../progress/types';
 import { clampColorState } from '../scoring/perceptualScore';
 import { coolerSide, warmerSide } from '../scoring/temperature';
 import type {
@@ -217,9 +218,11 @@ export function isolatedPrompt(axis: IsolatedAxis): string {
 export function generateIsolatedFlashcardChallenge(
   seed: number,
   level: number,
+  constraints?: PracticeGenConstraints,
 ): IsolatedFlashcardChallenge {
   const rng = createRng(seed);
-  const profile = getLevelConfig(level).isolatedProfile ?? 'valueGrayscale';
+  const profile =
+    constraints?.isolatedProfile ?? getLevelConfig(level).isolatedProfile ?? 'valueGrayscale';
   const { left, right, correct, axis } = generateForProfile(rng, profile);
 
   return {

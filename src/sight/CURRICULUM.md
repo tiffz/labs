@@ -1,4 +1,4 @@
-# Color Sight Trainer — curriculum (schema v4)
+# Color Sight Trainer — curriculum (schema v6)
 
 Four-phase scaffolding. **Temperature** (warm vs. cool) is a continuous Oklab axis from Phase 1 through Phase 4, not a one-off lesson.
 
@@ -9,7 +9,10 @@ Four-phase scaffolding. **Temperature** (warm vs. cool) is a continuous Oklab ax
 | **1 — Isolated dynamics**   | 1–7    | `flashcard` / `isolated` | Rapid multiple-choice: value, chroma, temperature undertones |
 | **2 — Relational dynamics** | 8–11   | `flashcard` / `albers`   | Albers-style fields; identity + perceived diagnostics        |
 | **3 — Calibration lab**     | 12–18  | `contextual`, `bridge`   | Slider matching, broken bridge                               |
-| **4 — Creative harmony**    | 19–20  | `gamut`                  | Scene gamut masks                                            |
+| **4 — Creative harmony**    | 19–22  | `gamut`, `anchor-pivot`  | Scene gamut masks, harmony wheel pivot                       |
+| **5 — Subtractive lab**     | 23–24  | `albers-equalizer`       | Perceived match across warm/cool fields                      |
+| **6 — Dimensional slice**   | 25–26  | `munsell-slice`          | Value/chroma outlier in a 5-swatch grid                      |
+| **7 — Atmospheric cast**    | 27–28  | `yot-cast`               | Light preset → flat scene color                              |
 
 Level definitions live in [`levels.ts`](levels.ts). Profile migration bumps levels ≥ 5 when upgrading from schema &lt; 4.
 

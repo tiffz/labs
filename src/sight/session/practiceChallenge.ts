@@ -1,19 +1,36 @@
+import { generateAnchorPivotChallenge } from '../generators/anchorPivot';
+import { generateAlbersEqualizerChallenge } from '../generators/albersEqualizer';
 import { generateBridgeChallenge } from '../generators/brokenBridge';
 import { generateContextualMatchChallenge } from '../generators/contextualMatch';
 import { generateFlashcardChallenge } from '../generators/flashcard';
 import { generateGamutChallenge } from '../generators/gamutLandscape';
+import { generateMunsellSliceChallenge } from '../generators/munsellSlice';
 import { createRng, randomSeed } from '../generators/rng';
+import { generateYotCastChallenge } from '../generators/yotCast';
 import { getLevelConfig, maxUnlockedLevel, MAX_LEVEL } from '../levels';
+import type { PracticeGenConstraints } from '../progress/types';
 import type { PracticeRound, SightChallenge, SightProfile } from '../types';
 
 const PASSES_TO_ADVANCE = 7;
 
-function challengeForLevel(seed: number, level: number): SightChallenge {
+export interface PickPracticeOptions {
+  constraints?: PracticeGenConstraints;
+}
+
+function challengeForLevel(
+  seed: number,
+  level: number,
+  constraints?: PracticeGenConstraints,
+): SightChallenge {
   const cfg = getLevelConfig(level);
-  if (cfg.module === 'flashcard') return generateFlashcardChallenge(seed, level);
-  if (cfg.module === 'contextual') return generateContextualMatchChallenge(seed, level);
+  if (cfg.module === 'flashcard') return generateFlashcardChallenge(seed, level, constraints);
+  if (cfg.module === 'contextual') return generateContextualMatchChallenge(seed, level, constraints);
   if (cfg.module === 'bridge') return generateBridgeChallenge(seed, level);
-  return generateGamutChallenge(seed, level);
+  if (cfg.module === 'gamut') return generateGamutChallenge(seed, level);
+  if (cfg.module === 'anchor-pivot') return generateAnchorPivotChallenge(seed, level);
+  if (cfg.module === 'albers-equalizer') return generateAlbersEqualizerChallenge(seed, level, constraints);
+  if (cfg.module === 'munsell-slice') return generateMunsellSliceChallenge(seed, level, constraints);
+  return generateYotCastChallenge(seed, level);
 }
 
 /**
@@ -24,6 +41,7 @@ export function pickPracticeChallenge(
   profile: SightProfile,
   salt = 0,
   practiceLevel?: number,
+  options?: PickPracticeOptions,
 ): PracticeRound {
   const maxLevel = maxUnlockedLevel(profile.level);
   const rng = createRng(randomSeed() + salt);
@@ -39,7 +57,7 @@ export function pickPracticeChallenge(
   const seed = Math.floor(createRng(randomSeed() + salt + level * 997)() * 1_000_000);
   return {
     level,
-    challenge: challengeForLevel(seed, level),
+    challenge: challengeForLevel(seed, level, options?.constraints),
   };
 }
 
@@ -53,10 +71,11 @@ export function challengeCountsTowardProgress(
 export function recordChallengeResult(
   profile: SightProfile,
   passed: boolean,
-  options?: { challengeLevel?: number },
+  options?: { challengeLevel?: number; countPass?: boolean },
 ): SightProfile {
   const challengeLevel = options?.challengeLevel ?? profile.level;
-  const countsTowardProgress = challengeCountsTowardProgress(profile.level, challengeLevel);
+  const countsTowardProgress =
+    options?.countPass !== false && challengeCountsTowardProgress(profile.level, challengeLevel);
 
   const next: SightProfile = {
     ...profile,

@@ -9,7 +9,7 @@ export function scoreGamut(
   level: number,
   simulatePass: boolean | null,
 ): { passed: boolean; overlapPct: number } {
-  const minPct = getLevelConfig(level).minGamutOverlapPct ?? 85;
+  const minPct = getLevelConfig(level).minGamutOverlapPct ?? 72;
   const samples = colorsToWheelPoints([
     challenge.colors.skyA,
     challenge.colors.skyB,

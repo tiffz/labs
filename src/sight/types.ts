@@ -1,4 +1,11 @@
 import type { CurriculumPhase } from './curriculum/phases';
+import type {
+  DailyQueueState,
+  DailySessionSummary,
+  GrowthDiagnostic,
+  RepRecord,
+  SkillMatrix,
+} from './progress/types';
 
 /** Oklch color state used for all generators and scoring. */
 export interface ColorState {
@@ -7,7 +14,16 @@ export interface ColorState {
   l: number;
 }
 
-export type ModuleId = 'flashcard' | 'compare' | 'contextual' | 'bridge' | 'gamut';
+export type ModuleId =
+  | 'flashcard'
+  | 'compare'
+  | 'contextual'
+  | 'bridge'
+  | 'gamut'
+  | 'anchor-pivot'
+  | 'albers-equalizer'
+  | 'munsell-slice'
+  | 'yot-cast';
 
 export type CompareAxis = 'lighter' | 'darker' | 'moreSaturated' | 'lessSaturated';
 
@@ -131,12 +147,64 @@ export interface GamutChallenge {
   maskShape: 'triangle' | 'square' | 'diamond';
 }
 
+export type HarmonySystem = 'complementary' | 'splitComplementary' | 'triadic' | 'tetradic';
+
+export interface AnchorPivotChallenge {
+  kind: 'anchor-pivot';
+  seed: number;
+  system: HarmonySystem;
+  targetAngles: number[];
+  targetChroma: number;
+  targetLightness: number;
+  pivotHue: number;
+}
+
+export type AlbersEqualizerPair = 'warm-cool' | 'saturation-contrast';
+
+export interface AlbersEqualizerChallenge {
+  kind: 'albers-equalizer';
+  seed: number;
+  left: AlbersField;
+  right: AlbersField;
+  backgroundPair: AlbersEqualizerPair;
+}
+
+export type MunsellSliceAxis = 'value' | 'chroma';
+
+export interface MunsellSliceChallenge {
+  kind: 'munsell-slice';
+  seed: number;
+  axis: MunsellSliceAxis;
+  swatches: ColorState[];
+  outlierIndex: number;
+}
+
+export type YotLightPrompt = 'goldenHour' | 'blueCave' | 'overcast' | 'neonAlley';
+
+export interface YotFlat {
+  id: string;
+  local: ColorState;
+}
+
+export interface YotCastChallenge {
+  kind: 'yot-cast';
+  seed: number;
+  lightPrompt: YotLightPrompt;
+  flats: YotFlat[];
+  options: ColorState[][];
+  correctIndex: number;
+}
+
 export type SightChallenge =
   | CompareChallenge
   | FlashcardChallenge
   | ContextualChallenge
   | BridgeChallenge
-  | GamutChallenge;
+  | GamutChallenge
+  | AnchorPivotChallenge
+  | AlbersEqualizerChallenge
+  | MunsellSliceChallenge
+  | YotCastChallenge;
 
 export interface PracticeRound {
   level: number;
@@ -148,6 +216,11 @@ export interface SightProfile {
   challengesCompleted: number;
   passesAtLevel: number;
   schemaVersion?: number;
+  skillMatrix: SkillMatrix;
+  recentReps: RepRecord[];
+  activeFocus: GrowthDiagnostic | null;
+  dailyQueue: DailyQueueState | null;
+  lastDailySummary?: DailySessionSummary;
 }
 
 /** Shown after submit / compare tap until the next challenge loads. */
@@ -193,4 +266,28 @@ export type PracticeReveal =
       passed: boolean;
       overlapPct: number;
       minPct: number;
+    }
+  | {
+      kind: 'munsell-slice';
+      challenge: MunsellSliceChallenge;
+      pickedIndex: number;
+      passed: boolean;
+    }
+  | {
+      kind: 'albers-equalizer';
+      passed: boolean;
+      accuracyRating: number;
+      deltaE: number;
+    }
+  | {
+      kind: 'anchor-pivot';
+      passed: boolean;
+      angularScore: number;
+      maxAngularError: number;
+    }
+  | {
+      kind: 'yot-cast';
+      challenge: YotCastChallenge;
+      pickedIndex: number;
+      passed: boolean;
     };

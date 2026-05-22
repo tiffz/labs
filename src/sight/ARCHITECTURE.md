@@ -4,7 +4,7 @@
 
 All generators and scoring use **Oklch** via [culori](https://github.com/Evercoder/culori). Perceptual distance uses **CIEDE2000** (`differenceCiede2000`).
 
-Level thresholds and generator profiles live in [`levels.ts`](levels.ts) (13 levels). Each row may set `compareProfile`, `contextualProfile`, `bridgeProfile`, or `gamutProfile` so generators do not rely on magic level numbers.
+Level thresholds and generator profiles live in [`levels.ts`](levels.ts) (28 levels, schema v6). Adaptive progress (skill matrix, diagnostics) lives under [`progress/`](progress/); see [ADR 0010](../../docs/adr/0010-sight-adaptive-progress.md). Each row may set `compareProfile`, `contextualProfile`, `bridgeProfile`, or `gamutProfile` so generators do not rely on magic level numbers.
 
 ## Phases (`App.tsx`)
 

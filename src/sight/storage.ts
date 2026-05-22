@@ -1,4 +1,5 @@
 import { CURRICULUM_SCHEMA_VERSION, MAX_LEVEL } from './levels';
+import { defaultSkillMatrix, PROFILE_PROGRESS_SCHEMA_VERSION } from './progress/types';
 import type { SightProfile } from './types';
 
 const KEY_PROFILE = 'sight:profile';
@@ -35,13 +36,6 @@ function safeSet(key: string, value: string): void {
   }
 }
 
-const DEFAULT_PROFILE: SightProfile = {
-  level: 1,
-  challengesCompleted: 0,
-  passesAtLevel: 0,
-  schemaVersion: CURRICULUM_SCHEMA_VERSION,
-};
-
 function migrateLevel(level: number, schemaVersion: number | undefined): number {
   const raw = Math.max(1, Math.floor(level));
   let migrated = raw;
@@ -62,6 +56,19 @@ function migrateLevel(level: number, schemaVersion: number | undefined): number 
   return Math.max(1, Math.min(MAX_LEVEL, migrated));
 }
 
+function defaultProfile(): SightProfile {
+  return {
+    level: 1,
+    challengesCompleted: 0,
+    passesAtLevel: 0,
+    schemaVersion: CURRICULUM_SCHEMA_VERSION,
+    skillMatrix: defaultSkillMatrix(1),
+    recentReps: [],
+    activeFocus: null,
+    dailyQueue: null,
+  };
+}
+
 function normalizeProfile(parsed: Partial<SightProfile> & { sessionsCompleted?: number }): SightProfile {
   const schemaVersion = parsed.schemaVersion;
   const level = migrateLevel(parsed.level ?? 1, schemaVersion);
@@ -74,16 +81,21 @@ function normalizeProfile(parsed: Partial<SightProfile> & { sessionsCompleted?: 
     ),
     passesAtLevel: Math.max(0, Math.floor(parsed.passesAtLevel ?? 0)),
     schemaVersion: CURRICULUM_SCHEMA_VERSION,
+    skillMatrix: parsed.skillMatrix ?? defaultSkillMatrix(level),
+    recentReps: Array.isArray(parsed.recentReps) ? parsed.recentReps.slice(-30) : [],
+    activeFocus: parsed.activeFocus ?? null,
+    dailyQueue: parsed.dailyQueue ?? null,
+    lastDailySummary: parsed.lastDailySummary,
   };
 }
 
 export function readProfile(): SightProfile {
   const raw = safeGet(KEY_PROFILE);
-  if (!raw) return { ...DEFAULT_PROFILE };
+  if (!raw) return defaultProfile();
   try {
     return normalizeProfile(JSON.parse(raw) as Partial<SightProfile> & { sessionsCompleted?: number });
   } catch {
-    return { ...DEFAULT_PROFILE };
+    return defaultProfile();
   }
 }
 
@@ -95,6 +107,9 @@ export function writeProfile(profile: SightProfile): void {
 }
 
 /** Drop legacy queued-session data from older builds. */
+/** Progress overlay schema (skill matrix, reps); separate from curriculum level table version. */
+export { PROFILE_PROGRESS_SCHEMA_VERSION };
+
 export function clearLegacySessionStorage(): void {
   if (typeof localStorage === 'undefined') return;
   try {

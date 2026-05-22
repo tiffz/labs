@@ -1,4 +1,5 @@
 import { getLevelConfig } from '../levels';
+import type { PracticeGenConstraints } from '../progress/types';
 import {
   perceivedLighterSide,
   perceivedMoreSaturatedSide,
@@ -105,9 +106,10 @@ export function albersPrompt(question: AlbersQuestionKind): string {
 export function generateAlbersFlashcardChallenge(
   seed: number,
   level: number,
+  constraints?: PracticeGenConstraints,
 ): AlbersFlashcardChallenge {
   const rng = createRng(seed);
-  const profile = getLevelConfig(level).albersProfile ?? 'identity';
+  const profile = constraints?.albersProfile ?? getLevelConfig(level).albersProfile ?? 'identity';
   const questions = questionsForProfile(profile);
   const question = questions[Math.floor(rng() * questions.length)]!;
   const { warm, cool } = contrastingBackgrounds(rng);

@@ -14,7 +14,7 @@ import ContextualMatcherView from '../modules/contextualMatcher/ContextualMatche
 import { initialContextualInput } from '../modules/contextualMatcher/contextualMatcherLogic';
 import BrokenBridgeView from '../modules/brokenBridge/BrokenBridgeView';
 import { initialBridgeSteps } from '../modules/brokenBridge/brokenBridgeLogic';
-import GamutFinderView from '../modules/gamutFinder/GamutFinderView';
+import GamutFinderView, { defaultGamutDeform } from '../modules/gamutFinder/GamutFinderView';
 import { deformMask } from '../scoring/gamutOverlap';
 import { colorStateToHex } from '../scoring/perceptualScore';
 import type { ModuleId, SightChallenge } from '../types';
@@ -41,7 +41,7 @@ export default function SandboxPhase(): React.ReactElement {
     challenge.kind === 'bridge' ? initialBridgeSteps(challenge) : initialBridgeSteps(generateBridgeChallenge(seed, 17)),
   );
   const [bridgeSlot, setBridgeSlot] = useState(1);
-  const [gamutDeform, setGamutDeform] = useState({ h: 0, c: 0, scale: 1 });
+  const [gamutDeform, setGamutDeform] = useState(defaultGamutDeform);
   const userMask: WheelPoint[] = useMemo(() => {
     if (challenge.kind !== 'gamut') return [];
     return deformMask(challenge.maskVertices, gamutDeform);
@@ -56,7 +56,7 @@ export default function SandboxPhase(): React.ReactElement {
     const c = challengeForModule(module, seed);
     if (c.kind === 'contextual') setContextualInput(initialContextualInput(c));
     if (c.kind === 'bridge') setBridgeSteps(initialBridgeSteps(c));
-    if (c.kind === 'gamut') setGamutDeform({ h: 0, c: 0, scale: 1 });
+    if (c.kind === 'gamut') setGamutDeform(defaultGamutDeform);
   }, [module, seed]);
 
   useEffect(() => {

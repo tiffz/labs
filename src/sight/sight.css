@@ -925,3 +925,163 @@ body {
   border: 2px solid rgba(0, 0, 0, 0.2);
   flex-shrink: 0;
 }
+
+.sight-skill-matrix {
+  margin: 0.75rem 0;
+  padding: 0.75rem 1rem;
+  background: var(--sight-panel);
+  border: 1px solid var(--sight-border);
+  border-radius: 6px;
+}
+
+.sight-skill-matrix__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.sight-skill-matrix__row {
+  display: grid;
+  grid-template-columns: 5.5rem 1fr 2rem;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+}
+
+.sight-skill-matrix__track {
+  height: 0.35rem;
+  background: #27272a;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.sight-skill-matrix__fill {
+  display: block;
+  height: 100%;
+  background: var(--sight-accent);
+  border-radius: 2px;
+}
+
+.sight-skill-matrix__value {
+  text-align: right;
+  font-family: var(--sight-font-mono);
+  color: var(--sight-muted);
+}
+
+.sight-home-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.sight-home-focus {
+  margin: 0.5rem 0;
+  color: var(--sight-accent);
+}
+
+.sight-purpose-chip {
+  margin-left: 0.25rem;
+}
+
+.sight-daily-summary {
+  padding: 1.5rem;
+  max-width: 28rem;
+}
+
+.sight-munsell-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(3rem, 1fr));
+  gap: 0.5rem;
+  max-width: 24rem;
+  margin: 1rem auto;
+}
+
+.sight-munsell-cell {
+  aspect-ratio: 1;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.sight-munsell-cell:disabled {
+  cursor: default;
+}
+
+.sight-yot-options {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.sight-yot-option {
+  padding: 0;
+  border: 2px solid var(--sight-border);
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.sight-yot-option:disabled {
+  cursor: default;
+}
+
+.sight-yot-svg {
+  width: 7.5rem;
+  height: 5rem;
+  display: block;
+}
+
+.sight-albers-field__inner {
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 4px;
+  border: 2px solid rgba(0, 0, 0, 0.2);
+}
+
+.sight-wheel-canvas--interactive {
+  cursor: crosshair;
+  touch-action: none;
+}
+
+/* Landing (home + curriculum map) */
+.sight-landing {
+  isolation: isolate;
+}
+
+.sight-landing--home::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(100%, 560px);
+  height: min(36vh, 320px);
+  background: radial-gradient(
+    ellipse 70% 60% at 50% 0%,
+    rgba(167, 139, 250, 0.07),
+    transparent 70%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+.sight-landing > * {
+  position: relative;
+  z-index: 1;
+}
+
+.sight-landing .MuiPaper-root {
+  background-image: none;
+}
+
+.sight-landing-hero .MuiButton-root:focus-visible {
+  outline: 2px solid var(--sight-accent);
+  outline-offset: 3px;
+}
