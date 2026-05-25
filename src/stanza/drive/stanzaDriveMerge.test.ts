@@ -61,14 +61,14 @@ describe('mergeDriveRowsIntoLocalLibrary', () => {
     expect(report.keptLocalOnly).toBe(1);
   });
 
-  it('prefers local when updatedAt is newer', () => {
+  it('prefers local when updatedAt is newer but still takes richer remote markers', () => {
     const local = [song({ id: '1', title: 'Local', updatedAt: 20, markers: [{ time: 1, label: 'L' }] })];
     const remote: StanzaSongDriveRow[] = [
       {
         id: '1',
         ytId: 'yt',
         title: 'Remote',
-        markers: [{ time: 2, label: 'R' }],
+        markers: [{ time: 2, label: 'R' }, { time: 40, label: 'R2' }],
         stats: {},
         updatedAt: 10,
       },
@@ -76,7 +76,8 @@ describe('mergeDriveRowsIntoLocalLibrary', () => {
     const { nextRows, report } = mergeDriveRowsIntoLocalLibrary(local, remote);
     expect(report.mergedPreferLocal).toBe(1);
     expect(nextRows[0].title).toBe('Local');
-    expect(nextRows[0].markers[0].label).toBe('L');
+    expect(nextRows[0].markers).toHaveLength(2);
+    expect(nextRows[0].markers[1]?.label).toBe('R2');
   });
 
   it('takes remote metadata when remote is newer and keeps local blobs', () => {
@@ -109,6 +110,39 @@ describe('mergeDriveRowsIntoLocalLibrary', () => {
     expect(nextRows[0].markers[0].label).toBe('m');
     expect(nextRows[0].localAudioBlob).toBe(blob);
     expect(nextRows[0].localVideoThumbnailBlob).toBe(thumb);
+  });
+
+  it('keeps local section markers when remote is newer but has none', () => {
+    const local = [
+      song({
+        id: '1',
+        ytId: 'vid',
+        title: 'Sectioned',
+        updatedAt: 5,
+        markers: [
+          { id: 'm1', time: 10, label: 'Intro' },
+          { id: 'm2', time: 40, label: 'Chorus' },
+          { id: 'm3', time: 80, label: 'Bridge' },
+        ],
+      }),
+    ];
+    const remote: StanzaSongDriveRow[] = [
+      {
+        id: '1',
+        ytId: 'vid',
+        title: 'Mix tweak only',
+        markers: [],
+        stats: {},
+        updatedAt: 500,
+        primaryGain: 0.5,
+      },
+    ];
+    const { nextRows, report } = mergeDriveRowsIntoLocalLibrary(local, remote);
+    expect(report.mergedPreferRemote).toBe(1);
+    expect(report.markersRecoveredFromLocal).toBe(1);
+    expect(nextRows[0].markers).toHaveLength(3);
+    expect(nextRows[0].title).toBe('Mix tweak only');
+    expect(nextRows[0].primaryGain).toBe(0.5);
   });
 
   it('merges stem blobs by id when remote wins', () => {
@@ -195,6 +229,37 @@ describe('mergeDriveRowsIntoLocalLibrary', () => {
     expect(nextRows[0]?.title).toBe('Newer title from device B');
     expect(report.collapsedByContentKey).toBe(1);
     expect(remappedIds.get('local-uuid')).toBe('remote-uuid');
+  });
+
+  it('merges local-only remote metadata onto a matching local file fingerprint', () => {
+    const blob = new Blob([new Uint8Array(128)], { type: 'video/mp4' });
+    const fp = '128:180.00';
+    const local = [
+      song({
+        id: 'device-b',
+        title: 'Clip',
+        updatedAt: 50,
+        localAudioBlob: blob,
+        localMediaFingerprint: fp,
+      }),
+    ];
+    const remote: StanzaSongDriveRow[] = [
+      {
+        id: 'device-a',
+        ytId: null,
+        title: 'Clip',
+        markers: [{ time: 12, label: 'verse' }],
+        stats: {},
+        updatedAt: 100,
+        localMediaFingerprint: fp,
+      },
+    ];
+    const { nextRows, report } = mergeDriveRowsIntoLocalLibrary(local, remote);
+    expect(nextRows).toHaveLength(1);
+    expect(report.mergedPreferRemote).toBe(1);
+    expect(nextRows[0]?.id).toBe('device-b');
+    expect(nextRows[0]?.markers).toHaveLength(1);
+    expect(nextRows[0]?.markers[0]?.label).toBe('verse');
   });
 
   it('collapses two Drive-imported rows with the same driveSourceFileId', () => {

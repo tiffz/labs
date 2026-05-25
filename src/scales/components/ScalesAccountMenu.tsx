@@ -2,7 +2,7 @@ import { LabsDriveAccountMenu } from '../../shared/google/LabsDriveAccountMenu';
 import { useScalesDriveBackupContext } from '../context/ScalesDriveBackupContext';
 
 export default function ScalesAccountMenu() {
-  const { googleClientConfigured, backupSlot, driveUi } = useScalesDriveBackupContext();
+  const { googleClientConfigured, backupSlot, driveUi, conflict } = useScalesDriveBackupContext();
 
   if (!googleClientConfigured) return null;
 
@@ -12,6 +12,7 @@ export default function ScalesAccountMenu() {
       googleClientConfigured={googleClientConfigured}
       backup={backupSlot}
       drive={driveUi}
+      conflict={conflict}
       ids={{ menu: 'scales-account-menu', button: 'scales-account-menu-button' }}
       appearance={{
         tooltipTitle: 'Account and Drive backup',

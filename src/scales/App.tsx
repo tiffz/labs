@@ -9,7 +9,6 @@ import { ScalesSessionDebugBridgeProvider } from './context/scalesSessionDebugBr
 import SkipToMain from '../shared/components/SkipToMain';
 import { readLabsDebugFromLocation } from '../shared/debug/readLabsDebugParams';
 import { ScalesDriveBackupProvider } from './context/ScalesDriveBackupContext';
-import ScalesDriveBackupSection from './components/ScalesDriveBackupSection';
 
 const debugMode = readLabsDebugFromLocation().debug;
 if (debugMode) enableDebug();
@@ -46,7 +45,6 @@ function AppContent() {
       </main>
       {!hasInput && !suppressConnectModal && <InputGateway />}
       {debugMode && <DebugPanel />}
-      <ScalesDriveBackupSection />
     </div>
   );
 }

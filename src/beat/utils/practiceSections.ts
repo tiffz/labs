@@ -19,10 +19,31 @@ export interface PerSongSettings {
   audioVolume?: number;
   metronomeVolume?: number;
   drumVolume?: number;
+  audioMuted?: boolean;
+  drumMuted?: boolean;
+  metronomeMuted?: boolean;
   alignLoopToMetronome?: boolean;
   correctedDetectedKey?: string | null;
   transposeSemitones?: number;
+  /** @deprecated Prefer `bpm`; kept for older saves. */
   youtubeManualBpm?: number;
+  /** User-facing BPM (manual override for local analysis or YouTube). */
+  bpm?: number;
+  playbackRate?: number;
+  /** User override for music start; omit or null = use detected analysis default. */
+  syncStartTime?: number | null;
+  loopEnabled?: boolean;
+  loopRegion?: { startTime: number; endTime: number } | null;
+  nudgeUnit?: 'measure' | 'beat';
+}
+
+export function readSavedSongBpm(saved: PerSongSettings | null | undefined): number | null {
+  if (!saved) return null;
+  if (typeof saved.bpm === 'number' && Number.isFinite(saved.bpm)) return saved.bpm;
+  if (typeof saved.youtubeManualBpm === 'number' && Number.isFinite(saved.youtubeManualBpm)) {
+    return saved.youtubeManualBpm;
+  }
+  return null;
 }
 
 export function songSettingsStorageKey(entryId: string): string {

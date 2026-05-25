@@ -150,4 +150,6 @@ export interface ScalesProgressData {
    * round-trips and forward compatibility.
    */
   introducedExerciseHands: Record<string, IntroducedHands>;
+  /** ISO timestamp bumped on meaningful local saves — used for Drive merge heuristics. */
+  progressUpdatedAt?: string;
 }

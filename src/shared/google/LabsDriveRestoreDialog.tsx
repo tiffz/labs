@@ -22,6 +22,8 @@ type LabsDriveRestoreDialogProps = Pick<
   | 'lastBackupExportedAt'
   | 'undoSnapshots'
   | 'applyUndoSnapshot'
+  | 'undoLastSync'
+  | 'canUndoLastSync'
   | 'copy'
 >;
 
@@ -36,6 +38,8 @@ export default function LabsDriveRestoreDialog(props: LabsDriveRestoreDialogProp
     lastBackupExportedAt,
     undoSnapshots,
     applyUndoSnapshot,
+    undoLastSync,
+    canUndoLastSync,
     copy,
   } = props;
 
@@ -85,6 +89,20 @@ export default function LabsDriveRestoreDialog(props: LabsDriveRestoreDialogProp
                   <ListItemText primary={s.label} secondary={s.secondary ?? 'Local pre-backup snapshot'} />
                 </ListItemButton>
               ))}
+            </List>
+          </>
+        ) : null}
+
+        {canUndoLastSync && undoLastSync ? (
+          <>
+            <Divider sx={{ my: 1 }} />
+            <List dense disablePadding>
+              <ListItemButton disabled={busy} onClick={() => void undoLastSync()}>
+                <ListItemText
+                  primary="Undo last sync"
+                  secondary="Restore the library snapshot from before the most recent Drive sync on this browser."
+                />
+              </ListItemButton>
             </List>
           </>
         ) : null}

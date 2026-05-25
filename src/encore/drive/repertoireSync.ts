@@ -5,12 +5,15 @@ import {
   defaultRepertoireExtrasRow,
   maxRepertoireClock,
   mergeRecordsByUpdatedAt,
+  mergeRepertoireExtras,
   parseRepertoireWire,
   repertoireExtrasFromWire,
   serializeRepertoireWire,
 } from './repertoireWire';
 import { driveGetFileMetadata, driveGetMedia, drivePatchJsonMedia } from './driveFetch';
 import { ensureEncoreDriveLayout } from './bootstrapFolders';
+import { snapshotEncoreRepertoireBeforeSync } from './encoreDriveUndoSnapshots';
+import { isShardedSyncEnabled, pullChangedShards } from './repertoireSharded';
 
 export type SyncConflictReason = 'local_and_remote_changed';
 
@@ -87,6 +90,7 @@ export async function pullRepertoireFromDrive(
   remoteEtag?: string,
   opts?: PullRepertoireOptions,
 ): Promise<void> {
+  await snapshotEncoreRepertoireBeforeSync('pre-pull');
   const onProgress = opts?.onProgress;
   onProgress?.(0.05);
   const raw = await driveGetMedia(accessToken, repertoireFileId);
@@ -98,18 +102,22 @@ export async function pullRepertoireFromDrive(
   const mergedSongs = mergeRecordsByUpdatedAt<EncoreSong>(localSongs, wire.songs);
   const mergedPerf = mergeRecordsByUpdatedAt<EncorePerformance>(localPerf, wire.performances);
   const extrasRow = repertoireExtrasFromWire(wire);
+  const localExtrasRow =
+    (await encoreDb.repertoireExtras.get('default')) ?? defaultRepertoireExtrasRow(extrasRow.updatedAt);
+  const mergedExtras = mergeRepertoireExtras(localExtrasRow, extrasRow);
   onProgress?.(0.48);
   await yieldToMain();
-  await encoreDb.transaction('rw', encoreDb.songs, encoreDb.performances, encoreDb.repertoireExtras, async () => {
+  await encoreDb.transaction('rw', encoreDb.songs, encoreDb.performances, encoreDb.repertoireExtras, encoreDb.dirtySync, async () => {
     await encoreDb.songs.clear();
     await encoreDb.performances.clear();
+    await encoreDb.dirtySync.clear();
     await encoreDb.songs.bulkPut(mergedSongs);
     await encoreDb.performances.bulkPut(mergedPerf);
-    await encoreDb.repertoireExtras.put(extrasRow);
+    await encoreDb.repertoireExtras.put(mergedExtras);
   });
   onProgress?.(0.72);
   const meta = await driveGetFileMetadata(accessToken, repertoireFileId);
-  const localMax = maxRepertoireClock(mergedSongs, mergedPerf, extrasRow.updatedAt);
+  const localMax = maxRepertoireClock(mergedSongs, mergedPerf, mergedExtras.updatedAt);
   await patchSyncMeta({
     lastRemoteModified: meta.modifiedTime,
     lastRemoteEtag: meta.etag ?? remoteEtag,
@@ -327,6 +335,9 @@ export async function runInitialSyncIfPossible(
           onProgress?.(0.32 + p * 0.62);
         },
       });
+      if (isShardedSyncEnabled()) {
+        await pullChangedShards(accessToken);
+      }
     } else if (localDirty) {
       onProgress?.(0.35);
       await pushRepertoireToDrive(accessToken, layout.repertoireFileId, meta.lastRemoteEtag, {
@@ -375,6 +386,7 @@ export async function resolveConflictWithChoices(
   accessToken: string,
   choices: Map<string, 'local' | 'remote'>,
 ): Promise<void> {
+  await snapshotEncoreRepertoireBeforeSync('pre-merge');
   const meta = await getSyncMeta();
   if (!meta.repertoireFileId) throw new Error('Not bootstrapped');
 
@@ -434,15 +446,20 @@ export async function resolveConflictWithChoices(
     }
   }
 
-  const extrasRow = repertoireExtrasFromWire(wire);
+  const extrasRow = mergeRepertoireExtras(
+    (await encoreDb.repertoireExtras.get('default')) ?? defaultRepertoireExtrasRow(wire.exportedAt),
+    repertoireExtrasFromWire(wire),
+  );
   await encoreDb.transaction(
     'rw',
     encoreDb.songs,
     encoreDb.performances,
     encoreDb.repertoireExtras,
+    encoreDb.dirtySync,
     async () => {
       await encoreDb.songs.clear();
       await encoreDb.performances.clear();
+      await encoreDb.dirtySync.clear();
       await encoreDb.songs.bulkPut(mergedSongs);
       await encoreDb.performances.bulkPut(mergedPerf);
       await encoreDb.repertoireExtras.put(extrasRow);

@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 import { CLICK_SAMPLE_URL } from '../../shared/audio/drumSampleUrls';
 import { loadClickSample, playClickSampleAt, type LoadedClickSample } from '../../shared/audio/clickService';
 import { ensureAudioContextRunning } from '../../shared/playback/audioContextLifecycle';
+import { stanzaMetronomeClickLevels } from '../utils/stanzaMetronomeClickLevels';
 
 let metronomeAudioContext: AudioContext | null = null;
 
@@ -46,21 +47,19 @@ export function primeStanzaMetronomeAudio(): void {
  * Default downbeat ceiling. Raised from the historic 0.52 because users reported the click was too
  * quiet against backing tracks; the user-facing Metronome slider in the Mix multiplies this and
  * lets people pull it back down if it's too loud.
+ *
+ * Off-beat level and downbeat pitch lift live in {@link stanzaMetronomeClickLevels} so the accent
+ * stays subtle (even clicks are easier to practice against).
  */
-const STANZA_METRONOME_DOWNBEAT_CEILING = 0.85;
-/** Off-beats remain quieter than the downbeat by this ratio (preserved from prior behavior). */
-const STANZA_METRONOME_OFFBEAT_RATIO = 0.42;
-
 function playSampleClick(
   ctx: AudioContext,
   sample: LoadedClickSample,
   isDownbeat: boolean,
   userGain: number,
 ): void {
-  const ceiling = Math.min(1, Math.max(0, STANZA_METRONOME_DOWNBEAT_CEILING * userGain));
-  const vol = isDownbeat ? ceiling : ceiling * STANZA_METRONOME_OFFBEAT_RATIO;
-  if (vol <= 0) return;
-  playClickSampleAt(ctx, sample, ctx.currentTime, vol, isDownbeat ? 1.28 : 1);
+  const { volume, playbackRate } = stanzaMetronomeClickLevels(isDownbeat, userGain);
+  if (volume <= 0) return;
+  playClickSampleAt(ctx, sample, ctx.currentTime, volume, playbackRate);
 }
 
 export interface UseStanzaMetronomeSyncOptions {

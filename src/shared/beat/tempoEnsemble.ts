@@ -7,6 +7,7 @@
 
 import { getEssentia } from './essentiaSingleton';
 import { detectOnsets } from './analysis/onsets';
+import { inferQuarterNoteBpmFromOnsets } from './analysis/ioiTempoHint';
 import { normalizeToRange } from './analysis/tempoUtils';
 
 export interface TempoEstimate {
@@ -516,11 +517,31 @@ void _legacyTempoHelpers;
  */
 function selectCorrectOctaveWithOnsets(candidateBpm: number, onsets: number[], duration: number): number {
   const onsetDensity = calculateOnsetDensity(onsets, duration);
-  
+  const ioiBpmHint = inferQuarterNoteBpmFromOnsets(onsets);
+
   // Calculate possible octaves
   const halfBpm = candidateBpm / 2;
   const doubleBpm = candidateBpm * 2;
-  
+
+  if (ioiBpmHint != null) {
+    const octaveCandidates = [halfBpm, candidateBpm, doubleBpm].filter(
+      (bpm) => bpm >= 40 && bpm <= 220
+    );
+    const directMatch = octaveCandidates.find(
+      (bpm) => Math.abs(bpm - ioiBpmHint) / ioiBpmHint < 0.04
+    );
+    if (directMatch) {
+      return Math.round(directMatch * 100) / 100;
+    }
+    // Drum loops often collapse to half-tempo; IOI 8th-note peaks expose the true rate.
+    if (
+      ioiBpmHint >= 90 &&
+      Math.abs(candidateBpm * 2 - ioiBpmHint) / ioiBpmHint < 0.04
+    ) {
+      return Math.round(ioiBpmHint * 100) / 100;
+    }
+  }
+
   // Expected onset density at each BPM level
   // 
   // The key insight: at a given BPM, we expect a certain number of onsets per beat.
@@ -555,9 +576,6 @@ function selectCorrectOctaveWithOnsets(candidateBpm: number, onsets: number[], d
     label: string;
   }
   
-  // Penalty for extreme tempos - most music feels natural between 60-170 BPM.
-  // BPMs below 55 are extremely rare in practice; most "slow" music sits at
-  // 60-75 BPM.  Halving a 90-100 BPM candidate to 45-50 is almost always wrong.
   function getTempoRangePenalty(bpm: number): number {
     if (bpm >= 60 && bpm <= 170) return 0;
     if (bpm >= 55 && bpm < 60) return 0.05;
@@ -588,24 +606,55 @@ function selectCorrectOctaveWithOnsets(candidateBpm: number, onsets: number[], d
     }
   }
 
+  function ioiHintPenalty(bpm: number): number {
+    if (ioiBpmHint == null) return 0;
+    const direct = Math.abs(bpm - ioiBpmHint) / ioiBpmHint;
+    if (direct < 0.04) return 0;
+    let best = direct;
+    for (const mult of [0.5, 2]) {
+      best = Math.min(best, Math.abs(bpm * mult - ioiBpmHint) / ioiBpmHint);
+    }
+  // Prefer the octave that matches IOI peaks without folding (e.g. 150 vs 75).
+    return best + 0.08;
+  }
+
   const scores: OctaveScore[] = [];
   
   // Only consider reasonable tempos (40-220 BPM range)
   if (halfBpm >= 40) {
     const penalty = getTempoRangePenalty(halfBpm);
-    scores.push({ bpm: halfBpm, score: densityErrorHalf + penalty, label: 'half' });
+    scores.push({ bpm: halfBpm, score: densityErrorHalf + penalty + ioiHintPenalty(halfBpm), label: 'half' });
   }
   
   if (candidateBpm >= 40 && candidateBpm <= 220) {
     const penalty = getTempoRangePenalty(candidateBpm);
     // Prefer the candidate when it's already in the comfortable 60-140 range
     const bias = (candidateBpm >= 60 && candidateBpm <= 140) ? 0.1 : 0.05;
-    scores.push({ bpm: candidateBpm, score: densityErrorCandidate - bias + penalty, label: 'candidate' });
+    scores.push({
+      bpm: candidateBpm,
+      score: densityErrorCandidate - bias + penalty + ioiHintPenalty(candidateBpm),
+      label: 'candidate',
+    });
   }
   
   if (doubleBpm <= 220) {
     const penalty = getTempoRangePenalty(doubleBpm);
-    scores.push({ bpm: doubleBpm, score: densityErrorDouble + penalty + slowBiasPenalty, label: 'double' });
+    scores.push({
+      bpm: doubleBpm,
+      score: densityErrorDouble + penalty + slowBiasPenalty + ioiHintPenalty(doubleBpm),
+      label: 'double',
+    });
+  }
+
+  if (ioiBpmHint != null && ioiBpmHint >= 40 && ioiBpmHint <= 220) {
+    const alreadyListed = scores.some((entry) => Math.abs(entry.bpm - ioiBpmHint) / ioiBpmHint < 0.03);
+    if (!alreadyListed) {
+      scores.push({
+        bpm: ioiBpmHint,
+        score: getTempoRangePenalty(ioiBpmHint) - 0.12,
+        label: 'candidate',
+      });
+    }
   }
   
   // Sort by score (lower is better)
@@ -712,6 +761,88 @@ async function runTempoEstimators(audioBuffer: AudioBuffer): Promise<TempoEstima
     } catch (err) {
       console.warn('[TempoEnsemble] loop failed:', err);
     }
+  }
+
+  signal.delete();
+
+  // Long steady loops (common for practice tracks) still need clip-based estimators.
+  if (isLongAudio) {
+    const clipEstimates = await runClipTempoEstimators(essentia, audioBuffer);
+    estimates.push(...clipEstimates);
+  }
+
+  return estimates;
+}
+
+/** True when any two estimates differ by roughly one octave (half/double). */
+function estimatesDisagreeByOctave(estimates: TempoEstimate[]): boolean {
+  for (let i = 0; i < estimates.length; i += 1) {
+    for (let j = i + 1; j < estimates.length; j += 1) {
+      const ratio = estimates[i].bpm / estimates[j].bpm;
+      if (Math.abs(ratio - 2) < 0.06 || Math.abs(ratio - 0.5) < 0.06) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+function resolveConsensusBpm(estimates: TempoEstimate[]): {
+  consensusBpm: number;
+  confidence: number;
+  agreement: 'strong' | 'moderate' | 'weak';
+} {
+  const base = computeConsensus(estimates);
+  if (!estimatesDisagreeByOctave(estimates)) {
+    return base;
+  }
+
+  const top = estimates.reduce((best, estimate) =>
+    estimate.confidence > best.confidence ? estimate : best
+  );
+  return {
+    consensusBpm: top.bpm,
+    confidence: Math.min(base.confidence, top.confidence),
+    agreement: base.agreement === 'strong' ? 'moderate' : base.agreement,
+  };
+}
+
+async function runClipTempoEstimators(
+  essentia: Awaited<ReturnType<typeof getEssentia>>,
+  audioBuffer: AudioBuffer,
+  maxSeconds: number = 90
+): Promise<TempoEstimate[]> {
+  const channel = audioBuffer.getChannelData(0);
+  const clipSamples = Math.min(channel.length, Math.floor(audioBuffer.sampleRate * maxSeconds));
+  if (clipSamples <= audioBuffer.sampleRate * 10) return [];
+
+  const clip = channel.subarray(0, clipSamples);
+  const signal = essentia.arrayToVector(clip);
+  const estimates: TempoEstimate[] = [];
+
+  try {
+    const result = essentia.LoopBpmEstimator(signal);
+    estimates.push({
+      algorithm: 'loop-clip',
+      bpm: result.bpm,
+      confidence: result.confidence || 0.55,
+    });
+  } catch (err) {
+    console.warn('[TempoEnsemble] loop-clip failed:', err);
+  }
+
+  try {
+    const result = essentia.RhythmExtractor2013(signal, 220, 'degara', 40);
+    const beats = essentia.vectorToArray(result.ticks);
+    estimates.push({
+      algorithm: 'degara-clip',
+      bpm: result.bpm,
+      confidence: Math.min(1, result.confidence / 5),
+      beats: Array.from(beats),
+    });
+    result.ticks.delete();
+  } catch (err) {
+    console.warn('[TempoEnsemble] degara-clip failed:', err);
   }
 
   signal.delete();
@@ -847,7 +978,7 @@ export async function detectTempoEnsemble(audioBuffer: AudioBuffer): Promise<Ens
   }
 
   // Compute consensus using only valid estimates
-  const { consensusBpm: rawConsensusBpm, confidence, agreement } = computeConsensus(validEstimates);
+  const { consensusBpm: rawConsensusBpm, confidence, agreement } = resolveConsensusBpm(validEstimates);
 
   // Detect onsets for octave selection and fine-tuning
   const onsets = detectOnsets(audioBuffer);

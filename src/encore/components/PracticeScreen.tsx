@@ -282,6 +282,7 @@ export function PracticeScreen({
     routeSongId: practiceMediaDraft?.id ?? null,
     songs,
     googleAccessToken,
+    signInWithGoogle,
     spotifyLinked,
     driveUploadFolderOverrides: repertoireExtras.driveUploadFolderOverrides,
     persistAfterMetadataRefresh: persistPracticeMediaNow,

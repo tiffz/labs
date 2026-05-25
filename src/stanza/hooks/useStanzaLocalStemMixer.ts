@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 'react';
 import { StanzaLocalStemMixer } from '../audio/stanzaLocalStemMixer';
+import { getStanzaLocalMainMediaElement } from '../utils/stanzaLocalMainMediaElement';
 import { stemPlaybackMuted } from '../utils/stanzaPlaybackMute';
 
 export interface StanzaStemMixRow {
@@ -26,7 +27,10 @@ export function useStanzaLocalStemMixer(options: {
   stems: StanzaStemMixRow[];
   localVideoRef: MutableRefObject<HTMLVideoElement | null>;
   localAudioRef: MutableRefObject<HTMLAudioElement | null>;
+  isLocalVideo: boolean;
   stemAudioRefs: MutableRefObject<Map<string, HTMLAudioElement>>;
+  /** After `createMediaElementSource`, the element must remount to restore HTML audio output. */
+  onMixGraphReleased?: () => void;
   /** When `AudioContext` cannot reach `running`, graph is torn down; call to restore `volume` / `muted` on media elements. */
   onMixResumeFailed?: () => void;
 }): {
@@ -47,7 +51,9 @@ export function useStanzaLocalStemMixer(options: {
     stems,
     localVideoRef,
     localAudioRef,
+    isLocalVideo,
     stemAudioRefs,
+    onMixGraphReleased,
     onMixResumeFailed,
   } = options;
 
@@ -55,13 +61,25 @@ export function useStanzaLocalStemMixer(options: {
   const builtForStemUrlKeyRef = useRef('');
   const prevStemUrlKeyRef = useRef<string | null>(null);
   const [webAudioMixReady, setWebAudioMixReady] = useState(false);
+  const isLocalVideoRef = useRef(isLocalVideo);
+  isLocalVideoRef.current = isLocalVideo;
 
   const mixRef = useRef({ primaryMuted, primaryGain, stems });
   mixRef.current = { primaryMuted, primaryGain, stems };
 
+  const releaseMixer = useCallback((opts?: { remountMain?: boolean }) => {
+    const wasActive = mixerRef.current?.isActive();
+    mixerRef.current?.dispose();
+    mixerRef.current = null;
+    builtForStemUrlKeyRef.current = '';
+    setWebAudioMixReady(false);
+    if (wasActive && opts?.remountMain !== false) {
+      onMixGraphReleased?.();
+    }
+  }, [onMixGraphReleased]);
+
   const getMainElement = useCallback((): HTMLMediaElement | null => {
-    // Match `StanzaWorkspace` transport (`localAudioRef` first) so we attach the same element as `playUnified`.
-    return (localAudioRef.current ?? localVideoRef.current) as HTMLMediaElement | null;
+    return getStanzaLocalMainMediaElement(isLocalVideoRef.current, localAudioRef, localVideoRef);
   }, [localAudioRef, localVideoRef]);
 
   useEffect(() => {
@@ -69,29 +87,20 @@ export function useStanzaLocalStemMixer(options: {
     prevStemUrlKeyRef.current = stemUrlKey;
 
     if (!enabled || !stemUrlKey || expectedStemCount <= 0) {
-      mixerRef.current?.dispose();
-      mixerRef.current = null;
-      builtForStemUrlKeyRef.current = '';
-      setWebAudioMixReady(false);
+      releaseMixer();
       return;
     }
 
     if (prev !== null && prev !== stemUrlKey) {
-      mixerRef.current?.dispose();
-      mixerRef.current = null;
-      builtForStemUrlKeyRef.current = '';
-      setWebAudioMixReady(false);
+      releaseMixer();
     }
-  }, [enabled, stemUrlKey, expectedStemCount]);
+  }, [enabled, stemUrlKey, expectedStemCount, releaseMixer]);
 
   useEffect(() => {
     return () => {
-      mixerRef.current?.dispose();
-      mixerRef.current = null;
-      builtForStemUrlKeyRef.current = '';
-      setWebAudioMixReady(false);
+      releaseMixer();
     };
-  }, []);
+  }, [releaseMixer]);
 
   useEffect(() => {
     const mixer = mixerRef.current;
@@ -109,12 +118,7 @@ export function useStanzaLocalStemMixer(options: {
     const main = getMainElement();
     const stemMap = new Map(stemAudioRefs.current);
     if (!main || stemMap.size < expectedStemCount) {
-      // Do not leave `webAudioMixReady` true with a half-built graph (e.g. stem `<audio>` refs not
-      // mounted yet, or count mismatch).
-      mixerRef.current?.dispose();
-      mixerRef.current = null;
-      builtForStemUrlKeyRef.current = '';
-      setWebAudioMixReady(false);
+      releaseMixer();
       return false;
     }
 
@@ -130,15 +134,12 @@ export function useStanzaLocalStemMixer(options: {
       return true;
     }
 
-    mixerRef.current?.dispose();
+    releaseMixer({ remountMain: false });
     const mixer = new StanzaLocalStemMixer();
     try {
       mixer.rebuild(main, stemMap);
     } catch {
       mixer.dispose();
-      mixerRef.current = null;
-      builtForStemUrlKeyRef.current = '';
-      setWebAudioMixReady(false);
       return false;
     }
 
@@ -151,14 +152,11 @@ export function useStanzaLocalStemMixer(options: {
     }
     mixer.kickResumeSync();
     return true;
-  }, [enabled, stemUrlKey, expectedStemCount, getMainElement, stemAudioRefs]);
+  }, [enabled, stemUrlKey, expectedStemCount, getMainElement, stemAudioRefs, releaseMixer]);
 
   const abandonWebAudioMix = useCallback(() => {
-    mixerRef.current?.dispose();
-    mixerRef.current = null;
-    builtForStemUrlKeyRef.current = '';
-    setWebAudioMixReady(false);
-  }, []);
+    releaseMixer();
+  }, [releaseMixer]);
 
   const finalizeStemMixerResume = useCallback(() => {
     void mixerRef.current?.ensureRunning().then((ok) => {

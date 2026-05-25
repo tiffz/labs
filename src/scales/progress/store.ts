@@ -14,6 +14,16 @@ const MAX_HISTORY_PER_EXERCISE = 20;
 const REVIEW_ACCURACY_THRESHOLD = 0.7;
 const STALE_DAYS = 5;
 
+const progressSaveListeners = new Set<() => void>();
+
+/** Subscribe to local progress writes (for debounced Drive auto-push). */
+export function subscribeScalesProgressSave(listener: () => void): () => void {
+  progressSaveListeners.add(listener);
+  return () => {
+    progressSaveListeners.delete(listener);
+  };
+}
+
 /**
  * Per-stage advancement criteria. Replaces a single global "3 runs at 90%"
  * rule with thresholds tuned to the pedagogical demands of each stage type:
@@ -247,7 +257,36 @@ function defaultProgress(): ScalesProgressData {
     seenOnboarding: false,
     introducedConcepts: {},
     introducedExerciseHands: {},
+    progressUpdatedAt: new Date().toISOString(),
   };
+}
+
+function defaultProgressUpdatedAt(data: ScalesProgressData): string {
+  let maxTs = 0;
+  for (const ep of Object.values(data.exercises)) {
+    for (const r of ep.history) {
+      maxTs = Math.max(maxTs, r.timestamp);
+    }
+    if (ep.lastPracticedAt) {
+      const t = Date.parse(ep.lastPracticedAt);
+      if (Number.isFinite(t)) maxTs = Math.max(maxTs, t);
+    }
+  }
+  return maxTs > 0 ? new Date(maxTs).toISOString() : new Date().toISOString();
+}
+
+/** Migrate, reconcile, and ensure progressUpdatedAt for Drive merge / restore paths. */
+export function normalizeScalesProgressPayload(raw: unknown): ScalesProgressData {
+  if (raw && typeof raw === 'object' && 'version' in raw) {
+    const migrated = migrateProgress(raw);
+    if (migrated) {
+      return reconcileProgressToCurriculum({
+        ...migrated,
+        progressUpdatedAt: migrated.progressUpdatedAt ?? defaultProgressUpdatedAt(migrated),
+      });
+    }
+  }
+  return reconcileProgressToCurriculum(defaultProgress());
 }
 
 /**
@@ -360,13 +399,20 @@ function migrateProgress(raw: unknown): ScalesProgressData | null {
       data.introducedExerciseHands && typeof data.introducedExerciseHands === 'object'
         ? (data.introducedExerciseHands as Record<string, IntroducedHands>)
         : {};
-    return {
-      version: 3,
+    const base = {
+      version: 3 as const,
       exercises,
       currentTierId,
       seenOnboarding: data.seenOnboarding === true,
       introducedConcepts,
       introducedExerciseHands,
+    };
+    return {
+      ...base,
+      progressUpdatedAt:
+        typeof (data as { progressUpdatedAt?: unknown }).progressUpdatedAt === 'string'
+          ? (data as { progressUpdatedAt: string }).progressUpdatedAt
+          : defaultProgressUpdatedAt(base),
     };
   }
   return null;
@@ -423,7 +469,13 @@ export function markGuidanceIntroduced(
 }
 
 export function saveProgress(data: ScalesProgressData): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify({ ...data, progressUpdatedAt: new Date().toISOString() }),
+  );
+  for (const listener of progressSaveListeners) {
+    listener();
+  }
 }
 
 /**

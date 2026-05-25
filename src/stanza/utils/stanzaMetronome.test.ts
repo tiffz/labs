@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { deriveSegments } from './segments';
 import {
+  beatOffsetFromTapsExtrapolated,
   bpmAnchorFromTaps,
   buildStanzaSegmentCalibration,
   calibrationEffectiveAnchorMediaTime,
   inheritedFirstBeatOffsetSecFromSongCalibration,
+  resolveTapPlaybackStartSec,
   STANZA_METRONOME_TAP_COUNT,
 } from './stanzaMetronome';
 
@@ -60,6 +62,79 @@ describe('bpmAnchorFromTaps', () => {
 
   it('returns null for too few taps', () => {
     expect(bpmAnchorFromTaps([1], 0)).toBeNull();
+  });
+
+  it('ignores outlier intervals when enough taps are present', () => {
+    const taps = [1.0, 1.5, 2.0, 2.5, 3.5, 4.0, 4.5, 5.0];
+    const r = bpmAnchorFromTaps(taps, 0);
+    expect(r).not.toBeNull();
+    expect(r!.bpm).toBe(120);
+  });
+});
+
+describe('beatOffsetFromTapsExtrapolated', () => {
+  it('extrapolates Beat 1 at section start when taps begin mid-section', () => {
+    const taps = [30.0, 30.5, 31.0, 31.5, 32.0, 32.5, 33.0, 33.5];
+    const r = beatOffsetFromTapsExtrapolated(taps, 0, 0);
+    expect(r).not.toBeNull();
+    expect(r!.bpm).toBe(120);
+    expect(r!.firstBeatOffsetSec).toBeCloseTo(0, 3);
+    expect(r!.anchorMediaTime).toBeCloseTo(0, 3);
+  });
+
+  it('keeps Beat 1 near the first tap when tapping from section start', () => {
+    const taps = [0.05, 0.55, 1.05, 1.55, 2.05, 2.55, 3.05, 3.55];
+    const r = beatOffsetFromTapsExtrapolated(taps, 0, 0);
+    expect(r).not.toBeNull();
+    expect(r!.bpm).toBe(120);
+    expect(r!.firstBeatOffsetSec).toBeCloseTo(0.05, 3);
+  });
+
+  it('projects Beat 1 relative to a non-zero section start', () => {
+    const taps = [40.0, 40.5, 41.0, 41.5, 42.0, 42.5, 43.0, 43.5];
+    const r = beatOffsetFromTapsExtrapolated(taps, 30, 0);
+    expect(r).not.toBeNull();
+    expect(r!.bpm).toBe(120);
+    expect(r!.firstBeatOffsetSec).toBeCloseTo(0, 3);
+    expect(r!.anchorMediaTime).toBeCloseTo(30, 3);
+  });
+});
+
+describe('resolveTapPlaybackStartSec', () => {
+  it('uses playhead when it is inside the section', () => {
+    const r = resolveTapPlaybackStartSec({
+      playheadSec: 42,
+      timingScope: 'section',
+      segmentStart: 30,
+      segmentEnd: 60,
+      songDurationSec: 120,
+    });
+    expect(r.fromPlayhead).toBe(true);
+    expect(r.startSec).toBe(42);
+  });
+
+  it('falls back to section start when playhead is outside the section', () => {
+    const r = resolveTapPlaybackStartSec({
+      playheadSec: 12,
+      timingScope: 'section',
+      segmentStart: 30,
+      segmentEnd: 60,
+      songDurationSec: 120,
+    });
+    expect(r.fromPlayhead).toBe(false);
+    expect(r.startSec).toBe(30);
+  });
+
+  it('uses playhead for whole-song scope', () => {
+    const r = resolveTapPlaybackStartSec({
+      playheadSec: 45,
+      timingScope: 'song',
+      segmentStart: 0,
+      segmentEnd: 120,
+      songDurationSec: 120,
+    });
+    expect(r.fromPlayhead).toBe(true);
+    expect(r.startSec).toBe(45);
   });
 });
 

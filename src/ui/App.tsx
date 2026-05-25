@@ -639,9 +639,7 @@ function DrumNotationMiniPresetDemo() {
   ): 'light' | NotationStyle => {
     if (surface === 'beat') {
       return {
-        staffColor: '#c8c4d8',
-        noteColor: '#c8c4d8',
-        textColor: '#c8c4d8',
+        inkColor: '#c8c4d8',
         highlightColor: '#22c55e',
       };
     }

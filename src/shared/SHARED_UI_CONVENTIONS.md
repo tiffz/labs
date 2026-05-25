@@ -145,6 +145,22 @@ For **mix rails and other linear 0–1 gain** controls, use `AppLinearVolumeSlid
 
 `AppSlider` remains the older **legacy event-shape** helper for BPM and similar; prefer `AppLinearVolumeSlider` for new **volume / gain** UX.
 
+### AppSlider value labels (thumb tooltips)
+
+When using `valueLabelDisplay="auto"` or `"on"`:
+
+- **Do not** override Slider root `padding` with a shorthand like `padding: 6px 0` — it removes the top space MUI needs and clips the tooltip. `AppSlider` adds `app-slider--with-value-label` automatically; keep that class effective (do not strip it in `className` overrides).
+- **Do not** set `overflow: hidden` on ancestors of the slider inside `shared-bpm-dropdown` / `shared-bpm-slider-wrap`. Shared `bpmInput.css` sets `overflow: visible` on dropdowns that contain `.shared-bpm-slider-wrap`; avoid app CSS that reintroduces clipping on the portaled paper.
+- For custom popover papers, include `shared-bpm-dropdown` (and `shared-bpm-dropdown--speed` for playback speed) on the paper `className` so shared overflow rules apply.
+
+`PlaybackSpeedControl` and `BpmInput` already follow this; new menus with labeled sliders should use `AppSlider` + the shared dropdown shell classes.
+
+### BPM / playback-speed inputs (`bpmInput.css`)
+
+- Sidebar playback speed shows values like `0.75×` in the stepper field — use the shared `shared-bpm-stepper--playback-speed` width tokens (`5.5ch`); do not cap the value field with a tight `max-width` in app CSS.
+- Milestone labels under the speed slider are positioned by rate (`left: %`), not `space-between`; do not re-center them in app overrides.
+- Use `SliderMilestoneLabels` + `buildSliderMilestones` for any new slider dropdown; do not render raw `<span>` lists inside `.shared-bpm-milestones`.
+
 ## Popover Primitive
 
 Apps historically re-specified MUI `Popover`'s `anchorOrigin`, `transformOrigin`, and `slotProps.paper.className` at every call site, which drifted over time. Use `AnchoredPopover` (`src/shared/components/AnchoredPopover.tsx`) for any new popover or menu surface.

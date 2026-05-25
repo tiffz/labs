@@ -4,13 +4,14 @@
  * Sections:
  *   1. Tokens, fonts, app shell + atmospheric background
  *   2. Display titles + section labels
- *   3. Library (grid, cards, footer accordion)
+ *   3. Library (grid, cards, footer panel)
  *   4. Hero (landing) + media (YouTube host, local video, viewer header)
+ *      — viewer grid/shell: stanza-viewer-layout.css
  *   5. Playback strip + transport / loop chips
  *   6. Scrub track + section buttons + selection / loop overlays
  *   7. Metronome strip, beat counts, BPM rail, key shift
  *   8. Mix rail
- *   9. MUI overrides (Accordion, Button, focus rings)
+ *   9. MUI overrides (Button, focus rings)
  *
  * Conventions:
  *   - Colors flow from the tokens at the top. Bypass with a literal hex/rgba ONLY
@@ -20,6 +21,8 @@
  *     it is fighting (per docs/CSS_IMPORTANT_AUDIT.md).
  *   - Reach for `--stanza-focus-ring` instead of hand-rolled `outline: ...`.
  */
+
+@import './stanza-viewer-layout.css';
 
 /* =====================================================================
  * 1. Tokens, fonts, app shell + atmospheric background
@@ -59,10 +62,27 @@
   --stanza-focus-ring-offset: 1px;
 
   /* Shape + elevation. Main work-surface cards (rail, playback strip, video frame,
-     library footer accordion) deliberately render flat — no shadow — so the cream
-     paper background reads as a continuous sheet. The `--stanza-shadow-card*` tokens
-     remain for compact cards (`.stanza-library-card`) and for portaled MUI dialogs
-     where elevation is the canonical lift cue. */
+     library panel) deliberately render flat — no shadow — so the cream paper background
+     reads as a continuous sheet. The `--stanza-shadow-card*` tokens remain for compact
+     cards (`.stanza-library-card`) and for portaled MUI dialogs where elevation is the
+     canonical lift cue. */
+  /* Viewer layout — tokens + rules in stanza-viewer-layout.css */
+  --stanza-viewer-max-width: 1160px;
+  --stanza-viewer-gutter: 12px;
+  --stanza-viewer-media-max-width: 720px;
+  --stanza-viewer-media-height: calc(
+    var(--stanza-viewer-media-max-width) * 9 / 16
+  );
+  --stanza-viewer-rail-width: 360px;
+  --stanza-viewer-grid-gap: 12px;
+  --stanza-viewer-row-gap: 12px;
+  --stanza-viewer-content-width: calc(
+    var(--stanza-viewer-media-max-width) + var(--stanza-viewer-rail-width) +
+      var(--stanza-viewer-grid-gap)
+  );
+  --stanza-viewer-scroll-pt: 8px;
+  --stanza-viewer-scroll-pb: 12px;
+  --stanza-viewer-library-gap: 20px;
   --stanza-radius-panel: 18px;
   --stanza-radius-chip: 11px;
   --stanza-shadow-card:
@@ -92,6 +112,22 @@
   font-family: var(--stanza-font-ui);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+@media (min-width: 600px) {
+  .stanza-app {
+    --stanza-viewer-gutter: 16px;
+    --stanza-viewer-library-gap: 24px;
+  }
+}
+
+@media (min-width: 900px) {
+  .stanza-app {
+    --stanza-viewer-grid-gap: 20px;
+    --stanza-viewer-row-gap: 16px;
+    --stanza-viewer-scroll-pt: 10px;
+    --stanza-viewer-scroll-pb: 16px;
+  }
 }
 
 .stanza-app::before {
@@ -358,25 +394,32 @@ button.stanza-library-card {
   background: #0f172a;
 }
 
-.stanza-library-footer.MuiPaper-root.MuiAccordion-root {
+.stanza-library-panel {
   background: rgba(255, 251, 245, 0.82);
   border: 1px solid var(--stanza-paper-line);
-  /* REASON: MuiAccordion sets a square radius via emotion-injected default rules. */
-  border-radius: var(--stanza-radius-panel) !important;
-  /* REASON: MuiPaper paints a default elevation shadow that overrides our `box-shadow: none`
-     unless we win specificity / use !important here. We want the footer flat against the
-     warm paper background like the other main cards. */
-  box-shadow: none !important;
+  border-radius: var(--stanza-radius-panel);
+  box-shadow: none;
+  overflow: hidden;
 }
 
-.stanza-library-footer .MuiAccordionSummary-root {
-  min-height: 56px;
-  padding-left: 16px;
-  padding-right: 16px;
+.stanza-library-panel-heading {
+  margin: 0;
+  padding: 12px 16px 8px;
+  border-bottom: 1px solid var(--stanza-paper-line-faint);
 }
 
-.stanza-library-footer .MuiAccordionDetails-root {
-  padding-top: 8px;
+.stanza-library-panel-body {
+  padding: 12px 16px 16px;
+}
+
+@media (min-width: 600px) {
+  .stanza-library-panel-heading {
+    padding-inline: 20px;
+  }
+
+  .stanza-library-panel-body {
+    padding-inline: 20px;
+  }
 }
 
 /* =====================================================================
@@ -451,13 +494,9 @@ button.stanza-library-card {
   }
 }
 
-/* Width cap lives on .stanza-viewer-media-stack so video + transport + timeline share one column.
- * The cap is balanced against the right-side rail (~360px wide) inside the 1280px grid so the
- * video grows large enough to not look dwarfed by the calibration + mix panel beside it, while
- * still leaving breathing room around both columns on wide screens. */
-.stanza-viewer-media-stack {
-  width: 100%;
-  max-width: 760px;
+.stanza-viewer-back-link {
+  display: inline-block;
+  margin-top: 0.5rem;
 }
 
 .stanza-video-column {
@@ -465,34 +504,16 @@ button.stanza-library-card {
 }
 
 .stanza-viewer-header {
-  padding-bottom: 0.35rem;
+  padding-bottom: 0.75rem;
   border-bottom: 1px solid var(--stanza-paper-line-faint);
-  margin-bottom: 0.35rem;
-}
-
-.stanza-viewer-shell {
-  position: relative;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-/* Avoid default grid `align-content: stretch` opening a tall gap between the video row
-   and the transport when the scroll pane is taller than the rows. */
-.stanza-viewer-body-grid {
-  min-height: 0;
-}
-
-.stanza-viewer-body-grid .stanza-playback-stack {
-  margin-top: 0;
+  margin-bottom: 0;
 }
 
 .stanza-youtube-host {
   position: relative;
   width: 100%;
   max-width: 100%;
-  margin: 0 auto;
+  margin: 0;
   aspect-ratio: 16 / 9;
   background: #0f172a;
   border-radius: calc(var(--stanza-radius-panel) - 2px);
@@ -500,7 +521,11 @@ button.stanza-library-card {
   border: 1px solid var(--stanza-paper-line);
 }
 
-.stanza-youtube-iframe,
+.stanza-youtube-iframe {
+  position: absolute;
+  inset: 0;
+}
+
 .stanza-youtube-iframe iframe {
   width: 100%;
   height: 100%;
@@ -508,12 +533,10 @@ button.stanza-library-card {
 
 .stanza-local-video {
   width: 100%;
-  margin-top: 8px;
+  margin-top: 0;
   border-radius: calc(var(--stanza-radius-chip) + 1px);
-  /* Cap chosen to clear the natural 16:9 height of the column at its widest cap (840px → 472px)
-   * so common landscape recordings render edge-to-edge without letterboxing. Portrait clips still
-   * stay bounded so they don't dominate the layout. */
-  max-height: 540px;
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
   background: #0a0a0a;
   cursor: pointer;
   border: 1px solid var(--stanza-paper-line);
@@ -524,20 +547,31 @@ button.stanza-library-card {
  * =================================================================== */
 
 .stanza-playback-stack {
-  margin-top: 0.25rem;
+  margin-top: 0;
+  background: var(--stanza-paper-elevated);
+  border: 1px solid var(--stanza-paper-line);
+  border-radius: var(--stanza-radius-panel);
+  padding: 10px 12px 12px;
+  box-sizing: border-box;
+}
+
+@supports (backdrop-filter: blur(6px)) {
+  .stanza-playback-stack {
+    backdrop-filter: blur(12px);
+  }
 }
 
 .stanza-playback-strip {
-  background: var(--stanza-paper-elevated);
-  border: 1px solid var(--stanza-paper-line);
-  border-radius: calc(var(--stanza-radius-panel) - 2px);
-  padding: 10px 12px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
   margin-bottom: 0;
 }
 
 @supports (backdrop-filter: blur(6px)) {
   .stanza-playback-strip {
-    backdrop-filter: blur(12px);
+    backdrop-filter: none;
   }
 }
 
@@ -784,18 +818,6 @@ button.stanza-library-card {
   color: var(--stanza-ink);
 }
 
-/* Speed: hide native number spinners; use MUI arrow buttons. */
-.stanza-speed-number input[type='number'] {
-  -moz-appearance: textfield;
-  font-variant-numeric: tabular-nums;
-}
-
-.stanza-speed-number input[type='number']::-webkit-outer-spin-button,
-.stanza-speed-number input[type='number']::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
 /* =====================================================================
  * 6. Scrub track + section buttons + selection / loop overlays
  * =================================================================== */
@@ -1032,9 +1054,10 @@ button.stanza-library-card {
   margin-top: 0;
 }
 
-/* Practice rail BPM + key shift: rose accent (overrides shared BpmInput purple defaults). */
+/* Practice rail BPM + key shift + playback speed: rose accent (overrides shared defaults). */
 .stanza-app .stanza-metronome-rail .shared-bpm-shell,
-.stanza-app .stanza-key-shift-block .shared-bpm-shell {
+.stanza-app .stanza-key-shift-block .shared-bpm-shell,
+.stanza-app .stanza-playback-speed-control .shared-bpm-shell {
   --bpm-focus: var(--stanza-rose);
   --bpm-border: var(--stanza-rose-line);
   --bpm-dropdown-hover-bg: rgba(232, 72, 160, 0.1);
@@ -1054,7 +1077,8 @@ button.stanza-library-card {
 .stanza-tempo-preview-dialog-content
   .stanza-bpm-modal-input
   .shared-bpm-shell:focus-within,
-.stanza-app .stanza-key-shift-block .shared-bpm-shell:focus-within {
+.stanza-app .stanza-key-shift-block .shared-bpm-shell:focus-within,
+.stanza-app .stanza-playback-speed-control .shared-bpm-shell:focus-within {
   box-shadow: none;
   border-color: var(--stanza-rose);
 }
@@ -1066,7 +1090,11 @@ button.stanza-library-card {
 .stanza-app
   .stanza-key-shift-block
   .shared-bpm-shell
-  .MuiIconButton-root:focus-visible {
+  .MuiIconButton-root:focus-visible,
+.stanza-app
+  .stanza-playback-speed-control
+  .shared-bpm-shell
+  button:focus-visible {
   outline: none;
   box-shadow: inset 0 0 0 2px rgba(232, 72, 160, 0.22);
 }
@@ -1096,6 +1124,53 @@ button.stanza-library-card {
   color: var(--bpm-text, var(--stanza-ink));
 }
 
+/* Playback toolbar speed: inky compact shell inside the meta chip. */
+.stanza-app .stanza-playback-speed-control.shared-bpm-input {
+  width: auto;
+  max-width: none;
+  flex: 0 0 auto;
+}
+
+.stanza-app .stanza-playback-speed-control .shared-bpm-shell {
+  --bpm-shell-height: 26px;
+  --bpm-shell-radius: 8px;
+  --bpm-border: transparent;
+  --bpm-bg: transparent;
+  --bpm-text: var(--stanza-ink);
+  --bpm-muted: var(--stanza-ink-muted);
+  --bpm-hover: var(--stanza-tray-bg-hover);
+  border: 0;
+  box-shadow: none;
+  min-height: 26px;
+}
+
+.stanza-app .stanza-playback-speed-control .shared-bpm-compact-display {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  padding: 0 0.34rem 0 0.42rem;
+}
+
+.stanza-app .stanza-playback-speed-control .shared-bpm-preset-toggle {
+  border-left-color: var(--stanza-tray-divider);
+  width: 26px;
+  min-width: 26px;
+  color: var(--stanza-ink-soft);
+}
+
+.stanza-app
+  .stanza-playback-speed-control
+  .shared-bpm-preset-toggle:hover:not(:disabled) {
+  color: var(--stanza-ink);
+}
+
+.stanza-app
+  .stanza-playback-speed-control
+  .shared-bpm-preset-toggle
+  .material-symbols-outlined {
+  font-size: 17px;
+}
+
 /* BPM preset popover (portaled under body): stanza-only class keeps rose accent. */
 .shared-bpm-dropdown.stanza-bpm-dropdown {
   --bpm-focus: var(--stanza-rose, #e848a0);
@@ -1106,6 +1181,11 @@ button.stanza-library-card {
   --bpm-chip-hover-bg: rgba(232, 72, 160, 0.08);
   --bpm-chip-active-bg: rgba(232, 72, 160, 0.14);
   --bpm-chip-active-text: #c4176e;
+  overflow: visible !important;
+}
+
+.shared-bpm-dropdown.stanza-bpm-dropdown .shared-bpm-slider-wrap {
+  overflow: visible;
 }
 
 .stanza-app .stanza-metronome-rail .app-slider.stanza-bpm-slider,
@@ -1118,8 +1198,48 @@ button.stanza-library-card {
 
 .stanza-app
   .stanza-metronome-rail
-  .stanza-rail-analyze-icon:hover:not(.Mui-disabled) {
+  .stanza-rail-analyze-icon:hover:not(.Mui-disabled),
+.stanza-app
+  .stanza-metronome-rail
+  .stanza-rail-tap-icon:hover:not(.Mui-disabled) {
   background-color: rgba(232, 72, 160, 0.1);
+}
+
+.stanza-tap-tempo-pad {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 160px;
+  margin: 0;
+  padding: 24px 16px;
+  border: 2px dashed rgba(232, 72, 160, 0.45);
+  border-radius: 16px;
+  background: rgba(232, 72, 160, 0.04);
+  color: var(--stanza-ink, #2a2622);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    transform 80ms ease;
+}
+
+.stanza-tap-tempo-pad:hover {
+  background: rgba(232, 72, 160, 0.08);
+  border-color: rgba(232, 72, 160, 0.65);
+}
+
+.stanza-tap-tempo-pad:active,
+.stanza-tap-tempo-pad--flash {
+  background: rgba(232, 72, 160, 0.16);
+  border-color: var(--stanza-rose, #e848a0);
+  transform: scale(0.985);
 }
 
 .stanza-app .stanza-key-shift-block {
@@ -1135,6 +1255,14 @@ button.stanza-library-card {
 
 .stanza-tempo-preview-dialog-content {
   padding-top: 0;
+}
+
+.stanza-tap-tempo-dialog-content.stanza-tempo-preview-dialog-content {
+  padding-top: 0;
+}
+
+.stanza-tap-tempo-ready-panel {
+  width: 100%;
 }
 
 .stanza-app .stanza-bpm-modal-input .shared-bpm-shell,
@@ -1173,6 +1301,7 @@ button.stanza-library-card {
 .stanza-drums-block {
   border-top: 1px solid var(--stanza-paper-line-faint);
   padding-top: 4px;
+  overflow: visible;
 }
 
 /* The shared DrumAccompaniment was designed for the dark Beat Finder canvas. Restyle it to
@@ -1184,13 +1313,12 @@ button.stanza-library-card {
   font-family: var(--stanza-font-ui);
 }
 
-/* Preset row: three columns of pills so 8 presets + 2 dice icons fit in 3 rows max instead of
- * 2 wide, ragged rows. */
+/* Preset row: five columns so 8 presets + 2 dice icons fit in two rows. */
 .stanza-drums-panel .drum-presets {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 3px 4px;
-  margin-bottom: 4px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 2px 3px;
+  margin-bottom: 3px;
 }
 .stanza-drums-panel .preset-btn {
   background: transparent;
@@ -1198,12 +1326,12 @@ button.stanza-library-card {
   border-radius: 999px;
   color: var(--stanza-ink);
   font-family: inherit;
-  font-size: 0.68rem;
+  font-size: 0.62rem;
   font-weight: 600;
   letter-spacing: 0.01em;
-  padding: 1px 6px;
+  padding: 0 4px;
   cursor: pointer;
-  line-height: 1.25;
+  line-height: 1.2;
   transition:
     background-color 0.12s ease,
     border-color 0.12s ease,
@@ -1226,10 +1354,44 @@ button.stanza-library-card {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 1px 4px;
+  padding: 0 2px;
+  min-height: 18px;
 }
 .stanza-drums-panel .drum-pattern-input {
+  margin-bottom: 1px;
+}
+
+.stanza-drums-panel .rhythm-template-variation {
   margin-bottom: 2px;
+  gap: 2px;
+}
+
+.stanza-drums-panel .rhythm-template-variation-counter {
+  color: var(--stanza-ink-muted);
+  font-size: 0.6rem;
+}
+
+.stanza-drums-panel .rhythm-template-variation-arrow {
+  width: 20px;
+  height: 20px;
+  border-color: var(--stanza-paper-line-faint);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--stanza-ink-soft);
+}
+
+.stanza-drums-panel
+  .rhythm-template-variation-arrow
+  .material-symbols-outlined {
+  font-size: 15px;
+}
+
+.stanza-drums-panel .rhythm-template-variation-controls {
+  gap: 6px;
+}
+
+.stanza-drums-panel .rhythm-template-variation-arrow:hover {
+  border-color: var(--stanza-rose-line);
+  color: var(--stanza-ink);
 }
 .stanza-drums-panel .drum-pattern-input input {
   width: 100%;
@@ -1260,28 +1422,106 @@ button.stanza-library-card {
 .stanza-drums-panel .drum-display-error p {
   margin: 0;
 }
-/* Notation: tighten container chrome and the multi-measure dot indicator. */
-.stanza-drums-panel .vexflow-mini-container {
-  margin-top: 2px;
+
+/* Notation card: variation carousel, staff, Darbuka link, and optional hint share one tray. */
+.stanza-drums-panel .stanza-drums-notation-frame {
+  padding: 4px 6px 2px;
+  border-radius: calc(var(--stanza-radius-chip) - 1px);
+  background: var(--stanza-tray-bg);
+  border: 1px solid var(--stanza-paper-line-faint);
+  box-shadow: none;
+  width: 100%;
+  box-sizing: border-box;
+  gap: 1px;
+  overflow: visible;
+}
+
+.stanza-drums-panel .stanza-drums-notation-frame .rhythm-template-variation {
+  margin-bottom: 0;
+  justify-items: stretch;
+}
+
+.stanza-drums-panel
+  .stanza-drums-notation-frame
+  .rhythm-template-variation-controls {
+  width: 100%;
+  justify-content: space-between;
+  padding-bottom: 0;
+}
+
+.stanza-drums-panel .stanza-drums-notation-frame .drum-notation-mini-x-scroll {
+  margin-top: -2px;
+}
+
+.stanza-drums-panel .stanza-drums-notation-frame.vexflow-mini-container {
+  margin-top: 3px;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: stretch;
+  overflow: visible;
+  flex-shrink: 0;
+  min-height: auto;
 }
+
+.stanza-drums-panel .drum-notation-mini-x-scroll {
+  flex-shrink: 0;
+}
+
+.stanza-drums-panel .drum-notation-mini {
+  --notation-ink: var(--stanza-ink);
+  --notation-highlight: var(--stanza-rose);
+  flex-shrink: 0;
+  overflow: visible;
+}
+
+.stanza-drums-panel .drum-notation-mini svg {
+  display: block;
+  overflow: visible;
+  max-width: none;
+  height: auto;
+  margin-top: -2px;
+}
+
 .stanza-drums-panel
-  .vexflow-mini-container
+  .stanza-drums-notation-frame
   > div:first-child:has(.measure-dot) {
   margin: 0 0 2px;
 }
+
 .stanza-drums-panel .measure-dot {
   width: 6px;
   height: 6px;
 }
-/* The "Edit in Darbuka Trainer" link is suppressed via the `hideDarbukaLink` prop on
- * `DrumAccompaniment`. The selector below is a defensive fallback if anything renders an
- * edit-link element inside the Stanza panel anyway. */
-.stanza-drums-panel .drum-notation-mini-edit-link,
-.stanza-drums-panel .drum-edit-link {
-  display: none;
+
+.stanza-drums-panel .stanza-drums-edit-link,
+.stanza-drums-panel .stanza-drums-edit-link.drum-notation-mini-edit-link {
+  align-self: center;
+  margin-top: 0;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--stanza-ink-muted);
+  text-decoration: none;
+  gap: 3px;
+  padding: 2px 4px;
+  border-radius: 6px;
+  transition:
+    color 0.12s ease,
+    background-color 0.12s ease;
+}
+
+.stanza-drums-panel .stanza-drums-edit-link:hover {
+  color: var(--stanza-rose-strong);
+  background: var(--stanza-rose-wash);
+}
+
+.stanza-drums-panel .stanza-drums-notation-hint {
+  margin: 2px 0 0;
+  padding-top: 4px;
+  border-top: 1px solid var(--stanza-paper-line-faint);
+  font-size: 0.68rem;
+  line-height: 1.35;
+  color: var(--stanza-ink-soft);
+  text-align: center;
 }
 
 .stanza-rail-compact-btn.MuiButton-root {

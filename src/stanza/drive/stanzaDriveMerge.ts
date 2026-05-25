@@ -1,4 +1,13 @@
 import type { StanzaSong, StanzaStemTrack } from '../db/stanzaDb';
+import {
+  stanzaLocalMediaFingerprintForDriveRow,
+  stanzaLocalMediaFingerprintForRow,
+} from '../utils/stanzaLocalMediaFingerprint';
+import {
+  mergeStanzaRicherSongMetadata,
+  mergeStanzaRicherSongMetadataWithReport,
+  mergeStanzaSongWithRemotePreference,
+} from '../utils/stanzaSongMetadataMerge';
 import { consolidateStanzaSongDuplicates } from '../utils/stanzaSongDeduplication';
 import type { StanzaSongDriveRow, StanzaStemDriveRow } from './stanzaDriveEnvelope';
 
@@ -21,6 +30,8 @@ export interface StanzaDriveMergeReport {
    * they deleted these rows; surfacing it again every sync would be noise.
    */
   skippedTombstoned: number;
+  /** Songs where local section markers were kept during a remote-wins merge. */
+  markersRecoveredFromLocal: number;
   summaryLines: string[];
 }
 
@@ -34,6 +45,8 @@ export interface StanzaDriveMergeOptions {
    * (caller clears it).
    */
   tombstoneFileIds?: ReadonlySet<string>;
+  /** Skip remote-only rows whose `ytId` was tombstoned locally or on Drive. */
+  youtubeTombstoneVideoIds?: ReadonlySet<string>;
 }
 
 function stemMetaFromRemote(
@@ -74,8 +87,10 @@ export function stanzaSongFromDriveRow(row: StanzaSongDriveRow): StanzaSong | nu
       metronomeMuted: row.metronomeMuted,
       drumsEnabled: row.drumsEnabled,
       drumsGain: row.drumsGain,
+      drumsMuted: row.drumsMuted,
       localTransposeSemitones: row.localTransposeSemitones,
       skippedBySegmentId: row.skippedBySegmentId,
+      localMediaFingerprint: row.localMediaFingerprint,
     };
   }
   if (row.driveSourceFileId?.trim()) {
@@ -98,49 +113,74 @@ export function stanzaSongFromDriveRow(row: StanzaSongDriveRow): StanzaSong | nu
       metronomeMuted: row.metronomeMuted,
       drumsEnabled: row.drumsEnabled,
       drumsGain: row.drumsGain,
+      drumsMuted: row.drumsMuted,
       localTransposeSemitones: row.localTransposeSemitones,
       skippedBySegmentId: row.skippedBySegmentId,
+      localMediaFingerprint: row.localMediaFingerprint,
     };
   }
   return null;
 }
 
-function mergeOneSong(local: StanzaSong, remote: StanzaSongDriveRow): StanzaSong {
+function mergeOneSong(
+  local: StanzaSong,
+  remote: StanzaSongDriveRow,
+): { song: StanzaSong; markersRecoveredFromLocal: boolean } {
   if (local.updatedAt >= remote.updatedAt) {
-    return local;
+    const r = mergeStanzaRicherSongMetadataWithReport(local, remote);
+    return { song: r.song, markersRecoveredFromLocal: r.markersRecoveredFromLocal };
   }
   const base = stanzaSongFromDriveRow(remote);
   if (!base) {
+    const practice = mergeStanzaRicherSongMetadataWithReport(local, remote);
     return {
-      ...local,
-      title: remote.title,
-      markers: remote.markers ?? local.markers,
-      stats: remote.stats ?? local.stats,
-      updatedAt: Math.max(local.updatedAt, remote.updatedAt),
-      driveSourceFileId: remote.driveSourceFileId ?? local.driveSourceFileId,
-      primaryGain: remote.primaryGain ?? local.primaryGain,
-      primaryMuted: remote.primaryMuted ?? local.primaryMuted,
-      metronomeBySegmentId: remote.metronomeBySegmentId ?? local.metronomeBySegmentId,
-      metronomeSongCalibration: remote.metronomeSongCalibration ?? local.metronomeSongCalibration,
-      metronomeTimingScope: remote.metronomeTimingScope ?? local.metronomeTimingScope,
-      metronomeEnabled: remote.metronomeEnabled ?? local.metronomeEnabled,
-      metronomeGain: remote.metronomeGain ?? local.metronomeGain,
-      metronomeMuted: remote.metronomeMuted ?? local.metronomeMuted,
-      drumsEnabled: remote.drumsEnabled ?? local.drumsEnabled,
-      drumsGain: remote.drumsGain ?? local.drumsGain,
-      localTransposeSemitones: remote.localTransposeSemitones ?? local.localTransposeSemitones,
-      skippedBySegmentId: remote.skippedBySegmentId ?? local.skippedBySegmentId,
-      stems: stemMetaFromRemote(local.stems, remote.stems),
-      localAudioBlob: local.localAudioBlob,
-      localVideoThumbnailBlob: local.localVideoThumbnailBlob,
+      song: {
+        ...practice.song,
+        title: remote.title,
+        stats: remote.stats && Object.keys(remote.stats).length > 0 ? remote.stats : practice.song.stats,
+        driveSourceFileId: remote.driveSourceFileId ?? local.driveSourceFileId,
+        primaryGain: remote.primaryGain ?? local.primaryGain,
+        primaryMuted: remote.primaryMuted ?? local.primaryMuted,
+        metronomeTimingScope: remote.metronomeTimingScope ?? local.metronomeTimingScope,
+        metronomeEnabled: remote.metronomeEnabled ?? local.metronomeEnabled,
+        metronomeGain: remote.metronomeGain ?? local.metronomeGain,
+        metronomeMuted: remote.metronomeMuted ?? local.metronomeMuted,
+        drumsEnabled: remote.drumsEnabled ?? local.drumsEnabled,
+        drumsGain: remote.drumsGain ?? local.drumsGain,
+        drumsMuted: remote.drumsMuted ?? local.drumsMuted,
+        localTransposeSemitones: remote.localTransposeSemitones ?? local.localTransposeSemitones,
+        stems: stemMetaFromRemote(local.stems, remote.stems),
+        localAudioBlob: local.localAudioBlob,
+        localVideoThumbnailBlob: local.localVideoThumbnailBlob,
+      },
+      markersRecoveredFromLocal: practice.markersRecoveredFromLocal,
     };
   }
+  const r = mergeStanzaSongWithRemotePreference(local, remote, base);
   return {
-    ...base,
-    localAudioBlob: local.localAudioBlob,
-    localVideoThumbnailBlob: local.localVideoThumbnailBlob,
-    stems: stemMetaFromRemote(local.stems, remote.stems),
+    song: {
+      ...r.song,
+      localAudioBlob: local.localAudioBlob,
+      localVideoThumbnailBlob: local.localVideoThumbnailBlob,
+      stems: stemMetaFromRemote(local.stems, remote.stems),
+      localMediaFingerprint: local.localMediaFingerprint ?? remote.localMediaFingerprint,
+    },
+    markersRecoveredFromLocal: r.markersRecoveredFromLocal,
   };
+}
+
+function findLocalRowForRemoteFingerprint(
+  mergedRows: StanzaSong[],
+  remote: StanzaSongDriveRow,
+): StanzaSong | null {
+  const fp = stanzaLocalMediaFingerprintForDriveRow(remote);
+  if (!fp) return null;
+  for (const row of mergedRows) {
+    if (row.ytId || row.driveSourceFileId?.trim()) continue;
+    if (!row.localAudioBlob) continue;
+    if (stanzaLocalMediaFingerprintForRow(row) === fp) return row;
+  }
+  return null;
 }
 
 /**
@@ -173,6 +213,7 @@ export function mergeDriveRowsIntoLocalLibrary(
   const remoteById = new Map(remoteSongs.map((s) => [s.id, s]));
   const ids = new Set<string>([...localById.keys(), ...remoteById.keys()]);
   const tombstoneFileIds = options.tombstoneFileIds ?? new Set<string>();
+  const youtubeTombstoneVideoIds = options.youtubeTombstoneVideoIds ?? new Set<string>();
 
   const report: StanzaDriveMergeReport = {
     keptLocalOnly: 0,
@@ -182,10 +223,12 @@ export function mergeDriveRowsIntoLocalLibrary(
     skippedRemoteOnlyUnplayable: 0,
     skippedTombstoned: 0,
     collapsedByContentKey: 0,
+    markersRecoveredFromLocal: 0,
     summaryLines: [],
   };
 
   const mergedRows: StanzaSong[] = [];
+  const pendingFingerprintRemotes: StanzaSongDriveRow[] = [];
 
   for (const id of ids) {
     const L = localById.get(id);
@@ -201,10 +244,17 @@ export function mergeDriveRowsIntoLocalLibrary(
         report.skippedTombstoned += 1;
         continue;
       }
+      const remoteYtId = R.ytId?.trim();
+      if (remoteYtId && youtubeTombstoneVideoIds.has(remoteYtId)) {
+        report.skippedTombstoned += 1;
+        continue;
+      }
       const created = stanzaSongFromDriveRow(R);
       if (created) {
         mergedRows.push(created);
         report.addedFromRemote += 1;
+      } else if (stanzaLocalMediaFingerprintForDriveRow(R)) {
+        pendingFingerprintRemotes.push(R);
       } else {
         report.skippedRemoteOnlyUnplayable += 1;
         report.summaryLines.push(
@@ -215,13 +265,31 @@ export function mergeDriveRowsIntoLocalLibrary(
     }
     if (L && R) {
       if (L.updatedAt >= R.updatedAt) {
-        mergedRows.push(L);
+        const r = mergeStanzaRicherSongMetadataWithReport(L, R);
+        mergedRows.push(r.song);
+        if (r.markersRecoveredFromLocal) report.markersRecoveredFromLocal += 1;
         report.mergedPreferLocal += 1;
       } else {
-        mergedRows.push(mergeOneSong(L, R));
+        const r = mergeOneSong(L, R);
+        mergedRows.push(r.song);
+        if (r.markersRecoveredFromLocal) report.markersRecoveredFromLocal += 1;
         report.mergedPreferRemote += 1;
       }
     }
+  }
+
+  for (const R of pendingFingerprintRemotes) {
+    const match = findLocalRowForRemoteFingerprint(mergedRows, R);
+    if (match) {
+      const idx = mergedRows.indexOf(match);
+      mergedRows[idx] = mergeStanzaRicherSongMetadata(match, R);
+      report.mergedPreferRemote += 1;
+      continue;
+    }
+    report.skippedRemoteOnlyUnplayable += 1;
+    report.summaryLines.push(
+      `Skipped "${R.title}" (${R.id.slice(0, 8)}…): upload the same file on this device to restore its sections.`,
+    );
   }
 
   const consolidation = consolidateStanzaSongDuplicates(mergedRows);
@@ -259,6 +327,11 @@ export function formatStanzaDriveMergeReport(r: StanzaDriveMergeReport): string 
   }
   if (r.skippedRemoteOnlyUnplayable > 0) {
     parts.push(`skipped ${r.skippedRemoteOnlyUnplayable} Drive-only entries without audio`);
+  }
+  if (r.markersRecoveredFromLocal > 0) {
+    parts.push(
+      `kept your section markers for ${r.markersRecoveredFromLocal} song${r.markersRecoveredFromLocal === 1 ? '' : 's'}`,
+    );
   }
   return parts.join(' · ');
 }

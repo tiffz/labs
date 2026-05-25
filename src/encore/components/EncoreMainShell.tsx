@@ -21,6 +21,7 @@ import { EncoreAccountMenu } from './EncoreAccountMenu';
 import { EncoreHeavyListTabPlaceholder } from './EncoreHeavyListTabPlaceholder';
 import { EncoreShareMenu } from './EncoreShareMenu';
 import { SyncConflictReviewDialog } from './SyncConflictReviewDialog';
+import { SyncConflictCoarseDialog } from './SyncConflictCoarseDialog';
 import { ImportGuideScreen as ImportGuideScreenBase } from './ImportGuideScreen';
 import { LibraryScreen as LibraryScreenBase } from './LibraryScreen';
 import { PerformancesScreen as PerformancesScreenBase } from './PerformancesScreen';
@@ -123,6 +124,8 @@ export function EncoreMainShell(): React.ReactElement {
     conflict,
     conflictAnalysis,
     resolveConflictWithChoices,
+    resolveConflictRemote,
+    resolveConflictLocal,
     dismissConflict,
     lastSilentMerge,
     acknowledgeSilentMerge,
@@ -595,6 +598,12 @@ export function EncoreMainShell(): React.ReactElement {
         open={Boolean(conflict?.conflict) && (conflictAnalysis?.bothEdited.length ?? 0) > 0}
         analysis={conflictAnalysis}
         onApply={(choices) => void resolveConflictWithChoices(choices)}
+        onDismiss={dismissConflict}
+      />
+      <SyncConflictCoarseDialog
+        open={Boolean(conflict?.conflict) && (conflictAnalysis?.bothEdited.length ?? 0) === 0}
+        onUseDrive={() => void resolveConflictRemote()}
+        onKeepLocal={() => void resolveConflictLocal()}
         onDismiss={dismissConflict}
       />
       <Snackbar

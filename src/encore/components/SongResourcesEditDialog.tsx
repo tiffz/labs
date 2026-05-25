@@ -61,7 +61,7 @@ export function SongResourcesEditDialog(props: {
   onClose: () => void;
 }): ReactElement {
   const { open, song, initialSection = 'all', onClose } = props;
-  const { songs, repertoireExtras, googleAccessToken, spotifyLinked, saveSong } = useEncore();
+  const { songs, repertoireExtras, googleAccessToken, signInWithGoogle, spotifyLinked, saveSong } = useEncore();
   const [draft, setDraft] = useState<EncoreSong | null>(null);
   const [saving, setSaving] = useState(false);
   const contentRef = useRef<HTMLDivElement | null>(null);
@@ -91,6 +91,7 @@ export function SongResourcesEditDialog(props: {
     routeSongId: song?.id ?? null,
     songs,
     googleAccessToken,
+    signInWithGoogle,
     spotifyLinked,
     driveUploadFolderOverrides: repertoireExtras.driveUploadFolderOverrides,
     persistAfterMetadataRefresh,

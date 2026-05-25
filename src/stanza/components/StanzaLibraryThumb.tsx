@@ -56,7 +56,7 @@ function StanzaLibraryJpegThumb({ songId, blob, onInvalidate }: StanzaLibraryJpe
         if (!row?.localVideoThumbnailBlob) return;
         const { localVideoThumbnailBlob, ...rest } = row;
         void localVideoThumbnailBlob;
-        await stanzaDb.songs.put({ ...rest, updatedAt: Date.now() });
+        await stanzaDb.songs.put({ ...rest });
       })();
     };
     el.addEventListener('error', onErr);

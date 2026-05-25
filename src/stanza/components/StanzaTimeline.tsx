@@ -48,7 +48,7 @@ import { effectiveBeatGridForSegment, sectionBoundaryBeatMisaligned } from '../u
 import type { StanzaPlaybackLoopMode } from '../utils/stanzaPlaybackLoop';
 import { computeLoopHull } from '../utils/stanzaPlaybackLoop';
 import AppTooltip from '../../shared/components/AppTooltip';
-import StanzaPlaybackSpeedControl from './StanzaPlaybackSpeedControl';
+import PlaybackSpeedControl from '../../shared/components/music/PlaybackSpeedControl';
 import StanzaSectionHoverCard from './StanzaSectionHoverCard';
 
 export type { StanzaPlaybackLoopMode };
@@ -706,7 +706,15 @@ export default function StanzaTimeline({
                 {formatClock(playheadDisplaySec)} / {formatClock(duration)}
               </Typography>
               <span className="stanza-playback-chip-divider" aria-hidden />
-              <StanzaPlaybackSpeedControl value={playbackRate} onChange={onPlaybackRateChange} />
+              <PlaybackSpeedControl
+                value={playbackRate}
+                onChange={onPlaybackRateChange}
+                variant="compact"
+                className="shared-bpm-input stanza-playback-speed-control"
+                dropdownClassName="stanza-bpm-dropdown"
+                sliderClassName="stanza-bpm-slider"
+                openPresetPanelOnFocus={false}
+              />
             </Box>
           </Box>
 

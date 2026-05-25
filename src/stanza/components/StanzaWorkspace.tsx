@@ -17,7 +17,7 @@
  *
  * Anything visually independent that can move out cleanly already has (e.g.
  * `StanzaLibraryThumb`, `StanzaTimeline`, `StanzaSectionMetronomeRail`,
- * `StanzaMetronomeStrip`, `StanzaPlaybackSpeedControl`).
+ * `StanzaMetronomeStrip`, shared `PlaybackSpeedControl`).
  */
 
 import {
@@ -34,14 +34,10 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import RestartAltOutlinedIcon from '@mui/icons-material/RestartAltOutlined';
 import VolumeOffOutlinedIcon from '@mui/icons-material/VolumeOffOutlined';
 import VolumeUpOutlinedIcon from '@mui/icons-material/VolumeUpOutlined';
-import Accordion from '@mui/material/Accordion';
-import AccordionDetails from '@mui/material/AccordionDetails';
-import AccordionSummary from '@mui/material/AccordionSummary';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Checkbox from '@mui/material/Checkbox';
@@ -77,6 +73,8 @@ import {
   isStanzaBlobLikeVideo,
   stanzaSongTitleFromFileName,
 } from '../db/stanzaLocalAudioImport';
+import { computeStanzaLocalMediaFingerprint } from '../utils/stanzaLocalMediaFingerprint';
+import { getStanzaLocalMainMediaElement } from '../utils/stanzaLocalMainMediaElement';
 import {
   readStanzaLastSelectedSongId,
   writeStanzaLastSelectedSongId,
@@ -96,8 +94,9 @@ import {
   applySectionSelectionExtend,
   computeLoopHull,
   effectiveBpmForSelectedSpan,
-  STANZA_LOOP_EPS,
+  STANZA_LOOP_WRAP_TOLERANCE_SEC,
   STANZA_MIN_LOOP_SPAN_SEC,
+  isPastLoopWrapPoint,
   suggestMusicalLoopPadSec,
   type StanzaPlaybackLoopMode,
   type StanzaSectionSelectionExtend,
@@ -127,6 +126,7 @@ import {
   clearStanzaDriveTombstone,
   getStanzaDriveTombstoneFileIds,
 } from '../drive/stanzaDriveTombstones';
+import { addStanzaYoutubeTombstone, clearStanzaYoutubeTombstone } from '../drive/stanzaYoutubeTombstones';
 import {
   hasStanzaDriveDeepLinkQuery,
   pushStanzaPlaybackUrlSearchParams,
@@ -162,16 +162,14 @@ const STANZA_EMPTY_STEMS: StanzaStemTrack[] = [];
 const STANZA_DRUMS_DEFAULT_TIME_SIGNATURE: TimeSignature = { numerator: 4, denominator: 4 };
 /** Fallback BPM when the metronome isn't calibrated yet — keeps the drum preview UI usable. */
 const STANZA_DRUMS_DEFAULT_BPM = 120;
-/** Notation render footprint inside the practice rail. Tuned for the ~280px-wide rail; smaller
- *  than Beat Finder's 320×100/120 default so the drum panel doesn't dominate the sidebar. */
-const STANZA_DRUMS_NOTATION_WIDTH = 240;
-const STANZA_DRUMS_NOTATION_HEIGHT = 84;
+/** Notation render footprint inside the practice rail — compact so Key shift stays in view. */
+const STANZA_DRUMS_NOTATION_WIDTH = 236;
+/** Minimum host height; {@link computeMiniNotationLayout} may grow the SVG to fit the staff. */
+const STANZA_DRUMS_NOTATION_HEIGHT = 68;
 /** Stanza-tinted notation palette so the staff matches `--stanza-ink` ink and the active note
  *  flashes the rose accent (`--stanza-rose`) instead of Beat Finder's green. */
 const STANZA_DRUMS_NOTATION_STYLE = {
-  staffColor: '#2a2622',
-  noteColor: '#2a2622',
-  textColor: '#6d665e',
+  inkColor: '#2a2622',
   highlightColor: '#e848a0',
   backgroundColor: 'transparent',
 } as const;
@@ -194,6 +192,7 @@ const STANZA_MIX_DRAG_COL_PX = 22;
 const STANZA_MIX_TRAIL_BALANCE_PX = 32;
 /** Cap layer name width so the Slider can grow on dense practice rails. */
 const STANZA_MIX_LABEL_MAX_WIDTH = '6.75rem';
+/** Shared viewer canvas: layout tokens live in stanza-viewer-layout.css (`--stanza-viewer-*`). */
 
 function stanzaMixTrackLabelSurfaceSx(theme: Theme) {
   return {
@@ -253,6 +252,8 @@ export default function StanzaWorkspace() {
   const pendingYoutubeBootstrapRef = useRef<{ songId: string; seekSec?: number; rate?: number } | null>(null);
   const localAudioRef = useRef<HTMLAudioElement | null>(null);
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
+  /** Bumped when Web Audio releases a hijacked `<video>` / `<audio>` so HTML output works again. */
+  const [mainMediaRemountKey, setMainMediaRemountKey] = useState(0);
   const stemAudioRefs = useRef(new Map<string, HTMLAudioElement>());
   const stemFileInputRef = useRef<HTMLInputElement | null>(null);
   const libraryUploadInputRef = useRef<HTMLInputElement | null>(null);
@@ -371,6 +372,17 @@ export default function StanzaWorkspace() {
   const isLocalVideo = Boolean(
     selected?.localAudioBlob && isStanzaBlobLikeVideo(selected.localAudioBlob, selected.title),
   );
+  const isLocalVideoRef = useRef(isLocalVideo);
+  isLocalVideoRef.current = isLocalVideo;
+
+  const getLocalMainMedia = useCallback(
+    () => getStanzaLocalMainMediaElement(isLocalVideoRef.current, localAudioRef, localVideoRef),
+    [],
+  );
+
+  const bumpMainMediaRemount = useCallback(() => {
+    setMainMediaRemountKey((k) => k + 1);
+  }, []);
 
   const persistedTransposeSemitones = selected?.localTransposeSemitones ?? 0;
   const [transposeInputStr, setTransposeInputStr] = useState('0');
@@ -512,6 +524,10 @@ export default function StanzaWorkspace() {
         updatedAt: Date.now(),
         localAudioBlob: blob,
         driveSourceFileId,
+        localMediaFingerprint: computeStanzaLocalMediaFingerprint({
+          sizeBytes: blob.size,
+          fileName: title,
+        }),
       };
       await stanzaDb.songs.put(row);
       setSelectedId(rowId);
@@ -904,7 +920,7 @@ export default function StanzaWorkspace() {
   /** If Web Audio graph setup fails (or is abandoned), restore audible levels on the underlying media elements. */
   const restoreHtmlStemVolumes = useCallback(() => {
     if (!selected || selected.ytId) return;
-    const main = localAudioRef.current ?? localVideoRef.current;
+    const main = getLocalMainMedia();
     if (main) {
       main.volume = stanzaSanitizeLinearBusGain(selected.primaryGain);
       main.muted = primaryPlaybackMuted(selected);
@@ -915,7 +931,7 @@ export default function StanzaWorkspace() {
       el.volume = stanzaSanitizeLinearBusGain(stem.gain);
       el.muted = stemPlaybackMuted(stem);
     }
-  }, [selected]);
+  }, [selected, getLocalMainMedia]);
 
   const { webAudioMixReady, prepareStemMixerForPlaySync, finalizeStemMixerResume, abandonWebAudioMix } =
     useStanzaLocalStemMixer({
@@ -927,13 +943,15 @@ export default function StanzaWorkspace() {
       stems: selected?.stems ?? STANZA_EMPTY_STEMS,
       localVideoRef,
       localAudioRef,
+      isLocalVideo,
       stemAudioRefs,
+      onMixGraphReleased: bumpMainMediaRemount,
       onMixResumeFailed: restoreHtmlStemVolumes,
     });
 
   useEffect(() => {
     if (!selected || selected.ytId) return;
-    const main = localAudioRef.current ?? localVideoRef.current;
+    const main = getLocalMainMedia();
     if (!main) return;
 
     const audibleTranspose = transposeMirrorPlaybackActive || transposeStemBusPlaybackActive;
@@ -986,11 +1004,12 @@ export default function StanzaWorkspace() {
     webAudioMixReady,
     transposeMirrorPlaybackActive,
     transposeStemBusPlaybackActive,
+    getLocalMainMedia,
   ]);
 
   useEffect(() => {
     if (isYoutube || !stemUrlKey) return;
-    const main = localAudioRef.current ?? localVideoRef.current;
+    const main = getLocalMainMedia();
     if (!main) return;
     const t = main.currentTime;
     const shouldPlay = !main.paused;
@@ -1006,7 +1025,7 @@ export default function StanzaWorkspace() {
       });
     });
     return () => window.cancelAnimationFrame(raf);
-  }, [stemUrlKey, isYoutube]);
+  }, [stemUrlKey, isYoutube, getLocalMainMedia]);
 
   useEffect(() => {
     timeRef.current = playback.currentTime;
@@ -1084,15 +1103,23 @@ export default function StanzaWorkspace() {
 
   /** Tempo suggestion dialog: hear metronome clicks even when the strip toggle is off (does not persist). */
   const [stanzaBeatAnalysisModalOpen, setStanzaBeatAnalysisModalOpen] = useState(false);
+  const [stanzaTapMetronomePreviewActive, setStanzaTapMetronomePreviewActive] = useState(false);
+  const [stanzaTapMetronomeTapActive, setStanzaTapMetronomeTapActive] = useState(false);
   const handleBeatAnalysisModalOpenChange = useCallback((open: boolean) => {
     setStanzaBeatAnalysisModalOpen(open);
   }, []);
+  const handleTapMetronomePreviewChange = useCallback((active: boolean) => {
+    setStanzaTapMetronomePreviewActive(active);
+  }, []);
+  const handleTapMetronomeTapActiveChange = useCallback((active: boolean) => {
+    setStanzaTapMetronomeTapActive(active);
+  }, []);
 
   useEffect(() => {
-    if (stanzaBeatAnalysisModalOpen) {
+    if (stanzaBeatAnalysisModalOpen || stanzaTapMetronomePreviewActive) {
       primeStanzaMetronomeAudio();
     }
-  }, [stanzaBeatAnalysisModalOpen]);
+  }, [stanzaBeatAnalysisModalOpen, stanzaTapMetronomePreviewActive]);
 
   const metronomeRailScopeRef = useRef<{ songId: string; scope: StanzaMetronomeTimingScope } | null>(null);
 
@@ -1175,13 +1202,22 @@ export default function StanzaWorkspace() {
   }, [songs]);
 
   const persistSong = useCallback(
-    async (patch: Partial<StanzaSong> & Pick<StanzaSong, 'id'>, opts?: { recordUndo?: boolean }) => {
+    async (
+      patch: Partial<StanzaSong> & Pick<StanzaSong, 'id'>,
+      opts?: { recordUndo?: boolean; touchUpdatedAt?: boolean },
+    ) => {
       const row = await stanzaDb.songs.get(patch.id);
       if (!row) return;
       const recordUndo = opts?.recordUndo !== false && !isReplayingRef.current;
+      const touchUpdatedAt = opts?.touchUpdatedAt !== false;
       const prevSnap = recordUndo ? structuredClone(row) : null;
       const nextMarkers = patch.markers != null ? ensureMarkerIds(patch.markers) : row.markers;
-      const next: StanzaSong = { ...row, ...patch, markers: nextMarkers, updatedAt: Date.now() };
+      const next: StanzaSong = {
+        ...row,
+        ...patch,
+        markers: nextMarkers,
+        updatedAt: touchUpdatedAt ? Date.now() : row.updatedAt,
+      };
       await stanzaDb.songs.put(next);
       if (recordUndo && prevSnap) {
         const nextSnap = structuredClone(next);
@@ -1490,6 +1526,7 @@ export default function StanzaWorkspace() {
       // `progress.json`, the URL bootstrap stops re-importing the same `?df=` link, and other
       // devices see the deletion via the next push of the envelope's `deletedDriveSourceFileIds`.
       const driveFileId = prevSnap.driveSourceFileId?.trim();
+      const youtubeVideoId = prevSnap.ytId?.trim();
       if (driveFileId) {
         addStanzaDriveTombstone(driveFileId);
         // If the current URL still points at this Drive file, strip the deep-link params so a
@@ -1505,6 +1542,9 @@ export default function StanzaWorkspace() {
           }
         }
       }
+      if (youtubeVideoId) {
+        addStanzaYoutubeTombstone(youtubeVideoId);
+      }
 
       if (!isReplayingRef.current) {
         pushUndo({
@@ -1516,12 +1556,14 @@ export default function StanzaWorkspace() {
             // Undoing the delete = "I didn't mean to remove this" — drop the tombstone so the
             // next sync doesn't immediately wipe the row again from another device.
             if (driveFileId) clearStanzaDriveTombstone(driveFileId);
+            if (youtubeVideoId) clearStanzaYoutubeTombstone(youtubeVideoId);
             if (wasSelected) setSelectedId(prevSnap.id);
           },
           redo: async () => {
             await stanzaDb.takes.where('songId').equals(id).delete();
             await stanzaDb.songs.delete(id);
             if (driveFileId) addStanzaDriveTombstone(driveFileId);
+            if (youtubeVideoId) addStanzaYoutubeTombstone(youtubeVideoId);
             if (wasSelected) setSelectedId(null);
           },
         });
@@ -1533,7 +1575,7 @@ export default function StanzaWorkspace() {
   const syncTransposeMirrorFromMain = useCallback(() => {
     const mirror = transposeMirrorRef.current;
     const bus = transposeStemBusRef.current;
-    const main = localAudioRef.current ?? localVideoRef.current;
+    const main = getLocalMainMedia();
     const row = selectedRef.current;
     if (!main || !row || row.ytId) {
       mirror?.stop();
@@ -1582,7 +1624,7 @@ export default function StanzaWorkspace() {
       row.primaryGain,
       row.stems ?? STANZA_EMPTY_STEMS,
     );
-  }, []);
+  }, [getLocalMainMedia]);
 
   const applyPlaybackRate = useCallback(
     (rate: number) => {
@@ -1590,7 +1632,7 @@ export default function StanzaWorkspace() {
       if (isYoutube) {
         ytControllerRef.current?.setPlaybackRate(clamped);
       } else {
-        const el = localAudioRef.current ?? localVideoRef.current;
+        const el = getLocalMainMedia();
         if (el) el.playbackRate = clamped;
         stemAudioRefs.current.forEach((a) => {
           a.playbackRate = clamped;
@@ -1603,7 +1645,7 @@ export default function StanzaWorkspace() {
       }
       setPlayback((p) => ({ ...p, playbackRate: clamped }));
     },
-    [isYoutube, syncTransposeMirrorFromMain],
+    [isYoutube, syncTransposeMirrorFromMain, getLocalMainMedia],
   );
 
   const scheduleSeekFrame = useCallback(() => {
@@ -1632,11 +1674,11 @@ export default function StanzaWorkspace() {
         /* ignore */
       }
     } else {
-      const el = localAudioRef.current ?? localVideoRef.current;
+      const el = getLocalMainMedia();
       if (el && Number.isFinite(el.currentTime)) return el.currentTime;
     }
     return timeRef.current;
-  }, [isYoutube]);
+  }, [isYoutube, getLocalMainMedia]);
 
   const seekUnified = useCallback(
     (tRaw: number, opts?: { flushPlaybackState?: boolean }) => {
@@ -1665,7 +1707,7 @@ export default function StanzaWorkspace() {
         }
         return;
       }
-      const el = localAudioRef.current ?? localVideoRef.current;
+      const el = getLocalMainMedia();
       if (el) {
         el.currentTime = t;
       }
@@ -1678,7 +1720,7 @@ export default function StanzaWorkspace() {
       });
       transposeMirrorRef.current?.stop();
       transposeStemBusRef.current?.stop();
-      const elPlaying = localAudioRef.current ?? localVideoRef.current;
+      const elPlaying = getLocalMainMedia();
       if (elPlaying && !elPlaying.paused) {
         window.requestAnimationFrame(() => {
           syncTransposeMirrorFromMain();
@@ -1690,7 +1732,7 @@ export default function StanzaWorkspace() {
         scheduleSeekFrame();
       }
     },
-    [isYoutube, scheduleSeekFrame, syncTransposeMirrorFromMain],
+    [isYoutube, scheduleSeekFrame, syncTransposeMirrorFromMain, getLocalMainMedia],
   );
 
   /**
@@ -1732,7 +1774,7 @@ export default function StanzaWorkspace() {
 
   /** Hard-sync stem clocks to the main element and start playback (call after `main.play()` has settled). */
   const snapStemsToMainAndPlay = useCallback(() => {
-    const main = localAudioRef.current ?? localVideoRef.current;
+    const main = getLocalMainMedia();
     if (!main) return;
     const mt = main.currentTime;
     if (!Number.isFinite(mt)) return;
@@ -1746,7 +1788,7 @@ export default function StanzaWorkspace() {
         /* ignore autoplay / decode races */
       });
     });
-  }, []);
+  }, [getLocalMainMedia]);
 
   /**
    * While the main track is playing: resume paused stems and correct large clock drift only.
@@ -1754,7 +1796,7 @@ export default function StanzaWorkspace() {
    * could otherwise read `main.paused` during a transient state and mute stems mid-playback.
    */
   const alignStemAudiosToMain = useCallback(() => {
-    const main = localAudioRef.current ?? localVideoRef.current;
+    const main = getLocalMainMedia();
     if (!main || main.paused) return;
     const mt = main.currentTime;
     if (!Number.isFinite(mt)) return;
@@ -1767,7 +1809,7 @@ export default function StanzaWorkspace() {
         /* ignore */
       }
     });
-  }, []);
+  }, [getLocalMainMedia]);
 
   /** Deferred drift pass after transport (main clock stable). */
   const scheduleAlignStemAudiosToMain = useCallback(() => {
@@ -1784,15 +1826,18 @@ export default function StanzaWorkspace() {
     timeRef.current = t;
     const d = durationRef.current;
     if (loopMode === 'loopAll' && d > 0) {
-      if (t < 0 || t > d - STANZA_LOOP_EPS) seekUnified(0, { flushPlaybackState: true });
+      if (t < 0 || isPastLoopWrapPoint(t, d)) seekUnified(0, { flushPlaybackState: true });
     } else if (loopMode === 'loopSelection' && effectiveSelectionSpan) {
-      if (t < effectiveSelectionSpan.start - 0.05 || t > effectiveSelectionSpan.end - STANZA_LOOP_EPS) {
+      if (
+        t < effectiveSelectionSpan.start - 0.05 ||
+        isPastLoopWrapPoint(t, effectiveSelectionSpan.end)
+      ) {
         seekUnified(effectiveSelectionSpan.start, { flushPlaybackState: true });
       }
     }
     if (isYoutube) ytControllerRef.current?.play();
     else {
-      const main = localAudioRef.current ?? localVideoRef.current;
+      const main = getLocalMainMedia();
       if (!main) return;
       let stemMixerPrepared = false;
       if (stemWebAudioMixerEnabled) {
@@ -1840,6 +1885,7 @@ export default function StanzaWorkspace() {
     scheduleAlignStemAudiosToMain,
     stemWebAudioMixerEnabled,
     syncTransposeMirrorFromMain,
+    getLocalMainMedia,
   ]);
 
   const handleLoopAtMediaEnd = useCallback(() => {
@@ -1864,10 +1910,10 @@ export default function StanzaWorkspace() {
     else {
       transposeMirrorRef.current?.stop();
       transposeStemBusRef.current?.stop();
-      (localAudioRef.current ?? localVideoRef.current)?.pause();
+      getLocalMainMedia()?.pause();
       pauseStemAudios();
     }
-  }, [isYoutube, pauseStemAudios]);
+  }, [isYoutube, pauseStemAudios, getLocalMainMedia]);
 
   const getTime = useCallback(() => {
     if (playingRef.current) {
@@ -1976,7 +2022,7 @@ export default function StanzaWorkspace() {
             try {
               if (isYoutubeRef.current) ytControllerRef.current?.pause();
               else {
-                const main = localAudioRef.current ?? localVideoRef.current;
+                const main = getLocalMainMedia();
                 main?.pause();
                 pauseStemAudiosRef.current();
               }
@@ -1995,14 +2041,12 @@ export default function StanzaWorkspace() {
 
       // 2. Loop-bound enforcement.
       try {
-        if (loopMode === 'loopAll' && d > 0) {
-          if (tLive >= d - STANZA_LOOP_EPS) {
-            seekUnifiedRef.current(0, { flushPlaybackState: true });
-          }
-        } else if (loopMode === 'loopSelection' && span) {
-          if (tLive >= span.end - STANZA_LOOP_EPS) {
+        // loopAll: let onEnded / handleLoopAtMediaEnd wrap at the natural tail so the full
+        // ending is heard; polling here used to fire ~60 ms early and audibly clipped fades.
+        if (loopMode === 'loopSelection' && span) {
+          if (isPastLoopWrapPoint(tLive, span.end)) {
             seekUnifiedRef.current(span.start, { flushPlaybackState: true });
-          } else if (tLive < span.start - STANZA_LOOP_EPS) {
+          } else if (tLive < span.start - STANZA_LOOP_WRAP_TOLERANCE_SEC) {
             seekUnifiedRef.current(span.start, { flushPlaybackState: true });
           }
         }
@@ -2016,7 +2060,7 @@ export default function StanzaWorkspace() {
     // Mount-only: dynamic state (loopMode, segments, skipped, span, isYoutube,
     // seekUnified, pauseStemAudios) is read from refs each tick so we never
     // need to re-establish the RAF on prop / state churn.
-  }, [readLiveTransportTime]);
+  }, [readLiveTransportTime, getLocalMainMedia]);
 
   useEffect(() => {
     if (!selected) return;
@@ -2382,7 +2426,8 @@ export default function StanzaWorkspace() {
     }
   }, [effectiveSelectionSpan, loopMode, userSeekUnified]);
 
-  const metronomeEnabledForPlayback = Boolean(selected?.metronomeEnabled) || stanzaBeatAnalysisModalOpen;
+  const metronomeEnabledForPlayback =
+    Boolean(selected?.metronomeEnabled) || stanzaBeatAnalysisModalOpen || stanzaTapMetronomePreviewActive;
 
   const metronomeSyncSource = useMemo(() => {
     const r = resolveStanzaMetronomePlaybackSync({
@@ -2415,7 +2460,7 @@ export default function StanzaWorkspace() {
     isPlaying: playback.isPlaying,
     audioEnabled: true,
     gain: metronomeUserGain,
-    muted: metronomeUserMuted,
+    muted: metronomeUserMuted || stanzaTapMetronomeTapActive,
   });
 
   /**
@@ -2424,6 +2469,7 @@ export default function StanzaWorkspace() {
    * persisted value is what we hand the drum component.
    */
   const drumsUserGain = stanzaSanitizeLinearBusGain(selected?.drumsGain, 0.7);
+  const drumsUserMuted = selected?.drumsMuted === true;
   /**
    * Stanza drives the shared `DrumAccompaniment` from the metronome's resolved bpm + anchor so
    * a single calibration drives both clicks and the groove. When the metronome isn't calibrated
@@ -2444,7 +2490,12 @@ export default function StanzaWorkspace() {
   const drumsBeatPeriod = 60 / drumsBpm;
   const drumsCurrentBeat = drumsHasGrid ? Math.floor(drumsCurrentBeatTime / drumsBeatPeriod) : 0;
   const drumsActuallyPlaying = Boolean(
-    selected?.drumsEnabled && playback.isPlaying && drumsHasGrid,
+    selected?.drumsEnabled &&
+      playback.isPlaying &&
+      drumsHasGrid &&
+      !drumsUserMuted &&
+      // Silence the groove during tap-tempo count-in/tapping (metronome clicks are muted too).
+      !stanzaTapMetronomeTapActive,
   );
 
   // Surface the "set BPM" hint on the metronome strip itself when the toggle is on but no usable
@@ -2672,7 +2723,7 @@ export default function StanzaWorkspace() {
     <Box
       className={`stanza-root${selected ? ' stanza-viewer-root' : ''}`}
       sx={{
-        maxWidth: selected ? 960 : 'none',
+        maxWidth: 'none',
         mx: 'auto',
         display: selected ? 'flex' : 'block',
         flexDirection: selected ? 'column' : undefined,
@@ -2829,24 +2880,25 @@ export default function StanzaWorkspace() {
       )}
 
       {selected && (
-        <Box className="stanza-viewer-shell" sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-          <Box sx={{ px: { xs: 1.5, sm: 2 }, pt: 1, flexShrink: 0 }}>{renderDriveDeepLinkAlerts()}</Box>
+        <Box className="stanza-viewer-shell">
+          <Box className="stanza-viewer-column">
+          <Box sx={{ pt: 1, flexShrink: 0 }}>{renderDriveDeepLinkAlerts()}</Box>
           <Box
             className="stanza-viewer-header"
             sx={{
-              px: { xs: 1.5, sm: 2 },
               pt: { xs: 1.25, sm: 1.5 },
               pb: 1,
               display: 'flex',
               alignItems: 'flex-start',
               gap: 2,
               flexWrap: 'wrap',
+              flexShrink: 0,
             }}
           >
             <StanzaRepeatMark size={40} />
             <Box sx={{ flex: '1 1 200px', minWidth: 0 }}>
               <StanzaSongTitleEditor title={selected.title} onCommit={(t) => void commitSongTitle(t)} />
-              <button type="button" className="stanza-link-quiet" onClick={goHome} aria-label="Back to library" style={{ marginTop: 6 }}>
+              <button type="button" className="stanza-link-quiet stanza-viewer-back-link" onClick={goHome} aria-label="Back to library">
                 ← Back to library
               </button>
             </Box>
@@ -2855,47 +2907,10 @@ export default function StanzaWorkspace() {
             </Box>
           </Box>
 
-          <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', px: { xs: 1.5, sm: 2 }, pt: { xs: 1, md: 1.25 }, pb: { xs: 1.5, md: 2 } }}>
-            <Box
-              className="stanza-viewer-body-grid"
-              sx={{
-                display: 'grid',
-                width: '100%',
-                // Wider canvas for typical 13"+ laptops. Capped to avoid the rail drifting away
-                // from the video on ultrawides; the timeline below uses the same maxWidth.
-                maxWidth: { md: 1440 },
-                mx: 'auto',
-                alignContent: 'start',
-                // `start` (vs `stretch`) lets the rail stop at its own (capped) height instead of
-                // stretching to match the video and creating empty space below the rail's last
-                // control. Combined with the rail's own `maxHeight: calc(100vh - …)`, this keeps
-                // the sidebar compact and viewport-bounded.
-                alignItems: 'start',
-                rowGap: { xs: 1.5, md: 2 },
-                columnGap: { xs: 1.5, md: 2.5 },
-                gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1fr) minmax(320px, 380px)' },
-                gridTemplateAreas: {
-                  xs: '"media" "timeline" "rail"',
-                  md: '"media rail" "timeline timeline"',
-                },
-              }}
-            >
-              <Box
-                className="stanza-viewer-media-stack"
-                sx={{
-                  gridArea: 'media',
-                  minWidth: 0,
-                  // Wider primary media frame — at 16:9 the local video is ~470px tall (was ~428),
-                  // closer to the natural viewing scale on a typical laptop.
-                  width: { xs: '100%', md: 'min(100%, 840px)' },
-                  maxWidth: { md: 840 },
-                  justifySelf: { md: 'end' },
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'stretch',
-                  justifyContent: 'center',
-                }}
-              >
+          <Box className="stanza-viewer-workbench">
+          <Box className="stanza-viewer-scroll">
+            <Box className="stanza-viewer-body-grid">
+              <Box className="stanza-viewer-media-stack">
                 <Box className="stanza-video-column">
                   {isYoutube && selected.ytId && youtubePlayerErrorCode != null && (
                     <Alert severity="warning" sx={{ mb: 1.5 }}>
@@ -2946,6 +2961,7 @@ export default function StanzaWorkspace() {
                         {isLocalVideo ? (
                           /* eslint-disable-next-line jsx-a11y/media-has-caption -- user recording; no captions */
                           <video
+                            key={`${selected.id}:${mainMediaRemountKey}`}
                             ref={localVideoRef}
                             className="stanza-local-video"
                             src={localUrl}
@@ -3006,6 +3022,7 @@ export default function StanzaWorkspace() {
                         ) : (
                           /* eslint-disable-next-line jsx-a11y/media-has-caption -- user-supplied audio; no captions */
                           <audio
+                            key={`${selected.id}:${mainMediaRemountKey}`}
                             ref={localAudioRef}
                             className="stanza-local-audio"
                             src={localUrl}
@@ -3086,19 +3103,13 @@ export default function StanzaWorkspace() {
               </Box>
 
               <Paper
-                className="stanza-panel stanza-practice-rail stanza-practice-rail--dense"
+                className="stanza-panel stanza-practice-rail stanza-practice-rail--dense stanza-viewer-rail-slot"
                 elevation={0}
                 sx={{
-                  gridArea: 'rail',
-                  width: { xs: '100%', md: '100%' },
-                  maxWidth: { md: 380 },
-                  justifySelf: { md: 'stretch' },
-                  alignSelf: { md: 'start' },
                   display: 'flex',
                   flexDirection: 'column',
                   minHeight: 0,
                   overflow: 'hidden',
-                  maxHeight: { md: 'calc(100dvh - 240px)' },
                   p: { xs: 1, md: 1.25 },
                 }}
               >
@@ -3148,8 +3159,11 @@ export default function StanzaWorkspace() {
                         mediaUrl={localUrl ?? ''}
                         isLocalVideo={isLocalVideo}
                         playbackIsPlaying={playback.isPlaying}
+                        getMediaTime={getTime}
                         beatAnalysisCacheKey={stanzaBeatAnalysisCacheKey}
                         onAnalysisModalOpenChange={handleBeatAnalysisModalOpenChange}
+                        onTapMetronomePreviewChange={handleTapMetronomePreviewChange}
+                        onTapMetronomeTapActiveChange={handleTapMetronomeTapActiveChange}
                         onRequestPlay={playUnified}
                         onRequestPause={pauseUnified}
                         onRequestSeek={(t) => {
@@ -3204,17 +3218,18 @@ export default function StanzaWorkspace() {
                             notationWidth={STANZA_DRUMS_NOTATION_WIDTH}
                             notationHeight={STANZA_DRUMS_NOTATION_HEIGHT}
                             notationStyle={STANZA_DRUMS_NOTATION_STYLE}
-                            hideDarbukaLink
+                            notationFrameClassName="stanza-drums-notation-frame"
+                            darbukaLinkClassName="stanza-drums-edit-link"
+                            drumSymbolScale={0.44}
+                            notationShowMetronomeDots={false}
+                            notationFooter={
+                              !drumsHasGrid ? (
+                                <p className="stanza-drums-notation-hint">
+                                  Set BPM and Beat 1 above to start the drum loop.
+                                </p>
+                              ) : null
+                            }
                           />
-                          {!drumsHasGrid ? (
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                              sx={{ display: 'block', mt: 0.25, lineHeight: 1.35 }}
-                            >
-                              Set BPM and Beat 1 above to start the drum loop.
-                            </Typography>
-                          ) : null}
                         </Box>
                       ) : null}
                     </Box>
@@ -3454,24 +3469,29 @@ export default function StanzaWorkspace() {
                           className="stanza-mix-row stanza-mix-row--system"
                           sx={{ display: 'flex', alignItems: 'center', gap: 1, minHeight: 28 }}
                         >
-                          {/* Drums has no Mix mute icon (the "Add drums" checkbox above is the
-                              on/off). We render a decorative volume icon in that slot so the row
-                              still reads as a volume control and the slider's left edge aligns
-                              with the Main + Metronome rows. */}
                           <Box sx={{ width: STANZA_MIX_DRAG_COL_PX, flexShrink: 0 }} aria-hidden />
-                          <Box
-                            aria-hidden
-                            sx={{
-                              width: 30,
-                              flexShrink: 0,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              color: 'text.secondary',
-                            }}
+                          <AppTooltip
+                            title={
+                              drumsUserMuted
+                                ? 'Unmute the drum groove'
+                                : 'Mute the drum groove (pattern and level are preserved)'
+                            }
                           >
-                            <VolumeUpOutlinedIcon sx={{ fontSize: 18 }} />
-                          </Box>
+                            <IconButton
+                              size="small"
+                              aria-label={drumsUserMuted ? 'Unmute drums' : 'Mute drums'}
+                              onClick={() =>
+                                void persistSong({ id: selected.id, drumsMuted: !drumsUserMuted })
+                              }
+                              sx={{ p: 0.35, alignSelf: 'center' }}
+                            >
+                              {drumsUserMuted ? (
+                                <VolumeOffOutlinedIcon sx={{ fontSize: 18 }} />
+                              ) : (
+                                <VolumeUpOutlinedIcon sx={{ fontSize: 18 }} />
+                              )}
+                            </IconButton>
+                          </AppTooltip>
                           <Typography
                             component="span"
                             noWrap
@@ -3497,7 +3517,11 @@ export default function StanzaWorkspace() {
                               setMixDrumsGainDraft(null);
                             }}
                             aria-label="Drums level"
-                            sx={{ alignSelf: 'center' }}
+                            sx={{
+                              alignSelf: 'center',
+                              opacity: drumsUserMuted ? 0.42 : 1,
+                              transition: 'opacity 0.15s ease',
+                            }}
                           />
                           <Box sx={{ width: STANZA_MIX_TRAIL_BALANCE_PX, flexShrink: 0 }} aria-hidden />
                         </Box>
@@ -3823,7 +3847,7 @@ export default function StanzaWorkspace() {
                 </Box>
               </Paper>
 
-              <Box sx={{ gridArea: 'timeline', minWidth: 0, width: '100%' }}>
+              <Box className="stanza-viewer-timeline-slot">
                 <StanzaTimeline
                   duration={playback.duration}
                   currentTime={playback.currentTime}
@@ -3875,22 +3899,18 @@ export default function StanzaWorkspace() {
             </Box>
           </Box>
 
-          <Accordion
-            defaultExpanded
-            disableGutters
-            square
-            className="stanza-panel stanza-library-footer"
-            sx={{ mt: { xs: 3.5, sm: 5 } }}
+          <Box
+            component="section"
+            className="stanza-library-panel"
+            aria-labelledby="stanza-library-heading"
           >
-            <AccordionSummary expandIcon={<ExpandMoreIcon />} aria-controls="stanza-library-panel" id="stanza-library-header">
-              <Typography variant="subtitle2" className="stanza-whisper-title">
-                Your library
-                <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1, fontWeight: 400 }}>
-                  ({songs?.length ?? 0})
-                </Typography>
+            <Typography id="stanza-library-heading" variant="subtitle2" className="stanza-whisper-title stanza-library-panel-heading">
+              Your library
+              <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1, fontWeight: 400 }}>
+                ({songs?.length ?? 0})
               </Typography>
-            </AccordionSummary>
-            <AccordionDetails sx={{ px: { xs: 1.5, sm: 2 }, pb: 1.75, pt: 1 }}>
+            </Typography>
+            <Box className="stanza-library-panel-body">
               <Typography
                 variant="body2"
                 color="text.secondary"
@@ -3955,8 +3975,10 @@ export default function StanzaWorkspace() {
                 </Stack>
               </Stack>
               {renderLibraryGrid('footer')}
-            </AccordionDetails>
-          </Accordion>
+            </Box>
+          </Box>
+          </Box>
+          </Box>
         </Box>
       )}
 

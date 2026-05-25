@@ -1,4 +1,6 @@
 import type { StanzaSong } from './stanzaDb';
+import { computeStanzaLocalMediaFingerprint } from '../utils/stanzaLocalMediaFingerprint';
+import { probeFileAudioDurationSeconds } from '../utils/probeFileAudioDuration';
 
 /**
  * Helpers that turn a browser `File` (or a drag-and-drop `DataTransfer`) into a Stanza-shaped
@@ -100,6 +102,7 @@ export async function buildLocalAudioStanzaSong(file: File): Promise<StanzaSong>
     throw new Error(`Not an audio file: ${file.name || 'unnamed file'}`);
   }
   const blob = new Blob([await file.arrayBuffer()], { type: file.type || 'audio/mpeg' });
+  const durationSec = await probeFileAudioDurationSeconds(file);
   return {
     id: crypto.randomUUID(),
     ytId: null,
@@ -108,5 +111,10 @@ export async function buildLocalAudioStanzaSong(file: File): Promise<StanzaSong>
     stats: {},
     updatedAt: Date.now(),
     localAudioBlob: blob,
+    localMediaFingerprint: computeStanzaLocalMediaFingerprint({
+      sizeBytes: blob.size,
+      durationSec,
+      fileName: file.name,
+    }),
   };
 }

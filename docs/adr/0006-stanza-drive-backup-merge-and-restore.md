@@ -18,7 +18,7 @@ Users asked for: changes to **propagate automatically** between devices, visible
 
 2. **Auto-push debounced** (`STANZA_DRIVE_AUTO_PUSH_DEBOUNCE_MS = 6_000`, `MIN_INTERVAL_MS = 4_000`): after the initial pull resolves, the hook subscribes to Dexie `creating` / `updating` / `deleting` events on the `songs` table. Any user edit (which already bumps `updatedAt`) re-arms a single debounced timer that writes the latest envelope back to Drive. A module-level `stanzaDriveMergeInProgress` flag suppresses hook firings during merge writes so a pull doesn’t immediately push the same data back. If the push fails the message is shown but **no retry loop runs**; the next user edit retries naturally and the manual “Back up” button still works.
 
-3. **Manual “Back up with Google”** keeps its existing role: it pushes a local `pushStanzaDriveUndoSnapshot` into a 5-deep `localStorage` ring buffer (`labs_stanza_drive_undo_snapshots_v1`) **before** writing, then runs the same conflict assessment as before. When the cloud appears newer than the device last recorded (or when this is the first push from a device that has never seen the file), the conflict dialog shows up and offers Merge / Replace / Cancel.
+3. **Manual “Back up with Google”** keeps its existing role: it pushes a local undo snapshot into a **20-deep IndexedDB** ring buffer (`stanzaDb.undoSnapshots`, migrating legacy `localStorage` entries) **before** writing, then runs the same conflict assessment as before. **Auto-pull**, **conflict merge**, and **snapshot restore** also capture a pre-merge snapshot so a bad sync can be rolled back from Restore. When the cloud appears newer than the device last recorded (or when this is the first push from a device that has never seen the file), the conflict dialog shows up and offers Merge / Replace / Cancel.
 
 4. **Restore library** (`StanzaAccountMenu` dialog): always lists **“Latest backup from Drive”** at the top — clicking it re-runs `pullFromDriveAndMerge`, even on devices with no local snapshots — followed by the local `localStorage` snapshot list (still browser-local). The Restore button itself is enabled whenever a Drive backup exists for the account, so a fresh device on first visit can immediately pull its prior data.
 
@@ -35,17 +35,19 @@ Users asked for: changes to **propagate automatically** between devices, visible
 
 ## Consequences
 
-- Drive sync now **feels like real sync** — open a second device, the account menu auto-pulls, and edits flow back via the debounced auto-push. Conflicts (two devices editing the same song between pushes) still resolve to **per-song newer-wins** at the next merge, which we accept as the right trade-off for a metadata-only backup; it is documented in the conflict dialog.
-- The auto-push fires from the same Dexie event stream that powers `useLiveQuery`, so a misbehaving caller that bumps `updatedAt` for spurious reasons can chatter Drive. The debounce + `MIN_INTERVAL_MS` cap absorb typical multi-control edits but a bug like “write song every animation frame” would still be visible as repeated Drive writes; we accept this risk because it would also be a serious local-storage bug.
+- Drive sync now **feels like real sync** — open a second device, the account menu auto-pulls, and edits flow back via the debounced auto-push. Per-song merge still uses `updatedAt` for title/mix freshness, but **section markers, stats, metronome maps, and skip flags use marker-safe heuristics** (`mergeStanzaRicherSongMetadata`): non-empty beats empty, more markers beats fewer, and a device that never sectioned a song cannot clobber a richly marked copy when remote `updatedAt` is newer.
+- The auto-push fires from the same Dexie event stream that powers `useLiveQuery`, so a misbehaving caller that bumps `updatedAt` for spurious reasons can chatter Drive. The debounce + `MIN_INTERVAL_MS` cap absorb typical multi-control edits but a bug like “write song every animation frame” would still be visible as repeated Drive writes; we accept this risk because it would also be a serious local-storage bug. Internal migrations (segment id remap) and thumbnail backfill do **not** bump `updatedAt`.
 - The Drive envelope explicitly drops `localAudioBlob`, `localVideoThumbnailBlob`, and per-stem `localBlob` (see `stanzaDriveEnvelope.ts`). Thumbnails are auto-rederived locally; audio and stems are deliberately device-local to keep `progress.json` small and avoid leaking gigabyte uploads through the metadata channel.
-- Undo snapshots are still **local to the browser**; clearing site data removes them. The new “Latest from Drive” entry partially compensates by giving users a one-tap way to roll back to whatever `progress.json` currently says.
+- Undo snapshots are still **local to the browser** (IndexedDB); clearing site data removes them. Restore lists song + section counts per snapshot; **Undo last sync** rolls back to the most recent pre-pull snapshot when available.
 - **Encore ↔ Stanza shared stem / practice-resource storage** is specified in **[ADR 0007](./0007-encore-owned-practice-resources-stanza-secondary-client.md)** (Encore-owned `Encore_App/` tree and repertoire schema; Stanza overlay / secondary client). This ADR remains about Stanza’s legacy `Tiff Zhang Labs/Stanza/progress.json` backup UX until migration lands.
 - **Drive deletion tombstones are append-mostly + capped** at 500 entries. A user who churns through hundreds of one-off Drive imports may eventually evict an older tombstone; if a Drive `progress.json` from a stale device still references that file id, the row could come back. We accept this because (a) the cap keeps `progress.json` size predictable and (b) at that retention depth the user can re-delete with one click and the new tombstone goes to the top of the list.
 
 ## Links
 
 - [`src/stanza/drive/stanzaDriveEnvelope.ts`](../../src/stanza/drive/stanzaDriveEnvelope.ts)
-- [`src/stanza/drive/stanzaDriveMerge.ts`](../../src/stanza/drive/stanzaDriveMerge.ts)
+- [`src/stanza/utils/stanzaSongMetadataMerge.ts`](../../src/stanza/utils/stanzaSongMetadataMerge.ts)
+- [`src/stanza/utils/stanzaMarkerMerge.ts`](../../src/stanza/utils/stanzaMarkerMerge.ts)
+- [`src/stanza/utils/stanzaSongCustomizationScore.ts`](../../src/stanza/utils/stanzaSongCustomizationScore.ts)
 - [`src/stanza/drive/stanzaDriveConflict.ts`](../../src/stanza/drive/stanzaDriveConflict.ts)
 - [`src/stanza/drive/stanzaDriveSyncMeta.ts`](../../src/stanza/drive/stanzaDriveSyncMeta.ts)
 - [`src/stanza/drive/stanzaDriveTombstones.ts`](../../src/stanza/drive/stanzaDriveTombstones.ts)

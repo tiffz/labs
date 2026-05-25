@@ -25,6 +25,7 @@ import {
   type LabsGoogleSessionTouches,
 } from './labsGoogleSessionConsumers';
 import { formatLabsDriveInstant } from './formatLabsDriveInstant';
+import { useLabsGoogleDriveNeedsSignIn } from './useLabsGoogleDriveNeedsSignIn';
 
 const PRIVACY_URL = 'https://labs.tiffzhang.com/privacy';
 
@@ -36,6 +37,8 @@ export type LabsAccountBackupSlotProps = {
   busy: boolean;
   message: string | null;
   onBackup: () => void;
+  /** Opens GIS sign-in from a user gesture; resumes Drive sync after auth. */
+  onSignIn?: () => void;
   lastBackupExportedAt?: string;
   /** Short scope line, e.g. "Markers & YouTube IDs · audio on device" */
   scopeSummary: string;
@@ -58,7 +61,13 @@ export type LabsAccountMenuProps = {
   identityCaption?: string;
   appearance?: LabsAccountMenuAppearance;
   ids: { menu: string; button: string };
-  renderBackupButton: (ctx: { disabled: boolean; busy: boolean; onBackup: () => void }) => ReactNode;
+  renderBackupButton: (ctx: {
+    disabled: boolean;
+    busy: boolean;
+    onBackup: () => void;
+    needsSignIn: boolean;
+    onSignIn: () => void;
+  }) => ReactNode;
 };
 
 function formatSessionTouchDay(ts: number): string {
@@ -124,6 +133,10 @@ function LabsAppsCompactRow(props: {
 
 function backupMessageIsFailure(message: string): boolean {
   return /failed|error|403|401|timed out/i.test(message);
+}
+
+function backupMessageNeedsSignIn(message: string): boolean {
+  return /sign in again|sync paused/i.test(message);
 }
 
 /**
@@ -246,6 +259,9 @@ function LabsAccountBackupBlock(props: {
 }) {
   const { backup, alertSurfaceSx, renderBackupButton } = props;
   const msgFail = typeof backup.message === 'string' && backupMessageIsFailure(backup.message);
+  const msgNeedsSignIn = typeof backup.message === 'string' && backupMessageNeedsSignIn(backup.message);
+  const needsSignIn = useLabsGoogleDriveNeedsSignIn(Boolean(backup.identity?.email?.trim()));
+  const onSignIn = backup.onSignIn ?? backup.onBackup;
 
   if (!backup.testerResolved) {
     return (
@@ -297,11 +313,13 @@ function LabsAccountBackupBlock(props: {
           disabled: backup.busy,
           busy: backup.busy,
           onBackup: backup.onBackup,
+          needsSignIn,
+          onSignIn,
         })}
       </Box>
       {backup.message ? (
         <Alert
-          severity={msgFail ? 'error' : 'success'}
+          severity={msgFail ? 'error' : msgNeedsSignIn ? 'warning' : 'success'}
           sx={{
             py: 0.5,
             ...alertSurfaceSx,
@@ -311,11 +329,17 @@ function LabsAccountBackupBlock(props: {
                   bgcolor: 'rgba(255, 248, 247, 0.96)',
                   '& .MuiAlert-icon': { color: 'error.main' },
                 }
-              : {
-                  borderColor: 'rgba(46, 125, 50, 0.22)',
-                  bgcolor: 'rgba(246, 252, 246, 0.92)',
-                  '& .MuiAlert-icon': { color: 'success.main' },
-                }),
+              : msgNeedsSignIn
+                ? {
+                    borderColor: 'rgba(237, 108, 2, 0.28)',
+                    bgcolor: 'rgba(255, 251, 245, 0.96)',
+                    '& .MuiAlert-icon': { color: 'warning.main' },
+                  }
+                : {
+                    borderColor: 'rgba(46, 125, 50, 0.22)',
+                    bgcolor: 'rgba(246, 252, 246, 0.92)',
+                    '& .MuiAlert-icon': { color: 'success.main' },
+                  }),
           }}
         >
           {backup.message}

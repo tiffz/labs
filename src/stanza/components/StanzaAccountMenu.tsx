@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import type { SxProps, Theme } from '@mui/material/styles';
+import { formatLabsDriveInstant } from '../../shared/google/formatLabsDriveInstant';
 import { LabsDriveAccountMenu } from '../../shared/google/LabsDriveAccountMenu';
 import type { LabsDriveBackupUiProps, LabsDriveConflictUiProps } from '../../shared/google/labsDriveBackupTypes';
 import {
@@ -7,12 +8,17 @@ import {
   stanzaGoogleClientConfigured,
   useStanzaDriveBackup,
 } from '../hooks/useStanzaDriveBackup';
+import { formatStanzaDriveUndoSnapshotTrigger, parseSnapshotEnvelope } from '../drive/stanzaDriveUndoSnapshots';
+import { summarizeEnvelopeSections } from '../drive/stanzaDriveMarkerSummary';
 
 export default function StanzaAccountMenu() {
   const backup = useStanzaDriveBackup();
 
   const drive = useMemo((): LabsDriveBackupUiProps => {
     const meta = backup.lastMeta;
+    const driveSummary = backup.latestRemoteEnvelope
+      ? summarizeEnvelopeSections(backup.latestRemoteEnvelope.songs)
+      : null;
     return {
       driveFolderUrl: backup.driveFolderUrl,
       driveFolderAriaLabel: 'Open Stanza folder in Google Drive (opens in new tab)',
@@ -26,24 +32,37 @@ export default function StanzaAccountMenu() {
       driveRestoreOption: backup.latestRemoteEnvelope
         ? {
             exportedAt: backup.latestRemoteEnvelope.exportedAt,
-            secondary: `${backup.latestRemoteEnvelope.songs.length} song${
-              backup.latestRemoteEnvelope.songs.length === 1 ? '' : 's'
-            }`,
+            secondary: `${driveSummary?.songCount ?? backup.latestRemoteEnvelope.songs.length} song${
+              (driveSummary?.songCount ?? backup.latestRemoteEnvelope.songs.length) === 1 ? '' : 's'
+            } · ${driveSummary?.sectionCount ?? 0} section${(driveSummary?.sectionCount ?? 0) === 1 ? '' : 's'}`,
           }
         : null,
       lastBackupExportedAt: meta.lastBackupExportedAt,
-      undoSnapshots: backup.undoSnapshots.map((s) => ({
-        key: String(s.createdAt),
-        label: s.label,
-      })),
+      undoSnapshots: backup.undoSnapshots.map((s) => {
+        let secondary = formatStanzaDriveUndoSnapshotTrigger(s.trigger);
+        try {
+          const env = parseSnapshotEnvelope(s);
+          const sum = summarizeEnvelopeSections(env.songs);
+          secondary = `${sum.songCount} song${sum.songCount === 1 ? '' : 's'} · ${sum.sectionCount} section${sum.sectionCount === 1 ? '' : 's'} · ${secondary}`;
+        } catch {
+          /* ignore parse errors in list */
+        }
+        return {
+          key: String(s.createdAt),
+          label: s.label,
+          secondary,
+        };
+      }),
       applyUndoSnapshot: (item) => {
         const snap = backup.undoSnapshots.find((s) => String(s.createdAt) === item.key);
         if (snap) void backup.applyUndoSnapshot(snap);
       },
+      undoLastSync: backup.restoreLatestPrePullSnapshot,
+      canUndoLastSync: backup.canUndoLastSync,
       copy: {
         title: 'Restore library',
         intro:
-          'Merges metadata into this library. Newer updatedAt wins per song; local audio is kept when ids match.',
+          'Merges metadata into this library. Section markers are kept when one copy has sections and the other does not. Local audio stays on device.',
       },
     };
   }, [backup]);
@@ -51,31 +70,33 @@ export default function StanzaAccountMenu() {
   const conflict = useMemo((): (LabsDriveConflictUiProps & { dialogTitleId: string }) | null => {
     if (!backup.conflict) return null;
     const c = backup.conflict;
+    const firstDeviceHere = c.reasons.includes('drive_nonempty_first_device');
+    const driveUpdatedAt = c.driveModifiedTime || c.remoteExportedAt;
+    const driveWhen = driveUpdatedAt ? formatLabsDriveInstant(driveUpdatedAt) : null;
+    const songCountLine = `${c.remoteSongCount} song${c.remoteSongCount === 1 ? '' : 's'} on Drive · ${c.localSongCount} here`;
+    const localRicher = c.localSongsWithMoreMarkers;
+    const remoteSections = c.remoteSectionCount;
+    const localSections = c.localSectionCount;
+    let recommendation = firstDeviceHere
+      ? 'Merge and upload is usually safest so you keep songs from both copies.'
+      : 'Merge and upload is usually safest so you keep edits from both copies.';
+    if (localRicher > 0) {
+      recommendation = `This device has sections for ${localRicher} song${localRicher === 1 ? '' : 's'} that Drive does not. Merge keeps your sections.`;
+    }
+    const replaceWarning =
+      remoteSections > localSections
+        ? `Drive has more section markers overall (${remoteSections} vs ${localSections} here). Use this device only if you mean to replace Drive with this copy.`
+        : undefined;
     return {
       dialogTitleId: 'stanza-drive-conflict-title',
       busy: backup.busy,
       title: 'Drive backup conflict',
-      intro: (
-        <>
-          Another device may have uploaded a newer <code>progress.json</code> to your Stanza folder on Drive than
-          this browser last saw.
-        </>
-      ),
-      stats: [
-        { label: 'Drive file modified:', value: c.driveModifiedTime || 'unknown' },
-        { label: 'Backup timestamp inside file:', value: c.remoteExportedAt },
-        {
-          label: 'Songs in Drive backup / on this device:',
-          value: `${c.remoteSongCount} / ${c.localSongCount}`,
-        },
-      ],
-      explainLines: c.explainLines,
-      mergeBullet:
-        'Merge, then upload. For each song id, keep the copy with the newer updatedAt. When Drive wins, this device keeps local audio files where ids still match. The combined library is then uploaded to Drive.',
-      replaceBullet:
-        "Replace Drive only. Uploads this device's library as-is and overwrites the Drive file. Use when Drive is wrong or empty.",
-      cancelBullet:
-        'Cancel. Nothing is written. A snapshot of this device was saved when you opened this dialog; use Restore if you merge and change your mind.',
+      intro: firstDeviceHere
+        ? 'Drive already has a Stanza backup, but this device has not synced here before.'
+        : 'Your Stanza library was updated on another device since this browser last synced.',
+      detail: driveWhen ? `${songCountLine} · Drive updated ${driveWhen}` : songCountLine,
+      recommendation,
+      replaceWarning,
       onCancel: backup.cancelConflict,
       onReplaceOnly: backup.confirmReplaceDriveOnly,
       onMergeThenUpload: backup.confirmMergeThenUpload,
@@ -105,6 +126,7 @@ export default function StanzaAccountMenu() {
         busy: backup.busy,
         message: backup.message,
         onBackup: backup.onBackup,
+        onSignIn: backup.onSignIn,
         lastBackupExportedAt: meta.lastBackupExportedAt,
         scopeSummary: 'Sections, BPM, mix, and skip flags. Audio stays on device.',
         scopeTooltip:

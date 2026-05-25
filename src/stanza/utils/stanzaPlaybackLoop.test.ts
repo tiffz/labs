@@ -3,6 +3,8 @@ import {
   applySectionSelectionExtend,
   computeLoopHull,
   effectiveBpmForSelectedSpan,
+  isPastLoopWrapPoint,
+  STANZA_LOOP_WRAP_TOLERANCE_SEC,
   suggestMusicalLoopPadSec,
 } from './stanzaPlaybackLoop';
 import type { DerivedSegment } from './segments';
@@ -84,5 +86,14 @@ describe('computeLoopHull', () => {
   it('spans contiguous selection', () => {
     const segments = [seg(0, 0, 1), seg(1, 1, 2), seg(2, 2, 3)];
     expect(computeLoopHull(segments, [0, 1])).toEqual({ start: 0, end: 2 });
+  });
+});
+
+describe('isPastLoopWrapPoint', () => {
+  it('does not wrap until the playhead is within sub-frame tolerance of loop end', () => {
+    const end = 180;
+    expect(isPastLoopWrapPoint(end - 0.06, end)).toBe(false);
+    expect(isPastLoopWrapPoint(end - STANZA_LOOP_WRAP_TOLERANCE_SEC, end)).toBe(true);
+    expect(isPastLoopWrapPoint(end, end)).toBe(true);
   });
 });

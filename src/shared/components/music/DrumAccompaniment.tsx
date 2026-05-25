@@ -2,7 +2,8 @@ import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom';
 import type { TimeSignature } from '../../rhythm/types';
 import { parseRhythm } from '../../rhythm/rhythmParser';
-import { getRhythmTemplatePresets } from '../../rhythm/presetDatabase';
+import { getRhythmTemplatePresets, getTemplatePresetVariationIndex, getTemplatePresetVariations } from '../../rhythm/presetDatabase';
+import { RhythmTemplateVariationControls } from '../../notation/RhythmTemplateVariationControls';
 import { AudioPlayer } from '../../audio/audioPlayer';
 import DrumNotationMini, { type NotationStyle } from '../../notation/DrumNotationMini';
 import DiceIcon from '../DiceIcon';
@@ -43,6 +44,16 @@ interface DrumAccompanimentProps {
   /** Hide the "Edit in Darbuka Trainer" deep-link below the notation (used by host apps that
    * don't want to send users into a separate tool). */
   hideDarbukaLink?: boolean;
+  /** Optional class for the Darbuka deep-link (app-specific styling). */
+  darbukaLinkClassName?: string;
+  /** Optional class on the notation frame wrapping variation controls + mini renderer. */
+  notationFrameClassName?: string;
+  /** Optional footer below the mini renderer (e.g. calibration hint). */
+  notationFooter?: React.ReactNode;
+  /** Metronome dots under the staff in mini notation. Defaults to `metronomeEnabled`. */
+  notationShowMetronomeDots?: boolean;
+  /** Scale for drum symbols above noteheads (default 0.6). */
+  drumSymbolScale?: number;
   scheduler?: DrumScheduler;
   TemplateButtonComponent?: React.ComponentType<DrumTemplateButtonProps>;
   templateButtonClassName?: string;
@@ -90,6 +101,11 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
   notationWidth,
   notationHeight,
   hideDarbukaLink = false,
+  darbukaLinkClassName,
+  notationFrameClassName,
+  notationFooter,
+  notationShowMetronomeDots,
+  drumSymbolScale = 0.6,
   scheduler,
   TemplateButtonComponent,
   templateButtonClassName,
@@ -114,6 +130,33 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
     }
     return presetRhythms[selectedPreset]?.notation ?? presetRhythms[0]?.notation ?? '';
   }, [customNotation, selectedPreset, presetRhythms]);
+
+  const selectedPresetData =
+    selectedPreset >= 0 ? presetRhythms[selectedPreset] : undefined;
+
+  const templateVariations = useMemo(
+    () =>
+      selectedPresetData
+        ? getTemplatePresetVariations(selectedPresetData.id, timeSignature)
+        : [],
+    [selectedPresetData, timeSignature],
+  );
+
+  const activeVariationIndex = useMemo(() => {
+    if (!selectedPresetData || templateVariations.length === 0) return -1;
+    return getTemplatePresetVariationIndex(selectedPresetData.id, notation, timeSignature);
+  }, [notation, selectedPresetData, templateVariations.length, timeSignature]);
+
+  const cycleTemplateVariation = useCallback(
+    (delta: -1 | 1) => {
+      if (templateVariations.length === 0) return;
+      const current = activeVariationIndex >= 0 ? activeVariationIndex : 0;
+      const nextIndex =
+        (current + delta + templateVariations.length) % templateVariations.length;
+      setCustomNotation(templateVariations[nextIndex]?.notation ?? notation);
+    },
+    [activeVariationIndex, notation, templateVariations],
+  );
 
   const parsedRhythm = useMemo(() => {
     return parseRhythm(notation, timeSignature);
@@ -258,20 +301,39 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
 
   const handleNotationChange = useCallback((value: string) => {
     setCustomNotation(value);
-    const matchingPresetIndex = presetRhythms.findIndex((preset) => preset.notation === value);
+    const matchingPresetIndex = presetRhythms.findIndex((preset) => {
+      if (preset.notation === value) return true;
+      return getTemplatePresetVariations(preset.id, timeSignature).some(
+        (variation) => variation.notation === value,
+      );
+    });
     if (matchingPresetIndex >= 0) {
       setSelectedPreset(matchingPresetIndex);
-      setCustomNotation(null); // Use preset instead
+      if (value === presetRhythms[matchingPresetIndex]?.notation) {
+        setCustomNotation(null);
+      }
     } else {
       setSelectedPreset(-1);
     }
-  }, [presetRhythms]);
+  }, [presetRhythms, timeSignature]);
   const randomizePresetTemplate = useCallback(() => {
     if (presetRhythms.length === 0) return;
-    const nextIndex = Math.floor(Math.random() * presetRhythms.length);
-    setSelectedPreset(nextIndex);
-    setCustomNotation(null);
-  }, [presetRhythms]);
+    const notationPool: string[] = [];
+    presetRhythms.forEach((preset) => {
+      const variations = getTemplatePresetVariations(preset.id, timeSignature);
+      if (variations.length > 0) {
+        variations.forEach((variation) => notationPool.push(variation.notation));
+      } else {
+        notationPool.push(preset.notation);
+      }
+    });
+    const uniquePool = [...new Set(notationPool)];
+    const nextNotation =
+      uniquePool[Math.floor(Math.random() * uniquePool.length)] ??
+      presetRhythms[0]?.notation ??
+      '';
+    handleNotationChange(nextNotation);
+  }, [handleNotationChange, presetRhythms, timeSignature]);
   const randomizeFullTemplate = useCallback(() => {
     const tokens = ['D', 'T', 'K', 'S', '-', '-'];
     let nextNotation = '';
@@ -412,7 +474,20 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
 
       {/* Rhythm display */}
       {parsedRhythm.isValid && parsedRhythm.measures.length > 0 ? (
-        <div className="vexflow-mini-container">
+        <div
+          className={['vexflow-mini-container', notationFrameClassName]
+            .filter(Boolean)
+            .join(' ')}
+        >
+          {selectedPresetData && templateVariations.length > 1 ? (
+            <RhythmTemplateVariationControls
+              presetLabel={selectedPresetData.label}
+              variations={templateVariations}
+              activeVariationIndex={activeVariationIndex}
+              onPrevious={() => cycleTemplateVariation(-1)}
+              onNext={() => cycleTemplateVariation(1)}
+            />
+          ) : null}
           {/* Multi-measure indicator */}
           {parsedRhythm.measures.length > 1 && (
             <div className="measure-indicator">
@@ -435,14 +510,12 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
             width={notationWidth ?? 320}
             height={notationHeight ?? (metronomeEnabled ? 120 : 100)}
             style={notationStyle ?? {
-              staffColor: '#c8c4d8',
-              noteColor: '#c8c4d8',
-              textColor: '#c8c4d8',
+              inkColor: '#c8c4d8',
               highlightColor: '#22c55e',
             } as NotationStyle}
             showDrumSymbols={true}
-            drumSymbolScale={0.6}
-            showMetronomeDots={metronomeEnabled}
+            drumSymbolScale={drumSymbolScale}
+            showMetronomeDots={notationShowMetronomeDots ?? metronomeEnabled}
             currentBeat={currentBeat}
             isPlaying={isPlaying}
             darbukaLinkOptions={
@@ -453,10 +526,11 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
                     bpm,
                     timeSignature,
                     metronomeEnabled,
-                    className: 'drum-edit-link',
+                    className: darbukaLinkClassName ?? 'drum-edit-link',
                   }
             }
           />
+          {notationFooter}
         </div>
       ) : (
         <div className="drum-display-error">

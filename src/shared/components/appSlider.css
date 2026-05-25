@@ -22,6 +22,17 @@
   padding: 6px 0 !important;
 }
 
+/* MUI value labels render above the thumb; default py=6px clips them in popovers. */
+.app-slider--with-value-label {
+  overflow: visible !important;
+  padding-top: 1.65rem !important;
+  padding-bottom: 6px !important;
+}
+
+.app-slider--with-value-label .MuiSlider-valueLabel {
+  z-index: 1;
+}
+
 .app-slider .MuiSlider-rail {
   background-color: var(--app-slider-rail) !important;
   opacity: 1 !important;

@@ -10,6 +10,8 @@ import {
   isAsymmetricTimeSignature,
   getBeatGroupingInSixteenths,
 } from '../rhythm/timeSignatureUtils';
+import './notationMini.css';
+import { RhythmTemplateVariationControls } from './RhythmTemplateVariationControls';
 
 /**
  * ARCHITECTURE DECISION: DrumNotationMini vs VexFlowRenderer
@@ -37,41 +39,105 @@ import {
  */
 
 /**
- * Style configuration for the drum notation renderer
+ * Style configuration for the drum notation renderer.
+ * Use a single `inkColor` for staff lines, barlines, noteheads, stems, beams, and time signature.
  */
 export interface NotationStyle {
-  /** Primary color for staff lines, barlines, and note stems */
-  staffColor: string;
-  /** Color for noteheads and filled elements */
-  noteColor: string;
-  /** Color for text (time signature) */
-  textColor: string;
-  /** Color for highlighted/active notes */
+  /** Unified ink for all notation glyphs and lines (staff, barlines, notes, time signature). */
+  inkColor: string;
+  /** Color for highlighted/active notes during playback. */
   highlightColor: string;
-  /** Background color (for contrast) */
+  /** Background color (for contrast). */
   backgroundColor?: string;
 }
+
+export type NotationStyleInput = 'light' | 'dark' | NotationStyle;
 
 /**
  * Predefined style presets
  */
-// eslint-disable-next-line react-refresh/only-export-components
+ 
 export const NOTATION_STYLES = {
   light: {
-    staffColor: '#333333',
-    noteColor: '#333333',
-    textColor: '#333333',
+    inkColor: '#333333',
     highlightColor: '#9d8ec7',
     backgroundColor: '#ffffff',
   },
   dark: {
-    staffColor: '#c8c4d8',
-    noteColor: '#c8c4d8',
-    textColor: '#c8c4d8',
+    inkColor: '#c8c4d8',
     highlightColor: '#c9a0b8',
     backgroundColor: '#262630',
   },
-} as const;
+} as const satisfies Record<'light' | 'dark', NotationStyle>;
+
+/** Resolve a preset name or custom style object to a full {@link NotationStyle}. */
+// eslint-disable-next-line react-refresh/only-export-components
+export function resolveNotationStyle(style: NotationStyleInput = 'light'): NotationStyle {
+  if (typeof style === 'string') {
+    return NOTATION_STYLES[style];
+  }
+  return style;
+}
+
+/** Derive VexFlow layout from the requested render height (host apps tune density via `height`). */
+// eslint-disable-next-line react-refresh/only-export-components
+export function computeMiniNotationLayout(
+  height: number,
+  options: { showDrumSymbols: boolean; showMetronomeDots: boolean },
+): {
+  staveY: number;
+  staveHeight: number;
+  renderHeight: number;
+  symbolGap: number;
+  metronomeDotGap: number;
+} {
+  const edgePadding = 2;
+  const isUltraCompact = height <= 68;
+  /** Room above the top staff line for time-signature numerals. */
+  const timeSignatureSpace = isUltraCompact ? 4 : 8;
+  /** Stems, flags, and noteheads extend below the bottom staff line. */
+  const noteBottomPad = isUltraCompact ? 16 : 20;
+  /** Metronome dots render below the bottom staff line (see draw loop). */
+  const metronomeDotRadius = 5;
+  const symbolGap = height <= 68 ? 4 : height <= 72 ? 5 : height <= 90 ? 6 : 8;
+  const metronomeDotGap = height <= 68 ? 9 : height <= 72 ? 11 : height <= 90 ? 14 : 18;
+  const symbolSpace = options.showDrumSymbols
+    ? isUltraCompact
+      ? Math.round(Math.min(9, Math.max(5, height * 0.1)))
+      : Math.round(Math.min(14, Math.max(9, height * 0.14)))
+    : 0;
+  const staveY = symbolSpace + timeSignatureSpace + edgePadding;
+  const belowStaffPad = options.showMetronomeDots
+    ? Math.max(noteBottomPad, metronomeDotGap + metronomeDotRadius + edgePadding)
+    : noteBottomPad;
+  const bottomPad = edgePadding + belowStaffPad;
+  /** Fixed staff height — do not shrink when adding top headroom. */
+  const staveHeight = options.showMetronomeDots ? 48 : isUltraCompact ? 46 : 50;
+  const contentHeight = staveY + staveHeight + bottomPad;
+  const renderHeight = Math.max(height, contentHeight);
+  return { staveY, staveHeight, renderHeight, symbolGap, metronomeDotGap };
+}
+
+/** Grow the SVG to fit VexFlow's real stave geometry (layout `staveHeight` is a budget hint only). */
+function resolveMiniNotationRenderHeight(
+  requestedHeight: number,
+  layout: ReturnType<typeof computeMiniNotationLayout>,
+  stave: Stave,
+  options: { showMetronomeDots: boolean },
+): number {
+  const edgePadding = 2;
+  const noteBottomPad = requestedHeight <= 68 ? 16 : 20;
+  const metronomeDotRadius = 5;
+  const bottomLineY = stave.getYForLine(4);
+  let contentBottom = bottomLineY + noteBottomPad + edgePadding;
+  if (options.showMetronomeDots) {
+    contentBottom = Math.max(
+      contentBottom,
+      bottomLineY + layout.metronomeDotGap + metronomeDotRadius + edgePadding,
+    );
+  }
+  return Math.max(requestedHeight, layout.renderHeight, contentBottom);
+}
 
 interface DrumNotationMiniProps {
   /** Parsed rhythm to render */
@@ -83,7 +149,7 @@ interface DrumNotationMiniProps {
   /** Height of the notation in pixels */
   height?: number;
   /** Theme preset ('light' or 'dark') or custom NotationStyle */
-  style?: 'light' | 'dark' | NotationStyle;
+  style?: NotationStyleInput;
   /** Whether to show drum symbols above notes */
   showDrumSymbols?: boolean;
   /** Scale factor for drum symbols (default: 0.65) */
@@ -100,6 +166,15 @@ interface DrumNotationMiniProps {
     onRandomFull?: () => void;
     randomPresetTooltip?: string;
     randomFullTooltip?: string;
+  };
+  /** Optional preset variation carousel (e.g. Maqsum ka ornaments). */
+  templateVariationOptions?: {
+    presetLabel: string;
+    variations: readonly { notation: string; label: string }[];
+    activeVariationIndex: number;
+    onPrevious: () => void;
+    onNext: () => void;
+    className?: string;
   };
   /** Optional Darbuka Trainer link rendered under the mini notation */
   darbukaLinkOptions?: {
@@ -203,96 +278,52 @@ function createBeamsFromBeatGroups(
 }
 
 /**
- * Apply colors to all SVG elements - force all colors regardless of current value
- * For elements inside notes/beams, we use lower priority styling so highlighting can override.
+ * Apply unified ink to all SVG elements. Skips playback-highlighted groups so
+ * post-processing can paint the active note with highlightColor.
  */
-function applyColorsToSvg(svg: SVGSVGElement, style: NotationStyle): void {
-  // Process ALL elements in the SVG
-  svg.querySelectorAll('*').forEach(el => {
-    const svgEl = el as SVGElement;
-    const tagName = svgEl.tagName.toLowerCase();
-    const currentFill = svgEl.getAttribute('fill');
-    
-    // Check if this element is inside a note or beam group
-    // These elements need lower-priority styling so highlighting can override
-    const isInsideNote = svgEl.closest('.vf-stavenote') !== null;
-    const isInsideBeam = svgEl.closest('.vf-beam') !== null;
-    const needsLowPriority = isInsideNote || isInsideBeam;
-    
-    switch (tagName) {
-      case 'path':
-      case 'polygon':
-      case 'polyline':
-        // For note/beam elements: only set style (not attribute) without !important
-        // This allows setStyle/setKeyStyle to override
-        if (needsLowPriority) {
-          svgEl.style.stroke = style.staffColor;
-          if (currentFill !== 'none') {
-            svgEl.style.fill = style.noteColor;
-          }
-        } else {
-          svgEl.setAttribute('stroke', style.staffColor);
-          svgEl.style.setProperty('stroke', style.staffColor, 'important');
-          if (currentFill !== 'none') {
-            svgEl.setAttribute('fill', style.noteColor);
-            svgEl.style.setProperty('fill', style.noteColor, 'important');
-          }
-        }
-        break;
-        
-      case 'line':
-        // Lines: stroke only - same low priority for note/beam elements
-        if (needsLowPriority) {
-          svgEl.style.stroke = style.staffColor;
-        } else {
-          svgEl.setAttribute('stroke', style.staffColor);
-          svgEl.style.setProperty('stroke', style.staffColor, 'important');
-        }
-        break;
-        
-      case 'rect':
-        // Rectangles: stroke + fill (if not none)
-        if (needsLowPriority) {
-          svgEl.style.stroke = style.staffColor;
-          if (currentFill !== 'none') {
-            svgEl.style.fill = style.noteColor;
-          }
-        } else {
-          svgEl.setAttribute('stroke', style.staffColor);
-          svgEl.style.setProperty('stroke', style.staffColor, 'important');
-          if (currentFill !== 'none') {
-            svgEl.setAttribute('fill', style.noteColor);
-            svgEl.style.setProperty('fill', style.noteColor, 'important');
-          }
-        }
-        break;
-        
-      case 'ellipse':
-      case 'circle':
-        // Noteheads - always low priority
-        svgEl.style.stroke = style.staffColor;
-        svgEl.style.fill = style.noteColor;
-        break;
-        
-      case 'text':
-      case 'tspan':
-        // Text elements - high priority
-        svgEl.setAttribute('fill', style.textColor);
-        svgEl.style.setProperty('fill', style.textColor, 'important');
-        break;
-        
-      case 'g':
-        // Groups might have styles - clear them
-        svgEl.style.removeProperty('fill');
-        svgEl.style.removeProperty('stroke');
-        break;
-    }
-  });
+function applyInkToSvgElement(el: SVGElement, inkColor: string): void {
+  if (el.closest('[data-highlighted="true"]')) return;
 
-  // Set default styles on the SVG root as fallback
-  svg.style.setProperty('--staff-color', style.staffColor);
-  svg.style.setProperty('--note-color', style.noteColor);
-  svg.style.setProperty('--text-color', style.textColor);
+  const tagName = el.tagName.toLowerCase();
+  const currentFill = el.getAttribute('fill');
+
+  switch (tagName) {
+    case 'path':
+    case 'polygon':
+    case 'polyline':
+    case 'ellipse':
+    case 'circle':
+    case 'rect':
+      el.setAttribute('stroke', inkColor);
+      el.style.setProperty('stroke', inkColor, 'important');
+      if (currentFill !== 'none') {
+        el.setAttribute('fill', inkColor);
+        el.style.setProperty('fill', inkColor, 'important');
+      }
+      break;
+
+    case 'line':
+      el.setAttribute('stroke', inkColor);
+      el.style.setProperty('stroke', inkColor, 'important');
+      break;
+
+    case 'text':
+    case 'tspan':
+      el.setAttribute('fill', inkColor);
+      el.style.setProperty('fill', inkColor, 'important');
+      break;
+
+    case 'g':
+      el.style.removeProperty('fill');
+      el.style.removeProperty('stroke');
+      break;
+  }
+}
+
+function applyColorsToSvg(svg: SVGSVGElement, style: NotationStyle): void {
+  svg.querySelectorAll('*').forEach(el => applyInkToSvgElement(el as SVGElement, style.inkColor));
+  svg.style.setProperty('--notation-ink', style.inkColor);
+  svg.style.setProperty('--notation-highlight', style.highlightColor);
 }
 
 /**
@@ -311,6 +342,7 @@ const DrumNotationMini: React.FC<DrumNotationMiniProps> = ({
   currentBeat = null,
   isPlaying = false,
   templateRandomizeOptions,
+  templateVariationOptions,
   darbukaLinkOptions,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -321,12 +353,7 @@ const DrumNotationMini: React.FC<DrumNotationMiniProps> = ({
   } | null>(null);
 
   // Resolve style to NotationStyle object
-  const resolvedStyle = useMemo((): NotationStyle => {
-    if (typeof style === 'string') {
-      return NOTATION_STYLES[style];
-    }
-    return style;
-  }, [style]);
+  const resolvedStyle = useMemo((): NotationStyle => resolveNotationStyle(style), [style]);
 
   useEffect(() => {
     if (!containerRef.current || rhythm.measures.length === 0) {
@@ -339,26 +366,31 @@ const DrumNotationMini: React.FC<DrumNotationMiniProps> = ({
       const measure = rhythm.measures[0];
       if (!measure || measure.notes.length === 0) return;
 
-      // Calculate layout - compact for mini display
-      // Allow enough space for notes at bottom of staff and metronome dots
-      const symbolSpace = showDrumSymbols ? 18 : 0;
-      const metronomeSpace = showMetronomeDots ? 18 : 0;
-      const staveY = symbolSpace + 2;
-      const staveHeight = 85; // Enough height for notes at bottom
-      const renderHeight = staveY + staveHeight + metronomeSpace;
-      const staveWidth = width - 25;
+      // Calculate layout — `height` drives vertical density for host apps (Stanza rail, etc.)
+      const layout = computeMiniNotationLayout(height, {
+        showDrumSymbols,
+        showMetronomeDots,
+      });
+      const { staveY, symbolGap, metronomeDotGap } = layout;
+      const staveX = width <= 300 ? 6 : 12;
+      const staveWidth = Math.max(120, width - staveX - 14);
 
-      // Create renderer
-      const renderer = new Renderer(containerRef.current, Renderer.Backends.SVG);
-      renderer.resize(width, renderHeight);
-      const context = renderer.getContext();
-
-      // Create stave
-      const stave = new Stave(12, staveY, staveWidth, { numLines: 5 });
+      const stave = new Stave(staveX, staveY, staveWidth, { numLines: 5 });
       stave.addTimeSignature(
         `${rhythm.timeSignature.numerator}/${rhythm.timeSignature.denominator}`
       );
       stave.setEndBarType(BarlineType.REPEAT_END);
+
+      const renderHeight = resolveMiniNotationRenderHeight(height, layout, stave, {
+        showMetronomeDots,
+      });
+
+      const renderer = new Renderer(containerRef.current, Renderer.Backends.SVG);
+      renderer.resize(width, renderHeight);
+      const context = renderer.getContext();
+      containerRef.current.style.minHeight = `${renderHeight}px`;
+      containerRef.current.style.height = `${renderHeight}px`;
+
       stave.setContext(context).draw();
 
       // Store refs for post-processing
@@ -581,8 +613,8 @@ const DrumNotationMini: React.FC<DrumNotationMiniProps> = ({
               // VexFlow absolute X sits near the stem; nudge to notehead center.
               const noteX = staveNote.getAbsoluteX() + 6;
               // Position symbol above the top staff line (line 0), with a small gap
-              const symbolY = stave.getYForLine(0) - 8;
-              const color = isActive ? resolvedStyle.highlightColor : resolvedStyle.noteColor;
+              const symbolY = stave.getYForLine(0) - symbolGap;
+              const color = isActive ? resolvedStyle.highlightColor : resolvedStyle.inkColor;
               drawDrumSymbol(svg, noteX, symbolY, note.sound, color, drumSymbolScale, 0);
             }
           });
@@ -624,7 +656,7 @@ const DrumNotationMini: React.FC<DrumNotationMiniProps> = ({
               }
               
               // Position dot below the staff
-              const dotY = stave.getYForLine(4) + 18;
+              const dotY = stave.getYForLine(4) + metronomeDotGap;
               
               // Determine if this beat is active
               const isActiveBeat = isPlaying && currentBeat === beatIndex;
@@ -685,6 +717,16 @@ const DrumNotationMini: React.FC<DrumNotationMiniProps> = ({
 
   return (
     <div style={{ width: '100%' }}>
+      {templateVariationOptions ? (
+        <RhythmTemplateVariationControls
+          presetLabel={templateVariationOptions.presetLabel}
+          variations={templateVariationOptions.variations}
+          activeVariationIndex={templateVariationOptions.activeVariationIndex}
+          onPrevious={templateVariationOptions.onPrevious}
+          onNext={templateVariationOptions.onNext}
+          className={templateVariationOptions.className}
+        />
+      ) : null}
       {templateRandomizeOptions?.onRandomPreset || templateRandomizeOptions?.onRandomFull ? (
         <div
           style={{
@@ -792,13 +834,20 @@ const DrumNotationMini: React.FC<DrumNotationMiniProps> = ({
             document.body
           )
         : null}
-      <div
-        ref={containerRef}
-        className="drum-notation-mini"
-        style={{ width: '100%', overflowX: 'auto' }}
-      />
+      <div className="drum-notation-mini-x-scroll">
+        <div
+          ref={containerRef}
+          className="drum-notation-mini"
+          style={{
+            width: '100%',
+            overflow: 'visible',
+            ['--notation-ink' as string]: resolvedStyle.inkColor,
+            ['--notation-highlight' as string]: resolvedStyle.highlightColor,
+          }}
+        />
+      </div>
       {darbukaHref ? (
-        <div style={{ marginTop: '6px', display: 'flex', justifyContent: 'center' }}>
+        <div style={{ marginTop: height <= 72 ? '2px' : '6px', display: 'flex', justifyContent: 'center' }}>
           <a
             href={darbukaHref}
             target="_blank"

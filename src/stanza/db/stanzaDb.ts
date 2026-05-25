@@ -53,6 +53,11 @@ export interface StanzaSong {
   driveSourceFileId?: string;
   /** Local file backing when `ytId` is null */
   localAudioBlob?: Blob;
+  /**
+   * Cross-device identity for local uploads (`size:duration` or `size:name:…`).
+   * Drive backup matches metadata to the same file on another device when ids differ.
+   */
+  localMediaFingerprint?: string;
   /** First-frame JPEG preview for {@link localAudioBlob} video types (library grid). */
   localVideoThumbnailBlob?: Blob;
   /** Extra stems (local-only bytes; not included in Drive metadata backup). */
@@ -87,6 +92,8 @@ export interface StanzaSong {
   drumsEnabled?: boolean;
   /** Linear drums level 0–1 (default 0.7). Global only. */
   drumsGain?: number;
+  /** Mute the drum groove from the Mix without disabling the pattern or calibration. */
+  drumsMuted?: boolean;
   /**
    * Sections the user marked to skip during forward playback (e.g. instrumental breaks while
    * practicing vocals). Keyed by stable segment id from `deriveSegments`. Crossing into a
@@ -104,9 +111,20 @@ export interface StanzaTake {
   createdAt: number;
 }
 
+export type StanzaDriveUndoSnapshotTrigger = 'manual-backup' | 'pre-pull' | 'pre-restore' | 'pre-merge';
+
+export interface StanzaDriveUndoSnapshotRow {
+  id?: number;
+  createdAt: number;
+  label: string;
+  trigger: StanzaDriveUndoSnapshotTrigger;
+  envelopeJson: string;
+}
+
 export class StanzaDB extends Dexie {
   songs!: Table<StanzaSong, string>;
   takes!: Table<StanzaTake, string>;
+  undoSnapshots!: Table<StanzaDriveUndoSnapshotRow, number>;
 
   constructor() {
     super('stanza-practice');
@@ -137,6 +155,11 @@ export class StanzaDB extends Dexie {
     this.version(7).stores({
       songs: 'id, updatedAt, title, ytId, driveSourceFileId',
       takes: 'id, songId, segmentId, createdAt, isGuided',
+    });
+    this.version(8).stores({
+      songs: 'id, updatedAt, title, ytId, driveSourceFileId',
+      takes: 'id, songId, segmentId, createdAt, isGuided',
+      undoSnapshots: '++id, createdAt',
     });
   }
 }

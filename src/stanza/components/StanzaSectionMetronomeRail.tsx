@@ -22,6 +22,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import TouchAppIcon from '@mui/icons-material/TouchApp';
 import PauseIcon from '@mui/icons-material/Pause';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import RestartAltOutlinedIcon from '@mui/icons-material/RestartAltOutlined';
@@ -55,6 +56,7 @@ import {
   inheritedFirstBeatOffsetSecFromSongCalibration,
 } from '../utils/stanzaMetronome';
 import { STANZA_SONG_METRONOME_LIVE_ID } from '../utils/stanzaMetronomeResolution';
+import StanzaTapTempoDialog from './StanzaTapTempoDialog';
 
 export interface StanzaSectionMetronomeRailProps {
   segment: DerivedSegment;
@@ -70,8 +72,14 @@ export interface StanzaSectionMetronomeRailProps {
   mediaUrl: string;
   isLocalVideo: boolean;
   playbackIsPlaying: boolean;
+  /** Current transport time in seconds (for tap recording). */
+  getMediaTime: () => number;
   beatAnalysisCacheKey: string;
   onAnalysisModalOpenChange: (open: boolean) => void;
+  /** Enable metronome click only during tap-tempo preview (not while tapping). */
+  onTapMetronomePreviewChange?: (active: boolean) => void;
+  /** Mute metronome click during tap-tempo count-in and tapping (drums follow the same gate). */
+  onTapMetronomeTapActiveChange?: (active: boolean) => void;
   onRequestPlay: () => void;
   onRequestPause: () => void;
   /** Seek transport before preview play (e.g. section start in the analysis modal). */
@@ -130,8 +138,11 @@ export default function StanzaSectionMetronomeRail({
   mediaUrl,
   isLocalVideo,
   playbackIsPlaying,
+  getMediaTime,
   beatAnalysisCacheKey,
   onAnalysisModalOpenChange,
+  onTapMetronomePreviewChange,
+  onTapMetronomeTapActiveChange,
   onRequestPlay,
   onRequestPause,
   onRequestSeek,
@@ -319,6 +330,7 @@ export default function StanzaSectionMetronomeRail({
   const [analysisBusy, setAnalysisBusy] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [analysisModalOpen, setAnalysisModalOpen] = useState(false);
+  const [tapModalOpen, setTapModalOpen] = useState(false);
   const [modalDraftBpm, setModalDraftBpm] = useState<number | null>(null);
   const [modalDraftOffsetSec, setModalDraftOffsetSec] = useState<number | null>(null);
   const [modalOffsetInput, setModalOffsetInput] = useState('');
@@ -355,6 +367,15 @@ export default function StanzaSectionMetronomeRail({
     return audioContextRef.current;
   }, []);
 
+  const analysisRangeStart = timingScope === 'song' ? 0 : segment.start;
+  const analysisRangeEnd = timingScope === 'song' ? songDurationSec : segment.end;
+  const analysisDuration = Math.max(0, analysisRangeEnd - analysisRangeStart);
+  const analyzeTooShort = analysisDuration < STANZA_METRONOME_ANALYZE_MIN_SECTION_SEC;
+  const analyzeTooShortMessage =
+    timingScope === 'song'
+      ? `Track must be at least ${STANZA_METRONOME_ANALYZE_MIN_SECTION_SEC}s long for analysis.`
+      : `Section must be at least ${STANZA_METRONOME_ANALYZE_MIN_SECTION_SEC}s long for analysis.`;
+
   const runAnalyze = async () => {
     if (!localAudioBlob || !canAnalyze) return;
     setAnalysisError(null);
@@ -373,8 +394,8 @@ export default function StanzaSectionMetronomeRail({
         file,
         mediaType: isLocalVideo ? 'video' : 'audio',
         mediaUrl,
-        rangeStartSec: segment.start,
-        rangeEndSec: segment.end,
+        rangeStartSec: analysisRangeStart,
+        rangeEndSec: analysisRangeEnd,
         audioContext: ctx,
         onProgress: () => {},
       });
@@ -391,7 +412,7 @@ export default function StanzaSectionMetronomeRail({
       setModalDraftOffsetSec(offSec);
       setModalOffsetInput(beatOffsetSecToMsDisplay(offSec));
       setModalAnalysisConfidence(res.confidence);
-      onRequestSeek(segment.start);
+      onRequestSeek(analysisRangeStart);
       setAnalysisModalOpen(true);
     } catch (e) {
       // Keep raw error in console for debugging; show user a friendly recovery line.
@@ -401,6 +422,33 @@ export default function StanzaSectionMetronomeRail({
       setAnalysisBusy(false);
     }
   };
+
+  const applyTapCalibration = useCallback(
+    (result: { bpm: number; firstBeatOffsetSec: number }) => {
+      const bpmR = Math.round(result.bpm);
+      const offR = roundBeatOffsetForUi(result.firstBeatOffsetSec);
+      const built = buildStanzaSegmentCalibration({
+        segmentStart,
+        bpm: bpmR,
+        firstBeatOffsetSec: offR,
+        source: 'tap',
+      });
+      if (timingScope === 'song') onPersistSongCalibration(built);
+      else onPersistSegmentCalibration(built);
+      setDraftBpm(bpmR);
+      setDraftOffsetInput(beatOffsetSecToMsDisplay(offR));
+      draftRef.current = { bpm: bpmR, offsetSec: offR };
+      draftDirtyRef.current = false;
+      pushLiveFromDraft(bpmR, offR);
+    },
+    [
+      onPersistSegmentCalibration,
+      onPersistSongCalibration,
+      pushLiveFromDraft,
+      segmentStart,
+      timingScope,
+    ],
+  );
 
   const applyModalCalibration = () => {
     if (modalDraftBpm == null || modalDraftOffsetSec == null) return;
@@ -446,9 +494,6 @@ export default function StanzaSectionMetronomeRail({
     if (modalDraftOffsetSec == null) return;
     setModalOffsetInput(beatOffsetSecToMsDisplay(modalDraftOffsetSec));
   };
-
-  const sectionDur = Math.max(0, segment.end - segment.start);
-  const analyzeTooShort = sectionDur < STANZA_METRONOME_ANALYZE_MIN_SECTION_SEC;
 
   const applyDraftNumbers = useCallback(
     (bpm: number, off: number) => {
@@ -618,40 +663,68 @@ export default function StanzaSectionMetronomeRail({
         </Box>
         <Box sx={{ flexShrink: 0 }}>
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.25, fontWeight: 600, letterSpacing: '0.01em' }}>
-            Auto
+            Find
           </Typography>
-          <AppTooltip
-            title={
-              !canAnalyze
-                ? analyzeDisabledReason ?? 'Analysis unavailable'
-                : analyzeTooShort
-                  ? `Section must be at least ${STANZA_METRONOME_ANALYZE_MIN_SECTION_SEC}s long for analysis.`
-                  : timingScope === 'song'
-                    ? 'Detect tempo from this section, then save it to the whole song.'
-                    : 'Detect tempo from this section (preview before saving).'
-            }
-          >
-            <span>
-              <IconButton
-                type="button"
-                size="small"
-                color="inherit"
-                className="stanza-btn-soft-outline stanza-rail-compact-btn stanza-rail-analyze-icon"
-                disabled={!canAnalyze || analysisBusy || analyzeTooShort}
-                aria-label={
-                  analysisBusy
-                    ? 'Analyzing tempo'
+          <Stack direction="row" spacing={0.25} alignItems="center">
+            <AppTooltip
+              title={
+                timingScope === 'song'
+                  ? 'Tap along to find tempo and Beat 1 for the whole song.'
+                  : 'Tap along to find tempo and Beat 1 for this section.'
+              }
+            >
+              <span>
+                <IconButton
+                  type="button"
+                  size="small"
+                  color="inherit"
+                  className="stanza-btn-soft-outline stanza-rail-compact-btn stanza-rail-tap-icon"
+                  aria-label={
+                    timingScope === 'song' ? 'Tap tempo for the whole song' : 'Tap tempo for this section'
+                  }
+                  onClick={() => {
+                    onPrimeMetronomeAudio?.();
+                    setTapModalOpen(true);
+                  }}
+                  sx={{ minWidth: 40, minHeight: 40, borderRadius: '999px', border: '1px solid rgba(232, 72, 160, 0.35)' }}
+                >
+                  <TouchAppIcon sx={{ fontSize: 20 }} />
+                </IconButton>
+              </span>
+            </AppTooltip>
+            <AppTooltip
+              title={
+                !canAnalyze
+                  ? analyzeDisabledReason ?? 'Analysis unavailable'
+                  : analyzeTooShort
+                    ? analyzeTooShortMessage
                     : timingScope === 'song'
-                      ? 'Analyze tempo for the whole song'
-                      : 'Analyze tempo for this section'
-                }
-                onClick={() => void runAnalyze()}
-                sx={{ minWidth: 40, minHeight: 40, borderRadius: '999px', border: '1px solid rgba(232, 72, 160, 0.35)' }}
-              >
-                {analysisBusy ? <CircularProgress size={18} sx={{ color: 'inherit' }} /> : <AutoFixHighIcon sx={{ fontSize: 20 }} />}
-              </IconButton>
-            </span>
-          </AppTooltip>
+                      ? 'Detect tempo from the whole song (preview before saving).'
+                      : 'Detect tempo from this section (preview before saving).'
+              }
+            >
+              <span>
+                <IconButton
+                  type="button"
+                  size="small"
+                  color="inherit"
+                  className="stanza-btn-soft-outline stanza-rail-compact-btn stanza-rail-analyze-icon"
+                  disabled={!canAnalyze || analysisBusy || analyzeTooShort}
+                  aria-label={
+                    analysisBusy
+                      ? 'Analyzing tempo'
+                      : timingScope === 'song'
+                        ? 'Analyze tempo for the whole song'
+                        : 'Analyze tempo for this section'
+                  }
+                  onClick={() => void runAnalyze()}
+                  sx={{ minWidth: 40, minHeight: 40, borderRadius: '999px', border: '1px solid rgba(232, 72, 160, 0.35)' }}
+                >
+                  {analysisBusy ? <CircularProgress size={18} sx={{ color: 'inherit' }} /> : <AutoFixHighIcon sx={{ fontSize: 20 }} />}
+                </IconButton>
+              </span>
+            </AppTooltip>
+          </Stack>
         </Box>
         {boundaryAlignmentMessage && onSnapSectionBoundariesToBeat ? (
           <Box sx={{ flexShrink: 0 }}>
@@ -700,7 +773,7 @@ export default function StanzaSectionMetronomeRail({
       ) : null}
       {canAnalyze && analyzeTooShort ? (
         <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.35, display: 'block' }}>
-          Section must be at least {STANZA_METRONOME_ANALYZE_MIN_SECTION_SEC}s long for analysis.
+          {analyzeTooShortMessage}
         </Typography>
       ) : null}
 
@@ -715,8 +788,9 @@ export default function StanzaSectionMetronomeRail({
         <DialogTitle sx={{ pb: 1 }}>Automatic tempo (preview)</DialogTitle>
         <DialogContent className="stanza-tempo-preview-dialog-content">
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2, lineHeight: 1.5 }}>
-            Detection gets you close. Tweak BPM and Beat 1 (ms), then play from the section start so the click
-            lands on the downbeat before you save.
+            Detection gets you close. Tweak BPM and Beat 1 (ms), then play from the{' '}
+            {timingScope === 'song' ? 'track start' : 'section start'} so the click lands on the downbeat before you
+            save.
           </Typography>
           {modalDraftBpm != null && modalDraftOffsetSec != null ? (
             <Stack spacing={2} sx={{ mt: 0.25 }}>
@@ -799,6 +873,28 @@ export default function StanzaSectionMetronomeRail({
           </Button>
         </DialogActions>
       </Dialog>
+
+      <StanzaTapTempoDialog
+        open={tapModalOpen}
+        onClose={() => {
+          setTapModalOpen(false);
+          pushLiveFromDraft(draftRef.current.bpm, draftRef.current.offsetSec);
+        }}
+        timingScope={timingScope}
+        segmentStart={segmentStart}
+        segmentEnd={timingScope === 'song' ? songDurationSec : segment.end}
+        songDurationSec={songDurationSec}
+        playbackIsPlaying={playbackIsPlaying}
+        getMediaTime={getMediaTime}
+        onRequestSeek={onRequestSeek}
+        onRequestPlay={onRequestPlay}
+        onRequestPause={onRequestPause}
+        onPrimeMetronomeAudio={onPrimeMetronomeAudio}
+        onLivePreview={(bpm, offsetSec) => pushLiveFromDraft(bpm, offsetSec)}
+        onMetronomePreviewActiveChange={onTapMetronomePreviewChange}
+        onMetronomeTapActiveChange={onTapMetronomeTapActiveChange}
+        onApply={applyTapCalibration}
+      />
     </Stack>
   );
 }

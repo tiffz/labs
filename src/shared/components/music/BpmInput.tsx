@@ -3,6 +3,7 @@ import Popover from '@mui/material/Popover';
 import { COMMON_BPMS, DEFAULT_BPM_MAX, DEFAULT_BPM_MIN } from '../../music/musicInputConstants';
 import AppSlider from '../AppSlider';
 import { NumericStepperField } from './NumericStepperField';
+import { buildSliderMilestones, pickBpmSliderMilestones, SliderMilestoneLabels } from './sliderMilestoneLabels';
 import './bpmInput.css';
 
 interface BpmInputProps {
@@ -78,8 +79,7 @@ const BpmInput: React.FC<BpmInputProps> = ({
     [sliderMarkValues]
   );
   const milestoneLabels = useMemo(() => {
-    const important = [min, 100, 200, max];
-    return Array.from(new Set(important.filter((mark) => mark >= min && mark <= max))).sort((a, b) => a - b);
+    return buildSliderMilestones(pickBpmSliderMilestones(min, max), min, max);
   }, [max, min]);
 
   useEffect(() => {
@@ -277,11 +277,7 @@ const BpmInput: React.FC<BpmInputProps> = ({
                   setDraft(String(next));
                 }}
               />
-              <div className="shared-bpm-milestones" aria-hidden="true">
-                {milestoneLabels.map((label) => (
-                  <span key={`milestone-${label}`}>{label}</span>
-                ))}
-              </div>
+              <SliderMilestoneLabels milestones={milestoneLabels} />
             </div>
             <div className="shared-bpm-presets-section">
               <span className="shared-bpm-presets-label">Common BPMs</span>

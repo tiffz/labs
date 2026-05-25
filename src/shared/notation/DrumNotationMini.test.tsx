@@ -1,6 +1,6 @@
 import { render } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
-import DrumNotationMini, { NOTATION_STYLES } from './DrumNotationMini';
+import DrumNotationMini, { NOTATION_STYLES, computeMiniNotationLayout } from './DrumNotationMini';
 import { parseRhythm } from '../rhythm/rhythmParser';
 import type { TimeSignature } from '../rhythm/types';
 
@@ -17,6 +17,7 @@ describe('DrumNotationMini', () => {
       const rhythm = createRhythm('D-T-');
       const { container } = render(<DrumNotationMini rhythm={rhythm} />);
       expect(container.querySelector('.drum-notation-mini')).toBeInTheDocument();
+      expect(container.querySelector('.drum-notation-mini-x-scroll')).toBeInTheDocument();
     });
 
     it('renders SVG element', () => {
@@ -123,9 +124,7 @@ describe('DrumNotationMini', () => {
     it('applies custom style object', () => {
       const rhythm = createRhythm('D-T-');
       const customStyle = {
-        staffColor: '#ff0000',
-        noteColor: '#00ff00',
-        textColor: '#0000ff',
+        inkColor: '#ff0000',
         highlightColor: '#ffff00',
       };
       const { container } = render(
@@ -133,6 +132,32 @@ describe('DrumNotationMini', () => {
       );
       const svg = container.querySelector('svg');
       expect(svg).toBeInTheDocument();
+    });
+
+    it('applies unified ink color to staff lines and note glyphs', () => {
+      const rhythm = createRhythm('D-T-K-T-');
+      const ink = '#112233';
+      const { container } = render(
+        <DrumNotationMini rhythm={rhythm} style={{ inkColor: ink, highlightColor: '#aabbcc' }} />
+      );
+      const svg = container.querySelector('svg');
+      expect(svg).toBeInTheDocument();
+
+      const coloredElements = svg!.querySelectorAll('path, line, text, rect');
+      expect(coloredElements.length).toBeGreaterThan(0);
+
+      for (const el of coloredElements) {
+        if (el.closest('[data-highlighted="true"]')) continue;
+        const svgEl = el as SVGElement;
+        const fill = svgEl.style.getPropertyValue('fill');
+        const stroke = svgEl.style.getPropertyValue('stroke');
+        if (fill && fill !== 'none') {
+          expect(fill).toBe(ink);
+        }
+        if (stroke && stroke !== 'none') {
+          expect(stroke).toBe(ink);
+        }
+      }
     });
   });
 
@@ -168,9 +193,18 @@ describe('DrumNotationMini', () => {
         />
       );
       
-      // Should have circle elements for metronome dots
       const circles = container.querySelectorAll('circle');
       expect(circles.length).toBeGreaterThan(0);
+
+      const svg = container.querySelector('svg');
+      const svgHeight = Number.parseFloat(svg?.getAttribute('height') ?? '0');
+      let maxCy = 0;
+      circles.forEach((circle) => {
+        const cy = Number.parseFloat(circle.getAttribute('cy') ?? '0');
+        const r = Number.parseFloat(circle.getAttribute('r') ?? '0');
+        maxCy = Math.max(maxCy, cy + r);
+      });
+      expect(maxCy).toBeLessThanOrEqual(svgHeight);
     });
 
     it('does not render metronome dots when disabled', () => {
@@ -215,17 +249,49 @@ describe('DrumNotationMini', () => {
     });
 
     it('light preset has required properties', () => {
-      expect(NOTATION_STYLES.light.staffColor).toBeDefined();
-      expect(NOTATION_STYLES.light.noteColor).toBeDefined();
-      expect(NOTATION_STYLES.light.textColor).toBeDefined();
+      expect(NOTATION_STYLES.light.inkColor).toBeDefined();
       expect(NOTATION_STYLES.light.highlightColor).toBeDefined();
     });
 
     it('dark preset has required properties', () => {
-      expect(NOTATION_STYLES.dark.staffColor).toBeDefined();
-      expect(NOTATION_STYLES.dark.noteColor).toBeDefined();
-      expect(NOTATION_STYLES.dark.textColor).toBeDefined();
+      expect(NOTATION_STYLES.dark.inkColor).toBeDefined();
       expect(NOTATION_STYLES.dark.highlightColor).toBeDefined();
+    });
+  });
+
+  describe('computeMiniNotationLayout', () => {
+    it('shrinks render height for compact hosts', () => {
+      const cozy = computeMiniNotationLayout(100, {
+        showDrumSymbols: true,
+        showMetronomeDots: false,
+      });
+      const compact = computeMiniNotationLayout(66, {
+        showDrumSymbols: true,
+        showMetronomeDots: false,
+      });
+      expect(compact.renderHeight).toBeLessThanOrEqual(cozy.renderHeight);
+      expect(compact.staveHeight).toBeLessThanOrEqual(cozy.staveHeight);
+      expect(compact.staveY).toBeLessThan(cozy.staveY);
+    });
+
+    it('never clips the staff within the requested height budget', () => {
+      const layout = computeMiniNotationLayout(80, {
+        showDrumSymbols: true,
+        showMetronomeDots: false,
+      });
+      expect(layout.renderHeight).toBeGreaterThanOrEqual(
+        layout.staveY + layout.staveHeight + 20,
+      );
+    });
+
+    it('reserves space for metronome dots below the staff', () => {
+      const layout = computeMiniNotationLayout(120, {
+        showDrumSymbols: true,
+        showMetronomeDots: true,
+      });
+      expect(layout.renderHeight).toBeGreaterThanOrEqual(
+        layout.staveY + layout.staveHeight + layout.metronomeDotGap + 5 + 2,
+      );
     });
   });
 });

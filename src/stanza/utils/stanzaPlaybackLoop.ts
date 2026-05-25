@@ -4,7 +4,21 @@ import type { DerivedSegment } from './segments';
 /** Match Beat: play through | loop entire media | loop selected section range(s). */
 export type StanzaPlaybackLoopMode = 'through' | 'loopAll' | 'loopSelection';
 
-export const STANZA_LOOP_EPS = 0.06;
+/**
+ * Sub-frame slack when comparing playhead time to a loop end (selection spans, resume-from-end).
+ * Keep this tiny so loop wraps do not audibly clip the tail; full-song loops rely on `ended` /
+ * YouTube `ENDED` instead of polling this threshold.
+ */
+export const STANZA_LOOP_WRAP_TOLERANCE_SEC = 0.008;
+
+/** True when the playhead has reached (or passed) the loop end within tolerance. */
+export function isPastLoopWrapPoint(
+  currentTime: number,
+  loopEnd: number,
+  toleranceSec: number = STANZA_LOOP_WRAP_TOLERANCE_SEC,
+): boolean {
+  return loopEnd > 0 && Number.isFinite(currentTime) && currentTime >= loopEnd - toleranceSec;
+}
 
 /** Minimum span after applying trim (seconds). */
 export const STANZA_MIN_LOOP_SPAN_SEC = 0.12;

@@ -1,0 +1,125 @@
+/**
+ * Stanza viewer layout — single source of truth for column / workbench alignment.
+ *
+ * Model:
+ *   .stanza-viewer-column     page shell (max width + horizontal gutter)
+ *   .stanza-viewer-workbench  fixed content width (media + rail + gap)
+ *   .stanza-viewer-body-grid  video | rail | timeline
+ *   .stanza-library-panel     footer, same width as workbench (never a sibling max-width)
+ *
+ * Keep layout here — not in StanzaWorkspace `sx`. TS constants in StanzaWorkspace
+ * should only remain where JS needs numeric values (e.g. drum notation width).
+ */
+
+.stanza-viewer-shell {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+}
+
+.stanza-viewer-column {
+  box-sizing: border-box;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: var(--stanza-viewer-max-width);
+  margin-inline: auto;
+  padding-inline: var(--stanza-viewer-gutter);
+}
+
+/*
+ * Exact workbench width — not `width: 100%` + `max-width`, which lets the library
+ * grow wider than the grid tracks when the column is wider than the content cap.
+ */
+.stanza-viewer-workbench {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  width: var(--stanza-viewer-content-width);
+  max-width: 100%;
+  min-width: 0;
+}
+
+.stanza-viewer-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  scrollbar-gutter: stable;
+  padding-top: var(--stanza-viewer-scroll-pt);
+  padding-bottom: var(--stanza-viewer-scroll-pb);
+}
+
+.stanza-viewer-body-grid {
+  box-sizing: border-box;
+  display: grid;
+  width: 100%;
+  min-height: 0;
+  align-content: start;
+  align-items: start;
+  row-gap: var(--stanza-viewer-row-gap);
+  column-gap: var(--stanza-viewer-grid-gap);
+  grid-template-columns: 1fr;
+  grid-template-areas:
+    'media'
+    'timeline'
+    'rail';
+}
+
+@media (min-width: 900px) {
+  .stanza-viewer-body-grid {
+    grid-template-columns:
+      minmax(0, var(--stanza-viewer-media-max-width))
+      minmax(280px, var(--stanza-viewer-rail-width));
+    grid-template-areas:
+      'media rail'
+      'timeline timeline';
+  }
+}
+
+.stanza-viewer-media-stack {
+  grid-area: media;
+  min-width: 0;
+  width: 100%;
+  max-width: var(--stanza-viewer-media-max-width);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.stanza-viewer-rail-slot {
+  grid-area: rail;
+  min-width: 0;
+  width: 100%;
+  max-width: var(--stanza-viewer-rail-width);
+}
+
+.stanza-viewer-timeline-slot {
+  grid-area: timeline;
+  min-width: 0;
+  width: 100%;
+}
+
+.stanza-viewer-body-grid .stanza-playback-stack {
+  margin-top: 0;
+}
+
+@media (min-width: 900px) {
+  .stanza-viewer-body-grid .stanza-practice-rail--dense {
+    min-height: var(--stanza-viewer-media-height);
+    max-height: var(--stanza-viewer-media-height);
+  }
+}
+
+.stanza-viewer-workbench .stanza-library-panel {
+  box-sizing: border-box;
+  width: 100%;
+  flex-shrink: 0;
+  margin-top: var(--stanza-viewer-library-gap);
+}

@@ -192,6 +192,8 @@ export type UseSongPageMediaHubArgs = {
   routeSongId: string | null;
   songs: EncoreSong[];
   googleAccessToken: string | null;
+  /** When uploads need Drive, run sign-in inline instead of disabling controls. */
+  signInWithGoogle: () => Promise<void>;
   spotifyLinked: boolean;
   /** Optional Drive folder ids for new uploads (Repertoire settings). */
   driveUploadFolderOverrides?: EncoreDriveUploadFolderOverrides | null;
@@ -207,11 +209,16 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
     routeSongId,
     songs,
     googleAccessToken,
+    signInWithGoogle,
     spotifyLinked,
     driveUploadFolderOverrides = null,
     persistAfterMetadataRefresh,
   } = props;
   const { withBlockingJob } = useEncoreBlockingJobs();
+  const googleAccessTokenRef = useRef(googleAccessToken);
+  useEffect(() => {
+    googleAccessTokenRef.current = googleAccessToken;
+  }, [googleAccessToken]);
   const clientId =
     (import.meta.env.VITE_SPOTIFY_CLIENT_ID as string | undefined)?.trim() ??
     '';
@@ -310,6 +317,32 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
         : null,
     [driveUploadLayout, driveUploadFolderOverrides],
   );
+
+  /** Sign in if needed and refresh Drive folder layout before chart/take uploads. */
+  const prepareDriveForMediaUpload = useCallback(async (): Promise<DriveUploadFolderLayout | null> => {
+    let token = googleAccessTokenRef.current;
+    if (!token) {
+      try {
+        await withBlockingJob('Signing in to Google…', async () => {
+          await signInWithGoogle();
+        });
+      } catch (e) {
+        setDriveAttachMsg(e instanceof Error ? e.message : 'Could not sign in to Google.');
+        return null;
+      }
+      token = googleAccessTokenRef.current;
+      if (!token) return null;
+    }
+    try {
+      const layout = await ensureEncoreDriveLayout(token);
+      setDriveUploadLayout(layout);
+      return layout;
+    } catch (e) {
+      setDriveAttachMsg(e instanceof Error ? e.message : 'Could not prepare Drive folders.');
+      return null;
+    }
+  }, [signInWithGoogle, withBlockingJob]);
+
   const spotifySearchListQuery = useMemo(() => {
     if (isNew) {
       return `${draft?.title ?? ''} ${draft?.artist ?? ''}`.trim();
@@ -677,8 +710,9 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
     async (slot: SongMediaUploadSlot, files: File[]) => {
       const list = files.filter(Boolean);
       if (list.length === 0) return;
-      setDriveUploading(true);
       setDriveAttachMsg(null);
+      if (!(await prepareDriveForMediaUpload())) return;
+      setDriveUploading(true);
       const jobLabel =
         list.length === 1
           ? slot === 'listen'
@@ -726,6 +760,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
       }
     },
     [
+      prepareDriveForMediaUpload,
       withBlockingJob,
       uploadReferenceDriveFile,
       uploadBackingDriveFile,
@@ -1783,8 +1818,15 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                     variant="outlined"
                     color="inherit"
                     startIcon={<AddIcon sx={{ fontSize: 17 }} />}
-                    disabled={!googleAccessToken || !chartUploadFolderId || driveUploading}
-                    onClick={(e) => setChartAddAnchor(e.currentTarget)}
+                    disabled={driveUploading}
+                    onClick={(e) => {
+                      void (async () => {
+                        if (driveUploading) return;
+                        const layout = await prepareDriveForMediaUpload();
+                        if (!layout) return;
+                        setChartAddAnchor(e.currentTarget);
+                      })();
+                    }}
                     sx={(t) => encoreMediaHubAddButtonSx(t)}
                   >
                     Add chart
@@ -1795,13 +1837,24 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                     onClose={() => setChartAddAnchor(null)}
                   >
                     <MenuItem
+                      disabled={driveUploading}
                       onClick={() => {
                         setChartAddAnchor(null);
-                        queueMicrotask(() =>
-                          chartFileInputRef.current?.click()
-                        );
+                        void (async () => {
+                          const layout = await prepareDriveForMediaUpload();
+                          if (!layout) return;
+                          const folderId =
+                            resolveDriveUploadFolderId('charts', layout, driveUploadFolderOverrides) ??
+                            null;
+                          if (!folderId) {
+                            setDriveAttachMsg(
+                              'Drive folders are not ready yet. Try again after the first backup completes.',
+                            );
+                            return;
+                          }
+                          chartFileInputRef.current?.click();
+                        })();
                       }}
-                      disabled={driveUploading || !chartUploadFolderId}
                     >
                       <ListItemIcon>
                         <CloudUploadIcon fontSize="small" />
@@ -1811,11 +1864,17 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                     <MenuItem
                       onClick={() => {
                         setChartAddAnchor(null);
-                        if (chartUploadFolderId) {
-                          window.open(driveFolderWebUrl(chartUploadFolderId), '_blank', 'noopener,noreferrer');
-                        }
+                        void (async () => {
+                          const layout = await prepareDriveForMediaUpload();
+                          if (!layout) return;
+                          const folderId =
+                            resolveDriveUploadFolderId('charts', layout, driveUploadFolderOverrides) ??
+                            null;
+                          if (folderId) {
+                            window.open(driveFolderWebUrl(folderId), '_blank', 'noopener,noreferrer');
+                          }
+                        })();
                       }}
-                      disabled={!chartUploadFolderId}
                     >
                       <ListItemIcon sx={{ minWidth: 36 }}>
                         <GoogleDriveBrandIcon sx={{ fontSize: 20 }} aria-hidden />
@@ -1920,8 +1979,23 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                     variant="outlined"
                     color="inherit"
                     startIcon={<AddIcon sx={{ fontSize: 17 }} />}
-                    disabled={!googleAccessToken || !takesUploadFolderId || driveUploading}
-                    onClick={() => takesDriveInputRef.current?.click()}
+                    disabled={driveUploading}
+                    onClick={() => {
+                      void (async () => {
+                        if (driveUploading) return;
+                        const layout = await prepareDriveForMediaUpload();
+                        if (!layout) return;
+                        const folderId =
+                          resolveDriveUploadFolderId('takes', layout, driveUploadFolderOverrides) ?? null;
+                        if (!folderId) {
+                          setDriveAttachMsg(
+                            'Drive folders are not ready yet. Try again after the first backup completes.',
+                          );
+                          return;
+                        }
+                        takesDriveInputRef.current?.click();
+                      })();
+                    }}
                     sx={(t) => encoreMediaHubAddButtonSx(t)}
                   >
                     Upload take

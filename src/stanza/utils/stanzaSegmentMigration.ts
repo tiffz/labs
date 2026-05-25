@@ -88,6 +88,6 @@ export async function migrateStanzaSongSegmentKeysIfNeeded(song: StanzaSong, dur
     ...song,
     markers: withIds,
     stats: nextStats,
-    updatedAt: Date.now(),
+    updatedAt: song.updatedAt,
   });
 }

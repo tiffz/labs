@@ -22,8 +22,27 @@ describe('stanzaSongContentKey', () => {
     expect(stanzaSongContentKey({ id: 'a', ytId: null, driveSourceFileId: 'fileX' })).toBe('drive:fileX');
   });
 
-  it('keys local-only rows by their own id (no cross-device dedupe)', () => {
-    expect(stanzaSongContentKey({ id: 'row-1', ytId: null, driveSourceFileId: undefined })).toBe('local:row-1');
+  it('keys local-only rows by fingerprint when available', () => {
+    expect(
+      stanzaSongContentKey({
+        id: 'row-1',
+        ytId: null,
+        driveSourceFileId: undefined,
+        localMediaFingerprint: '12345:180.00',
+      }),
+    ).toBe('localfp:12345:180.00');
+  });
+
+  it('keys local-only rows by blob size when fingerprint is missing', () => {
+    expect(
+      stanzaSongContentKey({
+        id: 'row-1',
+        ytId: null,
+        driveSourceFileId: undefined,
+        localAudioBlob: new Blob([new Uint8Array(100)]),
+        title: 'Song.mp3',
+      }),
+    ).toBe('localfp:100:name:song.mp3');
   });
 
   it('prefers YouTube over Drive when both are present', () => {
@@ -116,6 +135,27 @@ describe('consolidateStanzaSongDuplicates', () => {
     const out = consolidateStanzaSongDuplicates(rows);
     expect(out.rows).toHaveLength(2);
     expect(out.remappedIds.size).toBe(0);
+  });
+
+  it('inherits markers from the loser when the winner is newer but has no sections', () => {
+    const rows = [
+      song({
+        id: 'local',
+        driveSourceFileId: 'drive-file-1',
+        updatedAt: 200,
+        markers: [],
+      }),
+      song({
+        id: 'remote',
+        driveSourceFileId: 'drive-file-1',
+        updatedAt: 100,
+        markers: [{ time: 30, label: 'verse' }],
+      }),
+    ];
+    const out = consolidateStanzaSongDuplicates(rows);
+    expect(out.rows).toHaveLength(1);
+    expect(out.rows[0]?.markers).toHaveLength(1);
+    expect(out.rows[0]?.markers[0]?.label).toBe('verse');
   });
 
   it('preserves input order of each content key (no surprise grid shuffle)', () => {

@@ -32,18 +32,24 @@ export type LabsDriveBackupUiProps = {
   lastBackupExportedAt?: string;
   undoSnapshots: LabsDriveUndoSnapshotItem[];
   applyUndoSnapshot: (item: LabsDriveUndoSnapshotItem) => void | Promise<void>;
+  undoLastSync?: () => void | Promise<void>;
+  canUndoLastSync?: boolean;
   copy: LabsDriveRestoreDialogCopy;
 };
 
 export type LabsDriveConflictUiProps = {
   busy: boolean;
   title: string;
+  /** One short sentence: what happened. */
   intro: ReactNode;
-  stats: { label: string; value: string }[];
-  explainLines: string[];
-  mergeBullet: string;
-  replaceBullet: string;
-  cancelBullet: string;
+  /** Optional muted line (counts, relative times). */
+  detail?: ReactNode;
+  /** One-line hint above actions; omit when the intro is enough. */
+  recommendation?: string;
+  /** Shown above the replace-only action when cloud has richer section data. */
+  replaceWarning?: string;
+  mergeButtonLabel?: string;
+  replaceButtonLabel?: string;
   onCancel: () => void;
   onReplaceOnly: () => void;
   onMergeThenUpload: () => void;

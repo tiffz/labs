@@ -1,0 +1,81 @@
+/**
+ * DrumNotationMini theming — apps set `--notation-ink` (and optionally
+ * `--notation-highlight`) on `.drum-notation-mini` or pass `style={{ inkColor }}`.
+ * JavaScript post-processing applies ink to VexFlow SVG output; these vars are
+ * fallbacks for inheritance and host-app overrides.
+ */
+.drum-notation-mini {
+  --notation-ink: #333333;
+  --notation-highlight: #9d8ec7;
+}
+
+.drum-notation-mini svg {
+  color: var(--notation-ink);
+}
+
+/**
+ * Horizontal scroll host for wide patterns. Keep overflow-y hidden: pairing
+ * overflow-x: auto with overflow-y: visible computes overflow-y to auto and
+ * produces a nested vertical scrollbar in narrow rails (Stanza practice panel).
+ */
+.drum-notation-mini-x-scroll {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* Preset rhythm variation carousel (Maqsum ornaments, etc.) */
+.rhythm-template-variation {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 6px;
+  justify-items: center;
+}
+
+.rhythm-template-variation-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+  padding: 2px 0;
+}
+
+.rhythm-template-variation-arrows {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rhythm-template-variation-arrow {
+  width: 28px;
+  height: 28px;
+  border: 1px solid color-mix(in srgb, var(--notation-ink, #333) 18%, #cbd5e1);
+  border-radius: 999px;
+  background: color-mix(in srgb, #ffffff 92%, transparent);
+  color: color-mix(in srgb, var(--notation-ink, #333) 72%, #64748b);
+  display: inline-grid;
+  place-items: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.rhythm-template-variation-arrow:hover {
+  border-color: color-mix(
+    in srgb,
+    var(--notation-highlight, #9d8ec7) 42%,
+    #cbd5e1
+  );
+  color: var(--notation-ink, #333);
+}
+
+.rhythm-template-variation-arrow .material-symbols-outlined {
+  font-size: 18px;
+}
+
+.rhythm-template-variation-counter {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: color-mix(in srgb, var(--notation-ink, #333) 68%, #64748b);
+  white-space: nowrap;
+}

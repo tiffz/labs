@@ -64,14 +64,14 @@ Beat 1 to align to.
 
 - `drumsEnabled?: boolean` — the "Add drums" checkbox state.
 - `drumsGain?: number` — 0–1 (default `0.7`). Drives the **Drums** Mix row slider.
+- `drumsMuted?: boolean` — mutes groove playback from the Mix row icon (pattern and level preserved), parallel to `metronomeMuted`.
 
 We deliberately **do not** persist:
 
 - The selected preset / custom mini-notation: matches the Beat Finder UX, where pattern choice
   is per-session. Reopening a song reopens with the default preset; users can save common
   patterns by other means (the mini-notation input accepts pasted Darbuka Trainer URLs).
-- A drums mute toggle: the **Add drums** checkbox is the on/off; the Mix slider can be dragged
-  to zero. A separate mute icon would just duplicate one of those.
+- A drums mute toggle: the **Add drums** checkbox is the master on/off; the Mix row also exposes a mute icon (like Metronome) so users can silence the groove without losing pattern or slider level.
 - Per-section drum overrides: out of scope for v1. If a user wants different drums in different
   sections, they can disable drums and use only the metronome there. We can revisit per-section
   overrides if practice journeys reveal real demand; the schema can be extended without breaking
@@ -82,8 +82,7 @@ We deliberately **do not** persist:
 - **`Add drums` checkbox + `DrumAccompaniment`** sit below the metronome rail in
   `StanzaWorkspace`. The checkbox is always visible; the panel renders only when checked.
 - **Mix row** for Drums sits above the existing Main + stem rows when drums are enabled. It
-  uses `AppLinearVolumeSlider` with no mute icon (the **Add drums** checkbox is the on/off).
-  The Metronome Mix row sits next to it, always visible — that one keeps a mute icon because
+  uses `AppLinearVolumeSlider` with a mute icon (same affordance as Metronome). The Metronome Mix row sits next to it, always visible — that one keeps a mute icon because
   it parallels the Main row's mute affordance.
 - **Condensation** to absorb the new rail height without losing breathing room:
   - Boundary misalignment `Alert` was replaced with an inline warning icon + Snap `IconButton`
@@ -102,8 +101,8 @@ We deliberately **do not** persist:
 
 `StanzaSongDriveRow` is `Omit<StanzaSong, 'localAudioBlob' | 'stems'> & { stems?: ... }`, so the
 new fields automatically appear in the envelope shape. `stanzaSongFromDriveRow` and
-`mergeOneSong` were extended to thread `metronomeGain`, `metronomeMuted`, `drumsEnabled`, and
-`drumsGain` through. Drum sample blobs are not stored — playback uses bundled assets — so the
+`mergeOneSong` were extended to thread `metronomeGain`, `metronomeMuted`, `drumsEnabled`, `drumsGain`, and
+`drumsMuted` through. Drum sample blobs are not stored — playback uses bundled assets — so the
 round trip is metadata only.
 
 ## Consequences
@@ -134,9 +133,7 @@ round trip is metadata only.
   established surface. User feedback: copy Beat Finder, simplify.
 - **Per-section pattern overrides**: deferred per user request to ship v1 simple. Schema slot
   exists in commit history if we want to revive it.
-- **Global drums mute toggle in the Mix**: rejected — the **Add drums** checkbox already serves
-  as on/off; the Mix slider going to zero is the volume-only mute. A second mute icon would be
-  a third way to do the same thing.
+- **Global drums mute toggle in the Mix**: initially rejected in v1; added later as `drumsMuted` so the groove can be silenced without disabling **Add drums** or dragging the slider to zero.
 
 ## Links
 

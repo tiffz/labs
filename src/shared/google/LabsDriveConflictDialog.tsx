@@ -1,9 +1,9 @@
+import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
-import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import type { LabsDriveConflictUiProps } from './labsDriveBackupTypes';
 
@@ -19,11 +19,11 @@ export default function LabsDriveConflictDialog(props: LabsDriveConflictDialogPr
     busy,
     title,
     intro,
-    stats,
-    explainLines,
-    mergeBullet,
-    replaceBullet,
-    cancelBullet,
+    detail,
+    recommendation,
+    replaceWarning,
+    mergeButtonLabel = 'Merge and upload',
+    replaceButtonLabel = 'Use this device only',
     onCancel,
     onReplaceOnly,
     onMergeThenUpload,
@@ -34,46 +34,41 @@ export default function LabsDriveConflictDialog(props: LabsDriveConflictDialogPr
       open={open}
       onClose={() => !busy && onCancel()}
       fullWidth
-      maxWidth="sm"
+      maxWidth="xs"
       aria-labelledby={dialogTitleId}
     >
-      <DialogTitle id={dialogTitleId}>{title}</DialogTitle>
-      <DialogContent>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+      <DialogTitle id={dialogTitleId} sx={{ pb: 1 }}>
+        {title}
+      </DialogTitle>
+      <DialogContent sx={{ pt: 0 }}>
+        <Typography variant="body2" sx={{ lineHeight: 1.5 }}>
           {intro}
         </Typography>
-        <Stack spacing={1} sx={{ mb: 1.5 }}>
-          {stats.map((row) => (
-            <Typography key={row.label} variant="body2">
-              <strong>{row.label}</strong> {row.value}
-            </Typography>
-          ))}
-        </Stack>
-        {explainLines.map((line, i) => (
-          <Typography key={i} variant="body2" sx={{ mb: 1 }}>
-            {line}
+        {detail ? (
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1, lineHeight: 1.45 }}>
+            {detail}
           </Typography>
-        ))}
-        <Typography variant="subtitle2" sx={{ mt: 1, mb: 0.5 }}>
-          How to decide
-        </Typography>
-        <Typography variant="body2" color="text.secondary" component="div">
-          <ul style={{ marginTop: 0, paddingLeft: '1.25rem' }}>
-            <li>{mergeBullet}</li>
-            <li>{replaceBullet}</li>
-            <li>{cancelBullet}</li>
-          </ul>
-        </Typography>
+        ) : null}
+        {recommendation ? (
+          <Alert severity="info" sx={{ mt: 2, py: 0.5 }}>
+            {recommendation}
+          </Alert>
+        ) : null}
+        {replaceWarning ? (
+          <Alert severity="warning" sx={{ mt: 1.5, py: 0.5 }}>
+            {replaceWarning}
+          </Alert>
+        ) : null}
       </DialogContent>
-      <DialogActions sx={{ flexWrap: 'wrap', gap: 1 }}>
-        <Button onClick={onCancel} disabled={busy}>
+      <DialogActions sx={{ flexDirection: 'column', alignItems: 'stretch', gap: 1, px: 3, pb: 2.5, pt: 0 }}>
+        <Button variant="contained" fullWidth onClick={() => void onMergeThenUpload()} disabled={busy}>
+          {mergeButtonLabel}
+        </Button>
+        <Button fullWidth onClick={() => void onReplaceOnly()} disabled={busy} color="warning">
+          {replaceButtonLabel}
+        </Button>
+        <Button fullWidth onClick={onCancel} disabled={busy} color="inherit">
           Cancel
-        </Button>
-        <Button onClick={() => void onReplaceOnly()} disabled={busy} color="warning">
-          Replace Drive only
-        </Button>
-        <Button variant="contained" onClick={() => void onMergeThenUpload()} disabled={busy}>
-          Merge, then upload
         </Button>
       </DialogActions>
     </Dialog>

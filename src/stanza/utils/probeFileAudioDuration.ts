@@ -3,7 +3,7 @@
  * Used when routing drag-and-drop to stems vs a new library song (length match heuristic).
  */
 export function probeFileAudioDurationSeconds(file: File): Promise<number | null> {
-  if (typeof document === 'undefined') return Promise.resolve(null);
+  if (typeof document === 'undefined' || typeof URL.createObjectURL !== 'function') return Promise.resolve(null);
   return new Promise((resolve) => {
     const url = URL.createObjectURL(file);
     const audio = document.createElement('audio');

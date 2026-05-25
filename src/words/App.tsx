@@ -67,9 +67,12 @@ import { parseOptionalNumberParam } from '../shared/utils/urlParams';
 import { LyricImportModal } from './components/LyricImportModal';
 import { getNotationScrollContainer } from './utils/scrollOwner';
 import {
-  RHYTHM_DATABASE,
+  findRhythmTemplatePresetByNotation,
   getRhythmTemplatePresets,
+  getTemplatePresetVariationIndex,
+  getTemplatePresetVariations,
 } from '../shared/rhythm/presetDatabase';
+import { RhythmTemplateVariationControls } from '../shared/notation/RhythmTemplateVariationControls';
 import MetronomeToggleButton from '../shared/components/MetronomeToggleButton';
 import DiceIcon from '../shared/components/DiceIcon';
 import AppTooltip from '../shared/components/AppTooltip';
@@ -385,57 +388,6 @@ const ALIGNMENT_HELP = {
 
 const ALIGNMENT_STRENGTH_OPTIONS = ['light', 'strong'] as const satisfies readonly AlignmentStrength[];
 
-function matchesTimeSignature(
-  first: TimeSignature,
-  second: TimeSignature
-): boolean {
-  return (
-    first.numerator === second.numerator &&
-    first.denominator === second.denominator
-  );
-}
-
-function shouldDoublePatternForTimeSignature(
-  source: TimeSignature,
-  target: TimeSignature
-): boolean {
-  return (
-    source.numerator === 2 &&
-    source.denominator === 4 &&
-    target.numerator === 4 &&
-    target.denominator === 4
-  );
-}
-
-function getTemplatePresetVariations(
-  presetId: string,
-  targetTimeSignature: TimeSignature
-): Array<{ notation: string; label: string }> {
-  const rhythm = RHYTHM_DATABASE[presetId];
-  if (!rhythm) return [];
-  return rhythm.variations
-    .map((variation, index) => {
-      const sourceSignature = variation.timeSignature ?? rhythm.timeSignature;
-      if (
-        !matchesTimeSignature(sourceSignature, targetTimeSignature) &&
-        !shouldDoublePatternForTimeSignature(sourceSignature, targetTimeSignature)
-      ) {
-        return null;
-      }
-      const notation = shouldDoublePatternForTimeSignature(
-        sourceSignature,
-        targetTimeSignature
-      )
-        ? `${variation.notation}${variation.notation}`
-        : variation.notation;
-      return {
-        notation,
-        label: variation.note?.trim() || `Variation ${index + 1}`,
-      };
-    })
-    .filter((item): item is { notation: string; label: string } => item !== null);
-}
-
 const SettingHelpLabel: React.FC<{ text: string; help: string }> = ({
   text,
   help,
@@ -580,16 +532,15 @@ const App: React.FC = () => {
   );
   const findTemplatePresetByNotation = useCallback(
     (value: string): TemplatePreset | undefined => {
-      for (const preset of templatePresets) {
-        if (preset.notation === value) return preset;
-        const variations = getTemplatePresetVariations(preset.id, timeSignature);
-        if (variations.some((variation) => variation.notation === value)) {
-          return preset;
-        }
-      }
-      return undefined;
+      const preset = findRhythmTemplatePresetByNotation(value, timeSignature);
+      if (!preset) return undefined;
+      return {
+        id: preset.id,
+        label: preset.label,
+        notation: preset.notation,
+      };
     },
-    [templatePresets, timeSignature]
+    [timeSignature]
   );
   const hitMap = useMemo(() => {
     const map = new Map<string, SyllableHit>();
@@ -1821,12 +1772,13 @@ const App: React.FC = () => {
     [backingSelectedTemplatePreset, timeSignature]
   );
   const backingActiveVariationIndex = useMemo(() => {
-    if (backingTemplateVariations.length === 0) return -1;
-    const matchedIndex = backingTemplateVariations.findIndex(
-      (variation) => variation.notation === backingBeatNotation
+    if (!backingSelectedTemplatePreset) return -1;
+    return getTemplatePresetVariationIndex(
+      backingSelectedTemplatePreset.id,
+      backingBeatNotation,
+      timeSignature
     );
-    return matchedIndex >= 0 ? matchedIndex : 0;
-  }, [backingTemplateVariations, backingBeatNotation]);
+  }, [backingSelectedTemplatePreset, backingBeatNotation, timeSignature]);
   const templateNotationPool = useMemo(() => {
     const allNotations: string[] = [];
     templatePresets.forEach((preset) => {
@@ -3356,51 +3308,36 @@ const App: React.FC = () => {
                     (backingPatternRhythm.measures.length ?? 0) > 0 ? (
                       <div className="words-template-preview words-section-template-preview">
                         {backingSelectedTemplatePreset &&
-                        backingTemplateVariations.length > 0 ? (
-                          <div className="words-template-variation-carousel">
-                            <div className="words-template-variation-controls">
-                              <span className="words-template-variation-counter">
-                                {`Variation ${Math.max(1, backingActiveVariationIndex + 1)}/${backingTemplateVariations.length} · ${backingSelectedTemplatePreset.label}`}
-                              </span>
-                              <div className="words-template-variation-arrow-group">
-                                <button
-                                  type="button"
-                                  className="words-template-variation-arrow"
-                                  aria-label="Previous variation"
-                                  onClick={() => {
-                                    const current = backingActiveVariationIndex >= 0
-                                      ? backingActiveVariationIndex
-                                      : 0;
-                                    const prevIndex =
-                                      (current - 1 + backingTemplateVariations.length) %
-                                      backingTemplateVariations.length;
-                                    setBackingBeatNotation(
-                                      backingTemplateVariations[prevIndex].notation
-                                    );
-                                  }}
-                                >
-                                  <span className="material-symbols-outlined">chevron_left</span>
-                                </button>
-                                <button
-                                  type="button"
-                                  className="words-template-variation-arrow"
-                                  aria-label="Next variation"
-                                  onClick={() => {
-                                    const current = backingActiveVariationIndex >= 0
-                                      ? backingActiveVariationIndex
-                                      : 0;
-                                    const nextIndex =
-                                      (current + 1) % backingTemplateVariations.length;
-                                    setBackingBeatNotation(
-                                      backingTemplateVariations[nextIndex].notation
-                                    );
-                                  }}
-                                >
-                                  <span className="material-symbols-outlined">chevron_right</span>
-                                </button>
-                              </div>
-                            </div>
-                          </div>
+                        backingTemplateVariations.length > 1 ? (
+                          <RhythmTemplateVariationControls
+                            className="words-template-variation-carousel"
+                            presetLabel={backingSelectedTemplatePreset.label}
+                            variations={backingTemplateVariations}
+                            activeVariationIndex={backingActiveVariationIndex}
+                            onPrevious={() => {
+                              const current =
+                                backingActiveVariationIndex >= 0
+                                  ? backingActiveVariationIndex
+                                  : 0;
+                              const prevIndex =
+                                (current - 1 + backingTemplateVariations.length) %
+                                backingTemplateVariations.length;
+                              setBackingBeatNotation(
+                                backingTemplateVariations[prevIndex].notation
+                              );
+                            }}
+                            onNext={() => {
+                              const current =
+                                backingActiveVariationIndex >= 0
+                                  ? backingActiveVariationIndex
+                                  : 0;
+                              const nextIndex =
+                                (current + 1) % backingTemplateVariations.length;
+                              setBackingBeatNotation(
+                                backingTemplateVariations[nextIndex].notation
+                              );
+                            }}
+                          />
                         ) : null}
                         <DrumNotationMini
                           rhythm={backingPatternRhythm}
@@ -3459,16 +3396,13 @@ const App: React.FC = () => {
               const sectionTemplateVariations = selectedTemplatePreset
                 ? getTemplatePresetVariations(selectedTemplatePreset.id, timeSignature)
                 : [];
-              const sectionActiveVariationIndex =
-                sectionTemplateVariations.length > 0
-                  ? Math.max(
-                      0,
-                      sectionTemplateVariations.findIndex(
-                        (variation) =>
-                          variation.notation === section.templateNotation
-                      )
-                    )
-                  : -1;
+              const sectionActiveVariationIndex = selectedTemplatePreset
+                ? getTemplatePresetVariationIndex(
+                    selectedTemplatePreset.id,
+                    section.templateNotation ?? '',
+                    timeSignature
+                  )
+                : -1;
               return (
                 <div
                   key={section.id}
@@ -3790,57 +3724,38 @@ const App: React.FC = () => {
                               .length ?? 0) > 0 ? (
                               <div className="words-template-preview words-section-template-preview">
                                 {selectedTemplatePreset &&
-                                sectionTemplateVariations.length > 0 ? (
-                                  <div className="words-template-variation-carousel">
-                                    <div className="words-template-variation-controls">
-                                      <span className="words-template-variation-counter">
-                                        {`Variation ${Math.max(1, sectionActiveVariationIndex + 1)}/${sectionTemplateVariations.length} · ${selectedTemplatePreset.label}`}
-                                      </span>
-                                      <div className="words-template-variation-arrow-group">
-                                        <button
-                                          type="button"
-                                          className="words-template-variation-arrow"
-                                          aria-label="Previous variation"
-                                          onClick={() => {
-                                            const current = sectionActiveVariationIndex >= 0
-                                              ? sectionActiveVariationIndex
-                                              : 0;
-                                            const prevIndex =
-                                              (current - 1 + sectionTemplateVariations.length) %
-                                              sectionTemplateVariations.length;
-                                            updateSectionTemplateNotation(
-                                              section.id,
-                                              sectionTemplateVariations[prevIndex].notation
-                                            );
-                                          }}
-                                        >
-                                          <span className="material-symbols-outlined">
-                                            chevron_left
-                                          </span>
-                                        </button>
-                                        <button
-                                          type="button"
-                                          className="words-template-variation-arrow"
-                                          aria-label="Next variation"
-                                          onClick={() => {
-                                            const current = sectionActiveVariationIndex >= 0
-                                              ? sectionActiveVariationIndex
-                                              : 0;
-                                            const nextIndex =
-                                              (current + 1) % sectionTemplateVariations.length;
-                                            updateSectionTemplateNotation(
-                                              section.id,
-                                              sectionTemplateVariations[nextIndex].notation
-                                            );
-                                          }}
-                                        >
-                                          <span className="material-symbols-outlined">
-                                            chevron_right
-                                          </span>
-                                        </button>
-                                      </div>
-                                    </div>
-                                  </div>
+                                sectionTemplateVariations.length > 1 ? (
+                                  <RhythmTemplateVariationControls
+                                    className="words-template-variation-carousel"
+                                    presetLabel={selectedTemplatePreset.label}
+                                    variations={sectionTemplateVariations}
+                                    activeVariationIndex={sectionActiveVariationIndex}
+                                    onPrevious={() => {
+                                      const current =
+                                        sectionActiveVariationIndex >= 0
+                                          ? sectionActiveVariationIndex
+                                          : 0;
+                                      const prevIndex =
+                                        (current - 1 + sectionTemplateVariations.length) %
+                                        sectionTemplateVariations.length;
+                                      updateSectionTemplateNotation(
+                                        section.id,
+                                        sectionTemplateVariations[prevIndex].notation
+                                      );
+                                    }}
+                                    onNext={() => {
+                                      const current =
+                                        sectionActiveVariationIndex >= 0
+                                          ? sectionActiveVariationIndex
+                                          : 0;
+                                      const nextIndex =
+                                        (current + 1) % sectionTemplateVariations.length;
+                                      updateSectionTemplateNotation(
+                                        section.id,
+                                        sectionTemplateVariations[nextIndex].notation
+                                      );
+                                    }}
+                                  />
                                 ) : null}
                                 <DrumNotationMini
                                   rhythm={sectionTemplatePreviewById.get(section.id)!}

@@ -36,6 +36,12 @@ export interface RhythmTemplatePreset {
   timeSignature: TimeSignature;
 }
 
+/** Resolved preset variation for a target meter (notation + display label). */
+export interface RhythmTemplateVariation {
+  notation: string;
+  label: string;
+}
+
 export const RHYTHM_DATABASE: Record<string, RhythmDefinition> = {
   maqsum: {
     id: 'maqsum',
@@ -200,6 +206,74 @@ function shouldDoublePatternForTimeSignature(
     target.numerator === 4 &&
     target.denominator === 4
   );
+}
+
+function matchesTimeSignature(first: TimeSignature, second: TimeSignature): boolean {
+  return first.numerator === second.numerator && first.denominator === second.denominator;
+}
+
+/**
+ * Variations for a preset rhythm in the requested meter (e.g. Maqsum ka ornaments in 4/4).
+ * Returns an empty array when the preset id is unknown or has no compatible variations.
+ */
+export function getTemplatePresetVariations(
+  presetId: string,
+  targetTimeSignature: TimeSignature
+): RhythmTemplateVariation[] {
+  const rhythm = RHYTHM_DATABASE[presetId];
+  if (!rhythm) return [];
+  return rhythm.variations
+    .map((variation, index) => {
+      const sourceSignature = variation.timeSignature ?? rhythm.timeSignature;
+      if (
+        !matchesTimeSignature(sourceSignature, targetTimeSignature) &&
+        !shouldDoublePatternForTimeSignature(sourceSignature, targetTimeSignature)
+      ) {
+        return null;
+      }
+      const notation = shouldDoublePatternForTimeSignature(
+        sourceSignature,
+        targetTimeSignature
+      )
+        ? `${variation.notation}${variation.notation}`
+        : variation.notation;
+      return {
+        notation,
+        label: variation.note?.trim() || `Variation ${index + 1}`,
+      };
+    })
+    .filter((item): item is RhythmTemplateVariation => item !== null);
+}
+
+/** Find the preset family that owns this notation (base pattern or any variation). */
+export function findRhythmTemplatePresetByNotation(
+  notation: string,
+  targetTimeSignature: TimeSignature
+): RhythmTemplatePreset | undefined {
+  const presets = getRhythmTemplatePresets(targetTimeSignature);
+  for (const preset of presets) {
+    if (preset.notation === notation) return preset;
+    if (
+      getTemplatePresetVariations(preset.id, targetTimeSignature).some(
+        (variation) => variation.notation === notation
+      )
+    ) {
+      return preset;
+    }
+  }
+  return undefined;
+}
+
+/** Index of the active variation for a preset notation, or -1 when none match. */
+export function getTemplatePresetVariationIndex(
+  presetId: string,
+  notation: string,
+  targetTimeSignature: TimeSignature
+): number {
+  const variations = getTemplatePresetVariations(presetId, targetTimeSignature);
+  if (variations.length === 0) return -1;
+  const matchedIndex = variations.findIndex((variation) => variation.notation === notation);
+  return matchedIndex >= 0 ? matchedIndex : 0;
 }
 
 export function getPresetNotation(

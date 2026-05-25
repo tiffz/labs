@@ -226,6 +226,64 @@ export function repertoireExtrasFromWire(wire: RepertoireWirePayload): Repertoir
   };
 }
 
+/** Merge local and remote extras without silently dropping local-only settings on conflict resolve. */
+export function mergeRepertoireExtras(
+  local: RepertoireExtrasRow,
+  remote: RepertoireExtrasRow,
+): RepertoireExtrasRow {
+  const localNewer = (local.updatedAt ?? '') >= (remote.updatedAt ?? '');
+  const venueCatalog = [
+    ...new Set([...(local.venueCatalog ?? []), ...(remote.venueCatalog ?? [])]),
+  ].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+
+  const searchesById = new Map<string, NonNullable<RepertoireExtrasRow['repertoireSavedSearches']>[number]>();
+  for (const s of [...(local.repertoireSavedSearches ?? []), ...(remote.repertoireSavedSearches ?? [])]) {
+    searchesById.set(s.id, s);
+  }
+
+  const pick = <T>(l: T | undefined, r: T | undefined): T | undefined => (localNewer ? l ?? r : r ?? l);
+
+  const mergedOverrides = {
+    ...(remote.driveUploadFolderOverrides ?? {}),
+    ...(local.driveUploadFolderOverrides ?? {}),
+  };
+  const mergedOverrideLabels = {
+    ...(remote.driveUploadFolderOverrideLabels ?? {}),
+    ...(local.driveUploadFolderOverrideLabels ?? {}),
+  };
+
+  const trackIds = [
+    ...new Set([
+      ...(local.lastSyncedLearningPlaylistTrackIds ?? []),
+      ...(remote.lastSyncedLearningPlaylistTrackIds ?? []),
+    ]),
+  ];
+
+  return {
+    id: 'default',
+    venueCatalog,
+    milestoneTemplate: pick(local.milestoneTemplate, remote.milestoneTemplate) ?? [],
+    ownerDisplayName: pick(local.ownerDisplayName, remote.ownerDisplayName),
+    currentlyLearningSpotifyPlaylistId: pick(
+      local.currentlyLearningSpotifyPlaylistId,
+      remote.currentlyLearningSpotifyPlaylistId,
+    ),
+    lastSyncedLearningPlaylistTrackIds: trackIds.length > 0 ? trackIds : undefined,
+    repertoireSpotifySyncPerformedOnly: pick(
+      local.repertoireSpotifySyncPerformedOnly,
+      remote.repertoireSpotifySyncPerformedOnly,
+    ),
+    repertoireSavedSearches: searchesById.size > 0 ? [...searchesById.values()] : undefined,
+    tableUi: pick(local.tableUi, remote.tableUi),
+    driveUploadFolderOverrides:
+      Object.keys(mergedOverrides).length > 0 ? mergedOverrides : undefined,
+    driveUploadFolderOverrideLabels:
+      Object.keys(mergedOverrideLabels).length > 0 ? mergedOverrideLabels : undefined,
+    updatedAt:
+      [local.updatedAt, remote.updatedAt].sort((a, b) => b.localeCompare(a))[0] ?? new Date().toISOString(),
+  };
+}
+
 export function maxUpdatedAt(songs: EncoreSong[], performances: EncorePerformance[]): string {
   let max = '';
   for (const s of songs) {

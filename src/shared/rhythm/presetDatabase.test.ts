@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { RHYTHM_DATABASE, getPresetNotation } from './presetDatabase';
+import { RHYTHM_DATABASE, findRhythmTemplatePresetByNotation, getPresetNotation, getTemplatePresetVariations } from './presetDatabase';
 
 describe('presetDatabase malfuf/kahleegi defaults', () => {
   it('uses 8/8 defaults with ornament variations', () => {
@@ -49,5 +49,22 @@ describe('presetDatabase malfuf/kahleegi defaults', () => {
         expect(relatedId).not.toBe(id);
       });
     });
+  });
+});
+
+describe('getTemplatePresetVariations', () => {
+  it('returns Maqsum variations for 4/4 including ka ornaments', () => {
+    const variations = getTemplatePresetVariations('maqsum', { numerator: 4, denominator: 4 });
+    expect(variations.length).toBeGreaterThan(1);
+    expect(variations.some((variation) => variation.notation.includes('K'))).toBe(true);
+  });
+
+  it('finds preset family from a variation notation', () => {
+    const variations = getTemplatePresetVariations('maqsum', { numerator: 4, denominator: 4 });
+    const preset = findRhythmTemplatePresetByNotation(variations[1]?.notation ?? '', {
+      numerator: 4,
+      denominator: 4,
+    });
+    expect(preset?.id).toBe('maqsum');
   });
 });

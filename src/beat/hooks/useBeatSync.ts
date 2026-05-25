@@ -6,6 +6,7 @@ import { getCompensatedDetune } from '../../shared/audio/getCompensatedDetune';
 import { useMetronome } from './useMetronome';
 import type { TempoRegion } from '../utils/tempoRegions';
 import { devLog } from '../../shared/utils/devLog';
+import { clampBeatPlaybackRate } from '../utils/playbackRateLimits';
 
 export interface LoopRegion {
   startTime: number;
@@ -31,11 +32,16 @@ interface UseBeatSyncOptions {
   detectedOnsets?: number[];
   /** Enable adaptive resync to periodically realign metronome with onsets */
   adaptiveResync?: boolean;
+  /** Mute audio output without changing the stored volume level. */
+  audioMuted?: boolean;
+  /** Mute metronome clicks without changing the stored volume level. */
+  metronomeMuted?: boolean;
 }
 
-/** Available playback speed presets */
-export const PLAYBACK_SPEEDS = [0.5, 0.6, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.05, 1.1, 1.15, 1.25, 1.5, 2.0] as const;
-export type PlaybackSpeed = (typeof PLAYBACK_SPEEDS)[number];
+/** Available playback speed presets (see `playbackRateLimits.ts` for the full menu). */
+export { BEAT_SPEED_MENU_PRESETS as PLAYBACK_SPEEDS, clampBeatPlaybackRate } from '../utils/playbackRateLimits';
+
+export type PlaybackRate = number;
 
 interface UseBeatSyncReturn {
   isPlaying: boolean;
@@ -44,7 +50,7 @@ interface UseBeatSyncReturn {
   progress: number; // 0-1 progress within current beat
   currentTime: number;
   duration: number;
-  playbackRate: PlaybackSpeed;
+  playbackRate: PlaybackRate;
   audioVolume: number;
   metronomeVolume: number;
   /** Whether current playback position is within the sync region */
@@ -61,7 +67,7 @@ interface UseBeatSyncReturn {
   pause: () => void;
   stop: () => void;
   seek: (time: number) => void;
-  setPlaybackRate: (rate: PlaybackSpeed) => void;
+  setPlaybackRate: (rate: PlaybackRate) => void;
   setAudioVolume: (volume: number) => void;
   setMetronomeVolume: (volume: number) => void;
   skipToStart: () => void;
@@ -87,13 +93,15 @@ export function useBeatSync({
   tempoRegions: _tempoRegions, // eslint-disable-line @typescript-eslint/no-unused-vars
   detectedOnsets,
   adaptiveResync = false,
+  audioMuted = false,
+  metronomeMuted = false,
 }: UseBeatSyncOptions): UseBeatSyncReturn {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentBeat, setCurrentBeat] = useState(0);
   const [currentMeasure, setCurrentMeasure] = useState(0);
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
-  const [playbackRate, setPlaybackRate] = useState<PlaybackSpeed>(1.0);
+  const [playbackRate, setPlaybackRateState] = useState<PlaybackRate>(1.0);
   const [audioVolume, setAudioVolume] = useState(80);
   const [metronomeVolume, setMetronomeVolume] = useState(50);
   
@@ -117,8 +125,9 @@ export function useBeatSync({
   const lastBeatRef = useRef(-1);
   const lastClickTimeRef = useRef(0); // Prevent double clicks
   const metronomeEnabledRef = useRef(metronomeEnabled);
-  const playbackRateRef = useRef<PlaybackSpeed>(1.0);
+  const playbackRateRef = useRef<PlaybackRate>(1.0);
   const audioVolumeRef = useRef(80);
+  const audioOutputGainRef = useRef(0.8);
   const syncStartRef = useRef(effectiveSyncStart);
   const bpmRef = useRef(bpm);
   const beatsPerMeasureRef = useRef(timeSignature.numerator);
@@ -176,6 +185,8 @@ export function useBeatSync({
   // Keep volume refs in sync and update gain nodes with smooth transition
   useEffect(() => {
     audioVolumeRef.current = audioVolume;
+    audioOutputGainRef.current = audioMuted ? 0 : audioVolume / 100;
+    const outputGain = audioOutputGainRef.current;
     if (audioGainNodeRef.current && audioContextRef.current) {
       const currentTime = audioContextRef.current.currentTime;
       // Use exponential ramp for smooth volume changes (avoids clicks)
@@ -184,11 +195,11 @@ export function useBeatSync({
         currentTime
       );
       audioGainNodeRef.current.gain.linearRampToValueAtTime(
-        audioVolume / 100,
+        outputGain,
         currentTime + 0.05 // 50ms ramp for smooth transition
       );
     }
-  }, [audioVolume]);
+  }, [audioMuted, audioVolume]);
 
   // Keep loop refs in sync
   useEffect(() => {
@@ -239,7 +250,7 @@ export function useBeatSync({
   // Pass getter function so it can access AudioContext lazily (after user interaction)
   const { playClick } = useMetronome({
     getAudioContext,
-    volume: metronomeVolume,
+    volume: metronomeMuted ? 0 : metronomeVolume,
   });
 
   // Handle switching between audio element and source node when transpose changes
@@ -285,13 +296,13 @@ export function useBeatSync({
         const audio = audioElementRef.current;
         audio.currentTime = currentPosition;
         audio.playbackRate = playbackRateRef.current;
-        audio.volume = audioVolumeRef.current / 100;
+        audio.volume = audioOutputGainRef.current;
         audio.play().catch(() => {});
       } else {
         // Switch to source node (with transpose support)
         const audioContext = getAudioContext();
         const gainNode = audioContext.createGain();
-        const targetVolume = audioVolumeRef.current / 100;
+        const targetVolume = audioOutputGainRef.current;
         // Fade in smoothly to prevent click
         gainNode.gain.setValueAtTime(0, audioContext.currentTime);
         gainNode.gain.linearRampToValueAtTime(targetVolume, audioContext.currentTime + 0.02);
@@ -342,9 +353,9 @@ export function useBeatSync({
   // Sync audio element volume
   useEffect(() => {
     if (audioElementRef.current) {
-      audioElementRef.current.volume = audioVolume / 100;
+      audioElementRef.current.volume = audioMuted ? 0 : audioVolume / 100;
     }
-  }, [audioVolume]);
+  }, [audioMuted, audioVolume]);
 
   // Sync audio element playback rate
   useEffect(() => {
@@ -673,7 +684,7 @@ export function useBeatSync({
           }
 
           const gainNode = audioContext.createGain();
-          const targetVolume = audioVolumeRef.current / 100;
+          const targetVolume = audioOutputGainRef.current;
           // Fade in smoothly to prevent click on loop restart
           gainNode.gain.setValueAtTime(0, audioContext.currentTime);
           gainNode.gain.linearRampToValueAtTime(targetVolume, audioContext.currentTime + 0.015);
@@ -740,7 +751,7 @@ export function useBeatSync({
         
         // Create new gain node with smooth fade-in
         const gainNode = audioContext.createGain();
-        const targetVolume = audioVolumeRef.current / 100;
+        const targetVolume = audioOutputGainRef.current;
         // Fade in smoothly to prevent click on recovery
         gainNode.gain.setValueAtTime(0, audioContext.currentTime);
         gainNode.gain.linearRampToValueAtTime(targetVolume, audioContext.currentTime + 0.02);
@@ -816,7 +827,7 @@ export function useBeatSync({
       const audio = audioElementRef.current;
       audio.currentTime = pauseTimeRef.current;
       audio.playbackRate = playbackRateRef.current;
-      audio.volume = audioVolumeRef.current / 100;
+      audio.volume = audioOutputGainRef.current;
       audio.play().catch(err => {
         console.warn('Failed to play audio:', err);
       });
@@ -828,7 +839,7 @@ export function useBeatSync({
     // Fallback to AudioBufferSourceNode (no pitch preservation)
     // Create gain node for volume control with smooth fade-in
     const gainNode = audioContext.createGain();
-    const targetVolume = audioVolumeRef.current / 100;
+    const targetVolume = audioOutputGainRef.current;
     // Start at 0 and fade in to prevent click
     gainNode.gain.setValueAtTime(0, audioContext.currentTime);
     gainNode.gain.linearRampToValueAtTime(targetVolume, audioContext.currentTime + 0.02);
@@ -1085,6 +1096,10 @@ export function useBeatSync({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [audioBuffer, isPlaying, play, pause]);
+
+  const setPlaybackRate = useCallback((rate: PlaybackRate) => {
+    setPlaybackRateState(clampBeatPlaybackRate(rate));
+  }, []);
 
   return {
     isPlaying,

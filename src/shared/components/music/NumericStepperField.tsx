@@ -16,6 +16,9 @@ export interface NumericStepperFieldProps {
   min: number;
   max: number;
   step?: number;
+  /** Optional suffix rendered between the value and arrow buttons (e.g. "×"). */
+  valueSuffix?: React.ReactNode;
+  stepperClassName?: string;
   /** Apply one step in semitones/BPM units; parent clamps and updates state. */
   onBump: (delta: number) => void;
   incrementAriaLabel: string;
@@ -43,6 +46,8 @@ export function NumericStepperField({
   min,
   max,
   step = 1,
+  valueSuffix,
+  stepperClassName,
   onBump,
   incrementAriaLabel,
   decrementAriaLabel,
@@ -89,7 +94,17 @@ export function NumericStepperField({
   const decDisabled = disabled || value <= min;
 
   return (
-    <div className="shared-bpm-stepper" role="group" aria-label={stepperAriaLabel}>
+    <div
+      className={[
+        'shared-bpm-stepper',
+        valueSuffix ? 'has-value-suffix' : '',
+        stepperClassName,
+      ]
+        .filter(Boolean)
+        .join(' ')}
+      role="group"
+      aria-label={stepperAriaLabel}
+    >
       <input
         ref={inputRef}
         className="shared-bpm-value"
@@ -103,6 +118,11 @@ export function NumericStepperField({
         onKeyDown={onInputKeyDown}
         disabled={disabled}
       />
+      {valueSuffix ? (
+        <span className="shared-bpm-value-suffix" aria-hidden>
+          {valueSuffix}
+        </span>
+      ) : null}
       <div className="shared-bpm-arrows">
         <button
           type="button"

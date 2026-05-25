@@ -5,7 +5,7 @@ export function useStanzaMetronomePersistence(
   selected: StanzaSong | undefined,
   persistSong: (
     patch: Partial<StanzaSong> & Pick<StanzaSong, 'id'>,
-    opts?: { recordUndo?: boolean },
+    opts?: { recordUndo?: boolean; touchUpdatedAt?: boolean },
   ) => Promise<void>,
 ) {
   const saveSegmentMetronome = useCallback(

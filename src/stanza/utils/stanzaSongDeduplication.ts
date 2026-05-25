@@ -13,16 +13,25 @@
  */
 
 import type { StanzaSong, StanzaStemTrack } from '../db/stanzaDb';
+import { computeStanzaLocalMediaFingerprint } from '../utils/stanzaLocalMediaFingerprint';
+import { mergeStanzaRicherSongMetadata } from './stanzaSongMetadataMerge';
 
 /**
  * Stable identifier for the *content* a song points at. Two rows with the same content key are
- * considered duplicates and will be merged. Local-only audio uploads have no shared identifier
- * across devices, so we fall back to the row's own `id` (one row per content key, no dedupe).
+ * considered duplicates and will be merged. Local-only uploads match by `localMediaFingerprint`
+ * when the same file is imported on another device.
  */
-export function stanzaSongContentKey(song: Pick<StanzaSong, 'id' | 'ytId' | 'driveSourceFileId'>): string {
+export function stanzaSongContentKey(
+  song: Pick<StanzaSong, 'id' | 'ytId' | 'driveSourceFileId' | 'localMediaFingerprint' | 'localAudioBlob' | 'title'>,
+): string {
   if (song.ytId) return `yt:${song.ytId}`;
   const drive = song.driveSourceFileId?.trim();
   if (drive) return `drive:${drive}`;
+  const fp = song.localMediaFingerprint?.trim();
+  if (fp) return `localfp:${fp}`;
+  if (song.localAudioBlob) {
+    return `localfp:${computeStanzaLocalMediaFingerprint({ sizeBytes: song.localAudioBlob.size, fileName: song.title })}`;
+  }
   return `local:${song.id}`;
 }
 
@@ -110,7 +119,7 @@ export function consolidateStanzaSongDuplicates(rows: StanzaSong[]): StanzaConso
     }
     const winner = pickWinner(incumbent, row);
     const loser = winner === incumbent ? row : incumbent;
-    const merged = inheritLocalArtefacts(winner, loser);
+    const merged = mergeStanzaRicherSongMetadata(inheritLocalArtefacts(winner, loser), loser);
     winnerByKey.set(key, merged);
     if (loser.id !== merged.id) {
       remappedIds.set(loser.id, merged.id);

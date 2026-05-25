@@ -50,6 +50,7 @@ describe('useStanzaLocalStemMixer', () => {
         primaryMuted: false,
         primaryGain: 1,
         stems: [],
+        isLocalVideo: false,
         localVideoRef,
         localAudioRef,
         stemAudioRefs,
@@ -73,6 +74,7 @@ describe('useStanzaLocalStemMixer', () => {
         primaryMuted: false,
         primaryGain: 1,
         stems: [{ id: 'stem-a' }],
+        isLocalVideo: false,
         localVideoRef,
         localAudioRef,
         stemAudioRefs,
@@ -101,6 +103,7 @@ describe('useStanzaLocalStemMixer', () => {
         primaryMuted: false,
         primaryGain: 1,
         stems: [{ id: 'stem-a', muted: false, gain: 1 }],
+        isLocalVideo: false,
         localVideoRef,
         localAudioRef,
         stemAudioRefs,
@@ -121,5 +124,40 @@ describe('useStanzaLocalStemMixer', () => {
       expect(onMixResumeFailed).toHaveBeenCalledTimes(1);
     });
     expect(result.current.webAudioMixReady).toBe(false);
+  });
+
+  it('calls onMixGraphReleased when an active mixer is torn down', () => {
+    const onMixGraphReleased = vi.fn();
+    const main = document.createElement('audio');
+    const stem = document.createElement('audio');
+    const localVideoRef = { current: null as HTMLVideoElement | null };
+    const localAudioRef = { current: main };
+    const stemAudioRefs = { current: new Map<string, HTMLAudioElement>([['stem-a', stem]]) };
+
+    const { result } = renderHook(() =>
+      useStanzaLocalStemMixer({
+        enabled: true,
+        stemUrlKey: 'song\0stem-a:1',
+        expectedStemCount: 1,
+        primaryMuted: false,
+        primaryGain: 1,
+        stems: [{ id: 'stem-a', muted: false, gain: 1 }],
+        isLocalVideo: false,
+        localVideoRef,
+        localAudioRef,
+        stemAudioRefs,
+        onMixGraphReleased,
+      }),
+    );
+
+    act(() => {
+      expect(result.current.prepareStemMixerForPlaySync()).toBe(true);
+    });
+    expect(onMixGraphReleased).not.toHaveBeenCalled();
+
+    act(() => {
+      result.current.abandonWebAudioMix();
+    });
+    expect(onMixGraphReleased).toHaveBeenCalledTimes(1);
   });
 });

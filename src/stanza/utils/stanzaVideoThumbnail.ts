@@ -153,7 +153,7 @@ export async function backfillStanzaVideoThumbnailIfNeeded(songId: string): Prom
     const row = await stanzaDb.songs.get(songId);
     if (!row?.localAudioBlob || !isStanzaBlobLikeVideo(row.localAudioBlob, row.title)) return;
     if (row.localVideoThumbnailBlob) return;
-    await stanzaDb.songs.put({ ...row, localVideoThumbnailBlob: thumb, updatedAt: Date.now() });
+    await stanzaDb.songs.put({ ...row, localVideoThumbnailBlob: thumb });
   } finally {
     thumbBackfillInFlight.delete(songId);
   }

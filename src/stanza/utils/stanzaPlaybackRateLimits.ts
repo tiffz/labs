@@ -1,7 +1,16 @@
+import {
+  clampPlaybackRate,
+  DEFAULT_PLAYBACK_RATE_MAX,
+  DEFAULT_PLAYBACK_RATE_MIN,
+  DEFAULT_PLAYBACK_RATE_STEP,
+  DEFAULT_SPEED_MENU_PRESETS,
+  formatPlaybackRateLabel,
+} from '../../shared/music/playbackRateConstants';
+
 /** YouTube embed and local audio: stay within a conservative range. */
-export const STANZA_RATE_MIN = 0.25;
-export const STANZA_RATE_MAX = 2;
-export const STANZA_RATE_STEP = 0.05;
+export const STANZA_RATE_MIN = DEFAULT_PLAYBACK_RATE_MIN;
+export const STANZA_RATE_MAX = DEFAULT_PLAYBACK_RATE_MAX;
+export const STANZA_RATE_STEP = DEFAULT_PLAYBACK_RATE_STEP;
 
 /**
  * Speed-menu preset chips, ordered ascending. Hand-picked for **practice ergonomics**: gaps
@@ -18,15 +27,7 @@ export const STANZA_RATE_STEP = 0.05;
  * requested {0.85, 0.9, 0.95, 1, 1.05, 1.1}, and gaps must shrink monotonically toward 1× on
  * both sides — so changes to this list have to consciously preserve the density profile.
  */
-export const STANZA_SPEED_MENU_PRESETS = [
-  0.25, 0.5, 0.75, 0.85, 0.9, 0.95, 1, 1.05, 1.1, 1.25, 1.5, 1.75, 2,
-] as const;
+export const STANZA_SPEED_MENU_PRESETS = DEFAULT_SPEED_MENU_PRESETS;
 
-export function clampStanzaPlaybackRate(rate: number): number {
-  return Math.min(STANZA_RATE_MAX, Math.max(STANZA_RATE_MIN, rate));
-}
-
-export function formatStanzaPlaybackRateLabel(rate: number): string {
-  const r = Math.round(rate * 100) / 100;
-  return `${r}×`;
-}
+export const clampStanzaPlaybackRate = clampPlaybackRate;
+export const formatStanzaPlaybackRateLabel = formatPlaybackRateLabel;

@@ -366,6 +366,7 @@ export function SongPage(props: {
     routeSongId: route.kind === 'song' ? route.id : null,
     songs,
     googleAccessToken,
+    signInWithGoogle,
     spotifyLinked,
     driveUploadFolderOverrides: repertoireExtras.driveUploadFolderOverrides,
     persistAfterMetadataRefresh: persistSongNow,

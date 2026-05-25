@@ -11,9 +11,7 @@ import BpmInput from '../../shared/components/music/BpmInput';
 import AppSlider from '../../shared/components/AppSlider';
 
 const PIANO_DRUM_STYLE: NotationStyle = {
-  staffColor: '#94a3b8',
-  noteColor: '#64748b',
-  textColor: '#64748b',
+  inkColor: '#64748b',
   highlightColor: '#7c3aed',
 };
 

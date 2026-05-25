@@ -1,9 +1,14 @@
 import type { StanzaSong, StanzaStemTrack } from '../db/stanzaDb';
 import { stanzaDb } from '../db/stanzaDb';
+import { computeStanzaLocalMediaFingerprint } from '../utils/stanzaLocalMediaFingerprint';
 import {
   readStanzaDriveTombstones,
   type StanzaDriveTombstone,
 } from './stanzaDriveTombstones';
+import {
+  readStanzaYoutubeTombstones,
+  type StanzaYoutubeTombstone,
+} from './stanzaYoutubeTombstones';
 
 export const STANZA_DRIVE_APP_ID = 'stanza' as const;
 
@@ -30,12 +35,18 @@ function songWithoutBlob(row: StanzaSong): StanzaSongDriveRow {
   const { localAudioBlob, localVideoThumbnailBlob, stems, ...rest } = row;
   void localAudioBlob;
   void localVideoThumbnailBlob;
-  if (!stems?.length) return rest as StanzaSongDriveRow;
+  const fingerprint =
+    rest.localMediaFingerprint ??
+    (localAudioBlob
+      ? computeStanzaLocalMediaFingerprint({ sizeBytes: localAudioBlob.size, fileName: row.title })
+      : undefined);
+  const base = fingerprint ? { ...rest, localMediaFingerprint: fingerprint } : rest;
+  if (!stems?.length) return base as StanzaSongDriveRow;
   const stemMeta: StanzaStemDriveRow[] = stems.map(({ localBlob, ...m }) => {
     void localBlob;
     return m;
   });
-  return { ...rest, stems: stemMeta };
+  return { ...base, stems: stemMeta };
 }
 
 export interface StanzaDriveEnvelopeV1 {
@@ -53,12 +64,15 @@ export interface StanzaDriveEnvelopeV1 {
    * the empty set.
    */
   deletedDriveSourceFileIds?: StanzaDriveTombstone[];
+  /** YouTube video ids the user removed — optional for back-compat. */
+  deletedYoutubeVideoIds?: StanzaYoutubeTombstone[];
 }
 
 export async function buildStanzaDriveEnvelope(): Promise<StanzaDriveEnvelopeV1> {
   const rows = await stanzaDb.songs.toArray();
   const songs: StanzaSongDriveRow[] = rows.map(songWithoutBlob);
   const deletedDriveSourceFileIds = readStanzaDriveTombstones();
+  const deletedYoutubeVideoIds = readStanzaYoutubeTombstones();
   const env: StanzaDriveEnvelopeV1 = {
     schemaVersion: 1,
     exportedAt: new Date().toISOString(),
@@ -67,6 +81,9 @@ export async function buildStanzaDriveEnvelope(): Promise<StanzaDriveEnvelopeV1>
   };
   if (deletedDriveSourceFileIds.length > 0) {
     env.deletedDriveSourceFileIds = deletedDriveSourceFileIds;
+  }
+  if (deletedYoutubeVideoIds.length > 0) {
+    env.deletedYoutubeVideoIds = deletedYoutubeVideoIds;
   }
   return env;
 }

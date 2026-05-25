@@ -31,11 +31,25 @@ export function LabsDriveAccountMenu(props: LabsDriveAccountMenuProps) {
     ...menuProps
   } = props;
 
-  const defaultBackupRow = ({ disabled, busy, onBackup }: { disabled: boolean; busy: boolean; onBackup: () => void }) => (
+  const defaultBackupRow = ({
+    disabled,
+    busy,
+    onBackup,
+    needsSignIn,
+    onSignIn,
+  }: {
+    disabled: boolean;
+    busy: boolean;
+    onBackup: () => void;
+    needsSignIn: boolean;
+    onSignIn: () => void;
+  }) => (
     <LabsDriveBackupActionRow
       disabled={disabled}
       busy={busy}
       onBackup={onBackup}
+      needsSignIn={needsSignIn}
+      onSignIn={onSignIn}
       canRestore={drive.canRestore}
       onOpenRestore={drive.openRestorePicker}
       driveFolderUrl={drive.driveFolderUrl}

@@ -6,6 +6,7 @@ import type { PianoScore } from '../shared/music/scoreTypes';
 import {
   loadProgress,
   saveProgress,
+  normalizeScalesProgressPayload,
   recordPractice,
   getExerciseProgress,
   markOnboardingSeen,
@@ -943,9 +944,24 @@ function reducer(state: ScalesState, action: Action): ScalesState {
       return { ...state, progress: next };
     }
     case 'REPLACE_PROGRESS_FROM_CLOUD': {
-      saveProgress(action.progress);
+      const normalized = normalizeScalesProgressPayload(action.progress);
+      saveProgress(normalized);
       clearSessionSnapshot();
-      return { ...state, progress: action.progress };
+      return {
+        ...state,
+        screen: 'home',
+        progress: normalized,
+        sessionPlan: null,
+        activeExerciseIndex: 0,
+        activeExercise: null,
+        score: null,
+        sessionComplete: false,
+        isPlaying: false,
+        practiceResults: new Map(),
+        currentRunStartTime: null,
+        lastExerciseResult: null,
+        currentSessionRuns: [],
+      };
     }
 
     default:

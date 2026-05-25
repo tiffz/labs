@@ -1,13 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react';
 import SkipToMain from '../shared/components/SkipToMain';
-import FormControl from '@mui/material/FormControl';
-import MenuItem from '@mui/material/MenuItem';
 import AnchoredPopover from '../shared/components/AnchoredPopover';
-import Select from '@mui/material/Select';
-import Slider from '@mui/material/Slider';
 import { type MediaFile } from './components/MediaUploader';
 import BeatVisualizer from './components/BeatVisualizer';
 import VideoPlayer from './components/VideoPlayer';
+import PlaybackSpeedControl from './components/PlaybackSpeedControl';
+import BeatMixerChannel from './components/BeatMixerChannel';
 import type { YouTubeController, YouTubePlaybackState } from './components/YouTubePlayer';
 const YouTubePlayer = lazy(() => import('./components/YouTubePlayer'));
 import PlaybackBar from './components/PlaybackBar';
@@ -15,10 +13,11 @@ import DrumAccompaniment from '../shared/components/music/DrumAccompaniment';
 import UploadLanding from './components/UploadLanding';
 import { useAudioAnalysis } from './hooks/useAudioAnalysis';
 import { createAppAnalytics } from '../shared/utils/analytics';
+import { snapYouTubePlaybackRate } from './utils/playbackRateLimits';
 
 const analytics = createAppAnalytics('beat');
 import { transposeKey } from './utils/musicTheory';
-import { useBeatSync, PLAYBACK_SPEEDS, type PlaybackSpeed } from './hooks/useBeatSync';
+import { useBeatSync } from './hooks/useBeatSync';
 import { useSectionDetection } from './hooks/useSectionDetection';
 import { useChordAnalysis } from './hooks/useChordAnalysis';
 import { useSectionSelection } from './hooks/useSectionSelection';
@@ -40,7 +39,9 @@ import { shouldHandleGlobalPlaybackSpacebar } from './utils/keyboardShortcuts';
 import {
   createUserLane,
   loadSongSettings,
+  readSavedSongBpm,
   saveSongSettings,
+  type PerSongSettings,
   toLaneSection,
   type LaneSection,
   type PracticeEditorSnapshot,
@@ -55,7 +56,6 @@ import {
   getLocalFileForEntry,
   getUserPracticeSections,
   loadLibraryEntries,
-  loadStaleReanalysisQueue,
   markAllStaleIfVersionChanged,
   markEntryViewed,
   renameLibraryEntry,
@@ -88,7 +88,6 @@ const App: React.FC = () => {
   const [mediaFile, setMediaFile] = useState<MediaFile | null>(null);
   const [libraryEntries, setLibraryEntries] = useState<BeatLibraryEntry[]>([]);
   const [activeEntryId, setActiveEntryId] = useState<string | null>(null);
-  const [switchingEntry, setSwitchingEntry] = useState(false);
   const [uploadTasks, setUploadTasks] = useState<UploadTaskState[]>([]);
   const [duplicateMessage, setDuplicateMessage] = useState<string | null>(null);
   const [libraryQuery, setLibraryQuery] = useState('');
@@ -96,6 +95,7 @@ const App: React.FC = () => {
   const [editingTitle, setEditingTitle] = useState('');
   const [reanalysisQueue, setReanalysisQueue] = useState<string[]>([]);
   const [isBackgroundReanalyzing, setIsBackgroundReanalyzing] = useState(false);
+  const [backgroundIsReanalysis, setBackgroundIsReanalysis] = useState(false);
   const [analysisStaleMessage, setAnalysisStaleMessage] = useState<string | null>(null);
   const [alignLoopToMetronome, setAlignLoopToMetronome] = useState(true);
   const [nudgeUnit, setNudgeUnit] = useState<'measure' | 'beat'>('measure');
@@ -113,6 +113,9 @@ const App: React.FC = () => {
   const [drumEnabled, setDrumEnabled] = useState(false);
   const [syncStartTime, setSyncStartTime] = useState<number | null>(null);
   const [drumVolume, setDrumVolume] = useState(70);
+  const [audioMuted, setAudioMuted] = useState(false);
+  const [drumMuted, setDrumMuted] = useState(false);
+  const [metronomeMuted, setMetronomeMuted] = useState(false);
   const [mixerOpen, setMixerOpen] = useState(false);
   const mixerAnchorRef = useRef<HTMLButtonElement | null>(null);
   const audioBufferCacheRef = useRef<Map<string, AudioBuffer>>(new Map());
@@ -132,6 +135,8 @@ const App: React.FC = () => {
   const exportButtonRef = useRef<HTMLButtonElement | null>(null);
   const youtubeMetronomeContextRef = useRef<AudioContext | null>(null);
   const youtubeLastBeatRef = useRef(-1);
+  const pendingSavedBpmRef = useRef<number | null>(null);
+  const captureSongSettingsRef = useRef<() => PerSongSettings>(() => ({}));
   const [youtubeManualBpm, setYoutubeManualBpm] = useState(120);
   const [exportOpen, setExportOpen] = useState(false);
   const historyPastRef = useRef<PracticeEditorSnapshot[]>([]);
@@ -145,11 +150,14 @@ const App: React.FC = () => {
     audioBuffer,
     error: analysisError,
     getAudioContext,
-    analyzeMedia,
+    loadMediaBuffer,
+    analyzeLoadedBuffer,
     hydrateAnalysis,
     setBpm: setAnalyzedBpm,
     reset: resetAnalysis,
   } = useAudioAnalysis();
+
+  const isBeatAnalysisPending = isAnalyzing || analysisProgress !== null;
 
   const {
     sections: analysisSections,
@@ -200,11 +208,13 @@ const App: React.FC = () => {
     bpm: effectiveBpm,
     timeSignature,
     musicStartTime: analysisResult?.musicStartTime ?? 0,
-    metronomeEnabled,
+    metronomeEnabled: metronomeEnabled && !isBeatAnalysisPending,
     syncStartTime: effectiveSyncStart,
     mediaUrl: isYouTubeMedia ? undefined : mediaFile?.url,
     transposeSemitones,
     tempoRegions: analysisResult?.tempoRegions,
+    audioMuted,
+    metronomeMuted,
   });
 
   const mergeUserSections = useCallback((indexA: number, indexB: number) => {
@@ -227,12 +237,69 @@ const App: React.FC = () => {
   );
   const handleYouTubeControllerReady = useCallback((controller: YouTubeController | null) => {
     youtubeControllerRef.current = controller;
-  }, []);
+    if (controller) {
+      controller.setPlaybackRate(snapYouTubePlaybackRate(youtubePlayback.playbackRate));
+    }
+  }, [youtubePlayback.playbackRate]);
 
   const effectiveDuration = isYouTubeMedia ? youtubePlayback.duration : duration;
   const effectiveCurrentTime = isYouTubeMedia ? youtubePlayback.currentTime : currentTime;
   const effectiveIsPlaying = isYouTubeMedia ? youtubePlayback.isPlaying : isPlaying;
   const effectivePlaybackRate = isYouTubeMedia ? youtubePlayback.playbackRate : playbackRate;
+
+  const captureSongSettings = useCallback((): PerSongSettings => {
+    const bpm = Math.round(effectiveBpm);
+    return {
+      metronomeEnabled,
+      drumEnabled,
+      audioVolume,
+      metronomeVolume,
+      drumVolume,
+      audioMuted,
+      drumMuted,
+      metronomeMuted,
+      alignLoopToMetronome,
+      correctedDetectedKey: correctedDetectedKey ?? null,
+      transposeSemitones,
+      bpm,
+      youtubeManualBpm: isYouTubeMedia ? bpm : undefined,
+      playbackRate: effectivePlaybackRate,
+      syncStartTime,
+      loopEnabled,
+      loopRegion,
+      nudgeUnit,
+    };
+  }, [
+    alignLoopToMetronome,
+    audioMuted,
+    audioVolume,
+    correctedDetectedKey,
+    drumEnabled,
+    drumMuted,
+    drumVolume,
+    effectiveBpm,
+    effectivePlaybackRate,
+    isYouTubeMedia,
+    loopEnabled,
+    loopRegion,
+    metronomeEnabled,
+    metronomeMuted,
+    metronomeVolume,
+    nudgeUnit,
+    syncStartTime,
+    transposeSemitones,
+  ]);
+
+  useEffect(() => {
+    captureSongSettingsRef.current = captureSongSettings;
+  }, [captureSongSettings]);
+
+  useEffect(() => {
+    if (isYouTubeMedia || !analysisResult || pendingSavedBpmRef.current == null) return;
+    setAnalyzedBpm(pendingSavedBpmRef.current);
+    pendingSavedBpmRef.current = null;
+  }, [analysisResult, isYouTubeMedia, setAnalyzedBpm]);
+
   const exportAdapter = useMemo<ExportSourceAdapter>(() => {
     const hasAudio = Boolean(audioBuffer);
     const baseName = (mediaFile?.file.name || 'beat-track')
@@ -272,7 +339,7 @@ const App: React.FC = () => {
 
   const { playClick: playYouTubeClick } = useMetronome({
     getAudioContext: getYoutubeMetronomeAudioContext,
-    volume: metronomeVolume,
+    volume: metronomeMuted ? 0 : metronomeVolume,
   });
 
   const {
@@ -399,18 +466,18 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (!activeEntryId) return;
-    saveSongSettings(activeEntryId, {
-      metronomeEnabled,
-      drumEnabled,
-      audioVolume,
-      metronomeVolume,
-      drumVolume,
-      alignLoopToMetronome,
-      correctedDetectedKey: correctedDetectedKey ?? null,
-      transposeSemitones,
-      youtubeManualBpm,
-    });
-  }, [activeEntryId, metronomeEnabled, drumEnabled, audioVolume, metronomeVolume, drumVolume, alignLoopToMetronome, correctedDetectedKey, transposeSemitones, youtubeManualBpm]);
+    saveSongSettings(activeEntryId, captureSongSettings());
+  }, [activeEntryId, captureSongSettings]);
+
+  useEffect(() => {
+    const flush = () => {
+      if (activeEntryId) {
+        saveSongSettings(activeEntryId, captureSongSettingsRef.current());
+      }
+    };
+    window.addEventListener('pagehide', flush);
+    return () => window.removeEventListener('pagehide', flush);
+  }, [activeEntryId]);
 
   useEffect(() => {
     if (analysisResult && detectedBpmBaseline === null) {
@@ -551,7 +618,9 @@ const App: React.FC = () => {
 
   const loadEntry = useCallback(
     async (entry: BeatLibraryEntry) => {
-      setSwitchingEntry(true);
+      if (activeEntryId && activeEntryId !== entry.id) {
+        saveSongSettings(activeEntryId, captureSongSettingsRef.current());
+      }
       await markEntryViewed(entry.id);
       await refreshLibrary();
       setActiveEntryId(entry.id);
@@ -576,16 +645,27 @@ const App: React.FC = () => {
       resetAnalysis();
 
       const saved = loadSongSettings(entry.id);
+      const savedBpm = readSavedSongBpm(saved);
+      const savedRate = saved?.playbackRate ?? 1;
+      pendingSavedBpmRef.current = entry.sourceType === 'youtube' ? null : savedBpm;
       setMetronomeEnabled(saved?.metronomeEnabled ?? true);
       setDrumEnabled(saved?.drumEnabled ?? false);
       setDrumVolume(saved?.drumVolume ?? 70);
       setAudioVolume(saved?.audioVolume ?? 80);
       setMetronomeVolume(saved?.metronomeVolume ?? 50);
+      setAudioMuted(saved?.audioMuted ?? false);
+      setDrumMuted(saved?.drumMuted ?? false);
+      setMetronomeMuted(saved?.metronomeMuted ?? false);
       setAlignLoopToMetronome(saved?.alignLoopToMetronome ?? true);
       setCorrectedDetectedKey((saved?.correctedDetectedKey as MusicKey) ?? null);
       setTransposeSemitones(saved?.transposeSemitones ?? 0);
+      setSyncStartTime(saved?.syncStartTime ?? null);
+      setLoopEnabled(saved?.loopEnabled ?? false);
+      setLoopRegion(saved?.loopRegion ?? null);
+      setNudgeUnit(saved?.nudgeUnit ?? 'measure');
+      setPlaybackRate(savedRate);
       if (entry.sourceType === 'youtube') {
-        setYoutubeManualBpm(saved?.youtubeManualBpm ?? 120);
+        setYoutubeManualBpm(savedBpm ?? 120);
       }
 
       const savedLocal = localStorage.getItem(userSectionsStorageKey(entry.id));
@@ -602,7 +682,7 @@ const App: React.FC = () => {
           currentTime: 0,
           duration: 0,
           isPlaying: false,
-          playbackRate: 1,
+          playbackRate: snapYouTubePlaybackRate(savedRate),
         });
         setMediaFile({
           file: new File([], `${entry.title}.url`, { type: 'text/uri-list' }),
@@ -612,7 +692,6 @@ const App: React.FC = () => {
           youtubeVideoId: entry.youtubeVideoId,
           url: `https://www.youtube.com/embed/${entry.youtubeVideoId}?enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`,
         });
-        setSwitchingEntry(false);
         return;
       }
 
@@ -620,7 +699,7 @@ const App: React.FC = () => {
         getLocalFileForEntry(entry.id),
         getAnalysisBundle(entry.id),
       ]);
-      if (!file) { setSwitchingEntry(false); return; }
+      if (!file) return;
       const localMedia: MediaFile = {
         file,
         type: entry.mediaKind,
@@ -645,21 +724,41 @@ const App: React.FC = () => {
           }
         }
         hydrateAnalysis({ result: analysisBundle.beat, buffer });
+        if (pendingSavedBpmRef.current != null) {
+          setAnalyzedBpm(pendingSavedBpmRef.current);
+          pendingSavedBpmRef.current = null;
+        }
         if (entry.analysis.stale) {
           setReanalysisQueue((prev) => [entry.id, ...prev.filter((id) => id !== entry.id)]);
         }
       } else {
-        await analyzeMedia(localMedia);
+        void (async () => {
+          try {
+            let buffer = audioBufferCacheRef.current.get(entry.id);
+            if (!buffer) {
+              buffer = await loadMediaBuffer(localMedia);
+              audioBufferCacheRef.current.set(entry.id, buffer);
+              if (audioBufferCacheRef.current.size > 5) {
+                const oldest = audioBufferCacheRef.current.keys().next().value;
+                if (oldest) audioBufferCacheRef.current.delete(oldest);
+              }
+            }
+            await analyzeLoadedBuffer(buffer);
+          } catch (err) {
+            console.error('[beat] background analysis failed', err);
+          }
+        })();
       }
-      setSwitchingEntry(false);
     },
     [
-      analyzeMedia,
+      activeEntryId,
+      analyzeLoadedBuffer,
       clearAnalysisSections,
       clearSelection,
       getAudioContext,
       hydrateAnalysis,
       hydratePracticeData,
+      loadMediaBuffer,
       refreshLibrary,
       resetAnalysis,
       resetChordAnalysis,
@@ -668,6 +767,8 @@ const App: React.FC = () => {
       setLoopEnabled,
       setLoopRegion,
       setMetronomeVolume,
+      setAnalyzedBpm,
+      setPlaybackRate,
     ]
   );
 
@@ -709,7 +810,7 @@ const App: React.FC = () => {
       if (focus) {
         await loadEntry(entry);
       } else {
-        setReanalysisQueue((prev) => [...prev, entry.id]);
+        setReanalysisQueue((prev) => [entry.id, ...prev.filter((id) => id !== entry.id)]);
       }
       setUploadTasks((prev) => prev.map((task) => (task.id === taskId ? { ...task, status: 'done', detail: 'Queued' } : task)));
     },
@@ -835,9 +936,6 @@ const App: React.FC = () => {
     markAllStaleIfVersionChanged()
       .then(refreshLibrary)
       .catch((error) => console.error('Failed stale refresh', error));
-    loadStaleReanalysisQueue()
-      .then((queue) => setReanalysisQueue(queue.map((item) => item.id)))
-      .catch((error) => console.error('Failed to load stale queue', error));
   }, [refreshLibrary]);
 
   const hasBackfilledTitles = useRef(false);
@@ -867,6 +965,8 @@ const App: React.FC = () => {
         if (!entry || entry.sourceType !== 'local') {
           return;
         }
+        const isReanalysis = entry.analysis.analyzedAt > 0;
+        setBackgroundIsReanalysis(isReanalysis);
         const entryTitle = entry.title;
         setUploadTasks((prev) => {
           const matching = prev.find((t) => t.detail === 'Queued' && t.name === entryTitle);
@@ -905,6 +1005,7 @@ const App: React.FC = () => {
           prev.map((t) => (t.detail === 'Analyzing…' ? { ...t, status: 'error' as const, detail: 'Analysis failed' } : t))
         );
       } finally {
+        setBackgroundIsReanalysis(false);
         setIsBackgroundReanalyzing(false);
       }
     }, 500);
@@ -925,6 +1026,9 @@ const App: React.FC = () => {
   }, [uploadTasks]);
 
   const handleFileRemove = useCallback(() => {
+    if (activeEntryId) {
+      saveSongSettings(activeEntryId, captureSongSettingsRef.current());
+    }
     youtubeControllerRef.current?.pause();
     stop();
     if (mediaFile?.url && mediaFile.sourceType !== 'youtube') {
@@ -953,13 +1057,14 @@ const App: React.FC = () => {
     resetSelection();
     setLoopRegion(null);
     setLoopEnabled(false);
-  }, [stop, mediaFile, resetAnalysis, clearAnalysisSections, resetChordAnalysis, resetSelection, setLoopRegion, setLoopEnabled]);
+  }, [activeEntryId, stop, mediaFile, resetAnalysis, clearAnalysisSections, resetChordAnalysis, resetSelection, setLoopRegion, setLoopEnabled]);
 
   const handleSyncStartChange = useCallback((time: number) => {
     setSyncStartTime(Math.max(0, Math.min(time, Math.max(0, effectiveDuration - 1))));
   }, [effectiveDuration]);
 
   const handleBpmChange = useCallback((newBpm: number) => {
+    if (isBeatAnalysisPending) return;
     if (isYouTubeMedia) {
       setYoutubeManualBpm(Math.max(40, Math.min(220, Math.round(newBpm))));
       return;
@@ -968,12 +1073,14 @@ const App: React.FC = () => {
     if (activeEntryId) {
       setEntryStaleState(activeEntryId, false).catch((error) => console.error(error));
     }
-  }, [activeEntryId, isYouTubeMedia, setAnalyzedBpm]);
+  }, [activeEntryId, isBeatAnalysisPending, isYouTubeMedia, setAnalyzedBpm]);
 
   const handlePlaybackRateChange = useCallback(
-    (nextRate: PlaybackSpeed) => {
+    (nextRate: number) => {
       if (isYouTubeMedia) {
-        youtubeControllerRef.current?.setPlaybackRate(nextRate);
+        const snapped = snapYouTubePlaybackRate(nextRate);
+        youtubeControllerRef.current?.setPlaybackRate(snapped);
+        setYoutubePlayback((prev) => ({ ...prev, playbackRate: snapped }));
         return;
       }
       setPlaybackRate(nextRate);
@@ -1499,9 +1606,7 @@ const App: React.FC = () => {
   const hasAudio = audioBuffer !== null;
   const hasVideo = mediaFile?.type === 'video';
   const isYouTube = isYouTubeMedia;
-  const isProcessing = isAnalyzing || isAnalyzingChords || isDetectingSections;
-  const isReadyNative = isYouTube || (hasAudio && analysisResult !== null);
-  const isReady = isReadyNative || switchingEntry;
+  const isReady = Boolean(mediaFile);
   const confidenceLevel = analysisResult?.confidenceLevel ?? 'medium';
   const warnings = analysisResult?.warnings ?? [];
   const tempoWarning = warnings.find((w) => w.includes('tempo fluctuations') || w.includes('rubato'));
@@ -1538,7 +1643,7 @@ const App: React.FC = () => {
   }, [effectiveCurrentTime, effectiveIsPlaying, isYouTube, loopEnabled, loopRegion]);
 
   useEffect(() => {
-    if (!isYouTube || !metronomeEnabled || !effectiveIsPlaying) return;
+    if (!isYouTube || !metronomeEnabled || isBeatAnalysisPending || metronomeMuted || !effectiveIsPlaying) return;
     if (effectiveCurrentTime < effectiveSyncStart) {
       youtubeLastBeatRef.current = -1;
       return;
@@ -1549,7 +1654,7 @@ const App: React.FC = () => {
       youtubeLastBeatRef.current = beatIndex;
       playYouTubeClick(beatIndex % timeSignature.numerator === 0);
     }
-  }, [effectiveBpm, effectiveCurrentTime, effectiveIsPlaying, effectiveSyncStart, isYouTube, metronomeEnabled, playYouTubeClick, timeSignature.numerator]);
+  }, [effectiveBpm, effectiveCurrentTime, effectiveIsPlaying, effectiveSyncStart, isBeatAnalysisPending, isYouTube, metronomeEnabled, metronomeMuted, playYouTubeClick, timeSignature.numerator]);
 
   useEffect(() => {
     if (!isReady || effectiveDuration <= 0 || !activeEntryId) return;
@@ -1590,20 +1695,7 @@ const App: React.FC = () => {
       <main id="main" className="beat-main">
         {!isReady && (
           <div className="upload-section">
-            {isProcessing ? (
-              <div className="analyzing">
-                <div className="analyzing-spinner" />
-                <p>{analysisProgress?.stage || 'Analyzing…'}</p>
-                <div className="analysis-progress">
-                  <div
-                    className={`analysis-progress-bar ${!analysisProgress || analysisProgress.progress < 5 ? 'indeterminate' : ''}`}
-                    style={analysisProgress && analysisProgress.progress >= 5 ? { width: `${analysisProgress.progress}%` } : undefined}
-                  />
-                </div>
-              </div>
-            ) : (
-              <UploadLanding onFileSelect={handleFileSelect} />
-            )}
+            <UploadLanding onFileSelect={handleFileSelect} />
             {analysisError && <p className="error-text">{analysisError}</p>}
             {duplicateMessage && <p className="error-text">{duplicateMessage}</p>}
             {libraryEntries.length > 0 && (
@@ -1637,6 +1729,25 @@ const App: React.FC = () => {
         {isReady && mediaFile && (
           <div className="player-layout">
             <div className="viz-section">
+              {isBeatAnalysisPending && (
+                <div className="analysis-background-banner" role="status" aria-live="polite">
+                  <div className="analyzing-spinner compact" aria-hidden />
+                  <div className="analysis-background-banner-copy">
+                    <strong>{analysisProgress?.stage ?? 'Analyzing tempo…'}</strong>
+                    <span>Playback is available. BPM and metronome unlock when analysis finishes.</span>
+                  </div>
+                  <div className="analysis-progress inline">
+                    <div
+                      className={`analysis-progress-bar ${!analysisProgress || analysisProgress.progress < 5 ? 'indeterminate' : ''}`}
+                      style={
+                        analysisProgress && analysisProgress.progress >= 5
+                          ? { width: `${analysisProgress.progress}%` }
+                          : undefined
+                      }
+                    />
+                  </div>
+                </div>
+              )}
               {tempoWarning && !tempoWarningDismissed && (
                 <div className="tempo-warning-banner">
                   <span className="material-symbols-outlined">music_off</span>
@@ -1663,26 +1774,14 @@ const App: React.FC = () => {
                   <button className="nav-btn" onClick={handleSkipToEnd}>
                     <span className="material-symbols-outlined">skip_next</span>
                   </button>
-                  <FormControl size="small" className="speed-control">
-                    <Select
-                      value={effectivePlaybackRate}
-                      onChange={(event) => {
-                        const nextRate = Number(event.target.value) as PlaybackSpeed;
-                        handlePlaybackRateChange(nextRate);
-                      }}
-                      className="speed-select"
-                      MenuProps={{
-                        PaperProps: { className: 'speed-menu-paper' },
-                        MenuListProps: { className: 'speed-menu-list' },
-                      }}
-                    >
-                      {PLAYBACK_SPEEDS.map((speed) => (
-                        <MenuItem key={speed} value={speed}>
-                          {speed === 1 ? '1×' : `${speed}×`}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+                  <PlaybackSpeedControl
+                    value={effectivePlaybackRate}
+                    onChange={handlePlaybackRateChange}
+                    variant="compact"
+                    className="shared-bpm-input beat-playback-speed-transport"
+                    dropdownClassName="beat-bpm-dropdown"
+                    sliderClassName="beat-bpm-slider"
+                  />
                   <AppTooltip title={isYouTubeMedia ? 'Export not available for YouTube videos' : 'Export audio'}>
                     <span>
                       <button
@@ -1772,53 +1871,36 @@ const App: React.FC = () => {
                   paperClassName="mixer-popover"
                 >
                   <div className="volume-mixer vertical">
-                    <div className="mixer-row">
-                      <span className="mixer-label">
-                        <span className="material-symbols-outlined">movie</span>
-                        Video
-                      </span>
-                      <Slider
-                        min={0}
-                        max={100}
-                        value={audioVolume}
-                        onChange={(_, value) => setAudioVolume(Number(value))}
-                        className="mixer-slider"
-                        disabled={isYouTube}
-                        size="small"
-                      />
-                      <span className="mixer-value">{audioVolume}%</span>
-                    </div>
-                    <div className="mixer-row">
-                      <span className="mixer-label">
-                        <span className="material-symbols-outlined">music_cast</span>
-                        Drums
-                      </span>
-                      <Slider
-                        min={0}
-                        max={100}
-                        value={drumVolume}
-                        onChange={(_, value) => setDrumVolume(Number(value))}
-                        className="mixer-slider"
-                        size="small"
-                      />
-                      <span className="mixer-value">{drumVolume}%</span>
-                    </div>
-                    <div className="mixer-row">
-                      <span className="mixer-label">
-                        <span className="material-symbols-outlined">timer</span>
-                        Metronome
-                      </span>
-                      <Slider
-                        min={0}
-                        max={100}
-                        value={metronomeVolume}
-                        onChange={(_, value) => setMetronomeVolume(Number(value))}
-                        className="mixer-slider"
-                        disabled={!metronomeEnabled}
-                        size="small"
-                      />
-                      <span className="mixer-value">{metronomeVolume}%</span>
-                    </div>
+                    <BeatMixerChannel
+                      label="Video"
+                      icon="movie"
+                      volume={audioVolume}
+                      muted={audioMuted}
+                      onVolumeChange={setAudioVolume}
+                      onMutedChange={setAudioMuted}
+                      sliderDisabled={isYouTube}
+                      muteDisabled={isYouTube}
+                      muteDisabledReason="YouTube volume is controlled in the player"
+                    />
+                    <BeatMixerChannel
+                      label="Drums"
+                      icon="music_cast"
+                      volume={drumVolume}
+                      muted={drumMuted}
+                      onVolumeChange={setDrumVolume}
+                      onMutedChange={setDrumMuted}
+                    />
+                    <BeatMixerChannel
+                      label="Metronome"
+                      icon="timer"
+                      volume={metronomeVolume}
+                      muted={metronomeMuted}
+                      onVolumeChange={setMetronomeVolume}
+                      onMutedChange={setMetronomeMuted}
+                      sliderDisabled={!metronomeEnabled}
+                      muteDisabled={!metronomeEnabled}
+                      muteDisabledReason="Turn on the metronome first"
+                    />
                   </div>
                 </AnchoredPopover>
               </div>
@@ -1878,7 +1960,7 @@ const App: React.FC = () => {
                 </div>
               )}
 
-              {(isYouTube || analysisResult) && (
+              {(isYouTube || analysisResult || hasAudio) && (
                 <PlaybackBar
                   playback={{
                     currentTime: effectiveCurrentTime,
@@ -2002,6 +2084,7 @@ const App: React.FC = () => {
                     <BpmInput
                       value={Math.round(effectiveBpm)}
                       onChange={handleBpmChange}
+                      disabled={isBeatAnalysisPending}
                       className="shared-bpm-input"
                       dropdownClassName="beat-bpm-dropdown"
                       sliderClassName="beat-bpm-slider"
@@ -2051,26 +2134,29 @@ const App: React.FC = () => {
                 <div className="playback-speed-row">
                   <span className="sync-start-label">Playback speed</span>
                   <div className="playback-speed-controls">
-                    <FormControl size="small" className="speed-control sidebar">
-                      <Select
-                        value={effectivePlaybackRate}
-                        onChange={(event) => {
-                          const nextRate = Number(event.target.value) as PlaybackSpeed;
-                          handlePlaybackRateChange(nextRate);
-                        }}
-                        className="speed-select"
-                        MenuProps={{
-                          PaperProps: { className: 'speed-menu-paper' },
-                          MenuListProps: { className: 'speed-menu-list' },
-                        }}
-                      >
-                        {PLAYBACK_SPEEDS.map((speed) => (
-                          <MenuItem key={speed} value={speed}>
-                            {speed === 1 ? '1×' : `${speed}×`}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
+                    <PlaybackSpeedControl
+                      value={effectivePlaybackRate}
+                      onChange={handlePlaybackRateChange}
+                      className="shared-bpm-input beat-playback-speed-sidebar"
+                      dropdownClassName="beat-bpm-dropdown"
+                      sliderClassName="beat-bpm-slider"
+                      trailingActions={
+                        Math.abs(effectivePlaybackRate - 1) > 0.001 ? (
+                          <AppTooltip title="Reset playback speed to 1×">
+                            <span className="bpm-reset-tooltip-anchor">
+                              <button
+                                type="button"
+                                className="inline-icon-btn bpm-reset-btn"
+                                aria-label="Reset playback speed to 1×"
+                                onClick={() => handlePlaybackRateChange(1)}
+                              >
+                                <span className="material-symbols-outlined">restart_alt</span>
+                              </button>
+                            </span>
+                          </AppTooltip>
+                        ) : null
+                      }
+                    />
                     <span className={`playback-key-chip playback-bpm-chip ${isPlaybackBpmShifted ? 'shifted' : ''}`}>
                       {isPlaybackBpmShifted ? (
                         <span className={`material-symbols-outlined playback-chip-arrow ${playbackRateDelta > 0 ? 'up' : 'down'}`}>
@@ -2249,10 +2335,19 @@ const App: React.FC = () => {
                   <span className="metronome-strip-placeholder">Metronome</span>
                 )}
                 <div className="metronome-strip-toggle">
-                  <AppTooltip title={metronomeEnabled ? 'Metronome: On' : 'Metronome: Off'}>
+                  <AppTooltip
+                    title={
+                      isBeatAnalysisPending
+                        ? 'Analyzing tempo…'
+                        : metronomeEnabled
+                          ? 'Metronome: On'
+                          : 'Metronome: Off'
+                    }
+                  >
                     <span className="metronome-toggle-tooltip-wrap">
                       <MetronomeToggleButton
                         enabled={metronomeEnabled}
+                        disabled={isBeatAnalysisPending}
                         onToggle={() => setMetronomeEnabled((value) => !value)}
                         className="toggle-btn metronome-btn icon-only"
                         label={undefined}
@@ -2280,7 +2375,7 @@ const App: React.FC = () => {
                       currentBeatTime={Math.max(0, effectiveCurrentTime - effectiveSyncStart)}
                       currentBeat={effectiveCurrentBeat}
                       metronomeEnabled={metronomeEnabled}
-                      volume={drumVolume}
+                      volume={drumMuted ? 0 : drumVolume}
                     />
                   )}
                 </div>
@@ -2368,7 +2463,7 @@ const App: React.FC = () => {
         )}
       </main>
 
-      {uploadTasks.length > 0 && (
+      {(uploadTasks.length > 0 || isBackgroundReanalyzing) && (
         <div className="floating-upload-tasks">
           {uploadTasks.slice(-4).map((task) => (
             <div key={task.id} className={`upload-task ${task.status}`}>
@@ -2376,7 +2471,9 @@ const App: React.FC = () => {
               <span>{task.detail}</span>
             </div>
           ))}
-          {isBackgroundReanalyzing && <div className="upload-task processing">Reanalyzing cached videos in background…</div>}
+          {isBackgroundReanalyzing && backgroundIsReanalysis && (
+            <div className="upload-task processing">Updating older analysis in background…</div>
+          )}
         </div>
       )}
     </div>

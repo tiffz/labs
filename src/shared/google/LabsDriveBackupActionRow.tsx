@@ -16,6 +16,9 @@ export type LabsDriveBackupActionRowProps = {
   driveFolderUrl: string | null;
   driveFolderAriaLabel: string;
   backupAriaLabel: string;
+  /** When true, show sign-in instead of backup (expired token with remembered identity). */
+  needsSignIn?: boolean;
+  onSignIn?: () => void;
   /** `google-outlined` matches Stanza; `contained` matches Learn Your Scales. */
   variant?: 'google-outlined' | 'contained';
   googleButtonClassName?: string;
@@ -32,10 +35,28 @@ export default function LabsDriveBackupActionRow(props: LabsDriveBackupActionRow
     driveFolderUrl,
     driveFolderAriaLabel,
     backupAriaLabel,
+    needsSignIn = false,
+    onSignIn,
     variant = 'contained',
     googleButtonClassName,
     googleButtonSx,
   } = props;
+
+  const primaryAction = needsSignIn ? onSignIn ?? onBackup : onBackup;
+  const primaryLabel = needsSignIn
+    ? busy
+      ? 'Signing in…'
+      : 'Sign in again'
+    : busy
+      ? 'Saving…'
+      : 'Back up';
+  const primaryAriaLabel = needsSignIn
+    ? busy
+      ? 'Signing in with Google'
+      : 'Sign in with Google to resume Drive sync'
+    : busy
+      ? 'Saving backup to Google Drive'
+      : backupAriaLabel;
 
   return (
     <Stack spacing={1} useFlexGap sx={{ width: '100%' }}>
@@ -44,9 +65,9 @@ export default function LabsDriveBackupActionRow(props: LabsDriveBackupActionRow
           <LabsGoogleSignInButton
             className={googleButtonClassName}
             disabled={disabled}
-            onClick={() => void onBackup()}
-            aria-label={busy ? 'Saving backup to Google Drive' : backupAriaLabel}
-            label={busy ? 'Saving…' : 'Back up'}
+            onClick={() => void primaryAction()}
+            aria-label={primaryAriaLabel}
+            label={primaryLabel}
             sx={{
               borderRadius: 999,
               minHeight: 36,
@@ -58,11 +79,11 @@ export default function LabsDriveBackupActionRow(props: LabsDriveBackupActionRow
             variant="contained"
             size="small"
             disabled={disabled}
-            onClick={() => void onBackup()}
-            aria-label={backupAriaLabel}
+            onClick={() => void primaryAction()}
+            aria-label={primaryAriaLabel}
             startIcon={busy ? <CircularProgress size={14} color="inherit" aria-hidden /> : undefined}
           >
-            {busy ? 'Saving…' : 'Back up'}
+            {primaryLabel}
           </Button>
         )}
         <AppTooltip

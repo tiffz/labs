@@ -31,7 +31,7 @@ Behavior that's wider than a single file is captured in ADRs:
 - [ADR 0008](../../docs/adr/0008-stanza-section-marker-model-and-metronome-calibration.md)
   — Section/marker data model and per-section metronome calibration.
 - [ADR 0009](../../docs/adr/0009-stanza-drums-and-metronome-volume.md) — Drums
-  groove (BPM-locked, per-section pattern override or mute) and metronome volume.
+  groove (shared `DrumAccompaniment`), metronome/drums Mix volume + mute.
 
 ## Copy style
 
@@ -43,3 +43,6 @@ terminology for sections, mix layers, snap-to-beat, and Beat 1 calibration.
 ## Development
 
 Same as other Labs apps: `npm run dev` then open `http://127.0.0.1:5173/stanza/`.
+
+For the right-hand **Practice** rail (metronome, tap tempo, drums, mix), see
+[`PRACTICE_RAIL.md`](./PRACTICE_RAIL.md) — layout pitfalls, audio gates, and a pre-ship checklist.

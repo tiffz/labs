@@ -61,7 +61,7 @@
       "path": "/beat/",
       "title": "Find the Beat",
       "shortDescription": "Analyze music with BPM detection and visual beat guidance",
-      "stage": "unlisted",
+      "stage": "development",
       "category": "music",
       "iconClass": "beat"
     },

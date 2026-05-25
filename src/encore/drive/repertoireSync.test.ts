@@ -34,6 +34,7 @@ function makeTable<T>(initial: T[] = []): InMemoryTable<T> {
 let songsTable: InMemoryTable<EncoreSong>;
 let perfTable: InMemoryTable<EncorePerformance>;
 let extrasTable: InMemoryTable<RepertoireExtrasRow>;
+let dirtySyncTable: InMemoryTable<{ kind: string; op: string }>;
 let syncMetaState: SyncMetaRow;
 
 vi.mock('../db/encoreDb', () => {
@@ -54,6 +55,9 @@ vi.mock('../db/encoreDb', () => {
           ...extrasTable,
           get: vi.fn(async (id: string) => extrasTable.rows.find((r) => r.id === id)),
         };
+      },
+      get dirtySync() {
+        return dirtySyncTable;
       },
       transaction,
     },
@@ -132,6 +136,7 @@ beforeEach(() => {
   songsTable = makeTable<EncoreSong>();
   perfTable = makeTable<EncorePerformance>();
   extrasTable = makeTable<RepertoireExtrasRow>();
+  dirtySyncTable = makeTable<{ kind: string; op: string }>();
   syncMetaState = { id: 'default', repertoireFileId: REPERTOIRE_FILE_ID };
 });
 

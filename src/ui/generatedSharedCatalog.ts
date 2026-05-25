@@ -1125,6 +1125,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-beat-analysis-ioitempohint-ts-inferquarternotebpmfromonsets",
+    "name": "inferQuarterNoteBpmFromOnsets",
+    "path": "src/shared/beat/analysis/ioiTempoHint.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Estimate quarter-note BPM from onset times using IOI histogram peaks. Returns null when there is not enough evidence.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-beat-analysis-onsets-ts-detectonsets",
     "name": "detectOnsets",
     "path": "src/shared/beat/analysis/onsets.ts",
@@ -2185,7 +2198,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-ui",
-    "description": "Thin wrapper around MUI Slider that adapts callbacks to app legacy range events.",
+    "description": "Thin wrapper around MUI Slider that adapts callbacks to app legacy range events. When `valueLabelDisplay` is `auto` or `on`, adds `app-slider--with-value-label` so the thumb tooltip is not clipped (see appSlider.css and SHARED_UI_CONVENTIONS.md).",
     "tags": [
       "components",
       "api",
@@ -2730,6 +2743,42 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-components-music-playbackspeedcontrol-tsx-playbackspeedcontrol",
+    "name": "PlaybackSpeedControl",
+    "path": "src/shared/components/music/PlaybackSpeedControl.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Shared playback-speed input with stepper, slider, and preset chips. Uses the same shell / dropdown tokens as .",
+    "tags": [
+      "components",
+      "music",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "default",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-playbackspeedcontrol-tsx-playbackspeedcontrolprops",
+    "name": "PlaybackSpeedControlProps",
+    "path": "src/shared/components/music/PlaybackSpeedControl.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "music",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
     "id": "src-shared-components-music-sharedexportpopover-tsx-sharedexportpopover",
     "name": "SharedExportPopover",
     "path": "src/shared/components/music/SharedExportPopover.tsx",
@@ -2753,6 +2802,112 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "exportType": "default",
     "demoId": "shared-export-popover"
+  },
+  {
+    "id": "src-shared-components-music-slidermilestonelabels-tsx-buildslidermilestones",
+    "name": "buildSliderMilestones",
+    "path": "src/shared/components/music/sliderMilestoneLabels.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Map slider tick values to horizontal positions under the rail (linear scale).",
+    "tags": [
+      "components",
+      "music",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-slidermilestonelabels-tsx-pickbpmslidermilestones",
+    "name": "pickBpmSliderMilestones",
+    "path": "src/shared/components/music/sliderMilestoneLabels.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "BPM dropdown milestones: min, 100, 200, max — dropping ticks that would crowd (e.g. 200 + 220 when max is 220 in Words in Rhythm).",
+    "tags": [
+      "components",
+      "music",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-slidermilestonelabels-tsx-slidermilestonealign",
+    "name": "SliderMilestoneAlign",
+    "path": "src/shared/components/music/sliderMilestoneLabels.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "music",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-slidermilestonelabels-tsx-slidermilestoneitem",
+    "name": "SliderMilestoneItem",
+    "path": "src/shared/components/music/sliderMilestoneLabels.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "music",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-slidermilestonelabels-tsx-slidermilestonelabels",
+    "name": "SliderMilestoneLabels",
+    "path": "src/shared/components/music/sliderMilestoneLabels.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Tick labels under rails inside BPM / speed dropdowns.",
+    "tags": [
+      "components",
+      "music",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-slidermilestonelabels-tsx-slidermilestonelabelsprops",
+    "name": "SliderMilestoneLabelsProps",
+    "path": "src/shared/components/music/sliderMilestoneLabels.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "music",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
   },
   {
     "id": "src-shared-components-skiptomain-tsx-skiptomain",
@@ -3646,6 +3801,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-drive-labsdrivesyncguard-ts-labsdriveautopushallowed",
+    "name": "labsDriveAutoPushAllowed",
+    "path": "src/shared/drive/labsDriveSyncGuard.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Whether debounced auto-push to Drive is allowed this session. Auto-push must not run until a successful pull (or explicit manual backup) so a fresh/sparse device cannot overwrite richer cloud data.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-google-encoregoogletokenstorage-ts-clearpersistedgoogleidentity",
     "name": "clearPersistedGoogleIdentity",
     "path": "src/shared/google/encoreGoogleTokenStorage.ts",
@@ -4429,6 +4597,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "shared-core",
     "description": "Re-reads Encore-persisted Google identity from `localStorage` on sibling-tab `storage` events, window `focus`, and same-tab custom events. **Never** calls Google Identity Services — see [ADR 0011](../../../docs/adr/0011-labs-stanza-scales-no-background-google-refresh.md). Stability note (load-bearing): `setIdentity` is gated by . `readPersistedGoogleIdentity` returns a fresh object every call (JSON parse); without this guard, repeated focus / storage events would push a new reference into state on every fire, thrashing downstream consumers. History: this hook previously fired a one-shot silent `prompt: 'none'` token request on mount to \"backfill\" an identity when none was persisted yet. That path was the documented source of ghost iframes / phantom popups across Stanza / Scales tabs (the GIS hidden iframe leaks one per silent attempt). Per ADR 0011 the backfill was removed: users now click Sign in once when the persisted identity is missing or expired.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-google-uselabsgoogledriveneedssignin-ts-uselabsgoogledriveneedssignin",
+    "name": "useLabsGoogleDriveNeedsSignIn",
+    "path": "src/shared/google/useLabsGoogleDriveNeedsSignIn.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "True when the user has a remembered Labs Google identity but no fresh access token (Drive sync paused until they sign in again from a button click).",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
@@ -7007,6 +7188,129 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-music-playbackrateconstants-ts-clampplaybackrate",
+    "name": "clampPlaybackRate",
+    "path": "src/shared/music/playbackRateConstants.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Local audio/video element and YouTube embed (YouTube may snap to nearest supported rate).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "beat"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-playbackrateconstants-ts-default-playback-rate-max",
+    "name": "DEFAULT_PLAYBACK_RATE_MAX",
+    "path": "src/shared/music/playbackRateConstants.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Local audio/video element and YouTube embed (YouTube may snap to nearest supported rate).",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "beat"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-playbackrateconstants-ts-default-playback-rate-min",
+    "name": "DEFAULT_PLAYBACK_RATE_MIN",
+    "path": "src/shared/music/playbackRateConstants.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Local audio/video element and YouTube embed (YouTube may snap to nearest supported rate).",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "beat"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-playbackrateconstants-ts-default-playback-rate-step",
+    "name": "DEFAULT_PLAYBACK_RATE_STEP",
+    "path": "src/shared/music/playbackRateConstants.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Local audio/video element and YouTube embed (YouTube may snap to nearest supported rate).",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "beat"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-playbackrateconstants-ts-default-speed-menu-presets",
+    "name": "DEFAULT_SPEED_MENU_PRESETS",
+    "path": "src/shared/music/playbackRateConstants.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Preset chips in the speed menu — denser near 1× for practice tweaks.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "beat"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-playbackrateconstants-ts-formatplaybackratedraft",
+    "name": "formatPlaybackRateDraft",
+    "path": "src/shared/music/playbackRateConstants.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Local audio/video element and YouTube embed (YouTube may snap to nearest supported rate).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "beat"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-playbackrateconstants-ts-formatplaybackratelabel",
+    "name": "formatPlaybackRateLabel",
+    "path": "src/shared/music/playbackRateConstants.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Local audio/video element and YouTube embed (YouTube may snap to nearest supported rate).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "beat"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-music-randomchordprogression-ts-getrandompopularchordprogression",
     "name": "getRandomPopularChordProgression",
     "path": "src/shared/music/randomChordProgression.ts",
@@ -7933,6 +8237,26 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-notation-drumnotationmini-tsx-computemininotationlayout",
+    "name": "computeMiniNotationLayout",
+    "path": "src/shared/notation/DrumNotationMini.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Derive VexFlow layout from the requested render height (host apps tune density via `height`).",
+    "tags": [
+      "notation",
+      "react"
+    ],
+    "appsUsing": [
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-notation-drumnotationmini-tsx-drumnotationmini",
     "name": "DrumNotationMini",
     "path": "src/shared/notation/DrumNotationMini.tsx",
@@ -7981,7 +8305,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Style configuration for the drum notation renderer",
+    "description": "Style configuration for the drum notation renderer. Use a single `inkColor` for staff lines, barlines, noteheads, stems, beams, and time signature.",
     "tags": [
       "notation",
       "api",
@@ -7993,6 +8317,47 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "words"
     ],
     "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-drumnotationmini-tsx-notationstyleinput",
+    "name": "NotationStyleInput",
+    "path": "src/shared/notation/DrumNotationMini.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Style configuration for the drum notation renderer. Use a single `inkColor` for staff lines, barlines, noteheads, stems, beams, and time signature.",
+    "tags": [
+      "notation",
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-drumnotationmini-tsx-resolvenotationstyle",
+    "name": "resolveNotationStyle",
+    "path": "src/shared/notation/DrumNotationMini.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Resolve a preset name or custom style object to a full .",
+    "tags": [
+      "notation",
+      "react"
+    ],
+    "appsUsing": [
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "function",
     "demoId": null
   },
   {
@@ -8027,6 +8392,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "words"
     ],
     "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-index-ts-computemininotationlayout",
+    "name": "computeMiniNotationLayout",
+    "path": "src/shared/notation/index.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
     "demoId": null
   },
   {
@@ -8105,6 +8485,107 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [],
     "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-index-ts-notationstyleinput",
+    "name": "NotationStyleInput",
+    "path": "src/shared/notation/index.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-index-ts-resolvenotationstyle",
+    "name": "resolveNotationStyle",
+    "path": "src/shared/notation/index.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-index-ts-rhythmtemplatevariationcontrols",
+    "name": "RhythmTemplateVariationControls",
+    "path": "src/shared/notation/index.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-index-ts-rhythmtemplatevariationcontrolsprops",
+    "name": "RhythmTemplateVariationControlsProps",
+    "path": "src/shared/notation/index.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-rhythmtemplatevariationcontrols-tsx-rhythmtemplatevariationcontrols",
+    "name": "RhythmTemplateVariationControls",
+    "path": "src/shared/notation/RhythmTemplateVariationControls.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Previous / next carousel for preset rhythm variations (e.g. Maqsum ka ornaments). Shared by DrumAccompaniment, DrumNotationMini, and Words in Rhythm.",
+    "tags": [
+      "notation",
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-rhythmtemplatevariationcontrols-tsx-rhythmtemplatevariationcontrolsprops",
+    "name": "RhythmTemplateVariationControlsProps",
+    "path": "src/shared/notation/RhythmTemplateVariationControls.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation",
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "interface",
     "demoId": null
   },
   {
@@ -9235,6 +9716,24 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-rhythm-presetdatabase-ts-findrhythmtemplatepresetbynotation",
+    "name": "findRhythmTemplatePresetByNotation",
+    "path": "src/shared/rhythm/presetDatabase.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "rhythm-core",
+    "description": "Find the preset family that owns this notation (base pattern or any variation).",
+    "tags": [
+      "rhythm"
+    ],
+    "appsUsing": [
+      "ui",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-rhythm-presetdatabase-ts-getpresetnotation",
     "name": "getPresetNotation",
     "path": "src/shared/rhythm/presetDatabase.ts",
@@ -9260,6 +9759,42 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "rhythm-core",
     "description": "No JSDoc summary provided.",
+    "tags": [
+      "rhythm"
+    ],
+    "appsUsing": [
+      "ui",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-rhythm-presetdatabase-ts-gettemplatepresetvariationindex",
+    "name": "getTemplatePresetVariationIndex",
+    "path": "src/shared/rhythm/presetDatabase.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "rhythm-core",
+    "description": "Index of the active variation for a preset notation, or -1 when none match.",
+    "tags": [
+      "rhythm"
+    ],
+    "appsUsing": [
+      "ui",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-rhythm-presetdatabase-ts-gettemplatepresetvariations",
+    "name": "getTemplatePresetVariations",
+    "path": "src/shared/rhythm/presetDatabase.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "rhythm-core",
+    "description": "Variations for a preset rhythm in the requested meter (e.g. Maqsum ka ornaments in 4/4). Returns an empty array when the preset id is unknown or has no compatible variations.",
     "tags": [
       "rhythm"
     ],
@@ -9335,6 +9870,25 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "rhythm-core",
     "description": "No JSDoc summary provided.",
+    "tags": [
+      "rhythm",
+      "api"
+    ],
+    "appsUsing": [
+      "ui",
+      "words"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-rhythm-presetdatabase-ts-rhythmtemplatevariation",
+    "name": "RhythmTemplateVariation",
+    "path": "src/shared/rhythm/presetDatabase.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "rhythm-core",
+    "description": "Resolved preset variation for a target meter (notation + display label).",
     "tags": [
       "rhythm",
       "api"

@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
-import { regenerateBeats, adjustBeatsForGaps, type BeatAnalysisResult } from '../utils/beatAnalyzer';
+import { regenerateBeats, adjustBeatsForGaps, analyzeBeat, type BeatAnalysisResult } from '../utils/beatAnalyzer';
 import type { MediaFile } from '../components/MediaUploader';
-import { runBeatAnalysisPipeline, yieldToMainThread, type AnalysisProgress } from '../utils/analysisPipeline';
+import { decodeMediaToBuffer, yieldToMainThread, type AnalysisProgress } from '../utils/analysisPipeline';
 import { devLog } from '../../shared/utils/devLog';
 
 interface UseAudioAnalysisReturn {
@@ -11,6 +11,8 @@ interface UseAudioAnalysisReturn {
   audioBuffer: AudioBuffer | null;
   error: string | null;
   getAudioContext: () => AudioContext;
+  loadMediaBuffer: (media: MediaFile) => Promise<AudioBuffer>;
+  analyzeLoadedBuffer: (buffer: AudioBuffer) => Promise<void>;
   analyzeMedia: (media: MediaFile) => Promise<void>;
   hydrateAnalysis: (payload: { result: BeatAnalysisResult; buffer: AudioBuffer }) => void;
   setBpm: (bpm: number) => void;
@@ -37,28 +39,51 @@ export function useAudioAnalysis(): UseAudioAnalysisReturn {
     return audioContextRef.current;
   }, []);
 
-  const analyzeMedia = useCallback(
+  const loadMediaBuffer = useCallback(
     async (media: MediaFile) => {
-      setIsAnalyzing(true);
       setError(null);
       setAnalysisProgress({ stage: 'Loading audio', progress: 0 });
-      
-      // Yield to allow React to render the initial progress state
       await yieldToMainThread();
+      const audioContext = getAudioContext();
+      const buffer = await decodeMediaToBuffer({
+        file: media.file,
+        mediaType: media.type,
+        mediaUrl: media.url,
+        audioContext,
+        onProgress: setAnalysisProgress,
+      });
+      setAudioBuffer(buffer);
+      return buffer;
+    },
+    [getAudioContext],
+  );
 
+  const analyzeLoadedBuffer = useCallback(async (buffer: AudioBuffer) => {
+    setIsAnalyzing(true);
+    setError(null);
+    try {
+      const result = await analyzeBeat(buffer, (stage, progress) => {
+        setAnalysisProgress({ stage, progress });
+      });
+      setAnalysisResult(result);
+      setAnalysisProgress(null);
+    } catch (err) {
+      console.error('Error analyzing media:', err);
+      setError(
+        err instanceof Error ? err.message : 'Failed to analyze file. Please try a different file.',
+      );
+      setAnalysisResult(null);
+      setAnalysisProgress(null);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  }, []);
+
+  const analyzeMedia = useCallback(
+    async (media: MediaFile) => {
       try {
-        const audioContext = getAudioContext();
-        const { buffer, result } = await runBeatAnalysisPipeline({
-          file: media.file,
-          mediaType: media.type,
-          mediaUrl: media.url,
-          audioContext,
-          onProgress: setAnalysisProgress,
-        });
-
-        setAudioBuffer(buffer);
-        setAnalysisResult(result);
-        setAnalysisProgress(null);
+        const buffer = await loadMediaBuffer(media);
+        await analyzeLoadedBuffer(buffer);
       } catch (err) {
         console.error('Error analyzing media:', err);
         setError(
@@ -69,11 +94,10 @@ export function useAudioAnalysis(): UseAudioAnalysisReturn {
         setAudioBuffer(null);
         setAnalysisResult(null);
         setAnalysisProgress(null);
-      } finally {
         setIsAnalyzing(false);
       }
     },
-    [getAudioContext]
+    [analyzeLoadedBuffer, loadMediaBuffer],
   );
 
   const setBpm = useCallback(
@@ -123,6 +147,8 @@ export function useAudioAnalysis(): UseAudioAnalysisReturn {
     audioBuffer,
     error,
     getAudioContext,
+    loadMediaBuffer,
+    analyzeLoadedBuffer,
     analyzeMedia,
     hydrateAnalysis,
     setBpm,
