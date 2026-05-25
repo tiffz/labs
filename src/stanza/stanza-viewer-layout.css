@@ -1,14 +1,6 @@
 /**
- * Stanza viewer layout — single source of truth for column / workbench alignment.
- *
- * Model:
- *   .stanza-viewer-column     page shell (max width + horizontal gutter)
- *   .stanza-viewer-workbench  fixed content width (media + rail + gap)
- *   .stanza-viewer-body-grid  video | rail | timeline
- *   .stanza-library-panel     footer, same width as workbench (never a sibling max-width)
- *
- * Keep layout here — not in StanzaWorkspace `sx`. TS constants in StanzaWorkspace
- * should only remain where JS needs numeric values (e.g. drum notation width).
+ * Stanza viewer layout — built on shared AppShellLayout (see src/shared/layout/README.md).
+ * Tokens on `.stanza-app` in stanza.css. Documented in src/stanza/LAYOUT.md.
  */
 
 .stanza-viewer-shell {

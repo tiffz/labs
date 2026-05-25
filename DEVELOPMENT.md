@@ -369,6 +369,32 @@ iOS Safari's dynamic viewport (address bar hide/show) makes `100vh` overshoot th
 
 All existing app shells (pitch, words, cats, forms, chords, beat, drums, scales) have been migrated. New app CSS must follow the same pattern.
 
+## App shell layout (column + workbench)
+
+### Decision
+
+Apps with a fixed content width and an optional footer (library, status) use a shared **column → workbench → scroll → content + footer** shell so horizontal alignment does not drift between CSS, `sx`, and TS constants.
+
+### Implementation
+
+- **Shared:** [`src/shared/layout/AppShellLayout.tsx`](src/shared/layout/AppShellLayout.tsx), [`app-shell-layout.css`](src/shared/layout/app-shell-layout.css), [`src/shared/layout/README.md`](src/shared/layout/README.md)
+- **New app starters:** copy [`app-index.starter.html`](src/shared/templates/app-index.starter.html), [`app-main.starter.tsx`](src/shared/templates/app-main.starter.tsx), [`app-layout.starter.css`](src/shared/templates/app-layout.starter.css) into `src/<app>/`
+- **Reference app:** Stanza — [`StanzaViewerLayout`](src/stanza/components/StanzaViewerLayout.tsx), [`stanza-viewer-layout.css`](src/stanza/stanza-viewer-layout.css), [`src/stanza/LAYOUT.md`](src/stanza/LAYOUT.md)
+- **Layout in CSS only** — width, gutter, and grid template belong in the app layout CSS file, not scattered `sx` on the workspace component
+- **Workbench width** — `width: var(--app-shell-content-width); max-width: 100%`, not `width: 100%` + `max-width` on siblings (prevents footer wider than the grid)
+
+### E2E
+
+- Stanza alignment smoke: [`e2e/stanza-viewer-layout.spec.ts`](e2e/stanza-viewer-layout.spec.ts)
+
+## Session handoff (AI + humans)
+
+When stopping mid-refactor or after a multi-attempt bugfix:
+
+1. Update the relevant iteration doc (`src/<app>/LAYOUT.md`, `PRACTICE_RAIL.md`, `DEVELOPMENT.md`) with **current state**, **pitfalls**, and **next step** — not a play-by-play history.
+2. If layout was touched, note whether browser verification and layout e2e were run.
+3. Do not leave duplicate width constants in TS; point to CSS tokens.
+
 ## Bundle Splitting
 
 ### Decision

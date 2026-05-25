@@ -24,6 +24,7 @@
     "src/**/e2e/**",
     "src/**/audits/**",
     "src/shared/test/**",
-    "src/ui/generatedSharedCatalog.ts"
+    "src/ui/generatedSharedCatalog.ts",
+    "src/shared/templates/**/*.starter.tsx"
   ]
 }

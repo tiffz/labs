@@ -534,9 +534,20 @@ function selectCorrectOctaveWithOnsets(candidateBpm: number, onsets: number[], d
       return Math.round(directMatch * 100) / 100;
     }
     // Drum loops often collapse to half-tempo; IOI 8th-note peaks expose the true rate.
+    // Only when the consensus candidate is already the slower octave (not when it is doubled).
     if (
       ioiBpmHint >= 90 &&
+      candidateBpm < ioiBpmHint * 0.75 &&
       Math.abs(candidateBpm * 2 - ioiBpmHint) / ioiBpmHint < 0.04
+    ) {
+      return Math.round(ioiBpmHint * 100) / 100;
+    }
+    // Consensus doubled but IOI + half-tempo agree (e.g. 99.5 detected as ~188).
+    if (
+      halfBpm >= 55 &&
+      halfBpm <= 120 &&
+      Math.abs(halfBpm - ioiBpmHint) / ioiBpmHint < 0.06 &&
+      Math.abs(candidateBpm - halfBpm * 2) / (halfBpm * 2) < 0.05
     ) {
       return Math.round(ioiBpmHint * 100) / 100;
     }
@@ -647,8 +658,13 @@ function selectCorrectOctaveWithOnsets(candidateBpm: number, onsets: number[], d
   }
 
   if (ioiBpmHint != null && ioiBpmHint >= 40 && ioiBpmHint <= 220) {
+    const octaveRatio = ioiBpmHint / candidateBpm;
+    const ioiDisagreesByOctave =
+      (octaveRatio > 1.75 && octaveRatio < 2.25) ||
+      (octaveRatio > 0.45 && octaveRatio < 0.55);
+    const candidateInComfortZone = candidateBpm >= 60 && candidateBpm <= 140;
     const alreadyListed = scores.some((entry) => Math.abs(entry.bpm - ioiBpmHint) / ioiBpmHint < 0.03);
-    if (!alreadyListed) {
+    if (!alreadyListed && !(ioiDisagreesByOctave && candidateInComfortZone)) {
       scores.push({
         bpm: ioiBpmHint,
         score: getTempoRangePenalty(ioiBpmHint) - 0.12,

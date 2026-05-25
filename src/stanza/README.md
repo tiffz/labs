@@ -15,6 +15,8 @@ play a drum groove that follows the metronome BPM.
 
 ## Architecture
 
+Viewer layout contract: [`LAYOUT.md`](./LAYOUT.md). Practice rail notes: [`PRACTICE_RAIL.md`](./PRACTICE_RAIL.md).
+
 Behavior that's wider than a single file is captured in ADRs:
 
 - [ADR 0003](../../docs/adr/0003-stanza-multi-stem-playback.md) — optional multi-layer

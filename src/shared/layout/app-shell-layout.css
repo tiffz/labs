@@ -1,0 +1,62 @@
+/**
+ * Shared app shell layout — column + optional workbench + scroll + footer.
+ *
+ * Apps set tokens on a root class (e.g. `.my-app`) and pass matching class names
+ * to AppShellLayout. See src/shared/layout/README.md and app-layout.starter.css.
+ *
+ * Do not put width, padding, or grid template in component `sx` — override tokens here.
+ */
+
+.app-shell-root {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+}
+
+.app-shell-column {
+  box-sizing: border-box;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: var(--app-shell-max-width, 72rem);
+  margin-inline: auto;
+  padding-inline: var(--app-shell-gutter, 12px);
+}
+
+.app-shell-workbench {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  width: var(--app-shell-content-width, 100%);
+  max-width: 100%;
+  min-width: 0;
+}
+
+.app-shell-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  scrollbar-gutter: stable;
+  padding-top: var(--app-shell-scroll-pt, 8px);
+  padding-bottom: var(--app-shell-scroll-pb, 12px);
+}
+
+.app-shell-content {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 0;
+}
+
+.app-shell-footer {
+  box-sizing: border-box;
+  width: 100%;
+  flex-shrink: 0;
+  margin-top: var(--app-shell-footer-gap, 20px);
+}

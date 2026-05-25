@@ -8,6 +8,10 @@ This document defines default conventions for shared UI so apps stay naturally a
 - App teams should override tokens, not internals.
 - Defaults should encode the non-load-bearing UX decisions (spacing, typography scale, state behavior, focus treatment).
 
+## App shell layout
+
+Multi-panel apps (header + scrollable main + optional footer) should use [`layout/AppShellLayout.tsx`](./layout/AppShellLayout.tsx) and [`layout/app-shell-layout.css`](./layout/app-shell-layout.css). Copy [`templates/app-main.starter.tsx`](./templates/app-main.starter.tsx) and [`templates/app-layout.starter.css`](./templates/app-layout.starter.css) for new apps. See [`layout/README.md`](./layout/README.md) and Stanza [`LAYOUT.md`](../stanza/LAYOUT.md).
+
 ## Theme Contract (Default)
 
 All music apps and `/ui` should publish the same semantic contract, then map app identity into these variables:

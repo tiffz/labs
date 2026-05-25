@@ -82,6 +82,8 @@ const config: KnipConfig = {
     'src/cats/components/ui/NotificationQueue.tsx',
     'src/cats/hooks/useNotificationSystem.ts',
     'src/cats/data/notificationData.ts',
+    // Starter templates (copied into new apps; not imported by the build)
+    'src/shared/templates/**',
     // Parked legacy bootstrap kept for reference
     'src/corp/main.ts',
     // Kimberly System: Content generation library with many unused exports (intentional API)

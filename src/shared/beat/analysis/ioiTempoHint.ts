@@ -30,7 +30,7 @@ function strongestQuarterBpmFromHistogram(
     const quarterIoi = toQuarterIoi(ioi);
     if (quarterIoi <= 0) continue;
     const bpm = 60 / quarterIoi;
-    if (bpm < 80 || bpm > 200) continue;
+    if (bpm < 55 || bpm > 200) continue;
     if (!best || count > best.count) {
       best = { bpm, count };
     }
@@ -57,11 +57,22 @@ export function inferQuarterNoteBpmFromOnsets(onsets: number[]): number | null {
   }
   if (iois.length < 12) return null;
 
-  const eighthPeaks = buildIoiHistogram(iois, 0.15, 0.35, 0.02);
-  const quarterPeaks = buildIoiHistogram(iois, 0.32, 0.68, 0.02);
+  const eighthPeaks = buildIoiHistogram(iois, 0.15, 0.48, 0.02);
+  const quarterPeaks = buildIoiHistogram(iois, 0.28, 1.05, 0.02);
 
   const fromEighths = strongestQuarterBpmFromHistogram(eighthPeaks, (ioi) => ioi * 2);
   const fromQuarters = strongestQuarterBpmFromHistogram(quarterPeaks, (ioi) => ioi);
+
+  // Subdivision peaks often dominate the eighth histogram at ~2× the quarter tempo.
+  if (
+    fromEighths &&
+    fromQuarters &&
+    fromEighths.bpm / fromQuarters.bpm > 1.75 &&
+    fromEighths.bpm / fromQuarters.bpm < 2.25 &&
+    fromQuarters.count >= Math.max(8, fromEighths.count * 0.45)
+  ) {
+    return Math.round(fromQuarters.bpm * 100) / 100;
+  }
 
   const candidates = [fromEighths, fromQuarters].filter(
     (item): item is { bpm: number; count: number } => item != null

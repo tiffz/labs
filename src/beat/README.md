@@ -19,6 +19,8 @@ A web application for detecting BPM (beats per minute) in audio and video files,
 
 ## Architecture
 
+Development notes (background analysis contract, shared beat tests): [`DEVELOPMENT.md`](./DEVELOPMENT.md).
+
 ### Shared Playback Integration
 
 Beat uses shared playback/audio services for common timing and click behavior:

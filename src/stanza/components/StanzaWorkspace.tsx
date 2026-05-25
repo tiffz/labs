@@ -144,6 +144,7 @@ import StanzaMetronomeStrip from './StanzaMetronomeStrip';
 import StanzaSectionMetronomeRail from './StanzaSectionMetronomeRail';
 import StanzaRepeatMark from './StanzaRepeatMark';
 import StanzaSongTitleEditor from './StanzaSongTitleEditor';
+import { StanzaViewerLayout } from './StanzaViewerLayout';
 import { primeStanzaMetronomeAudio, useStanzaMetronomeSync } from '../hooks/useStanzaMetronomeSync';
 import { useStanzaMetronomePersistence } from '../hooks/useStanzaMetronomePersistence';
 import DrumAccompaniment from '../../shared/components/music/DrumAccompaniment';
@@ -2880,9 +2881,9 @@ export default function StanzaWorkspace() {
       )}
 
       {selected && (
-        <Box className="stanza-viewer-shell">
-          <Box className="stanza-viewer-column">
-          <Box sx={{ pt: 1, flexShrink: 0 }}>{renderDriveDeepLinkAlerts()}</Box>
+        <StanzaViewerLayout
+          alerts={renderDriveDeepLinkAlerts()}
+          header={
           <Box
             className="stanza-viewer-header"
             sx={{
@@ -2906,10 +2907,88 @@ export default function StanzaWorkspace() {
               <StanzaAccountMenu />
             </Box>
           </Box>
-
-          <Box className="stanza-viewer-workbench">
-          <Box className="stanza-viewer-scroll">
-            <Box className="stanza-viewer-body-grid">
+          }
+          footer={
+          <Box
+            component="section"
+            className="stanza-library-panel"
+            aria-labelledby="stanza-library-heading"
+          >
+            <Typography id="stanza-library-heading" variant="subtitle2" className="stanza-whisper-title stanza-library-panel-heading">
+              Your library
+              <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1, fontWeight: 400 }}>
+                ({songs?.length ?? 0})
+              </Typography>
+            </Typography>
+            <Box className="stanza-library-panel-body">
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ display: 'block', mb: 1.5, fontSize: '0.8125rem', lineHeight: 1.5, maxWidth: '48rem' }}
+              >
+                Paste a YouTube link or upload a file. You can also open a video with{' '}
+                <code>?v=</code> and the id in the URL bar.
+              </Typography>
+              <Stack spacing={1.25} sx={{ mb: 1.5 }}>
+                <TextField
+                  size="small"
+                  fullWidth
+                  label="YouTube URL or id"
+                  value={ytPaste}
+                  onChange={(e) => setYtPaste(e.target.value)}
+                  placeholder="https://youtube.com/watch?v=…"
+                  onKeyDown={(e) => {
+                    if (e.key !== 'Enter') return;
+                    e.preventDefault();
+                    if (canResolveYoutubePaste(ytPaste)) void addYoutubeSong();
+                  }}
+                />
+                <Stack direction="row" spacing={1} flexWrap="wrap" alignItems="center" useFlexGap>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    className="stanza-btn-pill"
+                    onClick={() => void addYoutubeSong()}
+                    disabled={!canResolveYoutubePaste(ytPaste)}
+                    sx={{ flexShrink: 0, minHeight: 36 }}
+                  >
+                    Add
+                  </Button>
+                  <input
+                    ref={libraryUploadInputRef}
+                    hidden
+                    type="file"
+                    accept="audio/*"
+                    tabIndex={-1}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) void addLocalSong(f);
+                      e.target.value = '';
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outlined"
+                    size="small"
+                    className="stanza-btn-soft-outline"
+                    aria-label="Upload audio file to your library"
+                    onClick={() => libraryUploadInputRef.current?.click()}
+                    sx={{
+                      flexShrink: 0,
+                      whiteSpace: 'nowrap',
+                      minHeight: 36,
+                      px: 2,
+                    }}
+                  >
+                    Upload audio
+                  </Button>
+                </Stack>
+              </Stack>
+              {renderLibraryGrid('footer')}
+            </Box>
+          </Box>
+          }
+        >
               <Box className="stanza-viewer-media-stack">
                 <Box className="stanza-video-column">
                   {isYoutube && selected.ytId && youtubePlayerErrorCode != null && (
@@ -3896,90 +3975,7 @@ export default function StanzaWorkspace() {
                   }
                 />
               </Box>
-            </Box>
-          </Box>
-
-          <Box
-            component="section"
-            className="stanza-library-panel"
-            aria-labelledby="stanza-library-heading"
-          >
-            <Typography id="stanza-library-heading" variant="subtitle2" className="stanza-whisper-title stanza-library-panel-heading">
-              Your library
-              <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1, fontWeight: 400 }}>
-                ({songs?.length ?? 0})
-              </Typography>
-            </Typography>
-            <Box className="stanza-library-panel-body">
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ display: 'block', mb: 1.5, fontSize: '0.8125rem', lineHeight: 1.5, maxWidth: '48rem' }}
-              >
-                Paste a YouTube link or upload a file. You can also open a video with{' '}
-                <code>?v=</code> and the id in the URL bar.
-              </Typography>
-              <Stack spacing={1.25} sx={{ mb: 1.5 }}>
-                <TextField
-                  size="small"
-                  fullWidth
-                  label="YouTube URL or id"
-                  value={ytPaste}
-                  onChange={(e) => setYtPaste(e.target.value)}
-                  placeholder="https://youtube.com/watch?v=…"
-                  onKeyDown={(e) => {
-                    if (e.key !== 'Enter') return;
-                    e.preventDefault();
-                    if (canResolveYoutubePaste(ytPaste)) void addYoutubeSong();
-                  }}
-                />
-                <Stack direction="row" spacing={1} flexWrap="wrap" alignItems="center" useFlexGap>
-                  <Button
-                    variant="contained"
-                    size="small"
-                    className="stanza-btn-pill"
-                    onClick={() => void addYoutubeSong()}
-                    disabled={!canResolveYoutubePaste(ytPaste)}
-                    sx={{ flexShrink: 0, minHeight: 36 }}
-                  >
-                    Add
-                  </Button>
-                  <input
-                    ref={libraryUploadInputRef}
-                    hidden
-                    type="file"
-                    accept="audio/*"
-                    tabIndex={-1}
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) void addLocalSong(f);
-                      e.target.value = '';
-                    }}
-                  />
-                  <Button
-                    type="button"
-                    variant="outlined"
-                    size="small"
-                    className="stanza-btn-soft-outline"
-                    aria-label="Upload audio file to your library"
-                    onClick={() => libraryUploadInputRef.current?.click()}
-                    sx={{
-                      flexShrink: 0,
-                      whiteSpace: 'nowrap',
-                      minHeight: 36,
-                      px: 2,
-                    }}
-                  >
-                    Upload audio
-                  </Button>
-                </Stack>
-              </Stack>
-              {renderLibraryGrid('footer')}
-            </Box>
-          </Box>
-          </Box>
-          </Box>
-        </Box>
+        </StanzaViewerLayout>
       )}
 
       <Menu

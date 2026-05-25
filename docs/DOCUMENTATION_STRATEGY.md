@@ -25,6 +25,8 @@ How we grow documentation without drift, duplication, or low-signal narrative. *
 | **Regression / rollback / dependency plans**                    | `docs/REGRESSION_WORKFLOW.md`, `docs/ROLLBACK.md`, `docs/DEPENDENCY_UPGRADE_PLAN.md` | Keep procedural; avoid embedding full CI YAML in prose.                                                      |
 | **Refactor pattern for large components**                       | [`docs/COMPONENT_DECOMPOSITION_PATTERN.md`](COMPONENT_DECOMPOSITION_PATTERN.md)      | Reference from app ARCHITECTURE when relevant.                                                               |
 | **App-specific behavior**                                       | `src/<app>/README.md` (+ optional `DESIGN.md`, etc.)                                 | Entry URL, storage, odd constraints, **link** to shared testing notes (e.g. JSDOM media) instead of copying. |
+| **App layout contract (workbench / footer)**                    | `src/<app>/LAYOUT.md` or `src/shared/layout/README.md`                               | Stanza: `src/stanza/LAYOUT.md`. Link from app README.                                                        |
+| **Async analysis / background queue UX**                        | `src/<app>/DEVELOPMENT.md`                                                           | Beat: `src/beat/DEVELOPMENT.md`. Shared tempo: `src/shared/beat/TEST_MATRIX.md`.                             |
 
 ## Anti-patterns (reduce noise)
 

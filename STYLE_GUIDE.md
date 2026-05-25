@@ -26,6 +26,7 @@ This repo follows the [Google TypeScript Style Guide](https://google.github.io/s
 ### HTML entry points
 
 - Start new apps from `src/shared/templates/app-index.starter.html`.
+- Copy `app-main.starter.tsx` and `app-layout.starter.css` from the same folder when the app uses a column/workbench shell (see `src/shared/layout/README.md`).
 - Every `src/*/index.html` must ship:
   - A `<meta name="color-scheme">` declaring light or dark.
   - An inline `<style>html{color-scheme:…;background:#…;color:#…}</style>` block that matches the app's resting body background, to prevent FOUC.
@@ -94,6 +95,13 @@ Filters that let users pick categorical values should support both **include (OR
 
 - Fullscreen app shells: `height: 100vh; height: 100dvh;` (or `min-height` variants). Never `100vh` alone.
 - Avoid hard-coded `100vw` desktop widths without a mobile plan.
+- **Multi-panel apps** (header + scroll + footer): use [`AppShellLayout`](../src/shared/layout/AppShellLayout.tsx) and an app `*-layout.css` for tokens. See [`src/shared/layout/README.md`](../src/shared/layout/README.md) and Stanza [`LAYOUT.md`](../src/stanza/LAYOUT.md). Do not put horizontal width or grid template in component `sx`.
+
+### Structural panels vs MUI
+
+- **MUI** for interactive widgets: `Dialog`, `Menu`, `TextField`, `Select`, `IconButton`, `Slider`.
+- **Plain `Box` / `section` + app CSS classes** for always-visible structural panels (library footer, playback stack, practice rail). Do not use MUI `Accordion` for layout chrome unless collapse is an explicit product requirement.
+- Prefer `.stanza-panel` / app panel classes over fighting MUI Paper defaults with `!important`.
 
 ### Bundle hygiene
 

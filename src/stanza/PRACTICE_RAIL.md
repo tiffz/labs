@@ -4,7 +4,7 @@ Local checklist for the right-hand **Practice** rail (metronome, tap tempo, drum
 
 ## Viewer layout
 
-Layout lives in **`stanza-viewer-layout.css`** (imported by `stanza.css`). Do not reintroduce viewer width/gap/padding in `StanzaWorkspace` `sx`.
+Full layer table: **[`LAYOUT.md`](./LAYOUT.md)**. CSS in **`stanza-viewer-layout.css`**; shell in **`StanzaViewerLayout`**. Do not reintroduce viewer width/gap/padding in `StanzaWorkspace` `sx`.
 
 | Layer          | Class                      | Role                                                                                                   |
 | -------------- | -------------------------- | ------------------------------------------------------------------------------------------------------ |

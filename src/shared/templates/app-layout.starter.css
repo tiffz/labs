@@ -1,0 +1,22 @@
+/**
+ * TODO_APP layout tokens — copy to src/TODO_APP/TODO_APP-layout.css
+ *
+ * Import from main.tsx: import './TODO_APP-layout.css';
+ * Override tokens on .TODO_APP (or your app root class).
+ */
+
+.TODO_APP {
+  --app-shell-max-width: 72rem;
+  --app-shell-gutter: 12px;
+  --app-shell-content-width: 100%;
+  --app-shell-scroll-pt: 8px;
+  --app-shell-scroll-pb: 12px;
+  --app-shell-footer-gap: 20px;
+}
+
+@media (min-width: 600px) {
+  .TODO_APP {
+    --app-shell-gutter: 16px;
+    --app-shell-footer-gap: 24px;
+  }
+}

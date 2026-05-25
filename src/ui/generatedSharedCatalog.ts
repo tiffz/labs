@@ -4616,6 +4616,38 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-layout-appshelllayout-tsx-appshelllayout",
+    "name": "AppShellLayout",
+    "path": "src/shared/layout/AppShellLayout.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared column → workbench → scroll → content + footer shell. Pair with `app-shell-layout.css` and app-specific token overrides. Stanza uses which maps Stanza class names onto this structure.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-layout-appshelllayout-tsx-appshelllayoutprops",
+    "name": "AppShellLayoutProps",
+    "path": "src/shared/layout/AppShellLayout.tsx",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
     "id": "src-shared-legal-labscookieconsentpolicy-ts-islabslocalhost",
     "name": "isLabsLocalHost",
     "path": "src/shared/legal/labsCookieConsentPolicy.ts",
