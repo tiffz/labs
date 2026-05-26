@@ -53,16 +53,42 @@ function stemMetaFromRemote(
   localStems: StanzaStemTrack[] | undefined,
   remoteStems: StanzaStemDriveRow[] | undefined,
 ): StanzaStemTrack[] | undefined {
-  if (!remoteStems?.length) return localStems;
-  const byId = new Map((localStems ?? []).map((s) => [s.id, s]));
+  if (!remoteStems?.length) return localStems?.length ? localStems : undefined;
+  const localById = new Map((localStems ?? []).map((s) => [s.id, s]));
   const out: StanzaStemTrack[] = [];
+  const seen = new Set<string>();
   for (const r of remoteStems) {
-    const local = byId.get(r.id);
-    if (local?.localBlob) {
-      out.push({ ...r, localBlob: local.localBlob });
-    }
+    seen.add(r.id);
+    const local = localById.get(r.id);
+    const blob =
+      local?.localBlob && local.localBlob.size > 0
+        ? local.localBlob
+        : new Blob([], { type: 'application/octet-stream' });
+    out.push({
+      id: r.id,
+      label: r.label || local?.label || 'Layer',
+      muted: r.muted ?? local?.muted,
+      gain: r.gain ?? local?.gain,
+      driveFileId: r.driveFileId ?? local?.driveFileId,
+      driveStemBytesFingerprint: r.driveStemBytesFingerprint ?? local?.driveStemBytesFingerprint,
+      localBlob: blob,
+    });
+  }
+  for (const local of localStems ?? []) {
+    if (seen.has(local.id)) continue;
+    if (local.localBlob?.size) out.push(local);
   }
   return out.length > 0 ? out : undefined;
+}
+
+function stemsFromDriveRowMetadata(
+  remoteStems: StanzaStemDriveRow[] | undefined,
+): StanzaStemTrack[] | undefined {
+  if (!remoteStems?.length) return undefined;
+  return remoteStems.map((r) => ({
+    ...r,
+    localBlob: new Blob([], { type: 'application/octet-stream' }),
+  }));
 }
 
 /** Build a playable row from Drive metadata (YouTube or Drive-linked audio only). */
@@ -76,7 +102,7 @@ export function stanzaSongFromDriveRow(row: StanzaSongDriveRow): StanzaSong | nu
       stats: row.stats ?? {},
       updatedAt: row.updatedAt,
       driveSourceFileId: row.driveSourceFileId,
-      stems: undefined,
+      stems: stemsFromDriveRowMetadata(row.stems),
       primaryGain: row.primaryGain,
       primaryMuted: row.primaryMuted,
       metronomeBySegmentId: row.metronomeBySegmentId,
@@ -102,7 +128,7 @@ export function stanzaSongFromDriveRow(row: StanzaSongDriveRow): StanzaSong | nu
       stats: row.stats ?? {},
       updatedAt: row.updatedAt,
       driveSourceFileId: row.driveSourceFileId,
-      stems: undefined,
+      stems: stemsFromDriveRowMetadata(row.stems),
       primaryGain: row.primaryGain,
       primaryMuted: row.primaryMuted,
       metronomeBySegmentId: row.metronomeBySegmentId,

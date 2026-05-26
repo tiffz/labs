@@ -36,8 +36,9 @@ import { driveFileWebUrl, driveFolderWebUrl } from '../../drive/driveWebUrls';
 import { ensureSpotifyAccessToken } from '../../spotify/pkce';
 import { fetchSpotifyTrack, searchTracks, type SpotifySearchTrack } from '../../spotify/spotifyApi';
 import { parseSpotifyTrackId } from '../../spotify/parseSpotifyTrackUrl';
-import type { EncoreDriveUploadFolderOverrides, EncoreSong } from '../../types';
+import type { EncoreDriveUploadFolderOverrides, EncoreMiscResource, EncoreSong } from '../../types';
 import { useEncoreBlockingJobs } from '../../context/EncoreBlockingJobContext';
+import { useEncoreDriveUploadDedup } from '../../context/EncoreDriveUploadDedupContext';
 import { encoreMediaHubAddButtonSx, songPageResourceRowShellSx } from '../../theme/encoreUiTokens';
 import { GoogleDriveBrandIcon, SpotifyBrandIcon, YouTubeBrandIcon } from '../EncoreBrandIcon';
 import {
@@ -77,6 +78,12 @@ import {
 } from '../../ui/encoreMediaLinkFormat';
 import { EncoreSpotifySearchOrPasteField } from '../../ui/EncoreSpotifySearchOrPasteField';
 import { EncoreYouTubePasteField } from '../../ui/EncoreYouTubePasteField';
+import {
+  appendMiscResourceFromDriveFile,
+  appendMiscResourceFromLocalFile,
+  appendMiscResourceFromUrl,
+} from '../../repertoire/songMiscResources';
+import { EncoreSongMiscResourcesPanel } from './EncoreSongMiscResourcesPanel';
 import type { SongPageMediaSlots } from './SongPageMediaHubCards';
 import type { SongMediaUploadSlot } from './songMediaUploadSlot';
 
@@ -215,6 +222,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
     persistAfterMetadataRefresh,
   } = props;
   const { withBlockingJob } = useEncoreBlockingJobs();
+  const { uploadWithDuplicateCheck, registerUploadedDriveFile } = useEncoreDriveUploadDedup();
   const googleAccessTokenRef = useRef(googleAccessToken);
   useEffect(() => {
     googleAccessTokenRef.current = googleAccessToken;
@@ -314,6 +322,13 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
     () =>
       driveUploadLayout
         ? resolveDriveUploadFolderId('takes', driveUploadLayout, driveUploadFolderOverrides) ?? null
+        : null,
+    [driveUploadLayout, driveUploadFolderOverrides],
+  );
+  const miscUploadFolderId = useMemo(
+    () =>
+      driveUploadLayout
+        ? resolveDriveUploadFolderId('misc', driveUploadLayout, driveUploadFolderOverrides) ?? null
         : null,
     [driveUploadLayout, driveUploadFolderOverrides],
   );
@@ -564,67 +579,125 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
       setSpotifyMetaLoading(false);
     }
   }, [clientId, draft, spotifyLinked, persistAfterMetadataRefresh, setDraft]);
+  const encoreDriveUploadLabel = useCallback(
+    (suffix: string) => `${draft?.title?.trim() || 'Untitled song'} · ${suffix}`,
+    [draft?.title],
+  );
+
+  const uploadDriveFileWithDedup = useCallback(
+    async (file: File, parentFolderId: string, indexLabel: string): Promise<string | null> => {
+      if (!googleAccessToken) throw new Error('Sign in to Google to upload files to Drive.');
+      return uploadWithDuplicateCheck({
+        file,
+        uploadNew: async () => {
+          const created = await driveUploadFileResumable(googleAccessToken, file, [parentFolderId]);
+          await registerUploadedDriveFile(created.id, indexLabel);
+          return created.id;
+        },
+        reuseExisting: async (driveFileId) => {
+          await registerUploadedDriveFile(driveFileId, indexLabel);
+          return driveFileId;
+        },
+      });
+    },
+    [googleAccessToken, registerUploadedDriveFile, uploadWithDuplicateCheck],
+  );
+
   const uploadReferenceDriveFile = useCallback(
     async (file: File) => {
-      if (!googleAccessToken) throw new Error('Sign in to Google to upload files to Drive.');
       if (!referenceUploadFolderId) {
         throw new Error('Drive folders are not ready yet. Try again after the first backup completes.');
       }
-      const created = await driveUploadFileResumable(googleAccessToken, file, [referenceUploadFolderId]);
-      setDraft((d) => (d ? appendDriveReferenceLink(d, created.id, { label: file.name }) : d));
+      const driveFileId = await uploadDriveFileWithDedup(
+        file,
+        referenceUploadFolderId,
+        encoreDriveUploadLabel('Reference'),
+      );
+      if (!driveFileId) return;
+      setDraft((d) => (d ? appendDriveReferenceLink(d, driveFileId, { label: file.name }) : d));
     },
-    [googleAccessToken, referenceUploadFolderId, setDraft],
+    [encoreDriveUploadLabel, referenceUploadFolderId, setDraft, uploadDriveFileWithDedup],
   );
 
   const uploadBackingDriveFile = useCallback(
     async (file: File) => {
-      if (!googleAccessToken) throw new Error('Sign in to Google to upload files to Drive.');
       if (!backingUploadFolderId) {
         throw new Error('Drive folders are not ready yet. Try again after the first backup completes.');
       }
-      const created = await driveUploadFileResumable(googleAccessToken, file, [backingUploadFolderId]);
-      setDraft((d) => (d ? appendDriveBackingLink(d, created.id, { label: file.name }) : d));
+      const driveFileId = await uploadDriveFileWithDedup(
+        file,
+        backingUploadFolderId,
+        encoreDriveUploadLabel('Backing'),
+      );
+      if (!driveFileId) return;
+      setDraft((d) => (d ? appendDriveBackingLink(d, driveFileId, { label: file.name }) : d));
     },
-    [googleAccessToken, backingUploadFolderId, setDraft],
+    [backingUploadFolderId, encoreDriveUploadLabel, setDraft, uploadDriveFileWithDedup],
   );
 
   const uploadTakeDriveFile = useCallback(
     async (file: File) => {
-      if (!googleAccessToken) throw new Error('Sign in to Google to upload files to Drive.');
       if (!takesUploadFolderId) {
         throw new Error('Drive folders are not ready yet. Try again after the first backup completes.');
       }
-      const created = await driveUploadFileResumable(googleAccessToken, file, [takesUploadFolderId]);
+      const driveFileId = await uploadDriveFileWithDedup(
+        file,
+        takesUploadFolderId,
+        encoreDriveUploadLabel('Recording'),
+      );
+      if (!driveFileId) return;
       setDraft((d) => {
         if (!d) return d;
         return addSongAttachment(d, {
           kind: 'recording',
-          driveFileId: created.id,
+          driveFileId,
           label: file.name,
         });
       });
     },
-    [googleAccessToken, takesUploadFolderId, setDraft],
+    [encoreDriveUploadLabel, setDraft, takesUploadFolderId, uploadDriveFileWithDedup],
   );
 
   const uploadChartDriveFile = useCallback(
     async (file: File) => {
-      if (!googleAccessToken) throw new Error('Sign in to Google to upload files to Drive.');
       if (!chartUploadFolderId) {
         throw new Error('Drive folders are not ready yet. Try again after the first backup completes.');
       }
-      const created = await driveUploadFileResumable(googleAccessToken, file, [chartUploadFolderId]);
+      const driveFileId = await uploadDriveFileWithDedup(
+        file,
+        chartUploadFolderId,
+        encoreDriveUploadLabel('Chart'),
+      );
+      if (!driveFileId) return;
       setDraft((d) =>
         d
           ? addSongAttachment(d, {
               kind: 'chart',
-              driveFileId: created.id,
+              driveFileId,
               label: file.name,
             })
           : d,
       );
     },
-    [googleAccessToken, chartUploadFolderId, setDraft],
+    [chartUploadFolderId, encoreDriveUploadLabel, setDraft, uploadDriveFileWithDedup],
+  );
+
+  const uploadMiscDriveFile = useCallback(
+    async (file: File) => {
+      if (!miscUploadFolderId) {
+        throw new Error('Drive folders are not ready yet. Try again after the first backup completes.');
+      }
+      const driveFileId = await uploadDriveFileWithDedup(
+        file,
+        miscUploadFolderId,
+        encoreDriveUploadLabel('Misc'),
+      );
+      if (!driveFileId) return;
+      setDraft((d) =>
+        d ? appendMiscResourceFromDriveFile(d, driveFileId, { label: file.name, mimeType: file.type }) : d,
+      );
+    },
+    [encoreDriveUploadLabel, miscUploadFolderId, setDraft, uploadDriveFileWithDedup],
   );
 
   const onReferenceDriveFile = useCallback(
@@ -721,7 +794,9 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
               ? 'Uploading backing file…'
               : slot === 'charts'
                 ? 'Uploading chart…'
-                : 'Uploading take…'
+                : slot === 'takes'
+                  ? 'Uploading take…'
+                  : 'Uploading file…'
           : `Uploading ${list.length} files…`;
       try {
         await withBlockingJob(jobLabel, async () => {
@@ -739,6 +814,9 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
               case 'takes':
                 await uploadTakeDriveFile(file);
                 break;
+              case 'misc':
+                await uploadMiscDriveFile(file);
+                break;
             }
           }
           setDriveAttachMsg(
@@ -749,7 +827,9 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                   ? 'Backing file linked.'
                   : slot === 'charts'
                     ? 'Chart linked.'
-                    : 'Take uploaded.'
+                    : slot === 'takes'
+                      ? 'Take uploaded.'
+                      : 'File added.'
               : `${list.length} files uploaded.`,
           );
         });
@@ -766,6 +846,89 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
       uploadBackingDriveFile,
       uploadChartDriveFile,
       uploadTakeDriveFile,
+      uploadMiscDriveFile,
+    ],
+  );
+
+  const handleMiscResourcesChange = useCallback(
+    (resources: EncoreMiscResource[]) => {
+      setDraft((d) =>
+        d
+          ? {
+              ...d,
+              miscResources: resources?.length ? resources : undefined,
+              updatedAt: new Date().toISOString(),
+            }
+          : d,
+      );
+    },
+    [setDraft],
+  );
+
+  const handleMiscAddLink = useCallback(
+    (url: string, label: string) => {
+      setDraft((d) => {
+        if (!d) return d;
+        const next = appendMiscResourceFromUrl(d, url, label || undefined);
+        return next ?? d;
+      });
+    },
+    [setDraft],
+  );
+
+  const handleMiscUploadFiles = useCallback(
+    async (files: File[]) => {
+      const list = files.filter(Boolean);
+      if (list.length === 0) return;
+      setDriveAttachMsg(null);
+      if (googleAccessToken && miscUploadFolderId) {
+        setDriveUploading(true);
+        try {
+          await withBlockingJob(
+            list.length === 1 ? 'Uploading file…' : `Uploading ${list.length} files…`,
+            async () => {
+              for (const file of list) await uploadMiscDriveFile(file);
+              setDriveAttachMsg(list.length === 1 ? 'File added.' : `${list.length} files added.`);
+            },
+          );
+        } catch (err) {
+          setDriveAttachMsg(err instanceof Error ? err.message : String(err));
+        } finally {
+          setDriveUploading(false);
+        }
+        return;
+      }
+      if (await prepareDriveForMediaUpload()) {
+        setDriveUploading(true);
+        try {
+          await withBlockingJob(
+            list.length === 1 ? 'Uploading file…' : `Uploading ${list.length} files…`,
+            async () => {
+              for (const file of list) await uploadMiscDriveFile(file);
+              setDriveAttachMsg(list.length === 1 ? 'File added.' : `${list.length} files added.`);
+            },
+          );
+        } catch (err) {
+          setDriveAttachMsg(err instanceof Error ? err.message : String(err));
+        } finally {
+          setDriveUploading(false);
+        }
+        return;
+      }
+      setDraft((d) => {
+        if (!d) return d;
+        let next = d;
+        for (const file of list) next = appendMiscResourceFromLocalFile(next, file);
+        return next;
+      });
+    },
+    [
+      googleAccessToken,
+      miscUploadFolderId,
+      prepareDriveForMediaUpload,
+      setDraft,
+      uploadMiscDriveFile,
+      withBlockingJob,
     ],
   );
 
@@ -776,6 +939,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
       charts: null,
       chartsFooter: null,
       takes: null,
+      misc: null,
     };
     return {
       catalogStrip: null,
@@ -1080,7 +1244,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
 
   const songMediaSlotReference = (
 <>
-              <Stack spacing={0.7} sx={{ width: 1 }}>
+              <Stack spacing={0.4} sx={{ width: 1 }}>
                 <SongPageSectionHeading
                   title="Reference recordings"
                   tooltip="Study and comparison tracks. Pick one primary reference (Spotify or YouTube). When a song info source is set, that Spotify track also appears here."
@@ -1259,7 +1423,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                         sx={(t) => ({
                           width: '100%',
                           maxWidth: 'min(100%, 440px)',
-                          mb: 0.5,
+                          mb: 0.25,
                           ...songPageResourceRowShellSx(t, isPrimary),
                         })}
                       >
@@ -1271,7 +1435,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                     size="small"
                     variant="outlined"
                     color="inherit"
-                    startIcon={<AddIcon sx={{ fontSize: 17 }} />}
+                    startIcon={<AddIcon sx={{ fontSize: 15 }} />}
                     onClick={(e) => setReferenceAddMenuAnchor(e.currentTarget)}
                     sx={(t) => encoreMediaHubAddButtonSx(t)}
                   >
@@ -1420,7 +1584,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
 
   const songMediaSlotBacking = (
 <>
-              <Stack spacing={0.7} sx={{ width: 1 }}>
+              <Stack spacing={0.4} sx={{ width: 1 }}>
                 <SongPageSectionHeading
                   title="Backing tracks"
                   tooltip="Karaoke or practice playback, separate from reference listening. Pick one primary backing when the app needs a default practice track."
@@ -1575,7 +1739,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                         sx={(t) => ({
                           width: '100%',
                           maxWidth: 'min(100%, 440px)',
-                          mb: 0.5,
+                          mb: 0.25,
                           ...songPageResourceRowShellSx(t, isPrimary),
                         })}
                       >
@@ -1587,7 +1751,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                     size="small"
                     variant="outlined"
                     color="inherit"
-                    startIcon={<AddIcon sx={{ fontSize: 17 }} />}
+                    startIcon={<AddIcon sx={{ fontSize: 15 }} />}
                     onClick={(e) => setBackingAddMenuAnchor(e.currentTarget)}
                     sx={(t) => encoreMediaHubAddButtonSx(t)}
                   >
@@ -1736,7 +1900,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
 
   const songMediaSlotCharts = (
 <>
-              <Stack spacing={0.7} sx={{ width: 1 }}>
+              <Stack spacing={0.4} sx={{ width: 1 }}>
                 <SongPageSectionHeading
                   title="Charts"
                   tooltip="Pick one primary chart for Practice quick links and default sheet export."
@@ -1761,7 +1925,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                         sx={(t) => ({
                           width: '100%',
                           maxWidth: 'min(100%, 440px)',
-                          mb: 0.5,
+                          mb: 0.25,
                           ...songPageResourceRowShellSx(t, isPrimary),
                         })}
                       >
@@ -1817,7 +1981,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                     size="small"
                     variant="outlined"
                     color="inherit"
-                    startIcon={<AddIcon sx={{ fontSize: 17 }} />}
+                    startIcon={<AddIcon sx={{ fontSize: 15 }} />}
                     disabled={driveUploading}
                     onClick={(e) => {
                       void (async () => {
@@ -1919,7 +2083,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
 
   const songMediaSlotTakes = (
 <>
-              <Stack spacing={0.7} sx={{ width: 1 }}>
+              <Stack spacing={0.4} sx={{ width: 1 }}>
                 <SongPageSectionHeading
                   title="Takes"
                   tooltip="Audio or video you uploaded from practice (stored in Drive). Same attachments as on the Practice screen."
@@ -1978,7 +2142,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                     size="small"
                     variant="outlined"
                     color="inherit"
-                    startIcon={<AddIcon sx={{ fontSize: 17 }} />}
+                    startIcon={<AddIcon sx={{ fontSize: 15 }} />}
                     disabled={driveUploading}
                     onClick={() => {
                       void (async () => {
@@ -2081,12 +2245,24 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
       </Stack>
     ) : null;
 
+  const songMediaSlotMisc = (
+    <EncoreSongMiscResourcesPanel
+      resources={draft.miscResources ?? []}
+      onChange={handleMiscResourcesChange}
+      onAddLink={handleMiscAddLink}
+      onUploadFiles={handleMiscUploadFiles}
+      driveUploading={driveUploading}
+      canUploadToDrive={Boolean(googleAccessToken && miscUploadFolderId)}
+    />
+  );
+
   const songMediaSlots: SongPageMediaSlots = {
     referenceRecordings: songMediaSlotReference,
     backingTracks: songMediaSlotBacking,
     charts: songMediaSlotCharts,
     chartsFooter: songMediaSlotChartsFooter,
     takes: songMediaSlotTakes,
+    misc: songMediaSlotMisc,
   };
 
   return {

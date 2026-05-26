@@ -15,7 +15,7 @@ import {
   type ReactElement,
   type ReactNode,
 } from 'react';
-import { encoreMediaLinkRowSx } from '../theme/encoreUiTokens';
+import { encoreMediaHubChipMinHeight, encoreMediaLinkRowSx } from '../theme/encoreUiTokens';
 
 export type EncoreAudioResourceNotesWrapperProps = {
   /** Main row (e.g. {@link EncoreMediaLinkRow} with hover wrapper). */
@@ -49,11 +49,9 @@ export function EncoreAudioResourceNotesWrapper(props: EncoreAudioResourceNotesW
         maxWidth: 'min(100%, 440px)',
         width: '100%',
         minWidth: 0,
-        mb: 0.5,
+        mb: 0.25,
         boxSizing: 'border-box',
-        // Matches `songPageResourceRowShellSx` (34) so Takes rows align with the other three
-        // hub cards visually.
-        minHeight: 34,
+        minHeight: encoreMediaHubChipMinHeight,
         ...encoreMediaLinkRowSx(theme, false),
         pr: 1.25,
         pl: 0.75,

@@ -97,17 +97,6 @@ describe('BpmInput', () => {
     expect(await screen.findByText('Common BPMs')).toBeInTheDocument();
   });
 
-  it('does not open preset panel on focus when openPresetPanelOnFocus is false', async () => {
-    const onChange = vi.fn();
-    render(<BpmInput value={120} onChange={onChange} openPresetPanelOnFocus={false} />);
-    const input = screen.getByRole('textbox');
-    fireEvent.focus(input);
-    expect(screen.queryByText('Common BPMs')).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Tempo slider and common BPMs' }));
-    expect(await screen.findByText('Common BPMs')).toBeInTheDocument();
-  });
-
   it('selects a preset BPM and closes the dropdown', async () => {
     const onChange = vi.fn();
     render(<BpmInput value={120} onChange={onChange} />);

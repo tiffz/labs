@@ -41,3 +41,4 @@ Skip an ADR for routine features, one-off UI tweaks, or purely internal refactor
 | [0010](./0010-sight-adaptive-progress.md)                                 | Color Sight adaptive progress, daily queue, and diagnostics                           |
 | [0010](./0010-encore-no-background-google-refresh.md)                     | Encore never silently refreshes Google sign-in in the background                      |
 | [0011](./0011-labs-stanza-scales-no-background-google-refresh.md)         | Stanza / Scales / shared Labs Google sign-in mirrors the no-background-refresh policy |
+| [0012](./0012-encore-originals-local-first-domain.md)                     | Encore Originals: separate local-first songwriting domain and Drive layout            |

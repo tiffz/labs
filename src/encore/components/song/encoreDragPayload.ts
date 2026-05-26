@@ -1,7 +1,7 @@
 import { inferMediaMimeType } from '../../../shared/drive/inferMediaMimeType';
 import type { SongMediaUploadSlot } from './songMediaUploadSlot';
 
-const ALL_SLOTS: SongMediaUploadSlot[] = ['listen', 'play', 'charts', 'takes'];
+const ALL_SLOTS: SongMediaUploadSlot[] = ['listen', 'play', 'charts', 'takes', 'misc'];
 
 function mimeToCategories(mime: string): { chart: boolean; av: boolean } {
   const m = mime.toLowerCase();
@@ -41,6 +41,7 @@ export function eligibleSlotsForFiles(files: File[]): Set<SongMediaUploadSlot> |
     out.add('play');
     out.add('takes');
   }
+  out.add('misc');
   return out.size > 0 ? out : new Set(ALL_SLOTS);
 }
 

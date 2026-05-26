@@ -41,6 +41,9 @@ import { useEncore, type SyncUiState } from '../context/EncoreContext';
 import { ensureSpotifyAccessToken } from '../spotify/pkce';
 import { fetchSpotifyCurrentUserSummary, type SpotifyCurrentUserSummary } from '../spotify/spotifyApi';
 import { encoreHairline, encoreShadowLift } from '../theme/encoreUiTokens';
+import type { ReorganizeDriveUploadsResult } from '../drive/driveReorganize';
+import type { DriveDuplicateGroup } from '../drive/driveDuplicateDetection';
+import { DriveDuplicateReviewDialog } from './DriveDuplicateReviewDialog';
 import { EncoreStatusPill } from '../ui/EncoreStatusPill';
 import { GoogleBrandIcon, SpotifyBrandIcon } from './EncoreBrandIcon';
 
@@ -361,51 +364,75 @@ export function EncoreAccountMenu(props: {
   const [reorganizing, setReorganizing] = useState(false);
   const [driveRetryBusy, setDriveRetryBusy] = useState(false);
   const [reorganizeMsg, setReorganizeMsg] = useState<string | null>(null);
+  const [duplicateReviewGroups, setDuplicateReviewGroups] = useState<DriveDuplicateGroup[]>([]);
+  const [duplicateReviewOpen, setDuplicateReviewOpen] = useState(false);
+
+  const reportOrganizeResult = useCallback((result: ReorganizeDriveUploadsResult) => {
+    const { performanceVideos: pv, attachments: at, dedup } = result;
+    const dedupParts: string[] = [];
+    if (dedup) {
+      if (dedup.songsUpdated + dedup.performancesUpdated > 0) {
+        dedupParts.push(
+          `merged references in ${dedup.songsUpdated + dedup.performancesUpdated} row${dedup.songsUpdated + dedup.performancesUpdated === 1 ? '' : 's'}`,
+        );
+      }
+      if (dedup.trashed > 0) {
+        dedupParts.push(`moved ${dedup.trashed} duplicate file${dedup.trashed === 1 ? '' : 's'} to trash`);
+      }
+      if (dedup.trashErrors > 0) {
+        dedupParts.push(`${dedup.trashErrors} duplicate${dedup.trashErrors === 1 ? '' : 's'} could not be trashed`);
+      }
+    }
+    const dedupPrefix = dedupParts.length > 0 ? `${dedupParts.join(', ')}. ` : '';
+    const totalErrors = pv.errors + at.errors;
+    const created = pv.shortcutsCreated;
+    const attShortcuts = at.shortcutsCreated;
+    if (
+      pv.renamed === 0 &&
+      totalErrors === 0 &&
+      created === 0 &&
+      attShortcuts === 0 &&
+      at.renamed === 0 &&
+      at.moved === 0
+    ) {
+      setReorganizeMsg(dedupPrefix ? `${dedupPrefix}Already organized.` : 'Already organized.');
+    } else if (totalErrors > 0) {
+      setReorganizeMsg(
+        `${dedupPrefix}Videos: renamed ${pv.renamed}, ${created} shortcut${created === 1 ? '' : 's'} (${pv.errors} errors). Attachments: renamed ${at.renamed}, moved ${at.moved}, ${attShortcuts} shortcut${attShortcuts === 1 ? '' : 's'} (${at.errors} errors).`,
+      );
+    } else {
+      const parts = [
+        pv.renamed > 0
+          ? `renamed ${pv.renamed} performance video${pv.renamed === 1 ? '' : 's'}`
+          : null,
+        at.renamed > 0 ? `renamed ${at.renamed} chart/recording file${at.renamed === 1 ? '' : 's'}` : null,
+        at.moved > 0
+          ? `moved ${at.moved} Encore-managed file${at.moved === 1 ? '' : 's'} to your saved folder targets`
+          : null,
+        created > 0 ? `created ${created} video shortcut${created === 1 ? '' : 's'}` : null,
+        attShortcuts > 0
+          ? `created ${attShortcuts} attachment shortcut${attShortcuts === 1 ? '' : 's'}`
+          : null,
+      ].filter(Boolean);
+      const organizeNote =
+        parts.length > 0 ? `Drive is up to date: ${parts.join(', ')}.` : 'Drive is up to date. Nothing to change.';
+      setReorganizeMsg(`${dedupPrefix}${organizeNote}`);
+    }
+  }, []);
+
   const handleReorganize = useCallback(async () => {
     setReorganizing(true);
     setReorganizeMsg(null);
     try {
-      const { performanceVideos: pv, attachments: at } = await reorganizeDriveUploads();
-      const totalErrors = pv.errors + at.errors;
-      const created = pv.shortcutsCreated;
-      const attShortcuts = at.shortcutsCreated;
-      if (
-        pv.renamed === 0 &&
-        totalErrors === 0 &&
-        created === 0 &&
-        attShortcuts === 0 &&
-        at.renamed === 0 &&
-        at.moved === 0
-      ) {
-        setReorganizeMsg('Already organized.');
-      } else if (totalErrors > 0) {
-        setReorganizeMsg(
-          `Videos: renamed ${pv.renamed}, ${created} shortcut${created === 1 ? '' : 's'} (${pv.errors} errors). Attachments: renamed ${at.renamed}, moved ${at.moved}, ${attShortcuts} shortcut${attShortcuts === 1 ? '' : 's'} (${at.errors} errors).`,
-        );
-      } else {
-        const parts = [
-          pv.renamed > 0
-            ? `renamed ${pv.renamed} performance video${pv.renamed === 1 ? '' : 's'}`
-            : null,
-          at.renamed > 0 ? `renamed ${at.renamed} chart/recording file${at.renamed === 1 ? '' : 's'}` : null,
-          at.moved > 0
-            ? `moved ${at.moved} Encore-managed file${at.moved === 1 ? '' : 's'} to your saved folder targets`
-            : null,
-          created > 0 ? `created ${created} video shortcut${created === 1 ? '' : 's'}` : null,
-          attShortcuts > 0
-            ? `created ${attShortcuts} attachment shortcut${attShortcuts === 1 ? '' : 's'}`
-            : null,
-        ].filter(Boolean);
-        setReorganizeMsg(
-          parts.length > 0 ? `Drive is up to date: ${parts.join(', ')}.` : 'Drive is up to date. Nothing to change.',
-        );
-      }
+      const result = await reorganizeDriveUploads();
+      setDuplicateReviewGroups(result.duplicateGroupsForReview);
+      reportOrganizeResult(result);
     } catch (e) {
       setReorganizeMsg(`Could not reorganize: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
       setReorganizing(false);
     }
-  }, [reorganizeDriveUploads]);
+  }, [reorganizeDriveUploads, reportOrganizeResult]);
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
@@ -711,6 +738,15 @@ export function EncoreAccountMenu(props: {
                 icon: reorganizing ? <RefreshIcon className="spin" fontSize="small" /> : <AutoFixHighIcon fontSize="small" />,
                 onClick: () => void handleReorganize(),
               },
+              ...(duplicateReviewGroups.length > 0
+                ? [
+                    {
+                      label: 'View duplicate upload details',
+                      icon: <AutoFixHighIcon fontSize="small" />,
+                      onClick: () => setDuplicateReviewOpen(true),
+                    },
+                  ]
+                : []),
             ]}
             primary={{
               label: googleSignInPending ? 'Opening Google…' : 'Sign in again',
@@ -928,6 +964,11 @@ export function EncoreAccountMenu(props: {
           </Stack>
         </Box>
       </Menu>
+      <DriveDuplicateReviewDialog
+        open={duplicateReviewOpen}
+        groups={duplicateReviewGroups}
+        onClose={() => setDuplicateReviewOpen(false)}
+      />
     </>
   );
 }

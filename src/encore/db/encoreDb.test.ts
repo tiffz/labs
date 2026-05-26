@@ -11,6 +11,7 @@ import {
   takeDirtyRows,
 } from './encoreDb';
 import type { EncorePerformance, EncoreSong } from '../types';
+import type { EncoreOriginalSong } from '../originals/types';
 
 beforeEach(async () => {
   await encoreDb.songs.clear();
@@ -18,6 +19,7 @@ beforeEach(async () => {
   await encoreDb.syncMeta.clear();
   await encoreDb.repertoireExtras.clear();
   await encoreDb.dirtySync.clear();
+  await encoreDb.originals.clear();
 });
 
 afterEach(async () => {
@@ -26,13 +28,14 @@ afterEach(async () => {
   await encoreDb.syncMeta.clear();
   await encoreDb.repertoireExtras.clear();
   await encoreDb.dirtySync.clear();
+  await encoreDb.originals.clear();
 });
 
 describe('encoreDb schema', () => {
-  it('opens at version 4 with songs/performances/syncMeta/repertoireExtras/dirtySync tables', async () => {
-    expect(encoreDb.verno).toBe(4);
+  it('opens at version 6 with repertoire + originals tables', async () => {
+    expect(encoreDb.verno).toBe(6);
     expect(encoreDb.tables.map((t) => t.name).sort()).toEqual(
-      ['dirtySync', 'performances', 'repertoireExtras', 'songs', 'syncMeta'].sort(),
+      ['dirtySync', 'originals', 'performances', 'repertoireExtras', 'songs', 'syncMeta'].sort(),
     );
   });
 
@@ -170,5 +173,24 @@ describe('dirtySync helpers', () => {
     await markDirtyRow('song', 's1', 'upsert');
     await clearDirtyRows([]);
     expect((await takeDirtyRows()).length).toBe(1);
+  });
+
+  it('stores originals and marks dirty kind original', async () => {
+    const row: EncoreOriginalSong = {
+      id: 'orig-1',
+      title: 'Demo',
+      key: 'G',
+      tempo: 90,
+      lyricsAndChords: '[G]hello',
+      takes: [],
+      mainTakeId: null,
+      history: [],
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    };
+    await encoreDb.originals.put(row);
+    await markDirtyRow('original', row.id);
+    const dirty = await takeDirtyRows();
+    expect(dirty.some((d) => d.kind === 'original' && d.rowId === row.id)).toBe(true);
   });
 });

@@ -1,4 +1,5 @@
 import type { Ref } from 'react';
+import { createPortal } from 'react-dom';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Checkbox from '@mui/material/Checkbox';
@@ -70,17 +71,17 @@ export default function StanzaSectionHoverCard({
   const cardW = 200;
   const half = cardW / 2;
   const leftPx = Math.min(Math.max(position.x - half, 8), window.innerWidth - cardW - 8);
-  const bottomPx = window.innerHeight - position.segmentTop + 8;
+  const topPx = Math.max(8, position.segmentTop - 8);
 
-  return (
+  const card = (
     <Box
       ref={cardRootRef}
       className="stanza-section-hover-card"
       sx={{
         position: 'fixed',
         left: `${leftPx}px`,
-        bottom: `${bottomPx}px`,
-        top: 'auto',
+        top: `${topPx}px`,
+        transform: 'translateY(-100%)',
         zIndex: 1400,
         width: cardW,
         p: 1,
@@ -198,4 +199,6 @@ export default function StanzaSectionHoverCard({
       </Typography>
     </Box>
   );
+
+  return createPortal(card, document.body);
 }

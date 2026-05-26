@@ -13,6 +13,8 @@ interface BpmInputProps {
   max?: number;
   step?: number;
   className?: string;
+  /** `inline` keeps the shell only as wide as the stepper; `block` fills the row (default). */
+  layout?: 'inline' | 'block';
   disabled?: boolean;
   showRandomize?: boolean;
   showPresetDropdown?: boolean;
@@ -23,11 +25,6 @@ interface BpmInputProps {
   dropdownClassName?: string;
   dropdownOffsetPx?: number;
   sliderClassName?: string;
-  /**
-   * When `showPresetDropdown` is true, opening the preset panel on input focus (default).
-   * Set to `false` for dense sidebars: use the presets button instead.
-   */
-  openPresetPanelOnFocus?: boolean;
   /** Where the preset popover anchors horizontally (`right` keeps the rail readable). */
   presetPanelHorizontal?: 'left' | 'right';
 }
@@ -46,6 +43,7 @@ const BpmInput: React.FC<BpmInputProps> = ({
   max = DEFAULT_BPM_MAX,
   step = 1,
   className,
+  layout = 'block',
   disabled = false,
   showRandomize = false,
   showPresetDropdown = true,
@@ -56,7 +54,6 @@ const BpmInput: React.FC<BpmInputProps> = ({
   dropdownClassName,
   dropdownOffsetPx,
   sliderClassName,
-  openPresetPanelOnFocus = true,
   presetPanelHorizontal = 'left',
 }) => {
   const [draft, setDraft] = useState(String(value));
@@ -111,7 +108,7 @@ const BpmInput: React.FC<BpmInputProps> = ({
   };
 
   return (
-    <div className={className}>
+    <div className={['shared-bpm-input', layout === 'inline' ? 'shared-bpm-input--inline' : '', className].filter(Boolean).join(' ')}>
       <div className="shared-bpm-dropdown-anchor" ref={anchorRef}>
         <div className="shared-bpm-main-row">
           <div className={`shared-bpm-shell ${isEditing ? 'is-editing' : 'is-idle'}`}>
@@ -126,7 +123,7 @@ const BpmInput: React.FC<BpmInputProps> = ({
                 if (disabled) return;
                 setDraft(String(Math.round(value)));
                 setIsEditing(true);
-                if (showPresetDropdown && openPresetPanelOnFocus) {
+                if (showPresetDropdown) {
                   setIsPresetOpen(true);
                 }
               }}
@@ -196,26 +193,6 @@ const BpmInput: React.FC<BpmInputProps> = ({
                 </button>
               </div>
             )}
-            {showPresetDropdown && !openPresetPanelOnFocus ? (
-              <button
-                type="button"
-                className="shared-bpm-preset-toggle"
-                aria-label="Tempo slider and common BPMs"
-                aria-expanded={isPresetOpen}
-                disabled={disabled}
-                onMouseDown={(event) => {
-                  event.preventDefault();
-                }}
-                onClick={() => {
-                  setIsPresetOpen((open) => !open);
-                  setIsEditing(true);
-                }}
-              >
-                <span className="material-symbols-outlined" aria-hidden>
-                  tune
-                </span>
-              </button>
-            ) : null}
             {showRandomize && (
               <button
                 type="button"

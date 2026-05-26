@@ -108,6 +108,10 @@ export type DriveFileListRow = {
   description?: string;
   /** Drive may expose short indexable text for search; optional and often empty for videos. */
   contentHints?: { indexableText?: string };
+  /** Byte size as a decimal string (Drive `files.list` / `files.get`). */
+  size?: string;
+  /** MD5 for uploaded binary files; absent for Google Docs and some native types. */
+  md5Checksum?: string;
 };
 
 /**
@@ -357,9 +361,22 @@ export async function driveCreateAnyoneReaderPermission(
   throw new DriveHttpError(formatDriveRequestFailure('POST', 'files/permissions', lastStatus, lastText), lastStatus, lastText);
 }
 
+export type DriveFileContentFingerprint = {
+  id: string;
+  /** Resolved media file (shortcut targets followed). */
+  mediaFileId: string;
+  name: string;
+  mimeType?: string;
+  size?: string;
+  md5Checksum?: string;
+  createdTime?: string;
+  isShortcutRow: boolean;
+};
+
 export async function driveGetFileMetadata(
   accessToken: string,
-  fileId: string
+  fileId: string,
+  fields = 'id,createdTime,modifiedTime,mimeType,name,parents,shortcutDetails',
 ): Promise<{
   id: string;
   /** When the file was created in Drive (first upload / insert). Prefer for “performance happened near”. */
@@ -369,12 +386,14 @@ export async function driveGetFileMetadata(
   mimeType?: string;
   name?: string;
   parents?: string[];
+  size?: string;
+  md5Checksum?: string;
   /** Populated for `application/vnd.google-apps.shortcut` files. */
   shortcutDetails?: { targetId?: string; targetMimeType?: string };
 }> {
   const path = `/files/${encodeURIComponent(fileId)}`;
   const qs = `?${new URLSearchParams({
-    fields: 'id,createdTime,modifiedTime,mimeType,name,parents,shortcutDetails',
+    fields,
     supportsAllDrives: 'true',
   }).toString()}`;
   let lastStatus = 0;
@@ -405,9 +424,34 @@ export async function driveGetFileMetadata(
     mimeType?: string;
     name?: string;
     parents?: string[];
+    size?: string;
+    md5Checksum?: string;
     shortcutDetails?: { targetId?: string; targetMimeType?: string };
   };
   return { ...data, etag: etagFromDriveResponse(res) };
+}
+
+/** Content fingerprint for duplicate-upload detection (follows shortcuts to the media file). */
+export async function driveGetFileContentFingerprint(
+  accessToken: string,
+  fileId: string,
+): Promise<DriveFileContentFingerprint> {
+  const { mediaFileId, meta } = await driveResolveFileForMedia(accessToken, fileId);
+  const media = await driveGetFileMetadata(
+    accessToken,
+    mediaFileId,
+    'id,createdTime,mimeType,name,size,md5Checksum',
+  );
+  return {
+    id: fileId.trim(),
+    mediaFileId,
+    name: media.name ?? meta.name ?? 'Untitled',
+    mimeType: media.mimeType ?? meta.mimeType,
+    size: media.size,
+    md5Checksum: media.md5Checksum,
+    createdTime: media.createdTime ?? meta.createdTime,
+    isShortcutRow: meta.mimeType === GOOGLE_DRIVE_SHORTCUT_MIME,
+  };
 }
 
 /** Google Drive shortcut row; follow `shortcutDetails.targetId` before `alt=media`. */

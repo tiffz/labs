@@ -29,8 +29,9 @@ Use these exact strings unless you have a strong reason not to. Consistency here
 
 ### Empty states
 
-- **Inline empty list** (a section inside a populated screen, e.g. "Reference recordings", "Backing tracks", "Charts" on `SongPage`, or "Performances" inside a song's tab): `None yet.` Optionally extend with one short clause for the most common next step, e.g. `None yet at this venue.` Keep it under ~6 words; never duplicate the section heading.
+- **Inline empty list** (a section inside a populated screen, e.g. "Reference recordings", "Backing tracks", "Charts", "Misc" on `SongPage`, or "Performances" inside a song's tab): `None yet.` Optionally extend with one short clause for the most common next step, e.g. `None yet at this venue.` Keep it under ~6 words; never duplicate the section heading.
 - **Screen-level empty state** (the primary content area of a screen with nothing in it yet, e.g. empty Library or empty Performances screen): `Nothing here yet. Add a song to start.` / `Nothing here yet. Add one from the toolbar.` Pattern: `Nothing here yet.` then a short second sentence with the next action. Include the action so the user knows what to do next.
+- **Originals library empty:** `Nothing here yet. Add an original from the toolbar.`
 - Don't use "There are no…" or "You haven't…"; both bury the lede. Don't use "No X yet." for screen-level empties; reserve "None yet." for inline lists.
 
 ### Primary-star affordance on media-link rows

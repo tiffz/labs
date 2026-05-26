@@ -8,14 +8,22 @@ vi.mock('../db/encoreDb', () => ({
   encoreDb: {
     repertoireExtras: {
       get: vi.fn(),
+      put: vi.fn(),
     },
   },
+  markDirtyRow: vi.fn(),
 }));
 vi.mock('./performanceShortcut', () => ({
   reorganizeAllPerformanceVideos: vi.fn(),
 }));
 vi.mock('./songAttachmentOrganize', () => ({
   reorganizeAllSongAttachments: vi.fn(),
+}));
+vi.mock('./driveDuplicateDetection', () => ({
+  scanEncoreDriveDuplicateUploads: vi.fn(async () => ({ refs: [], groups: [], contentIndex: {} })),
+}));
+vi.mock('./driveDuplicateDedup', () => ({
+  applyEncoreDriveDuplicateDedup: vi.fn(),
 }));
 
 import { encoreDb } from '../db/encoreDb';
@@ -62,7 +70,58 @@ describe('reorganizeAllDriveUploads', () => {
     expect(result).toEqual({
       performanceVideos: { renamed: 2, skipped: 1, errors: 0, shortcutsCreated: 1 },
       attachments: { renamed: 3, moved: 2, skipped: 0, errors: 0, shortcutsCreated: 0 },
+      dedup: null,
+      duplicateGroupsForReview: [],
     });
+  });
+
+  it('deduplicates before reorganizing when duplicate groups exist', async () => {
+    const { scanEncoreDriveDuplicateUploads } = await import('./driveDuplicateDetection');
+    const { applyEncoreDriveDuplicateDedup } = await import('./driveDuplicateDedup');
+    const reviewGroup = {
+      key: 'md5:abc',
+      members: [],
+      fileIdsToTrash: [],
+      canonicalMediaFileId: 'a',
+      canonicalFileId: 'a',
+    };
+    (scanEncoreDriveDuplicateUploads as any).mockResolvedValueOnce({
+      refs: [],
+      groups: [reviewGroup],
+      contentIndex: {},
+    });
+    (applyEncoreDriveDuplicateDedup as any).mockResolvedValueOnce({
+      songsUpdated: 1,
+      performancesUpdated: 0,
+      trashed: 2,
+      trashErrors: 0,
+    });
+    (ensureEncoreDriveLayout as any).mockResolvedValue(undefined);
+    (reorganizeAllPerformanceVideos as any).mockResolvedValue({
+      renamed: 0,
+      skipped: 0,
+      errors: 0,
+      shortcutsCreated: 0,
+    });
+    (reorganizeAllSongAttachments as any).mockResolvedValue({
+      renamed: 0,
+      moved: 0,
+      skipped: 0,
+      errors: 0,
+      shortcutsCreated: 0,
+    });
+
+    const result = await reorganizeAllDriveUploads('tok');
+
+    expect(applyEncoreDriveDuplicateDedup).toHaveBeenCalledBefore(ensureEncoreDriveLayout as any);
+    expect(result.dedup).toEqual({
+      songsUpdated: 1,
+      performancesUpdated: 0,
+      trashed: 2,
+      trashErrors: 0,
+      duplicateGroups: 1,
+    });
+    expect(result.duplicateGroupsForReview).toEqual([reviewGroup]);
   });
 
   it('propagates ensureEncoreDriveLayout failure without invoking the reorganizers', async () => {

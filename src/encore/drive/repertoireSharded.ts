@@ -59,7 +59,7 @@ export function isShardedSyncEnabled(): boolean {
   return norm === '1' || norm === 'true' || norm === 'yes' || norm === 'on';
 }
 
-export type ShardKind = DirtySyncRow['kind'];
+export type ShardKind = Exclude<DirtySyncRow['kind'], 'original'>;
 
 /** A single row's pointer in the manifest (row id → drive fileId + clock). */
 export interface ShardEntry {
@@ -316,7 +316,7 @@ export async function pushDirtyShards(
   const onProgress = options?.onProgress;
   onProgress?.(0.05);
 
-  const dirty = await takeDirtyRows();
+  const dirty = (await takeDirtyRows()).filter((d) => d.kind !== 'original');
   if (dirty.length === 0) {
     onProgress?.(1);
     return 0;
@@ -333,25 +333,26 @@ export async function pushDirtyShards(
   // Push in deterministic order (extras last, so a manifest re-read mid-flight still sees the
   // newest row payloads before the venue catalog).
   const ordered = [...dirty].sort((a, b) => {
-    const order = { song: 0, performance: 1, extras: 2 } as const;
-    return order[a.kind] - order[b.kind];
+    const order: Record<ShardKind, number> = { song: 0, performance: 1, extras: 2 };
+    return order[a.kind as ShardKind] - order[b.kind as ShardKind];
   });
 
   for (let i = 0; i < ordered.length; i += 1) {
-    const entry = ordered[i];
+    const entry = ordered[i]!;
+    const kind = entry.kind as ShardKind;
     if (entry.op === 'delete') {
-      await deleteShardFile(ctx, entry.kind, entry.rowId);
+      await deleteShardFile(ctx, kind, entry.rowId);
       drainedIds.push(entry.id);
     } else {
-      const body = await loadRowBody(entry.kind, entry.rowId);
+      const body = await loadRowBody(kind, entry.rowId);
       if (!body) {
         // Row was deleted between dirty-mark and now; convert to a delete and drain.
-        await deleteShardFile(ctx, entry.kind, entry.rowId);
+        await deleteShardFile(ctx, kind, entry.rowId);
         drainedIds.push(entry.id);
         continue;
       }
       const updatedAt = body.updatedAt;
-      await upsertShardFile(ctx, entry.kind, entry.rowId, serializeRow(body.value), updatedAt);
+      await upsertShardFile(ctx, kind, entry.rowId, serializeRow(body.value), updatedAt);
       drainedIds.push(entry.id);
     }
     onProgress?.(0.2 + ((i + 1) / ordered.length) * 0.65);

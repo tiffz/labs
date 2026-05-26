@@ -60,23 +60,6 @@ export const panelSx = {
   bgcolor: 'transparent',
 };
 
-export const panelCurrentSx = {
-  ...panelSx,
-  borderColor: (theme: { palette: { primary: { main: string } } }) =>
-    `${theme.palette.primary.main}33`,
-  bgcolor: (theme: { palette: { primary: { main: string } } }) =>
-    `${theme.palette.primary.main}0A`,
-};
-
-export const progressTrackSx = {
-  height: 5,
-  borderRadius: '999px',
-  bgcolor: 'rgba(255, 255, 255, 0.06)',
-  '& .MuiLinearProgress-bar': {
-    borderRadius: '999px',
-  },
-};
-
 export const pillSx = {
   display: 'inline-flex',
   alignItems: 'center',
@@ -90,13 +73,6 @@ export const pillSx = {
   color: 'text.secondary',
   whiteSpace: 'nowrap' as const,
   flexShrink: 0,
-};
-
-export const pillAccentSx = {
-  ...pillSx,
-  bgcolor: (theme: { palette: { primary: { main: string } } }) =>
-    `${theme.palette.primary.main}18`,
-  color: 'primary.main',
 };
 
 export const textLinkButtonSx = {

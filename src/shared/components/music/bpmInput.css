@@ -78,6 +78,7 @@
   width: auto;
   padding: 0 calc(var(--space-1, 4px) + 1px);
   gap: 0.12rem;
+  overflow: hidden;
 }
 
 .shared-bpm-shell:focus-within {
@@ -122,8 +123,10 @@
    border when one of them follows so we don't render a doubled hairline. */
 .shared-bpm-stepper:has(+ .shared-bpm-trailing-actions),
 .shared-bpm-stepper:has(+ .shared-bpm-preset-toggle),
-.shared-bpm-stepper:has(+ .shared-bpm-inline-action) {
+.shared-bpm-stepper:has(+ .shared-bpm-inline-action),
+.shared-bpm-stepper:last-child {
   border-right: 0;
+  padding-right: 0;
 }
 
 .shared-bpm-leading-actions {
@@ -258,7 +261,7 @@
   cursor: not-allowed;
 }
 
-/* Opens preset popover when `openPresetPanelOnFocus` is false (dense toolbars). */
+/* Legacy tune toggle (unused; preset panel opens on BPM field focus). */
 .shared-bpm-preset-toggle {
   border: 0;
   background: transparent;
@@ -709,4 +712,14 @@
   .shared-speed-presets-row {
     grid-template-columns: repeat(3, minmax(var(--bpm-chip-min-width), 1fr));
   }
+}
+
+.shared-bpm-input--inline .shared-bpm-dropdown-anchor,
+.shared-bpm-input--inline .shared-bpm-main-row {
+  width: fit-content;
+  max-width: 100%;
+}
+
+.shared-bpm-input--inline .shared-bpm-shell {
+  --bpm-stepper-min-width: 5rem;
 }

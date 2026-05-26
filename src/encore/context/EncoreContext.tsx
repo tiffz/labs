@@ -27,7 +27,11 @@ import { EncoreAuthProvider, useEncoreAuth } from './EncoreAuthContext';
 import { EncoreLibraryProvider, useEncoreLibrary } from './EncoreLibraryContext';
 import { EncoreSyncProvider, type SyncUiState } from './EncoreSyncContext';
 import { EncoreActionsProvider } from './EncoreActionsContext';
+import { EncoreDriveUploadDedupProvider } from './EncoreDriveUploadDedupContext';
 import { EncoreRepertoirePlaylistProvider } from './EncoreRepertoirePlaylistContext';
+import { EncoreOriginalsLibraryProvider } from './EncoreOriginalsLibraryContext';
+import { EncoreOriginalsActionsProvider } from './EncoreOriginalsActionsContext';
+import { EncoreOriginalsPlaybackProvider } from '../originals/context/EncoreOriginalsPlaybackContext';
 import { useEncoreSync } from './useEncoreSync';
 import { useEncoreActions } from './useEncoreActions';
 
@@ -46,6 +50,8 @@ export {
   EncoreRepertoirePlaylistProvider,
   useEncoreRepertoirePlaylist,
 } from './EncoreRepertoirePlaylistContext';
+export { useEncoreOriginals, useEncoreOriginalsActions } from './EncoreOriginalsActionsContext';
+export { useEncoreOriginalsLibrary, useEncoreOriginal } from './EncoreOriginalsLibraryContext';
 
 /**
  * Legacy shape exposed by `useEncore()`. New code should reach for the slice-specific hooks.
@@ -114,11 +120,19 @@ export function EncoreProvider({ children }: { children: ReactNode }): ReactElem
       <EncoreBlockingJobProvider>
         <EncoreAuthProvider>
           <EncoreLibraryProvider>
-            <EncoreSyncProvider>
-              <EncoreActionsProvider>
-                <EncoreRepertoirePlaylistProvider>{children}</EncoreRepertoirePlaylistProvider>
-              </EncoreActionsProvider>
-            </EncoreSyncProvider>
+            <EncoreOriginalsLibraryProvider>
+              <EncoreOriginalsPlaybackProvider>
+                <EncoreSyncProvider>
+                  <EncoreOriginalsActionsProvider>
+                    <EncoreActionsProvider>
+                      <EncoreDriveUploadDedupProvider>
+                        <EncoreRepertoirePlaylistProvider>{children}</EncoreRepertoirePlaylistProvider>
+                      </EncoreDriveUploadDedupProvider>
+                    </EncoreActionsProvider>
+                  </EncoreOriginalsActionsProvider>
+                </EncoreSyncProvider>
+              </EncoreOriginalsPlaybackProvider>
+            </EncoreOriginalsLibraryProvider>
           </EncoreLibraryProvider>
         </EncoreAuthProvider>
       </EncoreBlockingJobProvider>

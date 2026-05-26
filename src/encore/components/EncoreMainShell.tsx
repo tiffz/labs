@@ -10,7 +10,15 @@ import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import useScrollTrigger from '@mui/material/useScrollTrigger';
-import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import type { EncoreAppRoute } from '../routes/encoreAppHash';
 import { encoreAppHref, navigateEncore, parseEncoreAppHash } from '../routes/encoreAppHash';
 import { useEncoreSync } from '../context/EncoreContext';
@@ -29,6 +37,9 @@ import { PracticeScreen as PracticeScreenBase } from './PracticeScreen';
 import { RepertoireSettingsScreen as RepertoireSettingsScreenBase } from './RepertoireSettingsScreen';
 import { SavedSearchesManageScreen as SavedSearchesManageScreenBase } from './SavedSearchesManageScreen';
 import { SongPage as SongPageBase } from './SongPage';
+import { OriginalsLibraryScreen as OriginalsLibraryScreenBase } from '../originals/components/OriginalsLibraryScreen';
+import { OriginalSongPage as OriginalSongPageBase } from '../originals/components/OriginalSongPage';
+import { EncoreOriginalsPlaybackBar } from '../originals/components/EncoreOriginalsPlaybackBar';
 
 /** Eager imports: Encore’s main surfaces are one cohesive shell; avoiding `React.lazy` removes Suspense + chunk latency on tab and song navigation for a modest bundle cost. */
 const LibraryScreen = memo(LibraryScreenBase);
@@ -38,6 +49,8 @@ const RepertoireSettingsScreen = memo(RepertoireSettingsScreenBase);
 const ImportGuideScreen = memo(ImportGuideScreenBase);
 const SongPage = memo(SongPageBase);
 const SavedSearchesManageScreen = memo(SavedSearchesManageScreenBase);
+const OriginalsLibraryScreen = memo(OriginalsLibraryScreenBase);
+const OriginalSongPage = memo(OriginalSongPageBase);
 
 function bareSignedInShareHash(): boolean {
   const raw = window.location.hash.replace(/^#/, '').trim();
@@ -56,13 +69,14 @@ function encoreHashSnapshot(): string {
 }
 
 /** Top-level list tabs (not song editor); kept mounted once visited so tab switches stay instant. */
-type EncoreMainListSection = 'library' | 'performances' | 'practice' | 'repertoireSettings' | 'help';
+type EncoreMainListSection = 'library' | 'originals' | 'performances' | 'practice' | 'repertoireSettings' | 'help';
 
 function listSectionFromRoute(r: EncoreAppRoute): EncoreMainListSection | null {
   switch (r.kind) {
     case 'savedSearches':
       return 'library';
     case 'library':
+    case 'originals':
     case 'performances':
     case 'practice':
     case 'repertoireSettings':
@@ -76,6 +90,7 @@ function listSectionFromRoute(r: EncoreAppRoute): EncoreMainListSection | null {
 function initialListSectionVisited(route: EncoreAppRoute): Record<EncoreMainListSection, boolean> {
   const next: Record<EncoreMainListSection, boolean> = {
     library: false,
+    originals: false,
     performances: false,
     practice: false,
     repertoireSettings: false,
@@ -104,6 +119,7 @@ type HeavyListTabSessionWarmed = Record<HeavyListTabKey, boolean>;
 
 const LIST_TAB_PANEL_IDS: Record<EncoreMainListSection, { id: string; ariaLabelledBy: string }> = {
   library: { id: 'encore-panel-repertoire', ariaLabelledBy: 'encore-tab-repertoire' },
+  originals: { id: 'encore-panel-originals', ariaLabelledBy: 'encore-tab-originals' },
   performances: { id: 'encore-panel-performances', ariaLabelledBy: 'encore-tab-performances' },
   practice: { id: 'encore-panel-practice', ariaLabelledBy: 'encore-tab-practice' },
   repertoireSettings: { id: 'encore-panel-setup', ariaLabelledBy: 'encore-tab-setup' },
@@ -163,18 +179,26 @@ export function EncoreMainShell(): React.ReactElement {
   }, [openShareFromHash]);
 
   const onSongRoute = route.kind === 'song' || route.kind === 'songNew';
+  const onOriginalRoute =
+    route.kind === 'original' || route.kind === 'originalNew';
+  const onEditorRoute = onSongRoute || onOriginalRoute;
   const songPageKey = route.kind === 'songNew' ? 'new' : route.kind === 'song' ? route.id : 'main';
-  const librarySectionTab =
-    onSongRoute
-      ? 0
+  const originalPageKey =
+    route.kind === 'originalNew' ? 'new' : route.kind === 'original' ? route.id : 'main';
+  const librarySectionTab = onEditorRoute
+    ? route.kind === 'original' || route.kind === 'originalNew'
+      ? 1
+      : 0
+    : route.kind === 'originals'
+      ? 1
       : route.kind === 'performances'
-        ? 1
+        ? 2
         : route.kind === 'practice'
-          ? 2
+          ? 3
           : route.kind === 'repertoireSettings'
-            ? 3
+            ? 4
             : route.kind === 'help'
-              ? 4
+              ? 5
               : 0;
 
   const listSection = listSectionFromRoute(route);
@@ -192,7 +216,7 @@ export function EncoreMainShell(): React.ReactElement {
     }
 
     const heavyTab =
-      !onSongRoute && (s === 'library' || s === 'performances') ? s : null;
+      !onEditorRoute && (s === 'library' || s === 'performances') ? s : null;
     if (!heavyTab) {
       setHeavyListTabOverlay({ kind: 'none' });
       return;
@@ -209,7 +233,7 @@ export function EncoreMainShell(): React.ReactElement {
       setHeavyListTabSessionWarmed((w) => (w[heavyTab] ? w : { ...w, [heavyTab]: true }));
     }, HEAVY_TAB_OVERLAY_FAILSAFE_MS);
     return () => window.clearTimeout(failsafe);
-  }, [route, onSongRoute, heavyListTabSessionWarmed]);
+  }, [route, onEditorRoute, heavyListTabSessionWarmed]);
 
   useEffect(() => {
     if (heavyListTabOverlay.kind !== 'waiting' || !heavyListTabOverlay.laidOut) return;
@@ -388,6 +412,13 @@ export function EncoreMainShell(): React.ReactElement {
                 aria-controls={onSongRoute ? 'encore-panel-song' : 'encore-panel-repertoire'}
               />
               <Tab
+                label="Originals"
+                component="a"
+                href={encoreAppHref({ kind: 'originals' })}
+                id="encore-tab-originals"
+                aria-controls={onOriginalRoute ? 'encore-panel-original' : 'encore-panel-originals'}
+              />
+              <Tab
                 label="Performances"
                 component="a"
                 href={encoreAppHref({ kind: 'performances' })}
@@ -443,44 +474,66 @@ export function EncoreMainShell(): React.ReactElement {
             minHeight: 0,
             minWidth: 0,
             width: 1,
-            display: onSongRoute ? 'none' : 'flex',
+            display: onEditorRoute ? 'none' : 'flex',
             flexDirection: 'column',
           }}
-          aria-hidden={onSongRoute}
+          aria-hidden={onEditorRoute}
         >
           {listSectionVisited.library ? (
             <Box
               role="tabpanel"
-              id={!onSongRoute && listSection === 'library' ? LIST_TAB_PANEL_IDS.library.id : undefined}
+              id={!onEditorRoute && listSection === 'library' ? LIST_TAB_PANEL_IDS.library.id : undefined}
               aria-labelledby={
-                !onSongRoute && listSection === 'library' ? LIST_TAB_PANEL_IDS.library.ariaLabelledBy : undefined
+                !onEditorRoute && listSection === 'library' ? LIST_TAB_PANEL_IDS.library.ariaLabelledBy : undefined
               }
               sx={{
                 flex: 1,
                 minHeight: 0,
                 minWidth: 0,
                 width: 1,
-                display: !onSongRoute && listSection === 'library' ? 'flex' : 'none',
+                display: !onEditorRoute && listSection === 'library' ? 'flex' : 'none',
                 flexDirection: 'column',
               }}
-              aria-hidden={onSongRoute || listSection !== 'library'}
+              aria-hidden={onEditorRoute || listSection !== 'library'}
             >
               {route.kind === 'savedSearches' ? (
                 <SavedSearchesManageScreen onHeavyTabLaidOut={onLibraryHeavyTabLaidOut} />
               ) : (
                 <LibraryScreen
-                  heavyListTabActive={!onSongRoute && listSection === 'library'}
+                  heavyListTabActive={!onEditorRoute && listSection === 'library'}
                   onHeavyTabLaidOut={onLibraryHeavyTabLaidOut}
                 />
               )}
             </Box>
           ) : null}
+          {listSectionVisited.originals ? (
+            <Box
+              role="tabpanel"
+              id={!onEditorRoute && listSection === 'originals' ? LIST_TAB_PANEL_IDS.originals.id : undefined}
+              aria-labelledby={
+                !onEditorRoute && listSection === 'originals'
+                  ? LIST_TAB_PANEL_IDS.originals.ariaLabelledBy
+                  : undefined
+              }
+              sx={{
+                flex: 1,
+                minHeight: 0,
+                minWidth: 0,
+                width: 1,
+                display: !onEditorRoute && listSection === 'originals' ? 'flex' : 'none',
+                flexDirection: 'column',
+              }}
+              aria-hidden={onEditorRoute || listSection !== 'originals'}
+            >
+              <OriginalsLibraryScreen />
+            </Box>
+          ) : null}
           {listSectionVisited.performances ? (
             <Box
               role="tabpanel"
-              id={!onSongRoute && listSection === 'performances' ? LIST_TAB_PANEL_IDS.performances.id : undefined}
+              id={!onEditorRoute && listSection === 'performances' ? LIST_TAB_PANEL_IDS.performances.id : undefined}
               aria-labelledby={
-                !onSongRoute && listSection === 'performances'
+                !onEditorRoute && listSection === 'performances'
                   ? LIST_TAB_PANEL_IDS.performances.ariaLabelledBy
                   : undefined
               }
@@ -489,13 +542,13 @@ export function EncoreMainShell(): React.ReactElement {
                 minHeight: 0,
                 minWidth: 0,
                 width: 1,
-                display: !onSongRoute && listSection === 'performances' ? 'flex' : 'none',
+                display: !onEditorRoute && listSection === 'performances' ? 'flex' : 'none',
                 flexDirection: 'column',
               }}
-              aria-hidden={onSongRoute || listSection !== 'performances'}
+              aria-hidden={onEditorRoute || listSection !== 'performances'}
             >
               <PerformancesScreen
-                heavyListTabActive={!onSongRoute && listSection === 'performances'}
+                heavyListTabActive={!onEditorRoute && listSection === 'performances'}
                 onHeavyTabLaidOut={onPerformancesHeavyTabLaidOut}
               />
             </Box>
@@ -503,19 +556,19 @@ export function EncoreMainShell(): React.ReactElement {
           {listSectionVisited.practice ? (
             <Box
               role="tabpanel"
-              id={!onSongRoute && listSection === 'practice' ? LIST_TAB_PANEL_IDS.practice.id : undefined}
+              id={!onEditorRoute && listSection === 'practice' ? LIST_TAB_PANEL_IDS.practice.id : undefined}
               aria-labelledby={
-                !onSongRoute && listSection === 'practice' ? LIST_TAB_PANEL_IDS.practice.ariaLabelledBy : undefined
+                !onEditorRoute && listSection === 'practice' ? LIST_TAB_PANEL_IDS.practice.ariaLabelledBy : undefined
               }
               sx={{
                 flex: 1,
                 minHeight: 0,
                 minWidth: 0,
                 width: 1,
-                display: !onSongRoute && listSection === 'practice' ? 'flex' : 'none',
+                display: !onEditorRoute && listSection === 'practice' ? 'flex' : 'none',
                 flexDirection: 'column',
               }}
-              aria-hidden={onSongRoute || listSection !== 'practice'}
+              aria-hidden={onEditorRoute || listSection !== 'practice'}
             >
               <PracticeScreen
                 practiceHashActive={route.kind === 'practice'}
@@ -527,10 +580,10 @@ export function EncoreMainShell(): React.ReactElement {
             <Box
               role="tabpanel"
               id={
-                !onSongRoute && listSection === 'repertoireSettings' ? LIST_TAB_PANEL_IDS.repertoireSettings.id : undefined
+                !onEditorRoute && listSection === 'repertoireSettings' ? LIST_TAB_PANEL_IDS.repertoireSettings.id : undefined
               }
               aria-labelledby={
-                !onSongRoute && listSection === 'repertoireSettings'
+                !onEditorRoute && listSection === 'repertoireSettings'
                   ? LIST_TAB_PANEL_IDS.repertoireSettings.ariaLabelledBy
                   : undefined
               }
@@ -539,10 +592,10 @@ export function EncoreMainShell(): React.ReactElement {
                 minHeight: 0,
                 minWidth: 0,
                 width: 1,
-                display: !onSongRoute && listSection === 'repertoireSettings' ? 'flex' : 'none',
+                display: !onEditorRoute && listSection === 'repertoireSettings' ? 'flex' : 'none',
                 flexDirection: 'column',
               }}
-              aria-hidden={onSongRoute || listSection !== 'repertoireSettings'}
+              aria-hidden={onEditorRoute || listSection !== 'repertoireSettings'}
             >
               <RepertoireSettingsScreen />
             </Box>
@@ -550,17 +603,17 @@ export function EncoreMainShell(): React.ReactElement {
           {listSectionVisited.help ? (
             <Box
               role="tabpanel"
-              id={!onSongRoute && listSection === 'help' ? LIST_TAB_PANEL_IDS.help.id : undefined}
-              aria-labelledby={!onSongRoute && listSection === 'help' ? LIST_TAB_PANEL_IDS.help.ariaLabelledBy : undefined}
+              id={!onEditorRoute && listSection === 'help' ? LIST_TAB_PANEL_IDS.help.id : undefined}
+              aria-labelledby={!onEditorRoute && listSection === 'help' ? LIST_TAB_PANEL_IDS.help.ariaLabelledBy : undefined}
               sx={{
                 flex: 1,
                 minHeight: 0,
                 minWidth: 0,
                 width: 1,
-                display: !onSongRoute && listSection === 'help' ? 'flex' : 'none',
+                display: !onEditorRoute && listSection === 'help' ? 'flex' : 'none',
                 flexDirection: 'column',
               }}
-              aria-hidden={onSongRoute || listSection !== 'help'}
+              aria-hidden={onEditorRoute || listSection !== 'help'}
             >
               <ImportGuideScreen />
             </Box>
@@ -593,7 +646,22 @@ export function EncoreMainShell(): React.ReactElement {
             <SongPage key={songPageKey} route={route} />
           </Box>
         ) : null}
+        {onOriginalRoute ? (
+          <Box
+            role="tabpanel"
+            id="encore-panel-original"
+            aria-labelledby="encore-tab-originals"
+            sx={{ flex: 1, minHeight: 0, minWidth: 0, width: 1, display: 'flex', flexDirection: 'column' }}
+          >
+            <OriginalSongPage
+              key={originalPageKey}
+              id={route.kind === 'original' ? route.id : ''}
+              isNew={route.kind === 'originalNew'}
+            />
+          </Box>
+        ) : null}
       </Box>
+      <EncoreOriginalsPlaybackBar />
       <SyncConflictReviewDialog
         open={Boolean(conflict?.conflict) && (conflictAnalysis?.bothEdited.length ?? 0) > 0}
         analysis={conflictAnalysis}

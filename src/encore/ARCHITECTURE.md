@@ -23,6 +23,8 @@ flowchart TB
 
   subgraph Screens[Screens]
     libraryScreen[LibraryScreen]
+    originalsLib[OriginalsLibraryScreen]
+    originalsPage[OriginalSongPage]
     songPage[SongPage]
     practice[PracticeScreen]
     perf[PerformancesScreen]
@@ -40,8 +42,8 @@ flowchart TB
   end
 
   subgraph Data[Data + sync]
-    db[(Dexie<br/>encore-repertoire)]
-    drive[Drive APIs<br/>driveFetch / publicSnapshot / repertoireSync]
+    db[(Dexie<br/>encore-repertoire + originals)]
+    drive[Drive APIs<br/>repertoire + originals sharded]
     spotify[Spotify APIs<br/>spotifyApi / pkce]
     youtube[YouTube APIs<br/>youtubePlaylistApi]
   end
@@ -118,7 +120,7 @@ The Encore data + sync layer is **split into four focused providers** that nest 
 - **`publicSnapshot.ts`** — builds and publishes the read-only `public_snapshot.json` (only-performed-songs filter, anyone-reader probe per Drive video, public-readability verification).
 - **`performanceShortcut.ts`** — keeps performance video shortcuts (`Encore_App/Performances/...`) renamed to canonical `YYYY-MM-DD - Title - Artist` (venue not encoded in the filename).
 - **`songAttachmentOrganize.ts`** — moves/renames song chart + recording attachments to the canonical Drive folders.
-- **`driveReorganize.ts`** — top-level "tidy" that runs `bootstrapFolders` then both reorganizers in parallel.
+- **`driveReorganize.ts`** — top-level "tidy": **`driveDuplicateDetection.ts`** + **`driveDuplicateDedup.ts`** (merge duplicate uploads by content hash, rewrite Dexie refs, trash extras), then `bootstrapFolders` and both reorganizers in parallel. Account menu **Reorganize Drive uploads** runs this pipeline in one blocking job (no separate approval step).
 
 ### `import/`
 

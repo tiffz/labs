@@ -4,6 +4,10 @@ Personal musical repertoire companion: **local-first** (Dexie / IndexedDB) with 
 
 **Who it is for:** Encore is **singer-first**. Voice and repertoire are the primary focus; **piano or self-accompaniment** are supported as secondary detail (for example performance history and filters), not as a separate instrument-learning app.
 
+## Originals (songwriting)
+
+**Originals** is a separate tab and data domain for **your own songs**: brainstorm markdown, ChordPro charts, demo takes, and local chart history snapshots. Data lives in IndexedDB (`originals` table) and syncs to **`Encore_App/Originals/`** on Google Drive (sharded manifest + per-song JSON; audio bytes under `Originals/audio/`). It does not mix into repertoire `EncoreSong` rows in v1. See [`docs/adr/0012-encore-originals-local-first-domain.md`](../../docs/adr/0012-encore-originals-local-first-domain.md). Chord paint editor (Chords stage): [`originals/DEVELOPMENT.md`](originals/DEVELOPMENT.md).
+
 ## Repertoire depth (how the pieces fit)
 
 - **Milestones** are the main **structured** progress layer: a shared template on every song, per-row **To do / Done / N/A** (N/A is explicit and reversible), plus **song-only** rows for one-off goals. They answer “what done means” for this title in a scannable way.

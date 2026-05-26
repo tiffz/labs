@@ -58,6 +58,7 @@ import {
   looksLikeFullSongLyrics,
   type ParsedLyricSectionDraft,
 } from '../shared/music/lyricSectionParser';
+import { openMonospaceChartPrintWindow } from '../shared/music/chordChartPrintExport';
 import {
   subscribeToPopState,
   syncUrlWithHistory,
@@ -2486,51 +2487,7 @@ const App: React.FC = () => {
   ]);
 
   const handleDownloadChordChartPdf = () => {
-    const printWindow = window.open('', '_blank', 'width=900,height=700');
-    if (!printWindow) return;
-    const escapeHtml = (value: string) =>
-      value
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
-    const escapeWithNbsp = (value: string) =>
-      escapeHtml(value).replace(/ /g, '&nbsp;');
-    const chordTokenPattern =
-      /^[A-G](?:#|b)?(?:maj7|m7|m|7|sus2|sus4|dim|aug)?$/i;
-    const htmlLines = asciiChordChartExportText
-      .split('\n')
-      .map((line) => {
-        if (line.length === 0) return '<div class="chart-line empty">&nbsp;</div>';
-        const trimmed = line.trim();
-        const tokens = trimmed.length > 0 ? trimmed.split(/\s+/) : [];
-        const isChordLine =
-          tokens.length > 0 && tokens.every((token) => chordTokenPattern.test(token));
-        return `<div class="chart-line${isChordLine ? ' chord-line' : ''}">${escapeWithNbsp(line)}</div>`;
-      })
-      .join('');
-    printWindow.document.write(`<!doctype html>
-<html>
-  <head>
-    <title>Chord Chart</title>
-    <style>
-      body { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; padding: 24px; color: #111827; }
-      .chart { margin: 0; }
-      .chart-line { white-space: pre; font-size: 14px; line-height: 1.55; margin: 0; font-weight: 500; }
-      .chart-line.chord-line { font-weight: 800; }
-      .chart-line.empty { line-height: 1.15; }
-    </style>
-  </head>
-  <body>
-    <div class="chart">${htmlLines}</div>
-  </body>
-</html>`);
-    printWindow.document.close();
-    const printNow = () => {
-      printWindow.focus();
-      printWindow.print();
-    };
-    printWindow.onload = printNow;
-    window.setTimeout(printNow, 160);
+    openMonospaceChartPrintWindow(asciiChordChartExportText, 'Chord chart');
   };
 
   return (

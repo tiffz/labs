@@ -11,6 +11,7 @@ import {
   appendYoutubeBackingLink,
   appendYoutubeReferenceLink,
 } from '../../repertoire/songMediaLinks';
+import { appendMiscResourceFromUrl } from '../../repertoire/songMiscResources';
 import type { SongMediaUploadSlot } from './songMediaUploadSlot';
 
 export function extractFirstUrlFromDataTransfer(dt: DataTransfer): string | null {
@@ -27,6 +28,8 @@ export function extractFirstUrlFromDataTransfer(dt: DataTransfer): string | null
 export function applyMediaUrlToSongSlot(song: EncoreSong, slot: SongMediaUploadSlot, rawUrl: string): EncoreSong | null {
   const t = rawUrl.trim();
   if (!t) return null;
+
+  if (slot === 'misc') return appendMiscResourceFromUrl(song, t);
 
   const yt = parseYoutubeVideoId(t);
   if (yt) {

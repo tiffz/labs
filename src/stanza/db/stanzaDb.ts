@@ -37,6 +37,10 @@ export interface StanzaStemTrack {
   id: string;
   label: string;
   localBlob: Blob;
+  /** Google Drive file id for this layer's audio (under Stanza `stem_audio/`). */
+  driveFileId?: string;
+  /** `${size}:${type}` of bytes last uploaded to {@link driveFileId}. */
+  driveStemBytesFingerprint?: string;
   muted?: boolean;
   /** Linear gain 0–1 (default 1). */
   gain?: number;

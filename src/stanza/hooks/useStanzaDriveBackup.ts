@@ -50,6 +50,10 @@ import {
   type StanzaDriveMergeReport,
 } from '../drive/stanzaDriveMerge';
 import {
+  hydrateStanzaLibraryStemsFromDrive,
+  syncStanzaLibraryStemsToDrive,
+} from '../drive/stanzaDriveStemSync';
+import {
   patchStanzaDriveSyncMeta,
   readStanzaDriveSyncMeta,
   stanzaDriveFolderUrl,
@@ -193,6 +197,12 @@ async function mergeRemoteEnvelopeIntoLocal(
   for (const fid of staleTombstoneFileIds) {
     clearStanzaDriveTombstone(fid);
   }
+  try {
+    const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: false });
+    await hydrateStanzaLibraryStemsFromDrive(token);
+  } catch {
+    /* Stem bytes can hydrate when the user opens a song. */
+  }
   return {
     added: report.addedFromRemote,
     updatedFromRemote: report.mergedPreferRemote,
@@ -289,6 +299,7 @@ export function useStanzaDriveBackup() {
     const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: !opts?.silent });
     const refs = await ensureLabsDrivePortfolioProgressLayout(token, LABS_DRIVE_APP_FOLDER_STANZA);
     const writeOnce = async () => {
+      await syncStanzaLibraryStemsToDrive(token, refs.appFolderId);
       const metaBefore = await getLabsDriveProgressFileMeta(token, refs.progressFileId);
       const envelope = await buildStanzaDriveEnvelope();
       const body = serializeStanzaDriveEnvelope(envelope);
@@ -304,7 +315,7 @@ export function useStanzaDriveBackup() {
       setSyncMetaTick((n) => n + 1);
       setLatestRemoteEnvelope(envelope);
       if (!opts?.silent) {
-        setMessage('Saved to Drive. Audio stays on this device.');
+        setMessage('Saved to Drive. Main uploads stay on each device until linked from Drive.');
       }
     };
     try {

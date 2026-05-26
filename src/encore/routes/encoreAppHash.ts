@@ -12,7 +12,10 @@ export type EncoreAppRoute =
   /** Help center; import guide lives at `#/help` (legacy `#/settings/repertoire/import-guide` redirects here). */
   | { kind: 'help' }
   | { kind: 'song'; id: string; scrollToElementId?: string }
-  | { kind: 'songNew' };
+  | { kind: 'songNew' }
+  | { kind: 'originals' }
+  | { kind: 'original'; id: string }
+  | { kind: 'originalNew' };
 
 const ENCORE_HASH_SCROLL_QUERY = 'scroll';
 /** Safe DOM id fragment for `getElementById` after `scroll` query param. */
@@ -66,6 +69,9 @@ export function encoreAppHref(route: EncoreAppRoute): string {
   else if (route.kind === 'repertoireSettings') h = '#/settings/repertoire';
   else if (route.kind === 'help') h = '#/help';
   else if (route.kind === 'songNew') h = '#/song/new';
+  else if (route.kind === 'originals') h = '#/originals';
+  else if (route.kind === 'originalNew') h = '#/originals/new';
+  else if (route.kind === 'original') h = `#/originals/${encodeURIComponent(route.id)}`;
   else if (route.kind === 'song') {
     const base = `#/song/${encodeURIComponent(route.id)}`;
     const scroll = route.scrollToElementId?.trim();
@@ -96,6 +102,9 @@ export function parseEncoreAppHash(hash: string): EncoreAppRoute {
   const raw = pathOnly.replace(/^#/, '').trim();
   const path = raw.startsWith('/') ? raw : `/${raw}`;
   const segs = path.split('/').filter(Boolean);
+  if (segs[0] === 'originals' && segs[1] === 'new') return { kind: 'originalNew' };
+  if (segs[0] === 'originals' && segs[1]) return { kind: 'original', id: decodeURIComponent(segs[1]) };
+  if (segs[0] === 'originals') return { kind: 'originals' };
   if (segs[0] === 'song' && segs[1] === 'new') return { kind: 'songNew' };
   if (segs[0] === 'song' && segs[1]) return { kind: 'song', id: decodeURIComponent(segs[1]) };
   if (segs[0] === 'stats') return { kind: 'library' };

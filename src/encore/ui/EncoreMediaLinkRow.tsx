@@ -17,7 +17,10 @@ import {
   truncateMediaLinkCaption,
   youtubeWatchUrlFromMediaLink,
 } from './encoreMediaLinkFormat';
-import { encoreMediaLinkRowSx } from '../theme/encoreUiTokens';
+import {
+  encoreMediaHubChipFontSize,
+  encoreMediaLinkRowSx,
+} from '../theme/encoreUiTokens';
 import { stanzaPracticeHrefFromEncoreMediaLink } from '../youtube/stanzaPracticeOpenUrl';
 
 /**
@@ -42,10 +45,12 @@ const REMOVE_COPY: Record<EncoreMediaLinkRowSlot, string> = {
 const iconBtnSx = {
   color: 'text.secondary',
   flexShrink: 0,
-  p: 0.375,
+  p: 0.25,
   boxSizing: 'border-box' as const,
   '&:hover': { color: 'text.primary', bgcolor: 'action.hover' },
 } as const;
+
+const hubBrandIconSx = { fontSize: 14, flexShrink: 0, opacity: 0.88 } as const;
 
 export type EncoreMediaLinkRowProps = {
   /** Optional source override; when omitted, we use `link.source` (when given). */
@@ -196,11 +201,11 @@ export function EncoreMediaLinkRow(props: EncoreMediaLinkRowProps): ReactElement
   const stripBody = (
     <>
       {source === 'spotify' ? (
-        <SpotifyBrandIcon sx={{ fontSize: 15, flexShrink: 0, opacity: 0.88 }} aria-hidden />
+        <SpotifyBrandIcon sx={hubBrandIconSx} aria-hidden />
       ) : source === 'youtube' ? (
-        <YouTubeBrandIcon sx={{ fontSize: 15, flexShrink: 0, opacity: 0.88 }} aria-hidden />
+        <YouTubeBrandIcon sx={hubBrandIconSx} aria-hidden />
       ) : source === 'drive' ? (
-        <GoogleDriveBrandIcon sx={{ fontSize: 15, flexShrink: 0, opacity: 0.88 }} aria-hidden />
+        <GoogleDriveBrandIcon sx={hubBrandIconSx} aria-hidden />
       ) : null}
       <Typography
         className="EncoreMediaLinkRowCaption"
@@ -210,7 +215,8 @@ export function EncoreMediaLinkRow(props: EncoreMediaLinkRowProps): ReactElement
           minWidth: 0,
           flex: '1 1 0%',
           fontWeight: 600,
-          fontSize: '0.8125rem',
+          fontSize: encoreMediaHubChipFontSize,
+          lineHeight: 1.3,
           color: 'text.primary',
         }}
         title={resolvedFull}
@@ -259,7 +265,7 @@ export function EncoreMediaLinkRow(props: EncoreMediaLinkRowProps): ReactElement
       {isPrimary ? (
         <Tooltip title={primaryCopy.active}>
           <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center' }}>
-            <StarIcon sx={{ fontSize: 15, color: 'text.primary' }} aria-hidden />
+            <StarIcon sx={{ fontSize: 14, color: 'text.primary' }} aria-hidden />
           </Box>
         </Tooltip>
       ) : null}
@@ -272,7 +278,7 @@ export function EncoreMediaLinkRow(props: EncoreMediaLinkRowProps): ReactElement
             aria-label="Open practice in Stanza (Segno)"
             sx={iconBtnSx}
           >
-            <OpenInNewIcon sx={{ fontSize: 17 }} aria-hidden />
+            <OpenInNewIcon sx={{ fontSize: 15 }} aria-hidden />
           </IconButton>
         </Tooltip>
       ) : null}
@@ -318,7 +324,7 @@ export function EncoreMediaLinkRow(props: EncoreMediaLinkRowProps): ReactElement
         columnGap: 0,
       })}
     >
-      <Box sx={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', overflow: 'hidden' }}>{wrappedStrip}</Box>
+      <Box sx={{ flex: embedded ? '1 1 0%' : '0 1 auto', minWidth: 0, display: 'flex', alignItems: 'center', overflow: 'hidden' }}>{wrappedStrip}</Box>
       {showActionsCluster ? actionsCluster : null}
     </Box>
   );

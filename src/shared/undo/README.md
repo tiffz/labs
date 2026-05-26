@@ -7,6 +7,7 @@ App-level undo is for **committed** mutations (persisted state), not per-keystro
 1. Wrap the app (or the subtree that owns edits) in `<LabsUndoProvider>`.
 2. After a successful **write**, call `push({ undo, redo })` with callbacks that restore the previous snapshot and re-apply the new one.
 3. While replaying undo/redo, skip calling `push` (Encore uses `isReplayingRef` from `useLabsUndo()`; set the Labs replay flag around your replay callbacks if you implement a custom stack).
+4. Optional UI: render `<LabsUndoControls />` from `LabsUndoControls.tsx` in the app header (Stanza viewer uses this). Clear the stack when the edited document changes (`clear()` from `useLabsUndo()`), e.g. on song switch, so undo does not apply to a different item while another is on screen.
 
 Encore wires this in `EncoreContext` for song, performance, repertoire extras, and owner display name.
 

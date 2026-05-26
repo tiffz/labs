@@ -27,6 +27,20 @@ const ROMAN_TO_DEGREE: Record<RomanNumeral, number> = {
 const MAJOR_SCALE_INTERVALS = [0, 2, 4, 5, 7, 9, 11] as const;
 const MINOR_SCALE_INTERVALS = [0, 2, 3, 5, 7, 8, 10] as const;
 
+export function harmonicModeFromSongKey(songKey: string): HarmonicMode {
+  return songKey.endsWith('m') ? 'minor' : 'major';
+}
+
+export function songKeyToTonic(songKey: string): Key {
+  return songKey.replace(/m$/, '') as Key;
+}
+
+export function getScalePitchClasses(key: Key, mode: HarmonicMode = 'major'): number[] {
+  const tonicPc = keyToChromaticIndex(key);
+  const scaleIntervals = mode === 'major' ? MAJOR_SCALE_INTERVALS : MINOR_SCALE_INTERVALS;
+  return scaleIntervals.map((interval) => (tonicPc + interval) % 12);
+}
+
 function getChordQuality(roman: RomanNumeral): ChordQuality {
   if (roman === roman.toUpperCase()) {
     if (roman === 'VII') return 'diminished';

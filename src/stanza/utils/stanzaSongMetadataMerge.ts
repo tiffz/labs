@@ -1,4 +1,4 @@
-import type { StanzaMarker, StanzaSong } from '../db/stanzaDb';
+import type { StanzaSong } from '../db/stanzaDb';
 import type { StanzaSongDriveRow } from '../drive/stanzaDriveEnvelope';
 import { mergeStanzaMarkers } from './stanzaMarkerMerge';
 import {
@@ -171,16 +171,4 @@ export function mergeStanzaSongWithRemotePreference(
     },
     markersRecoveredFromLocal: practice.markersRecoveredFromLocal,
   };
-}
-
-/** Prefer non-empty markers over empty when `??` would incorrectly take `[]`. */
-export function pickNonEmptyMarkers(
-  primary: StanzaMarker[] | undefined,
-  fallback: StanzaMarker[] | undefined,
-): StanzaMarker[] {
-  const p = primary ?? [];
-  const f = fallback ?? [];
-  if (p.length === 0) return [...f];
-  if (f.length === 0) return [...p];
-  return [...p];
 }

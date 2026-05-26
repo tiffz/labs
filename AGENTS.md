@@ -11,7 +11,7 @@ Instructions for AI coding assistants working in this repo (Cursor, Claude, Code
 5. `docs/SOURCE_OF_TRUTH.md` — precedence map when docs disagree.
 6. `docs/DOCUMENTATION_STRATEGY.md` — where to put new docs; avoid duplication and low-signal history.
 7. `docs/adr/README.md` — Architecture Decision Records (when to add one; index of accepted ADRs).
-8. `.cursor/rules/*.mdc` — machine-enforced rules (pre-commit checks, app-entry-html, spa-css-conventions, react-a11y, stanza-viewer-layout, beat-analysis-scope).
+8. `.cursor/rules/*.mdc` — machine-enforced rules (pre-commit checks, app-entry-html, spa-css-conventions, react-a11y, stanza-viewer-layout, beat-analysis-scope, encore-originals-chord-paint).
 
 ## Canonical Rules
 
@@ -20,6 +20,7 @@ Instructions for AI coding assistants working in this repo (Cursor, Claude, Code
 - **Import boundaries** (`src/shared/importBoundaries.test.ts` + `scripts/check-import-boundaries.mjs`): apps may import from `src/shared/**` but not from each other. Keep cross-app reuse in `src/shared/` and register new app directories in both files.
 - **Shared UI first** (`src/shared/SHARED_UI_CONVENTIONS.md`): reach for `src/shared/components/` primitives before writing a new popover/tooltip/menu. MUI is the underlying primitive library for complex widgets.
 - **App shell layout** (`src/shared/layout/README.md`): new multi-panel apps copy `app-main.starter.tsx` + `app-layout.starter.css`; Stanza uses `StanzaViewerLayout` + `stanza-viewer-layout.css` — see `src/stanza/LAYOUT.md`. No viewer width in `sx`.
+- **Encore Originals chord paint** (`src/encore/originals/DEVELOPMENT.md`, `src/shared/music/chordPro/`): select/move/delete by `ChordMarker.id`; shared paste fixtures in `chordPro/fixtures.ts`.
 - **User-facing copy** ([`docs/USER_COPY_STYLE.md`](docs/USER_COPY_STYLE.md)): default Labs voice for UI strings (landings, dialogs, errors, empty states). App-specific rules live in `src/<app>/COPY_STYLE.md` where present (for example Learn Your Scales extends the default in [`src/scales/COPY_STYLE.md`](src/scales/COPY_STYLE.md) with curriculum and file-location notes).
 - **Find Your Pitch visuals** (`src/pitch/DESIGN.md`): the pitch app ships one layout (teal/pink, white panels, halftone field). Do not reintroduce theme switchers or `data-pitch-concept` skins; extend `pitch.css` per that spec.
 - **Rhythm preset integrity** (`src/shared/rhythm/presetIntegrity.ts` + `presetIntegrity.test.ts`): when editing `RHYTHM_DATABASE` or related presets, run `npx vitest run src/shared/rhythm/presetIntegrity.test.ts`. The checks parse every pattern, flag copy/pasted variations across related rhythms with different bases, and verify labeled 8/8 ornament/anchor lines match the reference attack skeleton (prevents Malfuf/Kahleegi-style encoding mistakes).

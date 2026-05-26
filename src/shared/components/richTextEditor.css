@@ -1,0 +1,49 @@
+.shared-rich-text-editor {
+  min-height: 0;
+}
+
+.shared-rich-text-editor .tiptap,
+.shared-rich-text-editor .ProseMirror {
+  min-height: inherit;
+}
+
+.shared-rich-text-editor--fill {
+  flex: 1;
+  min-height: 0;
+}
+
+.shared-rich-text-editor--fill .shared-rich-text-surface,
+.shared-rich-text-editor--fill .tiptap,
+.shared-rich-text-editor--fill .ProseMirror {
+  min-height: 100%;
+  max-height: none;
+}
+
+/* Tall document canvas — brainstorm / long-form editing. */
+.shared-rich-text-editor--canvas {
+  flex: 1;
+  min-height: min(78vh, 920px);
+}
+
+.shared-rich-text-editor--canvas > div:last-child {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.shared-rich-text-editor .shared-rich-text-surface a:visited {
+  color: inherit;
+}
+
+.shared-rich-text-editor .shared-rich-text-surface a {
+  cursor: pointer;
+}
+
+.shared-rich-text-editor--canvas .shared-rich-text-surface,
+.shared-rich-text-editor--canvas .tiptap,
+.shared-rich-text-editor--canvas .ProseMirror {
+  flex: 1;
+  min-height: min(74vh, 880px);
+  max-height: none;
+}

@@ -1,4 +1,5 @@
 import type { RepertoireExtrasRow } from '../db/encoreDb';
+import type { EncoreDriveContentIndex } from './encoreDriveContentIndex';
 import {
   derivePlaylistImportTagsFromFilters,
   normalizeExcludedRepertoireFieldIds,
@@ -21,6 +22,7 @@ const DRIVE_UPLOAD_FOLDER_KINDS = new Set<EncoreDriveUploadFolderKind>([
   'referenceTracks',
   'backingTracks',
   'takes',
+  'misc',
 ]);
 
 function parseDriveUploadFolderOverrides(raw: unknown): EncoreDriveUploadFolderOverrides | undefined {
@@ -132,7 +134,27 @@ export function parseRepertoireWire(json: string): RepertoireWirePayload {
     tableUi: parseTableUiBundle(data.tableUi),
     driveUploadFolderOverrides: parseDriveUploadFolderOverrides(data.driveUploadFolderOverrides),
     driveUploadFolderOverrideLabels: parseDriveUploadFolderOverrideLabels(data.driveUploadFolderOverrideLabels),
+    driveContentIndex: parseDriveContentIndex(data.driveContentIndex),
   };
+}
+
+function parseDriveContentIndex(raw: unknown): EncoreDriveContentIndex | undefined {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+  const o = raw as Record<string, unknown>;
+  const out: EncoreDriveContentIndex = {};
+  for (const [key, value] of Object.entries(o)) {
+    if (!key.trim() || !value || typeof value !== 'object' || Array.isArray(value)) continue;
+    const entry = value as Record<string, unknown>;
+    const driveFileId = typeof entry.driveFileId === 'string' ? entry.driveFileId.trim() : '';
+    const mediaFileId = typeof entry.mediaFileId === 'string' ? entry.mediaFileId.trim() : '';
+    const name = typeof entry.name === 'string' ? entry.name : '';
+    if (!driveFileId || !mediaFileId) continue;
+    const sampleLabels = Array.isArray(entry.sampleLabels)
+      ? (entry.sampleLabels as unknown[]).filter((x): x is string => typeof x === 'string' && x.trim().length > 0)
+      : [];
+    out[key] = { driveFileId, mediaFileId, name: name || 'Untitled', sampleLabels };
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
 }
 
 function parseTableUiBundle(raw: unknown): EncoreTableUiBundle | undefined {
@@ -192,6 +214,7 @@ export function buildWireFromTables(
     tableUi: extras.tableUi,
     driveUploadFolderOverrides: extras.driveUploadFolderOverrides,
     driveUploadFolderOverrideLabels: extras.driveUploadFolderOverrideLabels,
+    driveContentIndex: extras.driveContentIndex,
   };
 }
 
@@ -222,6 +245,7 @@ export function repertoireExtrasFromWire(wire: RepertoireWirePayload): Repertoir
     tableUi: wire.tableUi,
     driveUploadFolderOverrides: wire.driveUploadFolderOverrides,
     driveUploadFolderOverrideLabels: wire.driveUploadFolderOverrideLabels,
+    driveContentIndex: wire.driveContentIndex,
     updatedAt: wire.exportedAt,
   };
 }

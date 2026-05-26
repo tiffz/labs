@@ -1,5 +1,7 @@
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import TextField from '@mui/material/TextField';
 import Tooltip, { tooltipClasses, type TooltipProps } from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
@@ -285,6 +287,7 @@ export function EncoreStreamingHoverCard(props: EncoreStreamingHoverCardProps): 
         component="span"
         sx={{
           display: 'inline-flex',
+          width: 'fit-content',
           maxWidth: '100%',
           verticalAlign: 'middle',
           borderRadius: 1,
@@ -305,6 +308,11 @@ export type EncoreStaticResourceHoverCardProps = {
   onEditNicknameChange?: (value: string) => void;
   resourceNotes?: string;
   onResourceNotesChange?: (value: string) => void;
+  /** When set, shows a Play control in the hover card (e.g. audio takes). */
+  onPlay?: () => void;
+  isPlaying?: boolean;
+  playDisabled?: boolean;
+  playDisabledReason?: string;
 };
 
 /**
@@ -319,6 +327,10 @@ export function EncoreStaticResourceHoverCard(props: EncoreStaticResourceHoverCa
     onEditNicknameChange,
     resourceNotes,
     onResourceNotesChange,
+    onPlay,
+    isPlaying = false,
+    playDisabled = false,
+    playDisabledReason,
   } = props;
   const [open, setOpen] = useState(false);
   const heading = title.trim() || 'Attachment';
@@ -335,6 +347,20 @@ export function EncoreStaticResourceHoverCard(props: EncoreStaticResourceHoverCa
           </Typography>
         ) : null}
       </Box>
+      {onPlay ? (
+        <Box sx={{ mt: 1, display: 'flex', gap: 0.75, alignItems: 'center' }}>
+          <Button
+            size="small"
+            variant={isPlaying ? 'contained' : 'outlined'}
+            startIcon={<PlayArrowIcon fontSize="small" />}
+            disabled={playDisabled}
+            title={playDisabled ? playDisabledReason : undefined}
+            onClick={() => onPlay()}
+          >
+            {isPlaying ? 'Playing' : 'Play'}
+          </Button>
+        </Box>
+      ) : null}
       {onEditNicknameChange || onResourceNotesChange ? (
         <Box
           sx={{ mt: 1.25, pt: 1, borderTop: 1, borderColor: 'divider' }}
@@ -394,6 +420,7 @@ export function EncoreStaticResourceHoverCard(props: EncoreStaticResourceHoverCa
         component="span"
         sx={{
           display: 'inline-flex',
+          width: 'fit-content',
           maxWidth: '100%',
           verticalAlign: 'middle',
           borderRadius: 1,

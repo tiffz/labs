@@ -55,6 +55,12 @@ export function encoreExcludeTone(theme: Theme): {
  * hairline, and {@link encoreShadowSurface} so chips match Encore surfaces instead of grey
  * `action.hover` pills.
  */
+/** Caption / chip label size for song-page practice resource rows. */
+export const encoreMediaHubChipFontSize = '0.75rem' as const;
+
+/** Shared band height for hub chips, row shells, and "+ Add …" controls. */
+export const encoreMediaHubChipMinHeight = 30 as const;
+
 export function encoreMediaLinkRowSx(
   theme: Theme,
   isPrimary: boolean,
@@ -64,12 +70,12 @@ export function encoreMediaLinkRowSx(
   return {
     display: 'inline-flex',
     alignItems: 'center',
-    gap: 0.5,
-    pl: embedded ? 0.5 : 0.875,
-    pr: embedded ? 0.5 : 0.375,
-    py: embedded ? 0.5 : 0.375,
+    gap: 0.375,
+    pl: embedded ? 0.375 : 0.75,
+    pr: embedded ? 0.375 : 0.25,
+    py: embedded ? 0.375 : 0.25,
     boxSizing: 'border-box',
-    minHeight: embedded ? 36 : 34,
+    minHeight: embedded ? encoreMediaHubChipMinHeight : encoreMediaHubChipMinHeight,
     borderRadius: embedded ? 0 : encoreRadius,
     border: embedded ? 0 : 1,
     borderStyle: 'solid',
@@ -89,11 +95,11 @@ export function encoreMediaHubAddButtonSx(theme: Theme): SystemStyleObject<Theme
     flexShrink: 0,
     textTransform: 'none',
     fontWeight: 600,
-    fontSize: '0.8125rem',
-    lineHeight: 1.35,
-    minHeight: 34,
-    px: 1.125,
-    py: 0.5,
+    fontSize: encoreMediaHubChipFontSize,
+    lineHeight: 1.3,
+    minHeight: encoreMediaHubChipMinHeight,
+    px: 1,
+    py: 0.25,
     borderRadius: encoreRadius,
     color: 'text.primary',
     bgcolor: theme.palette.background.paper,
@@ -125,21 +131,16 @@ export function songPageResourceRowShellSx(
     display: 'flex',
     flexWrap: 'wrap',
     alignItems: 'stretch',
-    gap: theme.spacing(0.75),
+    gap: theme.spacing(0.5),
     width: '100%',
     minWidth: 0,
     maxWidth: '100%',
     boxSizing: 'border-box',
-    /**
-     * Aligned with `encoreMediaLinkRowSx` (34) and `encoreMediaHubAddButtonSx` (34) so the row
-     * shell, chip, and "+ Add …" affordance all share the same band height. Was 40 — caused tall
-     * resource cards on songs with many references.
-     */
-    minHeight: 34,
+    minHeight: encoreMediaHubChipMinHeight,
     /** Inset from outer stroke; extra right room for remove / star hit targets. */
-    pl: 1.25,
-    pr: 2,
-    py: 0.5,
+    pl: 1,
+    pr: 1.5,
+    py: 0.375,
   };
 }
 

@@ -4,7 +4,7 @@ App behavior overview: [`README.md`](./README.md). Shared tempo/IOI contracts: [
 
 ## Background analysis UX contract
 
-Do **not** call `loadStaleReanalysisQueue()` on mount. Stale library entries reanalyze only when the user explicitly refreshes stale items or opens a stale entry.
+Do **not** bulk-enqueue stale library entries on mount. Stale entries reanalyze only when the user explicitly refreshes stale items or opens a stale entry.
 
 | Event                               | Queue                       | `backgroundIsReanalysis` banner | Floating task panel                      |
 | ----------------------------------- | --------------------------- | ------------------------------- | ---------------------------------------- |

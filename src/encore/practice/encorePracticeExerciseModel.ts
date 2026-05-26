@@ -7,6 +7,7 @@ import type {
   EncorePracticeExerciseRun,
   EncoreSong,
 } from '../types';
+import { plainOrHtmlToEditorHtml, richTextPlainText } from '../../shared/utils/richTextContent';
 
 /** Short prompts only. Descriptive paragraphs from published sources are intentionally omitted. */
 export const ENCORE_CHARACTER_NINE_QUESTION_TITLES = [
@@ -532,47 +533,12 @@ export function lyricsRewriteProgressFromSections(
  * plain text. Not a security sanitizer.
  */
 export function characterNineAnswerPlainText(htmlOrPlain: string | undefined): string {
-  if (!htmlOrPlain) return '';
-  const t = htmlOrPlain.trim();
-  if (!t) return '';
-  if (!t.includes('<')) return t;
-  return t
-    .replace(/<\/p>/gi, '\n')
-    .replace(/<\/li>/gi, '\n')
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<[^>]+>/g, '')
-    .replace(/&nbsp;/gi, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/\u00a0/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
+  return richTextPlainText(htmlOrPlain);
 }
 
-function escapePlainLineForHtml(line: string): string {
-  return line
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
-
-/**
- * TipTap `setContent` input: empty → empty doc; values that already look like HTML pass through;
- * otherwise treated as legacy plain text (paragraphs split on blank lines).
- */
+/** @deprecated Use {@link plainOrHtmlToEditorHtml} from shared utils. */
 export function characterNineAnswerToEditorHtml(stored: string | undefined): string {
-  const s = stored ?? '';
-  const t = s.trim();
-  if (!t) return '<p></p>';
-  if (t.startsWith('<')) return s;
-  const blocks = s.split(/\r?\n\r?\n/);
-  return blocks
-    .map((block) => {
-      const inner = block.split(/\r?\n/).map((line) => escapePlainLineForHtml(line)).join('<br>');
-      return `<p>${inner || '<br>'}</p>`;
-    })
-    .join('');
+  return plainOrHtmlToEditorHtml(stored);
 }
 
 export function nineQuestionsProgress(answers: string[]): { done: number; total: number } {

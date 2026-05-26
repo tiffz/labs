@@ -12,6 +12,7 @@ import { EncoreProvider } from './context/EncoreContext';
 import App from './App';
 import { syncEncoreGuestShareRobotsFromHash } from './seo/guestShareRobots';
 import './styles/encore.css';
+import './originals/styles/originals.css';
 
 installServerLogger('ENCORE');
 initMaterialIconRuntime();

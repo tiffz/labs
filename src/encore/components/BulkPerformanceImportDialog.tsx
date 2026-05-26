@@ -35,6 +35,7 @@ import { useEncore } from '../context/EncoreContext';
 import { ensureEncoreDriveLayout } from '../drive/bootstrapFolders';
 import { resolveDriveUploadFolderId, type DriveUploadFolderLayout } from '../drive/resolveDriveUploadFolder';
 import { driveUploadFileResumable } from '../drive/driveFetch';
+import { useEncoreDriveUploadDedup } from '../context/EncoreDriveUploadDedupContext';
 import { driveCollectVideoFilesRecursive } from '../drive/driveFolderWalk';
 import { resolveDriveFolderFromUserInput } from '../drive/resolveDriveFolderFromUserInput';
 import { DragDropFileUpload } from '../../shared/components/DragDropFileUpload';
@@ -223,6 +224,7 @@ export function BulkPerformanceImportDialog(props: {
   const { open, onClose, songs, googleAccessToken, spotifyLinked, onSaveSong, onSavePerformances } = props;
   const { connectSpotify, spotifyConnectError, clearSpotifyConnectError, performances, repertoireExtras } = useEncore();
   const { withBlockingJob } = useEncoreBlockingJobs();
+  const { uploadWithDuplicateCheck, registerUploadedDriveFile } = useEncoreDriveUploadDedup();
   const { withBatch } = useLabsUndo();
   const clientId = (import.meta.env.VITE_SPOTIFY_CLIENT_ID as string | undefined)?.trim() ?? '';
   const theme = useTheme();
@@ -638,12 +640,29 @@ export function BulkPerformanceImportDialog(props: {
             if (!performancesUploadFolderId) {
               throw new Error('Drive Performances folder is not ready yet. Try again in a moment.');
             }
-            const created = await driveUploadFileResumable(
-              googleAccessToken,
-              r.pendingUploadFile,
-              [performancesUploadFolderId],
-            );
-            videoFileId = created.id;
+            const perfIndexLabel = `${r.venue.trim() || r.name} · Video`;
+            const uploadedId = await uploadWithDuplicateCheck({
+              file: r.pendingUploadFile,
+              uploadNew: async () => {
+                const created = await driveUploadFileResumable(
+                  googleAccessToken,
+                  r.pendingUploadFile!,
+                  [performancesUploadFolderId],
+                );
+                await registerUploadedDriveFile(created.id, perfIndexLabel);
+                return created.id;
+              },
+              reuseExisting: async (id) => {
+                await registerUploadedDriveFile(id, perfIndexLabel);
+                return id;
+              },
+            });
+            if (!uploadedId) {
+              rowStep += 1;
+              setBlockingProgress(totalRows ? rowStep / totalRows : null);
+              continue;
+            }
+            videoFileId = uploadedId;
           }
 
           if (r.linkedPerformanceId) {
@@ -711,6 +730,8 @@ export function BulkPerformanceImportDialog(props: {
     perfRowExcluded,
     withBlockingJob,
     withBatch,
+    uploadWithDuplicateCheck,
+    registerUploadedDriveFile,
   ]);
 
   const columns = useMemo<MRT_ColumnDef<BulkPerfRow>[]>(

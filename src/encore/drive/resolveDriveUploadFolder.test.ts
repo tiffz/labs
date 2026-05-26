@@ -14,6 +14,7 @@ describe('resolveDriveUploadFolderId', () => {
     expect(resolveDriveUploadFolderId('referenceTracks', meta, undefined)).toBe('r');
     expect(resolveDriveUploadFolderId('backingTracks', meta)).toBe('r');
     expect(resolveDriveUploadFolderId('takes', meta)).toBe('r');
+    expect(resolveDriveUploadFolderId('misc', meta)).toBe('r');
   });
 
   it('uses trimmed override ids per kind', () => {

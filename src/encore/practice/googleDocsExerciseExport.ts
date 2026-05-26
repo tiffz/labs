@@ -648,6 +648,140 @@ async function docsReplaceLyricsInOwnWordsTable(
   }
 }
 
+export type GoogleDocBoldSpan = { start: number; end: number };
+
+/**
+ * Replace document body with landscape page + preamble + one-row two-column table (monospace chart).
+ */
+export async function docsReplaceBodyTwoColumnPlainTextTable(
+  accessToken: string,
+  documentId: string,
+  opts: {
+    preamble: string;
+    leftCell: string;
+    rightCell: string;
+    leftBold?: GoogleDocBoldSpan[];
+    rightBold?: GoogleDocBoldSpan[];
+    documentTitle?: string;
+  },
+): Promise<void> {
+  const { preamble, leftCell, rightCell, leftBold = [], rightBold = [], documentTitle } = opts;
+
+  await docsClearBodyTextPreservingStructure(accessToken, documentId);
+  await docsDeleteExtraDocumentTabsKeepingFirst(accessToken, documentId);
+  if (documentTitle?.trim()) {
+    await driveRenameFile(accessToken, documentId, documentTitle.trim());
+  }
+
+  const clearedLayout = await docsGetDocumentRecord(accessToken, documentId);
+  const tabId = primaryTabId(clearedLayout);
+
+  await docsBatchUpdate(accessToken, documentId, [
+    {
+      updateDocumentStyle: {
+        documentStyle: { pageSize: DOCS_LANDSCAPE_PAGE_SIZE },
+        fields: 'pageSize',
+        ...(tabId ? { tabId } : {}),
+      },
+    },
+    {
+      insertText: {
+        location: docsIndexLocation(1, tabId),
+        text: preamble,
+      },
+    },
+    {
+      insertTable: {
+        rows: 1,
+        columns: 2,
+        endOfSegmentLocation: tabId ? { segmentId: '', tabId } : { segmentId: '' },
+      },
+    },
+  ]);
+
+  const layoutAfterTable = await docsGetDocumentRecord(accessToken, documentId);
+  const placed = findFirstTableInBody(documentBodyContent(layoutAfterTable));
+  if (!placed) throw new Error('Google Docs export: table not found after insert.');
+  const tableStart = placed.startIndex;
+
+  await docsBatchUpdate(accessToken, documentId, [
+    {
+      updateTableColumnProperties: {
+        tableStartLocation: docsIndexLocation(tableStart, tabId),
+        columnIndices: [],
+        tableColumnProperties: { widthType: 'EVENLY_DISTRIBUTED' },
+        fields: 'widthType',
+      },
+    },
+  ]);
+
+  const docJson = await docsGetDocumentRecord(accessToken, documentId);
+  const found = findFirstTableInBody(documentBodyContent(docJson));
+  if (!found) throw new Error('Google Docs export: table not found after insert.');
+
+  const grid = collectTableCellInsertIndices(found.table);
+  if (grid.size !== 2) {
+    throw new Error(`Google Docs export: expected 1×2 table (2 cells), got ${String(grid.size)} cells.`);
+  }
+
+  const i00 = grid.get('0,0');
+  const i01 = grid.get('0,1');
+  if (i00 === undefined || i01 === undefined) {
+    throw new Error('Google Docs export: missing table cells at row 0.');
+  }
+
+  const L = leftCell;
+  const R = rightCell;
+  let leftGlobalStart: number;
+  let rightGlobalStart: number;
+  let cellInserts: unknown[];
+  if (i00 < i01) {
+    leftGlobalStart = i00;
+    rightGlobalStart = i01 + L.length;
+    cellInserts = [
+      { insertText: { location: docsIndexLocation(i00, tabId), text: L } },
+      { insertText: { location: docsIndexLocation(i01 + L.length, tabId), text: R } },
+    ];
+  } else {
+    rightGlobalStart = i01;
+    leftGlobalStart = i00 + R.length;
+    cellInserts = [
+      { insertText: { location: docsIndexLocation(i01, tabId), text: R } },
+      { insertText: { location: docsIndexLocation(i00 + R.length, tabId), text: L } },
+    ];
+  }
+
+  await docsBatchUpdate(accessToken, documentId, cellInserts);
+
+  const boldRequests: unknown[] = [];
+  for (const { start, end } of leftBold) {
+    if (end > start) {
+      boldRequests.push({
+        updateTextStyle: {
+          range: docsContentRange(leftGlobalStart + start, leftGlobalStart + end, tabId),
+          textStyle: { bold: true },
+          fields: 'bold',
+        },
+      });
+    }
+  }
+  for (const { start, end } of rightBold) {
+    if (end > start) {
+      boldRequests.push({
+        updateTextStyle: {
+          range: docsContentRange(rightGlobalStart + start, rightGlobalStart + end, tabId),
+          textStyle: { bold: true },
+          fields: 'bold',
+        },
+      });
+    }
+  }
+
+  for (const group of chunkArray(boldRequests, DOCS_BATCH_INSERT_TEXT_MAX)) {
+    if (group.length > 0) await docsBatchUpdate(accessToken, documentId, group);
+  }
+}
+
 export type PracticeExerciseGoogleDocExportResult = {
   drivePracticeExportGoogleDocId: string;
 };

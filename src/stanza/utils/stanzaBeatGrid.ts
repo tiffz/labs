@@ -1,6 +1,9 @@
 import type { StanzaMarker, StanzaSegmentMetronomeCalibration } from '../db/stanzaDb';
 import { calibrationEffectiveAnchorMediaTime } from './stanzaMetronome';
+import { clampMarkerTimeBetweenNeighbours } from './stanzaMarkerSpacing';
 import { ensureMarkerIds, STANZA_TIME_EPS, type DerivedSegment } from './segments';
+
+export { clampMarkerTimeBetweenNeighbours };
 import { STANZA_MIN_LOOP_SPAN_SEC } from './stanzaPlaybackLoop';
 
 /** Default quarter-note tempo when no calibration exists (pad / nudge / snap). */
@@ -65,21 +68,6 @@ export function beatBoundaryAlignmentErrorSec(
 ): number {
   const snapped = nearestBeatMediaTime(boundaryMediaSec, anchorMediaTime, bpm);
   return Math.abs(boundaryMediaSec - snapped);
-}
-
-/** Same neighbour clamp as timeline marker drag (seconds). */
-export function clampMarkerTimeBetweenNeighbours(
-  markerId: string,
-  rawTime: number,
-  list: StanzaMarker[],
-  duration: number,
-): number {
-  const sorted = [...list].sort((a, b) => a.time - b.time);
-  const idx = sorted.findIndex((m) => m.id === markerId);
-  if (idx < 0) return rawTime;
-  const prevT = idx <= 0 ? 0 : sorted[idx - 1]!.time;
-  const nextT = idx >= sorted.length - 1 ? duration : sorted[idx + 1]!.time;
-  return Math.max(prevT + STANZA_TIME_EPS * 2, Math.min(nextT - STANZA_TIME_EPS * 2, rawTime));
 }
 
 /** Largest beat media-time at or before `t` on the grid `(anchorMediaTime, bpm)`. */

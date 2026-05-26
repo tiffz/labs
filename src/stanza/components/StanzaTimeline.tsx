@@ -42,11 +42,12 @@ import {
   deletableBoundaryMarkerAtTime,
   deriveSegments,
   ensureMarkerIds,
-  STANZA_TIME_EPS,
 } from '../utils/segments';
 import { effectiveBeatGridForSegment, sectionBoundaryBeatMisaligned } from '../utils/stanzaBeatGrid';
+import { clampMarkerTimeBetweenNeighbours } from '../utils/stanzaMarkerSpacing';
 import type { StanzaPlaybackLoopMode } from '../utils/stanzaPlaybackLoop';
 import { computeLoopHull } from '../utils/stanzaPlaybackLoop';
+import { stanzaPlayheadDisplayTime } from '../utils/stanzaPlayheadDisplayTime';
 import AppTooltip from '../../shared/components/AppTooltip';
 import PlaybackSpeedControl from '../../shared/components/music/PlaybackSpeedControl';
 import StanzaSectionHoverCard from './StanzaSectionHoverCard';
@@ -73,14 +74,10 @@ function formatClock(sec: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
-function clampMarkerTime(markerId: string, rawTime: number, list: StanzaMarker[], dur: number): number {
-  const sorted = [...list].sort((a, b) => a.time - b.time);
-  const idx = sorted.findIndex((m) => m.id === markerId);
-  if (idx < 0) return rawTime;
-  const prevT = idx <= 0 ? 0 : sorted[idx - 1]!.time;
-  const nextT = idx >= sorted.length - 1 ? dur : sorted[idx + 1]!.time;
-  return Math.max(prevT + STANZA_TIME_EPS * 2, Math.min(nextT - STANZA_TIME_EPS * 2, rawTime));
-}
+export type StanzaMarkersChangeContext = {
+  /** Markers at pointer-down when the user started dragging a boundary (for undo). */
+  dragBaseline?: StanzaMarker[];
+};
 
 export interface StanzaTimelineProps {
   duration: number;
@@ -94,8 +91,10 @@ export interface StanzaTimelineProps {
   isPlaying: boolean;
   onPlay: () => void;
   onPause: () => void;
-  onSeek: (time: number) => void;
-  onMarkersChange: (markers: StanzaMarker[]) => void;
+  onSeek: (time: number, opts?: { flushPlaybackState?: boolean }) => void;
+  /** When set, playhead paint uses this instead of `currentTime` (keeps split/scrub in sync). */
+  transportTime?: number;
+  onMarkersChange: (markers: StanzaMarker[], context?: StanzaMarkersChangeContext) => void;
   onDeleteMarker: (markerId: string) => void;
   onRenameSectionFromLabel: (segmentIndex: number, label: string) => void;
   onSkipToLoopStart: () => void;
@@ -135,6 +134,7 @@ export interface StanzaTimelineProps {
 export default function StanzaTimeline({
   duration,
   currentTime,
+  transportTime,
   markers,
   segmentMs,
   selectedSegmentIndices,
@@ -225,11 +225,14 @@ export default function StanzaTimeline({
 
   const markersRef = useRef(markers);
   markersRef.current = markers;
+  const markerDragBaselineRef = useRef<StanzaMarker[] | null>(null);
 
   const endDragPersist = useCallback(
     (dm: StanzaMarker[] | null, releasedMarkerId: string | null) => {
       if (dm) {
-        onMarkersChange(dm);
+        const baseline = markerDragBaselineRef.current ?? undefined;
+        markerDragBaselineRef.current = null;
+        onMarkersChange(dm, baseline ? { dragBaseline: baseline } : undefined);
         if (releasedMarkerId) {
           const m = dm.find((x) => x.id === releasedMarkerId);
           if (m) onSeek(m.time);
@@ -245,7 +248,7 @@ export default function StanzaTimeline({
     const onMove = (e: MouseEvent) => {
       setDragMarkers((prev) => {
         const base = ensureMarkerIds(prev ?? markersRef.current);
-        const t = clampMarkerTime(releasedId, getTimeFromClientX(e.clientX), base, duration);
+        const t = clampMarkerTimeBetweenNeighbours(releasedId, getTimeFromClientX(e.clientX), base, duration);
         return base.map((m) => (m.id === releasedId ? { ...m, time: t } : m));
       });
     };
@@ -335,16 +338,20 @@ export default function StanzaTimeline({
     [getTimeFromClientX, onSeek],
   );
 
-  const onTrackPointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (!scrubbingRef.current) return;
-    scrubbingRef.current = false;
-    setTrackScrubActive(false);
-    try {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    } catch {
-      /* ignore */
-    }
-  }, []);
+  const onTrackPointerUp = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (!scrubbingRef.current) return;
+      scrubbingRef.current = false;
+      setTrackScrubActive(false);
+      onSeek(getTimeFromClientX(e.clientX), { flushPlaybackState: true });
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      } catch {
+        /* ignore */
+      }
+    },
+    [getTimeFromClientX, onSeek],
+  );
 
   const onPlayheadPointerDown = useCallback(
     (e: React.PointerEvent) => {
@@ -364,6 +371,7 @@ export default function StanzaTimeline({
   const [draftSectionLabel, setDraftSectionLabel] = useState('');
   const hoverCloseTimer = useRef<number | null>(null);
   const sectionHoverCardRootRef = useRef<HTMLDivElement | null>(null);
+  const sectionButtonRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
   const commitSectionRenameRef = useRef<() => void>(() => {});
 
   const clearHoverClose = useCallback(() => {
@@ -419,22 +427,40 @@ export default function StanzaTimeline({
     }, HOVER_CLOSE_MS);
   }, [clearHoverClose]);
 
+  const positionHoverCardFromSegment = useCallback((segmentId: string) => {
+    const el = sectionButtonRefs.current.get(segmentId);
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    setHoverCard({
+      segmentId,
+      anchorCenterX: r.left + r.width / 2,
+      segmentTop: r.top,
+    });
+  }, []);
+
   const handleSectionPointerEnter = useCallback(
     (segmentId: string, e: React.PointerEvent<HTMLButtonElement>) => {
       clearHoverClose();
       commitSectionRenameRef.current();
-      const el = e.currentTarget;
-      const r = el.getBoundingClientRect();
-      setHoverCard({
-        segmentId,
-        anchorCenterX: r.left + r.width / 2,
-        segmentTop: r.top,
-      });
+      sectionButtonRefs.current.set(segmentId, e.currentTarget);
+      positionHoverCardFromSegment(segmentId);
       const seg = segments.find((s) => s.id === segmentId);
       if (seg) setDraftSectionLabel(seg.label);
     },
-    [clearHoverClose, segments],
+    [clearHoverClose, positionHoverCardFromSegment, segments],
   );
+
+  useEffect(() => {
+    if (!hoverCard) return;
+    const segmentId = hoverCard.segmentId;
+    const onReflow = () => positionHoverCardFromSegment(segmentId);
+    window.addEventListener('scroll', onReflow, true);
+    window.addEventListener('resize', onReflow);
+    return () => {
+      window.removeEventListener('scroll', onReflow, true);
+      window.removeEventListener('resize', onReflow);
+    };
+  }, [hoverCard, positionHoverCardFromSegment]);
 
   /** Commit when clicking outside the hover card — blur alone misses non-focusable targets (video, timeline). */
   useEffect(() => {
@@ -485,10 +511,13 @@ export default function StanzaTimeline({
   }
 
   /** While repeating the selection span, keep the playhead from painting past the span end between wrap and the next state tick. */
-  const playheadDisplaySec =
-    loopMode === 'loopSelection' && selectionSpan != null && duration > 0
-      ? Math.min(currentTime, Math.max(selectionSpan.start, selectionSpan.end - STANZA_TIME_EPS * 3))
-      : currentTime;
+  const playheadTransportSec = transportTime ?? currentTime;
+  const playheadDisplaySec = stanzaPlayheadDisplayTime(
+    playheadTransportSec,
+    duration,
+    loopMode,
+    selectionSpan,
+  );
   const playheadPct = (playheadDisplaySec / duration) * 100;
   const showSelectionSpanWash =
     selectedSegmentIndices.length > 0 && selectionSpan != null && duration > 0;
@@ -713,7 +742,6 @@ export default function StanzaTimeline({
                 className="shared-bpm-input stanza-playback-speed-control"
                 dropdownClassName="stanza-bpm-dropdown"
                 sliderClassName="stanza-bpm-slider"
-                openPresetPanelOnFocus={false}
               />
             </Box>
           </Box>
@@ -847,6 +875,10 @@ export default function StanzaTimeline({
                   key={seg.id}
                   type="button"
                   className={classes}
+                  ref={(el) => {
+                    if (el) sectionButtonRefs.current.set(seg.id, el);
+                    else sectionButtonRefs.current.delete(seg.id);
+                  }}
                   onClick={(ev) => {
                     ev.stopPropagation();
                     if (suppressSegmentClickRef.current) {
@@ -941,7 +973,8 @@ export default function StanzaTimeline({
                   e.stopPropagation();
                   e.preventDefault();
                   if (!m.id) return;
-                  setDragMarkers(ensureMarkerIds(markers));
+                  markerDragBaselineRef.current = ensureMarkerIds(markers);
+                  setDragMarkers(markerDragBaselineRef.current);
                   setDragId(m.id);
                 }}
                 role="separator"

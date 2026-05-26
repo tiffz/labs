@@ -8,6 +8,8 @@ import type {
   EncoreSong,
   EncoreTableUiBundle,
 } from '../types';
+import type { EncoreOriginalSong } from '../originals/types';
+import type { EncoreDriveContentIndex } from '../drive/encoreDriveContentIndex';
 
 export interface SyncMetaRow {
   id: 'default';
@@ -34,6 +36,12 @@ export interface SyncMetaRow {
   shardedManifestRevision?: string;
   /** ISO timestamp Encore last finished a fan-out migration from the monolithic file. */
   shardedMigratedAt?: string;
+  /** `Encore_App/Originals/` folder id. */
+  originalsFolderId?: string;
+  /** `Encore_App/Originals/originals_manifest.json` file id. */
+  originalsManifestFileId?: string;
+  originalsManifestRevision?: string;
+  lastSyncedOriginalsMaxUpdatedAt?: string;
 }
 
 /**
@@ -43,7 +51,7 @@ export interface SyncMetaRow {
 export interface DirtySyncRow {
   /** Compound id: `<kind>:<rowId>` (e.g. `song:abc123`) — keeps the table cheap to upsert. */
   id: string;
-  kind: 'song' | 'performance' | 'extras';
+  kind: 'song' | 'performance' | 'extras' | 'original';
   /** The Encore row id this shard mirrors. For `extras`, always `"default"`. */
   rowId: string;
   /**
@@ -85,12 +93,18 @@ export interface RepertoireExtrasRow {
   driveUploadFolderOverrides?: EncoreDriveUploadFolderOverrides;
   /** Optional labels for override folders (Drive folder titles). */
   driveUploadFolderOverrideLabels?: EncoreDriveUploadFolderOverrideLabels;
+  /**
+   * Content-hash index for O(1) duplicate detection at upload time (`contentFingerprintGroupKey`
+   * → canonical Drive file). Rebuilt during organize; updated after uploads.
+   */
+  driveContentIndex?: EncoreDriveContentIndex;
   updatedAt: string;
 }
 
 export class EncoreDB extends Dexie {
   songs!: Table<EncoreSong, string>;
   performances!: Table<EncorePerformance, string>;
+  originals!: Table<EncoreOriginalSong, string>;
   syncMeta!: Table<SyncMetaRow, string>;
   repertoireExtras!: Table<RepertoireExtrasRow, string>;
   dirtySync!: Table<DirtySyncRow, string>;
@@ -116,6 +130,22 @@ export class EncoreDB extends Dexie {
     this.version(4).stores({
       songs: 'id, updatedAt, title, artist, practicing',
       performances: 'id, songId, date, updatedAt, venueTag',
+      syncMeta: 'id',
+      repertoireExtras: 'id',
+      dirtySync: 'id, kind, markedAt',
+    });
+    this.version(5).stores({
+      songs: 'id, updatedAt, title, artist, practicing',
+      performances: 'id, songId, date, updatedAt, venueTag',
+      originals: 'id, updatedAt, title, status',
+      syncMeta: 'id',
+      repertoireExtras: 'id',
+      dirtySync: 'id, kind, markedAt',
+    });
+    this.version(6).stores({
+      songs: 'id, updatedAt, title, artist, practicing',
+      performances: 'id, songId, date, updatedAt, venueTag',
+      originals: 'id, updatedAt, title',
       syncMeta: 'id',
       repertoireExtras: 'id',
       dirtySync: 'id, kind, markedAt',

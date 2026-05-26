@@ -35,6 +35,16 @@ Column → workbench → scroll → content + footer pattern for micro-apps with
 5. Use `<AppShellLayout>` when the app has header + scroll + optional footer
 6. Document app-specific grid areas in `src/<app>/LAYOUT.md` if non-trivial
 
+## In-content sticky chrome
+
+When a panel scrolls but toolbars inside it should stick (not the global app header), use [`in-content-sticky.css`](in-content-sticky.css):
+
+- `.in-scroll-region` — flex child with `overflow: auto`
+- `.in-scroll-region__band` — non-sticky block above chrome (e.g. stepper rail)
+- `.in-scroll-region__sticky-surface` — sticky stack (toolbar + palette)
+
+Encore Originals chords stage imports this from `originals.css`. Override `--in-scroll-sticky-*` tokens on a parent if needed.
+
 ## Stanza reference
 
 Stanza uses `StanzaViewerLayout` (maps Stanza class names) + `stanza-viewer-layout.css`. See [`src/stanza/LAYOUT.md`](../../stanza/LAYOUT.md).

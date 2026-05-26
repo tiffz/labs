@@ -34,6 +34,7 @@ import { ensureEncoreDriveLayout } from '../drive/bootstrapFolders';
 import { resolveDriveUploadFolderId, type DriveUploadFolderLayout } from '../drive/resolveDriveUploadFolder';
 import { driveCollectScoreFilesRecursive } from '../drive/driveFolderWalk';
 import { driveUploadFileResumable } from '../drive/driveFetch';
+import { useEncoreDriveUploadDedup } from '../context/EncoreDriveUploadDedupContext';
 import { driveFileWebUrl } from '../drive/driveWebUrls';
 import { resolveDriveFolderFromUserInput } from '../drive/resolveDriveFolderFromUserInput';
 import { encoreAppHref, isModifiedOrNonPrimaryClick } from '../routes/encoreAppHash';
@@ -154,6 +155,7 @@ export function BulkScoreImportDialog(props: BulkScoreImportDialogProps): ReactE
   const theme = useTheme();
   const { googleAccessToken, repertoireExtras } = useEncore();
   const { withBlockingJob } = useEncoreBlockingJobs();
+  const { uploadWithDuplicateCheck, registerUploadedDriveFile } = useEncoreDriveUploadDedup();
   const { withBatch } = useLabsUndo();
 
   const [step, setStep] = useState<'source' | 'review'>('source');
@@ -768,8 +770,21 @@ export function BulkScoreImportDialog(props: BulkScoreImportDialogProps): ReactE
               if (!chartsUploadFolderId) {
                 throw new Error('Drive charts folder is not ready yet. Try again in a moment.');
               }
-              const created = await driveUploadFileResumable(googleAccessToken, r.file, [chartsUploadFolderId]);
-              driveFileId = created.id;
+              const targetTitle = targetSong.title.trim() || 'Untitled song';
+              const uploadedId = await uploadWithDuplicateCheck({
+                file: r.file,
+                uploadNew: async () => {
+                  const created = await driveUploadFileResumable(googleAccessToken, r.file!, [chartsUploadFolderId]);
+                  await registerUploadedDriveFile(created.id, `${targetTitle} · Chart`);
+                  return created.id;
+                },
+                reuseExisting: async (id) => {
+                  await registerUploadedDriveFile(id, `${targetTitle} · Chart`);
+                  return id;
+                },
+              });
+              if (!uploadedId) continue;
+              driveFileId = uploadedId;
             }
             if (!driveFileId) {
               done += 1;
@@ -819,6 +834,8 @@ export function BulkScoreImportDialog(props: BulkScoreImportDialogProps): ReactE
     scoreRowExcluded,
     withBlockingJob,
     withBatch,
+    uploadWithDuplicateCheck,
+    registerUploadedDriveFile,
   ]);
 
   const reviewFullscreen = step === 'review';

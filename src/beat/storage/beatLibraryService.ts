@@ -261,11 +261,6 @@ export async function markAllStaleIfVersionChanged(): Promise<void> {
   );
 }
 
-export async function loadStaleReanalysisQueue(): Promise<BeatLibraryEntry[]> {
-  const entries = await listLibraryEntries();
-  return entries.filter((entry) => entry.sourceType === 'local' && entry.analysis.stale);
-}
-
 export async function setEntryStaleState(videoId: string, stale: boolean, reason?: string): Promise<void> {
   const entry = await getLibraryEntryById(videoId);
   if (!entry) return;

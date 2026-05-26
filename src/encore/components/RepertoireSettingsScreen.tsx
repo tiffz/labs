@@ -119,6 +119,7 @@ export function RepertoireSettingsScreen(): ReactElement {
           { kind: 'referenceTracks' as const, label: 'Reference tracks (file uploads)' },
           { kind: 'backingTracks' as const, label: 'Backing tracks (file uploads)' },
           { kind: 'takes' as const, label: 'Takes / recordings' },
+          { kind: 'misc' as const, label: 'Misc resources' },
         ] satisfies Array<{ kind: EncoreDriveUploadFolderKind; label: string }>
       ),
     [],

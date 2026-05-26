@@ -145,6 +145,25 @@ describe('mergeDriveRowsIntoLocalLibrary', () => {
     expect(nextRows[0].primaryGain).toBe(0.5);
   });
 
+  it('materializes remote-only stems with driveFileId for later hydration', () => {
+    const remote: StanzaSongDriveRow[] = [
+      {
+        id: '1',
+        ytId: null,
+        title: 'Local',
+        markers: [],
+        stats: {},
+        updatedAt: 10,
+        driveSourceFileId: 'main-file',
+        stems: [{ id: 'st1', label: 'Backing', driveFileId: 'stem-drive-1' }],
+      },
+    ];
+    const { nextRows } = mergeDriveRowsIntoLocalLibrary([], remote);
+    expect(nextRows[0].stems).toHaveLength(1);
+    expect(nextRows[0].stems?.[0].driveFileId).toBe('stem-drive-1');
+    expect(nextRows[0].stems?.[0].localBlob.size).toBe(0);
+  });
+
   it('merges stem blobs by id when remote wins', () => {
     const stemBlob = new Blob(['s'], { type: 'audio/wav' });
     const local = [

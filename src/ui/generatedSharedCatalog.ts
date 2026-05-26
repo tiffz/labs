@@ -2910,6 +2910,140 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-components-richtexteditor-tsx-richtexteditor",
+    "name": "RichTextEditor",
+    "path": "src/shared/components/RichTextEditor.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-richtexteditor-tsx-richtexteditorprops",
+    "name": "RichTextEditorProps",
+    "path": "src/shared/components/RichTextEditor.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-richtextlinkhover-tsx-richtextlinkhovercontroller",
+    "name": "RichTextLinkHoverController",
+    "path": "src/shared/components/RichTextLinkHover.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-richtextlinkhover-tsx-richtextlinkhoverpopover",
+    "name": "RichTextLinkHoverPopover",
+    "path": "src/shared/components/RichTextLinkHover.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-richtextlinkhover-tsx-richtextlinkhoverpopoverprops",
+    "name": "RichTextLinkHoverPopoverProps",
+    "path": "src/shared/components/RichTextLinkHover.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-richtextlinkhover-tsx-richtextlinkhoverstate",
+    "name": "RichTextLinkHoverState",
+    "path": "src/shared/components/RichTextLinkHover.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-richtextlinkhover-tsx-selectlinkdomrange",
+    "name": "selectLinkDomRange",
+    "path": "src/shared/components/RichTextLinkHover.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-richtextlinkhover-tsx-userichtextlinkhover",
+    "name": "useRichTextLinkHover",
+    "path": "src/shared/components/RichTextLinkHover.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-components-skiptomain-tsx-skiptomain",
     "name": "SkipToMain",
     "path": "src/shared/components/SkipToMain.tsx",
@@ -3181,6 +3315,32 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-dom-resolveeventtargetelement-ts-ispointerinsideselector",
+    "name": "isPointerInsideSelector",
+    "path": "src/shared/dom/resolveEventTargetElement.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "True when the event target lies inside an element matching `selector` (or inside `root`).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-dom-resolveeventtargetelement-ts-resolveeventtargetelement",
+    "name": "resolveEventTargetElement",
+    "path": "src/shared/dom/resolveEventTargetElement.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Resolve a pointer/focus event target to an Element for DOM traversal (`closest`, `matches`). Clicks on text inside buttons often set `event.target` to a Text node, which has no `closest`.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-drawing-catmullrombezier-ts-catmullrompath",
     "name": "catmullRomPath",
     "path": "src/shared/drawing/catmullRomBezier.ts",
@@ -3300,6 +3460,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-drive-drivefetch-ts-drivefilecontentfingerprint",
+    "name": "DriveFileContentFingerprint",
+    "path": "src/shared/drive/driveFetch.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
     "id": "src-shared-drive-drivefetch-ts-drivefilehasanyonereader",
     "name": "driveFileHasAnyoneReader",
     "path": "src/shared/drive/driveFetch.ts",
@@ -3325,6 +3500,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [],
     "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-drivefetch-ts-drivegetfilecontentfingerprint",
+    "name": "driveGetFileContentFingerprint",
+    "path": "src/shared/drive/driveFetch.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Content fingerprint for duplicate-upload detection (follows shortcuts to the media file).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
     "demoId": null
   },
   {
@@ -4904,6 +5092,148 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-music-chordchartasciiexport-ts-alignchordsoverlyricline",
+    "name": "alignChordsOverLyricLine",
+    "path": "src/shared/music/chordChartAsciiExport.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Align chord tokens over lyric words (monospace ASCII chart lines).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordchartasciiexport-ts-chartlayouttoasciiexport",
+    "name": "chartLayoutToAsciiExport",
+    "path": "src/shared/music/chordChartAsciiExport.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Build a monospace ASCII chord chart from structured chart layout.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordchartasciiexport-ts-copytexttoclipboard",
+    "name": "copyTextToClipboard",
+    "path": "src/shared/music/chordChartAsciiExport.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Align chord tokens over lyric words (monospace ASCII chart lines).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordchartprintexport-ts-asciicharttexttoprinthtml",
+    "name": "asciiChartTextToPrintHtml",
+    "path": "src/shared/music/chordChartPrintExport.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Render monospace ASCII chart text as styled HTML lines for print/PDF.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordchartprintexport-ts-isasciichartchordline",
+    "name": "isAsciiChartChordLine",
+    "path": "src/shared/music/chordChartPrintExport.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "True when every whitespace-separated token on the line is a chord symbol.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordchartprintexport-ts-openmonospacechartprintwindow",
+    "name": "openMonospaceChartPrintWindow",
+    "path": "src/shared/music/chordChartPrintExport.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Open a print-friendly view for a chord chart (Save as PDF via browser print).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordcharttwocolumnexport-ts-boldsectionheaderspans",
+    "name": "boldSectionHeaderSpans",
+    "path": "src/shared/music/chordChartTwoColumnExport.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "UTF-16 half-open ranges for section header lines like `[Verse 1]`.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordcharttwocolumnexport-ts-chartlayouttotwocolumnexport",
+    "name": "chartLayoutToTwoColumnExport",
+    "path": "src/shared/music/chordChartTwoColumnExport.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Split chart sections across two columns for print / Google Docs export.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordcharttwocolumnexport-ts-twocolumnchartexport",
+    "name": "TwoColumnChartExport",
+    "path": "src/shared/music/chordChartTwoColumnExport.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
     "id": "src-shared-music-chordmatcher-ts-matcheschord",
     "name": "matchesChord",
     "path": "src/shared/music/chordMatcher.ts",
@@ -4953,6 +5283,740 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "piano"
     ],
     "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chartplaybacksequence-ts-chart-playback-beats-per-measure",
+    "name": "CHART_PLAYBACK_BEATS_PER_MEASURE",
+    "path": "src/shared/music/chordPro/chartPlaybackSequence.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Assume 4/4: each lyric line spans two measures; one chord change per measure.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chartplaybacksequence-ts-chart-playback-measures-per-line",
+    "name": "CHART_PLAYBACK_MEASURES_PER_LINE",
+    "path": "src/shared/music/chordPro/chartPlaybackSequence.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Assume 4/4: each lyric line spans two measures; one chord change per measure.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chartplaybacksequence-ts-chartlayouttoplaybacksequence",
+    "name": "chartLayoutToPlaybackSequence",
+    "path": "src/shared/music/chordPro/chartPlaybackSequence.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Build a measure-aligned playback schedule: two measures per lyric line, chord at each measure boundary, holding/repeating the previous chord when a line has fewer changes.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chartplaybacksequence-ts-chartplaybackmeasuredurationms",
+    "name": "chartPlaybackMeasureDurationMs",
+    "path": "src/shared/music/chordPro/chartPlaybackSequence.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "One measure duration in ms at the given tempo (4/4).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chartplaybacksequence-ts-chartplaybackstep",
+    "name": "ChartPlaybackStep",
+    "path": "src/shared/music/chordPro/chartPlaybackSequence.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Assume 4/4: each lyric line spans two measures; one chord change per measure.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chordchartlayout-ts-assignchordcharindicesfromcolumns",
+    "name": "assignChordCharIndicesFromColumns",
+    "path": "src/shared/music/chordPro/chordChartLayout.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Assign char indices from chord-over-lyrics column positions.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chordchartlayout-ts-chartlayout",
+    "name": "ChartLayout",
+    "path": "src/shared/music/chordPro/chordChartLayout.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Structured chord chart layout (ChordPro ↔ sections/lines/markers). - **Placement:** `ChordMarker.charIndex` is a position in `LyricLine.text` (often a word token start). - **Identity:** `ChordMarker.id` is stable for select/edit; multiple markers may share one `charIndex`. - **Paint:** `tokenizeLyricLine`, `groupChordsByTokenStart`, `snapChordColumnToCharIndex` align UI and paste import. - **Edits:** prefer `*ById` helpers; `upsertChordAtIndex` replaces all chords at an index. Fixtures: `./fixtures.ts` (`MEET_ME_MOON_PASTE`). Tests: `pastedChartImport.test.ts`, `chordChartLayout.test.ts`.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chordchartlayout-ts-chordmarker",
+    "name": "ChordMarker",
+    "path": "src/shared/music/chordPro/chordChartLayout.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Structured chord chart layout (ChordPro ↔ sections/lines/markers). - **Placement:** `ChordMarker.charIndex` is a position in `LyricLine.text` (often a word token start). - **Identity:** `ChordMarker.id` is stable for select/edit; multiple markers may share one `charIndex`. - **Paint:** `tokenizeLyricLine`, `groupChordsByTokenStart`, `snapChordColumnToCharIndex` align UI and paste import. - **Edits:** prefer `*ById` helpers; `upsertChordAtIndex` replaces all chords at an index. Fixtures: `./fixtures.ts` (`MEET_ME_MOON_PASTE`). Tests: `pastedChartImport.test.ts`, `chordChartLayout.test.ts`.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chordchartlayout-ts-groupchordsbytokenstart",
+    "name": "groupChordsByTokenStart",
+    "path": "src/shared/music/chordPro/chordChartLayout.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Group chord markers by lyric word-start for paint/export (supports duplicate indices).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chordchartlayout-ts-infersectiontype",
+    "name": "inferSectionType",
+    "path": "src/shared/music/chordPro/chordChartLayout.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Structured chord chart layout (ChordPro ↔ sections/lines/markers). - **Placement:** `ChordMarker.charIndex` is a position in `LyricLine.text` (often a word token start). - **Identity:** `ChordMarker.id` is stable for select/edit; multiple markers may share one `charIndex`. - **Paint:** `tokenizeLyricLine`, `groupChordsByTokenStart`, `snapChordColumnToCharIndex` align UI and paste import. - **Edits:** prefer `*ById` helpers; `upsertChordAtIndex` replaces all chords at an index. Fixtures: `./fixtures.ts` (`MEET_ME_MOON_PASTE`). Tests: `pastedChartImport.test.ts`, `chordChartLayout.test.ts`.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chordchartlayout-ts-layouttowritedocument",
+    "name": "layoutToWriteDocument",
+    "path": "src/shared/music/chordPro/chordChartLayout.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Plain-text document for Write Mode (headers + lyrics, no chord tokens).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chordchartlayout-ts-linetoken",
+    "name": "LineToken",
+    "path": "src/shared/music/chordPro/chordChartLayout.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Structured chord chart layout (ChordPro ↔ sections/lines/markers). - **Placement:** `ChordMarker.charIndex` is a position in `LyricLine.text` (often a word token start). - **Identity:** `ChordMarker.id` is stable for select/edit; multiple markers may share one `charIndex`. - **Paint:** `tokenizeLyricLine`, `groupChordsByTokenStart`, `snapChordColumnToCharIndex` align UI and paste import. - **Edits:** prefer `*ById` helpers; `upsertChordAtIndex` replaces all chords at an index. Fixtures: `./fixtures.ts` (`MEET_ME_MOON_PASTE`). Tests: `pastedChartImport.test.ts`, `chordChartLayout.test.ts`.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chordchartlayout-ts-lyricline",
+    "name": "LyricLine",
+    "path": "src/shared/music/chordPro/chordChartLayout.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Structured chord chart layout (ChordPro ↔ sections/lines/markers). - **Placement:** `ChordMarker.charIndex` is a position in `LyricLine.text` (often a word token start). - **Identity:** `ChordMarker.id` is stable for select/edit; multiple markers may share one `charIndex`. - **Paint:** `tokenizeLyricLine`, `groupChordsByTokenStart`, `snapChordColumnToCharIndex` align UI and paste import. - **Edits:** prefer `*ById` helpers; `upsertChordAtIndex` replaces all chords at an index. Fixtures: `./fixtures.ts` (`MEET_ME_MOON_PASTE`). Tests: `pastedChartImport.test.ts`, `chordChartLayout.test.ts`.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chordchartlayout-ts-movechordbyid",
+    "name": "moveChordById",
+    "path": "src/shared/music/chordPro/chordChartLayout.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Structured chord chart layout (ChordPro ↔ sections/lines/markers). - **Placement:** `ChordMarker.charIndex` is a position in `LyricLine.text` (often a word token start). - **Identity:** `ChordMarker.id` is stable for select/edit; multiple markers may share one `charIndex`. - **Paint:** `tokenizeLyricLine`, `groupChordsByTokenStart`, `snapChordColumnToCharIndex` align UI and paste import. - **Edits:** prefer `*ById` helpers; `upsertChordAtIndex` replaces all chords at an index. Fixtures: `./fixtures.ts` (`MEET_ME_MOON_PASTE`). Tests: `pastedChartImport.test.ts`, `chordChartLayout.test.ts`.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chordchartlayout-ts-newlineid",
+    "name": "newLineId",
+    "path": "src/shared/music/chordPro/chordChartLayout.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Structured chord chart layout (ChordPro ↔ sections/lines/markers). - **Placement:** `ChordMarker.charIndex` is a position in `LyricLine.text` (often a word token start). - **Identity:** `ChordMarker.id` is stable for select/edit; multiple markers may share one `charIndex`. - **Paint:** `tokenizeLyricLine`, `groupChordsByTokenStart`, `snapChordColumnToCharIndex` align UI and paste import. - **Edits:** prefer `*ById` helpers; `upsertChordAtIndex` replaces all chords at an index. Fixtures: `./fixtures.ts` (`MEET_ME_MOON_PASTE`). Tests: `pastedChartImport.test.ts`, `chordChartLayout.test.ts`.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chordchartlayout-ts-parsechordprotochartlayout",
+    "name": "parseChordProToChartLayout",
+    "path": "src/shared/music/chordPro/chordChartLayout.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Parse a ChordPro document into structured chart layout.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chordchartlayout-ts-parsewritedocumenttolayout",
+    "name": "parseWriteDocumentToLayout",
+    "path": "src/shared/music/chordPro/chordChartLayout.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Apply Write Mode edits while preserving chord markers via index reconciliation.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chordchartlayout-ts-reconcilechordsaftertextchange",
+    "name": "reconcileChordsAfterTextChange",
+    "path": "src/shared/music/chordPro/chordChartLayout.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Shift chord indices after a single-line text edit (prefix/suffix diff).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chordchartlayout-ts-removechordbyid",
+    "name": "removeChordById",
+    "path": "src/shared/music/chordPro/chordChartLayout.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Structured chord chart layout (ChordPro ↔ sections/lines/markers). - **Placement:** `ChordMarker.charIndex` is a position in `LyricLine.text` (often a word token start). - **Identity:** `ChordMarker.id` is stable for select/edit; multiple markers may share one `charIndex`. - **Paint:** `tokenizeLyricLine`, `groupChordsByTokenStart`, `snapChordColumnToCharIndex` align UI and paste import. - **Edits:** prefer `*ById` helpers; `upsertChordAtIndex` replaces all chords at an index. Fixtures: `./fixtures.ts` (`MEET_ME_MOON_PASTE`). Tests: `pastedChartImport.test.ts`, `chordChartLayout.test.ts`.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chordchartlayout-ts-replacechordbyid",
+    "name": "replaceChordById",
+    "path": "src/shared/music/chordPro/chordChartLayout.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Structured chord chart layout (ChordPro ↔ sections/lines/markers). - **Placement:** `ChordMarker.charIndex` is a position in `LyricLine.text` (often a word token start). - **Identity:** `ChordMarker.id` is stable for select/edit; multiple markers may share one `charIndex`. - **Paint:** `tokenizeLyricLine`, `groupChordsByTokenStart`, `snapChordColumnToCharIndex` align UI and paste import. - **Edits:** prefer `*ById` helpers; `upsertChordAtIndex` replaces all chords at an index. Fixtures: `./fixtures.ts` (`MEET_ME_MOON_PASTE`). Tests: `pastedChartImport.test.ts`, `chordChartLayout.test.ts`.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chordchartlayout-ts-sectiontype",
+    "name": "SectionType",
+    "path": "src/shared/music/chordPro/chordChartLayout.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Structured chord chart layout (ChordPro ↔ sections/lines/markers). - **Placement:** `ChordMarker.charIndex` is a position in `LyricLine.text` (often a word token start). - **Identity:** `ChordMarker.id` is stable for select/edit; multiple markers may share one `charIndex`. - **Paint:** `tokenizeLyricLine`, `groupChordsByTokenStart`, `snapChordColumnToCharIndex` align UI and paste import. - **Edits:** prefer `*ById` helpers; `upsertChordAtIndex` replaces all chords at an index. Fixtures: `./fixtures.ts` (`MEET_ME_MOON_PASTE`). Tests: `pastedChartImport.test.ts`, `chordChartLayout.test.ts`.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chordchartlayout-ts-serializechartlayouttochordpro",
+    "name": "serializeChartLayoutToChordPro",
+    "path": "src/shared/music/chordPro/chordChartLayout.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Serialize structured layout back to ChordPro for Drive / IndexedDB storage.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chordchartlayout-ts-slugsectionid",
+    "name": "slugSectionId",
+    "path": "src/shared/music/chordPro/chordChartLayout.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Structured chord chart layout (ChordPro ↔ sections/lines/markers). - **Placement:** `ChordMarker.charIndex` is a position in `LyricLine.text` (often a word token start). - **Identity:** `ChordMarker.id` is stable for select/edit; multiple markers may share one `charIndex`. - **Paint:** `tokenizeLyricLine`, `groupChordsByTokenStart`, `snapChordColumnToCharIndex` align UI and paste import. - **Edits:** prefer `*ById` helpers; `upsertChordAtIndex` replaces all chords at an index. Fixtures: `./fixtures.ts` (`MEET_ME_MOON_PASTE`). Tests: `pastedChartImport.test.ts`, `chordChartLayout.test.ts`.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chordchartlayout-ts-snapchordcolumntocharindex",
+    "name": "snapChordColumnToCharIndex",
+    "path": "src/shared/music/chordPro/chordChartLayout.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Map a monospace chord-line column to a lyric word-start index. Columns past the lyric length snap to the last word (common for trailing chords).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chordchartlayout-ts-songsection",
+    "name": "SongSection",
+    "path": "src/shared/music/chordPro/chordChartLayout.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Structured chord chart layout (ChordPro ↔ sections/lines/markers). - **Placement:** `ChordMarker.charIndex` is a position in `LyricLine.text` (often a word token start). - **Identity:** `ChordMarker.id` is stable for select/edit; multiple markers may share one `charIndex`. - **Paint:** `tokenizeLyricLine`, `groupChordsByTokenStart`, `snapChordColumnToCharIndex` align UI and paste import. - **Edits:** prefer `*ById` helpers; `upsertChordAtIndex` replaces all chords at an index. Fixtures: `./fixtures.ts` (`MEET_ME_MOON_PASTE`). Tests: `pastedChartImport.test.ts`, `chordChartLayout.test.ts`.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chordchartlayout-ts-tokenizelyricline",
+    "name": "tokenizeLyricLine",
+    "path": "src/shared/music/chordPro/chordChartLayout.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Split a lyric line into word/whitespace tokens with character start indices.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chordchartlayout-ts-updatelineinlayout",
+    "name": "updateLineInLayout",
+    "path": "src/shared/music/chordPro/chordChartLayout.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Structured chord chart layout (ChordPro ↔ sections/lines/markers). - **Placement:** `ChordMarker.charIndex` is a position in `LyricLine.text` (often a word token start). - **Identity:** `ChordMarker.id` is stable for select/edit; multiple markers may share one `charIndex`. - **Paint:** `tokenizeLyricLine`, `groupChordsByTokenStart`, `snapChordColumnToCharIndex` align UI and paste import. - **Edits:** prefer `*ById` helpers; `upsertChordAtIndex` replaces all chords at an index. Fixtures: `./fixtures.ts` (`MEET_ME_MOON_PASTE`). Tests: `pastedChartImport.test.ts`, `chordChartLayout.test.ts`.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chordchartlayout-ts-upsertchordatindex",
+    "name": "upsertChordAtIndex",
+    "path": "src/shared/music/chordPro/chordChartLayout.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Replace every chord at `charIndex` with a single new marker (does not append a sibling).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chordprotext-ts-chordprolyricsnippet",
+    "name": "chordProLyricSnippet",
+    "path": "src/shared/music/chordPro/chordProText.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Plain lyric snippet for library cards (no chords, collapsed whitespace).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chordprotext-ts-chordprosection",
+    "name": "ChordProSection",
+    "path": "src/shared/music/chordPro/chordProText.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Matches inline ChordPro chord tokens like `[Fm]`, `[Bbmaj7]`, `[C/E]`.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chordprotext-ts-chordprosectiontypekey",
+    "name": "chordProSectionTypeKey",
+    "path": "src/shared/music/chordPro/chordProText.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Section type key for inheritance, e.g. `Verse 1` → `Verse`.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chordprotext-ts-chordprosegment",
+    "name": "ChordProSegment",
+    "path": "src/shared/music/chordPro/chordProText.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Matches inline ChordPro chord tokens like `[Fm]`, `[Bbmaj7]`, `[C/E]`.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chordprotext-ts-extractchordsymbolsfromtext",
+    "name": "extractChordSymbolsFromText",
+    "path": "src/shared/music/chordPro/chordProText.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Extract ordered chord symbols from a line or section body.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chordprotext-ts-ischordprosectionheaderline",
+    "name": "isChordProSectionHeaderLine",
+    "path": "src/shared/music/chordPro/chordProText.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Matches inline ChordPro chord tokens like `[Fm]`, `[Bbmaj7]`, `[C/E]`.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chordprotext-ts-parsechordproline",
+    "name": "parseChordProLine",
+    "path": "src/shared/music/chordPro/chordProText.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Split a single line into alternating chord and lyric segments.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chordprotext-ts-parsechordprosectionheader",
+    "name": "parseChordProSectionHeader",
+    "path": "src/shared/music/chordPro/chordProText.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Matches inline ChordPro chord tokens like `[Fm]`, `[Bbmaj7]`, `[C/E]`.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chordprotext-ts-parsechordprosections",
+    "name": "parseChordProSections",
+    "path": "src/shared/music/chordPro/chordProText.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Matches inline ChordPro chord tokens like `[Fm]`, `[Bbmaj7]`, `[C/E]`.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chordprotext-ts-semitonesbetweenkeys",
+    "name": "semitonesBetweenKeys",
+    "path": "src/shared/music/chordPro/chordProText.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Matches inline ChordPro chord tokens like `[Fm]`, `[Bbmaj7]`, `[C/E]`.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chordprotext-ts-stripchordbrackets",
+    "name": "stripChordBrackets",
+    "path": "src/shared/music/chordPro/chordProText.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Remove all `[...]` chord tokens for lyrics-only view.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chordprotext-ts-transposechordprodocument",
+    "name": "transposeChordProDocument",
+    "path": "src/shared/music/chordPro/chordProText.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Transpose all inline chords by semitones (key change).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-fixtures-ts-meet-me-around-lyric",
+    "name": "MEET_ME_AROUND_LYRIC",
+    "path": "src/shared/music/chordPro/fixtures.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Lyric line used in import tests: two chords on “around”.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-fixtures-ts-meet-me-moon-paste",
+    "name": "MEET_ME_MOON_PASTE",
+    "path": "src/shared/music/chordPro/fixtures.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Shared chord-chart fixtures for unit tests (import layout, paint, multi-chord words). Canonical source for “Meet Me on the Moon” paste regressions — see `pastedChartImport.test.ts`.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-pastedchartimport-ts-extractchartportionforimport",
+    "name": "extractChartPortionForImport",
+    "path": "src/shared/music/chordPro/pastedChartImport.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Long brainstorm + chart pastes: keep the trailing chord-chart block instead of treating prose above as lyric lines in an anonymous section.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-pastedchartimport-ts-importpastedchartfromclipboard",
+    "name": "importPastedChartFromClipboard",
+    "path": "src/shared/music/chordPro/pastedChartImport.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Detect, optionally excerpt, and parse clipboard chart text for Originals Write mode.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-pastedchartimport-ts-ischordonlyline",
+    "name": "isChordOnlyLine",
+    "path": "src/shared/music/chordPro/pastedChartImport.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "True when the line is only chord symbols (and whitespace / punctuation).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-pastedchartimport-ts-lookslikepastedchart",
+    "name": "looksLikePastedChart",
+    "path": "src/shared/music/chordPro/pastedChartImport.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Chord symbol token — roots, qualities, slash bass, parenthetical extensions. Intentionally permissive so pasted charts preserve symbols the playback engine may not parse.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-pastedchartimport-ts-parsepastedcharttochartlayout",
+    "name": "parsePastedChartToChartLayout",
+    "path": "src/shared/music/chordPro/pastedChartImport.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Parse pasted chart text (chord-over-lyrics, plain headers, or inline ChordPro) into app layout.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-pastedchartimport-ts-pastedchartimportsummary",
+    "name": "PastedChartImportSummary",
+    "path": "src/shared/music/chordPro/pastedChartImport.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Chord symbol token — roots, qualities, slash bass, parenthetical extensions. Intentionally permissive so pasted charts preserve symbols the playback engine may not parse.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
     "demoId": null
   },
   {
@@ -5382,6 +6446,69 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-music-chordsymboldisplay-ts-chordnotationmode",
+    "name": "ChordNotationMode",
+    "path": "src/shared/music/chordSymbolDisplay.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordsymboldisplay-ts-chordsymboltoromandisplay",
+    "name": "chordSymbolToRomanDisplay",
+    "path": "src/shared/music/chordSymbolDisplay.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Map a chord symbol to roman numeral display in the song key (falls back to letters).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordsymboldisplay-ts-formatchordfordisplay",
+    "name": "formatChordForDisplay",
+    "path": "src/shared/music/chordSymbolDisplay.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordtheory-ts-getscalepitchclasses",
+    "name": "getScalePitchClasses",
+    "path": "src/shared/music/chordTheory.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Shared chord theory helpers used by multiple music apps.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-music-chordtheory-ts-harmonicmode",
     "name": "HarmonicMode",
     "path": "src/shared/music/chordTheory.ts",
@@ -5397,6 +6524,23 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "piano"
     ],
     "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordtheory-ts-harmonicmodefromsongkey",
+    "name": "harmonicModeFromSongKey",
+    "path": "src/shared/music/chordTheory.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Shared chord theory helpers used by multiple music apps.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "function",
     "demoId": null
   },
   {
@@ -5419,6 +6563,23 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
   {
     "id": "src-shared-music-chordtheory-ts-romannumeraltochord",
     "name": "romanNumeralToChord",
+    "path": "src/shared/music/chordTheory.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Shared chord theory helpers used by multiple music apps.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordtheory-ts-songkeytotonic",
+    "name": "songKeyToTonic",
     "path": "src/shared/music/chordTheory.ts",
     "kind": "utility",
     "stability": "stable",
@@ -8269,6 +9430,52 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-music-wordsappdeeplink-ts-buildwordsappdeeplink",
+    "name": "buildWordsAppDeepLink",
+    "path": "src/shared/music/wordsAppDeepLink.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Build a Words in Rhythm URL preloaded with chart sections.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-wordsappdeeplink-ts-chartlayouttowordssections",
+    "name": "chartLayoutToWordsSections",
+    "path": "src/shared/music/wordsAppDeepLink.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Convert Encore Originals chart layout into Words in Rhythm section payloads.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-wordsappdeeplink-ts-wordsappdeeplinkoptions",
+    "name": "WordsAppDeepLinkOptions",
+    "path": "src/shared/music/wordsAppDeepLink.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
     "id": "src-shared-notation-drumnotationmini-tsx-computemininotationlayout",
     "name": "computeMiniNotationLayout",
     "path": "src/shared/notation/DrumNotationMini.tsx",
@@ -11084,6 +12291,64 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-undo-labsundocontrols-tsx-labsundocontrols",
+    "name": "LabsUndoControls",
+    "path": "src/shared/undo/LabsUndoControls.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Undo / redo icon buttons wired to . Hotkeys remain active app-wide; these controls expose the same stack in the UI.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "default",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-undo-labsundocontrols-tsx-labsundocontrolsprops",
+    "name": "LabsUndoControlsProps",
+    "path": "src/shared/undo/LabsUndoControls.tsx",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-undo-labsundoshortcutlabel-ts-labsredoshortcutlabel",
+    "name": "labsRedoShortcutLabel",
+    "path": "src/shared/undo/labsUndoShortcutLabel.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Platform-appropriate label for Labs app-level undo/redo tooltips.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-undo-labsundoshortcutlabel-ts-labsundoshortcutlabel",
+    "name": "labsUndoShortcutLabel",
+    "path": "src/shared/undo/labsUndoShortcutLabel.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Platform-appropriate label for Labs app-level undo/redo tooltips.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-undo-labsundostack-ts-combineundocommits",
     "name": "combineUndoCommits",
     "path": "src/shared/undo/labsUndoStack.ts",
@@ -11243,6 +12508,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "words",
       "zines"
     ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-base64url-ts-encodebase64urlutf8",
+    "name": "encodeBase64UrlUtf8",
+    "path": "src/shared/utils/base64Url.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "UTF-8 string ↔ base64url (no padding) for URL-safe payloads.",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [],
     "exportType": "function",
     "demoId": null
   },
@@ -11409,6 +12689,97 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "shared-core",
     "description": "Ensures callers never wait forever if a third-party OAuth callback never fires (blocked popups / iframes / stalled GIS).",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-richtextcontent-ts-isrichtextempty",
+    "name": "isRichTextEmpty",
+    "path": "src/shared/utils/richTextContent.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-richtextcontent-ts-normalizerichtextlinkhref",
+    "name": "normalizeRichTextLinkHref",
+    "path": "src/shared/utils/richTextContent.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Normalize user-entered URLs for TipTap link marks (blocks script/data URLs).",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-richtextcontent-ts-plainorhtmltoeditorhtml",
+    "name": "plainOrHtmlToEditorHtml",
+    "path": "src/shared/utils/richTextContent.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "TipTap `setContent` input: empty → empty doc; values that already look like HTML pass through; otherwise treated as legacy plain text (paragraphs split on blank lines).",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-richtextcontent-ts-richtextlinkpreview",
+    "name": "richTextLinkPreview",
+    "path": "src/shared/utils/richTextContent.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Human-readable lines for link hover cards (hostname + full URL).",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-richtextcontent-ts-richtextlinkpreview",
+    "name": "RichTextLinkPreview",
+    "path": "src/shared/utils/richTextContent.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "utils",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-richtextcontent-ts-richtextplaintext",
+    "name": "richTextPlainText",
+    "path": "src/shared/utils/richTextContent.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Plain text for previews / counts. Not a security sanitizer.",
     "tags": [
       "utils"
     ],

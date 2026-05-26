@@ -60,9 +60,11 @@ import Link from '@mui/material/Link';
 import { alpha, type Theme } from '@mui/material/styles';
 import AppTooltip from '../../shared/components/AppTooltip';
 import { NumericStepperField } from '../../shared/components/music/NumericStepperField';
+import LabsUndoControls from '../../shared/undo/LabsUndoControls';
 import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
 import {
   stanzaDb,
+  type StanzaMarker,
   type StanzaMetronomeTimingScope,
   type StanzaSong,
   type StanzaStemTrack,
@@ -101,7 +103,13 @@ import {
   type StanzaPlaybackLoopMode,
   type StanzaSectionSelectionExtend,
 } from '../utils/stanzaPlaybackLoop';
+import {
+  resolveStanzaTimelineTransport,
+  stanzaPlayheadDisplayTime,
+} from '../utils/stanzaPlayheadDisplayTime';
 import { snapSegmentBoundaryMarkersToBeats, commitSelectionSpanToHullBoundaryMarkers } from '../utils/stanzaBeatGrid';
+import { canPlaceMarkerAtTime, markerTimesEqual } from '../utils/stanzaMarkerSpacing';
+import type { StanzaMarkersChangeContext } from './StanzaTimeline';
 import { isSegmentSkipped, nextNonSkippedTimeForwardPlayback } from '../utils/stanzaSkippedSections';
 import { useStanzaLocalPlaybackObjectUrls } from '../hooks/useStanzaLocalPlaybackObjectUrls';
 import {
@@ -120,7 +128,19 @@ import {
 import { backfillStanzaVideoThumbnailIfNeeded } from '../utils/stanzaVideoThumbnail';
 import { fetchYoutubeOEmbedTitle, youtubeMqThumbnailUrl } from '../utils/stanzaYoutubeMeta';
 import { loadDriveFileAsStanzaLocalBlob } from '../drive/loadDriveSourceForStanza';
-import { LabsGoogleInteractiveAuthRequiredError, LABS_GOOGLE_INTERACTIVE_DRIVE_AUTH_HINT } from '../../shared/google/labsGoogleDriveAccess';
+import {
+  hydrateStanzaDriveSongMedia,
+  stanzaDriveSongNeedsMediaDownload,
+} from '../drive/stanzaDriveMediaHydration';
+import {
+  hydrateStanzaSongStems,
+  stanzaSongStemsNeedHydration,
+} from '../drive/stanzaDriveStemSync';
+import {
+  ensureLabsGoogleAccessTokenForDrive,
+  LabsGoogleInteractiveAuthRequiredError,
+  LABS_GOOGLE_INTERACTIVE_DRIVE_AUTH_HINT,
+} from '../../shared/google/labsGoogleDriveAccess';
 import {
   addStanzaDriveTombstone,
   clearStanzaDriveTombstone,
@@ -228,7 +248,7 @@ function describeYoutubePlayerError(code: number): string {
 
 export default function StanzaWorkspace() {
   const songs = useLiveQuery(() => stanzaDb.songs.orderBy('updatedAt').reverse().toArray(), []);
-  const { push: pushUndo, isReplayingRef } = useLabsUndo();
+  const { push: pushUndo, isReplayingRef, clear: clearUndoStack } = useLabsUndo();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selectedIdRef = useRef<string | null>(null);
   selectedIdRef.current = selectedId;
@@ -313,6 +333,8 @@ export default function StanzaWorkspace() {
   const oembedAttemptedRef = useRef(new Set<string>());
   const urlBootstrapDoneRef = useRef(false);
   const driveDeepLinkAttemptedRef = useRef(false);
+  /** Avoid duplicate Drive fetches when deep-link bootstrap and selection effect overlap. */
+  const driveMediaHydrateSongIdRef = useRef<string | null>(null);
   const [driveDeepLinkError, setDriveDeepLinkError] = useState<string | null>(null);
   const [driveDeepLinkNeedsGesture, setDriveDeepLinkNeedsGesture] = useState<{
     fileId: string;
@@ -497,22 +519,35 @@ export default function StanzaWorkspace() {
     async (opts: { fileId: string; suggestedTitle: string | null; interactiveOAuth: boolean }) => {
       const existingByLink = await stanzaDb.songs.where('driveSourceFileId').equals(opts.fileId).first();
       if (existingByLink) {
-        setSelectedId(existingByLink.id);
+        clearStanzaDriveTombstone(opts.fileId);
+        const row = stanzaDriveSongNeedsMediaDownload(existingByLink)
+          ? await hydrateStanzaDriveSongMedia({
+              row: existingByLink,
+              suggestedTitle: opts.suggestedTitle,
+              interactiveOAuth: opts.interactiveOAuth,
+            })
+          : existingByLink;
+        setSelectedId(row.id);
         setDriveDeepLinkError(null);
         setDriveDeepLinkNeedsGesture(null);
-        // The row is back in the library after this resolves, so any prior tombstone is stale.
-        clearStanzaDriveTombstone(opts.fileId);
-        void backfillStanzaVideoThumbnailIfNeeded(existingByLink.id);
+        void backfillStanzaVideoThumbnailIfNeeded(row.id);
         return;
       }
       const { blob, title, driveSourceFileId } = await loadDriveFileAsStanzaLocalBlob(opts);
       const existing = await stanzaDb.songs.where('driveSourceFileId').equals(driveSourceFileId).first();
       if (existing) {
-        setSelectedId(existing.id);
+        clearStanzaDriveTombstone(driveSourceFileId);
+        const row = stanzaDriveSongNeedsMediaDownload(existing)
+          ? await hydrateStanzaDriveSongMedia({
+              row: existing,
+              suggestedTitle: opts.suggestedTitle,
+              interactiveOAuth: opts.interactiveOAuth,
+            })
+          : existing;
+        setSelectedId(row.id);
         setDriveDeepLinkError(null);
         setDriveDeepLinkNeedsGesture(null);
-        clearStanzaDriveTombstone(driveSourceFileId);
-        void backfillStanzaVideoThumbnailIfNeeded(existing.id);
+        void backfillStanzaVideoThumbnailIfNeeded(row.id);
         return;
       }
       const rowId = crypto.randomUUID();
@@ -544,8 +579,15 @@ export default function StanzaWorkspace() {
   const completeGestureDriveImport = useCallback(async () => {
     const pending = driveDeepLinkNeedsGesture;
     const fromUrl = readStanzaDriveBootstrapFromLocation();
-    const fileId = pending?.fileId ?? fromUrl.driveFileId;
-    const suggestedTitle = pending?.title ?? fromUrl.driveTitle;
+    const selectedRow = selectedRef.current;
+    const fileId =
+      pending?.fileId ??
+      fromUrl.driveFileId ??
+      (selectedRow && stanzaDriveSongNeedsMediaDownload(selectedRow)
+        ? selectedRow.driveSourceFileId?.trim() ?? null
+        : null);
+    const suggestedTitle =
+      pending?.title ?? fromUrl.driveTitle ?? (selectedRow?.driveSourceFileId ? selectedRow.title : null);
     if (!fileId) return;
     setDriveDeepLinkBusy(true);
     setDriveDeepLinkError(null);
@@ -617,6 +659,57 @@ export default function StanzaWorkspace() {
       }
     })();
   }, [commitDriveDeepLinkImport]);
+
+  useEffect(() => {
+    driveMediaHydrateSongIdRef.current = null;
+  }, [selectedId]);
+
+  /**
+   * After a Drive metadata pull, rows may exist without `localAudioBlob`. Re-download from Drive
+   * when the user opens the song (library click or last-selected restore), not only on `?df=`.
+   */
+  useEffect(() => {
+    if (!selected) return;
+    const needsMain = stanzaDriveSongNeedsMediaDownload(selected);
+    const needsStems = stanzaSongStemsNeedHydration(selected);
+    if (!needsMain && !needsStems) return;
+    if (driveMediaHydrateSongIdRef.current === selected.id) return;
+    const { driveFileId } = readStanzaDriveBootstrapFromLocation();
+    if (needsMain && driveFileId && selected.driveSourceFileId?.trim() === driveFileId) return;
+    driveMediaHydrateSongIdRef.current = selected.id;
+    setDriveDeepLinkBusy(true);
+    setDriveDeepLinkError(null);
+    void (async () => {
+      try {
+        let row = selected;
+        if (needsMain) {
+          row = await hydrateStanzaDriveSongMedia({
+            row,
+            interactiveOAuth: false,
+          });
+        }
+        if (stanzaSongStemsNeedHydration(row)) {
+          const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: false });
+          row = await hydrateStanzaSongStems({ accessToken: token, row });
+        }
+        setSelectedId(row.id);
+        setDriveDeepLinkNeedsGesture(null);
+        void backfillStanzaVideoThumbnailIfNeeded(row.id);
+      } catch (e) {
+        if (e instanceof LabsGoogleInteractiveAuthRequiredError) {
+          const fid = selected.driveSourceFileId?.trim();
+          if (fid) {
+            setDriveDeepLinkNeedsGesture({ fileId: fid, title: selected.title });
+          }
+          setDriveDeepLinkError(null);
+          return;
+        }
+        setDriveDeepLinkError(e instanceof Error ? e.message : String(e));
+      } finally {
+        setDriveDeepLinkBusy(false);
+      }
+    })();
+  }, [selected]);
 
   /**
    * Bootstrap-prompt re-add: user clicked "Re-add to library" in the tombstone prompt. We clear
@@ -888,11 +981,25 @@ export default function StanzaWorkspace() {
     });
   }, [selectedId, primaryLocalBlobKey]);
 
-  const primaryMixKey = `${primaryPlaybackMuted(selected) ? 1 : 0}:${stanzaSanitizeLinearBusGain(selected?.primaryGain)}`;
-  const stemMixKey =
-    selected?.stems
-      ?.map((s) => `${s.id}:${stemPlaybackMuted(s) ? 1 : 0}:${stanzaSanitizeLinearBusGain(s.gain)}`)
-      .join('|') ?? '';
+  /** Mix slider drafts apply to audible output immediately; Dexie persists on commit. */
+  const playbackPrimaryGain = stanzaSanitizeLinearBusGain(mixPrimaryGainDraft ?? selected?.primaryGain);
+  const playbackStems = useMemo((): StanzaStemTrack[] => {
+    const stems = selected?.stems ?? STANZA_EMPTY_STEMS;
+    if (Object.keys(mixStemGainDraftById).length === 0) return stems;
+    return stems.map((s) =>
+      mixStemGainDraftById[s.id] != null
+        ? { ...s, gain: stanzaSanitizeLinearBusGain(mixStemGainDraftById[s.id]) }
+        : s,
+    );
+  }, [selected?.stems, mixStemGainDraftById]);
+
+  const playbackMixRef = useRef({ primaryGain: 1, stems: STANZA_EMPTY_STEMS });
+  playbackMixRef.current = { primaryGain: playbackPrimaryGain, stems: playbackStems };
+
+  const primaryMixKey = `${primaryPlaybackMuted(selected) ? 1 : 0}:${playbackPrimaryGain}`;
+  const stemMixKey = playbackStems
+    .map((s) => `${s.id}:${stemPlaybackMuted(s) ? 1 : 0}:${stanzaSanitizeLinearBusGain(s.gain)}`)
+    .join('|');
 
   const stemWebAudioMixerEnabled = Boolean(
     selected &&
@@ -940,8 +1047,8 @@ export default function StanzaWorkspace() {
       stemUrlKey,
       expectedStemCount: selected?.stems?.length ?? 0,
       primaryMuted: primaryPlaybackMuted(selected),
-      primaryGain: stanzaSanitizeLinearBusGain(selected?.primaryGain),
-      stems: selected?.stems ?? STANZA_EMPTY_STEMS,
+      primaryGain: playbackPrimaryGain,
+      stems: playbackStems,
       localVideoRef,
       localAudioRef,
       isLocalVideo,
@@ -979,11 +1086,11 @@ export default function StanzaWorkspace() {
       main.volume = 0;
       main.muted = false;
     } else {
-      main.volume = stanzaSanitizeLinearBusGain(selected.primaryGain);
+      main.volume = playbackPrimaryGain;
       main.muted = primaryPlaybackMuted(selected);
     }
 
-    for (const stem of selected.stems ?? []) {
+    for (const stem of playbackStems) {
       const el = stemAudioRefs.current.get(stem.id);
       if (!el) continue;
       if (viaWebAudio) {
@@ -1000,6 +1107,8 @@ export default function StanzaWorkspace() {
   }, [
     primaryMixKey,
     stemMixKey,
+    playbackPrimaryGain,
+    playbackStems,
     selected,
     stemWebAudioMixerEnabled,
     webAudioMixReady,
@@ -1186,6 +1295,10 @@ export default function StanzaWorkspace() {
   }, [selectedId, playback.duration, songs]);
 
   useEffect(() => {
+    clearUndoStack();
+  }, [selectedId, clearUndoStack]);
+
+  useEffect(() => {
     if (!songs?.length) return;
     for (const s of songs) {
       if (!s.ytId) continue;
@@ -1205,7 +1318,12 @@ export default function StanzaWorkspace() {
   const persistSong = useCallback(
     async (
       patch: Partial<StanzaSong> & Pick<StanzaSong, 'id'>,
-      opts?: { recordUndo?: boolean; touchUpdatedAt?: boolean },
+      opts?: {
+        recordUndo?: boolean;
+        touchUpdatedAt?: boolean;
+        /** When dragging a boundary, undo restores to pointer-down markers (not DB mid-drag). */
+        markerUndoBaseline?: StanzaMarker[];
+      },
     ) => {
       const row = await stanzaDb.songs.get(patch.id);
       if (!row) return;
@@ -1219,21 +1337,69 @@ export default function StanzaWorkspace() {
         markers: nextMarkers,
         updatedAt: touchUpdatedAt ? Date.now() : row.updatedAt,
       };
+      const markersOnlyPatch =
+        patch.markers != null &&
+        (Object.keys(patch) as (keyof typeof patch)[]).every((k) => k === 'id' || k === 'markers');
+
       await stanzaDb.songs.put(next);
-      if (recordUndo && prevSnap) {
-        const nextSnap = structuredClone(next);
+
+      if (!recordUndo || !prevSnap) return;
+
+      if (markersOnlyPatch) {
+        const prevMarkers = structuredClone(
+          opts?.markerUndoBaseline != null
+            ? ensureMarkerIds(opts.markerUndoBaseline)
+            : prevSnap.markers,
+        );
+        const nextMarkersSnap = structuredClone(nextMarkers);
+        if (markerTimesEqual(prevMarkers, nextMarkersSnap)) return;
+        const songId = patch.id;
         pushUndo({
           undo: async () => {
-            await stanzaDb.songs.put(prevSnap);
+            const r = await stanzaDb.songs.get(songId);
+            if (!r) return;
+            await stanzaDb.songs.put({ ...r, markers: prevMarkers, updatedAt: Date.now() });
           },
           redo: async () => {
-            await stanzaDb.songs.put(nextSnap);
+            const r = await stanzaDb.songs.get(songId);
+            if (!r) return;
+            await stanzaDb.songs.put({ ...r, markers: nextMarkersSnap, updatedAt: Date.now() });
           },
         });
+        return;
       }
+
+      const nextSnap = structuredClone(next);
+      pushUndo({
+        undo: async () => {
+          await stanzaDb.songs.put(prevSnap);
+        },
+        redo: async () => {
+          await stanzaDb.songs.put(nextSnap);
+        },
+      });
     },
     [isReplayingRef, pushUndo],
   );
+
+  const commitMarkers = useCallback(
+    async (markers: StanzaMarker[], context?: StanzaMarkersChangeContext) => {
+      if (!selected) return;
+      await persistSong(
+        { id: selected.id, markers },
+        { markerUndoBaseline: context?.dragBaseline },
+      );
+    },
+    [persistSong, selected],
+  );
+
+  const [markerEditNotice, setMarkerEditNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!markerEditNotice) return;
+    const t = window.setTimeout(() => setMarkerEditNotice(null), 5000);
+    return () => window.clearTimeout(t);
+  }, [markerEditNotice]);
 
   const { saveSegmentMetronome, saveSongMetronome } = useStanzaMetronomePersistence(selected ?? undefined, persistSong);
 
@@ -1578,6 +1744,7 @@ export default function StanzaWorkspace() {
     const bus = transposeStemBusRef.current;
     const main = getLocalMainMedia();
     const row = selectedRef.current;
+    const mix = playbackMixRef.current;
     if (!main || !row || row.ytId) {
       mirror?.stop();
       bus?.stop();
@@ -1590,15 +1757,20 @@ export default function StanzaWorkspace() {
       bus?.stop();
       return;
     }
+    const primaryMuted = primaryPlaybackMuted(row);
     if (stemsLen === 0) {
       bus?.stop();
       if (!mirror?.getBuffer()) {
         mirror?.stop();
         return;
       }
-      const linear = primaryPlaybackMuted(row) ? 0 : stanzaSanitizeLinearBusGain(row.primaryGain);
+      const linear = primaryMuted ? 0 : mix.primaryGain;
       if (main.paused || linear <= 0) {
         mirror.stop();
+        return;
+      }
+      if (mirror.hasActiveSource()) {
+        mirror.setLinearGain(linear);
         return;
       }
       mirror.startOrRestart(main.currentTime, main.playbackRate, transpose, linear);
@@ -1617,15 +1789,33 @@ export default function StanzaWorkspace() {
       bus.stop();
       return;
     }
+    if (bus.hasActiveSources()) {
+      bus.updateMix(primaryMuted, mix.primaryGain, mix.stems);
+      return;
+    }
     bus.startOrRestart(
       main.currentTime,
       main.playbackRate,
       transpose,
-      primaryPlaybackMuted(row),
-      row.primaryGain,
-      row.stems ?? STANZA_EMPTY_STEMS,
+      primaryMuted,
+      mix.primaryGain,
+      mix.stems,
     );
   }, [getLocalMainMedia]);
+
+  useEffect(() => {
+    if (!transposeMirrorPlaybackActive && !transposeStemBusPlaybackActive) return;
+    const main = getLocalMainMedia();
+    if (!main || main.paused) return;
+    syncTransposeMirrorFromMain();
+  }, [
+    primaryMixKey,
+    stemMixKey,
+    transposeMirrorPlaybackActive,
+    transposeStemBusPlaybackActive,
+    syncTransposeMirrorFromMain,
+    getLocalMainMedia,
+  ]);
 
   const applyPlaybackRate = useCallback(
     (rate: number) => {
@@ -1681,6 +1871,15 @@ export default function StanzaWorkspace() {
     return timeRef.current;
   }, [isYoutube, getLocalMainMedia]);
 
+  /** Align marker placement with the painted timeline playhead (loop clamp + scrub display). */
+  const resolvePlayheadTimeForMarkers = useCallback((): number => {
+    const d = durationRef.current;
+    const live = readLiveTransportTime();
+    const transport = resolveStanzaTimelineTransport(live, seekDisplayPendingRef.current);
+    if (!(d > 0)) return transport;
+    return stanzaPlayheadDisplayTime(transport, d, loopModeRef.current, effectiveSelectionSpanRef.current);
+  }, [readLiveTransportTime]);
+
   const seekUnified = useCallback(
     (tRaw: number, opts?: { flushPlaybackState?: boolean }) => {
       const flush = opts?.flushPlaybackState === true;
@@ -1700,9 +1899,9 @@ export default function StanzaWorkspace() {
       }
 
       if (isYoutube) {
+        setPlayback((p) => (p.currentTime === t ? p : { ...p, currentTime: t }));
         if (flush) {
           ytControllerRef.current?.seekTo(t);
-          setPlayback((p) => (p.currentTime === t ? p : { ...p, currentTime: t }));
         } else {
           scheduleSeekFrame();
         }
@@ -1727,11 +1926,7 @@ export default function StanzaWorkspace() {
           syncTransposeMirrorFromMain();
         });
       }
-      if (flush) {
-        setPlayback((p) => (p.currentTime === t ? p : { ...p, currentTime: t }));
-      } else {
-        scheduleSeekFrame();
-      }
+      setPlayback((p) => (p.currentTime === t ? p : { ...p, currentTime: t }));
     },
     [isYoutube, scheduleSeekFrame, syncTransposeMirrorFromMain, getLocalMainMedia],
   );
@@ -2096,6 +2291,26 @@ export default function StanzaWorkspace() {
     return () => window.clearInterval(id);
   }, [selected, segments, persistSong]);
 
+  const addMarkerAtCurrentTime = useCallback(() => {
+    if (!selected) return;
+    const d = playback.duration;
+    if (!(d > 0)) return;
+    const at = resolvePlayheadTimeForMarkers();
+    const existing = ensureMarkerIds(selected.markers ?? []);
+    if (!canPlaceMarkerAtTime(at, existing, d)) {
+      setMarkerEditNotice(
+        'A split already exists near the playhead. Scrub elsewhere or drag the nearby boundary.',
+      );
+      return;
+    }
+    const n = existing.length + 1;
+    const markers = [
+      ...existing,
+      { id: crypto.randomUUID(), time: at, label: `Marker ${n}` },
+    ];
+    void persistSong({ id: selected.id, markers });
+  }, [resolvePlayheadTimeForMarkers, playback.duration, persistSong, selected]);
+
   useEffect(() => {
     if (!selected) return;
     const onKey = (e: KeyboardEvent) => {
@@ -2105,28 +2320,11 @@ export default function StanzaWorkspace() {
       const t = e.target as HTMLElement | null;
       if (t?.closest('input, textarea, [contenteditable=true], button')) return;
       e.preventDefault();
-      const at = timeRef.current;
-      const n = (selected.markers?.length ?? 0) + 1;
-      const markers = [
-        ...ensureMarkerIds(selected.markers ?? []),
-        { id: crypto.randomUUID(), time: at, label: `Marker ${n}` },
-      ];
-      void persistSong({ id: selected.id, markers });
+      void addMarkerAtCurrentTime();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [selected, persistSong]);
-
-  const addMarkerAtCurrentTime = useCallback(() => {
-    if (!selected) return;
-    const at = timeRef.current;
-    const n = (selected.markers?.length ?? 0) + 1;
-    const markers = [
-      ...ensureMarkerIds(selected.markers ?? []),
-      { id: crypto.randomUUID(), time: at, label: `Marker ${n}` },
-    ];
-    void persistSong({ id: selected.id, markers });
-  }, [selected, persistSong]);
+  }, [addMarkerAtCurrentTime, selected]);
 
   const handleSelectSegments = useCallback(
     (i: number, event: React.MouseEvent) => {
@@ -2449,7 +2647,7 @@ export default function StanzaWorkspace() {
     railCalibSeg?.id,
   ]);
 
-  const metronomeUserGain = stanzaSanitizeLinearBusGain(selected?.metronomeGain, 1);
+  const metronomeUserGain = stanzaSanitizeLinearBusGain(mixMetronomeGainDraft ?? selected?.metronomeGain, 1);
   const metronomeUserMuted = selected?.metronomeMuted === true;
   useStanzaMetronomeSync({
     enabled: Boolean(
@@ -2469,7 +2667,7 @@ export default function StanzaWorkspace() {
    * scale at the boundary. Sliding the Mix slider updates this immediately via a draft, and the
    * persisted value is what we hand the drum component.
    */
-  const drumsUserGain = stanzaSanitizeLinearBusGain(selected?.drumsGain, 0.7);
+  const drumsUserGain = stanzaSanitizeLinearBusGain(mixDrumsGainDraft ?? selected?.drumsGain, 0.7);
   const drumsUserMuted = selected?.drumsMuted === true;
   /**
    * Stanza drives the shared `DrumAccompaniment` from the metronome's resolved bpm + anchor so
@@ -2599,11 +2797,19 @@ export default function StanzaWorkspace() {
   const renderDriveDeepLinkAlerts = (): ReactNode => {
     const showLoading =
       driveDeepLinkBusy && !driveDeepLinkError && !driveDeepLinkNeedsGesture && !driveDeepLinkRemovedPrompt;
+    const showDriveMediaHint =
+      selected != null &&
+      stanzaDriveSongNeedsMediaDownload(selected) &&
+      !driveDeepLinkBusy &&
+      !driveDeepLinkError &&
+      !driveDeepLinkNeedsGesture &&
+      !driveDeepLinkRemovedPrompt;
     if (
       !driveDeepLinkError &&
       !driveDeepLinkNeedsGesture &&
       !driveDeepLinkRemovedPrompt &&
-      !showLoading
+      !showLoading &&
+      !showDriveMediaHint
     ) {
       return null;
     }
@@ -2613,6 +2819,33 @@ export default function StanzaWorkspace() {
           <Alert severity="info" sx={{ maxWidth: 560, mx: 'auto', mb: 2, width: '100%' }}>
             <Typography variant="body2" sx={{ lineHeight: 1.5 }}>
               Fetching audio from Google Drive…
+            </Typography>
+          </Alert>
+        ) : null}
+        {showDriveMediaHint ? (
+          <Alert
+            severity="info"
+            sx={{
+              maxWidth: 560,
+              mx: 'auto',
+              mb: 2,
+              width: '100%',
+              '& .MuiAlert-message': { width: '100%' },
+            }}
+            action={
+              <Button
+                color="inherit"
+                size="small"
+                variant="outlined"
+                onClick={() => void completeGestureDriveImport()}
+              >
+                Load from Drive
+              </Button>
+            }
+          >
+            <Typography variant="body2" sx={{ lineHeight: 1.5 }}>
+              Your sections and mix settings are here. Load the recording from Google Drive to hear it on
+              this device.
             </Typography>
           </Alert>
         ) : null}
@@ -2903,7 +3136,17 @@ export default function StanzaWorkspace() {
                 ← Back to library
               </button>
             </Box>
-            <Box sx={{ flexShrink: 0, ml: 'auto', alignSelf: 'flex-start' }}>
+            <Box
+              sx={{
+                flexShrink: 0,
+                ml: 'auto',
+                alignSelf: 'flex-start',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+              }}
+            >
+              <LabsUndoControls />
               <StanzaAccountMenu />
             </Box>
           </Box>
@@ -3927,9 +4170,22 @@ export default function StanzaWorkspace() {
               </Paper>
 
               <Box className="stanza-viewer-timeline-slot">
+                {markerEditNotice ? (
+                  <Alert
+                    severity="info"
+                    onClose={() => setMarkerEditNotice(null)}
+                    sx={{ mb: 1 }}
+                  >
+                    {markerEditNotice}
+                  </Alert>
+                ) : null}
                 <StanzaTimeline
                   duration={playback.duration}
                   currentTime={playback.currentTime}
+                  transportTime={resolveStanzaTimelineTransport(
+                    playback.currentTime,
+                    seekDisplayPendingRef.current,
+                  )}
                   markers={selected.markers ?? []}
                   segmentMs={selected.stats}
                   selectedSegmentIndices={selectedSegmentIndices}
@@ -3940,7 +4196,7 @@ export default function StanzaWorkspace() {
                   onPause={pauseUnified}
                   onSeek={userSeekUnified}
                   onSelectSegments={handleSelectSegments}
-                  onMarkersChange={(m) => void persistSong({ id: selected.id, markers: m })}
+                  onMarkersChange={(m, ctx) => void commitMarkers(m, ctx)}
                   onDeleteMarker={deleteMarkerById}
                   onRenameSectionFromLabel={renameSectionFromLabel}
                   onSkipToLoopStart={skipToLoopStart}

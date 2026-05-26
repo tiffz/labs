@@ -1,0 +1,171 @@
+import { describe, expect, it } from 'vitest';
+import {
+  extractChartPortionForImport,
+  importPastedChartFromClipboard,
+  isChordOnlyLine,
+  looksLikePastedChart,
+  parsePastedChartToChartLayout,
+} from './pastedChartImport';
+import { serializeChartLayoutToChordPro } from './chordChartLayout';
+import { MEET_ME_AROUND_LYRIC, MEET_ME_MOON_PASTE } from './fixtures';
+
+const MEET_ME_MOON = MEET_ME_MOON_PASTE;
+
+const ROYAL_FLUSH = `Verse 1
+Cm
+You crawled from the black, out of the night
+Ab
+Faced all you lack, in a shivering fight
+Fm                                  G7
+Held your tears through the menace of the years
+
+Chorus
+Eb               Bb
+A royal flush, and you're set!
+
+Bridge
+Ab
+You crossed the gate,
+Bb/Ab
+But lost your grip on fate
+
+Chorus 3
+Cm
+You earned your get
+Ab
+Cause you never made a bet
+Fm
+Ab       G7             Cm(add2)
+You just won someone else's game`;
+
+describe('pastedChartImport', () => {
+  it('detects chord-over-lyrics paste', () => {
+    expect(looksLikePastedChart(MEET_ME_MOON)).toBe(true);
+    expect(looksLikePastedChart('Hello world\nplain text')).toBe(false);
+  });
+
+  it('recognizes chord-only lines', () => {
+    expect(isChordOnlyLine('Fm                    Bb')).toBe(true);
+    expect(isChordOnlyLine('Ab     Bb')).toBe(true);
+    expect(isChordOnlyLine('Bb/Ab')).toBe(true);
+    expect(isChordOnlyLine("I'm not like you")).toBe(false);
+  });
+
+  it('parses section headers and chord positions', () => {
+    const layout = parsePastedChartToChartLayout(MEET_ME_MOON);
+    expect(layout.sections.map((s) => s.header)).toEqual([
+      'Verse 1',
+      'Chorus 1',
+      'Bridge',
+      'Instrumental',
+      'Outro',
+    ]);
+
+    const instrumental = layout.sections.find((s) => s.header === 'Instrumental')!;
+    expect(instrumental.lines[0]?.chords.map((c) => c.chordName)).toEqual(['Ab', 'Bb']);
+    expect(instrumental.lines[0]?.chords[1]?.charIndex).toBeGreaterThan(0);
+
+    const verse = layout.sections[0]!;
+    expect(verse.lines[0]?.text).toBe("I'm not like you, and you're not like me");
+    expect(verse.lines[0]?.chords.map((c) => [c.chordName, c.charIndex])).toEqual([
+      ['Fm', 0],
+      ['Bb', 22],
+    ]);
+    expect(verse.lines[1]?.chords[0]?.chordName).toBe('Eb');
+  });
+
+  it('handles slash chords and parenthetical extensions', () => {
+    const layout = parsePastedChartToChartLayout(ROYAL_FLUSH);
+    expect(layout.sections.some((s) => s.header === 'Chorus')).toBe(true);
+
+    const bridge = layout.sections.find((s) => s.header === 'Bridge')!;
+    const slashLine = bridge.lines.find((l) => l.text.includes('But lost your grip'));
+    expect(slashLine?.chords[0]?.chordName).toBe('Bb/Ab');
+
+    const lastSection = layout.sections.find((s) => s.header === 'Chorus 3')!;
+    const extended = lastSection.lines.find((l) => l.text.includes("someone else's game"));
+    expect(extended?.chords.some((c) => c.chordName === 'Cm(add2)')).toBe(true);
+  });
+
+  it('round-trips through ChordPro serialization', () => {
+    const layout = parsePastedChartToChartLayout(`Verse 1
+Fm
+Hello world`);
+    const chordPro = serializeChartLayoutToChordPro(layout);
+    expect(chordPro).toContain('[Verse 1]');
+    expect(chordPro).toContain('[Fm]Hello world');
+  });
+
+  it('imports inline ChordPro paste', () => {
+    const layout = parsePastedChartToChartLayout(`[Verse 1]
+[Fm]I'm not like [Bb]you`);
+    expect(layout.sections[0]?.lines[0]?.chords).toHaveLength(2);
+  });
+
+  it('parses full Meet Me on the Moon chart including Instrumental chords', () => {
+    const full = `${MEET_ME_MOON.split('Outro')[0]!.trim()}
+Chorus 2
+Ab
+So please meet me on the moon
+Bb
+It's cold up here, so please come soon
+
+Bridge
+Cm
+You know the moon can be a lonely place
+Bb
+And smiles wide but hides its dark side 
+
+Ab     Bb
+[Instrumental]
+
+Outro
+Ab
+So thanks for stopping by the moon`;
+
+    const layout = parsePastedChartToChartLayout(full);
+    const instrumental = layout.sections.find((s) => s.header === 'Instrumental')!;
+    expect(instrumental.lines[0]?.chords.map((c) => c.chordName)).toEqual(['Ab', 'Bb']);
+    expect(serializeChartLayoutToChordPro({ sections: [instrumental] })).toBe('[Instrumental]\n[Ab][Bb]');
+  });
+
+  it('excerpts trailing chart from long mixed paste', () => {
+    const prose = Array.from({ length: 90 }, (_, i) => `Brainstorm line ${i} with some words.`).join('\n');
+    const mixed = `${prose}\n\n${MEET_ME_MOON}`;
+    const { text, excerpted } = extractChartPortionForImport(mixed);
+    expect(excerpted).toBe(true);
+    expect(text).toContain('Verse 1');
+    expect(text).not.toContain('Brainstorm line 0');
+    const imported = importPastedChartFromClipboard(mixed);
+    expect(imported.ok).toBe(true);
+    expect(imported.excerpted).toBe(true);
+    expect(imported.notifyUser).toBe(true);
+    expect(imported.sectionCount).toBeGreaterThan(2);
+  });
+
+  it('snaps trailing outro chords onto the last word', () => {
+    const layout = parsePastedChartToChartLayout(`Outro
+Fm                                Bb       Eb
+You'll have to show me around`);
+    const line = layout.sections[0]?.lines[0];
+    expect(line?.text).toBe(MEET_ME_AROUND_LYRIC);
+    const around = line!.text.indexOf('around');
+    expect(line?.chords.map((c) => [c.chordName, c.charIndex])).toEqual([
+      ['Fm', 0],
+      ['Bb', around],
+      ['Eb', around],
+    ]);
+  });
+
+  it('overlays chord-only lines across blank lines before lyrics', () => {
+    const layout = parsePastedChartToChartLayout(`Bridge
+Ab
+
+But I love how the moon calls the wolves and pulls the tide`);
+    const bridge = layout.sections[0];
+    expect(bridge?.lines).toHaveLength(1);
+    expect(bridge?.lines[0]?.text).toContain('But I love');
+    expect(bridge?.lines[0]?.chords[0]?.chordName).toBe('Ab');
+    expect(bridge?.lines[0]?.chords[0]?.charIndex).toBe(0);
+  });
+});

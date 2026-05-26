@@ -26,6 +26,7 @@ export type SongResourcesEditSection =
   | 'spotify'
   | 'charts'
   | 'takes'
+  | 'misc'
   | 'all';
 
 const SECTION_SCROLL: Record<SongResourcesEditSection, string | null> = {
@@ -35,6 +36,7 @@ const SECTION_SCROLL: Record<SongResourcesEditSection, string | null> = {
   spotify: 'encore-media-hub-spotify',
   charts: 'encore-media-hub-charts',
   takes: 'encore-media-hub-takes',
+  misc: 'encore-media-hub-misc',
 };
 
 function toPersistedSong(

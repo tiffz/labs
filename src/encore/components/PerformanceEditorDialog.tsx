@@ -20,6 +20,7 @@ import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 import { useCallback, useEffect, useMemo, useRef, useState, Fragment, type DragEvent, type ReactElement } from 'react';
 import { driveGetFileMetadata, driveUploadFileResumable } from '../drive/driveFetch';
+import { useEncoreDriveUploadDedup } from '../context/EncoreDriveUploadDedupContext';
 import { ensureEncoreDriveLayout } from '../drive/bootstrapFolders';
 import { resolveDriveUploadFolderId, type DriveUploadFolderLayout } from '../drive/resolveDriveUploadFolder';
 import { driveFileWebUrl, driveFolderWebUrl } from '../drive/driveWebUrls';
@@ -132,6 +133,7 @@ export function PerformanceEditorDialog(props: {
   } = props;
   const { songs, repertoireExtras } = useEncore();
   const { withBlockingJob } = useEncoreBlockingJobs();
+  const { uploadWithDuplicateCheck, registerUploadedDriveFile } = useEncoreDriveUploadDedup();
   const songForPerformance = useMemo(() => songs.find((s) => s.id === songId) ?? null, [songs, songId]);
   const [draft, setDraft] = useState<EncorePerformance>(newPerformance(songId));
   const [videoInput, setVideoInput] = useState('');
@@ -325,13 +327,29 @@ export function PerformanceEditorDialog(props: {
             songForPerformance,
             extension,
           );
-          const created = await driveUploadFileResumable(
-            googleAccessToken,
-            pendingLocalVideoFile,
-            [parent.trim()],
-            desiredName,
-          );
-          videoTargetDriveFileId = created.id;
+          const perfLabel = `${draft.venueTag.trim() || 'Venue'} · Video`;
+          const uploadedId = await uploadWithDuplicateCheck({
+            file: pendingLocalVideoFile,
+            uploadNew: async () => {
+              const created = await driveUploadFileResumable(
+                googleAccessToken,
+                pendingLocalVideoFile,
+                [parent.trim()],
+                desiredName,
+              );
+              await registerUploadedDriveFile(created.id, perfLabel);
+              return created.id;
+            },
+            reuseExisting: async (driveFileId) => {
+              await registerUploadedDriveFile(driveFileId, perfLabel);
+              return driveFileId;
+            },
+          });
+          if (!uploadedId) {
+            setUploading(false);
+            return;
+          }
+          videoTargetDriveFileId = uploadedId;
           externalVideoUrl = undefined;
         });
       } catch (e) {

@@ -14,6 +14,7 @@ export type SongPageMediaSlots = {
   charts: ReactNode;
   chartsFooter: ReactNode;
   takes: ReactNode;
+  misc: ReactNode;
 };
 
 export type SongPageMediaHubFileDropConfig = {
@@ -39,7 +40,7 @@ export function SongPageMediaHubCards(props: {
 }): ReactElement {
   const theme = useTheme();
   const { slots, fileDrop } = props;
-  const { referenceRecordings, backingTracks, charts, chartsFooter, takes } = slots;
+  const { referenceRecordings, backingTracks, charts, chartsFooter, takes, misc } = slots;
   const cardBorder = alpha(theme.palette.text.primary, 0.09);
   const cardBg = alpha(theme.palette.background.paper, 1);
   const hoverShadow = `0 18px 44px -20px ${alpha(theme.palette.common.black, 0.14)}`;
@@ -66,15 +67,15 @@ export function SongPageMediaHubCards(props: {
 
   const headerSx = {
     pb: 0,
-    pt: 1,
-    px: 1.5,
+    pt: 0.75,
+    px: 1.25,
     '& .MuiCardHeader-content': { minWidth: 0 },
   } as const;
 
   const contentSx = {
     pt: 0,
-    px: 1.5,
-    pb: 1.25,
+    px: 1.25,
+    pb: 1,
     flex: 1,
     display: 'flex',
     flexDirection: 'column',
@@ -85,12 +86,19 @@ export function SongPageMediaHubCards(props: {
   const titleProps = {
     variant: 'subtitle2' as const,
     fontWeight: 700,
-    lineHeight: 1.3,
+    fontSize: '0.8125rem',
+    lineHeight: 1.25,
     letterSpacing: '-0.01em',
   };
   const subProps = {
     variant: 'caption' as const,
-    sx: { lineHeight: 1.35, display: 'block', color: 'text.secondary', letterSpacing: '0.01em' },
+    sx: {
+      fontSize: '0.6875rem',
+      lineHeight: 1.3,
+      display: 'block',
+      color: 'text.secondary',
+      letterSpacing: '0.01em',
+    },
   };
 
   const dropHighlight = (slot: SongMediaUploadSlot) => {
@@ -185,6 +193,18 @@ export function SongPageMediaHubCards(props: {
         <CardContent sx={contentSx}>{takes}</CardContent>
       </Card>
   );
+  const miscCard = (
+    <Card id="encore-media-hub-misc" sx={cardSx} variant="outlined">
+        <CardHeader
+          title="Misc"
+          subheader="Other resources"
+          titleTypographyProps={titleProps}
+          subheaderTypographyProps={subProps}
+          sx={headerSx}
+        />
+        <CardContent sx={contentSx}>{misc}</CardContent>
+      </Card>
+  );
 
   return (
     <Box
@@ -196,7 +216,7 @@ export function SongPageMediaHubCards(props: {
         gridTemplateColumns: {
           xs: '1fr',
           sm: 'repeat(2, minmax(0, 1fr))',
-          lg: 'repeat(4, minmax(0, 1fr))',
+          lg: 'repeat(5, minmax(0, 1fr))',
         },
         gap: { xs: 1.75, sm: 2, lg: 2 },
       }}
@@ -205,6 +225,7 @@ export function SongPageMediaHubCards(props: {
       {wrapDropCard('play', playCard)}
       {wrapDropCard('charts', chartsCard)}
       {wrapDropCard('takes', takesCard)}
+      {wrapDropCard('misc', miscCard)}
     </Box>
   );
 }

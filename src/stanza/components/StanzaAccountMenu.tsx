@@ -128,7 +128,8 @@ export default function StanzaAccountMenu() {
         onBackup: backup.onBackup,
         onSignIn: backup.onSignIn,
         lastBackupExportedAt: meta.lastBackupExportedAt,
-        scopeSummary: 'Sections, BPM, mix, and skip flags. Audio stays on device.',
+        scopeSummary:
+          'Sections, BPM, mix, and skip flags. Drive recordings re-download when you open them.',
         scopeTooltip:
           'Metadata syncs to a Stanza folder on Drive. Recordings and mix layers stay on each device (drive.file).',
       }}

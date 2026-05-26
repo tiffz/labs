@@ -29,6 +29,7 @@ export function resolveDriveUploadFolderId(
     case 'referenceTracks':
     case 'backingTracks':
     case 'takes':
+    case 'misc':
       return trimmed(kind) ?? (syncMeta.recordingsFolderId?.trim() || undefined);
     default: {
       const _exhaustive: never = kind;

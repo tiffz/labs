@@ -1,4 +1,4 @@
-export const SONG_MEDIA_UPLOAD_SLOTS = ['listen', 'play', 'charts', 'takes'] as const;
+export const SONG_MEDIA_UPLOAD_SLOTS = ['listen', 'play', 'charts', 'takes', 'misc'] as const;
 
 export type SongMediaUploadSlot = (typeof SONG_MEDIA_UPLOAD_SLOTS)[number];
 
@@ -7,4 +7,5 @@ export const SONG_MEDIA_UPLOAD_SLOT_LABEL: Record<SongMediaUploadSlot, string> =
   play: 'Play: backing track',
   charts: 'Charts: sheet or export',
   takes: 'Takes: practice recording',
+  misc: 'Misc: other resources',
 };

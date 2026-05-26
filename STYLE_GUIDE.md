@@ -109,6 +109,16 @@ Filters that let users pick categorical values should support both **include (OR
 - Lazy-load heavy modals, analytics surfaces, and video players with `React.lazy` + `<Suspense fallback={…}>`.
 - If you add a new heavy dependency (>50 KB minified), also add it to the `manualChunks` map in `vite.config.ts`.
 
+## Document-level dismiss handlers
+
+When using `document.addEventListener('pointerdown', …)` (or `mousedown`) to close popovers, clear selection, or commit inline edits:
+
+- **`event.target` may be a `Text` node** inside a button or label. `Text` has no `.closest()` — resolve with [`resolveEventTargetElement`](src/shared/dom/resolveEventTargetElement.ts) or check `root.contains(event.target)` on a container (`Node`, not only `Element`). See `StanzaTimeline` hover-card dismiss for the `contains` pattern.
+- **`pointerdown` runs before `click`.** Clearing state on `pointerdown` outside a control will cancel the subsequent `click` on a lyric token or chord badge (for example chord move-to-word). Ignore inside interactive regions on `pointerdown`, or defer clear to `click`.
+- Prefer [`isPointerInsideSelector`](src/shared/dom/resolveEventTargetElement.ts) when matching multiple paint/toolbar surfaces.
+
+Encore Originals chord paint documents this in [`src/encore/originals/DEVELOPMENT.md`](src/encore/originals/DEVELOPMENT.md).
+
 ## Unit tests: `navigator.mediaDevices` in JSDOM
 
 JSDOM does not implement `navigator.mediaDevices` (or related live-media APIs). Any unit test that mounts an app or hook which enumerates mics/cameras on mount **must mock** those calls or the suite will throw.

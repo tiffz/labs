@@ -1,5 +1,20 @@
 export type EncoreSongAttachmentKind = 'chart' | 'backing' | 'recording';
 
+export type EncoreMiscResourceKind = 'link' | 'file' | 'google-doc' | 'pdf' | 'text' | 'audio';
+
+/** Catch-all practice resource (links, uploads, PDFs, notes) — not reference/backing/chart/takes. */
+export interface EncoreMiscResource {
+  id: string;
+  kind: EncoreMiscResourceKind;
+  label: string;
+  url?: string;
+  notes?: string;
+  driveFileId?: string;
+  encoreShortcutDriveFileId?: string;
+  mimeType?: string;
+  createdAt: string;
+}
+
 /** How the performer accompanied themselves at this show. Free-form multi-select. */
 export const ENCORE_ACCOMPANIMENT_TAGS = [
   'Guitar',
@@ -192,6 +207,10 @@ export interface EncoreSong {
   recordingDriveFileIds?: string[];
   /** Structured Drive attachments; legacy id fields are synced on save via {@link songWithSyncedLegacyDriveIds}. */
   attachments?: EncoreSongAttachment[];
+  /**
+   * Other materials for this song (links, PDFs, audio, notes). Omitted from {@link PublicSnapshot}.
+   */
+  miscResources?: EncoreMiscResource[];
   /** True when you are actively working on this song in your rotation (independent of milestone checkboxes). */
   practicing?: boolean;
   /**
@@ -293,7 +312,8 @@ export type EncoreDriveUploadFolderKind =
   | 'charts'
   | 'referenceTracks'
   | 'backingTracks'
-  | 'takes';
+  | 'takes'
+  | 'misc';
 
 export type EncoreDriveUploadFolderOverrides = Partial<Record<EncoreDriveUploadFolderKind, string>>;
 
@@ -357,4 +377,6 @@ export interface RepertoireWirePayload {
   driveUploadFolderOverrides?: EncoreDriveUploadFolderOverrides;
   /** Human-readable folder titles for UI (from Drive); optional. */
   driveUploadFolderOverrideLabels?: EncoreDriveUploadFolderOverrideLabels;
+  /** Content-hash index for upload-time duplicate warnings (see `encoreDriveContentIndex`). */
+  driveContentIndex?: import('./drive/encoreDriveContentIndex').EncoreDriveContentIndex;
 }

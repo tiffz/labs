@@ -24,6 +24,10 @@ import {
   migrateMonolithicToShardedIfNeeded,
   pushDirtyShards,
 } from '../drive/repertoireSharded';
+import {
+  pullChangedOriginalsShards,
+  pushOriginalsDirtyShards,
+} from '../originals/drive/originalsSharded';
 import { useEncoreAuth } from './EncoreAuthContext';
 import { useEncoreBlockingJobs } from './EncoreBlockingJobContext';
 import { useEncoreLibraryReady } from './EncoreLibraryContext';
@@ -151,6 +155,11 @@ export function EncoreSyncProvider({ children }: { children: ReactNode }): React
           setProgress(1);
           return;
         }
+        try {
+          await pullChangedOriginalsShards(token);
+        } catch {
+          /* originals pull is best-effort on full sync */
+        }
         setSyncState('idle');
         setConflict(null);
         setConflictAnalysis(null);
@@ -205,6 +214,7 @@ export function EncoreSyncProvider({ children }: { children: ReactNode }): React
                 const meta = await getSyncMeta();
                 if (!meta.repertoireFileId) return;
                 await pushRepertoireToDrive(token, meta.repertoireFileId, meta.lastRemoteEtag);
+                await pushOriginalsDirtyShards(token);
                 setSyncState('idle');
                 setSyncMessage(null);
               } catch (e) {

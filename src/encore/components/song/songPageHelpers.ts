@@ -68,6 +68,7 @@ export function songAutosaveDirty(prev: EncoreSong | null, next: EncoreSong): bo
   if (!shallowItemsEqual(prev.attachments, next.attachments)) return true;
   if (!shallowItemsEqual(prev.referenceLinks, next.referenceLinks)) return true;
   if (!shallowItemsEqual(prev.backingLinks, next.backingLinks)) return true;
+  if (!shallowItemsEqual(prev.miscResources, next.miscResources)) return true;
   return false;
 }
 

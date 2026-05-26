@@ -12,6 +12,17 @@ play a drum groove that follows the metronome BPM.
   the URL (`v` is cleared).
 - Storage: Dexie (`stanza-practice` database). Legacy practice **takes** rows may
   still exist from older builds.
+- **Undo:** Section splits, boundary drags, joins, renames, mix settings, and other
+  song edits go through `persistSong` with the shared Labs undo stack (header buttons
+  plus ⌘Z / Ctrl+Z). Boundary drags record undo from where the drag started. The stack
+  resets when you open a different song.
+- **Splits:** New boundaries must be at least **0.5s** from an existing split (prevents
+  stacked handles). **Split at playhead** and **M** are blocked with a short notice when
+  too close.
+- **Drive restore:** `progress.json` syncs section markers, BPM, mix, and skip flags.
+  **Mix layers (stems)** upload to `stem_audio/` on backup and re-download after restore.
+  The **main recording** is not in that JSON; Drive-linked songs (`?df=` / Encore uploads)
+  re-download when you open them on a new device (same Google account).
 
 ## Architecture
 

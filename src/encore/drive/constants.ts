@@ -19,3 +19,9 @@ export const ENCORE_SHARDED_SONG_FOLDER = 'song';
 export const ENCORE_SHARDED_PERFORMANCE_FOLDER = 'performance';
 export const ENCORE_SHARDED_EXTRAS_FOLDER = 'extras';
 export const ENCORE_SHARDED_EXTRAS_FILE = 'default.json';
+
+/** Songwriter originals under `Encore_App/Originals/`. */
+export const ENCORE_ORIGINALS_FOLDER = 'Originals';
+export const ENCORE_ORIGINALS_MANIFEST_FILE = 'originals_manifest.json';
+export const ENCORE_ORIGINALS_SHARD_SONG_FOLDER = 'song';
+export const ENCORE_ORIGINALS_AUDIO_FOLDER = 'audio';

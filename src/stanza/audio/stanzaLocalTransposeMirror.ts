@@ -25,6 +25,17 @@ export class StanzaLocalTransposeMirror {
     return this.buffer != null && this.buffer.duration > 0;
   }
 
+  hasActiveSource(): boolean {
+    return this.source != null;
+  }
+
+  /** Update audibility without restarting buffer playback (e.g. Mix slider drag). */
+  setLinearGain(linearGain: number): void {
+    if (this.gain) {
+      this.gain.gain.value = Math.max(0, linearGain);
+    }
+  }
+
   stop(): void {
     try {
       this.source?.stop();

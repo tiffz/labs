@@ -26,11 +26,6 @@ export interface PlaybackSpeedControlProps {
   dropdownClassName?: string;
   dropdownOffsetPx?: number;
   sliderClassName?: string;
-  /**
-   * When true, focusing the value field opens the preset panel (default).
-   * Set false for dense toolbars and use the tune button instead.
-   */
-  openPresetPanelOnFocus?: boolean;
   presetPanelHorizontal?: 'left' | 'right';
   /** Compact chip with tune menu (Stanza toolbar). */
   variant?: 'default' | 'compact' | 'display';
@@ -54,7 +49,6 @@ const PlaybackSpeedControl: React.FC<PlaybackSpeedControlProps> = ({
   dropdownClassName,
   dropdownOffsetPx,
   sliderClassName,
-  openPresetPanelOnFocus = true,
   presetPanelHorizontal = 'left',
   variant = 'default',
   trailingActions,
@@ -62,8 +56,6 @@ const PlaybackSpeedControl: React.FC<PlaybackSpeedControlProps> = ({
   const isDisplay = variant === 'display';
   const isCompact = variant === 'compact';
   const showPresetPanel = !isDisplay;
-  /** Tune icon only for dense default shells; compact chips open the menu on click. */
-  const showTuneButton = !isCompact && !isDisplay && !openPresetPanelOnFocus;
   const [draft, setDraft] = useState(() => formatPlaybackRateDraft(value));
   const [isEditing, setIsEditing] = useState(false);
   const [isPresetOpen, setIsPresetOpen] = useState(false);
@@ -179,9 +171,7 @@ const PlaybackSpeedControl: React.FC<PlaybackSpeedControlProps> = ({
                     setDraft(formatPlaybackRateDraft(value));
                     setIsEditing(true);
                     inputRef.current?.select();
-                    if (openPresetPanelOnFocus) {
-                      setIsPresetOpen(true);
-                    }
+                    setIsPresetOpen(true);
                   }}
                   onInputBlur={(event) => {
                     if (disabled) return;
@@ -228,29 +218,6 @@ const PlaybackSpeedControl: React.FC<PlaybackSpeedControlProps> = ({
                   enableHoldToStep
                 />
             )}
-            {showTuneButton ? (
-              <button
-                type="button"
-                className="shared-bpm-preset-toggle"
-                aria-label="Playback speed slider and common speeds"
-                aria-expanded={presetOpen}
-                disabled={disabled}
-                onMouseDown={(event) => {
-                  event.preventDefault();
-                }}
-                onClick={() => {
-                  if (presetOpen) {
-                    closePanel();
-                  } else {
-                    openPanel();
-                  }
-                }}
-              >
-                <span className="material-symbols-outlined" aria-hidden>
-                  tune
-                </span>
-              </button>
-            ) : null}
             {trailingActions ? (
               <div className="shared-bpm-trailing-actions">{trailingActions}</div>
             ) : null}
