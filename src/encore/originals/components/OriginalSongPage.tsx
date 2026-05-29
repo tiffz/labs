@@ -140,6 +140,7 @@ export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactEle
   const writeWorkspace = (
     <OriginalsSongWorkspace
       song={draft}
+      integratedPageScroll={chordsPaintScroll}
       onWorkflowStageChange={setWorkflowStage}
       onChartChange={onChartChange}
       onSongChange={(patch) => update(patch)}

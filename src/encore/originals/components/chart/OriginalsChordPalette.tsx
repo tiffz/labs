@@ -1,14 +1,12 @@
-import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
-import TextField from '@mui/material/TextField';
-import ToggleButton from '@mui/material/ToggleButton';
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
-import { useMemo, useState, type ReactElement } from 'react';
+import { type ReactElement } from 'react';
 import { parseChordSymbol } from '../../../../shared/music/chordMatcher';
 import { formatChordForDisplay, type ChordNotationMode } from '../../../../shared/music/chordSymbolDisplay';
 import type { ChordInteractionTarget, WordInteractionTarget } from '../../chartInteractionTypes';
-import { chordSymbolSuggestions, keyChordPaletteLayout } from './keyChordPalette';
+import { OriginalsChordPaletteCustomSegment } from './OriginalsChordPaletteCustomSegment';
+import { OriginalsChordPaletteNotationToggle } from './OriginalsChordPaletteNotationToggle';
+import { keyChordPaletteLayout } from './keyChordPalette';
 
 export type OriginalsChordPaletteProps = {
   songKey: string;
@@ -74,36 +72,17 @@ export function OriginalsChordPalette({
   onNotationChange,
   onClearSelection,
 }: OriginalsChordPaletteProps): ReactElement {
-  const [customDraft, setCustomDraft] = useState('');
   const layout = keyChordPaletteLayout(songKey);
-  const suggestions = useMemo(
-    () => chordSymbolSuggestions(songKey, customDraft),
-    [customDraft, songKey],
-  );
 
   const pickChord = (chord: string) => {
     if (!parseChordSymbol(chord)) return;
     onArm(armedChord === chord && !selectedChord ? null : chord);
   };
 
-  const armCustom = (value: string) => {
-    const sym = value.trim();
-    if (!sym || !parseChordSymbol(sym)) return;
-    onArm(sym);
-    setCustomDraft('');
-  };
-
-  const statusHint = selectedWord
-    ? 'Pick chord'
-    : armedChord
-      ? `${formatChordForDisplay(armedChord, songKey, notation)} → word`
-      : null;
-  const showClear = Boolean(armedChord || selectedChord || selectedWord);
-
   return (
     <Box className="encore-originals-chord-palette">
       <Box className="encore-originals-chord-palette-flow" role="toolbar" aria-label="Chord palette">
-        <Box className="encore-originals-chord-palette-chips">
+        <Box className="encore-originals-chord-palette-pick" role="group" aria-label="Pick a chord">
           <PaletteSegment
             label="Triads"
             chords={layout.triads}
@@ -136,58 +115,21 @@ export function OriginalsChordPalette({
             armedChord={armedChord}
             onPick={pickChord}
           />
-        </Box>
-        <Box className="encore-originals-chord-palette-tools">
-          {statusHint ? <span className="encore-originals-chord-palette-status">{statusHint}</span> : null}
-          <Autocomplete
-            id="encore-originals-custom-chord"
-            freeSolo
-            size="small"
-            className="encore-originals-chord-palette-custom"
-            options={suggestions}
-            inputValue={customDraft}
-            onInputChange={(_, value) => setCustomDraft(value)}
-            onChange={(_, value) => {
-              if (typeof value === 'string') armCustom(value);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                armCustom(customDraft);
-              }
-            }}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                placeholder="Custom"
-                size="small"
-                inputProps={{ ...params.inputProps, 'aria-label': 'Custom chord' }}
-              />
-            )}
+          <OriginalsChordPaletteCustomSegment
+            songKey={songKey}
+            armedChord={armedChord}
+            notation={notation}
+            selectedChord={selectedChord}
+            selectedWord={selectedWord}
+            onArm={onArm}
+            onClearSelection={onClearSelection}
           />
-          <ToggleButtonGroup
-            size="small"
-            exclusive
-            value={notation}
-            onChange={(_, v: ChordNotationMode | null) => v && onNotationChange(v)}
-            aria-label="Chord notation"
-            className="encore-originals-chord-palette-notation"
-          >
-            <ToggleButton value="letters">A–G</ToggleButton>
-            <ToggleButton value="roman">I–V</ToggleButton>
-          </ToggleButtonGroup>
-          {showClear ? (
-            <button
-              type="button"
-              className="encore-originals-chord-palette-clear"
-              onClick={() => {
-                onArm(null);
-                onClearSelection();
-              }}
-            >
-              Clear
-            </button>
-          ) : null}
+        </Box>
+        <Box className="encore-originals-chord-palette-display" role="group" aria-label="Chord display">
+          <Box component="span" className="encore-originals-chord-palette-display-label">
+            Show
+          </Box>
+          <OriginalsChordPaletteNotationToggle notation={notation} onNotationChange={onNotationChange} />
         </Box>
       </Box>
     </Box>

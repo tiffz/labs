@@ -4,12 +4,10 @@ import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
-import { alpha, useTheme } from '@mui/material/styles';
 import type { ReactElement } from 'react';
 import type { ChartLayout } from '../../../shared/music/chordPro/chordChartLayout';
 import type { ChartPlaybackStep } from '../../../shared/music/chordPro/chartPlaybackSequence';
 import { encoreSurfacePadX } from '../../theme/encoreM3Layout';
-import { encoreHairline } from '../../theme/encoreUiTokens';
 import type { EncoreOriginalSong } from '../types';
 import { OriginalsChartExportMenu } from './OriginalsChartExportMenu';
 import { OriginalsChordPlaybackBar } from './OriginalsChordPlaybackBar';
@@ -26,7 +24,7 @@ export type OriginalsChordsStageToolbarProps = {
   onToggleStageComplete: () => void;
 };
 
-/** Compact band: key + tempo on the left; export actions on the right. */
+/** Compact band: key + tempo + play on the left; export actions on the right. */
 export function OriginalsChordsStageToolbar({
   song,
   layout,
@@ -36,22 +34,18 @@ export function OriginalsChordsStageToolbar({
   onPersist,
   onToggleStageComplete,
 }: OriginalsChordsStageToolbarProps): ReactElement {
-  const theme = useTheme();
-
   return (
     <Stack
       direction="row"
       alignItems="center"
-      flexWrap="nowrap"
+      flexWrap="wrap"
       className="encore-originals-chords-toolbar"
       sx={{
         flexShrink: 0,
         px: encoreSurfacePadX,
-        py: 0.4,
+        py: 0.55,
         gap: 0.75,
-        borderBottom: 1,
-        borderColor: encoreHairline,
-        bgcolor: alpha(theme.palette.background.default, 0.35),
+        rowGap: 0.4,
       }}
     >
       <OriginalsChordsStageMeta song={song} onChange={onSongChange} />

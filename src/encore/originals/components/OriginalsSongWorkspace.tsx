@@ -61,6 +61,8 @@ export function readPersistedWorkflowStage(songId: string, song: EncoreOriginalS
 
 export type OriginalsSongWorkspaceProps = {
   song: EncoreOriginalSong;
+  /** Chords stage: stepper + sticky chrome are direct children of the page scroll region. */
+  integratedPageScroll?: boolean;
   onWorkflowStageChange?: (stage: OriginalsWorkflowStage) => void;
   onChartChange: (chordPro: string) => void;
   onSongChange: (patch: Partial<EncoreOriginalSong>) => void;
@@ -69,6 +71,7 @@ export type OriginalsSongWorkspaceProps = {
 
 export function OriginalsSongWorkspace({
   song,
+  integratedPageScroll = false,
   onWorkflowStageChange,
   onChartChange,
   onSongChange,
@@ -159,6 +162,7 @@ export function OriginalsSongWorkspace({
   const isBrainstorm = stage === 'brainstorm';
   const isChords = stage === 'chords';
   const isWrite = stage === 'write';
+  const chordsIntegratedScroll = isChords && integratedPageScroll;
   const showStageTitleBand = Boolean(stageCaption) || isBrainstorm;
   /** Chords keeps “Mark complete” on the stage toolbar only (saves a band of height). */
   const showMarkCompleteRow = !showStageTitleBand && !isChords;
@@ -169,22 +173,27 @@ export function OriginalsSongWorkspace({
         'encore-originals-workspace',
         isBrainstorm ? 'encore-originals-workspace--brainstorm' : '',
         isChords ? 'encore-originals-workspace--chords' : '',
+        chordsIntegratedScroll ? 'encore-originals-workspace--chords-integrated' : '',
         isWrite ? 'encore-originals-workspace--write' : '',
       ]
         .filter(Boolean)
         .join(' ')}
-      sx={{
-        flex: 1,
-        minHeight: 0,
-        display: 'flex',
-        flexDirection: 'column',
-        borderRadius: encoreRadius,
-        border: 1,
-        borderColor: encoreHairline,
-        boxShadow: encoreShadowSurface,
-        bgcolor: 'background.paper',
-        overflow: isChords ? 'visible' : 'hidden',
-      }}
+      sx={
+        chordsIntegratedScroll
+          ? { display: 'contents' }
+          : {
+              flex: 1,
+              minHeight: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              borderRadius: encoreRadius,
+              border: 1,
+              borderColor: encoreHairline,
+              boxShadow: encoreShadowSurface,
+              bgcolor: 'background.paper',
+              overflow: 'hidden',
+            }
+      }
     >
       {!isChords ? (
         <Box
@@ -281,14 +290,18 @@ export function OriginalsSongWorkspace({
         ]
           .filter(Boolean)
           .join(' ')}
-        sx={{
-          flex: 1,
-          minHeight: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          px: isBrainstorm || isChords ? 0 : encoreSurfaceContentPad,
-          py: isBrainstorm || isChords ? 0 : encoreSurfaceContentPad,
-        }}
+        sx={
+          chordsIntegratedScroll
+            ? { display: 'contents' }
+            : {
+                flex: 1,
+                minHeight: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                px: isBrainstorm || isChords ? 0 : encoreSurfaceContentPad,
+                py: isBrainstorm || isChords ? 0 : encoreSurfaceContentPad,
+              }
+        }
       >
         {stage === 'brainstorm' ? (
           <OriginalsBrainstormStage
@@ -318,9 +331,13 @@ export function OriginalsSongWorkspace({
               className="in-scroll-region__band encore-originals-chords-stepper-scroll encore-originals-no-print"
               sx={{
                 px: encoreSurfacePadX,
-                py: { xs: 0.75, sm: 1 },
-                borderBottom: 1,
-                borderColor: encoreHairline,
+                py: { xs: 0.9, sm: 1.15 },
+                ...(chordsIntegratedScroll
+                  ? {}
+                  : {
+                      borderBottom: 1,
+                      borderColor: encoreHairline,
+                    }),
               }}
             >
               <OriginalsWorkflowStepper song={song} stage={stage} onStageChange={onStageChange} />
@@ -352,25 +369,27 @@ export function OriginalsSongWorkspace({
                 onClearSelection={chart.onClearSelection}
               />
             </Box>
-            <OriginalsPaintChordsEditor
-              layout={chart.layout}
-              songKey={song.key}
-              notation={chordNotation}
-              armedChord={chart.armedChord}
-              selectedChord={chart.selectedChord}
-              selectedWord={chart.selectedWord}
-              activePlaybackStep={activePlaybackStep}
-              onArm={handleArmChord}
-              onClearSelection={chart.onClearSelection}
-              onStamp={chart.onStamp}
-              onSelectChord={(sectionId, lineId, charIndex, chordId) =>
-                chart.onSelectChord({ sectionId, lineId, charIndex, chordId })
-              }
-              onSelectWord={(sectionId, lineId, charIndex) =>
-                chart.onSelectWord({ sectionId, lineId, charIndex })
-              }
-              onDeleteSelected={onDeleteSelectedChord}
-            />
+            <Box className="encore-originals-chords-chart-surface">
+              <OriginalsPaintChordsEditor
+                layout={chart.layout}
+                songKey={song.key}
+                notation={chordNotation}
+                armedChord={chart.armedChord}
+                selectedChord={chart.selectedChord}
+                selectedWord={chart.selectedWord}
+                activePlaybackStep={activePlaybackStep}
+                onArm={handleArmChord}
+                onClearSelection={chart.onClearSelection}
+                onStamp={chart.onStamp}
+                onSelectChord={(sectionId, lineId, charIndex, chordId) =>
+                  chart.onSelectChord({ sectionId, lineId, charIndex, chordId })
+                }
+                onSelectWord={(sectionId, lineId, charIndex) =>
+                  chart.onSelectWord({ sectionId, lineId, charIndex })
+                }
+                onDeleteSelected={onDeleteSelectedChord}
+              />
+            </Box>
           </>
         ) : (
           <OriginalsTakesStage song={song} onChange={(next) => void onPersist(next)} />

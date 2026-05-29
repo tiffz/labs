@@ -43,18 +43,18 @@
 .encore-originals-chords-meta .encore-originals-key-input .shared-key-shell {
   width: auto;
   min-width: 3.75rem;
-  --key-shell-height: 28px;
-  --key-border: color-mix(in srgb, #7c3aed 28%, #e9d5ff);
+  --key-shell-height: 30px;
+  --key-border: color-mix(in srgb, #7c3aed 22%, #e9d5ff);
   --key-bg: #fff;
-  --key-radius: 0.4rem;
+  --key-radius: 0.45rem;
 }
 
 .encore-originals-chords-meta .encore-originals-bpm-inline .shared-bpm-shell {
-  --bpm-shell-height: 28px;
+  --bpm-shell-height: 30px;
   --bpm-stepper-min-width: 4.25rem;
-  --bpm-border: color-mix(in srgb, #7c3aed 28%, #e9d5ff);
+  --bpm-border: color-mix(in srgb, #7c3aed 22%, #e9d5ff);
   --bpm-bg: #fff;
-  --bpm-radius: 0.4rem;
+  --bpm-radius: 0.45rem;
 }
 
 .encore-originals-chords-toolbar .encore-originals-chords-actions {
@@ -79,19 +79,55 @@
   min-height: 0;
 }
 
-.encore-originals-chords-page-scroll .encore-originals-workspace--chords {
-  min-height: auto;
-  max-height: none;
-  flex: 0 0 auto;
-  overflow: visible;
-}
-
-.encore-originals-chords-page-scroll
-  .encore-originals-workspace-content--chords {
+.encore-originals-chords-page-scroll .encore-originals-paint-editor,
+.encore-originals-chords-page-scroll .encore-originals-paint-mode,
+.encore-originals-chords-page-scroll .encore-originals-paint-scroll-outer {
   flex: none;
   min-height: auto;
   overflow: visible;
-  display: block;
+}
+
+.encore-originals-workspace--chords-integrated
+  .encore-originals-chords-stepper-scroll {
+  border: 1px solid rgba(76, 29, 149, 0.1);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(76, 29, 149, 0.05);
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.15rem;
+}
+
+.encore-originals-workspace--chords-integrated
+  .encore-originals-chords-paint-chrome {
+  border: 1px solid rgba(76, 29, 149, 0.1);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow:
+    0 1px 2px rgba(76, 29, 149, 0.05),
+    0 4px 16px rgba(76, 29, 149, 0.04);
+}
+
+.encore-originals-workspace--chords-integrated
+  .encore-originals-chords-paint-chrome.in-scroll-region__sticky-surface {
+  backdrop-filter: none;
+  background: #fff;
+  border-bottom: none;
+  box-shadow:
+    0 1px 2px rgba(76, 29, 149, 0.05),
+    0 4px 16px rgba(76, 29, 149, 0.04);
+}
+
+.encore-originals-chords-toolbar {
+  background: rgba(255, 255, 255, 0.92);
+  border-bottom: 1px solid rgba(76, 29, 149, 0.07);
+}
+
+.encore-originals-chords-chart-surface {
+  border: 1px solid rgba(76, 29, 149, 0.12);
+  border-top: 0;
+  border-radius: 0 0 12px 12px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(76, 29, 149, 0.06);
 }
 
 .encore-originals-chords-stepper-scroll .encore-originals-workflow-stepper {
@@ -100,59 +136,108 @@
 }
 
 .encore-originals-chords-paint-chrome {
-  background: rgba(255, 255, 255, 0.98);
+  background: #fff;
 }
 
 .encore-originals-chords-paint-chrome .encore-originals-chord-palette {
-  border-top: 1px solid rgba(76, 29, 149, 0.08);
+  border-top: 1px solid rgba(76, 29, 149, 0.06);
+  background: linear-gradient(
+    180deg,
+    rgba(249, 250, 251, 0.98) 0%,
+    rgba(255, 255, 255, 0.94) 100%
+  );
 }
 
 .encore-originals-chord-palette {
-  padding: 0.2rem 0.65rem 0.3rem;
-  background: rgba(249, 250, 251, 0.94);
+  padding: 0.35rem 0.75rem 0.45rem;
 }
 
 .encore-originals-chord-palette-flow {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 0.18rem 0.45rem;
+  column-gap: 0.65rem;
+  row-gap: 0.25rem;
   min-width: 0;
 }
 
-.encore-originals-chord-palette-chips {
+.encore-originals-chord-palette-pick {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.18rem 0.45rem;
+  gap: 0.2rem 0.4rem;
   min-width: 0;
-  flex: 1 1 auto;
+  grid-column: 1;
+  grid-row: 1;
 }
 
-.encore-originals-chord-palette-tools {
-  display: flex;
-  flex-flow: row wrap;
+.encore-originals-chord-palette-display {
+  display: inline-flex;
+  flex-flow: row nowrap;
   align-items: center;
-  justify-content: flex-end;
-  gap: 0.25rem 0.4rem;
+  gap: 0.35rem;
+  flex-shrink: 0;
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+  justify-self: end;
+  padding-inline-start: 0.65rem;
+  border-inline-start: 1px solid rgba(76, 29, 149, 0.1);
+}
+
+.encore-originals-chord-palette-display-label {
   flex: 0 0 auto;
-  margin-inline-start: auto;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(76, 29, 149, 0.38);
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .encore-originals-chord-palette-status {
   font-size: 0.6875rem;
   font-weight: 600;
-  color: rgba(76, 29, 149, 0.78);
+  color: rgba(76, 29, 149, 0.72);
   white-space: nowrap;
-  padding-inline-end: 0.15rem;
+  letter-spacing: 0.01em;
+}
+
+.encore-originals-chord-palette-notation.MuiToggleButtonGroup-root {
+  flex-shrink: 0;
+  height: 1.375rem;
+}
+
+.encore-originals-chord-palette-notation .MuiToggleButtonGroup-grouped {
+  margin: 0;
+  min-width: 2.5rem;
+  border-color: rgba(76, 29, 149, 0.14);
 }
 
 .encore-originals-chord-palette-notation .MuiToggleButton-root {
   min-height: 1.375rem;
-  font-size: 0.6875rem;
+  height: 1.375rem;
+  min-width: 2.5rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   text-transform: none;
-  line-height: 1.2;
-  padding: 0.1rem 0.4rem;
+  line-height: 1;
+  padding: 0 0.5rem;
+  white-space: nowrap;
+  overflow: visible;
+  color: rgba(76, 29, 149, 0.62);
+}
+
+.encore-originals-chord-palette-notation .MuiToggleButton-root.Mui-selected {
+  color: #6d28d9;
+  background: rgba(124, 58, 237, 0.1);
+}
+
+.encore-originals-chord-palette-notation .MuiToggleButton-label {
+  line-height: 1;
+  display: block;
 }
 
 .encore-originals-chord-palette-clear {
@@ -172,8 +257,12 @@
   gap: 0.2rem;
   min-width: 0;
   max-width: 100%;
-  padding-inline-end: 0.35rem;
-  border-inline-end: 1px solid rgba(76, 29, 149, 0.1);
+}
+
+.encore-originals-chord-palette-segment:not(:last-child) {
+  padding-inline-end: 0.4rem;
+  margin-inline-end: 0.05rem;
+  border-inline-end: 1px solid rgba(76, 29, 149, 0.08);
 }
 
 .encore-originals-chord-palette-segment-label {
@@ -196,34 +285,53 @@
 }
 
 .encore-originals-chord-palette-segment-chips .MuiChip-root {
-  height: 1.3rem;
+  height: 1.375rem;
   font-size: 0.625rem;
   font-weight: 600;
   border-radius: 999px;
+}
+
+.encore-originals-chord-palette-segment-chips .MuiChip-outlined {
+  border-color: rgba(76, 29, 149, 0.16);
+  background: #fff;
+}
+
+.encore-originals-chord-palette-segment-chips .MuiChip-outlined:hover {
+  border-color: rgba(124, 58, 237, 0.35);
+  background: rgba(124, 58, 237, 0.04);
 }
 
 .encore-originals-chord-palette-segment-chips .MuiChip-label {
   padding-inline: 0.4rem;
 }
 
+.encore-originals-chord-palette-segment--custom {
+  border-inline-end: 0;
+  padding-inline-end: 0;
+}
+
 .encore-originals-chord-palette-custom {
-  flex: 0 1 6.5rem;
-  min-width: 4.75rem;
-  max-width: 7.5rem;
+  flex: 0 1 5.5rem;
+  min-width: 4.25rem;
+  max-width: 6.5rem;
 }
 
 .encore-originals-chord-palette-custom .MuiInputBase-root {
-  min-height: 1.25rem;
+  min-height: 1.375rem;
+  height: 1.375rem;
   font-size: 0.625rem;
+  background: #fff;
+  border-radius: 999px;
 }
 
 .encore-originals-chord-palette-custom .MuiInputBase-input {
-  padding-top: 0.15rem;
-  padding-bottom: 0.15rem;
+  padding-top: 0;
+  padding-bottom: 0;
+  line-height: 1.375rem;
 }
 
 .encore-originals-chord-palette-custom .MuiOutlinedInput-notchedOutline {
-  border-color: rgba(76, 29, 149, 0.22);
+  border-color: rgba(76, 29, 149, 0.14);
 }
 
 /* Legacy palette group selectors — kept for catalog/demo if referenced elsewhere */
@@ -374,17 +482,27 @@
 }
 
 @media (max-width: 899px) {
-  .encore-originals-chord-palette-tools {
-    margin-inline-start: 0;
-    justify-content: flex-start;
-    width: 100%;
+  .encore-originals-chord-palette-flow {
+    grid-template-columns: 1fr;
   }
-}
 
-@media (max-width: 599px) {
+  .encore-originals-chord-palette-display {
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: end;
+    border-inline-start: 0;
+    padding-inline-start: 0;
+    padding-top: 0.15rem;
+  }
+
   .encore-originals-chord-palette-segment {
     border-inline-end: 0;
     padding-inline-end: 0;
+  }
+
+  .encore-originals-chord-palette-segment:not(:last-child) {
+    padding-inline-end: 0.25rem;
+    border-inline-end: 1px solid rgba(76, 29, 149, 0.1);
   }
 }
 

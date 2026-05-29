@@ -210,7 +210,10 @@ export const encoreDialogActionsSx: SystemStyleObject<Theme> = {
 export const encoreShellLayoutSx: SystemStyleObject<Theme> = {
   display: 'flex',
   flexDirection: 'column',
+  height: '100dvh',
+  maxHeight: '100dvh',
   minHeight: '100dvh',
+  overflow: 'hidden',
 };
 
 /** Centered full-viewport states (loading, gates). */
