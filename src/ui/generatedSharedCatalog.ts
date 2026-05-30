@@ -2463,6 +2463,42 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": "bpm-input"
   },
   {
+    "id": "src-shared-components-music-chordplaybacksettingspanel-tsx-chordplaybacksettingspanel",
+    "name": "ChordPlaybackSettingsPanel",
+    "path": "src/shared/components/music/ChordPlaybackSettingsPanel.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "music",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-chordplaybacksettingspanel-tsx-chordplaybacksettingspanelprops",
+    "name": "ChordPlaybackSettingsPanelProps",
+    "path": "src/shared/components/music/ChordPlaybackSettingsPanel.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "music",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
     "id": "src-shared-components-music-chordprogressioninput-tsx-chordprogressioninput",
     "name": "ChordProgressionInput",
     "path": "src/shared/components/music/ChordProgressionInput.tsx",
@@ -2615,6 +2651,23 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-components-music-inlinedrumuxdefaults-ts-inline-drum-panel-ux",
+    "name": "INLINE_DRUM_PANEL_UX",
+    "path": "src/shared/components/music/inlineDrumUxDefaults.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Shared props for compact inline drum editing (playback settings panels, sidebars). Spread onto so randomize controls, symbol scale, and notation height stay consistent everywhere we embed the inline drum UX.",
+    "tags": [
+      "components",
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
     "id": "src-shared-components-music-keyinput-tsx-keyinput",
     "name": "KeyInput",
     "path": "src/shared/components/music/KeyInput.tsx",
@@ -2743,6 +2796,347 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-components-music-playbackfieldselect-ts-forwardwheeltopagescroller",
+    "name": "forwardWheelToPageScroller",
+    "path": "src/shared/components/music/playbackFieldSelect.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Forward wheel events on an invisible backdrop to the page scroll container.",
+    "tags": [
+      "components",
+      "music"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-playbackfieldselect-ts-isplaybackfieldselectpopovertarget",
+    "name": "isPlaybackFieldSelectPopoverTarget",
+    "path": "src/shared/components/music/playbackFieldSelect.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "True when `target` is inside a portaled playback field select menu (sound, style, …).",
+    "tags": [
+      "components",
+      "music"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-playbackfieldselect-ts-playback-field-select-popover-class",
+    "name": "PLAYBACK_FIELD_SELECT_POPOVER_CLASS",
+    "path": "src/shared/components/music/playbackFieldSelect.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Class on the portaled Popover root — hosts must treat clicks inside as in-panel.",
+    "tags": [
+      "components",
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-playbackfieldselect-ts-playback-field-select-words-z-index",
+    "name": "PLAYBACK_FIELD_SELECT_WORDS_Z_INDEX",
+    "path": "src/shared/components/music/playbackFieldSelect.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Words section-style menus use 2600; nested sound pickers must sit above them.",
+    "tags": [
+      "components",
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-playbackfieldselect-ts-playback-field-select-z-index",
+    "name": "PLAYBACK_FIELD_SELECT_Z_INDEX",
+    "path": "src/shared/components/music/playbackFieldSelect.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Above floating panels (e.g. Encore playback settings) so nested menus paint on top.",
+    "tags": [
+      "components",
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-playbackfieldselect-ts-playbackfieldselectappearance",
+    "name": "PlaybackFieldSelectAppearance",
+    "path": "src/shared/components/music/playbackFieldSelect.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Shared closed-trigger + menu shell appearance for playback pickers (sound, chord style, …).",
+    "tags": [
+      "components",
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-playbackfieldselect-ts-playbackfieldselectmenuappearance",
+    "name": "PlaybackFieldSelectMenuAppearance",
+    "path": "src/shared/components/music/playbackFieldSelect.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Menu paper variant — app skins get their own list chrome; generic hosts use default.",
+    "tags": [
+      "components",
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-playbackfieldselect-ts-playbackfieldselectmenuclass",
+    "name": "playbackFieldSelectMenuClass",
+    "path": "src/shared/components/music/playbackFieldSelect.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Shared closed-trigger + menu shell appearance for playback pickers (sound, chord style, …).",
+    "tags": [
+      "components",
+      "music"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-playbackfieldselect-ts-playbackfieldselectpopoverslotprops",
+    "name": "playbackFieldSelectPopoverSlotProps",
+    "path": "src/shared/components/music/playbackFieldSelect.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Shared closed-trigger + menu shell appearance for playback pickers (sound, chord style, …).",
+    "tags": [
+      "components",
+      "music"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-playbackfieldselect-ts-playbackfieldselectrootclass",
+    "name": "playbackFieldSelectRootClass",
+    "path": "src/shared/components/music/playbackFieldSelect.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Shared closed-trigger + menu shell appearance for playback pickers (sound, chord style, …).",
+    "tags": [
+      "components",
+      "music"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-playbackfieldselect-ts-playbackfloatingpanelslotprops",
+    "name": "playbackFloatingPanelSlotProps",
+    "path": "src/shared/components/music/playbackFieldSelect.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Floating settings / tool panels that may host nested playback field selects.",
+    "tags": [
+      "components",
+      "music"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-playbackfieldselect-ts-resolveplaybackfieldselectappearance",
+    "name": "resolvePlaybackFieldSelectAppearance",
+    "path": "src/shared/components/music/playbackFieldSelect.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Map richer host appearance tokens (e.g. ChordStyleInput skins) onto the shared trigger API.",
+    "tags": [
+      "components",
+      "music"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-playbackfieldselect-ts-resolveplaybackfieldselectmenuappearance",
+    "name": "resolvePlaybackFieldSelectMenuAppearance",
+    "path": "src/shared/components/music/playbackFieldSelect.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Shared closed-trigger + menu shell appearance for playback pickers (sound, chord style, …).",
+    "tags": [
+      "components",
+      "music"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-playbackfieldselecttrigger-tsx-playbackfieldselecttrigger",
+    "name": "PlaybackFieldSelectTrigger",
+    "path": "src/shared/components/music/PlaybackFieldSelectTrigger.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "music",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-playbackfieldselecttrigger-tsx-playbackfieldselecttriggerprops",
+    "name": "PlaybackFieldSelectTriggerProps",
+    "path": "src/shared/components/music/PlaybackFieldSelectTrigger.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "music",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-playbacksoundselect-tsx-playbackfieldselectappearance",
+    "name": "PlaybackFieldSelectAppearance",
+    "path": "src/shared/components/music/PlaybackSoundSelect.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "music",
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "chords",
+      "piano",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-playbacksoundselect-tsx-playbacksoundselect",
+    "name": "PlaybackSoundSelect",
+    "path": "src/shared/components/music/PlaybackSoundSelect.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "music",
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "chords",
+      "piano",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-playbacksoundselect-tsx-playbacksoundselectprops",
+    "name": "PlaybackSoundSelectProps",
+    "path": "src/shared/components/music/PlaybackSoundSelect.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "music",
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "chords",
+      "piano",
+      "words"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
     "id": "src-shared-components-music-playbackspeedcontrol-tsx-playbackspeedcontrol",
     "name": "PlaybackSpeedControl",
     "path": "src/shared/components/music/PlaybackSpeedControl.tsx",
@@ -2776,6 +3170,42 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [],
     "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-playbackvolumerow-tsx-playbackvolumerow",
+    "name": "PlaybackVolumeRow",
+    "path": "src/shared/components/music/PlaybackVolumeRow.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "music",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-playbackvolumerow-tsx-playbackvolumerowprops",
+    "name": "PlaybackVolumeRowProps",
+    "path": "src/shared/components/music/PlaybackVolumeRow.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "music",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
     "demoId": null
   },
   {
@@ -4804,6 +5234,105 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-hooks-usechartchordplayback-ts-usechartchordplayback",
+    "name": "useChartChordPlayback",
+    "path": "src/shared/hooks/useChartChordPlayback.ts",
+    "kind": "hook",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-hooks-usechartchordplayback-ts-usechartchordplaybackoptions",
+    "name": "UseChartChordPlaybackOptions",
+    "path": "src/shared/hooks/useChartChordPlayback.ts",
+    "kind": "hook",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-hooks-usechartchordplayback-ts-usechartchordplaybackresult",
+    "name": "UseChartChordPlaybackResult",
+    "path": "src/shared/hooks/useChartChordPlayback.ts",
+    "kind": "hook",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-hooks-usepopoverscrollanchorsync-ts-collectpopoverscrollparents",
+    "name": "collectPopoverScrollParents",
+    "path": "src/shared/hooks/usePopoverScrollAnchorSync.ts",
+    "kind": "hook",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Scrollable ancestors of the anchor — includes Labs `.in-scroll-region` when present.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-hooks-usepopoverscrollanchorsync-ts-popoveranchorel",
+    "name": "popoverAnchorEl",
+    "path": "src/shared/hooks/usePopoverScrollAnchorSync.ts",
+    "kind": "hook",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Prefer a getter so MUI reads a fresh rect on each reposition.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-hooks-usepopoverscrollanchorsync-ts-usepopoverscrollanchorsync",
+    "name": "usePopoverScrollAnchorSync",
+    "path": "src/shared/hooks/usePopoverScrollAnchorSync.ts",
+    "kind": "hook",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Keeps MUI `Popover` anchored while nested scroll containers move (e.g. Encore `.in-scroll-region`). MUI only listens to `window` scroll when `disableScrollLock` is set; this fills the gap for in-app scroll regions.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-hooks-usesampledpianopreload-ts-usesampledpianopreload",
+    "name": "useSampledPianoPreload",
+    "path": "src/shared/hooks/useSampledPianoPreload.ts",
+    "kind": "hook",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Preloads sampled piano when `soundType` is `piano-sampled`. Reuses one instance for the caller's playback hook and mirrors global Salamander load state across Labs apps on the same page.",
+    "tags": [],
+    "appsUsing": [
+      "chords",
+      "piano",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-layout-appshelllayout-tsx-appshelllayout",
     "name": "AppShellLayout",
     "path": "src/shared/layout/AppShellLayout.tsx",
@@ -5234,6 +5763,38 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-music-chordinstrumentsession-ts-chordinstrumentsession",
+    "name": "ChordInstrumentSession",
+    "path": "src/shared/music/chordInstrumentSession.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "class",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordinstrumentsession-ts-sampledpianoloadstate",
+    "name": "SampledPianoLoadState",
+    "path": "src/shared/music/chordInstrumentSession.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
     "id": "src-shared-music-chordmatcher-ts-matcheschord",
     "name": "matchesChord",
     "path": "src/shared/music/chordMatcher.ts",
@@ -5283,6 +5844,114 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "piano"
     ],
     "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordplaybacksettings-ts-chart-chord-playback-time-signature",
+    "name": "CHART_CHORD_PLAYBACK_TIME_SIGNATURE",
+    "path": "src/shared/music/chordPlaybackSettings.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Chart chord playback assumes 4/4 (two quarter-note measures per lyric line).",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordplaybacksettings-ts-chordplaybacksettings",
+    "name": "ChordPlaybackSettings",
+    "path": "src/shared/music/chordPlaybackSettings.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Chart chord playback assumes 4/4 (two quarter-note measures per lyric line).",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordplaybacksettings-ts-default-chord-playback-settings",
+    "name": "DEFAULT_CHORD_PLAYBACK_SETTINGS",
+    "path": "src/shared/music/chordPlaybackSettings.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Chart chord playback assumes 4/4 (two quarter-note measures per lyric line).",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordplaybacksettings-ts-effectivechordplaybackvelocity",
+    "name": "effectiveChordPlaybackVelocity",
+    "path": "src/shared/music/chordPlaybackSettings.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Chart chord playback assumes 4/4 (two quarter-note measures per lyric line).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordplaybacksettings-ts-effectivedrumplaybackvolume",
+    "name": "effectiveDrumPlaybackVolume",
+    "path": "src/shared/music/chordPlaybackSettings.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Chart chord playback assumes 4/4 (two quarter-note measures per lyric line).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordplaybacksettings-ts-loadchordplaybacksettings",
+    "name": "loadChordPlaybackSettings",
+    "path": "src/shared/music/chordPlaybackSettings.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Chart chord playback assumes 4/4 (two quarter-note measures per lyric line).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordplaybacksettings-ts-savechordplaybacksettings",
+    "name": "saveChordPlaybackSettings",
+    "path": "src/shared/music/chordPlaybackSettings.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Chart chord playback assumes 4/4 (two quarter-note measures per lyric line).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
     "demoId": null
   },
   {
@@ -6484,6 +7153,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "music-core",
     "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordsymboltotheorychord-ts-chordsymboltotheorychord",
+    "name": "chordSymbolToTheoryChord",
+    "path": "src/shared/music/chordSymbolToTheoryChord.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Map a chart chord symbol (e.g. `Fm`, `Bbmaj7`) to shared voicing input.",
     "tags": [
       "music"
     ],
@@ -8575,6 +9259,84 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-music-sampledpianoloadstate-ts-idle-sampled-piano-load-state",
+    "name": "IDLE_SAMPLED_PIANO_LOAD_STATE",
+    "path": "src/shared/music/sampledPianoLoadState.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Shared load progress for across playback UIs.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "chords",
+      "piano",
+      "words"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-sampledpianoloadstate-ts-sampledpianoloadcaption",
+    "name": "sampledPianoLoadCaption",
+    "path": "src/shared/music/sampledPianoLoadState.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Shared load progress for across playback UIs.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "chords",
+      "piano",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-sampledpianoloadstate-ts-sampledpianoloadpercent",
+    "name": "sampledPianoLoadPercent",
+    "path": "src/shared/music/sampledPianoLoadState.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Shared load progress for across playback UIs.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "chords",
+      "piano",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-sampledpianoloadstate-ts-sampledpianoloadstate",
+    "name": "SampledPianoLoadState",
+    "path": "src/shared/music/sampledPianoLoadState.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Shared load progress for across playback UIs.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "chords",
+      "piano",
+      "words"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
     "id": "src-shared-music-scales-ts-chromatic-notes",
     "name": "CHROMATIC_NOTES",
     "path": "src/shared/music/scales.ts",
@@ -8749,6 +9511,83 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "appsUsing": [
       "piano"
     ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-scheduledrummeasure-ts-createchartdrumaudioplayer",
+    "name": "createChartDrumAudioPlayer",
+    "path": "src/shared/music/scheduleDrumMeasure.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-scheduledrummeasure-ts-scheduledrummeasure",
+    "name": "scheduleDrumMeasure",
+    "path": "src/shared/music/scheduleDrumMeasure.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Schedule one measure of drum pattern at absolute AudioContext times.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-scheduledrummeasure-ts-scheduledrummeasureparams",
+    "name": "ScheduleDrumMeasureParams",
+    "path": "src/shared/music/scheduleDrumMeasure.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-schedulestyledchordmeasure-ts-schedulestyledchordmeasure",
+    "name": "scheduleStyledChordMeasure",
+    "path": "src/shared/music/scheduleStyledChordMeasure.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Schedule styled chord hits across one measure using Web Audio absolute times.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-schedulestyledchordmeasure-ts-schedulestyledchordmeasureparams",
+    "name": "ScheduleStyledChordMeasureParams",
+    "path": "src/shared/music/scheduleStyledChordMeasure.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
     "exportType": "type",
     "demoId": null
   },
@@ -9878,7 +10717,8 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
-      "chords"
+      "chords",
+      "words"
     ],
     "exportType": "function",
     "demoId": null
@@ -9896,7 +10736,8 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
-      "chords"
+      "chords",
+      "words"
     ],
     "exportType": "function",
     "demoId": null
@@ -9914,7 +10755,8 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
-      "chords"
+      "chords",
+      "words"
     ],
     "exportType": "function",
     "demoId": null
@@ -9933,9 +10775,29 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
-      "chords"
+      "chords",
+      "words"
     ],
     "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-playback-audiocontextlifecycle-ts-primeaudiocontext",
+    "name": "primeAudioContext",
+    "path": "src/shared/playback/audioContextLifecycle.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Start resuming a suspended context synchronously on a user gesture (click/tap). Pair with after any awaited work.",
+    "tags": [
+      "playback"
+    ],
+    "appsUsing": [
+      "beat",
+      "chords",
+      "words"
+    ],
+    "exportType": "function",
     "demoId": null
   },
   {
@@ -10224,6 +11086,96 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [],
     "exportType": "class",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-playback-instruments-salamanderpianosamplepool-ts-ensuresalamanderpianosamples",
+    "name": "ensureSalamanderPianoSamples",
+    "path": "src/shared/playback/instruments/salamanderPianoSamplePool.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Loads Salamander piano samples once per page session. Subsequent callers (any Labs app) reuse decoded buffers from 's URL cache.",
+    "tags": [
+      "playback"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-playback-instruments-salamanderpianosamplepool-ts-getsalamanderpianoloadstate",
+    "name": "getSalamanderPianoLoadState",
+    "path": "src/shared/playback/instruments/salamanderPianoSamplePool.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "playback"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-playback-instruments-salamanderpianosamplepool-ts-getsalamandersampleentries",
+    "name": "getSalamanderSampleEntries",
+    "path": "src/shared/playback/instruments/salamanderPianoSamplePool.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "playback"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-playback-instruments-salamanderpianosamplepool-ts-issalamanderpianoready",
+    "name": "isSalamanderPianoReady",
+    "path": "src/shared/playback/instruments/salamanderPianoSamplePool.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "playback"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-playback-instruments-salamanderpianosamplepool-ts-resetsalamanderpianosamplepoolfortests",
+    "name": "resetSalamanderPianoSamplePoolForTests",
+    "path": "src/shared/playback/instruments/salamanderPianoSamplePool.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Test-only reset — not for production callers.",
+    "tags": [
+      "playback"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-playback-instruments-salamanderpianosamplepool-ts-subscribesalamanderpianoloadstate",
+    "name": "subscribeSalamanderPianoLoadState",
+    "path": "src/shared/playback/instruments/salamanderPianoSamplePool.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "playback"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
     "demoId": null
   },
   {
@@ -10918,6 +11870,52 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "drums"
     ],
     "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-rhythm-drumplaybacknotepointer-ts-drumplaybacknotepointer",
+    "name": "DrumPlaybackNotePointer",
+    "path": "src/shared/rhythm/drumPlaybackNotePointer.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "rhythm-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "rhythm",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-rhythm-drumplaybacknotepointer-ts-resolvedrumplaybacknotepointer",
+    "name": "resolveDrumPlaybackNotePointer",
+    "path": "src/shared/rhythm/drumPlaybackNotePointer.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "rhythm-core",
+    "description": "Map elapsed seconds within a looping pattern to the active drum note.",
+    "tags": [
+      "rhythm"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-rhythm-drumplaybacknotepointer-ts-sixteenthspermeasurefortimesignature",
+    "name": "sixteenthsPerMeasureForTimeSignature",
+    "path": "src/shared/rhythm/drumPlaybackNotePointer.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "rhythm-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "rhythm"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
     "demoId": null
   },
   {
@@ -12864,6 +13862,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "shared-core",
     "description": "No JSDoc summary provided.",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-triggerblobdownload-ts-triggerblobdownload",
+    "name": "triggerBlobDownload",
+    "path": "src/shared/utils/triggerBlobDownload.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Trigger a browser download for an in-memory blob (revokes the object URL after a short delay).",
     "tags": [
       "utils"
     ],

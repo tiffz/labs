@@ -1,0 +1,286 @@
+/**
+ * Shared closed trigger + list menu chrome for playback field selects
+ * (PlaybackSoundSelect, ChordStyleInput trigger, …).
+ *
+ * Hosts set `appearance="default" | "encore"` on the root wrapper. App-specific
+ * skins can override `--pfs-*` tokens on a parent selector.
+ */
+.shared-playback-field-select {
+  width: 100%;
+  --pfs-height: 2.125rem;
+  --pfs-radius: 0.5rem;
+  --pfs-font-size: 0.8125rem;
+  --pfs-padding-x: 0.625rem;
+  --pfs-padding-y: 0.375rem;
+  --pfs-border: color-mix(in srgb, var(--theme-primary, #6366f1) 34%, #c7d2fe);
+  --pfs-bg: var(--theme-surface, #fff);
+  --pfs-text: var(--theme-text, #0f172a);
+  --pfs-icon: rgba(15, 23, 42, 0.52);
+  --pfs-focus-border: color-mix(
+    in srgb,
+    var(--theme-primary, #7c3aed) 56%,
+    #c4b5fd
+  );
+  --pfs-focus-ring: 0 0 0 2px rgba(124, 58, 237, 0.12);
+  --pfs-menu-border: color-mix(in srgb, #8b5cf6 32%, #ddd6fe);
+  --pfs-menu-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+  --pfs-menu-radius: 0.625rem;
+  --pfs-menu-padding: 0.375rem;
+  --pfs-item-radius: 0.5rem;
+  --pfs-item-hover-bg: rgba(99, 102, 241, 0.06);
+  --pfs-item-active-bg: rgba(99, 102, 241, 0.1);
+}
+
+.shared-playback-field-select--encore {
+  --pfs-height: 34px;
+  --pfs-radius: 8px;
+  --pfs-font-size: 0.8125rem;
+  --pfs-padding-x: 10px;
+  --pfs-padding-y: 6px;
+  --pfs-border: rgba(124, 58, 237, 0.18);
+  --pfs-bg: #fff;
+  --pfs-text: rgba(15, 23, 42, 0.92);
+  --pfs-icon: rgba(109, 40, 217, 0.52);
+  --pfs-focus-border: rgba(139, 92, 246, 0.55);
+  --pfs-focus-ring: 0 0 0 2px rgba(124, 58, 237, 0.1);
+  --pfs-menu-border: rgba(124, 58, 237, 0.12);
+  --pfs-menu-shadow: 0 12px 32px rgba(76, 29, 149, 0.08);
+  --pfs-menu-radius: 10px;
+  --pfs-menu-padding: 0.375rem;
+  --pfs-item-hover-bg: rgba(124, 58, 237, 0.06);
+  --pfs-item-active-bg: rgba(124, 58, 237, 0.1);
+}
+
+.shared-playback-field-select__anchor {
+  width: 100%;
+}
+
+.shared-playback-field-select__trigger {
+  width: 100%;
+  min-height: var(--pfs-height);
+  border: 1px solid var(--pfs-border);
+  border-radius: var(--pfs-radius);
+  background: var(--pfs-bg);
+  color: var(--pfs-text);
+  font: inherit;
+  font-size: var(--pfs-font-size);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  padding: var(--pfs-padding-y) var(--pfs-padding-x);
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.375rem;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.shared-playback-field-select__trigger:hover:not(:disabled) {
+  border-color: color-mix(
+    in srgb,
+    var(--pfs-focus-border) 72%,
+    var(--pfs-border)
+  );
+}
+
+.shared-playback-field-select__trigger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.shared-playback-field-select__trigger:focus-visible {
+  outline: none;
+  border-color: var(--pfs-focus-border);
+  box-shadow: var(--pfs-focus-ring);
+}
+
+.shared-playback-field-select__value {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-weight: 600;
+}
+
+.shared-playback-field-select__chevron {
+  flex-shrink: 0;
+  width: 1.125rem;
+  height: 1.125rem;
+  color: var(--pfs-icon);
+  font-size: 1.125rem;
+}
+
+.shared-playback-field-select__menu {
+  --pfs-bg: #fff;
+  border-radius: var(--pfs-menu-radius, 0.625rem) !important;
+  border: 1px solid var(--pfs-menu-border, rgba(124, 58, 237, 0.12)) !important;
+  box-shadow: var(
+    --pfs-menu-shadow,
+    0 12px 28px rgba(15, 23, 42, 0.12)
+  ) !important;
+  background-color: var(--pfs-bg, #fff) !important;
+  background-image: none !important;
+  overflow: hidden;
+}
+
+.shared-playback-field-select__menu--default {
+  --pfs-bg: #fff;
+  --pfs-text: #0f172a;
+  --pfs-menu-border: color-mix(in srgb, #8b5cf6 32%, #ddd6fe);
+  --pfs-menu-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+  --pfs-menu-radius: 0.625rem;
+  --pfs-menu-padding: 0.375rem;
+  --pfs-item-radius: 0.5rem;
+  --pfs-item-hover-bg: rgba(99, 102, 241, 0.06);
+  --pfs-item-active-bg: rgba(99, 102, 241, 0.1);
+  --pfs-font-size: 0.8125rem;
+}
+
+.shared-playback-field-select__menu--encore {
+  --pfs-bg: #fff;
+  --pfs-text: rgba(15, 23, 42, 0.92);
+  --pfs-menu-border: rgba(124, 58, 237, 0.12);
+  --pfs-menu-shadow: 0 12px 32px rgba(76, 29, 149, 0.08);
+  --pfs-menu-radius: 10px;
+  --pfs-menu-padding: 0.375rem;
+  --pfs-item-radius: 0.5rem;
+  --pfs-item-hover-bg: rgba(124, 58, 237, 0.06);
+  --pfs-item-active-bg: rgba(124, 58, 237, 0.1);
+  --pfs-font-size: 0.8125rem;
+}
+
+.shared-playback-field-select--words {
+  --pfs-border: color-mix(in srgb, #0a8a8f 34%, #bfeef0);
+  --pfs-focus-border: color-mix(in srgb, #0a8a8f 58%, #67e8f9);
+  --pfs-focus-ring: 0 0 0 2px rgba(10, 138, 143, 0.14);
+  --pfs-icon: rgba(10, 138, 143, 0.58);
+  --pfs-text: #0f172a;
+}
+
+.shared-playback-field-select--chords {
+  --pfs-border: color-mix(in srgb, #6366f1 28%, #c7d2fe);
+  --pfs-focus-border: color-mix(in srgb, #4f46e5 58%, #a5b4fc);
+  --pfs-focus-ring: 0 0 0 2px rgba(99, 102, 241, 0.14);
+  --pfs-icon: rgba(79, 70, 229, 0.58);
+}
+
+.shared-playback-field-select--piano {
+  --pfs-border: color-mix(in srgb, #7c3aed 26%, #d8b4fe);
+  --pfs-focus-border: color-mix(in srgb, #7c3aed 60%, #c4b5fd);
+  --pfs-focus-ring: 0 0 0 2px rgba(124, 58, 237, 0.14);
+  --pfs-icon: rgba(109, 40, 217, 0.52);
+}
+
+.shared-playback-field-select__menu--words {
+  --pfs-bg: #fff;
+  --pfs-text: #0f172a;
+  --pfs-menu-border: color-mix(in srgb, #0a8a8f 30%, #dbeafe);
+  --pfs-menu-shadow: 0 10px 20px rgba(2, 132, 199, 0.16);
+  --pfs-menu-radius: 0.625rem;
+  --pfs-menu-padding: 0.375rem;
+  --pfs-item-radius: 0.5rem;
+  --pfs-item-hover-bg: color-mix(in srgb, #f0fdfa 72%, #fff);
+  --pfs-item-active-bg: color-mix(in srgb, #ccfbf1 44%, #fff);
+  --pfs-item-active-border: color-mix(in srgb, #0a8a8f 56%, #67e8f9);
+  --pfs-font-size: 0.8125rem;
+  --pfs-option-desc-color: rgba(21, 94, 99, 0.78);
+}
+
+.shared-playback-field-select__menu--chords {
+  --pfs-bg: #fff;
+  --pfs-text: #0f172a;
+  --pfs-menu-border: color-mix(in srgb, #6366f1 26%, #c7d2fe);
+  --pfs-menu-shadow: 0 12px 24px rgba(67, 56, 202, 0.16);
+  --pfs-menu-radius: 0.625rem;
+  --pfs-menu-padding: 0.375rem;
+  --pfs-item-radius: 0.5rem;
+  --pfs-item-hover-bg: color-mix(in srgb, #eef2ff 68%, #fff);
+  --pfs-item-active-bg: color-mix(in srgb, #e0e7ff 58%, #fff);
+  --pfs-font-size: 0.8125rem;
+  --pfs-option-desc-color: rgba(79, 70, 229, 0.72);
+}
+
+.shared-playback-field-select__menu--piano {
+  --pfs-bg: #fff;
+  --pfs-text: #0f172a;
+  --pfs-menu-border: color-mix(in srgb, #7c3aed 24%, #d8b4fe);
+  --pfs-menu-shadow: 0 14px 30px rgba(124, 58, 237, 0.15);
+  --pfs-menu-radius: 0.625rem;
+  --pfs-menu-padding: 0.375rem;
+  --pfs-item-radius: 0.5rem;
+  --pfs-item-hover-bg: color-mix(in srgb, #f5f3ff 70%, #fff);
+  --pfs-item-active-bg: color-mix(in srgb, #ede9fe 62%, #fff);
+  --pfs-font-size: 0.8125rem;
+  --pfs-option-desc-color: rgba(109, 40, 217, 0.68);
+}
+
+.shared-playback-field-select__menu-list {
+  padding: var(--pfs-menu-padding, 0.375rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  max-height: min(280px, calc(100dvh - 120px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background-color: var(--pfs-bg, #fff);
+}
+
+.shared-playback-field-select__option {
+  width: 100%;
+  border: 0;
+  border-radius: var(--pfs-item-radius);
+  background: transparent;
+  color: var(--pfs-text);
+  text-align: left;
+  cursor: pointer;
+  padding: 0.5rem 0.625rem;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+.shared-playback-field-select__option:hover,
+.shared-playback-field-select__option:focus-visible {
+  outline: none;
+  background: var(--pfs-item-hover-bg);
+}
+
+.shared-playback-field-select__option.active {
+  background: var(--pfs-item-active-bg);
+  color: var(--pfs-text);
+  box-shadow: inset 0 0 0 1px var(--pfs-item-active-border, transparent);
+}
+
+.shared-playback-field-select__option-copy {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.shared-playback-field-select__option-label {
+  display: block;
+  font-size: var(--pfs-font-size);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+
+.shared-playback-field-select__option-description {
+  display: block;
+  margin-top: 0.125rem;
+  font-size: 0.6875rem;
+  line-height: 1.35;
+  color: var(--pfs-option-desc-color, rgba(100, 116, 139, 0.95));
+}
+
+.shared-playback-field-select__option-trailing {
+  flex-shrink: 0;
+}

@@ -5,7 +5,7 @@ import type { Instrument } from './instruments';
 import type { SoundType } from '../music/soundOptions';
 import { recordNoteExpectedTime, clearExpectedTimes, refreshHeldNotes } from '../practice/practiceTimingStore';
 import { CLICK_SAMPLE_URL } from '../audio/drumSampleUrls';
-import { createManagedAudioContext, ensureAudioContextRunning } from './audioContextLifecycle';
+import { createManagedAudioContext, ensureAudioContextRunning, primeAudioContext } from './audioContextLifecycle';
 import { createInstrumentForSoundType } from './instrumentFactory';
 import { loadClickSample, playClickSampleAt, type LoadedClickSample } from '../audio/clickService';
 
@@ -175,6 +175,11 @@ export class ScorePlaybackEngine {
       this.audioContext = managed.context;
     }
     return this.audioContext;
+  }
+
+  /** Call synchronously from a click/tap handler before awaited playback setup. */
+  primeAudioContext(): void {
+    primeAudioContext(this.getAudioContext());
   }
 
   async loadClickSound(): Promise<void> {
@@ -411,9 +416,10 @@ export class ScorePlaybackEngine {
     this.generation++;
     const myGen = this.generation;
 
+    this.primeAudioContext();
     const ctx = this.getAudioContext();
-    await ensureAudioContextRunning(ctx);
-    if (this.generation !== myGen) return;
+    const running = await ensureAudioContextRunning(ctx);
+    if (!running || this.generation !== myGen) return;
 
     await this.loadClickSound();
     if (this.generation !== myGen) return;
@@ -425,8 +431,7 @@ export class ScorePlaybackEngine {
       if (this.generation !== myGen) return;
     }
 
-    await ensureAudioContextRunning(ctx);
-    if (this.generation !== myGen) return;
+    if (!(await ensureAudioContextRunning(ctx)) || this.generation !== myGen) return;
 
     this.events = this.buildEvents(score);
     this.positionCallback = callback;

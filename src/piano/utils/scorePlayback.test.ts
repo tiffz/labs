@@ -34,7 +34,8 @@ const hoisted = vi.hoisted(() => {
 
 vi.mock('../../shared/playback/audioContextLifecycle', () => ({
   createManagedAudioContext: vi.fn(() => ({ context: hoisted.fakeAudioContext })),
-  ensureAudioContextRunning: vi.fn(async () => {}),
+  ensureAudioContextRunning: vi.fn(async () => true),
+  primeAudioContext: vi.fn(),
 }));
 vi.mock('../../shared/playback/instrumentFactory', () => ({
   createInstrumentForSoundType: vi.fn(() => ({

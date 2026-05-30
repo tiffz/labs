@@ -4,11 +4,17 @@
  */
 
 import React, { useEffect, useRef } from 'react';
-import { Renderer, Stave, StaveNote, Voice, Formatter, Dot, Beam, Fraction } from 'vexflow';
+import { Renderer, Stave, StaveNote, Voice, Formatter, Dot } from 'vexflow';
 import type { ChordStylingStrategy, TimeSignature } from '../types';
 import { generateStyledChordNotes } from '../utils/chordStyling';
 import { generateVoicing } from '../utils/chordVoicing';
 import type { Chord } from '../types';
+import {
+  generateChordClefBeams,
+  redrawBeamedStemsIfMissing,
+  removeOrphanBeamedFlags,
+  suppressBeamedNoteFlags,
+} from '../utils/chordNotationBeams';
 
 interface ChordStylePreviewProps {
   strategy: ChordStylingStrategy;
@@ -178,56 +184,22 @@ const ChordStylePreview: React.FC<ChordStylePreviewProps> = ({
       const finalFormatWidth = Math.max(formatWidth, 40);
       formatter.format([trebleVoice, bassVoice], finalFormatWidth);
 
-      // Add beams for eighth notes based on time signature
-      const addBeams = (notes: StaveNote[], clef: 'treble' | 'bass') => {
-        const beamGroup =
-          timeSignature.denominator === 8
-            ? new Fraction(3, 8)
-            : new Fraction(1, 4);
-        const beams = Beam.generateBeams(notes, {
-          groups: [beamGroup],
-          beamRests: false,
-          maintainStemDirections: false,
-        });
-        const groupStemDirection = clef === 'treble' ? 1 : -1;
-        beams.forEach((beam) => {
-          beam.getNotes().forEach((note) => {
-            (note as StaveNote).setStemDirection(groupStemDirection);
-          });
-        });
-        return beams;
-      };
+      const trebleBeams = generateChordClefBeams(trebleNotes, timeSignature, 'treble');
+      const bassBeams = generateChordClefBeams(bassNotes, timeSignature, 'bass');
+      suppressBeamedNoteFlags(trebleBeams);
+      suppressBeamedNoteFlags(bassBeams);
       
-      const trebleBeams = addBeams(trebleNotes, 'treble');
-      const bassBeams = addBeams(bassNotes, 'bass');
-
-      const suppressFlagsForBeamedNotes = (beams: Beam[]) => {
-        const beamedNotes = new Set<StaveNote>();
-        beams.forEach((beam) => {
-          beam.getNotes().forEach((note) => {
-            beamedNotes.add(note as StaveNote);
-          });
-        });
-        beamedNotes.forEach((note) => {
-          note.setFlagStyle({ fillStyle: 'transparent', strokeStyle: 'transparent' });
-        });
-      };
-
-      suppressFlagsForBeamedNotes(trebleBeams);
-      suppressFlagsForBeamedNotes(bassBeams);
-      
-      // Draw both voices to show complete measure
       trebleVoice.draw(context, trebleStave);
       bassVoice.draw(context, bassStave);
+
+      redrawBeamedStemsIfMissing(trebleNotes, context);
+      redrawBeamedStemsIfMissing(bassNotes, context);
       
-      // Draw beams after notes are drawn
       trebleBeams.forEach(beam => beam.setContext(context).draw());
       bassBeams.forEach(beam => beam.setContext(context).draw());
 
-      if (strategy === 'one-per-beat' && timeSignature.numerator === 12 && timeSignature.denominator === 8) {
-        containerRef.current
-          ?.querySelectorAll('.vf-flag, [class*="vf-flag"]')
-          .forEach((node) => node.remove());
+      if (containerRef.current) {
+        removeOrphanBeamedFlags(containerRef.current);
       }
     } catch (error) {
       console.error('Error rendering chord style preview:', error);

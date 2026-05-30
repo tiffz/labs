@@ -334,6 +334,32 @@
   border-color: rgba(76, 29, 149, 0.14);
 }
 
+.encore-originals-chord-palette-custom-menu.MuiPaper-root {
+  margin-top: 0.2rem;
+  min-width: 7.25rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(76, 29, 149, 0.12);
+  box-shadow: 0 4px 14px rgba(76, 29, 149, 0.1);
+}
+
+.encore-originals-chord-palette-custom-menu .MuiAutocomplete-listbox {
+  padding: 0.3rem;
+}
+
+.encore-originals-chord-palette-custom-menu .MuiAutocomplete-option {
+  min-height: 1.75rem;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  border-radius: 0.35rem;
+}
+
+.encore-originals-chord-palette-custom-menu
+  .MuiAutocomplete-option.Mui-focused {
+  background: rgba(124, 58, 237, 0.08);
+}
+
 /* Legacy palette group selectors — kept for catalog/demo if referenced elsewhere */
 .encore-originals-chord-palette-header {
   margin-bottom: 0.2rem;
@@ -454,6 +480,15 @@
 .encore-originals-paint-scroll {
   flex: 0 0 auto;
   padding: 0.35rem 0.65rem 0.45rem;
+}
+
+.encore-originals-chords-playback-settings-menu {
+  background: #fff;
+}
+
+.encore-originals-chords-playback-settings-menu
+  .shared-chord-playback-settings--encore {
+  background: transparent;
 }
 
 .encore-originals-chords-playback-bar {

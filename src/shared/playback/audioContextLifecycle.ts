@@ -82,6 +82,19 @@ async function waitForRunningState(
   return context.state === 'running';
 }
 
+/**
+ * Start resuming a suspended context synchronously on a user gesture (click/tap).
+ * Pair with {@link ensureAudioContextRunning} after any awaited work.
+ */
+export function primeAudioContext(context: AudioContext | null | undefined): void {
+  if (!context || context.state === 'closed') return;
+  if (context.state === 'suspended') {
+    void context.resume().catch(() => {
+      /* no-op */
+    });
+  }
+}
+
 export async function ensureAudioContextRunning(context: AudioContext): Promise<boolean> {
   const state = context.state;
   if (state === 'running') return true;

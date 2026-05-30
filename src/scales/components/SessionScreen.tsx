@@ -416,6 +416,7 @@ export default function SessionScreen() {
     // it, auto-loop tick); the others would set it to false themselves.
     setLoopPaused(false);
     const engine = getScorePlaybackEngine();
+    engine.primeAudioContext();
     engineRef.current = engine;
     engine.setTempo(activeExercise.bpm || 80);
     engine.setMetronome(activeExercise.useMetronome);

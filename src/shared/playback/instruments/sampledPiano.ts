@@ -10,30 +10,12 @@
 
 import { BaseInstrument, type PlayNoteParams } from './instrument';
 import {
-  loadSamples,
   findBestSample,
-  noteToMidi,
-  type SampleEntry,
   type LoadedSample,
   type VelocityLayer,
   type LoadingProgressCallback,
 } from './sampleLoader';
-
-/**
- * Salamander Grand Piano sample configuration
- * Using the Tone.js-hosted Salamander samples (reliable CDN)
- */
-const SAMPLE_BASE_URL = 'https://tonejs.github.io/audio/salamander/';
-
-/**
- * Available sample points (only A, C, Ds, Fs are hosted per octave)
- */
-const SAMPLE_NOTES = [
-  'A0', 'C1', 'Ds1', 'Fs1', 'A1', 'C2', 'Ds2', 'Fs2',
-  'A2', 'C3', 'Ds3', 'Fs3', 'A3', 'C4', 'Ds4', 'Fs4',
-  'A4', 'C5', 'Ds5', 'Fs5', 'A5', 'C6', 'Ds6', 'Fs6',
-  'A6', 'C7', 'Ds7', 'Fs7', 'A7', 'C8',
-];
+import { ensureSalamanderPianoSamples, isSalamanderPianoReady } from './salamanderPianoSamplePool';
 
 /**
  * Single velocity layer (Tone.js samples don't have multiple velocity layers)
@@ -41,26 +23,6 @@ const SAMPLE_NOTES = [
 const VELOCITY_LAYERS: VelocityLayer[] = [
   { name: 'default', velocityMin: 0, velocityMax: 1.0, suffix: '' },
 ];
-
-/**
- * Generate sample entries for loading
- */
-function generateSampleEntries(): SampleEntry[] {
-  const entries: SampleEntry[] = [];
-  
-  for (const note of SAMPLE_NOTES) {
-    for (const layer of VELOCITY_LAYERS) {
-      entries.push({
-        note,
-        midiNote: noteToMidi(note),
-        url: `${SAMPLE_BASE_URL}${note}.mp3`,
-        velocityLayer: layer.name,
-      });
-    }
-  }
-  
-  return entries;
-}
 
 /**
  * Loading state
@@ -130,31 +92,26 @@ export class SampledPiano extends BaseInstrument {
    * Returns a promise that resolves when loading is complete
    */
   async loadSamples(): Promise<boolean> {
-    // If already loading, return existing promise result
+    if (this.isReady()) {
+      return true;
+    }
+
     if (this.loadingPromise) {
       await this.loadingPromise;
       return this.isReady();
     }
-    
-    // If already loaded, return immediately
-    if (this.isReady()) {
-      return true;
-    }
-    
+
     this.loadingState = 'loading';
-    
+
     this.loadingPromise = (async () => {
       try {
-        const sampleEntries = generateSampleEntries();
-        
-        this.samples = await loadSamples(
+        this.samples = await ensureSalamanderPianoSamples(
           this.audioContext,
-          sampleEntries,
           (loaded, total) => {
             this.onLoadingProgress?.(loaded, total);
-          }
+          },
         );
-        
+
         if (this.samples.length > 0) {
           this.loadingState = 'loaded';
           this.onLoadingComplete?.(true);
@@ -168,8 +125,9 @@ export class SampledPiano extends BaseInstrument {
         this.onLoadingComplete?.(false);
       }
     })();
-    
+
     await this.loadingPromise;
+    this.loadingPromise = null;
     return this.isReady();
   }
   
@@ -317,7 +275,7 @@ export class SampledPiano extends BaseInstrument {
   dispose(): void {
     super.dispose();
     this.samples = [];
-    this.loadingState = 'idle';
+    this.loadingState = isSalamanderPianoReady() ? 'loaded' : 'idle';
     this.loadingPromise = null;
     this.onLoadingProgress = null;
     this.onLoadingComplete = null;

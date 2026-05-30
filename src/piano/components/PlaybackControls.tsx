@@ -1,7 +1,13 @@
 import React, { useState, useRef, useMemo } from 'react';
 import Popover from '@mui/material/Popover';
 import { usePiano, type ActiveMode } from '../store';
-import { SOUND_OPTIONS, type SoundType } from '../../shared/music/soundOptions';
+import { type SoundType } from '../../shared/music/soundOptions';
+import {
+  IDLE_SAMPLED_PIANO_LOAD_STATE,
+  type SampledPianoLoadState,
+} from '../../shared/music/sampledPianoLoadState';
+import { PlaybackSoundSelect } from '../../shared/components/music/PlaybackSoundSelect';
+import { useSampledPianoPreload } from '../../shared/hooks/useSampledPianoPreload';
 import DrumAccompaniment, { type DrumScheduler } from '../../shared/components/music/DrumAccompaniment';
 import type { NotationStyle } from '../../shared/notation/DrumNotationMini';
 import { getScorePlaybackEngine } from '../utils/scorePlayback';
@@ -26,7 +32,8 @@ interface SettingsDropdownProps {
   onMetronomeToggle: () => void;
   onTrackMute: (id: string) => void;
   onTrackVolume: (id: string, v: number) => void;
-  onSoundChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  onSoundChange: (soundType: SoundType) => void;
+  sampledPianoLoad?: SampledPianoLoadState;
   onDrumVolume: (v: number) => void;
   onCountInEveryLoop: (enabled: boolean) => void;
   onMidiSound: (enabled: boolean) => void;
@@ -34,7 +41,7 @@ interface SettingsDropdownProps {
 }
 
 const SettingsDropdown = React.forwardRef<HTMLDivElement, SettingsDropdownProps>(
-  ({ state, isActive, onMasterVolume, onMasterMute, onMetronomeVolume, onMetronomeToggle, onTrackMute, onTrackVolume, onSoundChange, onDrumVolume, onCountInEveryLoop, onMidiSound, onMidiSoundVolume }, ref) => {
+  ({ state, isActive, onMasterVolume, onMasterMute, onMetronomeVolume, onMetronomeToggle, onTrackMute, onTrackVolume, onSoundChange, sampledPianoLoad, onDrumVolume, onCountInEveryLoop, onMidiSound, onMidiSoundVolume }, ref) => {
     return (
       <div className="sb-settings-dropdown" ref={ref}>
         <div className="sb-settings-section">
@@ -128,11 +135,14 @@ const SettingsDropdown = React.forwardRef<HTMLDivElement, SettingsDropdownProps>
         <div className="sb-settings-divider" />
         <div className="sb-settings-section">
           <label className="sb-settings-label" style={{ marginBottom: 4, display: 'block' }}>Instrument</label>
-          <select value={state.soundType} onChange={onSoundChange} className="sb-full sound-select" disabled={isActive}>
-            {SOUND_OPTIONS.map(o => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
+          <PlaybackSoundSelect
+            appearance="piano"
+            value={state.soundType as SoundType}
+            onChange={onSoundChange}
+            sampledPianoLoad={sampledPianoLoad}
+            aria-label="Playback instrument"
+            disabled={isActive}
+          />
         </div>
       </div>
     );
@@ -142,6 +152,10 @@ SettingsDropdown.displayName = 'SettingsDropdown';
 
 const PlaybackControls: React.FC = () => {
   const { state, dispatch, engine, startMode, stopMode } = usePiano();
+  const [sampledPianoLoad, setSampledPianoLoad] = useState<SampledPianoLoadState>(
+    IDLE_SAMPLED_PIANO_LOAD_STATE,
+  );
+  useSampledPianoPreload(state.soundType as SoundType, setSampledPianoLoad);
   const hasVocalPart = useMemo(() => state.score?.parts.some(p => p.hand === 'voice') ?? false, [state.score]);
   const hasChordSymbols = useMemo(() => {
     if (!state.score) return false;
@@ -180,8 +194,7 @@ const PlaybackControls: React.FC = () => {
     engine.setLoop(newEnabled);
   };
 
-  const handleSoundChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const soundType = e.target.value as SoundType;
+  const handleSoundChange = async (soundType: SoundType) => {
     dispatch({ type: 'SET_SOUND_TYPE', soundType });
     if (soundType === 'piano-sampled') {
       dispatch({ type: 'SET_SAMPLE_LOADING', progress: { loaded: 0, total: 1 } });
@@ -551,14 +564,14 @@ const PlaybackControls: React.FC = () => {
         )}
       </div>
 
-      {state.sampleLoadingProgress && (
+      {state.sampleLoadingProgress && !sampledPianoLoad.ready ? (
         <div className="loading-bar">
           <div
             className="loading-fill"
             style={{ width: `${(state.sampleLoadingProgress.loaded / state.sampleLoadingProgress.total) * 100}%` }}
           />
         </div>
-      )}
+      ) : null}
 
       <Popover
         open={settingsOpen}
@@ -578,6 +591,7 @@ const PlaybackControls: React.FC = () => {
           onTrackMute={handleTrackMute}
           onTrackVolume={handleTrackVolume}
           onSoundChange={handleSoundChange}
+          sampledPianoLoad={sampledPianoLoad}
           onDrumVolume={handleDrumVolume}
           onCountInEveryLoop={(enabled) => dispatch({ type: 'SET_COUNT_IN_EVERY_LOOP', enabled })}
           onMidiSound={(enabled) => dispatch({ type: 'SET_MIDI_SOUND', enabled })}

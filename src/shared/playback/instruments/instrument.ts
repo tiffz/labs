@@ -58,6 +58,7 @@ export interface Instrument {
 export abstract class BaseInstrument implements Instrument {
   protected audioContext: AudioContext;
   protected output: GainNode;
+  protected connectedDestination: AudioNode | null = null;
   protected disposed: boolean = false;
   
   constructor(audioContext: AudioContext) {
@@ -70,27 +71,53 @@ export abstract class BaseInstrument implements Instrument {
   
   stopAll(fadeTimeMs: number = 50): void {
     if (this.disposed) return;
-    
-    const fadeTime = fadeTimeMs / 1000;
+
     const now = this.audioContext.currentTime;
-    
-    // Cancel any scheduled gain changes
-    this.output.gain.cancelScheduledValues(now);
-    
-    // Set current value then ramp to 0, then back to 1
-    // Use Web Audio scheduling instead of setTimeout for precise timing
-    this.output.gain.setValueAtTime(this.output.gain.value, now);
-    this.output.gain.linearRampToValueAtTime(0, now + fadeTime);
-    // Restore gain immediately after fade completes using Web Audio scheduling
-    this.output.gain.setValueAtTime(1, now + fadeTime + 0.001);
+    const fadeTime = Math.max(0, fadeTimeMs) / 1000;
+    const oldOutput = this.output;
+
+    oldOutput.gain.cancelScheduledValues(now);
+    oldOutput.gain.setValueAtTime(oldOutput.gain.value, now);
+    if (fadeTime > 0) {
+      oldOutput.gain.linearRampToValueAtTime(0, now + fadeTime);
+    } else {
+      oldOutput.gain.setValueAtTime(0, now);
+    }
+
+    // Route future notes through a fresh output bus; old scheduled voices keep
+    // running on the muted bus instead of returning after a brief duck.
+    this.output = this.audioContext.createGain();
+    this.output.gain.value = 1;
+    if (this.connectedDestination) {
+      this.output.connect(this.connectedDestination);
+    }
+
+    if (fadeTime <= 0) {
+      try {
+        oldOutput.disconnect();
+      } catch {
+        /* ignore */
+      }
+      return;
+    }
+
+    window.setTimeout(() => {
+      try {
+        oldOutput.disconnect();
+      } catch {
+        /* ignore */
+      }
+    }, fadeTimeMs + 20);
   }
   
   connect(destination: AudioNode): void {
+    this.connectedDestination = destination;
     this.output.connect(destination);
   }
   
   disconnect(): void {
     this.output.disconnect();
+    this.connectedDestination = null;
   }
   
   getOutput(): GainNode {

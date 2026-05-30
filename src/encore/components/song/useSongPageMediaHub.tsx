@@ -69,6 +69,11 @@ import {
 import { EncoreSpotifyConnectionChip } from '../../ui/EncoreSpotifyConnectionChip';
 import { EncoreStaticResourceHoverCard, EncoreStreamingHoverCard } from '../EncoreStreamingHoverCard';
 import { EncoreMediaLinkRow } from '../../ui/EncoreMediaLinkRow';
+import {
+  encoreResourceDownloadDisabled,
+  encoreResourceDownloadTargetFromDriveFile,
+  triggerEncoreResourceDownload,
+} from '../../drive/encoreResourceDownload';
 import { EncoreAudioResourceNotesWrapper } from '../../ui/EncoreAudioResourceNotesWrapper';
 import {
   formatChartAttachmentCaption,
@@ -93,6 +98,23 @@ import type { SongMediaUploadSlot } from './songMediaUploadSlot';
  */
 const ENCORE_AUDIO_VIDEO_FILE_ACCEPT =
   'audio/*,video/*,.m4a,.mp4,.mov,.m4v,.aac,.mp3,.wav,.wave,.aif,.aiff,.caf,.flac,.ogg,.oga,.opus,.webm,.mkv,.mpeg,.mpg,.avi';
+
+function staticHoverCardDownloadProps(
+  filename: string,
+  driveFileId: string | undefined,
+  googleAccessToken: string | null,
+  mimeType?: string,
+) {
+  const id = driveFileId?.trim();
+  if (!id) return {};
+  const target = encoreResourceDownloadTargetFromDriveFile(filename, id, mimeType);
+  const gate = encoreResourceDownloadDisabled({ driveFileId: id }, googleAccessToken);
+  return {
+    onDownload: () => triggerEncoreResourceDownload(target, googleAccessToken),
+    downloadDisabled: gate.disabled,
+    downloadDisabledReason: gate.reason,
+  };
+}
 
 /** Persist nickname/notes while typing: trimming on every keystroke strips spaces before the user finishes. */
 function optionalNonEmptyString(value: string): string | undefined {
@@ -1377,6 +1399,11 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                                       return { ...d, referenceLinks: next };
                                     })
                                   }
+                                  {...staticHoverCardDownloadProps(
+                                    formatMediaLinkCaption(link),
+                                    link.driveFileId,
+                                    googleAccessToken,
+                                  )}
                                 >
                                   {inner}
                                 </EncoreStaticResourceHoverCard>
@@ -1713,6 +1740,11 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                                       return { ...d, backingLinks: next };
                                     })
                                   }
+                                  {...staticHoverCardDownloadProps(
+                                    formatMediaLinkCaption(link),
+                                    link.driveFileId,
+                                    googleAccessToken,
+                                  )}
                                 >
                                   {inner}
                                 </EncoreStaticResourceHoverCard>
@@ -1969,6 +2001,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                                   return { ...d, attachments: next };
                                 })
                               }
+                              {...staticHoverCardDownloadProps(fullCaption, a.driveFileId, googleAccessToken)}
                             >
                               {strip}
                             </EncoreStaticResourceHoverCard>

@@ -17,20 +17,32 @@ import { richTextPlainText } from '../../../shared/utils/richTextContent';
 import { EncoreStaticResourceHoverCard } from '../../components/EncoreStreamingHoverCard';
 import { EncoreResourceLinksPanel } from '../../components/EncoreResourceLinksPanel';
 import { EncoreMediaLinkRow } from '../../ui/EncoreMediaLinkRow';
+import { useEncoreAuth } from '../../context/EncoreAuthContext';
+import {
+  encoreResourceDownloadDisabled,
+  encoreResourceDownloadTargetFromTake,
+  triggerEncoreResourceDownload,
+} from '../../drive/encoreResourceDownload';
 import { encoreMaxWidthPage } from '../../theme/encoreUiTokens';
 import { useEncoreOriginalsPlayback } from '../context/EncoreOriginalsPlaybackContext';
 import { isStageComplete } from '../originalsWorkflowCompletion';
 import { ORIGINALS_WORKFLOW_STAGES, workflowStageShortLabel } from '../originalsWorkflowStages';
 import { originalTakeListenHint } from '../originalsTakeDisplay';
-import { preferredOriginalTake, type EncoreOriginalSong } from '../types';
+import { preferredOriginalTake, type EncoreOriginalSong, type OriginalAudioTake } from '../types';
 
 export type OriginalsSongViewModeProps = {
   song: EncoreOriginalSong;
   onEdit: () => void;
+  onSongChange: (patch: Partial<EncoreOriginalSong>) => void;
 };
 
-export function OriginalsSongViewMode({ song, onEdit }: OriginalsSongViewModeProps): ReactElement {
+export function OriginalsSongViewMode({
+  song,
+  onEdit,
+  onSongChange,
+}: OriginalsSongViewModeProps): ReactElement {
   const theme = useTheme();
+  const { googleAccessToken } = useEncoreAuth();
   const writeDoc = layoutToWriteDocument(parseChordProToChartLayout(song.lyricsAndChords));
   const ascii = chartLayoutToAsciiExport(parseChordProToChartLayout(song.lyricsAndChords));
   const brainstormPlain = richTextPlainText(song.brainstormHtml);
@@ -56,6 +68,12 @@ export function OriginalsSongViewMode({ song, onEdit }: OriginalsSongViewModePro
       takeLabel: preferredTake.label,
       driveFileId: preferredTake.driveFileId,
       mimeType: preferredTake.mimeType,
+    });
+  };
+
+  const updateTake = (takeId: string, patch: Partial<OriginalAudioTake>) => {
+    onSongChange({
+      takes: song.takes.map((t) => (t.id === takeId ? { ...t, ...patch } : t)),
     });
   };
 
@@ -235,21 +253,58 @@ export function OriginalsSongViewMode({ song, onEdit }: OriginalsSongViewModePro
               Demo takes
             </Typography>
             <Stack spacing={0.75} alignItems="flex-start">
-              {song.takes.map((t) => (
-                <EncoreStaticResourceHoverCard key={t.id} title={t.label} subtitle="Demo take">
-                  <EncoreMediaLinkRow
-                    slot="reference"
-                    isPrimary={song.mainTakeId === t.id}
-                    caption={t.label}
-                    openUrl={
+              {song.takes.map((t) => {
+                const openUrl = t.driveFileId
+                  ? `https://drive.google.com/file/d/${encodeURIComponent(t.driveFileId)}/view`
+                  : undefined;
+                const downloadTarget = encoreResourceDownloadTargetFromTake(t);
+                const downloadGate = encoreResourceDownloadDisabled(
+                  { driveFileId: t.driveFileId },
+                  googleAccessToken,
+                );
+                return (
+                  <EncoreStaticResourceHoverCard
+                    key={t.id}
+                    title={t.label}
+                    subtitle="Demo take"
+                    editNickname={t.label}
+                    onEditNicknameChange={(value) => updateTake(t.id, { label: value.trim() || t.label })}
+                    resourceNotes={t.notes ?? ''}
+                    onResourceNotesChange={(value) => updateTake(t.id, { notes: value.trim() || undefined })}
+                    onPlay={
                       t.driveFileId
-                        ? `https://drive.google.com/file/d/${encodeURIComponent(t.driveFileId)}/view`
+                        ? () =>
+                            playTake({
+                              songId: song.id,
+                              songTitle: song.title,
+                              takeId: t.id,
+                              takeLabel: t.label,
+                              driveFileId: t.driveFileId!,
+                              mimeType: t.mimeType,
+                            })
                         : undefined
                     }
-                    openAriaLabel={`Open ${t.label}`}
-                  />
-                </EncoreStaticResourceHoverCard>
-              ))}
+                    isPlaying={isPlayingTake(song.id, t.id)}
+                    playDisabled={!t.driveFileId}
+                    playDisabledReason={!t.driveFileId ? 'Sign in to Google to play in Encore' : undefined}
+                    {...(downloadTarget
+                      ? {
+                          onDownload: () => triggerEncoreResourceDownload(downloadTarget, googleAccessToken),
+                          downloadDisabled: downloadGate.disabled,
+                          downloadDisabledReason: downloadGate.reason,
+                        }
+                      : {})}
+                  >
+                    <EncoreMediaLinkRow
+                      slot="reference"
+                      isPrimary={song.mainTakeId === t.id}
+                      caption={t.label}
+                      openUrl={openUrl}
+                      openAriaLabel={`Open ${t.label}`}
+                    />
+                  </EncoreStaticResourceHoverCard>
+                );
+              })}
             </Stack>
           </Paper>
         ) : null}

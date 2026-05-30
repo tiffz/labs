@@ -8,6 +8,7 @@ import { AudioPlayer } from '../../audio/audioPlayer';
 import DrumNotationMini, { type NotationStyle } from '../../notation/DrumNotationMini';
 import DiceIcon from '../DiceIcon';
 import { DRUM_SAMPLE_URLS } from '../../audio/drumSampleUrls';
+import { resolveDrumPlaybackNotePointer } from '../../rhythm/drumPlaybackNotePointer';
 
 /** Precise drum scheduling via the playback engine's look-ahead scheduler */
 export interface DrumScheduler {
@@ -54,10 +55,19 @@ interface DrumAccompanimentProps {
   notationShowMetronomeDots?: boolean;
   /** Scale for drum symbols above noteheads (default 0.6). */
   drumSymbolScale?: number;
+  /** Hide dice randomize controls (rare; prefer {@link INLINE_DRUM_PANEL_UX} defaults). */
+  showRandomizeButtons?: boolean;
+  /** Hide the raw Darbuka notation text field (preset + notation preview only). */
+  hidePatternInput?: boolean;
   scheduler?: DrumScheduler;
   TemplateButtonComponent?: React.ComponentType<DrumTemplateButtonProps>;
   templateButtonClassName?: string;
   randomizeButtonClassName?: string;
+  /** Controlled Darbuka notation (e.g. chart playback settings). */
+  notationValue?: string;
+  onNotationValueChange?: (notation: string) => void;
+  /** When false, skips local AudioPlayer init (notation picker only). */
+  audioEnabled?: boolean;
 }
 
 const DRUM_SOUNDS = { ...DRUM_SAMPLE_URLS } as const;
@@ -106,15 +116,19 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
   notationFooter,
   notationShowMetronomeDots,
   drumSymbolScale = 0.6,
+  showRandomizeButtons = true,
+  hidePatternInput = false,
   scheduler,
   TemplateButtonComponent,
   templateButtonClassName,
   randomizeButtonClassName,
+  notationValue,
+  onNotationValueChange,
+  audioEnabled = true,
 }) => {
+  const isControlled = onNotationValueChange !== undefined;
   const [selectedPreset, setSelectedPreset] = useState(0);
   const [customNotation, setCustomNotation] = useState<string | null>(null);
-  const [currentNoteIndex, setCurrentNoteIndex] = useState<number | null>(null);
-  const [currentMeasureIndex, setCurrentMeasureIndex] = useState(0);
   const [hoverTip, setHoverTip] = useState<{ text: string; x: number; y: number } | null>(
     null
   );
@@ -124,12 +138,51 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
   const lastPlayedNoteRef = useRef<number>(-1);
   const lastMeasureRef = useRef<number>(-1);
 
-  const notation = useMemo(() => {
+  const internalNotation = useMemo(() => {
     if (customNotation !== null) {
       return customNotation;
     }
     return presetRhythms[selectedPreset]?.notation ?? presetRhythms[0]?.notation ?? '';
   }, [customNotation, selectedPreset, presetRhythms]);
+
+  const notation =
+    isControlled && notationValue !== undefined ? notationValue : internalNotation;
+
+  const syncPresetFromNotation = useCallback(
+    (value: string) => {
+      const matchingPresetIndex = presetRhythms.findIndex((preset) => {
+        if (preset.notation === value) return true;
+        return getTemplatePresetVariations(preset.id, timeSignature).some(
+          (variation) => variation.notation === value,
+        );
+      });
+      if (matchingPresetIndex >= 0) {
+        setSelectedPreset(matchingPresetIndex);
+        if (value === presetRhythms[matchingPresetIndex]?.notation) {
+          setCustomNotation(null);
+        } else {
+          setCustomNotation(value);
+        }
+      } else {
+        setCustomNotation(value);
+        setSelectedPreset(-1);
+      }
+    },
+    [presetRhythms, timeSignature],
+  );
+
+  useEffect(() => {
+    if (!isControlled || notationValue === undefined) return;
+    syncPresetFromNotation(notationValue);
+  }, [isControlled, notationValue, syncPresetFromNotation]);
+
+  const handleNotationChange = useCallback(
+    (value: string) => {
+      syncPresetFromNotation(value);
+      if (isControlled) onNotationValueChange?.(value);
+    },
+    [isControlled, onNotationValueChange, syncPresetFromNotation],
+  );
 
   const selectedPresetData =
     selectedPreset >= 0 ? presetRhythms[selectedPreset] : undefined;
@@ -153,9 +206,9 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
       const current = activeVariationIndex >= 0 ? activeVariationIndex : 0;
       const nextIndex =
         (current + delta + templateVariations.length) % templateVariations.length;
-      setCustomNotation(templateVariations[nextIndex]?.notation ?? notation);
+      handleNotationChange(templateVariations[nextIndex]?.notation ?? notation);
     },
-    [activeVariationIndex, notation, templateVariations],
+    [activeVariationIndex, handleNotationChange, notation, templateVariations],
   );
 
   const parsedRhythm = useMemo(() => {
@@ -169,14 +222,14 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
 
   // Fallback: initialize own AudioPlayer when no engine scheduler is provided
   useEffect(() => {
-    if (scheduler) return;
+    if (!audioEnabled || scheduler) return;
     const player = new AudioPlayer({
       soundUrls: DRUM_SOUNDS,
       enableReverb: false,
     });
     player.initialize().then(() => { audioPlayerRef.current = player; });
     return () => { player.destroy(); };
-  }, [scheduler]);
+  }, [audioEnabled, scheduler]);
 
   // Load drum sounds into the engine's AudioContext when scheduler is provided
   useEffect(() => {
@@ -238,84 +291,58 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
     return () => { scheduler.setCallback(null); };
   }, [scheduler, isPlaying]);
 
-  // Visual highlighting only (reactive is fine for visuals)
+  const playbackPointer = useMemo(() => {
+    if (!isPlaying || currentBeatTime < 0) return null;
+    return resolveDrumPlaybackNotePointer(parsedRhythm, timeSignature, bpm, currentBeatTime);
+  }, [isPlaying, currentBeatTime, bpm, timeSignature, parsedRhythm]);
+
+  const currentMeasureIndex = playbackPointer?.measureIndex ?? 0;
+  const currentNoteIndex = playbackPointer?.noteIndex ?? null;
+
+  const displayRhythm = useMemo(() => {
+    if (!parsedRhythm.isValid || parsedRhythm.measures.length === 0) return parsedRhythm;
+    const measure = parsedRhythm.measures[currentMeasureIndex] ?? parsedRhythm.measures[0];
+    return {
+      ...parsedRhythm,
+      measures: measure ? [measure] : [],
+    };
+  }, [parsedRhythm, currentMeasureIndex]);
+
+  // Fallback: play sound reactively when no engine scheduler is available.
   useEffect(() => {
-    if (!isPlaying || !parsedRhythm.isValid || parsedRhythm.measures.length === 0) {
-      setCurrentNoteIndex(null);
-      setCurrentMeasureIndex(0);
-      lastPlayedNoteRef.current = -1;
-      lastMeasureRef.current = -1;
+    if (scheduler || !isPlaying || !playbackPointer || !parsedRhythm.isValid) {
+      if (!isPlaying) {
+        lastPlayedNoteRef.current = -1;
+        lastMeasureRef.current = -1;
+      }
       return;
     }
 
-    if (currentBeatTime < 0) {
-      setCurrentNoteIndex(null);
-      lastPlayedNoteRef.current = -1;
-      lastMeasureRef.current = -1;
-      return;
-    }
+    const measure = parsedRhythm.measures[playbackPointer.measureIndex];
+    if (!measure) return;
 
-    const msPerSixteenth = 60000 / bpm / 4;
-    const sixteenthsPerMeasure =
-      timeSignature.denominator === 8 ? timeSignature.numerator * 2 : timeSignature.numerator * 4;
-    const measureCount = parsedRhythm.measures.length;
-    const sixteenthsPerPattern = sixteenthsPerMeasure * measureCount;
-    const totalSixteenths = (currentBeatTime * 1000) / msPerSixteenth;
-    const positionInPattern = ((totalSixteenths % sixteenthsPerPattern) + sixteenthsPerPattern) % sixteenthsPerPattern;
-    const measureIndex = Math.floor(positionInPattern / sixteenthsPerMeasure);
-    const positionInMeasure = positionInPattern % sixteenthsPerMeasure;
-    setCurrentMeasureIndex(measureIndex);
-
-    const measure = parsedRhythm.measures[measureIndex];
-    let cumulativePosition = 0;
-    let noteIndex = 0;
-    for (let i = 0; i < measure.notes.length; i++) {
-      const noteEnd = cumulativePosition + measure.notes[i].durationInSixteenths;
-      if (positionInMeasure >= cumulativePosition && positionInMeasure < noteEnd) {
-        noteIndex = i;
-        break;
+    const noteKey = playbackPointer.measureIndex * 1000 + playbackPointer.noteIndex;
+    const lastNoteKey = lastMeasureRef.current * 1000 + lastPlayedNoteRef.current;
+    if (noteKey !== lastNoteKey && audioPlayerRef.current) {
+      const note = measure.notes[playbackPointer.noteIndex];
+      if (note?.sound !== 'rest') {
+        audioPlayerRef.current.play(note.sound, volume / 100);
       }
-      cumulativePosition = noteEnd;
+      lastPlayedNoteRef.current = playbackPointer.noteIndex;
+      lastMeasureRef.current = playbackPointer.measureIndex;
     }
-    setCurrentNoteIndex(noteIndex);
+  }, [isPlaying, parsedRhythm, playbackPointer, scheduler, volume]);
 
-    // Fallback: play sound reactively when no scheduler is available
-    if (!scheduler) {
-      const noteKey = measureIndex * 1000 + noteIndex;
-      const lastNoteKey = lastMeasureRef.current * 1000 + lastPlayedNoteRef.current;
-      if (noteKey !== lastNoteKey && audioPlayerRef.current) {
-        const note = measure.notes[noteIndex];
-        if (note.sound !== 'rest') {
-          audioPlayerRef.current.play(note.sound, volume / 100);
-        }
-        lastPlayedNoteRef.current = noteIndex;
-        lastMeasureRef.current = measureIndex;
-      }
-    }
-  }, [isPlaying, currentBeatTime, bpm, timeSignature, parsedRhythm, volume, scheduler]);
+  const handlePresetChange = useCallback(
+    (index: number) => {
+      setSelectedPreset(index);
+      setCustomNotation(null);
+      const next = presetRhythms[index]?.notation ?? '';
+      if (isControlled) onNotationValueChange?.(next);
+    },
+    [isControlled, onNotationValueChange, presetRhythms],
+  );
 
-  const handlePresetChange = useCallback((index: number) => {
-    setSelectedPreset(index);
-    setCustomNotation(null); // Clear custom notation to use preset
-  }, []);
-
-  const handleNotationChange = useCallback((value: string) => {
-    setCustomNotation(value);
-    const matchingPresetIndex = presetRhythms.findIndex((preset) => {
-      if (preset.notation === value) return true;
-      return getTemplatePresetVariations(preset.id, timeSignature).some(
-        (variation) => variation.notation === value,
-      );
-    });
-    if (matchingPresetIndex >= 0) {
-      setSelectedPreset(matchingPresetIndex);
-      if (value === presetRhythms[matchingPresetIndex]?.notation) {
-        setCustomNotation(null);
-      }
-    } else {
-      setSelectedPreset(-1);
-    }
-  }, [presetRhythms, timeSignature]);
   const randomizePresetTemplate = useCallback(() => {
     if (presetRhythms.length === 0) return;
     const notationPool: string[] = [];
@@ -344,9 +371,8 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
       const randomIndex = Math.floor(Math.random() * nextNotation.length);
       nextNotation = `${nextNotation.slice(0, randomIndex)}D${nextNotation.slice(randomIndex + 1)}`;
     }
-    setCustomNotation(nextNotation);
-    setSelectedPreset(-1);
-  }, [sixteenthsPerMeasure]);
+    handleNotationChange(nextNotation);
+  }, [handleNotationChange, sixteenthsPerMeasure]);
   const showTip = useCallback(
     (event: React.MouseEvent<HTMLButtonElement> | React.FocusEvent<HTMLButtonElement>, text: string) => {
       const rect = event.currentTarget.getBoundingClientRect();
@@ -435,6 +461,8 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
             {preset.label}
           </TemplateButton>
         ))}
+        {showRandomizeButtons ? (
+          <>
         <TemplateButton
           onClick={randomizePresetTemplate}
           isActive={false}
@@ -459,9 +487,12 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
         >
           <DiceIcon variant="multiple" size={15} />
         </TemplateButton>
+          </>
+        ) : null}
       </div>
 
       {/* Always visible notation input */}
+      {hidePatternInput ? null : (
       <div className="drum-pattern-input">
         <input
           type="text"
@@ -471,6 +502,7 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
           onPaste={handlePaste}
         />
       </div>
+      )}
 
       {/* Rhythm display */}
       {parsedRhythm.isValid && parsedRhythm.measures.length > 0 ? (
@@ -501,11 +533,7 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
             </div>
           )}
           <DrumNotationMini
-            rhythm={{
-              ...parsedRhythm,
-              // Show only the current measure
-              measures: [parsedRhythm.measures[currentMeasureIndex]],
-            }}
+            rhythm={displayRhythm}
             currentNoteIndex={currentNoteIndex}
             width={notationWidth ?? 320}
             height={notationHeight ?? (metronomeEnabled ? 120 : 100)}

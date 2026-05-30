@@ -25,6 +25,12 @@ import {
 import { resourceLinkOpenUrl } from '../repertoire/encoreResourceLinks';
 import { encoreMediaHubAddButtonSx, encoreRadius, songPageResourceRowShellSx } from '../theme/encoreUiTokens';
 import type { EncoreMiscResource } from '../types';
+import { useEncoreAuth } from '../context/EncoreAuthContext';
+import {
+  encoreResourceDownloadDisabled,
+  encoreResourceDownloadTargetFromMisc,
+  triggerEncoreResourceDownload,
+} from '../drive/encoreResourceDownload';
 import { EncoreStaticResourceHoverCard } from './EncoreStreamingHoverCard';
 import { EncoreMediaLinkRow } from '../ui/EncoreMediaLinkRow';
 
@@ -90,6 +96,7 @@ export function EncoreResourceLinksPanel({
   readOnly = false,
 }: EncoreResourceLinksPanelProps): ReactElement {
   const theme = useTheme();
+  const { googleAccessToken } = useEncoreAuth();
   const isHubCard = layout === 'media-hub-card';
   const isSidebar = layout === 'sidebar';
   const panelDropEnabled = !readOnly && isSidebar;
@@ -182,13 +189,27 @@ export function EncoreResourceLinksPanel({
       onChange(resources.map((r) => (r.id === resource.id ? { ...r, ...patch } : r)));
     };
 
+    const downloadTarget = encoreResourceDownloadTargetFromMisc(resource);
+    const downloadGate = encoreResourceDownloadDisabled(resource, googleAccessToken);
+
     const hoverCardProps = {
       title: resource.label,
       subtitle: resource.kind,
       editNickname: resource.label,
-      onEditNicknameChange: (value: string) => patchResource({ label: value.trim() || resource.label }),
+      onEditNicknameChange: readOnly
+        ? undefined
+        : (value: string) => patchResource({ label: value.trim() || resource.label }),
       resourceNotes: resource.notes ?? '',
-      onResourceNotesChange: (value: string) => patchResource({ notes: value.trim() || undefined }),
+      onResourceNotesChange: readOnly
+        ? undefined
+        : (value: string) => patchResource({ notes: value.trim() || undefined }),
+      ...(downloadTarget
+        ? {
+            onDownload: () => triggerEncoreResourceDownload(downloadTarget, googleAccessToken),
+            downloadDisabled: downloadGate.disabled,
+            downloadDisabledReason: downloadGate.reason,
+          }
+        : {}),
     };
 
     if (isHubCard) {

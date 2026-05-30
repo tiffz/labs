@@ -5,6 +5,11 @@ import { DragDropFileUpload } from '../../../shared/components/DragDropFileUploa
 import { EncoreMediaLinkRow } from '../../ui/EncoreMediaLinkRow';
 import { EncoreStaticResourceHoverCard } from '../../components/EncoreStreamingHoverCard';
 import { useEncoreAuth } from '../../context/EncoreAuthContext';
+import {
+  encoreResourceDownloadDisabled,
+  encoreResourceDownloadTargetFromTake,
+  triggerEncoreResourceDownload,
+} from '../../drive/encoreResourceDownload';
 import { useEncoreOriginalsPlayback } from '../context/EncoreOriginalsPlaybackContext';
 import type { EncoreOriginalSong, OriginalAudioTake } from '../types';
 import { driveUploadFileResumable } from '../../drive/driveFetch';
@@ -153,6 +158,11 @@ export function OriginalsTakesStage({ song, onChange }: OriginalsTakesStageProps
                 }}
               />
             );
+            const downloadTarget = encoreResourceDownloadTargetFromTake(t);
+            const downloadGate = encoreResourceDownloadDisabled(
+              { driveFileId: t.driveFileId },
+              googleAccessToken,
+            );
             return (
               <EncoreStaticResourceHoverCard
                 key={t.id}
@@ -178,6 +188,13 @@ export function OriginalsTakesStage({ song, onChange }: OriginalsTakesStageProps
                 isPlaying={isPlayingTake(song.id, t.id)}
                 playDisabled={!t.driveFileId}
                 playDisabledReason={!t.driveFileId ? 'Sign in to Google to play in Encore' : undefined}
+                {...(downloadTarget
+                  ? {
+                      onDownload: () => triggerEncoreResourceDownload(downloadTarget, googleAccessToken),
+                      downloadDisabled: downloadGate.disabled,
+                      downloadDisabledReason: downloadGate.reason,
+                    }
+                  : {})}
               >
                 {row}
               </EncoreStaticResourceHoverCard>

@@ -165,6 +165,18 @@ When using `valueLabelDisplay="auto"` or `"on"`:
 - Milestone labels under the speed slider are positioned by rate (`left: %`), not `space-between`; do not re-center them in app overrides.
 - Use `SliderMilestoneLabels` + `buildSliderMilestones` for any new slider dropdown; do not render raw `<span>` lists inside `.shared-bpm-milestones`.
 
+### Playback field selects (`playbackFieldSelect.css`)
+
+Closed playback pickers (sound, chord style trigger, similar single-choice fields) share one trigger + menu shell so apps stay visually aligned.
+
+- **`PlaybackFieldSelectTrigger`** — closed `<button>` chrome; pass `appearance="default" | "encore"` and optional `triggerClassName` for app tweaks.
+- **`PlaybackSoundSelect`** — sound picker built on the shared trigger + list popover; pass the same `appearance` as adjacent pickers (`words`, `chords`, `piano`, …). Inside floating panels with document-level click-outside handlers, treat `.shared-playback-field-select-popover` as in-panel via `isPlaybackFieldSelectPopoverTarget`.
+- **Audio regression tests** — `src/shared/playback/audioContextLifecycle.test.ts`, `scorePlayback.audio.test.ts`, `chordInstrumentSession.test.ts`, `scheduleStyledChordMeasure.test.ts`, and `playbackFieldSelect.test.ts` guard silent-playback failures (suspended context, zero-velocity schedule, portaled menu dismissal).
+- **`ChordStyleInput`** — uses the shared trigger for its closed state; maps `appearance="encore"` (and host skins like `piano` / `words` / `chords`) onto shared `--pfs-*` CSS variables for the trigger while keeping its grid menu for rich style cards.
+- **Helpers** (`playbackFieldSelect.ts`): `PlaybackFieldSelectAppearance`, `playbackFieldSelectPopoverSlotProps`, `playbackFloatingPanelSlotProps`, `forwardWheelToPageScroller`, `resolvePlaybackFieldSelectAppearance`.
+- **Floating panels + nested menus**: use `playbackFloatingPanelSlotProps` on the outer popover and `playbackFieldSelectPopoverSlotProps` on field selects (`PLAYBACK_FIELD_SELECT_Z_INDEX` keeps menus above the panel). Backdrop wheel events forward to `.in-scroll-region` so the page still scrolls while a menu is open; backdrop clicks close as usual. Pair floating popovers with `usePopoverScrollAnchorSync` + `popoverAnchorEl()` so menus track anchors inside nested scroll regions (Encore `.in-scroll-region`).
+- **Custom menus**: reuse `playbackFieldSelectPopoverSlotProps(appearance)` on MUI `Popover` `slotProps` and put options in `.shared-playback-field-select__menu-list` / `.shared-playback-field-select__option` when you need a simple list; override `--pfs-*` on a parent selector for app tint without forking the trigger markup.
+
 ## Popover Primitive
 
 Apps historically re-specified MUI `Popover`'s `anchorOrigin`, `transformOrigin`, and `slotProps.paper.className` at every call site, which drifted over time. Use `AnchoredPopover` (`src/shared/components/AnchoredPopover.tsx`) for any new popover or menu surface.

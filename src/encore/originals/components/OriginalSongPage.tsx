@@ -1,4 +1,5 @@
 import Box from '@mui/material/Box';
+import CircularProgress from '@mui/material/CircularProgress';
 import Typography from '@mui/material/Typography';
 import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
 import { useEncoreOriginalsActions } from '../../context/EncoreOriginalsActionsContext';
@@ -100,16 +101,30 @@ export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactEle
     [draft, persist],
   );
 
-  if (!draft) {
+  const activeSong = draft ?? (live.status === 'ok' ? live.song : null);
+
+  if (!activeSong) {
+    if (!isNew && live.status === 'missing') {
+      return (
+        <Box sx={{ p: encoreScreenPaddingX }}>
+          <Typography>Song not found.</Typography>
+        </Box>
+      );
+    }
+
     return (
-      <Box sx={{ p: encoreScreenPaddingX }}>
-        <Typography>{live.status === 'loading' ? 'Loading…' : 'Song not found.'}</Typography>
+      <Box
+        sx={{ display: 'flex', justifyContent: 'center', py: 8 }}
+        aria-busy="true"
+        aria-label="Loading original song"
+      >
+        <CircularProgress />
       </Box>
     );
   }
 
   const update = (patch: Partial<EncoreOriginalSong>) => {
-    const next = { ...draft, ...patch, updatedAt: new Date().toISOString() };
+    const next = { ...activeSong, ...patch, updatedAt: new Date().toISOString() };
     void persist(next, { silentUndo: true });
   };
 
@@ -122,16 +137,16 @@ export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactEle
 
   const songHeader = (
     <OriginalsSongHeader
-      song={draft}
+      song={activeSong}
       mode={mode}
       onModeChange={setMode}
       onChange={update}
       compact={chordsPaintScroll}
-      onRestoreSnapshot={(snap) => void persist(restoreOriginalFromSnapshot(draft, snap))}
+      onRestoreSnapshot={(snap) => void persist(restoreOriginalFromSnapshot(activeSong, snap))}
       onImportPdf={() => setPdfOpen(true)}
       onDelete={async () => {
         if (!window.confirm('Delete this original?')) return;
-        await deleteOriginal(draft.id);
+        await deleteOriginal(activeSong.id);
         navigateEncore({ kind: 'originals' });
       }}
     />
@@ -139,7 +154,7 @@ export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactEle
 
   const writeWorkspace = (
     <OriginalsSongWorkspace
-      song={draft}
+      song={activeSong}
       integratedPageScroll={chordsPaintScroll}
       onWorkflowStageChange={setWorkflowStage}
       onChartChange={onChartChange}
@@ -178,7 +193,7 @@ export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactEle
       ) : (
         <>
           {songHeader}
-          <OriginalsSongViewMode song={draft} onEdit={() => setMode('write')} />
+          <OriginalsSongViewMode song={activeSong} onEdit={() => setMode('write')} onSongChange={update} />
         </>
       )}
 

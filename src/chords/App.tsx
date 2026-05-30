@@ -12,7 +12,12 @@ import { generateStyledChordNotes, type StyledChordNotes } from './utils/chordSt
 import { getPlaybackEngine, disposePlaybackEngine, type ActiveNotes } from './utils/playback';
 import ChordScoreRenderer from './components/ChordScoreRenderer';
 import ManualControls from './components/ManualControls';
-import { SOUND_OPTIONS } from './types/soundOptions';
+import {
+  IDLE_SAMPLED_PIANO_LOAD_STATE,
+  type SampledPianoLoadState,
+} from '../shared/music/sampledPianoLoadState';
+import { PlaybackSoundSelect } from '../shared/components/music/PlaybackSoundSelect';
+import { useSampledPianoPreload } from '../shared/hooks/useSampledPianoPreload';
 import { useUrlState } from './hooks/useUrlState';
 import { CHORD_STYLING_STRATEGIES } from './data/chordStylingStrategies';
 import MetronomeToggleButton from '../shared/components/MetronomeToggleButton';
@@ -103,6 +108,10 @@ const App: React.FC = () => {
   const [activeNoteGroups, setActiveNoteGroups] = useState<Set<string>>(new Set());
   const [lockedOptions, setLockedOptions] = useState<LockedOptions>({});
   const [loadingState, setLoadingState] = useState<LoadingState>({ isLoading: false, progress: 0, total: 0 });
+  const [sampledPianoLoad, setSampledPianoLoad] = useState<SampledPianoLoadState>(
+    IDLE_SAMPLED_PIANO_LOAD_STATE,
+  );
+  useSampledPianoPreload(state.soundType, setSampledPianoLoad);
   const [masterVolume, setMasterVolume] = useState(0.9);
   const [pianoVolume, setPianoVolume] = useState(0.9);
   const [metronomeVolume, setMetronomeVolume] = useState(0.75);
@@ -690,23 +699,15 @@ const App: React.FC = () => {
               />
             </AppTooltip>
             <div className="sound-control">
-              <label htmlFor="sound-type">Sound:</label>
-              <select
-                id="sound-type"
+              <PlaybackSoundSelect
+                appearance="chords"
                 value={state.soundType}
-                onChange={(e) => {
-                  const newSoundType = e.target.value as ChordProgressionState['soundType'];
-                  handleStateChange({ soundType: newSoundType });
-                }}
-                className="sound-select"
+                onChange={(soundType) => handleStateChange({ soundType })}
+                sampledPianoLoad={sampledPianoLoad}
+                aria-label="Chord sound"
                 disabled={loadingState.isLoading}
-              >
-                {SOUND_OPTIONS.map(option => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+                fullWidth={false}
+              />
             </div>
             <AppTooltip title="Export">
               <button

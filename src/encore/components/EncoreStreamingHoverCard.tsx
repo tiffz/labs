@@ -1,7 +1,9 @@
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
+import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import IconButton from '@mui/material/IconButton';
 import TextField from '@mui/material/TextField';
 import Tooltip, { tooltipClasses, type TooltipProps } from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
@@ -313,6 +315,10 @@ export type EncoreStaticResourceHoverCardProps = {
   isPlaying?: boolean;
   playDisabled?: boolean;
   playDisabledReason?: string;
+  /** When set, shows a low-key download control for attached files. */
+  onDownload?: () => void | Promise<void>;
+  downloadDisabled?: boolean;
+  downloadDisabledReason?: string;
 };
 
 /**
@@ -331,9 +337,23 @@ export function EncoreStaticResourceHoverCard(props: EncoreStaticResourceHoverCa
     isPlaying = false,
     playDisabled = false,
     playDisabledReason,
+    onDownload,
+    downloadDisabled = false,
+    downloadDisabledReason,
   } = props;
   const [open, setOpen] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const heading = title.trim() || 'Attachment';
+
+  const handleDownload = async () => {
+    if (!onDownload || downloading || downloadDisabled) return;
+    setDownloading(true);
+    try {
+      await onDownload();
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   const tooltipContent = (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0, minWidth: 0 }}>
@@ -347,18 +367,42 @@ export function EncoreStaticResourceHoverCard(props: EncoreStaticResourceHoverCa
           </Typography>
         ) : null}
       </Box>
-      {onPlay ? (
-        <Box sx={{ mt: 1, display: 'flex', gap: 0.75, alignItems: 'center' }}>
-          <Button
-            size="small"
-            variant={isPlaying ? 'contained' : 'outlined'}
-            startIcon={<PlayArrowIcon fontSize="small" />}
-            disabled={playDisabled}
-            title={playDisabled ? playDisabledReason : undefined}
-            onClick={() => onPlay()}
-          >
-            {isPlaying ? 'Playing' : 'Play'}
-          </Button>
+      {onPlay || onDownload ? (
+        <Box sx={{ mt: 1, display: 'flex', gap: 0.5, alignItems: 'center' }}>
+          {onPlay ? (
+            <Button
+              size="small"
+              variant={isPlaying ? 'contained' : 'outlined'}
+              startIcon={<PlayArrowIcon fontSize="small" />}
+              disabled={playDisabled}
+              title={playDisabled ? playDisabledReason : undefined}
+              onClick={() => onPlay()}
+            >
+              {isPlaying ? 'Playing' : 'Play'}
+            </Button>
+          ) : null}
+          {onDownload ? (
+            <Tooltip title={downloadDisabled ? downloadDisabledReason : 'Download file'}>
+              <span>
+                <IconButton
+                  size="small"
+                  aria-label="Download file"
+                  disabled={downloadDisabled || downloading}
+                  onClick={() => void handleDownload()}
+                  sx={{
+                    color: 'text.secondary',
+                    '&:hover': { color: 'text.primary', bgcolor: 'action.hover' },
+                  }}
+                >
+                  {downloading ? (
+                    <CircularProgress size={16} color="inherit" />
+                  ) : (
+                    <FileDownloadOutlinedIcon fontSize="small" />
+                  )}
+                </IconButton>
+              </span>
+            </Tooltip>
+          ) : null}
         </Box>
       ) : null}
       {onEditNicknameChange || onResourceNotesChange ? (

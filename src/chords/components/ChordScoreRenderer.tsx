@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect, useRef, useCallback } from 'react';
-import { Renderer, Stave, StaveNote, Voice, Formatter, StaveConnector, BarlineType, Dot, Beam, Fraction } from 'vexflow';
+import { Renderer, Stave, StaveNote, Voice, Formatter, StaveConnector, BarlineType, Dot } from 'vexflow';
 import type { ChordProgressionState } from '../types';
 import type { Key } from '../../shared/music/chordTypes';
 import { progressionToChords } from '../utils/chordTheory';
@@ -13,6 +13,12 @@ import { generateStyledChordNotes } from '../utils/chordStyling';
 import { getKeySignature } from '../utils/keySignature';
 import { scrollPlaybackTarget, type PlaybackAutoScrollState } from '../../shared/utils/playbackAutoScroll';
 import { spellPitchClass } from '../../shared/music/theory/pitchClass';
+import {
+  generateChordClefBeams,
+  redrawBeamedStemsIfMissing,
+  removeOrphanBeamedFlags,
+  suppressBeamedNoteFlags,
+} from '../utils/chordNotationBeams';
 
 interface ChordScoreRendererProps {
   state: ChordProgressionState;
@@ -402,49 +408,20 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({
             staveWidth - (noteStartX - staveX) - barlineWidth - rightPadding
           ));
           
-          const addBeams = (notes: StaveNote[], clef: 'treble' | 'bass') => {
-            const beamGroup =
-              state.timeSignature.denominator === 8
-                ? new Fraction(3, 8)
-                : new Fraction(1, 4);
-            const beams = Beam.generateBeams(notes, {
-              groups: [beamGroup],
-              beamRests: false,
-              maintainStemDirections: false,
-            });
-            const groupStemDirection = clef === 'treble' ? 1 : -1;
-            beams.forEach((beam) => {
-              beam.getNotes().forEach((note) => {
-                (note as StaveNote).setStemDirection(groupStemDirection);
-              });
-            });
-            return beams;
-          };
-
-          const trebleBeams = addBeams(trebleNotes, 'treble');
-          const bassBeams = addBeams(bassNotes, 'bass');
-
-          const suppressFlagsForBeamedNotes = (beams: Beam[]) => {
-            const beamedNotes = new Set<StaveNote>();
-            beams.forEach((beam) => {
-              beam.getNotes().forEach((note) => {
-                beamedNotes.add(note as StaveNote);
-              });
-            });
-            beamedNotes.forEach((note) => {
-              note.setFlagStyle({ fillStyle: 'transparent', strokeStyle: 'transparent' });
-            });
-          };
-
-          suppressFlagsForBeamedNotes(trebleBeams);
-          suppressFlagsForBeamedNotes(bassBeams);
-          
           const formatter = new Formatter();
           formatter.joinVoices([trebleVoice, bassVoice]);
           formatter.format([trebleVoice, bassVoice], formatWidth);
+
+          const trebleBeams = generateChordClefBeams(trebleNotes, state.timeSignature, 'treble');
+          const bassBeams = generateChordClefBeams(bassNotes, state.timeSignature, 'bass');
+          suppressBeamedNoteFlags(trebleBeams);
+          suppressBeamedNoteFlags(bassBeams);
           
           trebleVoice.draw(context, trebleStave);
           bassVoice.draw(context, bassStave);
+
+          redrawBeamedStemsIfMissing(trebleNotes, context);
+          redrawBeamedStemsIfMissing(bassNotes, context);
           
           trebleBeams.forEach(beam => beam.setContext(context).draw());
           bassBeams.forEach(beam => beam.setContext(context).draw());
@@ -519,14 +496,8 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({
         barlineConnector.setContext(context).draw();
       }
 
-      if (
-        state.stylingStrategy === 'one-per-beat' &&
-        state.timeSignature.numerator === 12 &&
-        state.timeSignature.denominator === 8
-      ) {
-        containerRef.current
-          ?.querySelectorAll('.vf-flag, [class*="vf-flag"]')
-          .forEach((node) => node.remove());
+      if (containerRef.current) {
+        removeOrphanBeamedFlags(containerRef.current);
       }
 
       // Apply initial highlights if any are active right now

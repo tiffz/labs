@@ -25,6 +25,14 @@ import DrumNotationMini from '../shared/notation/DrumNotationMini';
 import { AudioPlayer } from '../shared/audio/audioPlayer';
 import { SOUND_OPTIONS, type SoundType } from '../shared/music/soundOptions';
 import {
+  IDLE_SAMPLED_PIANO_LOAD_STATE,
+  type SampledPianoLoadState,
+} from '../shared/music/sampledPianoLoadState';
+import { PlaybackSoundSelect } from '../shared/components/music/PlaybackSoundSelect';
+import { isPlaybackFieldSelectPopoverTarget } from '../shared/components/music/playbackFieldSelect';
+import { primeAudioContext } from '../shared/playback/audioContextLifecycle';
+import { useSampledPianoPreload } from '../shared/hooks/useSampledPianoPreload';
+import {
   CHORD_STYLE_OPTIONS,
   type ChordStyleId,
 } from '../shared/music/chordStyleOptions';
@@ -450,12 +458,9 @@ const App: React.FC = () => {
   );
   const [backingBeatVolume, setBackingBeatVolume] = useState<number>(42);
   const [backingBeatMuted, setBackingBeatMuted] = useState<boolean>(false);
-  const [sampledPianoLoad, setSampledPianoLoad] = useState<{
-    loading: boolean;
-    loaded: number;
-    total: number;
-    ready: boolean;
-  }>({ loading: false, loaded: 0, total: 0, ready: false });
+  const [sampledPianoLoad, setSampledPianoLoad] = useState<SampledPianoLoadState>(
+    IDLE_SAMPLED_PIANO_LOAD_STATE,
+  );
   const [playbackSettings, setPlaybackSettings] =
     useState<PlaybackSettings>(DEFAULT_PLAYBACK_SETTINGS);
   const [generationSettings, setGenerationSettings] =
@@ -1127,52 +1132,7 @@ const App: React.FC = () => {
     []
   );
 
-  useEffect(() => {
-    if (chordSoundType !== 'piano-sampled') return;
-    let cancelled = false;
-    const preloadSampledPiano = async () => {
-      if (!chordAudioContextRef.current) {
-        chordAudioContextRef.current = new AudioContext({
-          latencyHint: 'interactive',
-        });
-      }
-      const ctx = chordAudioContextRef.current;
-      if (!ctx) return;
-      if (!chordSampledPianoRef.current) {
-        chordSampledPianoRef.current = new SampledPiano(ctx);
-        chordSampledPianoRef.current.connect(ctx.destination);
-      }
-      if (
-        chordSampledPianoRef.current.isReady() ||
-        sampledPianoLoad.loading
-      ) {
-        return;
-      }
-      chordSampledPianoRef.current.setLoadingProgressCallback((loaded, total) => {
-        if (cancelled) return;
-        setSampledPianoLoad({
-          loading: loaded < total,
-          loaded,
-          total,
-          ready: false,
-        });
-      });
-      setSampledPianoLoad((previous) => ({ ...previous, loading: true }));
-      await chordSampledPianoRef.current.loadSamples();
-      if (cancelled) return;
-      setSampledPianoLoad((previous) => ({
-        ...previous,
-        loading: false,
-        ready: chordSampledPianoRef.current?.isReady() ?? false,
-        loaded: previous.total > 0 ? previous.total : 1,
-        total: previous.total > 0 ? previous.total : 1,
-      }));
-    };
-    void preloadSampledPiano();
-    return () => {
-      cancelled = true;
-    };
-  }, [chordSoundType, sampledPianoLoad.loading]);
+  useSampledPianoPreload(chordSoundType, setSampledPianoLoad);
 
   useEffect(() => {
     if (!isPlaying) {
@@ -1410,7 +1370,7 @@ const App: React.FC = () => {
       }
       const inSoundMenu = soundMenuRef.current?.contains(target);
       const inSoundButton = soundButtonRef.current?.contains(target);
-      if (!inSoundMenu && !inSoundButton) {
+      if (!inSoundMenu && !inSoundButton && !isPlaybackFieldSelectPopoverTarget(target)) {
         setSoundMenuOpen(false);
       }
       const inSectionSettingsAnchor =
@@ -2865,6 +2825,12 @@ const App: React.FC = () => {
                 setActiveSectionLoopId(null);
                 return;
               }
+              if (!chordAudioContextRef.current) {
+                chordAudioContextRef.current = new AudioContext({
+                  latencyHint: 'interactive',
+                });
+              }
+              primeAudioContext(chordAudioContextRef.current);
               playAllSections();
             }}
           >
@@ -3084,50 +3050,17 @@ const App: React.FC = () => {
                 </AppTooltip>
               </label>
               <div className="words-chord-settings">
-                <label className="words-slider-row">
-                  chord sound
-                  <select
-                    className="words-select-inline"
+                <div className="words-chord-sound-field">
+                  <span className="words-chord-sound-label">chord sound</span>
+                  <PlaybackSoundSelect
+                    appearance="words"
                     value={chordSoundType}
-                    onChange={(event) =>
-                      setChordSoundType(event.target.value as SoundType)
-                    }
-                  >
-                    {SOUND_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                  <span />
-                </label>
-                {chordSoundType === 'piano-sampled' ? (
-                  <div className="words-sample-load">
-                    <div className="words-sample-load-label">
-                      {sampledPianoLoad.ready
-                        ? 'sampled piano ready'
-                        : sampledPianoLoad.loading
-                          ? 'loading sampled piano...'
-                          : 'sampled piano not loaded'}
-                    </div>
-                    <div className="words-sample-load-track">
-                      <div
-                        className="words-sample-load-fill"
-                        style={{
-                          width: `${
-                            sampledPianoLoad.total > 0
-                              ? (sampledPianoLoad.loaded /
-                                  sampledPianoLoad.total) *
-                                100
-                              : sampledPianoLoad.ready
-                                ? 100
-                                : 0
-                          }%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-                ) : null}
+                    onChange={setChordSoundType}
+                    sampledPianoLoad={sampledPianoLoad}
+                    aria-label="Chord sound"
+                    triggerClassName="words-chord-sound-select"
+                  />
+                </div>
                 <label className="words-slider-row">
                   chord volume
                   <AppSlider

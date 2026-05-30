@@ -1,12 +1,23 @@
 import { useMemo, useRef, useState } from 'react';
 import Popover from '@mui/material/Popover';
+import type { PopoverActions } from '@mui/material/Popover';
 import type { TimeSignature } from '../../music/chordTypes';
 import {
   getAvailableChordStyleTimeSignatures,
   CHORD_STYLING_STRATEGIES,
 } from '../../music/chordStylingStrategies';
 import { isStrategyCompatibleWithTimeSignature } from '../../music/chordStylingCompatibility';
+import { PlaybackFieldSelectTrigger } from './PlaybackFieldSelectTrigger';
+import {
+  playbackFieldSelectPopoverSlotProps,
+  resolvePlaybackFieldSelectAppearance,
+} from './playbackFieldSelect';
+import {
+  popoverAnchorEl,
+  usePopoverScrollAnchorSync,
+} from '../../hooks/usePopoverScrollAnchorSync';
 import './chordStyleInput.css';
+import './playbackFieldSelect.css';
 
 /**
  * Generic option contract consumed by `ChordStyleInput`.
@@ -165,7 +176,7 @@ interface ChordStyleInputProps<TStyle extends string> {
   inlineMenuClassName?: string;
   menuClassName?: string;
   menuItemClassName?: string;
-  appearance?: 'default' | 'piano' | 'words' | 'chords';
+  appearance?: 'default' | 'piano' | 'words' | 'chords' | 'encore';
   menuColumns?: 1 | 2 | 3 | 'auto';
   menuMode?: 'popover' | 'inline';
   disabled?: boolean;
@@ -181,6 +192,9 @@ interface ChordStyleInputProps<TStyle extends string> {
    * is provided.
    */
   showTimeSignatureFilter?: boolean;
+  /** Controlled open state for the popover menu (use with `onMenuOpenChange`). */
+  menuOpen?: boolean;
+  onMenuOpenChange?: (open: boolean) => void;
 }
 
 /**
@@ -202,12 +216,22 @@ const ChordStyleInput = <TStyle extends string>({
   disabled = false,
   timeSignature,
   showTimeSignatureFilter = false,
+  menuOpen: menuOpenProp,
+  onMenuOpenChange,
 }: ChordStyleInputProps<TStyle>) => {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const menuOpenControlled = menuOpenProp !== undefined;
+  const open = menuOpenControlled ? menuOpenProp : internalOpen;
+  const setOpen = (next: boolean) => {
+    if (menuOpenControlled) onMenuOpenChange?.(next);
+    else setInternalOpen(next);
+  };
   const [internalTsFilter, setInternalTsFilter] = useState<TimeSignature | null>(
     null,
   );
   const anchorRef = useRef<HTMLDivElement | null>(null);
+  const popoverActionRef = useRef<PopoverActions>(null);
+  usePopoverScrollAnchorSync(open, anchorRef, popoverActionRef);
   const selected = useMemo(
     () => options.find((option) => option.id === value),
     [options, value],
@@ -277,42 +301,43 @@ const ChordStyleInput = <TStyle extends string>({
         .filter(Boolean)
         .join(' ')}
     >
-      <div className="shared-chord-style-anchor" ref={anchorRef}>
-        <button
-          type="button"
-          className={['shared-chord-style-trigger', triggerClassName].filter(Boolean).join(' ')}
-          onClick={() => !disabled && setOpen((previous) => !previous)}
+      <div className="shared-chord-style-anchor shared-playback-field-select__anchor" ref={anchorRef}>
+        <PlaybackFieldSelectTrigger
+          appearance={resolvePlaybackFieldSelectAppearance(appearance)}
+          triggerClassName={triggerClassName}
           disabled={disabled}
           aria-label="Choose chord style"
-        >
-          <span className="shared-chord-style-trigger-label">
-            {selected?.label ?? 'Style'}
-          </span>
-          <span className="material-symbols-outlined">expand_more</span>
-        </button>
+          aria-expanded={open}
+          valueLabel={selected?.label ?? 'Style'}
+          onClick={() => !disabled && setOpen(!open)}
+        />
       </div>
       <Popover
+        action={popoverActionRef}
         open={Boolean(open && anchorRef.current && !disabled)}
-        anchorEl={anchorRef.current}
-        onClose={() => setOpen(false)}
+        anchorEl={popoverAnchorEl(anchorRef)}
+        onClose={(_, reason) => {
+          if (reason === 'backdropClick' || reason === 'escapeKeyDown') setOpen(false);
+        }}
         disableAutoFocus
         disableEnforceFocus
         disableRestoreFocus
+        disableScrollLock
         anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
         transformOrigin={{ vertical: 'top', horizontal: 'left' }}
         slotProps={{
-          root: {
-            className: dropdownClassName ? `${dropdownClassName}-root` : undefined,
-          },
-          paper: {
-            className: [
+          ...playbackFieldSelectPopoverSlotProps(resolvePlaybackFieldSelectAppearance(appearance), {
+            menuClassName: [
               'shared-chord-style-dropdown',
               `shared-chord-style-dropdown--${appearance}`,
               dropdownClassName,
             ]
               .filter(Boolean)
               .join(' '),
-          },
+            rootClassName: dropdownClassName ? `${dropdownClassName}-root` : undefined,
+            minWidth: 'var(--cs-dropdown-min-width)',
+            maxWidth: 'var(--cs-dropdown-max-width)',
+          }),
         }}
       >
         <div className="shared-chord-style-dropdown-list">
