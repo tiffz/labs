@@ -43,9 +43,7 @@ import { useBeatPracticeLaneMutations } from './hooks/useBeatPracticeLaneMutatio
 import { useBeatPracticeKeyboardShortcuts } from './hooks/useBeatPracticeKeyboardShortcuts';
 import {
   createUserLane,
-  loadSongSettings,
   readSavedSongBpm,
-  saveSongSettings,
   type PerSongSettings,
   toLaneSection,
   type LaneSection,
@@ -60,10 +58,12 @@ import {
   getLocalFileForEntry,
   getUserPracticeSections,
   loadLibraryEntries,
+  loadSongSettingsForEntry,
   markAllStaleIfVersionChanged,
   markEntryViewed,
   renameLibraryEntry,
   saveAnalysisBundle,
+  saveSongSettingsForEntry,
   saveUserPracticeSections,
   setEntryStaleState,
   upsertLocalVideo,
@@ -125,8 +125,9 @@ const App: React.FC = () => {
   const exportButtonRef = useRef<HTMLButtonElement | null>(null);
   const youtubeMetronomeContextRef = useRef<AudioContext | null>(null);
   const youtubeLastBeatRef = useRef(-1);
-  const pendingSavedBpmRef = useRef<number | null>(null);
+  const isLoadingEntryRef = useRef(false);
   const captureSongSettingsRef = useRef<() => PerSongSettings>(() => ({}));
+  const [manualBpmOverride, setManualBpmOverride] = useState<number | null>(null);
   const [youtubeManualBpm, setYoutubeManualBpm] = useState(120);
   const [exportOpen, setExportOpen] = useState(false);
 
@@ -194,7 +195,9 @@ const App: React.FC = () => {
   } = useChordAnalysis();
 
   const isYouTubeMedia = mediaFile?.sourceType === 'youtube';
-  const effectiveBpm = isYouTubeMedia ? youtubeManualBpm : Math.round(analysisResult?.bpm ?? 120);
+  const effectiveBpm = isYouTubeMedia
+    ? youtubeManualBpm
+    : Math.round(manualBpmOverride ?? analysisResult?.bpm ?? 120);
   const effectiveSyncStart = syncStartTime ?? analysisResult?.musicStartTime ?? 0;
   const detectedSyncStart = isYouTubeMedia ? 0 : (analysisResult?.musicStartTime ?? 0);
 
@@ -313,11 +316,16 @@ const App: React.FC = () => {
     captureSongSettingsRef.current = captureSongSettings;
   }, [captureSongSettings]);
 
-  useEffect(() => {
-    if (isYouTubeMedia || !analysisResult || pendingSavedBpmRef.current == null) return;
-    setAnalyzedBpm(pendingSavedBpmRef.current);
-    pendingSavedBpmRef.current = null;
-  }, [analysisResult, isYouTubeMedia, setAnalyzedBpm]);
+  const persistCurrentSongSettings = useCallback(
+    (entryId: string = activeEntryId ?? '', overrides?: Partial<PerSongSettings>) => {
+      if (!entryId || isLoadingEntryRef.current) return;
+      const settings = { ...captureSongSettingsRef.current(), ...overrides };
+      void saveSongSettingsForEntry(entryId, settings).catch((error) => {
+        console.error('Failed to save song settings', error);
+      });
+    },
+    [activeEntryId]
+  );
 
   const exportAdapter = useMemo<ExportSourceAdapter>(() => {
     const hasAudio = Boolean(audioBuffer);
@@ -443,14 +451,20 @@ const App: React.FC = () => {
   }, [practiceLanes, userSections, persistUserSections]);
 
   useEffect(() => {
-    if (!activeEntryId) return;
-    saveSongSettings(activeEntryId, captureSongSettings());
-  }, [activeEntryId, captureSongSettings]);
+    if (!activeEntryId || isLoadingEntryRef.current) return;
+    const timer = window.setTimeout(() => {
+      if (!activeEntryId || isLoadingEntryRef.current) return;
+      persistCurrentSongSettings(activeEntryId);
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [activeEntryId, captureSongSettings, persistCurrentSongSettings]);
 
   useEffect(() => {
     const flush = () => {
-      if (activeEntryId) {
-        saveSongSettings(activeEntryId, captureSongSettingsRef.current());
+      if (activeEntryId && !isLoadingEntryRef.current) {
+        void saveSongSettingsForEntry(activeEntryId, captureSongSettingsRef.current()).catch((error) => {
+          console.error('Failed to flush song settings', error);
+        });
       }
     };
     window.addEventListener('pagehide', flush);
@@ -594,143 +608,166 @@ const App: React.FC = () => {
     }
   }, [activeEntryId, libraryEntries]);
 
+  const applyLoadedSongSettings = useCallback((saved: PerSongSettings | null, entry: BeatLibraryEntry) => {
+    const savedBpm = readSavedSongBpm(saved);
+    const savedRate = saved?.playbackRate ?? 1;
+    setManualBpmOverride(entry.sourceType === 'youtube' ? null : savedBpm);
+    setMetronomeEnabled(saved?.metronomeEnabled ?? true);
+    setDrumEnabled(saved?.drumEnabled ?? false);
+    setDrumVolume(saved?.drumVolume ?? 70);
+    setAudioVolume(saved?.audioVolume ?? 80);
+    setMetronomeVolume(saved?.metronomeVolume ?? 50);
+    setAudioMuted(saved?.audioMuted ?? false);
+    setDrumMuted(saved?.drumMuted ?? false);
+    setMetronomeMuted(saved?.metronomeMuted ?? false);
+    setAlignLoopToMetronome(saved?.alignLoopToMetronome ?? true);
+    setCorrectedDetectedKey((saved?.correctedDetectedKey as MusicKey) ?? null);
+    setTransposeSemitones(saved?.transposeSemitones ?? 0);
+    setSyncStartTime(saved?.syncStartTime ?? null);
+    setLoopEnabled(saved?.loopEnabled ?? false);
+    setLoopRegion(saved?.loopRegion ?? null);
+    setNudgeUnit(saved?.nudgeUnit ?? 'measure');
+    setPlaybackRate(savedRate);
+    if (entry.sourceType === 'youtube') {
+      setYoutubeManualBpm(savedBpm ?? 120);
+    }
+  }, [setAudioVolume, setLoopEnabled, setLoopRegion, setMetronomeVolume, setPlaybackRate]);
+
   const loadEntry = useCallback(
     async (entry: BeatLibraryEntry) => {
       if (activeEntryId && activeEntryId !== entry.id) {
-        saveSongSettings(activeEntryId, captureSongSettingsRef.current());
-      }
-      await markEntryViewed(entry.id);
-      await refreshLibrary();
-      setActiveEntryId(entry.id);
-      setSyncStartTime(null);
-      setAnalysisStaleMessage(
-        entry.analysis.stale && entry.analysis.analyzedAt > 0
-          ? entry.analysis.staleReason ?? 'Analysis may be out of date.'
-          : null
-      );
-      setSelectedAnalysisIds([]);
-      setDetectedBpmBaseline(null);
-      setDetectedKeyBaseline(null);
-      setSeededPracticeForEntry(null);
-      setPracticeLanes([]);
-      setActiveLaneId(null);
-      resetSelection();
-      clearSelection();
-      setLoopEnabled(false);
-      setLoopRegion(null);
-      clearAnalysisSections();
-      resetChordAnalysis();
-      resetAnalysis();
-
-      const saved = loadSongSettings(entry.id);
-      const savedBpm = readSavedSongBpm(saved);
-      const savedRate = saved?.playbackRate ?? 1;
-      pendingSavedBpmRef.current = entry.sourceType === 'youtube' ? null : savedBpm;
-      setMetronomeEnabled(saved?.metronomeEnabled ?? true);
-      setDrumEnabled(saved?.drumEnabled ?? false);
-      setDrumVolume(saved?.drumVolume ?? 70);
-      setAudioVolume(saved?.audioVolume ?? 80);
-      setMetronomeVolume(saved?.metronomeVolume ?? 50);
-      setAudioMuted(saved?.audioMuted ?? false);
-      setDrumMuted(saved?.drumMuted ?? false);
-      setMetronomeMuted(saved?.metronomeMuted ?? false);
-      setAlignLoopToMetronome(saved?.alignLoopToMetronome ?? true);
-      setCorrectedDetectedKey((saved?.correctedDetectedKey as MusicKey) ?? null);
-      setTransposeSemitones(saved?.transposeSemitones ?? 0);
-      setSyncStartTime(saved?.syncStartTime ?? null);
-      setLoopEnabled(saved?.loopEnabled ?? false);
-      setLoopRegion(saved?.loopRegion ?? null);
-      setNudgeUnit(saved?.nudgeUnit ?? 'measure');
-      setPlaybackRate(savedRate);
-      if (entry.sourceType === 'youtube') {
-        setYoutubeManualBpm(savedBpm ?? 120);
-      }
-
-      const savedLocal = localStorage.getItem(userSectionsStorageKey(entry.id));
-      if (savedLocal) {
-        const parsed = JSON.parse(savedLocal) as UserPracticeData | UserPracticeSection[];
-        hydratePracticeData(parsed);
-      } else {
-        const persisted = await getUserPracticeSections(entry.id);
-        hydratePracticeData(persisted);
-      }
-
-      if (entry.sourceType === 'youtube' && entry.youtubeVideoId && entry.sourceUrl) {
-        setYoutubePlayback({
-          currentTime: 0,
-          duration: 0,
-          isPlaying: false,
-          playbackRate: snapYouTubePlaybackRate(savedRate),
+        void saveSongSettingsForEntry(activeEntryId, captureSongSettingsRef.current()).catch((error) => {
+          console.error('Failed to save song settings when switching entries', error);
         });
-        setMediaFile({
-          file: new File([], `${entry.title}.url`, { type: 'text/uri-list' }),
-          type: 'video',
-          sourceType: 'youtube',
-          sourceUrl: entry.sourceUrl,
-          youtubeVideoId: entry.youtubeVideoId,
-          url: `https://www.youtube.com/embed/${entry.youtubeVideoId}?enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`,
-        });
-        return;
       }
 
-      const [file, analysisBundle] = await Promise.all([
-        getLocalFileForEntry(entry.id),
-        getAnalysisBundle(entry.id),
-      ]);
-      if (!file) return;
-      const localMedia: MediaFile = {
-        file,
-        type: entry.mediaKind,
-        url: URL.createObjectURL(file),
-        sourceType: 'local',
-      };
-      setMediaFile(localMedia);
+      isLoadingEntryRef.current = true;
 
-      if (analysisBundle?.beat) {
-        let buffer = audioBufferCacheRef.current.get(entry.id);
-        if (!buffer) {
-          buffer = await decodeMediaToBuffer({
-            file: localMedia.file,
-            mediaType: localMedia.type,
-            mediaUrl: localMedia.url,
-            audioContext: getAudioContext(),
+      try {
+        const saved = await loadSongSettingsForEntry(entry.id);
+
+        setActiveEntryId(entry.id);
+        setAnalysisStaleMessage(
+          entry.analysis.stale && entry.analysis.analyzedAt > 0
+            ? entry.analysis.staleReason ?? 'Analysis may be out of date.'
+            : null
+        );
+        setSelectedAnalysisIds([]);
+        setDetectedBpmBaseline(null);
+        setDetectedKeyBaseline(null);
+        setSeededPracticeForEntry(null);
+        setPracticeLanes([]);
+        setActiveLaneId(null);
+        resetSelection();
+        clearSelection();
+        clearAnalysisSections();
+        resetChordAnalysis();
+        resetAnalysis();
+        applyLoadedSongSettings(saved, entry);
+
+        const savedLocal = localStorage.getItem(userSectionsStorageKey(entry.id));
+        if (savedLocal) {
+          const parsed = JSON.parse(savedLocal) as UserPracticeData | UserPracticeSection[];
+          hydratePracticeData(parsed);
+        } else {
+          const persisted = await getUserPracticeSections(entry.id);
+          hydratePracticeData(persisted);
+        }
+
+        if (entry.sourceType === 'youtube' && entry.youtubeVideoId && entry.sourceUrl) {
+          const savedRate = saved?.playbackRate ?? 1;
+          setYoutubePlayback({
+            currentTime: 0,
+            duration: 0,
+            isPlaying: false,
+            playbackRate: snapYouTubePlaybackRate(savedRate),
           });
-          audioBufferCacheRef.current.set(entry.id, buffer);
-          if (audioBufferCacheRef.current.size > 5) {
-            const oldest = audioBufferCacheRef.current.keys().next().value;
-            if (oldest) audioBufferCacheRef.current.delete(oldest);
-          }
+          setMediaFile({
+            file: new File([], `${entry.title}.url`, { type: 'text/uri-list' }),
+            type: 'video',
+            sourceType: 'youtube',
+            sourceUrl: entry.sourceUrl,
+            youtubeVideoId: entry.youtubeVideoId,
+            url: `https://www.youtube.com/embed/${entry.youtubeVideoId}?enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`,
+          });
+          return;
         }
-        hydrateAnalysis({ result: analysisBundle.beat, buffer });
-        if (pendingSavedBpmRef.current != null) {
-          setAnalyzedBpm(pendingSavedBpmRef.current);
-          pendingSavedBpmRef.current = null;
-        }
-        if (entry.analysis.stale) {
-          setReanalysisQueue((prev) => [entry.id, ...prev.filter((id) => id !== entry.id)]);
-        }
-      } else {
-        void (async () => {
-          try {
-            let buffer = audioBufferCacheRef.current.get(entry.id);
-            if (!buffer) {
-              buffer = await loadMediaBuffer(localMedia);
-              audioBufferCacheRef.current.set(entry.id, buffer);
-              if (audioBufferCacheRef.current.size > 5) {
-                const oldest = audioBufferCacheRef.current.keys().next().value;
-                if (oldest) audioBufferCacheRef.current.delete(oldest);
-              }
+
+        const [file, analysisBundle] = await Promise.all([
+          getLocalFileForEntry(entry.id),
+          getAnalysisBundle(entry.id),
+        ]);
+        if (!file) return;
+
+        const localMedia: MediaFile = {
+          file,
+          type: entry.mediaKind,
+          url: URL.createObjectURL(file),
+          sourceType: 'local',
+        };
+        setMediaFile(localMedia);
+
+        const savedBpm = readSavedSongBpm(saved);
+        const hydrateFromBundle = async () => {
+          if (!analysisBundle?.beat) return;
+          let buffer = audioBufferCacheRef.current.get(entry.id);
+          if (!buffer) {
+            buffer = await decodeMediaToBuffer({
+              file: localMedia.file,
+              mediaType: localMedia.type,
+              mediaUrl: localMedia.url,
+              audioContext: getAudioContext(),
+            });
+            audioBufferCacheRef.current.set(entry.id, buffer);
+            if (audioBufferCacheRef.current.size > 5) {
+              const oldest = audioBufferCacheRef.current.keys().next().value;
+              if (oldest) audioBufferCacheRef.current.delete(oldest);
             }
-            await analyzeLoadedBuffer(buffer);
-          } catch (err) {
-            console.error('[beat] background analysis failed', err);
           }
-        })();
+          hydrateAnalysis({ result: analysisBundle.beat, buffer });
+          if (savedBpm != null) {
+            setAnalyzedBpm(savedBpm, { buffer });
+          }
+        };
+
+        if (analysisBundle?.beat) {
+          void hydrateFromBundle().catch((error) => console.error('[beat] failed to hydrate cached analysis', error));
+          if (entry.analysis.stale) {
+            setReanalysisQueue((prev) => [entry.id, ...prev.filter((id) => id !== entry.id)]);
+          }
+        } else {
+          void (async () => {
+            try {
+              let buffer = audioBufferCacheRef.current.get(entry.id);
+              if (!buffer) {
+                buffer = await loadMediaBuffer(localMedia);
+                audioBufferCacheRef.current.set(entry.id, buffer);
+                if (audioBufferCacheRef.current.size > 5) {
+                  const oldest = audioBufferCacheRef.current.keys().next().value;
+                  if (oldest) audioBufferCacheRef.current.delete(oldest);
+                }
+              }
+              await analyzeLoadedBuffer(buffer);
+              if (savedBpm != null) {
+                setAnalyzedBpm(savedBpm, { buffer });
+              }
+            } catch (err) {
+              console.error('[beat] background analysis failed', err);
+            }
+          })();
+        }
+      } finally {
+        isLoadingEntryRef.current = false;
       }
+
+      void markEntryViewed(entry.id)
+        .then(() => refreshLibrary())
+        .catch((error) => console.error('Failed to mark entry viewed', error));
     },
     [
       activeEntryId,
       analyzeLoadedBuffer,
+      applyLoadedSongSettings,
       clearAnalysisSections,
       clearSelection,
       getAudioContext,
@@ -741,12 +778,7 @@ const App: React.FC = () => {
       resetAnalysis,
       resetChordAnalysis,
       resetSelection,
-      setAudioVolume,
-      setLoopEnabled,
-      setLoopRegion,
-      setMetronomeVolume,
       setAnalyzedBpm,
-      setPlaybackRate,
     ]
   );
 
@@ -1005,7 +1037,9 @@ const App: React.FC = () => {
 
   const handleFileRemove = useCallback(() => {
     if (activeEntryId) {
-      saveSongSettings(activeEntryId, captureSongSettingsRef.current());
+      void saveSongSettingsForEntry(activeEntryId, captureSongSettingsRef.current()).catch((error) => {
+        console.error('Failed to save song settings on remove', error);
+      });
     }
     youtubeControllerRef.current?.pause();
     stop();
@@ -1014,6 +1048,7 @@ const App: React.FC = () => {
     }
     setMediaFile(null);
     setActiveEntryId(null);
+    setManualBpmOverride(null);
     setSyncStartTime(null);
     setAnalysisStaleMessage(null);
     setUserSections([]);
@@ -1038,20 +1073,26 @@ const App: React.FC = () => {
   }, [activeEntryId, stop, mediaFile, resetAnalysis, clearAnalysisSections, resetChordAnalysis, resetSelection, setLoopRegion, setLoopEnabled]);
 
   const handleSyncStartChange = useCallback((time: number) => {
-    setSyncStartTime(Math.max(0, Math.min(time, Math.max(0, effectiveDuration - 1))));
-  }, [effectiveDuration]);
+    const next = Math.max(0, Math.min(time, Math.max(0, effectiveDuration - 1)));
+    setSyncStartTime(next);
+    persistCurrentSongSettings(undefined, { syncStartTime: next });
+  }, [effectiveDuration, persistCurrentSongSettings]);
 
   const handleBpmChange = useCallback((newBpm: number) => {
     if (isBeatAnalysisPending) return;
+    const rounded = Math.max(40, Math.min(220, Math.round(newBpm)));
     if (isYouTubeMedia) {
-      setYoutubeManualBpm(Math.max(40, Math.min(220, Math.round(newBpm))));
+      setYoutubeManualBpm(rounded);
+      persistCurrentSongSettings(undefined, { bpm: rounded, youtubeManualBpm: rounded });
       return;
     }
-    setAnalyzedBpm(newBpm);
+    setManualBpmOverride(rounded);
+    setAnalyzedBpm(rounded);
+    persistCurrentSongSettings(undefined, { bpm: rounded });
     if (activeEntryId) {
       setEntryStaleState(activeEntryId, false).catch((error) => console.error(error));
     }
-  }, [activeEntryId, isBeatAnalysisPending, isYouTubeMedia, setAnalyzedBpm]);
+  }, [activeEntryId, isBeatAnalysisPending, isYouTubeMedia, persistCurrentSongSettings, setAnalyzedBpm]);
 
   const handlePlaybackRateChange = useCallback(
     (nextRate: number) => {

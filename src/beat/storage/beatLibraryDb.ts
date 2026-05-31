@@ -1,9 +1,10 @@
+import type { PerSongSettings } from '../utils/practiceSections';
 import type { BeatLibraryEntry, PersistedAnalysisBundle, UserPracticeData, UserPracticeLane, UserPracticeSection } from '../types/library';
 
 const DB_NAME = 'beat-finder-library';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
-type BeatLibraryStore = 'entries' | 'files' | 'analysis' | 'practiceSections' | 'metadata';
+type BeatLibraryStore = 'entries' | 'files' | 'analysis' | 'practiceSections' | 'songSettings' | 'metadata';
 
 interface BeatLibraryFileRecord {
   videoId: string;
@@ -18,6 +19,12 @@ interface BeatLibraryAnalysisRecord {
 interface BeatLibraryPracticeSectionsRecord {
   videoId: string;
   sections: UserPracticeData | UserPracticeSection[];
+}
+
+interface BeatLibrarySongSettingsRecord {
+  videoId: string;
+  settings: PerSongSettings;
+  updatedAt: number;
 }
 
 interface BeatLibraryMetadataRecord {
@@ -45,6 +52,9 @@ function openDb(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains('practiceSections')) {
         db.createObjectStore('practiceSections', { keyPath: 'videoId' });
+      }
+      if (!db.objectStoreNames.contains('songSettings')) {
+        db.createObjectStore('songSettings', { keyPath: 'videoId' });
       }
       if (!db.objectStoreNames.contains('metadata')) {
         db.createObjectStore('metadata', { keyPath: 'key' });
@@ -102,11 +112,15 @@ export async function getLibraryEntryByFingerprint(fingerprint: string): Promise
 export async function deleteLibraryEntry(videoId: string): Promise<void> {
   const db = await openDb();
   await new Promise<void>((resolve, reject) => {
-    const tx = db.transaction(['entries', 'files', 'analysis', 'practiceSections'], 'readwrite');
+    const storeNames: BeatLibraryStore[] = ['entries', 'files', 'analysis', 'practiceSections', 'songSettings'];
+    const tx = db.transaction(storeNames, 'readwrite');
     tx.objectStore('entries').delete(videoId);
     tx.objectStore('files').delete(videoId);
     tx.objectStore('analysis').delete(videoId);
     tx.objectStore('practiceSections').delete(videoId);
+    if (db.objectStoreNames.contains('songSettings')) {
+      tx.objectStore('songSettings').delete(videoId);
+    }
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error ?? new Error('Failed to delete library entry'));
   });
@@ -181,6 +195,24 @@ export async function getPracticeSections(videoId: string): Promise<UserPractice
     (store) => store.get(videoId)
   );
   return normalizePracticeData(record?.sections);
+}
+
+export async function putSongSettings(videoId: string, settings: PerSongSettings): Promise<void> {
+  const payload: BeatLibrarySongSettingsRecord = {
+    videoId,
+    settings,
+    updatedAt: Date.now(),
+  };
+  await runTransaction('songSettings', 'readwrite', (store) => store.put(payload));
+}
+
+export async function getSongSettings(videoId: string): Promise<PerSongSettings | undefined> {
+  const record = await runTransaction<BeatLibrarySongSettingsRecord | undefined>(
+    'songSettings',
+    'readonly',
+    (store) => store.get(videoId)
+  );
+  return record?.settings;
 }
 
 export async function getSchemaVersion(): Promise<number> {

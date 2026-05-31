@@ -1,5 +1,11 @@
-import { describe, expect, it } from 'vitest';
-import { readSavedSongBpm } from './practiceSections';
+import { describe, expect, it, beforeEach } from 'vitest';
+import {
+  loadSongSettings,
+  readSavedSongBpm,
+  saveSongSettings,
+  songSettingsStorageKey,
+  type PerSongSettings,
+} from './practiceSections';
 
 describe('readSavedSongBpm', () => {
   it('prefers bpm over legacy youtubeManualBpm', () => {
@@ -12,5 +18,27 @@ describe('readSavedSongBpm', () => {
 
   it('returns null when no tempo saved', () => {
     expect(readSavedSongBpm({})).toBeNull();
+  });
+});
+
+describe('song settings persistence', () => {
+  const entryId = 'video-test-entry';
+
+  beforeEach(() => {
+    localStorage.removeItem(songSettingsStorageKey(entryId));
+  });
+
+  it('round-trips per-song settings through localStorage', () => {
+    const settings: PerSongSettings = {
+      bpm: 132,
+      syncStartTime: 4.2,
+      playbackRate: 0.75,
+      metronomeEnabled: false,
+      loopEnabled: true,
+      loopRegion: { startTime: 8, endTime: 32 },
+    };
+
+    saveSongSettings(entryId, settings);
+    expect(loadSongSettings(entryId)).toEqual(settings);
   });
 });

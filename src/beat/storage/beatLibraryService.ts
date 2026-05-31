@@ -13,12 +13,19 @@ import {
   getLibraryEntryByFingerprint,
   getLibraryEntryById,
   getPracticeSections,
+  getSongSettings,
   listLibraryEntries,
   putAnalysisBundle,
   putFileBlob,
   putLibraryEntry,
   putPracticeSections,
+  putSongSettings,
 } from './beatLibraryDb';
+import type { PerSongSettings } from '../utils/practiceSections';
+import {
+  loadSongSettings as loadSongSettingsFromLocalStorage,
+  saveSongSettings as saveSongSettingsToLocalStorage,
+} from '../utils/practiceSections';
 
 const STORAGE_LIMIT_MB = 1024;
 const STORAGE_LIMIT_BYTES = STORAGE_LIMIT_MB * 1024 * 1024;
@@ -240,6 +247,28 @@ export async function saveUserPracticeSections(videoId: string, sections: UserPr
 
 export async function getUserPracticeSections(videoId: string): Promise<UserPracticeData> {
   return getPracticeSections(videoId);
+}
+
+export async function loadSongSettingsForEntry(entryId: string): Promise<PerSongSettings | null> {
+  try {
+    const fromDb = await getSongSettings(entryId);
+    if (fromDb) return fromDb;
+  } catch (error) {
+    console.error('Failed to load song settings from IndexedDB', error);
+  }
+
+  const fromLocal = loadSongSettingsFromLocalStorage(entryId);
+  if (fromLocal) {
+    void putSongSettings(entryId, fromLocal).catch((error) => {
+      console.error('Failed to migrate song settings to IndexedDB', error);
+    });
+  }
+  return fromLocal;
+}
+
+export async function saveSongSettingsForEntry(entryId: string, settings: PerSongSettings): Promise<void> {
+  saveSongSettingsToLocalStorage(entryId, settings);
+  await putSongSettings(entryId, settings);
 }
 
 export async function markAllStaleIfVersionChanged(): Promise<void> {

@@ -15,7 +15,7 @@ interface UseAudioAnalysisReturn {
   analyzeLoadedBuffer: (buffer: AudioBuffer) => Promise<void>;
   analyzeMedia: (media: MediaFile) => Promise<void>;
   hydrateAnalysis: (payload: { result: BeatAnalysisResult; buffer: AudioBuffer }) => void;
-  setBpm: (bpm: number) => void;
+  setBpm: (bpm: number, options?: { buffer?: AudioBuffer }) => void;
   reset: () => void;
 }
 
@@ -101,28 +101,31 @@ export function useAudioAnalysis(): UseAudioAnalysisReturn {
   );
 
   const setBpm = useCallback(
-    (newBpm: number) => {
-      if (!analysisResult || !audioBuffer) return;
+    (newBpm: number, options?: { buffer?: AudioBuffer }) => {
+      const buffer = options?.buffer ?? audioBuffer;
+      setAnalysisResult((current) => {
+        if (!current || !buffer) return current;
 
-      // Regenerate beats with new BPM
-      let newBeats = regenerateBeats(newBpm, audioBuffer.duration, analysisResult.offset);
-      
-      // Re-apply gap adjustments if we have detected gaps
-      // This ensures the beat grid stays aligned after fermatas even when BPM changes
-      if (analysisResult.detectedGaps && analysisResult.detectedGaps.length > 0) {
-        devLog(`[setBpm] Re-applying ${analysisResult.detectedGaps.length} gap adjustment(s) for new BPM ${newBpm}`);
-        newBeats = adjustBeatsForGaps(newBeats, analysisResult.detectedGaps);
-      }
+        // Regenerate beats with new BPM
+        let newBeats = regenerateBeats(newBpm, buffer.duration, current.offset);
 
-      setAnalysisResult({
-        ...analysisResult,
-        bpm: newBpm,
-        beats: newBeats,
-        confidence: 1.0, // Manual adjustment = full confidence
-        hasTempoVariance: false,
+        // Re-apply gap adjustments if we have detected gaps
+        // This ensures the beat grid stays aligned after fermatas even when BPM changes
+        if (current.detectedGaps && current.detectedGaps.length > 0) {
+          devLog(`[setBpm] Re-applying ${current.detectedGaps.length} gap adjustment(s) for new BPM ${newBpm}`);
+          newBeats = adjustBeatsForGaps(newBeats, current.detectedGaps);
+        }
+
+        return {
+          ...current,
+          bpm: newBpm,
+          beats: newBeats,
+          confidence: 1.0, // Manual adjustment = full confidence
+          hasTempoVariance: false,
+        };
       });
     },
-    [analysisResult, audioBuffer]
+    [audioBuffer]
   );
 
   const hydrateAnalysis = useCallback((payload: { result: BeatAnalysisResult; buffer: AudioBuffer }) => {
