@@ -32,4 +32,4 @@ Each beat includes specific story elements tailored to your selected genre and t
 
 ## Development
 
-See `GEMINI.md` for technical architecture details and `DEVELOPMENT.md` for architecture decision records.
+See [`../../AGENTS.md`](../../AGENTS.md) for agent workflow and `DEVELOPMENT.md` for architecture decision records.

@@ -77,3 +77,27 @@ Do **not** build one monolithic shared renderer. Instead, keep renderer shells a
   - redraw + highlight persistence,
   - scroll-owner selection behavior,
   - active-note cleanup when moving between notes/measures.
+
+## Canonical VexFlow render order
+
+Several stem/beam/highlight bugs came from running steps at the wrong lifecycle point. **Always use this order** for new or refactored VexFlow surfaces; import shared helpers instead of copying ad hoc sequences.
+
+| Step | Action                                   | Shared helper / reference                                                                  |
+| ---- | ---------------------------------------- | ------------------------------------------------------------------------------------------ |
+| 1    | Format voices (`Formatter.format`)       | App formatter setup                                                                        |
+| 2    | Generate beams                           | `generateChordClefBeams`, `getChordBeamGroups` (`chordNotationBeams.ts`)                   |
+| 3    | Draw notes / staves                      | App renderer draw pass                                                                     |
+| 4    | Redraw stems if beamed clusters omit SVG | `redrawBeamedStemsIfMissing` (`chordNotationBeams.ts`)                                     |
+| 5    | Draw beams                               | `suppressBeamedNoteFlags` then beam `.draw()`                                              |
+| 6    | Apply playback highlight                 | Prefer lightweight SVG attribute toggle (`data-highlighted`); avoid full rebuild per frame |
+
+**Do not** generate beams before `Formatter.format()` — beamed chord stems detach in compound meter when order is wrong (`ChordScoreRenderer.tsx`, `ChordStylePreview.tsx`).
+
+For drum mini notation sync (no VexFlow), derive `{ measureIndex, noteIndex }` synchronously from elapsed time (`drumPlaybackNotePointer.ts`); memoize `displayRhythm` passed into `DrumNotationMini`.
+
+## Playback hook and empty-state patterns
+
+Async chart playback, portaled picker skins, and loading UX are documented in:
+
+- [`src/shared/hooks/PLAYBACK_HOOK_PATTERN.md`](../hooks/PLAYBACK_HOOK_PATTERN.md) — generation token, real `stopAll`, stable notation props.
+- [`.cursor/rules/playback-ui-regressions.mdc`](../../.cursor/rules/playback-ui-regressions.mdc) — agent checklist for hot-path edits.

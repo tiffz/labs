@@ -28,4 +28,4 @@ A lightweight, emoji-first roguelite about climbing the corporate dungeon. Navig
 
 ## Development
 
-See `GEMINI.md` for technical architecture details.
+See [`../../AGENTS.md`](../../AGENTS.md) for agent workflow.

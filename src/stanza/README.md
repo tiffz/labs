@@ -5,6 +5,8 @@ loop, log focus time, layer in extra audio (alternate mixes / instrumentals), sh
 pitch on uploads, calibrate a per-section metronome (manual or **Analyze**), and
 play a drum groove that follows the metronome BPM.
 
+**Agents:** start with [`AGENTS.md`](AGENTS.md) and [`LAYOUT.md`](LAYOUT.md).
+
 - Entry: `/stanza/`
 - **Deep link (YouTube):** append `?v=` plus the 11-character video id, e.g.
   `/stanza/?v=dQw4w9WgXcQ`. Opening that URL selects or creates the song and keeps

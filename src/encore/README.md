@@ -2,6 +2,8 @@
 
 Personal musical repertoire companion: **local-first** (Dexie / IndexedDB) with optional **Google Drive** sync for `repertoire_data.json`, plus an optional **public snapshot** for read-only sharing.
 
+**Agents:** start with [`AGENTS.md`](AGENTS.md) (nested context for this app).
+
 **Who it is for:** Encore is **singer-first**. Voice and repertoire are the primary focus; **piano or self-accompaniment** are supported as secondary detail (for example performance history and filters), not as a separate instrument-learning app.
 
 ## Originals (songwriting)

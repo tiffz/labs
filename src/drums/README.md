@@ -42,7 +42,7 @@ Each character represents a 16th note:
 
 ## Development
 
-See `GEMINI.md` for technical architecture details and `DEVELOPMENT.md` for architecture decision records.
+See [`../../AGENTS.md`](../../AGENTS.md) for agent workflow and `DEVELOPMENT.md` for architecture decision records.
 
 ## Shared Playback Integration
 

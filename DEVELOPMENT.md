@@ -183,8 +183,9 @@ Production rollback is available through `.github/workflows/rollback.yml` (manua
 ### Testing Strategy
 
 - Co-located test files alongside source code
-- Comprehensive coverage required
-- E2E tests in `src/<app>/e2e/` per app
+- Add tests when behavior is **non-obvious**, **regression-prone**, or encodes a **documented invariant**; do not test trivial getters or mirror implementation line-for-line
+- Prefer patterns already in the directory you are editing
+- E2E tests in `src/<app>/e2e/` per app; cross-app smokes in `e2e/`
 - Regression tests in `src/<app>/regression/` for complex integration testing
 
 ### Test Modes
@@ -387,13 +388,15 @@ Apps with a fixed content width and an optional footer (library, status) use a s
 
 - Stanza alignment smoke: [`e2e/stanza-viewer-layout.spec.ts`](e2e/stanza-viewer-layout.spec.ts)
 
-## Session handoff (AI + humans)
+## Iteration handoff (AI + humans)
 
-When stopping mid-refactor or after a multi-attempt bugfix:
+When stopping **mid-refactor** or after a multi-attempt bugfix (hand off **state**, not process):
 
 1. Update the relevant iteration doc (`src/<app>/LAYOUT.md`, `PRACTICE_RAIL.md`, `DEVELOPMENT.md`) with **current state**, **pitfalls**, and **next step** — not a play-by-play history.
 2. If layout was touched, note whether browser verification and layout e2e were run.
 3. Do not leave duplicate width constants in TS; point to CSS tokens.
+
+Related: **process retrospective** → [`CONTINUOUS_PROCESS_IMPROVEMENT.md`](docs/CONTINUOUS_PROCESS_IMPROVEMENT.md). **Bug-fix handoff** → PR template § Bug-fix handoff. See [`AGENTS.md`](AGENTS.md) § Handoff types.
 
 ## Bundle Splitting
 
@@ -427,3 +430,19 @@ Combined with path imports from `@mui/material/<Component>` (not barrel imports 
 
 - **No `@mui/material` barrel imports.** Import each component from its path: `import Button from '@mui/material/Button'`.
 - **Lazy-load heavy modals and optional surfaces** with `React.lazy` + `<Suspense>`. Reference implementations: `src/piano/App.tsx` (ImportModal, Analytics, VideoPlayer, DebugPanel) and `src/beat/App.tsx` (YouTubePlayer).
+
+## Playback UI patterns
+
+Cross-app playback hooks, notation render order, portaled picker skins, and loading empty states share one set of regressions. Before editing chart playback, `DrumNotationMini`, `PlaybackSoundSelect`, or VexFlow chord renderers:
+
+- [`src/shared/hooks/PLAYBACK_HOOK_PATTERN.md`](src/shared/hooks/PLAYBACK_HOOK_PATTERN.md) — generation token, synchronous derived display state, real `stopAll`, required tests.
+- [`src/shared/music/PLAYBACK_RENDERING_AUDIT.md`](src/shared/music/PLAYBACK_RENDERING_AUDIT.md) — VexFlow step order, highlight persistence, shared boundaries.
+- [`src/shared/SHARED_UI_CONVENTIONS.md`](src/shared/SHARED_UI_CONVENTIONS.md) § Playback field selects — portaled appearance checklist.
+- [`.cursor/rules/playback-ui-regressions.mdc`](.cursor/rules/playback-ui-regressions.mdc) — agent rule for hot-path files.
+- Playwright smokes: [`e2e/playback-ui-regressions.spec.ts`](e2e/playback-ui-regressions.spec.ts) (see [`docs/REGRESSION_WORKFLOW.md`](docs/REGRESSION_WORKFLOW.md)).
+
+## Continuous process improvement
+
+After meaningful work, review the session for durable process fixes—not only product fixes. Agents should **offer** a brief retrospective at session end; humans should do the same when closing a branch or PR.
+
+Full workflow: [`docs/CONTINUOUS_PROCESS_IMPROVEMENT.md`](docs/CONTINUOUS_PROCESS_IMPROVEMENT.md). Agent checklist: [`AGENTS.md`](AGENTS.md) § Continuous process improvement.

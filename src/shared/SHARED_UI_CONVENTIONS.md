@@ -177,6 +177,18 @@ Closed playback pickers (sound, chord style trigger, similar single-choice field
 - **Floating panels + nested menus**: use `playbackFloatingPanelSlotProps` on the outer popover and `playbackFieldSelectPopoverSlotProps` on field selects (`PLAYBACK_FIELD_SELECT_Z_INDEX` keeps menus above the panel). Backdrop wheel events forward to `.in-scroll-region` so the page still scrolls while a menu is open; backdrop clicks close as usual. Pair floating popovers with `usePopoverScrollAnchorSync` + `popoverAnchorEl()` so menus track anchors inside nested scroll regions (Encore `.in-scroll-region`).
 - **Custom menus**: reuse `playbackFieldSelectPopoverSlotProps(appearance)` on MUI `Popover` `slotProps` and put options in `.shared-playback-field-select__menu-list` / `.shared-playback-field-select__option` when you need a simple list; override `--pfs-*` on a parent selector for app tint without forking the trigger markup.
 
+#### Portaled appearance checklist
+
+Trigger skin and portaled menu skin **must match**. A closed trigger with Words teal but a `default` (purple) menu paper is a common regression.
+
+When wiring `appearance="words|chords|piano|encore"` on `PlaybackSoundSelect`, `ChordStyleInput`, or a custom list popover:
+
+1. **Closed trigger** — root uses `shared-playback-field-select--{appearance}` (via `playbackFieldSelectRootClass` or `PlaybackFieldSelectTrigger`).
+2. **Portaled menu paper** — `playbackFieldSelectPopoverSlotProps(appearance)` so `resolvePlaybackFieldSelectMenuAppearance()` maps to `shared-playback-field-select__menu--{appearance}` on the MUI `paper` class (not only on the trigger).
+3. **Click-outside** — document-level dismiss handlers must allowlist `.shared-playback-field-select-popover` via `isPlaybackFieldSelectPopoverTarget` (Words sound panel is the reference).
+4. **Nested z-index** — Words menus inside section dropdowns: pass `menuZIndex={PLAYBACK_FIELD_SELECT_WORDS_Z_INDEX}` when the host panel sits above default popovers.
+5. **UI catalog** — demo the **open menu** per skin under `/ui`, not just the closed trigger; `playbackFieldSelect.test.ts` guards the appearance → menu mapping.
+
 ## Popover Primitive
 
 Apps historically re-specified MUI `Popover`'s `anchorOrigin`, `transformOrigin`, and `slotProps.paper.className` at every call site, which drifted over time. Use `AnchoredPopover` (`src/shared/components/AnchoredPopover.tsx`) for any new popover or menu surface.

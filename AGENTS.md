@@ -1,90 +1,142 @@
 # AGENTS.md
 
-Instructions for AI coding assistants working in this repo (Cursor, Claude, Codex, Gemini, etc.). This is the modern universal convention; `GEMINI.md` is kept for backwards compatibility but defers to this file.
+Instructions for AI coding assistants (Cursor, Claude, Codex, Gemini, etc.). [`GEMINI.md`](GEMINI.md) redirects here for backwards compatibility.
 
 ## Start Here
 
 1. `README.md` — repo layout and quick start.
-2. `DEVELOPMENT.md` — architecture decisions, guardrails, and policy. **This is the authoritative policy document.**
-3. `STYLE_GUIDE.md` — TypeScript + UI/a11y conventions (see § _Information density_ for tooltip-first explanatory copy and icon-forward controls on dense screens).
-4. `docs/USER_COPY_STYLE.md` — default voice for user-visible copy across apps.
-5. `docs/SOURCE_OF_TRUTH.md` — precedence map when docs disagree.
-6. `docs/DOCUMENTATION_STRATEGY.md` — where to put new docs; avoid duplication and low-signal history.
-7. `docs/adr/README.md` — Architecture Decision Records (when to add one; index of accepted ADRs).
-8. `.cursor/rules/*.mdc` — machine-enforced rules (pre-commit checks, app-entry-html, spa-css-conventions, react-a11y, stanza-viewer-layout, beat-analysis-scope, encore-originals-chord-paint).
+2. **`src/<app>/README.md`** — always read the app you are editing (nested agent context).
+3. `DEVELOPMENT.md` — architecture, guardrails, policy (**authoritative for humans**).
+4. `STYLE_GUIDE.md` — TypeScript + UI/a11y conventions.
+5. `docs/SOURCE_OF_TRUTH.md` — doc precedence + [agent precedence](#agent-precedence).
+6. `docs/DOCUMENTATION_STRATEGY.md` — where to put new docs.
+7. [`.cursor/rules/README.md`](.cursor/rules/README.md) — scoped Cursor rules index.
+8. Nested **`AGENTS.md`** when present: [`src/encore/`](src/encore/AGENTS.md), [`src/stanza/`](src/stanza/AGENTS.md), [`src/shared/`](src/shared/AGENTS.md).
 
-## Canonical Rules
+## Agent precedence
 
-- **Pre-commit checks** (`.cursor/rules/pre-commit-checks.mdc`): run `npm run presubmit` before declaring a task done or suggesting a commit (mirrors `.husky/pre-commit`: boundaries, lint, knip, typecheck, `test:fast`).
-- **SPA guardrails** (`src/shared/spaGuardrails.test.ts`): every app in `src/*/` must follow the shared shell template (`src/shared/templates/app-index.starter.html`), render under `React.StrictMode`, and expose `SkipToMain`. Tests will fail the build if you add a new app that skips these.
-- **Import boundaries** (`src/shared/importBoundaries.test.ts` + `scripts/check-import-boundaries.mjs`): apps may import from `src/shared/**` but not from each other. Keep cross-app reuse in `src/shared/` and register new app directories in both files.
-- **Shared UI first** (`src/shared/SHARED_UI_CONVENTIONS.md`): reach for `src/shared/components/` primitives before writing a new popover/tooltip/menu. MUI is the underlying primitive library for complex widgets.
-- **App shell layout** (`src/shared/layout/README.md`): new multi-panel apps copy `app-main.starter.tsx` + `app-layout.starter.css`; Stanza uses `StanzaViewerLayout` + `stanza-viewer-layout.css` — see `src/stanza/LAYOUT.md`. No viewer width in `sx`.
-- **Encore Originals chord paint** (`src/encore/originals/DEVELOPMENT.md`, `src/shared/music/chordPro/`): select/move/delete by `ChordMarker.id`; shared paste fixtures in `chordPro/fixtures.ts`.
-- **User-facing copy** ([`docs/USER_COPY_STYLE.md`](docs/USER_COPY_STYLE.md)): default Labs voice for UI strings (landings, dialogs, errors, empty states). App-specific rules live in `src/<app>/COPY_STYLE.md` where present (for example Learn Your Scales extends the default in [`src/scales/COPY_STYLE.md`](src/scales/COPY_STYLE.md) with curriculum and file-location notes).
-- **Find Your Pitch visuals** (`src/pitch/DESIGN.md`): the pitch app ships one layout (teal/pink, white panels, halftone field). Do not reintroduce theme switchers or `data-pitch-concept` skins; extend `pitch.css` per that spec.
-- **Rhythm preset integrity** (`src/shared/rhythm/presetIntegrity.ts` + `presetIntegrity.test.ts`): when editing `RHYTHM_DATABASE` or related presets, run `npx vitest run src/shared/rhythm/presetIntegrity.test.ts`. The checks parse every pattern, flag copy/pasted variations across related rhythms with different bases, and verify labeled 8/8 ornament/anchor lines match the reference attack skeleton (prevents Malfuf/Kahleegi-style encoding mistakes).
-- **Labs debug mode** (`src/shared/debug/readLabsDebugParams.ts`, `labsDebugLog.ts`, `LabsDebugDock.tsx`): `?debug` and `?dev` are equivalent. `ServerLogger` info/debug only POST to `/__debug_log` when that flag is set; errors/warnings still post in dev. See root [DEVELOPMENT.md](DEVELOPMENT.md) § Labs debug mode. Use **Copy bundle** in the dock or `.debug-snapshots/` for assistant-friendly artifacts (no automatic browser→LLM pipe exists).
-- **Architecture Decision Records** ([`docs/adr/README.md`](docs/adr/README.md)): for **material** cross-cutting changes (routing vs static hosting, OAuth/storage contracts, new micro-app boundaries), add `docs/adr/NNNN-short-title.md` in the same PR when practical. Backfill older `DEVELOPMENT.md` prose opportunistically per [ADR 0002](docs/adr/0002-historical-decisions-in-development.md).
+When instructions conflict, resolve in this order:
 
-## Repo Map
+1. **Explicit user chat** in the current session (unless they say “follow repo policy”).
+2. **Cursor user rules** and installed **skills** (read the skill file when the task matches).
+3. **Nearest `AGENTS.md`** (app or `src/shared/`, then root) + matching **`.cursor/rules/*.mdc`** for open/edited paths.
+4. **`src/<app>/README.md`** and app `DEVELOPMENT.md` / `LAYOUT.md`.
+5. **`DEVELOPMENT.md`**, **`docs/adr/`**, **`STYLE_GUIDE.md`**.
 
-```text
-src/
-  <app>/                   # one directory per micro-app, with its own index.html + main.tsx
-    README.md              # human-readable overview (every app has one)
-    ARCHITECTURE.md|DEVELOPMENT.md  # (where applicable) architecture notes
-  shared/                  # cross-app components, music/audio/playback/rhythm utilities
-  ui/                      # internal shared-UI catalog / demo workspace
-docs/
-  adr/                     # Architecture Decision Records (index: adr/README.md)
-  DOCUMENTATION_STRATEGY.md # where to put new docs; avoid duplication
-  design-explorations/     # non-binding design spikes (README + topic notes; see SOURCE_OF_TRUTH)
-  COMPONENT_DECOMPOSITION_PATTERN.md
-  CSS_IMPORTANT_AUDIT.md
-  DEPENDENCY_UPGRADE_PLAN.md
-  ENGINEERING_AUDIT_2026-03.md    # archived; current plan lives in active PRs
-  REGRESSION_WORKFLOW.md
-  ROLLBACK.md
-  SOURCE_OF_TRUTH.md
-e2e/                       # Playwright smoke and visual specs
-scripts/                   # build-time helpers and boundary checks
-.github/workflows/         # CI + deploy
-```
+Enforced config (CI, ESLint, guardrail tests) overrides prose in any doc. See [`docs/SOURCE_OF_TRUTH.md`](docs/SOURCE_OF_TRUTH.md).
 
-Each app under `src/<app>/` has a `README.md`. Start there when working in an unfamiliar app.
+## Task routing
 
-## Commands You Should Actually Run
+| If you are touching…                               | Read first                                                                                                 |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Any app feature                                    | `src/<app>/README.md` (+ app `AGENTS.md` if present)                                                       |
+| New/changed app shell / `index.html`               | `src/shared/templates/app-index.starter.html`, `spaGuardrails.test.ts`, `.cursor/rules/app-entry-html.mdc` |
+| Shared UI, popovers, playback pickers              | `SHARED_UI_CONVENTIONS.md`, `/ui/` catalog, `.cursor/rules/playback-ui-regressions.mdc`                    |
+| Playback hooks, notation, VexFlow                  | `PLAYBACK_HOOK_PATTERN.md`, `PLAYBACK_RENDERING_AUDIT.md`                                                  |
+| Encore (library, originals, sync)                  | `src/encore/AGENTS.md`, `src/encore/README.md`                                                             |
+| Encore Originals chord paint                       | `originals/DEVELOPMENT.md`, `.cursor/rules/encore-originals-chord-paint.mdc`                               |
+| Stanza viewer layout                               | `src/stanza/LAYOUT.md`, `.cursor/rules/stanza-viewer-layout.mdc`                                           |
+| Workbench / multi-panel layout                     | `src/shared/layout/README.md`, `app-main.starter.tsx`                                                      |
+| Beat analysis / tempo                              | `src/beat/DEVELOPMENT.md`, `.cursor/rules/beat-analysis-scope.mdc`                                         |
+| User-visible copy                                  | `docs/USER_COPY_STYLE.md` (+ app `COPY_STYLE.md`)                                                          |
+| Pitch visuals                                      | `src/pitch/DESIGN.md`                                                                                      |
+| Rhythm presets                                     | `presetIntegrity.test.ts` after editing `RHYTHM_DATABASE`                                                  |
+| Material architecture (routing, OAuth, boundaries) | `docs/adr/README.md`, `.cursor/rules/architecture-decisions.mdc`                                           |
+| Regression / visual baselines                      | `docs/REGRESSION_WORKFLOW.md`                                                                              |
+
+## Boundaries
+
+### Always (do without asking)
+
+- Run **`npm run presubmit`** before declaring a task done or suggesting a commit.
+- Respect **import boundaries** (`src/shared/**` only for cross-app reuse).
+- Use **shared UI primitives** before app-local copies.
+- **Question-only / review-only tasks:** minimal diff—do not refactor or “improve” unrelated code.
+- Read the **nearest app README** before editing an unfamiliar app.
+
+### Ask first
+
+- **Git commit**, **push**, or **open a PR** (unless the user explicitly requested it).
+- **Visual baseline updates** (`e2e/visual/*-snapshots/`).
+- **New ADR** or material architecture change.
+- Expanding scope beyond the user’s request.
+- **Codifying process improvements** into rules/docs (offer first; implement when the user agrees).
+
+### Never
+
+- Cross-app imports (`src/<app-a>/` → `src/<app-b>/`).
+- Disable guardrail tests to land a refactor.
+- **`git commit --no-verify`**, **force-push to `main`**, or destructive git without explicit user request.
+- Commit secrets (`.env`, tokens, credentials) or log OAuth tokens / PII.
+- Silently regenerate visual baselines without review.
+- Add new **`!important`** in CSS (`docs/CSS_IMPORTANT_AUDIT.md`).
+- Reintroduce Pitch theme switchers or `data-pitch-concept` skins.
+
+## Security
+
+- Never commit `.env`, API keys, OAuth client secrets, or credential files.
+- Labs debug mode (`?debug` / `?dev`) is **local dev only** — do not expose debug endpoints in production builds.
+- Use **Copy bundle** in LabsDebugDock for assistant artifacts; there is no automatic browser→LLM pipe.
+
+## Skills
+
+When the user’s task matches an installed Cursor skill (e.g. babysit PR, split-to-PRs, create-rule), **read and follow that skill file first** before improvising a workflow.
+
+## Commands
+
+| Command                                                   | Use when                                  |
+| --------------------------------------------------------- | ----------------------------------------- |
+| `npm run presubmit`                                       | Before done / before suggesting commit    |
+| `npm run test:fast`                                       | Iterating on TS/tests (pre-commit subset) |
+| `npm test`                                                | Full Vitest (CI parity)                   |
+| `npm run test:e2e:smoke`                                  | Quick app shell smoke                     |
+| `npx playwright test e2e/playback-ui-regressions.spec.ts` | Playback UI smokes                        |
+| `npm run test:e2e:visual`                                 | Visual regression verify                  |
+| `npm run test:e2e:visual:update`                          | Intentional baseline refresh              |
+| `npm run test:regression`                                 | Audio + visual combined                   |
+| `npm run knip`                                            | After adding/removing exports or files    |
 
 ```bash
-npm run dev            # vite dev server
+npm run dev            # vite dev server (5173)
 npm run typecheck      # tsc --noEmit
 npm run lint           # eslint
-npm run knip           # dead-code / unused-exports check
-npm run presubmit      # full local pre-commit mirror (run before commit)
-npm run test:fast      # vitest, fast subset used by pre-commit
-npm run test           # full vitest suite (longer; CI gate)
 npm run build          # production build
-npx playwright test    # E2E (requires `npx playwright install` first)
+npx playwright test    # all E2E (install browsers first)
 ```
+
+## Handoff types (do not conflate)
+
+| Name                      | When                                           | Doc                                  |
+| ------------------------- | ---------------------------------------------- | ------------------------------------ |
+| **Iteration handoff**     | Stopping mid-refactor; next person needs state | `DEVELOPMENT.md` § Iteration handoff |
+| **Process retrospective** | Session complete; improve how we work          | `CONTINUOUS_PROCESS_IMPROVEMENT.md`  |
+| **Bug-fix handoff**       | Fixed a regression; record symptom class       | PR template § Bug-fix handoff        |
 
 ## Editing Checklist
 
 Before declaring a task done:
 
-- [ ] `npm run presubmit` clean (or the same steps: lint, knip, typecheck, test:fast)
-- [ ] Any new shared primitive is documented in `src/shared/SHARED_UI_CONVENTIONS.md` and demoed under `/ui/`
-- [ ] Any new app directory is added to `src/shared/importBoundaries.test.ts` and `scripts/check-import-boundaries.mjs`
-- [ ] Visual baselines updated intentionally, not silently (`e2e/visual/*`)
-- [ ] If the change is a **material architecture decision** (see [`docs/adr/README.md`](docs/adr/README.md)), an ADR was added or updated in the same PR when practical
+- [ ] `npm run presubmit` clean
+- [ ] New shared primitive → `SHARED_UI_CONVENTIONS.md` + `/ui/` demo
+- [ ] New app directory → `importBoundaries.test.ts` + `check-import-boundaries.mjs`
+- [ ] Visual baselines updated **intentionally** only
+- [ ] Material architecture → ADR when practical
+
+## Continuous process improvement
+
+After substantial sessions, **proactively** offer a brief retrospective (symptom → root cause class → durable fix). See [`docs/CONTINUOUS_PROCESS_IMPROVEMENT.md`](docs/CONTINUOUS_PROCESS_IMPROVEMENT.md). Fill PR **Process improvements** when codifying.
 
 ## Large Refactors
 
-See `docs/COMPONENT_DECOMPOSITION_PATTERN.md` for the repeatable pattern used to split oversized components and modules. Follow it rather than inventing a new structure.
+Follow [`docs/COMPONENT_DECOMPOSITION_PATTERN.md`](docs/COMPONENT_DECOMPOSITION_PATTERN.md).
 
-## Do Not
+## Repo Map
 
-- Do not add cross-app imports (`src/<app-a>/...` importing from `src/<app-b>/...`).
-- Do not disable guardrail tests to make a refactor easier; fix the refactor instead.
-- Do not silently regenerate `e2e/visual/*-snapshots/` without reviewing the diff.
-- Do not add new uses of `!important` in CSS; see `docs/CSS_IMPORTANT_AUDIT.md`.
+```text
+src/<app>/     — micro-apps (index.html + main.tsx + README.md)
+src/shared/    — cross-app code (see src/shared/AGENTS.md)
+src/ui/        — shared UI catalog
+docs/          — policy, ADRs, regression workflow
+e2e/           — cross-app Playwright specs
+.cursor/rules/ — scoped agent rules (see README.md)
+```

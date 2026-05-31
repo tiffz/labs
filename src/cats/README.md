@@ -31,4 +31,4 @@ An incremental clicker game featuring an adorable cat in a 2D side-view world en
 
 ## Development
 
-See `GEMINI.md` for technical architecture details and `DEVELOPMENT.md` for architecture decision records.
+See [`../../AGENTS.md`](../../AGENTS.md) for agent workflow and `DEVELOPMENT.md` for architecture decision records.

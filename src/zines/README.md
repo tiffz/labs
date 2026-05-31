@@ -54,7 +54,7 @@ For automatic page placement, name your files:
 
 ## Architecture
 
-See `GEMINI.md` for technical architecture and `DEVELOPMENT.md` for architecture decision records.
+See [`../../AGENTS.md`](../../AGENTS.md) for agent workflow and `DEVELOPMENT.md` for architecture decision records.
 
 ## Development
 

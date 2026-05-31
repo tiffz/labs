@@ -12,15 +12,19 @@ When guidance conflicts, resolve in this order:
    - `.husky/*`
    - `vite.config.ts`, `playwright.config.ts`, `tsconfig.json`
    - `eslint.config.js` (includes enforced `jsx-a11y` rules)
-   - Cursor rules in `.cursor/rules/*.mdc` (app-entry-html, spa-css-conventions, react-a11y, pre-commit-checks)
+   - Cursor rules — see [`.cursor/rules/README.md`](../.cursor/rules/README.md) (not a partial list here)
    - Test-based guardrails: `src/shared/importBoundaries.test.ts`, `src/shared/spaGuardrails.test.ts`
 2. `DEVELOPMENT.md` (repo-level architectural decisions)
    2a. `docs/adr/*.md` — accepted Architecture Decision Records ([`docs/adr/README.md`](adr/README.md)); durable context and alternatives. If an ADR and `DEVELOPMENT.md` diverge on intent, reconcile in one PR; default to the **newer accepted ADR** for architectural intent until `DEVELOPMENT.md` is updated.
 3. `STYLE_GUIDE.md` (TypeScript + UI/A11y conventions for editing code)
 4. `docs/USER_COPY_STYLE.md` (default voice and patterns for user-visible copy; app `COPY_STYLE.md` files add domain-only rules)
 5. Root `README.md` (onboarding and command quick reference)
-6. App-level docs (`src/<app>/README.md`, `src/<app>/DEVELOPMENT.md`)
-7. AI-assistant helper docs — canonical: `AGENTS.md` (legacy: `GEMINI.md`, which defers to `AGENTS.md`)
+6. App-level docs (`src/<app>/README.md`, `src/<app>/AGENTS.md`, `src/<app>/DEVELOPMENT.md`)
+7. Root `AGENTS.md` (cross-cutting agent workflow; legacy: `GEMINI.md` redirects here)
+
+### Agent precedence (coding assistants)
+
+When **AI agents** receive conflicting instructions, use [`AGENTS.md`](../AGENTS.md) § Agent precedence (user chat → user rules/skills → nearest AGENTS.md + scoped rules → app README → DEVELOPMENT.md). Human doc precedence above still applies when the user has not given explicit chat overrides.
 
 ## Scope by Document Type
 
@@ -45,7 +49,7 @@ When guidance conflicts, resolve in this order:
 - `docs/design-explorations/`
   - Non-binding design notes and spikes (see [`docs/design-explorations/README.md`](design-explorations/README.md)). Below ADRs and `DEVELOPMENT.md` in precedence. Example: [`local-first-session-and-bff.md`](design-explorations/local-first-session-and-bff.md) (OAuth / BFF / source-of-truth options).
 - AI helper docs
-  - Task-oriented guidance for agents.
+  - Task-oriented guidance for agents: root [`AGENTS.md`](../AGENTS.md), nested `src/<app>/AGENTS.md` where present, [`.cursor/rules/README.md`](../.cursor/rules/README.md).
   - Should reference canonical docs instead of duplicating policy text (see [`DOCUMENTATION_STRATEGY.md`](DOCUMENTATION_STRATEGY.md)).
 
 ## Consistency Rules
@@ -57,8 +61,9 @@ When guidance conflicts, resolve in this order:
 
 ## Audit Targets
 
-During code review and periodic maintenance, verify:
+During code review and **quarterly maintenance** (or after major agent-workflow changes), verify:
 
+- [`AGENTS.md`](../AGENTS.md), [`.cursor/rules/README.md`](../.cursor/rules/README.md), and commands in `package.json` stay aligned.
 - CI behavior described in docs matches `.github/workflows/*`.
 - Hook behavior described in docs matches `.husky/*`.
 - Shared boundary documentation matches `src/shared/importBoundaries.test.ts`.

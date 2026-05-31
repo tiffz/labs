@@ -11,6 +11,17 @@ This document defines the canonical workflow for screenshot and audio regression
 
 ## Test Coverage
 
+### Playback UI smokes (Playwright)
+
+- Test file: `e2e/playback-ui-regressions.spec.ts`
+- Coverage (cheap integration checks, not full visual baselines):
+  - Words — portaled chord sound menu uses `shared-playback-field-select__menu--words` (trigger + menu skin parity).
+  - Encore Originals — inline drum mini notation highlight moves during chord chart playback.
+  - Encore Originals — reload existing song shows loading spinner, not a “Song not found” flash.
+- Run: `npx playwright test e2e/playback-ui-regressions.spec.ts`
+
+Add a smoke here when a cross-app playback/portal/empty-state bug recurs — prefer DOM/class assertions over screenshot baselines.
+
 ### Visual Baselines
 
 - Test file: `e2e/visual/apps.visual.spec.ts`
@@ -150,3 +161,19 @@ CI uploads browseable artifacts for each run:
   - `src/beat/regression/reports/**`
 
 Use these artifacts to inspect all screenshots and any drift without reproducing locally.
+
+## Bug-fix handoff (playback / notation / portal UI)
+
+When fixing user-visible playback, notation, portal, or async-load bugs, record in the PR (see [`.github/pull_request_template.md`](../.github/pull_request_template.md)):
+
+| Field                     | Purpose                                                                                                          |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| **User-visible symptom**  | What the user saw (e.g. highlight stuck on beat 1).                                                              |
+| **Root cause class**      | One of: `stale state` · `portal styling` · `render order` · `async race` · `empty-state logic` · `fake stopAll`. |
+| **Regression test added** | Vitest or Playwright file that would fail if the bug returns.                                                    |
+
+This makes the next similar bug searchable and helps agents pick the right fix class faster. Canonical patterns live in [`src/shared/hooks/PLAYBACK_HOOK_PATTERN.md`](../src/shared/hooks/PLAYBACK_HOOK_PATTERN.md) and [`src/shared/music/PLAYBACK_RENDERING_AUDIT.md`](../src/shared/music/PLAYBACK_RENDERING_AUDIT.md).
+
+## Session retrospectives
+
+After substantial agent or human sessions, review friction and codify durable fixes. Workflow: [`CONTINUOUS_PROCESS_IMPROVEMENT.md`](CONTINUOUS_PROCESS_IMPROVEMENT.md). Handoff types: [`AGENTS.md`](../AGENTS.md) § Handoff types. Record what landed in the PR **Process improvements** table when applicable.
